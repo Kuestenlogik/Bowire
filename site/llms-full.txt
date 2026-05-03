@@ -1,0 +1,153 @@
+# Bowire — full reference for LLMs
+
+> Multi-protocol API workbench for .NET. Auto-discovers gRPC, REST/OpenAPI, GraphQL, SignalR, WebSocket, SSE, MQTT, Socket.IO, OData, and MCP services from a running endpoint and gives you a single browser UI to inspect schemas, call methods, stream messages, mock backends, record/replay sessions, and assert on responses. Ships embedded as ASP.NET middleware (`MapBowire()`) or as a standalone .NET tool / container.
+
+This file is the verbose, AI-readable companion to `llms.txt`. It contains install commands, code snippets, the API surface, and answers to the most common questions in one self-contained document so an agent doesn't need to crawl the site to understand Bowire.
+
+License: Apache-2.0. Source: https://github.com/Kuestenlogik/Bowire. Brand: Küstenlogik (https://kuestenlogik.com), Northern Germany.
+
+## What problem Bowire solves
+
+Modern .NET services rarely speak only HTTP+JSON. A single product can ship gRPC for backend-to-backend, REST for the web frontend, SignalR for live updates, MQTT for IoT integration, GraphQL for partner APIs, and MCP for AI-agent access. Each protocol traditionally needs its own debugging tool — Postman for REST, grpcurl for gRPC, MQTT Explorer for MQTT, Insomnia for GraphQL — and each tool re-asks the developer for the same metadata (services, methods, schemas, headers, auth).
+
+Bowire auto-discovers all of these from one running endpoint URL and renders them in one workbench. You point Bowire at `https://api.example.com` (or `app.MapBowire()` inside your own ASP.NET service) and get every callable method across every supported protocol, with the same UI for unary calls, server-streaming, client-streaming, and duplex channels.
+
+## Install paths
+
+```bash
+# Standalone CLI / .NET global tool — runs from anywhere
+dotnet tool install -g Kuestenlogik.Bowire.Tool
+
+# Embedded — middleware inside your own ASP.NET service (recommended)
+dotnet add package Kuestenlogik.Bowire
+
+# Container
+docker pull ghcr.io/kuestenlogik/bowire:0.9.4
+
+# Native installers (pre-built archives + winget / brew)
+winget install Kuestenlogik.Bowire.Tool
+brew install kuestenlogik/tap/bowire
+```
+
+All packages are at https://www.nuget.org/profiles/Kuestenlogik. Source-link is wired up so consumers can step into Bowire source from any debugger.
+
+## Embedded mode — the two-line integration
+
+```csharp
+using Kuestenlogik.Bowire;
+
+var builder = WebApplication.CreateBuilder(args);
+builder.Services.AddBowire();          // protocol plugins auto-discovered
+var app = builder.Build();
+app.MapBowire();                       // workbench at /bowire
+app.Run();
+```
+
+Visit `http://localhost:5000/bowire`. Bowire scans the live `IServiceProvider` for `IBowireProtocol` implementations and `EndpointDataSource` for app routes, so all your services, hubs, and OpenAPI endpoints are listed without any manual registration.
+
+## Standalone mode — point at any URL
+
+```bash
+bowire                                          # opens the UI on localhost:5080
+bowire list https://api.example.com             # discover services
+bowire describe ServiceName.MethodName          # show signature
+bowire call ServiceName.MethodName --json '...' # invoke
+bowire mock --recording session.har             # replay as a local server
+bowire mcp serve                                # expose discovered methods as MCP tools
+```
+
+## Protocol plugins (one NuGet package each)
+
+Built-ins ship in the Bowire core repo:
+
+- `Kuestenlogik.Bowire.Protocol.Rest` — OpenAPI / Swagger discovery, AWS Sig v4
+- `Kuestenlogik.Bowire.Protocol.Grpc` — Server Reflection, all four streaming types
+- `Kuestenlogik.Bowire.Protocol.GraphQL` — `__schema` introspection, subscriptions
+- `Kuestenlogik.Bowire.Protocol.SignalR` — hub auto-discovery via `EndpointDataSource`
+- `Kuestenlogik.Bowire.Protocol.WebSocket` — endpoint scan + duplex channel UI
+- `Kuestenlogik.Bowire.Protocol.Sse` — Server-Sent Events with reconnect
+- `Kuestenlogik.Bowire.Protocol.Mqtt` — broker connect, topic browse, publish/subscribe
+- `Kuestenlogik.Bowire.Protocol.SocketIo` — Socket.IO 4.x event discovery
+- `Kuestenlogik.Bowire.Protocol.OData` — `$metadata` discovery, entity sets
+- `Kuestenlogik.Bowire.Protocol.Mcp` — Model Context Protocol both directions
+
+Sister-repo plugins:
+
+- `Kuestenlogik.Bowire.Protocol.Udp` — generic UDP listener (multicast / broadcast / unicast)
+- `Kuestenlogik.Bowire.Protocol.Dis` — IEEE 1278.1 DIS with typed PDU decode
+- `Kuestenlogik.Bowire.Protocol.Kafka` — Apache Kafka via Confluent.Kafka, schema registry
+- `Kuestenlogik.Bowire.Protocol.Storm` — Küstenlogik Storm distribution-fabric tap (private)
+
+## Writing your own plugin
+
+```bash
+dotnet new bowire-plugin -n Contoso.Bowire.Protocol.Foo --Preset rest
+```
+
+Implement `IBowireProtocol` (Name / Id / IconSvg / DiscoverAsync / InvokeAsync / InvokeStreamAsync / OpenChannelAsync) and `IBowireChannel` for duplex protocols. The full interface contract is documented at https://kuestenlogik.github.io/Bowire/docs/protocols/custom.html and is what the existing 13 protocol plugins all implement.
+
+Tag your published nupkg with `<PackageTags>bowire bowire-plugin</PackageTags>` so it surfaces in Bowire's in-app marketplace and on https://github.com/topics/bowire-plugin.
+
+## Mock server, recording, replay
+
+Every Bowire session can be recorded — pure UI button — into a HAR-like JSON file. Recordings replay through:
+
+- `bowire mock --recording session.har` — local HTTP server serving recorded responses
+- Schema-only mocks: `--schema openapi.json` or `--grpc-schema service.proto` or `--graphql-schema schema.graphql` — generates plausible responses from the schema, no recording needed
+- HTML CI report — pass/fail summary with collapsible step details
+
+Mocks support chaos injection (latency, error injection), stateful cursors (CRUD-style), and capture-on-miss (when a request comes in that isn't in the recording, capture it from the live backend and add it).
+
+## MCP integration (AI agents)
+
+Two complementary modes via `Kuestenlogik.Bowire.Protocol.Mcp`:
+
+- **Bowire as MCP server** — every method Bowire has discovered becomes an MCP tool exposed to Claude Desktop, Cursor, Copilot, etc. Plus tools for `discover` / `invoke` / `subscribe` / recording management. AI agents can drive Bowire from their conversation.
+- **Bowire as MCP client** — connect to remote MCP servers, browse their tools / resources / prompts, and invoke them with the same UI as gRPC.
+
+```bash
+bowire mcp serve                  # MCP server over streamable-HTTP
+bowire mcp connect mcp://remote   # MCP client browsing
+```
+
+## Architecture in three layers
+
+1. `Kuestenlogik.Bowire` — UI shell (single-page HTML, inlined CSS/JS), plugin host, contracts (`IBowireProtocol`, `IBowireChannel`, `IBowireMockEmitter`), models (`BowireServiceInfo`, `BowireMethodInfo`, `BowireMessageInfo`, `InvokeResult`).
+2. `Kuestenlogik.Bowire.Protocol.*` — one nupkg per protocol, each implementing `IBowireProtocol`. Loaded out of the consumer's bin directory or `~/.bowire/plugins/`.
+3. `Kuestenlogik.Bowire.Mock` — separate package for recording/replay infrastructure. Plugins contribute `IBowireMockSchemaSource` for schema-only mocks and `IBowireMockTransportHost` for non-HTTP protocols (MQTT, WebSocket, etc.).
+
+The whole pipeline (discovery → invoke → record → replay → assert) is plugin-extensible at every step.
+
+## Common questions
+
+**Q: Does Bowire phone home / send data anywhere?**
+A: No. There is no telemetry, no cloud account, no proxy. Embedded mode runs fully in-process; standalone mode only talks to the URL you give it.
+
+**Q: Is it free?**
+A: Yes — Apache-2.0 source, MIT-style permissive use, including commercial.
+
+**Q: Why .NET only?**
+A: Bowire embeds via ASP.NET middleware. The CLI talks to any HTTP/gRPC/MQTT/etc. service regardless of the server's language — Bowire.Tool against a Java gRPC service works fine. Only the embedding (`AddBowire()` + `MapBowire()`) is .NET-specific.
+
+**Q: How is it different from Postman / Insomnia / Bruno / Hoppscotch?**
+A: Those are HTTP-first clients. Bowire starts with multi-protocol auto-discovery (no manual collection authoring), supports embedded mode (lives next to your service), records sessions to replay them as mock servers, and exposes everything as MCP tools for AI agents. The single-tool-many-protocols story plus embed-mode are the two main differentiators.
+
+**Q: What's the relationship to Storm?**
+A: Storm is Küstenlogik's separate distribution-fabric product. `Kuestenlogik.Bowire.Protocol.Storm` is an optional plugin that lets Bowire tap Storm event streams. Storm itself is not yet public.
+
+**Q: Where do I report bugs / request features?**
+A: https://github.com/Kuestenlogik/Bowire/issues for the core. Per-plugin sister repos have their own issue trackers.
+
+## Map of resources
+
+- Site: https://kuestenlogik.github.io/Bowire/
+- Docs: https://kuestenlogik.github.io/Bowire/docs/
+- Quickstart: https://kuestenlogik.github.io/Bowire/quickstart.html
+- Custom-protocol guide: https://kuestenlogik.github.io/Bowire/docs/protocols/custom.html
+- API reference: https://kuestenlogik.github.io/Bowire/docs/api/Kuestenlogik.Bowire.html
+- Source (core): https://github.com/Kuestenlogik/Bowire
+- Source (plugin templates): https://github.com/Kuestenlogik/Bowire.Templates
+- Source (samples): https://github.com/Kuestenlogik/Bowire.Samples
+- NuGet profile: https://www.nuget.org/profiles/Kuestenlogik
+- Roadmap: https://github.com/Kuestenlogik/Bowire/blob/main/ROADMAP.md
+- Changelog: https://github.com/Kuestenlogik/Bowire/blob/main/CHANGELOG.md

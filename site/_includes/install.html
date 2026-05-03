@@ -1,0 +1,165 @@
+<section class="install" id="install">
+  <div class="container">
+    <h2 class="section-title">Ship Bowire in 60 seconds</h2>
+    <p class="section-subtitle">Four ways to run Bowire &mdash; from builtin to scripting. Pick what fits your workflow.</p>
+
+    <div class="install-tabs" role="tablist" aria-label="Install options">
+      <button class="install-tab active" role="tab" aria-selected="true" aria-controls="install-panel-embedded" data-tab="embedded">Embedded</button>
+      <button class="install-tab" role="tab" aria-selected="false" aria-controls="install-panel-standalone" data-tab="standalone">Standalone</button>
+      <button class="install-tab" role="tab" aria-selected="false" aria-controls="install-panel-sidecar" data-tab="sidecar">Sidecar</button>
+      <button class="install-tab" role="tab" aria-selected="false" aria-controls="install-panel-cli" data-tab="cli">Commandline</button>
+    </div>
+
+    <div class="install-panels">
+
+      <div class="install-panel active" id="install-panel-embedded" role="tabpanel" data-panel="embedded">
+        <p class="install-desc">Add Bowire to your ASP.NET app. Auto-discovery for every protocol you install.</p>
+        <div class="code-block">
+          <div class="code-block-header">
+            <span class="code-block-lang">bash</span>
+            <button class="copy-btn" data-copy="dotnet add package Kuestenlogik.Bowire
+dotnet add package Kuestenlogik.Bowire.Protocol.Grpc" aria-label="Copy">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+            </button>
+          </div>
+          <pre><code><span class="c"># Add Bowire core</span>
+dotnet add package Kuestenlogik.Bowire
+
+<span class="c"># Add gRPC protocol (pick the ones you need)</span>
+dotnet add package Kuestenlogik.Bowire.Protocol.Grpc</code></pre>
+        </div>
+        <div class="code-block">
+          <div class="code-block-header">
+            <span class="code-block-lang">csharp</span>
+            <button class="copy-btn" data-copy="builder.Services.AddBowire();
+
+// ... your app setup ...
+
+app.MapBowire();" aria-label="Copy">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+            </button>
+          </div>
+          <pre><code>builder.Services.AddBowire(); <span class="c">// auto-configure installed protocols</span>
+
+<span class="c">// ... your app setup ...</span>
+
+app.MapBowire();              <span class="c">// mount UI + API at /bowire</span></code></pre>
+        </div>
+      </div>
+
+      <div class="install-panel" id="install-panel-standalone" role="tabpanel" data-panel="standalone" hidden>
+        <p class="install-desc">Run Bowire as a .NET tool. Opens the browser UI against any server &mdash; no code changes required.</p>
+        <div class="code-block">
+          <div class="code-block-header">
+            <span class="code-block-lang">bash</span>
+            <button class="copy-btn" data-copy="dotnet tool install -g Kuestenlogik.Bowire.Tool" aria-label="Copy">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+            </button>
+          </div>
+          <pre><code><span class="c"># Install once</span>
+dotnet tool install -g Kuestenlogik.Bowire.Tool</code></pre>
+        </div>
+        <div class="code-block">
+          <div class="code-block-header">
+            <span class="code-block-lang">bash</span>
+            <button class="copy-btn" data-copy="bowire --url https://myserver" aria-label="Copy">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+            </button>
+          </div>
+          <pre><code><span class="c"># Launch the UI in your browser</span>
+bowire --url https://myserver</code></pre>
+        </div>
+      </div>
+
+      <div class="install-panel" id="install-panel-sidecar" role="tabpanel" data-panel="sidecar" hidden>
+        <p class="install-desc">Drop the Bowire container next to your service in Docker Compose or Kubernetes. Zero code change, language-agnostic &mdash; works with any server using a supported protocol.</p>
+        <div class="code-block">
+          <div class="code-block-header">
+            <span class="code-block-lang">docker-compose.yml</span>
+            <button class="copy-btn" data-copy="services:
+  myapp:
+    image: myapp:latest
+    ports: [&quot;443:443&quot;]
+
+  bowire:
+    image: kuestenlogik/bowire:latest
+    command: [&quot;--url&quot;, &quot;http://myapp:443&quot;, &quot;--no-browser&quot;]
+    ports: [&quot;5080:5080&quot;]
+    depends_on: [myapp]" aria-label="Copy">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+            </button>
+          </div>
+          <pre><code><span class="c"># Run alongside your existing service</span>
+services:
+  myapp:
+    image: myapp:latest
+    ports: ["443:443"]
+
+  bowire:
+    image: kuestenlogik/bowire:latest
+    command: ["--url", "http://myapp:443", "--no-browser"]
+    ports: ["5080:5080"]
+    depends_on: [myapp]</code></pre>
+        </div>
+        <div class="code-block">
+          <div class="code-block-header">
+            <span class="code-block-lang">kubernetes</span>
+            <button class="copy-btn" data-copy="# As a pod sidecar — same network namespace as the main app
+spec:
+  containers:
+    - name: myapp
+      image: myapp:latest
+    - name: bowire
+      image: kuestenlogik/bowire:latest
+      args: [&quot;--url&quot;, &quot;http://localhost:443&quot;, &quot;--no-browser&quot;]
+      ports: [{ containerPort: 5080 }]" aria-label="Copy">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+            </button>
+          </div>
+          <pre><code><span class="c"># As a pod sidecar — same network namespace as the main app</span>
+spec:
+  containers:
+    - name: myapp
+      image: myapp:latest
+    - name: bowire
+      image: kuestenlogik/bowire:latest
+      args: ["--url", "http://localhost:443", "--no-browser"]
+      ports: [{ containerPort: 5080 }]</code></pre>
+        </div>
+      </div>
+
+      <div class="install-panel" id="install-panel-cli" role="tabpanel" data-panel="cli" hidden>
+        <p class="install-desc">Same tool, terminal mode. Scriptable <code>list</code>, <code>describe</code>, and <code>call</code> commands for CI and automation.</p>
+        <div class="code-block">
+          <div class="code-block-header">
+            <span class="code-block-lang">bash</span>
+            <button class="copy-btn" data-copy="dotnet tool install -g Kuestenlogik.Bowire.Tool" aria-label="Copy">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+            </button>
+          </div>
+          <pre><code><span class="c"># Install once</span>
+dotnet tool install -g Kuestenlogik.Bowire.Tool</code></pre>
+        </div>
+        <div class="code-block">
+          <div class="code-block-header">
+            <span class="code-block-lang">bash</span>
+            <button class="copy-btn" data-copy="bowire list --url https://myserver
+bowire describe --url https://myserver WeatherService
+bowire call --url https://myserver WeatherService/GetCurrentWeather -d '{&quot;city&quot;:&quot;Berlin&quot;}'" aria-label="Copy">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+            </button>
+          </div>
+          <pre><code><span class="c"># Treat your APIs like Unix commands</span>
+bowire list --url https://myserver
+bowire describe --url https://myserver WeatherService
+bowire call --url https://myserver WeatherService/GetCurrentWeather -d '{"city":"Berlin"}'</code></pre>
+        </div>
+      </div>
+
+    </div>
+
+    <p class="features-detail-cta">
+      Set sail: <a href="{{ '/downloads.html' | relative_url }}">downloads &rarr;</a>
+    </p>
+  </div>
+</section>

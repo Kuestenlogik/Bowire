@@ -1,0 +1,75 @@
+- name: Overview
+  href: index.md
+
+- name: Making requests
+  items:
+    - name: Auto-discovery
+      href: auto-discovery.md
+    - name: Form & JSON input
+      href: form-json-input.md
+    - name: Freeform requests
+      href: freeform-requests.md
+    - name: Authentication
+      href: authentication.md
+    - name: Response chaining
+      href: response-chaining.md
+
+- name: Streaming & channels
+  items:
+    - name: Streaming
+      href: streaming.md
+    - name: Duplex channels
+      href: duplex-channels.md
+    - name: Multi-channel manager
+      href: multi-channel.md
+    - name: Console / log view
+      href: console.md
+
+- name: Recording & replay
+  items:
+    - name: Recording
+      href: recording.md
+    - name: Replay mock server
+      href: mock-server.md
+    - name: Test assertions
+      href: test-assertions.md
+
+- name: Automation
+  items:
+    - name: Flows
+      href: flows.md
+    - name: Performance graphs
+      href: performance.md
+
+- name: Environments & data
+  items:
+    - name: Environments & variables
+      href: environments.md
+    - name: Collections
+      href: collections.md
+    - name: Favorites & history
+      href: favorites-history.md
+    - name: Workspace files (.blw)
+      href: workspace.md
+    - name: Export & import
+      href: export-import.md
+
+- name: UI & productivity
+  items:
+    - name: Command palette
+      href: command-palette.md
+    - name: Keyboard shortcuts
+      href: keyboard-shortcuts.md
+    - name: Empty-state landing
+      href: empty-state.md
+    - name: Settings dialog
+      href: settings.md
+    - name: Responsive & mobile
+      href: responsive-mobile.md
+
+- name: Command line & extending
+  items:
+    - name: CLI mode
+      href: cli-mode.md
+    - name: Plugin system
+      href: plugin-system.md

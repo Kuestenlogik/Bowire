@@ -1,0 +1,33 @@
+# Canonical line-ending policy for the repo. Silences the
+# "LF will be replaced by CRLF" warnings that Windows clients with
+# core.autocrlf=true emit on every git add: with `text=auto eol=lf`
+# the repo's working-copy tracks LF exactly the way files land in
+# the index, so no per-add normalisation is needed.
+
+# All recognised text files: store and check out with LF on every
+# platform. Files already committed with LF stay LF; Windows editors
+# that insist on CRLF trigger a one-time renormalize but no ongoing
+# warnings on git add.
+* text=auto eol=lf
+
+# Windows-only scripts: preserve CRLF so PowerShell / .bat hosts
+# don't trip over LF-only shebang / line-continuation behaviour.
+*.ps1  text eol=crlf
+*.psm1 text eol=crlf
+*.bat  text eol=crlf
+*.cmd  text eol=crlf
+
+# Binary file types — never diff, never touch line endings.
+*.png  binary
+*.jpg  binary
+*.jpeg binary
+*.gif  binary
+*.ico  binary
+*.pdf  binary
+*.zip  binary
+*.nupkg binary
+*.snupkg binary
+*.dll  binary
+*.pdb  binary
+*.woff binary
+*.woff2 binary

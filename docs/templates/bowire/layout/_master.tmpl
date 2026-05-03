@@ -1,0 +1,1163 @@
+{{!--- Bowire docfx master template — overrides modern/layout/_master.tmpl.
+       The content slot below (the docfx body placeholder) receives the
+       output of the upstream content template. We only own the page
+       chrome. Diff against the modern master when docfx upgrades. ---}}
+{{!include(/^public/.*/)}}
+{{!include(favicon.ico)}}
+{{!include(logo.svg)}}
+<!DOCTYPE html>
+<html {{#_lang}}lang="{{_lang}}"{{/_lang}}>
+  <head>
+    <meta charset="utf-8">
+    {{#redirect_url}}
+      <meta http-equiv="refresh" content="0;URL='{{redirect_url}}'">
+    {{/redirect_url}}
+    {{^redirect_url}}
+      <title>{{#title}}{{title}}{{/title}}{{^title}}{{>partials/title}}{{/title}} {{#_appTitle}}| {{_appTitle}} {{/_appTitle}}</title>
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <meta name="title" content="{{#title}}{{title}}{{/title}}{{^title}}{{>partials/title}}{{/title}} {{#_appTitle}}| {{_appTitle}} {{/_appTitle}}">
+      {{#_description}}<meta name="description" content="{{_description}}">{{/_description}}
+      {{#description}}<meta name="description" content="{{description}}">{{/description}}
+
+      {{!--- Favicon — same Bowire indigo-tile + white-B mark used on
+            the marketing site, app icon, and browser tab. ----------}}
+      <link rel="icon" type="image/svg+xml" href="{{_rel}}public/favicon.svg">
+      <link rel="alternate icon" type="image/x-icon" href="{{_rel}}{{{_appFaviconPath}}}{{^_appFaviconPath}}favicon.ico{{/_appFaviconPath}}">
+
+      {{!--- Theme bootstrap — MUST run before any stylesheet link so the
+            data-bs-theme attribute is set when the critical CSS below
+            applies. Otherwise the browser blocks the first paint on the
+            external stylesheets (google fonts, docfx.min.css, main.css)
+            and the user sees a white flash before our bg/preloader
+            style kicks in. -----------------------------------------}}
+      <script>
+        (function () {
+          var mode = localStorage.getItem('theme') || 'auto';
+          var resolved = mode === 'auto'
+            ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
+            : mode;
+          var el = document.documentElement;
+          el.setAttribute('data-bs-theme', resolved);
+          el.setAttribute('data-theme', mode);
+        })();
+      </script>
+
+      {{!--- Critical CSS — paints body bg + preloader synchronously
+            before docfx.min.css + main.css arrive. Preloader is the
+            Bowire app's pattern: 80px rotating indigo ring with the
+            40px B-tile centred inside. Same keyframes, same palette. }}
+      <style>
+        :root[data-bs-theme="dark"] {
+          background: #0f0f17;
+          color: #e8e8f0;
+        }
+        :root[data-bs-theme="light"] {
+          background: #fafaff;
+          color: #1a1a2e;
+        }
+        html, body {
+          margin: 0;
+          background: inherit;
+          color: inherit;
+          font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+        #bowire-loading {
+          position: fixed;
+          inset: 0;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          z-index: 9999;
+          background: #0f0f17;
+          transition: opacity 300ms ease;
+        }
+        :root[data-bs-theme="light"] #bowire-loading,
+        :root[data-theme="light"] #bowire-loading {
+          background: #fafaff;
+        }
+        .bowire-loading-wrap {
+          position: relative;
+          width: 80px;
+          height: 80px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: #e8e8f0;
+        }
+        :root[data-bs-theme="light"] .bowire-loading-wrap,
+        :root[data-theme="light"] .bowire-loading-wrap {
+          color: #1a1a2e;
+        }
+        .bowire-loading-logo-ring {
+          position: absolute;
+          inset: 0;
+          border: 3px solid #2a2a3d;
+          border-top-color: #6366f1;
+          border-radius: 50%;
+          animation: bowire-spin 800ms linear infinite;
+        }
+        :root[data-bs-theme="light"] .bowire-loading-logo-ring,
+        :root[data-theme="light"] .bowire-loading-logo-ring {
+          border-color: #d8dae5;
+          border-top-color: #4f46e5;
+        }
+        .bowire-loading-logo {
+          width: 40px;
+          height: 40px;
+          position: relative;
+          z-index: 1;
+          color: inherit;
+        }
+        @keyframes bowire-spin {
+          to { transform: rotate(360deg); }
+        }
+        #bowire-loading.is-hidden {
+          opacity: 0;
+          pointer-events: none;
+        }
+      </style>
+
+      {{!--- Inter + JetBrains Mono — loaded AFTER critical CSS so the
+            render-blocking on font CSS doesn't delay our brand-coloured
+            first paint. ------------------------------------------}}
+      <link rel="preconnect" href="https://fonts.googleapis.com">
+      <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+      <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+      {{!--- Modern template's stylesheet still ships the heavy lifting
+            (typography, code highlighting, search bar, side TOC). Our
+            main.css below loads after it and applies brand overrides. -}}
+      <link rel="stylesheet" href="{{_rel}}public/docfx.min.css">
+      {{!--- Pagefind stylesheet loads BEFORE our main.css so the brand
+            theme overrides for --pagefind-ui-* win the cascade. ----}}
+      <link rel="stylesheet" href="{{_rel}}../pagefind/pagefind-ui.css">
+      <link rel="stylesheet" href="{{_rel}}public/main.css">
+
+      <meta name="docfx:navrel" content="{{_navRel}}">
+      <meta name="docfx:tocrel" content="{{_tocRel}}">
+      {{#_noindex}}<meta name="searchOption" content="noindex">{{/_noindex}}
+      {{#_enableSearch}}<meta name="docfx:rel" content="{{_rel}}">{{/_enableSearch}}
+      {{#_disableNewTab}}<meta name="docfx:disablenewtab" content="true">{{/_disableNewTab}}
+      {{#_disableTocFilter}}<meta name="docfx:disabletocfilter" content="true">{{/_disableTocFilter}}
+      {{#docurl}}<meta name="docfx:docurl" content="{{docurl}}">{{/docurl}}
+      <meta name="loc:inThisArticle" content="{{__global.inThisArticle}}">
+      <meta name="loc:searchResultsCount" content="{{__global.searchResultsCount}}">
+      <meta name="loc:searchNoResults" content="{{__global.searchNoResults}}">
+      <meta name="loc:tocFilter" content="{{__global.tocFilter}}">
+      <meta name="loc:nextArticle" content="{{__global.nextArticle}}">
+      <meta name="loc:prevArticle" content="{{__global.prevArticle}}">
+      <meta name="loc:themeLight" content="{{__global.themeLight}}">
+      <meta name="loc:themeDark" content="{{__global.themeDark}}">
+      <meta name="loc:themeAuto" content="{{__global.themeAuto}}">
+      <meta name="loc:changeTheme" content="{{__global.changeTheme}}">
+      <meta name="loc:copy" content="{{__global.copy}}">
+      <meta name="loc:downloadPdf" content="{{__global.downloadPdf}}">
+
+      <script type="module" src="./{{_rel}}public/docfx.min.js"></script>
+
+      {{#_googleAnalyticsTagId}}
+      <script async src="https://www.googletagmanager.com/gtag/js?id={{_googleAnalyticsTagId}}"></script>
+      <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag() { dataLayer.push(arguments); }
+        gtag('js', new Date());
+        gtag('config', '{{_googleAnalyticsTagId}}');
+      </script>
+      {{/_googleAnalyticsTagId}}
+    {{/redirect_url}}
+  </head>
+
+  {{^redirect_url}}
+  <body class="bowire-docs tex2jax_ignore{{#_standalone}} bowire-docs-mode-standalone{{/_standalone}}" data-layout="{{_layout}}{{layout}}" data-yaml-mime="{{yamlmime}}">
+
+    {{!--- Brand preloader — same pattern as the Bowire app
+          (src/Kuestenlogik.Bowire/BowireHtmlGenerator.cs): 80px indigo ring
+          rotating around a 40px B-tile. Visible from the first paint,
+          fades out on window.load when stylesheets + fonts are in. -}}
+    <div id="bowire-loading" aria-hidden="true">
+      <div class="bowire-loading-wrap">
+        <div class="bowire-loading-logo-ring"></div>
+        <svg class="bowire-loading-logo" viewBox="0 0 95.114075 95.114098" fill="currentColor" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <g transform="translate(-57.679684,-154.66912)">
+            <path d="m 98.433779,206.65457 v 16.57418 h 7.672911 c 3.27394,0 5.83185,-0.75992 7.67344,-2.27997 1.87082,-1.52004 2.80603,-3.59565 2.80603,-6.22649 0,-2.51391 -0.92052,-4.48667 -2.76211,-5.91902 -1.81236,-1.43234 -4.35557,-2.1487 -7.62951,-2.1487 z"/>
+            <path d="m 98.433779,181.22304 v 14.90814 h 6.225971 c 2.92316,0 5.21814,-0.70167 6.88434,-2.10478 1.69543,-1.43235 2.54299,-3.39093 2.54299,-5.87561 0,-4.61859 -3.44955,-6.92775 -10.3482,-6.92775 z"/>
+            <path d="m 105.23698,154.66911 c -26.26504,-1.7e-4 -47.557183,21.29175 -47.557298,47.55679 -1.66e-4,26.26524 21.292058,47.55747 47.557298,47.5573 26.26504,-1.2e-4 47.55695,-21.29226 47.55678,-47.5573 -1.2e-4,-26.26484 -21.29194,-47.55667 -47.55678,-47.55679 z M 84.270824,170.7875 h 22.888516 c 7.01558,0 12.4085,1.28631 16.17937,3.85868 3.77088,2.57238 5.65651,6.19671 5.65651,10.87376 0,3.39086 -1.15458,6.35812 -3.46387,8.90126 -2.28007,2.54315 -5.20324,4.31175 -8.76949,5.30562 v 0.17519 c 4.47243,0.5554 8.03849,2.20696 10.69857,4.95473 2.6893,2.74777 4.03386,6.09499 4.03386,10.04125 0,5.75862 -2.06092,10.33336 -6.18257,13.72423 -4.12165,3.36163 -9.74863,5.04258 -16.88114,5.04258 H 84.270824 Z"/>
+          </g>
+        </svg>
+      </div>
+    </div>
+    <script>
+      window.addEventListener('load', function () {
+        var pre = document.getElementById('bowire-loading');
+        if (!pre) return;
+        pre.classList.add('is-hidden');
+        setTimeout(function () { pre.remove(); }, 300);
+      });
+
+      // Mirror site/assets/js/main.js: toggle the header's `.scrolled`
+      // class after 20px of scroll so it fades from transparent to a
+      // translucent solid bar. Waits for DOMContentLoaded because this
+      // script block is inlined in <head>, before the <header> element.
+      document.addEventListener('DOMContentLoaded', function () {
+        var h = document.getElementById('bowire-docs-header');
+        if (!h) return;
+        // Apply once immediately for cold loads that happen already past
+        // the 20px threshold (e.g. the user hit a deep-link anchor).
+        function sync() { h.classList.toggle('scrolled', window.scrollY > 20); }
+        sync();
+        window.addEventListener('scroll', sync, { passive: true });
+      });
+
+      // Alternating section backgrounds — mirrors the marketing site
+      // (site/assets/css/style.css .features-group-alt pattern) so the
+      // docs article breaks visually into the same rhythm as the site.
+      // Wrap every H2 + the content until the next H2 into a <section>
+      // and alternate a background class on them via box-shadow+clip-path.
+      document.addEventListener('DOMContentLoaded', function () {
+        var article = document.querySelector('article[data-uid]');
+        if (!article) return;
+        var kids = Array.from(article.children);
+        var groups = [];
+        var current = null;
+        kids.forEach(function (node) {
+          if (node.tagName === 'H2') {
+            current = document.createElement('section');
+            current.className = 'docs-article-group';
+            groups.push(current);
+          }
+          if (current) current.appendChild(node);
+          // If there's content before the first H2 (e.g. intro para
+          // right after the H1), leave it in place — only wrap from
+          // the first H2 onwards.
+        });
+        groups.forEach(function (g, i) {
+          if (i % 2 === 1) g.classList.add('docs-article-group-alt');
+          article.appendChild(g);
+        });
+      });
+    </script>
+
+    {{!--- BOWIRE HEADER — marketing-style fixed bar with logo, nav,
+          theme toggle and GitHub link. The links point at docs sections
+          when we are inside the docs (context-aware nav per the plan).
+          The marketing site's identical header points at /#features
+          etc. instead.
+
+          In _standalone mode (release zip / offline docs) we render a
+          minimal header instead: just the Bowire logo, no site nav,
+          no links that would 404 offline. ------------------------}}
+    {{#_standalone}}
+    <header class="bowire-docs-header bowire-docs-header-standalone" id="bowire-docs-header">
+      <div class="bowire-docs-header-inner">
+        <a class="bowire-docs-logo" href="{{_rel}}index.html" aria-label="Bowire documentation">
+          <svg class="bowire-docs-logo-mark" viewBox="0 0 95.114075 95.114098" fill="currentColor" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <g transform="translate(-57.679684,-154.66912)">
+              <path d="m 98.433779,206.65457 v 16.57418 h 7.672911 c 3.27394,0 5.83185,-0.75992 7.67344,-2.27997 1.87082,-1.52004 2.80603,-3.59565 2.80603,-6.22649 0,-2.51391 -0.92052,-4.48667 -2.76211,-5.91902 -1.81236,-1.43234 -4.35557,-2.1487 -7.62951,-2.1487 z"/>
+              <path d="m 98.433779,181.22304 v 14.90814 h 6.225971 c 2.92316,0 5.21814,-0.70167 6.88434,-2.10478 1.69543,-1.43235 2.54299,-3.39093 2.54299,-5.87561 0,-4.61859 -3.44955,-6.92775 -10.3482,-6.92775 z"/>
+              <path d="m 105.23698,154.66911 c -26.26504,-1.7e-4 -47.557183,21.29175 -47.557298,47.55679 -1.66e-4,26.26524 21.292058,47.55747 47.557298,47.5573 26.26504,-1.2e-4 47.55695,-21.29226 47.55678,-47.5573 -1.2e-4,-26.26484 -21.29194,-47.55667 -47.55678,-47.55679 z M 84.270824,170.7875 h 22.888516 c 7.01558,0 12.4085,1.28631 16.17937,3.85868 3.77088,2.57238 5.65651,6.19671 5.65651,10.87376 0,3.39086 -1.15458,6.35812 -3.46387,8.90126 -2.28007,2.54315 -5.20324,4.31175 -8.76949,5.30562 v 0.17519 c 4.47243,0.5554 8.03849,2.20696 10.69857,4.95473 2.6893,2.74777 4.03386,6.09499 4.03386,10.04125 0,5.75862 -2.06092,10.33336 -6.18257,13.72423 -4.12165,3.36163 -9.74863,5.04258 -16.88114,5.04258 H 84.270824 Z"/>
+            </g>
+          </svg>
+          <span class="bowire-docs-logo-text">Bowire <span class="bowire-docs-logo-sub">Documentation</span></span>
+        </a>
+      </div>
+    </header>
+    {{/_standalone}}
+    {{^_standalone}}
+    <header class="bowire-docs-header" id="bowire-docs-header">
+      <div class="bowire-docs-header-inner">
+        <a class="bowire-docs-logo" href="{{_rel}}../index.html" aria-label="Bowire home">
+          {{!--- Tile logo (circle + B) — same SVG as site/_includes/header.html
+                so the header brand mark is identical across site ↔ docs. ----}}
+          <svg class="bowire-docs-logo-mark" viewBox="0 0 95.114075 95.114098" fill="currentColor" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <g transform="translate(-57.679684,-154.66912)">
+              <path d="m 98.433779,206.65457 v 16.57418 h 7.672911 c 3.27394,0 5.83185,-0.75992 7.67344,-2.27997 1.87082,-1.52004 2.80603,-3.59565 2.80603,-6.22649 0,-2.51391 -0.92052,-4.48667 -2.76211,-5.91902 -1.81236,-1.43234 -4.35557,-2.1487 -7.62951,-2.1487 z"/>
+              <path d="m 98.433779,181.22304 v 14.90814 h 6.225971 c 2.92316,0 5.21814,-0.70167 6.88434,-2.10478 1.69543,-1.43235 2.54299,-3.39093 2.54299,-5.87561 0,-4.61859 -3.44955,-6.92775 -10.3482,-6.92775 z"/>
+              <path d="m 105.23698,154.66911 c -26.26504,-1.7e-4 -47.557183,21.29175 -47.557298,47.55679 -1.66e-4,26.26524 21.292058,47.55747 47.557298,47.5573 26.26504,-1.2e-4 47.55695,-21.29226 47.55678,-47.5573 -1.2e-4,-26.26484 -21.29194,-47.55667 -47.55678,-47.55679 z M 84.270824,170.7875 h 22.888516 c 7.01558,0 12.4085,1.28631 16.17937,3.85868 3.77088,2.57238 5.65651,6.19671 5.65651,10.87376 0,3.39086 -1.15458,6.35812 -3.46387,8.90126 -2.28007,2.54315 -5.20324,4.31175 -8.76949,5.30562 v 0.17519 c 4.47243,0.5554 8.03849,2.20696 10.69857,4.95473 2.6893,2.74777 4.03386,6.09499 4.03386,10.04125 0,5.75862 -2.06092,10.33336 -6.18257,13.72423 -4.12165,3.36163 -9.74863,5.04258 -16.88114,5.04258 H 84.270824 Z"/>
+            </g>
+          </svg>
+          <span class="bowire-docs-logo-text">Bowire</span>
+        </a>
+        {{!--- Main navigation mirrors site/_includes/header.html exactly
+              so the jump between marketing site ↔ docs doesn't look like
+              a navigation break. All links except "Docs" (self) point back
+              at the marketing site with ../ prefix. -----------------}}
+        <nav class="bowire-docs-nav">
+          <a href="{{_rel}}../quickstart.html">Quickstart</a>
+          <a href="{{_rel}}../features.html">Features</a>
+          <a href="{{_rel}}../downloads.html">Downloads</a>
+          <a href="{{_rel}}index.html" class="is-active">Documentation</a>
+          <a href="{{_rel}}../community.html">Community</a>
+        </nav>
+        <div class="bowire-docs-header-actions">
+          {{!--- Pagefind search trigger — opens the overlay defined at
+                the bottom of this template. Same widget, same index
+                across marketing site and docs. }}
+          <button type="button" class="bowire-docs-nav-home bowire-search-trigger" aria-label="Search" title="Search (press /)">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          </button>
+          <a href="{{_rel}}../index.html" class="bowire-docs-nav-home" aria-label="Home" title="Home">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/><path d="M10 21v-6h4v6"/></svg>
+          </a>
+          {{!--- Theme toggle — cycles light → dark → auto, same
+                localStorage('theme') key the marketing site uses so the
+                choice carries across site ↔ docs. Icon is injected by
+                the inline script below. ----------------------------}}
+          <button class="bowire-docs-theme-toggle" id="bowire-docs-theme-toggle" type="button" aria-label="Toggle theme" title="Theme"></button>
+          <a href="https://github.com/Kuestenlogik/Bowire" class="bowire-docs-nav-github" aria-label="GitHub" target="_blank" rel="noopener">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+          </a>
+        </div>
+      </div>
+    </header>
+    {{/_standalone}}
+
+    {{!--- Sections overlay — modal popup mirroring the outline +
+          search overlays so the docs page has one consistent
+          "site-nav-as-modal" idiom. DocFX populates <nav id="toc">
+          here with the site TOC tree. Triggered from the Sections
+          tool-pill button on the right rail. ----------------}}
+    {{^_disableToc}}
+    <div class="bowire-docs-overlay bowire-sections-overlay" id="bowire-sections-overlay" aria-hidden="true">
+      <div class="bowire-docs-overlay-panel" role="dialog" aria-label="Sections">
+        <h2 class="bowire-docs-overlay-title">Sections</h2>
+        <nav class="toc" id="toc"></nav>
+        <div class="bowire-docs-overlay-hint">
+          <kbd>↑</kbd><kbd>↓</kbd> navigate · <kbd>Enter</kbd> open selected · <kbd>Esc</kbd> close
+        </div>
+      </div>
+    </div>
+    {{/_disableToc}}
+
+    {{!--- Outline overlay — same modal idiom as the Sections one
+          above; DocFX populates <nav id="affix"> with the article's
+          heading list. Triggered from the Outline tool-pill button
+          on the right rail. ----------------------------------}}
+    {{^_disableAffix}}
+    <div class="bowire-docs-overlay bowire-outline-overlay" id="bowire-outline-overlay" aria-hidden="true">
+      <div class="bowire-docs-overlay-panel" role="dialog" aria-label="On this page">
+        <h2 class="bowire-docs-overlay-title">On this page</h2>
+        <nav id="affix"></nav>
+        <div class="bowire-docs-overlay-hint">
+          <kbd>↑</kbd><kbd>↓</kbd> navigate · <kbd>Enter</kbd> open selected · <kbd>Esc</kbd> close
+        </div>
+      </div>
+    </div>
+    {{/_disableAffix}}
+
+    {{!--- Right rail — vertically-centred stack of two pills on the
+          right edge of the viewport:
+            • Tools pill (top): hosts the "On this page" outline toggle
+              and any future per-article actions (extra tools could be
+              added next to it later).
+            • Section-nav pill (below): scrollspy dots, one per H2,
+              built at runtime by the inline script further down.
+          The pills share visual treatment (translucent + blur, rounded
+          pill shape) but stay independent so each can scale to its own
+          contents. The whole rail hides on mobile (< 768 px). ---}}
+    {{^_disableAffix}}
+    <aside class="docs-rail" aria-label="Article tools and outline" hidden>
+      <nav class="docs-section-nav" aria-label="On this page" hidden></nav>
+      <div class="docs-rail-tools" hidden>
+        {{^_disableAffix}}
+        <button type="button" class="docs-rail-tool bowire-outline-trigger" aria-controls="bowire-outline-overlay" aria-expanded="false" aria-label="On this page" title="On this page (Esc closes)" hidden>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+        </button>
+        {{/_disableAffix}}
+        {{^_disableToc}}
+        <button type="button" class="docs-rail-tool bowire-sections-trigger" aria-controls="bowire-sections-overlay" aria-expanded="false" aria-label="Sections" title="Sections (Esc closes)" hidden>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+        </button>
+        {{/_disableToc}}
+      </div>
+    </aside>
+    {{/_disableAffix}}
+
+    {{!--- MAIN CONTENT — same Bootstrap container-xxl shell modern uses
+          so all the API page partials' grid classes still line up.
+          With the subbar pattern, main only contains the article and
+          related secondary chrome (contribution, next-article). The
+          previous left .toc-offcanvas + right .affix slots are gone —
+          their navs moved to the subpanels above. -----------------}}
+    <main class="container-xxl bowire-docs-main-shell">
+      <div class="content">
+        {{^_disableBreadcrumb}}
+        <div class="actionbar">
+          <nav id="breadcrumb"></nav>
+        </div>
+        {{/_disableBreadcrumb}}
+
+        <article data-uid="{{uid}}">
+          {{!body}}
+        </article>
+
+        {{^_disableContribution}}
+        <div class="contribution d-print-none">
+          {{#sourceurl}}
+          <a href="{{sourceurl}}" class="edit-link">{{__global.improveThisDoc}}</a>
+          {{/sourceurl}}
+          {{^sourceurl}}{{#docurl}}
+          <a href="{{docurl}}" class="edit-link">{{__global.improveThisDoc}}</a>
+          {{/docurl}}{{/sourceurl}}
+        </div>
+        {{/_disableContribution}}
+
+        {{^_disableNextArticle}}
+        <div class="next-article d-print-none border-top" id="nextArticle"></div>
+        {{/_disableNextArticle}}
+      </div>
+    </main>
+
+    {{#_enableSearch}}
+    <div class="container-xxl search-results" id="search-results"></div>
+    {{/_enableSearch}}
+
+    {{!--- Theme toggle wiring — mirrors site/assets/js/main.js's theme
+          toggle so the cycle / icon / localStorage behaviour is identical
+          across site and docs. Syncs both data-bs-theme (Bootstrap /
+          docfx) and data-theme (Jekyll site convention). --------}}
+    <script>
+      (function () {
+        var btn = document.getElementById('bowire-docs-theme-toggle');
+        if (!btn) return;
+        var icons = {
+          light: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>',
+          dark: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>',
+          auto: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 3 a 9 9 0 0 1 0 18 z" fill="currentColor" stroke="none"/></svg>'
+        };
+        function resolved(mode) {
+          if (mode === 'auto') return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+          return mode;
+        }
+        function apply(mode) {
+          document.documentElement.setAttribute('data-bs-theme', resolved(mode));
+          document.documentElement.setAttribute('data-theme', mode);
+          localStorage.setItem('theme', mode);
+          btn.innerHTML = icons[mode] || icons.auto;
+          btn.setAttribute('title', 'Theme: ' + mode);
+        }
+        var cycle = ['light', 'dark', 'auto'];
+        apply(localStorage.getItem('theme') || 'auto');
+        btn.addEventListener('click', function (ev) {
+          var cur = localStorage.getItem('theme') || 'auto';
+          var next = cycle[(cycle.indexOf(cur) + 1) % cycle.length];
+          var commit = function () { apply(next); };
+          // Same circular-reveal pattern as the marketing site — the
+          // CSS rules in main.css animate ::view-transition-new(root)
+          // as an expanding clip-path circle from the button centre.
+          // Browsers without the View Transitions API (Firefox as of
+          // mid-2026) fall through to the instant swap below.
+          if (!document.startViewTransition) {
+            commit();
+            return;
+          }
+          var rect = btn.getBoundingClientRect();
+          var x = rect.left + rect.width / 2;
+          var y = rect.top + rect.height / 2;
+          document.documentElement.style.setProperty('--theme-transition-x', x + 'px');
+          document.documentElement.style.setProperty('--theme-transition-y', y + 'px');
+          document.startViewTransition(commit);
+        });
+      })();
+    </script>
+
+    {{!--- Custom breadcrumb populator — DocFX's upstream
+          renderBreadcrumb() depends on <nav id="navbar"> being
+          rendered (we don't), so its runtime always emits an empty
+          breadcrumb list. We build our own by fetching the parent
+          toc.json (via the docfx:tocrel meta), walking it to find
+          the current page's path, and rendering the trail directly
+          into <nav id="breadcrumb">. ----------------------------}}
+    <script>
+      (function () {
+        var nav = document.getElementById('breadcrumb');
+        if (!nav) return;
+
+        function rel(meta) {
+          var el = document.querySelector('meta[name="' + meta + '"]');
+          return el ? el.getAttribute('content') : null;
+        }
+
+        // Walk the toc tree depth-first; return the chain of
+        // ancestors leading to the page that matches `currentHref`.
+        // All topicHrefs are resolved to absolute URLs against the
+        // toc's base — that way the rendered <a href> never depends
+        // on which page the breadcrumb is sitting on.
+        function findChain(items, currentHref, baseHref) {
+          if (!items) return null;
+          for (var i = 0; i < items.length; i++) {
+            var it = items[i];
+            var topic = it.topicHref || it.href;
+            var absUrl = topic ? new URL(topic, baseHref).href : null;
+            var entry = { name: it.name, url: absUrl };
+            if (absUrl === currentHref) return [entry];
+            if (it.items) {
+              var sub = findChain(it.items, currentHref, baseHref);
+              if (sub) return [entry].concat(sub);
+            }
+          }
+          return null;
+        }
+
+        function render(crumbs) {
+          if (!crumbs || crumbs.length === 0) return;
+          var ol = document.createElement('ol');
+          ol.className = 'breadcrumb';
+          // "Documentation" root link as the first crumb so even
+          // top-level section pages get a back-to-home anchor.
+          var rootHref = new URL('{{_rel}}index.html', location.href).href;
+          var rootLi = document.createElement('li');
+          rootLi.className = 'breadcrumb-item';
+          rootLi.innerHTML = '<a href="' + rootHref + '">Documentation</a>';
+          ol.appendChild(rootLi);
+          crumbs.forEach(function (c, i) {
+            var li = document.createElement('li');
+            var isLast = i === crumbs.length - 1;
+            li.className = 'breadcrumb-item' + (isLast ? ' active' : '');
+            if (isLast) {
+              li.setAttribute('aria-current', 'page');
+              li.textContent = c.name;
+            } else if (c.url) {
+              var a = document.createElement('a');
+              a.href = c.url;
+              a.textContent = c.name;
+              li.appendChild(a);
+            } else {
+              li.textContent = c.name;
+            }
+            ol.appendChild(li);
+          });
+          nav.innerHTML = '';
+          nav.appendChild(ol);
+        }
+
+        async function build() {
+          // Walk parent TOCs from the closest one upward — for a deep
+          // page like /docs/protocols/udp.html the closest toc.html is
+          // /docs/protocols/toc.json (lists UDP), and the parent is
+          // /docs/toc.json (lists "Protocol Guides"). Combining both
+          // gives the full Documentation > Protocol Guides > UDP chain.
+          var tocrel = rel('docfx:tocrel');
+          if (!tocrel) return;
+          var tocUrl = new URL(tocrel.replace(/\.html$/, '.json'), location.href).href;
+          var resp = await fetch(tocUrl);
+          if (!resp.ok) return;
+          var toc = await resp.json();
+          var chain = findChain(toc.items, location.href, tocUrl);
+          // If the page is the index of its tocrel folder, the chain
+          // is just one item — walk up to the parent toc to also
+          // include the section name as the parent crumb.
+          var navrel = rel('docfx:navrel');
+          if (navrel && navrel !== tocrel) {
+            var navUrl = new URL(navrel.replace(/\.html$/, '.json'), location.href).href;
+            try {
+              var navResp = await fetch(navUrl);
+              if (navResp.ok) {
+                var navToc = await navResp.json();
+                var sectionHref = new URL(tocrel, location.href).href.replace(/\.html$/, '.json').replace(/[^\/]+$/, '');
+                // Find the parent section that points at this folder
+                // and prepend its name to the chain. Resolve topicHref
+                // to an absolute URL so the rendered link doesn't
+                // double up the path on pages deep inside the section.
+                (function walk(items) {
+                  if (!items) return;
+                  for (var i = 0; i < items.length; i++) {
+                    var it = items[i];
+                    if (it.tocHref) {
+                      var t = new URL(it.tocHref.replace(/\.html$/, '.json'), navUrl).href;
+                      if (t.replace(/[^\/]+$/, '') === sectionHref) {
+                        var absUrl = it.topicHref
+                          ? new URL(it.topicHref, navUrl).href
+                          : null;
+                        // Dedup: if the section's own page IS the
+                        // current page (e.g. /docs/protocols/index.html),
+                        // the chain already has a single entry with the
+                        // same URL. Replace it with the parent toc's
+                        // section name ("Protocol Guides") rather than
+                        // the page-level name ("Overview") and skip
+                        // prepending — otherwise the breadcrumb shows
+                        // "Protocol Guides › Overview" with both entries
+                        // linking to the same page.
+                        if (chain && chain.length === 1 && chain[0].url === absUrl) {
+                          chain[0].name = it.name;
+                        } else {
+                          chain = [{ name: it.name, url: absUrl }].concat(chain || []);
+                        }
+                        return;
+                      }
+                    }
+                    if (it.items) walk(it.items);
+                  }
+                })(navToc.items);
+              }
+            } catch (e) { /* fall through with current-toc-only chain */ }
+          }
+          render(chain);
+          emitJsonLd();
+        }
+
+        // schema.org BreadcrumbList JSON-LD — emitted into <head> after
+        // the breadcrumb is filled. Picked up by Google Search (which
+        // runs JS on indexed pages) for the rich-result breadcrumb trail.
+        function emitJsonLd() {
+          var links = nav.querySelectorAll('.breadcrumb-item');
+          if (links.length < 2) return;
+          var items = [];
+          links.forEach(function (li, i) {
+            var a = li.querySelector('a');
+            items.push({
+              '@type': 'ListItem',
+              position: i + 1,
+              name: (a || li).textContent.trim(),
+              item: a ? a.href : location.href
+            });
+          });
+          var ld = {
+            '@context': 'https://schema.org',
+            '@type': 'BreadcrumbList',
+            itemListElement: items
+          };
+          var prev = document.head.querySelector('script[data-bowire-breadcrumb]');
+          if (prev) prev.remove();
+          var s = document.createElement('script');
+          s.type = 'application/ld+json';
+          s.setAttribute('data-bowire-breadcrumb', '');
+          s.textContent = JSON.stringify(ld);
+          document.head.appendChild(s);
+        }
+
+        build();
+      })();
+    </script>
+
+    {{!--- Modal overlays for the docs page — Sections (site TOC) +
+          Outline (article headings). Both share one factory:
+            • Click on the trigger toggles open/close
+            • ArrowUp/Down moves the .is-highlighted cursor
+            • Enter opens the highlighted item
+            • Mouse hover syncs the cursor (keyboard + pointer state
+              share one variable so input modality switches don't
+              lose context — same idiom as the search overlay)
+            • Click on a link navigates and auto-closes
+            • Backdrop click / Esc closes
+          When one overlay opens, all others close so the user is
+          never juggling stacked modals. ----------------------}}
+    <script>
+      (function () {
+        function makeOverlay(opts) {
+          var overlay = document.querySelector(opts.overlay);
+          var trigger = document.querySelector(opts.trigger);
+          if (!overlay || !trigger) return null;
+          var highlighted = -1;
+          var api = { overlay: overlay, trigger: trigger, close: closeFn };
+          function items() {
+            return Array.from(overlay.querySelectorAll(opts.linkSelector));
+          }
+          function paint() {
+            var list = items();
+            list.forEach(function (el, i) {
+              el.classList.toggle('is-highlighted', i === highlighted);
+            });
+            if (highlighted >= 0 && list[highlighted]) {
+              list[highlighted].scrollIntoView({ block: 'nearest' });
+            }
+          }
+          function isOpen() { return overlay.classList.contains('is-open'); }
+          function openFn() {
+            // Close any sibling overlays first — single-modal-at-a-time UX.
+            window.__bowireDocsOverlays__.forEach(function (o) {
+              if (o !== api) o.close();
+            });
+            overlay.classList.add('is-open');
+            overlay.setAttribute('aria-hidden', 'false');
+            trigger.setAttribute('aria-expanded', 'true');
+            highlighted = -1;
+            paint();
+          }
+          function closeFn() {
+            overlay.classList.remove('is-open');
+            overlay.setAttribute('aria-hidden', 'true');
+            trigger.setAttribute('aria-expanded', 'false');
+            highlighted = -1;
+          }
+          trigger.addEventListener('click', function (e) {
+            e.preventDefault();
+            isOpen() ? closeFn() : openFn();
+          });
+          overlay.addEventListener('click', function (e) {
+            if (e.target.closest(opts.panel + ' a')) {
+              setTimeout(closeFn, 0);
+              return;
+            }
+            if (e.target === overlay) closeFn();
+          });
+          overlay.addEventListener('mouseover', function (e) {
+            var link = e.target.closest(opts.linkSelector);
+            if (!link) return;
+            var list = items();
+            var idx = list.indexOf(link);
+            if (idx === -1 || idx === highlighted) return;
+            highlighted = idx;
+            paint();
+          });
+          document.addEventListener('keydown', function (e) {
+            if (!isOpen()) return;
+            if (e.key === 'Escape') { closeFn(); return; }
+            var list = items();
+            if (list.length === 0) return;
+            if (e.key === 'ArrowDown') {
+              e.preventDefault();
+              highlighted = (highlighted + 1) % list.length;
+              paint();
+            } else if (e.key === 'ArrowUp') {
+              e.preventDefault();
+              highlighted = highlighted < 0
+                ? list.length - 1
+                : (highlighted - 1 + list.length) % list.length;
+              paint();
+            } else if (e.key === 'Enter') {
+              if (highlighted >= 0 && list[highlighted]) {
+                e.preventDefault();
+                list[highlighted].click();
+              }
+            }
+          });
+          return api;
+        }
+
+        window.__bowireDocsOverlays__ = [];
+        ['sections', 'outline'].forEach(function (name) {
+          var overlayId = 'bowire-' + name + '-overlay';
+          var triggerCls = 'bowire-' + name + '-trigger';
+          var linkSel = name === 'sections'
+            ? '#' + overlayId + ' nav#toc a'
+            : '#' + overlayId + ' nav#affix a';
+          var api = makeOverlay({
+            overlay: '#' + overlayId,
+            trigger: '.' + triggerCls,
+            panel: '.bowire-docs-overlay-panel',
+            linkSelector: linkSel
+          });
+          if (api) window.__bowireDocsOverlays__.push(api);
+        });
+      })();
+    </script>
+
+    {{!--- Rail visibility manager — each tool button + the dot pill +
+          the rail itself only show when their content has something
+          to offer. Runs at DOMContentLoaded and re-runs whenever the
+          underlying nav#toc / nav#affix mutates (DocFX populates them
+          asynchronously after page load). ---------------------}}
+    <script>
+      (function () {
+        function refreshRailVisibility() {
+          var rail = document.querySelector('.docs-rail');
+          if (!rail) return;
+          var sectionsBtn = document.querySelector('.bowire-sections-trigger');
+          var outlineBtn = document.querySelector('.bowire-outline-trigger');
+          var dotNav = document.querySelector('.docs-section-nav');
+          var toolsPill = rail.querySelector('.docs-rail-tools');
+          var hasToc = document.querySelectorAll('#bowire-sections-overlay nav#toc a').length > 0;
+          var hasAffix = document.querySelectorAll('#bowire-outline-overlay nav#affix a').length > 0;
+          if (sectionsBtn) sectionsBtn.toggleAttribute('hidden', !hasToc);
+          if (outlineBtn) outlineBtn.toggleAttribute('hidden', !hasAffix);
+          var anyTool = hasToc || hasAffix;
+          if (toolsPill) toolsPill.toggleAttribute('hidden', !anyTool);
+          var dotVisible = dotNav && !dotNav.hasAttribute('hidden');
+          rail.toggleAttribute('hidden', !anyTool && !dotVisible);
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+          refreshRailVisibility();
+          // DocFX populates nav#toc / nav#affix asynchronously after
+          // DOMContentLoaded — observe each so the rail toggles in as
+          // the content lands.
+          ['#toc', '#affix'].forEach(function (sel) {
+            var nav = document.querySelector(sel);
+            if (!nav) return;
+            new MutationObserver(refreshRailVisibility).observe(nav, { childList: true, subtree: true });
+          });
+        });
+      })();
+    </script>
+
+    {{!--- Floating section-nav — scrollspy dots pinned to the right
+          edge of the viewport, mirroring site/assets/js/main.js's
+          marketing-site .section-nav pattern. Built from the article's
+          h2 elements at DOMContentLoaded; updates the active dot as
+          the user scrolls. Carries an expand toggle at the top of the
+          pill that flips the whole strip into a wider labelled-list
+          mode (every section's title visible inline, no need to hover
+          individual dots). State persists in localStorage. Hidden on
+          mobile via CSS (< 768 px). -----------------------------}}
+    <script>
+      (function () {
+        document.addEventListener('DOMContentLoaded', function () {
+          var nav = document.querySelector('nav.docs-section-nav');
+          if (!nav) return;
+          var article = document.querySelector('main article[data-uid], main article');
+          if (!article) return;
+          // Conceptual pages use H2 for major sections; API ref pages
+          // (where the page title is the namespace / type) drop H2 and
+          // use H3 instead for "Classes", "Methods", etc. Try H2 first;
+          // fall back to H3 if too few H2 are present.
+          var headings = Array.from(article.querySelectorAll('h2'))
+              .filter(function (h) { return h.id && h.textContent.trim(); });
+          if (headings.length < 2) {
+            headings = Array.from(article.querySelectorAll('h3'))
+                .filter(function (h) { return h.id && h.textContent.trim(); });
+          }
+          if (headings.length < 2) {
+            // No anchors worth navigating — hide the whole right rail
+            // (tools pill + dot-nav pill). The outline overlay would
+            // also be near-empty on these pages, so the rail's only
+            // affordance is moot.
+            var rail = document.querySelector('.docs-rail');
+            if (rail) rail.setAttribute('hidden', '');
+            return;
+          }
+
+          headings.forEach(function (h, idx) {
+            if (!h.id) {
+              h.id = 'section-' + idx + '-' + h.textContent.trim().toLowerCase()
+                .replace(/[^a-z0-9\-]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40);
+            }
+          });
+
+          // Sample down to MAX_DOTS evenly across the article when there
+          // are more headings than the pill can show without becoming a
+          // visual wall. Always anchored at first + last so the strip
+          // still represents the full document range; gaps between non-
+          // adjacent picks are flagged with a small inline marker so the
+          // user can tell the strip is sampled (and use the Sections /
+          // Outline overlays to find anything skipped).
+          var MAX_DOTS = 8;
+          var pickedIndexes;
+          if (headings.length <= MAX_DOTS) {
+            pickedIndexes = headings.map(function (_, i) { return i; });
+          } else {
+            var seen = {};
+            pickedIndexes = [];
+            for (var i = 0; i < MAX_DOTS; i++) {
+              var idx = Math.round(i * (headings.length - 1) / (MAX_DOTS - 1));
+              if (!seen[idx]) {
+                seen[idx] = true;
+                pickedIndexes.push(idx);
+              }
+            }
+          }
+
+          var dots = [];
+          pickedIndexes.forEach(function (headingIdx, i) {
+            var h = headings[headingIdx];
+            var label = h.textContent.trim() || ('Section ' + (headingIdx + 1));
+            var btn = document.createElement('a');
+            btn.href = '#' + h.id;
+            btn.className = 'docs-section-nav-dot';
+            btn.setAttribute('aria-label', 'Jump to ' + label);
+            btn.innerHTML = '<span class="docs-section-nav-dot-label"></span>';
+            btn.querySelector('.docs-section-nav-dot-label').textContent = label;
+            nav.appendChild(btn);
+            dots.push({ heading: h, btn: btn });
+
+            if (i < pickedIndexes.length - 1
+                && pickedIndexes[i + 1] > headingIdx + 1) {
+              var gap = document.createElement('span');
+              gap.className = 'docs-section-nav-gap';
+              gap.setAttribute('aria-hidden', 'true');
+              nav.appendChild(gap);
+            }
+          });
+          nav.removeAttribute('hidden');
+
+          function activeIndex() {
+            var threshold = window.scrollY + 80 + 40;
+            var headingActive = 0;
+            for (var i = 0; i < headings.length; i++) {
+              var top = headings[i].getBoundingClientRect().top + window.scrollY;
+              if (top <= threshold) headingActive = i;
+              else break;
+            }
+            var dotIdx = 0;
+            for (var j = 0; j < pickedIndexes.length; j++) {
+              if (pickedIndexes[j] <= headingActive) dotIdx = j;
+              else break;
+            }
+            var bottomReached = (window.innerHeight + window.scrollY)
+              >= (document.documentElement.scrollHeight - 4);
+            if (bottomReached) dotIdx = dots.length - 1;
+            return dotIdx;
+          }
+
+          function syncActive() {
+            var idx = activeIndex();
+            dots.forEach(function (d, i) {
+              d.btn.classList.toggle('is-active', i === idx);
+            });
+          }
+          syncActive();
+          window.addEventListener('scroll', syncActive, { passive: true });
+          window.addEventListener('resize', syncActive, { passive: true });
+        });
+      })();
+    </script>
+
+    {{!--- BOWIRE FOOTER — mirrors site/_includes/footer.html in the
+          normal build, collapses to a minimal brand + copyright bar in
+          _standalone mode so we don't advertise dead links in the
+          offline release zip. ---------------------------------}}
+    <footer class="bowire-docs-footer{{#_standalone}} bowire-docs-footer-standalone{{/_standalone}}">
+      <div class="bowire-docs-footer-inner">
+        {{^_standalone}}
+        <div class="bowire-docs-footer-top">
+          <div class="bowire-docs-footer-brand">
+            <span class="bowire-docs-footer-logo">
+              <svg class="bowire-docs-footer-logo-icon" viewBox="0 0 95.114075 95.114098" fill="currentColor" aria-hidden="true">
+                <g transform="translate(-57.679684,-154.66912)">
+                  <path d="m 98.433779,206.65457 v 16.57418 h 7.672911 c 3.27394,0 5.83185,-0.75992 7.67344,-2.27997 1.87082,-1.52004 2.80603,-3.59565 2.80603,-6.22649 0,-2.51391 -0.92052,-4.48667 -2.76211,-5.91902 -1.81236,-1.43234 -4.35557,-2.1487 -7.62951,-2.1487 z"/>
+                  <path d="m 98.433779,181.22304 v 14.90814 h 6.225971 c 2.92316,0 5.21814,-0.70167 6.88434,-2.10478 1.69543,-1.43235 2.54299,-3.39093 2.54299,-5.87561 0,-4.61859 -3.44955,-6.92775 -10.3482,-6.92775 z"/>
+                  <path d="m 105.23698,154.66911 c -26.26504,-1.7e-4 -47.557183,21.29175 -47.557298,47.55679 -1.66e-4,26.26524 21.292058,47.55747 47.557298,47.5573 26.26504,-1.2e-4 47.55695,-21.29226 47.55678,-47.5573 -1.2e-4,-26.26484 -21.29194,-47.55667 -47.55678,-47.55679 z M 84.270824,170.7875 h 22.888516 c 7.01558,0 12.4085,1.28631 16.17937,3.85868 3.77088,2.57238 5.65651,6.19671 5.65651,10.87376 0,3.39086 -1.15458,6.35812 -3.46387,8.90126 -2.28007,2.54315 -5.20324,4.31175 -8.76949,5.30562 v 0.17519 c 4.47243,0.5554 8.03849,2.20696 10.69857,4.95473 2.6893,2.74777 4.03386,6.09499 4.03386,10.04125 0,5.75862 -2.06092,10.33336 -6.18257,13.72423 -4.12165,3.36163 -9.74863,5.04258 -16.88114,5.04258 H 84.270824 Z"/>
+                </g>
+              </svg>
+              Bowire
+            </span>
+            <span class="bowire-docs-footer-tagline">is tied by <a href="https://kuestenlogik.com" target="_blank" rel="noopener">K&uuml;stenlogik</a> in Northern Germany</span>
+          </div>
+          <nav class="bowire-docs-footer-nav" aria-label="Footer navigation">
+            <div class="bowire-docs-footer-nav-col">
+              <div class="bowire-docs-footer-nav-title">Product</div>
+              <a href="{{_rel}}../features.html">Features</a>
+              <a href="{{_rel}}../downloads.html">Downloads</a>
+              <a href="{{_rel}}index.html">Documentation</a>
+            </div>
+            <div class="bowire-docs-footer-nav-col">
+              <div class="bowire-docs-footer-nav-title">Open source</div>
+              <a href="https://github.com/Kuestenlogik/Bowire" target="_blank" rel="noopener">GitHub</a>
+              <a href="{{_rel}}../community.html">Community</a>
+              <a href="https://github.com/Kuestenlogik/Bowire/blob/main/LICENSE" target="_blank" rel="noopener">License</a>
+            </div>
+            <div class="bowire-docs-footer-nav-col">
+              <div class="bowire-docs-footer-nav-title">Info</div>
+              <a href="{{_rel}}../about.html">About Bowire</a>
+              <a href="{{_rel}}../legal.html">Legal notice</a>
+              <a href="{{_rel}}../privacy.html">Privacy</a>
+            </div>
+          </nav>
+        </div>
+        {{/_standalone}}
+      </div>
+      <div class="bowire-docs-footer-bottom">
+        <div class="bowire-docs-footer-bottom-inner">
+          {{#_standalone}}
+          Bowire documentation &middot; &copy; 2026 K&uuml;stenlogik &middot; <a href="https://github.com/Kuestenlogik/Bowire" target="_blank" rel="noopener">github.com/Kuestenlogik/Bowire</a>
+          {{/_standalone}}
+          {{^_standalone}}
+          &copy; 2026 K&uuml;stenlogik
+          {{/_standalone}}
+        </div>
+      </div>
+    </footer>
+
+    {{!--- Pagefind search overlay — shared with the marketing site's
+          _layouts/default.html. Same widget, same index, same UX across
+          marketing site and docs. ---------------------------------}}
+    <div class="bowire-search-overlay" id="bowire-search-overlay" aria-hidden="true">
+      <div class="bowire-search-overlay-panel" role="dialog" aria-label="Search">
+        <div id="search"></div>
+        <div class="bowire-search-hint">
+          <kbd>↑</kbd><kbd>↓</kbd> navigate · <kbd>Enter</kbd> open selected / full results · <kbd>Esc</kbd> close
+        </div>
+      </div>
+    </div>
+    <script src="{{_rel}}../pagefind/pagefind-ui.js"
+            onerror="(function(){var b=document.querySelector('.bowire-search-trigger');if(b){b.disabled=true;b.title='Search index not available — run scripts/build-docs.{ps1,sh} or `npx pagefind --site artifacts/docs --output-path artifacts/docs/pagefind`';b.setAttribute('aria-disabled','true');}})()"></script>
+    <script>
+      (function () {
+        function initSearch() {
+          if (!window.PagefindUI) {
+            // pagefind-ui.js never loaded (404 or hosting hadn't run
+            // pagefind yet). The script tag's onerror already greyed
+            // out the trigger; this just bails before initialising
+            // PagefindUI / wiring the open/close listeners.
+            var b = document.querySelector('.bowire-search-trigger');
+            if (b && !b.disabled) {
+              b.disabled = true;
+              b.title = 'Search index not available — run pagefind on artifacts/docs first';
+              b.setAttribute('aria-disabled', 'true');
+            }
+            return;
+          }
+          var link = document.querySelector('link[href*="/pagefind/pagefind-ui.css"]');
+          var bundlePath = link
+            ? link.getAttribute('href').replace(/pagefind-ui\.css$/, '')
+            : '../pagefind/';
+          new window.PagefindUI({
+            element: '#search',
+            showImages: false,
+            showSubResults: false,
+            resetStyles: false,
+            pageSize: 5,
+            bundlePath: bundlePath
+          });
+
+          var overlay = document.getElementById('bowire-search-overlay');
+          var highlighted = -1;
+          function getResults() {
+            return Array.from(document.querySelectorAll('#search .pagefind-ui__result'));
+          }
+          function paintHighlight() {
+            var items = getResults();
+            items.forEach(function (el, i) {
+              el.classList.toggle('is-highlighted', i === highlighted);
+            });
+            if (highlighted >= 0 && items[highlighted]) {
+              items[highlighted].scrollIntoView({ block: 'nearest' });
+            }
+          }
+          // MutationObserver covers two responsibilities each time
+          // PagefindUI re-renders its tree:
+          //   1. Reset the keyboard-highlight cursor.
+          //   2. Promote the result-count message out of .pagefind-ui__
+          //      drawer so it sits in the form's header zone (between
+          //      the input and the results scroll area). PagefindUI puts
+          //      it inside the drawer by default; visually we want it
+          //      on the tertiary header bg, not on the secondary
+          //      results bg.
+          new MutationObserver(function () {
+            highlighted = -1;
+            paintHighlight();
+            var msg = document.querySelector('#search .pagefind-ui__message');
+            var drawer = document.querySelector('#search .pagefind-ui__drawer');
+            var form = document.querySelector('#search .pagefind-ui__form');
+            if (msg && drawer && form && drawer.contains(msg)) {
+              form.insertBefore(msg, drawer);
+            }
+          }).observe(document.getElementById('search'), { childList: true, subtree: true });
+
+          // Infinite-scroll: when the user scrolls within ~80 px of the
+          // drawer's bottom edge, auto-click PagefindUI's "Load more
+          // results" button (we keep it hidden via CSS for visual
+          // simplicity; this listener turns the page into infinite
+          // scroll so the keyboard ArrowDown path isn't the only way
+          // to expose the rest of the index).
+          var drawerEl = document.querySelector('#search .pagefind-ui__drawer');
+          if (drawerEl) {
+            var loading = false;
+            drawerEl.addEventListener('scroll', function () {
+              if (loading) return;
+              if (drawerEl.scrollTop + drawerEl.clientHeight < drawerEl.scrollHeight - 80) return;
+              var loadMore = document.querySelector('#search .pagefind-ui__button');
+              if (!loadMore) return;
+              loading = true;
+              loadMore.click();
+              setTimeout(function () { loading = false; }, 200);
+            }, { passive: true });
+
+            // Mouse hover mirrors keyboard ArrowUp/Down — moving the
+            // pointer over a result moves the .is-highlighted marker
+            // there, so the visual cursor follows whichever input
+            // device the user used last.
+            drawerEl.addEventListener('mouseover', function (e) {
+              var result = e.target.closest('.pagefind-ui__result');
+              if (!result) return;
+              var items = getResults();
+              var idx = items.indexOf(result);
+              if (idx === -1 || idx === highlighted) return;
+              highlighted = idx;
+              paintHighlight();
+            });
+            // Single click anywhere on a result row navigates — the
+            // entire card behaves like a link. If the click already
+            // landed on the title's <a>, the browser handles it
+            // natively and we no-op to avoid a double dispatch.
+            drawerEl.addEventListener('click', function (e) {
+              if (e.target.closest('a')) return;
+              var result = e.target.closest('.pagefind-ui__result');
+              if (!result) return;
+              var link = result.querySelector('a');
+              if (link) link.click();
+            });
+          }
+
+          function open() {
+            overlay.classList.add('is-open');
+            overlay.setAttribute('aria-hidden', 'false');
+            var input = document.querySelector('#search input[type="text"]');
+            if (input) setTimeout(function () { input.focus(); }, 50);
+          }
+          function close() {
+            overlay.classList.remove('is-open');
+            overlay.setAttribute('aria-hidden', 'true');
+            highlighted = -1;
+          }
+          document.addEventListener('click', function (e) {
+            var trigger = e.target.closest('.bowire-search-trigger');
+            if (trigger) { e.preventDefault(); open(); return; }
+            if (e.target === overlay) close();
+          });
+          document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape' && overlay.classList.contains('is-open')) close();
+            if ((e.key === '/' || (e.key === 'k' && (e.metaKey || e.ctrlKey))) &&
+                !/^(INPUT|TEXTAREA)$/i.test(document.activeElement.tagName)) {
+              e.preventDefault();
+              open();
+            }
+            if (!overlay.classList.contains('is-open')) return;
+            var active = document.activeElement;
+            var isInput = active && active.matches && active.matches('.pagefind-ui__search-input');
+            if (!isInput) return;
+            if (e.key === 'ArrowDown') {
+              e.preventDefault();
+              var items = getResults();
+              if (items.length === 0) return;
+              if (highlighted === items.length - 1) {
+                var loadMore = document.querySelector('#search .pagefind-ui__button');
+                if (loadMore) {
+                  loadMore.click();
+                  var prevLen = items.length;
+                  setTimeout(function () {
+                    var next = getResults();
+                    if (next.length > prevLen) {
+                      highlighted = prevLen;
+                      paintHighlight();
+                    }
+                  }, 150);
+                }
+                return;
+              }
+              highlighted = Math.min(highlighted + 1, items.length - 1);
+              paintHighlight();
+              return;
+            }
+            if (e.key === 'ArrowUp') {
+              e.preventDefault();
+              var items = getResults();
+              if (items.length === 0) return;
+              highlighted = Math.max(highlighted - 1, -1);
+              paintHighlight();
+              return;
+            }
+            if (e.key === 'Enter') {
+              e.preventDefault();
+              var items = getResults();
+              if (highlighted >= 0 && items[highlighted]) {
+                var link = items[highlighted].querySelector('a.pagefind-ui__result-link');
+                if (link) { window.location = link.href; return; }
+              }
+              var q = (active.value || '').trim();
+              if (!q) return;
+              close();
+              window.location = '{{_rel}}../search.html?q=' + encodeURIComponent(q);
+            }
+          });
+        }
+        if (document.readyState === 'loading') {
+          document.addEventListener('DOMContentLoaded', initSearch);
+        } else {
+          initSearch();
+        }
+      })();
+    </script>
+
+  </body>
+  {{/redirect_url}}
+</html>

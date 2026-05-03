@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>Bowire Socket.IO protocol plugin — connect to Socket.IO 4.x servers, discover events, emit and listen.</Description>
+    <PackageId>Kuestenlogik.Bowire.Protocol.SocketIo</PackageId>
+    <PackageTags>bowire;bowire-plugin;socketio;socket.io;realtime;developer-tools</PackageTags>
+    <IsPackable>true</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="bowire" />
+    <InternalsVisibleTo Include="Kuestenlogik.Bowire.Tests" />
+    <InternalsVisibleTo Include="Kuestenlogik.Bowire.IntegrationTests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Kuestenlogik.Bowire\Kuestenlogik.Bowire.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="SocketIOClient" />
+  </ItemGroup>
+
+</Project>

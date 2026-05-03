@@ -1,0 +1,134 @@
+---
+layout: page
+title: Why Bowire — the differentiators in detail
+description: A closer look at what makes Bowire different from Postman, Insomnia, and Scalar — embedded mode, 100% local, the open plugin architecture, duplex channel manager, visual flow editor, and record / replay.
+---
+
+<section class="features-page-hero">
+  <h1>What sets Bowire apart</h1>
+  <p class="features-page-tagline">The cards on the home page give you the gist; this page gives you the substance.</p>
+  <p class="features-page-note">Each section links to the technical documentation when you need the full picture.</p>
+</section>
+
+<!-- ================================================================ -->
+<!--  Embedded mode                                                    -->
+<!-- ================================================================ -->
+<section class="features-group features-group-alt">
+  <div class="features-block" id="embedded">
+    <div class="features-block-text">
+      <h3>Embedded &mdash; zero config</h3>
+      <p class="features-block-lead"><code>AddBowire()</code> + <code>MapBowire()</code> in <code>Program.cs</code>, and Bowire ships next to your service. No companion process, no extra container, no shared database.</p>
+      <p>The plugin host hooks into the same DI container your app already builds. <code>AddBowire()</code> wires up the protocol registry, plugin loader, and middleware that exposes the workbench at <code>/bowire</code>. <code>MapBowire()</code> attaches the routes; everything else &mdash; discovery, invocation, recording &mdash; runs in-process against the live <code>IServiceProvider</code>.</p>
+      <p>Protocol prerequisites that you'd normally wire by hand are added automatically: gRPC plugins call <code>AddGrpcReflection()</code>, REST plugins read the existing <code>IApiDescriptionGroupCollectionProvider</code>, SignalR plugins enumerate mapped hubs via <code>EndpointDataSource</code>. No schema files, no manual endpoint registry, no parallel proto / yaml to keep in sync.</p>
+      <a class="features-block-docs-link" href="{{ '/docs/setup/embedded.html' | relative_url }}">Read the technical docs &rarr;</a>
+    </div>
+    <div class="features-block-screenshot">
+      {% include themed-img.html src="/assets/images/screenshots/method-detail.png" alt="A discovered service method exposed by Bowire embedded in the host app — typed parameters surface without any schema upload" %}
+    </div>
+  </div>
+</section>
+
+<!-- ================================================================ -->
+<!--  100% Local                                                       -->
+<!-- ================================================================ -->
+<section class="features-group">
+  <div class="features-block features-block-text-only" id="local">
+    <div class="features-block-text">
+      <h3>100% Local &mdash; no cloud</h3>
+      <p class="features-block-lead">No accounts. No telemetry. No data leaves your machine. Bowire persists every credential, recording, and environment to your disk.</p>
+      <p>Workspace state lives in browser <code>localStorage</code> (per-origin, so dev/staging/prod each have their own). Recordings, plugins, and shared environments persist under <code>~/.bowire/</code> &mdash; a plain JSON tree on the file system that you can grep, diff, and check into a private repository if your team wants shared environments without paying for a sync service.</p>
+      <p>Outbound connections only happen when you tell Bowire to make one: clicking <em>Execute</em> hits the target API, that's it. No background pings, no opt-out telemetry, no remote feature flags. Enterprise security teams sign off on this in minutes &mdash; there's nothing to put in a Data Processing Agreement because there's no third party in the chain.</p>
+      <a class="features-block-docs-link" href="{{ '/docs/setup/standalone.html' | relative_url }}">Read the technical docs &rarr;</a>
+    </div>
+  </div>
+</section>
+
+<!-- ================================================================ -->
+<!--  Open Plugin Architecture                                         -->
+<!-- ================================================================ -->
+<section class="features-group features-group-alt">
+  <div class="features-block features-block-reverse" id="plugins">
+    <div class="features-block-text">
+      <h3>Open plugin architecture</h3>
+      <p class="features-block-lead">Every protocol is a NuGet package implementing <code>IBowireProtocol</code>. Discovery, Invoke, Stream, Channel, Settings &mdash; one interface, infinite protocols.</p>
+      <p>Plugins ship as ordinary NuGet packages. Bowire loads them into per-package <code>AssemblyLoadContext</code>s so a plugin's transitive dependencies don't collide with the host or with each other &mdash; you can install the gRPC plugin (which pins one Google.Protobuf version), the GraphQL plugin (which pins another), and a third-party protocol (which pins a third), and they all coexist.</p>
+      <p>Authoring is six methods on one interface: <code>DiscoverAsync</code>, <code>InvokeAsync</code>, <code>InvokeStreamAsync</code>, <code>OpenChannelAsync</code>, the static plugin metadata, and the optional <code>IBowireMockEmitter</code> for mock replay. The same contract powers the official plugins (gRPC, REST, GraphQL, SignalR, &hellip;) and external ones (Storm, Kafka, DIS, UDP). End-users install via <code>bowire plugin install &lt;package-id&gt;</code>; air-gapped users via <code>bowire plugin download</code> + <code>install --file</code>.</p>
+      <a class="features-block-docs-link" href="{{ '/docs/features/plugin-system.html' | relative_url }}">Read the technical docs &rarr;</a>
+    </div>
+    <div class="features-block-screenshot">
+      {% include themed-img.html src="/assets/images/screenshots/schema-upload.png" alt="Bowire's plugin and schema-upload surface — every protocol installs the same way" %}
+    </div>
+  </div>
+</section>
+
+<!-- ================================================================ -->
+<!--  Duplex Channel Manager                                           -->
+<!-- ================================================================ -->
+<section class="features-group">
+  <div class="features-block" id="duplex">
+    <div class="features-block-text">
+      <h3>Duplex channel manager</h3>
+      <p class="features-block-lead">WebSocket, SignalR, MQTT, Socket.IO &mdash; every bidirectional protocol gets a persistent channel. Switch between methods and Bowire stashes the live socket; come back and it's still connected.</p>
+      <p>Most API tools either drop the socket the moment you click off the method (Postman) or only support one connection per workspace at a time (Insomnia). Bowire tracks each open channel as its own object: connect to a SignalR hub on one tab, an MQTT broker on another, a raw WebSocket on a third, and all three keep streaming. The sidebar shows a green dot per live channel; closing the workbench closes them, switching methods doesn't.</p>
+      <p>Per-channel state means request history, sent messages, and received frames all stay grouped per connection &mdash; even if you re-open the workbench tomorrow. For long-running streams (a SignalR hub with 30 minutes of accumulated frames) the Wireshark-style append-only viewer shows every event with timestamps and lets you scroll back through the whole history.</p>
+      <a class="features-block-docs-link" href="{{ '/docs/features/duplex-channels.html' | relative_url }}">Read the technical docs &rarr;</a>
+    </div>
+    <div class="features-block-screenshot">
+      {% include themed-img.html src="/assets/images/screenshots/streaming.png" alt="Wireshark-style streaming pane showing live duplex traffic with per-frame detail" %}
+    </div>
+  </div>
+</section>
+
+<!-- ================================================================ -->
+<!--  Visual Flow Editor                                               -->
+<!-- ================================================================ -->
+<section class="features-group features-group-alt">
+  <div class="features-block features-block-reverse" id="flows">
+    <div class="features-block-text">
+      <h3>Visual flow editor</h3>
+      <p class="features-block-lead">Chain API calls into visual pipelines &mdash; branching conditions, loops, delays, variable forwarding. The kind of orchestration Postman locks behind a Teams subscription.</p>
+      <p>Each step is a node on a canvas: pick the service + method, set inputs (literal or <code>${response.path}</code> from a previous step), choose what to do with the result. Branching nodes split on response value, status code, or timing; loop nodes iterate over an array or repeat until a condition fires; delay nodes pause for a fixed interval or until an external trigger. The whole flow is just JSON, version-controllable in the same repo as the rest of your workbench config.</p>
+      <p>Run the flow once interactively and Bowire shows the response from every step inline. Pin it to an environment and run it from CI via <code>bowire test --flow</code> &mdash; same orchestration, same output, no GUI needed.</p>
+      <a class="features-block-docs-link" href="{{ '/docs/features/flows.html' | relative_url }}">Read the technical docs &rarr;</a>
+    </div>
+    <div class="features-block-screenshot">
+      {% include themed-img.html src="/assets/images/screenshots/flow-editor.png" alt="Flow editor canvas with branching, loop, and delay nodes between API calls" %}
+    </div>
+  </div>
+</section>
+
+<!-- ================================================================ -->
+<!--  Record and Replay                                                -->
+<!-- ================================================================ -->
+<section class="features-group">
+  <div class="features-block" id="recording">
+    <div class="features-block-text">
+      <h3>Record and replay</h3>
+      <p class="features-block-lead">Capture a real session once. Serve the exact same responses back as a live mock endpoint &mdash; same protocols, same payloads, same timing.</p>
+      <p>Click <em>Record</em>, run a sequence of calls, click <em>Stop</em>: now you have a JSON file with every request, response, status, header, and inter-call timing across every protocol you touched &mdash; gRPC streams next to SignalR hub invocations next to MQTT publishes next to REST hits, all on one timeline. Replay against another environment to spot drift, convert into test assertions for CI, export as HAR for teammates, or hand it to <code>bowire mock</code> to serve the recording back as a live multi-protocol mock.</p>
+      <p>Mocks aren't simulators, they're playback: every byte is what the real server actually sent. The mock server speaks every protocol the recording captured, so a test client sees exactly what production does &mdash; useful for unblocking frontend work before the backend ships, running offline contract tests, or sharing a realistic sandbox with a stakeholder without exposing the real environment.</p>
+      <a class="features-block-docs-link" href="{{ '/docs/features/recording.html' | relative_url }}">Read the technical docs &rarr;</a>
+    </div>
+    <div class="features-block-screenshot">
+      {% include themed-img.html src="/assets/images/screenshots/recording.png" alt="Recording timeline with captured calls across protocols, ready for replay or mock-serve" %}
+    </div>
+  </div>
+</section>
+
+<section class="features-page-cta features-page-cta-alt">
+  <div class="features-page-cta-inner">
+    <h2 class="features-page-cta-title">More than these six</h2>
+    <p class="features-page-cta-lede">The differentiators on this page are the headlines. The full feature list &mdash; auto-discovery, every call type, environments, auth helpers, performance graphs, response chaining, command palette, keyboard shortcuts &mdash; lives on the features page.</p>
+    <div class="features-page-cta-buttons">
+      <a class="btn btn-secondary features-page-cta-btn" href="{{ '/features.html' | relative_url }}">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+        See every feature
+      </a>
+      <a class="btn btn-secondary features-page-cta-btn" href="{{ '/docs/' | relative_url }}">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+        Read the docs
+      </a>
+    </div>
+    <p class="features-page-cta-finale">Different angle, same boat. <a href="{{ '/community.html' | relative_url }}">Join the crew &rarr;</a></p>
+  </div>
+</section>

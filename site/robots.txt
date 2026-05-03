@@ -1,0 +1,11 @@
+---
+# Front matter so Jekyll processes the {{ }} below.
+---
+User-agent: *
+Allow: /
+
+# Pagefind index files are served as JSON/binary — useful only to the
+# in-page search widget, not to crawlers.
+Disallow: /pagefind/
+
+Sitemap: {{ site.url }}{{ site.baseurl }}/sitemap.xml

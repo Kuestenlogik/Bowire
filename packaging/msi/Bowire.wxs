@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  WiX v5 source for the Bowire Windows installer (MSI).
+
+  Build with the `wix` .NET tool:
+
+    wix build packaging/msi/Bowire.wxs ^
+        -arch x64 ^
+        -d Version=0.9.4 ^
+        -d PublishDir=publish/bowire-win-x64 ^
+        -o publish/Bowire-0.9.4-x64.msi
+
+  The `-arch` flag controls whether the package targets x64 or arm64
+  (use `publish/bowire-win-arm64` as the PublishDir for arm64).
+  `-d` defines preprocessor variables consumed by `$(var.Name)` below.
+
+  The MSI installs Bowire into Program Files\Bowire\, adds the
+  install folder to the system PATH so `bowire …` works in any new
+  shell, drops a Start-menu shortcut, and registers an "Apps &
+  Features" entry with publisher / support / icon metadata so the
+  uninstall surface looks polished — and so the same metadata feeds
+  the Microsoft Store listing if we publish through the unpackaged
+  Win32 path.
+
+  UpgradeCode below is the fixed product identity. NEVER regenerate
+  it once a release ships — it's the key Windows Installer uses to
+  recognise the same product across versions and to perform major
+  upgrades cleanly.
+
+  No custom UI is wired in: a CLI install benefits little from a
+  Welcome / EULA wizard, and the default basic-progress UI MSI
+  provides covers manual installs while `msiexec /qn` keeps
+  unattended installs silent.
+-->
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
+
+    <Package Name="Bowire"
+             Manufacturer="Küstenlogik"
+             Version="$(var.Version)"
+             UpgradeCode="C0B72D33-31F5-4349-9748-9A0DBB0C51AF"
+             Scope="perMachine"
+             Compressed="yes"
+             InstallerVersion="500">
+
+        <SummaryInformation Description="Bowire — interactive multi-protocol API workbench and CLI for .NET"
+                            Manufacturer="Küstenlogik" />
+
+        <!-- Major-upgrade rule: any older version is silently uninstalled
+             before the new one installs. Same-version reinstall is allowed
+             so users can repair a broken install via `msiexec /fa`. -->
+        <MajorUpgrade DowngradeErrorMessage="A newer version of Bowire is already installed."
+                      AllowSameVersionUpgrades="yes" />
+
+        <!-- One CAB embedded into the MSI so the installer is a single
+             file with no loose .cab dependency. -->
+        <MediaTemplate EmbedCab="yes" />
+
+        <!-- Authoring properties surfaced by Add/Remove Programs ("Apps
+             & Features" on Win10/11). The same fields feed the
+             Microsoft Store listing when we publish via the
+             unpackaged-Win32 path. -->
+        <Property Id="ARPPRODUCTICON" Value="bowire.ico" />
+        <Property Id="ARPHELPLINK" Value="https://github.com/Kuestenlogik/Bowire" />
+        <Property Id="ARPURLINFOABOUT" Value="https://kuestenlogik.github.io/Bowire/" />
+        <Property Id="ARPURLUPDATEINFO" Value="https://github.com/Kuestenlogik/Bowire/releases" />
+        <Property Id="ARPCONTACT" Value="https://github.com/Kuestenlogik/Bowire/issues" />
+        <Property Id="ARPNOMODIFY" Value="1" />
+
+        <!-- $(sys.SOURCEFILEDIR) resolves to the directory of *this* .wxs
+             file at preprocess time, so the icon path stays correct
+             regardless of where `wix build` is invoked from. -->
+        <Icon Id="bowire.ico" SourceFile="$(sys.SOURCEFILEDIR)..\..\images\bowire.ico" />
+
+        <!-- Install layout: Program Files\Bowire\<all published files>. -->
+        <StandardDirectory Id="ProgramFiles64Folder">
+            <Directory Id="INSTALLFOLDER" Name="Bowire" />
+        </StandardDirectory>
+
+        <!-- Auto-harvest every file under the publish output. The WiX v5
+             `Files` element enumerates the directory at build time and
+             generates one Component per file with stable, deterministic
+             IDs derived from the relative path. The harvested files
+             land in ProductFiles, which the feature references below. -->
+        <ComponentGroup Id="ProductFiles" Directory="INSTALLFOLDER">
+            <Files Include="$(var.PublishDir)\**" />
+        </ComponentGroup>
+
+        <!-- Start-menu shortcut. Shortcuts need a registry KeyPath
+             because they're not files in the strict MSI sense. -->
+        <StandardDirectory Id="ProgramMenuFolder">
+            <Component Id="StartMenuShortcut" Guid="3F5BFAE3-7BE4-4E69-8CFE-6CF0C44CFAA8">
+                <Shortcut Id="BowireShortcut"
+                          Name="Bowire"
+                          Description="Interactive multi-protocol API workbench"
+                          Target="[INSTALLFOLDER]bowire.exe"
+                          WorkingDirectory="INSTALLFOLDER"
+                          Icon="bowire.ico" />
+                <RegistryValue Root="HKCU"
+                               Key="Software\Kuestenlogik\Bowire"
+                               Name="StartMenuShortcut"
+                               Type="integer"
+                               Value="1"
+                               KeyPath="yes" />
+            </Component>
+        </StandardDirectory>
+
+        <!-- Add the install folder to the system PATH so `bowire …`
+             works in any new shell. `Part="last"` appends rather than
+             prepending so we don't shadow other tools' commands. -->
+        <Component Id="PathEntry"
+                   Directory="INSTALLFOLDER"
+                   Guid="A86EE112-2E8A-4FFA-9BCE-3F32A2641EF2">
+            <Environment Id="BowirePath"
+                         Name="PATH"
+                         Value="[INSTALLFOLDER]"
+                         Permanent="no"
+                         Part="last"
+                         Action="set"
+                         System="yes" />
+            <RegistryValue Root="HKLM"
+                           Key="Software\Kuestenlogik\Bowire"
+                           Name="PathEntry"
+                           Type="integer"
+                           Value="1"
+                           KeyPath="yes" />
+        </Component>
+
+        <!-- Single feature; users get everything or nothing. Splitting
+             plugins into optional sub-features doesn't fit Bowire's
+             usage model — plugins install via `bowire plugin install`
+             into ~/.bowire/plugins/, not into Program Files. -->
+        <Feature Id="MainFeature"
+                 Title="Bowire"
+                 Description="Interactive multi-protocol API workbench and CLI."
+                 Level="1">
+            <ComponentGroupRef Id="ProductFiles" />
+            <ComponentRef Id="StartMenuShortcut" />
+            <ComponentRef Id="PathEntry" />
+        </Feature>
+    </Package>
+</Wix>

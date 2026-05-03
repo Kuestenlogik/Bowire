@@ -1,0 +1,57 @@
+# nfpm config for the Bowire Linux packages (DEB + RPM).
+#
+# Build with the goreleaser/nfpm tool:
+#
+#   nfpm pkg --packager deb --target dist/bowire_${VERSION}_amd64.deb \
+#       --config packaging/linux/nfpm.yaml
+#   nfpm pkg --packager rpm --target dist/bowire-${VERSION}.x86_64.rpm \
+#       --config packaging/linux/nfpm.yaml
+#
+# The release pipeline ($repo/.github/workflows/release.yml) sets the
+# VERSION + ARCH + PUBLISH_DIR environment variables before invoking
+# nfpm, so the same config covers x64 and arm64.
+
+name: bowire
+arch: ${ARCH}
+platform: linux
+version: ${VERSION}
+
+# Required Debian-control fields. The "Section" mapping isn't formally
+# required for RPM, but nfpm copies it into a rpm group so the field
+# isn't wasted.
+section: devel
+priority: optional
+
+maintainer: Küstenlogik <oss@kuestenlogik.de>
+vendor: Küstenlogik
+homepage: https://github.com/Kuestenlogik/Bowire
+license: Apache-2.0
+
+description: |
+  Interactive multi-protocol API workbench and CLI for .NET.
+  Discover and invoke gRPC, REST, GraphQL, SignalR, MCP, SSE,
+  WebSocket, MQTT, Socket.IO, OData, Storm, Kafka, DIS, and UDP
+  endpoints from one tool. Embed it next to your ASP.NET service
+  or run the standalone bowire command against any host.
+
+# Self-contained .NET 10 publish bundles its own runtime — no
+# dependency on a system .NET install. Deliberately empty so APT/DNF
+# don't pull in a SDK we don't actually use.
+depends: []
+
+contents:
+  # Drop the entire publish folder under /opt/bowire. The folder
+  # carries bowire + ~150 satellite DLLs + the pinned runtime; we
+  # don't try to FHS-split them across /usr/{bin,lib,share} because
+  # the .NET single-folder publish layout assumes everything sits in
+  # one directory next to the entrypoint exe.
+  - src: ${PUBLISH_DIR}/
+    dst: /opt/bowire/
+
+  # Convenience symlink so `bowire …` works straight from the user's
+  # PATH without manual export. /usr/bin is the FHS spot for vendor
+  # CLIs; /usr/local/bin is owned by the user and conventionally not
+  # touched by package managers.
+  - src: /opt/bowire/bowire
+    dst: /usr/bin/bowire
+    type: symlink

@@ -1,0 +1,1826 @@
+/*
+ * Bowire docfx theme — visual parity with the Jekyll marketing site
+ * (../../site/). Single source of truth for the brand palette is
+ * src/Kuestenlogik.Bowire/wwwroot/bowire.css:9-25 — values must stay in sync.
+ *
+ * The template chain in docs/docfx.json is:
+ *   ["default", "modern", "templates/bowire"]
+ *
+ * Modern still ships docfx.min.css for Bootstrap 5 + the article-content
+ * styling. This file loads AFTER it (see _master.tmpl) and overrides:
+ *
+ *   1. Bootstrap variables (--bs-*) so the body bg, links, primary
+ *      colour and font stack switch to Bowire brand
+ *   2. The .bowire-docs-* classes from our own master template (header,
+ *      footer, content shell)
+ *   3. A handful of docfx-internal selectors (.toc, .affix, .contribution,
+ *      pre code, .navbar etc.) so the inherited Bootstrap shell looks
+ *      like the Bowire marketing site
+ *
+ * Theme switching is driven by the same `theme` localStorage key the
+ * marketing site writes — see _master.tmpl's inline head script.
+ */
+
+/* ============================================================
+   Bowire brand palette
+   ============================================================ */
+:root {
+    --bowire-accent: #6366f1;
+    --bowire-accent-hover: #818cf8;
+    --bowire-accent-rgb: 99, 102, 241;
+    --bowire-accent-light: #4f46e5;
+    --bowire-success: #10b981;
+    --bowire-warning: #fbbf24;
+    --bowire-danger: #ef4444;
+}
+
+/* ============================================================
+   Bootstrap 5 variable overrides — dark
+   ============================================================ */
+:root[data-bs-theme="dark"] {
+    --bs-body-bg: #0f0f17;
+    --bs-body-color: #e8e8f0;
+    --bs-secondary-bg: #161621;
+    --bs-tertiary-bg: #1a1a2e;
+    --bs-secondary-bg-rgb: 22, 22, 33;
+    --bs-tertiary-bg-rgb: 26, 26, 46;
+
+    --bs-border-color: #2a2a3d;
+    --bs-border-color-translucent: rgba(232, 232, 240, 0.1);
+
+    --bs-primary: var(--bowire-accent);
+    --bs-primary-rgb: var(--bowire-accent-rgb);
+    --bs-link-color: var(--bowire-accent);
+    --bs-link-color-rgb: var(--bowire-accent-rgb);
+    --bs-link-hover-color: var(--bowire-accent-hover);
+    --bs-link-hover-color-rgb: 129, 140, 248;
+
+    --bs-code-color: var(--bowire-accent-hover);
+
+    --bs-emphasis-color: #e8e8f0;
+    --bs-emphasis-color-rgb: 232, 232, 240;
+    --bs-secondary-color: #9898b0;
+    --bs-tertiary-color: #6a6a82;
+    --bs-heading-color: #e8e8f0;
+
+    --bs-body-font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    --bs-font-monospace: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+}
+
+/* ============================================================
+   Bootstrap 5 variable overrides — light
+   ============================================================ */
+:root[data-bs-theme="light"] {
+    --bs-body-bg: #fafaff;
+    --bs-body-color: #1a1a2e;
+    --bs-secondary-bg: #f4f4fa;
+    --bs-tertiary-bg: #eeeef0;
+    --bs-secondary-bg-rgb: 244, 244, 250;
+    --bs-tertiary-bg-rgb: 238, 238, 240;
+
+    --bs-border-color: #e1e1ee;
+    --bs-border-color-translucent: rgba(26, 26, 46, 0.1);
+
+    --bs-primary: var(--bowire-accent-light);
+    --bs-primary-rgb: 79, 70, 229;
+    --bs-link-color: var(--bowire-accent-light);
+    --bs-link-color-rgb: 79, 70, 229;
+    --bs-link-hover-color: var(--bowire-accent);
+
+    --bs-code-color: var(--bowire-accent-light);
+
+    --bs-emphasis-color: #0a0a1a;
+    --bs-secondary-color: #5a5a72;
+    --bs-tertiary-color: #8a8aa0;
+    --bs-heading-color: #1a1a2e;
+
+    --bs-body-font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    --bs-font-monospace: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+}
+
+/* Smooth font rendering on both themes */
+body.bowire-docs {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    margin: 0;
+    /* Reserve room for the fixed header */
+    padding-top: 64px;
+}
+
+/* ============================================================
+   Bowire header — fixed top bar mirroring the marketing site
+   ============================================================ */
+/* Using body.bowire-docs prefix to beat docfx.min.css's default
+   `header { position: sticky; display: flex; ... }` rule that otherwise
+   wins on equal-specificity and leaves our header non-fixed at y=64. */
+body.bowire-docs .bowire-docs-header {
+    /* Mirror site/_includes/header.html behaviour exactly: header is
+       transparent on page-top and turns into a translucent solid bar
+       after the first 20px of scroll. */
+    position: fixed !important;
+    top: 0 !important;
+    left: 0;
+    right: 0;
+    width: 100%;
+    z-index: 1030;
+    height: 64px;
+    display: block;
+    background: transparent;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    border-bottom: 1px solid transparent;
+    transition: background 0.3s, border-color 0.3s, backdrop-filter 0.3s, -webkit-backdrop-filter 0.3s;
+    font-family: var(--bs-body-font-family);
+}
+body.bowire-docs .bowire-docs-header.scrolled {
+    background: rgba(15, 15, 23, 0.9) !important;
+    backdrop-filter: blur(12px) !important;
+    -webkit-backdrop-filter: blur(12px) !important;
+    border-bottom-color: var(--bs-border-color) !important;
+}
+:root[data-bs-theme="light"] body.bowire-docs .bowire-docs-header.scrolled {
+    background: rgba(250, 250, 255, 0.9) !important;
+}
+
+.bowire-docs-header-inner {
+    /* Mirror site/_includes/header.html's three-zone grid exactly:
+       logo left, nav centred, actions right. 1fr-auto-1fr keeps the
+       nav horizontally centred even when logo and actions differ in
+       width — matching the marketing header pixel-for-pixel avoids a
+       layout jump on site ↔ docs transitions. */
+    max-width: 1120px;
+    margin: 0 auto;
+    padding: 0 24px;
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    gap: 24px;
+    height: 100%;
+}
+.bowire-docs-header-actions {
+    justify-self: end;
+}
+
+.bowire-docs-logo {
+    /* Mirror site .logo — inline-flex + justify-self:start so the
+       click area hugs the mark + wordmark instead of stretching to
+       fill the 1fr grid column the header layout puts it in. */
+    display: inline-flex;
+    justify-self: start;
+    align-items: center;
+    gap: 8px;
+    font-weight: 700;
+    font-size: 1.125rem;
+    color: var(--bs-emphasis-color);
+    text-decoration: none;
+    transition: color 0.15s;
+}
+.bowire-docs-logo:hover {
+    color: var(--bowire-accent);
+}
+.bowire-docs-logo-mark {
+    /* Tile logo (1:1) — same 28px sizing as site/_includes/header.html.
+       Color follows currentColor so it flips with theme via the parent
+       link's color (var(--bs-emphasis-color)). */
+    width: 28px;
+    height: 28px;
+    display: block;
+    color: inherit;
+    flex-shrink: 0;
+}
+/* Hover lifts the brand mark to accent colour while the wordmark
+   next to it stays on its link colour. */
+.bowire-docs-logo:hover .bowire-docs-logo-mark {
+    color: var(--bowire-accent);
+}
+
+.bowire-docs-nav {
+    display: flex;
+    align-items: center;
+    gap: 28px;
+    /* Mirror the marketing site's 3px baseline nudge so smaller nav
+       text aligns with the bigger wordmark next to the logo. */
+    margin-top: 3px;
+}
+.bowire-docs-nav a {
+    color: var(--bs-secondary-color);
+    font-size: 0.875rem;
+    font-weight: 500;
+    text-decoration: none;
+    transition: color 0.15s;
+}
+.bowire-docs-nav a:hover {
+    color: var(--bowire-accent);
+}
+/* Active section (current page) — distinct from hover so the user can
+   tell "I am here" vs "I can go here". Lifts to emphasis colour +
+   semibold while hover stays on accent. */
+.bowire-docs-nav a.is-active {
+    color: var(--bs-emphasis-color);
+    font-weight: 600;
+}
+
+.bowire-docs-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+/* Search form in the header — replaces the modern template's navbar
+   search. docfx.min.js looks up #search and #search-query by id. */
+/* ============================================================
+   Pagefind search overlay — shared with the Jekyll marketing site.
+   Trigger button sits in the header actions next to home / theme /
+   github and opens a centred overlay with the PagefindUI widget.
+   ============================================================ */
+.bowire-search-trigger {
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    background: transparent;
+    border: none;
+    color: var(--bs-secondary-color);
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.15s, opacity 0.15s;
+}
+.bowire-search-trigger:hover {
+    color: var(--bowire-accent);
+}
+.bowire-search-trigger:focus-visible {
+    outline: 2px solid var(--bowire-accent);
+    outline-offset: 2px;
+    border-radius: 4px;
+}
+/* Disabled state when the Pagefind index isn't available — typically
+   hit during local-only docfx serve runs where the post-build pagefind
+   step hasn't run. Greyed out + non-interactive so clicks don't fire
+   into uninitialised PagefindUI and surface uncaught exceptions. */
+.bowire-search-trigger[disabled] {
+    opacity: 0.35;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+.bowire-search-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 2000;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding-top: min(12vh, 120px);
+    background: rgba(15, 15, 23, 0.55);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.15s ease;
+}
+:root[data-bs-theme="light"] .bowire-search-overlay {
+    background: rgba(200, 200, 220, 0.55);
+}
+.bowire-search-overlay.is-open {
+    opacity: 1;
+    pointer-events: auto;
+}
+.bowire-search-overlay-panel {
+    width: min(680px, calc(100% - 48px));
+    max-height: 80vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    background: var(--bs-secondary-bg);
+    border: 1px solid var(--bs-border-color);
+    border-radius: 12px;
+    padding: 0;
+    box-shadow: 0 24px 64px rgba(0, 0, 0, 0.35);
+    transform: translateY(-8px);
+    transition: transform 0.2s ease;
+}
+.bowire-search-overlay #search {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-height: 0;
+}
+.bowire-search-overlay .pagefind-ui {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-height: 0;
+}
+.bowire-search-overlay .pagefind-ui__form {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-height: 0;
+    padding: 20px;
+    /* Form is the "header zone" — same tertiary bg as the footer hint
+       band so the input + result-count read as one capsule, with the
+       results drawer below it visually distinct (secondary bg). */
+    background: var(--bs-tertiary-bg);
+}
+.bowire-search-overlay .pagefind-ui__search-input {
+    flex: 0 0 auto;
+}
+.bowire-search-overlay .pagefind-ui__drawer {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    margin: 16px -20px -20px;
+    padding: 16px 20px 20px;
+    background: var(--bs-secondary-bg);
+    border-top: 1px solid var(--bs-border-color);
+    scrollbar-width: thin;
+    scrollbar-color: var(--bs-border-color) transparent;
+}
+.bowire-search-overlay .pagefind-ui__drawer::-webkit-scrollbar { width: 10px; }
+.bowire-search-overlay .pagefind-ui__drawer::-webkit-scrollbar-track { background: transparent; }
+.bowire-search-overlay .pagefind-ui__drawer::-webkit-scrollbar-thumb {
+    background: var(--bs-border-color);
+    border-radius: 8px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+}
+.bowire-search-overlay.is-open .bowire-search-overlay-panel {
+    transform: translateY(0);
+}
+
+/* Theme the PagefindUI widget to the Bowire brand palette. Bind to
+   data-bs-theme so dark/light mode switch picks up synchronously with
+   the rest of the docs. Attribute selectors (0,2,0) beat Pagefind's
+   default :root declaration (0,1,0). */
+html[data-bs-theme="dark"],
+html[data-bs-theme="light"] {
+    --pagefind-ui-scale: 1;
+    --pagefind-ui-primary: var(--bowire-accent);
+    --pagefind-ui-text: var(--bs-emphasis-color);
+    --pagefind-ui-background: var(--bs-secondary-bg);
+    --pagefind-ui-border: var(--bs-border-color);
+    --pagefind-ui-tag: var(--bs-tertiary-bg);
+    --pagefind-ui-border-width: 1px;
+    --pagefind-ui-border-radius: 10px;
+    --pagefind-ui-image-border-radius: 6px;
+    --pagefind-ui-image-box-ratio: 3 / 2;
+    --pagefind-ui-font: inherit;
+}
+
+.pagefind-ui {
+    padding-top: 0 !important;
+}
+.pagefind-ui__drawer {
+    gap: 24px !important;
+}
+.pagefind-ui__results-area {
+    margin-top: 8px !important;
+}
+/* Result count — relocated by JS from inside the drawer to between
+   the search input and the drawer (still inside the form so it
+   inherits the tertiary "header" bg). Smaller font than the previous
+   in-drawer placement so it reads as a sub-line of the input area
+   rather than a result row. */
+.pagefind-ui__message {
+    color: var(--bs-secondary-color) !important;
+    font-size: 0.75rem !important;
+    font-weight: 500 !important;
+    padding: 8px 0 0 !important;
+    margin: 0 !important;
+    height: auto !important;
+}
+.pagefind-ui__result {
+    padding: 18px 0 20px !important;
+    border-top: 1px solid var(--bs-border-color) !important;
+    cursor: pointer;
+}
+/* The drawer already carries a border-top above the first result —
+   skip the per-result rule for the first item to avoid the
+   double-line stack. */
+.pagefind-ui__result:first-child {
+    border-top: none !important;
+    padding-top: 0 !important;
+}
+.pagefind-ui__result-title {
+    font-size: 1.0625rem !important;
+    font-weight: 600 !important;
+    line-height: 1.35 !important;
+    margin-bottom: 4px !important;
+}
+.pagefind-ui__result-excerpt {
+    font-size: 0.9375rem !important;
+    color: var(--bs-secondary-color) !important;
+    line-height: 1.55 !important;
+}
+.pagefind-ui__result-tags {
+    margin-top: 10px !important;
+}
+.pagefind-ui__result-tag {
+    font-size: 0.75rem !important;
+    padding: 3px 8px !important;
+    color: var(--bs-secondary-color) !important;
+}
+
+/* Pagefind-UI-specific selector overrides where --pagefind-ui-* doesn't
+   reach (focus ring, link hover, mark highlight). */
+.pagefind-ui__search-input {
+    color: var(--bs-emphasis-color) !important;
+    font-weight: 500 !important;
+    font-size: 0.9375rem !important;
+    padding: 0 52px 0 44px !important;
+    height: 52px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    line-height: 1 !important;
+}
+.pagefind-ui__form::before {
+    top: 38px !important;
+    left: 34px !important;
+    width: 16px !important;
+    height: 16px !important;
+}
+.pagefind-ui__search-input::placeholder {
+    color: var(--bs-secondary-color) !important;
+    opacity: 0.6 !important;
+    font-weight: 400 !important;
+}
+.pagefind-ui__search-input:focus-visible {
+    outline: none !important;
+    border-color: var(--bowire-accent) !important;
+    box-shadow: 0 0 0 3px rgba(var(--bowire-accent-rgb), 0.15) !important;
+}
+/* Theme the overlay panel's scrollbar so dark mode doesn't paint a
+   bright browser-default track on top of the panel. */
+.bowire-search-overlay-panel {
+    scrollbar-width: thin;
+    scrollbar-color: var(--bs-border-color) transparent;
+}
+.bowire-search-overlay-panel::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+}
+.bowire-search-overlay-panel::-webkit-scrollbar-track {
+    background: transparent;
+}
+.bowire-search-overlay-panel::-webkit-scrollbar-thumb {
+    background: var(--bs-border-color);
+    border-radius: 8px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+}
+.bowire-search-overlay-panel::-webkit-scrollbar-thumb:hover {
+    background: var(--bs-secondary-color);
+    background-clip: padding-box;
+}
+.pagefind-ui__result-link {
+    color: var(--bs-emphasis-color) !important;
+}
+.pagefind-ui__result-link:hover {
+    color: var(--bowire-accent) !important;
+}
+.pagefind-ui mark {
+    color: var(--bowire-accent);
+    background: rgba(var(--bowire-accent-rgb), 0.14);
+    padding: 0 2px;
+    border-radius: 3px;
+}
+
+/* Arrow-key / hover highlight on the currently selected result.
+   Background tint + accent text colour only — no left-stripe, since
+   it would curve with the border-radius and read as comma-shaped. */
+.pagefind-ui__result.is-highlighted {
+    background: rgba(var(--bowire-accent-rgb), 0.08);
+    border-radius: 8px;
+    padding-left: 12px !important;
+    padding-right: 12px !important;
+    margin-left: -12px;
+    margin-right: -12px;
+}
+.pagefind-ui__result.is-highlighted .pagefind-ui__result-link {
+    color: var(--bowire-accent) !important;
+}
+
+.bowire-search-hint {
+    flex: 0 0 auto;
+    padding: 14px 20px;
+    border-top: 1px solid var(--bs-border-color);
+    background: var(--bs-tertiary-bg);
+    color: var(--bs-secondary-color);
+    font-size: 0.75rem;
+    text-align: center;
+}
+.bowire-search-hint kbd {
+    display: inline-block;
+    min-width: 20px;
+    padding: 1px 5px;
+    margin: 0 2px;
+    background: var(--bs-tertiary-bg);
+    border: 1px solid var(--bs-border-color);
+    border-bottom-width: 2px;
+    border-radius: 4px;
+    font-family: var(--bs-body-font-family);
+    font-size: 0.6875rem;
+    color: var(--bs-emphasis-color);
+    line-height: 1.4;
+}
+
+/* DocFX injects an anchorjs "#" link beside every heading that pops in
+   on hover. The id is already on the <h*> element itself, so the extra
+   glyph is visual noise — hide it everywhere. Direct deep-links via URL
+   fragment still work. */
+.anchorjs-link {
+    display: none !important;
+}
+
+/* Form layout is set on .bowire-search-overlay .pagefind-ui__form
+   above — nothing more needed here. */
+
+/* Overlay is a Suggest popup, capped at 5 results — no Load-More here. */
+.bowire-search-overlay .pagefind-ui__button {
+    display: none !important;
+}
+
+/* "Load more results" — secondary button style matching the Bowire
+   docs buttons (neutral background, accent on hover). */
+.pagefind-ui__button {
+    background: var(--bs-tertiary-bg) !important;
+    color: var(--bs-emphasis-color) !important;
+    border: 1px solid var(--bs-border-color) !important;
+    border-radius: 8px !important;
+    font-weight: 600 !important;
+    transition: background 0.2s, border-color 0.2s, color 0.2s, transform 0.2s !important;
+    cursor: pointer !important;
+}
+.pagefind-ui__button:hover {
+    background: var(--bs-secondary-bg) !important;
+    border-color: var(--bowire-accent) !important;
+    color: var(--bowire-accent) !important;
+    transform: translateY(-1px);
+}
+.pagefind-ui__button:focus-visible {
+    outline: 2px solid var(--bowire-accent) !important;
+    outline-offset: 2px;
+}
+
+/* Clear-query button — circular 28×28 × icon button. Mirrors the
+   marketing site's styling exactly so site and docs share the same
+   affordance in the search popout. */
+.pagefind-ui__search-clear {
+    position: absolute !important;
+    width: 28px !important;
+    height: 28px !important;
+    padding: 0 !important;
+    /* 20 px form padding-top + (52 px input - 28 px button) / 2 = 32 px */
+    top: 32px !important;
+    /* Inside the input's right edge — 28 px from form-right leaves an
+       8-px gap between button and input border. */
+    right: 28px !important;
+    transform: none !important;
+    /* Rounded square to match the input's 10 px radius + the rest of
+       the button system. */
+    border-radius: 8px !important;
+    background: var(--bs-border-color) !important;
+    color: transparent !important;
+    border: none !important;
+    font-size: 0 !important;
+    line-height: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    cursor: pointer !important;
+    transition: background 0.15s, color 0.15s, transform 0.15s;
+}
+.pagefind-ui__search-clear::before {
+    content: "";
+    display: block;
+    width: 10px;
+    height: 10px;
+    background-color: var(--bs-emphasis-color);
+    -webkit-mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 10'><path stroke='black' stroke-width='1.6' stroke-linecap='round' d='M1 1l8 8M9 1l-8 8'/></svg>");
+    mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 10'><path stroke='black' stroke-width='1.6' stroke-linecap='round' d='M1 1l8 8M9 1l-8 8'/></svg>");
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+    -webkit-mask-size: contain;
+    mask-size: contain;
+    transition: background-color 0.15s;
+}
+.pagefind-ui__search-clear:hover {
+    background: var(--bowire-accent) !important;
+    transform: scale(1.05) !important;
+}
+.pagefind-ui__search-clear:hover::before {
+    background-color: #fff;
+}
+.pagefind-ui__search-clear:focus-visible {
+    outline: 2px solid var(--bowire-accent) !important;
+    outline-offset: 2px;
+}
+.bowire-docs-nav-home,
+.bowire-docs-nav-github {
+    display: inline-flex;
+    align-items: center;
+    color: var(--bs-secondary-color);
+    text-decoration: none;
+    transition: color 0.2s;
+}
+.bowire-docs-nav-home:hover,
+.bowire-docs-nav-github:hover {
+    color: var(--bowire-accent);
+}
+.bowire-docs-theme-toggle {
+    /* Match site `.theme-toggle` exactly: 32×32 hitbox, 16×16 icon
+       centred inside. Without this the button was only as big as its
+       svg child (16×16), making the header action row visually shorter
+       than the marketing site's. */
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    background: transparent;
+    border: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--bs-secondary-color);
+    cursor: pointer;
+    transition: color 0.2s;
+}
+.bowire-docs-theme-toggle svg {
+    width: 16px;
+    height: 16px;
+}
+.bowire-docs-theme-toggle:hover,
+.bowire-docs-theme-toggle:focus {
+    color: var(--bowire-accent);
+    outline: none;
+}
+.bowire-docs-theme-toggle:focus-visible {
+    outline: 2px solid var(--bowire-accent);
+    outline-offset: 2px;
+    border-radius: 4px;
+}
+
+/* ============================================================
+   Main content shell — same Bootstrap container as modern, but
+   we make sure it doesn't slide under the fixed header and we
+   tighten the max-width so it visually matches the marketing
+   site's 1120px column.
+   ============================================================ */
+main.bowire-docs-main-shell {
+    /* Match site/assets/css/style.css `.container` exactly:
+       max-width 1120px + 24px horizontal padding. Bootstrap's
+       container-xxl defaults to 1320px with 12px padding, which
+       made the docs content column visibly wider than the marketing
+       site's hero/cards. Force identical outer box + padding here
+       so the jump site ↔ docs feels seamless. */
+    max-width: 1120px;
+    padding-left: 24px;
+    padding-right: 24px;
+    padding-top: 24px;
+    /* Neutralise Bootstrap's gutter system inside the docs shell.
+       `.container-xxl` and Bootstrap's row/col classes pull
+       --bs-gutter-x (default 1.5rem) into both negative row margins
+       and column padding — that's where the stray 12px on the right
+       of the affix sidebar comes from, leaving the "In this article"
+       column ending visibly inside the header's GitHub icon column.
+       Setting the gutter to 0 here keeps every nested .row + .col
+       flush with main's own 24px padding edge, so the affix lines up
+       with the header's right edge pixel-for-pixel. */
+    --bs-gutter-x: 0;
+}
+
+
+/* === Right rail (article tools + section-nav) ====================
+   Two stacked pills on the right edge of the viewport:
+     • .docs-rail-tools — top pill, hosts per-article tool buttons
+       (currently just the "On this page" outline toggle; future tools
+       — share, copy-link, edit, mark-read — would land alongside).
+     • .docs-section-nav — bottom pill, scrollspy dots built at
+       runtime from article h2 elements (one per section).
+   Both pills share visual treatment (translucent + blur, pill shape,
+   thin border) so the rail reads as a coherent vertical band; the
+   parent .docs-rail keeps them centred and stacks them with a small
+   gap so each can scale independently. Hidden on mobile (< 768 px).
+   ============================================================ */
+.docs-rail {
+    position: fixed;
+    right: 18px;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 1015;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 12px;
+    pointer-events: none;  /* gaps between pills don't block clicks */
+}
+/* Explicit because `display: flex` above overrides the user-agent
+   default `[hidden] { display: none }` and the rail-hide JS uses
+   the [hidden] attribute. */
+.docs-rail[hidden] { display: none; }
+.docs-rail > * {
+    pointer-events: auto;
+}
+
+/* Tools pill — small per-article-action surface. Style matches the
+   section-nav pill so the two read as siblings. */
+.docs-rail-tools {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 6px;
+    background: rgba(15, 15, 23, 0.55);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-radius: 999px;
+    border: 1px solid var(--bs-border-color);
+}
+:root[data-bs-theme="light"] .docs-rail-tools {
+    background: rgba(250, 250, 255, 0.7);
+}
+.docs-rail-tool {
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    background: transparent;
+    color: var(--bs-secondary-color);
+    cursor: pointer;
+    border-radius: 50%;
+    padding: 0;
+    transition: color 0.15s, background 0.15s;
+}
+.docs-rail-tool:hover,
+.docs-rail-tool:focus-visible {
+    color: var(--bs-link-color);
+    outline: none;
+}
+.docs-rail-tool[aria-expanded="true"] {
+    color: var(--bs-link-color);
+}
+.docs-rail-tool svg { display: block; }
+/* Explicit because `display: flex` on the parent + `display: inline-
+   flex` here override the user-agent default `[hidden]{display:none}`,
+   so the JS that hides empty triggers needs a CSS hand. */
+.docs-rail-tools[hidden],
+.docs-rail-tool[hidden] {
+    display: none;
+}
+
+/* Section-nav pill — sits inside the rail, no longer fixed-positioned
+   itself (the parent .docs-rail handles viewport anchoring). */
+.docs-section-nav {
+    position: static;
+    transform: none;
+    right: auto;
+    top: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 8px 6px;
+    background: rgba(15, 15, 23, 0.55);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-radius: 999px;
+    border: 1px solid var(--bs-border-color);
+}
+:root[data-bs-theme="light"] .docs-section-nav {
+    background: rgba(250, 250, 255, 0.7);
+}
+.docs-section-nav[hidden] { display: none; }
+
+.docs-section-nav-dot {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    cursor: pointer;
+    background: transparent;
+    border: none;
+    padding: 0;
+    text-decoration: none;
+    color: inherit;
+}
+.docs-section-nav-dot::before {
+    content: '';
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--bs-secondary-color);
+    opacity: 0.4;
+    transition: opacity 0.15s, transform 0.15s, background 0.15s;
+}
+.docs-section-nav-dot:hover::before,
+.docs-section-nav-dot:focus-visible::before {
+    opacity: 0.85;
+    transform: scale(1.25);
+}
+.docs-section-nav-dot.is-active::before {
+    background: var(--bs-link-color);
+    opacity: 1;
+    transform: scale(1.35);
+}
+.docs-section-nav-dot:focus-visible {
+    outline: 2px solid var(--bs-link-color);
+    outline-offset: 2px;
+}
+
+/* Tooltip-style label to the left of each dot — only visible on
+   hover/focus so the pill stays minimal at rest. */
+.docs-section-nav-dot-label {
+    position: absolute;
+    right: calc(100% + 8px);
+    top: 50%;
+    transform: translateY(-50%) translateX(4px);
+    white-space: nowrap;
+    padding: 4px 10px;
+    background: var(--bs-body-bg);
+    border: 1px solid var(--bs-border-color);
+    border-radius: 6px;
+    font-size: 0.8125rem;
+    color: var(--bs-body-color);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.15s, transform 0.15s;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.18);
+}
+.docs-section-nav-dot:hover .docs-section-nav-dot-label,
+.docs-section-nav-dot:focus-visible .docs-section-nav-dot-label {
+    opacity: 1;
+    transform: translateY(-50%) translateX(0);
+}
+
+/* Gap marker — inserted between two non-adjacent picked dots when the
+   article has more headings than the pill can show (sampled mode).
+   Two stacked micro-dots in the same dot-language as the surrounding
+   pill so the strip reads as "… some entries hidden here", without
+   adding clickable noise. Use the Sections / Outline overlay to find
+   the skipped headings. */
+.docs-section-nav-gap {
+    width: 24px;
+    height: 10px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    pointer-events: none;
+}
+.docs-section-nav-gap::before,
+.docs-section-nav-gap::after {
+    content: '';
+    width: 2px;
+    height: 2px;
+    border-radius: 50%;
+    background: var(--bs-secondary-color);
+    opacity: 0.35;
+}
+
+@media (max-width: 768px) {
+    .docs-rail { display: none; }
+}
+
+/* === "On this page" outline overlay ==============================
+   Modal popup analog to the Pagefind .bowire-search-overlay —
+   centred panel with translucent backdrop, opened from the right-
+   rail tool button. Same backdrop colour, same panel chrome, same
+   slide-in animation so the docs site has one cohesive overlay
+   idiom across search and outline. The overlay is purely transient:
+   no localStorage, opens fresh, dismisses on backdrop / Esc / link
+   click inside the list. ====================================== */
+.bowire-docs-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 1100;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding-top: min(12vh, 120px);
+    background: rgba(15, 15, 23, 0.55);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.15s ease;
+}
+:root[data-bs-theme="light"] .bowire-docs-overlay {
+    background: rgba(200, 200, 220, 0.55);
+}
+.bowire-docs-overlay.is-open {
+    opacity: 1;
+    pointer-events: auto;
+}
+.bowire-docs-overlay-panel {
+    width: min(560px, calc(100% - 48px));
+    max-height: 80vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    background: var(--bs-secondary-bg);
+    border: 1px solid var(--bs-border-color);
+    border-radius: 12px;
+    padding: 0;
+    box-shadow: 0 24px 64px rgba(0, 0, 0, 0.35);
+    transform: translateY(-8px);
+    transition: transform 0.2s ease;
+}
+.bowire-docs-overlay.is-open .bowire-docs-overlay-panel {
+    transform: translateY(0);
+}
+.bowire-docs-overlay-title {
+    flex-shrink: 0;
+    font-size: 0.85em;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--bs-secondary-color);
+    margin: 0;
+    font-weight: 600;
+    padding: 16px 20px;
+    /* Header capsule — same tertiary bg as the search overlay's input
+       zone, with a 1 px separator below before the link list (which
+       sits on the lighter secondary bg). Reads as a clear "title +
+       content + footer" three-band layout. */
+    background: var(--bs-tertiary-bg);
+    border-bottom: 1px solid var(--bs-border-color);
+}
+.bowire-docs-overlay nav#affix {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    background: var(--bs-secondary-bg);
+    scrollbar-width: thin;
+    scrollbar-color: var(--bs-border-color) transparent;
+    margin: 0;
+    padding: 16px 20px;
+}
+.bowire-docs-overlay nav#affix::-webkit-scrollbar { width: 6px; }
+.bowire-docs-overlay nav#affix::-webkit-scrollbar-track { background: transparent; }
+.bowire-docs-overlay nav#affix::-webkit-scrollbar-thumb {
+    background: var(--bs-border-color);
+    border-radius: 3px;
+}
+/* DocFX injects its own h5 inside the nav — hide it; our static
+   .bowire-docs-overlay-title above already labels the panel. */
+.bowire-docs-overlay nav#affix > h5 {
+    display: none;
+}
+
+/* --- Tree styling for the article outline ---
+   DocFX's runtime renders a single flat <ul> with both h2 and h3
+   anchors as siblings; the depth distinction lives on the <a>:
+     • h2 → class `link-body-emphasis` (top level)
+     • h3 → class `link-secondary` (sub-level)
+   We translate that into a visible tree by indenting + adding a
+   thin tree-line on the secondary anchors. On pages that contain
+   ONLY secondaries (e.g. namespace pages where every entry is h3
+   "Classes" / "Enums" / "Interfaces"), the indent is dropped via
+   :has() so they read as their own top-level — otherwise every
+   item would float as an orphaned indent with no parent above. */
+.bowire-docs-overlay nav#affix ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+.bowire-docs-overlay nav#affix li {
+    margin: 0;
+    line-height: 1.45;
+}
+.bowire-docs-overlay nav#affix a {
+    color: var(--bs-body-color);
+    text-decoration: none !important;
+    font-size: 13.5px;
+    display: block;
+    padding: 4px 10px;
+    margin: 1px 0;
+    border-radius: 4px;
+    white-space: normal;
+    word-break: break-word;
+    transition: color 0.15s, background 0.15s;
+}
+.bowire-docs-overlay nav#affix a.link-secondary {
+    color: var(--bs-secondary-color);
+    margin-left: 14px;
+    padding-left: 12px;
+    border-left: 1px solid var(--bs-border-color);
+    border-radius: 0 4px 4px 0;
+}
+/* Pages with no top-level (h2) entries — every item is link-secondary.
+   Drop the indent so they don't read as orphan-children. */
+.bowire-docs-overlay nav#affix:not(:has(.link-body-emphasis)) a.link-secondary {
+    margin-left: 0;
+    padding-left: 10px;
+    border-left: none;
+}
+.bowire-docs-overlay nav#affix a:hover,
+.bowire-docs-overlay nav#affix a:focus-visible {
+    color: var(--bs-link-color);
+    background: var(--bs-tertiary-bg);
+    outline: none;
+}
+/* Active section — DocFX's runtime adds `.active` to the <li> as the
+   user scrolls; sometimes `.in` for ancestor lis containing the
+   active one. */
+.bowire-docs-overlay nav#affix li.active > a,
+.bowire-docs-overlay nav#affix li.in > a {
+    color: var(--bs-link-color);
+    font-weight: 600;
+    background: var(--bs-tertiary-bg);
+}
+/* Keyboard / hover cursor — mirrors the search overlay's
+   .pagefind-ui__result.is-highlighted treatment so the two overlays
+   share one selection idiom. ArrowUp/Down + Enter open the entry.
+   Background tint + accent text colour only (no left-stripe; with
+   border-radius the stripe curves and looks comma-shaped). */
+.bowire-docs-overlay nav#affix a.is-highlighted {
+    color: var(--bowire-accent) !important;
+    background: rgba(var(--bowire-accent-rgb), 0.08);
+}
+/* Inline <h6> group headers between groups of <li> — DocFX uses
+   these to label "Constructors", "Methods" etc. on type pages. */
+.bowire-docs-overlay nav#affix h6 {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--bs-secondary-color);
+    margin: 14px 0 4px;
+    font-weight: 600;
+    padding: 0 10px;
+}
+.bowire-docs-overlay nav#affix h6:first-child {
+    margin-top: 0;
+}
+/* Footer hint band — same visual treatment as the search overlay's
+   .bowire-search-hint (tertiary bg, full-width centred, bordered
+   top, kbd pills with double-bottom-border). */
+.bowire-docs-overlay-hint {
+    flex: 0 0 auto;
+    padding: 14px 20px;
+    border-top: 1px solid var(--bs-border-color);
+    background: var(--bs-tertiary-bg);
+    color: var(--bs-secondary-color);
+    font-size: 0.75rem;
+    text-align: center;
+}
+.bowire-docs-overlay-hint kbd {
+    display: inline-block;
+    min-width: 20px;
+    padding: 1px 5px;
+    margin: 0 2px;
+    background: var(--bs-tertiary-bg);
+    border: 1px solid var(--bs-border-color);
+    border-bottom-width: 2px;
+    border-radius: 4px;
+    font-family: var(--bs-body-font-family);
+    font-size: 0.6875rem;
+    color: var(--bs-emphasis-color);
+    line-height: 1.4;
+}
+
+/* === end docs subbar + subpanels ================================= */
+
+/* Drop DocFX upstream's `margin: 0 3rem` on the article column —
+   without this the article visually indents 48 px each side relative
+   to the top header and subbar, breaking the left/right alignment of
+   the docs site's vertical line. Our 1120 px container already
+   supplies the only horizontal padding we want (24 px each side). */
+main.bowire-docs-main-shell > .content,
+body:not([data-search])[data-layout=conceptual] > main.bowire-docs-main-shell > .content {
+    margin: 0 !important;
+}
+
+/* Breadcrumb above the article. DocFX renders an <ol class="breadcrumb">
+   inside <nav id="breadcrumb"> at runtime from toc.json, using
+   Bootstrap's Breadcrumb component. We re-skin it to match the
+   docs-site palette: dim secondary text for crumbs, accent on hover,
+   chevron `›` separator instead of the BS default `/`. Active
+   (current) crumb gets emphasis colour without bold so it doesn't
+   compete with the article H1 below it. Hidden when DocFX produces
+   an empty list (single-item breadcrumbs are auto-hidden upstream). */
+main.bowire-docs-main-shell > .content > .actionbar {
+    margin: 4px 0 14px;
+}
+main.bowire-docs-main-shell > .content > .actionbar:has(.breadcrumb:empty),
+main.bowire-docs-main-shell > .content > .actionbar:not(:has(.breadcrumb-item)) {
+    display: none;
+}
+nav#breadcrumb .breadcrumb {
+    --bs-breadcrumb-divider: '\203A'; /* › */
+    --bs-breadcrumb-divider-color: var(--bs-secondary-color);
+    --bs-breadcrumb-item-padding-x: 8px;
+    --bs-breadcrumb-margin-bottom: 0;
+    --bs-breadcrumb-padding-y: 0;
+    --bs-breadcrumb-padding-x: 0;
+    --bs-breadcrumb-font-size: 0.8125rem;
+    --bs-breadcrumb-bg: transparent;
+    --bs-breadcrumb-item-active-color: var(--bs-emphasis-color);
+}
+nav#breadcrumb .breadcrumb-item a {
+    color: var(--bs-secondary-color);
+    text-decoration: none;
+    transition: color 0.15s;
+}
+nav#breadcrumb .breadcrumb-item a:hover,
+nav#breadcrumb .breadcrumb-item a:focus-visible {
+    color: var(--bowire-accent);
+    outline: none;
+}
+nav#breadcrumb .breadcrumb-item + .breadcrumb-item::before {
+    /* Chevron at slightly reduced opacity so the trail reads as
+       structure rather than punctuation. */
+    opacity: 0.55;
+}
+
+/* Upstream DocFX sets scroll-margin-top: 60 px on every article anchor
+   target, but our docs header is 64 px tall — close enough that hash
+   jumps from the dot-nav land the heading 4 px under the header.
+   Bump the offset to 80 px (header height + a buffer) so the anchor
+   scrolls into clean space below the sticky chrome. */
+@media (min-width: 768px) {
+    body.bowire-docs main.bowire-docs-main-shell > .content > article [id] {
+        scroll-margin-top: 80px;
+    }
+}
+
+/* Sections nav itself — mirror the Outline overlay's nav#affix
+   layout so the dialog has the same inset (16 / 20 px) on the
+   filter input + entries instead of being flush to the panel edge. */
+.bowire-sections-overlay nav#toc {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    background: var(--bs-secondary-bg);
+    scrollbar-width: thin;
+    scrollbar-color: var(--bs-border-color) transparent;
+    margin: 0;
+    padding: 16px 20px;
+    display: flex;
+    flex-direction: column;
+}
+.bowire-sections-overlay nav#toc::-webkit-scrollbar { width: 6px; }
+.bowire-sections-overlay nav#toc::-webkit-scrollbar-track { background: transparent; }
+.bowire-sections-overlay nav#toc::-webkit-scrollbar-thumb {
+    background: var(--bs-border-color);
+    border-radius: 3px;
+}
+
+/* TOC links inside the Sections overlay — wrap long names, no
+   underline (DocFX adds one on hover by default), same hover/active
+   colour scheme as the Outline overlay so both modals share one
+   selection idiom. */
+.bowire-sections-overlay .toc .toc-link {
+    white-space: normal;
+    word-break: break-word;
+    text-decoration: none !important;
+    color: var(--bs-body-color);
+    display: block;
+    padding: 4px 10px;
+    margin: 1px 0;
+    border-radius: 4px;
+    transition: color 0.15s, background 0.15s;
+}
+.bowire-sections-overlay .toc .toc-link:hover,
+.bowire-sections-overlay .toc .toc-link:focus-visible {
+    color: var(--bs-link-color);
+    background: var(--bs-tertiary-bg);
+    outline: none;
+}
+.bowire-sections-overlay .toc .toc-link.is-highlighted {
+    color: var(--bowire-accent) !important;
+    background: rgba(var(--bowire-accent-rgb), 0.08);
+}
+/* Active page in the TOC — DocFX adds .active to the matching li. */
+.bowire-sections-overlay .toc li.active > .toc-link,
+.bowire-sections-overlay .toc li.in > .toc-link {
+    color: var(--bs-link-color);
+    font-weight: 600;
+    background: var(--bs-tertiary-bg);
+}
+/* Nested children in the TOC — indent under their parent + tree-line.
+   DocFX hides them by default and shows .expanded > ul. */
+.bowire-sections-overlay .toc li > ul {
+    margin-left: 12px;
+    padding-left: 12px;
+    border-left: 1px solid var(--bs-border-color);
+    margin-top: 2px;
+    margin-bottom: 4px;
+}
+
+/* Alternating H2-group backgrounds inside the article — wrapped by the
+   inline script in _master.tmpl, styled here. Same box-shadow +
+   clip-path full-bleed trick the marketing site uses for .features-group-alt. */
+.docs-article-group {
+    padding: 32px 0 24px;
+    position: relative;
+}
+/* Alternate-section full-bleed background. The `box-shadow: 0 0 0 100vmax`
+   trick would paint over the left TOC + the right article-TOC because
+   it projects outside the section box. Move the bleed onto a ::before
+   pseudo-element with z-index: -1 so it stays behind the content layer
+   and the surrounding sidebars keep their own stacking context. */
+.docs-article-group-alt {
+    position: relative;
+    background: transparent;
+    z-index: 0;
+}
+.docs-article-group-alt::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: var(--bs-secondary-bg);
+    box-shadow: 0 0 0 100vmax var(--bs-secondary-bg);
+    clip-path: inset(0 -100vmax);
+    z-index: -1;
+}
+/* Pull the toc list flush to the subpanel's left padding edge.
+   DocFX's defaults leave .toc li with padding-left: 0.85rem (room for
+   an expand-stub icon); we currently don't render expand-stubs, so the
+   indent reads as wasted left margin. */
+.bowire-sections-overlay .toc form.filter,
+.bowire-sections-overlay .toc ul,
+.bowire-sections-overlay .toc li {
+    padding-left: 0 !important;
+    margin-left: 0 !important;
+}
+.bowire-sections-overlay .toc form.filter > input {
+    padding-left: 1.5rem !important;
+}
+.bowire-sections-overlay .toc form.filter > i.bi {
+    left: 0.4rem !important;
+}
+.docs-article-group > h2:first-child {
+    margin-top: 0;
+}
+
+/* Article body typography */
+article {
+    font-family: var(--bs-body-font-family);
+    color: var(--bs-body-color);
+    line-height: 1.7;
+}
+article h1, article h2, article h3, article h4 {
+    font-family: var(--bs-body-font-family);
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: var(--bs-heading-color);
+}
+article h1 {
+    font-weight: 800;
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid var(--bowire-accent);
+    display: inline-block;
+}
+article h2 {
+    margin-top: 2rem;
+}
+article a {
+    color: var(--bs-link-color);
+    text-decoration: none;
+}
+article a:hover {
+    color: var(--bs-link-hover-color);
+    text-decoration: underline;
+}
+
+/* Code styling */
+article code {
+    font-family: var(--bs-font-monospace);
+    font-size: 0.875em;
+    color: var(--bs-code-color);
+    background: var(--bs-tertiary-bg);
+    padding: 0.15em 0.4em;
+    border-radius: 4px;
+}
+article pre {
+    background: var(--bs-tertiary-bg);
+    border: 1px solid var(--bs-border-color);
+    border-radius: 8px;
+    padding: 16px;
+    font-family: var(--bs-font-monospace);
+    font-size: 0.875rem;
+    line-height: 1.6;
+    overflow-x: auto;
+}
+article pre code {
+    background: none;
+    padding: 0;
+    font-size: inherit;
+    color: var(--bs-body-color);
+    border: none;
+}
+
+/* highlight.js — Bowire brand palette */
+.hljs {
+    background: var(--bs-tertiary-bg) !important;
+    color: var(--bs-body-color);
+}
+.hljs-comment, .hljs-quote, .hljs-deletion {
+    color: #6a6a82;
+    font-style: italic;
+}
+.hljs-keyword, .hljs-selector-tag, .hljs-literal, .hljs-doctag,
+.hljs-section, .hljs-name, .hljs-strong {
+    color: var(--bowire-accent);
+    font-weight: 600;
+}
+.hljs-string, .hljs-attr, .hljs-symbol, .hljs-bullet, .hljs-addition {
+    color: var(--bowire-accent-hover);
+}
+.hljs-number, .hljs-regexp {
+    color: #fbbf24;
+}
+.hljs-built_in, .hljs-type, .hljs-class .hljs-title, .hljs-builtin-name {
+    color: #34d399;
+}
+.hljs-function .hljs-title, .hljs-title.function_, .hljs-title.class_ {
+    color: #60a5fa;
+}
+.hljs-tag, .hljs-meta, .hljs-meta-keyword {
+    color: #c084fc;
+}
+.hljs-attribute, .hljs-property {
+    color: #818cf8;
+}
+.hljs-link {
+    color: var(--bowire-accent);
+    text-decoration: underline;
+}
+
+/* Tables — borderless rows + accent header */
+article table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1rem 0;
+}
+article table th {
+    text-align: left;
+    padding: 8px 12px;
+    border-bottom: 2px solid var(--bowire-accent);
+    color: var(--bs-heading-color);
+    font-weight: 600;
+    font-size: 0.875rem;
+}
+article table td {
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--bs-border-color);
+    font-size: 0.875rem;
+    color: var(--bs-body-color);
+}
+article table tr:hover td {
+    background: var(--bs-tertiary-bg);
+}
+
+/* Blockquotes */
+article blockquote {
+    border-left: 3px solid var(--bowire-accent);
+    background: var(--bs-tertiary-bg);
+    padding: 12px 16px;
+    margin: 1rem 0;
+    border-radius: 0 6px 6px 0;
+    color: var(--bs-secondary-color);
+}
+article blockquote p {
+    margin: 0;
+}
+
+/* ============================================================
+   Side TOC (left) — Bowire accent on active item
+   ============================================================ */
+nav.toc .nav-link.active,
+.toc-item.active > a,
+.toc .nav-item.active > .nav-link {
+    color: var(--bs-link-color) !important;
+    background: var(--bs-tertiary-bg);
+    border-left: 3px solid var(--bowire-accent);
+    padding-left: 9px;
+    font-weight: 600;
+}
+nav.toc .nav-link {
+    color: var(--bs-secondary-color);
+    transition: color 0.15s, background 0.15s;
+}
+nav.toc .nav-link:hover {
+    color: var(--bs-link-hover-color);
+}
+
+/* ============================================================
+   Affix nav (right side, "in this article") — accent active
+   ============================================================ */
+nav#affix .nav-link.active {
+    color: var(--bowire-accent) !important;
+    border-left: 2px solid var(--bowire-accent);
+    padding-left: 10px;
+}
+nav#affix .nav-link {
+    color: var(--bs-secondary-color);
+}
+nav#affix .nav-link:hover {
+    color: var(--bs-emphasis-color);
+}
+
+/* ============================================================
+   Edit-on-GitHub button — Bowire accent restyle
+   ============================================================ */
+.contribution .edit-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    background: transparent;
+    border: 1px solid var(--bowire-accent);
+    border-radius: 6px;
+    color: var(--bowire-accent);
+    font-size: 0.8125rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.15s;
+}
+.contribution .edit-link:hover {
+    background: rgba(var(--bowire-accent-rgb), 0.12);
+    border-color: var(--bowire-accent-hover);
+    color: var(--bowire-accent-hover);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(var(--bowire-accent-rgb), 0.2);
+    text-decoration: none;
+}
+.contribution .edit-link::before {
+    content: '✎';
+    font-size: 0.875rem;
+}
+
+/* ============================================================
+   Search bar — Bowire tertiary surface + indigo focus ring
+   ============================================================ */
+#search-query, .search input {
+    background: var(--bs-tertiary-bg);
+    border: 1px solid var(--bs-border-color);
+    color: var(--bs-body-color);
+    border-radius: 6px;
+    transition: border-color 0.15s, box-shadow 0.15s;
+}
+#search-query:focus, .search input:focus {
+    border-color: var(--bowire-accent);
+    box-shadow: 0 0 0 3px rgba(var(--bowire-accent-rgb), 0.25);
+    outline: none;
+}
+#search-query::placeholder, .search input::placeholder {
+    color: var(--bs-tertiary-color);
+}
+
+/* ============================================================
+   Bowire footer — exact mirror of the marketing site's footer
+   ============================================================ */
+.bowire-docs-footer {
+    margin-top: 4rem;
+    padding: 40px 0 0;
+    border-top: 1px solid var(--bs-border-color);
+    color: var(--bs-secondary-color);
+    font-family: var(--bs-body-font-family);
+}
+.bowire-docs-footer-inner {
+    max-width: 1120px;
+    margin: 0 auto;
+    padding: 0 24px;
+}
+.bowire-docs-footer-top {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 48px;
+    align-items: start;
+}
+.bowire-docs-footer-brand {
+    /* Match site .footer-brand exactly: block flex so the tagline wraps
+       naturally below on narrow widths. 6px sits between a word-space
+       and a visible separator, so "Bowire is tied by Küstenlogik…"
+       still reads as one sentence. */
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+.bowire-docs-footer-logo {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-weight: 700;
+    font-size: 0.8125rem;
+    color: var(--bs-emphasis-color);
+    line-height: 1;
+}
+.bowire-docs-footer-logo-icon {
+    width: 17px;
+    height: 17px;
+    flex-shrink: 0;
+    display: block;
+}
+.bowire-docs-footer-tagline {
+    font-size: 0.8125rem;
+    color: var(--bs-tertiary-color);
+}
+.bowire-docs-footer-tagline a {
+    color: inherit;
+    text-decoration: none;
+    transition: color 0.15s;
+}
+.bowire-docs-footer-tagline a:hover {
+    color: var(--bowire-accent);
+}
+
+.bowire-docs-footer-nav {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(130px, auto));
+    gap: 32px 48px;
+}
+.bowire-docs-footer-nav-col {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+.bowire-docs-footer-nav-title {
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--bs-tertiary-color);
+    margin-bottom: 4px;
+}
+.bowire-docs-footer-nav-col a {
+    color: var(--bs-secondary-color);
+    font-size: 0.875rem;
+    text-decoration: none;
+    transition: color 0.15s;
+}
+.bowire-docs-footer-nav-col a:hover {
+    color: var(--bowire-accent);
+}
+
+.bowire-docs-footer-bottom {
+    /* Full-width divider bar — border-top spans edge-to-edge; the
+       inner div wraps the copyright text with the same max-width
+       container the rest of the page uses so the text sits dead
+       centre on wide viewports. */
+    margin-top: 40px;
+    padding: 20px 0;
+    border-top: 1px solid var(--bs-border-color);
+    text-align: center;
+}
+.bowire-docs-footer-bottom-inner {
+    max-width: 1120px;
+    margin: 0 auto;
+    padding: 0 24px;
+    font-size: 0.8125rem;
+    color: var(--bs-tertiary-color);
+}
+
+@media (max-width: 768px) {
+    .bowire-docs-footer-top {
+        grid-template-columns: 1fr;
+        gap: 32px;
+    }
+    .bowire-docs-footer-nav {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 24px;
+    }
+}
+@media (max-width: 540px) {
+    .bowire-docs-footer-nav {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
+/* ============================================================
+   Hero block — for docs/index.md or other landing pages that
+   want a marketing-style intro
+   ============================================================ */
+/* Online docs default: render the heading like every other page on
+   the marketing site (features-page-hero, legal-hero) — centered
+   text, no card frame, no background tint. The framed card-style
+   variant lives below under .bowire-docs-mode-standalone, where the
+   docs are read offline and the surround acts as a cover-page block. */
+.bowire-docs-hero {
+    margin: 0 0 2.5rem;
+    padding: 2rem 0 1.5rem;
+    text-align: center;
+    border: 0;
+    background: none;
+    border-radius: 0;
+    position: relative;
+    overflow: hidden;
+}
+.bowire-docs-hero::before {
+    content: none;
+}
+
+/* Standalone build (release zip / offline PDF) keeps the framed
+   cover-card look — there's no surrounding marketing site so the
+   border helps the title sit as a self-contained header. */
+body.bowire-docs-mode-standalone .bowire-docs-hero {
+    padding: 2.5rem 2rem;
+    text-align: left;
+    border: 1px solid var(--bs-border-color);
+    border-radius: 12px;
+    background: linear-gradient(135deg,
+        rgba(var(--bowire-accent-rgb), 0.06) 0%,
+        rgba(var(--bowire-accent-rgb), 0.02) 100%);
+}
+body.bowire-docs-mode-standalone .bowire-docs-hero::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    right: -10%;
+    width: 400px;
+    height: 400px;
+    background: radial-gradient(circle, rgba(var(--bowire-accent-rgb), 0.08) 0%, transparent 60%);
+    pointer-events: none;
+}
+
+/* Standalone / PDF cover badge — hidden by default (online docs),
+   revealed when the body has the mode-standalone class set by the
+   master template's {{#_standalone}} block. The .online-only pair
+   is the mirror: visible in the online docs, hidden in the standalone
+   zip / PDF so we don't ship duplicate titles or site-only banners. */
+/* Utility toggle classes — !important because they must beat any other
+   display rule attached to the same element (e.g. the hero badge also
+   carries .bowire-docs-standalone-badge with display:inline-block). */
+.standalone-only {
+    display: none !important;
+}
+.bowire-docs-mode-standalone .standalone-only {
+    display: block !important;
+}
+.online-only {
+    display: block;
+}
+.bowire-docs-mode-standalone .online-only {
+    display: none !important;
+}
+.bowire-docs-standalone-badge {
+    font-family: var(--bs-font-monospace);
+    font-size: 0.72rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--bowire-accent);
+    background: rgba(var(--bowire-accent-rgb), 0.12);
+    border: 1px solid rgba(var(--bowire-accent-rgb), 0.35);
+    padding: 6px 14px;
+    border-radius: 999px;
+    margin: 0 auto 1.25rem;
+    display: inline-block;
+}
+
+.bowire-docs-hero-logo {
+    /* Hero wordmark — same big horizontal "Bowire knot" mark the
+       marketing site shows above its H1 on the landing page. Uses
+       currentColor so it flips white on dark / black on light in step
+       with the theme. Acts as the cover image on the standalone docs
+       and the PDF title page. Margin-x:auto centres it under the
+       online hero; the standalone override below pins it left so the
+       cover-card reads top-down. */
+    display: block;
+    width: clamp(220px, 50vw, 340px);
+    height: auto;
+    margin: 0 auto 1.25rem;
+    color: var(--bs-emphasis-color);
+}
+body.bowire-docs-mode-standalone .bowire-docs-hero-logo {
+    margin-left: 0;
+    margin-right: 0;
+}
+.bowire-docs-hero-title,
+.bowire-docs-hero h1 {
+    margin: 0 0 0.75rem;
+    padding: 0;
+    border: none;
+    display: block;
+    font-size: clamp(1.75rem, 4vw, 2.25rem);
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    background: linear-gradient(135deg, var(--bs-emphasis-color) 0%, var(--bowire-accent-hover) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+.bowire-docs-hero-tagline {
+    /* Centre the tagline under the online hero — the parent
+       .bowire-docs-hero is text-align:center, but a block-level <p>
+       with max-width still needs auto margins to actually centre. The
+       standalone override below pins it left for the cover-card. */
+    margin: 0 auto 1.5rem;
+    color: var(--bs-secondary-color);
+    font-size: 1rem;
+    line-height: 1.5;
+    max-width: 880px;
+}
+body.bowire-docs-mode-standalone .bowire-docs-hero-tagline {
+    margin-left: 0;
+    margin-right: 0;
+}
+.bowire-docs-hero-cta {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+.bowire-cta-primary,
+.bowire-cta-secondary {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.15s;
+}
+.bowire-cta-primary {
+    background: var(--bowire-accent);
+    color: #fff;
+    border: 1px solid var(--bowire-accent);
+}
+.bowire-cta-primary:hover {
+    background: var(--bowire-accent-hover);
+    border-color: var(--bowire-accent-hover);
+    color: #fff;
+    text-decoration: none;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(var(--bowire-accent-rgb), 0.3);
+}
+.bowire-cta-secondary {
+    background: transparent;
+    color: var(--bs-body-color);
+    border: 1px solid var(--bs-border-color);
+}
+.bowire-cta-secondary:hover {
+    border-color: var(--bowire-accent);
+    color: var(--bowire-accent);
+    text-decoration: none;
+    transform: translateY(-1px);
+}
+
+/* Unify the code-snippet copy button with the marketing site.
+   DocFX injects <a><i class="bi bi-clipboard"></i></a> (Bootstrap Icons
+   font). The site uses inline Lucide-style SVGs (two overlapping
+   rectangles for copy, a checkmark for "copied"). Replace the
+   BI-font glyph with a CSS mask pointing at the same Lucide SVG so
+   docs and site show the identical icon. */
+.bi-clipboard::before,
+.bi-check::before {
+    content: '';
+    display: inline-block;
+    width: 1em;
+    height: 1em;
+    background-color: currentColor;
+    -webkit-mask-size: contain;
+    mask-size: contain;
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+    -webkit-mask-position: center;
+    mask-position: center;
+    vertical-align: -0.125em;
+}
+.bi-clipboard::before {
+    -webkit-mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><rect x='9' y='9' width='13' height='13' rx='2'/><path d='M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1'/></svg>");
+            mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><rect x='9' y='9' width='13' height='13' rx='2'/><path d='M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1'/></svg>");
+}
+.bi-check::before {
+    -webkit-mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><polyline points='20 6 9 17 4 12'/></svg>");
+            mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><polyline points='20 6 9 17 4 12'/></svg>");
+}
+
+/* ------------------------------------------------------------------
+   View-transition theme toggle (mirrors site/assets/css/style.css)
+   ------------------------------------------------------------------
+   Chromium's View Transitions API captures before/after DOM snapshots;
+   we animate the incoming one as an expanding clip-path circle from
+   the theme button's centre, same pattern as deepwiki.com. Non-
+   supporting browsers (Firefox as of mid-2026) fall through to an
+   instant swap because the inline script never starts a transition.
+-------------------------------------------------------------------*/
+::view-transition-old(root),
+::view-transition-new(root) {
+    animation: none;
+    mix-blend-mode: normal;
+}
+::view-transition-old(root) { z-index: 0; }
+::view-transition-new(root) {
+    z-index: 1;
+    /* 900 ms — matches site/assets/css/style.css so the switch feels
+       identical across surfaces. 550 ms looked "did anything happen?"
+       on wider monitors. */
+    animation: bowire-docs-theme-reveal 900ms cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+@keyframes bowire-docs-theme-reveal {
+    from { clip-path: circle(0% at var(--theme-transition-x, 50%) var(--theme-transition-y, 0%)); }
+    to   { clip-path: circle(150vmax at var(--theme-transition-x, 50%) var(--theme-transition-y, 0%)); }
+}
+@media (prefers-reduced-motion: reduce) {
+    ::view-transition-new(root) { animation: none; }
+}

@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Description>Bowire SignalR protocol plugin — interactive SignalR Hub browser with auto-discovery.</Description>
+    <PackageId>Kuestenlogik.Bowire.Protocol.SignalR</PackageId>
+    <PackageTags>bowire;bowire-plugin;signalr;hub;browser;developer-tools</PackageTags>
+    <IsPackable>true</IsPackable>
+  </PropertyGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="bowire" />
+    <InternalsVisibleTo Include="Kuestenlogik.Bowire.Tests" />
+    <InternalsVisibleTo Include="Kuestenlogik.Bowire.IntegrationTests" />
+  </ItemGroup>
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Kuestenlogik.Bowire\Kuestenlogik.Bowire.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" />
+  </ItemGroup>
+</Project>

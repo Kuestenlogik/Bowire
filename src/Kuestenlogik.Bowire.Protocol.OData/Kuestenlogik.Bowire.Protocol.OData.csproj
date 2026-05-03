@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>Bowire OData v4 protocol plugin — discover entity sets via $metadata, CRUD operations as methods.</Description>
+    <PackageId>Kuestenlogik.Bowire.Protocol.OData</PackageId>
+    <PackageTags>bowire;bowire-plugin;odata;enterprise;rest;developer-tools</PackageTags>
+    <IsPackable>true</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="bowire" />
+    <InternalsVisibleTo Include="Kuestenlogik.Bowire.Tests" />
+    <InternalsVisibleTo Include="Kuestenlogik.Bowire.IntegrationTests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Kuestenlogik.Bowire\Kuestenlogik.Bowire.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.OData.Edm" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,78 @@
+<Project>
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <LangVersion>14.0</LangVersion>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AnalysisLevel>latest-all</AnalysisLevel>
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <NoWarn>$(NoWarn);NU1510;NU1902;NU1903;NU5104</NoWarn>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <ArtifactsPath>$(MSBuildThisFileDirectory)artifacts\</ArtifactsPath>
+    <BaseIntermediateOutputPath>$(ArtifactsPath)obj\$(MSBuildProjectName)\</BaseIntermediateOutputPath>
+    <IntermediateOutputPath>$(BaseIntermediateOutputPath)$(Configuration)\</IntermediateOutputPath>
+    <BaseOutputPath>$(ArtifactsPath)bin\$(MSBuildProjectName)\</BaseOutputPath>
+    <OutputPath>$(BaseOutputPath)$(Configuration)\</OutputPath>
+    <PackageOutputPath>$(ArtifactsPath)packages\</PackageOutputPath>
+    <PublishDir>$(ArtifactsPath)publish\$(MSBuildProjectName)\$(Configuration)\</PublishDir>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(IsPackable)' != 'false'">
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);CS1591</NoWarn>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(IsPackable)' != 'false'">
+    <Authors>Kuestenlogik</Authors>
+    <Company>Kuestenlogik</Company>
+    <Copyright>Copyright (c) 2026 Küstenlogik</Copyright>
+    <RepositoryType>git</RepositoryType>
+    <RepositoryUrl>https://github.com/Kuestenlogik/Bowire</RepositoryUrl>
+    <PackageProjectUrl>https://kuestenlogik.github.io/Bowire/</PackageProjectUrl>
+    <PackageLicenseFile>LICENSE</PackageLicenseFile>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageIcon>icon.png</PackageIcon>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(IsPackable)' != 'false'">
+    <Version>1.0.0</Version>
+    <AssemblyVersion>1.0.0</AssemblyVersion>
+    <FileVersion>1.0.0</FileVersion>
+  </PropertyGroup>
+
+  <!-- Mark all Kuestenlogik.Bowire.Protocol.* projects as Bowire plugins so
+       NuGet consumers and the in-UI marketplace can identify them. -->
+  <PropertyGroup Condition="$(MSBuildProjectName.StartsWith('Kuestenlogik.Bowire.Protocol.'))">
+    <PackageType>BowirePlugin</PackageType>
+  </PropertyGroup>
+
+  <!-- DebugType=embedded folds the PDB into the assembly itself, so
+       SourceLink data ships inside every .dll inside the .nupkg — no
+       separate .snupkg required. Avoids the nuget.org symbol-server
+       race where a back-to-back .snupkg push 404s while the parent
+       .nupkg is still in validation. Consumer-side source-stepping is
+       identical (debuggers read the embedded PDB transparently). -->
+  <PropertyGroup>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+    <DebugType>embedded</DebugType>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(IsPackable)' != 'false'">
+    <None Include="$(MSBuildThisFileDirectory)README.md" Pack="true" PackagePath="\" Link="README.md" Visible="false" Condition="Exists('$(MSBuildThisFileDirectory)README.md')" />
+    <None Include="$(MSBuildThisFileDirectory)LICENSE" Pack="true" PackagePath="\" Link="LICENSE" Visible="false" Condition="Exists('$(MSBuildThisFileDirectory)LICENSE')" />
+    <None Include="$(MSBuildThisFileDirectory)images\bowire_logo_small.png" Pack="true" PackagePath="icon.png" Visible="false" Condition="Exists('$(MSBuildThisFileDirectory)images\bowire_logo_small.png')" />
+  </ItemGroup>
+
+  <!-- SourceLink: embeds GitHub raw-content URLs into the PDBs so
+       consumers' debuggers can step into Bowire source on any commit
+       this nupkg was built from. Compatible with the existing
+       'PublishRepositoryUrl + EmbedUntrackedSources + DebugType=portable'
+       block above; SourceLink fills in the per-file source map. -->
+  <ItemGroup Condition="'$(IsPackable)' != 'false'">
+    <PackageReference Include="Microsoft.SourceLink.GitHub" PrivateAssets="All" />
+  </ItemGroup>
+</Project>

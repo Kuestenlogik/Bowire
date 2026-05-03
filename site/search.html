@@ -1,0 +1,30 @@
+---
+layout: page
+title: Search
+description: Search the Bowire documentation and marketing site.
+permalink: /search.html
+---
+
+<section class="search-page">
+  <h1 class="search-page-title">Search</h1>
+  <p class="search-page-subtitle">Results from across the marketing site and the full Bowire documentation.</p>
+  <div id="search-page-results"></div>
+</section>
+
+<script>
+  window.addEventListener('DOMContentLoaded', function () {
+    if (!window.PagefindUI) return;
+    var params = new URLSearchParams(window.location.search);
+    var q = params.get('q') || '';
+    var ui = new window.PagefindUI({
+      element: '#search-page-results',
+      showImages: false,
+      showSubResults: true,
+      resetStyles: false,
+      bundlePath: {{ '/pagefind/' | relative_url | jsonify }}
+    });
+    if (q) {
+      ui.triggerSearch(q);
+    }
+  });
+</script>

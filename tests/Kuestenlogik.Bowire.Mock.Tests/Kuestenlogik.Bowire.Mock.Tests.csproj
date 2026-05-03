@@ -1,0 +1,36 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+    <OutputType>Exe</OutputType>
+  </PropertyGroup>
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="Microsoft.AspNetCore.TestHost" />
+    <PackageReference Include="xunit.v3" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+    <PackageReference Include="Grpc.Net.Client" />
+    <PackageReference Include="Google.Protobuf" />
+    <PackageReference Include="Grpc.Reflection" />
+    <PackageReference Include="MQTTnet" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Kuestenlogik.Bowire.Mock\Kuestenlogik.Bowire.Mock.csproj" />
+    <!-- Protocol plugin refs for the schema-mock + transport-host
+         adapters tests exercise. Each plugin owns the schema → recording
+         conversion and broker hosting since the plugin-isation refactor
+         pulled the heavy protocol libs out of Kuestenlogik.Bowire.Mock. -->
+    <ProjectReference Include="..\..\src\Kuestenlogik.Bowire.Protocol.Mqtt\Kuestenlogik.Bowire.Protocol.Mqtt.csproj" />
+    <ProjectReference Include="..\..\src\Kuestenlogik.Bowire.Protocol.Rest\Kuestenlogik.Bowire.Protocol.Rest.csproj" />
+    <ProjectReference Include="..\..\src\Kuestenlogik.Bowire.Protocol.Grpc\Kuestenlogik.Bowire.Protocol.Grpc.csproj" />
+    <ProjectReference Include="..\..\src\Kuestenlogik.Bowire.Protocol.GraphQL\Kuestenlogik.Bowire.Protocol.GraphQL.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Update="Fixtures\**\*.*">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+</Project>

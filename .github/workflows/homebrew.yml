@@ -1,0 +1,152 @@
+# Pushes a refreshed bowire.rb to the kuestenlogik/homebrew-bowire
+# tap repository whenever a GitHub release is published.
+#
+# Pipeline:
+#   1. Trigger on release.published (after release.yml has uploaded
+#      the per-platform tarballs).
+#   2. Compute SHA256 for every target archive (macOS x64/arm64 and
+#      Linux x64/arm64).
+#   3. Render packaging/macos/Formula/bowire.rb by substituting the
+#      version + four SHA256s.
+#   4. Commit the rendered formula straight into the tap repo on a
+#      release-tagged branch and push it to main.
+#
+# One-time setup before the first release:
+#   - Create the tap repo: github.com/kuestenlogik/homebrew-bowire
+#     (must follow the `homebrew-<tap>` naming so `brew tap` resolves
+#     kuestenlogik/bowire → that repo).
+#   - Drop a stub README.md + an empty Formula/ directory into it.
+#   - Create a fine-grained PAT with `Contents: Read & Write` on
+#     kuestenlogik/homebrew-bowire only. Save as repo secret
+#     HOMEBREW_TAP_TOKEN.
+#
+# Without the secret the workflow exits without failing the release —
+# the tarballs are still attached to the GitHub release, users just
+# don't get the brew channel until the secret is set.
+
+name: homebrew
+
+# Temporarily manual-trigger only. Auto-tap-update waits until the
+# release.yml pipeline that produces the linux/macOS tarballs is back
+# online.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Lifted to workflow-level so step-level `if:` conditions can reference
+# `env.HOMEBREW_TAP_TOKEN`. GitHub Actions disallows the `secrets`
+# context inside step-level `if:` expressions; assigning the secret to
+# env once here is the documented workaround.
+env:
+  HOMEBREW_TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+
+jobs:
+  publish:
+    name: Push formula to tap
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Bail out if HOMEBREW_TAP_TOKEN is missing
+        if: ${{ env.HOMEBREW_TAP_TOKEN == '' }}
+        run: |
+          echo "::warning::HOMEBREW_TAP_TOKEN secret is not set — skipping Homebrew formula update."
+          echo "Add a fine-grained PAT with push access to kuestenlogik/homebrew-bowire as HOMEBREW_TAP_TOKEN to enable this step."
+
+      - name: Stop here if no token
+        if: ${{ env.HOMEBREW_TAP_TOKEN == '' }}
+        run: exit 0
+
+      - uses: actions/checkout@v6
+
+      - name: Resolve version
+        id: meta
+        run: |
+          # Strip leading 'v' from the tag so the formula's `version`
+          # field reads as a plain SemVer string.
+          version="${{ github.event.release.tag_name }}"
+          version="${version#v}"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "version=$version"
+
+      - name: Download tarballs from the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p artifacts
+          tag="${{ github.event.release.tag_name }}"
+          gh release download "$tag" \
+              --repo "$GITHUB_REPOSITORY" \
+              --pattern 'bowire-osx-*.tar.gz' \
+              --pattern 'bowire-linux-*.tar.gz' \
+              --dir artifacts
+          ls -la artifacts
+
+      - name: Compute SHA256 hashes
+        id: hash
+        run: |
+          # `shasum -a 256` is the cross-platform name; `sha256sum`
+          # also works on the ubuntu runner. We strip the trailing
+          # space + filename so each hash sits as a clean hex string.
+          mac_arm=$(shasum -a 256 artifacts/bowire-osx-arm64.tar.gz   | cut -d' ' -f1)
+          mac_x64=$(shasum -a 256 artifacts/bowire-osx-x64.tar.gz     | cut -d' ' -f1)
+          lnx_arm=$(shasum -a 256 artifacts/bowire-linux-arm64.tar.gz | cut -d' ' -f1)
+          lnx_x64=$(shasum -a 256 artifacts/bowire-linux-x64.tar.gz   | cut -d' ' -f1)
+          echo "macos_arm64=$mac_arm" >> "$GITHUB_OUTPUT"
+          echo "macos_x64=$mac_x64"   >> "$GITHUB_OUTPUT"
+          echo "linux_arm64=$lnx_arm" >> "$GITHUB_OUTPUT"
+          echo "linux_x64=$lnx_x64"   >> "$GITHUB_OUTPUT"
+
+      - name: Render formula from template
+        env:
+          VERSION:           ${{ steps.meta.outputs.version }}
+          SHA_MACOS_ARM64:   ${{ steps.hash.outputs.macos_arm64 }}
+          SHA_MACOS_X64:     ${{ steps.hash.outputs.macos_x64 }}
+          SHA_LINUX_ARM64:   ${{ steps.hash.outputs.linux_arm64 }}
+          SHA_LINUX_X64:     ${{ steps.hash.outputs.linux_x64 }}
+        run: |
+          mkdir -p out/Formula
+          # `|` separator in sed expressions because the SHA256 is
+          # always hex (no slashes to clash with).
+          sed \
+              -e "s|__VERSION__|${VERSION}|g" \
+              -e "s|__SHA256_MACOS_ARM64__|${SHA_MACOS_ARM64}|g" \
+              -e "s|__SHA256_MACOS_X64__|${SHA_MACOS_X64}|g" \
+              -e "s|__SHA256_LINUX_ARM64__|${SHA_LINUX_ARM64}|g" \
+              -e "s|__SHA256_LINUX_X64__|${SHA_LINUX_X64}|g" \
+              packaging/macos/Formula/bowire.rb > out/Formula/bowire.rb
+
+          echo "Rendered formula:"
+          cat out/Formula/bowire.rb
+
+      - name: Push to homebrew-bowire tap
+        env:
+          GH_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+          VERSION:  ${{ steps.meta.outputs.version }}
+        run: |
+          git clone "https://x-access-token:${GH_TOKEN}@github.com/kuestenlogik/homebrew-bowire.git" tap
+
+          # Drop the freshly-rendered formula in. Homebrew looks at
+          # the Formula/ subdirectory of a tap repo; the file name
+          # must equal the formula class name in lowercase.
+          mkdir -p tap/Formula
+          cp out/Formula/bowire.rb tap/Formula/bowire.rb
+
+          cd tap
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          # No-op guard — if the formula is byte-identical (e.g. a
+          # release was re-published without rebuilding the bottles),
+          # avoid emitting an empty commit.
+          if git diff --quiet; then
+              echo "Formula unchanged — nothing to commit."
+              exit 0
+          fi
+
+          git add Formula/bowire.rb
+          git commit -m "bowire ${VERSION}" \
+                     -m "Auto-generated by Kuestenlogik/Bowire release workflow." \
+                     -m "Sources the per-platform tarballs from the v${VERSION} GitHub release."
+          git push origin HEAD:main

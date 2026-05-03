@@ -1,0 +1,55 @@
+<Project>
+  <PropertyGroup>
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageVersion Include="Google.Api.CommonProtos" Version="2.17.0" />
+    <PackageVersion Include="Grpc.AspNetCore.Server.Reflection" Version="2.80.0" />
+    <PackageVersion Include="Grpc.Reflection" Version="2.80.0" />
+    <PackageVersion Include="Grpc.Net.Client" Version="2.80.0" />
+    <PackageVersion Include="Google.Protobuf" Version="3.34.1" />
+    <PackageVersion Include="Microsoft.AspNetCore.Mvc.Testing" Version="10.0.7" />
+    <PackageVersion Include="Microsoft.AspNetCore.TestHost" Version="10.0.7" />
+    <PackageVersion Include="Grpc.AspNetCore" Version="2.80.0" />
+    <PackageVersion Include="Grpc.Tools" Version="2.80.0" />
+    <PackageVersion Include="Microsoft.AspNetCore.SignalR.Client" Version="10.0.7" />
+    <PackageVersion Include="Microsoft.OpenApi" Version="3.5.3" />
+    <PackageVersion Include="Microsoft.OpenApi.YamlReader" Version="3.5.3" />
+    <PackageVersion Include="MQTTnet" Version="5.1.0.1559" />
+    <PackageVersion Include="MQTTnet.AspNetCore" Version="5.1.0.1559" />
+    <PackageVersion Include="MQTTnet.Server" Version="5.1.0.1559" />
+    <PackageVersion Include="Microsoft.OData.Edm" Version="8.4.3" />
+    <PackageVersion Include="SocketIOClient" Version="4.0.3" />
+    <PackageVersion Include="Microsoft.AspNetCore.OpenApi" Version="10.0.7" />
+    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.5.1" />
+    <PackageVersion Include="xunit.v3" Version="3.2.2" />
+    <PackageVersion Include="xunit.runner.visualstudio" Version="3.1.5" />
+    <!-- NuGet.Protocol: used by `bowire plugin install` to fetch
+         plugin packages directly from any NuGet feed, skipping the old
+         dotnet-restore-a-temp-csproj detour (so bowire no longer
+         requires the .NET SDK at install time, only the runtime). -->
+    <PackageVersion Include="NuGet.Protocol" Version="7.3.1" />
+    <!-- SourceLink: bakes per-file GitHub raw-content URLs into the
+         portable PDBs at build time, so consumer debuggers can step
+         into Bowire source on the exact commit a given nupkg was
+         built from. Only takes effect for packable projects (gated
+         in Directory.Build.props). -->
+    <PackageVersion Include="Microsoft.SourceLink.GitHub" Version="10.0.203" />
+    <!-- GraphQL-Parser: SDL + query parser for the GraphQL schema-only
+         mock mode. Lightweight, focused package from the graphql-dotnet
+         team; only parsing (not execution) which is all we need. -->
+    <PackageVersion Include="GraphQL-Parser" Version="9.5.1" />
+    <!-- ModelContextProtocol C# SDK — Kuestenlogik.Bowire.Mcp builds on this to
+         expose the workbench as an MCP server for AI agents. Two
+         packages from modelcontextprotocol/csharp-sdk: the host/DI
+         flavour and .AspNetCore for HTTP/SSE transport. -->
+    <PackageVersion Include="ModelContextProtocol" Version="1.2.0" />
+    <PackageVersion Include="ModelContextProtocol.AspNetCore" Version="1.2.0" />
+    <!-- System.CommandLine 2.0.7 — stable after the beta-to-stable
+         API rework. Used by Kuestenlogik.Bowire.Tool to declare the CLI's
+         subcommand tree (list/describe/call/mock/mcp/plugin/test) and
+         get auto-generated help, validation, and tab-completion in one
+         place instead of hand-rolled args.Contains() across files. -->
+    <PackageVersion Include="System.CommandLine" Version="2.0.7" />
+  </ItemGroup>
+</Project>

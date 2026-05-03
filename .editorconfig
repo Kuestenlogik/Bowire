@@ -1,0 +1,56 @@
+root = true
+
+[*]
+indent_style = space
+indent_size = 4
+end_of_line = lf
+charset = utf-8
+trim_trailing_whitespace = true
+insert_final_newline = true
+
+[*.cs]
+# CA2007: Consider calling ConfigureAwait on the awaited task
+# Not applicable in ASP.NET applications where we want the synchronization context.
+dotnet_diagnostic.CA2007.severity = none
+
+# CA1002: Do not expose generic lists
+# Records with lists are fine for DTOs used internally and serialized to JSON.
+dotnet_diagnostic.CA1002.severity = none
+
+# CA1056: URI-like properties should not be strings
+# ServerUrl is a string to simplify configuration; it is validated at runtime.
+dotnet_diagnostic.CA1056.severity = none
+
+# CA1054: URI parameters should not be strings
+dotnet_diagnostic.CA1054.severity = none
+
+# CA1031: Do not catch general exception types
+# API endpoints must catch all exceptions to return proper error responses.
+dotnet_diagnostic.CA1031.severity = none
+
+# CA2016: Forward the CancellationToken parameter to methods
+# gRPC streaming WriteAsync overloads don't always accept CT directly.
+dotnet_diagnostic.CA2016.severity = suggestion
+
+# CA1812: Avoid uninstantiated internal classes
+# Records used for JSON deserialization are instantiated by the serializer.
+dotnet_diagnostic.CA1812.severity = none
+
+# CA1848: Use the LoggerMessage delegates
+dotnet_diagnostic.CA1848.severity = none
+
+# CA1307: Specify StringComparison for clarity
+dotnet_diagnostic.CA1307.severity = suggestion
+
+# CA1309: Use ordinal StringComparison
+dotnet_diagnostic.CA1309.severity = suggestion
+
+# CA1310: Specify StringComparison for correctness
+dotnet_diagnostic.CA1310.severity = suggestion
+
+# CA1062: Validate arguments of public methods - handled by nullable reference types
+dotnet_diagnostic.CA1062.severity = none
+
+[tests/**/*.cs]
+# CA1707: Identifiers should not contain underscores - test methods use underscores by convention
+dotnet_diagnostic.CA1707.severity = none

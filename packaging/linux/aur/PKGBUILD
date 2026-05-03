@@ -1,0 +1,74 @@
+# Maintainer: Küstenlogik <oss@kuestenlogik.de>
+#
+# AUR package for Bowire. Pulls the linux-{x86_64,aarch64}.tar.gz
+# attached to each GitHub release and unpacks it into /opt/bowire,
+# with a /usr/bin/bowire symlink for PATH.
+#
+# Submission flow (one-time):
+#   1. Clone ssh://aur@aur.archlinux.org/bowire.git into a working dir.
+#   2. Copy this PKGBUILD into the clone.
+#   3. `makepkg --printsrcinfo > .SRCINFO`
+#   4. `git add PKGBUILD .SRCINFO && git commit && git push`
+#
+# Per release:
+#   1. Bump pkgver to the new release tag (without the leading 'v').
+#   2. Re-run `updpkgsums` to refresh the sha256 lines below.
+#   3. `makepkg --printsrcinfo > .SRCINFO && git commit && git push`
+#
+# The release pipeline could automate steps 2-3 by running
+# `aur-publish` action — left manual for now to keep PKGBUILD edits
+# under direct review.
+
+pkgname=bowire
+pkgver=0.9.4
+pkgrel=1
+pkgdesc="Interactive multi-protocol API workbench and CLI for .NET (gRPC, REST, GraphQL, SignalR, MCP, SSE, WebSocket, MQTT, Socket.IO, OData, …)"
+arch=('x86_64' 'aarch64')
+url="https://github.com/Kuestenlogik/Bowire"
+license=('Apache-2.0')
+provides=('bowire')
+conflicts=('bowire')
+options=('!strip' '!debug')
+
+# The .NET self-contained publish ships its own runtime, so there is
+# nothing to pull from the official repos. ICU is needed for
+# globalization-aware string operations on locales other than C —
+# .NET 10 falls back to InvariantGlobalization without it, but
+# Bowire's tests assume real locale data so we hard-require icu.
+depends=('icu')
+makedepends=()
+
+source_x86_64=("${pkgname}-${pkgver}-x86_64.tar.gz::${url}/releases/download/v${pkgver}/bowire-linux-x64.tar.gz")
+source_aarch64=("${pkgname}-${pkgver}-aarch64.tar.gz::${url}/releases/download/v${pkgver}/bowire-linux-arm64.tar.gz")
+
+# `updpkgsums` rewrites these on every release. Empty placeholders
+# would also work; the `SKIP` token tells makepkg to bypass the check
+# on platforms whose source isn't published yet.
+sha256sums_x86_64=('SKIP')
+sha256sums_aarch64=('SKIP')
+
+package() {
+    # Drop the unpacked self-contained publish under /opt/bowire.
+    install -dm755 "${pkgdir}/opt/bowire"
+    cp -a "bowire-linux-x64/." "${pkgdir}/opt/bowire/" 2>/dev/null || \
+        cp -a "bowire-linux-arm64/." "${pkgdir}/opt/bowire/"
+
+    # Strip the executable bit from non-binary payloads so Pacman
+    # doesn't flag spurious +x permissions on data files.
+    chmod 755 "${pkgdir}/opt/bowire/bowire"
+
+    # PATH-friendly symlink under /usr/bin.
+    install -dm755 "${pkgdir}/usr/bin"
+    ln -s /opt/bowire/bowire "${pkgdir}/usr/bin/bowire"
+
+    # Standard Apache-2.0 placement under /usr/share/licenses/<pkg>/
+    # so `pacman -Qi bowire` can show the license text.
+    install -Dm644 "/dev/null" "${pkgdir}/usr/share/licenses/${pkgname}/LICENSE"
+    if [[ -f "bowire-linux-x64/LICENSE" ]]; then
+        install -Dm644 "bowire-linux-x64/LICENSE" \
+            "${pkgdir}/usr/share/licenses/${pkgname}/LICENSE"
+    elif [[ -f "bowire-linux-arm64/LICENSE" ]]; then
+        install -Dm644 "bowire-linux-arm64/LICENSE" \
+            "${pkgdir}/usr/share/licenses/${pkgname}/LICENSE"
+    fi
+}

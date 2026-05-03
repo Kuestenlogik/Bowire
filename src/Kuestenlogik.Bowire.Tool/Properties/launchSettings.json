@@ -1,0 +1,14 @@
+{
+  "profiles": {
+    "bowire": {
+      "commandName": "Project",
+      "commandLineArgs": "--no-browser",
+      "launchBrowser": true,
+      "launchUrl": "bowire",
+      "applicationUrl": "http://localhost:5080",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      }
+    }
+  }
+}

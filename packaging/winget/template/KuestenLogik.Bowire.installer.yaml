@@ -1,0 +1,53 @@
+# yaml-language-server: $schema=https://aka.ms/winget-manifest.installer.1.6.0.schema.json
+#
+# Installer manifest — one entry per architecture, pointing at the
+# matching MSI on the GitHub release.
+#
+# WiX v5 generates a fresh ProductCode for every build; the renderer
+# in .github/workflows/winget.yml extracts the per-arch ProductCode
+# straight out of each downloaded MSI via the WindowsInstaller COM
+# database before substitution. UpgradeCode is the fixed product
+# identity declared in packaging/msi/Bowire.wxs and never changes.
+#
+# Placeholders substituted at release time:
+#   __VERSION__              — release tag minus the leading 'v'
+#   __SHA256_X64__           — Get-FileHash of Bowire-<v>-x64.msi
+#   __SHA256_ARM64__         — Get-FileHash of Bowire-<v>-arm64.msi
+#   __PRODUCT_CODE_X64__     — extracted from Bowire-<v>-x64.msi
+#   __PRODUCT_CODE_ARM64__   — extracted from Bowire-<v>-arm64.msi
+#   __RELEASE_DATE__         — workflow run date (yyyy-MM-dd)
+PackageIdentifier: KuestenLogik.Bowire
+PackageVersion: __VERSION__
+InstallerType: wix
+Scope: machine
+InstallModes:
+  - interactive
+  - silent
+  - silentWithProgress
+UpgradeBehavior: install
+ReleaseDate: __RELEASE_DATE__
+Commands:
+  - bowire
+Installers:
+  - Architecture: x64
+    InstallerUrl: https://github.com/Kuestenlogik/Bowire/releases/download/v__VERSION__/Bowire-__VERSION__-x64.msi
+    InstallerSha256: __SHA256_X64__
+    ProductCode: __PRODUCT_CODE_X64__
+    AppsAndFeaturesEntries:
+      - DisplayName: Bowire
+        Publisher: Küstenlogik
+        ProductCode: __PRODUCT_CODE_X64__
+        UpgradeCode: C0B72D33-31F5-4349-9748-9A0DBB0C51AF
+        InstallerType: wix
+  - Architecture: arm64
+    InstallerUrl: https://github.com/Kuestenlogik/Bowire/releases/download/v__VERSION__/Bowire-__VERSION__-arm64.msi
+    InstallerSha256: __SHA256_ARM64__
+    ProductCode: __PRODUCT_CODE_ARM64__
+    AppsAndFeaturesEntries:
+      - DisplayName: Bowire
+        Publisher: Küstenlogik
+        ProductCode: __PRODUCT_CODE_ARM64__
+        UpgradeCode: C0B72D33-31F5-4349-9748-9A0DBB0C51AF
+        InstallerType: wix
+ManifestType: installer
+ManifestVersion: 1.6.0

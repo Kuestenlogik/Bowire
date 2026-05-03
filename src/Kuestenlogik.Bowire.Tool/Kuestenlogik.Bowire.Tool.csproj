@@ -1,0 +1,108 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <!--
+      The assembly + the executable + the dotnet-tool command are all
+      `bowire` (lowercase) so end-users only ever type `bowire ...`
+      after `dotnet tool install -g Kuestenlogik.Bowire.Tool`. The PackageId is
+      KL-prefixed for consistency with the other Bowire packages —
+      Kuestenlogik.Bowire (core), Kuestenlogik.Bowire.Protocol.* (plugins), Kuestenlogik.Bowire.Tool
+      (this dotnet-tool / standalone CLI).
+    -->
+    <RootNamespace>Kuestenlogik.Bowire.App</RootNamespace>
+    <AssemblyName>bowire</AssemblyName>
+    <PackageId>Kuestenlogik.Bowire.Tool</PackageId>
+    <Description>Bowire — standalone CLI + browser UI for the multi-protocol API workbench. Discover, invoke, record, mock, and replay across gRPC, REST, GraphQL, MQTT, SignalR, WebSocket, SSE, MCP, OData, and Socket.IO — every first-party plugin pre-bundled. Run `bowire --url …` for the browser UI or `bowire list/describe/call` / `bowire mock` for grpcurl-style scripting and recording replay.</Description>
+    <IsPackable>true</IsPackable>
+    <PackAsTool>true</PackAsTool>
+    <ToolCommandName>bowire</ToolCommandName>
+    <NoWarn>$(NoWarn);CA1303</NoWarn>
+    <!--
+      Windows application icon for the compiled bowire.exe. Embedded as a
+      PE resource so Task Manager, Explorer, and the title bar all show
+      the Bowire "B" glyph when the tool runs standalone. Points directly
+      at the repo-level images/bowire.ico so there's a single source of
+      truth — regenerate it via `scripts/generate-icons.sh` whenever
+      images/bowire_logo_small.svg changes. The ICO is multi-resolution
+      (16/20/24/32/40/48/64/96/128/256) so Explorer picks the right size
+      for small icons, medium icons, list view, large tiles, and the
+      taskbar.
+    -->
+    <ApplicationIcon>..\..\images\bowire.ico</ApplicationIcon>
+  </PropertyGroup>
+
+  <!--
+    Container image config — only kicks in when the build is invoked with
+    `dotnet publish /t:PublishContainer`. Auto-picks an ASP.NET base image
+    (Bowire is an ASP.NET app), the alpine family for size, OCI image
+    format (open standard, broader runtime compatibility), exposes the
+    default standalone port, and sets the working directory + image
+    repository / labels. Tags + version come from the publish-container
+    script and default to the project Version.
+  -->
+  <PropertyGroup>
+    <ContainerRepository>kuestenlogik/bowire</ContainerRepository>
+    <!--
+      noble-chiseled-extra = Ubuntu Noble (24.04) chiseled distroless
+      base + ICU + tzdata. Picks the smallest secure ASP.NET base image
+      Microsoft ships, with no shell, no package manager, and a non-root
+      `app` user enabled by default. The `-extra` suffix adds globalization
+      support so culture-aware string operations keep working without an
+      InvariantGlobalization audit. Drop the `-extra` if you've verified
+      every code path uses StringComparison.Ordinal / InvariantCulture.
+    -->
+    <ContainerFamily>noble-chiseled-extra</ContainerFamily>
+    <ContainerImageFormat>OCI</ContainerImageFormat>
+    <ContainerWorkingDirectory>/app</ContainerWorkingDirectory>
+    <!--
+      Image tag(s) come from the publish-container script via
+      -p:ContainerImageTags="$VERSION;latest". Setting both
+      ContainerImageTag (singular) and ContainerImageTags (plural) at
+      the same time is rejected by the SDK with CONTAINER2008, so we
+      leave the default empty here and let the script ship the value.
+    -->
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ContainerPort Include="5080" Type="tcp" />
+    <ContainerEnvironmentVariable Include="ASPNETCORE_URLS" Value="http://+:5080" />
+    <ContainerLabel Include="org.opencontainers.image.title" Value="Bowire" />
+    <ContainerLabel Include="org.opencontainers.image.description" Value="Interactive multi-protocol API browser and CLI tool for gRPC, REST, GraphQL, SignalR, MCP, SSE, and WebSocket endpoints." />
+    <ContainerLabel Include="org.opencontainers.image.vendor" Value="Kuestenlogik" />
+    <ContainerLabel Include="org.opencontainers.image.source" Value="https://github.com/Kuestenlogik/Bowire" />
+    <ContainerLabel Include="org.opencontainers.image.licenses" Value="Apache-2.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Expose internals (like BowireConfiguration) to the shared test
+         project. Tool is an exe rather than a library, so there's no
+         external surface to protect — internals just keep CA1515 happy
+         while the test project gets direct access via the friend
+         assembly declaration. -->
+    <InternalsVisibleTo Include="Kuestenlogik.Bowire.Tests" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- NuGet client library used by the `bowire plugin install`
+         subcommand. Lets us resolve + download + extract a plugin
+         package without shelling out to `dotnet restore` + `dotnet
+         build` (and without requiring the .NET SDK on the install
+         host — only the runtime). -->
+    <PackageReference Include="NuGet.Protocol" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Kuestenlogik.Bowire\Kuestenlogik.Bowire.csproj" />
+    <ProjectReference Include="..\Kuestenlogik.Bowire.Protocol.Grpc\Kuestenlogik.Bowire.Protocol.Grpc.csproj" />
+    <ProjectReference Include="..\Kuestenlogik.Bowire.Protocol.SignalR\Kuestenlogik.Bowire.Protocol.SignalR.csproj" />
+    <ProjectReference Include="..\Kuestenlogik.Bowire.Protocol.Mcp\Kuestenlogik.Bowire.Protocol.Mcp.csproj" />
+    <ProjectReference Include="..\Kuestenlogik.Bowire.Protocol.Sse\Kuestenlogik.Bowire.Protocol.Sse.csproj" />
+    <ProjectReference Include="..\Kuestenlogik.Bowire.Protocol.Rest\Kuestenlogik.Bowire.Protocol.Rest.csproj" />
+    <ProjectReference Include="..\Kuestenlogik.Bowire.Protocol.GraphQL\Kuestenlogik.Bowire.Protocol.GraphQL.csproj" />
+    <ProjectReference Include="..\Kuestenlogik.Bowire.Protocol.WebSocket\Kuestenlogik.Bowire.Protocol.WebSocket.csproj" />
+    <ProjectReference Include="..\Kuestenlogik.Bowire.Protocol.Mqtt\Kuestenlogik.Bowire.Protocol.Mqtt.csproj" />
+    <ProjectReference Include="..\Kuestenlogik.Bowire.Protocol.SocketIo\Kuestenlogik.Bowire.Protocol.SocketIo.csproj" />
+    <ProjectReference Include="..\Kuestenlogik.Bowire.Protocol.OData\Kuestenlogik.Bowire.Protocol.OData.csproj" />
+    <ProjectReference Include="..\Kuestenlogik.Bowire.Mock\Kuestenlogik.Bowire.Mock.csproj" />
+    <ProjectReference Include="..\Kuestenlogik.Bowire.Mcp\Kuestenlogik.Bowire.Mcp.csproj" />
+    <PackageReference Include="System.CommandLine" />
+  </ItemGroup>
+</Project>

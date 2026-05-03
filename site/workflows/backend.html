@@ -1,0 +1,113 @@
+---
+layout: page
+title: Bowire for backend developers
+description: Embed Bowire inside your ASP.NET service as a debug UI for your team — no separate app, no sign-up, every protocol auto-discovered at /bowire.
+permalink: /workflows/backend.html
+---
+
+<section class="features-page-hero">
+  <p class="workflow-hero-eyebrow">Workflow &middot; Backend developers</p>
+  <h1>A debug UI inside your own app</h1>
+  <p class="features-page-tagline">You ship an ASP.NET service. Your team needs to poke at it &mdash; not through a separate Electron app behind a sign-up flow.</p>
+  <p class="features-page-note">Two lines of code turn any <code>WebApplication</code> into a Bowire host. Every endpoint your service registers shows up in the sidebar, typed and invokable, without a schema file to maintain.</p>
+</section>
+
+<section class="features-group features-group-alt">
+  <header class="features-group-header">
+    <h2 class="features-group-title">Wire it in</h2>
+    <p class="features-group-lede">One NuGet install, one <code>MapBowire()</code>. Bowire reuses your app&rsquo;s service provider and <code>EndpointDataSource</code> &mdash; nothing to configure twice.</p>
+  </header>
+
+  <div class="features-block">
+    <div class="features-block-text">
+      <h3>Program.cs &mdash; that&rsquo;s the whole setup</h3>
+      <p class="features-block-lead">Add the package, register the services, map the endpoint. The browser UI mounts at <code>/bowire</code> and picks up every protocol plugin you have installed.</p>
+<pre><code class="lang-csharp">builder.Services.AddBowire();
+builder.Services.AddBowire&lt;BowireGrpcProtocol&gt;();
+builder.Services.AddBowire&lt;BowireSignalRProtocol&gt;();
+// ...other plugins
+
+var app = builder.Build();
+
+app.MapBowire();</code></pre>
+      <p>Hit <code>https://localhost:5001/bowire</code> and the sidebar already has your services in it. gRPC via Server Reflection, REST via your OpenAPI endpoint, SignalR hubs from the endpoint data source, GraphQL via introspection &mdash; all at once.</p>
+      <a class="features-block-docs-link" href="{{ '/docs/setup/embedded.html' | relative_url }}">Read the embedded-mode docs &rarr;</a>
+    </div>
+    <div class="features-block-screenshot">
+      {% include themed-img.html src="/assets/images/screenshots/first-run.png" alt="Bowire first-run view — sidebar populated with discovered services seconds after the embedded MapBowire() call" %}
+    </div>
+  </div>
+</section>
+
+<section class="features-group">
+  <header class="features-group-header">
+    <h2 class="features-group-title">Every protocol, one sidebar</h2>
+    <p class="features-group-lede">Your service probably speaks more than one protocol already. Bowire lists everything in a single tree — gRPC method next to SignalR hub next to REST endpoint.</p>
+  </header>
+
+  <div class="features-block">
+    <div class="features-block-text">
+      <h3>Streaming views, duplex channels, binary frames</h3>
+      <p class="features-block-lead">Invoke any method, watch the response render in the right pane &mdash; or open a persistent channel for long-running duplex work.</p>
+      <p>gRPC server-stream, client-stream, and duplex show up as the same Wireshark-style message list. SignalR invokes render inline, streams open a duplex channel. Raw WebSocket? Text + binary frame editor. MQTT subscribe? Topic tree with QoS. You never leave the sidebar + response pane pattern &mdash; the UI adapts per protocol, not per tool.</p>
+      <a class="features-block-docs-link" href="{{ '/features.html#all-call-types' | relative_url }}">All call types on the feature tour &rarr;</a>
+    </div>
+    <div class="features-block-screenshot">
+      {% include themed-img.html src="/assets/images/screenshots/streaming.png" alt="Streaming response pane — append-only frame list on the left, detail on the right" %}
+    </div>
+  </div>
+
+  <div class="features-block features-block-reverse">
+    <div class="features-block-text">
+      <h3>Hot reload &mdash; no restart after a route change</h3>
+      <p class="features-block-lead">Add a new method to a service, save, re-run. The next discovery tick picks it up; you never hit refresh.</p>
+      <p>Bowire polls discovery every few seconds against every configured URL. A new gRPC method, a new SignalR hub handler, a new REST route &mdash; shows up within a tick without anyone disconnecting or re-uploading a schema. Cuts the inner dev loop from &ldquo;change, rebuild, reconnect, click&rdquo; down to &ldquo;change, rebuild, click.&rdquo;</p>
+      <a class="features-block-docs-link" href="{{ '/features.html#auto-discovery' | relative_url }}">Auto-discovery in detail &rarr;</a>
+    </div>
+    <div class="features-block-screenshot">
+      {% include themed-img.html src="/assets/images/screenshots/ready.png" alt="Bowire sidebar showing services discovered across multiple protocols" %}
+    </div>
+  </div>
+</section>
+
+<section class="features-group features-group-alt">
+  <header class="features-group-header">
+    <h2 class="features-group-title">Debug, measure, share</h2>
+    <p class="features-group-lede">Inline auth, per-environment variables, perf smoke tests, recordings. Everything a backend dev needs to reproduce a bug or confirm a fix.</p>
+  </header>
+
+  <div class="features-block">
+    <div class="features-block-text">
+      <h3>Record &mdash; send to the bug tracker as a repro</h3>
+      <p class="features-block-lead">Click record, reproduce the bug, click stop. You have a file that replays the exact same calls against any environment.</p>
+      <p>Recordings capture request, response, status, timing, metadata across every protocol. Replay against another environment to check drift, or against a colleague&rsquo;s laptop to confirm the fix landed. Convert the recording into test assertions for CI, or export as HAR to attach to a ticket.</p>
+      <a class="features-block-docs-link" href="{{ '/features.html#recording' | relative_url }}">Record &amp; replay in detail &rarr;</a>
+    </div>
+    <div class="features-block-screenshot">
+      {% include themed-img.html src="/assets/images/screenshots/recording.png" alt="Recording manager — timeline of captured calls with per-step pass/fail markers" %}
+    </div>
+  </div>
+
+  <div class="features-block features-block-reverse">
+    <div class="features-block-text">
+      <h3>Performance smoke test, right in the pane</h3>
+      <p class="features-block-lead">Repeat any call 500× and watch P50 / P90 / P99 render live. No k6 setup.</p>
+      <p>Exact-enough for &ldquo;did my change regress this endpoint?&rdquo; &mdash; not a replacement for proper load testing, but enough to spot a 10× slowdown before it hits staging. Export the call as k6 or vegeta when you do need a proper soak test.</p>
+      <a class="features-block-docs-link" href="{{ '/features.html#performance' | relative_url }}">Performance testing in detail &rarr;</a>
+    </div>
+    <div class="features-block-screenshot">
+      {% include themed-img.html src="/assets/images/screenshots/performance.png" alt="Performance graph — latency histogram with P50 / P90 / P99 percentiles" %}
+    </div>
+  </div>
+</section>
+
+<section class="features-page-cta">
+  <div class="features-page-cta-inner">
+    <h2 class="features-page-cta-title">Ready to embed it?</h2>
+    <p class="features-page-cta-lede">Two-line setup, zero schema files, every protocol your service already speaks.</p>
+    <a class="btn btn-secondary features-page-cta-btn" href="{{ '/docs/setup/embedded.html' | relative_url }}">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+      Go to the embedded-mode docs
+    </a>
+  </div>
+</section>

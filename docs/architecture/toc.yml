@@ -1,0 +1,6 @@
+- name: Overview
+  href: index.md
+- name: Plugin Architecture
+  href: plugin-architecture.md
+- name: Packages
+  href: packages.md

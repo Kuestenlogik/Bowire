@@ -1,0 +1,40 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Description>Bowire mock server — replays Bowire recordings as a live local API endpoint. Supports REST + gRPC unary replay, SSE / WebSocket / SignalR / MQTT streaming replay with captured frame cadence, schema-only mocks (OpenAPI / proto FileDescriptorSet / GraphQL SDL), chaos injection (latency, fail-rate), stateful cursors, and capture-on-miss for spec-by-example. Run via `bowire mock --recording &lt;file&gt;` or embed with `app.UseBowireMock(...)`.</Description>
+    <PackageId>Kuestenlogik.Bowire.Mock</PackageId>
+    <PackageTags>bowire;mock-server;api-testing;replay;recording;openapi;protobuf;graphql;chaos-engineering;developer-tools</PackageTags>
+    <IsPackable>true</IsPackable>
+  </PropertyGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="bowire" />
+    <InternalsVisibleTo Include="Kuestenlogik.Bowire.Mock.Tests" />
+    <InternalsVisibleTo Include="Kuestenlogik.Bowire.Mock.IntegrationTests" />
+  </ItemGroup>
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- Kuestenlogik.Bowire owns the mock-emitter contract types
+         (IBowireMockEmitter, BowireRecording, MockEmitterOptions) under
+         the Kuestenlogik.Bowire.Mocking namespace. Mock picks them up from there;
+         plugins reference only Kuestenlogik.Bowire and never inherit the heavy
+         packages below. -->
+    <ProjectReference Include="..\Kuestenlogik.Bowire\Kuestenlogik.Bowire.csproj" />
+  </ItemGroup>
+  <!-- All protocol-specific dependencies (MQTTnet/MQTTnet.Server,
+       Google.Protobuf, Grpc.AspNetCore, Grpc.Reflection,
+       Microsoft.OpenApi.Readers, GraphQL-Parser) hung here until the
+       mock plugin-isation refactor. They now live on the matching
+       protocol plugins (Protocol.Mqtt, Protocol.Grpc, Protocol.Rest,
+       Protocol.GraphQL), each of which contributes an
+       IBowireMockTransportHost / IBowireMockSchemaSource /
+       IBowireMockHostingExtension the mock server discovers at
+       startup. Kuestenlogik.Bowire.Mock has zero compile-time protocol-library
+       knowledge — pure orchestrator. -->
+  <PropertyGroup>
+    <!-- CA1873: the rule fires on structured-logging arguments that are just
+         property accesses. For this project's volume of log calls the
+         source-generated LoggerMessage alternative is overkill. -->
+    <NoWarn>$(NoWarn);CA1873</NoWarn>
+  </PropertyGroup>
+</Project>

@@ -1,0 +1,65 @@
+---
+layout: page
+title: Privacy Policy — Bowire
+description: Privacy policy for the Bowire website.
+---
+
+<section class="legal-hero">
+  <h1>Privacy Policy</h1>
+  <p class="legal-hero-tagline">What data this website collects and what Bowire itself does.</p>
+</section>
+
+<section class="legal-section legal-section-alt">
+  <h2>The short version</h2>
+  <p>This website serves marketing pages and documentation. It does not set tracking cookies, does not run analytics, and does not transmit any personal data to third parties beyond what a browser normally sends to fetch a page.</p>
+  <p><strong>The Bowire application itself is local-first</strong>: it runs on your machine, stores everything under <code>~/.bowire/</code>, and never phones home. See the note below.</p>
+</section>
+
+<section class="legal-section">
+  <h2>What this website stores</h2>
+  <ul class="legal-list">
+    <li><strong>LocalStorage only</strong>: your selected theme (<code>theme</code> = light / dark / auto) so your choice sticks across visits. That&rsquo;s it. No tracking, no user identifiers, no advertising cookies.</li>
+    <li>No session cookies. No analytics SDK. No tag manager.</li>
+  </ul>
+</section>
+
+<section class="legal-section legal-section-alt">
+  <h2>Third-party resources loaded by this site</h2>
+  <ul class="legal-list">
+    <li><strong>Google Fonts</strong> &mdash; the <em>Inter</em> and <em>JetBrains Mono</em> typefaces are loaded from <code>fonts.googleapis.com</code>. When your browser fetches them, Google may log the request (IP, User-Agent) per their privacy policy.</li>
+    <li><strong>shields.io and NuGet / GitHub APIs</strong> &mdash; the hero &ldquo;Stars / Downloads / Version&rdquo; badges fetch live values from <code>api.github.com</code> and <code>azuresearch-usnc.nuget.org</code>. These requests originate from your browser, not from our server.</li>
+  </ul>
+  <p>No other third parties are contacted.</p>
+</section>
+
+<section class="legal-section">
+  <h2>Hosting</h2>
+  <p>This site is hosted on <em>&lt;GitHub Pages / your host&gt;</em>. The host records standard HTTP access logs (IP address, timestamp, requested path, User-Agent) for security and operational purposes. We do not access these logs for any analytics use.</p>
+</section>
+
+<section class="legal-section legal-section-alt">
+  <h2>Bowire the application</h2>
+  <p>Bowire &mdash; the actual tool you install via <code>dotnet tool install -g Kuestenlogik.Bowire.Tool</code> or embed via <code>AddBowire()</code> &mdash; is <strong>fully local-first</strong>:</p>
+  <ul class="legal-list">
+    <li>No account required. No login. No registration.</li>
+    <li>No telemetry. No phone-home.</li>
+    <li>All your recordings, environments, and history live under <code>~/.bowire/</code> on your own machine.</li>
+    <li>Network traffic is exclusively to the servers you explicitly point Bowire at (via <code>--url</code> or the UI).</li>
+    <li>Source is Apache 2.0 and <a href="https://github.com/Kuestenlogik/Bowire" target="_blank" rel="noopener">public on GitHub</a> &mdash; feel free to audit.</li>
+  </ul>
+</section>
+
+<section class="legal-section">
+  <h2>Your rights (GDPR)</h2>
+  <p>Because this site collects virtually no personal data, there is very little to request. If you believe we do hold personal data about you (e.g., via the hoster&rsquo;s access logs), you have the right to information, correction, deletion, and restriction of processing under Art. 15&ndash;18 GDPR. Contact us at <em>&lt;contact@kuestenlogik.com&gt;</em>.</p>
+  <p>If you download or install Bowire itself, all data handling happens on <em>your</em> machine under your control.</p>
+</section>
+
+<section class="legal-section legal-section-alt">
+  <h2>Changes to this policy</h2>
+  <p>This policy may be updated when hosting or third-party resources change. The latest version is always here.</p>
+</section>
+
+<p class="legal-footnote">
+  See also the <a href="{{ '/legal.html' | relative_url }}">Legal Notice</a>.
+</p>

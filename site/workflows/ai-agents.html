@@ -1,0 +1,86 @@
+---
+layout: page
+title: Bowire for AI agent builders
+description: Expose every discovered service method as an MCP tool with JSON Schema input — typed, streaming-capable, ready for Claude Desktop, Cursor, or any MCP-aware agent.
+permalink: /workflows/ai-agents.html
+---
+
+<section class="features-page-hero">
+  <p class="workflow-hero-eyebrow">Workflow &middot; AI agent builders</p>
+  <h1>Knot your API to any AI agent</h1>
+  <p class="features-page-tagline">You want Claude / Cursor / Copilot to call your internal services with the right shape of arguments, not a free-text prompt you have to keep fixing.</p>
+  <p class="features-page-note">Bowire&rsquo;s MCP adapter turns every discovered method into an MCP tool with JSON Schema input, validates arguments before invocation, and streams results back over SSE or stdio &mdash; zero hand-written adapter code.</p>
+</section>
+
+<section class="features-group features-group-alt">
+  <header class="features-group-header">
+    <h2 class="features-group-title">One flag, every method becomes a tool</h2>
+    <p class="features-group-lede">No manual tool definitions. Bowire enumerates your services, maps each method&rsquo;s input schema to JSON Schema, and exposes the lot via the MCP streamable-HTTP transport.</p>
+  </header>
+
+  <div class="features-block features-block-text-only">
+    <div class="features-block-text">
+      <h3>Enable the adapter</h3>
+      <p class="features-block-lead"><code>--enable-mcp-adapter</code> on the CLI, or <code>.WithMcpAdapter()</code> chained onto <code>MapBowire()</code> in embedded mode. That&rsquo;s the whole opt-in.</p>
+<pre><code class="lang-bash"># Standalone, against any server
+bowire --url https://api.example.com --enable-mcp-adapter
+
+# Then in Claude Desktop config:
+# "my-api": {
+#   "url": "http://localhost:5000/bowire/mcp"
+# }</code></pre>
+      <p>Bowire hosts the MCP endpoint at <code>{prefix}/mcp</code>, responds to <code>initialize</code>, <code>tools/list</code>, <code>tools/call</code>, and <code>ping</code>. Every unary method Bowire discovers &mdash; across gRPC, REST, SignalR, GraphQL, any protocol plugin &mdash; becomes a typed tool.</p>
+      <a class="features-block-docs-link" href="{{ '/docs/protocols/mcp.html' | relative_url }}">MCP plugin docs &rarr;</a>
+    </div>
+  </div>
+</section>
+
+<section class="features-group">
+  <header class="features-group-header">
+    <h2 class="features-group-title">Bowire is also an MCP client</h2>
+    <p class="features-group-lede">Point Bowire at someone else&rsquo;s MCP server and browse their tools / resources / prompts in the same sidebar &mdash; typed forms, response viewer, history.</p>
+  </header>
+
+  <div class="features-block features-block-reverse">
+    <div class="features-block-text">
+      <h3>Inspect tools published by other agents</h3>
+      <p class="features-block-lead">Your agent doesn&rsquo;t work? Bowire becomes a debug probe for the same MCP server it&rsquo;s hitting.</p>
+      <p><code>bowire --url http://localhost:5000/mcp</code> runs the discovery pass against an MCP server, surfaces <code>tools</code>, <code>resources</code>, and <code>prompts</code> as separate service categories in the sidebar, maps each tool&rsquo;s <code>inputSchema</code> to Bowire&rsquo;s form UI, and dispatches invocations through the same JSON-RPC client an agent would use.</p>
+      <p>Streaming tools (SSE transport, chunked responses) render in the same Wireshark-style message view as gRPC streams.</p>
+      <a class="features-block-docs-link" href="{{ '/features.html#streaming' | relative_url }}">Streaming view in detail &rarr;</a>
+    </div>
+    <div class="features-block-screenshot">
+      {% include themed-img.html src="/assets/images/screenshots/streaming.png" alt="MCP streaming tool — response frames rendered in the Wireshark-style pane" %}
+    </div>
+  </div>
+</section>
+
+<section class="features-group features-group-alt">
+  <header class="features-group-header">
+    <h2 class="features-group-title">Debug the assistant&rsquo;s side of things</h2>
+    <p class="features-group-lede">Record the calls the agent is making and compare them to what the agent claims it did. Assertions on the response shape catch tool drift early.</p>
+  </header>
+
+  <div class="features-block">
+    <div class="features-block-text">
+      <h3>Record agent sessions for reproducibility</h3>
+      <p class="features-block-lead">Turn on recording while the agent is running, capture every tool invocation, replay against a test env to confirm behaviour.</p>
+      <p>Every tool call the adapter handles is a regular Bowire request &mdash; same recording, same environment substitution, same assertions. Great for post-mortems when an agent &ldquo;hallucinated&rdquo; a result that actually came from a call you didn&rsquo;t expect.</p>
+      <a class="features-block-docs-link" href="{{ '/features.html#recording' | relative_url }}">Recording in detail &rarr;</a>
+    </div>
+    <div class="features-block-screenshot">
+      {% include themed-img.html src="/assets/images/screenshots/recording.png" alt="Recording manager — sequence of captured tool calls" %}
+    </div>
+  </div>
+</section>
+
+<section class="features-page-cta">
+  <div class="features-page-cta-inner">
+    <h2 class="features-page-cta-title">Ship typed tools to your agent</h2>
+    <p class="features-page-cta-lede">Flip one flag, get a full MCP tool catalogue. Debug with the same UI you use to invoke the services by hand.</p>
+    <a class="btn btn-secondary features-page-cta-btn" href="{{ '/docs/protocols/mcp.html' | relative_url }}">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+      Go to the MCP docs
+    </a>
+  </div>
+</section>

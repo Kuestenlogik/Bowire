@@ -1,0 +1,263 @@
+<section class="protocols" id="protocols">
+  <div class="container">
+    <h2 class="section-title">Multi-protocol by design</h2>
+    <p class="section-subtitle">One UI for every protocol your service stack speaks.<br>Each protocol is a plugin &mdash; install only what you need.</p>
+    <div class="protocol-grid">
+
+      <a class="protocol-card" href="{{ '/docs/protocols/grpc.html' | relative_url }}">
+        <div class="protocol-icon">
+          <!-- gRPC — community single-path mark (vectorlogo.zone); official grpc.io SVG is a 130 KB raster trace. -->
+          <svg width="32" height="32" viewBox="0 0 64 64" fill="var(--success)" aria-hidden="true"><path d="M27.125 36.16v12.46c0 2.593.44 4.847 1.323 6.762s2.044 3.506 3.485 4.773 3.06 2.225 4.853 2.873S40.39 64 42.212 64s3.632-.324 5.426-.972 3.412-1.606 4.853-2.873 2.603-2.858 3.485-4.773 1.323-4.17 1.323-6.762V27.86l-16.126-.025-.02 8.325H48.3v12.46c0 2.18-.603 3.786-1.8 4.818s-2.632 1.547-4.28 1.547-3.073-.516-4.28-1.547-1.8-2.637-1.8-4.818V15.38c0-2.18.603-3.786 1.8-4.818s2.632-1.547 4.28-1.547 3.073.516 4.28 1.547 1.8 2.638 1.8 4.818v3.182h9V15.38c0-2.534-.44-4.773-1.323-6.718s-2.044-3.55-3.485-4.818S49.432 1.62 47.64.97 44.035 0 42.212 0s-3.632.324-5.426.972-3.412 1.606-4.853 2.873-2.603 2.873-3.485 4.818-1.323 4.184-1.323 6.718v12.46h-9.207v-9.28h2.824l-7.02-9.92-7.02 9.92h2.92V32c0 2.298 1.857 4.16 4.15 4.16h13.355z" fill-rule="evenodd"/></svg>
+        </div>
+        <div class="protocol-content">
+          <h3>gRPC</h3>
+          <p>Server Reflection, proto schema browser, all four streaming types (unary / server / client / duplex). Auto-generated request templates from protobuf definitions, plus HTTP transcoding for methods with <code>google.api.http</code> annotations.</p>
+          <div class="protocol-install">
+            <code><span class="protocol-install-prompt">$</span> dotnet add package Kuestenlogik.Bowire.Protocol.Grpc</code>
+            <button class="protocol-install-copy copy-btn" data-copy="dotnet add package Kuestenlogik.Bowire.Protocol.Grpc" aria-label="Copy install command for gRPC"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></button>
+          </div>
+        </div>
+      </a>
+
+      <a class="protocol-card" href="{{ '/docs/protocols/rest.html' | relative_url }}">
+        <div class="protocol-icon">
+          <!-- REST has no official logo; HTTP-braces glyph matches the chip above. -->
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.5" aria-hidden="true"><path d="M8 3H6a2 2 0 00-2 2v4c0 1.1-.9 2-2 2 1.1 0 2 .9 2 2v4a2 2 0 002 2h2"/><path d="M16 3h2a2 2 0 012 2v4c0 1.1.9 2 2 2-1.1 0-2 .9-2 2v4a2 2 0 01-2 2h-2"/></svg>
+        </div>
+        <div class="protocol-content">
+          <h3>REST</h3>
+          <p>OpenAPI / Swagger document discovery with full path / query / header / body parameter forms. AWS Sig v4 signing built in. Drop in any <code>swagger.json</code> as a fallback when introspection isn't available.</p>
+          <div class="protocol-install">
+            <code><span class="protocol-install-prompt">$</span> dotnet add package Kuestenlogik.Bowire.Protocol.Rest</code>
+            <button class="protocol-install-copy copy-btn" data-copy="dotnet add package Kuestenlogik.Bowire.Protocol.Rest" aria-label="Copy install command for REST"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></button>
+          </div>
+        </div>
+      </a>
+
+      <a class="protocol-card" href="{{ '/docs/protocols/graphql.html' | relative_url }}">
+        <div class="protocol-icon">
+          <!-- GraphQL — official logo (simpleicons) in brand pink. -->
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="#e535ab" aria-hidden="true"><path d="M12.002 0a2.138 2.138 0 1 0 0 4.277 2.138 2.138 0 1 0 0-4.277zm8.54 4.931a2.138 2.138 0 1 0 0 4.277 2.138 2.138 0 1 0 0-4.277zm0 9.862a2.138 2.138 0 1 0 0 4.277 2.138 2.138 0 1 0 0-4.277zm-8.54 4.931a2.138 2.138 0 1 0 0 4.276 2.138 2.138 0 1 0 0-4.276zm-8.542-4.93a2.138 2.138 0 1 0 0 4.276 2.138 2.138 0 1 0 0-4.277zm0-9.863a2.138 2.138 0 1 0 0 4.277 2.138 2.138 0 1 0 0-4.277zm8.542-3.378L2.953 6.777v10.448l9.049 5.224 9.047-5.224V6.777zm0 1.601 7.66 13.27H4.34zm-1.387.371L3.97 15.037V7.363zm2.774 0 6.646 3.838v7.674zM5.355 17.44h13.293l-6.646 3.836z"/></svg>
+        </div>
+        <div class="protocol-content">
+          <h3>GraphQL</h3>
+          <p>Schema introspection via <code>__schema</code>, visual selection-set picker for picking which fields you want returned, support for queries, mutations, and <code>graphql-transport-ws</code> subscriptions.</p>
+          <div class="protocol-install">
+            <code><span class="protocol-install-prompt">$</span> dotnet add package Kuestenlogik.Bowire.Protocol.GraphQL</code>
+            <button class="protocol-install-copy copy-btn" data-copy="dotnet add package Kuestenlogik.Bowire.Protocol.GraphQL" aria-label="Copy install command for GraphQL"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></button>
+          </div>
+        </div>
+      </a>
+
+      <a class="protocol-card" href="{{ '/docs/protocols/signalr.html' | relative_url }}">
+        <div class="protocol-icon">
+          <!-- Azure SignalR Service — official Microsoft Azure Architecture Icons (2025-11 set). -->
+          <svg width="32" height="32" viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><defs><radialGradient id="signalr-card-grad" cx="9" cy="9" r="8.5" gradientUnits="userSpaceOnUse"><stop offset="0.18" stop-color="#5ea0ef"/><stop offset="1" stop-color="#0078d4"/></radialGradient><clipPath id="signalr-card-clip"><path d="M14.21,15.72A8.5,8.5,0,0,1,3.79,2.28l.09-.06a8.5,8.5,0,0,1,10.33,13.5" fill="none"/></clipPath></defs><path d="M14.21,15.72A8.5,8.5,0,0,1,3.79,2.28l.09-.06a8.5,8.5,0,0,1,10.33,13.5" fill="url(#signalr-card-grad)"/><g clip-path="url(#signalr-card-clip)"><path d="M4.13,7.05a.28.28,0,0,0,.2.48h6.12A1.55,1.55,0,0,1,11.6,8a1.61,1.61,0,0,1,.43.92,1.43,1.43,0,0,1-.36,1.15,1.41,1.41,0,0,1-1.12.54H8.44a.08.08,0,0,0-.09.06L7.81,12c-.12.29-.25.59-.37.89a.08.08,0,0,0,0,.09L9,14.48l2.59,2.59.46.49,2.14-1.19L13.72,16l-1.43-1.44L10.74,13l-.07,0,0,0,.52-.07A3.84,3.84,0,0,0,14,10.65a3.85,3.85,0,0,0,0-3.08,3.93,3.93,0,0,0-.73-1.12,3.67,3.67,0,0,0-1.24-.89,4,4,0,0,0-1.66-.34h-3V4.05A.14.14,0,0,0,7.18,4Z" fill="#f2f2f2"/></g></svg>
+        </div>
+        <div class="protocol-content">
+          <h3>SignalR</h3>
+          <p>Hub auto-discovery via endpoint metadata, method invocation with parameter type reflection, real-time bidirectional channels with the same UI as gRPC duplex streaming.</p>
+          <div class="protocol-install">
+            <code><span class="protocol-install-prompt">$</span> dotnet add package Kuestenlogik.Bowire.Protocol.SignalR</code>
+            <button class="protocol-install-copy copy-btn" data-copy="dotnet add package Kuestenlogik.Bowire.Protocol.SignalR" aria-label="Copy install command for SignalR"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></button>
+          </div>
+        </div>
+      </a>
+
+      <a class="protocol-card" href="{{ '/docs/protocols/mcp.html' | relative_url }}">
+        <div class="protocol-icon">
+          <!-- Model Context Protocol — official three-stroke mark (modelcontextprotocol.io). -->
+          <svg width="32" height="32" viewBox="0 0 180 180" fill="none" stroke="var(--accent)" stroke-width="14" stroke-linecap="round" aria-hidden="true"><path d="M18 84.8528L85.8822 16.9706C95.2548 7.59798 110.451 7.59798 119.823 16.9706C129.196 26.3431 129.196 41.5391 119.823 50.9117L68.5581 102.177"/><path d="M69.2652 101.47L119.823 50.9117C129.196 41.5391 144.392 41.5391 153.765 50.9117L154.118 51.2652C163.491 60.6378 163.491 75.8338 154.118 85.2063L92.7248 146.6C89.6006 149.724 89.6006 154.789 92.7248 157.913L105.331 170.52"/><path d="M102.853 33.9411L52.6482 84.1457C43.2756 93.5183 43.2756 108.714 52.6482 118.087C62.0208 127.459 77.2167 127.459 86.5893 118.087L136.794 67.8822"/></svg>
+        </div>
+        <div class="protocol-content">
+          <h3>MCP</h3>
+          <p>AI agent integration for Claude Desktop, Cursor, and Copilot. Discovered methods are exposed as MCP tools with JSON Schema input. Bidirectional MCP server browser for inspecting tools published by other agents.</p>
+          <div class="protocol-install">
+            <code><span class="protocol-install-prompt">$</span> dotnet add package Kuestenlogik.Bowire.Protocol.Mcp</code>
+            <button class="protocol-install-copy copy-btn" data-copy="dotnet add package Kuestenlogik.Bowire.Protocol.Mcp" aria-label="Copy install command for MCP"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></button>
+          </div>
+        </div>
+      </a>
+
+      <a class="protocol-card" href="{{ '/docs/protocols/sse.html' | relative_url }}">
+        <div class="protocol-icon">
+          <!-- SSE has no official logo; one-way broadcast glyph matches the chip. -->
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#fb923c" stroke-width="1.5" aria-hidden="true"><path d="M5 8h14l-4-4"/><path d="M5 12h10"/><path d="M5 16h6"/></svg>
+        </div>
+        <div class="protocol-content">
+          <h3>SSE</h3>
+          <p>Server-Sent Events — register endpoints via attribute or fluent API, watch live event streams render in the response pane. The same plugin powers GraphQL subscriptions and MCP server-push.</p>
+          <div class="protocol-install">
+            <code><span class="protocol-install-prompt">$</span> dotnet add package Kuestenlogik.Bowire.Protocol.Sse</code>
+            <button class="protocol-install-copy copy-btn" data-copy="dotnet add package Kuestenlogik.Bowire.Protocol.Sse" aria-label="Copy install command for SSE"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></button>
+          </div>
+        </div>
+      </a>
+
+      <a class="protocol-card" href="{{ '/docs/protocols/websocket.html' | relative_url }}">
+        <div class="protocol-icon">
+          <!-- WebSocket — community logo from the gilbarbara/logos set (also
+               distributed via Iconify as logos/websocket). No strictly
+               "official" mark exists, but this one is the de-facto community
+               logo, consistently present in major icon libraries. -->
+          <svg width="32" height="32" viewBox="0 0 256 193" preserveAspectRatio="xMidYMid meet" fill="var(--text)" aria-hidden="true"><path d="M192.440223 144.644612L224.220111 144.644612 224.220111 68.3393384 188.415329 32.5345562 165.943007 55.0068785 192.440223 81.5040943 192.440223 144.644612ZM224.303963 160.576482L178.017688 160.576482 113.451687 160.576482 86.954471 134.079266 98.1906322 122.843105 120.075991 144.728464 165.104487 144.728464 120.746806 100.286931 132.06682 88.9669178 176.4245 133.324599 176.4245 88.2961022 154.622994 66.4945955 165.775303 55.3422863 110.684573 0 56.3485097 0 0 0 31.6960367 31.6960367 31.6960367 31.7798886 31.8637406 31.7798886 97.4359646 31.7798886 120.662954 55.0068785 86.7029152 88.9669178 63.4759253 65.7399279 63.4759253 47.7117589 31.6960367 47.7117589 31.6960367 78.9046839 86.7029152 133.911562 64.3144448 156.300033 100.119227 192.104815 154.45529 192.104815 256 192.104815 224.303963 160.576482Z"/></svg>
+        </div>
+        <div class="protocol-content">
+          <h3>WebSocket</h3>
+          <p>Raw WebSocket frame editor with text + binary support, sub-protocol selection, per-frame type toggle. Open a channel, send a frame, watch responses arrive — same UI as the duplex gRPC and SignalR channels.</p>
+          <div class="protocol-install">
+            <code><span class="protocol-install-prompt">$</span> dotnet add package Kuestenlogik.Bowire.Protocol.WebSocket</code>
+            <button class="protocol-install-copy copy-btn" data-copy="dotnet add package Kuestenlogik.Bowire.Protocol.WebSocket" aria-label="Copy install command for WebSocket"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></button>
+          </div>
+        </div>
+      </a>
+
+      <a class="protocol-card" href="{{ '/docs/protocols/mqtt.html' | relative_url }}">
+        <div class="protocol-icon">
+          <!-- MQTT — official mqtt.org logo (simpleicons). -->
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="#660066" aria-hidden="true"><path d="M10.657 23.994h-9.45A1.212 1.212 0 0 1 0 22.788v-9.18h.071c5.784 0 10.504 4.65 10.586 10.386Zm7.606 0h-4.045C14.135 16.246 7.795 9.977 0 9.942V6.038h.071c9.983 0 18.121 8.044 18.192 17.956Zm4.53 0h-.97C21.754 12.071 11.995 2.407 0 2.372v-1.16C0 .55.544.006 1.207.006h7.64C15.733 2.49 21.257 7.789 24 14.508v8.291c0 .663-.544 1.195-1.207 1.195ZM16.713.006h6.092A1.19 1.19 0 0 1 24 1.2v5.914c-.91-1.242-2.046-2.65-3.158-3.762C19.588 2.11 18.122.987 16.714.005Z"/></svg>
+        </div>
+        <div class="protocol-content">
+          <h3>MQTT</h3>
+          <p>Broker connect over TCP or WebSocket, topic subscribe with wildcards, retained-message inspection, QoS 0/1/2 publishes. Bidirectional channel reuses the same Wireshark-style stream pane as gRPC and SignalR.</p>
+          <div class="protocol-install">
+            <code><span class="protocol-install-prompt">$</span> dotnet add package Kuestenlogik.Bowire.Protocol.Mqtt</code>
+            <button class="protocol-install-copy copy-btn" data-copy="dotnet add package Kuestenlogik.Bowire.Protocol.Mqtt" aria-label="Copy install command for MQTT"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></button>
+          </div>
+        </div>
+      </a>
+
+      <a class="protocol-card" href="{{ '/docs/protocols/socketio.html' | relative_url }}">
+        <div class="protocol-icon">
+          <!-- Socket.IO — official logo (simpleicons). -->
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="var(--text)" aria-hidden="true"><path d="M11.9362.0137a12.1694 12.1694 0 00-2.9748.378C4.2816 1.5547.5678 5.7944.0918 10.6012c-.59 4.5488 1.7079 9.2856 5.6437 11.6345 3.8608 2.4179 9.0926 2.3199 12.8734-.223 3.3969-2.206 5.5118-6.2277 5.3858-10.2845-.058-4.0159-2.31-7.9167-5.7588-9.9796C16.354.5876 14.1431.0047 11.9362.0137zm-.063 1.696c4.9448-.007 9.7886 3.8137 10.2815 8.9245.945 5.6597-3.7528 11.4125-9.4875 11.5795-5.4538.544-10.7245-4.0798-10.8795-9.5566-.407-4.4338 2.5159-8.8346 6.6977-10.2995a9.1126 9.1126 0 013.3878-.647zm5.0908 3.2248c-2.6869 2.0849-5.2598 4.3078-7.8886 6.4567 1.2029.017 2.4118.016 3.6208.01 1.41-2.165 2.8589-4.3008 4.2678-6.4667zm-5.6647 7.6536c-1.41 2.166-2.86 4.3088-4.2699 6.4737 2.693-2.0799 5.2548-4.3198 7.9017-6.4557a255.4132 255.4132 0 00-3.6318-.018z"/></svg>
+        </div>
+        <div class="protocol-content">
+          <h3>Socket.IO</h3>
+          <p>Namespace + room aware client, event emit / ack with JSON payloads, auto-reconnect with exponential backoff, binary event support. Works against any v2/v3/v4 Socket.IO server.</p>
+          <div class="protocol-install">
+            <code><span class="protocol-install-prompt">$</span> dotnet add package Kuestenlogik.Bowire.Protocol.SocketIO</code>
+            <button class="protocol-install-copy copy-btn" data-copy="dotnet add package Kuestenlogik.Bowire.Protocol.SocketIO" aria-label="Copy install command for Socket.IO"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></button>
+          </div>
+        </div>
+      </a>
+
+      <a class="protocol-card" href="{{ '/docs/protocols/odata.html' | relative_url }}">
+        <div class="protocol-icon">
+          <!-- OData: official icon pack on odata.org is PNG-only; cylinder glyph reads as "queryable dataset". -->
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--warning)" stroke-width="1.5" aria-hidden="true"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 5v6c0 1.66-4.03 3-9 3s-9-1.34-9-3V5"/><path d="M21 11v6c0 1.66-4.03 3-9 3s-9-1.34-9-3v-6"/></svg>
+        </div>
+        <div class="protocol-content">
+          <h3>OData</h3>
+          <p>CSDL metadata discovery, entity-set browser with typed filters (<code>$filter</code>, <code>$orderby</code>, <code>$expand</code>), batch requests, navigation-property follow-through. Works with ASP.NET's <code>Microsoft.AspNetCore.OData</code>.</p>
+          <div class="protocol-install">
+            <code><span class="protocol-install-prompt">$</span> dotnet add package Kuestenlogik.Bowire.Protocol.OData</code>
+            <button class="protocol-install-copy copy-btn" data-copy="dotnet add package Kuestenlogik.Bowire.Protocol.OData" aria-label="Copy install command for OData"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></button>
+          </div>
+        </div>
+      </a>
+
+      <a class="protocol-card" href="{{ '/docs/protocols/storm.html' | relative_url }}">
+        <div class="protocol-icon">
+          <!-- Storm — Küstenlogik blue, three diverging streams echoing
+               the broker's data-distribution fan-out. -->
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="1.5" aria-hidden="true"><path d="M4 12h4"/><path d="M8 12 L14 6"/><path d="M8 12 L14 12"/><path d="M8 12 L14 18"/><circle cx="15.5" cy="6" r="1.3" fill="#38bdf8"/><circle cx="15.5" cy="12" r="1.3" fill="#38bdf8"/><circle cx="15.5" cy="18" r="1.3" fill="#38bdf8"/></svg>
+        </div>
+        <div class="protocol-content">
+          <h3>Storm</h3>
+          <p>Küstenlogik's Storm broker — native protocol via the KL.Storm.Client SDK or Kafka-compatible wire (<code>?protocol=kafka</code>). Topic browse, produce, server-streaming consume, in-process tap via <code>storm://embedded</code>.</p>
+          <div class="protocol-install">
+            <code><span class="protocol-install-prompt">$</span> bowire plugin install Kuestenlogik.Bowire.Protocol.Storm</code>
+            <button class="protocol-install-copy copy-btn" data-copy="bowire plugin install Kuestenlogik.Bowire.Protocol.Storm" aria-label="Copy install command for Storm"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></button>
+          </div>
+        </div>
+      </a>
+
+      <a class="protocol-card" href="{{ '/docs/protocols/kafka.html' | relative_url }}">
+        <div class="protocol-icon">
+          <!-- Apache Kafka — official mark from simpleicons.org. The
+               three-node "K" geometry is Apache's chosen wordmark icon;
+               theme-driven `var(--text)` keeps it readable in both
+               light and dark modes since the official Kafka branding
+               is monochrome. -->
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="var(--text)" aria-hidden="true"><path d="M9.71 19.345a2.502 2.502 0 0 0-1.4.42l-1.764-1.762c.354-.475.564-1.061.564-1.697 0-1.135-.673-2.111-1.638-2.563l.045-7.667A2.85 2.85 0 0 0 7.595 3.32 2.853 2.853 0 0 0 4.745.471a2.853 2.853 0 0 0-2.85 2.85 2.85 2.85 0 0 0 2.078 2.736l-.045 7.674c-.97.452-1.643 1.43-1.643 2.575 0 .647.214 1.241.578 1.72L1.146 19.71a2.504 2.504 0 0 0-1.146-.276A2.501 2.501 0 0 0 0 24.434c1.379 0 2.5-1.122 2.5-2.501a2.5 2.5 0 0 0-.426-1.404l1.65-1.65c.439.305.954.498 1.508.561l.045-7.652a2.83 2.83 0 0 0 2.022-.829l1.794 1.794a2.501 2.501 0 0 0-.444 1.428 2.501 2.501 0 0 0 5.001 0 2.501 2.501 0 0 0-2.5-2.5z"/></svg>
+        </div>
+        <div class="protocol-content">
+          <h3>Kafka</h3>
+          <p>Apache Kafka via <code>Confluent.Kafka</code>. Topic discovery via the Admin API, produce / consume with the standard JSON envelope, mTLS + SASL auth, plus optional <code>?schema-registry=…</code> for live Avro decode of consumed messages.</p>
+          <div class="protocol-install">
+            <code><span class="protocol-install-prompt">$</span> bowire plugin install Kuestenlogik.Bowire.Protocol.Kafka</code>
+            <button class="protocol-install-copy copy-btn" data-copy="bowire plugin install Kuestenlogik.Bowire.Protocol.Kafka" aria-label="Copy install command for Kafka"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></button>
+          </div>
+        </div>
+      </a>
+
+      <a class="protocol-card" href="{{ '/docs/protocols/dis.html' | relative_url }}">
+        <div class="protocol-icon">
+          <!-- DIS — radar/sweep glyph in defence-green; reads as
+               "tracks on a scope" without leaning on a real military
+               icon. -->
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#4ade80" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 3v9l6 4"/><circle cx="6.5" cy="9" r="0.7" fill="#4ade80"/><circle cx="18" cy="14" r="0.7" fill="#4ade80"/><circle cx="14" cy="18" r="0.7" fill="#4ade80"/></svg>
+        </div>
+        <div class="protocol-content">
+          <h3>DIS</h3>
+          <p>IEEE 1278 Distributed Interactive Simulation. UDP multicast listener for live PDU traffic, structured rendering of EntityState / Fire / Detonation / Collision PDUs, on-wire hex dump for binary inspection. Standalone-mode plugin for simulation environments.</p>
+          <div class="protocol-install">
+            <code><span class="protocol-install-prompt">$</span> bowire plugin install Kuestenlogik.Bowire.Protocol.Dis</code>
+            <button class="protocol-install-copy copy-btn" data-copy="bowire plugin install Kuestenlogik.Bowire.Protocol.Dis" aria-label="Copy install command for DIS"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></button>
+          </div>
+        </div>
+      </a>
+
+      <a class="protocol-card" href="{{ '/docs/protocols/udp.html' | relative_url }}">
+        <div class="protocol-icon">
+          <!-- UDP — three datagram packets streaming right; deliberately
+               minimal since UDP is a primitive, not a branded product. -->
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="6" width="6" height="4" rx="1"/><rect x="9" y="10" width="6" height="4" rx="1"/><rect x="16" y="14" width="6" height="4" rx="1"/><path d="M14 8h4"/><path d="M14 16h4"/></svg>
+        </div>
+        <div class="protocol-content">
+          <h3>UDP</h3>
+          <p>Raw UDP datagram listener — feed any UDP source into the Bowire streaming pane. Auto-detects UTF-8 text payloads, falls back to base64 + canonical hex dump for binary. Sibling to the DIS plugin via the same <code>IBowireMockEmitter</code> contract.</p>
+          <div class="protocol-install">
+            <code><span class="protocol-install-prompt">$</span> bowire plugin install Kuestenlogik.Bowire.Protocol.Udp</code>
+            <button class="protocol-install-copy copy-btn" data-copy="bowire plugin install Kuestenlogik.Bowire.Protocol.Udp" aria-label="Copy install command for UDP"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></button>
+          </div>
+        </div>
+      </a>
+
+      <a class="protocol-card protocol-card-coming" href="#roadmap">
+        <div class="protocol-icon">
+          <!-- Sparkle / plus mark; dashed to pair visually with the Custom card. -->
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v4"/><path d="M12 17v4"/><path d="M3 12h4"/><path d="M17 12h4"/><path d="M5.64 5.64l2.83 2.83"/><path d="M15.53 15.53l2.83 2.83"/><path d="M5.64 18.36l2.83-2.83"/><path d="M15.53 8.47l2.83-2.83"/><circle cx="12" cy="12" r="2.5" fill="var(--accent)" stroke="none"/></svg>
+        </div>
+        <div class="protocol-content">
+          <h3>Coming soon</h3>
+          <p>SOAP for enterprise legacy, NATS for cloud-native messaging, AMQP for RabbitMQ / ActiveMQ, Akka.NET actor inspection. More on the <span class="protocol-coming-link">roadmap &rarr;</span></p>
+          <span class="protocol-tag protocol-tag-dim">Planned plugins</span>
+        </div>
+      </a>
+
+      <a class="protocol-card protocol-card-custom" href="{{ '/docs/protocols/custom.html' | relative_url }}">
+        <div class="protocol-icon">
+          <!-- Custom/Your Protocol — abstract user silhouette. Stroke is solid;
+               the dashed card border already carries the "fill in yours" cue. -->
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v1"/></svg>
+        </div>
+        <div class="protocol-content">
+          <h3>Your Protocol</h3>
+          <p>Implement <code>IBowireProtocol</code> to add support for any protocol. Bowire discovers plugins automatically via assembly scanning — drop a DLL into <code>~/.bowire/plugins/</code> and it's loaded at the next startup.</p>
+          <div class="protocol-install protocol-install-dim">
+            <code>// implement IBowireProtocol in your own package</code>
+          </div>
+        </div>
+      </a>
+
+    </div>
+
+    <p class="protocols-cta">
+      For another protocol: <a href="#cta-section">join the crew
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg>
+      </a>
+    </p>
+  </div>
+</section>

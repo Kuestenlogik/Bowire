@@ -1,0 +1,179 @@
+<section class="screenshots" id="screenshots">
+  <div class="container">
+    <h2 class="section-title">See it in action</h2>
+    <p class="section-subtitle">Discovery, request, response, switch protocol — a full round-trip against the BowireDemo sample with gRPC, SignalR, REST, and WebSocket.</p>
+
+    <button class="screenshot-hero demo-video-expand" type="button" aria-label="Expand demo video to full screen">
+      <video
+        class="demo-video theme-video-dark"
+        src="{{ '/assets/videos/bowire-demo-dark.webm' | relative_url }}"
+        poster="{{ '/assets/images/screenshots/method-detail-dark.png' | relative_url }}"
+        autoplay
+        muted
+        loop
+        playsinline
+        disablepictureinpicture
+        controlslist="nodownload nofullscreen noremoteplayback"
+        preload="metadata"
+        aria-label="Bowire UI demo — discovering services, executing requests, and switching between protocols">
+      </video>
+      <video
+        class="demo-video theme-video-light"
+        src="{{ '/assets/videos/bowire-demo-light.webm' | relative_url }}"
+        poster="{{ '/assets/images/screenshots/method-detail-light.png' | relative_url }}"
+        autoplay
+        muted
+        loop
+        playsinline
+        disablepictureinpicture
+        controlslist="nodownload nofullscreen noremoteplayback"
+        preload="metadata"
+        aria-label="Bowire UI demo — discovering services, executing requests, and switching between protocols">
+      </video>
+      <span class="demo-video-hint" aria-hidden="true">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
+        Click to expand
+      </span>
+    </button>
+
+    <p class="screenshot-caption">
+      A single tool, every protocol — gRPC, REST, GraphQL, SignalR, MCP, SSE, WebSocket, MQTT, Socket.IO, OData, Storm, Kafka, DIS, UDP. No browser plugin, no separate desktop app, no protocol-specific UI quirks.
+    </p>
+
+    <h3 class="screenshot-grid-title">A single Bowire for every situation</h3>
+    <p class="screenshot-grid-subtitle">
+      Bowire understands your setup and shows the most useful tools and guidance depending on your task&nbsp;&mdash; from first-run welcome through single request and daily streaming workflows to recording and replays.
+    </p>
+
+    <div class="screenshot-carousel-wrap">
+
+    <button class="screenshot-nav-btn screenshot-nav-prev" type="button" aria-label="Previous screenshot" data-direction="-1">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+    </button>
+
+    <div class="screenshot-carousel" role="region" aria-label="Bowire screen gallery" tabindex="0">
+      <div class="screenshot-carousel-track">
+
+        <!-- ===== Landing states ===== -->
+
+        <a class="screenshot-card" href="{{ '/features.html#empty-states' | relative_url }}">
+          {% include themed-img.html src="/assets/images/screenshots/ready.png" alt="Bowire ready landing — connected to a server, services discovered, waiting for method selection" %}
+          <div class="screenshot-card-body">
+            <h4>Connected &amp; ready</h4>
+            <p>Service summary, recent-history quick-recall, keyboard shortcut tips, guided tour entry point.</p>
+          </div>
+        </a>
+
+        <a class="screenshot-card" href="{{ '/features.html#empty-states' | relative_url }}">
+          {% include themed-img.html src="/assets/images/screenshots/first-run.png" alt="First-run welcome screen with two onboarding cards — connect to a server, or upload a schema file" %}
+          <div class="screenshot-card-body">
+            <h4>First-run welcome</h4>
+            <p>Standalone tool without <code>--url</code>: two onboarding paths &mdash; connect to a live server, or upload a <code>.proto</code> / OpenAPI / GraphQL SDL.</p>
+          </div>
+        </a>
+
+        <a class="screenshot-card" href="{{ '/features.html#empty-states' | relative_url }}">
+          {% include themed-img.html src="/assets/images/screenshots/multi-url.png" alt="Multi-URL setup with one connected server and one failed — per-URL status table with retry buttons" %}
+          <div class="screenshot-card-body">
+            <h4>Multi-URL discovery</h4>
+            <p>Connect to multiple servers in parallel — per-URL status table with retry buttons for any that fail.</p>
+          </div>
+        </a>
+
+        <a class="screenshot-card" href="{{ '/features.html#empty-states' | relative_url }}">
+          {% include themed-img.html src="/assets/images/screenshots/discovery-failed.png" alt="Discovery failed against an unreachable server — error message plus four troubleshoot bullets" %}
+          <div class="screenshot-card-body">
+            <h4>Smart error guidance</h4>
+            <p>When discovery fails, the landing surfaces the actual error plus four common-cause troubleshoot bullets.</p>
+          </div>
+        </a>
+
+        <!-- ===== Core workflows ===== -->
+
+        <a class="screenshot-card" href="{{ '/features.html#schema-upload' | relative_url }}">
+          {% include themed-img.html src="/assets/images/screenshots/schema-upload.png" alt="Schema upload — drop in a .proto, OpenAPI spec, or GraphQL SDL and browse the API offline" %}
+          <div class="screenshot-card-body">
+            <h4>Work offline with a schema file</h4>
+            <p>Drop in a <code>.proto</code>, OpenAPI spec, or GraphQL SDL and browse the API without a running server. Great for reviewing a contract during code review.</p>
+          </div>
+        </a>
+
+        <a class="screenshot-card" href="{{ '/features.html#flow-editor' | relative_url }}">
+          {% include themed-img.html src="/assets/images/screenshots/flow-editor.png" alt="Visual flow editor — pipeline of API calls with branching conditions and loops" %}
+          <div class="screenshot-card-body">
+            <h4>Visual flow editor</h4>
+            <p>Chain API calls into branching pipelines — visual node editor with loops, conditions, and variable forwarding. No Postman Teams subscription required.</p>
+          </div>
+        </a>
+
+        <a class="screenshot-card" href="{{ '/features.html#streaming' | relative_url }}">
+          {% include themed-img.html src="/assets/images/screenshots/streaming.png" alt="Streaming response view — append-only message list on the left, detail pane on the right" %}
+          <div class="screenshot-card-body">
+            <h4>Streaming like Wireshark</h4>
+            <p>Append-only message list + detail pane for server-streaming, client-streaming, and duplex. Filter by substring, jump to any frame, pin the latest.</p>
+          </div>
+        </a>
+
+        <a class="screenshot-card" href="{{ '/features.html#response-chaining' | relative_url }}">
+          {% include themed-img.html src="/assets/images/screenshots/json-chaining.png" alt="Click any JSON value in a response to copy the chaining variable expression" %}
+          <div class="screenshot-card-body">
+            <h4>Click any JSON value to chain</h4>
+            <p>Hover a leaf or key in the response, click it, paste <code>${response.path.to.value}</code> into the next request's body or URL.</p>
+          </div>
+        </a>
+
+        <a class="screenshot-card" href="{{ '/features.html#env-diff' | relative_url }}">
+          {% include themed-img.html src="/assets/images/screenshots/env-diff.png" alt="Environment diff view — two environments compared side by side with colour-coded rows" %}
+          <div class="screenshot-card-body">
+            <h4>Environment diff</h4>
+            <p>Compare two environments side-by-side &mdash; spot drift before it hits production. Colour-coded equal / changed / only-in-A / only-in-B rows.</p>
+          </div>
+        </a>
+
+        <a class="screenshot-card" href="{{ '/features.html#command-palette' | relative_url }}">
+          {% include themed-img.html src="/assets/images/screenshots/command-palette.png" alt="Command palette open with method suggestions, environment jumps, and protocol filters" %}
+          <div class="screenshot-card-body">
+            <h4>Command palette &amp; vim keys</h4>
+            <p>Press <kbd>/</kbd> anywhere to search methods, switch environments, filter protocols. Vim-style <kbd>j</kbd>/<kbd>k</kbd> navigation for power users.</p>
+          </div>
+        </a>
+
+        <a class="screenshot-card" href="{{ '/features.html#recording' | relative_url }}">
+          {% include themed-img.html src="/assets/images/screenshots/recording.png" alt="Recording manager — timeline of captured calls with per-step pass/fail markers" %}
+          <div class="screenshot-card-body">
+            <h4>Record &amp; replay</h4>
+            <p>Click record, run a sequence of calls, click stop. Replay against another environment, convert to test assertions, export as HAR or <code>.blr</code>.</p>
+          </div>
+        </a>
+
+        <a class="screenshot-card" href="{{ '/features.html#performance' | relative_url }}">
+          {% include themed-img.html src="/assets/images/screenshots/performance.png" alt="Performance graph — latency histogram with P50 / P90 / P99 percentiles" %}
+          <div class="screenshot-card-body">
+            <h4>Performance histogram</h4>
+            <p>Repeat any call N times, watch the latency histogram + timeline render in real time. P50 / P90 / P99 percentiles, success rate, throughput.</p>
+          </div>
+        </a>
+
+        <a class="screenshot-card" href="{{ '/features.html#settings' | relative_url }}">
+          {% include themed-img.html src="/assets/images/screenshots/settings.png" alt="Settings dialog — general, shortcuts, data management, and per-plugin configuration" %}
+          <div class="screenshot-card-body">
+            <h4>Per-plugin settings</h4>
+            <p>General, shortcuts, data management, and a dedicated section per installed protocol plugin — each protocol defines its own <code>BowirePluginSetting</code> schema.</p>
+          </div>
+        </a>
+
+      </div>
+    </div>
+
+    <button class="screenshot-nav-btn screenshot-nav-next" type="button" aria-label="Next screenshot" data-direction="1">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+    </button>
+
+    </div><!-- /.screenshot-carousel-wrap -->
+
+    <div class="screenshot-dots" role="tablist" aria-label="Screenshot indicators">
+      <!-- Filled by main.js — one dot per card, click-to-jump, active state tracks scroll position. -->
+    </div>
+
+  </div>
+</section>

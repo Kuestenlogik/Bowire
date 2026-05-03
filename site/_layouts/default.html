@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ page.title | default: site.title }}</title>
+  <meta name="description" content="{{ page.description | default: site.description }}">
+
+  <!-- Apply the stored (or default: auto) theme synchronously before the
+       body renders, so the page never flashes a different theme for the
+       first frame. main.js re-applies + wires the toggle button later. -->
+  <script>
+    (function () {
+      var mode = localStorage.getItem('theme') || 'auto';
+      var resolved = mode === 'auto'
+        ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
+        : mode;
+      document.documentElement.setAttribute('data-theme', mode);
+      document.documentElement.setAttribute('data-theme-resolved', resolved);
+    })();
+  </script>
+
+  <link rel="icon" type="image/svg+xml" href="{{ '/assets/images/favicon.svg' | relative_url }}">
+  <link rel="alternate icon" type="image/x-icon" href="{{ '/assets/images/favicon.ico' | relative_url }}">
+  <link rel="apple-touch-icon" sizes="180x180" href="{{ '/assets/images/apple-touch-icon.png' | relative_url }}">
+
+  {% seo %}
+
+  {%- comment -%}
+  Override jekyll-seo-tag's defaults: it emits twitter:card=summary
+  with no image. Force the larger card + brand-card image so
+  X / LinkedIn / Discord / Slack previews render the 1200×630 OG
+  card instead of a 1:1 favicon thumbnail.
+  {%- endcomment -%}
+  <meta property="og:image" content="{{ '/assets/images/og-image.png' | absolute_url }}">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Bowire — Multi-protocol API workbench for .NET. By Küstenlogik.">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:image" content="{{ '/assets/images/og-image.png' | absolute_url }}">
+  <meta name="twitter:image:alt" content="Bowire — Multi-protocol API workbench for .NET. By Küstenlogik.">
+
+  {%- comment -%}
+  schema.org JSON-LD — gives Google / Bing / DuckDuckGo / AI crawlers a
+  structured-data view of the page so they can render rich results
+  (app card, sitelinks, FAQ snippets) instead of guessing from the HTML.
+
+  - Organization on every page, so both .com (Küstenlogik) and the
+    Bowire product surface their canonical entity link.
+  - WebSite on every page so search engines know about the in-page
+    Pagefind search and can surface a sitelinks searchbox.
+  - SoftwareApplication ONLY on pages that opt in via
+    `schema_type: SoftwareApplication` in front matter (currently the
+    homepage). Adding it to every page would dilute the signal.
+  {%- endcomment -%}
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    "name": "Küstenlogik",
+    "url": "https://kuestenlogik.com",
+    "logo": "{{ '/assets/images/og-image.png' | absolute_url }}",
+    "sameAs": [
+      "https://github.com/Kuestenlogik"
+    ]
+  }
+  </script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "name": "Bowire",
+    "url": "{{ '/' | absolute_url }}",
+    "potentialAction": {
+      "@type": "SearchAction",
+      "target": {
+        "@type": "EntryPoint",
+        "urlTemplate": "{{ '/search.html' | absolute_url }}?q={search_term_string}"
+      },
+      "query-input": "required name=search_term_string"
+    }
+  }
+  </script>
+  {%- if page.schema_type == 'SoftwareApplication' -%}
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "Bowire",
+    "applicationCategory": "DeveloperApplication",
+    "applicationSubCategory": "API testing tool",
+    "operatingSystem": "Windows, macOS, Linux",
+    "description": "{{ site.description | strip_newlines | xml_escape }}",
+    "url": "{{ '/' | absolute_url }}",
+    "image": "{{ '/assets/images/og-image.png' | absolute_url }}",
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "USD"
+    },
+    "softwareRequirements": ".NET 10 or later",
+    "license": "https://www.apache.org/licenses/LICENSE-2.0",
+    "author": {
+      "@type": "Organization",
+      "name": "Küstenlogik",
+      "url": "https://kuestenlogik.com"
+    },
+    "downloadUrl": "https://www.nuget.org/packages/Kuestenlogik.Bowire.Tool",
+    "softwareHelp": {
+      "@type": "WebPage",
+      "url": "{{ '/docs/' | absolute_url }}"
+    }
+  }
+  </script>
+  {%- endif -%}
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+  {%- comment -%}
+  Pagefind stylesheet loads BEFORE our brand CSS so style.css's theme
+  overrides for `--pagefind-ui-*` win the cascade.
+  {%- endcomment -%}
+  <link rel="stylesheet" href="{{ '/pagefind/pagefind-ui.css' | relative_url }}">
+  <link rel="stylesheet" href="{{ '/assets/css/style.css' | relative_url }}">
+
+  <!-- Brand preloader — same pattern as the Bowire app + docs template:
+       80px indigo ring rotating around a 40px B-tile, theme-aware bg,
+       visible from the first paint, fades out on window.load when the
+       stylesheets + fonts are in. -->
+  <style>
+    #bowire-loading {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+      background: #0f0f17;
+      transition: opacity 300ms ease;
+    }
+    :root[data-theme-resolved="light"] #bowire-loading,
+    :root[data-theme="light"] #bowire-loading {
+      background: #fafaff;
+    }
+    .bowire-loading-wrap {
+      position: relative;
+      width: 80px;
+      height: 80px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #e8e8f0;
+    }
+    :root[data-theme-resolved="light"] .bowire-loading-wrap,
+    :root[data-theme="light"] .bowire-loading-wrap {
+      color: #1a1a2e;
+    }
+    .bowire-loading-logo-ring {
+      position: absolute;
+      inset: 0;
+      border: 3px solid #2a2a3d;
+      border-top-color: #6366f1;
+      border-radius: 50%;
+      animation: bowire-spin 800ms linear infinite;
+    }
+    :root[data-theme-resolved="light"] .bowire-loading-logo-ring,
+    :root[data-theme="light"] .bowire-loading-logo-ring {
+      border-color: #d8dae5;
+      border-top-color: #4f46e5;
+    }
+    .bowire-loading-logo {
+      width: 40px;
+      height: 40px;
+      position: relative;
+      z-index: 1;
+      color: inherit;
+    }
+    @keyframes bowire-spin {
+      to { transform: rotate(360deg); }
+    }
+    #bowire-loading.is-hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+  </style>
+</head>
+<body>
+  <div id="bowire-loading" aria-hidden="true">
+    <div class="bowire-loading-wrap">
+      <div class="bowire-loading-logo-ring"></div>
+      <svg class="bowire-loading-logo" viewBox="0 0 95.114075 95.114098" fill="currentColor" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <g transform="translate(-57.679684,-154.66912)">
+          <path d="m 98.433779,206.65457 v 16.57418 h 7.672911 c 3.27394,0 5.83185,-0.75992 7.67344,-2.27997 1.87082,-1.52004 2.80603,-3.59565 2.80603,-6.22649 0,-2.51391 -0.92052,-4.48667 -2.76211,-5.91902 -1.81236,-1.43234 -4.35557,-2.1487 -7.62951,-2.1487 z"/>
+          <path d="m 98.433779,181.22304 v 14.90814 h 6.225971 c 2.92316,0 5.21814,-0.70167 6.88434,-2.10478 1.69543,-1.43235 2.54299,-3.39093 2.54299,-5.87561 0,-4.61859 -3.44955,-6.92775 -10.3482,-6.92775 z"/>
+          <path d="m 105.23698,154.66911 c -26.26504,-1.7e-4 -47.557183,21.29175 -47.557298,47.55679 -1.66e-4,26.26524 21.292058,47.55747 47.557298,47.5573 26.26504,-1.2e-4 47.55695,-21.29226 47.55678,-47.5573 -1.2e-4,-26.26484 -21.29194,-47.55667 -47.55678,-47.55679 z M 84.270824,170.7875 h 22.888516 c 7.01558,0 12.4085,1.28631 16.17937,3.85868 3.77088,2.57238 5.65651,6.19671 5.65651,10.87376 0,3.39086 -1.15458,6.35812 -3.46387,8.90126 -2.28007,2.54315 -5.20324,4.31175 -8.76949,5.30562 v 0.17519 c 4.47243,0.5554 8.03849,2.20696 10.69857,4.95473 2.6893,2.74777 4.03386,6.09499 4.03386,10.04125 0,5.75862 -2.06092,10.33336 -6.18257,13.72423 -4.12165,3.36163 -9.74863,5.04258 -16.88114,5.04258 H 84.270824 Z"/>
+        </g>
+      </svg>
+    </div>
+  </div>
+  <script>
+    window.addEventListener('load', function () {
+      var pre = document.getElementById('bowire-loading');
+      if (!pre) return;
+      pre.classList.add('is-hidden');
+      setTimeout(function () { pre.remove(); }, 300);
+    });
+  </script>
+
+  {% include header.html %}
+
+  <main>
+    {{ content }}
+  </main>
+
+  {% include footer.html %}
+
+  {%- comment -%}
+  Pagefind search overlay — shared with the docs template.
+  Hidden until a .search-trigger click; closed via Esc / backdrop click.
+  {%- endcomment -%}
+  <div class="bowire-search-overlay" id="bowire-search-overlay" aria-hidden="true" inert>
+    <div class="bowire-search-overlay-panel" role="dialog" aria-label="Search">
+      <div id="search"></div>
+      <div class="bowire-search-hint">
+        <kbd>↑</kbd><kbd>↓</kbd> navigate · <kbd>Enter</kbd> open selected / full results · <kbd>Esc</kbd> close
+      </div>
+    </div>
+  </div>
+
+  {%- comment -%}
+  Page outline overlay — modal mirroring the docs Outline pill. Triggered
+  from the Outline tool below the section-nav dots on the right rail.
+  main.js populates <nav#page-outline> with one link per <section>.
+  {%- endcomment -%}
+  <div class="bowire-page-overlay" id="bowire-page-outline-overlay" aria-hidden="true" inert>
+    <div class="bowire-page-overlay-panel" role="dialog" aria-label="On this page">
+      <h2 class="bowire-page-overlay-title">On this page</h2>
+      <nav class="page-outline" id="page-outline" aria-label="Page outline"></nav>
+      <div class="bowire-page-overlay-hint">
+        <kbd>↑</kbd><kbd>↓</kbd> navigate · <kbd>Enter</kbd> jump · <kbd>Esc</kbd> close
+      </div>
+    </div>
+  </div>
+
+  {%- comment -%}
+  Feature detail modal — opened by click on any .feature-card that
+  ships a <template class="feature-card-detail">. Content is cloned
+  into .bowire-feature-modal-body so the detail block is authored
+  once next to the card itself.
+  {%- endcomment -%}
+  <div class="bowire-feature-modal" id="bowire-feature-modal" aria-hidden="true" inert>
+    <div class="bowire-feature-modal-panel" role="dialog" aria-label="Feature detail">
+      <button type="button" class="bowire-feature-modal-close" aria-label="Close">
+        <svg width="16" height="16" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><path d="M1 1l8 8M9 1l-8 8"/></svg>
+      </button>
+      <div class="bowire-feature-modal-body"></div>
+    </div>
+  </div>
+  <script>
+    (function () {
+      var modal = document.getElementById('bowire-feature-modal');
+      var body = modal.querySelector('.bowire-feature-modal-body');
+      var closeBtn = modal.querySelector('.bowire-feature-modal-close');
+      function open(card) {
+        var tpl = card.querySelector('template.feature-card-detail');
+        if (!tpl) return;
+        body.innerHTML = '';
+        body.appendChild(tpl.content.cloneNode(true));
+        modal.classList.add('is-open');
+        modal.setAttribute('aria-hidden', 'false');
+        modal.removeAttribute('inert');
+        setTimeout(function () { closeBtn.focus(); }, 30);
+      }
+      function close() {
+        modal.classList.remove('is-open');
+        modal.setAttribute('aria-hidden', 'true');
+        modal.setAttribute('inert', '');
+        body.innerHTML = '';
+      }
+      document.addEventListener('click', function (e) {
+        // Match any element opted into the popup via data-feature-modal,
+        // regardless of card type — feature-card under "Why Bowire?",
+        // usp-card under the same section, plus any future card class
+        // that joins the same popup pattern.
+        var card = e.target.closest('[data-feature-modal]');
+        if (card && !e.target.closest('a')) { e.preventDefault(); open(card); return; }
+        if (e.target === modal) close();
+        if (e.target.closest('.bowire-feature-modal-close')) close();
+      });
+      document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape' && modal.classList.contains('is-open')) close();
+      });
+    })();
+  </script>
+
+  <script src="{{ '/pagefind/pagefind-ui.js' | relative_url }}"
+          onerror="(function(){var b=document.querySelector('.bowire-search-trigger');if(b){b.disabled=true;b.title='Search index not available — run pagefind on the built site first';b.setAttribute('aria-disabled','true');}})()"></script>
+  <script>
+    window.addEventListener('DOMContentLoaded', function () {
+      if (!window.PagefindUI) {
+        // pagefind-ui.js never loaded (404 or pagefind hadn't run yet).
+        // The script tag's onerror already greyed out the trigger; this
+        // just bails before initialising PagefindUI / wiring listeners.
+        var b = document.querySelector('.bowire-search-trigger');
+        if (b && !b.disabled) {
+          b.disabled = true;
+          b.title = 'Search index not available — run pagefind on the built site first';
+          b.setAttribute('aria-disabled', 'true');
+        }
+        return;
+      }
+      // Suggest-style overlay: small, fixed result count, arrow-key nav,
+      // Enter → selected result OR full /search.html page. No autoload,
+      // no scrolling inside the overlay — the full page owns the long
+      // list. Keeps the ↑ / ↓ meaning unambiguous.
+      // Pagefind UI is a Svelte component — its constructor reads
+      // props in snake_case (base_path / show_images / page_size /
+      // reset_styles / show_sub_results), NOT the camelCase form
+      // shown in pagefind.app/docs/ui. The camelCase keys are silently
+      // ignored, which is what was producing the failed dynamic
+      // import to /pagefind/pagefind.js (default fallback) instead of
+      // /Bowire/pagefind/pagefind.js when this layout had
+      // bundlePath: '/Bowire/pagefind/' set.
+      new window.PagefindUI({
+        element: '#search',
+        show_images: false,
+        show_sub_results: false,
+        reset_styles: false,
+        page_size: 5,
+        base_path: {{ '/pagefind/' | relative_url | jsonify }}
+      });
+
+      var overlay = document.getElementById('bowire-search-overlay');
+      var highlighted = -1;
+      function getResults() {
+        return Array.from(document.querySelectorAll('#search .pagefind-ui__result'));
+      }
+      function paintHighlight() {
+        var items = getResults();
+        items.forEach(function (el, i) {
+          el.classList.toggle('is-highlighted', i === highlighted);
+        });
+        if (highlighted >= 0 && items[highlighted]) {
+          items[highlighted].scrollIntoView({ block: 'nearest' });
+        }
+      }
+      // MutationObserver covers two responsibilities each time
+      // PagefindUI re-renders its tree:
+      //   1. Reset the keyboard-highlight cursor.
+      //   2. Promote the result-count message out of .pagefind-ui__
+      //      drawer so it sits in the form's header zone (between
+      //      the input and the results scroll area). PagefindUI puts
+      //      it inside the drawer by default; visually we want it
+      //      on the tertiary header bg, not on the secondary
+      //      results bg.
+      new MutationObserver(function () {
+        highlighted = -1;
+        paintHighlight();
+        var msg = document.querySelector('#search .pagefind-ui__message');
+        var drawer = document.querySelector('#search .pagefind-ui__drawer');
+        var form = document.querySelector('#search .pagefind-ui__form');
+        if (msg && drawer && form && drawer.contains(msg)) {
+          form.insertBefore(msg, drawer);
+        }
+      }).observe(document.getElementById('search'), { childList: true, subtree: true });
+
+      // Infinite-scroll: when the user scrolls within ~80 px of the
+      // drawer's bottom edge, auto-click PagefindUI's hidden "Load more
+      // results" button. Mouse hover mirrors keyboard ArrowUp/Down so
+      // the visual cursor follows whichever input device the user used
+      // last. Click anywhere on a result row navigates — the entire
+      // card behaves like a link.
+      var drawerEl = document.querySelector('#search .pagefind-ui__drawer');
+      if (drawerEl) {
+        var loading = false;
+        drawerEl.addEventListener('scroll', function () {
+          if (loading) return;
+          if (drawerEl.scrollTop + drawerEl.clientHeight < drawerEl.scrollHeight - 80) return;
+          var loadMore = document.querySelector('#search .pagefind-ui__button');
+          if (!loadMore) return;
+          loading = true;
+          loadMore.click();
+          setTimeout(function () { loading = false; }, 200);
+        }, { passive: true });
+
+        drawerEl.addEventListener('mouseover', function (e) {
+          var result = e.target.closest('.pagefind-ui__result');
+          if (!result) return;
+          var items = getResults();
+          var idx = items.indexOf(result);
+          if (idx === -1 || idx === highlighted) return;
+          highlighted = idx;
+          paintHighlight();
+        });
+
+        drawerEl.addEventListener('click', function (e) {
+          if (e.target.closest('a')) return;
+          var result = e.target.closest('.pagefind-ui__result');
+          if (!result) return;
+          var link = result.querySelector('a');
+          if (link) link.click();
+        });
+      }
+
+      function open() {
+        overlay.classList.add('is-open');
+        overlay.setAttribute('aria-hidden', 'false');
+        overlay.removeAttribute('inert');
+        var input = document.querySelector('#search input[type="text"]');
+        if (input) setTimeout(function () { input.focus(); }, 50);
+      }
+      function close() {
+        overlay.classList.remove('is-open');
+        overlay.setAttribute('aria-hidden', 'true');
+        overlay.setAttribute('inert', '');
+        highlighted = -1;
+      }
+      document.addEventListener('click', function (e) {
+        var trigger = e.target.closest('.bowire-search-trigger');
+        if (trigger) { e.preventDefault(); open(); return; }
+        if (e.target === overlay) close();
+      });
+      document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape' && overlay.classList.contains('is-open')) close();
+        if ((e.key === '/' || (e.key === 'k' && (e.metaKey || e.ctrlKey))) &&
+            !/^(INPUT|TEXTAREA)$/i.test(document.activeElement.tagName)) {
+          e.preventDefault();
+          open();
+        }
+        if (!overlay.classList.contains('is-open')) return;
+        var active = document.activeElement;
+        var isInput = active && active.matches && active.matches('.pagefind-ui__search-input');
+        if (!isInput) return;
+        if (e.key === 'ArrowDown') {
+          e.preventDefault();
+          var items = getResults();
+          if (items.length === 0) return;
+          if (highlighted === items.length - 1) {
+            // At the bottom — nudge Pagefind to render the next batch
+            // (button is visually hidden but still functional).
+            var loadMore = document.querySelector('#search .pagefind-ui__button');
+            if (loadMore) {
+              loadMore.click();
+              // After the batch lands, advance the highlight one step
+              // further. The MutationObserver resets highlighted to -1,
+              // so re-seed it here.
+              var prevLen = items.length;
+              setTimeout(function () {
+                var next = getResults();
+                if (next.length > prevLen) {
+                  highlighted = prevLen;
+                  paintHighlight();
+                }
+              }, 150);
+            }
+            return;
+          }
+          highlighted = Math.min(highlighted + 1, items.length - 1);
+          paintHighlight();
+          return;
+        }
+        if (e.key === 'ArrowUp') {
+          e.preventDefault();
+          var items = getResults();
+          if (items.length === 0) return;
+          highlighted = Math.max(highlighted - 1, -1);
+          paintHighlight();
+          return;
+        }
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          var items = getResults();
+          if (highlighted >= 0 && items[highlighted]) {
+            var link = items[highlighted].querySelector('a.pagefind-ui__result-link');
+            if (link) { window.location = link.href; return; }
+          }
+          var q = (active.value || '').trim();
+          if (!q) return;
+          close();
+          window.location = {{ '/search.html' | relative_url | jsonify }} + '?q=' + encodeURIComponent(q);
+        }
+      });
+    });
+  </script>
+
+  <script src="{{ '/assets/js/main.js' | relative_url }}"></script>
+</body>
+</html>

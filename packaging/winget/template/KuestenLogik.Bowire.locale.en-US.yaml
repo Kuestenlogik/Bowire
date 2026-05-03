@@ -1,0 +1,54 @@
+# yaml-language-server: $schema=https://aka.ms/winget-manifest.defaultLocale.1.6.0.schema.json
+#
+# Default-locale manifest — human-facing metadata (name, description,
+# license, URLs, tags). winget shows these in `winget show
+# KuestenLogik.Bowire` and the search results.
+PackageIdentifier: KuestenLogik.Bowire
+PackageVersion: __VERSION__
+PackageLocale: en-US
+Publisher: Küstenlogik
+PublisherUrl: https://kuestenlogik.de
+PublisherSupportUrl: https://github.com/Kuestenlogik/Bowire/issues
+Author: Küstenlogik
+PackageName: Bowire
+PackageUrl: https://github.com/Kuestenlogik/Bowire
+License: Apache-2.0
+LicenseUrl: https://github.com/Kuestenlogik/Bowire/blob/main/LICENSE
+Copyright: Copyright (c) Küstenlogik
+ShortDescription: Interactive multi-protocol API browser and CLI for .NET — gRPC, REST, GraphQL, SignalR, MCP, SSE, WebSocket, MQTT, Socket.IO, OData, Storm, Kafka, DIS, UDP.
+Description: |-
+  Bowire is the multi-protocol API workbench for .NET. Discover and
+  invoke endpoints across gRPC (with reflection + transcoding), REST
+  (OpenAPI / Swagger), GraphQL, SignalR, MCP, SSE, WebSocket, MQTT,
+  Socket.IO, OData, plus sibling plugins for Küstenlogik Storm, Apache
+  Kafka, IEEE 1278 DIS, and raw UDP. Embed it next to your ASP.NET app
+  or run the standalone `bowire` CLI against any host.
+
+  Bowire is 100% local — no accounts, no telemetry, no cloud
+  dependency. Recordings, environments, and credentials persist on
+  disk under `~/.bowire/`.
+Moniker: bowire
+Tags:
+  - api
+  - api-client
+  - api-testing
+  - aspnet
+  - dotnet
+  - graphql
+  - grpc
+  - http
+  - kafka
+  - mcp
+  - mqtt
+  - postman-alternative
+  - rest
+  - signalr
+  - websocket
+ReleaseNotesUrl: https://github.com/Kuestenlogik/Bowire/releases/tag/v__VERSION__
+Documentation:
+  - DocumentLabel: Documentation
+    DocumentUrl: https://kuestenlogik.github.io/Bowire/docs/
+  - DocumentLabel: Quick Start
+    DocumentUrl: https://kuestenlogik.github.io/Bowire/docs/quickstart.html
+ManifestType: defaultLocale
+ManifestVersion: 1.6.0

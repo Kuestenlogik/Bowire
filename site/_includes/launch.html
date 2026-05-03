@@ -1,0 +1,194 @@
+{% comment %}
+  Quickstart stepper — three steps from slipway to running Bowire.
+
+  Step 1 ("Pick your boat") chooses the persona; that selection
+  determines which install + run snippets show in steps 2 + 3. An
+  optional URL input feeds substitutions in step 3. The whole
+  thing is vanilla JS state — see the corresponding handler in
+  assets/js/main.js.
+{% endcomment %}
+<section class="launch" id="launch">
+  <div class="container">
+    <h2 class="section-title">Straight into the water</h2>
+    <p class="section-subtitle">Three steps from slipway to running Bowire.</p>
+
+    <div class="launch-stepper" data-launch>
+
+      <!-- Step indicators -->
+      <div class="launch-steps" role="tablist" aria-label="Quickstart steps">
+        <button type="button" class="launch-step active" data-step-indicator="1" role="tab" aria-selected="true">
+          <span class="launch-step-num"><span class="launch-step-num-digit">1</span></span>
+          <span class="launch-step-label">Pick your boat</span>
+        </button>
+        <span class="launch-step-connector"></span>
+        <button type="button" class="launch-step" data-step-indicator="2" role="tab" aria-selected="false" aria-disabled="true">
+          <span class="launch-step-num"><span class="launch-step-num-digit">2</span></span>
+          <span class="launch-step-label">Install</span>
+        </button>
+        <span class="launch-step-connector"></span>
+        <button type="button" class="launch-step" data-step-indicator="3" role="tab" aria-selected="false" aria-disabled="true">
+          <span class="launch-step-num"><span class="launch-step-num-digit">3</span></span>
+          <span class="launch-step-label">Run</span>
+        </button>
+      </div>
+
+      <!-- Step 1: pick your boat -->
+      <div class="launch-panel active" data-step-panel="1" role="tabpanel">
+        <p class="launch-prompt">Which boat are you stepping into today?</p>
+        <div class="launch-boats">
+
+          <button type="button" class="launch-boat" data-boat="backend">
+            <div class="launch-boat-icon">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <polyline points="16 18 22 12 16 6"/>
+                <polyline points="8 6 2 12 8 18"/>
+              </svg>
+            </div>
+            <h3 class="launch-boat-mode">Embedded mode</h3>
+            <p class="launch-boat-title">Backend developer</p>
+            <p class="launch-boat-desc">Embed Bowire in your own ASP.NET service. Auto-discovers everything you ship.</p>
+          </button>
+
+          <button type="button" class="launch-boat" data-boat="tester">
+            <div class="launch-boat-icon">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M9 11l3 3L22 4"/>
+                <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/>
+              </svg>
+            </div>
+            <h3 class="launch-boat-mode">Standalone CLI</h3>
+            <p class="launch-boat-title">API tester</p>
+            <p class="launch-boat-desc">Browse + record someone else&rsquo;s API. Replay against Dev / Staging / Prod.</p>
+          </button>
+
+          <button type="button" class="launch-boat" data-boat="mock">
+            <div class="launch-boat-icon">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <circle cx="12" cy="12" r="10"/>
+                <path d="M8 14s1.5 2 4 2 4-2 4-2"/>
+                <line x1="9" y1="9" x2="9.01" y2="9"/>
+                <line x1="15" y1="9" x2="15.01" y2="9"/>
+              </svg>
+            </div>
+            <h3 class="launch-boat-mode">Bowire mock</h3>
+            <p class="launch-boat-title">Mock author</p>
+            <p class="launch-boat-desc">Replay a recorded session as a standalone mock server &mdash; no live backend required.</p>
+          </button>
+
+          <button type="button" class="launch-boat" data-boat="ai">
+            <div class="launch-boat-icon">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <rect x="4" y="7" width="16" height="13" rx="2"/>
+                <circle cx="9" cy="13" r="1" fill="currentColor"/>
+                <circle cx="15" cy="13" r="1" fill="currentColor"/>
+                <path d="M9 17h6"/>
+                <path d="M12 7V4"/>
+                <circle cx="12" cy="3" r="1" fill="currentColor"/>
+              </svg>
+            </div>
+            <h3 class="launch-boat-mode">Sidecar + MCP adapter</h3>
+            <p class="launch-boat-title">AI agent builder</p>
+            <p class="launch-boat-desc">Expose any service as MCP tools so Claude / Cursor / Copilot can call them.</p>
+          </button>
+
+        </div>
+      </div>
+
+      <!-- Step 2: install — content swapped per boat selection -->
+      <div class="launch-panel" data-step-panel="2" role="tabpanel" aria-hidden="true">
+        <p class="launch-prompt" data-launch-prompt-2>One package, one command.</p>
+
+        <!-- Protocol picker — search-combobox with multi-select. Two
+             distinct modes: "nuget" lists every first-party protocol
+             plugin so the embedded backend can `dotnet add package`
+             them; "cli" lists the third-party extras the standalone
+             CLI doesn't bundle (Storm, Kafka, …) so tester / mock
+             boats can `bowire plugin install` them. The combobox
+             code lives in main.js and inflates the host divs below
+             on first render. -->
+        <div class="launch-protocols" data-protocols-host="nuget" hidden>
+          <p class="launch-protocols-label">Add the protocols you need:</p>
+          <div class="launch-combobox-host" data-combobox-nuget></div>
+        </div>
+
+        <div class="launch-protocols" data-protocols-host="cli" hidden>
+          <p class="launch-protocols-label">Many protocols ship with the CLI. Add any third-party extras you need:</p>
+          <div class="launch-combobox-host" data-combobox-cli></div>
+        </div>
+
+        <div class="code-block launch-recipe" data-recipe-step="2">
+          <div class="code-block-header">
+            <span class="code-block-lang" data-recipe-lang>bash</span>
+            <button type="button" class="copy-btn" data-recipe-copy aria-label="Copy">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+            </button>
+          </div>
+          <pre><code data-recipe-content>Pick a boat in step 1 first.</code></pre>
+        </div>
+
+        <div class="launch-nav">
+          <button type="button" class="launch-nav-btn launch-nav-back" data-step-back>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg>
+            Back
+          </button>
+          <button type="button" class="launch-nav-btn launch-nav-next" data-step-next>
+            Next
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Step 3: run — depending on boat, may include URL input -->
+      <div class="launch-panel" data-step-panel="3" role="tabpanel" aria-hidden="true">
+        <p class="launch-prompt" data-launch-prompt-3>Run it.</p>
+
+        <!-- Optional URL input — shown only for tester / mock / ai boats -->
+        <div class="launch-url-row" data-url-row hidden>
+          <label class="launch-url-label" for="launch-url-input">Target URL</label>
+          <input type="text"
+                 id="launch-url-input"
+                 class="launch-url-input"
+                 data-url-input
+                 placeholder="https://api.example.com/swagger.json"
+                 autocomplete="off"
+                 spellcheck="false">
+        </div>
+
+        <div class="code-block launch-recipe" data-recipe-step="3">
+          <div class="code-block-header">
+            <span class="code-block-lang" data-recipe-lang-3>bash</span>
+            <button type="button" class="copy-btn" data-recipe-copy-3 aria-label="Copy">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+            </button>
+          </div>
+          <pre><code data-recipe-content-3>Pick a boat in step 1 first.</code></pre>
+        </div>
+
+        <p class="launch-then" data-launch-then></p>
+
+        <!-- Per-protocol setup notes + doc links. Only the embedded
+             backend boat populates this — the CLI boats ship every
+             plugin already wired internally. The list rebuilds from
+             the protocols the user picked in step 2. -->
+        <div class="launch-setup-notes" data-setup-notes hidden>
+          <p class="launch-setup-notes-label">Per-protocol setup notes</p>
+          <ul class="launch-setup-notes-list" data-setup-notes-list></ul>
+        </div>
+
+        <div class="launch-nav">
+          <button type="button" class="launch-nav-btn launch-nav-back" data-step-back>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg>
+            Back
+          </button>
+          <button type="button" class="launch-nav-btn launch-nav-restart" data-step-restart>
+            Pick another boat
+          </button>
+        </div>
+      </div>
+
+    </div>
+    <p class="features-detail-cta">
+      Different rig: <a href="{{ '/downloads.html' | relative_url }}">see every download &rarr;</a>
+    </p>
+  </div>
+</section>

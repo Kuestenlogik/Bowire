@@ -1,0 +1,153 @@
+<Project Sdk="Microsoft.NET.Sdk.Razor">
+  <PropertyGroup>
+    <Description>Bowire — multi-protocol API workbench for ASP.NET. Core host package: plugin infrastructure (IBowireProtocol), UI shell, HTML generator, recording + mock contracts. Pair with Kuestenlogik.Bowire.Protocol.* plugins (gRPC, REST, GraphQL, MQTT, SignalR, WebSocket, SSE, MCP, OData, Socket.IO) to discover, invoke, record, mock, and replay live network traffic across protocols.</Description>
+    <PackageId>Kuestenlogik.Bowire</PackageId>
+    <PackageTags>bowire;api;workbench;multi-protocol;grpc;rest;graphql;mqtt;signalr;websocket;sse;mcp;mock-server;recording;developer-tools;aspnet</PackageTags>
+    <IsPackable>true</IsPackable>
+    <AddRazorSupportForMvc>true</AddRazorSupportForMvc>
+  </PropertyGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="Kuestenlogik.Bowire.Protocol.Grpc" />
+    <InternalsVisibleTo Include="Kuestenlogik.Bowire.Protocol.SignalR" />
+    <InternalsVisibleTo Include="Kuestenlogik.Bowire.Protocol.Mcp" />
+    <InternalsVisibleTo Include="Kuestenlogik.Bowire.Protocol.Sse" />
+    <InternalsVisibleTo Include="bowire" />
+    <InternalsVisibleTo Include="Kuestenlogik.Bowire.Tests" />
+    <InternalsVisibleTo Include="Kuestenlogik.Bowire.IntegrationTests" />
+  </ItemGroup>
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="wwwroot\bowire.css" LogicalName="Kuestenlogik.Bowire.wwwroot.bowire.css" />
+    <EmbeddedResource Include="wwwroot\bowire.js" LogicalName="Kuestenlogik.Bowire.wwwroot.bowire.js" />
+    <EmbeddedResource Include="wwwroot\favicon.svg" LogicalName="Kuestenlogik.Bowire.wwwroot.favicon.svg" />
+    <EmbeddedResource Include="wwwroot\kuestenlogik_lockup.svg" LogicalName="Kuestenlogik.Bowire.wwwroot.kuestenlogik_lockup.svg" />
+  </ItemGroup>
+
+  <!--
+    bowire.js is split into per-feature fragment files under
+    wwwroot/js/. Edit those — never the concatenated wwwroot/bowire.js,
+    which is regenerated on every build by ConcatBowireJs and embedded
+    via the EmbeddedResource above.
+
+    Fragment order is the order this <BowireJsFragment> ItemGroup
+    declares them in. MSBuild items preserve declaration order, so the
+    list below IS the execution order inside the IIFE. To insert a new
+    fragment, drop a file under wwwroot/js/ and add a single line to
+    this list — no rename, no number renumbering, no glob magic.
+
+    Constraints to keep in mind when reordering:
+      • prologue.js opens the IIFE and declares every `let`/`const`
+        used by later files — it must come first.
+      • init.js closes the IIFE — it must come last.
+      • Each file is concatenated as a raw text fragment, so the IIFE
+        wrapper is shared across all files. Function declarations are
+        hoisted within the closure but `let`/`const` are not, so any
+        new state used by other fragments belongs at the top of
+        prologue.js.
+
+    The concat uses File.ReadAllText / File.WriteAllText via an inline
+    RoslynCodeTaskFactory task instead of the built-in ReadLinesFromFile
+    / WriteLinesToFile pair, because the latter strips leading whitespace
+    and drops empty lines (MSBuild items can't be empty strings) — both
+    of which would mangle the JS source.
+  -->
+  <ItemGroup>
+    <!--
+      _morphdom.js is the morphdom 2.7.4 UMD minified build, vendored into
+      wwwroot/js/. It MUST come first in the fragment list because it lives
+      OUTSIDE the IIFE opened by prologue.js — the UMD wrapper sets
+      `window.morphdom` on the global scope, and the rest of the Bowire
+      code then references `window.morphdom` from inside the closure.
+      render() uses it to merge new DOM into the live tree instead of
+      wiping #bowire-app on every state change.
+    -->
+    <BowireJsFragment Include="wwwroot\js\_morphdom.js" />
+    <BowireJsFragment Include="wwwroot\js\prologue.js" />
+    <BowireJsFragment Include="wwwroot\js\test-assertions.js" />
+    <BowireJsFragment Include="wwwroot\js\helpers.js" />
+    <BowireJsFragment Include="wwwroot\js\history-env.js" />
+    <BowireJsFragment Include="wwwroot\js\auth.js" />
+    <BowireJsFragment Include="wwwroot\js\schema-form.js" />
+    <BowireJsFragment Include="wwwroot\js\recording.js" />
+    <BowireJsFragment Include="wwwroot\js\collections.js" />
+    <BowireJsFragment Include="wwwroot\js\flows.js" />
+    <BowireJsFragment Include="wwwroot\js\api.js" />
+    <BowireJsFragment Include="wwwroot\js\protocols.js" />
+    <BowireJsFragment Include="wwwroot\js\execute.js" />
+    <BowireJsFragment Include="wwwroot\js\render-env-auth.js" />
+    <BowireJsFragment Include="wwwroot\js\render-sidebar.js" />
+    <BowireJsFragment Include="wwwroot\js\landing.js" />
+    <BowireJsFragment Include="wwwroot\js\autocomplete.js" />
+    <BowireJsFragment Include="wwwroot\js\render-main.js" />
+    <BowireJsFragment Include="wwwroot\js\tests.js" />
+    <BowireJsFragment Include="wwwroot\js\code-export.js" />
+    <BowireJsFragment Include="wwwroot\js\perf-diff.js" />
+    <BowireJsFragment Include="wwwroot\js\response-diff.js" />
+    <BowireJsFragment Include="wwwroot\js\settings.js" />
+    <BowireJsFragment Include="wwwroot\js\init.js" />
+    <Watch Include="wwwroot\js\*.js" />
+  </ItemGroup>
+
+  <UsingTask TaskName="ConcatFiles"
+             TaskFactory="RoslynCodeTaskFactory"
+             AssemblyFile="$(MSBuildToolsPath)\Microsoft.Build.Tasks.Core.dll">
+    <ParameterGroup>
+      <InputFiles ParameterType="Microsoft.Build.Framework.ITaskItem[]" Required="true" />
+      <OutputFile ParameterType="System.String" Required="true" />
+    </ParameterGroup>
+    <Task>
+      <Code Type="Fragment" Language="cs"><![CDATA[
+        var sb = new System.Text.StringBuilder();
+        foreach (var item in InputFiles)
+        {
+            sb.Append(System.IO.File.ReadAllText(item.ItemSpec));
+        }
+        var newContent = sb.ToString();
+        // Skip the write if the file is already up to date — keeps the
+        // EmbeddedResource timestamp stable so incremental builds don't
+        // re-link the assembly on every invocation.
+        if (!System.IO.File.Exists(OutputFile) ||
+            System.IO.File.ReadAllText(OutputFile) != newContent)
+        {
+            System.IO.File.WriteAllText(OutputFile, newContent);
+        }
+      ]]></Code>
+    </Task>
+  </UsingTask>
+
+  <Target Name="ConcatBowireJs"
+          BeforeTargets="PrepareForBuild"
+          Inputs="@(BowireJsFragment)"
+          Outputs="wwwroot\bowire.js">
+    <ConcatFiles InputFiles="@(BowireJsFragment)" OutputFile="wwwroot\bowire.js" />
+    <!-- Light minification: strip JS line comments and collapse runs of whitespace.
+         No external tool needed — uses a simple regex in a C# inline task.
+         Block comments are left alone (they may contain license text or the
+         morphdom UMD wrapper). This typically saves 25-35% on the concat output. -->
+    <MinifyFile File="wwwroot\bowire.js" />
+    <MinifyFile File="wwwroot\bowire.css" />
+  </Target>
+
+  <UsingTask TaskName="MinifyFile" TaskFactory="RoslynCodeTaskFactory" AssemblyFile="$(MSBuildToolsPath)\Microsoft.Build.Tasks.Core.dll">
+    <ParameterGroup>
+      <File ParameterType="System.String" Required="true" />
+    </ParameterGroup>
+    <Task>
+      <Code Type="Fragment" Language="cs"><![CDATA[
+        var text = System.IO.File.ReadAllText(File);
+        var original = text.Length;
+        // Comment stripping disabled — the simple // regex can't
+        // distinguish comments from URLs (https://) and protocol
+        // strings. Only safe cleanups remain:
+        // 1. Collapse runs of blank lines into a single newline
+        text = System.Text.RegularExpressions.Regex.Replace(text, @"\n\s*\n\s*\n", "\n\n");
+        // 2. Strip trailing whitespace on each line
+        text = System.Text.RegularExpressions.Regex.Replace(text, @"[ \t]+$", "", System.Text.RegularExpressions.RegexOptions.Multiline);
+        System.IO.File.WriteAllText(File, text);
+        Log.LogMessage(MessageImportance.Normal, $"Minified {File}: {original:N0} → {text.Length:N0} bytes ({100 - (int)(text.Length * 100.0 / original)}% saved)");
+      ]]></Code>
+    </Task>
+  </UsingTask>
+</Project>

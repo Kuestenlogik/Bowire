@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Description>Bowire GraphQL protocol plugin — discover and execute GraphQL queries, mutations, and subscriptions via schema introspection.</Description>
+    <PackageId>Kuestenlogik.Bowire.Protocol.GraphQL</PackageId>
+    <PackageTags>bowire;bowire-plugin;graphql;introspection;query;mutation;subscription;developer-tools</PackageTags>
+    <IsPackable>true</IsPackable>
+    <RootNamespace>Kuestenlogik.Bowire.Protocol.GraphQL</RootNamespace>
+    <NoWarn>$(NoWarn);CA1873</NoWarn>
+  </PropertyGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="bowire" />
+    <InternalsVisibleTo Include="Kuestenlogik.Bowire.Tests" />
+    <InternalsVisibleTo Include="Kuestenlogik.Bowire.IntegrationTests" />
+  </ItemGroup>
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Kuestenlogik.Bowire\Kuestenlogik.Bowire.csproj" />
+    <!-- Mock for the GraphQlMockSchemaSource + LiveHandler. -->
+    <ProjectReference Include="..\Kuestenlogik.Bowire.Mock\Kuestenlogik.Bowire.Mock.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- GraphQL-Parser: SDL parsing for the GraphQlSchemaHandler.
+         Lived on Mock until the plugin-isation refactor. -->
+    <PackageReference Include="GraphQL-Parser" />
+  </ItemGroup>
+</Project>

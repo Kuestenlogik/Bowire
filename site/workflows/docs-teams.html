@@ -1,0 +1,81 @@
+---
+layout: page
+title: Bowire for documentation teams
+description: Runnable API examples next to your written docs — readers edit the JSON, hit Send, see the real response. Export per-language code snippets for copy-paste.
+permalink: /workflows/docs-teams.html
+---
+
+<section class="features-page-hero">
+  <p class="workflow-hero-eyebrow">Workflow &middot; Documentation teams</p>
+  <h1>Runnable examples next to the words</h1>
+  <p class="features-page-tagline">Your API reference deserves more than a curl block readers can&rsquo;t edit. Bowire gives each example a method picker, a typed editor, and a real response.</p>
+  <p class="features-page-note">Embed the Bowire UI inside your own Jekyll / docfx / MkDocs site, or link out to a hosted standalone. Every example is live, every response matches production behaviour, every call exports to curl / grpcurl / C# / TypeScript.</p>
+</section>
+
+<section class="features-group features-group-alt">
+  <header class="features-group-header">
+    <h2 class="features-group-title">Embed inside your docs site</h2>
+    <p class="features-group-lede">Drop Bowire next to the prose. Readers click a method, tweak the request, see the real response &mdash; no &ldquo;copy this, paste into terminal, adjust the token&rdquo; round-trip.</p>
+  </header>
+
+  <div class="features-block">
+    <div class="features-block-text">
+      <h3>One <code>&lt;iframe&gt;</code> per example</h3>
+      <p class="features-block-lead">Point each embed at the specific method you&rsquo;re documenting. Bowire renders the request editor + response pane for just that method &mdash; no sidebar, no clutter.</p>
+      <p>Works with any static-site generator. The embedded Bowire instance can hit a sandbox endpoint you already have (auth pre-filled via URL params) or a per-reader replay-mock if you don&rsquo;t want live traffic to touch the docs. The UI honours your docs site&rsquo;s theme via CSS variables &mdash; light / dark flip automatically.</p>
+      <a class="features-block-docs-link" href="{{ '/docs/setup/embedded.html' | relative_url }}">Embedded setup docs &rarr;</a>
+    </div>
+    <div class="features-block-screenshot">
+      {% include themed-img.html src="/assets/images/screenshots/json-chaining.png" alt="Request editor with response pane showing a real API response" %}
+    </div>
+  </div>
+</section>
+
+<section class="features-group">
+  <header class="features-group-header">
+    <h2 class="features-group-title">Copy-paste in every language</h2>
+    <p class="features-group-lede">Readers don&rsquo;t all write C#. Bowire regenerates the current request as curl, grpcurl, and typed C# / TypeScript snippets, live as you edit.</p>
+  </header>
+
+  <div class="features-block features-block-reverse">
+    <div class="features-block-text">
+      <h3>Every edit updates every snippet</h3>
+      <p class="features-block-lead">Change a field in the form editor &mdash; the curl block, the grpcurl command, the C# client code, and the TypeScript fetch-wrapper all regenerate in place.</p>
+      <p>No stale docs. The snippet you&rsquo;re about to paste reflects exactly what you just configured in the UI: the current URL, the current auth header, the current body, the current headers. Copy-to-clipboard on any snippet; readers keep the thing that worked for them.</p>
+      <a class="features-block-docs-link" href="{{ '/docs/features/export-import.html' | relative_url }}">Export / import docs &rarr;</a>
+    </div>
+    <div class="features-block-screenshot">
+      {% include themed-img.html src="/assets/images/screenshots/command-palette.png" alt="Command palette and method picker — searching across every documented method" %}
+    </div>
+  </div>
+</section>
+
+<section class="features-group features-group-alt">
+  <header class="features-group-header">
+    <h2 class="features-group-title">Work offline from a schema</h2>
+    <p class="features-group-lede">Your docs team shouldn&rsquo;t need a running staging server to write the API reference. Upload the schema and browse the full surface.</p>
+  </header>
+
+  <div class="features-block">
+    <div class="features-block-text">
+      <h3>Drop in a <code>.proto</code> / OpenAPI spec / GraphQL SDL</h3>
+      <p class="features-block-lead">Bowire renders the full method tree from the schema alone &mdash; no live backend required for writing, reviewing, or linting the reference.</p>
+      <p>Great for contract-review PRs, for writing docs before the backend ships, for onboarding a writer who doesn&rsquo;t have staging credentials, and for producing screenshots that don&rsquo;t depend on a flaky shared environment. Supports buf-style imports, OpenAPI 3 / Swagger 2, and GraphQL SDL; additional formats via plugin.</p>
+      <a class="features-block-docs-link" href="{{ '/features.html#schema-upload' | relative_url }}">Offline schema mode &rarr;</a>
+    </div>
+    <div class="features-block-screenshot">
+      {% include themed-img.html src="/assets/images/screenshots/schema-upload.png" alt="Upload a .proto / OpenAPI / GraphQL SDL and browse the API surface offline" %}
+    </div>
+  </div>
+</section>
+
+<section class="features-page-cta">
+  <div class="features-page-cta-inner">
+    <h2 class="features-page-cta-title">Turn the reference into a playground</h2>
+    <p class="features-page-cta-lede">Runnable examples, per-language exports, offline-from-schema authoring &mdash; no SaaS, no account, MIT-licensed.</p>
+    <a class="btn btn-secondary features-page-cta-btn" href="{{ '/docs/features/export-import.html' | relative_url }}">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+      Go to the export &amp; import docs
+    </a>
+  </div>
+</section>

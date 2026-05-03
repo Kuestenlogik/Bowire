@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Description>Bowire.Mcp — exposes the Bowire workbench itself as an MCP server, so AI agents (Claude Desktop, Cursor, Copilot) can drive discovery, invocation, recording, mocking, and replay through the Model Context Protocol. Sibling of Kuestenlogik.Bowire.Mock; the third row of the MCP surface area: Bowire as MCP server for its own operations (Kuestenlogik.Bowire.Protocol.Mcp covers the other two — Bowire as MCP client and as MCP adapter for fremd-protocols). Built on the official ModelContextProtocol C# SDK (1.2.x). Mount via `services.AddBowireMcp() + endpoints.MapBowireMcp(...)` for HTTP/SSE binding or run `bowire mcp serve` for stdio transport.</Description>
+    <PackageId>Kuestenlogik.Bowire.Mcp</PackageId>
+    <PackageTags>bowire;mcp;ai;claude;copilot;cursor;model-context-protocol;tools;workbench;developer-tools</PackageTags>
+    <IsPackable>true</IsPackable>
+    <!-- CA1873: false positive on debug log calls whose template arguments
+         are property/local reads (no allocation, no virtual dispatch).
+         Same suppression as Kuestenlogik.Bowire.Mock. -->
+    <NoWarn>$(NoWarn);CA1873</NoWarn>
+  </PropertyGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="bowire" />
+    <InternalsVisibleTo Include="Kuestenlogik.Bowire.Tests" />
+    <InternalsVisibleTo Include="Kuestenlogik.Bowire.IntegrationTests" />
+    <InternalsVisibleTo Include="Kuestenlogik.Bowire.Mcp.Tests" />
+  </ItemGroup>
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Kuestenlogik.Bowire\Kuestenlogik.Bowire.csproj" />
+    <!-- Bowire.Mock is referenced for Phase-3 mock lifecycle tools
+         (bowire.mock.start / bowire.mock.stop). Without it the Mcp
+         tools class can't drive MockServer.StartAsync. -->
+    <ProjectReference Include="..\Kuestenlogik.Bowire.Mock\Kuestenlogik.Bowire.Mock.csproj" />
+    <PackageReference Include="ModelContextProtocol" />
+    <PackageReference Include="ModelContextProtocol.AspNetCore" />
+  </ItemGroup>
+</Project>

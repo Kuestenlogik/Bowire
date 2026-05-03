@@ -1,0 +1,836 @@
+<section class="comparison" id="comparison">
+  <div class="container">
+    <h2 class="section-title">Pick the right tool</h2>
+    <p class="section-subtitle">Postman, Scalar, Swashbuckle, Insomnia, Bruno &mdash; every API tool has its sweet spot.<br>Here's where Bowire lands.</p>
+
+    <!-- Positioning strip — each tool's "best for" line in one glance. The
+         competitor cards are buttons: click to reveal the "why not X?"
+         positioning detail inline below. Bowire's card is the static
+         highlight (no click target). gRPC UI / grpcurl sits here as a
+         single-protocol alternative. -->
+    {%- comment -%}
+    Tablist with role=tab children — per WAI-ARIA, tab elements must be
+    direct children of their tablist (no <li> wrappers). Switched from
+    <ul><li><button> to a flex <div> + direct <button>s so screen
+    readers walk the strip as a tablist correctly.
+    {%- endcomment -%}
+    <div class="comparison-bestfor-strip" role="tablist" aria-label="Tool positioning summary">
+      <div class="comparison-bestfor-card comparison-bestfor-card-bowire">
+        <span class="comparison-bestfor-name">Bowire</span>
+        <span class="comparison-bestfor-tag">.NET, multi-protocol deployment</span>
+      </div>
+      <span class="comparison-bestfor-vs" aria-hidden="true">vs.</span>
+      <button class="comparison-bestfor-card" type="button" role="tab" aria-selected="false" aria-controls="comparison-pos-postman" data-target="postman">
+        <span class="comparison-bestfor-name">Postman</span>
+        <span class="comparison-bestfor-tag">Cloud teams</span>
+      </button>
+      <button class="comparison-bestfor-card" type="button" role="tab" aria-selected="false" aria-controls="comparison-pos-scalar" data-target="scalar">
+        <span class="comparison-bestfor-name">Scalar</span>
+        <span class="comparison-bestfor-tag">API docs</span>
+      </button>
+      <button class="comparison-bestfor-card" type="button" role="tab" aria-selected="false" aria-controls="comparison-pos-swashbuckle" data-target="swashbuckle">
+        <span class="comparison-bestfor-name">Swashbuckle</span>
+        <span class="comparison-bestfor-tag">Legacy .NET OpenAPI</span>
+      </button>
+      <button class="comparison-bestfor-card" type="button" role="tab" aria-selected="false" aria-controls="comparison-pos-insomnia" data-target="insomnia">
+        <span class="comparison-bestfor-name">Insomnia</span>
+        <span class="comparison-bestfor-tag">REST + GraphQL desktop</span>
+      </button>
+      <button class="comparison-bestfor-card" type="button" role="tab" aria-selected="false" aria-controls="comparison-pos-bruno" data-target="bruno">
+        <span class="comparison-bestfor-name">Bruno</span>
+        <span class="comparison-bestfor-tag">Git-native REST client</span>
+      </button>
+      <button class="comparison-bestfor-card" type="button" role="tab" aria-selected="false" aria-controls="comparison-pos-grpcui" data-target="grpcui">
+        <span class="comparison-bestfor-name">gRPC UI / grpcurl</span>
+        <span class="comparison-bestfor-tag">Single-protocol gRPC</span>
+      </button>
+    </div>
+    <p class="comparison-bestfor-footnote">Shell tools (curl, HTTPie) aren&rsquo;t listed &mdash; Bowire exports every call as a curl snippet when you need one.</p>
+
+    <!-- Positioning panels — one visible at a time when a competitor card
+         is clicked above. Default state: placeholder visible with a CTA to
+         pick a card; the per-tool panels sit hidden until a card is active. -->
+    <div class="comparison-bestfor-panels">
+      <div class="comparison-bestfor-placeholder">
+        <svg class="comparison-bestfor-placeholder-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5"/><polyline points="5 12 12 5 19 12"/></svg>
+        <p>Pick a tool above to see when it fits better than Bowire &mdash; and when Bowire is the right call.</p>
+      </div>
+
+      <div class="comparison-bestfor-panel" id="comparison-pos-postman" data-panel="postman" role="tabpanel" hidden>
+        <h4 class="comparison-bestfor-panel-title">Bowire vs. Postman</h4>
+        <p><strong>Pick Postman</strong> when a distributed team collaborates on curated API collections in the cloud, your stack is primarily REST / GraphQL / WebSocket, and features like Agent Mode, Public Workspaces, and seat-based sync are worth the account + subscription.</p>
+        <p><strong>Pick Bowire</strong> when you need more protocols (gRPC streaming, SignalR, MCP, MQTT, Socket.IO, OData, &hellip;) in one workbench, want local-first (no Kong/Postman account, no cloud), or need the UI embedded in your ASP.NET service for ops teams.</p>
+      </div>
+
+      <div class="comparison-bestfor-panel" id="comparison-pos-scalar" data-panel="scalar" role="tabpanel" hidden>
+        <h4 class="comparison-bestfor-panel-title">Bowire vs. Scalar</h4>
+        <p><strong>Pick Scalar</strong> when your workflow is <em>spec-first</em>: an <code>openapi.yaml</code> / <code>swagger.json</code> is the source of truth, server + clients are generated from it, and you want a polished public docs site with a built-in Try-it console. Scalar reads the spec and renders it beautifully &mdash; great fit for contract-first REST APIs where the contract is designed before implementation.</p>
+        <p><strong>Pick Bowire</strong> when the direction is reversed: a running server is the source of truth and Bowire <em>discovers</em> the contract at runtime (gRPC reflection, the OpenAPI document the server emits, SignalR hub enumeration, GraphQL introspection, &hellip;). Bowire lands one workbench across every protocol your service actually speaks &mdash; not only REST &mdash; and embeds directly inside the ASP.NET app instead of being a separate hosted site.</p>
+      </div>
+
+      <div class="comparison-bestfor-panel" id="comparison-pos-swashbuckle" data-panel="swashbuckle" role="tabpanel" hidden>
+        <h4 class="comparison-bestfor-panel-title">Bowire vs. Swashbuckle / <code>Microsoft.AspNetCore.OpenApi</code></h4>
+        <p><strong>Pick Swashbuckle</strong> (or Microsoft&rsquo;s new built-in OpenAPI in .NET 9+) when pre-built / offline generation and distribution of OpenAPI specs is enough for your workflow. Note that Swagger UI itself is legacy &mdash; Scalar or Bowire make a simple migration path, both consume the same OpenAPI document you already emit.</p>
+        <p><strong>Pick Bowire</strong> when the same service exposes gRPC, SignalR, WebSocket, MCP, or other protocols alongside REST. Bowire reads the OpenAPI document you already generate and layers every other protocol on top &mdash; one workbench instead of five different tools.</p>
+      </div>
+
+      <div class="comparison-bestfor-panel" id="comparison-pos-insomnia" data-panel="insomnia" role="tabpanel" hidden>
+        <h4 class="comparison-bestfor-panel-title">Bowire vs. Insomnia</h4>
+        <p><strong>Pick Insomnia</strong> when you want a solid local-first desktop client for REST / GraphQL / gRPC / WebSocket, and you&rsquo;re fine with Kong&rsquo;s account layer for Sync, Teams, and the Dev Portal.</p>
+        <p><strong>Pick Bowire</strong> when you also need SignalR, MCP, MQTT, Socket.IO, OData, or custom protocols, or when you want the workbench embedded in your ASP.NET service instead of running a separate desktop app. No Kong account required for anything.</p>
+      </div>
+
+      <div class="comparison-bestfor-panel" id="comparison-pos-bruno" data-panel="bruno" role="tabpanel" hidden>
+        <h4 class="comparison-bestfor-panel-title">Bowire vs. Bruno</h4>
+        <p><strong>Pick Bruno</strong> when Git-native collections are your priority &mdash; REST / GraphQL / basic gRPC with <code>.bru</code> files committed to your repo. No cloud, no account, just text files reviewed like code.</p>
+        <p><strong>Pick Bowire</strong> when you need gRPC streaming, GraphQL subscriptions, SignalR hubs, MQTT topics, Socket.IO, or the workbench embedded in your ASP.NET service. (Bowire will ship Git-native workspace files too &mdash; see the roadmap.)</p>
+      </div>
+
+      <div class="comparison-bestfor-panel" id="comparison-pos-grpcui" data-panel="grpcui" role="tabpanel" hidden>
+        <h4 class="comparison-bestfor-panel-title">Bowire vs. gRPC UI / grpcurl</h4>
+        <p><strong>Pick gRPC UI or grpcurl</strong> when you only care about gRPC and want a lightweight, single-purpose tool with minimal setup.</p>
+        <p><strong>Pick Bowire</strong> when the same service exposes REST or SignalR alongside gRPC and you don&rsquo;t want to switch tools mid-session. Bowire also has a Wireshark-style append-only streaming view that beats the chat-style drawer for long duplex sessions.</p>
+      </div>
+    </div>
+
+    <div class="comparison-matrix-intro">
+      <h3 class="comparison-matrix-heading">Dig into the details</h3>
+      <p class="comparison-matrix-desc">The positioning above is the quick read. The table below is the exhaustive check &mdash; useful when you're evaluating Bowire for a specific project.</p>
+    </div>
+
+    <!-- Symbol legend for the three-state circles used throughout the
+         feature matrix. Hover any partial-circle in the table for the
+         specific reason (e.g. "Enterprise (paid)"). -->
+    <ul class="comparison-legend" aria-label="Symbol legend">
+      <li>
+        <span class="comparison-legend-marker comparison-legend-yes" aria-hidden="true"></span>
+        Full support
+      </li>
+      <li>
+        <span class="comparison-legend-marker comparison-legend-partial" aria-hidden="true"></span>
+        Partial / limited (hover for details)
+      </li>
+      <li>
+        <span class="comparison-legend-marker comparison-legend-no" aria-hidden="true"></span>
+        Not supported
+      </li>
+    </ul>
+
+    <div class="comparison-table-wrap">
+      <table class="comparison-table">
+        <thead>
+          <tr>
+            <th class="comparison-feature-col"></th>
+            <th class="comparison-bowire">
+              <span class="comparison-brand">Bowire</span>
+            </th>
+            <th>Postman</th>
+            <th>Scalar</th>
+            <th>Swashbuckle</th>
+            <th>Insomnia</th>
+            <th>Bruno</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="comparison-row-expandable" data-group="protocols">
+            <td class="comparison-feature">
+              <button class="comparison-row-toggle" type="button" aria-expanded="false" aria-controls="comparison-sub-protocols">
+                <span class="comparison-row-toggle-label">Multi-protocol support</span>
+                <svg class="comparison-chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="5 3 11 8 5 13"/></svg>
+              </button>
+            </td>
+            <td class="comparison-bowire" data-detail="gRPC, REST, GraphQL, SignalR, MCP, SSE, WebSocket, MQTT, Socket.IO, OData, Storm, Kafka, DIS, UDP — plus any custom protocol via plugin">10+</td>
+            <td data-detail="REST, GraphQL, gRPC, WebSocket, MQTT, Socket.IO, MCP">7</td>
+            <td data-detail="REST via OpenAPI / Swagger import">1</td>
+            <td data-detail="REST via ASP.NET OpenAPI document">1</td>
+            <td data-detail="REST, GraphQL, gRPC, WebSocket, SSE">5</td>
+            <td data-detail="REST, GraphQL, gRPC, WebSocket">4</td>
+          </tr>
+          <!-- Sub-rows for the Multi-protocol row — one line per protocol with
+               concrete ✓/✗ per tool. Hidden by default; JS toggles visibility
+               when the parent row's chevron is clicked. Values reflect core
+               (non-beta) support as of 2026-04; verify against each tool's
+               docs before publishing. -->
+          <tr class="comparison-row-sub" data-group="protocols">
+            <td class="comparison-feature comparison-feature-sub">gRPC</td>
+            <td class="comparison-bowire c-yes">✓</td>
+            <td class="c-yes">✓</td>
+            <td class="c-no">✗</td>
+            <td class="c-no">✗</td>
+            <td class="c-yes">✓</td>
+            <td class="c-partial" data-detail="Preview support; streaming is limited">partial</td>
+          </tr>
+          <tr class="comparison-row-sub" data-group="protocols">
+            <td class="comparison-feature comparison-feature-sub">REST / HTTP</td>
+            <td class="comparison-bowire c-yes">✓</td>
+            <td class="c-yes">✓</td>
+            <td class="c-yes">✓</td>
+            <td class="c-yes">✓</td>
+            <td class="c-yes">✓</td>
+            <td class="c-yes">✓</td>
+          </tr>
+          <tr class="comparison-row-sub" data-group="protocols">
+            <td class="comparison-feature comparison-feature-sub">GraphQL</td>
+            <td class="comparison-bowire c-yes">✓</td>
+            <td class="c-yes">✓</td>
+            <td class="c-no">✗</td>
+            <td class="c-no">✗</td>
+            <td class="c-yes">✓</td>
+            <td class="c-partial" data-detail="Queries + mutations; no subscriptions">partial</td>
+          </tr>
+          <tr class="comparison-row-sub" data-group="protocols">
+            <td class="comparison-feature comparison-feature-sub">SignalR</td>
+            <td class="comparison-bowire c-yes">✓</td>
+            <td class="c-no">✗</td>
+            <td class="c-no">✗</td>
+            <td class="c-no">✗</td>
+            <td class="c-no">✗</td>
+            <td class="c-no">✗</td>
+          </tr>
+          <tr class="comparison-row-sub" data-group="protocols">
+            <td class="comparison-feature comparison-feature-sub">MCP</td>
+            <td class="comparison-bowire c-yes">✓</td>
+            <td class="c-yes">✓</td>
+            <td class="c-no">✗</td>
+            <td class="c-no">✗</td>
+            <td class="c-no">✗</td>
+            <td class="c-no">✗</td>
+          </tr>
+          <tr class="comparison-row-sub" data-group="protocols">
+            <td class="comparison-feature comparison-feature-sub">SSE</td>
+            <td class="comparison-bowire c-yes">✓</td>
+            <td class="c-no">✗</td>
+            <td class="c-no">✗</td>
+            <td class="c-no">✗</td>
+            <td class="c-yes">✓</td>
+            <td class="c-no">✗</td>
+          </tr>
+          <tr class="comparison-row-sub" data-group="protocols">
+            <td class="comparison-feature comparison-feature-sub">WebSocket</td>
+            <td class="comparison-bowire c-yes">✓</td>
+            <td class="c-yes">✓</td>
+            <td class="c-no">✗</td>
+            <td class="c-no">✗</td>
+            <td class="c-yes">✓</td>
+            <td class="c-yes">✓</td>
+          </tr>
+          <tr class="comparison-row-sub" data-group="protocols">
+            <td class="comparison-feature comparison-feature-sub">MQTT</td>
+            <td class="comparison-bowire c-yes">✓</td>
+            <td class="c-yes">✓</td>
+            <td class="c-no">✗</td>
+            <td class="c-no">✗</td>
+            <td class="c-no">✗</td>
+            <td class="c-no">✗</td>
+          </tr>
+          <tr class="comparison-row-sub" data-group="protocols">
+            <td class="comparison-feature comparison-feature-sub">Socket.IO</td>
+            <td class="comparison-bowire c-yes">✓</td>
+            <td class="c-yes">✓</td>
+            <td class="c-no">✗</td>
+            <td class="c-no">✗</td>
+            <td class="c-no">✗</td>
+            <td class="c-no">✗</td>
+          </tr>
+          <tr class="comparison-row-sub" data-group="protocols">
+            <td class="comparison-feature comparison-feature-sub">OData</td>
+            <td class="comparison-bowire c-yes">✓</td>
+            <td class="c-no">✗</td>
+            <td class="c-no">✗</td>
+            <td class="c-no">✗</td>
+            <td class="c-no">✗</td>
+            <td class="c-no">✗</td>
+          </tr>
+          <tr class="comparison-row-sub" data-group="protocols">
+            <td class="comparison-feature comparison-feature-sub">Storm</td>
+            <td class="comparison-bowire c-yes">✓</td>
+            <td class="c-no">✗</td>
+            <td class="c-no">✗</td>
+            <td class="c-no">✗</td>
+            <td class="c-no">✗</td>
+            <td class="c-no">✗</td>
+          </tr>
+          <tr class="comparison-row-sub" data-group="protocols">
+            <td class="comparison-feature comparison-feature-sub">Kafka</td>
+            <td class="comparison-bowire c-yes">✓</td>
+            <td class="c-no">✗</td>
+            <td class="c-no">✗</td>
+            <td class="c-no">✗</td>
+            <td class="c-no">✗</td>
+            <td class="c-no">✗</td>
+          </tr>
+          <tr class="comparison-row-sub" data-group="protocols">
+            <td class="comparison-feature comparison-feature-sub">DIS (IEEE 1278)</td>
+            <td class="comparison-bowire c-yes">✓</td>
+            <td class="c-no">✗</td>
+            <td class="c-no">✗</td>
+            <td class="c-no">✗</td>
+            <td class="c-no">✗</td>
+            <td class="c-no">✗</td>
+          </tr>
+          <tr class="comparison-row-sub" data-group="protocols">
+            <td class="comparison-feature comparison-feature-sub">UDP (raw datagrams)</td>
+            <td class="comparison-bowire c-yes">✓</td>
+            <td class="c-no">✗</td>
+            <td class="c-no">✗</td>
+            <td class="c-no">✗</td>
+            <td class="c-no">✗</td>
+            <td class="c-no">✗</td>
+          </tr>
+          <tr class="comparison-row-sub" data-group="protocols">
+            <td class="comparison-feature comparison-feature-sub">Custom (plugin)</td>
+            <td class="comparison-bowire c-yes">✓</td>
+            <td class="c-no">✗</td>
+            <td class="c-no">✗</td>
+            <td class="c-no">✗</td>
+            <td class="c-no">✗</td>
+            <td class="c-no">✗</td>
+          </tr>
+          <tr>
+            <td class="comparison-feature">Custom protocol plugins</td>
+            <td class="comparison-bowire c-yes">✓</td>
+            <td class="c-no">✗</td>
+            <td class="c-no">✗</td>
+            <td class="c-no">✗</td>
+            <td class="c-no">✗</td>
+            <td class="c-no">✗</td>
+          </tr>
+          <tr class="comparison-row-expandable" data-group="discovery">
+            <td class="comparison-feature">
+              <button class="comparison-row-toggle" type="button" aria-expanded="false" aria-controls="comparison-sub-discovery">
+                <span class="comparison-row-toggle-label">Auto-discovery</span>
+                <svg class="comparison-chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="5 3 11 8 5 13"/></svg>
+              </button>
+            </td>
+            <td class="comparison-bowire c-yes">✓</td>
+            <td class="c-partial" data-detail="Manual endpoint configuration required">manual</td>
+            <td class="c-partial" data-detail="Only via OpenAPI / Swagger import">OpenAPI</td>
+            <td class="c-partial" data-detail="Only via ASP.NET OpenAPI document">OpenAPI</td>
+            <td class="c-partial" data-detail="Manual endpoint configuration required">manual</td>
+            <td class="c-partial" data-detail="Manual endpoint configuration required">manual</td>
+          </tr>
+          <tr class="comparison-row-sub" data-group="discovery">
+            <td class="comparison-feature comparison-feature-sub">gRPC Reflection</td>
+            <td class="comparison-bowire c-yes">✓</td>
+            <td class="c-yes">✓</td>
+            <td class="c-no">✗</td>
+            <td class="c-no">✗</td>
+            <td class="c-yes">✓</td>
+            <td class="c-yes">✓</td>
+          </tr>
+          <tr class="comparison-row-sub" data-group="discovery">
+            <td class="comparison-feature comparison-feature-sub">OpenAPI / Swagger import</td>
+            <td class="comparison-bowire c-yes">✓</td>
+            <td class="c-yes">✓</td>
+            <td class="c-yes">✓</td>
+            <td class="c-yes">✓</td>
+            <td class="c-yes">✓</td>
+            <td class="c-yes">✓</td>
+          </tr>
+          <tr class="comparison-row-sub" data-group="discovery">
+            <td class="comparison-feature comparison-feature-sub">GraphQL introspection</td>
+            <td class="comparison-bowire c-yes">✓</td>
+            <td class="c-yes">✓</td>
+            <td class="c-no">✗</td>
+            <td class="c-no">✗</td>
+            <td class="c-yes">✓</td>
+            <td class="c-yes">✓</td>
+          </tr>
+          <tr class="comparison-row-sub" data-group="discovery">
+            <td class="comparison-feature comparison-feature-sub">Proto file loading</td>
+            <td class="comparison-bowire c-yes">✓</td>
+            <td class="c-yes">✓</td>
+            <td class="c-no">✗</td>
+            <td class="c-no">✗</td>
+            <td class="c-yes">✓</td>
+            <td class="c-yes">✓</td>
+          </tr>
+          <tr class="comparison-row-sub" data-group="discovery">
+            <td class="comparison-feature comparison-feature-sub">Schema registry lookup</td>
+            <td class="comparison-bowire">planned</td>
+            <td class="c-no">✗</td>
+            <td class="c-no">✗</td>
+            <td class="c-no">✗</td>
+            <td class="c-no">✗</td>
+            <td class="c-no">✗</td>
+          </tr>
+
+          <tr>
+            <td class="comparison-feature">Embedded in ASP.NET app</td>
+            <td class="comparison-bowire c-yes">✓</td>
+            <td class="c-no">✗</td>
+            <td class="c-yes">✓</td>
+            <td class="c-yes">✓</td>
+            <td class="c-no">✗</td>
+            <td class="c-no">✗</td>
+          </tr>
+          <tr>
+            <td class="comparison-feature">Standalone tool</td>
+            <td class="comparison-bowire c-yes">✓</td>
+            <td class="c-yes">✓</td>
+            <td class="c-no">✗</td>
+            <td class="c-no">✗</td>
+            <td class="c-yes">✓</td>
+            <td class="c-yes">✓</td>
+          </tr>
+          <tr>
+            <td class="comparison-feature">CLI mode</td>
+            <td class="comparison-bowire c-yes">✓</td>
+            <td class="c-yes">✓</td>
+            <td class="c-no">✗</td>
+            <td class="c-no">✗</td>
+            <td class="c-yes">✓</td>
+            <td class="c-yes">✓</td>
+          </tr>
+          <tr class="comparison-row-expandable" data-group="onprem">
+            <td class="comparison-feature">
+              <button class="comparison-row-toggle" type="button" aria-expanded="false" aria-controls="comparison-sub-onprem">
+                <span class="comparison-row-toggle-label">On-premise deployment</span>
+                <svg class="comparison-chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="5 3 11 8 5 13"/></svg>
+              </button>
+            </td>
+            <td class="comparison-bowire c-yes">✓</td>
+            <td class="c-partial" data-detail="Enterprise plan (paid)">Enterprise (paid)</td>
+            <td class="c-yes">✓</td>
+            <td class="c-yes">✓</td>
+            <td class="c-partial" data-detail="Enterprise plan (paid)">Enterprise (paid)</td>
+            <td class="c-yes">✓</td>
+          </tr>
+          <tr class="comparison-row-sub" data-group="onprem">
+            <td class="comparison-feature comparison-feature-sub">Docker image</td>
+            <td class="comparison-bowire">planned</td>
+            <td class="c-yes">✓</td>
+            <td class="c-yes">✓</td>
+            <td class="c-yes">✓</td>
+            <td class="c-yes">✓</td>
+            <td class="c-yes">✓</td>
+          </tr>
+          <tr class="comparison-row-sub" data-group="onprem">
+            <td class="comparison-feature comparison-feature-sub">Compose manifest</td>
+            <td class="comparison-bowire">planned</td>
+            <td class="c-yes">✓</td>
+            <td class="c-yes">✓</td>
+            <td class="c-yes">✓</td>
+            <td class="c-yes">✓</td>
+            <td class="c-yes">✓</td>
+          </tr>
+          <tr class="comparison-row-sub" data-group="onprem">
+            <td class="comparison-feature comparison-feature-sub">Kubernetes / Helm</td>
+            <td class="comparison-bowire">planned</td>
+            <td class="c-yes">✓</td>
+            <td class="c-yes">✓</td>
+            <td class="c-yes">✓</td>
+            <td class="c-yes">✓</td>
+            <td class="c-partial" data-detail="Manual K8s manifest required">manual</td>
+          </tr>
+          <tr class="comparison-row-sub" data-group="onprem">
+            <td class="comparison-feature comparison-feature-sub">Air-gapped install</td>
+            <td class="comparison-bowire c-yes">✓</td>
+            <td class="c-partial" data-detail="Enterprise plan (paid)">Enterprise (paid)</td>
+            <td class="c-yes">✓</td>
+            <td class="c-yes">✓</td>
+            <td class="c-partial" data-detail="Enterprise plan (paid)">Enterprise (paid)</td>
+            <td class="c-yes">✓</td>
+          </tr>
+          <tr class="comparison-row-sub" data-group="onprem">
+            <td class="comparison-feature comparison-feature-sub">SSO / SCIM</td>
+            <td class="comparison-bowire c-no">✗</td>
+            <td class="c-partial" data-detail="Enterprise plan (paid)">Enterprise (paid)</td>
+            <td class="c-partial" data-detail="Enterprise plan (paid)">Enterprise (paid)</td>
+            <td class="c-no">✗</td>
+            <td class="c-partial" data-detail="Enterprise plan (paid)">Enterprise (paid)</td>
+            <td class="c-no">✗</td>
+          </tr>
+          <tr>
+            <td class="comparison-feature">Native .NET (no Electron)</td>
+            <td class="comparison-bowire c-yes">✓</td>
+            <td class="c-no">✗</td>
+            <td class="c-partial" data-detail="Requires Scalar.AspNetCore NuGet package">via Scalar.AspNetCore</td>
+            <td class="c-yes">✓</td>
+            <td class="c-no">✗</td>
+            <td class="c-no">✗</td>
+          </tr>
+
+          <tr class="comparison-row-expandable" data-group="recorder">
+            <td class="comparison-feature">
+              <button class="comparison-row-toggle" type="button" aria-expanded="false" aria-controls="comparison-sub-recorder">
+                <span class="comparison-row-toggle-label">Recorder + replay</span>
+                <svg class="comparison-chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="5 3 11 8 5 13"/></svg>
+              </button>
+            </td>
+            <td class="comparison-bowire c-yes">✓</td>
+            <td class="c-partial" data-detail="Via Postman Collections">Collections</td>
+            <td class="c-no">✗</td>
+            <td class="c-no">✗</td>
+            <td class="c-partial" data-detail="Partial recording support">partial</td>
+            <td class="c-no">✗</td>
+          </tr>
+          <tr class="comparison-row-sub" data-group="recorder">
+            <td class="comparison-feature comparison-feature-sub">Record session</td>
+            <td class="comparison-bowire c-yes">✓</td>
+            <td class="c-yes">✓</td>
+            <td class="c-no">✗</td>
+            <td class="c-no">✗</td>
+            <td class="c-yes">✓</td>
+            <td class="c-no">✗</td>
+          </tr>
+          <tr class="comparison-row-sub" data-group="recorder">
+            <td class="comparison-feature comparison-feature-sub">Replay against env</td>
+            <td class="comparison-bowire c-yes">✓</td>
+            <td class="c-yes">✓</td>
+            <td class="c-no">✗</td>
+            <td class="c-no">✗</td>
+            <td class="c-yes">✓</td>
+            <td class="c-no">✗</td>
+          </tr>
+          <tr class="comparison-row-sub" data-group="recorder">
+            <td class="comparison-feature comparison-feature-sub">HAR export</td>
+            <td class="comparison-bowire c-yes">✓</td>
+            <td class="c-yes">✓</td>
+            <td class="c-no">✗</td>
+            <td class="c-no">✗</td>
+            <td class="c-yes">✓</td>
+            <td class="c-no">✗</td>
+          </tr>
+          <tr class="comparison-row-sub" data-group="recorder">
+            <td class="comparison-feature comparison-feature-sub">Convert to test assertions</td>
+            <td class="comparison-bowire c-yes">✓</td>
+            <td class="c-yes">✓</td>
+            <td class="c-no">✗</td>
+            <td class="c-no">✗</td>
+            <td class="c-partial" data-detail="Only via the Inso CLI, not in the GUI">via Inso CLI</td>
+            <td class="c-no">✗</td>
+          </tr>
+          <tr class="comparison-row-sub" data-group="recorder">
+            <td class="comparison-feature comparison-feature-sub">Native export format</td>
+            <td class="comparison-bowire">.blr</td>
+            <td>Collection JSON</td>
+            <td class="c-no">✗</td>
+            <td class="c-no">✗</td>
+            <td>Insomnia JSON</td>
+            <td>.bru</td>
+          </tr>
+          <tr>
+            <td class="comparison-feature">Replay as mock server</td>
+            <td class="comparison-bowire c-yes">✓</td>
+            <td class="c-partial" data-detail="Paid cloud tier only">paid cloud</td>
+            <td class="c-no">✗</td>
+            <td class="c-no">✗</td>
+            <td class="c-partial" data-detail="Self-host available in Enterprise plan">self-host (Enterprise)</td>
+            <td class="c-no">✗</td>
+          </tr>
+          <tr>
+            <td class="comparison-feature">Multiple duplex channels</td>
+            <td class="comparison-bowire c-yes">✓</td>
+            <td class="c-partial" data-detail="One channel at a time (serial, not parallel)">one at a time</td>
+            <td class="c-no">✗</td>
+            <td class="c-no">✗</td>
+            <td class="c-partial" data-detail="One channel at a time (serial, not parallel)">one at a time</td>
+            <td class="c-partial" data-detail="One channel at a time (serial, not parallel)">one at a time</td>
+          </tr>
+          <tr class="comparison-row-expandable" data-group="flows">
+            <td class="comparison-feature">
+              <button class="comparison-row-toggle" type="button" aria-expanded="false" aria-controls="comparison-sub-flows">
+                <span class="comparison-row-toggle-label">Visual flow editor</span>
+                <svg class="comparison-chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="5 3 11 8 5 13"/></svg>
+              </button>
+            </td>
+            <td class="comparison-bowire c-yes">✓</td>
+            <td class="c-partial" data-detail="Paid cloud tier only">paid cloud</td>
+            <td class="c-no">✗</td>
+            <td class="c-no">✗</td>
+            <td class="c-no">✗</td>
+            <td class="c-no">✗</td>
+          </tr>
+          <tr class="comparison-row-sub" data-group="flows">
+            <td class="comparison-feature comparison-feature-sub">Branching (if / else)</td>
+            <td class="comparison-bowire c-yes">✓</td>
+            <td class="c-partial" data-detail="Paid cloud tier only">paid cloud</td>
+            <td class="c-no">✗</td>
+            <td class="c-no">✗</td>
+            <td class="c-no">✗</td>
+            <td class="c-no">✗</td>
+          </tr>
+          <tr class="comparison-row-sub" data-group="flows">
+            <td class="comparison-feature comparison-feature-sub">Loops</td>
+            <td class="comparison-bowire c-yes">✓</td>
+            <td class="c-partial" data-detail="Paid cloud tier only">paid cloud</td>
+            <td class="c-no">✗</td>
+            <td class="c-no">✗</td>
+            <td class="c-no">✗</td>
+            <td class="c-no">✗</td>
+          </tr>
+          <tr class="comparison-row-sub" data-group="flows">
+            <td class="comparison-feature comparison-feature-sub">Delays / wait steps</td>
+            <td class="comparison-bowire c-yes">✓</td>
+            <td class="c-partial" data-detail="Paid cloud tier only">paid cloud</td>
+            <td class="c-no">✗</td>
+            <td class="c-no">✗</td>
+            <td class="c-no">✗</td>
+            <td class="c-no">✗</td>
+          </tr>
+          <tr class="comparison-row-sub" data-group="flows">
+            <td class="comparison-feature comparison-feature-sub">Variable forwarding</td>
+            <td class="comparison-bowire c-yes">✓</td>
+            <td class="c-partial" data-detail="Paid cloud tier only">paid cloud</td>
+            <td class="c-no">✗</td>
+            <td class="c-no">✗</td>
+            <td class="c-no">✗</td>
+            <td class="c-no">✗</td>
+          </tr>
+          <tr class="comparison-row-sub" data-group="flows">
+            <td class="comparison-feature comparison-feature-sub">Per-step assertions</td>
+            <td class="comparison-bowire c-yes">✓</td>
+            <td class="c-partial" data-detail="Paid cloud tier only">paid cloud</td>
+            <td class="c-no">✗</td>
+            <td class="c-no">✗</td>
+            <td class="c-no">✗</td>
+            <td class="c-no">✗</td>
+          </tr>
+          <tr>
+            <td class="comparison-feature">Performance / load testing</td>
+            <td class="comparison-bowire c-yes">✓</td>
+            <td class="c-partial" data-detail="Via separate k6 integration">k6 (separate)</td>
+            <td class="c-no">✗</td>
+            <td class="c-no">✗</td>
+            <td class="c-no">✗</td>
+            <td class="c-no">✗</td>
+          </tr>
+
+          <tr>
+            <td class="comparison-feature">Local-first, no account</td>
+            <td class="comparison-bowire c-yes">✓</td>
+            <td class="c-partial" data-detail="Postman account required for free tier">account required</td>
+            <td class="c-partial" data-detail="OSS client is local; hosted platform is cloud">cloud-hosted</td>
+            <td class="c-yes">✓</td>
+            <td class="c-partial" data-detail="Kong account required for most features">account required</td>
+            <td class="c-yes">✓</td>
+          </tr>
+          <tr>
+            <td class="comparison-feature">Git-native workspace</td>
+            <td class="comparison-bowire">planned</td>
+            <td class="c-no">✗</td>
+            <td class="c-no">✗</td>
+            <td class="c-no">✗</td>
+            <td class="c-partial" data-detail="Git Sync available, but requires Kong cloud">Git Sync (cloud)</td>
+            <td class="c-yes">✓</td>
+          </tr>
+          <tr class="comparison-row-expandable" data-group="catalog">
+            <td class="comparison-feature">
+              <button class="comparison-row-toggle" type="button" aria-expanded="false" aria-controls="comparison-sub-catalog">
+                <span class="comparison-row-toggle-label">Public API catalog</span>
+                <svg class="comparison-chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="5 3 11 8 5 13"/></svg>
+              </button>
+            </td>
+            <td class="comparison-bowire">via Storm Registry</td>
+            <td class="c-yes-text">Public Workspaces</td>
+            <td class="c-yes">✓</td>
+            <td class="c-partial" data-detail="Hosted Swagger UI at /swagger">Swagger UI</td>
+            <td class="c-partial" data-detail="Kong Dev Portal (Enterprise)">partial</td>
+            <td class="c-no">✗</td>
+          </tr>
+          <tr class="comparison-row-sub" data-group="catalog">
+            <td class="comparison-feature comparison-feature-sub">Hosted docs page</td>
+            <td class="comparison-bowire c-no">✗</td>
+            <td class="c-yes">✓</td>
+            <td class="c-yes">✓</td>
+            <td class="c-yes">✓</td>
+            <td class="c-partial" data-detail="Via Kong Developer Portal">Kong portal</td>
+            <td class="c-no">✗</td>
+          </tr>
+          <tr class="comparison-row-sub" data-group="catalog">
+            <td class="comparison-feature comparison-feature-sub">Custom domain</td>
+            <td class="comparison-bowire c-no">✗</td>
+            <td class="c-partial" data-detail="Enterprise plan (paid)">Enterprise (paid)</td>
+            <td class="c-partial" data-detail="Scalar Pro tier (paid)">Pro (paid)</td>
+            <td class="c-yes">✓</td>
+            <td class="c-no">✗</td>
+            <td class="c-no">✗</td>
+          </tr>
+          <tr class="comparison-row-sub" data-group="catalog">
+            <td class="comparison-feature comparison-feature-sub">Try-It-Out widget</td>
+            <td class="comparison-bowire">via client</td>
+            <td class="c-yes">✓</td>
+            <td class="c-yes">✓</td>
+            <td class="c-yes">✓</td>
+            <td class="c-no">✗</td>
+            <td class="c-no">✗</td>
+          </tr>
+          <tr class="comparison-row-sub" data-group="catalog">
+            <td class="comparison-feature comparison-feature-sub">API versioning</td>
+            <td class="comparison-bowire">via Storm Registry</td>
+            <td class="c-yes">✓</td>
+            <td class="c-partial" data-detail="Scalar Pro tier (paid)">Pro (paid)</td>
+            <td class="c-partial" data-detail="Manual via OpenAPI document">manual</td>
+            <td class="c-no">✗</td>
+            <td class="c-no">✗</td>
+          </tr>
+          <tr class="comparison-row-sub" data-group="catalog">
+            <td class="comparison-feature comparison-feature-sub">Catalog / search</td>
+            <td class="comparison-bowire">via Storm Registry</td>
+            <td class="c-partial" data-detail="Postman Public API Network">Public API Network</td>
+            <td class="c-yes">✓</td>
+            <td class="c-no">✗</td>
+            <td class="c-no">✗</td>
+            <td class="c-no">✗</td>
+          </tr>
+          <tr class="comparison-row-expandable" data-group="mcp">
+            <td class="comparison-feature">
+              <button class="comparison-row-toggle" type="button" aria-expanded="false" aria-controls="comparison-sub-mcp">
+                <span class="comparison-row-toggle-label">MCP adapter</span>
+                <svg class="comparison-chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="5 3 11 8 5 13"/></svg>
+              </button>
+            </td>
+            <td class="comparison-bowire">any protocol</td>
+            <td>full MCP server</td>
+            <td class="c-partial" data-detail="REST docs only, via OpenAPI">REST docs only</td>
+            <td class="c-no">✗</td>
+            <td class="c-partial" data-detail="MCP client only, not server">client only</td>
+            <td class="c-no">✗</td>
+          </tr>
+          <tr class="comparison-row-sub" data-group="mcp">
+            <td class="comparison-feature comparison-feature-sub">Tools capability</td>
+            <td class="comparison-bowire c-yes">✓</td>
+            <td class="c-yes">✓</td>
+            <td class="c-no">✗</td>
+            <td class="c-no">✗</td>
+            <td class="c-no">✗</td>
+            <td class="c-no">✗</td>
+          </tr>
+          <tr class="comparison-row-sub" data-group="mcp">
+            <td class="comparison-feature comparison-feature-sub">Resources capability</td>
+            <td class="comparison-bowire">planned</td>
+            <td class="c-yes">✓</td>
+            <td class="c-partial" data-detail="Docs content exposed as MCP resources">docs-as-resources</td>
+            <td class="c-no">✗</td>
+            <td class="c-no">✗</td>
+            <td class="c-no">✗</td>
+          </tr>
+          <tr class="comparison-row-sub" data-group="mcp">
+            <td class="comparison-feature comparison-feature-sub">Prompts capability</td>
+            <td class="comparison-bowire">planned</td>
+            <td class="c-yes">✓</td>
+            <td class="c-no">✗</td>
+            <td class="c-no">✗</td>
+            <td class="c-no">✗</td>
+            <td class="c-no">✗</td>
+          </tr>
+          <tr class="comparison-row-sub" data-group="mcp">
+            <td class="comparison-feature comparison-feature-sub">stdio transport</td>
+            <td class="comparison-bowire c-yes">✓</td>
+            <td class="c-yes">✓</td>
+            <td class="c-no">✗</td>
+            <td class="c-no">✗</td>
+            <td class="c-partial" data-detail="MCP client only, not server">client only</td>
+            <td class="c-no">✗</td>
+          </tr>
+          <tr class="comparison-row-sub" data-group="mcp">
+            <td class="comparison-feature comparison-feature-sub">SSE transport</td>
+            <td class="comparison-bowire">planned</td>
+            <td class="c-yes">✓</td>
+            <td class="c-no">✗</td>
+            <td class="c-no">✗</td>
+            <td class="c-no">✗</td>
+            <td class="c-no">✗</td>
+          </tr>
+          <tr class="comparison-row-sub" data-group="mcp">
+            <td class="comparison-feature comparison-feature-sub">HTTP transport</td>
+            <td class="comparison-bowire">planned</td>
+            <td class="c-yes">✓</td>
+            <td class="c-no">✗</td>
+            <td class="c-no">✗</td>
+            <td class="c-no">✗</td>
+            <td class="c-no">✗</td>
+          </tr>
+          <tr class="comparison-row-expandable" data-group="platformops">
+            <td class="comparison-feature">
+              <button class="comparison-row-toggle" type="button" aria-expanded="false" aria-controls="comparison-sub-platformops">
+                <span class="comparison-row-toggle-label">Platform ops as MCP tools</span>
+                <svg class="comparison-chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="5 3 11 8 5 13"/></svg>
+              </button>
+            </td>
+            <td class="comparison-bowire">planned</td>
+            <td class="c-yes">✓</td>
+            <td class="c-no">✗</td>
+            <td class="c-no">✗</td>
+            <td class="c-no">✗</td>
+            <td class="c-no">✗</td>
+          </tr>
+          <tr class="comparison-row-sub" data-group="platformops">
+            <td class="comparison-feature comparison-feature-sub">Recording start / stop</td>
+            <td class="comparison-bowire">planned</td>
+            <td class="c-yes">✓</td>
+            <td class="c-no">✗</td>
+            <td class="c-no">✗</td>
+            <td class="c-no">✗</td>
+            <td class="c-no">✗</td>
+          </tr>
+          <tr class="comparison-row-sub" data-group="platformops">
+            <td class="comparison-feature comparison-feature-sub">Environment switch</td>
+            <td class="comparison-bowire">planned</td>
+            <td class="c-yes">✓</td>
+            <td class="c-no">✗</td>
+            <td class="c-no">✗</td>
+            <td class="c-no">✗</td>
+            <td class="c-no">✗</td>
+          </tr>
+          <tr class="comparison-row-sub" data-group="platformops">
+            <td class="comparison-feature comparison-feature-sub">Replay execute</td>
+            <td class="comparison-bowire">planned</td>
+            <td class="c-yes">✓</td>
+            <td class="c-no">✗</td>
+            <td class="c-no">✗</td>
+            <td class="c-no">✗</td>
+            <td class="c-no">✗</td>
+          </tr>
+          <tr class="comparison-row-sub" data-group="platformops">
+            <td class="comparison-feature comparison-feature-sub">Mock spin-up</td>
+            <td class="comparison-bowire">planned</td>
+            <td class="c-yes">✓</td>
+            <td class="c-no">✗</td>
+            <td class="c-no">✗</td>
+            <td class="c-no">✗</td>
+            <td class="c-no">✗</td>
+          </tr>
+          <tr class="comparison-row-sub" data-group="platformops">
+            <td class="comparison-feature comparison-feature-sub">Collection / workspace mgmt</td>
+            <td class="comparison-bowire c-no">✗</td>
+            <td class="c-yes">✓</td>
+            <td class="c-no">✗</td>
+            <td class="c-no">✗</td>
+            <td class="c-no">✗</td>
+            <td class="c-no">✗</td>
+          </tr>
+          <tr>
+            <td class="comparison-feature">License</td>
+            <td class="comparison-bowire">Apache 2.0</td>
+            <td>Proprietary</td>
+            <td>MIT</td>
+            <td>MIT</td>
+            <td>Apache 2.0 (core only!)</td>
+            <td>MIT</td>
+          </tr>
+          <tr>
+            <td class="comparison-feature">Price</td>
+            <td class="comparison-bowire">Free</td>
+            <td>Freemium</td>
+            <td>Freemium</td>
+            <td>Free</td>
+            <td>Freemium</td>
+            <td>Free</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p class="comparison-footnote">
+      Comparison reflects the public feature matrix as of 2026-04. Postman, Scalar, Swashbuckle, Insomnia and Bruno are excellent tools in their own niches &mdash; Bowire is designed for the .NET ecosystem and devs who want every protocol in one place, embeddable into their own service, with zero account walls.
+    </p>
+    <p class="comparison-footnote comparison-footnote-correction">
+      Spotted something wrong? Tools move fast &mdash; if we&rsquo;ve misrepresented a feature or missed one that has since shipped, please <a href="https://github.com/Kuestenlogik/Bowire/issues/new?labels=comparison-table" target="_blank" rel="noopener">open an issue</a> and we&rsquo;ll update the matrix.
+    </p>
+    <p class="features-detail-cta">
+      Below decks: <a href="{{ '/features.html' | relative_url }}">tour every feature &rarr;</a>
+    </p>
+  </div>
+</section>

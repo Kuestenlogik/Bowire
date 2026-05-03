@@ -1,0 +1,155 @@
+// Copyright 2026 Küstenlogik
+// SPDX-License-Identifier: Apache-2.0
+
+using System.Globalization;
+using System.Text;
+
+namespace Kuestenlogik.Bowire.App;
+
+/// <summary>
+/// Renders a self-contained HTML report from a <see cref="RunReport"/>.
+/// All CSS is inlined so the file works as a CI artifact without external
+/// assets. The visual style mirrors the Bowire UI's dark theme so anyone
+/// who has used the in-browser tool feels at home.
+/// </summary>
+internal static class HtmlReport
+{
+    public static string Render(RunReport report)
+    {
+        var sb = new StringBuilder(8 * 1024);
+        var totalTests = report.Tests.Count;
+        var passedTests = totalTests - report.FailedTests;
+        var summaryClass = report.FailedTests > 0 ? "fail" : "pass";
+
+        sb.Append("<!doctype html><html lang=\"en\"><head><meta charset=\"utf-8\">");
+        sb.Append("<title>Bowire Test Report — ").Append(EscapeHtml(report.CollectionName)).Append("</title>");
+        sb.Append("<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">");
+        sb.Append("<style>");
+        sb.Append(Css);
+        sb.Append("</style></head><body>");
+
+        sb.Append("<header><div class=\"title\"><span class=\"logo\">⚓</span> Bowire Test Report</div>");
+        sb.Append("<div class=\"meta\">");
+        sb.Append("<div><span class=\"label\">Collection</span> ").Append(EscapeHtml(report.CollectionName)).Append("</div>");
+        sb.Append("<div><span class=\"label\">Source</span> ").Append(EscapeHtml(report.CollectionPath)).Append("</div>");
+        sb.Append("<div><span class=\"label\">Started</span> ").Append(report.StartedAt.ToString("u", CultureInfo.InvariantCulture)).Append("</div>");
+        sb.Append("<div><span class=\"label\">Duration</span> ").Append(report.DurationMs).Append(" ms</div>");
+        sb.Append("</div></header>");
+
+        sb.Append("<section class=\"summary ").Append(summaryClass).Append("\">");
+        sb.Append("<div class=\"stat\"><div class=\"stat-value\">").Append(passedTests).Append('/').Append(totalTests).Append("</div><div class=\"stat-label\">Tests passed</div></div>");
+        sb.Append("<div class=\"stat\"><div class=\"stat-value\">").Append(report.PassedAssertions).Append('/').Append(report.TotalAssertions).Append("</div><div class=\"stat-label\">Assertions passed</div></div>");
+        sb.Append("<div class=\"stat\"><div class=\"stat-value\">").Append(report.FailedTests).Append("</div><div class=\"stat-label\">Failed tests</div></div>");
+        sb.Append("</section>");
+
+        sb.Append("<main>");
+        foreach (var test in report.Tests)
+        {
+            var testFailed = test.Error is not null || test.Assertions.Any(a => !a.Passed);
+            var testClass = testFailed ? "fail" : "pass";
+            sb.Append("<article class=\"test ").Append(testClass).Append("\">");
+            sb.Append("<header class=\"test-header\">");
+            sb.Append("<span class=\"icon\">").Append(testFailed ? "✗" : "✓").Append("</span>");
+            sb.Append("<span class=\"name\">").Append(EscapeHtml(test.Name)).Append("</span>");
+            sb.Append("<span class=\"endpoint\">").Append(EscapeHtml(test.Service)).Append(" / ").Append(EscapeHtml(test.Method)).Append("</span>");
+            sb.Append("<span class=\"status\">").Append(EscapeHtml(test.Status ?? "")).Append("</span>");
+            sb.Append("<span class=\"duration\">").Append(test.DurationMs).Append(" ms</span>");
+            sb.Append("</header>");
+
+            if (test.Error is not null)
+            {
+                sb.Append("<div class=\"error\">").Append(EscapeHtml(test.Error)).Append("</div>");
+            }
+
+            if (test.Assertions.Count > 0)
+            {
+                sb.Append("<ul class=\"assertions\">");
+                foreach (var a in test.Assertions)
+                {
+                    var aClass = a.Passed ? "pass" : "fail";
+                    sb.Append("<li class=\"").Append(aClass).Append("\">");
+                    sb.Append("<span class=\"icon\">").Append(a.Passed ? "✓" : "✗").Append("</span>");
+                    sb.Append("<code>").Append(EscapeHtml(a.Path)).Append(' ').Append(EscapeHtml(a.Op)).Append(' ').Append(EscapeHtml(a.Expected)).Append("</code>");
+                    if (!a.Passed)
+                    {
+                        if (a.Error is not null)
+                            sb.Append("<div class=\"actual error\">error: ").Append(EscapeHtml(a.Error)).Append("</div>");
+                        else
+                            sb.Append("<div class=\"actual\">actual: <code>").Append(EscapeHtml(a.ActualText)).Append("</code></div>");
+                    }
+                    sb.Append("</li>");
+                }
+                sb.Append("</ul>");
+            }
+
+            sb.Append("</article>");
+        }
+        sb.Append("</main>");
+
+        sb.Append("<footer>Generated by Bowire · <a href=\"https://github.com/Kuestenlogik/Bowire\">github.com/Kuestenlogik/Bowire</a></footer>");
+        sb.Append("</body></html>");
+        return sb.ToString();
+    }
+
+    private static string EscapeHtml(string s)
+    {
+        return s
+            .Replace("&", "&amp;", StringComparison.Ordinal)
+            .Replace("<", "&lt;", StringComparison.Ordinal)
+            .Replace(">", "&gt;", StringComparison.Ordinal)
+            .Replace("\"", "&quot;", StringComparison.Ordinal);
+    }
+
+    private const string Css = """
+        :root {
+            --bg: #0f0f17; --bg-elev: #161621; --surface: #1a1a2e;
+            --text: #e8e8f0; --text-2: #9898b0; --text-3: #6a6a82;
+            --border: #2a2a3d;
+            --success: #34d399; --success-bg: rgba(52,211,153,.12);
+            --error: #f87171;   --error-bg:   rgba(248,113,113,.12);
+            --accent: #6366f1;  --accent-2:   #a5b4fc;
+            --mono: 'JetBrains Mono','Fira Code','Cascadia Code',Consolas,monospace;
+            --sans: -apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+        }
+        * { box-sizing: border-box; }
+        body { margin:0; padding:24px; font-family: var(--sans); font-size:14px; color: var(--text); background: var(--bg); }
+        header { max-width: 1100px; margin: 0 auto 18px; }
+        header .title { font-size: 22px; font-weight: 700; margin-bottom: 14px; }
+        header .logo { display: inline-block; margin-right: 8px; color: var(--accent-2); }
+        header .meta { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px 24px; font-size: 12px; color: var(--text-2); }
+        header .meta .label { display: inline-block; width: 80px; color: var(--text-3); text-transform: uppercase; font-size: 10px; letter-spacing: .04em; font-weight: 600; }
+        section.summary { max-width: 1100px; margin: 0 auto 24px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; padding: 16px; background: var(--bg-elev); border: 1px solid var(--border); border-radius: 8px; }
+        section.summary.pass { border-left: 3px solid var(--success); }
+        section.summary.fail { border-left: 3px solid var(--error); }
+        section.summary .stat { text-align: center; }
+        section.summary .stat-value { font-size: 28px; font-weight: 700; font-family: var(--mono); }
+        section.summary.pass .stat-value { color: var(--success); }
+        section.summary.fail .stat-value { color: var(--error); }
+        section.summary .stat-label { font-size: 11px; color: var(--text-3); text-transform: uppercase; letter-spacing: .04em; margin-top: 4px; }
+        main { max-width: 1100px; margin: 0 auto; }
+        article.test { background: var(--bg-elev); border: 1px solid var(--border); border-left-width: 3px; border-radius: 8px; padding: 12px 16px; margin-bottom: 10px; }
+        article.test.pass { border-left-color: var(--success); }
+        article.test.fail { border-left-color: var(--error); }
+        article.test .test-header { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+        article.test .test-header .icon { font-size: 16px; font-weight: 700; }
+        article.test.pass .icon { color: var(--success); }
+        article.test.fail .icon { color: var(--error); }
+        article.test .test-header .name { font-weight: 600; flex: 1; min-width: 200px; }
+        article.test .test-header .endpoint { font-family: var(--mono); font-size: 11px; color: var(--text-2); }
+        article.test .test-header .status { font-family: var(--mono); font-size: 11px; padding: 2px 8px; background: var(--surface); border-radius: 4px; color: var(--text-2); }
+        article.test .test-header .duration { font-family: var(--mono); font-size: 11px; color: var(--text-3); }
+        article.test .error { color: var(--error); background: var(--error-bg); padding: 8px 12px; border-radius: 4px; margin-top: 8px; font-family: var(--mono); font-size: 11px; }
+        article.test ul.assertions { list-style: none; padding: 0; margin: 8px 0 0; display: flex; flex-direction: column; gap: 4px; }
+        article.test ul.assertions li { padding: 6px 10px; border-radius: 4px; display: flex; align-items: center; flex-wrap: wrap; gap: 8px; font-size: 12px; }
+        article.test ul.assertions li.pass { background: var(--success-bg); }
+        article.test ul.assertions li.fail { background: var(--error-bg); }
+        article.test ul.assertions li .icon { font-weight: 700; }
+        article.test ul.assertions li.pass .icon { color: var(--success); }
+        article.test ul.assertions li.fail .icon { color: var(--error); }
+        article.test ul.assertions li code { font-family: var(--mono); color: var(--text); background: rgba(0,0,0,.25); padding: 1px 6px; border-radius: 3px; font-size: 11px; }
+        article.test ul.assertions li .actual { width: 100%; font-family: var(--mono); font-size: 11px; color: var(--text-2); margin-left: 24px; }
+        article.test ul.assertions li .actual.error { color: var(--error); }
+        footer { max-width: 1100px; margin: 24px auto 0; text-align: center; font-size: 11px; color: var(--text-3); }
+        footer a { color: var(--accent-2); text-decoration: none; }
+    """;
+}

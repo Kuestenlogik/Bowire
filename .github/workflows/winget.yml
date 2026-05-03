@@ -1,0 +1,188 @@
+# Auto-publishes Bowire to the Windows Package Manager (winget)
+# whenever a GitHub release is published.
+#
+# Pipeline:
+#   1. Wait for release.yml to finish (we trigger on release.published,
+#      which fires after the workflow uploads its assets).
+#   2. Download the win-x64 + win-arm64 ZIPs from the release.
+#   3. Compute SHA256 of each ZIP.
+#   4. Render the manifest templates under packaging/winget/template/
+#      (substituting __VERSION__, __SHA256_*__, __RELEASE_DATE__) into
+#      a fresh `manifests/k/KuestenLogik/Bowire/<version>/` directory.
+#   5. Submit a PR to microsoft/winget-pkgs via wingetcreate.exe.
+#
+# Works for both the first-time submission and every subsequent
+# version — `wingetcreate submit` opens a PR either way; the upstream
+# reviewers handle the "this is a new package" path on their end.
+#
+# One-time setup before the first release:
+#   - Fork microsoft/winget-pkgs into the maintainer's GitHub account.
+#   - Create a fine-grained PAT with `Contents: Read & Write` on that
+#     fork only, valid for ~12 months. Save it as repo secret
+#     WINGET_TOKEN.
+#
+# Without WINGET_TOKEN the workflow exits early without failing the
+# release — the Windows ZIPs are still attached to the GitHub release,
+# users just won't get the winget channel until the secret is set.
+
+name: winget
+
+# Temporarily manual-trigger only. Auto-publish to the Windows
+# Package Manager waits until the release.yml pipeline that produces
+# the win-x64 / win-arm64 ZIP artefacts is back online.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Lifted to workflow-level so step-level `if:` conditions can reference
+# `env.WINGET_TOKEN`. GitHub Actions disallows the `secrets` context
+# inside step-level `if:` expressions; assigning the secret to env once
+# here is the documented workaround.
+env:
+  WINGET_TOKEN: ${{ secrets.WINGET_TOKEN }}
+
+jobs:
+  publish:
+    name: Submit / update microsoft/winget-pkgs
+    runs-on: windows-latest
+
+    steps:
+      - name: Bail out if WINGET_TOKEN is missing
+        if: ${{ env.WINGET_TOKEN == '' }}
+        shell: pwsh
+        run: |
+          Write-Host "::warning::WINGET_TOKEN secret is not set — skipping winget submission."
+          Write-Host "Add a fine-grained PAT with push access to a fork of microsoft/winget-pkgs as WINGET_TOKEN to enable this step."
+
+      - name: Stop here if no token
+        if: ${{ env.WINGET_TOKEN == '' }}
+        shell: pwsh
+        run: exit 0
+
+      - uses: actions/checkout@v6
+
+      - name: Resolve version + release date
+        id: meta
+        shell: pwsh
+        run: |
+          # Strip the leading 'v' from the tag — winget expects a plain
+          # SemVer string in PackageVersion.
+          $version = "${{ github.event.release.tag_name }}".TrimStart('v')
+          $date = (Get-Date).ToString('yyyy-MM-dd')
+          "version=$version" | Out-File -Append $env:GITHUB_OUTPUT
+          "release_date=$date" | Out-File -Append $env:GITHUB_OUTPUT
+          Write-Host "version=$version"
+          Write-Host "release_date=$date"
+
+      - name: Download Windows MSIs from the release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $tag = "${{ github.event.release.tag_name }}"
+          New-Item -ItemType Directory -Force -Path artifacts | Out-Null
+          gh release download $tag --repo $env:GITHUB_REPOSITORY --pattern 'Bowire-*.msi' --dir artifacts
+          Get-ChildItem artifacts
+
+      - name: Compute SHA256 hashes
+        id: hash
+        shell: pwsh
+        env:
+          VERSION: ${{ steps.meta.outputs.version }}
+        run: |
+          $msiX64  = "artifacts/Bowire-$env:VERSION-x64.msi"
+          $msiArm  = "artifacts/Bowire-$env:VERSION-arm64.msi"
+          $sx64 = (Get-FileHash -Algorithm SHA256 $msiX64).Hash
+          $sarm = (Get-FileHash -Algorithm SHA256 $msiArm).Hash
+          "x64=$sx64"   | Out-File -Append $env:GITHUB_OUTPUT
+          "arm64=$sarm" | Out-File -Append $env:GITHUB_OUTPUT
+          Write-Host "x64   = $sx64"
+          Write-Host "arm64 = $sarm"
+
+      - name: Extract ProductCode from each MSI
+        id: pcode
+        shell: pwsh
+        env:
+          VERSION: ${{ steps.meta.outputs.version }}
+        run: |
+          # WiX v5 stamps a fresh ProductCode per build, but winget
+          # needs it pinned in the manifest so `winget upgrade` can
+          # match installed copies against published versions. Reach
+          # into the MSI Property table via the WindowsInstaller COM
+          # database — exactly what `msiexec` consults at install time.
+          function Get-MsiProperty([string]$msi, [string]$prop) {
+              $installer = New-Object -ComObject WindowsInstaller.Installer
+              $database = $installer.GetType().InvokeMember(
+                  "OpenDatabase", "InvokeMethod", $null, $installer,
+                  @($msi, 0))
+              $view = $database.GetType().InvokeMember(
+                  "OpenView", "InvokeMethod", $null, $database,
+                  @("SELECT Value FROM Property WHERE Property='$prop'"))
+              $view.GetType().InvokeMember("Execute", "InvokeMethod", $null, $view, $null) | Out-Null
+              $record = $view.GetType().InvokeMember("Fetch", "InvokeMethod", $null, $view, $null)
+              if ($record -eq $null) { throw "Property $prop not found in $msi" }
+              return $record.GetType().InvokeMember("StringData", "GetProperty", $null, $record, 1)
+          }
+          $px64  = Get-MsiProperty "artifacts/Bowire-$env:VERSION-x64.msi"   "ProductCode"
+          $parm  = Get-MsiProperty "artifacts/Bowire-$env:VERSION-arm64.msi" "ProductCode"
+          "x64=$px64"  | Out-File -Append $env:GITHUB_OUTPUT
+          "arm64=$parm" | Out-File -Append $env:GITHUB_OUTPUT
+          Write-Host "ProductCode x64   = $px64"
+          Write-Host "ProductCode arm64 = $parm"
+
+      - name: Render manifests from templates
+        shell: pwsh
+        env:
+          VERSION:           ${{ steps.meta.outputs.version }}
+          RELEASE_DATE:      ${{ steps.meta.outputs.release_date }}
+          SHA256_X64:        ${{ steps.hash.outputs.x64 }}
+          SHA256_ARM64:      ${{ steps.hash.outputs.arm64 }}
+          PRODUCT_CODE_X64:  ${{ steps.pcode.outputs.x64 }}
+          PRODUCT_CODE_ARM64: ${{ steps.pcode.outputs.arm64 }}
+        run: |
+          $src = 'packaging/winget/template'
+          $dst = "out/manifests/k/KuestenLogik/Bowire/$env:VERSION"
+          New-Item -ItemType Directory -Force -Path $dst | Out-Null
+
+          Get-ChildItem $src -Filter '*.yaml' | ForEach-Object {
+              $content = Get-Content $_.FullName -Raw
+              $content = $content `
+                  -replace '__VERSION__',            $env:VERSION `
+                  -replace '__RELEASE_DATE__',       $env:RELEASE_DATE `
+                  -replace '__SHA256_X64__',         $env:SHA256_X64 `
+                  -replace '__SHA256_ARM64__',       $env:SHA256_ARM64 `
+                  -replace '__PRODUCT_CODE_X64__',   $env:PRODUCT_CODE_X64 `
+                  -replace '__PRODUCT_CODE_ARM64__', $env:PRODUCT_CODE_ARM64
+              Set-Content -Path (Join-Path $dst $_.Name) -Value $content -NoNewline
+          }
+
+          Write-Host "Rendered manifests:"
+          Get-ChildItem $dst | ForEach-Object { Write-Host "  $($_.Name)" }
+
+      - name: Install wingetcreate
+        shell: pwsh
+        run: |
+          # Pinned to a specific release so the workflow is reproducible.
+          # Bump the URL when a newer wingetcreate stabilises.
+          Invoke-WebRequest -Uri 'https://aka.ms/wingetcreate/latest' -OutFile wingetcreate.exe
+          .\wingetcreate.exe --version
+
+      - name: Validate manifests via winget
+        shell: pwsh
+        run: |
+          # `winget validate` is the same checker the upstream PR
+          # pipeline runs. Failing here saves a round-trip through
+          # microsoft/winget-pkgs review.
+          winget validate "out/manifests/k/KuestenLogik/Bowire/${{ steps.meta.outputs.version }}"
+
+      - name: Submit PR to microsoft/winget-pkgs
+        shell: pwsh
+        env:
+          TOKEN: ${{ secrets.WINGET_TOKEN }}
+        run: |
+          $manifestDir = "out/manifests/k/KuestenLogik/Bowire/${{ steps.meta.outputs.version }}"
+          .\wingetcreate.exe submit `
+              --token $env:TOKEN `
+              $manifestDir

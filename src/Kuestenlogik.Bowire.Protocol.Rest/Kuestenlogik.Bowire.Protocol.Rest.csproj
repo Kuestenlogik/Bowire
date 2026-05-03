@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Description>Bowire REST protocol plugin — discovers REST endpoints via OpenAPI 3 / Swagger and lets you exercise them with the same form-based UI used for gRPC.</Description>
+    <PackageId>Kuestenlogik.Bowire.Protocol.Rest</PackageId>
+    <PackageTags>bowire;bowire-plugin;rest;openapi;swagger;http;developer-tools</PackageTags>
+    <IsPackable>true</IsPackable>
+  </PropertyGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="bowire" />
+    <InternalsVisibleTo Include="Kuestenlogik.Bowire.Tests" />
+    <InternalsVisibleTo Include="Kuestenlogik.Bowire.IntegrationTests" />
+  </ItemGroup>
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.OpenApi" />
+    <PackageReference Include="Microsoft.OpenApi.YamlReader" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Kuestenlogik.Bowire\Kuestenlogik.Bowire.csproj" />
+    <!-- Mock for the OpenApiMockSchemaSource adapter. -->
+    <ProjectReference Include="..\Kuestenlogik.Bowire.Mock\Kuestenlogik.Bowire.Mock.csproj" />
+  </ItemGroup>
+</Project>

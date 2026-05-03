@@ -1,0 +1,90 @@
+name: Release
+
+# Tag-driven publish flow. Push a `v*` tag → build, test, pack, then
+# publish to both GitHub Packages and nuget.org. SemVer prerelease tags
+# like `v0.9.4-rc.1`, `v1.0.0-beta.2` or `v2.0.0-preview` flow through
+# the same path; nuget.org auto-flags them as prerelease, so consumers
+# only see them when they opt in via "Include prerelease". The GitHub
+# Release itself is also marked prerelease for any tag containing `-rc`.
+#
+# What this workflow does NOT do (yet):
+#   - Multi-RID standalone binaries (linux/win/osx × x64/arm64)
+#   - MSI / DEB / RPM packaging
+#   - Multi-arch container build + push to GHCR / Docker Hub
+#   - DocFX site + PDF artefacts
+# All of those are parked until the winget / homebrew / container-
+# registry plumbing is fully wired. They live in git history on the
+# pre-9c00fe0 release.yml; revive when ready.
+on:
+  push:
+    tags: ['v*']
+
+env:
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+  DOTNET_NOLOGO: true
+
+permissions:
+  contents: write   # softprops/action-gh-release needs write to create the Release
+  packages: write   # 'dotnet nuget push' to GitHub Packages needs write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Extract version
+        id: version
+        run: echo "VERSION=${GITHUB_REF_NAME#v}" >> $GITHUB_OUTPUT
+
+      - name: Restore
+        run: dotnet restore Kuestenlogik.Bowire.slnx
+
+      - name: Build & Test
+        run: |
+          dotnet build Kuestenlogik.Bowire.slnx -c Release --no-restore -p:Version=${{ steps.version.outputs.VERSION }}
+          dotnet test Kuestenlogik.Bowire.slnx -c Release --no-build -v normal
+
+      - name: Pack
+        run: dotnet pack Kuestenlogik.Bowire.slnx -c Release --no-build -o artifacts/packages -p:Version=${{ steps.version.outputs.VERSION }}
+
+      # Publishes on every v* tag, including `-rc` / `-beta` / `-preview`.
+      # nuget.org and GitHub Packages both treat any version with a
+      # SemVer prerelease suffix as a prerelease automatically; consumers
+      # have to opt in with `--prerelease` (or "Include prerelease" in
+      # the IDE), so stable installs aren't affected. `--skip-duplicate`
+      # makes the step idempotent if a tag is re-run.
+      - name: Publish to GitHub Packages
+        run: dotnet nuget push "artifacts/packages/*.nupkg" --source "https://nuget.pkg.github.com/Kuestenlogik/index.json" --api-key ${{ secrets.GITHUB_TOKEN }} --skip-duplicate
+
+      # Secret-presence gate so the step is a no-op (rather than failing)
+      # when NUGET_API_KEY isn't configured — convenient for forks.
+      #
+      # Only the .nupkg goes to nuget.org. The .snupkg (symbol package)
+      # push is intentionally skipped: nuget.org's symbol server requires
+      # the parent .nupkg to be fully validated before it accepts symbols
+      # (validation takes ~5-15 minutes), so a back-to-back push fails
+      # with a 404. Embedded SourceLink-PDBs inside the .nupkg already
+      # give consumers source-stepping, so the symbol server is a
+      # nice-to-have rather than a blocker. Standard pattern for projects
+      # that don't want a delayed second job.
+      - name: Publish to nuget.org
+        if: ${{ env.NUGET_API_KEY != '' }}
+        env:
+          NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+        run: dotnet nuget push "artifacts/packages/*.nupkg" --source https://api.nuget.org/v3/index.json --api-key "$NUGET_API_KEY" --skip-duplicate
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          prerelease: ${{ contains(github.ref, '-rc') }}
+          files: artifacts/packages/*.nupkg

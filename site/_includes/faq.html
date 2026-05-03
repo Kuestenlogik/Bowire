@@ -1,0 +1,55 @@
+<section class="faq" id="faq">
+  <div class="container">
+    <h2 class="section-title">Why not just use ***?</h2>
+    <p class="section-subtitle">Pick the tool you&rsquo;re coming from.</p>
+
+    <div class="faq-chooser" role="tablist" aria-label="Coming-from tool chooser">
+
+      <div class="faq-chooser-tabs">
+        <button class="faq-chooser-tab active" type="button" role="tab" aria-selected="true" aria-controls="faq-panel-swagger" data-target="swagger">Swagger / Swashbuckle</button>
+        <button class="faq-chooser-tab" type="button" role="tab" aria-selected="false" aria-controls="faq-panel-msopenapi" data-target="msopenapi">Microsoft OpenAPI</button>
+        <button class="faq-chooser-tab" type="button" role="tab" aria-selected="false" aria-controls="faq-panel-postman" data-target="postman">Postman</button>
+        <button class="faq-chooser-tab" type="button" role="tab" aria-selected="false" aria-controls="faq-panel-scalar" data-target="scalar">Scalar</button>
+        <button class="faq-chooser-tab" type="button" role="tab" aria-selected="false" aria-controls="faq-panel-grpcui" data-target="grpcui">gRPC UI / grpcurl</button>
+        <button class="faq-chooser-tab" type="button" role="tab" aria-selected="false" aria-controls="faq-panel-curl" data-target="curl">curl / HTTPie</button>
+        <button class="faq-chooser-tab" type="button" role="tab" aria-selected="false" aria-controls="faq-panel-diy" data-target="diy">Build my own</button>
+      </div>
+
+      <div class="faq-chooser-panels">
+
+        <div class="faq-chooser-panel active" id="faq-panel-swagger" role="tabpanel" data-panel="swagger">
+          <p>Swagger UI is great for REST <em>documentation</em>. Bowire keeps that surface and adds everything Swagger doesn&rsquo;t do: gRPC, GraphQL, SignalR, WebSocket, MCP, MQTT, Socket.IO, OData &mdash; all with auto-discovery. No <code>swagger.json</code> to maintain, no protocol-specific tool to switch to when you leave REST.</p>
+          <p>Already on Swashbuckle? Keep it. Bowire reads your existing OpenAPI document and layers every other protocol on top.</p>
+        </div>
+
+        <div class="faq-chooser-panel" id="faq-panel-msopenapi" role="tabpanel" data-panel="msopenapi" hidden>
+          <p>Microsoft&rsquo;s built-in OpenAPI support in .NET 9+ generates the spec &mdash; and only the spec. There&rsquo;s no UI to actually call your endpoints, no form generator, no streaming view. You still need to pair it with something like Scalar or Swagger UI to get an interactive client, and neither of those cover anything beyond REST.</p>
+          <p>Bowire is that interactive layer &mdash; it reads the OpenAPI document Microsoft generates and gives you the full request/response workbench on top, plus gRPC, SignalR, GraphQL, WebSocket, MQTT, MCP, etc. for the rest of the surface.</p>
+        </div>
+
+        <div class="faq-chooser-panel" id="faq-panel-postman" role="tabpanel" data-panel="postman" hidden>
+          <p>Postman is a workbench for <em>collections you curate by hand</em>. Bowire discovers your API live &mdash; gRPC via Server Reflection, REST via OpenAPI, GraphQL via introspection, SignalR hubs via endpoint metadata &mdash; so there&rsquo;s nothing to curate.</p>
+          <p>Also: no account, no cloud sync, no seat count. Everything runs on your machine. Some shops can&rsquo;t use Postman at all because of the data-residency policy &mdash; Bowire has no such constraint.</p>
+        </div>
+
+        <div class="faq-chooser-panel" id="faq-panel-scalar" role="tabpanel" data-panel="scalar" hidden>
+          <p>Scalar is an excellent Swagger UI replacement for REST + OpenAPI. If all you need is pretty REST docs, use Scalar. Bowire steps in when you also have gRPC, SignalR, WebSocket, MQTT, or custom protocols in the same service stack &mdash; none of which Scalar covers.</p>
+        </div>
+
+        <div class="faq-chooser-panel" id="faq-panel-grpcui" role="tabpanel" data-panel="grpcui" hidden>
+          <p>Single-protocol tools. Great at their one thing. Bowire gives you the same Reflection-driven UX for gRPC, <em>and</em> you don&rsquo;t need a different tool for the REST endpoint sitting next to it, or for the SignalR hub wired into the same service.</p>
+          <p>Bonus: Bowire&rsquo;s streaming view is a Wireshark-style append log with filter and pin &mdash; hands-down more useful than scrolling through a chat-style drawer on long duplex sessions.</p>
+        </div>
+
+        <div class="faq-chooser-panel" id="faq-panel-curl" role="tabpanel" data-panel="curl" hidden>
+          <p>Curl is the right tool for one-shot invocations from a shell. It falls apart the moment you want to browse a service&rsquo;s surface, round-trip typed request bodies, or handle duplex streams. Bowire covers the &ldquo;I need to explore this service&rdquo; case that shells were never built for &mdash; and still exports every call as a curl / HTTPie snippet when you need one.</p>
+        </div>
+
+        <div class="faq-chooser-panel" id="faq-panel-diy" role="tabpanel" data-panel="diy" hidden>
+          <p>You can &mdash; but you&rsquo;ll rebuild auth, form generation, response viewers, streaming channels, history, environment switching, and recording. Bowire is one <code>MapBowire()</code> line in Program.cs and you get all of it, wired to whichever protocols you&rsquo;ve installed. Apache 2.0, so fork it if you ever outgrow it.</p>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</section>

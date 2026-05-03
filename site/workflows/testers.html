@@ -1,0 +1,78 @@
+---
+layout: page
+title: Bowire for API integration testers
+description: Record API sessions, replay them against Dev / Staging / Prod, convert captured traffic into regression assertions — without leaving the workbench.
+permalink: /workflows/testers.html
+---
+
+<section class="features-page-hero">
+  <p class="workflow-hero-eyebrow">Workflow &middot; Integration testers</p>
+  <h1>From a session to a regression in two clicks</h1>
+  <p class="features-page-tagline">Someone says &ldquo;this endpoint used to return X.&rdquo; You need to verify that claim, against three environments, and have a test file at the end of it.</p>
+  <p class="features-page-note">Bowire records real calls across every protocol, replays them against any environment, and can turn the response payloads into Newman-style assertions that live right next to the request.</p>
+</section>
+
+<section class="features-group features-group-alt">
+  <header class="features-group-header">
+    <h2 class="features-group-title">Capture the truth once</h2>
+    <p class="features-group-lede">Click record, run your test scenario, click stop. Every call across every installed plugin ends up in one timeline &mdash; request, response, status, timing, metadata.</p>
+  </header>
+
+  <div class="features-block">
+    <div class="features-block-text">
+      <h3>Record &amp; replay &mdash; Postman Collection-Runner parity</h3>
+      <p class="features-block-lead">gRPC streams, SignalR hub invocations, WebSocket frames, MQTT publishes, REST hits &mdash; all in the same timeline, all replayable.</p>
+      <p>Recordings are JSON files you can commit to the repo next to the service they test. Replay against Dev to check a dev-only regression; against Staging to confirm a release candidate; against Prod (read-only) to compare drift between the spec and what the live system actually returns.</p>
+      <a class="features-block-docs-link" href="{{ '/features.html#recording' | relative_url }}">Record &amp; replay in detail &rarr;</a>
+    </div>
+    <div class="features-block-screenshot">
+      {% include themed-img.html src="/assets/images/screenshots/recording.png" alt="Recording manager — captured sequence of API calls with per-step pass/fail markers" %}
+    </div>
+  </div>
+</section>
+
+<section class="features-group">
+  <header class="features-group-header">
+    <h2 class="features-group-title">Compare across environments</h2>
+    <p class="features-group-lede">Environments aren&rsquo;t identical. Bowire makes it obvious which variable drifted where.</p>
+  </header>
+
+  <div class="features-block features-block-reverse">
+    <div class="features-block-text">
+      <h3>Side-by-side environment diff</h3>
+      <p class="features-block-lead">Pick any two configured environments, get a colour-coded diff of every variable and header. Catch the stale secret before it burns your afternoon.</p>
+      <p>Equal rows fold away, changed rows highlight, only-in-A / only-in-B rows are clearly flagged. Works across the envs you use in recordings (Dev/Staging/Prod) and the per-URL overrides that Bowire applies at request time via <code>${variable}</code> substitution.</p>
+      <a class="features-block-docs-link" href="{{ '/features.html#env-diff' | relative_url }}">Environment diff in detail &rarr;</a>
+    </div>
+    <div class="features-block-screenshot">
+      {% include themed-img.html src="/assets/images/screenshots/env-diff.png" alt="Two environments compared side-by-side with colour-coded rows" %}
+    </div>
+  </div>
+</section>
+
+<section class="features-group features-group-alt">
+  <header class="features-group-header">
+    <h2 class="features-group-title">Turn it into a regression</h2>
+    <p class="features-group-lede">A one-off capture becomes a repeatable check. Inline assertions run on every replay, CI or local.</p>
+  </header>
+
+  <div class="features-block features-block-text-only">
+    <div class="features-block-text">
+      <h3>Newman-style assertions &mdash; next to the request, not in a separate file</h3>
+      <p class="features-block-lead">Eleven comparison operators, JSONPath-style targeting, pass / fail badges inline.</p>
+      <p>Pick a value in a recorded response, add an <code>eq</code> / <code>gt</code> / <code>contains</code> / <code>matches</code> / <code>type</code> check. Run the recording, every assertion lights up green or red inline. Export to HAR for the bug tracker, or drive the whole set from <code>bowire call --recording</code> in CI.</p>
+      <a class="features-block-docs-link" href="{{ '/features.html#test-assertions' | relative_url }}">Test assertions in detail &rarr;</a>
+    </div>
+  </div>
+</section>
+
+<section class="features-page-cta">
+  <div class="features-page-cta-inner">
+    <h2 class="features-page-cta-title">Test what&rsquo;s actually shipped</h2>
+    <p class="features-page-cta-lede">Record once, replay everywhere, assert with the operators you already know.</p>
+    <a class="btn btn-secondary features-page-cta-btn" href="{{ '/docs/features/recording.html' | relative_url }}">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+      Go to the recording docs
+    </a>
+  </div>
+</section>

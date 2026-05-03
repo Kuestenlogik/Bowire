@@ -1,0 +1,483 @@
+---
+layout: page
+title: Features — Bowire
+description: A closer look at the workflows Bowire is built for — visual flow editor, recording & replay, Wireshark-style streaming, environment diff, and click-to-chain responses.
+---
+
+<section class="features-page-hero">
+  <h1>Features</h1>
+  <p class="features-page-tagline">Simplicity is tied in.<br>All in one workbench &mdash; no tool switch required.</p>
+  <p class="features-page-note">Each section below links to the technical documentation for the full details.</p>
+</section>
+
+<!-- ================================================================ -->
+<!-- Group 1 — Discover and invoke                                    -->
+<!-- ================================================================ -->
+<section class="features-group features-group-alt">
+  <header class="features-group-header">
+    <h2 class="features-group-title">Discover and invoke</h2>
+    <p class="features-group-lede">Plug a protocol in, get a live service tree. Compose requests with typed forms or raw JSON. Every call pattern &mdash; unary, streaming, duplex, REST verbs, GraphQL, MQTT publishes &mdash; ends up in the same UI.</p>
+  </header>
+
+  <!-- ---- Auto-discovery ---- -->
+  <div class="features-block" id="auto-discovery">
+    <div class="features-block-text">
+      <h3>Auto-discovery with hot reload</h3>
+      <p class="features-block-lead">Plug in a protocol, get a service tree &mdash; no hand-maintained proto / OpenAPI / hub-registration code.</p>
+      <p>Each protocol plugin implements a single <code>DiscoverAsync</code> method: gRPC hits Server Reflection, REST reads the OpenAPI spec, SignalR enumerates mapped hubs via <code>EndpointDataSource</code>, GraphQL introspects <code>__schema</code>, MQTT subscribes to <code>$SYS/#</code>, and so on. Bowire merges the results into a single sidebar across every installed plugin.</p>
+      <p>The discovery pass repeats every few seconds against every configured URL. A new method registered on a running server shows up in the sidebar within the next tick &mdash; no page refresh, no re-upload, no &ldquo;disconnect and retry&rdquo; dance.</p>
+      <a class="features-block-docs-link" href="{{ '/docs/features/auto-discovery.html' | relative_url }}">Read the technical docs &rarr;</a>
+    </div>
+    <div class="features-block-screenshot">
+      {% include themed-img.html src="/assets/images/screenshots/method-detail.png" alt="Discovered service method with typed parameters, exposed in the sidebar without hand-maintained schema" %}
+    </div>
+  </div>
+
+  <!-- ---- All call types ---- -->
+  <div class="features-block features-block-reverse" id="all-call-types">
+    <div class="features-block-text">
+      <h3>Every call pattern in one UI</h3>
+      <p class="features-block-lead">Unary, server-stream, client-stream, duplex &mdash; plus REST verbs, GraphQL subscriptions, SignalR hubs, raw WebSocket frames, MQTT publishes. One UI, same muscle memory across all of them.</p>
+      <p>Streaming calls render into a Wireshark-style append-only list with per-frame detail. Duplex / client-stream open a persistent channel with a &ldquo;send next message&rdquo; composer on one side and incoming frames on the other. REST maps verbs onto the same invoke pane; GraphQL has a selection-set picker plus subscription follow-up via <code>graphql-transport-ws</code>.</p>
+      <a class="features-block-docs-link" href="{{ '/docs/features/duplex-channels.html' | relative_url }}">Read the technical docs &rarr;</a>
+    </div>
+    <div class="features-block-screenshot">
+      {% include themed-img.html src="/assets/images/screenshots/streaming.png" alt="Streaming response — Wireshark-style frame list with detail pane" %}
+    </div>
+  </div>
+
+  <!-- ---- Form / JSON input ---- -->
+  <div class="features-block features-block-reverse" id="form-json">
+    <div class="features-block-text">
+      <h3>Form or raw JSON</h3>
+      <p class="features-block-lead">Schema-driven form inputs for the common case, a full JSON editor when you need to tweak something unusual. Toggle with <kbd>f</kbd>.</p>
+      <p>The form view auto-generates controls from the discovered message shape: typed number inputs for <code>int32</code>, date pickers for <code>google.protobuf.Timestamp</code>, dropdowns for enums, nested cards for messages, repeated-field tables. Client-side validation flags missing required fields and type mismatches before a single byte hits the wire.</p>
+      <p>The JSON view is a full editor with syntax highlighting, bracket matching, and inline validation errors. State is preserved per method, so switching away and back never loses work.</p>
+      <a class="features-block-docs-link" href="{{ '/docs/features/form-json-input.html' | relative_url }}">Read the technical docs &rarr;</a>
+    </div>
+    <div class="features-block-screenshot">
+      <div class="code-block">
+        <div class="code-block-header">
+          <span class="code-block-lang">json</span>
+          <span class="code-block-hint">press <kbd>f</kbd> for form view</span>
+          <button class="copy-btn" data-copy='{
+  &quot;city&quot;: &quot;Berlin&quot;,
+  &quot;days&quot;: 7,
+  &quot;units&quot;: &quot;celsius&quot;,
+  &quot;include_humidity&quot;: true,
+  &quot;filter&quot;: {
+    &quot;after&quot;: &quot;2026-04-22T00:00Z&quot;
+  }
+}' aria-label="Copy">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+          </button>
+        </div>
+        <pre><code>{
+  <span class="c">// typed form mirrors this shape</span>
+  "city": "Berlin",
+  "days": 7,
+  "units": "celsius",
+  "include_humidity": true,
+  "filter": {
+    "after": "2026-04-22T00:00Z"
+  }
+}</code></pre>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================================================================ -->
+<!-- Group 2 — Build flows and chain responses                        -->
+<!-- ================================================================ -->
+<section class="features-group">
+  <header class="features-group-header">
+    <h2 class="features-group-title">Build flows and chain responses</h2>
+    <p class="features-group-lede">Compose multi-step API sequences visually, forward any response value into the next call, and drive everything from the keyboard.</p>
+  </header>
+
+  <!-- ---- Visual flow editor ---- -->
+  <div class="features-block" id="flow-editor">
+    <div class="features-block-text">
+      <h3>Visual flow editor</h3>
+      <p class="features-block-lead">Chain API calls into branching pipelines &mdash; visually, not in a YAML file you can&rsquo;t read three months later.</p>
+      <p>Drag requests onto a canvas, forward response values into the next call with <code>${response.path.to.value}</code>, branch on status or body content, loop over arrays, sleep, assert. Every node has its own response viewer so you can step through a failing flow like a debugger.</p>
+      <p>All of it is local to your machine. No seat-counted cloud subscription, no hand-maintained Postman Collections &mdash; flows are JSON files you can commit, review, and replay.</p>
+      <a class="features-block-docs-link" href="{{ '/docs/features/flows.html' | relative_url }}">Read the technical docs &rarr;</a>
+    </div>
+    <div class="features-block-screenshot">
+      {% include themed-img.html src="/assets/images/screenshots/flow-editor.png" alt="Visual flow editor — pipeline of API calls with branching conditions and loops" %}
+    </div>
+  </div>
+
+  <!-- ---- Click-to-chain responses ---- -->
+  <div class="features-block features-block-reverse" id="response-chaining">
+    <div class="features-block-text">
+      <h3>Click any JSON value to chain</h3>
+      <p class="features-block-lead">The response from one call is the input for the next. Bowire skips the copy-paste round-trip.</p>
+      <p>Hover any value or key in a rendered JSON response, click it, and Bowire places the chaining expression on your clipboard &mdash; ready to paste into the next request&rsquo;s body, URL path, or headers. Works on every supported protocol, not just REST: gRPC response fields, GraphQL query results, SignalR hub return values, MQTT payloads, SSE events all use the same <code>${response.path.to.value}</code> grammar.</p>
+      <a class="features-block-docs-link" href="{{ '/docs/features/response-chaining.html' | relative_url }}">Read the technical docs &rarr;</a>
+    </div>
+    <div class="features-block-screenshot">
+      {% include themed-img.html src="/assets/images/screenshots/json-chaining.png" alt="Click any JSON value in a response to copy the chaining variable expression" %}
+    </div>
+  </div>
+
+  <!-- ---- Command palette ---- -->
+  <div class="features-block" id="command-palette">
+    <div class="features-block-text">
+      <h3>Command palette &amp; keyboard flow</h3>
+      <p class="features-block-lead">Press <kbd>/</kbd> anywhere to search methods, switch environments, filter protocols &mdash; never leave the keyboard.</p>
+      <p>Vim-style <kbd>j</kbd> / <kbd>k</kbd> to hop between methods, <kbd>f</kbd> to flip form / JSON, <kbd>r</kbd> to repeat the last request, <kbd>t</kbd> to cycle themes, <kbd>Ctrl</kbd>+<kbd>Enter</kbd> to execute. Recently-used methods surface when the palette query is empty. Power users who live in the shell will feel at home.</p>
+      <a class="features-block-docs-link" href="{{ '/docs/features/command-palette.html' | relative_url }}">Read the technical docs &rarr;</a>
+    </div>
+    <div class="features-block-screenshot">
+      {% include themed-img.html src="/assets/images/screenshots/command-palette.png" alt="Command palette open with method suggestions, environment jumps, and protocol filters" %}
+    </div>
+  </div>
+
+  <!-- ---- Keyboard shortcuts ---- -->
+  <div class="features-block features-block-reverse" id="keyboard-shortcuts">
+    <div class="features-block-text">
+      <h3>Keyboard-first everything</h3>
+      <p class="features-block-lead">Every action has a shortcut. Power users never touch the mouse; newcomers get a cheat sheet at <kbd>?</kbd>.</p>
+      <p>Vim-style <kbd>j</kbd> / <kbd>k</kbd> to hop between methods in the sidebar, <kbd>f</kbd> to flip form &harr; JSON, <kbd>r</kbd> to repeat the last request, <kbd>t</kbd> to cycle light / dark / auto themes, <kbd>Ctrl</kbd>+<kbd>Enter</kbd> (or <kbd>&#8984;</kbd>+<kbd>Enter</kbd>) to execute, <kbd>Esc</kbd> to close any modal, <kbd>/</kbd> to open the command palette, <kbd>?</kbd> to see the full list without leaving the page.</p>
+      <p>Shortcuts are configurable per-user in Settings &rarr; Shortcuts, with conflict detection so the same chord never binds two actions silently.</p>
+      <a class="features-block-docs-link" href="{{ '/docs/features/keyboard-shortcuts.html' | relative_url }}">Read the technical docs &rarr;</a>
+    </div>
+    <div class="features-block-screenshot">
+      <div class="code-block">
+        <div class="code-block-header">
+          <span class="code-block-lang">shortcuts</span>
+          <span class="code-block-hint">press <kbd>?</kbd> for the full list</span>
+          <button class="copy-btn" data-copy="/             open command palette
+j  / k        hop between methods
+f             toggle form / JSON
+r             repeat last request
+⌘ Enter       send request
+t             cycle theme
+Esc           close modal
+?             full cheat sheet" aria-label="Copy">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+          </button>
+        </div>
+        <pre><code>/             <span class="c">open command palette</span>
+j  / k        <span class="c">hop between methods</span>
+f             <span class="c">toggle form &harr; JSON</span>
+r             <span class="c">repeat last request</span>
+&#8984; Enter       <span class="c">send request</span>
+t             <span class="c">cycle theme</span>
+Esc           <span class="c">close modal</span>
+?             <span class="c">full cheat sheet</span></code></pre>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================================================================ -->
+<!-- Group 3 — Capture, replay, and stress                            -->
+<!-- ================================================================ -->
+<section class="features-group features-group-alt">
+  <header class="features-group-header">
+    <h2 class="features-group-title">Capture, replay, and stress</h2>
+    <p class="features-group-lede">Every call captured in a filterable timeline, replayable against any environment, and ready for a quick load check &mdash; all in the same workbench.</p>
+  </header>
+
+  <!-- ---- Record & replay ---- -->
+  <div class="features-block" id="recording">
+    <div class="features-block-text">
+      <h3>Record &amp; replay</h3>
+      <p class="features-block-lead">Click record, run a sequence of calls, click stop. Now you have a reproducible test case, a debug artifact, and a future mock server in one file.</p>
+      <p>Recordings capture request, response, status, timing, and metadata for every call across every protocol &mdash; gRPC streams, SignalR hub invocations, WebSocket frames, MQTT publishes, REST hits, all in one timeline. Replay against another environment to check drift, convert into test assertions for CI, export as HAR for teammates, or (coming soon) serve the recording back as a live mock.</p>
+      <a class="features-block-docs-link" href="{{ '/docs/features/recording.html' | relative_url }}">Read the technical docs &rarr;</a>
+    </div>
+    <div class="features-block-screenshot">
+      {% include themed-img.html src="/assets/images/screenshots/recording.png" alt="Recording manager — timeline of captured calls with per-step pass/fail markers" %}
+    </div>
+  </div>
+
+  <!-- ---- Streaming view ---- -->
+  <div class="features-block features-block-reverse" id="streaming">
+    <div class="features-block-text">
+      <h3>Wireshark-style streaming view</h3>
+      <p class="features-block-lead">An append-only message list on the left, a detail pane on the right &mdash; built for long-running duplex sessions, not a chat transcript.</p>
+      <p>Every incoming frame lands in a filterable table (substring, regex, or protocol-specific fields). Click one to see the full payload. Pin the latest to auto-follow, or pin a specific frame to keep the detail view stable while new messages scroll in. Works for gRPC server / client / duplex streams, SignalR real-time events, GraphQL subscriptions, WebSocket frames, SSE events, and MQTT subscribe streams &mdash; all with the same UI.</p>
+      <a class="features-block-docs-link" href="{{ '/docs/features/streaming.html' | relative_url }}">Read the technical docs &rarr;</a>
+    </div>
+    <div class="features-block-screenshot">
+      {% include themed-img.html src="/assets/images/screenshots/streaming.png" alt="Streaming response view — append-only message list on the left, detail pane on the right" %}
+    </div>
+  </div>
+
+  <!-- ---- Performance ---- -->
+  <div class="features-block" id="performance">
+    <div class="features-block-text">
+      <h3>Performance testing, built in</h3>
+      <p class="features-block-lead">Repeat any call N times, watch the latency histogram and timeline render in real time.</p>
+      <p>P50 / P90 / P99 / P99.9 percentiles, success rate, and throughput all in the same pane as the request. No separate load tool to install, no CI pipeline to wire up &mdash; just a quick &ldquo;is this endpoint holding up?&rdquo; check when you suspect a regression. Scales enough for smoke tests; for full-blown soak tests, export the call as k6 / vegeta and run it from a proper load runner.</p>
+      <a class="features-block-docs-link" href="{{ '/docs/features/performance.html' | relative_url }}">Read the technical docs &rarr;</a>
+    </div>
+    <div class="features-block-screenshot">
+      {% include themed-img.html src="/assets/images/screenshots/performance.png" alt="Performance graph — latency histogram with P50 / P90 / P99 percentiles" %}
+    </div>
+  </div>
+
+  <!-- ---- Test assertions ---- -->
+  <div class="features-block features-block-reverse" id="test-assertions">
+    <div class="features-block-text">
+      <h3>Inline test assertions</h3>
+      <p class="features-block-lead">Write Newman-style checks once, Bowire runs them after every successful response and shows a green / red badge inline.</p>
+      <p>Eleven comparison operators (<code>eq</code>, <code>ne</code>, <code>gt</code>, <code>gte</code>, <code>lt</code>, <code>lte</code>, <code>contains</code>, <code>startsWith</code>, <code>endsWith</code>, <code>matches</code>, <code>type</code>) target any value via <code>response.path.to.value</code> JSONPath. Assertions are stored per method, replay with every invocation, and can be exported into a recording so a flow becomes its own regression test.</p>
+      <p>For streaming responses, assertions run on the accumulated frames &mdash; &ldquo;expect at least 3 frames of type TICK within 2 s&rdquo; is one rule. No plugins, no pipeline, just a test that lives next to the request.</p>
+      <a class="features-block-docs-link" href="{{ '/docs/features/test-assertions.html' | relative_url }}">Read the technical docs &rarr;</a>
+    </div>
+    <div class="features-block-screenshot">
+      <div class="code-block">
+        <div class="code-block-header">
+          <span class="code-block-lang">assertions</span>
+          <span class="code-block-hint"><span class="check-pass">&#10003;</span> 4/4 passing</span>
+          <button class="copy-btn" data-copy='response.status   eq   200
+response.time     lt   500
+body.user.id      eq   "42"
+body.items[0]     type "object"' aria-label="Copy">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+          </button>
+        </div>
+        <pre><code>response.status   eq   200        <span class="check-pass">&#10003;</span>
+response.time     lt   500        <span class="check-pass">&#10003;</span>
+body.user.id      eq   "42"       <span class="check-pass">&#10003;</span>
+body.items[0]     type "object"   <span class="check-pass">&#10003;</span></code></pre>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================================================================ -->
+<!-- Group 4 — Environments, schemas, and setup                       -->
+<!-- ================================================================ -->
+<section class="features-group">
+  <header class="features-group-header">
+    <h2 class="features-group-title">Environments, schemas, and setup</h2>
+    <p class="features-group-lede">Compare what&rsquo;s actually running where, work from a schema when the server isn&rsquo;t reachable, authenticate against any auth scheme, and script everything from the CLI when you don&rsquo;t want the UI.</p>
+  </header>
+
+  <!-- ---- Environment diff ---- -->
+  <div class="features-block" id="env-diff">
+    <div class="features-block-text">
+      <h3>Environment diff</h3>
+      <p class="features-block-lead">Compare two environments side-by-side &mdash; spot drift before it hits production.</p>
+      <p>Pick any two configured environments (Dev, Staging, Prod, or per-URL overrides) and get a colour-coded diff across every variable and header. Equal rows are folded away, changed rows highlighted, only-in-A / only-in-B clearly marked. Catches missing secrets, mistyped keys, and accidental overrides that would otherwise burn an afternoon of debugging.</p>
+      <a class="features-block-docs-link" href="{{ '/docs/features/environments.html' | relative_url }}">Read the technical docs &rarr;</a>
+    </div>
+    <div class="features-block-screenshot">
+      {% include themed-img.html src="/assets/images/screenshots/env-diff.png" alt="Environment diff view — two environments compared side by side with colour-coded rows" %}
+    </div>
+  </div>
+
+  <!-- ---- Auth helpers ---- -->
+  <div class="features-block" id="authentication">
+    <div class="features-block-text">
+      <h3>Every auth scheme, built in</h3>
+      <p class="features-block-lead">Every auth scheme worth supporting, built in. Set it once per environment, Bowire signs every request.</p>
+      <p>Bearer tokens, HTTP Basic, API Key (header or query), JWT issuance (HS256 / RS256 / ES256) with custom claims, OAuth 2.0 <code>client_credentials</code>, OAuth 2.0 <code>authorization_code</code> with PKCE for local CLI flow, a custom token endpoint with auto-refresh, and AWS Signature v4 for S3 / Lambda / API Gateway. Each scheme stores its values in the environment, substituted at request time &mdash; tokens never touch the page source.</p>
+      <p>Expired tokens refresh transparently. Metadata headers on gRPC, authorization headers on REST / GraphQL / SignalR / WebSocket / MQTT (Username-Password CONNECT) all share the same credential store.</p>
+      <a class="features-block-docs-link" href="{{ '/docs/features/authentication.html' | relative_url }}">Read the technical docs &rarr;</a>
+    </div>
+    <div class="features-block-screenshot">
+      <div class="code-block">
+        <div class="code-block-header">
+          <span class="code-block-lang">auth schemes</span>
+          <span class="code-block-hint">env: staging</span>
+          <button class="copy-btn" data-copy="Bearer token        ✓ auto-refresh
+HTTP Basic          ✓
+API key (header)    ✓
+JWT (HS / RS / ES)  ✓ custom claims
+OAuth 2.0 client    ✓
+OAuth 2.0 + PKCE    ✓
+AWS Sig v4          ✓" aria-label="Copy">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+          </button>
+        </div>
+        <pre><code>Bearer token        <span class="check-pass">&#10003;</span> auto-refresh
+HTTP Basic          <span class="check-pass">&#10003;</span>
+API key (header)    <span class="check-pass">&#10003;</span>
+JWT (HS / RS / ES)  <span class="check-pass">&#10003;</span> custom claims
+OAuth 2.0 client    <span class="check-pass">&#10003;</span>
+OAuth 2.0 + PKCE    <span class="check-pass">&#10003;</span>
+AWS Sig v4          <span class="check-pass">&#10003;</span></code></pre>
+      </div>
+    </div>
+  </div>
+
+  <!-- ---- Schema upload ---- -->
+  <div class="features-block features-block-reverse" id="schema-upload">
+    <div class="features-block-text">
+      <h3>Work offline from a schema file</h3>
+      <p class="features-block-lead">Drop in a <code>.proto</code>, OpenAPI spec, or GraphQL SDL &mdash; browse the API surface without a running server.</p>
+      <p>Great for reviewing a contract during a PR, sharing a service&rsquo;s shape with a teammate who can&rsquo;t reach staging, prototyping a client before the backend exists, or teaching someone what an API looks like without spinning up infrastructure. Supports <code>.proto</code> (buf-style imports included), OpenAPI 3 / Swagger 2, and GraphQL SDL &mdash; other formats via plugin.</p>
+      <a class="features-block-docs-link" href="{{ '/docs/setup/index.html' | relative_url }}">Read the setup docs &rarr;</a>
+    </div>
+    <div class="features-block-screenshot">
+      {% include themed-img.html src="/assets/images/screenshots/schema-upload.png" alt="Schema upload — drop in a .proto, OpenAPI spec, or GraphQL SDL and browse the API offline" %}
+    </div>
+  </div>
+
+  <!-- ---- Empty states ---- -->
+  <div class="features-block" id="empty-states">
+    <div class="features-block-text">
+      <h3>Smart empty states</h3>
+      <p class="features-block-lead">Every screen where Bowire could be blank has something useful instead &mdash; a welcome, a retry, a diff of what connected and what didn&rsquo;t.</p>
+      <p>First-run without a <code>--url</code> gets two onboarding paths: connect to a live server, or drop in a schema file for offline browsing. When discovery fails, the page surfaces the actual error plus four common-cause troubleshoot bullets. With multiple URLs configured, a per-URL status table lets you retry the ones that failed without touching the ones that connected.</p>
+      <p>When everything works, the landing shows a service summary, recent-history quick-recall, keyboard shortcut tips, and a guided tour entry point for new team members.</p>
+      <a class="features-block-docs-link" href="{{ '/docs/features/empty-state.html' | relative_url }}">Read the technical docs &rarr;</a>
+    </div>
+    <div class="features-block-screenshot features-block-screenshot-grid">
+      {% include themed-img.html src="/assets/images/screenshots/ready.png" alt="Connected &amp; ready landing — service summary, recent history, keyboard tips" %}
+      {% include themed-img.html src="/assets/images/screenshots/first-run.png" alt="First-run welcome screen with two onboarding cards" %}
+      {% include themed-img.html src="/assets/images/screenshots/multi-url.png" alt="Multi-URL status table with retry buttons for failed servers" %}
+      {% include themed-img.html src="/assets/images/screenshots/discovery-failed.png" alt="Discovery-failed state with error and troubleshooting bullets" %}
+    </div>
+  </div>
+
+  <!-- ---- No CORS proxy needed ---- -->
+  <div class="features-block" id="no-cors-proxy">
+    <div class="features-block-text">
+      <h3>No CORS proxy to set up</h3>
+      <p class="features-block-lead">Bowire talks to any API &mdash; local, internal, cloud &mdash; without browser-CORS friction. The architecture is the proxy.</p>
+      <p>The UI only ever hits <code>localhost:5080</code> (same-origin, no CORS involved). The actual gRPC, REST, GraphQL, WebSocket, SSE, MCP, and MQTT calls are made by the Bowire process server-to-server, not from the browser. Same-origin policy doesn&rsquo;t apply to server-to-server traffic, so endpoints without permissive CORS headers still work &mdash; no proxy layer to configure, no dev-tunnel to spin up, no <code>*</code>-origin security hole to poke.</p>
+      <p>It&rsquo;s the reason you can browse a staging gRPC cluster or an internal REST service from your laptop without the backend team adding <code>Access-Control-Allow-Origin</code>.</p>
+      <a class="features-block-docs-link" href="{{ '/docs/architecture/index.html' | relative_url }}">Read the architecture docs &rarr;</a>
+    </div>
+    <div class="features-block-screenshot">
+      <div class="code-block">
+        <div class="code-block-header">
+          <span class="code-block-lang">request flow</span>
+          <span class="code-block-hint">same-origin on the browser side</span>
+          <button class="copy-btn" data-copy="browser  ──▶  localhost:5080   (same-origin, no CORS)
+                   │
+                   ▼
+             bowire host      (server-to-server, no SOP)
+                   │
+                   ▼
+      target API (gRPC | REST | WS | MQTT | …)" aria-label="Copy">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+          </button>
+        </div>
+        <pre><code>browser  <span class="c">──▶</span>  localhost:5080   <span class="c">(same-origin, no CORS)</span>
+                   │
+                   ▼
+             <span class="check-pass">bowire host</span>      <span class="c">(server-to-server, no SOP)</span>
+                   │
+                   ▼
+      target API <span class="c">(gRPC | REST | WS | MQTT | …)</span></code></pre>
+      </div>
+    </div>
+  </div>
+
+  <!-- ---- Plugin lifecycle ---- -->
+  <div class="features-block features-block-reverse" id="plugin-lifecycle">
+    <div class="features-block-text">
+      <h3>Install, update, inspect &mdash; protocol plugins as NuGet packages</h3>
+      <p class="features-block-lead">Every protocol plugin is a NuGet package. <code>bowire plugin install</code> fetches it, <code>update</code> bumps it, <code>inspect</code> shows what's loaded. No <code>dotnet restore</code> detour, no .NET SDK required at install time &mdash; only the runtime.</p>
+      <p>Plugins install into <code>~/.bowire/plugins/</code> (override via <code>--plugin-dir</code> or <code>appsettings.json</code>), each in its own isolated <code>AssemblyLoadContext</code> so two plugins can ship different versions of the same third-party library without clashing. Shared contract assemblies (<code>Kuestenlogik.Bowire.*</code>, <code>System.*</code>, <code>Microsoft.*</code>) delegate to the host so <code>IBowireProtocol</code> stays type-identity-identical across the boundary.</p>
+      <p>Need a private feed? <code>--source https://nuget.mycorp.internal/v3/index.json</code> is repeatable; multiple sources are tried in order. <code>bowire plugin inspect MyCompany.Protocol.X</code> loads the plugin live and reports the load-context, the resolved version, every assembly it pulled in, and every <code>IBowireProtocol</code> implementation reflection finds &mdash; instant verification that a freshly-packed plugin is wired correctly.</p>
+      <a class="features-block-docs-link" href="{{ '/docs/features/plugin-system.html' | relative_url }}">Read the technical docs &rarr;</a>
+    </div>
+    <div class="features-block-screenshot">
+      <div class="code-block">
+        <div class="code-block-header">
+          <span class="code-block-lang">bash</span>
+          <span class="code-block-hint">$ bowire plugin ...</span>
+          <button class="copy-btn" data-copy="bowire plugin install Acme.Bowire.Protocol.Amqp
+bowire plugin install Acme.Protocol.X --source https://nuget.corp/v3/index.json
+bowire plugin update Acme.Bowire.Protocol.Amqp
+bowire plugin update                      # bump every installed plugin
+bowire plugin inspect Acme.Bowire.Protocol.Amqp
+bowire plugin list --verbose" aria-label="Copy">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+          </button>
+        </div>
+        <pre><code><span class="c">$ bowire plugin install Acme.Bowire.Protocol.Amqp</span>
+  Installed Acme.Bowire.Protocol.Amqp 1.2.0 (4 file(s))
+
+<span class="c">$ bowire plugin update                     # bump all</span>
+  Updating Acme.Bowire.Protocol.Amqp 1.2.0 -&gt; 1.3.0...
+
+<span class="c">$ bowire plugin inspect Acme.Bowire.Protocol.Amqp</span>
+  Load context
+    name:        BowirePlugin:Acme.Bowire.Protocol.Amqp
+    collectible: True
+    assemblies:  4
+      Acme.Bowire.Protocol.Amqp 1.3.0
+      RabbitMQ.Client            7.0.0
+      ...
+  Bowire contract implementations
+    IBowireProtocol  Acme.Bowire.Protocol.Amqp.AmqpProtocol</code></pre>
+      </div>
+    </div>
+  </div>
+
+  <!-- ---- Per-plugin settings ---- -->
+  <div class="features-block features-block-reverse" id="settings">
+    <div class="features-block-text">
+      <h3>Per-plugin settings</h3>
+      <p class="features-block-lead">Every protocol plugin contributes its own settings section &mdash; granular control without leaving the UI.</p>
+      <p>General settings (theme, keyboard shortcuts), data management (where recordings, history, and environments live on disk), and a dedicated panel per installed protocol plugin. Each plugin implements its own <code>BowirePluginSetting</code> schema, so the UI always reflects exactly what that plugin supports &mdash; no hidden configuration in environment variables or JSON files.</p>
+      <a class="features-block-docs-link" href="{{ '/docs/features/settings.html' | relative_url }}">Read the technical docs &rarr;</a>
+    </div>
+    <div class="features-block-screenshot">
+      {% include themed-img.html src="/assets/images/screenshots/settings.png" alt="Settings dialog — general, shortcuts, data management, and per-plugin configuration" %}
+    </div>
+  </div>
+
+  <!-- ---- CLI & standalone tool ---- -->
+  <div class="features-block features-block-reverse" id="cli-mode">
+    <div class="features-block-text">
+      <h3>One binary, three modes</h3>
+      <p class="features-block-lead">Run as a .NET global tool and get three flavours of the same workbench &mdash; CLI subcommands for scripts, an HTTP-served UI for interactive use, and embedded middleware for teams that want the UI inside their own app.</p>
+      <p><code>bowire list &lt;url&gt;</code> enumerates services, <code>bowire describe &lt;service.method&gt;</code> prints the full schema, <code>bowire call &lt;service.method&gt; --body '{...}'</code> invokes it &mdash; same output shape as the UI uses, so the CLI is scriptable against CI. Add <code>--format json</code> for machine-readable piping, or <code>--recording</code> to capture an output for later replay.</p>
+      <p>The standalone UI is just <code>bowire --url https://api.example.com</code> &mdash; the UI runs locally, hits the API with your auth, zero host-side changes. Plugin management (<code>bowire plugin install / list / uninstall</code>) shares the same state with the embedded mode.</p>
+      <a class="features-block-docs-link" href="{{ '/docs/features/cli-mode.html' | relative_url }}">Read the technical docs &rarr;</a>
+    </div>
+    <div class="features-block-screenshot">
+      <div class="code-block">
+        <div class="code-block-header">
+          <span class="code-block-lang">bash</span>
+          <span class="code-block-hint">$ bowire</span>
+          <button class="copy-btn" data-copy="bowire list --url https://api.example.com
+bowire call UserApi.GetUser -d '{&quot;id&quot;:42}'
+bowire --url https://api.example.com  # opens UI" aria-label="Copy">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+          </button>
+        </div>
+        <pre><code><span class="c">$ bowire list --url https://api.example.com</span>
+WeatherService   gRPC
+UserApi          REST
+EventsHub        SignalR
+
+<span class="c">$ bowire call UserApi.GetUser -d '{"id":42}'</span>
+{ "id": 42, "name": "Ada" }
+
+<span class="c">$ bowire --url https://api.example.com  # opens UI</span></code></pre>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="features-page-cta features-page-cta-alt">
+  <div class="features-page-cta-inner">
+    <h2 class="features-page-cta-title">Into the engine room</h2>
+    <p class="features-page-cta-lede">That was the topside tour. For SDK generation, protocol-plugin authoring, and everything else that lives below the waterline &mdash; read the docs or dive into the source.</p>
+    <div class="features-page-cta-buttons">
+      <a class="btn btn-secondary features-page-cta-btn" href="{{ '/docs/' | relative_url }}">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+        Read the docs
+      </a>
+      <a class="btn btn-secondary features-page-cta-btn" href="https://github.com/Kuestenlogik/Bowire">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .5C5.65.5.5 5.65.5 12c0 5.08 3.29 9.39 7.86 10.91.58.11.79-.25.79-.56 0-.27-.01-1.16-.02-2.11-3.2.7-3.87-1.37-3.87-1.37-.52-1.33-1.27-1.69-1.27-1.69-1.04-.71.08-.7.08-.7 1.15.08 1.76 1.18 1.76 1.18 1.02 1.76 2.69 1.25 3.34.96.1-.74.4-1.25.73-1.54-2.55-.29-5.24-1.28-5.24-5.7 0-1.26.45-2.29 1.18-3.1-.12-.29-.51-1.46.11-3.04 0 0 .96-.31 3.15 1.18.91-.25 1.89-.38 2.86-.39.97.01 1.95.14 2.86.39 2.18-1.49 3.14-1.18 3.14-1.18.62 1.58.23 2.75.11 3.04.74.81 1.18 1.84 1.18 3.1 0 4.43-2.69 5.4-5.26 5.69.41.36.78 1.06.78 2.13 0 1.54-.01 2.78-.01 3.16 0 .31.21.68.8.56C20.21 21.39 23.5 17.08 23.5 12 23.5 5.65 18.35.5 12 .5z"/></svg>
+        See the source
+      </a>
+    </div>
+    <p class="features-page-cta-finale">The engine room runs on hands. <a href="{{ '/community.html' | relative_url }}">Join the crew &rarr;</a></p>
+  </div>
+</section>

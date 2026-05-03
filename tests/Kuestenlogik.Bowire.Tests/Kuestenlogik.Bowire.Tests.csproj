@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+    <OutputType>Exe</OutputType>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit.v3" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Kuestenlogik.Bowire\Kuestenlogik.Bowire.csproj" />
+    <ProjectReference Include="..\..\src\Kuestenlogik.Bowire.Protocol.GraphQL\Kuestenlogik.Bowire.Protocol.GraphQL.csproj" />
+    <ProjectReference Include="..\..\src\Kuestenlogik.Bowire.Protocol.WebSocket\Kuestenlogik.Bowire.Protocol.WebSocket.csproj" />
+    <ProjectReference Include="..\..\src\Kuestenlogik.Bowire.Protocol.Mcp\Kuestenlogik.Bowire.Protocol.Mcp.csproj" />
+    <ProjectReference Include="..\..\src\Kuestenlogik.Bowire.Protocol.Rest\Kuestenlogik.Bowire.Protocol.Rest.csproj" />
+    <!-- Tool brings in BowireConfiguration (bootstrap IConfiguration +
+         CLI-flag / legacy-env-var mappings) that the Bowire executable
+         uses before WebApplication.CreateBuilder runs. Tested here
+         because the alternative — a standalone Kuestenlogik.Bowire.Tool.Tests
+         project — is too much ceremony for two units' worth of logic. -->
+    <ProjectReference Include="..\..\src\Kuestenlogik.Bowire.Tool\Kuestenlogik.Bowire.Tool.csproj" />
+  </ItemGroup>
+</Project>

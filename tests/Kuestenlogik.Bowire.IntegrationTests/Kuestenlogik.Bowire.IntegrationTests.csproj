@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <PropertyGroup>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+    <NoWarn>$(NoWarn);CA1515</NoWarn>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit.v3" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" />
+    <PackageReference Include="Grpc.AspNetCore" />
+    <PackageReference Include="Grpc.AspNetCore.Server.Reflection" />
+    <PackageReference Include="Grpc.Tools" PrivateAssets="All" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Kuestenlogik.Bowire\Kuestenlogik.Bowire.csproj" />
+    <ProjectReference Include="..\..\src\Kuestenlogik.Bowire.Protocol.Grpc\Kuestenlogik.Bowire.Protocol.Grpc.csproj" />
+    <ProjectReference Include="..\..\src\Kuestenlogik.Bowire.Protocol.SignalR\Kuestenlogik.Bowire.Protocol.SignalR.csproj" />
+    <ProjectReference Include="..\..\src\Kuestenlogik.Bowire.Protocol.GraphQL\Kuestenlogik.Bowire.Protocol.GraphQL.csproj" />
+    <ProjectReference Include="..\..\src\Kuestenlogik.Bowire.Protocol.WebSocket\Kuestenlogik.Bowire.Protocol.WebSocket.csproj" />
+    <ProjectReference Include="..\..\src\Kuestenlogik.Bowire.Protocol.Mcp\Kuestenlogik.Bowire.Protocol.Mcp.csproj" />
+    <ProjectReference Include="..\..\src\Kuestenlogik.Bowire.Protocol.Mqtt\Kuestenlogik.Bowire.Protocol.Mqtt.csproj" />
+    <ProjectReference Include="..\..\src\Kuestenlogik.Bowire.Protocol.SocketIo\Kuestenlogik.Bowire.Protocol.SocketIo.csproj" />
+    <ProjectReference Include="..\..\src\Kuestenlogik.Bowire.Protocol.OData\Kuestenlogik.Bowire.Protocol.OData.csproj" />
+    <ProjectReference Include="..\..\src\Kuestenlogik.Bowire.Protocol.Rest\Kuestenlogik.Bowire.Protocol.Rest.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <Protobuf Include="Protos/*.proto" GrpcServices="Both" />
+  </ItemGroup>
+</Project>

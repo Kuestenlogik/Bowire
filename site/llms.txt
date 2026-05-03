@@ -1,0 +1,50 @@
+# Bowire
+
+> Multi-protocol API workbench for .NET. Auto-discovers gRPC, REST/OpenAPI, GraphQL, SignalR, WebSocket, SSE, MQTT, Socket.IO, OData, and MCP services from a running endpoint and gives you a single browser UI to inspect schemas, call methods, stream messages, mock backends, record/replay sessions, and assert on responses. Ships embedded as ASP.NET middleware (`MapBowire()`) or as a standalone .NET tool / container.
+
+Bowire is plugin-based: each protocol is a separate NuGet package implementing `IBowireProtocol`, loaded out of `~/.bowire/plugins/` at startup. Sister repos extend the surface to wire-protocols (DIS, UDP) and event streams (Storm, Kafka). New plugins can be scaffolded with `dotnet new bowire-plugin`.
+
+Apache-2.0 licensed. Source at https://github.com/Kuestenlogik/Bowire. Distributed via nuget.org as `Kuestenlogik.Bowire.*` libraries and `Kuestenlogik.Bowire.Tool` for the CLI.
+
+## Getting started
+
+- [Quickstart](https://kuestenlogik.github.io/Bowire/quickstart.html): five-minute walkthrough — embed in an ASP.NET app or run the CLI against any URL.
+- [Downloads](https://kuestenlogik.github.io/Bowire/downloads.html): .NET tool, NuGet packages, container image, OS-specific archives.
+- [Why Bowire](https://kuestenlogik.github.io/Bowire/why-bowire.html): design rationale and how it compares to Postman / Insomnia / Bruno.
+- [Features overview](https://kuestenlogik.github.io/Bowire/features.html): UI tour at a glance.
+
+## Documentation
+
+- [Documentation home](https://kuestenlogik.github.io/Bowire/docs/): full reference manual.
+- [Setup](https://kuestenlogik.github.io/Bowire/docs/setup/): install paths — embedded middleware, standalone CLI, Docker sidecar, building from source.
+- [UI guide](https://kuestenlogik.github.io/Bowire/docs/ui-guide/): every pane and action in the browser workbench, with screenshots.
+- [Protocol guides](https://kuestenlogik.github.io/Bowire/docs/protocols/): per-plugin behaviour and configuration. Built-in: gRPC, REST, GraphQL, SignalR, WebSocket, SSE, MQTT, Socket.IO, OData, MCP. Sister-repo plugins: DIS, UDP, Storm, Kafka. Includes a guide for writing your own.
+- [Features reference](https://kuestenlogik.github.io/Bowire/docs/features/): mock server, recording/replay, response chaining, test assertions, environments, flows, command palette, plugin system, performance graphs, freeform requests, multi-channel duplex.
+- [Architecture](https://kuestenlogik.github.io/Bowire/docs/architecture/): plugin pipeline, package layout, extension points for embedding deeply.
+- [API reference](https://kuestenlogik.github.io/Bowire/docs/api/Kuestenlogik.Bowire.html): types, methods, and extension points generated from the source.
+
+## Workflows by audience
+
+- [Backend developers](https://kuestenlogik.github.io/Bowire/workflows/backend.html): inspect and exercise your own services without writing a client.
+- [Testers / QA](https://kuestenlogik.github.io/Bowire/workflows/testers.html): record / replay, assertions, no-code flows for CI, HTML reports.
+- [AI agent builders](https://kuestenlogik.github.io/Bowire/workflows/ai-agents.html): MCP server adapter — every discovered method becomes an MCP tool with JSON Schema input, ready for Claude Desktop, Cursor, or any MCP-aware agent.
+- [Docs teams](https://kuestenlogik.github.io/Bowire/workflows/docs-teams.html): export OpenAPI / proto / GraphQL schemas and generate samples from running services.
+
+## Project
+
+- [Source repository](https://github.com/Kuestenlogik/Bowire): Bowire core (UI shell, plugin host, built-in protocol plugins).
+- [Releases](https://github.com/Kuestenlogik/Bowire/releases): tagged versions with offline doc snapshots (HTML zip + single-file PDF).
+- [Issues](https://github.com/Kuestenlogik/Bowire/issues): bug reports and feature requests.
+- [Roadmap](https://github.com/Kuestenlogik/Bowire/blob/main/ROADMAP.md): completed work and upcoming protocols.
+- [Security policy](https://github.com/Kuestenlogik/Bowire/blob/main/SECURITY.md): how to report vulnerabilities.
+- [License](https://github.com/Kuestenlogik/Bowire/blob/main/LICENSE): Apache-2.0.
+
+## Optional
+
+- [Bowire.Templates](https://github.com/Kuestenlogik/Bowire.Templates): `dotnet new bowire-plugin` scaffolding for new protocol plugins.
+- [Bowire.Samples](https://github.com/Kuestenlogik/Bowire.Samples): runnable examples of common host configurations.
+- [Bowire.Protocol.Dis](https://github.com/Kuestenlogik/Bowire.Protocol.Dis): IEEE 1278.1 Distributed Interactive Simulation plugin.
+- [Bowire.Protocol.Udp](https://github.com/Kuestenlogik/Bowire.Protocol.Udp): generic UDP datagram inspection plugin.
+- [Bowire.Protocol.Storm](https://github.com/Kuestenlogik/Bowire.Protocol.Storm): KL.Storm distribution-fabric tap stream plugin.
+- [Bowire.Protocol.Kafka](https://github.com/Kuestenlogik/Bowire.Protocol.Kafka): Apache Kafka producer / consumer plugin.
+- [llms.txt](https://llmstxt.org/): about this file format.

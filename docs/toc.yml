@@ -1,0 +1,17 @@
+pdf: true
+pdfFileName: bowire-documentation.pdf
+items:
+- name: Home
+  href: index.md
+- name: Deployment
+  href: setup/
+- name: User Guide
+  href: ui-guide/
+- name: Features
+  href: features/
+- name: Protocol Guides
+  href: protocols/
+- name: Architecture
+  href: architecture/
+- name: API Reference
+  href: api/

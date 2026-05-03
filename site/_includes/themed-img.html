@@ -1,0 +1,17 @@
+{%- comment -%}
+Renders a screenshot as a paired dark/light image. One stays visible
+at a time depending on `<html data-theme>`.
+
+Usage:
+  {% include themed-img.html src="/assets/images/screenshots/streaming.png"
+                              alt="Streaming response — Wireshark-style frame list"
+                              class="some-extra-class" %}
+
+`src` should be the *theme-less* legacy filename ending in `.png` — the
+include rewrites it to `…-dark.png` and `…-light.png`.
+{%- endcomment -%}
+{%- assign extra_class = include.class | default: "" -%}
+{%- assign dark_src = include.src | replace: ".png", "-dark.png" -%}
+{%- assign light_src = include.src | replace: ".png", "-light.png" -%}
+<img src="{{ dark_src | relative_url }}" alt="{{ include.alt }}" loading="lazy" class="theme-img-dark {{ extra_class }}">
+<img src="{{ light_src | relative_url }}" alt="{{ include.alt }}" loading="lazy" class="theme-img-light {{ extra_class }}">

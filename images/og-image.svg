@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Social-share preview card for Bowire (1200×630 — the OpenGraph
+  recommended size, Twitter Cards summary_large_image picks the same).
+  Rendered to site/assets/images/og-image.png by scripts/generate-icons.sh.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0f0f17"/>
+      <stop offset="1" stop-color="#1a1a2e"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.85" cy="0.15" r="0.6">
+      <stop offset="0" stop-color="#6366f1" stop-opacity="0.28"/>
+      <stop offset="1" stop-color="#6366f1" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  <rect width="1200" height="630" fill="url(#glow)"/>
+
+  <!-- Bowire B-tile (white-on-indigo so the brand mark stays
+       legible against any social-app theme). -->
+  <g transform="translate(96, 220)">
+    <!-- 110×110 indigo rounded tile -->
+    <rect width="110" height="110" rx="22" fill="#6366f1"/>
+    <!-- Bowire B glyph centred in the tile, scaled to ~62 px -->
+    <g transform="translate(23, 22) scale(0.696)" fill="#ffffff">
+      <path d="m 40.755 51.985 v 16.574 h 7.673 c 3.274 0 5.832 -0.76 7.673 -2.28 1.871 -1.52 2.806 -3.596 2.806 -6.226 0 -2.514 -0.921 -4.487 -2.762 -5.919 -1.812 -1.432 -4.355 -2.149 -7.629 -2.149 z"/>
+      <path d="m 40.755 26.554 v 14.908 h 6.226 c 2.923 0 5.218 -0.702 6.884 -2.105 1.696 -1.432 2.543 -3.391 2.543 -5.876 0 -4.619 -3.45 -6.928 -10.348 -6.928 z"/>
+      <path d="m 47.559 0 c -26.265 0 -47.557 21.292 -47.557 47.557 0 26.265 21.292 47.557 47.557 47.557 26.265 0 47.557 -21.292 47.557 -47.557 0 -26.265 -21.292 -47.557 -47.557 -47.557 z m -20.965 16.119 h 22.888 c 7.016 0 12.408 1.286 16.179 3.859 3.771 2.572 5.657 6.197 5.657 10.874 0 3.391 -1.155 6.358 -3.464 8.901 -2.28 2.543 -5.203 4.312 -8.769 5.306 v 0.175 c 4.472 0.555 8.038 2.207 10.699 4.955 2.689 2.748 4.034 6.095 4.034 10.041 0 5.759 -2.061 10.333 -6.183 13.724 -4.122 3.362 -9.749 5.043 -16.881 5.043 h -24.16 z"/>
+    </g>
+  </g>
+
+  <!-- Wordmark "Bowire" — large, bright, set with letter-spacing
+       that matches the Inter Display brand setting elsewhere. -->
+  <text x="240" y="290" fill="#ffffff" font-family="Inter, system-ui, -apple-system, sans-serif"
+        font-size="100" font-weight="800" letter-spacing="-3">Bowire</text>
+
+  <!-- Tagline: same line that runs as the hero subheading. Two lines
+       for readability at preview-thumbnail sizes. -->
+  <text x="240" y="370" fill="#cdd0e0" font-family="Inter, system-ui, sans-serif"
+        font-size="32" font-weight="500">Multi-protocol API workbench for .NET</text>
+  <text x="240" y="412" fill="#9ea3bd" font-family="Inter, system-ui, sans-serif"
+        font-size="26" font-weight="400">gRPC · REST · GraphQL · MQTT · SignalR · WebSocket · SSE · MCP · OData</text>
+
+  <!-- Bottom strip: install command + "by Küstenlogik" attribution. -->
+  <rect x="96" y="500" width="1008" height="60" rx="14" fill="#1f1f33" stroke="#2a2a3d" stroke-width="1"/>
+  <text x="120" y="538" fill="#a5b4fc" font-family="JetBrains Mono, ui-monospace, Consolas, monospace"
+        font-size="22">$</text>
+  <text x="146" y="538" fill="#e8e8f0" font-family="JetBrains Mono, ui-monospace, Consolas, monospace"
+        font-size="22">dotnet tool install -g Kuestenlogik.Bowire.Tool</text>
+  <text x="1080" y="538" fill="#9ea3bd" font-family="Inter, system-ui, sans-serif"
+        font-size="18" font-weight="500" text-anchor="end">by Küstenlogik</text>
+</svg>

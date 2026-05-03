@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Description>Bowire WebSocket protocol plugin — interactive raw text/binary frame channel for testing WebSocket endpoints.</Description>
+    <PackageId>Kuestenlogik.Bowire.Protocol.WebSocket</PackageId>
+    <PackageTags>bowire;bowire-plugin;websocket;ws;wss;developer-tools</PackageTags>
+    <IsPackable>true</IsPackable>
+    <RootNamespace>Kuestenlogik.Bowire.Protocol.WebSocket</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="bowire" />
+    <InternalsVisibleTo Include="Kuestenlogik.Bowire.Tests" />
+    <InternalsVisibleTo Include="Kuestenlogik.Bowire.IntegrationTests" />
+  </ItemGroup>
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Kuestenlogik.Bowire\Kuestenlogik.Bowire.csproj" />
+  </ItemGroup>
+</Project>

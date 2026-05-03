@@ -1,0 +1,76 @@
+{
+  "metadata": [
+    {
+      "src": [
+        {
+          "files": [
+            "artifacts/bin/Kuestenlogik.Bowire/Release/Kuestenlogik.Bowire.dll",
+            "artifacts/bin/Kuestenlogik.Bowire.Protocol.Grpc/Release/Kuestenlogik.Bowire.Protocol.Grpc.dll",
+            "artifacts/bin/Kuestenlogik.Bowire.Protocol.Rest/Release/Kuestenlogik.Bowire.Protocol.Rest.dll",
+            "artifacts/bin/Kuestenlogik.Bowire.Protocol.GraphQL/Release/Kuestenlogik.Bowire.Protocol.GraphQL.dll",
+            "artifacts/bin/Kuestenlogik.Bowire.Protocol.SignalR/Release/Kuestenlogik.Bowire.Protocol.SignalR.dll",
+            "artifacts/bin/Kuestenlogik.Bowire.Protocol.WebSocket/Release/Kuestenlogik.Bowire.Protocol.WebSocket.dll",
+            "artifacts/bin/Kuestenlogik.Bowire.Protocol.Sse/Release/Kuestenlogik.Bowire.Protocol.Sse.dll",
+            "artifacts/bin/Kuestenlogik.Bowire.Protocol.Mqtt/Release/Kuestenlogik.Bowire.Protocol.Mqtt.dll",
+            "artifacts/bin/Kuestenlogik.Bowire.Protocol.SocketIo/Release/Kuestenlogik.Bowire.Protocol.SocketIo.dll",
+            "artifacts/bin/Kuestenlogik.Bowire.Protocol.OData/Release/Kuestenlogik.Bowire.Protocol.OData.dll",
+            "artifacts/bin/Kuestenlogik.Bowire.Protocol.Mcp/Release/Kuestenlogik.Bowire.Protocol.Mcp.dll"
+          ],
+          "src": ".."
+        }
+      ],
+      "dest": "../artifacts/docs/api",
+      "includePrivateMembers": false,
+      "namespaceLayout": "flattened"
+    }
+  ],
+  "build": {
+    "content": [
+      {
+        "files": ["**.yml"],
+        "src": "../artifacts/docs/api",
+        "dest": "api"
+      },
+      {
+        "files": [
+          "quickstart.md",
+          "use-cases.md",
+          "features/**.md",
+          "features/**/toc.yml",
+          "protocols/**.md",
+          "protocols/**/toc.yml",
+          "ui-guide/**.md",
+          "ui-guide/**/toc.yml",
+          "architecture/**.md",
+          "architecture/**/toc.yml",
+          "setup/**.md",
+          "setup/**/toc.yml",
+          "api/*.md",
+          "toc.yml",
+          "*.md"
+        ]
+      }
+    ],
+    "resource": [
+      {
+        "files": ["images/**", "favicon.ico"]
+      }
+    ],
+    "dest": "../artifacts/docs",
+    "template": ["default", "modern", "templates/bowire"],
+    "globalMetadata": {
+      "_appTitle": "Bowire Documentation",
+      "_appName": "Bowire",
+      "_appFaviconPath": "favicon.ico",
+      "_enableSearch": false,
+      "_enableNewTab": true,
+      "_disableContribution": false,
+      "_gitContribute": {
+        "repo": "https://github.com/Kuestenlogik/Bowire",
+        "branch": "main"
+      },
+      "_gitUrlPattern": "github"
+    },
+    "postProcessors": ["ExtractSearchIndex"]
+  }
+}

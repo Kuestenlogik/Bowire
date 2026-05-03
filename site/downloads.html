@@ -1,0 +1,496 @@
+---
+layout: page
+title: Downloads — Bowire
+description: All the ways to install and run Bowire — NuGet packages, global .NET tool, GitHub Releases, containers, and source.
+---
+
+<section class="downloads-hero">
+  <h1>Downloads</h1>
+  <p class="downloads-hero-tagline">Every way to get Bowire. Pick what fits your workflow.</p>
+
+  <!-- Quick-picker: OS auto-detected from the browser, click goes straight
+       to the matching release asset. All URLs resolve via GitHub's
+       `/releases/latest/download/<file>` redirect — no scrolling required. -->
+  <div class="downloads-quick-picker">
+    <label class="downloads-quick-picker-label">Quick download:</label>
+    <div class="downloads-quick-picker-group" role="group" aria-label="Quick download">
+      <a id="quick-download-btn" class="downloads-quick-picker-btn" href="#" rel="noopener">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Download
+      </a>
+      <div class="downloads-quick-picker-pop">
+        <button type="button" id="quick-download-toggle" class="downloads-quick-picker-toggle" aria-haspopup="listbox" aria-expanded="false" aria-controls="quick-download-list">
+          <span id="quick-download-label" class="downloads-quick-picker-current">Windows x64 &mdash; MSI installer</span>
+          <svg class="downloads-quick-picker-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+        <ul id="quick-download-list" class="downloads-quick-picker-menu" role="listbox" hidden>
+          <li role="option" tabindex="-1" data-value="win-x64-msi" data-url="https://github.com/Kuestenlogik/Bowire/releases/latest/download/bowire-x64.msi" aria-selected="true">Windows x64 &mdash; MSI installer</li>
+          <li role="option" tabindex="-1" data-value="win-x64-zip" data-url="https://github.com/Kuestenlogik/Bowire/releases/latest/download/bowire-win-x64.zip">Windows x64 &mdash; portable zip</li>
+          <li role="option" tabindex="-1" data-value="deb" data-url="https://github.com/Kuestenlogik/Bowire/releases/latest/download/bowire_amd64.deb">Debian / Ubuntu &mdash; DEB</li>
+          <li role="option" tabindex="-1" data-value="rpm" data-url="https://github.com/Kuestenlogik/Bowire/releases/latest/download/bowire.x86_64.rpm">Fedora / RHEL / SUSE &mdash; RPM</li>
+          <li role="option" tabindex="-1" data-value="linux-x64" data-url="https://github.com/Kuestenlogik/Bowire/releases/latest/download/bowire-linux-x64.tar.gz">Linux x64 &mdash; tarball</li>
+          <li role="option" tabindex="-1" data-value="linux-arm64" data-url="https://github.com/Kuestenlogik/Bowire/releases/latest/download/bowire-linux-arm64.tar.gz">Linux ARM64 &mdash; tarball</li>
+          <li role="option" tabindex="-1" data-value="osx-arm64" data-url="https://github.com/Kuestenlogik/Bowire/releases/latest/download/bowire-osx-arm64.tar.gz">macOS Apple Silicon &mdash; tarball</li>
+          <li role="option" tabindex="-1" data-value="osx-x64" data-url="https://github.com/Kuestenlogik/Bowire/releases/latest/download/bowire-osx-x64.tar.gz">macOS Intel &mdash; tarball</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================================================================ -->
+<!-- Group 1 — Install from a package manager                         -->
+<!-- ================================================================ -->
+<section class="downloads-group downloads-group-alt">
+  <header class="downloads-group-header">
+    <h2 class="downloads-group-title">Install from a package manager</h2>
+    <p class="downloads-group-lede">The fastest path for most developers &mdash; NuGet for embedded integrations, the .NET global tool for a standalone CLI, or your platform&rsquo;s native package manager.</p>
+  </header>
+
+  <!-- ---- NuGet packages ---- -->
+  <div class="downloads-section">
+    <h3>NuGet packages</h3>
+    <p class="downloads-section-desc">Every plugin ships as a standalone NuGet package so you install only what you need. All published by <a href="https://www.nuget.org/profiles/kuestenlogik" target="_blank" rel="noopener">Küstenlogik on nuget.org</a>.</p>
+
+    <h4 class="downloads-sub">Core</h4>
+    <ul class="downloads-pkgs downloads-pkgs-icons">
+      <li>
+        <div class="downloads-pkg-icon" aria-hidden="true">
+          <svg viewBox="0 0 95.114075 95.114098" fill="currentColor"><g transform="translate(-57.679684,-154.66912)"><path d="m 98.433779,206.65457 v 16.57418 h 7.672911 c 3.27394,0 5.83185,-0.75992 7.67344,-2.27997 1.87082,-1.52004 2.80603,-3.59565 2.80603,-6.22649 0,-2.51391 -0.92052,-4.48667 -2.76211,-5.91902 -1.81236,-1.43234 -4.35557,-2.1487 -7.62951,-2.1487 z"/><path d="m 98.433779,181.22304 v 14.90814 h 6.225971 c 2.92316,0 5.21814,-0.70167 6.88434,-2.10478 1.69543,-1.43235 2.54299,-3.39093 2.54299,-5.87561 0,-4.61859 -3.44955,-6.92775 -10.3482,-6.92775 z"/><path d="m 105.23698,154.66911 c -26.26504,-1.7e-4 -47.557183,21.29175 -47.557298,47.55679 -1.66e-4,26.26524 21.292058,47.55747 47.557298,47.5573 26.26504,-1.2e-4 47.55695,-21.29226 47.55678,-47.5573 -1.2e-4,-26.26484 -21.29194,-47.55667 -47.55678,-47.55679 z M 84.270824,170.7875 h 22.888516 c 7.01558,0 12.4085,1.28631 16.17937,3.85868 3.77088,2.57238 5.65651,6.19671 5.65651,10.87376 0,3.39086 -1.15458,6.35812 -3.46387,8.90126 -2.28007,2.54315 -5.20324,4.31175 -8.76949,5.30562 v 0.17519 c 4.47243,0.5554 8.03849,2.20696 10.69857,4.95473 2.6893,2.74777 4.03386,6.09499 4.03386,10.04125 0,5.75862 -2.06092,10.33336 -6.18257,13.72423 -4.12165,3.36163 -9.74863,5.04258 -16.88114,5.04258 H 84.270824 Z"/></g></svg>
+        </div>
+        <div class="downloads-pkg-body">
+          <div class="downloads-pkg-head">
+            <a href="https://www.nuget.org/packages/Kuestenlogik.Bowire" target="_blank" rel="noopener"><code>Kuestenlogik.Bowire</code></a>
+            <button class="copy-btn downloads-pkg-copy" type="button" data-copy="dotnet add package Kuestenlogik.Bowire" aria-label="Copy install command" title="dotnet add package Kuestenlogik.Bowire">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+            </button>
+          </div>
+          <span class="downloads-pkg-desc">Host integration, plugin loader, discovery pipeline.</span>
+        </div>
+      </li>
+      <li>
+        <div class="downloads-pkg-icon" aria-hidden="true">
+          <svg viewBox="0 0 95.114075 95.114098" fill="currentColor"><g transform="translate(-57.679684,-154.66912)"><path d="m 98.433779,206.65457 v 16.57418 h 7.672911 c 3.27394,0 5.83185,-0.75992 7.67344,-2.27997 1.87082,-1.52004 2.80603,-3.59565 2.80603,-6.22649 0,-2.51391 -0.92052,-4.48667 -2.76211,-5.91902 -1.81236,-1.43234 -4.35557,-2.1487 -7.62951,-2.1487 z"/><path d="m 98.433779,181.22304 v 14.90814 h 6.225971 c 2.92316,0 5.21814,-0.70167 6.88434,-2.10478 1.69543,-1.43235 2.54299,-3.39093 2.54299,-5.87561 0,-4.61859 -3.44955,-6.92775 -10.3482,-6.92775 z"/><path d="m 105.23698,154.66911 c -26.26504,-1.7e-4 -47.557183,21.29175 -47.557298,47.55679 -1.66e-4,26.26524 21.292058,47.55747 47.557298,47.5573 26.26504,-1.2e-4 47.55695,-21.29226 47.55678,-47.5573 -1.2e-4,-26.26484 -21.29194,-47.55667 -47.55678,-47.55679 z M 84.270824,170.7875 h 22.888516 c 7.01558,0 12.4085,1.28631 16.17937,3.85868 3.77088,2.57238 5.65651,6.19671 5.65651,10.87376 0,3.39086 -1.15458,6.35812 -3.46387,8.90126 -2.28007,2.54315 -5.20324,4.31175 -8.76949,5.30562 v 0.17519 c 4.47243,0.5554 8.03849,2.20696 10.69857,4.95473 2.6893,2.74777 4.03386,6.09499 4.03386,10.04125 0,5.75862 -2.06092,10.33336 -6.18257,13.72423 -4.12165,3.36163 -9.74863,5.04258 -16.88114,5.04258 H 84.270824 Z"/></g></svg>
+        </div>
+        <div class="downloads-pkg-body">
+          <div class="downloads-pkg-head">
+            <a href="https://www.nuget.org/packages/Kuestenlogik.Bowire.Tool" target="_blank" rel="noopener"><code>Kuestenlogik.Bowire.Tool</code></a>
+            <button class="copy-btn downloads-pkg-copy" type="button" data-copy="dotnet tool install -g Kuestenlogik.Bowire.Tool" aria-label="Copy install command" title="dotnet tool install -g Kuestenlogik.Bowire.Tool">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+            </button>
+          </div>
+          <span class="downloads-pkg-desc">Standalone <code>bowire</code> CLI + browser UI, installable as a global .NET tool.</span>
+        </div>
+      </li>
+    </ul>
+
+    <h4 class="downloads-sub">Protocol plugins</h4>
+    <ul class="downloads-pkgs downloads-pkgs-icons">
+      <li>
+        <div class="downloads-pkg-icon" aria-hidden="true">
+          <svg viewBox="0 0 64 64" fill="var(--success)"><path d="M27.125 36.16v12.46c0 2.593.44 4.847 1.323 6.762s2.044 3.506 3.485 4.773 3.06 2.225 4.853 2.873S40.39 64 42.212 64s3.632-.324 5.426-.972 3.412-1.606 4.853-2.873 2.603-2.858 3.485-4.773 1.323-4.17 1.323-6.762V27.86l-16.126-.025-.02 8.325H48.3v12.46c0 2.18-.603 3.786-1.8 4.818s-2.632 1.547-4.28 1.547-3.073-.516-4.28-1.547-1.8-2.637-1.8-4.818V15.38c0-2.18.603-3.786 1.8-4.818s2.632-1.547 4.28-1.547 3.073.516 4.28 1.547 1.8 2.638 1.8 4.818v3.182h9V15.38c0-2.534-.44-4.773-1.323-6.718s-2.044-3.55-3.485-4.818S49.432 1.62 47.64.97 44.035 0 42.212 0s-3.632.324-5.426.972-3.412 1.606-4.853 2.873-2.603 2.873-3.485 4.818-1.323 4.184-1.323 6.718v12.46h-9.207v-9.28h2.824l-7.02-9.92-7.02 9.92h2.92V32c0 2.298 1.857 4.16 4.15 4.16h13.355z" fill-rule="evenodd"/></svg>
+        </div>
+        <div class="downloads-pkg-body">
+          <div class="downloads-pkg-head">
+            <a href="https://www.nuget.org/packages/Kuestenlogik.Bowire.Protocol.Grpc" target="_blank" rel="noopener"><code>Kuestenlogik.Bowire.Protocol.Grpc</code></a>
+            <button class="copy-btn downloads-pkg-copy" type="button" data-copy="dotnet add package Kuestenlogik.Bowire.Protocol.Grpc" aria-label="Copy install command" title="dotnet add package Kuestenlogik.Bowire.Protocol.Grpc">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+            </button>
+          </div>
+          <span class="downloads-pkg-desc">gRPC with Server Reflection, all four streaming types, HTTP transcoding.</span>
+        </div>
+      </li>
+      <li>
+        <div class="downloads-pkg-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2.25"><path d="M8 3H6a2 2 0 00-2 2v4c0 1.1-.9 2-2 2 1.1 0 2 .9 2 2v4a2 2 0 002 2h2"/><path d="M16 3h2a2 2 0 012 2v4c0 1.1.9 2 2 2-1.1 0-2 .9-2 2v4a2 2 0 01-2 2h-2"/></svg>
+        </div>
+        <div class="downloads-pkg-body">
+          <div class="downloads-pkg-head">
+            <a href="https://www.nuget.org/packages/Kuestenlogik.Bowire.Protocol.Rest" target="_blank" rel="noopener"><code>Kuestenlogik.Bowire.Protocol.Rest</code></a>
+            <button class="copy-btn downloads-pkg-copy" type="button" data-copy="dotnet add package Kuestenlogik.Bowire.Protocol.Rest" aria-label="Copy install command" title="dotnet add package Kuestenlogik.Bowire.Protocol.Rest">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+            </button>
+          </div>
+          <span class="downloads-pkg-desc">REST / OpenAPI, AWS Sig v4, Swagger import.</span>
+        </div>
+      </li>
+      <li>
+        <div class="downloads-pkg-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="#e535ab"><path d="M12.002 0a2.138 2.138 0 1 0 0 4.277 2.138 2.138 0 1 0 0-4.277zm8.54 4.931a2.138 2.138 0 1 0 0 4.277 2.138 2.138 0 1 0 0-4.277zm0 9.862a2.138 2.138 0 1 0 0 4.277 2.138 2.138 0 1 0 0-4.277zm-8.54 4.931a2.138 2.138 0 1 0 0 4.276 2.138 2.138 0 1 0 0-4.276zm-8.542-4.93a2.138 2.138 0 1 0 0 4.276 2.138 2.138 0 1 0 0-4.277zm0-9.863a2.138 2.138 0 1 0 0 4.277 2.138 2.138 0 1 0 0-4.277zm8.542-3.378L2.953 6.777v10.448l9.049 5.224 9.047-5.224V6.777zm0 1.601 7.66 13.27H4.34zm-1.387.371L3.97 15.037V7.363zm2.774 0 6.646 3.838v7.674zM5.355 17.44h13.293l-6.646 3.836z"/></svg>
+        </div>
+        <div class="downloads-pkg-body">
+          <div class="downloads-pkg-head">
+            <a href="https://www.nuget.org/packages/Kuestenlogik.Bowire.Protocol.GraphQL" target="_blank" rel="noopener"><code>Kuestenlogik.Bowire.Protocol.GraphQL</code></a>
+            <button class="copy-btn downloads-pkg-copy" type="button" data-copy="dotnet add package Kuestenlogik.Bowire.Protocol.GraphQL" aria-label="Copy install command" title="dotnet add package Kuestenlogik.Bowire.Protocol.GraphQL">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+            </button>
+          </div>
+          <span class="downloads-pkg-desc">GraphQL with schema introspection + subscriptions (WS / SSE).</span>
+        </div>
+      </li>
+      <li>
+        <div class="downloads-pkg-icon" aria-hidden="true">
+          <svg viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg"><defs><radialGradient id="signalr-dl-grad" cx="9" cy="9" r="8.5" gradientUnits="userSpaceOnUse"><stop offset="0.18" stop-color="#5ea0ef"/><stop offset="1" stop-color="#0078d4"/></radialGradient><clipPath id="signalr-dl-clip"><path d="M14.21,15.72A8.5,8.5,0,0,1,3.79,2.28l.09-.06a8.5,8.5,0,0,1,10.33,13.5" fill="none"/></clipPath></defs><path d="M14.21,15.72A8.5,8.5,0,0,1,3.79,2.28l.09-.06a8.5,8.5,0,0,1,10.33,13.5" fill="url(#signalr-dl-grad)"/><g clip-path="url(#signalr-dl-clip)"><path d="M4.13,7.05a.28.28,0,0,0,.2.48h6.12A1.55,1.55,0,0,1,11.6,8a1.61,1.61,0,0,1,.43.92,1.43,1.43,0,0,1-.36,1.15,1.41,1.41,0,0,1-1.12.54H8.44a.08.08,0,0,0-.09.06L7.81,12c-.12.29-.25.59-.37.89a.08.08,0,0,0,0,.09L9,14.48l2.59,2.59.46.49,2.14-1.19L13.72,16l-1.43-1.44L10.74,13l-.07,0,0,0,.52-.07A3.84,3.84,0,0,0,14,10.65a3.85,3.85,0,0,0,0-3.08,3.93,3.93,0,0,0-.73-1.12,3.67,3.67,0,0,0-1.24-.89,4,4,0,0,0-1.66-.34h-3V4.05A.14.14,0,0,0,7.18,4Z" fill="#f2f2f2"/></g></svg>
+        </div>
+        <div class="downloads-pkg-body">
+          <div class="downloads-pkg-head">
+            <a href="https://www.nuget.org/packages/Kuestenlogik.Bowire.Protocol.SignalR" target="_blank" rel="noopener"><code>Kuestenlogik.Bowire.Protocol.SignalR</code></a>
+            <button class="copy-btn downloads-pkg-copy" type="button" data-copy="dotnet add package Kuestenlogik.Bowire.Protocol.SignalR" aria-label="Copy install command" title="dotnet add package Kuestenlogik.Bowire.Protocol.SignalR">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+            </button>
+          </div>
+          <span class="downloads-pkg-desc">SignalR hubs with typed method invocation + real-time channels.</span>
+        </div>
+      </li>
+      <li>
+        <div class="downloads-pkg-icon" aria-hidden="true">
+          <svg viewBox="0 0 256 193" preserveAspectRatio="xMidYMid meet" fill="var(--text)"><path d="M192.440223 144.644612L224.220111 144.644612 224.220111 68.3393384 188.415329 32.5345562 165.943007 55.0068785 192.440223 81.5040943 192.440223 144.644612ZM224.303963 160.576482L178.017688 160.576482 113.451687 160.576482 86.954471 134.079266 98.1906322 122.843105 120.075991 144.728464 165.104487 144.728464 120.746806 100.286931 132.06682 88.9669178 176.4245 133.324599 176.4245 88.2961022 154.622994 66.4945955 165.775303 55.3422863 110.684573 0 56.3485097 0 0 0 31.6960367 31.6960367 31.6960367 31.7798886 31.8637406 31.7798886 97.4359646 31.7798886 120.662954 55.0068785 86.7029152 88.9669178 63.4759253 65.7399279 63.4759253 47.7117589 31.6960367 47.7117589 31.6960367 78.9046839 86.7029152 133.911562 64.3144448 156.300033 100.119227 192.104815 154.45529 192.104815 256 192.104815 224.303963 160.576482Z"/></svg>
+        </div>
+        <div class="downloads-pkg-body">
+          <div class="downloads-pkg-head">
+            <a href="https://www.nuget.org/packages/Kuestenlogik.Bowire.Protocol.WebSocket" target="_blank" rel="noopener"><code>Kuestenlogik.Bowire.Protocol.WebSocket</code></a>
+            <button class="copy-btn downloads-pkg-copy" type="button" data-copy="dotnet add package Kuestenlogik.Bowire.Protocol.WebSocket" aria-label="Copy install command" title="dotnet add package Kuestenlogik.Bowire.Protocol.WebSocket">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+            </button>
+          </div>
+          <span class="downloads-pkg-desc">Raw WebSocket with text + binary frames, sub-protocol selection.</span>
+        </div>
+      </li>
+      <li>
+        <div class="downloads-pkg-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#fb923c" stroke-width="2.25"><path d="M5 8h14l-4-4"/><path d="M5 12h10"/><path d="M5 16h6"/></svg>
+        </div>
+        <div class="downloads-pkg-body">
+          <div class="downloads-pkg-head">
+            <a href="https://www.nuget.org/packages/Kuestenlogik.Bowire.Protocol.Sse" target="_blank" rel="noopener"><code>Kuestenlogik.Bowire.Protocol.Sse</code></a>
+            <button class="copy-btn downloads-pkg-copy" type="button" data-copy="dotnet add package Kuestenlogik.Bowire.Protocol.Sse" aria-label="Copy install command" title="dotnet add package Kuestenlogik.Bowire.Protocol.Sse">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+            </button>
+          </div>
+          <span class="downloads-pkg-desc">Server-Sent Events &mdash; event-stream discovery and inline rendering.</span>
+        </div>
+      </li>
+      <li>
+        <div class="downloads-pkg-icon" aria-hidden="true">
+          <svg viewBox="0 0 180 180" fill="none" stroke="var(--accent)" stroke-width="14" stroke-linecap="round"><path d="M18 84.8528L85.8822 16.9706C95.2548 7.59798 110.451 7.59798 119.823 16.9706C129.196 26.3431 129.196 41.5391 119.823 50.9117L68.5581 102.177"/><path d="M69.2652 101.47L119.823 50.9117C129.196 41.5391 144.392 41.5391 153.765 50.9117L154.118 51.2652C163.491 60.6378 163.491 75.8338 154.118 85.2063L92.7248 146.6C89.6006 149.724 89.6006 154.789 92.7248 157.913L105.331 170.52"/><path d="M102.853 33.9411L52.6482 84.1457C43.2756 93.5183 43.2756 108.714 52.6482 118.087C62.0208 127.459 77.2167 127.459 86.5893 118.087L136.794 67.8822"/></svg>
+        </div>
+        <div class="downloads-pkg-body">
+          <div class="downloads-pkg-head">
+            <a href="https://www.nuget.org/packages/Kuestenlogik.Bowire.Protocol.Mcp" target="_blank" rel="noopener"><code>Kuestenlogik.Bowire.Protocol.Mcp</code></a>
+            <button class="copy-btn downloads-pkg-copy" type="button" data-copy="dotnet add package Kuestenlogik.Bowire.Protocol.Mcp" aria-label="Copy install command" title="dotnet add package Kuestenlogik.Bowire.Protocol.Mcp">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+            </button>
+          </div>
+          <span class="downloads-pkg-desc">Model Context Protocol adapter + client, any protocol as MCP tools.</span>
+        </div>
+      </li>
+      <li>
+        <div class="downloads-pkg-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="#660066"><path d="M10.657 23.994h-9.45A1.212 1.212 0 0 1 0 22.788v-9.18h.071c5.784 0 10.504 4.65 10.586 10.386Zm7.606 0h-4.045C14.135 16.246 7.795 9.977 0 9.942V6.038h.071c9.983 0 18.121 8.044 18.192 17.956Zm4.53 0h-.97C21.754 12.071 11.995 2.407 0 2.372v-1.16C0 .55.544.006 1.207.006h7.64C15.733 2.49 21.257 7.789 24 14.508v8.291c0 .663-.544 1.195-1.207 1.195ZM16.713.006h6.092A1.19 1.19 0 0 1 24 1.2v5.914c-.91-1.242-2.046-2.65-3.158-3.762C19.588 2.11 18.122.987 16.714.005Z"/></svg>
+        </div>
+        <div class="downloads-pkg-body">
+          <div class="downloads-pkg-head">
+            <a href="https://www.nuget.org/packages/Kuestenlogik.Bowire.Protocol.Mqtt" target="_blank" rel="noopener"><code>Kuestenlogik.Bowire.Protocol.Mqtt</code></a>
+            <button class="copy-btn downloads-pkg-copy" type="button" data-copy="dotnet add package Kuestenlogik.Bowire.Protocol.Mqtt" aria-label="Copy install command" title="dotnet add package Kuestenlogik.Bowire.Protocol.Mqtt">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+            </button>
+          </div>
+          <span class="downloads-pkg-desc">MQTT 3.1.1 / 5.0 via MQTTnet &mdash; topics, QoS, retain, duplex channels.</span>
+        </div>
+      </li>
+      <li>
+        <div class="downloads-pkg-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="var(--text)"><path d="M11.9362.0137a12.1694 12.1694 0 00-2.9748.378C4.2816 1.5547.5678 5.7944.0918 10.6012c-.59 4.5488 1.7079 9.2856 5.6437 11.6345 3.8608 2.4179 9.0926 2.3199 12.8734-.223 3.3969-2.206 5.5118-6.2277 5.3858-10.2845-.058-4.0159-2.31-7.9167-5.7588-9.9796C16.354.5876 14.1431.0047 11.9362.0137zm-.063 1.696c4.9448-.007 9.7886 3.8137 10.2815 8.9245.945 5.6597-3.7528 11.4125-9.4875 11.5795-5.4538.544-10.7245-4.0798-10.8795-9.5566-.407-4.4338 2.5159-8.8346 6.6977-10.2995a9.1126 9.1126 0 013.3878-.647zm5.0908 3.2248c-2.6869 2.0849-5.2598 4.3078-7.8886 6.4567 1.2029.017 2.4118.016 3.6208.01 1.41-2.165 2.8589-4.3008 4.2678-6.4667zm-5.6647 7.6536c-1.41 2.166-2.86 4.3088-4.2699 6.4737 2.693-2.0799 5.2548-4.3198 7.9017-6.4557a255.4132 255.4132 0 00-3.6318-.018z"/></svg>
+        </div>
+        <div class="downloads-pkg-body">
+          <div class="downloads-pkg-head">
+            <a href="https://www.nuget.org/packages/Kuestenlogik.Bowire.Protocol.SocketIo" target="_blank" rel="noopener"><code>Kuestenlogik.Bowire.Protocol.SocketIo</code></a>
+            <button class="copy-btn downloads-pkg-copy" type="button" data-copy="dotnet add package Kuestenlogik.Bowire.Protocol.SocketIo" aria-label="Copy install command" title="dotnet add package Kuestenlogik.Bowire.Protocol.SocketIo">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+            </button>
+          </div>
+          <span class="downloads-pkg-desc">Socket.IO v2/v3/v4 &mdash; namespaces, rooms, ack, binary events.</span>
+        </div>
+      </li>
+      <li>
+        <div class="downloads-pkg-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="var(--warning)" stroke-width="2.25"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 5v6c0 1.66-4.03 3-9 3s-9-1.34-9-3V5"/><path d="M21 11v6c0 1.66-4.03 3-9 3s-9-1.34-9-3v-6"/></svg>
+        </div>
+        <div class="downloads-pkg-body">
+          <div class="downloads-pkg-head">
+            <a href="https://www.nuget.org/packages/Kuestenlogik.Bowire.Protocol.OData" target="_blank" rel="noopener"><code>Kuestenlogik.Bowire.Protocol.OData</code></a>
+            <button class="copy-btn downloads-pkg-copy" type="button" data-copy="dotnet add package Kuestenlogik.Bowire.Protocol.OData" aria-label="Copy install command" title="dotnet add package Kuestenlogik.Bowire.Protocol.OData">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+            </button>
+          </div>
+          <span class="downloads-pkg-desc">OData CSDL discovery, typed filter / orderby / expand, batch requests.</span>
+        </div>
+      </li>
+      <li>
+        <div class="downloads-pkg-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2"><path d="M4 12h4"/><path d="M8 12 L14 6"/><path d="M8 12 L14 12"/><path d="M8 12 L14 18"/><circle cx="15.5" cy="6" r="1.3" fill="#38bdf8"/><circle cx="15.5" cy="12" r="1.3" fill="#38bdf8"/><circle cx="15.5" cy="18" r="1.3" fill="#38bdf8"/></svg>
+        </div>
+        <div class="downloads-pkg-body">
+          <div class="downloads-pkg-head">
+            <a href="https://www.nuget.org/packages/Kuestenlogik.Bowire.Protocol.Storm" target="_blank" rel="noopener"><code>Kuestenlogik.Bowire.Protocol.Storm</code></a>
+            <button class="copy-btn downloads-pkg-copy" type="button" data-copy="dotnet add package Kuestenlogik.Bowire.Protocol.Storm" aria-label="Copy install command" title="dotnet add package Kuestenlogik.Bowire.Protocol.Storm">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+            </button>
+          </div>
+          <span class="downloads-pkg-desc">Küstenlogik Storm broker — native protocol or Kafka-compat wire, in-process tap via <code>storm://embedded</code>.</span>
+        </div>
+      </li>
+      <li>
+        <div class="downloads-pkg-icon" aria-hidden="true">
+          <!-- Apache Kafka — official mark (simpleicons), `var(--text)` so the monochrome brand renders in both light and dark mode. -->
+          <svg viewBox="0 0 24 24" fill="var(--text)"><path d="M9.71 19.345a2.502 2.502 0 0 0-1.4.42l-1.764-1.762c.354-.475.564-1.061.564-1.697 0-1.135-.673-2.111-1.638-2.563l.045-7.667A2.85 2.85 0 0 0 7.595 3.32 2.853 2.853 0 0 0 4.745.471a2.853 2.853 0 0 0-2.85 2.85 2.85 2.85 0 0 0 2.078 2.736l-.045 7.674c-.97.452-1.643 1.43-1.643 2.575 0 .647.214 1.241.578 1.72L1.146 19.71a2.504 2.504 0 0 0-1.146-.276A2.501 2.501 0 0 0 0 24.434c1.379 0 2.5-1.122 2.5-2.501a2.5 2.5 0 0 0-.426-1.404l1.65-1.65c.439.305.954.498 1.508.561l.045-7.652a2.83 2.83 0 0 0 2.022-.829l1.794 1.794a2.501 2.501 0 0 0-.444 1.428 2.501 2.501 0 0 0 5.001 0 2.501 2.501 0 0 0-2.5-2.5z"/></svg>
+        </div>
+        <div class="downloads-pkg-body">
+          <div class="downloads-pkg-head">
+            <a href="https://www.nuget.org/packages/Kuestenlogik.Bowire.Protocol.Kafka" target="_blank" rel="noopener"><code>Kuestenlogik.Bowire.Protocol.Kafka</code></a>
+            <button class="copy-btn downloads-pkg-copy" type="button" data-copy="dotnet add package Kuestenlogik.Bowire.Protocol.Kafka" aria-label="Copy install command" title="dotnet add package Kuestenlogik.Bowire.Protocol.Kafka">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+            </button>
+          </div>
+          <span class="downloads-pkg-desc">Apache Kafka via <code>Confluent.Kafka</code> &mdash; topics, mTLS + SASL, Avro decode via Schema Registry.</span>
+        </div>
+      </li>
+      <li>
+        <div class="downloads-pkg-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#4ade80" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 3v9l6 4"/><circle cx="6.5" cy="9" r="0.7" fill="#4ade80"/><circle cx="18" cy="14" r="0.7" fill="#4ade80"/><circle cx="14" cy="18" r="0.7" fill="#4ade80"/></svg>
+        </div>
+        <div class="downloads-pkg-body">
+          <div class="downloads-pkg-head">
+            <a href="https://www.nuget.org/packages/Kuestenlogik.Bowire.Protocol.Dis" target="_blank" rel="noopener"><code>Kuestenlogik.Bowire.Protocol.Dis</code></a>
+            <button class="copy-btn downloads-pkg-copy" type="button" data-copy="dotnet add package Kuestenlogik.Bowire.Protocol.Dis" aria-label="Copy install command" title="dotnet add package Kuestenlogik.Bowire.Protocol.Dis">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+            </button>
+          </div>
+          <span class="downloads-pkg-desc">IEEE 1278 DIS &mdash; UDP multicast PDU stream, structured EntityState / Fire / Detonation rendering.</span>
+        </div>
+      </li>
+      <li>
+        <div class="downloads-pkg-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="6" height="4" rx="1"/><rect x="9" y="10" width="6" height="4" rx="1"/><rect x="16" y="14" width="6" height="4" rx="1"/><path d="M14 8h4"/><path d="M14 16h4"/></svg>
+        </div>
+        <div class="downloads-pkg-body">
+          <div class="downloads-pkg-head">
+            <a href="https://www.nuget.org/packages/Kuestenlogik.Bowire.Protocol.Udp" target="_blank" rel="noopener"><code>Kuestenlogik.Bowire.Protocol.Udp</code></a>
+            <button class="copy-btn downloads-pkg-copy" type="button" data-copy="dotnet add package Kuestenlogik.Bowire.Protocol.Udp" aria-label="Copy install command" title="dotnet add package Kuestenlogik.Bowire.Protocol.Udp">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+            </button>
+          </div>
+          <span class="downloads-pkg-desc">Raw UDP datagrams &mdash; UTF-8 detection, base64 + hex dump fallback for binary.</span>
+        </div>
+      </li>
+    </ul>
+
+    <h4 class="downloads-sub">Third-party plugins</h4>
+    <p class="downloads-section-desc">Bowire&rsquo;s protocol system is open &mdash; anyone can ship a plugin against the <code>IBowireProtocol</code> interface and publish it to NuGet. Packages tagged <code>bowire-plugin</code> show up in the discovery feed below. These are community-maintained, not official K&uuml;stenlogik releases &mdash; audit the source before running them in production.</p>
+    <a class="btn btn-secondary" href="https://www.nuget.org/packages?q=Tags%3A%22bowire-plugin%22" target="_blank" rel="noopener">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      Browse community plugins on NuGet
+    </a>
+    <p class="downloads-section-note">Want to build one? See <a href="{{ '/docs/protocols/custom.html' | relative_url }}">the custom protocol guide</a> for the plugin lifecycle and discovery contract.</p>
+  </div>
+
+  <!-- ---- .NET global tool ---- -->
+  <div class="downloads-section">
+    <h3>.NET global tool &mdash; standalone CLI + UI</h3>
+    <p class="downloads-section-desc">Install once, point at any running server. No code changes to your host app.</p>
+
+    <div class="downloads-command">
+      <code><span class="downloads-prompt">$</span> dotnet tool install -g Kuestenlogik.Bowire.Tool</code>
+      <button class="copy-btn downloads-copy" type="button" data-copy="dotnet tool install -g Kuestenlogik.Bowire.Tool" aria-label="Copy install command">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+      </button>
+    </div>
+    <div class="downloads-command">
+      <code><span class="downloads-prompt">$</span> bowire --url https://your-server</code>
+      <button class="copy-btn downloads-copy" type="button" data-copy="bowire --url https://your-server" aria-label="Copy run command">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- ---- Windows package managers ---- -->
+  <div class="downloads-section">
+    <h3>Windows package managers <span class="downloads-status-planned">Planned</span></h3>
+    <p class="downloads-section-desc">Install the standalone tool through the package manager you already use &mdash; no .NET tool chain on the host required.</p>
+
+    <h4 class="downloads-sub">winget</h4>
+    <div class="downloads-command">
+      <code><span class="downloads-prompt">$</span> winget install Kuestenlogik.Bowire</code>
+      <button class="copy-btn downloads-copy" type="button" data-copy="winget install Kuestenlogik.Bowire" aria-label="Copy winget install command">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+      </button>
+    </div>
+
+    <h4 class="downloads-sub">Chocolatey</h4>
+    <div class="downloads-command">
+      <code><span class="downloads-prompt">$</span> choco install bowire</code>
+      <button class="copy-btn downloads-copy" type="button" data-copy="choco install bowire" aria-label="Copy Chocolatey install command">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+      </button>
+    </div>
+  </div>
+</section>
+
+<!-- ================================================================ -->
+<!-- Group 2 — Native installers and portable bundles                 -->
+<!-- ================================================================ -->
+<section class="downloads-group">
+  <header class="downloads-group-header">
+    <h2 class="downloads-group-title">Native installers and portable bundles</h2>
+    <p class="downloads-group-lede">Platform-native installers, xcopy-style self-contained bundles, or tagged releases from GitHub &mdash; whichever fits how you ship software.</p>
+  </header>
+
+  <!-- ---- Native installers ---- -->
+  <div class="downloads-section">
+    <h3>Native installers <span class="downloads-status-planned">Planned</span></h3>
+    <p class="downloads-section-desc">Signed MSI for Windows, DEB for Debian / Ubuntu, RPM for Fedora / RHEL / SUSE. For shops that prefer a platform-native install path over the .NET tool chain.</p>
+
+    <ul class="downloads-pkgs downloads-pkgs-icons">
+      <li>
+        <div class="downloads-pkg-icon" aria-hidden="true">
+          <!-- Windows 11 — 4-pane mark (simpleicons). -->
+          <svg viewBox="0 0 24 24" fill="#0078D6"><path d="M0 3.449L9.75 2.1v9.451H0m10.949-9.602L24 0v11.4H10.949M0 12.6h9.75v9.451L0 20.699M10.949 12.6H24V24l-13.051-1.851"/></svg>
+        </div>
+        <div class="downloads-pkg-body">
+          <code>bowire-x64.msi</code>
+          <span class="downloads-pkg-desc">Windows 10 / 11, signed, per-user or machine-wide install.</span>
+        </div>
+      </li>
+      <li>
+        <div class="downloads-pkg-icon" aria-hidden="true">
+          <!-- Debian — official Swirl from simpleicons, in Debian red. -->
+          <svg viewBox="0 0 24 24" fill="#A81D33"><path d="M13.88 12.685c-.4 0 .08.2.601.28.14-.1.27-.22.39-.33a3.001 3.001 0 01-.99.05m2.14-.53c.23-.33.4-.69.47-1.06-.06.27-.2.5-.33.73-.75.47-.07-.27 0-.56-.8 1.01-.11.6-.14.89m.781-2.05c.05-.721-.14-.501-.2-.221.07.04.13.5.2.22M12.38.31c.2.04.45.07.42.12.23-.05.28-.1-.43-.12m.43.12l-.15.03.14-.01V.43m6.633 9.944c.02.64-.2.95-.38 1.5l-.35.181c-.28.54.03.35-.17.78-.44.39-1.34 1.22-1.62 1.301-.201 0 .14-.25.19-.34-.591.4-.481.6-1.371.85l-.03-.06c-2.221 1.04-5.303-1.02-5.253-3.842-.03.17-.07.13-.12.2a3.551 3.552 0 012.001-3.501 3.361 3.362 0 013.732.48 3.341 3.342 0 00-2.721-1.3c-1.18.01-2.281.76-2.651 1.57-.6.38-.67 1.47-.93 1.661-.361 2.601.66 3.722 2.38 5.042.27.19.08.21.12.35a4.702 4.702 0 01-1.53-1.16c.23.33.47.66.8.91-.55-.18-1.27-1.3-1.48-1.35.93 1.66 3.78 2.921 5.261 2.3a6.203 6.203 0 01-2.33-.28c-.33-.16-.77-.51-.7-.57a5.802 5.803 0 005.902-.84c.44-.35.93-.94 1.07-.95-.2.32.04.16-.12.44.44-.72-.2-.3.46-1.24l.24.33c-.09-.6.74-1.321.66-2.262.19-.3.2.3 0 .97.29-.74.08-.85.15-1.46.08.2.18.42.23.63-.18-.7.2-1.2.28-1.6-.09-.05-.28.3-.32-.53 0-.37.1-.2.14-.28-.08-.05-.26-.32-.38-.861.08-.13.22.33.34.34-.08-.42-.2-.75-.2-1.08-.34-.68-.12.1-.4-.3-.34-1.091.3-.25.34-.74.54.77.84 1.96.981 2.46-.1-.6-.28-1.2-.49-1.76.16.07-.26-1.241.21-.37A7.823 7.824 0 0017.702 1.6c.18.17.42.39.33.42-.75-.45-.62-.48-.73-.67-.61-.25-.65.02-1.06 0C15.082.73 14.862.8 13.8.4l.05.23c-.77-.25-.9.1-1.73 0-.05-.04.27-.14.53-.18-.741.1-.701-.14-1.431.03.17-.13.36-.21.55-.32-.6.04-1.44.35-1.18.07C9.6.68 7.847 1.3 6.867 2.22L6.838 2c-.45.54-1.96 1.611-2.08 2.311l-.131.03c-.23.4-.38.85-.57 1.261-.3.52-.45.2-.4.28-.6 1.22-.9 2.251-1.16 3.102.18.27 0 1.65.07 2.76-.3 5.463 3.84 10.776 8.363 12.006.67.23 1.65.23 2.49.25-.99-.28-1.12-.15-2.08-.49-.7-.32-.85-.7-1.34-1.13l.2.35c-.971-.34-.57-.42-1.361-.67l.21-.27c-.31-.03-.83-.53-.97-.81l-.34.01c-.41-.501-.63-.871-.61-1.161l-.111.2c-.13-.21-1.52-1.901-.8-1.511-.13-.12-.31-.2-.5-.55l.14-.17c-.35-.44-.64-1.02-.62-1.2.2.24.32.3.45.33-.88-2.172-.93-.12-1.601-2.202l.15-.02c-.1-.16-.18-.34-.26-.51l.06-.6c-.63-.74-.18-3.102-.09-4.402.07-.54.53-1.1.88-1.981l-.21-.04c.4-.71 2.341-2.872 3.241-2.761.43-.55-.09 0-.18-.14.96-.991 1.26-.7 1.901-.88.7-.401-.6.16-.27-.151 1.2-.3.85-.7 2.421-.85.16.1-.39.14-.52.26 1-.49 3.151-.37 4.562.27 1.63.77 3.461 3.011 3.531 5.132l.08.02c-.04.85.13 1.821-.17 2.711l.2-.42M9.54 13.236l-.05.28c.26.35.47.73.8 1.01-.24-.47-.42-.66-.75-1.3m.62-.02c-.14-.15-.22-.34-.31-.52.08.32.26.6.43.88l-.12-.36m10.945-2.382l-.07.15c-.1.76-.34 1.511-.69 2.212.4-.73.65-1.541.75-2.362M12.45.12c.27-.1.66-.05.95-.12-.37.03-.74.05-1.1.1l.15.02M3.006 5.142c.07.57-.43.8.11.42.3-.66-.11-.18-.1-.42m-.64 2.661c.12-.39.15-.62.2-.84-.35.44-.17.53-.2.83"/></svg>
+        </div>
+        <div class="downloads-pkg-body">
+          <code>bowire_amd64.deb</code>
+          <span class="downloads-pkg-desc">Debian / Ubuntu, installs to <code>/usr/bin/bowire</code> via <code>apt</code>.</span>
+        </div>
+      </li>
+      <li>
+        <div class="downloads-pkg-icon" aria-hidden="true">
+          <!-- Fedora — official logo from simpleicons, in Fedora blue. -->
+          <svg viewBox="0 0 24 24" fill="#51A2DA"><path d="M12.001 0C5.376 0 .008 5.369.004 11.992H.002v9.287h.002A2.726 2.726 0 0 0 2.73 24h9.275c6.626-.004 11.993-5.372 11.993-11.997C23.998 5.375 18.628 0 12 0zm2.431 4.94c2.015 0 3.917 1.543 3.917 3.671 0 .197.001.395-.03.619a1.002 1.002 0 0 1-1.137.893 1.002 1.002 0 0 1-.842-1.175 2.61 2.61 0 0 0 .013-.337c0-1.207-.987-1.672-1.92-1.672-.934 0-1.775.784-1.777 1.672.016 1.027 0 2.046 0 3.07l1.732-.012c1.352-.028 1.368 2.009.016 1.998l-1.748.013c-.004.826.006.677.002 1.093 0 0 .015 1.01-.016 1.776-.209 2.25-2.124 4.046-4.424 4.046-2.438 0-4.448-1.993-4.448-4.437.073-2.515 2.078-4.492 4.603-4.469l1.409-.01v1.996l-1.409.013h-.007c-1.388.04-2.577.984-2.6 2.47a2.438 2.438 0 0 0 2.452 2.439c1.356 0 2.441-.987 2.441-2.437l-.001-7.557c0-.14.005-.252.02-.407.23-1.848 1.883-3.256 3.754-3.256z"/></svg>
+        </div>
+        <div class="downloads-pkg-body">
+          <code>bowire.x86_64.rpm</code>
+          <span class="downloads-pkg-desc">Fedora / RHEL / SUSE, installable via <code>dnf</code> or <code>yum</code>.</span>
+        </div>
+      </li>
+    </ul>
+
+    <a class="downloads-roadmap-link" href="{{ '/#roadmap' | relative_url }}">See the roadmap &rarr;</a>
+  </div>
+
+  <!-- ---- Self-contained / portable ---- -->
+  <div class="downloads-section">
+    <h3>Self-contained / portable</h3>
+    <p class="downloads-section-desc">Zip or tarball per platform with the .NET runtime bundled. Extract, run the <code>bowire</code> binary &mdash; no SDK, no installer, no registry entries, no system changes. Perfect for air-gapped networks, USB-stick installs, ephemeral CI runners, or anywhere you want an xcopy deployment.</p>
+
+    <ul class="downloads-pkgs">
+      <li>
+        <code>bowire-win-x64.zip</code>
+        <span class="downloads-pkg-desc">Windows x64 &mdash; unzip, run <code>bowire.exe</code>.</span>
+      </li>
+      <li>
+        <code>bowire-linux-x64.tar.gz</code>
+        <span class="downloads-pkg-desc">Linux x64 &mdash; <code>tar -xzf</code>, run <code>./bowire/bowire</code>.</span>
+      </li>
+      <li>
+        <code>bowire-linux-arm64.tar.gz</code>
+        <span class="downloads-pkg-desc">Linux ARM64 &mdash; Raspberry Pi 4+, AWS Graviton, etc.</span>
+      </li>
+      <li>
+        <code>bowire-osx-arm64.tar.gz</code>
+        <span class="downloads-pkg-desc">macOS Apple Silicon (M1+).</span>
+      </li>
+      <li>
+        <code>bowire-osx-x64.tar.gz</code>
+        <span class="downloads-pkg-desc">macOS Intel.</span>
+      </li>
+    </ul>
+  </div>
+
+  <!-- ---- GitHub Releases ---- -->
+  <div class="downloads-section">
+    <h3>GitHub Releases</h3>
+    <p class="downloads-section-desc">Every tagged release is published with changelog, source archive, and all the self-contained bundles listed above. For air-gapped installs, reproducible builds, or when you want to compare release notes.</p>
+    <a class="btn btn-secondary" href="https://github.com/Kuestenlogik/Bowire/releases" target="_blank" rel="noopener">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.37-12-12-12z"/></svg>
+      Browse all releases on GitHub
+    </a>
+  </div>
+</section>
+
+<!-- ================================================================ -->
+<!-- Group 3 — Sidecar containers                                     -->
+<!-- ================================================================ -->
+<section class="downloads-group downloads-group-alt">
+  <header class="downloads-group-header">
+    <h2 class="downloads-group-title">Sidecar containers</h2>
+    <p class="downloads-group-lede">Drop Bowire next to a non-.NET service as a sidecar &mdash; no .NET runtime on the host, one manifest to deploy.</p>
+  </header>
+
+  <!-- ---- Docker / container ---- -->
+  <div class="downloads-section">
+    <h3>Docker / container <span class="downloads-status-planned">Planned</span></h3>
+    <p class="downloads-section-desc">First-class Docker and Kubernetes / Helm images for the sidecar deployment pattern are on the roadmap &mdash; so non-.NET teams can drop Bowire next to their Go / Rust / Python / Node service with a single manifest.</p>
+    <a class="downloads-roadmap-link" href="{{ '/#roadmap' | relative_url }}">See the roadmap &rarr;</a>
+  </div>
+</section>
+
+<!-- ================================================================ -->
+<!-- Group 4 — Build from source                                      -->
+<!-- ================================================================ -->
+<section class="downloads-group">
+  <header class="downloads-group-header">
+    <h2 class="downloads-group-title">Build from source</h2>
+    <p class="downloads-group-lede">Clone the repo, audit the code, fork it, embed it in commercial products.</p>
+  </header>
+
+  <!-- ---- Source ---- -->
+  <div class="downloads-section">
+    <h3>Source code</h3>
+    <p class="downloads-section-desc">Every protocol plugin, the host integration, the CLI &mdash; all published on GitHub. <a href="https://github.com/Kuestenlogik/Bowire/blob/main/LICENSE" target="_blank" rel="noopener">Apache 2.0</a>, no strings attached.</p>
+    <a class="btn btn-secondary" href="https://github.com/Kuestenlogik/Bowire" target="_blank" rel="noopener">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.37-12-12-12z"/></svg>
+      Clone on GitHub
+    </a>
+  </div>
+</section>
+
+<!-- ================================================================ -->
+<!-- Group 5 — Documentation                                          -->
+<!-- ================================================================ -->
+<section class="downloads-group downloads-group-alt">
+  <header class="downloads-group-header">
+    <h2 class="downloads-group-title">Documentation</h2>
+    <p class="downloads-group-lede">The complete Bowire documentation, packaged for offline reading &mdash; a standalone HTML snapshot you can unzip anywhere and a single-file PDF for printing or archiving. Both are built from the same source as <a href="{{ '/docs/' | relative_url }}">the online docs</a>.</p>
+  </header>
+
+  <!-- ---- Standalone HTML ---- -->
+  <div class="downloads-section">
+    <h3>Standalone HTML <span class="downloads-section-version">offline-ready</span></h3>
+    <p class="downloads-section-desc">Unzip, open <code>index.html</code>, browse offline. Same layout as the online docs, minus the marketing site chrome so every outbound link stays self-contained.</p>
+    <a class="btn btn-secondary" href="https://github.com/Kuestenlogik/Bowire/releases/latest/download/bowire-docs.zip" target="_blank" rel="noopener">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      Download bowire-docs.zip
+    </a>
+  </div>
+
+  <!-- ---- PDF ---- -->
+  <div class="downloads-section">
+    <h3>PDF <span class="downloads-section-version">single file</span></h3>
+    <p class="downloads-section-desc">Every article in one PDF. Useful for printing, archiving a specific version, or searching the whole reference inside a single reader.</p>
+    <a class="btn btn-secondary" href="https://github.com/Kuestenlogik/Bowire/releases/latest/download/bowire-docs.pdf" target="_blank" rel="noopener">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="15" x2="15" y2="15"/><line x1="9" y1="11" x2="15" y2="11"/></svg>
+      Download bowire-docs.pdf
+    </a>
+  </div>
+
+  <p class="downloads-section-note">Older versions are pinned on each tagged release &mdash; see <a href="https://github.com/Kuestenlogik/Bowire/releases" target="_blank" rel="noopener">github.com/Kuestenlogik/Bowire/releases</a> for <code>bowire-docs-&lt;version&gt;.{zip,pdf}</code> artifacts.</p>
+</section>

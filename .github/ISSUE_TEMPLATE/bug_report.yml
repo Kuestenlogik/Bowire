@@ -1,0 +1,26 @@
+name: Bug Report
+description: Report a bug in Bowire
+labels: ["bug"]
+body:
+  - type: textarea
+    attributes:
+      label: Description
+      description: What happened?
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Steps to Reproduce
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Expected Behavior
+  - type: input
+    attributes:
+      label: Bowire Version
+      placeholder: "0.9.4"
+  - type: input
+    attributes:
+      label: .NET Version
+      placeholder: "10.0"

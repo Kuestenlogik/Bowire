@@ -1,0 +1,376 @@
+---
+layout: page
+title: Quickstart — Bowire
+description: From zero to invoking your first endpoint in five minutes. Pick the standalone CLI to point Bowire at any service, or embed it directly into your ASP.NET app.
+---
+
+{%- comment -%}
+schema.org HowTo — gives Google a step-by-step Rich Result for the
+Quickstart, rendered as a numbered "How to install Bowire" expand
+in search snippets. Mirrors the standalone path (the default in
+the path-picker), since that's the universal route — works against
+any service URL without code changes.
+{%- endcomment -%}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "HowTo",
+  "name": "How to get started with Bowire",
+  "description": "Install the Bowire CLI, point it at any HTTP / gRPC / GraphQL / MQTT / SignalR / WebSocket / SSE / MCP service, and start invoking methods in five minutes.",
+  "totalTime": "PT5M",
+  "supply": [
+    { "@type": "HowToSupply", "name": ".NET 10 SDK" }
+  ],
+  "tool": [
+    { "@type": "HowToTool", "name": "Bowire.Tool — global .NET tool" }
+  ],
+  "step": [
+    {
+      "@type": "HowToStep",
+      "position": 1,
+      "name": "Install Bowire",
+      "text": "Install the Bowire CLI as a global .NET tool. Cross-platform — works on Windows, macOS, and Linux.",
+      "url": "{{ '/quickstart.html#install' | absolute_url }}"
+    },
+    {
+      "@type": "HowToStep",
+      "position": 2,
+      "name": "Run it against your service",
+      "text": "Point bowire at any URL. For gRPC enable Server Reflection, for REST drop in any swagger.json, the rest auto-discover.",
+      "url": "{{ '/quickstart.html#run' | absolute_url }}"
+    },
+    {
+      "@type": "HowToStep",
+      "position": 3,
+      "name": "Open the workbench",
+      "text": "Bowire opens a browser tab with the workbench UI showing every discovered service and method, ready to invoke.",
+      "url": "{{ '/quickstart.html#browse' | absolute_url }}"
+    },
+    {
+      "@type": "HowToStep",
+      "position": 4,
+      "name": "Install a sibling plugin (optional)",
+      "text": "Add a wire-protocol plugin (DIS, UDP, Kafka) for protocols outside the built-in set — same workbench UI.",
+      "url": "{{ '/quickstart.html#plugins' | absolute_url }}"
+    }
+  ]
+}
+</script>
+
+<section class="features-page-hero">
+  <h1>Quickstart</h1>
+  <p class="features-page-tagline">Embark and get from zero to invoking your first endpoint in five minutes.</p>
+  <p class="features-page-note">In a hurry? <a href="{{ '/#launch' | relative_url }}">Pick your boat and go straight into the water &rarr;</a></p>
+</section>
+
+<!-- All steps live in a single flat container so the connector rail
+     between numbered bubbles flows from step 1 (decision) right
+     through to the finish flag. The articles for each path carry a
+     data-path attribute; the path picker's JS handler togglt them
+     hidden/visible without restructuring the DOM, so the connector
+     keeps its top-down continuity regardless of which path is
+     active. -->
+<div class="quickstart-page-steps" data-path-host>
+
+  <!-- Step 1 — Pick the path. Y-fork visualises the decision; the
+       two path-picker buttons below the fork sit at the ends of the
+       fork's tracks. The bubble starts the stepper rail. -->
+  <article class="quickstart-page-step quickstart-page-step-decision" id="decision">
+    <div class="quickstart-page-step-num">1</div>
+    <div class="quickstart-page-step-body">
+      <h2>Pick your path</h2>
+      <p class="features-block-lead">Bowire runs two ways &mdash; the rest of the steps differ slightly depending on which one you pick.</p>
+
+      <div class="quickstart-path-picker" data-path-picker role="tablist" aria-label="Choose how Bowire runs against your services">
+        <button class="quickstart-path-btn" type="button" role="tab" data-path="standalone" aria-selected="false">
+          <span class="quickstart-path-btn-icon" aria-hidden="true">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
+          </span>
+          <span class="quickstart-path-btn-body">
+            <span class="quickstart-path-btn-title">Standalone CLI</span>
+            <span class="quickstart-path-btn-desc">Run <code>bowire</code> against any service URL. No code changes to the target.</span>
+          </span>
+        </button>
+        <button class="quickstart-path-btn" type="button" role="tab" data-path="embedded" aria-selected="false">
+          <span class="quickstart-path-btn-icon" aria-hidden="true">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="6" width="12" height="12" rx="1"/><path d="M9 2v4M15 2v4M9 18v4M15 18v4"/><path d="M2 9h4M2 15h4M18 9h4M18 15h4"/></svg>
+          </span>
+          <span class="quickstart-path-btn-body">
+            <span class="quickstart-path-btn-title">Embedded in ASP.NET</span>
+            <span class="quickstart-path-btn-desc">Mount Bowire inside your app. Auto-discovers services from the live <code>IServiceProvider</code>.</span>
+          </span>
+        </button>
+      </div>
+    </div>
+  </article>
+
+  <!-- Pending placeholder — visible until the user picks a path
+       above. The "?" bubble + dashed connector signal "the next
+       step depends on your decision". JS hides this article and
+       reveals the real path-tagged steps once a button is clicked. -->
+  <article class="quickstart-page-step quickstart-page-step-pending" data-step-pending>
+    <div class="quickstart-page-step-num" aria-hidden="true">?</div>
+    <div class="quickstart-page-step-body">
+      <p class="features-block-lead">Pick a path above &mdash; the next steps will appear here.</p>
+    </div>
+  </article>
+
+  <!-- ========================================================== -->
+  <!--  Standalone path                                            -->
+  <!-- ========================================================== -->
+
+  <!-- Step 2 — Install -->
+  <article class="quickstart-page-step" id="install" data-path="standalone" hidden>
+    <div class="quickstart-page-step-num">2</div>
+    <div class="quickstart-page-step-body">
+      <h2>Install Bowire</h2>
+      <p class="features-block-lead">Pick the package format for your platform. All five paths land at the same <code>bowire</code> CLI plus the embedded browser UI on port 5080.</p>
+
+      <div class="qs-install-tabs" data-qs-install-tabs>
+        <div class="qs-install-tabs-list" role="tablist" aria-label="Choose install path">
+          <button class="qs-install-tab" type="button" role="tab" data-qs-install-tab="windows" aria-selected="true">Windows</button>
+          <button class="qs-install-tab" type="button" role="tab" data-qs-install-tab="macos" aria-selected="false">macOS</button>
+          <button class="qs-install-tab" type="button" role="tab" data-qs-install-tab="linux" aria-selected="false">Linux</button>
+          <button class="qs-install-tab" type="button" role="tab" data-qs-install-tab="dotnet" aria-selected="false">.NET tool</button>
+          <button class="qs-install-tab" type="button" role="tab" data-qs-install-tab="docker" aria-selected="false">Container</button>
+        </div>
+
+        <div class="qs-install-tab-panel" role="tabpanel" data-qs-install-panel="windows">
+<pre><code class="lang-bash">winget install KuestenLogik.Bowire</code></pre>
+          <p class="qs-install-tab-note">One-line install via the Windows Package Manager. <code>bowire</code> lands on PATH; uninstall via "Apps &amp; Features" or <code>winget uninstall KuestenLogik.Bowire</code>.</p>
+        </div>
+
+        <div class="qs-install-tab-panel" role="tabpanel" data-qs-install-panel="macos" hidden>
+<pre><code class="lang-bash">brew tap kuestenlogik/bowire
+brew install bowire</code></pre>
+          <p class="qs-install-tab-note">One-time tap, then <code>brew install</code>. The same formula serves both Apple Silicon and Intel Macs &mdash; Homebrew picks the right binary at install time.</p>
+        </div>
+
+        <div class="qs-install-tab-panel" role="tabpanel" data-qs-install-panel="linux" hidden>
+<pre><code class="lang-bash"># Debian / Ubuntu / Mint
+sudo apt install ./bowire_0.9.4_amd64.deb
+
+# Fedora / RHEL / openSUSE
+sudo dnf install ./bowire-0.9.4.x86_64.rpm
+
+# Arch / Manjaro
+yay -S bowire
+
+# Or Linuxbrew (cross-distro)
+brew tap kuestenlogik/bowire &amp;&amp; brew install bowire</code></pre>
+          <p class="qs-install-tab-note">Distro-native packages on every GitHub release. Both x86_64 and aarch64 builds are attached so ARM Linux works out of the box. The Linuxbrew path uses the same formula as macOS.</p>
+        </div>
+
+        <div class="qs-install-tab-panel" role="tabpanel" data-qs-install-panel="dotnet" hidden>
+<pre><code class="lang-bash">dotnet tool install -g Kuestenlogik.Bowire.Tool</code></pre>
+          <p class="qs-install-tab-note">Cross-platform path that ships every first-party protocol plugin pre-bundled. Requires the .NET 10 SDK on the host. Update with <code>dotnet tool update -g Kuestenlogik.Bowire.Tool</code>.</p>
+        </div>
+
+        <div class="qs-install-tab-panel" role="tabpanel" data-qs-install-panel="docker" hidden>
+<pre><code class="lang-bash">docker pull ghcr.io/kuestenlogik/bowire:latest
+
+docker run --rm -p 5080:5080 \
+    -v ~/.bowire:/home/app/.bowire \
+    ghcr.io/kuestenlogik/bowire:latest \
+    --url https://api.example.com</code></pre>
+          <p class="qs-install-tab-note">Multi-arch image (linux/amd64 + linux/arm64). The volume mount keeps installed plugins, recordings, and environments persistent across container restarts.</p>
+        </div>
+      </div>
+
+      <p>Every package ships <strong>every first-party protocol plugin</strong> bundled (gRPC, REST, GraphQL, SignalR, WebSocket, SSE, MQTT, Socket.IO, OData, MCP). Sibling plugins (Storm, Kafka, DIS, UDP) install separately &mdash; see step 5.</p>
+      <p class="quickstart-page-step-links">
+        <a class="features-block-docs-link" href="{{ '/downloads.html' | relative_url }}">Every install path on the downloads page &rarr;</a>
+        <a class="features-block-docs-link" href="{{ '/docs/setup/standalone.html' | relative_url }}">Configuration options (port, plugin dir, theme) &rarr;</a>
+      </p>
+    </div>
+  </article>
+
+  <!-- Step 3 — Run -->
+  <article class="quickstart-page-step" id="run" data-path="standalone" hidden>
+    <div class="quickstart-page-step-num">3</div>
+    <div class="quickstart-page-step-body">
+      <h2>Run it against your service</h2>
+      <p class="features-block-lead">Point Bowire at any URL &mdash; your own ASP.NET app, a remote production service, an OpenAPI document on disk, anything.</p>
+
+<pre><code class="lang-bash">bowire --url https://api.example.com</code></pre>
+
+      <p>Multi-target works too &mdash; pass <code>--url</code> repeatedly to connect to several services in parallel:</p>
+
+<pre><code class="lang-bash">bowire --url https://users.example.com:50051 \
+        --url https://orders.example.com/openapi.json \
+        --url https://chat.example.com/notifications</code></pre>
+
+      <p>Bowire tries every installed protocol plugin against each URL and picks the one that responds. gRPC reflects, REST reads OpenAPI, GraphQL introspects, SignalR enumerates hubs, MQTT subscribes &mdash; all without configuration.</p>
+    </div>
+  </article>
+
+  <!-- Step 4 — Open -->
+  <article class="quickstart-page-step" id="browse" data-path="standalone" hidden>
+    <div class="quickstart-page-step-num">4</div>
+    <div class="quickstart-page-step-body">
+      <h2>Open the workbench</h2>
+      <p class="features-block-lead">Bowire opens a browser tab at <code>http://localhost:5080/bowire</code> (or whichever port you passed via <code>--port</code>).</p>
+      <p>The sidebar shows every service the plugins discovered, grouped by URL when you connected to several. Click any method, drop in inputs (typed form or raw JSON, toggle with <kbd>f</kbd>), hit <kbd>Ctrl</kbd>+<kbd>Enter</kbd>, response renders in the right pane. Streaming responses show as a Wireshark-style frame list, duplex protocols open persistent channels, and every call lands on the request history for replay.</p>
+      <a class="features-block-docs-link" href="{{ '/docs/ui-guide/index.html' | relative_url }}">Full UI guide &rarr;</a>
+    </div>
+  </article>
+
+  <!-- Step 5 — Sibling plugins (optional) -->
+  <article class="quickstart-page-step quickstart-page-step-optional" id="plugins" data-path="standalone" hidden>
+    <div class="quickstart-page-step-num">5</div>
+    <div class="quickstart-page-step-body">
+      <h2>Install a sibling plugin <span class="quickstart-page-step-tag">optional</span></h2>
+      <p class="features-block-lead">For protocols that don't ship with the CLI bundle &mdash; Storm, Kafka, DIS, UDP &mdash; pull the plugin from NuGet:</p>
+
+<pre><code class="lang-bash">bowire plugin install Kuestenlogik.Bowire.Protocol.Kafka
+bowire plugin install Kuestenlogik.Bowire.Protocol.Storm
+bowire plugin install Kuestenlogik.Bowire.Protocol.Dis
+bowire plugin install Kuestenlogik.Bowire.Protocol.Udp</code></pre>
+
+      <p>Air-gapped install? Download the plugin and its transitive deps on a connected host into a folder, transfer the folder, install offline:</p>
+
+<pre><code class="lang-bash"># On the connected host
+bowire plugin download Kuestenlogik.Bowire.Protocol.Kafka --output ./bundle/
+
+# On the offline host (after transferring ./bundle/)
+bowire plugin install --file ./bundle/kl.bowire.protocol.kafka.0.9.4.nupkg \
+                       --source ./bundle/</code></pre>
+
+      <a class="features-block-docs-link" href="{{ '/docs/features/plugin-system.html' | relative_url }}">Plugin system docs &rarr;</a>
+    </div>
+  </article>
+
+  <!-- Standalone finish — flag bubble + welcome screenshot -->
+  <article class="quickstart-page-step quickstart-page-step-finish" id="afloat" data-path="standalone" hidden>
+    <div class="quickstart-page-step-num" aria-hidden="true">
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 22V4"/><path d="M4 4h13l-3 4 3 4H4"/></svg>
+    </div>
+    <div class="quickstart-page-step-body">
+      <h2>You're afloat</h2>
+      <p class="features-block-lead">Bowire is running. The sidebar populates with every service the plugins discovered, plus a recent-history strip and the keyboard-shortcut hint band.</p>
+      <p>From here on it's a regular API workbench: pick a method, fill the form (or hit <kbd>f</kbd> for raw JSON), <kbd>Ctrl</kbd>+<kbd>Enter</kbd> to execute, response on the right. Recordings, environments, performance graphs, the command palette &mdash; all one shortcut away.</p>
+      {% include themed-img.html src="/assets/images/screenshots/ready.png" alt="Bowire ready landing — connected to a server, services discovered, recent history surfaced for quick recall" class="quickstart-page-step-screenshot" %}
+    </div>
+  </article>
+
+  <!-- ========================================================== -->
+  <!--  Embedded path                                              -->
+  <!-- ========================================================== -->
+
+  <!-- Step 2 — Add the NuGet packages -->
+  <article class="quickstart-page-step" id="embed-install" data-path="embedded" hidden>
+    <div class="quickstart-page-step-num">2</div>
+    <div class="quickstart-page-step-body">
+      <h2>Add the NuGet packages</h2>
+      <p class="features-block-lead">Pick the protocol plugins your service speaks. The core <code>Kuestenlogik.Bowire</code> package is always there; protocols are opt-in so you only ship what you need.</p>
+
+<pre><code class="lang-bash">dotnet add package Kuestenlogik.Bowire
+
+# plus the protocols your service exposes
+dotnet add package Kuestenlogik.Bowire.Protocol.Grpc
+dotnet add package Kuestenlogik.Bowire.Protocol.Rest
+dotnet add package Kuestenlogik.Bowire.Protocol.SignalR</code></pre>
+
+      <p>Every first-party protocol (gRPC, REST, GraphQL, SignalR, WebSocket, SSE, MQTT, Socket.IO, OData, MCP) is its own package &mdash; same versioning, same release cadence. Sibling plugins (Storm, Kafka, DIS, UDP) follow the same pattern from their separate repositories.</p>
+      <p class="quickstart-page-step-links">
+        <a class="features-block-docs-link" href="{{ '/downloads.html' | relative_url }}">Every package on the downloads page &rarr;</a>
+        <a class="features-block-docs-link" href="{{ '/docs/setup/embedded.html' | relative_url }}">Configuration options (mount path, theme, auth) &rarr;</a>
+      </p>
+    </div>
+  </article>
+
+  <!-- Step 3 — Wire it into Program.cs -->
+  <article class="quickstart-page-step" id="embed-wire" data-path="embedded" hidden>
+    <div class="quickstart-page-step-num">3</div>
+    <div class="quickstart-page-step-body">
+      <h2>Wire it into <code>Program.cs</code></h2>
+      <p class="features-block-lead">Two lines: <code>AddBowire()</code> registers the plugin host into DI, <code>MapBowire()</code> mounts the workbench at <code>/bowire</code>.</p>
+
+<pre><code class="lang-csharp">var builder = WebApplication.CreateBuilder(args);
+
+// ... your existing service registrations ...
+
+builder.Services.AddBowire();
+
+var app = builder.Build();
+
+// ... your existing middleware + routing ...
+
+app.MapBowire();
+app.Run();</code></pre>
+
+      <p>That's the entire wire-in. Plugin discovery, protocol detection, and the browser UI all run in-process against the live <code>IServiceProvider</code> &mdash; no schema files, no parallel proto / OpenAPI to maintain, no second process to keep in sync.</p>
+    </div>
+  </article>
+
+  <!-- Step 4 — Run your app -->
+  <article class="quickstart-page-step" id="embed-run" data-path="embedded" hidden>
+    <div class="quickstart-page-step-num">4</div>
+    <div class="quickstart-page-step-body">
+      <h2>Run your app</h2>
+      <p class="features-block-lead">Start your service the way you always do, then open <code>/bowire</code> alongside your normal API routes.</p>
+
+<pre><code class="lang-bash">dotnet run --project src/MyService
+
+# &rarr; Listening on https://localhost:5001
+# Open https://localhost:5001/bowire in your browser</code></pre>
+
+      <p>Bowire picks up every protocol prerequisite for you: gRPC plugins call <code>AddGrpcReflection()</code> and <code>MapGrpcReflectionService()</code>, REST plugins read your <code>IApiDescriptionGroupCollectionProvider</code>, SignalR plugins enumerate mapped hubs via <code>EndpointDataSource</code>. Side effects scoped to dev / staging environments only &mdash; the production path stays untouched.</p>
+    </div>
+  </article>
+
+  <!-- Step 5 — Sibling plugins (optional) -->
+  <article class="quickstart-page-step quickstart-page-step-optional" id="embed-plugins" data-path="embedded" hidden>
+    <div class="quickstart-page-step-num">5</div>
+    <div class="quickstart-page-step-body">
+      <h2>Add a sibling plugin <span class="quickstart-page-step-tag">optional</span></h2>
+      <p class="features-block-lead">For protocols that ship from sibling repositories &mdash; Storm, Kafka, DIS, UDP &mdash; the same <code>dotnet add package</code> path applies.</p>
+
+<pre><code class="lang-bash">dotnet add package Kuestenlogik.Bowire.Protocol.Kafka
+dotnet add package Kuestenlogik.Bowire.Protocol.Storm
+dotnet add package Kuestenlogik.Bowire.Protocol.Dis
+dotnet add package Kuestenlogik.Bowire.Protocol.Udp</code></pre>
+
+      <p>The plugin host loads each package into its own <code>AssemblyLoadContext</code>, so transitive-dependency conflicts between plugins don't reach your app. No host-side wiring needed beyond <code>AddBowire()</code>.</p>
+      <a class="features-block-docs-link" href="{{ '/docs/features/plugin-system.html' | relative_url }}">Plugin system docs &rarr;</a>
+    </div>
+  </article>
+
+  <!-- Embedded finish — same flag bubble pattern, slightly different prose -->
+  <article class="quickstart-page-step quickstart-page-step-finish" id="embed-afloat" data-path="embedded" hidden>
+    <div class="quickstart-page-step-num" aria-hidden="true">
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 22V4"/><path d="M4 4h13l-3 4 3 4H4"/></svg>
+    </div>
+    <div class="quickstart-page-step-body">
+      <h2>Bowire is mounted</h2>
+      <p class="features-block-lead">Hit <code>https://localhost:5001/bowire</code> and the workbench is running inside your app. The sidebar already lists every service your DI container exposes &mdash; no schema files, no manual registration.</p>
+      <p>The same shortcuts, the same recordings, the same environments as the standalone CLI &mdash; just one URL away from your normal API routes. Ship the same binary to staging or production with the workbench scoped to dev environments by tag, or strip <code>MapBowire()</code> with a feature flag for prod.</p>
+      {% include themed-img.html src="/assets/images/screenshots/ready.png" alt="Bowire ready landing — services discovered from the host's IServiceProvider, recent history visible" class="quickstart-page-step-screenshot" %}
+    </div>
+  </article>
+
+</div><!-- /.quickstart-page-steps -->
+
+<!-- Footer CTA — page bg flips to elevated for the closer so the
+     "From here" block reads as its own section. -->
+<section class="features-page-cta features-page-cta-elevated">
+  <div class="features-page-cta-inner">
+    <h2 class="features-page-cta-title">From here</h2>
+    <p class="features-page-cta-lede">A few steps in, and you have a workbench running against any service in your stack. Three branches from here:</p>
+    <div class="features-page-cta-buttons">
+      <a class="btn btn-secondary features-page-cta-btn" href="{{ '/features.html' | relative_url }}">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+        See every feature
+      </a>
+      <a class="btn btn-secondary features-page-cta-btn" href="{{ '/docs/' | relative_url }}">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+        Read the docs
+      </a>
+      <a class="btn btn-secondary features-page-cta-btn" href="{{ '/downloads.html' | relative_url }}">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Browse all downloads
+      </a>
+    </div>
+    <p class="features-page-cta-finale">Run aground? <a href="{{ '/community.html' | relative_url }}">Get helping hands &rarr;</a></p>
+  </div>
+</section>

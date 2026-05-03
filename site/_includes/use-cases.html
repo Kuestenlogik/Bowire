@@ -1,0 +1,78 @@
+<section class="use-cases" id="use-cases">
+  <div class="container">
+    <h2 class="section-title">Built for four kinds of workflows</h2>
+    <p class="section-subtitle">Bowire isn't a Postman replacement — it's a workbench for the situations where Postman doesn't fit. Pick the workflow that sounds most like yours.</p>
+
+    <div class="use-case-grid">
+
+      <a class="use-case-card use-case-card-link" href="{{ '/workflows/backend.html' | relative_url }}">
+        <div class="use-case-icon">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.5">
+            <polyline points="16 18 22 12 16 6"/>
+            <polyline points="8 6 2 12 8 18"/>
+          </svg>
+        </div>
+        <h3>Backend developers</h3>
+        <p class="use-case-tag">embedded mode · zero account walls</p>
+        <p>You're building an ASP.NET service and you want a debug UI <strong>inside</strong> your app for your team and your users — not a separate Electron app behind a sign-up flow. Add <code>app.MapBowire()</code>, ship the binary, every endpoint is browsable at <code>/bowire</code>.</p>
+        <p class="use-case-tools">→ gRPC reflection · OpenAPI · GraphQL introspection · SignalR endpoint scan</p>
+      </a>
+
+      <a class="use-case-card use-case-card-link" href="{{ '/workflows/testers.html' | relative_url }}">
+        <div class="use-case-icon">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.5">
+            <path d="M9 11l3 3L22 4"/>
+            <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/>
+          </svg>
+        </div>
+        <h3>API integration testers</h3>
+        <p class="use-case-tag">recorder · environments · assertions</p>
+        <p>You're verifying that an external API behaves the way the docs claim. Click <strong>Record</strong>, run a sequence of calls, click stop. Replay against Dev / Staging / Prod with environment-variable substitution. Convert the captured responses into regression assertions with one click.</p>
+        <p class="use-case-tools">→ Postman Collection-Runner parity · HAR export · Newman-style assertions</p>
+      </a>
+
+      <a class="use-case-card use-case-card-link" href="{{ '/workflows/ai-agents.html' | relative_url }}">
+        <div class="use-case-icon">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="4" y="7" width="16" height="13" rx="2"/>
+            <circle cx="9" cy="13" r="1" fill="var(--accent)"/>
+            <circle cx="15" cy="13" r="1" fill="var(--accent)"/>
+            <path d="M9 17h6"/>
+            <path d="M12 7V4"/>
+            <circle cx="12" cy="3" r="1" fill="var(--accent)"/>
+            <path d="M2 13h2"/>
+            <path d="M20 13h2"/>
+          </svg>
+        </div>
+        <h3>AI agent builders</h3>
+        <p class="use-case-tag">MCP adapter · Claude / Cursor / Copilot</p>
+        <p>You're wiring an AI agent up to internal services. Bowire's MCP adapter exposes every discovered method as an MCP tool with JSON Schema input — without writing the MCP server boilerplate yourself. Drop the URL into your agent config and your assistant has typed access to your service surface.</p>
+        <p class="use-case-tools">→ <code>--enable-mcp-adapter</code> · auto-tool generation · streaming support</p>
+      </a>
+
+      <a class="use-case-card use-case-card-link" href="{{ '/workflows/docs-teams.html' | relative_url }}">
+        <div class="use-case-icon">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.5">
+            <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
+            <polyline points="14 2 14 8 20 8"/>
+            <line x1="16" y1="13" x2="8" y2="13"/>
+            <line x1="16" y1="17" x2="8" y2="17"/>
+          </svg>
+        </div>
+        <h3>Documentation teams</h3>
+        <p class="use-case-tag">interactive docs · live examples · code export</p>
+        <p>You're writing API docs and you want every example to be runnable without a curl-paste-and-pray loop. Embed Bowire next to your written guides — readers click a method, edit the JSON, hit Send, see the actual response. Export the call as <code>curl</code>, <code>grpcurl</code>, or a typed C# / TypeScript snippet.</p>
+        <p class="use-case-tools">→ Live examples · per-language code export · embedded in your own docs site</p>
+      </a>
+
+    </div>
+
+    <p class="use-cases-cta">
+      For another workflow:
+      <a href="#cta-section">
+        join the crew
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg>
+      </a>
+    </p>
+  </div>
+</section>

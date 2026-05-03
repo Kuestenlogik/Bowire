@@ -1,0 +1,25 @@
+{%- comment -%}
+Renders a hero/demo video as a paired dark/light <video> pair —
+matching the themed-img.html pattern. The site theme attribute on
+<html> hides the wrong one, and a small JS hook in the layout
+re-loads the visible video on each theme toggle so playback follows
+the user's choice instead of just the OS preference.
+
+Usage:
+  {% include themed-video.html src="/assets/videos/bowire-demo.webm"
+                                poster="/assets/images/screenshots/method-detail.png" %}
+{%- endcomment -%}
+{%- assign dark_src = include.src | replace: ".webm", "-dark.webm" -%}
+{%- assign light_src = include.src | replace: ".webm", "-light.webm" -%}
+{%- assign poster_dark = include.poster | replace: ".png", "-dark.png" -%}
+{%- assign poster_light = include.poster | replace: ".png", "-light.png" -%}
+<video class="theme-video-dark"
+       src="{{ dark_src | relative_url }}"
+       poster="{{ poster_dark | relative_url }}"
+       autoplay muted loop playsinline preload="metadata"
+       aria-label="{{ include.label | default: 'Bowire workbench demo video' }}"></video>
+<video class="theme-video-light"
+       src="{{ light_src | relative_url }}"
+       poster="{{ poster_light | relative_url }}"
+       autoplay muted loop playsinline preload="metadata"
+       aria-label="{{ include.label | default: 'Bowire workbench demo video' }}"></video>

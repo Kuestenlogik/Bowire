@@ -1,0 +1,10 @@
+# yaml-language-server: $schema=https://aka.ms/winget-manifest.version.1.6.0.schema.json
+#
+# Version manifest — points winget at the locale + installer files.
+# This is the entry point the winget client reads first when it
+# resolves `winget install KuestenLogik.Bowire`.
+PackageIdentifier: KuestenLogik.Bowire
+PackageVersion: __VERSION__
+DefaultLocale: en-US
+ManifestType: version
+ManifestVersion: 1.6.0

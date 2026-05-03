@@ -1,0 +1,101 @@
+name: Documentation
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'docs/**'
+      - 'site/**'
+      - 'src/**'
+      - '.github/workflows/docs.yml'
+  workflow_dispatch:
+
+env:
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+  DOTNET_NOLOGO: true
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build Documentation
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Build projects (for API docs)
+        run: dotnet build Kuestenlogik.Bowire.slnx --configuration Release
+
+      # Build DocFX documentation
+      - name: Install DocFX
+        run: dotnet tool install -g docfx
+
+      - name: Build DocFX documentation
+        run: docfx docs/docfx.json
+
+      # Build Jekyll landing page
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.3'
+          bundler-cache: true
+          working-directory: site
+
+      - name: Build Jekyll site
+        run: |
+          cd site
+          bundle install
+          bundle exec jekyll build --baseurl "/Bowire"
+
+      # Combine: Jekyll output + DocFX output
+      - name: Combine outputs
+        run: |
+          mkdir -p _combined
+          cp -r site/_site/* _combined/
+          cp -r artifacts/docs _combined/docs/
+
+      # Pagefind crawls the already-rendered HTML under _combined/ (both
+      # marketing site and docs) and emits a single full-text index into
+      # _combined/pagefind/. Client-side only, no runtime server.
+      - name: Setup Node for Pagefind
+        uses: actions/setup-node@v5
+        with:
+          node-version: '20'
+
+      - name: Generate Pagefind search index
+        run: npx -y pagefind --site _combined --output-path _combined/pagefind
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: _combined
+
+  deploy:
+    name: Deploy to GitHub Pages
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v5
