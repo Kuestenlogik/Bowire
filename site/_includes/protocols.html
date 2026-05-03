@@ -464,18 +464,18 @@
 
       <a class="protocol-card" href="{{ '/docs/protocols/akka.html' | relative_url }}" data-feature-modal tabindex="0">
         <div class="protocol-icon">
-          <!-- Akka.NET — twin mountain peaks per the petabridge brand
-               guidelines (https://petabridge.com/press/akkadotnet-brand-guidelines.html).
-               Akka Blue #2A9FD6 primary fill, secondary peak in the
-               darker Akka shade #1E88C3 to suggest depth + a snowcap
-               on the taller peak. -->
-          <svg width="32" height="32" viewBox="0 0 24 24" aria-hidden="true">
-            <!-- back peak (smaller, behind), darker blue -->
-            <path d="M0.5 20 L7.5 9 L13 16.5 L13 20 Z" fill="#1E88C3"/>
-            <!-- front peak (taller, in front), primary Akka blue -->
-            <path d="M9 20 L15.5 5 L23.5 20 Z" fill="#2A9FD6"/>
-            <!-- snowcap on the front peak's tip -->
-            <path d="M14.4 7.5 L15.5 5 L16.6 7.5 Z" fill="#ffffff"/>
+          <!-- Akka.NET — official mark, traced from
+               Bowire.Protocol.Akka/images/akkanet_protocol_icon.svg.
+               Two interlocking peaks: a darker rear/foreground
+               peak (#0f75bc) and a lighter background peak
+               (#2f97ca). Native viewBox is 1.93:1, so we pad
+               the y-range so the logo sits centred in a square
+               32×32 card-icon slot. -->
+          <svg width="32" height="32" viewBox="0 -43.275 179.3875 179.3875" aria-hidden="true">
+            <g transform="translate(-15.875002, -81.756247)">
+              <path fill="#0f75bc" d="m 15.875002,174.36042 h 87.841668 c -2.80116,-5.48723 -8.212074,-10.60165 -12.149399,-15.34584 -7.101044,-8.55624 -13.908832,-17.35608 -20.989666,-25.92916 -2.600972,-3.14911 -5.160465,-6.33606 -7.712522,-9.525 -0.626278,-0.78258 -1.941959,-3.12029 -3.069248,-3.12029 -1.113757,0 -2.397666,2.34743 -3.016168,3.12029 -2.624916,3.27999 -5.312462,6.50944 -7.9375,9.78958 -7.373476,9.2136 -14.838669,18.3584 -22.280939,27.51667 -3.445867,4.2404 -8.18263,8.64187 -10.686226,13.49375"/>
+              <path fill="#2f97ca" d="m 120.12083,81.756254 c -9.75253,12.098696 -19.55671,24.155276 -29.31669,36.247916 -2.567358,3.18097 -5.171237,6.33295 -7.724973,9.525 -0.80377,1.00468 -2.738342,2.63881 -2.842841,3.96875 -0.132348,1.68442 2.957426,4.31051 3.954046,5.55625 4.042421,5.05286 8.181308,10.02839 12.223713,15.08125 4.183445,5.22916 8.440485,10.3994 12.646305,15.61041 1.44769,1.79369 3.42575,5.54178 5.58076,6.45494 1.84218,0.7806 5.07649,0.15965 7.06718,0.15965 h 16.40417 57.15 c -4.14568,-7.20643 -10.88393,-13.61492 -16.08671,-20.10834 -11.2814,-14.07994 -22.6353,-28.1146 -34.07184,-42.06874 -5.68388,-6.93512 -11.24949,-13.966956 -16.93333,-20.902087 -2.49696,-3.046648 -4.87365,-7.187045 -8.04979,-9.524999"/>
+            </g>
           </svg>
         </div>
         <div class="protocol-content">
