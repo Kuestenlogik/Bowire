@@ -54,14 +54,15 @@ function log(m) { console.log(new Date().toISOString().slice(11, 19), m); }
             await page.reload({ waitUntil: 'domcontentloaded' });
             await page.waitForSelector('#bowire-app.bowire-app-ready', { timeout: 20000 });
 
-            // Wait until the discovery loop has either resolved (services
-            // populated, or first-run landing card visible) or visibly
-            // failed (error pane). 30 s is enough for a TCP RST on the
-            // dead :65535 to surface.
+            // Wait until every spinner has gone away — sidebar's
+            // "Loading services..." and the right-pane "Discovering
+            // services..." card both render until isLoadingServices
+            // flips to false. 30 s easily covers a TCP-refused on the
+            // dead :65535 (the AbortController fires at 12 s).
             await page.waitForFunction(() => {
                 const txt = (document.body && document.body.innerText) || '';
-                if (/Discovering services/i.test(txt)) return false;
-                return /Connected|services|First-run|Welcome|first request|Pick a method|Discovery failed|Server unreachable|Drop in a schema/i.test(txt);
+                if (/Discovering services|Loading services/i.test(txt)) return false;
+                return /Connected|First-run|Welcome|first request|Pick a method|Discovery failed|Could not discover|Server unreachable|Drop in a schema|services/i.test(txt);
             }, { timeout: 30000 }).catch(() => {});
             await page.waitForTimeout(800);
 

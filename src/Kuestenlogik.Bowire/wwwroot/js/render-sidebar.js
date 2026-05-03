@@ -1224,10 +1224,16 @@
         } else if (sidebarView === 'favorites') {
             renderFavoritesListInto(list);
         } else if (services.length === 0) {
-            list.appendChild(el('div', { className: 'bowire-loading' },
-                el('div', { className: 'bowire-spinner' }),
-                el('span', { className: 'bowire-loading-text', textContent: 'Loading services...' })
-            ));
+            // Spinner only while discovery is in flight; once
+            // discovery has resolved, an empty service list means the
+            // landing card on the right is showing the proper empty
+            // state and the sidebar should match it (no spinner).
+            if (isLoadingServices) {
+                list.appendChild(el('div', { className: 'bowire-loading' },
+                    el('div', { className: 'bowire-spinner' }),
+                    el('span', { className: 'bowire-loading-text', textContent: 'Loading services...' })
+                ));
+            }
         } else {
             // Effective query combines the transient topbar search with the
             // pinned name-filter chip. Both are AND-ed: a method must match
