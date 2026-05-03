@@ -1,76 +1,110 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-    Click-mapped anatomy of the Bowire workbench. Background image is
-    the method-detail-dark capture; the four <a> overlays jump to the
-    matching ui-guide sub-page. Theme parity is provided by the
-    sibling ui-anatomy-light.svg + a CSS [data-theme] swap on the
-    consuming page.
+    Click-mapped anatomy of the Bowire workbench (variant C).
+    Background is the method-detail-dark capture (1280×720) placed in
+    the centre of a 1600×1080 canvas. Four annotation panels surround
+    the UI image, each pointing at its region with a connector line +
+    short caption. Every annotation is wrapped in <a xlink:href> so a
+    click jumps to the matching ui-guide sub-page.
 -->
 <svg xmlns="http://www.w3.org/2000/svg"
      xmlns:xlink="http://www.w3.org/1999/xlink"
-     viewBox="0 0 1280 720"
+     viewBox="0 0 1600 1080"
      role="img"
      aria-label="Bowire workbench layout — click any region to jump to its UI Guide page">
     <style>
-        .region rect.box { fill: rgba(99,102,241,0.10); stroke: #6366f1; stroke-width: 3; transition: fill 0.15s ease, stroke 0.15s ease; }
-        .region:hover rect.box { fill: rgba(99,102,241,0.28); stroke: #818cf8; }
-        .region:focus rect.box { fill: rgba(99,102,241,0.32); stroke: #a5b4fc; outline: none; }
+        /* Subtle outline + colour highlight on the corresponding image
+           region for each annotation; opacity bumps on hover/focus. */
+        .region-box { fill: rgba(99,102,241,0.06); stroke: #6366f1; stroke-width: 2; rx: 4; transition: fill .15s, stroke .15s; }
+        .annotation:hover .region-box,
+        .annotation:focus .region-box { fill: rgba(99,102,241,0.22); stroke: #a5b4fc; }
+        .annotation .connector { stroke: #6366f1; stroke-width: 2.5; fill: none; transition: stroke .15s; }
+        .annotation:hover .connector,
+        .annotation:focus .connector { stroke: #a5b4fc; }
+        .annotation .panel { fill: #1a1a2e; stroke: #6366f1; stroke-width: 2; rx: 12; transition: fill .15s, stroke .15s; }
+        .annotation:hover .panel,
+        .annotation:focus .panel { fill: #232342; stroke: #a5b4fc; }
         .badge { fill: #6366f1; }
-        .region:hover .badge { fill: #818cf8; }
-        .badge-num { fill: #fff; font-family: -apple-system, "Segoe UI", Inter, system-ui, sans-serif; font-size: 18px; font-weight: 800; text-anchor: middle; dominant-baseline: central; }
-        .badge-label { fill: #fff; font-family: -apple-system, "Segoe UI", Inter, system-ui, sans-serif; font-size: 16px; font-weight: 700; }
-        .badge-sub { fill: rgba(255,255,255,0.85); font-family: -apple-system, "Segoe UI", Inter, system-ui, sans-serif; font-size: 12px; font-weight: 500; }
-        .label-pill { fill: #6366f1; }
-        .region:hover .label-pill { fill: #818cf8; }
+        .annotation:hover .badge,
+        .annotation:focus .badge { fill: #818cf8; }
+        .badge-num { fill: #fff; font-family: -apple-system, "Segoe UI", Inter, system-ui, sans-serif; font-size: 22px; font-weight: 800; text-anchor: middle; dominant-baseline: central; }
+        .panel-title { fill: #ffffff; font-family: -apple-system, "Segoe UI", Inter, system-ui, sans-serif; font-size: 22px; font-weight: 700; }
+        .panel-line { fill: #cdd0e0; font-family: -apple-system, "Segoe UI", Inter, system-ui, sans-serif; font-size: 17px; font-weight: 400; }
+        .panel-arrow { fill: #818cf8; font-family: -apple-system, "Segoe UI", Inter, system-ui, sans-serif; font-size: 14px; font-weight: 600; }
+        .annotation { cursor: pointer; }
+        .annotation:focus { outline: none; }
     </style>
 
-    <image href="bowire-method-detail-dark.png" x="0" y="0" width="1280" height="720" />
+    <!-- 1280×720 UI capture sits at (160, 80). -->
+    <image href="bowire-method-detail-dark.png" x="160" y="80" width="1280" height="720" />
 
-    <!-- 1. Sidebar -->
-    <a xlink:href="../ui-guide/sidebar.html" target="_top" class="region" aria-label="Sidebar">
-        <rect class="box" x="2" y="2" width="321" height="716" rx="6" />
-        <g transform="translate(28, 380)">
-            <rect class="label-pill" x="-12" y="-22" width="160" height="44" rx="22" />
-            <circle class="badge" cx="14" cy="0" r="18" />
-            <text class="badge-num" x="14" y="0">1</text>
-            <text class="badge-label" x="42" y="-3">Sidebar</text>
-            <text class="badge-sub" x="42" y="14">services · search · favs</text>
-        </g>
+    <!-- ============================================================
+         1. Sidebar — annotation on the LEFT
+         Region in the image: x=160..485, y=80..800 (sidebar box +
+         the topbar above it); we frame x=162..485, y=82..798.
+         ============================================================ -->
+    <a xlink:href="../ui-guide/sidebar.html" target="_top" class="annotation" tabindex="0" aria-label="Sidebar — services, search, favourites, environments, flows">
+        <rect class="region-box" x="162" y="82" width="323" height="716"/>
+        <!-- Panel on the far left — wider so badge + label sit side by side -->
+        <rect class="panel" x="10" y="200" width="140" height="252"/>
+        <circle class="badge" cx="38" cy="234" r="20"/>
+        <text class="badge-num" x="38" y="234">1</text>
+        <text class="panel-title" x="68" y="240" text-anchor="start">Sidebar</text>
+        <text class="panel-line" x="80" y="280" text-anchor="middle">Service tree</text>
+        <text class="panel-line" x="80" y="304" text-anchor="middle">Search</text>
+        <text class="panel-line" x="80" y="328" text-anchor="middle">Favourites</text>
+        <text class="panel-line" x="80" y="352" text-anchor="middle">Environments</text>
+        <text class="panel-line" x="80" y="376" text-anchor="middle">Flows</text>
+        <text class="panel-arrow" x="80" y="416" text-anchor="middle">Open guide →</text>
+        <!-- Connector from panel right edge to sidebar left edge -->
+        <path class="connector" d="M 150,326 L 162,440"/>
     </a>
 
-    <!-- 2. Request Pane -->
-    <a xlink:href="../ui-guide/request-pane.html" target="_top" class="region" aria-label="Request pane">
-        <rect class="box" x="328" y="60" width="463" height="598" rx="6" />
-        <g transform="translate(380, 350)">
-            <rect class="label-pill" x="-12" y="-22" width="200" height="44" rx="22" />
-            <circle class="badge" cx="14" cy="0" r="18" />
-            <text class="badge-num" x="14" y="0">2</text>
-            <text class="badge-label" x="42" y="-3">Request Pane</text>
-            <text class="badge-sub" x="42" y="14">body · headers · code · scripts</text>
-        </g>
+    <!-- ============================================================
+         2. Request pane — annotation on the TOP
+         Region: x=486..1075, y=140..880.
+         ============================================================ -->
+    <a xlink:href="../ui-guide/request-pane.html" target="_top" class="annotation" tabindex="0" aria-label="Request Pane — body editor, metadata, schema, code, scripts, history">
+        <rect class="region-box" x="488" y="140" width="463" height="598"/>
+        <rect class="panel" x="380" y="6" width="380" height="62"/>
+        <circle class="badge" cx="410" cy="38" r="20"/>
+        <text class="badge-num" x="410" y="38">2</text>
+        <text class="panel-title" x="440" y="33" text-anchor="start">Request Pane</text>
+        <text class="panel-line" x="440" y="55" text-anchor="start">Body · Metadata · Schema · Code · Scripts · History</text>
+        <path class="connector" d="M 570,68 L 720,140"/>
     </a>
 
-    <!-- 3. Response Pane -->
-    <a xlink:href="../ui-guide/response-pane.html" target="_top" class="region" aria-label="Response pane">
-        <rect class="box" x="796" y="60" width="480" height="598" rx="6" />
-        <g transform="translate(848, 270)">
-            <rect class="label-pill" x="-12" y="-22" width="210" height="44" rx="22" />
-            <circle class="badge" cx="14" cy="0" r="18" />
-            <text class="badge-num" x="14" y="0">3</text>
-            <text class="badge-label" x="42" y="-3">Response Pane</text>
-            <text class="badge-sub" x="42" y="14">result · metadata · perf · tests</text>
-        </g>
+    <!-- ============================================================
+         3. Response pane — annotation on the TOP-RIGHT
+         Region: x=956..1440, y=140..738.
+         ============================================================ -->
+    <a xlink:href="../ui-guide/response-pane.html" target="_top" class="annotation" tabindex="0" aria-label="Response Pane — result, response metadata, performance, tests">
+        <rect class="region-box" x="956" y="140" width="480" height="598"/>
+        <rect class="panel" x="840" y="6" width="380" height="62" transform="translate(280,0)"/>
+        <circle class="badge" cx="1150" cy="38" r="20"/>
+        <text class="badge-num" x="1150" y="38">3</text>
+        <text class="panel-title" x="1180" y="33" text-anchor="start">Response Pane</text>
+        <text class="panel-line" x="1180" y="55" text-anchor="start">Result · Metadata · Performance · Tests</text>
+        <path class="connector" d="M 1310,68 L 1196,140"/>
     </a>
 
-    <!-- 4. Action Bar -->
-    <a xlink:href="../ui-guide/action-bar.html" target="_top" class="region" aria-label="Action bar">
-        <rect class="box" x="328" y="662" width="950" height="56" rx="6" />
-        <g transform="translate(530, 690)">
-            <rect class="label-pill" x="-12" y="-22" width="180" height="44" rx="22" />
-            <circle class="badge" cx="14" cy="0" r="18" />
-            <text class="badge-num" x="14" y="0">4</text>
-            <text class="badge-label" x="42" y="-3">Action Bar</text>
-            <text class="badge-sub" x="42" y="14">execute · repeat · save · record</text>
-        </g>
+    <!-- ============================================================
+         4. Action bar — annotation BELOW
+         Region: x=486..1436, y=742..798 (the row holding Execute /
+         Repeat / Save / transport switch / Record / Console).
+         ============================================================ -->
+    <a xlink:href="../ui-guide/action-bar.html" target="_top" class="annotation" tabindex="0" aria-label="Action Bar — execute, repeat, save, transport switch, record, console">
+        <rect class="region-box" x="488" y="742" width="950" height="56"/>
+        <rect class="panel" x="380" y="858" width="840" height="64"/>
+        <circle class="badge" cx="410" cy="890" r="20"/>
+        <text class="badge-num" x="410" y="890">4</text>
+        <text class="panel-title" x="440" y="884" text-anchor="start">Action Bar</text>
+        <text class="panel-line" x="440" y="908" text-anchor="start">Execute · Repeat · Save · Transport (gRPC ↔ HTTP) · Record · Console</text>
+        <path class="connector" d="M 800,858 L 800,798"/>
     </a>
+
+    <!-- Hint footer -->
+    <text x="800" y="990" fill="#9ea3bd" font-family="-apple-system, 'Segoe UI', Inter, system-ui, sans-serif" font-size="14" font-weight="500" text-anchor="middle" opacity="0.8">
+        Click any pane to jump to its detail page in the UI Guide
+    </text>
 </svg>

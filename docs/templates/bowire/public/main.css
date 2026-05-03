@@ -1824,3 +1824,43 @@ body.bowire-docs-mode-standalone .bowire-docs-hero-tagline {
 @media (prefers-reduced-motion: reduce) {
     ::view-transition-new(root) { animation: none; }
 }
+
+/* ==========================================================
+   Theme-aware images / videos / objects in docs pages.
+   Mirrors the Jekyll site's CSS so docs and marketing stay in
+   lockstep — the DocFX template flips data-theme on <html>
+   exactly the same way the marketing site does.
+   ========================================================== */
+:root[data-theme="dark"] .theme-img-light,
+:root[data-theme="dark"] .theme-video-light {
+    display: none !important;
+}
+:root[data-theme="light"] .theme-img-dark,
+:root[data-theme="light"] .theme-video-dark {
+    display: none !important;
+}
+@media (prefers-color-scheme: dark) {
+    :root[data-theme="auto"] .theme-img-light,
+    :root[data-theme="auto"] .theme-video-light,
+    :root:not([data-theme]) .theme-img-light,
+    :root:not([data-theme]) .theme-video-light {
+        display: none !important;
+    }
+}
+@media (prefers-color-scheme: light) {
+    :root[data-theme="auto"] .theme-img-dark,
+    :root[data-theme="auto"] .theme-video-dark,
+    :root:not([data-theme]) .theme-img-dark,
+    :root:not([data-theme]) .theme-video-dark {
+        display: none !important;
+    }
+}
+
+/* Anatomy SVG — width fits the article column, fall-back to img on
+   prerender / object-blocked browsers. */
+.theme-img-dark, .theme-img-light,
+object.theme-img-dark, object.theme-img-light {
+    display: block;
+    max-width: 100%;
+    height: auto;
+}
