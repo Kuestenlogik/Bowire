@@ -5233,21 +5233,39 @@ html[data-theme="light"] {
     margin-top: 0;
 }
 
-/* Capability line inside the protocol-card modals. Authored in
-   protocols.html as a single-item <ul><li> with &middot;-separated
-   items (one line, not a real list) — the browser-default disc
-   bullet + 40 px indent broke the modal's prose flow, so we drop
-   both and treat the line as another paragraph at slightly
-   smaller size to keep its "tech-spec" feel. */
-.bowire-feature-modal-body .features-block-text ul {
+/* Capability tags inside the protocol-card modals. Each <li> is
+   one capability and renders as a rounded pill so the spec line
+   reads like a row of chips instead of a bullet list. The track
+   wraps onto multiple rows on narrow modals. */
+.features-block-capabilities {
     list-style: none;
     padding-left: 0;
-    margin: 0 0 18px;
+    margin: 0 0 20px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 8px;
 }
-.bowire-feature-modal-body .features-block-text ul li {
+.features-block-capabilities li {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 10px;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background: var(--bg);
     color: var(--text-secondary);
-    font-size: 0.9375rem;
-    line-height: 1.55;
+    font-size: 0.8125rem;
+    line-height: 1.35;
+    white-space: nowrap;
+}
+.features-block-capabilities li code {
+    background: transparent;
+    padding: 0;
+    font-size: 0.95em;
+    color: var(--text);
+}
+:root[data-theme-resolved="light"] .features-block-capabilities li,
+:root[data-theme="light"] .features-block-capabilities li {
+    background: var(--bg-elevated);
 }
 
 /* Text-only variant for feature blocks that don't ship a screenshot —

@@ -23,8 +23,13 @@
               <h3>gRPC</h3>
               <p class="features-block-lead">All four streaming flavours land in the same Wireshark-style frame pane &mdash; no separate tool for client-stream or duplex.</p>
               <p>Bowire pulls the service tree from Server Reflection, generates typed request forms straight off the proto, and renders streaming responses frame-by-frame with per-message detail. HTTP transcoding kicks in automatically for methods carrying <code>google.api.http</code>, so REST-style hits work side by side with the gRPC call.</p>
-              <ul>
-                <li>Unary &middot; Server-streaming &middot; Client-streaming &middot; Bidi &middot; gRPC-Web &middot; Connect (planned)</li>
+              <ul class="features-block-capabilities">
+                <li>Unary</li>
+                <li>Server-streaming</li>
+                <li>Client-streaming</li>
+                <li>Bidi</li>
+                <li>gRPC-Web</li>
+                <li>Connect (planned)</li>
               </ul>
               <a class="features-block-docs-link" href="{{ '/docs/protocols/grpc.html' | relative_url }}">Read the full docs &rarr;</a>
             </div>
@@ -54,8 +59,10 @@
               <h3>REST</h3>
               <p class="features-block-lead">REST that doesn't make you babysit a Postman collection &mdash; OpenAPI in, typed forms out, AWS Sig v4 already wired up.</p>
               <p>Bowire pulls the schema from <code>/swagger/v1/swagger.json</code> (or any URL you point it at) and turns each operation into a typed form with separate path / query / header / body sections. Multipart uploads work out of the box, and streaming JSON / NDJSON responses render frame-by-frame in the same pane gRPC server-streaming uses.</p>
-              <ul>
-                <li>Request / response &middot; multipart upload &middot; streaming JSON / NDJSON</li>
+              <ul class="features-block-capabilities">
+                <li>Request / response</li>
+                <li>multipart upload</li>
+                <li>streaming JSON / NDJSON</li>
               </ul>
               <a class="features-block-docs-link" href="{{ '/docs/protocols/rest.html' | relative_url }}">Read the full docs &rarr;</a>
             </div>
@@ -85,8 +92,10 @@
               <h3>GraphQL</h3>
               <p class="features-block-lead">A visual selection-set picker beats hand-rolling query strings &mdash; tick the fields you want, Bowire writes the query.</p>
               <p>Bowire introspects <code>__schema</code>, lets you tick the fields you want returned, and renders nested object types as collapsible sub-trees. Subscriptions stream into the same Wireshark-style frame pane gRPC server-streaming uses, over either <code>graphql-transport-ws</code> or SSE.</p>
-              <ul>
-                <li>Query &middot; Mutation &middot; Subscription (over WS or SSE)</li>
+              <ul class="features-block-capabilities">
+                <li>Query</li>
+                <li>Mutation</li>
+                <li>Subscription (over WS or SSE)</li>
               </ul>
               <a class="features-block-docs-link" href="{{ '/docs/protocols/graphql.html' | relative_url }}">Read the full docs &rarr;</a>
             </div>
@@ -116,8 +125,10 @@
               <h3>SignalR</h3>
               <p class="features-block-lead">Hubs show up in the sidebar without a hand-rolled JS test client &mdash; Bowire enumerates them straight from <code>EndpointDataSource</code>.</p>
               <p>Auto-discovery walks the ASP.NET endpoint metadata to find every mapped hub, then reflects the method signatures so each gets a typed parameter form. Server-streaming and duplex hub channels render in the same Wireshark-style frame pane gRPC bidi uses.</p>
-              <ul>
-                <li>Invoke &middot; Server-streaming &middot; Duplex hub channels</li>
+              <ul class="features-block-capabilities">
+                <li>Invoke</li>
+                <li>Server-streaming</li>
+                <li>Duplex hub channels</li>
               </ul>
               <a class="features-block-docs-link" href="{{ '/docs/protocols/signalr.html' | relative_url }}">Read the full docs &rarr;</a>
             </div>
@@ -147,8 +158,10 @@
               <h3>MCP</h3>
               <p class="features-block-lead">Bowire is an MCP client and server &mdash; inspect what Claude Desktop / Cursor / Copilot expose, or surface your own services as tools to them.</p>
               <p>Each discovered Bowire method becomes an MCP tool with JSON Schema input, so any MCP-aware agent can call your services. The browser side connects over stdio today (with SSE and HTTP transports planned), enumerates remote tools, and lets you invoke them with the same typed-form UI used for everything else.</p>
-              <ul>
-                <li>Tool invocation (unary) over stdio &middot; SSE &middot; HTTP (planned)</li>
+              <ul class="features-block-capabilities">
+                <li>Tool invocation (unary) over stdio</li>
+                <li>SSE</li>
+                <li>HTTP (planned)</li>
               </ul>
               <a class="features-block-docs-link" href="{{ '/docs/protocols/mcp.html' | relative_url }}">Read the full docs &rarr;</a>
             </div>
@@ -178,7 +191,7 @@
               <h3>SSE</h3>
               <p class="features-block-lead">One plugin, three jobs &mdash; raw SSE, GraphQL subscriptions, and MCP server-push all reuse the same streaming pipeline.</p>
               <p>Register an endpoint via attribute or the fluent API, point Bowire at it, and live events render frame-by-frame in the same Wireshark-style pane gRPC server-streaming uses. Last-Event-ID resume and named event channels are honoured automatically.</p>
-              <ul>
+              <ul class="features-block-capabilities">
                 <li>Server-streaming (one-way push)</li>
               </ul>
               <a class="features-block-docs-link" href="{{ '/docs/protocols/sse.html' | relative_url }}">Read the full docs &rarr;</a>
@@ -212,8 +225,9 @@
               <h3>WebSocket</h3>
               <p class="features-block-lead">Raw frame editor with the same duplex UI gRPC and SignalR get &mdash; no need for a separate browser tab full of <code>wscat</code>.</p>
               <p>Send text or binary frames per side, flip frame type per message, negotiate a sub-protocol on connect. Incoming frames stream into the same Wireshark-style pane, with hex / UTF-8 toggle for binary payloads.</p>
-              <ul>
-                <li>Duplex text + binary frames &middot; sub-protocol negotiation</li>
+              <ul class="features-block-capabilities">
+                <li>Duplex text + binary frames</li>
+                <li>sub-protocol negotiation</li>
               </ul>
               <a class="features-block-docs-link" href="{{ '/docs/protocols/websocket.html' | relative_url }}">Read the full docs &rarr;</a>
             </div>
@@ -243,8 +257,10 @@
               <h3>MQTT</h3>
               <p class="features-block-lead">Both 3.1.1 and 5.0 brokers in one client, with retained-message inspection and QoS 0/1/2 publishes from the same UI as every other call.</p>
               <p>Connect over TCP or WebSocket, subscribe with wildcards (<code>+</code>, <code>#</code>), and watch live messages stream in the Wireshark-style frame pane. MQTT 5 request/response pairs (using correlation data + response topic) are correlated automatically and shown as a unified call.</p>
-              <ul>
-                <li>Pub / Sub &middot; Request / Response &middot; MQTT 3.1.1 + 5.0</li>
+              <ul class="features-block-capabilities">
+                <li>Pub / Sub</li>
+                <li>Request / Response</li>
+                <li>MQTT 3.1.1 + 5.0</li>
               </ul>
               <a class="features-block-docs-link" href="{{ '/docs/protocols/mqtt.html' | relative_url }}">Read the full docs &rarr;</a>
             </div>
@@ -274,8 +290,10 @@
               <h3>Socket.IO</h3>
               <p class="features-block-lead">Namespace + room aware, with the ack callback wired into the same response pane &mdash; no JS console acrobatics.</p>
               <p>Bowire picks the namespace, joins / leaves rooms on the fly, and emits typed events with JSON payloads. Acks come back as a normal response with timing; broadcast events stream into the duplex pane like any other channel. Works against v2 / v3 / v4 servers, with auto-reconnect on transport drop.</p>
-              <ul>
-                <li>Duplex with ack &middot; namespaces &middot; rooms</li>
+              <ul class="features-block-capabilities">
+                <li>Duplex with ack</li>
+                <li>namespaces</li>
+                <li>rooms</li>
               </ul>
               <a class="features-block-docs-link" href="{{ '/docs/protocols/socketio.html' | relative_url }}">Read the full docs &rarr;</a>
             </div>
@@ -305,8 +323,10 @@
               <h3>OData</h3>
               <p class="features-block-lead">Build <code>$filter</code> / <code>$expand</code> / <code>$select</code> as picker UI &mdash; no more hand-encoding query strings to chase a bug.</p>
               <p>Bowire reads CSDL metadata from <code>/$metadata</code>, renders entity sets in the sidebar, and gives each one a query builder for system query options. Bound functions and actions appear as their own callable methods. Works against ASP.NET's <code>Microsoft.AspNetCore.OData</code> stack and any V4-compliant service.</p>
-              <ul>
-                <li>Request / response &middot; <code>$filter</code> / <code>$expand</code> / <code>$select</code> &middot; functions / actions</li>
+              <ul class="features-block-capabilities">
+                <li>Request / response</li>
+                <li><code>$filter</code> / <code>$expand</code> / <code>$select</code></li>
+                <li>functions / actions</li>
               </ul>
               <a class="features-block-docs-link" href="{{ '/docs/protocols/odata.html' | relative_url }}">Read the full docs &rarr;</a>
             </div>
@@ -337,8 +357,10 @@
               <h3>Storm</h3>
               <p class="features-block-lead">First-class support for Küstenlogik's own broker &mdash; including the in-process <code>storm://embedded</code> tap that needs zero broker installed.</p>
               <p>Connect with the native KL.Storm.Client SDK, or hit any Storm broker through its Kafka-compatible wire by appending <code>?protocol=kafka</code>. Topic discovery, produce, partitioned consume, and consumer-group state are all visible in the same UI &mdash; the embedded mode is the fastest path from "is my pipeline producing?" to a green frame in the response pane.</p>
-              <ul>
-                <li>Topic produce (Unary) &middot; partitioned consume (Server-streaming) &middot; in-process tap</li>
+              <ul class="features-block-capabilities">
+                <li>Topic produce (Unary)</li>
+                <li>partitioned consume (Server-streaming)</li>
+                <li>in-process tap</li>
               </ul>
               <a class="features-block-docs-link" href="{{ '/docs/protocols/storm.html' | relative_url }}">Read the full docs &rarr;</a>
             </div>
@@ -371,8 +393,10 @@
               <h3>Kafka</h3>
               <p class="features-block-lead">Live Avro decode against Schema Registry &mdash; consumed records show up as JSON in the frame pane instead of opaque bytes.</p>
               <p>Bowire connects with <code>Confluent.Kafka</code>, discovers topics via the Admin API, and uses the standard envelope so produce / consume work the same as every other protocol. Append <code>?schema-registry=https://...</code> and Avro records are decoded inline; mTLS and SASL credentials live in the environment alongside every other auth scheme.</p>
-              <ul>
-                <li>Produce (Unary) &middot; Consume (Server-streaming) &middot; Schema Registry decode (Avro)</li>
+              <ul class="features-block-capabilities">
+                <li>Produce (Unary)</li>
+                <li>Consume (Server-streaming)</li>
+                <li>Schema Registry decode (Avro)</li>
               </ul>
               <a class="features-block-docs-link" href="{{ '/docs/protocols/kafka.html' | relative_url }}">Read the full docs &rarr;</a>
             </div>
@@ -411,8 +435,10 @@
               <h3>DIS</h3>
               <p class="features-block-lead">Typed PDU rendering for IEEE 1278 traffic &mdash; EntityState / Fire / Detonation / Collision get a real form, not just a hex blob.</p>
               <p>Subscribe to a multicast group, watch live PDUs land in the streaming pane with structured fields per type. Anything Bowire doesn't have a typed renderer for falls back to a canonical hex dump so binary inspection still works. Built for the same simulation environments as Storm and the Estuary stack.</p>
-              <ul>
-                <li>UDP-multicast PDU listen &middot; typed PDU rendering &middot; hex-dump fallback</li>
+              <ul class="features-block-capabilities">
+                <li>UDP-multicast PDU listen</li>
+                <li>typed PDU rendering</li>
+                <li>hex-dump fallback</li>
               </ul>
               <a class="features-block-docs-link" href="{{ '/docs/protocols/dis.html' | relative_url }}">Read the full docs &rarr;</a>
             </div>
@@ -450,8 +476,10 @@
               <h3>UDP</h3>
               <p class="features-block-lead">A general-purpose UDP listener that feels like every other protocol &mdash; same streaming pane, same hex / UTF-8 toggle, same recording support.</p>
               <p>Listen on multicast, broadcast, or unicast addresses; Bowire auto-detects UTF-8 payloads and falls back to base64 + canonical hex dump for raw binary. Shares the <code>IBowireMockEmitter</code> contract with the DIS plugin, so the same harness works for both.</p>
-              <ul>
-                <li>Datagram listen &middot; multicast / broadcast / unicast &middot; UTF-8 + hex</li>
+              <ul class="features-block-capabilities">
+                <li>Datagram listen</li>
+                <li>multicast / broadcast / unicast</li>
+                <li>UTF-8 + hex</li>
               </ul>
               <a class="features-block-docs-link" href="{{ '/docs/protocols/udp.html' | relative_url }}">Read the full docs &rarr;</a>
             </div>
@@ -492,8 +520,9 @@
               <h3>Akka.NET</h3>
               <p class="features-block-lead">A passive mailbox tap means you can watch every <code>Tell</code> in your actor system without changing a line of business code.</p>
               <p>The <code>BowireTapMailbox</code> wraps Akka.NET's standard mailbox and streams each message into the workbench in real time &mdash; per-actor or globally via the default-mailbox swap. Embedded mode only, since the tap runs in the same process as the <code>ActorSystem</code>; nothing leaves the host unless you choose to expose it.</p>
-              <ul>
-                <li>Mailbox tap (Server-streaming <code>Tap/MonitorMessages</code>) &middot; embedded only</li>
+              <ul class="features-block-capabilities">
+                <li>Mailbox tap (Server-streaming <code>Tap/MonitorMessages</code>)</li>
+                <li>embedded only</li>
               </ul>
               <a class="features-block-docs-link" href="{{ '/docs/protocols/akka.html' | relative_url }}">Read the full docs &rarr;</a>
             </div>
