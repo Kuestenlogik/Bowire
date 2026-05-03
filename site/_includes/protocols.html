@@ -464,10 +464,18 @@
 
       <a class="protocol-card" href="{{ '/docs/protocols/akka.html' | relative_url }}" data-feature-modal tabindex="0">
         <div class="protocol-icon">
-          <!-- Akka.NET — official Akka wordmark/mark from simpleicons.org,
-               brand red for instant recognisability on both themes. -->
-          <svg width="32" height="32" viewBox="0 0 24 24" fill="#15a9ce" aria-hidden="true">
-            <path d="M2.62 0v3.486h.85V.84h17.066v22.32H3.47V20.515h-.85V24h18.764V0zM4.32 4.323v.838h7.658c4.247 0 7.658 3.428 7.658 7.7H6.872V11.16h11.013V11.989h-3.811V14.491c0 1.69-1.34 3.014-3.005 3.014-1.687 0-3.018-1.34-3.018-3.014v-2.502H6.024v.838H7.18v1.664c0 2.156 1.7 3.852 3.846 3.852 2.144 0 3.84-1.696 3.84-3.852V12.83h2.118c-.452 3.812-3.7 6.84-7.658 6.84H4.32v.846H10.829c4.696 0 8.49-3.873 8.49-8.51 0-4.685-3.795-8.51-8.49-8.51H6.872z"/>
+          <!-- Akka.NET — twin mountain peaks per the petabridge brand
+               guidelines (https://petabridge.com/press/akkadotnet-brand-guidelines.html).
+               Akka Blue #2A9FD6 primary fill, secondary peak in the
+               darker Akka shade #1E88C3 to suggest depth + a snowcap
+               on the taller peak. -->
+          <svg width="32" height="32" viewBox="0 0 24 24" aria-hidden="true">
+            <!-- back peak (smaller, behind), darker blue -->
+            <path d="M0.5 20 L7.5 9 L13 16.5 L13 20 Z" fill="#1E88C3"/>
+            <!-- front peak (taller, in front), primary Akka blue -->
+            <path d="M9 20 L15.5 5 L23.5 20 Z" fill="#2A9FD6"/>
+            <!-- snowcap on the front peak's tip -->
+            <path d="M14.4 7.5 L15.5 5 L16.6 7.5 Z" fill="#ffffff"/>
           </svg>
         </div>
         <div class="protocol-content">
