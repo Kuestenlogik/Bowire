@@ -11,25 +11,25 @@ Bowire is a modular API browser built on ASP.NET. The core library provides the 
 ```mermaid
 graph TB
     subgraph "Browser"
-        UI[Bowire UI<br/>HTML/CSS/JS]
+        UI["Bowire UI<br/>HTML/CSS/JS"]
     end
     subgraph "ASP.NET host"
-        API[Bowire API endpoints]
-        REG[Protocol registry]
+        API["Bowire API endpoints"]
+        REG["Protocol registry"]
         API --> REG
-        REG --> GRPC[gRPC]
-        REG --> REST[REST]
-        REG --> GQL[GraphQL]
-        REG --> SIG[SignalR]
-        REG --> WS[WebSocket]
-        REG --> SSE[SSE]
-        REG --> MQTT[MQTT]
-        REG --> SIO[Socket.IO]
-        REG --> OD[OData]
-        REG --> MCP[MCP]
+        REG --> GRPC["gRPC"]
+        REG --> REST["REST"]
+        REG --> GQL["GraphQL"]
+        REG --> SIG["SignalR"]
+        REG --> WS["WebSocket"]
+        REG --> SSE["SSE"]
+        REG --> MQTT["MQTT"]
+        REG --> SIO["Socket.IO"]
+        REG --> OD["OData"]
+        REG --> MCP["MCP"]
     end
     subgraph "Target services"
-        TGT[Any protocol<br/>the plugins speak]
+        TGT["Any protocol<br/>the plugins speak"]
     end
     UI -->|HTTP / SSE| API
     GRPC --> TGT

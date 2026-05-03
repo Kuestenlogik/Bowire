@@ -95,12 +95,12 @@ Bowire keeps a clean plugin boundary here: **core has zero HTTP-invocation code*
 
 ```mermaid
 graph LR
-    A[JS toggle: HTTP] -->|inline method info| B[/api/invoke]
+    A["JS toggle: HTTP"] -->|inline method info| B["/api/invoke"]
     B --> C{REST plugin loaded?}
-    C -->|yes| D[BowireRestProtocol.InvokeHttpAsync]
-    D --> E[RestInvoker]
-    E -->|HttpClient| F[Target server]
-    C -->|no| G[501 'install REST plugin']
+    C -->|yes| D["BowireRestProtocol.InvokeHttpAsync"]
+    D --> E["RestInvoker"]
+    E -->|HttpClient| F["Target server"]
+    C -->|no| G["501 'install REST plugin'"]
 ```
 
 When the REST plugin **isn't** installed:

@@ -10,14 +10,14 @@ Bowire is distributed as a set of NuGet packages with clear dependency relations
 
 ```mermaid
 graph TD
-    TOOL[Bowire<br/>dotnet tool] --> CORE
+    TOOL["Bowire<br/>dotnet tool"] --> CORE
     TOOL --> GRPC
     TOOL --> SIG
-    TOOL --> SSE2[Kuestenlogik.Bowire.Protocol.Sse]
-    TOOL --> MCP2[Kuestenlogik.Bowire.Protocol.Mcp]
-    CORE[Kuestenlogik.Bowire<br/>Core + UI]
-    GRPC[Kuestenlogik.Bowire.Protocol.Grpc] --> CORE
-    SIG[Kuestenlogik.Bowire.Protocol.SignalR] --> CORE
+    TOOL --> SSE2["Kuestenlogik.Bowire.Protocol.Sse"]
+    TOOL --> MCP2["Kuestenlogik.Bowire.Protocol.Mcp"]
+    CORE["Kuestenlogik.Bowire<br/>Core + UI"]
+    GRPC["Kuestenlogik.Bowire.Protocol.Grpc"] --> CORE
+    SIG["Kuestenlogik.Bowire.Protocol.SignalR"] --> CORE
     SSE2 --> CORE
     MCP2 --> CORE
     style CORE fill:#6366f1,color:#fff
