@@ -28,5 +28,7 @@
   href: dis.md
 - name: UDP
   href: udp.md
+- name: Akka.NET
+  href: akka.md
 - name: Custom Protocols
   href: custom.md

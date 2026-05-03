@@ -1,10 +1,10 @@
 ---
-summary: 'Bowire ships with ten first-party protocol plugins plus four sibling plugins (Storm, Kafka, DIS, UDP) that install via the CLI.'
+summary: 'Bowire ships with ten first-party protocol plugins plus five sibling plugins (Storm, Kafka, DIS, UDP, Akka.NET) that install via the CLI.'
 ---
 
 # Protocol Guides
 
-Bowire ships with **ten first-party protocol plugins** plus **four sibling plugins** (Storm, Kafka, DIS, UDP) that live in their own NuGet packages and install via `bowire plugin install`. Each implements `IBowireProtocol` and auto-registers at startup. Install only the ones you need.
+Bowire ships with **ten first-party protocol plugins** plus **five sibling plugins** (Storm, Kafka, DIS, UDP, Akka.NET) that live in their own NuGet packages and install via `bowire plugin install`. Each implements `IBowireProtocol` and auto-registers at startup. Install only the ones you need.
 
 ## First-party protocols
 
@@ -31,6 +31,7 @@ These ship from their own repos / NuGet packages on independent release cadences
 | [Kafka](kafka.md) | `Kuestenlogik.Bowire.Protocol.Kafka` | `IAdminClient.GetMetadata` | Consume (ServerStreaming), Produce (Unary) |
 | [DIS](dis.md) | `Kuestenlogik.Bowire.Protocol.Dis` | Mock-emit only (replay path) | UDP-multicast PDU bytes |
 | [UDP](udp.md) | `Kuestenlogik.Bowire.Protocol.Udp` | URL-bind any UDP endpoint | Datagram listener (multicast / broadcast / unicast) |
+| [Akka.NET](akka.md) | `Kuestenlogik.Bowire.Protocol.Akka` | DI-resolved `ActorSystem` (embedded only) | Mailbox tap (server-streaming `Tap/MonitorMessages`) |
 
 Writing your own: see [Custom protocols](custom.md).
 
@@ -52,6 +53,7 @@ graph LR
     A --> N[Kafka]
     A --> O[DIS]
     A --> P[UDP]
+    A --> Q["Akka.NET"]
     A --> L[Custom plugins]
     style A fill:#6366f1,color:#fff
     style L stroke-dasharray: 5 5

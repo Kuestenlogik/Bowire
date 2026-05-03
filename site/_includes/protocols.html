@@ -175,12 +175,21 @@
 
       <a class="protocol-card" href="{{ '/docs/protocols/kafka.html' | relative_url }}">
         <div class="protocol-icon">
-          <!-- Apache Kafka — official mark from simpleicons.org. The
-               three-node "K" geometry is Apache's chosen wordmark icon;
-               theme-driven `var(--text)` keeps it readable in both
-               light and dark modes since the official Kafka branding
-               is monochrome. -->
-          <svg width="32" height="32" viewBox="0 0 24 24" fill="var(--text)" aria-hidden="true"><path d="M9.71 19.345a2.502 2.502 0 0 0-1.4.42l-1.764-1.762c.354-.475.564-1.061.564-1.697 0-1.135-.673-2.111-1.638-2.563l.045-7.667A2.85 2.85 0 0 0 7.595 3.32 2.853 2.853 0 0 0 4.745.471a2.853 2.853 0 0 0-2.85 2.85 2.85 2.85 0 0 0 2.078 2.736l-.045 7.674c-.97.452-1.643 1.43-1.643 2.575 0 .647.214 1.241.578 1.72L1.146 19.71a2.504 2.504 0 0 0-1.146-.276A2.501 2.501 0 0 0 0 24.434c1.379 0 2.5-1.122 2.5-2.501a2.5 2.5 0 0 0-.426-1.404l1.65-1.65c.439.305.954.498 1.508.561l.045-7.652a2.83 2.83 0 0 0 2.022-.829l1.794 1.794a2.501 2.501 0 0 0-.444 1.428 2.501 2.501 0 0 0 5.001 0 2.501 2.501 0 0 0-2.5-2.5z"/></svg>
+          <!-- Kafka — three partitioned record bands stacked vertically;
+               reads as "ordered log of records" without needing the
+               official Apache K-mark, which renders as an unreadable
+               splatter at this size. Theme-driven stroke. -->
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--text)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect x="3" y="4.5" width="18" height="3.5" rx="1"/>
+            <rect x="3" y="10.25" width="18" height="3.5" rx="1"/>
+            <rect x="3" y="16" width="18" height="3.5" rx="1"/>
+            <line x1="8.5" y1="4.5" x2="8.5" y2="8"/>
+            <line x1="14" y1="4.5" x2="14" y2="8"/>
+            <line x1="6.5" y1="10.25" x2="6.5" y2="13.75"/>
+            <line x1="13" y1="10.25" x2="13" y2="13.75"/>
+            <line x1="10.5" y1="16" x2="10.5" y2="19.5"/>
+            <line x1="16.5" y1="16" x2="16.5" y2="19.5"/>
+          </svg>
         </div>
         <div class="protocol-content">
           <h3>Kafka</h3>
@@ -194,10 +203,17 @@
 
       <a class="protocol-card" href="{{ '/docs/protocols/dis.html' | relative_url }}">
         <div class="protocol-icon">
-          <!-- DIS — radar/sweep glyph in defence-green; reads as
-               "tracks on a scope" without leaning on a real military
-               icon. -->
-          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#4ade80" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 3v9l6 4"/><circle cx="6.5" cy="9" r="0.7" fill="#4ade80"/><circle cx="18" cy="14" r="0.7" fill="#4ade80"/><circle cx="14" cy="18" r="0.7" fill="#4ade80"/></svg>
+          <!-- DIS — radar scope: outer ring + inner range ring + a
+               filled sweep wedge + a couple of contact dots. Defence-
+               green stroke for the simulation/military context. -->
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#4ade80" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="9"/>
+            <circle cx="12" cy="12" r="4.5"/>
+            <path d="M12 12 L20 8 A9 9 0 0 1 18.5 17 Z" fill="#4ade80" fill-opacity="0.18" stroke="none"/>
+            <line x1="12" y1="12" x2="20" y2="8"/>
+            <circle cx="7.5" cy="9" r="0.9" fill="#4ade80" stroke="none"/>
+            <circle cx="15" cy="17.5" r="0.9" fill="#4ade80" stroke="none"/>
+          </svg>
         </div>
         <div class="protocol-content">
           <h3>DIS</h3>
@@ -211,9 +227,16 @@
 
       <a class="protocol-card" href="{{ '/docs/protocols/udp.html' | relative_url }}">
         <div class="protocol-icon">
-          <!-- UDP — three datagram packets streaming right; deliberately
-               minimal since UDP is a primitive, not a branded product. -->
-          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="6" width="6" height="4" rx="1"/><rect x="9" y="10" width="6" height="4" rx="1"/><rect x="16" y="14" width="6" height="4" rx="1"/><path d="M14 8h4"/><path d="M14 16h4"/></svg>
+          <!-- UDP — three datagram packets stepping diagonally right
+               with little arrow connectors between them, reading as
+               "stream of fire-and-forget packets". -->
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect x="2" y="3" width="7" height="5" rx="1"/>
+            <rect x="8.5" y="9.5" width="7" height="5" rx="1"/>
+            <rect x="15" y="16" width="7" height="5" rx="1"/>
+            <path d="M5.5 8 L11 9.5"/>
+            <path d="M12 14.5 L17.5 16"/>
+          </svg>
         </div>
         <div class="protocol-content">
           <h3>UDP</h3>
@@ -225,6 +248,31 @@
         </div>
       </a>
 
+      <a class="protocol-card" href="{{ '/docs/protocols/akka.html' | relative_url }}">
+        <div class="protocol-icon">
+          <!-- Akka.NET — a parent actor at the top with two children
+               and a grandchild; reads as "actor hierarchy" which is
+               what the plugin observes via the BowireTapMailbox. -->
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="12" cy="4.5" r="2.5"/>
+            <circle cx="6" cy="13" r="2.5"/>
+            <circle cx="18" cy="13" r="2.5"/>
+            <circle cx="6" cy="20" r="1.8"/>
+            <line x1="11" y1="6.5" x2="7" y2="11"/>
+            <line x1="13" y1="6.5" x2="17" y2="11"/>
+            <line x1="6" y1="15.5" x2="6" y2="18.2"/>
+          </svg>
+        </div>
+        <div class="protocol-content">
+          <h3>Akka.NET</h3>
+          <p>Live tap on any Akka.NET <code>ActorSystem</code> &mdash; the <code>BowireTapMailbox</code> wraps the standard mailbox and streams every <code>Tell</code> into the workbench. Embedded mode only; opt in globally via the default-mailbox swap or per-actor with <code>Props.WithMailbox</code>.</p>
+          <div class="protocol-install">
+            <code><span class="protocol-install-prompt">$</span> bowire plugin install Kuestenlogik.Bowire.Protocol.Akka</code>
+            <button class="protocol-install-copy copy-btn" data-copy="bowire plugin install Kuestenlogik.Bowire.Protocol.Akka" aria-label="Copy install command for Akka"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></button>
+          </div>
+        </div>
+      </a>
+
       <a class="protocol-card protocol-card-coming" href="#roadmap">
         <div class="protocol-icon">
           <!-- Sparkle / plus mark; dashed to pair visually with the Custom card. -->
@@ -232,7 +280,7 @@
         </div>
         <div class="protocol-content">
           <h3>Coming soon</h3>
-          <p>SOAP for enterprise legacy, NATS for cloud-native messaging, AMQP for RabbitMQ / ActiveMQ, Akka.NET actor inspection. More on the <span class="protocol-coming-link">roadmap &rarr;</span></p>
+          <p>SOAP for enterprise legacy, NATS for cloud-native messaging, AMQP for RabbitMQ / ActiveMQ, Connect (Buf) over HTTP/1.1+JSON. More on the <span class="protocol-coming-link">roadmap &rarr;</span></p>
           <span class="protocol-tag protocol-tag-dim">Planned plugins</span>
         </div>
       </a>
