@@ -6,6 +6,9 @@ summary: 'The request pane is where you compose and edit requests before sending
 
 The request pane is where you compose and edit requests before sending them to the target service.
 
+<img class="theme-img-dark" src="../images/ui-guide/request-pane-dark.png" alt="Bowire request pane — JSON / Form editor with Metadata, Schema, Code, Scripts, History tabs above the body">
+<img class="theme-img-light" src="../images/ui-guide/request-pane-light.png" alt="Bowire request pane — JSON / Form editor with Metadata, Schema, Code, Scripts, History tabs above the body">
+
 ## Input Modes
 
 ### Form Mode

@@ -6,6 +6,9 @@ summary: 'The sidebar is the main navigation panel on the left side of the Bowir
 
 The sidebar is the main navigation panel on the left side of the Bowire UI. It lists all discovered services grouped by protocol.
 
+<img class="theme-img-dark" src="../images/ui-guide/sidebar-dark.png" alt="Bowire sidebar — service list grouped by protocol with badges, favourites star, and search input">
+<img class="theme-img-light" src="../images/ui-guide/sidebar-light.png" alt="Bowire sidebar — service list grouped by protocol with badges, favourites star, and search input">
+
 ## Service List
 
 Services are displayed as expandable tree nodes. Each service shows:

@@ -8,12 +8,20 @@ Bowire's browser UI is a single-page application built with pure HTML, CSS, and 
 
 ## Layout
 
-The UI is organized into four main areas:
+The UI is organized into four main areas. Click any region in the
+diagram below to jump to its detail page:
 
-1. **[Sidebar](sidebar.md)** -- service list, search, favorites, protocol tabs
-2. **[Request Pane](request-pane.md)** -- form/JSON editor, metadata headers, import
-3. **[Response Pane](response-pane.md)** -- syntax-highlighted response, streaming view, copy/download
-4. **[Action Bar](action-bar.md)** -- execute button, repeat, status indicators
+<object class="theme-img-dark" type="image/svg+xml" data="../images/ui-anatomy-dark.svg" aria-label="Bowire workbench layout — click any region to open its UI Guide page">
+  <img src="../images/ui-anatomy-dark.svg" alt="Bowire workbench layout">
+</object>
+<object class="theme-img-light" type="image/svg+xml" data="../images/ui-anatomy-light.svg" aria-label="Bowire workbench layout — click any region to open its UI Guide page">
+  <img src="../images/ui-anatomy-light.svg" alt="Bowire workbench layout">
+</object>
+
+1. **[Sidebar](sidebar.md)** &mdash; service list, search, favorites, protocol tabs
+2. **[Request Pane](request-pane.md)** &mdash; form/JSON editor, metadata headers, import
+3. **[Response Pane](response-pane.md)** &mdash; syntax-highlighted response, streaming view, copy/download
+4. **[Action Bar](action-bar.md)** &mdash; execute button, repeat, status indicators
 
 On desktop, the sidebar sits on the left with the request and response panes stacked or side-by-side on the right. On mobile, the sidebar collapses behind a hamburger menu and panels stack vertically.
 

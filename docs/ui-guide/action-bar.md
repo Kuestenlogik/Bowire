@@ -6,6 +6,9 @@ summary: 'The action bar sits between the request and response panes.'
 
 The action bar sits between the request and response panes. It contains the primary controls for executing and managing requests.
 
+<img class="theme-img-dark" src="../images/ui-guide/action-bar-dark.png" alt="Bowire action bar — Execute, Repeat, Save, transport switch (gRPC / HTTP), Record, and Console buttons">
+<img class="theme-img-light" src="../images/ui-guide/action-bar-light.png" alt="Bowire action bar — Execute, Repeat, Save, transport switch (gRPC / HTTP), Record, and Console buttons">
+
 ## Execute Button
 
 The main **Send** button executes the current request. Its behavior depends on the call type:

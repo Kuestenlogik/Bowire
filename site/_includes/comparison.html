@@ -139,7 +139,7 @@
                 <svg class="comparison-chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="5 3 11 8 5 13"/></svg>
               </button>
             </td>
-            <td class="comparison-bowire" data-detail="gRPC, REST, GraphQL, SignalR, MCP, SSE, WebSocket, MQTT, Socket.IO, OData, Storm, Kafka, DIS, UDP — plus any custom protocol via plugin">10+</td>
+            <td class="comparison-bowire" data-detail="gRPC, REST, GraphQL, SignalR, MCP, SSE, WebSocket, MQTT, Socket.IO, OData, Storm, Kafka, DIS, UDP, Akka.NET — plus any custom protocol via plugin">15+</td>
             <td data-detail="REST, GraphQL, gRPC, WebSocket, MQTT, Socket.IO, MCP">7</td>
             <td data-detail="REST via OpenAPI / Swagger import">1</td>
             <td data-detail="REST via ASP.NET OpenAPI document">1</td>
@@ -270,6 +270,15 @@
           </tr>
           <tr class="comparison-row-sub" data-group="protocols">
             <td class="comparison-feature comparison-feature-sub">UDP (raw datagrams)</td>
+            <td class="comparison-bowire c-yes">✓</td>
+            <td class="c-no">✗</td>
+            <td class="c-no">✗</td>
+            <td class="c-no">✗</td>
+            <td class="c-no">✗</td>
+            <td class="c-no">✗</td>
+          </tr>
+          <tr class="comparison-row-sub" data-group="protocols">
+            <td class="comparison-feature comparison-feature-sub">Akka.NET (mailbox tap)</td>
             <td class="comparison-bowire c-yes">✓</td>
             <td class="c-no">✗</td>
             <td class="c-no">✗</td>
@@ -749,7 +758,7 @@
                 <svg class="comparison-chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="5 3 11 8 5 13"/></svg>
               </button>
             </td>
-            <td class="comparison-bowire">planned</td>
+            <td class="comparison-bowire c-yes" data-detail="bowire.discover, bowire.invoke, bowire.subscribe, bowire.env.list, bowire.record.{list,start,stop,replay}, bowire.mock.{start,stop,list}, bowire.allowlist.show">✓</td>
             <td class="c-yes">✓</td>
             <td class="c-no">✗</td>
             <td class="c-no">✗</td>
@@ -758,7 +767,7 @@
           </tr>
           <tr class="comparison-row-sub" data-group="platformops">
             <td class="comparison-feature comparison-feature-sub">Recording start / stop</td>
-            <td class="comparison-bowire">planned</td>
+            <td class="comparison-bowire c-yes" data-detail="bowire.record.start / .stop / .list">✓</td>
             <td class="c-yes">✓</td>
             <td class="c-no">✗</td>
             <td class="c-no">✗</td>
@@ -766,8 +775,8 @@
             <td class="c-no">✗</td>
           </tr>
           <tr class="comparison-row-sub" data-group="platformops">
-            <td class="comparison-feature comparison-feature-sub">Environment switch</td>
-            <td class="comparison-bowire">planned</td>
+            <td class="comparison-feature comparison-feature-sub">Environment list</td>
+            <td class="comparison-bowire c-yes" data-detail="bowire.env.list — read-only enumeration; switch-as-tool on the 0.10 roadmap">✓</td>
             <td class="c-yes">✓</td>
             <td class="c-no">✗</td>
             <td class="c-no">✗</td>
@@ -776,7 +785,7 @@
           </tr>
           <tr class="comparison-row-sub" data-group="platformops">
             <td class="comparison-feature comparison-feature-sub">Replay execute</td>
-            <td class="comparison-bowire">planned</td>
+            <td class="comparison-bowire c-yes" data-detail="bowire.record.replay">✓</td>
             <td class="c-yes">✓</td>
             <td class="c-no">✗</td>
             <td class="c-no">✗</td>
@@ -785,7 +794,7 @@
           </tr>
           <tr class="comparison-row-sub" data-group="platformops">
             <td class="comparison-feature comparison-feature-sub">Mock spin-up</td>
-            <td class="comparison-bowire">planned</td>
+            <td class="comparison-bowire c-yes" data-detail="bowire.mock.start / .stop / .list">✓</td>
             <td class="c-yes">✓</td>
             <td class="c-no">✗</td>
             <td class="c-no">✗</td>

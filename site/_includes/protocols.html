@@ -4,7 +4,7 @@
     <p class="section-subtitle">One UI for every protocol your service stack speaks.<br>Each protocol is a plugin &mdash; install only what you need.</p>
     <div class="protocol-grid">
 
-      <a class="protocol-card" href="{{ '/docs/protocols/grpc.html' | relative_url }}">
+      <a class="protocol-card" href="{{ '/docs/protocols/grpc.html' | relative_url }}" data-feature-modal tabindex="0">
         <div class="protocol-icon">
           <!-- gRPC — community single-path mark (vectorlogo.zone); official grpc.io SVG is a 130 KB raster trace. -->
           <svg width="32" height="32" viewBox="0 0 64 64" fill="var(--success)" aria-hidden="true"><path d="M27.125 36.16v12.46c0 2.593.44 4.847 1.323 6.762s2.044 3.506 3.485 4.773 3.06 2.225 4.853 2.873S40.39 64 42.212 64s3.632-.324 5.426-.972 3.412-1.606 4.853-2.873 2.603-2.858 3.485-4.773 1.323-4.17 1.323-6.762V27.86l-16.126-.025-.02 8.325H48.3v12.46c0 2.18-.603 3.786-1.8 4.818s-2.632 1.547-4.28 1.547-3.073-.516-4.28-1.547-1.8-2.637-1.8-4.818V15.38c0-2.18.603-3.786 1.8-4.818s2.632-1.547 4.28-1.547 3.073.516 4.28 1.547 1.8 2.638 1.8 4.818v3.182h9V15.38c0-2.534-.44-4.773-1.323-6.718s-2.044-3.55-3.485-4.818S49.432 1.62 47.64.97 44.035 0 42.212 0s-3.632.324-5.426.972-3.412 1.606-4.853 2.873-2.603 2.873-3.485 4.818-1.323 4.184-1.323 6.718v12.46h-9.207v-9.28h2.824l-7.02-9.92-7.02 9.92h2.92V32c0 2.298 1.857 4.16 4.15 4.16h13.355z" fill-rule="evenodd"/></svg>
@@ -17,9 +17,25 @@
             <button class="protocol-install-copy copy-btn" data-copy="dotnet add package Kuestenlogik.Bowire.Protocol.Grpc" aria-label="Copy install command for gRPC"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></button>
           </div>
         </div>
+        <template class="feature-card-detail">
+          <div class="features-block features-block-reverse">
+            <div class="features-block-text">
+              <h3>gRPC</h3>
+              <p class="features-block-lead">All four streaming flavours land in the same Wireshark-style frame pane &mdash; no separate tool for client-stream or duplex.</p>
+              <p>Bowire pulls the service tree from Server Reflection, generates typed request forms straight off the proto, and renders streaming responses frame-by-frame with per-message detail. HTTP transcoding kicks in automatically for methods carrying <code>google.api.http</code>, so REST-style hits work side by side with the gRPC call.</p>
+              <ul>
+                <li>Unary &middot; Server-streaming &middot; Client-streaming &middot; Bidi &middot; gRPC-Web &middot; Connect (planned)</li>
+              </ul>
+              <a class="features-block-docs-link" href="{{ '/docs/protocols/grpc.html' | relative_url }}">Read the full docs &rarr;</a>
+            </div>
+            <div class="features-block-screenshot">
+              {% include themed-img.html src="/assets/images/screenshots/streaming.png" alt="gRPC server-streaming response in Bowire's Wireshark-style frame pane" %}
+            </div>
+          </div>
+        </template>
       </a>
 
-      <a class="protocol-card" href="{{ '/docs/protocols/rest.html' | relative_url }}">
+      <a class="protocol-card" href="{{ '/docs/protocols/rest.html' | relative_url }}" data-feature-modal tabindex="0">
         <div class="protocol-icon">
           <!-- REST has no official logo; HTTP-braces glyph matches the chip above. -->
           <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.5" aria-hidden="true"><path d="M8 3H6a2 2 0 00-2 2v4c0 1.1-.9 2-2 2 1.1 0 2 .9 2 2v4a2 2 0 002 2h2"/><path d="M16 3h2a2 2 0 012 2v4c0 1.1.9 2 2 2-1.1 0-2 .9-2 2v4a2 2 0 01-2 2h-2"/></svg>
@@ -32,9 +48,25 @@
             <button class="protocol-install-copy copy-btn" data-copy="dotnet add package Kuestenlogik.Bowire.Protocol.Rest" aria-label="Copy install command for REST"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></button>
           </div>
         </div>
+        <template class="feature-card-detail">
+          <div class="features-block">
+            <div class="features-block-text">
+              <h3>REST</h3>
+              <p class="features-block-lead">REST that doesn't make you babysit a Postman collection &mdash; OpenAPI in, typed forms out, AWS Sig v4 already wired up.</p>
+              <p>Bowire pulls the schema from <code>/swagger/v1/swagger.json</code> (or any URL you point it at) and turns each operation into a typed form with separate path / query / header / body sections. Multipart uploads work out of the box, and streaming JSON / NDJSON responses render frame-by-frame in the same pane gRPC server-streaming uses.</p>
+              <ul>
+                <li>Request / response &middot; multipart upload &middot; streaming JSON / NDJSON</li>
+              </ul>
+              <a class="features-block-docs-link" href="{{ '/docs/protocols/rest.html' | relative_url }}">Read the full docs &rarr;</a>
+            </div>
+            <div class="features-block-screenshot">
+              {% include themed-img.html src="/assets/images/screenshots/method-detail.png" alt="REST endpoint detail with typed parameter form" %}
+            </div>
+          </div>
+        </template>
       </a>
 
-      <a class="protocol-card" href="{{ '/docs/protocols/graphql.html' | relative_url }}">
+      <a class="protocol-card" href="{{ '/docs/protocols/graphql.html' | relative_url }}" data-feature-modal tabindex="0">
         <div class="protocol-icon">
           <!-- GraphQL — official logo (simpleicons) in brand pink. -->
           <svg width="32" height="32" viewBox="0 0 24 24" fill="#e535ab" aria-hidden="true"><path d="M12.002 0a2.138 2.138 0 1 0 0 4.277 2.138 2.138 0 1 0 0-4.277zm8.54 4.931a2.138 2.138 0 1 0 0 4.277 2.138 2.138 0 1 0 0-4.277zm0 9.862a2.138 2.138 0 1 0 0 4.277 2.138 2.138 0 1 0 0-4.277zm-8.54 4.931a2.138 2.138 0 1 0 0 4.276 2.138 2.138 0 1 0 0-4.276zm-8.542-4.93a2.138 2.138 0 1 0 0 4.276 2.138 2.138 0 1 0 0-4.277zm0-9.863a2.138 2.138 0 1 0 0 4.277 2.138 2.138 0 1 0 0-4.277zm8.542-3.378L2.953 6.777v10.448l9.049 5.224 9.047-5.224V6.777zm0 1.601 7.66 13.27H4.34zm-1.387.371L3.97 15.037V7.363zm2.774 0 6.646 3.838v7.674zM5.355 17.44h13.293l-6.646 3.836z"/></svg>
@@ -47,9 +79,25 @@
             <button class="protocol-install-copy copy-btn" data-copy="dotnet add package Kuestenlogik.Bowire.Protocol.GraphQL" aria-label="Copy install command for GraphQL"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></button>
           </div>
         </div>
+        <template class="feature-card-detail">
+          <div class="features-block features-block-reverse">
+            <div class="features-block-text">
+              <h3>GraphQL</h3>
+              <p class="features-block-lead">A visual selection-set picker beats hand-rolling query strings &mdash; tick the fields you want, Bowire writes the query.</p>
+              <p>Bowire introspects <code>__schema</code>, lets you tick the fields you want returned, and renders nested object types as collapsible sub-trees. Subscriptions stream into the same Wireshark-style frame pane gRPC server-streaming uses, over either <code>graphql-transport-ws</code> or SSE.</p>
+              <ul>
+                <li>Query &middot; Mutation &middot; Subscription (over WS or SSE)</li>
+              </ul>
+              <a class="features-block-docs-link" href="{{ '/docs/protocols/graphql.html' | relative_url }}">Read the full docs &rarr;</a>
+            </div>
+            <div class="features-block-screenshot">
+              {% include themed-img.html src="/assets/images/screenshots/streaming.png" alt="GraphQL subscription streaming into Bowire's frame pane" %}
+            </div>
+          </div>
+        </template>
       </a>
 
-      <a class="protocol-card" href="{{ '/docs/protocols/signalr.html' | relative_url }}">
+      <a class="protocol-card" href="{{ '/docs/protocols/signalr.html' | relative_url }}" data-feature-modal tabindex="0">
         <div class="protocol-icon">
           <!-- Azure SignalR Service — official Microsoft Azure Architecture Icons (2025-11 set). -->
           <svg width="32" height="32" viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><defs><radialGradient id="signalr-card-grad" cx="9" cy="9" r="8.5" gradientUnits="userSpaceOnUse"><stop offset="0.18" stop-color="#5ea0ef"/><stop offset="1" stop-color="#0078d4"/></radialGradient><clipPath id="signalr-card-clip"><path d="M14.21,15.72A8.5,8.5,0,0,1,3.79,2.28l.09-.06a8.5,8.5,0,0,1,10.33,13.5" fill="none"/></clipPath></defs><path d="M14.21,15.72A8.5,8.5,0,0,1,3.79,2.28l.09-.06a8.5,8.5,0,0,1,10.33,13.5" fill="url(#signalr-card-grad)"/><g clip-path="url(#signalr-card-clip)"><path d="M4.13,7.05a.28.28,0,0,0,.2.48h6.12A1.55,1.55,0,0,1,11.6,8a1.61,1.61,0,0,1,.43.92,1.43,1.43,0,0,1-.36,1.15,1.41,1.41,0,0,1-1.12.54H8.44a.08.08,0,0,0-.09.06L7.81,12c-.12.29-.25.59-.37.89a.08.08,0,0,0,0,.09L9,14.48l2.59,2.59.46.49,2.14-1.19L13.72,16l-1.43-1.44L10.74,13l-.07,0,0,0,.52-.07A3.84,3.84,0,0,0,14,10.65a3.85,3.85,0,0,0,0-3.08,3.93,3.93,0,0,0-.73-1.12,3.67,3.67,0,0,0-1.24-.89,4,4,0,0,0-1.66-.34h-3V4.05A.14.14,0,0,0,7.18,4Z" fill="#f2f2f2"/></g></svg>
@@ -62,9 +110,25 @@
             <button class="protocol-install-copy copy-btn" data-copy="dotnet add package Kuestenlogik.Bowire.Protocol.SignalR" aria-label="Copy install command for SignalR"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></button>
           </div>
         </div>
+        <template class="feature-card-detail">
+          <div class="features-block">
+            <div class="features-block-text">
+              <h3>SignalR</h3>
+              <p class="features-block-lead">Hubs show up in the sidebar without a hand-rolled JS test client &mdash; Bowire enumerates them straight from <code>EndpointDataSource</code>.</p>
+              <p>Auto-discovery walks the ASP.NET endpoint metadata to find every mapped hub, then reflects the method signatures so each gets a typed parameter form. Server-streaming and duplex hub channels render in the same Wireshark-style frame pane gRPC bidi uses.</p>
+              <ul>
+                <li>Invoke &middot; Server-streaming &middot; Duplex hub channels</li>
+              </ul>
+              <a class="features-block-docs-link" href="{{ '/docs/protocols/signalr.html' | relative_url }}">Read the full docs &rarr;</a>
+            </div>
+            <div class="features-block-screenshot">
+              {% include themed-img.html src="/assets/images/screenshots/streaming.png" alt="SignalR duplex hub channel streaming live frames" %}
+            </div>
+          </div>
+        </template>
       </a>
 
-      <a class="protocol-card" href="{{ '/docs/protocols/mcp.html' | relative_url }}">
+      <a class="protocol-card" href="{{ '/docs/protocols/mcp.html' | relative_url }}" data-feature-modal tabindex="0">
         <div class="protocol-icon">
           <!-- Model Context Protocol — official three-stroke mark (modelcontextprotocol.io). -->
           <svg width="32" height="32" viewBox="0 0 180 180" fill="none" stroke="var(--accent)" stroke-width="14" stroke-linecap="round" aria-hidden="true"><path d="M18 84.8528L85.8822 16.9706C95.2548 7.59798 110.451 7.59798 119.823 16.9706C129.196 26.3431 129.196 41.5391 119.823 50.9117L68.5581 102.177"/><path d="M69.2652 101.47L119.823 50.9117C129.196 41.5391 144.392 41.5391 153.765 50.9117L154.118 51.2652C163.491 60.6378 163.491 75.8338 154.118 85.2063L92.7248 146.6C89.6006 149.724 89.6006 154.789 92.7248 157.913L105.331 170.52"/><path d="M102.853 33.9411L52.6482 84.1457C43.2756 93.5183 43.2756 108.714 52.6482 118.087C62.0208 127.459 77.2167 127.459 86.5893 118.087L136.794 67.8822"/></svg>
@@ -77,9 +141,25 @@
             <button class="protocol-install-copy copy-btn" data-copy="dotnet add package Kuestenlogik.Bowire.Protocol.Mcp" aria-label="Copy install command for MCP"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></button>
           </div>
         </div>
+        <template class="feature-card-detail">
+          <div class="features-block features-block-reverse">
+            <div class="features-block-text">
+              <h3>MCP</h3>
+              <p class="features-block-lead">Bowire is an MCP client and server &mdash; inspect what Claude Desktop / Cursor / Copilot expose, or surface your own services as tools to them.</p>
+              <p>Each discovered Bowire method becomes an MCP tool with JSON Schema input, so any MCP-aware agent can call your services. The browser side connects over stdio today (with SSE and HTTP transports planned), enumerates remote tools, and lets you invoke them with the same typed-form UI used for everything else.</p>
+              <ul>
+                <li>Tool invocation (unary) over stdio &middot; SSE &middot; HTTP (planned)</li>
+              </ul>
+              <a class="features-block-docs-link" href="{{ '/docs/protocols/mcp.html' | relative_url }}">Read the full docs &rarr;</a>
+            </div>
+            <div class="features-block-screenshot">
+              {% include themed-img.html src="/assets/images/screenshots/method-detail.png" alt="MCP tool invocation form with JSON Schema input" %}
+            </div>
+          </div>
+        </template>
       </a>
 
-      <a class="protocol-card" href="{{ '/docs/protocols/sse.html' | relative_url }}">
+      <a class="protocol-card" href="{{ '/docs/protocols/sse.html' | relative_url }}" data-feature-modal tabindex="0">
         <div class="protocol-icon">
           <!-- SSE has no official logo; one-way broadcast glyph matches the chip. -->
           <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#fb923c" stroke-width="1.5" aria-hidden="true"><path d="M5 8h14l-4-4"/><path d="M5 12h10"/><path d="M5 16h6"/></svg>
@@ -92,9 +172,25 @@
             <button class="protocol-install-copy copy-btn" data-copy="dotnet add package Kuestenlogik.Bowire.Protocol.Sse" aria-label="Copy install command for SSE"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></button>
           </div>
         </div>
+        <template class="feature-card-detail">
+          <div class="features-block">
+            <div class="features-block-text">
+              <h3>SSE</h3>
+              <p class="features-block-lead">One plugin, three jobs &mdash; raw SSE, GraphQL subscriptions, and MCP server-push all reuse the same streaming pipeline.</p>
+              <p>Register an endpoint via attribute or the fluent API, point Bowire at it, and live events render frame-by-frame in the same Wireshark-style pane gRPC server-streaming uses. Last-Event-ID resume and named event channels are honoured automatically.</p>
+              <ul>
+                <li>Server-streaming (one-way push)</li>
+              </ul>
+              <a class="features-block-docs-link" href="{{ '/docs/protocols/sse.html' | relative_url }}">Read the full docs &rarr;</a>
+            </div>
+            <div class="features-block-screenshot">
+              {% include themed-img.html src="/assets/images/screenshots/streaming.png" alt="SSE event stream rendering frame-by-frame in Bowire" %}
+            </div>
+          </div>
+        </template>
       </a>
 
-      <a class="protocol-card" href="{{ '/docs/protocols/websocket.html' | relative_url }}">
+      <a class="protocol-card" href="{{ '/docs/protocols/websocket.html' | relative_url }}" data-feature-modal tabindex="0">
         <div class="protocol-icon">
           <!-- WebSocket — community logo from the gilbarbara/logos set (also
                distributed via Iconify as logos/websocket). No strictly
@@ -110,9 +206,25 @@
             <button class="protocol-install-copy copy-btn" data-copy="dotnet add package Kuestenlogik.Bowire.Protocol.WebSocket" aria-label="Copy install command for WebSocket"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></button>
           </div>
         </div>
+        <template class="feature-card-detail">
+          <div class="features-block features-block-reverse">
+            <div class="features-block-text">
+              <h3>WebSocket</h3>
+              <p class="features-block-lead">Raw frame editor with the same duplex UI gRPC and SignalR get &mdash; no need for a separate browser tab full of <code>wscat</code>.</p>
+              <p>Send text or binary frames per side, flip frame type per message, negotiate a sub-protocol on connect. Incoming frames stream into the same Wireshark-style pane, with hex / UTF-8 toggle for binary payloads.</p>
+              <ul>
+                <li>Duplex text + binary frames &middot; sub-protocol negotiation</li>
+              </ul>
+              <a class="features-block-docs-link" href="{{ '/docs/protocols/websocket.html' | relative_url }}">Read the full docs &rarr;</a>
+            </div>
+            <div class="features-block-screenshot">
+              {% include themed-img.html src="/assets/images/screenshots/streaming.png" alt="WebSocket duplex channel in Bowire's frame pane" %}
+            </div>
+          </div>
+        </template>
       </a>
 
-      <a class="protocol-card" href="{{ '/docs/protocols/mqtt.html' | relative_url }}">
+      <a class="protocol-card" href="{{ '/docs/protocols/mqtt.html' | relative_url }}" data-feature-modal tabindex="0">
         <div class="protocol-icon">
           <!-- MQTT — official mqtt.org logo (simpleicons). -->
           <svg width="32" height="32" viewBox="0 0 24 24" fill="#660066" aria-hidden="true"><path d="M10.657 23.994h-9.45A1.212 1.212 0 0 1 0 22.788v-9.18h.071c5.784 0 10.504 4.65 10.586 10.386Zm7.606 0h-4.045C14.135 16.246 7.795 9.977 0 9.942V6.038h.071c9.983 0 18.121 8.044 18.192 17.956Zm4.53 0h-.97C21.754 12.071 11.995 2.407 0 2.372v-1.16C0 .55.544.006 1.207.006h7.64C15.733 2.49 21.257 7.789 24 14.508v8.291c0 .663-.544 1.195-1.207 1.195ZM16.713.006h6.092A1.19 1.19 0 0 1 24 1.2v5.914c-.91-1.242-2.046-2.65-3.158-3.762C19.588 2.11 18.122.987 16.714.005Z"/></svg>
@@ -125,9 +237,25 @@
             <button class="protocol-install-copy copy-btn" data-copy="dotnet add package Kuestenlogik.Bowire.Protocol.Mqtt" aria-label="Copy install command for MQTT"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></button>
           </div>
         </div>
+        <template class="feature-card-detail">
+          <div class="features-block">
+            <div class="features-block-text">
+              <h3>MQTT</h3>
+              <p class="features-block-lead">Both 3.1.1 and 5.0 brokers in one client, with retained-message inspection and QoS 0/1/2 publishes from the same UI as every other call.</p>
+              <p>Connect over TCP or WebSocket, subscribe with wildcards (<code>+</code>, <code>#</code>), and watch live messages stream in the Wireshark-style frame pane. MQTT 5 request/response pairs (using correlation data + response topic) are correlated automatically and shown as a unified call.</p>
+              <ul>
+                <li>Pub / Sub &middot; Request / Response &middot; MQTT 3.1.1 + 5.0</li>
+              </ul>
+              <a class="features-block-docs-link" href="{{ '/docs/protocols/mqtt.html' | relative_url }}">Read the full docs &rarr;</a>
+            </div>
+            <div class="features-block-screenshot">
+              {% include themed-img.html src="/assets/images/screenshots/streaming.png" alt="MQTT subscribe stream with retained message inspection" %}
+            </div>
+          </div>
+        </template>
       </a>
 
-      <a class="protocol-card" href="{{ '/docs/protocols/socketio.html' | relative_url }}">
+      <a class="protocol-card" href="{{ '/docs/protocols/socketio.html' | relative_url }}" data-feature-modal tabindex="0">
         <div class="protocol-icon">
           <!-- Socket.IO — official logo (simpleicons). -->
           <svg width="32" height="32" viewBox="0 0 24 24" fill="var(--text)" aria-hidden="true"><path d="M11.9362.0137a12.1694 12.1694 0 00-2.9748.378C4.2816 1.5547.5678 5.7944.0918 10.6012c-.59 4.5488 1.7079 9.2856 5.6437 11.6345 3.8608 2.4179 9.0926 2.3199 12.8734-.223 3.3969-2.206 5.5118-6.2277 5.3858-10.2845-.058-4.0159-2.31-7.9167-5.7588-9.9796C16.354.5876 14.1431.0047 11.9362.0137zm-.063 1.696c4.9448-.007 9.7886 3.8137 10.2815 8.9245.945 5.6597-3.7528 11.4125-9.4875 11.5795-5.4538.544-10.7245-4.0798-10.8795-9.5566-.407-4.4338 2.5159-8.8346 6.6977-10.2995a9.1126 9.1126 0 013.3878-.647zm5.0908 3.2248c-2.6869 2.0849-5.2598 4.3078-7.8886 6.4567 1.2029.017 2.4118.016 3.6208.01 1.41-2.165 2.8589-4.3008 4.2678-6.4667zm-5.6647 7.6536c-1.41 2.166-2.86 4.3088-4.2699 6.4737 2.693-2.0799 5.2548-4.3198 7.9017-6.4557a255.4132 255.4132 0 00-3.6318-.018z"/></svg>
@@ -140,9 +268,25 @@
             <button class="protocol-install-copy copy-btn" data-copy="dotnet add package Kuestenlogik.Bowire.Protocol.SocketIO" aria-label="Copy install command for Socket.IO"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></button>
           </div>
         </div>
+        <template class="feature-card-detail">
+          <div class="features-block features-block-reverse">
+            <div class="features-block-text">
+              <h3>Socket.IO</h3>
+              <p class="features-block-lead">Namespace + room aware, with the ack callback wired into the same response pane &mdash; no JS console acrobatics.</p>
+              <p>Bowire picks the namespace, joins / leaves rooms on the fly, and emits typed events with JSON payloads. Acks come back as a normal response with timing; broadcast events stream into the duplex pane like any other channel. Works against v2 / v3 / v4 servers, with auto-reconnect on transport drop.</p>
+              <ul>
+                <li>Duplex with ack &middot; namespaces &middot; rooms</li>
+              </ul>
+              <a class="features-block-docs-link" href="{{ '/docs/protocols/socketio.html' | relative_url }}">Read the full docs &rarr;</a>
+            </div>
+            <div class="features-block-screenshot">
+              {% include themed-img.html src="/assets/images/screenshots/streaming.png" alt="Socket.IO duplex channel with namespace + room awareness" %}
+            </div>
+          </div>
+        </template>
       </a>
 
-      <a class="protocol-card" href="{{ '/docs/protocols/odata.html' | relative_url }}">
+      <a class="protocol-card" href="{{ '/docs/protocols/odata.html' | relative_url }}" data-feature-modal tabindex="0">
         <div class="protocol-icon">
           <!-- OData: official icon pack on odata.org is PNG-only; cylinder glyph reads as "queryable dataset". -->
           <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--warning)" stroke-width="1.5" aria-hidden="true"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 5v6c0 1.66-4.03 3-9 3s-9-1.34-9-3V5"/><path d="M21 11v6c0 1.66-4.03 3-9 3s-9-1.34-9-3v-6"/></svg>
@@ -155,9 +299,25 @@
             <button class="protocol-install-copy copy-btn" data-copy="dotnet add package Kuestenlogik.Bowire.Protocol.OData" aria-label="Copy install command for OData"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></button>
           </div>
         </div>
+        <template class="feature-card-detail">
+          <div class="features-block">
+            <div class="features-block-text">
+              <h3>OData</h3>
+              <p class="features-block-lead">Build <code>$filter</code> / <code>$expand</code> / <code>$select</code> as picker UI &mdash; no more hand-encoding query strings to chase a bug.</p>
+              <p>Bowire reads CSDL metadata from <code>/$metadata</code>, renders entity sets in the sidebar, and gives each one a query builder for system query options. Bound functions and actions appear as their own callable methods. Works against ASP.NET's <code>Microsoft.AspNetCore.OData</code> stack and any V4-compliant service.</p>
+              <ul>
+                <li>Request / response &middot; <code>$filter</code> / <code>$expand</code> / <code>$select</code> &middot; functions / actions</li>
+              </ul>
+              <a class="features-block-docs-link" href="{{ '/docs/protocols/odata.html' | relative_url }}">Read the full docs &rarr;</a>
+            </div>
+            <div class="features-block-screenshot">
+              {% include themed-img.html src="/assets/images/screenshots/method-detail.png" alt="OData entity-set query builder with system query option pickers" %}
+            </div>
+          </div>
+        </template>
       </a>
 
-      <a class="protocol-card" href="{{ '/docs/protocols/storm.html' | relative_url }}">
+      <a class="protocol-card" href="{{ '/docs/protocols/storm.html' | relative_url }}" data-feature-modal tabindex="0">
         <div class="protocol-icon">
           <!-- Storm — Küstenlogik blue, three diverging streams echoing
                the broker's data-distribution fan-out. -->
@@ -171,9 +331,25 @@
             <button class="protocol-install-copy copy-btn" data-copy="bowire plugin install Kuestenlogik.Bowire.Protocol.Storm" aria-label="Copy install command for Storm"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></button>
           </div>
         </div>
+        <template class="feature-card-detail">
+          <div class="features-block features-block-reverse">
+            <div class="features-block-text">
+              <h3>Storm</h3>
+              <p class="features-block-lead">First-class support for Küstenlogik's own broker &mdash; including the in-process <code>storm://embedded</code> tap that needs zero broker installed.</p>
+              <p>Connect with the native KL.Storm.Client SDK, or hit any Storm broker through its Kafka-compatible wire by appending <code>?protocol=kafka</code>. Topic discovery, produce, partitioned consume, and consumer-group state are all visible in the same UI &mdash; the embedded mode is the fastest path from "is my pipeline producing?" to a green frame in the response pane.</p>
+              <ul>
+                <li>Topic produce (Unary) &middot; partitioned consume (Server-streaming) &middot; in-process tap</li>
+              </ul>
+              <a class="features-block-docs-link" href="{{ '/docs/protocols/storm.html' | relative_url }}">Read the full docs &rarr;</a>
+            </div>
+            <div class="features-block-screenshot">
+              {% include themed-img.html src="/assets/images/screenshots/streaming.png" alt="Storm partitioned consume streaming into Bowire's frame pane" %}
+            </div>
+          </div>
+        </template>
       </a>
 
-      <a class="protocol-card" href="{{ '/docs/protocols/kafka.html' | relative_url }}">
+      <a class="protocol-card" href="{{ '/docs/protocols/kafka.html' | relative_url }}" data-feature-modal tabindex="0">
         <div class="protocol-icon">
           <!-- Kafka — three partitioned record bands stacked vertically;
                reads as "ordered log of records" without needing the
@@ -199,9 +375,25 @@
             <button class="protocol-install-copy copy-btn" data-copy="bowire plugin install Kuestenlogik.Bowire.Protocol.Kafka" aria-label="Copy install command for Kafka"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></button>
           </div>
         </div>
+        <template class="feature-card-detail">
+          <div class="features-block">
+            <div class="features-block-text">
+              <h3>Kafka</h3>
+              <p class="features-block-lead">Live Avro decode against Schema Registry &mdash; consumed records show up as JSON in the frame pane instead of opaque bytes.</p>
+              <p>Bowire connects with <code>Confluent.Kafka</code>, discovers topics via the Admin API, and uses the standard envelope so produce / consume work the same as every other protocol. Append <code>?schema-registry=https://...</code> and Avro records are decoded inline; mTLS and SASL credentials live in the environment alongside every other auth scheme.</p>
+              <ul>
+                <li>Produce (Unary) &middot; Consume (Server-streaming) &middot; Schema Registry decode (Avro)</li>
+              </ul>
+              <a class="features-block-docs-link" href="{{ '/docs/protocols/kafka.html' | relative_url }}">Read the full docs &rarr;</a>
+            </div>
+            <div class="features-block-screenshot">
+              {% include themed-img.html src="/assets/images/screenshots/streaming.png" alt="Kafka consume stream with live Avro decode" %}
+            </div>
+          </div>
+        </template>
       </a>
 
-      <a class="protocol-card" href="{{ '/docs/protocols/dis.html' | relative_url }}">
+      <a class="protocol-card" href="{{ '/docs/protocols/dis.html' | relative_url }}" data-feature-modal tabindex="0">
         <div class="protocol-icon">
           <!-- DIS — radar scope: outer ring + inner range ring + a
                filled sweep wedge + a couple of contact dots. Defence-
@@ -223,9 +415,25 @@
             <button class="protocol-install-copy copy-btn" data-copy="bowire plugin install Kuestenlogik.Bowire.Protocol.Dis" aria-label="Copy install command for DIS"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></button>
           </div>
         </div>
+        <template class="feature-card-detail">
+          <div class="features-block features-block-reverse">
+            <div class="features-block-text">
+              <h3>DIS</h3>
+              <p class="features-block-lead">Typed PDU rendering for IEEE 1278 traffic &mdash; EntityState / Fire / Detonation / Collision get a real form, not just a hex blob.</p>
+              <p>Subscribe to a multicast group, watch live PDUs land in the streaming pane with structured fields per type. Anything Bowire doesn't have a typed renderer for falls back to a canonical hex dump so binary inspection still works. Built for the same simulation environments as Storm and the Estuary stack.</p>
+              <ul>
+                <li>UDP-multicast PDU listen &middot; typed PDU rendering &middot; hex-dump fallback</li>
+              </ul>
+              <a class="features-block-docs-link" href="{{ '/docs/protocols/dis.html' | relative_url }}">Read the full docs &rarr;</a>
+            </div>
+            <div class="features-block-screenshot">
+              {% include themed-img.html src="/assets/images/screenshots/streaming.png" alt="DIS PDU multicast stream with typed entity-state rendering" %}
+            </div>
+          </div>
+        </template>
       </a>
 
-      <a class="protocol-card" href="{{ '/docs/protocols/udp.html' | relative_url }}">
+      <a class="protocol-card" href="{{ '/docs/protocols/udp.html' | relative_url }}" data-feature-modal tabindex="0">
         <div class="protocol-icon">
           <!-- UDP — three datagram packets stepping diagonally right
                with little arrow connectors between them, reading as
@@ -246,9 +454,25 @@
             <button class="protocol-install-copy copy-btn" data-copy="bowire plugin install Kuestenlogik.Bowire.Protocol.Udp" aria-label="Copy install command for UDP"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></button>
           </div>
         </div>
+        <template class="feature-card-detail">
+          <div class="features-block">
+            <div class="features-block-text">
+              <h3>UDP</h3>
+              <p class="features-block-lead">A general-purpose UDP listener that feels like every other protocol &mdash; same streaming pane, same hex / UTF-8 toggle, same recording support.</p>
+              <p>Listen on multicast, broadcast, or unicast addresses; Bowire auto-detects UTF-8 payloads and falls back to base64 + canonical hex dump for raw binary. Shares the <code>IBowireMockEmitter</code> contract with the DIS plugin, so the same harness works for both.</p>
+              <ul>
+                <li>Datagram listen &middot; multicast / broadcast / unicast &middot; UTF-8 + hex</li>
+              </ul>
+              <a class="features-block-docs-link" href="{{ '/docs/protocols/udp.html' | relative_url }}">Read the full docs &rarr;</a>
+            </div>
+            <div class="features-block-screenshot">
+              {% include themed-img.html src="/assets/images/screenshots/streaming.png" alt="UDP datagram listener with hex / UTF-8 rendering" %}
+            </div>
+          </div>
+        </template>
       </a>
 
-      <a class="protocol-card" href="{{ '/docs/protocols/akka.html' | relative_url }}">
+      <a class="protocol-card" href="{{ '/docs/protocols/akka.html' | relative_url }}" data-feature-modal tabindex="0">
         <div class="protocol-icon">
           <!-- Akka.NET — a parent actor at the top with two children
                and a grandchild; reads as "actor hierarchy" which is
@@ -271,6 +495,22 @@
             <button class="protocol-install-copy copy-btn" data-copy="bowire plugin install Kuestenlogik.Bowire.Protocol.Akka" aria-label="Copy install command for Akka"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></button>
           </div>
         </div>
+        <template class="feature-card-detail">
+          <div class="features-block features-block-reverse">
+            <div class="features-block-text">
+              <h3>Akka.NET</h3>
+              <p class="features-block-lead">A passive mailbox tap means you can watch every <code>Tell</code> in your actor system without changing a line of business code.</p>
+              <p>The <code>BowireTapMailbox</code> wraps Akka.NET's standard mailbox and streams each message into the workbench in real time &mdash; per-actor or globally via the default-mailbox swap. Embedded mode only, since the tap runs in the same process as the <code>ActorSystem</code>; nothing leaves the host unless you choose to expose it.</p>
+              <ul>
+                <li>Mailbox tap (Server-streaming <code>Tap/MonitorMessages</code>) &middot; embedded only</li>
+              </ul>
+              <a class="features-block-docs-link" href="{{ '/docs/protocols/akka.html' | relative_url }}">Read the full docs &rarr;</a>
+            </div>
+            <div class="features-block-screenshot">
+              {% include themed-img.html src="/assets/images/screenshots/streaming.png" alt="Akka.NET BowireTapMailbox streaming live Tell messages" %}
+            </div>
+          </div>
+        </template>
       </a>
 
       <a class="protocol-card protocol-card-coming" href="#roadmap">

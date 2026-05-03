@@ -282,10 +282,20 @@
       document.addEventListener('click', function (e) {
         // Match any element opted into the popup via data-feature-modal,
         // regardless of card type — feature-card under "Why Bowire?",
-        // usp-card under the same section, plus any future card class
-        // that joins the same popup pattern.
+        // usp-card under the same section, protocol-card on the home
+        // page, plus any future card class that joins the same pattern.
         var card = e.target.closest('[data-feature-modal]');
-        if (card && !e.target.closest('a')) { e.preventDefault(); open(card); return; }
+        if (card) {
+          // If the click landed on an <a> *inside* the card (but not the
+          // card itself, when the card is the <a>), let the link own the
+          // navigation. Buttons inside the card (e.g. copy-to-clipboard)
+          // also escape — they handle their own state.
+          var innerLink = e.target.closest('a, button');
+          if (innerLink && innerLink !== card) return;
+          e.preventDefault();
+          open(card);
+          return;
+        }
         if (e.target === modal) close();
         if (e.target.closest('.bowire-feature-modal-close')) close();
       });

@@ -6,6 +6,9 @@ summary: 'The response pane displays the result of a method invocation with synt
 
 The response pane displays the result of a method invocation with syntax highlighting, status information, and action buttons.
 
+<img class="theme-img-dark" src="../images/ui-guide/response-pane-dark.png" alt="Bowire response pane — Result, Response Metadata, Performance, and Tests tabs above the response body">
+<img class="theme-img-light" src="../images/ui-guide/response-pane-light.png" alt="Bowire response pane — Result, Response Metadata, Performance, and Tests tabs above the response body">
+
 ## Unary Responses
 
 For unary calls, the response pane shows:
