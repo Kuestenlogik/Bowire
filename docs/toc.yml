@@ -14,4 +14,4 @@ items:
 - name: Architecture
   href: architecture/
 - name: API Reference
-  href: api/
+  href: api/index.md
