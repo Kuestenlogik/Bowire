@@ -1857,10 +1857,16 @@ body.bowire-docs-mode-standalone .bowire-docs-hero-tagline {
 }
 
 /* Anatomy SVG — width fits the article column, fall-back to img on
-   prerender / object-blocked browsers. */
+   prerender / object-blocked browsers. background:transparent lets
+   the SVG's own theme-coloured backdrop show through instead of the
+   browser-default white that <object> renders against. The lower
+   margin gives the click-map breathing room before the legend list
+   that follows in ui-guide/index.md. */
 .theme-img-dark, .theme-img-light,
 object.theme-img-dark, object.theme-img-light {
     display: block;
     max-width: 100%;
     height: auto;
+    background: transparent;
+    margin: 0 auto 32px;
 }

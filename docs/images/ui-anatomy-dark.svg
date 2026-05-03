@@ -35,6 +35,11 @@
         .annotation:focus { outline: none; }
     </style>
 
+    <!-- Match the DocFX bowire-template body bg so the SVG blends
+         into the doc-site instead of showing the browser default
+         white that <object> renders against. -->
+    <rect width="1600" height="1080" fill="#0f0f17" rx="12"/>
+
     <!-- 1280×720 UI capture sits at (160, 80). -->
     <image href="bowire-method-detail-dark.png" x="160" y="80" width="1280" height="720" />
 
@@ -66,12 +71,14 @@
          ============================================================ -->
     <a xlink:href="../ui-guide/request-pane.html" target="_top" class="annotation" tabindex="0" aria-label="Request Pane — body editor, metadata, schema, code, scripts, history">
         <rect class="region-box" x="488" y="140" width="463" height="598"/>
-        <rect class="panel" x="380" y="6" width="380" height="62"/>
-        <circle class="badge" cx="410" cy="38" r="20"/>
-        <text class="badge-num" x="410" y="38">2</text>
-        <text class="panel-title" x="440" y="33" text-anchor="start">Request Pane</text>
-        <text class="panel-line" x="440" y="55" text-anchor="start">Body · Metadata · Schema · Code · Scripts · History</text>
-        <path class="connector" d="M 570,68 L 720,140"/>
+        <!-- Panel widened (380→580) so the six-tab caption fits without
+             clipping; badge + title shifted left to keep the layout. -->
+        <rect class="panel" x="290" y="6" width="580" height="62"/>
+        <circle class="badge" cx="320" cy="38" r="20"/>
+        <text class="badge-num" x="320" y="38">2</text>
+        <text class="panel-title" x="350" y="33" text-anchor="start">Request Pane</text>
+        <text class="panel-line" x="350" y="55" text-anchor="start">Body · Metadata · Schema · Code · Scripts · History</text>
+        <path class="connector" d="M 580,68 L 720,140"/>
     </a>
 
     <!-- ============================================================
