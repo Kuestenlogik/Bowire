@@ -258,6 +258,19 @@
       <div class="bowire-feature-modal-body"></div>
     </div>
   </div>
+
+  {%- comment -%}
+  Image lightbox — opened by click on a screenshot inside any
+  feature-card popup so the user can inspect the UI at full size.
+  Sits at a higher z-index than the feature-modal so it covers
+  the modal panel; closing it leaves the underlying modal intact.
+  {%- endcomment -%}
+  <div class="bowire-image-lightbox" id="bowire-image-lightbox" aria-hidden="true" inert>
+    <button type="button" class="bowire-image-lightbox-close" aria-label="Close zoom">
+      <svg width="20" height="20" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><path d="M1 1l8 8M9 1l-8 8"/></svg>
+    </button>
+    <img alt="" />
+  </div>
   <script>
     (function () {
       var modal = document.getElementById('bowire-feature-modal');
@@ -302,6 +315,58 @@
       document.addEventListener('keydown', function (e) {
         if (e.key === 'Escape' && modal.classList.contains('is-open')) close();
       });
+
+      // ---- Image lightbox ------------------------------------------
+      // Click on a screenshot inside the popup opens the image in a
+      // full-bleed lightbox. Stops the click from bubbling to the
+      // feature-modal's outside-click handler so closing the lightbox
+      // doesn't also dismiss the underlying modal.
+      var lightbox = document.getElementById('bowire-image-lightbox');
+      var lightboxImg = lightbox.querySelector('img');
+      var lightboxClose = lightbox.querySelector('.bowire-image-lightbox-close');
+      var lightboxLastFocus = null;
+      function openLightbox(img) {
+        lightboxImg.src = img.currentSrc || img.src;
+        lightboxImg.alt = img.alt || '';
+        lightbox.classList.add('is-open');
+        lightbox.setAttribute('aria-hidden', 'false');
+        lightbox.removeAttribute('inert');
+        lightboxLastFocus = document.activeElement;
+        setTimeout(function () { lightboxClose.focus(); }, 30);
+      }
+      function closeLightbox() {
+        lightbox.classList.remove('is-open');
+        lightbox.setAttribute('aria-hidden', 'true');
+        lightbox.setAttribute('inert', '');
+        lightboxImg.removeAttribute('src');
+        if (lightboxLastFocus && typeof lightboxLastFocus.focus === 'function') {
+          lightboxLastFocus.focus();
+        }
+      }
+      document.addEventListener('click', function (e) {
+        // Only screenshots inside an open feature-modal are zoomable —
+        // keeps the cursor-pointer/data-feature-modal click on cards
+        // unaffected on marketing pages.
+        var zoomImg = e.target.closest('.bowire-feature-modal-body .features-block-screenshot img');
+        if (zoomImg) {
+          e.preventDefault();
+          e.stopPropagation();
+          openLightbox(zoomImg);
+          return;
+        }
+        if (lightbox.classList.contains('is-open')) {
+          if (e.target === lightbox || e.target.closest('.bowire-image-lightbox-close')) {
+            e.stopPropagation();
+            closeLightbox();
+          }
+        }
+      }, true);
+      document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape' && lightbox.classList.contains('is-open')) {
+          e.stopPropagation();
+          closeLightbox();
+        }
+      }, true);
     })();
   </script>
 
