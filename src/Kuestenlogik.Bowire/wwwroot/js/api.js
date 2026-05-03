@@ -19,12 +19,24 @@
         // gRPC (via reflection), SignalR (via hub metadata), REST (via
         // API explorer), WebSocket, SSE, etc. on the host itself.
         try {
-            const resp = await fetch(`${config.prefix}/api/services`);
-            if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-            services = await resp.json();
+            // Abort after 12 s so a hung server-side discovery (e.g. a
+            // stuck plugin probing an unreachable target URL) can never
+            // wedge the UI in the loading spinner. Failure surfaces via
+            // the discovery-failed landing card instead.
+            const ctrl = new AbortController();
+            const timer = setTimeout(() => ctrl.abort(), 12000);
+            try {
+                const resp = await fetch(`${config.prefix}/api/services`, { signal: ctrl.signal });
+                if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+                services = await resp.json();
+            } finally {
+                clearTimeout(timer);
+            }
         } catch (e) {
             services = [];
-            discoveryErrors['(embedded)'] = e.message;
+            discoveryErrors['(embedded)'] = e.name === 'AbortError'
+                ? 'Discovery timed out after 12 s'
+                : e.message;
         }
 
         // Then fan out per configured URL for protocols that need a
@@ -153,8 +165,13 @@
         if (isMqtt) {
             addConsoleEntry({ type: 'request', method: 'MQTT Discovery', status: 'Scanning', body: 'Subscribing to # at ' + url + ' (up to 3s)...' });
         }
+        // Per-URL discovery timeout — stops one unreachable server
+        // (TCP-refused, DNS-fail, hung HTTPS handshake) from wedging
+        // the whole landing page in the loading spinner.
+        const ctrl = new AbortController();
+        const timer = setTimeout(() => ctrl.abort(), 12000);
         try {
-            const resp = await fetch(`${config.prefix}/api/services${serverUrlParam(false, url)}`);
+            const resp = await fetch(`${config.prefix}/api/services${serverUrlParam(false, url)}`, { signal: ctrl.signal });
             if (!resp.ok) {
                 connectionStatuses[url] = 'error';
                 discoveryErrors[url] = 'HTTP ' + resp.status + ' ' + resp.statusText;
@@ -183,8 +200,12 @@
             return [];
         } catch (e) {
             connectionStatuses[url] = 'error';
-            discoveryErrors[url] = e.message || 'Connection failed';
+            discoveryErrors[url] = e.name === 'AbortError'
+                ? 'Discovery timed out after 12 s'
+                : (e.message || 'Connection failed');
             return [];
+        } finally {
+            clearTimeout(timer);
         }
     }
 
