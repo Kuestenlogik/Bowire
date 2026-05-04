@@ -3302,6 +3302,24 @@ button.comparison-bestfor-card.active .comparison-bestfor-name {
         display: block;
     }
 
+    /* On a phone the right-hand action row had five icons (search,
+       home, theme, github, burger) — burger ended up flush against
+       the viewport edge and the row visually crashed against the
+       window frame. Hide search / home / github on small screens
+       (those routes still live inside the burger menu's nav links)
+       and keep theme + burger so the user can still toggle dark/
+       light without opening the menu. Adds breathing room on the
+       right edge for the burger itself. */
+    .header-actions .bowire-search-trigger,
+    .header-actions .nav-home,
+    .header-actions .nav-github {
+        display: none;
+    }
+    .header-actions {
+        gap: 8px;
+        padding-right: 4px;
+    }
+
     .feature-grid {
         grid-template-columns: 1fr;
     }
@@ -3326,6 +3344,80 @@ button.comparison-bestfor-card.active .comparison-bestfor-name {
     .comparison-table td {
         padding: 10px 12px;
         font-size: 0.8125rem;
+    }
+
+    /* Mobile comparison table: container scrolls horizontally instead
+       of crushing the feature-name column down to ~30 px (causing the
+       "M\nul\nti\n-p\nro\nto…" letter-per-line wrap that broke the
+       page width). The feature column is sticky so users can scroll
+       left/right to compare tools without losing the row label, and a
+       hint above tells them they can scroll. */
+    .comparison-table-wrap {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        position: relative;
+    }
+    .comparison-table {
+        min-width: 720px;
+        table-layout: fixed;
+    }
+    .comparison-feature-col,
+    .comparison-table th.comparison-feature-col,
+    .comparison-table td.comparison-feature {
+        position: sticky;
+        left: 0;
+        z-index: 2;
+        background: var(--bg);
+        min-width: 200px;
+        max-width: 240px;
+    }
+    .comparison-table thead th {
+        background: var(--bg);
+    }
+    /* Make the Bowire column read as the subject of the comparison —
+       'vs.' badge above the column header so the table reads "Bowire
+       vs. Postman / Scalar / …" instead of just six tool names side
+       by side. Hidden on desktop where the accent-border on the
+       column already does the job. */
+    .comparison-table thead th.comparison-bowire .comparison-brand::before {
+        content: "vs. ";
+        color: var(--text-secondary);
+        font-weight: 500;
+        margin-right: 2px;
+    }
+    /* Hint above the table that horizontal scroll is the way to see
+       the rest. Pure CSS — uses the wrap's ::before. */
+    .comparison-table-wrap::before {
+        content: "← scroll horizontally to compare more tools →";
+        display: block;
+        text-align: center;
+        font-size: 0.75rem;
+        color: var(--text-secondary);
+        padding: 8px 12px;
+        border-bottom: 1px solid var(--border);
+        background: var(--bg-elevated);
+    }
+
+    /* Quickstart launch stepper: stack the three steps vertically on
+       narrow viewports so step-1's "Pick your boat" label and step-3's
+       "Run" both stay fully visible (otherwise they got clipped at the
+       viewport edges). Connectors flip from horizontal to vertical
+       bars between the rows. */
+    .launch-steps {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0;
+    }
+    .launch-step {
+        justify-content: flex-start;
+        padding: 10px 12px;
+    }
+    .launch-step-connector {
+        flex: 0 0 24px;
+        width: 2px;
+        height: 24px;
+        align-self: center;
+        margin: 0;
     }
 
     .hero-actions {
