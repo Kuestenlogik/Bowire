@@ -164,7 +164,7 @@ async function capture(target) {
         },
         graphql: { url: 'https://localhost:5115/bowire', methodText: 'OnPortCallChanged',  waitMs: 6000, shotName: 'streaming-graphql' },
         sse:     { url: 'https://localhost:5114/bowire', methodText: 'Slow keep-alive',   waitMs: 12000, shotName: 'streaming-sse' },
-        ws:      { url: 'https://localhost:5113/bowire', methodText: 'echo',               waitMs: 5000, shotName: 'streaming-websocket' },
+        ws:      { url: 'https://localhost:5113/bowire', methodText: '/ws/ship-tracker',  waitMs: 8000, shotName: 'streaming-websocket' },
         mqtt:    { url: 'https://localhost:5117/bowire', methodText: 'subscribe',          waitMs: 5000, shotName: 'streaming-mqtt' },
         socketio:{ url: 'https://localhost:5118/bowire', methodText: 'subscribe',          waitMs: 5000, shotName: 'streaming-socketio' },
     };
