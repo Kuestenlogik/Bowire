@@ -3360,22 +3360,20 @@ button.comparison-bestfor-card.active .comparison-bestfor-name {
         display: block;
     }
 
-    /* On a phone the right-hand action row had five icons (search,
-       home, theme, github, burger) crammed against the viewport edge.
-       Hide search / home / github on small screens — those routes
-       still live inside the burger menu's nav links — and keep theme
-       + burger so the user can still toggle dark/light without
-       opening the menu. The container's own 16 px padding is what
-       gives the burger its right-edge breathing room (matching the
-       logo's left-edge breathing room exactly), so don't add an
-       extra padding here. */
-    .header-actions .bowire-search-trigger,
-    .header-actions .nav-home,
-    .header-actions .nav-github {
-        display: none;
-    }
+    /* Mobile right-hand action row: keep all five icons (search,
+       home, theme, github, burger) — there's enough space once the
+       row is tightened up. The burger has a 3 px stroke padding
+       inside its 24×24 SVG box (lines run x1=3..x2=21), while the
+       logo's circle hits the SVG edge flush, so without correction
+       the burger's visual stroke sat 3 px further from the viewport
+       edge than the logo's circle did. Pull the burger out by
+       margin-right:-3 px so the right-edge breathing room matches
+       the logo's left-edge breathing room exactly. */
     .header-actions {
-        gap: 8px;
+        gap: 6px;
+    }
+    .mobile-menu-toggle {
+        margin-right: -3px;
     }
 
     .feature-grid {
