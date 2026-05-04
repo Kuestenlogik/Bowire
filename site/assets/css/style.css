@@ -3357,6 +3357,17 @@ button.comparison-bestfor-card.active .comparison-bestfor-name {
         margin-right: -3px;
     }
 
+    /* Belt-and-suspenders against horizontal overflow on phones —
+       any single oversized element (a stretched grid cell, a long
+       inline code block, a Pagefind result with a wide URL) used to
+       widen the body and produce a dark gutter on the right edge,
+       which made the entire layout look shifted left and the burger
+       look 'centred' relative to the visible area. Clamp body
+       overflow-x so a runaway child can't push siblings off-screen. */
+    html, body {
+        overflow-x: hidden;
+    }
+
     .feature-grid {
         grid-template-columns: 1fr;
     }
@@ -3384,39 +3395,27 @@ button.comparison-bestfor-card.active .comparison-bestfor-name {
     }
 
     /* Mobile comparison table — only two data columns fit on a phone
-       (Bowire + one competitor). Both feature-name + Bowire stay
-       pinned (Bowire is the subject of the comparison and must never
-       scroll out of view); a JS-injected select above the table lets
-       the reader page through Postman / Scalar / Swashbuckle /
-       Insomnia / Bruno as the right-hand column. The default-hide on
-       columns 3..7 keeps only the active competitor visible.
+       (Bowire + one competitor). A JS-injected select above the
+       table lets the reader page through Postman / Scalar /
+       Swashbuckle / Insomnia / Bruno as the right-hand column. With
+       only three columns rendered (feature + Bowire + active tool)
+       there's no horizontal scrolling, so we don't need sticky or
+       fixed table-layout — the three columns just share the full
+       width of the wrap and content sizes itself naturally.
 
        Column order in the markup:
          1 = feature name      4 = Scalar       7 = Bruno
          2 = Bowire            5 = Swashbuckle
          3 = Postman           6 = Insomnia
     */
-    .comparison-table {
-        table-layout: fixed;
+    .comparison-table-wrap {
+        overflow: hidden;
     }
     .comparison-table th.comparison-feature-col,
     .comparison-table td.comparison-feature {
-        position: sticky;
-        left: 0;
-        z-index: 2;
-        background: var(--bg);
-        min-width: 160px;
-        max-width: 50vw;
-    }
-    .comparison-table th.comparison-bowire,
-    .comparison-table td.comparison-bowire {
-        position: sticky;
-        /* Anchored next to the feature column. The exact left value
-           is the feature column's min-width so the bowire column
-           lines up flush with the right edge of the sticky cluster. */
-        left: 160px;
-        z-index: 1;
-        background: var(--bg);
+        max-width: 40vw;
+        word-break: normal;
+        overflow-wrap: break-word;
     }
     /* Hide every non-active competitor column. The data-comparison-tool
        attribute on <html> is set by JS (default 'postman') and switched
