@@ -2063,8 +2063,41 @@ pre > code {
     letter-spacing: 0.02em;
 }
 @media (max-width: 640px) {
+    /* On phones the flex-wrap strip turned into a 7-cell grid where
+       the implicit "vs." between Bowire and the competitors got lost
+       — readers couldn't tell the section was a comparison. Re-layout
+       as: Bowire card on its own row, an explicit horizontal "vs."
+       divider, then the five competitor cards in a 2-column grid. */
+    .comparison-bestfor-strip {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+    }
+    .comparison-bestfor-strip > .comparison-bestfor-card-bowire {
+        grid-column: 1 / -1;
+    }
     .comparison-bestfor-strip > .comparison-bestfor-vs {
-        display: none;
+        grid-column: 1 / -1;
+        align-self: stretch;
+        text-align: center;
+        padding: 6px 0;
+        font-size: 0.95rem;
+        position: relative;
+    }
+    .comparison-bestfor-strip > .comparison-bestfor-vs::before,
+    .comparison-bestfor-strip > .comparison-bestfor-vs::after {
+        content: "";
+        position: absolute;
+        top: 50%;
+        width: 64px;
+        height: 1px;
+        background: var(--border);
+    }
+    .comparison-bestfor-strip > .comparison-bestfor-vs::before {
+        right: calc(50% + 28px);
+    }
+    .comparison-bestfor-strip > .comparison-bestfor-vs::after {
+        left: calc(50% + 28px);
     }
 }
 .comparison-bestfor-card {
@@ -3346,57 +3379,98 @@ button.comparison-bestfor-card.active .comparison-bestfor-name {
         font-size: 0.8125rem;
     }
 
-    /* Mobile comparison table: container scrolls horizontally instead
-       of crushing the feature-name column down to ~30 px (causing the
-       "M\nul\nti\n-p\nro\nto…" letter-per-line wrap that broke the
-       page width). The feature column is sticky so users can scroll
-       left/right to compare tools without losing the row label, and a
-       hint above tells them they can scroll. */
-    .comparison-table-wrap {
-        overflow-x: auto;
-        -webkit-overflow-scrolling: touch;
-        position: relative;
-    }
+    /* Mobile comparison table — only two data columns fit on a phone
+       (Bowire + one competitor). Both feature-name + Bowire stay
+       pinned (Bowire is the subject of the comparison and must never
+       scroll out of view); a JS-injected select above the table lets
+       the reader page through Postman / Scalar / Swashbuckle /
+       Insomnia / Bruno as the right-hand column. The default-hide on
+       columns 3..7 keeps only the active competitor visible.
+
+       Column order in the markup:
+         1 = feature name      4 = Scalar       7 = Bruno
+         2 = Bowire            5 = Swashbuckle
+         3 = Postman           6 = Insomnia
+    */
     .comparison-table {
-        min-width: 720px;
         table-layout: fixed;
     }
-    .comparison-feature-col,
     .comparison-table th.comparison-feature-col,
     .comparison-table td.comparison-feature {
         position: sticky;
         left: 0;
         z-index: 2;
         background: var(--bg);
-        min-width: 200px;
-        max-width: 240px;
+        min-width: 160px;
+        max-width: 50vw;
     }
-    .comparison-table thead th {
+    .comparison-table th.comparison-bowire,
+    .comparison-table td.comparison-bowire {
+        position: sticky;
+        /* Anchored next to the feature column. The exact left value
+           is the feature column's min-width so the bowire column
+           lines up flush with the right edge of the sticky cluster. */
+        left: 160px;
+        z-index: 1;
         background: var(--bg);
     }
-    /* Make the Bowire column read as the subject of the comparison —
-       'vs.' badge above the column header so the table reads "Bowire
-       vs. Postman / Scalar / …" instead of just six tool names side
-       by side. Hidden on desktop where the accent-border on the
-       column already does the job. */
-    .comparison-table thead th.comparison-bowire .comparison-brand::before {
-        content: "vs. ";
-        color: var(--text-secondary);
-        font-weight: 500;
-        margin-right: 2px;
+    /* Hide every non-active competitor column. The data-comparison-tool
+       attribute on <html> is set by JS (default 'postman') and switched
+       by the dropdown above the table. */
+    .comparison-table th:nth-child(n+3),
+    .comparison-table td:nth-child(n+3) {
+        display: none;
     }
-    /* Hint above the table that horizontal scroll is the way to see
-       the rest. Pure CSS — uses the wrap's ::before. */
-    .comparison-table-wrap::before {
-        content: "← scroll horizontally to compare more tools →";
-        display: block;
-        text-align: center;
-        font-size: 0.75rem;
-        color: var(--text-secondary);
-        padding: 8px 12px;
-        border-bottom: 1px solid var(--border);
+    [data-comparison-tool="postman"]    .comparison-table th:nth-child(3),
+    [data-comparison-tool="postman"]    .comparison-table td:nth-child(3),
+    [data-comparison-tool="scalar"]     .comparison-table th:nth-child(4),
+    [data-comparison-tool="scalar"]     .comparison-table td:nth-child(4),
+    [data-comparison-tool="swashbuckle"] .comparison-table th:nth-child(5),
+    [data-comparison-tool="swashbuckle"] .comparison-table td:nth-child(5),
+    [data-comparison-tool="insomnia"]   .comparison-table th:nth-child(6),
+    [data-comparison-tool="insomnia"]   .comparison-table td:nth-child(6),
+    [data-comparison-tool="bruno"]      .comparison-table th:nth-child(7),
+    [data-comparison-tool="bruno"]      .comparison-table td:nth-child(7) {
+        display: table-cell;
+    }
+    /* The dropdown is appended by main.js as .comparison-tool-picker;
+       label + select sit above the table on a flush bar. */
+    .comparison-tool-picker {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 12px;
         background: var(--bg-elevated);
+        border-bottom: 1px solid var(--border);
+        font-size: 0.8125rem;
+        color: var(--text-secondary);
     }
+    .comparison-tool-picker label {
+        font-weight: 600;
+        color: var(--text);
+        flex-shrink: 0;
+    }
+    .comparison-tool-picker select {
+        flex: 1 1 auto;
+        background: var(--bg);
+        color: var(--text);
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        padding: 6px 28px 6px 10px;
+        font-size: 0.9rem;
+        font-family: inherit;
+        cursor: pointer;
+        appearance: none;
+        -webkit-appearance: none;
+        background-image: linear-gradient(45deg, transparent 50%, var(--text-secondary) 50%),
+                          linear-gradient(135deg, var(--text-secondary) 50%, transparent 50%);
+        background-position: calc(100% - 14px) 50%, calc(100% - 9px) 50%;
+        background-size: 5px 5px;
+        background-repeat: no-repeat;
+    }
+    /* Small "Bowire vs." prefix in the picker label so it's obvious
+       the selected dropdown value is what Bowire is being compared
+       against — independent of the table header itself. */
 
     /* Quickstart launch stepper: stack the three steps vertically on
        narrow viewports so step-1's "Pick your boat" label and step-3's

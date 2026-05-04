@@ -45,6 +45,52 @@ if (toggle && nav) {
 })();
 
 // ====================================================================
+// Comparison table — mobile tool-picker. Only two data columns fit on
+// a phone: the feature names (sticky) and Bowire (sticky next to it).
+// The third column rotates through the five competitors via a select
+// above the table; the active value lands on <html data-comparison-
+// tool="…"> and the CSS shows the matching column.
+// ====================================================================
+(function () {
+    const wrap = document.querySelector('.comparison-table-wrap');
+    if (!wrap) return;
+    // [id, label] pairs match the markup column order in comparison.html
+    // (Postman → 3rd column, Scalar → 4th, …). Keep these in lockstep
+    // with the CSS [data-comparison-tool] selectors above.
+    const tools = [
+        ['postman',     'Postman'],
+        ['scalar',      'Scalar'],
+        ['swashbuckle', 'Swashbuckle'],
+        ['insomnia',    'Insomnia'],
+        ['bruno',       'Bruno'],
+    ];
+    const picker = document.createElement('div');
+    picker.className = 'comparison-tool-picker';
+    const labelEl = document.createElement('label');
+    labelEl.htmlFor = 'comparison-tool-select';
+    labelEl.textContent = 'Bowire vs.';
+    const select = document.createElement('select');
+    select.id = 'comparison-tool-select';
+    for (const [id, label] of tools) {
+        const opt = document.createElement('option');
+        opt.value = id;
+        opt.textContent = label;
+        select.appendChild(opt);
+    }
+    picker.appendChild(labelEl);
+    picker.appendChild(select);
+    wrap.insertBefore(picker, wrap.firstChild);
+
+    // Default to the first competitor; CSS hides the rest.
+    const initial = tools[0][0];
+    document.documentElement.setAttribute('data-comparison-tool', initial);
+    select.value = initial;
+    select.addEventListener('change', () => {
+        document.documentElement.setAttribute('data-comparison-tool', select.value);
+    });
+})();
+
+// ====================================================================
 // Comparison table — expandable rows with per-item sub-rows. Click on
 // the chevron in the feature column toggles visibility of all sub-rows
 // sharing the same data-group. Sub-rows sit directly after the trigger
