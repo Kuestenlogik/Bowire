@@ -58,17 +58,11 @@ app.Run();
 - **Standalone or embedded** — `bowire` CLI tool, OCI container, or `app.MapBowire()` next to your services. Same engine.
 - **Plugins** — extend with `IBowireProtocol`. First-party plugins ship as separate NuGet packages so the host stays light (DIS, UDP, Socket.IO, OData, …).
 
-## Why this and not Postman / grpcurl / Insomnia
+## Why this and not Postman / Scalar / Insomnia / Bruno / grpcurl
 
-| | Bowire | Postman | grpcurl |
-|---|---|---|---|
-| Multi-protocol (gRPC + REST + WS + MQTT + …) | yes | partial | gRPC only |
-| Embedded into your service | yes | no | no |
-| Local-first, no cloud account | yes | no | yes |
-| Recordings → mocks → replay end-to-end | yes | no | no |
-| Open source, plugin architecture | yes (Apache 2.0) | no | yes |
-
-→ Full feature-by-feature breakdown in the [Why Bowire](https://kuestenlogik.github.io/Bowire/why-bowire.html) tour.
+→ Side-by-side comparison with every major API tool — positioning,
+features, license, price — lives on the site under
+[Pick the right tool](https://kuestenlogik.github.io/Bowire/#comparison).
 
 ## Documentation
 
