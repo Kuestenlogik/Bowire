@@ -1329,19 +1329,35 @@
                         persistExpandedServices();
                         render();
                     }
-                },
-                    el('span', {
-                        className: `bowire-service-chevron ${isExpanded ? 'expanded' : ''}`,
-                        innerHTML: svgIcon('chevron')
-                    }),
-                    el('span', { className: 'bowire-service-name', textContent: shortName, title: svc.name }),
-                    el('span', {
-                        className: 'bowire-method-count',
-                        textContent: query
-                            ? (filteredMethods.length + ' / ' + svc.methods.length)
-                            : String(svc.methods.length)
-                    })
-                );
+                });
+                headerEl.appendChild(el('span', {
+                    className: `bowire-service-chevron ${isExpanded ? 'expanded' : ''}`,
+                    innerHTML: svgIcon('chevron')
+                }));
+
+                // Protocol icon (leading) — only when more than one
+                // protocol is loaded; with a single plugin the icon
+                // would just repeat for every group and waste space.
+                // Helps the user tell mixed gRPC / REST / Kafka /
+                // DIS / Akka sidebars apart at a glance.
+                if (protocols.length > 1) {
+                    var svcProto = protocols.find(function (p) { return p.id === svc.source; });
+                    if (svcProto) {
+                        headerEl.appendChild(el('span', {
+                            className: 'bowire-service-proto-icon',
+                            title: svcProto.name,
+                            innerHTML: svcProto.icon
+                        }));
+                    }
+                }
+
+                headerEl.appendChild(el('span', { className: 'bowire-service-name', textContent: shortName, title: svc.name }));
+                headerEl.appendChild(el('span', {
+                    className: 'bowire-method-count',
+                    textContent: query
+                        ? (filteredMethods.length + ' / ' + svc.methods.length)
+                        : String(svc.methods.length)
+                }));
                 group.appendChild(headerEl);
 
                 const methodList = el('div', { className: `bowire-method-list ${isExpanded ? 'expanded' : ''}` });
