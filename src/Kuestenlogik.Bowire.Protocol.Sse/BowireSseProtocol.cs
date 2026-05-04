@@ -115,16 +115,48 @@ public sealed class BowireSseProtocol : IBowireProtocol, IInlineSseSubscriber
     /// Resolves the SSE endpoint URL from the method's full name and optional JSON body override.
     /// The method FullName is encoded as "SSE{path}" (e.g., "SSE/events/ticker").
     /// </summary>
-    private static string ResolveUrl(string serverUrl, string method, List<string> jsonMessages)
+    private string ResolveUrl(string serverUrl, string method, List<string> jsonMessages)
     {
-        // Extract path from the method full name (format: "SSE/events/ticker")
-        var path = method.StartsWith("SSE", StringComparison.Ordinal)
-            ? method[3..]
-            : method;
+        // The frontend's invokeStreaming sends method.name (the human-readable
+        // label, e.g. 'Slow keep-alive tick…') rather than method.fullName
+        // (the route-bearing 'SSE/events/heartbeat'). Run discovery to recover
+        // the path the same way /api/services would — covers both manual
+        // RegisterEndpoint registrations and Produces("text/event-stream")
+        // auto-discovered endpoints. Fall back to the legacy fullName parse
+        // for callers that still pass the synthesised 'SSE/...' shape.
+        string path;
+        var match = SseEndpointDiscovery.Discover(s_registeredEndpoints, _serviceProvider)
+            .SelectMany(s => s.Methods)
+            .FirstOrDefault(m =>
+                string.Equals(m.Name, method, StringComparison.Ordinal) ||
+                string.Equals(m.FullName, method, StringComparison.Ordinal));
+        if (match is not null)
+        {
+            // FullName is "SSE{path}" — strip the prefix to get the route.
+            path = match.FullName.StartsWith("SSE", StringComparison.Ordinal)
+                ? match.FullName[3..]
+                : match.FullName;
+        }
+        else if (method.StartsWith("SSE", StringComparison.Ordinal))
+        {
+            path = method[3..];
+        }
+        else
+        {
+            path = method.StartsWith('/') ? method : "/" + method;
+        }
 
         var url = serverUrl.TrimEnd('/') + path;
 
-        // Allow URL override from the request body
+        // Allow URL override from the request body. The override is
+        // only honoured when it's an absolute http(s) URL or a path
+        // anchored at root ('/...'). Bare strings — e.g. the form
+        // builder echoes back the schema type name 'string' when the
+        // user never typed anything into an optional field — would
+        // otherwise concatenate to an invalid URI like
+        // 'https://localhost:5114string' and surface as a confusing
+        // 'Invalid port specified' on Execute. Ignoring garbage here
+        // keeps the default endpoint working out of the box.
         if (jsonMessages.Count > 0)
         {
             try
@@ -135,9 +167,11 @@ public sealed class BowireSseProtocol : IBowireProtocol, IInlineSseSubscriber
                     var customUrl = urlProp.GetString();
                     if (!string.IsNullOrEmpty(customUrl))
                     {
-                        url = customUrl.StartsWith("http", StringComparison.OrdinalIgnoreCase)
-                            ? customUrl
-                            : serverUrl.TrimEnd('/') + customUrl;
+                        if (customUrl.StartsWith("http", StringComparison.OrdinalIgnoreCase))
+                            url = customUrl;
+                        else if (customUrl.StartsWith('/'))
+                            url = serverUrl.TrimEnd('/') + customUrl;
+                        // else: bare string, treat as 'no override'
                     }
                 }
             }

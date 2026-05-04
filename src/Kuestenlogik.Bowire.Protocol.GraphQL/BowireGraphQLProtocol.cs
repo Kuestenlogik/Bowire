@@ -353,14 +353,29 @@ public sealed class BowireGraphQLProtocol : IBowireProtocol
 
                 // Channel envelopes from the WebSocket plugin look like
                 // { type: "text"|"binary"|"close", text?, base64?, ... }.
-                // Unwrap text frames into their JSON-RPC payload.
+                // Unwrap text frames into their JSON-RPC payload. The
+                // WebSocket plugin parses text frames into a JsonElement
+                // when they're valid JSON (so the UI shows nested objects
+                // instead of escaped strings) and falls back to a raw
+                // string only on parse failure — handle both shapes.
                 if (msg.ValueKind == JsonValueKind.Object && msg.TryGetProperty("type", out var envType) &&
                     envType.GetString() == "text" && msg.TryGetProperty("text", out var inner))
                 {
-                    var innerText = inner.GetString();
-                    if (string.IsNullOrEmpty(innerText)) continue;
-                    try { msg = JsonSerializer.Deserialize<JsonElement>(innerText); }
-                    catch { continue; }
+                    if (inner.ValueKind == JsonValueKind.String)
+                    {
+                        var innerText = inner.GetString();
+                        if (string.IsNullOrEmpty(innerText)) continue;
+                        try { msg = JsonSerializer.Deserialize<JsonElement>(innerText); }
+                        catch { continue; }
+                    }
+                    else if (inner.ValueKind == JsonValueKind.Object)
+                    {
+                        msg = inner.Clone();
+                    }
+                    else
+                    {
+                        continue;
+                    }
                 }
 
                 if (msg.ValueKind != JsonValueKind.Object) continue;

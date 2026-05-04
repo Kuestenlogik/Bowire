@@ -17,6 +17,11 @@ const { chromium } = require('@playwright/test');
 const path = require('path');
 const fs = require('fs');
 
+// Node-side fetch traffic generators (e.g. graphql) hit the sample over
+// https with a self-signed dev cert. Skip cert validation for the
+// capture process so the mutation goes through.
+process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
+
 const OUT = path.resolve(__dirname, '..', 'site', 'assets', 'images', 'screenshots');
 const DOCS_OUT = path.resolve(__dirname, '..', 'docs', 'images', 'screenshots');
 for (const dir of [OUT, DOCS_OUT]) if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
@@ -159,26 +164,24 @@ async function capture(target) {
             // GraphQL HarborSubscription emits on store.PortCallChanged.
             // Stand-alone GraphQL sample has no REST endpoint to PATCH —
             // we trigger the same store from a GraphQL mutation instead.
-            traffic: async (page) => {
-                // PortCallStatus values per the sample's HarborDomain.cs:
-                // SCHEDULED, APPROACHING, DOCKED, DEPARTING, COMPLETED,
-                // CANCELLED. Mutation lives at HarborMutation.
-                // updatePortCallStatus on id 1.
+            // Node.js-side fetch (not page.evaluate) so CORS doesn't
+            // block the cross-origin :5079→:5115 request inside the
+            // browser context.
+            traffic: async () => {
                 const statuses = ['APPROACHING', 'DOCKED', 'DEPARTING', 'COMPLETED'];
-                const idx = Math.floor(Math.random() * statuses.length);
-                await page.evaluate(async (status) => {
-                    await fetch('https://localhost:5115/graphql', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ query: `mutation { updatePortCallStatus(id: 1, status: ${status}) { id status } }` }),
-                    }).catch(() => {});
-                }, statuses[idx]);
+                const status = statuses[Math.floor(Math.random() * statuses.length)];
+                await fetch('https://localhost:5115/graphql', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ query: `mutation { updatePortCallStatus(id: 1, status: ${status}) { id status } }` }),
+                }).catch(() => {});
             },
         },
-        graphql: { url: 'https://localhost:5115/bowire', methodText: 'OnPortCallChanged',  waitMs: 6000, shotName: 'streaming-graphql' },
         sse:     { url: 'https://localhost:5114/bowire', methodText: 'Slow keep-alive',   waitMs: 12000, shotName: 'streaming-sse' },
         ws:      { url: 'https://localhost:5113/bowire', methodText: '/ws/ship-tracker',  waitMs: 8000, shotName: 'streaming-websocket' },
-        mqtt:    { url: 'https://localhost:5117/bowire', methodText: 'subscribe',          waitMs: 5000, shotName: 'streaming-mqtt' },
+        // MQTT sample is a broker + publisher with no embedded /bowire — point
+        // a standalone bowire CLI at it: `bowire --port 5079 --url mqtt://localhost:1883`.
+        mqtt:    { url: 'http://localhost:5079/bowire',  methodText: 'harbor/crane/1/status', waitMs: 7000, shotName: 'streaming-mqtt' },
         socketio:{ url: 'https://localhost:5118/bowire', methodText: 'subscribe',          waitMs: 5000, shotName: 'streaming-socketio' },
     };
     const list = wanted.size > 0

@@ -2,6 +2,25 @@
 
 ## Completed
 
+### v1.0.7 — Streaming-fix release (2026-05-04)
+- [x] **GraphQL `graphql-transport-ws` subscriptions**: fixed unwrap mismatch with the WebSocket plugin's nested-JSON envelope. Subscriptions now accept both shapes (parsed object and legacy escaped string). Bug present since 1.0.0.
+- [x] **SSE `Invalid port specified`** on Execute — frontend sends `method.name`, plugin expected `method.fullName`. Resolver now reuses `SseEndpointDiscovery.Discover` so manual `RegisterEndpoint` *and* `Produces("text/event-stream")` auto-discovered routes both resolve correctly.
+- [x] **SSE garbage `url` overrides ignored** — bare schema-type-name strings from the form-builder no longer concatenate to a malformed URI.
+- [x] **Protocol-card screenshots dedicated** for GraphQL, SSE, MQTT (replacing the shared `streaming.png` placeholder). Capture script gains a Node-side traffic generator for cross-origin GraphQL mutations.
+
+### v1.0.6 — Plugin hint URLs + `--disable-plugin` (2026-05-04)
+- [x] **`<plugin-id>@<url>` hint syntax** routes a single URL straight to the named plugin and skips every other plugin's discovery probe. Saves the ~12 s gRPC HTTP/2 handshake when the URL belongs to a non-gRPC service. Userinfo (`https://user:pass@host`) and email-style strings pass through untouched.
+- [x] **`--disable-plugin <id>` CLI flag** (and `Bowire:DisabledPlugins` appsettings key) excludes named plugins from the assembly scan at startup. Repeatable + comma-separated forms both supported.
+
+### v1.0.4 / v1.0.5 — SignalR streaming fixes (2026-05-04)
+- [x] **Hub URL resolution** — `ResolveHubUrl` now uses the discovered service's `Package` field (the configured `MapHub<T>` route) instead of the literal display name.
+- [x] **Empty-body invocation** — `ParseArguments` returns zero args for an empty form body so zero-parameter hub methods (e.g. `SubscribeToChanges([EnumeratorCancellation] CancellationToken)`) no longer fail server-side with a wrong-argument-count error.
+
+### v1.0.3 — Generalised localhost-cert trust + WebSocket plugin opt-in (2026-05-04)
+- [x] **`Bowire:TrustLocalhostCert`** global flag (was SignalR-specific). Per-plugin override `Bowire:{pluginId}:TrustLocalhostCert` retained as escape hatch.
+- [x] **WebSocket plugin** picks up the same opt-in for `wss://localhost`.
+- [x] **`Kuestenlogik.Bowire.Auth.LocalhostCertTrust`** owns loopback URL check + config lookup.
+
 ### Public go-live (v0.9.4)
 - [x] **Package prefix rename** `KL.Bowire.*` → `Kuestenlogik.Bowire.*`. The original 4-letter `KL.*` prefix was rejected by nuget.org (4-char minimum), and `Bowire.*` standalone was caught by the typosquat-protection block. The longer `Kuestenlogik.*` prefix sailed through. CLI command name stayed as `bowire` — only the package IDs and namespaces moved.
 - [x] **License sweep**: Apache-2.0 LICENSE files re-centred above the Apache header axis, copyright line updated to `Copyright 2026 Küstenlogik` (with ü). SPDX `// Copyright 2026 Küstenlogik` + `// SPDX-License-Identifier: Apache-2.0` headers on all 207 .cs source files. `<Copyright>` baked into every .nupkg's metadata via `Directory.Build.props`. Identifiers (namespaces, package IDs, GitHub-org slug, URLs) deliberately stay ASCII.

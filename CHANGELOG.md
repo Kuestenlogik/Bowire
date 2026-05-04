@@ -1,5 +1,48 @@
 # Changelog
 
+## v1.0.7 — GraphQL/SSE streaming fixes (2026-05-04)
+
+### Fixes
+- **GraphQL plugin: subscriptions over `graphql-transport-ws`**.
+  The unwrap path expected the WebSocket plugin to deliver text
+  frames as escaped JSON strings, but the WebSocket plugin parses
+  valid JSON into a nested `JsonElement` (so the UI shows clean
+  nested objects instead of `\"`-escaped strings). The mismatch
+  surfaced as `JsonElementWrongTypeException` on the very first
+  `connection_ack` and bubbled up as "Stream error occurred." in
+  the UI. Subscriptions now accept both shapes — the inline
+  parsed object and the legacy escaped string. Bug present since
+  1.0.0 (the GraphQL ws path was added before the WebSocket
+  plugin's nested-JSON envelope shipped).
+- **SSE plugin: `Invalid port specified` on Execute**. The frontend's
+  `invokeStreaming` passes `method.name` (the human-readable label,
+  e.g. `Slow keep-alive tick…`), not `method.fullName` (the
+  route-bearing `SSE/events/heartbeat`). The SSE plugin's URL
+  resolver expected the latter and fell through to a default that
+  concatenated the prose into the URI, producing things like
+  `https://localhost:5114Slow keep-alive…`. Resolver now runs the
+  same discovery path as `/api/services` and matches on either
+  shape — covers manual `RegisterEndpoint` *and*
+  `Produces("text/event-stream")` auto-discovered routes.
+- **SSE plugin: garbage `url` overrides ignored**. When an
+  optional URL-override field in the form pane was left untouched,
+  the form builder was echoing the schema type name `string` back
+  as the value, which then concatenated to a malformed URI. The
+  resolver now only honours `http(s)://…` absolutes or paths
+  anchored at `/`; bare strings fall through to the discovered
+  default. The form-builder echo itself is still being tracked.
+
+### Site / docs
+- **Protocol cards**: dedicated streaming screenshots replace the
+  shared `streaming.png` placeholder for **GraphQL**, **SSE**, and
+  **MQTT** — each card popup now shows its own protocol's frame
+  pane in action (subscription emit, heartbeat tick, retained-flag
+  publish).
+- Capture script (`scripts/capture-builtin-screenshots.js`) gains a
+  Node-side traffic generator so the GraphQL run can fire
+  `updatePortCallStatus` mutations against the running sample
+  without tripping the browser's same-origin policy.
+
 ## v1.0.6 — Plugin hint URL syntax + `--disable-plugin` (2026-05-04)
 
 ### Adds
