@@ -1,5 +1,18 @@
 # Changelog
 
+## v1.0.5 — SignalR no-arg streaming fix (2026-05-04)
+
+### Fixes
+- SignalR plugin's `ParseArguments` mapped a "{}" form body to a
+  single positional `null` arg, which made every zero-parameter
+  hub method (e.g. `SubscribeToChanges([EnumeratorCancellation]
+  CancellationToken)`) fail server-side with "Failed to invoke …
+  due to an error on the server" — the SignalR runtime rejected
+  the wrong-argument-count call before the streamer ever ran.
+  Detect the empty-body case up front and return zero args. Hub
+  methods that *do* take parameters keep the existing form-unfold
+  path unchanged.
+
 ## v1.0.4 — SignalR hub-URL resolution fix (2026-05-04)
 
 ### Fixes

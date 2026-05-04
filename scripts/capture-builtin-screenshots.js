@@ -25,7 +25,8 @@ const THEME = (process.env.THEME || 'dark').toLowerCase();
 
 function log(m) { console.log(new Date().toISOString().slice(11, 19), m); }
 
-async function capture({ url, methodText, waitMs, shotName }) {
+async function capture(target) {
+    const { url, methodText, waitMs, shotName } = target;
     log(`---- ${shotName} (${THEME}) ----`);
     const browser = await chromium.launch({ headless: true });
     const ctx = await browser.newContext({
@@ -59,25 +60,47 @@ async function capture({ url, methodText, waitMs, shotName }) {
     await page.locator('.bowire-method-item', { hasText: methodText }).first().click();
     await page.waitForTimeout(400);
 
-    // Sample servers usually need at least one valid id in the form
-    // (gRPC WatchCrane needs an existing crane_id). Fill every empty
-    // text/number input in the request pane with "1" so a default
-    // Execute hits the first seeded record. Skip selects / checkboxes
-    // / readonly.
+    // Sample servers occasionally need at least one valid id in the
+    // form (gRPC WatchCrane needs an existing crane_id). Fill empty
+    // *numeric* inputs with "1" so a default Execute hits the first
+    // seeded record. Skip URL / text / select / readonly — those
+    // either default to the right value (hub URL on SSE / WebSocket)
+    // or aren't safe to populate with a placeholder integer.
     const inputs = await page.locator('.bowire-pane input, .bowire-pane textarea').all();
     for (const inp of inputs) {
         const tag = await inp.evaluate(e => e.tagName);
         const type = (await inp.getAttribute('type') || '').toLowerCase();
         const readonly = await inp.getAttribute('readonly');
         const value = await inp.inputValue().catch(() => '');
+        const placeholder = (await inp.getAttribute('placeholder') || '').toLowerCase();
         if (readonly !== null || value) continue;
         if (tag === 'INPUT' && (type === 'checkbox' || type === 'radio' || type === 'select' || type === 'submit' || type === 'button')) continue;
+        const looksNumeric = type === 'number' || /int|long|float|double|number|count|id\b|size|length/.test(placeholder);
+        if (!looksNumeric) continue;
         await inp.fill('1').catch(() => {});
     }
 
     await page.locator('.bowire-execute-btn, #bowire-execute-btn').first().click();
     log(`  stream started — waiting ${waitMs}ms`);
+
+    // Optional: parallel HTTP request loop that nudges the sample
+    // server into emitting events while the screen is captured (for
+    // event-driven streams like SignalR's SubscribeToChanges or
+    // GraphQL subscriptions, which sit silent without external
+    // traffic). The traffic function is invoked every 1.5 s for the
+    // duration of the wait window.
+    let trafficStop = null;
+    if (typeof trafficUrl === 'function') {
+        // forwarded through closure
+    }
+    if (target.traffic) {
+        const tick = () => target.traffic(page).catch(() => {});
+        tick(); // immediate first hit so the stream gets a frame ASAP
+        trafficStop = setInterval(tick, 1500);
+    }
+
     await page.waitForTimeout(waitMs);
+    if (trafficStop) clearInterval(trafficStop);
 
     const file = path.join(OUT, `${shotName}-${THEME}.png`);
     await page.screenshot({ path: file, fullPage: false });
@@ -95,12 +118,55 @@ async function capture({ url, methodText, waitMs, shotName }) {
     const wanted = new Set(process.argv.slice(2));
     const targets = {
         grpc:    { url: 'https://localhost:5101/bowire', methodText: 'WatchCrane',         waitMs: 5000, shotName: 'streaming-grpc' },
-        signalr: { url: 'https://localhost:5101/bowire', methodText: 'SubscribeToChanges', waitMs: 5000, shotName: 'streaming-signalr' },
-        graphql: { url: 'http://localhost:5104/bowire',  methodText: 'shipPositions',       waitMs: 5000, shotName: 'streaming-graphql' },
-        sse:     { url: 'http://localhost:5105/bowire',  methodText: 'cargo-events',        waitMs: 5000, shotName: 'streaming-sse' },
-        ws:      { url: 'http://localhost:5106/bowire',  methodText: 'echo',                waitMs: 5000, shotName: 'streaming-websocket' },
-        mqtt:    { url: 'http://localhost:5107/bowire',  methodText: 'subscribe',           waitMs: 5000, shotName: 'streaming-mqtt' },
-        socketio:{ url: 'http://localhost:5108/bowire',  methodText: 'subscribe',           waitMs: 5000, shotName: 'streaming-socketio' },
+        signalr: {
+            url: 'https://localhost:5101/bowire',
+            methodText: 'SubscribeToChanges',
+            waitMs: 7000,
+            shotName: 'streaming-signalr',
+            // Parallel PATCH requests against the Combined sample's
+            // REST surface so the SignalR subscription receives
+            // PortCallChanged events while we capture. Cycles status
+            // through the enum so each frame looks distinct.
+            traffic: async (page) => {
+                // PortCallStatus enum: 0 Scheduled, 1 Approaching, 2 Docked,
+                // 3 Departing, 4 Completed, 5 Cancelled. System.Text.Json
+                // default expects the integer value, not the string name.
+                const statuses = [1, 2, 3, 4];
+                const idx = Math.floor(Math.random() * statuses.length);
+                await page.evaluate(async (status) => {
+                    await fetch('https://localhost:5101/api/port-calls/1/status', {
+                        method: 'PATCH',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ status, notes: 'capture run' }),
+                    }).catch(() => {});
+                }, statuses[idx]);
+            },
+        },
+        graphql: {
+            url: 'https://localhost:5115/bowire',
+            methodText: 'OnPortCallChanged',
+            waitMs: 7000,
+            shotName: 'streaming-graphql',
+            // GraphQL HarborSubscription emits on store.PortCallChanged.
+            // Stand-alone GraphQL sample has no REST endpoint to PATCH —
+            // we trigger the same store from a GraphQL mutation instead.
+            traffic: async (page) => {
+                const statuses = ['APPROACHING', 'DOCKED', 'LOADING', 'UNLOADING', 'COMPLETED'];
+                const idx = Math.floor(Math.random() * statuses.length);
+                await page.evaluate(async (status) => {
+                    await fetch('https://localhost:5115/graphql', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ query: `mutation { setPortCallStatus(id: 1, status: ${status}) { id status } }` }),
+                    }).catch(() => {});
+                }, statuses[idx]);
+            },
+        },
+        graphql: { url: 'https://localhost:5115/bowire', methodText: 'OnPortCallChanged',  waitMs: 6000, shotName: 'streaming-graphql' },
+        sse:     { url: 'https://localhost:5114/bowire', methodText: 'Slow keep-alive',   waitMs: 12000, shotName: 'streaming-sse' },
+        ws:      { url: 'https://localhost:5113/bowire', methodText: 'echo',               waitMs: 5000, shotName: 'streaming-websocket' },
+        mqtt:    { url: 'https://localhost:5117/bowire', methodText: 'subscribe',          waitMs: 5000, shotName: 'streaming-mqtt' },
+        socketio:{ url: 'https://localhost:5118/bowire', methodText: 'subscribe',          waitMs: 5000, shotName: 'streaming-socketio' },
     };
     const list = wanted.size > 0
         ? [...wanted].map(k => ({ key: k, ...targets[k] })).filter(t => t.url)

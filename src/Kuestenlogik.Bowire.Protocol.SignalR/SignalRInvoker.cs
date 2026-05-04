@@ -179,6 +179,17 @@ internal sealed class SignalRInvoker : IAsyncDisposable
 
     private static object?[] ParseArguments(List<string> jsonMessages)
     {
+        // No-arg streaming methods (e.g. SubscribeToChanges() with only
+        // the implicit CancellationToken) receive an empty body "{}" from
+        // the form pane. The fallback path below would map that to a
+        // single positional null and SignalR would reject the invocation
+        // with "Failed to invoke … wrong argument count". Detect the empty
+        // object up front and return zero args.
+        if (jsonMessages.Count == 1 && jsonMessages[0]?.Trim() is "{}" or "" or null)
+        {
+            return [];
+        }
+
         // Form-mode sends a single JSON object like {"count": 5, "delayMs": 200}
         // for hub methods that take multiple parameters. Unwrap that into one
         // positional arg per property so InvokeCoreAsync / StreamAsyncCore see
