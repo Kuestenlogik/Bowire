@@ -1102,32 +1102,13 @@ pre > code {
 }
 
 @media (max-width: 768px) {
-    /* Mobile keeps the floating section-rail (scrollspy dots + outline
-       trigger) — it's the same scroll-aid that helps on desktop, just
-       pulled in tighter. Compact dots, smaller padding, and no hover-
-       label tooltips (touch-only — labels have no place to render). */
-    .section-rail {
-        right: 8px;
-        gap: 6px;
-    }
-    .section-nav {
-        padding: 6px 4px;
-        gap: 4px;
-    }
-    .section-tools {
-        padding: 6px 4px;
-    }
-    .section-nav-dot {
-        width: 28px;
-        height: 28px;
-    }
-    .section-nav-dot::before {
-        width: 6px;
-        height: 6px;
-    }
-    .section-nav-dot-label {
-        display: none;
-    }
+    /* Hide the floating section-rail on phones again. The scrollspy
+       dots overlapped article text on the right edge (no fixed gutter
+       to retreat into on mobile), and the outline ≡ trigger duplicated
+       the burger menu icon in the header — same glyph, same idea, two
+       buttons. The header burger plus an article's anchor links cover
+       this functionality already. */
+    .section-rail { display: none; }
 }
 
 /* ---- Page outline modal — opened from the .section-tools-trigger pill
@@ -5237,13 +5218,23 @@ html[data-theme="light"] {
     height: auto !important;
 }
 .pagefind-ui__result {
-    /* Pagefind default reserves a left thumbnail column via
-       grid-template-columns: <image-side-length> 1fr. Bowire results have
-       no thumbnails, so collapse to a single full-width column. */
-    grid-template-columns: 1fr !important;
+    /* Pagefind's Svelte build uses flex (not grid) and reserves a
+       30 %-wide thumbnail column on every result via .pagefind-ui__
+       result-thumb. Bowire results never carry images, so the column
+       just leaves a phantom indent that pushed the title + excerpt
+       right by ~30 % on phones. Hide the thumb and let .result-inner
+       take the full row. */
     padding: 18px 0 20px !important;
     border-top: 1px solid var(--border) !important;
     cursor: pointer;
+}
+.pagefind-ui__result .pagefind-ui__result-thumb {
+    display: none !important;
+}
+.pagefind-ui__result .pagefind-ui__result-inner {
+    flex: 1 !important;
+    margin-top: 0 !important;
+    width: 100% !important;
 }
 /* The drawer already carries a border-top above the first result —
    skip the per-result rule for the first item to avoid the
