@@ -9,6 +9,8 @@ using Grpc.Net.Client;
 using Grpc.Reflection.V1Alpha;
 using Kuestenlogik.Bowire.Auth;
 using Kuestenlogik.Bowire.Models;
+using Kuestenlogik.Bowire.Net;
+using Microsoft.Extensions.Configuration;
 
 namespace Kuestenlogik.Bowire;
 
@@ -42,13 +44,21 @@ internal sealed class GrpcReflectionClient : IDisposable
             AnnotationsExtensions.Http
         });
 
-    public GrpcReflectionClient(string serverUrl, bool showInternalServices, MtlsConfig? mtlsConfig = null)
+    public GrpcReflectionClient(
+        string serverUrl,
+        bool showInternalServices,
+        MtlsConfig? mtlsConfig = null,
+        IConfiguration? configuration = null)
     {
         _showInternalServices = showInternalServices;
 
         SocketsHttpHandler httpHandler;
         if (mtlsConfig is not null)
         {
+            // mTLS path stays on its dedicated handler-owner — that already
+            // installs cert presentation + chain validation against the
+            // client/CA pair the user configured, so localhost-cert
+            // relaxation would be both redundant and confusing.
             _mtlsOwner = MtlsHandlerOwner.CreateSocketsHttpHandler(mtlsConfig, out var mtlsError);
             if (_mtlsOwner is null)
             {
@@ -58,11 +68,11 @@ internal sealed class GrpcReflectionClient : IDisposable
         }
         else
         {
-            httpHandler = new SocketsHttpHandler
-            {
-                EnableMultipleHttp2Connections = true,
-                ConnectTimeout = TimeSpan.FromSeconds(5)
-            };
+            // Non-mTLS path picks up the same Bowire:TrustLocalhostCert
+            // opt-in the HttpClient-based plugins use. Configuration null
+            // (test paths) yields a vanilla handler with no relaxation.
+            httpHandler = BowireHttpClientFactory.CreateSocketsHttpHandler(
+                configuration, "grpc", serverUrl);
         }
 
         _channel = GrpcChannel.ForAddress(serverUrl, new GrpcChannelOptions

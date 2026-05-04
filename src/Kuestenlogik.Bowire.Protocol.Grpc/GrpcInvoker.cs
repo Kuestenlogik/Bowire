@@ -10,6 +10,8 @@ using Google.Protobuf.Reflection;
 using Grpc.Core;
 using Grpc.Net.Client;
 using Kuestenlogik.Bowire.Auth;
+using Kuestenlogik.Bowire.Net;
+using Microsoft.Extensions.Configuration;
 
 namespace Kuestenlogik.Bowire;
 
@@ -23,12 +25,17 @@ internal sealed class GrpcInvoker : IDisposable
     private readonly GrpcReflectionClient _reflectionClient;
     private readonly MtlsHandlerOwner? _mtlsOwner;
 
-    public GrpcInvoker(string serverUrl, GrpcReflectionClient reflectionClient, MtlsConfig? mtlsConfig = null)
+    public GrpcInvoker(
+        string serverUrl,
+        GrpcReflectionClient reflectionClient,
+        MtlsConfig? mtlsConfig = null,
+        IConfiguration? configuration = null)
     {
         // When a client cert is supplied via the mTLS auth helper, build a
         // SocketsHttpHandler with the cert attached to SslOptions and route
         // gRPC traffic through it. The handler-owner holds the X509 resources
-        // alongside the handler so disposal is centralised.
+        // alongside the handler so disposal is centralised. mTLS path stays
+        // strict — the user already specified a CA / client cert pair.
         SocketsHttpHandler httpHandler;
         if (mtlsConfig is not null)
         {
@@ -41,11 +48,10 @@ internal sealed class GrpcInvoker : IDisposable
         }
         else
         {
-            httpHandler = new SocketsHttpHandler
-            {
-                EnableMultipleHttp2Connections = true,
-                ConnectTimeout = TimeSpan.FromSeconds(5)
-            };
+            // Non-mTLS path picks up Bowire:TrustLocalhostCert via the shared
+            // factory, same as the HttpClient-based plugins.
+            httpHandler = BowireHttpClientFactory.CreateSocketsHttpHandler(
+                configuration, "grpc", serverUrl);
         }
 
         _channel = GrpcChannel.ForAddress(serverUrl, new GrpcChannelOptions

@@ -7,6 +7,8 @@ using System.Threading.Channels;
 using Google.Protobuf.Reflection;
 using Grpc.Core;
 using Grpc.Net.Client;
+using Kuestenlogik.Bowire.Net;
+using Microsoft.Extensions.Configuration;
 
 namespace Kuestenlogik.Bowire.Protocol.Grpc;
 
@@ -130,9 +132,11 @@ internal sealed class GrpcBowireChannel : IBowireChannel
         string methodName,
         bool showInternalServices,
         Dictionary<string, string>? metadata,
-        CancellationToken ct)
+        CancellationToken ct,
+        IConfiguration? configuration = null)
     {
-        using var reflectionClient = new GrpcReflectionClient(serverUrl, showInternalServices);
+        using var reflectionClient = new GrpcReflectionClient(
+            serverUrl, showInternalServices, mtlsConfig: null, configuration: configuration);
 
         var fileDescProtos = await reflectionClient.ResolveAllDescriptorsAsync(serviceName, ct);
         if (fileDescProtos.Count == 0)
@@ -162,11 +166,8 @@ internal sealed class GrpcBowireChannel : IBowireChannel
 
         var grpcChannel = GrpcChannel.ForAddress(serverUrl, new GrpcChannelOptions
         {
-            HttpHandler = new SocketsHttpHandler
-            {
-                EnableMultipleHttp2Connections = true,
-                ConnectTimeout = TimeSpan.FromSeconds(5)
-            }
+            HttpHandler = BowireHttpClientFactory.CreateSocketsHttpHandler(
+                configuration, "grpc", serverUrl)
         });
 
         try

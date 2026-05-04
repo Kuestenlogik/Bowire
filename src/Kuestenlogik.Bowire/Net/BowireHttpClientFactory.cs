@@ -79,4 +79,47 @@ public static class BowireHttpClientFactory
 
         return handler;
     }
+
+    /// <summary>
+    /// Builds a <see cref="SocketsHttpHandler"/> with the same loopback-cert
+    /// opt-in as <see cref="CreateHandler"/>, but configured for protocols
+    /// that need HTTP/2 directly (gRPC's <see cref="System.Net.Http.HttpClient"/>-
+    /// less channel). The validation callback consults
+    /// <see cref="LocalhostCertTrust"/> per request, so per-plugin overrides
+    /// keep working the same way as on the regular HttpClient path.
+    /// </summary>
+    /// <param name="config">Application <see cref="IConfiguration"/>; null disables relaxed validation.</param>
+    /// <param name="pluginId">Plugin id used for <c>Bowire:{pluginId}:TrustLocalhostCert</c> overrides.</param>
+    /// <param name="serverUrl">
+    /// Optional target URL used to gate the validation callback. The plugin
+    /// gives us the URL eagerly (rather than reading <c>request.RequestUri</c>
+    /// inside the callback) because gRPC's <see cref="System.Net.Security.RemoteCertificateValidationCallback"/>
+    /// is the SslStream-level one — it doesn't carry an HttpRequestMessage,
+    /// so we close over the URL here instead.
+    /// </param>
+    public static SocketsHttpHandler CreateSocketsHttpHandler(
+        IConfiguration? config, string pluginId, string? serverUrl = null)
+    {
+        var handler = new SocketsHttpHandler
+        {
+            EnableMultipleHttp2Connections = true,
+            ConnectTimeout = TimeSpan.FromSeconds(5)
+        };
+
+        // Wire the same trust opt-in as the HttpClient path. SocketsHttpHandler
+        // exposes SslOptions.RemoteCertificateValidationCallback (SslStream
+        // level) rather than the HttpClientHandler's per-request callback.
+        // We close over the caller-supplied serverUrl so the loopback gate
+        // still applies — the SslStream callback doesn't see a request URI.
+        handler.SslOptions.RemoteCertificateValidationCallback = (sender, cert, chain, errors) =>
+        {
+#pragma warning disable CA5359
+            if (errors == System.Net.Security.SslPolicyErrors.None) return true;
+            return !string.IsNullOrEmpty(serverUrl)
+                && LocalhostCertTrust.IsTrustedFor(config, pluginId, serverUrl);
+#pragma warning restore CA5359
+        };
+
+        return handler;
+    }
 }

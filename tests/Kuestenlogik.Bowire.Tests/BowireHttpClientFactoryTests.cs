@@ -116,4 +116,65 @@ public sealed class BowireHttpClientFactoryTests
 
         Assert.True(trusted);
     }
+
+    // ---- SocketsHttpHandler variant (gRPC HTTP/2 path) ----
+
+    [Fact]
+    public void CreateSocketsHttpHandler_Returns_Handler_With_Ssl_Validation_Callback()
+    {
+        using var handler = BowireHttpClientFactory.CreateSocketsHttpHandler(
+            config: null, pluginId: "grpc", serverUrl: "https://localhost:5001");
+        Assert.NotNull(handler.SslOptions.RemoteCertificateValidationCallback);
+        Assert.True(handler.EnableMultipleHttp2Connections);
+    }
+
+    [Fact]
+    public void SocketsHttpHandler_Trusts_Loopback_When_Flag_True()
+    {
+        var config = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["Bowire:TrustLocalhostCert"] = "true"
+            })
+            .Build();
+
+        using var handler = BowireHttpClientFactory.CreateSocketsHttpHandler(
+            config, pluginId: "grpc", serverUrl: "https://localhost:5001");
+
+        var trusted = handler.SslOptions.RemoteCertificateValidationCallback!(
+            new object(), null, null, System.Net.Security.SslPolicyErrors.RemoteCertificateChainErrors);
+
+        Assert.True(trusted);
+    }
+
+    [Fact]
+    public void SocketsHttpHandler_Rejects_Production_Url_Even_When_Flag_True()
+    {
+        var config = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["Bowire:TrustLocalhostCert"] = "true"
+            })
+            .Build();
+
+        using var handler = BowireHttpClientFactory.CreateSocketsHttpHandler(
+            config, pluginId: "grpc", serverUrl: "https://api.example.com:443");
+
+        var trusted = handler.SslOptions.RemoteCertificateValidationCallback!(
+            new object(), null, null, System.Net.Security.SslPolicyErrors.RemoteCertificateChainErrors);
+
+        Assert.False(trusted);
+    }
+
+    [Fact]
+    public void SocketsHttpHandler_Bypasses_Validation_When_Os_Trusts_The_Cert()
+    {
+        using var handler = BowireHttpClientFactory.CreateSocketsHttpHandler(
+            config: null, pluginId: "grpc", serverUrl: "https://api.example.com:443");
+
+        var trusted = handler.SslOptions.RemoteCertificateValidationCallback!(
+            new object(), null, null, System.Net.Security.SslPolicyErrors.None);
+
+        Assert.True(trusted);
+    }
 }

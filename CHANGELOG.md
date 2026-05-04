@@ -1,5 +1,62 @@
 # Changelog
 
+## v1.0.9 — HttpClient factory + gRPC SocketsHttpHandler + Socket.IO fix (2026-05-05)
+
+Stable release of the cert-trust generalisation. Promotes the rc.1 +
+rc.2 work after one round of smoke-testing against
+`Bowire.Samples.SocketIo` surfaced (and fixed) the Socket.IO
+payload bug. Also adds the gRPC-side SocketsHttpHandler variant
+of the factory that was tracked as a follow-up in rc.1.
+
+### Adds (over 1.0.8)
+- **`Kuestenlogik.Bowire.Net.BowireHttpClientFactory`** — shared
+  helpers `Create()` / `CreateHandler()` for the HttpClient-bearing
+  plugins, plus **`CreateSocketsHttpHandler(config, pluginId,
+  serverUrl)`** for HTTP/2 paths that bypass HttpClient (gRPC).
+  All three install a per-request validation callback that
+  consults `LocalhostCertTrust` and gates relaxation on a loopback
+  URL.
+- **gRPC plugin** picks up the same opt-in for non-mTLS gRPC
+  servers — `bowire --url https://localhost:5001` against an
+  ASP.NET Core dev cert now Just Works once
+  `Bowire:TrustLocalhostCert=true` is set, instead of failing
+  the TLS handshake. mTLS path unchanged — its dedicated
+  `MtlsHandlerOwner` already installs cert presentation + chain
+  validation, so localhost relaxation would be redundant there.
+
+### Refactors
+- **REST, GraphQL, SSE, MCP, OData, gRPC** plugins migrated from
+  `static s_http` (or local `using var http = new HttpClient()`)
+  to instance fields built in `Initialize()` from the factory.
+  HttpClient count per process unchanged (one per plugin
+  singleton); the only difference is the validation callback is
+  now wired to config.
+- **`SseSubscriber`** accepts an externally-supplied `HttpClient`
+  for cross-plugin SSE consumers (`IInlineSseSubscriber`).
+
+### Fixes
+- **Socket.IO plugin payload extraction** — the streaming pane
+  showed `"SocketIOClient.EventContext"` (the type name) instead
+  of the actual event arguments. Switched to `IEventContext.RawText`
+  with leading-event-name strip + single-arg unwrap.
+- **Socket.IO plugin event filter** — the catch-all `listen`
+  method now honours an `event` filter from the request body,
+  matching the per-event method behaviour.
+
+### Tests
+- 11 new unit tests for `BowireHttpClientFactory` (HttpClientHandler
+  + SocketsHttpHandler variants × loopback / production / OS-trust
+  / per-plugin-override / null-config). 994 tests total across the
+  three test assemblies, all green.
+
+### Versioning discipline
+- First successful run of the **`-rc.N` then final** strategy
+  agreed in 1.0.8: rc.1 introduced the factory + 5-plugin
+  refactor; rc.2 fixed the Socket.IO payload bug found during
+  smoke; final adds the gRPC SocketsHttpHandler variant. The rc
+  pre-releases stay on nuget.org as `--prerelease`-only versions
+  for anyone who wants to bisect.
+
 ## v1.0.9-rc.2 — Socket.IO payload extraction (2026-05-04)
 
 Found during the rc.1 smoke pass.

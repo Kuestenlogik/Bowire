@@ -2,6 +2,10 @@
 
 ## Completed
 
+### v1.0.9 — HttpClient factory + gRPC SocketsHttpHandler + Socket.IO fix (2026-05-05)
+- [x] **gRPC plugin migrated** to `BowireHttpClientFactory.CreateSocketsHttpHandler` for the non-mTLS HTTP/2 path. Closes the rc.1 follow-up. Cert-trust opt-in (`Bowire:TrustLocalhostCert`) now covers every TLS-bearing plugin (gRPC, REST, GraphQL, SignalR, WebSocket, SSE, MCP, OData).
+- [x] **rc.1 + rc.2 + final** released as the first successful application of the new versioning discipline. rc.2 caught a Socket.IO payload bug (`response.ToString()` returned the type name); rc.1 didn't smoke-test the Socket.IO sample.
+
 ### v1.0.9-rc.2 — Socket.IO payload extraction (2026-05-04)
 - [x] **Socket.IO plugin: `RawText` instead of `ToString()`**. `response.ToString()` returned `"SocketIOClient.EventContext"`; the streaming-pane lost every event's actual payload. Switched to `IEventContext.RawText` with leading-event-name strip + single-arg unwrap. Found during rc.1 smoke against `Bowire.Samples.SocketIo`.
 - [x] **Socket.IO plugin: catch-all `listen` honours form-body `event` filter** so `event: port-call-changed` actually narrows the stream (was only respected on dynamically-discovered per-event methods).
