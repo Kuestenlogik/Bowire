@@ -1102,7 +1102,32 @@ pre > code {
 }
 
 @media (max-width: 768px) {
-    .section-rail { display: none; }
+    /* Mobile keeps the floating section-rail (scrollspy dots + outline
+       trigger) — it's the same scroll-aid that helps on desktop, just
+       pulled in tighter. Compact dots, smaller padding, and no hover-
+       label tooltips (touch-only — labels have no place to render). */
+    .section-rail {
+        right: 8px;
+        gap: 6px;
+    }
+    .section-nav {
+        padding: 6px 4px;
+        gap: 4px;
+    }
+    .section-tools {
+        padding: 6px 4px;
+    }
+    .section-nav-dot {
+        width: 28px;
+        height: 28px;
+    }
+    .section-nav-dot::before {
+        width: 6px;
+        height: 6px;
+    }
+    .section-nav-dot-label {
+        display: none;
+    }
 }
 
 /* ---- Page outline modal — opened from the .section-tools-trigger pill
@@ -3336,13 +3361,14 @@ button.comparison-bestfor-card.active .comparison-bestfor-name {
     }
 
     /* On a phone the right-hand action row had five icons (search,
-       home, theme, github, burger) — burger ended up flush against
-       the viewport edge and the row visually crashed against the
-       window frame. Hide search / home / github on small screens
-       (those routes still live inside the burger menu's nav links)
-       and keep theme + burger so the user can still toggle dark/
-       light without opening the menu. Adds breathing room on the
-       right edge for the burger itself. */
+       home, theme, github, burger) crammed against the viewport edge.
+       Hide search / home / github on small screens — those routes
+       still live inside the burger menu's nav links — and keep theme
+       + burger so the user can still toggle dark/light without
+       opening the menu. The container's own 16 px padding is what
+       gives the burger its right-edge breathing room (matching the
+       logo's left-edge breathing room exactly), so don't add an
+       extra padding here. */
     .header-actions .bowire-search-trigger,
     .header-actions .nav-home,
     .header-actions .nav-github {
@@ -3350,7 +3376,6 @@ button.comparison-bestfor-card.active .comparison-bestfor-name {
     }
     .header-actions {
         gap: 8px;
-        padding-right: 4px;
     }
 
     .feature-grid {
