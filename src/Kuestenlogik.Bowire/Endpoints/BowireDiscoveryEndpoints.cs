@@ -48,6 +48,22 @@ internal static class BowireDiscoveryEndpoints
             var serverUrl = ctx.Request.Query["serverUrl"].FirstOrDefault()
                 ?? BowireEndpointHelpers.ResolveServerUrl(options, ctx.Request);
 
+            // Standalone tool launched without --url and with no proto
+            // uploads / sources to consult: there is genuinely nothing
+            // to discover. Returning an empty list immediately keeps the
+            // first-run UI snappy — without this the gRPC reflection
+            // path tries to handshake with the local Bowire host (which
+            // doesn't ship gRPC services), wedges for ~10 s, then fails.
+            // The ServerUrls.Count check covers the case where the user
+            // passes --url on the command line.
+            if (options.Mode == BowireMode.Standalone
+                && options.ServerUrls.Count == 0
+                && options.ProtoSources.Count == 0
+                && !ProtoUploadStore.HasUploads)
+            {
+                return Results.Json(Array.Empty<BowireServiceInfo>(), BowireEndpointHelpers.JsonOptions);
+            }
+
             // Collect proto-sourced services (code-configured + uploaded). Code-configured
             // protos via options.ProtoSources are not "uploads" — they're the host's own
             // schemas; only ProtoUploadStore entries get the IsUploaded flag.

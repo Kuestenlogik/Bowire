@@ -32,6 +32,14 @@ public sealed class BowireGrpcProtocol : IBowireProtocol, IBowireProtocolService
     public async Task<List<BowireServiceInfo>> DiscoverAsync(
         string serverUrl, bool showInternalServices, CancellationToken ct)
     {
+        // Empty serverUrl is the standalone-CLI-without-flags case
+        // (`bowire` with no --url, no schema). Returning empty here
+        // is much better than spinning up a GrpcReflectionClient
+        // against the empty string and waiting ~10 s for a doomed
+        // HTTP/2 handshake — that's what made the standalone first-
+        // run land on a hung "Loading services…" spinner.
+        if (string.IsNullOrWhiteSpace(serverUrl)) return [];
+
         // Discovery doesn't currently carry per-environment metadata, so
         // mTLS-protected gRPC servers can't be reflected against today.
         // Once IBowireProtocol.DiscoverAsync grows a metadata parameter
