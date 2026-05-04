@@ -70,6 +70,19 @@ async function capture(target) {
     await page.locator('.bowire-method-item', { hasText: methodText }).first().click();
     await page.waitForTimeout(400);
 
+    // Per-target preset form values — used when a method needs more than
+    // a numeric "1" to actually emit a frame (e.g. Socket.IO listen needs
+    // an event-name filter to subscribe to a specific server-emitted topic).
+    if (target.formValues) {
+        for (const [fieldKey, value] of Object.entries(target.formValues)) {
+            const inp = page.locator(`.bowire-form-input[data-field-key="${fieldKey}"]`).first();
+            if (await inp.count()) {
+                await inp.fill(String(value)).catch(() => {});
+            }
+        }
+        await page.waitForTimeout(200);
+    }
+
     // Sample servers occasionally need at least one valid id in the
     // form (gRPC WatchCrane needs an existing crane_id). Fill empty
     // *numeric* inputs with "1" so a default Execute hits the first
@@ -182,7 +195,20 @@ async function capture(target) {
         // MQTT sample is a broker + publisher with no embedded /bowire — point
         // a standalone bowire CLI at it: `bowire --port 5079 --url mqtt://localhost:1883`.
         mqtt:    { url: 'http://localhost:5079/bowire',  methodText: 'harbor/crane/1/status', waitMs: 7000, shotName: 'streaming-mqtt' },
-        socketio:{ url: 'https://localhost:5118/bowire', methodText: 'subscribe',          waitMs: 5000, shotName: 'streaming-socketio' },
+        // Socket.IO sample is a Node.js server (no embedded /bowire). Run
+        // its `node server.js` from src/Kuestenlogik.Bowire.Samples.SocketIo
+        // and point a standalone bowire CLI at it on :5079:
+        //   bowire --port 5079 --no-browser --url http://localhost:3000
+        // The sample's /harbor namespace broadcasts a port-call-changed
+        // event every 3 s, which the 'listen' method surfaces as a stream.
+        socketio:{
+            url: 'http://localhost:5079/bowire',
+            methodText: 'listen',
+            waitMs: 8000,
+            shotName: 'streaming-socketio',
+            // Filter to the broadcast event the sample emits every 3 s.
+            formValues: { event: 'port-call-changed' },
+        },
     };
     const list = wanted.size > 0
         ? [...wanted].map(k => ({ key: k, ...targets[k] })).filter(t => t.url)
