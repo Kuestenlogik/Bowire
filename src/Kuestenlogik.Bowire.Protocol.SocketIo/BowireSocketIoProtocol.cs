@@ -108,7 +108,11 @@ public sealed class BowireSocketIoProtocol : IBowireProtocol
 
             client.OnAny((name, response) =>
             {
-                tcs.TrySetResult(JsonSerializer.Serialize(new { @event = name, data = response?.ToString() }));
+                tcs.TrySetResult(JsonSerializer.Serialize(new
+                {
+                    @event = name,
+                    data = ExtractPayload(response)
+                }));
                 return Task.CompletedTask;
             });
 
@@ -132,19 +136,47 @@ public sealed class BowireSocketIoProtocol : IBowireProtocol
         [EnumeratorCancellation] CancellationToken ct = default)
     {
         var url = serverUrl.TrimEnd('/');
+
+        // Optional event-name filter from the form body. When present, only
+        // events whose name matches are forwarded — the same shape SSE uses
+        // for its `url` override. Empty / missing means "every event".
+        string? eventFilter = null;
+        if (jsonMessages.Count > 0)
+        {
+            try
+            {
+                using var doc = JsonDocument.Parse(jsonMessages[0]);
+                if (doc.RootElement.TryGetProperty("event", out var evProp))
+                {
+                    var v = evProp.GetString();
+                    if (!string.IsNullOrEmpty(v)) eventFilter = v;
+                }
+            }
+            catch (JsonException) { /* ignore — empty filter */ }
+        }
+
+        // method == "listen" is the generic catch-all method. Dynamically
+        // discovered events surface as their own per-event method, in which
+        // case `method` is the event name itself.
+        var specificEvent = eventFilter ?? (method != "listen" ? method : null);
+
         var channel = System.Threading.Channels.Channel.CreateUnbounded<string>();
 
         using var client = new SocketIOClient.SocketIO(new Uri(url), new SocketIOOptions
         { Reconnection = false, ConnectionTimeout = TimeSpan.FromSeconds(10) });
-
-        var specificEvent = method != "listen" ? method : null;
 
         client.OnAny((name, response) =>
         {
             if (specificEvent != null && name != specificEvent) return Task.CompletedTask;
             channel.Writer.TryWrite(JsonSerializer.Serialize(new
             {
-                @event = name, data = response?.ToString(), timestamp = DateTime.UtcNow
+                @event = name,
+                // ctx.RawText is `["eventName", arg1, arg2, ...]`. The plugin
+                // strips the leading event-name token so the user sees just
+                // the payload they cared about; falls back to the raw text
+                // when parsing fails.
+                data = ExtractPayload(response),
+                timestamp = DateTime.UtcNow
             }));
             return Task.CompletedTask;
         });
@@ -156,6 +188,37 @@ public sealed class BowireSocketIoProtocol : IBowireProtocol
                 yield return msg;
         }
         finally { await client.DisconnectAsync(); }
+    }
+
+    /// <summary>
+    /// Extract the user-visible payload from a SocketIOClient response.
+    /// SocketIOClient 4.x exposes the full frame as RawText (the JSON
+    /// array <c>["eventName", arg1, ...]</c>); ToString() returns the
+    /// type name <c>SocketIOClient.EventContext</c> which is useless to
+    /// users. Strip the event-name leading element and unwrap a single
+    /// remaining argument so the streaming-pane shows the raw payload.
+    /// </summary>
+    private static JsonElement? ExtractPayload(SocketIOClient.IEventContext? ctx)
+    {
+        if (ctx is null) return null;
+        var raw = ctx.RawText;
+        if (string.IsNullOrEmpty(raw)) return null;
+        try
+        {
+            using var doc = JsonDocument.Parse(raw);
+            if (doc.RootElement.ValueKind != JsonValueKind.Array) return doc.RootElement.Clone();
+            var args = doc.RootElement.EnumerateArray().Skip(1).ToList();
+            return args.Count switch
+            {
+                0 => null,
+                1 => args[0].Clone(),
+                _ => JsonSerializer.SerializeToElement(args.Select(a => a.Clone()).ToArray())
+            };
+        }
+        catch (JsonException)
+        {
+            return JsonSerializer.SerializeToElement(raw);
+        }
     }
 
     public Task<IBowireChannel?> OpenChannelAsync(

@@ -2,6 +2,10 @@
 
 ## Completed
 
+### v1.0.9-rc.2 — Socket.IO payload extraction (2026-05-04)
+- [x] **Socket.IO plugin: `RawText` instead of `ToString()`**. `response.ToString()` returned `"SocketIOClient.EventContext"`; the streaming-pane lost every event's actual payload. Switched to `IEventContext.RawText` with leading-event-name strip + single-arg unwrap. Found during rc.1 smoke against `Bowire.Samples.SocketIo`.
+- [x] **Socket.IO plugin: catch-all `listen` honours form-body `event` filter** so `event: port-call-changed` actually narrows the stream (was only respected on dynamically-discovered per-event methods).
+
 ### v1.0.9-rc.1 — Shared HttpClient factory for cert-trust (2026-05-04)
 - [x] **`BowireHttpClientFactory`** in `Kuestenlogik.Bowire/Net/`. Validation callback consults `LocalhostCertTrust` on every request, defence-in-depth gates on loopback URL.
 - [x] **REST, GraphQL, SSE, MCP, OData** plugins migrated from `static s_http` to instance `_http` built in `Initialize()`. HttpClient count per process unchanged (one per plugin singleton).

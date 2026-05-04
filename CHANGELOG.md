@@ -1,5 +1,33 @@
 # Changelog
 
+## v1.0.9-rc.2 — Socket.IO payload extraction (2026-05-04)
+
+Found during the rc.1 smoke pass.
+
+### Fixes
+- **Socket.IO plugin: payload was `"SocketIOClient.EventContext"`**.
+  The plugin called `response?.ToString()` on the SocketIOClient
+  callback context, which returned the type name rather than the
+  event arguments. Stream pane and unary-emit responses both lost
+  the actual payload — only the event name survived. Switched to
+  `IEventContext.RawText` (the JSON array `["eventName", arg1, …]`)
+  with leading-element strip and single-arg unwrap so the user
+  sees the same shape the underlying transport delivered.
+- **Socket.IO plugin: `event` field in the form body was ignored
+  for the catch-all `listen` method**. The filter only fired for
+  dynamically-discovered per-event methods. Now the listen
+  method also honours an `event` filter from the request body —
+  empty / missing means "every event" as before.
+
+### Tests
+- Existing 712 + 7 factory tests still green; no Socket.IO tests
+  added in this RC because the plugin pulls in the full
+  `SocketIOClient` runtime which makes meaningful unit-tests
+  fixture-heavy. Manual smoke against
+  `Bowire.Samples.SocketIo/server.js` confirmed: 8 events
+  captured with full `{id, shipId, dockNumber, status, at}`
+  payload visible in the streaming-frame pane.
+
 ## v1.0.9-rc.1 — Shared HttpClient factory for cert-trust opt-in (2026-05-04)
 
 First release-candidate of the cert-trust generalisation that 1.0.3
