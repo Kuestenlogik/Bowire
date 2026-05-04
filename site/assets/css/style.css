@@ -1867,6 +1867,13 @@ pre > code {
 }
 .protocol-card-coming h3 {
     color: var(--text);
+    /* Pin the Coming-soon h3 to the start of column 2 so the title
+       reads left-aligned next to the icon, matching every other
+       protocol card. Without this, the h3's column was effectively
+       stretched and short text 'Coming soon' rendered centred-looking
+       in some browsers — visibly out of pattern with the siblings. */
+    justify-self: start;
+    text-align: left;
 }
 .protocol-coming-link {
     color: var(--accent);
@@ -3353,8 +3360,23 @@ button.comparison-bestfor-card.active .comparison-bestfor-name {
     .header-actions {
         gap: 6px;
     }
+    /* Burger sits flush against the right viewport edge so its visual
+       stroke aligns with the logo's circle on the left. The button has
+       padding:4 from base + the SVG itself has 3 px of internal stroke
+       padding (lines run x1=3..x2=21 inside a 24×24 box) — so we zero
+       the button's right-padding and add a small negative margin to
+       compensate for the SVG-internal padding that doesn't move. */
     .mobile-menu-toggle {
-        margin-right: -3px;
+        padding: 4px 0 4px 4px;
+        margin-right: -7px;
+    }
+    /* Burger menu drops a 1 px gap between the header bottom edge and
+       the open submenu — caused by the .site-header's border-bottom +
+       the absolute-positioned nav anchored at top:var(--header-height)
+       (which sits below the border). Pull the nav up by 1 px so it
+       butts up against the header without a transparent slit. */
+    .header-nav.open {
+        top: calc(var(--header-height) - 1px);
     }
 
     /* Belt-and-suspenders against horizontal overflow on phones —
