@@ -36,9 +36,14 @@ async function capture(target) {
         colorScheme: THEME === 'light' ? 'light' : 'dark',
     });
     const page = await ctx.newPage();
-    await page.goto(url, { waitUntil: 'networkidle' });
+    // Some samples (GraphQL with HotChocolate's ws subscriptions, the
+    // Combined sample with SignalR + WebSocket open) keep an idle
+    // socket open on page load and `networkidle` never resolves —
+    // wait for DOM ready instead and let the sidebar populate via the
+    // .bowire-method-item attached check below.
+    await page.goto(url, { waitUntil: 'domcontentloaded' });
     await page.evaluate((theme) => { try { localStorage.setItem('bowire-theme', theme); } catch (_) {} }, THEME);
-    await page.reload({ waitUntil: 'networkidle' });
+    await page.reload({ waitUntil: 'domcontentloaded' });
 
     // Wait for the sidebar to render method items into the DOM. We use
     // 'attached' rather than the default 'visible' because some sample
@@ -143,21 +148,29 @@ async function capture(target) {
             },
         },
         graphql: {
-            url: 'https://localhost:5115/bowire',
-            methodText: 'OnPortCallChanged',
+            // GraphQL sample doesn't host its own /bowire — it expects a
+            // standalone bowire CLI pointed at /graphql. Run the CLI on
+            // :5079 with --url https://localhost:5115/graphql before
+            // running this target.
+            url: 'http://localhost:5079/bowire',
+            methodText: 'onPortCallChanged',
             waitMs: 7000,
             shotName: 'streaming-graphql',
             // GraphQL HarborSubscription emits on store.PortCallChanged.
             // Stand-alone GraphQL sample has no REST endpoint to PATCH —
             // we trigger the same store from a GraphQL mutation instead.
             traffic: async (page) => {
-                const statuses = ['APPROACHING', 'DOCKED', 'LOADING', 'UNLOADING', 'COMPLETED'];
+                // PortCallStatus values per the sample's HarborDomain.cs:
+                // SCHEDULED, APPROACHING, DOCKED, DEPARTING, COMPLETED,
+                // CANCELLED. Mutation lives at HarborMutation.
+                // updatePortCallStatus on id 1.
+                const statuses = ['APPROACHING', 'DOCKED', 'DEPARTING', 'COMPLETED'];
                 const idx = Math.floor(Math.random() * statuses.length);
                 await page.evaluate(async (status) => {
                     await fetch('https://localhost:5115/graphql', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ query: `mutation { setPortCallStatus(id: 1, status: ${status}) { id status } }` }),
+                        body: JSON.stringify({ query: `mutation { updatePortCallStatus(id: 1, status: ${status}) { id status } }` }),
                     }).catch(() => {});
                 }, statuses[idx]);
             },
