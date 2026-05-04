@@ -2,6 +2,13 @@
 
 ## Completed
 
+### v1.0.10 — Method-detail header layout fix (2026-05-05)
+- [x] **Protocol-name in icon slot** — render-main.js used `bowire-breadcrumb-icon` (12×12) for the multi-character protocol-name span; the text overflowed the slot and collided with the method-title on the right. Most visible on Socket.IO. Fixed to `bowire-breadcrumb-item`.
+- [x] **Method-name duplicated** in breadcrumb + headerName. Breadcrumb now ends at the service segment; method name is the prominent title alone.
+- [x] **Service-name dot-trim too aggressive** — `Socket.IO` → `IO`. Now only trims when the last segment is ≥ 4 characters.
+- [x] **Service segment suppressed** when it duplicates the plugin name (Socket.IO single-service case). No more `Socket.IO > Socket.IO`.
+- [x] **`bowire-header-info` is now column-flex** stacking breadcrumb → method-name → path → summary vertically. Avoids the side-by-side overlap that produced the original `Sock|listen|tIO` artefact.
+
 ### v1.0.9 — HttpClient factory + gRPC SocketsHttpHandler + Socket.IO fix (2026-05-05)
 - [x] **gRPC plugin migrated** to `BowireHttpClientFactory.CreateSocketsHttpHandler` for the non-mTLS HTTP/2 path. Closes the rc.1 follow-up. Cert-trust opt-in (`Bowire:TrustLocalhostCert`) now covers every TLS-bearing plugin (gRPC, REST, GraphQL, SignalR, WebSocket, SSE, MCP, OData).
 - [x] **rc.1 + rc.2 + final** released as the first successful application of the new versioning discipline. rc.2 caught a Socket.IO payload bug (`response.ToString()` returned the type name); rc.1 didn't smoke-test the Socket.IO sample.

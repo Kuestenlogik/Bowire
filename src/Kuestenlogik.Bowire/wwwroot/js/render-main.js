@@ -733,8 +733,10 @@
         header.appendChild(toggleBtn);
 
         if (selectedMethod) {
-            // Breadcrumb: Protocol > Service > Method — each segment
-            // is clickable to navigate up one level.
+            // Breadcrumb: Protocol > Service. The method name is rendered
+            // separately as headerName below (at a much larger size), so
+            // leaving it out of the breadcrumb avoids the visual stutter
+            // that used to put two `listen`s next to each other.
             var breadcrumb = el('div', { className: 'bowire-breadcrumb' });
             if (selectedService && selectedService.source) {
                 var proto = protocols.find(function (p) { return p.id === selectedService.source; });
@@ -754,14 +756,45 @@
                             }
                         }
                     }));
-                    breadcrumb.appendChild(el('span', { className: 'bowire-breadcrumb-icon', textContent: proto.name }));
+                    // BUG fix: this used to use 'bowire-breadcrumb-icon'
+                    // (the 12×12 icon slot) for a multi-character text label,
+                    // which let the protocol name overflow its container and
+                    // collide with whatever sat to the right of the breadcrumb.
+                    breadcrumb.appendChild(el('span', { className: 'bowire-breadcrumb-item', textContent: proto.name }));
                     breadcrumb.appendChild(el('span', { className: 'bowire-breadcrumb-sep', textContent: '\u203A' }));
                 }
             }
             if (selectedService) {
-                breadcrumb.appendChild(el('span', {
-                    className: 'bowire-breadcrumb-item clickable',
-                    textContent: selectedService.name.split('.').pop(),
+                // Service is the breadcrumb's terminal segment now \u2014 the
+                // method name is rendered separately as headerName below
+                // (and at a much larger size), so duplicating it inside
+                // the breadcrumb just produced a `\u2026 \u203A listen   listen`
+                // visual stutter at narrow widths.
+                // Trim the namespace prefix only when it looks like a
+                // proto-style FQN (e.g. `weather.WeatherService` → `WeatherService`).
+                // Service names that *end* with a dotted token (e.g. `Socket.IO`,
+                // `Akka.Actor.Tap`) keep their full name — splitting them would
+                // produce nonsense like `Socket.IO` → `IO`.
+                var svcDisplayName = selectedService.name;
+                if (svcDisplayName.includes('.')) {
+                    var lastToken = svcDisplayName.split('.').pop();
+                    if (lastToken.length >= 4) svcDisplayName = lastToken;
+                }
+
+                // When the service name matches the plugin's display name
+                // exactly (e.g. Socket.IO plugin exposes one service literally
+                // named 'Socket.IO'), drop this segment so the breadcrumb
+                // doesn't read 'Socket.IO > Socket.IO'. Multi-service
+                // protocols like gRPC have per-call distinct names so this
+                // only kicks in for single-service plugins.
+                var protoForCheck = selectedService.source
+                    ? protocols.find(function (p) { return p.id === selectedService.source; })
+                    : null;
+                var skipServiceSegment = protoForCheck && protoForCheck.name === svcDisplayName;
+
+                if (!skipServiceSegment) breadcrumb.appendChild(el('span', {
+                    className: 'bowire-breadcrumb-item current',
+                    textContent: svcDisplayName,
                     title: selectedService.name,
                     onClick: function () {
                         // Expand this service in the sidebar, close active tab
@@ -775,13 +808,7 @@
                         }
                     }
                 }));
-                breadcrumb.appendChild(el('span', { className: 'bowire-breadcrumb-sep', textContent: '\u203A' }));
             }
-            breadcrumb.appendChild(el('span', {
-                className: 'bowire-breadcrumb-item current',
-                textContent: selectedMethod.name
-            }));
-            header.appendChild(breadcrumb);
 
             var headerName = el('div', { className: 'bowire-header-method' + (selectedMethod.deprecated ? ' deprecated' : '') });
             headerName.appendChild(document.createTextNode(selectedMethod.name));
@@ -789,7 +816,13 @@
                 headerName.appendChild(el('span', { className: 'bowire-header-deprecated', textContent: 'DEPRECATED' }));
             }
 
+            // Stack breadcrumb + method-name + path + summary vertically
+            // inside the same column-flex container. Previously breadcrumb
+            // sat in a sibling row to the right of the toggle button, so a
+            // short Protocol > Service trail and a short method name landed
+            // on the same horizontal axis and overlapped at narrower widths.
             const info = el('div', { className: 'bowire-header-info' },
+                breadcrumb,
                 headerName,
                 el('div', { className: 'bowire-header-path', textContent: selectedMethod.fullName })
             );

@@ -1,5 +1,43 @@
 # Changelog
 
+## v1.0.10 — Method-detail header layout fix (2026-05-05)
+
+### Fixes
+- **Method-detail header rendered the protocol name in a 12×12 icon
+  slot**, which let it overflow horizontally and collide with the
+  large method-name title on the right. Most visible on Socket.IO
+  where it produced a `Sock|listen|tIO` overlap. The protocol-name
+  span now uses the regular `bowire-breadcrumb-item` class so it
+  flows alongside its sibling tokens.
+- **Method name was duplicated** — once as the breadcrumb's
+  current segment, once as the prominent header title. Dropped
+  the breadcrumb's method segment; breadcrumb now reads
+  `Protocol > Service` and the method name is the title alone.
+- **Service-name dot-prefix trim was too aggressive** —
+  `selectedService.name.split('.').pop()` turned `Socket.IO` into
+  `IO` and `Akka.Actor.Tap` into `Tap`. Trim only when the last
+  segment is at least 4 characters; otherwise show the full name.
+- **Service segment is suppressed entirely** when it would just
+  duplicate the protocol name (single-service plugins like
+  Socket.IO, where service-name == plugin-name). No more
+  `Socket.IO > Socket.IO`.
+
+### Site / docs
+- Re-captured `streaming-socketio-{dark,light}.png` and
+  `streaming-mqtt-{dark,light}.png` with the new vertically-stacked
+  header. The other protocol-card screenshots have distinct
+  service names so the old horizontal layout already rendered
+  cleanly there — they'll pick up the same vertical stack on the
+  next refresh but no visual regression today.
+
+### Layout structure
+- `bowire-header-info` is now a column-flex container that holds
+  breadcrumb → method-name → fullName-path → optional summary.
+  Previously breadcrumb sat as a sibling row to the right of the
+  toggle button, which let a short Protocol > Service trail land
+  on the same horizontal axis as a short method-name title and
+  overlap at narrow widths.
+
 ## v1.0.9 — HttpClient factory + gRPC SocketsHttpHandler + Socket.IO fix (2026-05-05)
 
 Stable release of the cert-trust generalisation. Promotes the rc.1 +
