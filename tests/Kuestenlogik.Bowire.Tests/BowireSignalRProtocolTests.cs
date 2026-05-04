@@ -501,21 +501,24 @@ public sealed class SignalRHubDiscoveryTests
 public sealed class SignalRInvokerParseArgumentsTests
 {
     [Fact]
-    public void Empty_Body_Returns_Single_Null_Argument()
+    public void Empty_Body_Returns_Zero_Arguments()
     {
+        // Empty form body now maps to a zero-arg call so SignalR hub
+        // methods with no parameters (e.g. SubscribeToChanges with
+        // only a CancellationToken) match their signature. Pre-1.0.5
+        // returned a single null which made the runtime reject the
+        // invocation with 'wrong argument count'.
         var args = InvokeParseArguments(["{}"]);
 
-        Assert.Single(args);
-        Assert.Null(args[0]);
+        Assert.Empty(args);
     }
 
     [Fact]
-    public void Whitespace_Body_Returns_Single_Null_Argument()
+    public void Whitespace_Body_Returns_Zero_Arguments()
     {
         var args = InvokeParseArguments(["   "]);
 
-        Assert.Single(args);
-        Assert.Null(args[0]);
+        Assert.Empty(args);
     }
 
     [Fact]
