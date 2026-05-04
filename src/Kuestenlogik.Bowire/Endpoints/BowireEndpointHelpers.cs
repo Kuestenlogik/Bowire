@@ -1,6 +1,7 @@
 // Copyright 2026 Küstenlogik
 // SPDX-License-Identifier: Apache-2.0
 
+using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Kuestenlogik.Bowire.Models;
@@ -25,13 +26,21 @@ internal static class BowireEndpointHelpers
     /// JSON serialiser settings used for every endpoint response. Camel
     /// case so the JS layer can read fields with their idiomatic names,
     /// nulls dropped to keep the wire small, no indentation because the
-    /// browser doesn't render it.
+    /// browser doesn't render it. <c>UnsafeRelaxedJsonEscaping</c> keeps
+    /// quotes and non-ASCII characters literal — the default
+    /// <c>JavaScriptEncoder</c> escapes them as <c>"</c> /
+    /// <c>ü</c> for HTML/script-injection safety, but Bowire never
+    /// embeds responses inside HTML or scripts, only fetches them as
+    /// <c>application/json</c>, so the escapes were pure noise that made
+    /// the streaming-frame pane harder to read for users with German /
+    /// Japanese / Russian payloads.
     /// </summary>
     public static readonly JsonSerializerOptions JsonOptions = new()
     {
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
-        WriteIndented = false
+        WriteIndented = false,
+        Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping
     };
 
     /// <summary>

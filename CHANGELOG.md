@@ -1,5 +1,30 @@
 # Changelog
 
+## v1.0.8 — Readable JSON output in stream pane (2026-05-04)
+
+### Changes
+- **`UnsafeRelaxedJsonEscaping`** for every Bowire endpoint
+  response. The default `JavaScriptEncoder` escapes quotes and
+  non-ASCII characters as `"` / `ü` for HTML-/script-
+  injection safety, but Bowire never embeds responses inside HTML
+  or `<script>` blocks — the UI fetches them as
+  `application/json` only. The escapes were pure noise that made
+  German / Japanese / Russian payloads, plus already-stringified
+  inner JSON in event-stream frames, unnecessarily hard to read
+  in the streaming-frame pane (`\\u0022` was a frequent
+  side-effect of the double-serialise pattern many sample servers
+  use). One-line change in `BowireEndpointHelpers.JsonOptions`.
+
+### Notes
+- The setting only changes the **wire** representation, not the
+  semantic content. JSON parsers handle both forms identically;
+  consumers that hand-decoded the payloads will see literal `"`
+  and Unicode characters where they previously saw `\u`-escapes.
+- Names of the form `*RelaxedJsonEscaping` historically alarm
+  reviewers — to be explicit: this is safe in Bowire because the
+  output never lands in an HTML attribute or a `<script>` body
+  where browser parsers would re-interpret it.
+
 ## v1.0.7 — GraphQL/SSE streaming fixes (2026-05-04)
 
 ### Fixes

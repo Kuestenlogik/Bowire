@@ -2,6 +2,9 @@
 
 ## Completed
 
+### v1.0.8 — Readable JSON output (2026-05-04)
+- [x] **Switch every endpoint response to `UnsafeRelaxedJsonEscaping`** so quotes and non-ASCII characters stay literal. Removes the `"` / `ü` noise from the streaming-frame pane — particularly visible on German payloads and on event-stream samples that double-serialise (string-of-JSON inside JSON).
+
 ### v1.0.7 — Streaming-fix release (2026-05-04)
 - [x] **GraphQL `graphql-transport-ws` subscriptions**: fixed unwrap mismatch with the WebSocket plugin's nested-JSON envelope. Subscriptions now accept both shapes (parsed object and legacy escaped string). Bug present since 1.0.0.
 - [x] **SSE `Invalid port specified`** on Execute — frontend sends `method.name`, plugin expected `method.fullName`. Resolver now reuses `SseEndpointDiscovery.Discover` so manual `RegisterEndpoint` *and* `Produces("text/event-stream")` auto-discovered routes both resolve correctly.
