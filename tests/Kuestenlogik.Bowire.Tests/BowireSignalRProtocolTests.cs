@@ -197,11 +197,17 @@ public sealed class BowireSignalRProtocolTests
 
     private static string InvokeResolveHubUrl(string serverUrl, string service)
     {
+        // ResolveHubUrl became an instance method in 1.0.5 so it can
+        // resolve the discovered hub Package when one is registered.
+        // Tests pass a fresh instance with no IServiceProvider, so the
+        // discovery lookup short-circuits to empty and we fall through
+        // to the literal-name path the older static helper used.
+        var plugin = new BowireSignalRProtocol();
         var method = typeof(BowireSignalRProtocol).GetMethod(
             "ResolveHubUrl",
-            BindingFlags.NonPublic | BindingFlags.Static);
+            BindingFlags.NonPublic | BindingFlags.Instance);
         Assert.NotNull(method);
-        var result = method!.Invoke(null, new object[] { serverUrl, service });
+        var result = method!.Invoke(plugin, new object[] { serverUrl, service });
         return Assert.IsType<string>(result);
     }
 }
