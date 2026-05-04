@@ -2,6 +2,13 @@
 
 ## Completed
 
+### v1.0.9-rc.1 — Shared HttpClient factory for cert-trust (2026-05-04)
+- [x] **`BowireHttpClientFactory`** in `Kuestenlogik.Bowire/Net/`. Validation callback consults `LocalhostCertTrust` on every request, defence-in-depth gates on loopback URL.
+- [x] **REST, GraphQL, SSE, MCP, OData** plugins migrated from `static s_http` to instance `_http` built in `Initialize()`. HttpClient count per process unchanged (one per plugin singleton).
+- [x] **`SseSubscriber`** accepts externally-supplied `HttpClient` so cross-plugin SSE consumers (`IInlineSseSubscriber`) inherit the host's trust config.
+- [x] **Pending**: gRPC plugin still uses `SocketsHttpHandler` directly for HTTP/2 — migrate to a `BowireHttpClientFactory.CreateSocketsHttpHandler(...)` shape in a follow-up.
+- [ ] **First RC of the new versioning discipline** — features land as `1.0.x-rc.N` for a smoke round before the final `1.0.x` tag drops. Consumers opt into RCs via `--prerelease`.
+
 ### v1.0.8 — Readable JSON output (2026-05-04)
 - [x] **Switch every endpoint response to `UnsafeRelaxedJsonEscaping`** so quotes and non-ASCII characters stay literal. Removes the `"` / `ü` noise from the streaming-frame pane — particularly visible on German payloads and on event-stream samples that double-serialise (string-of-JSON inside JSON).
 

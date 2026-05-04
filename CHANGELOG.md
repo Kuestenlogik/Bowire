@@ -1,5 +1,61 @@
 # Changelog
 
+## v1.0.9-rc.1 — Shared HttpClient factory for cert-trust opt-in (2026-05-04)
+
+First release-candidate of the cert-trust generalisation that 1.0.3
+left as a follow-up. SignalR and WebSocket already honoured
+`Bowire:TrustLocalhostCert` for `wss://localhost`; the
+HttpClient-bearing plugins (REST, GraphQL, SSE, MCP, OData) used
+the OS trust store directly and failed with a generic stream
+error against the ASP.NET Core dev cert when it wasn't installed.
+
+### Adds
+- **`Kuestenlogik.Bowire.Net.BowireHttpClientFactory`**. Two
+  static helpers — `Create(config, pluginId, timeout)` returns a
+  ready-to-go `HttpClient`, `CreateHandler(config, pluginId)`
+  returns the underlying `HttpClientHandler` for plugins that
+  need to layer cookies / proxies / redirect policy on top before
+  wrapping. The validation callback consults
+  `LocalhostCertTrust.IsTrustedFor(...)` on every request so
+  per-plugin overrides (`Bowire:rest:TrustLocalhostCert=false`
+  beats `Bowire:TrustLocalhostCert=true`) keep working.
+- **Defence in depth**: the relaxed validation path only fires
+  when (a) the OS trust check failed AND (b) the request URL
+  resolves to `localhost` / `127.0.0.1` / `::1`. A misconfigured
+  host that flipped `TrustLocalhostCert=true` against an external
+  hostname still validates strictly.
+
+### Refactors (no behaviour change without the opt-in)
+- **REST, GraphQL, SSE, MCP, OData** plugins switch from a
+  `static readonly HttpClient s_http` to an instance `_http`
+  built in `Initialize()` from the factory. HttpClient count
+  per process is unchanged (one per plugin, plugin is a
+  registry singleton); the only difference is the validation
+  callback is now wired to config.
+- **`SseSubscriber`** gains a constructor that accepts an
+  externally-supplied `HttpClient`, so cross-plugin SSE
+  consumers (`IInlineSseSubscriber.SubscribeAsync` from MCP /
+  GraphQL graphql-sse) inherit the host's trust config.
+
+### Tests
+- 7 unit tests for `BowireHttpClientFactory`: null-config path,
+  custom timeout, callback wiring, loopback-with-flag-on,
+  production-URL-with-flag-on (defence-in-depth), per-plugin
+  override beats global, OS-already-trusted bypass.
+
+### Why RC, not 1.0.9 final
+- Touches every HttpClient-using plugin's lifetime model. We
+  want at least one round of `bowire --url https://localhost:…`
+  end-to-end smoke against a non-trusted dev cert before this
+  goes stable. RC drops on nuget.org with the `-rc.1` suffix
+  so consumers must opt in via `--prerelease`.
+
+### Pending
+- gRPC plugin uses `SocketsHttpHandler` directly for HTTP/2 and
+  has its own MTLS-handler-owner machinery, so it isn't migrated
+  in this RC. Will follow once the factory grows a
+  `CreateSocketsHttpHandler(...)` shape.
+
 ## v1.0.8 — Readable JSON output in stream pane (2026-05-04)
 
 ### Changes

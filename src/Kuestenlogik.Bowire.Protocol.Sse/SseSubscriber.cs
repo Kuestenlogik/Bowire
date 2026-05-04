@@ -15,13 +15,32 @@ internal sealed class SseSubscriber : IAsyncDisposable
     private static readonly JsonSerializerOptions s_jsonOptions = new() { WriteIndented = true };
 
     private readonly HttpClient _client;
+    private readonly bool _ownsClient;
 
+    /// <summary>
+    /// Pass an externally-built <see cref="HttpClient"/> (typically from
+    /// <c>BowireHttpClientFactory.Create</c> in the plugin's
+    /// <c>Initialize</c>) so localhost-cert trust opt-in flows through.
+    /// SSE connections are long-lived, so the caller is expected to
+    /// configure the timeout — this constructor does not override it.
+    /// </summary>
+    public SseSubscriber(HttpClient client)
+    {
+        _client = client;
+        _ownsClient = false;
+    }
+
+    /// <summary>
+    /// Default constructor — builds a vanilla 1-hour-timeout HttpClient.
+    /// Used by test paths that don't have a configuration to plumb through.
+    /// </summary>
     public SseSubscriber()
     {
         _client = new HttpClient
         {
             Timeout = TimeSpan.FromHours(1), // SSE connections are long-lived
         };
+        _ownsClient = true;
     }
 
     /// <summary>
@@ -102,7 +121,7 @@ internal sealed class SseSubscriber : IAsyncDisposable
 
     public ValueTask DisposeAsync()
     {
-        _client.Dispose();
+        if (_ownsClient) _client.Dispose();
         return ValueTask.CompletedTask;
     }
 }

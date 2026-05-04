@@ -4,6 +4,9 @@
 using System.Runtime.CompilerServices;
 using System.Text.Json;
 using Kuestenlogik.Bowire.Models;
+using Kuestenlogik.Bowire.Net;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Kuestenlogik.Bowire.Protocol.Sse;
 
@@ -16,10 +19,24 @@ namespace Kuestenlogik.Bowire.Protocol.Sse;
 /// event-stream parser via <see cref="BowireProtocolRegistry.FindSseSubscriber"/>
 /// without taking a compile-time dependency on this assembly.
 /// </summary>
+// CA1001: _http lives for the lifetime of the protocol registry, which is
+// the lifetime of the host process. Adding IDisposable to IBowireProtocol
+// just to dispose a singleton at shutdown would ripple through every plugin
+// without payoff.
+#pragma warning disable CA1001
 public sealed class BowireSseProtocol : IBowireProtocol, IInlineSseSubscriber
+#pragma warning restore CA1001
 {
     private static readonly List<SseEndpointInfo> s_registeredEndpoints = [];
     private IServiceProvider? _serviceProvider;
+
+    // Built lazily from BowireHttpClientFactory in Initialize() so the
+    // localhost-cert opt-in (Bowire:TrustLocalhostCert) reaches the
+    // certificate validation callback. SSE connections are long-lived, so
+    // a 1-hour timeout — short enough that an actual broken connection
+    // eventually surfaces, long enough that legitimate keep-alive
+    // streams (every 5 s) keep the channel open indefinitely.
+    private HttpClient _http = new() { Timeout = TimeSpan.FromHours(1) };
 
     public string Name => "SSE";
     public string Id => "sse";
@@ -51,6 +68,8 @@ public sealed class BowireSseProtocol : IBowireProtocol, IInlineSseSubscriber
     public void Initialize(IServiceProvider? serviceProvider)
     {
         _serviceProvider = serviceProvider;
+        var config = serviceProvider?.GetService<IConfiguration>();
+        _http = BowireHttpClientFactory.Create(config, Id, TimeSpan.FromHours(1));
     }
 
     /// <inheritdoc />
@@ -83,7 +102,7 @@ public sealed class BowireSseProtocol : IBowireProtocol, IInlineSseSubscriber
     {
         var url = ResolveUrl(serverUrl, method, jsonMessages);
 
-        await using var subscriber = new SseSubscriber();
+        await using var subscriber = new SseSubscriber(_http);
         await foreach (var evt in subscriber.SubscribeAsync(url, metadata, ct))
             yield return evt;
     }
@@ -96,7 +115,7 @@ public sealed class BowireSseProtocol : IBowireProtocol, IInlineSseSubscriber
     {
         // Cross-plugin entry point — open a brand-new SseSubscriber so the
         // caller's lifetime is independent of any other in-flight stream.
-        await using var subscriber = new SseSubscriber();
+        await using var subscriber = new SseSubscriber(_http);
         await foreach (var evt in subscriber.SubscribeAsync(url, headers, ct))
             yield return evt;
     }

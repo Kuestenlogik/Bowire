@@ -37,10 +37,13 @@
     <PackageIcon>icon.png</PackageIcon>
   </PropertyGroup>
 
+  <!-- Version is the NuGet/SemVer string (may include -rc/-preview suffix);
+       AssemblyVersion and FileVersion must be 4-part numeric (no suffix), so
+       pre-release tags share the underlying 1.0.9 numeric until the final tag. -->
   <PropertyGroup Condition="'$(IsPackable)' != 'false'">
-    <Version>1.0.8</Version>
-    <AssemblyVersion>1.0.8</AssemblyVersion>
-    <FileVersion>1.0.8</FileVersion>
+    <Version>1.0.9-rc.1</Version>
+    <AssemblyVersion>1.0.9</AssemblyVersion>
+    <FileVersion>1.0.9</FileVersion>
   </PropertyGroup>
 
   <!-- Mark all Kuestenlogik.Bowire.Protocol.* projects as Bowire plugins so

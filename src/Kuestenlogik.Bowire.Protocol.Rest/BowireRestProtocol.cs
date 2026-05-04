@@ -3,6 +3,9 @@
 
 using System.Collections.Concurrent;
 using Kuestenlogik.Bowire.Models;
+using Kuestenlogik.Bowire.Net;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Kuestenlogik.Bowire.Protocol.Rest;
 
@@ -12,11 +15,21 @@ namespace Kuestenlogik.Bowire.Protocol.Rest;
 /// them via <see cref="RestInvoker"/>. Auto-discovered by
 /// <see cref="BowireProtocolRegistry"/>.
 /// </summary>
+// CA1001: _http lives for the lifetime of the protocol registry, which is
+// the lifetime of the host process. Adding IDisposable to IBowireProtocol
+// just to dispose a singleton at shutdown would ripple through every
+// plugin without payoff.
+#pragma warning disable CA1001
 public sealed class BowireRestProtocol : IBowireProtocol, IInlineHttpInvoker
+#pragma warning restore CA1001
 {
     // One HttpClient for the lifetime of the plugin — fine for a dev tool.
     // 30s timeout matches the OAuth proxy timeout used elsewhere in Bowire.
-    private static readonly HttpClient s_http = new() { Timeout = TimeSpan.FromSeconds(30) };
+    // Built lazily from BowireHttpClientFactory in Initialize() so the
+    // localhost-cert opt-in (Bowire:TrustLocalhostCert) reaches the
+    // certificate validation callback. Falls back to a vanilla HttpClient
+    // for test paths that skip Initialize.
+    private HttpClient _http = new() { Timeout = TimeSpan.FromSeconds(30) };
 
     // Cache parsed OpenAPI docs per server URL so InvokeAsync doesn't re-fetch.
     // Key: serverUrl. Value: discovered services + lookup index.
@@ -35,6 +48,8 @@ public sealed class BowireRestProtocol : IBowireProtocol, IInlineHttpInvoker
     public void Initialize(IServiceProvider? serviceProvider)
     {
         _serviceProvider = serviceProvider;
+        var config = serviceProvider?.GetService<IConfiguration>();
+        _http = BowireHttpClientFactory.Create(config, Id, TimeSpan.FromSeconds(30));
     }
 
     public async Task<List<BowireServiceInfo>> DiscoverAsync(
@@ -127,7 +142,7 @@ public sealed class BowireRestProtocol : IBowireProtocol, IInlineHttpInvoker
     {
         if (string.IsNullOrEmpty(docUrl)) return [];
 
-        var discovered = await OpenApiDiscovery.FetchAndParseAsync(docUrl, s_http, ct).ConfigureAwait(false);
+        var discovered = await OpenApiDiscovery.FetchAndParseAsync(docUrl, _http, ct).ConfigureAwait(false);
         if (discovered is null)
         {
             // The URL is not an OpenAPI document — drop any cache entry and let
@@ -212,7 +227,7 @@ public sealed class BowireRestProtocol : IBowireProtocol, IInlineHttpInvoker
         if (_cache.TryGetValue(string.Empty, out var embeddedCache)
             && embeddedCache.Index.TryGetValue(service + "::" + method, out var embeddedMethod))
         {
-            return await RestInvoker.InvokeAsync(s_http, serverUrl, embeddedMethod, jsonMessages, metadata, ct)
+            return await RestInvoker.InvokeAsync(_http, serverUrl, embeddedMethod, jsonMessages, metadata, ct)
                 .ConfigureAwait(false);
         }
 
@@ -251,7 +266,7 @@ public sealed class BowireRestProtocol : IBowireProtocol, IInlineHttpInvoker
         // Use the OpenAPI servers[0] base URL when present — that's the actual
         // API endpoint, even if the OpenAPI doc was hosted somewhere else.
         var effectiveBase = cache.ApiBaseUrl ?? serverUrl;
-        return await RestInvoker.InvokeAsync(s_http, effectiveBase, methodInfo, jsonMessages, metadata, ct)
+        return await RestInvoker.InvokeAsync(_http, effectiveBase, methodInfo, jsonMessages, metadata, ct)
             .ConfigureAwait(false);
     }
 
@@ -281,7 +296,7 @@ public sealed class BowireRestProtocol : IBowireProtocol, IInlineHttpInvoker
         Dictionary<string, string>? metadata,
         CancellationToken ct = default)
     {
-        return RestInvoker.InvokeAsync(s_http, serverUrl, methodInfo, jsonMessages, metadata, ct);
+        return RestInvoker.InvokeAsync(_http, serverUrl, methodInfo, jsonMessages, metadata, ct);
     }
 }
 

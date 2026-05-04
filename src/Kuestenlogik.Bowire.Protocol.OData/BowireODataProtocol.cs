@@ -5,6 +5,9 @@ using System.Runtime.CompilerServices;
 using System.Text.Json;
 using System.Xml;
 using Kuestenlogik.Bowire.Models;
+using Kuestenlogik.Bowire.Net;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.OData.Edm;
 using Microsoft.OData.Edm.Csdl;
 
@@ -21,15 +24,31 @@ namespace Kuestenlogik.Bowire.Protocol.OData;
 ///
 /// Auto-discovered by <see cref="BowireProtocolRegistry"/>.
 /// </summary>
+// CA1001: _http lives for the lifetime of the protocol registry, which is
+// the lifetime of the host process. Adding IDisposable to IBowireProtocol
+// just to dispose a singleton at shutdown would ripple through every plugin
+// without payoff.
+#pragma warning disable CA1001
 public sealed class BowireODataProtocol : IBowireProtocol
+#pragma warning restore CA1001
 {
+    // Built lazily from BowireHttpClientFactory in Initialize() so the
+    // localhost-cert opt-in (Bowire:TrustLocalhostCert) reaches the
+    // certificate validation callback. Discovery uses a 10 s timeout, but
+    // invocations may be slower (server-side joins) — give them the default.
+    private HttpClient _http = new();
+
     public string Name => "OData";
     public string Id => "odata";
 
     // OData has no official SVG; cylinder glyph ("queryable dataset") matches the site.
     public string IconSvg => """<svg viewBox="0 0 24 24" fill="none" stroke="#eab308" stroke-width="1.5" width="16" height="16" aria-hidden="true"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 5v6c0 1.66-4.03 3-9 3s-9-1.34-9-3V5"/><path d="M21 11v6c0 1.66-4.03 3-9 3s-9-1.34-9-3v-6"/></svg>""";
 
-    public void Initialize(IServiceProvider? serviceProvider) { }
+    public void Initialize(IServiceProvider? serviceProvider)
+    {
+        var config = serviceProvider?.GetService<IConfiguration>();
+        _http = BowireHttpClientFactory.Create(config, Id);
+    }
 
     public async Task<List<BowireServiceInfo>> DiscoverAsync(
         string serverUrl, bool showInternalServices, CancellationToken ct = default)
@@ -40,13 +59,17 @@ public sealed class BowireODataProtocol : IBowireProtocol
 
         try
         {
-            using var http = new HttpClient();
-            http.Timeout = TimeSpan.FromSeconds(10);
+            // 10 s discovery timeout is plenty for an EDMX fetch — anything
+            // longer is the server being broken, and we'd rather drop than
+            // hang the discovery probe loop.
+            using var discoveryCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+            discoveryCts.CancelAfter(TimeSpan.FromSeconds(10));
+
             var metadataUrl = baseUrl.EndsWith("$metadata", StringComparison.OrdinalIgnoreCase)
                 ? baseUrl
                 : baseUrl + "/$metadata";
 
-            var resp = await http.GetAsync(new Uri(metadataUrl), ct);
+            var resp = await _http.GetAsync(new Uri(metadataUrl), discoveryCts.Token);
             if (!resp.IsSuccessStatusCode) return [];
 
             var xml = await resp.Content.ReadAsStreamAsync(ct);
@@ -137,8 +160,6 @@ public sealed class BowireODataProtocol : IBowireProtocol
         var payload = jsonMessages.FirstOrDefault() ?? "{}";
         var sw = System.Diagnostics.Stopwatch.StartNew();
 
-        using var http = new HttpClient();
-
         // Parse method to determine HTTP verb and path
         var parts = method.Split('/');
         var httpVerb = parts.Length >= 3 ? parts[2] : "GET";
@@ -169,15 +190,15 @@ public sealed class BowireODataProtocol : IBowireProtocol
         {
             using var content = new StringContent(payload, System.Text.Encoding.UTF8, "application/json");
             using var req = new HttpRequestMessage(new HttpMethod(httpVerb), requestUrl) { Content = content };
-            resp = await http.SendAsync(req, ct);
+            resp = await _http.SendAsync(req, ct);
         }
         else if (httpVerb == "DELETE")
         {
-            resp = await http.DeleteAsync(requestUrl, ct);
+            resp = await _http.DeleteAsync(requestUrl, ct);
         }
         else
         {
-            resp = await http.GetAsync(requestUrl, ct);
+            resp = await _http.GetAsync(requestUrl, ct);
         }
 
         var responseBody = await resp.Content.ReadAsStringAsync(ct);

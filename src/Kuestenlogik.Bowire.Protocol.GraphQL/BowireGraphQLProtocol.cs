@@ -5,6 +5,9 @@ using System.Net.Http.Json;
 using System.Runtime.CompilerServices;
 using System.Text.Json;
 using Kuestenlogik.Bowire.Models;
+using Kuestenlogik.Bowire.Net;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Kuestenlogik.Bowire.Protocol.GraphQL;
 
@@ -15,9 +18,19 @@ namespace Kuestenlogik.Bowire.Protocol.GraphQL;
 /// invokes them by building a parameterised operation string with
 /// <see cref="GraphQLQueryBuilder"/>.
 /// </summary>
+// CA1001: _http lives for the lifetime of the protocol registry, which is
+// the lifetime of the host process. Adding IDisposable to IBowireProtocol
+// just to dispose a singleton at shutdown would ripple through every plugin
+// without payoff.
+#pragma warning disable CA1001
 public sealed class BowireGraphQLProtocol : IBowireProtocol
+#pragma warning restore CA1001
 {
-    private static readonly HttpClient s_http = new()
+    // Built lazily from BowireHttpClientFactory in Initialize() so the
+    // localhost-cert opt-in (Bowire:TrustLocalhostCert) reaches the
+    // certificate validation callback. Falls back to a vanilla HttpClient
+    // for test paths that skip Initialize.
+    private HttpClient _http = new()
     {
         Timeout = TimeSpan.FromSeconds(30)
     };
@@ -37,6 +50,12 @@ public sealed class BowireGraphQLProtocol : IBowireProtocol
 
     // Official GraphQL logo (simpleicons) in brand pink.
     public string IconSvg => """<svg viewBox="0 0 24 24" fill="#e535ab" width="16" height="16" aria-hidden="true"><path d="M12.002 0a2.138 2.138 0 1 0 0 4.277 2.138 2.138 0 1 0 0-4.277zm8.54 4.931a2.138 2.138 0 1 0 0 4.277 2.138 2.138 0 1 0 0-4.277zm0 9.862a2.138 2.138 0 1 0 0 4.277 2.138 2.138 0 1 0 0-4.277zm-8.54 4.931a2.138 2.138 0 1 0 0 4.276 2.138 2.138 0 1 0 0-4.276zm-8.542-4.93a2.138 2.138 0 1 0 0 4.276 2.138 2.138 0 1 0 0-4.277zm0-9.863a2.138 2.138 0 1 0 0 4.277 2.138 2.138 0 1 0 0-4.277zm8.542-3.378L2.953 6.777v10.448l9.049 5.224 9.047-5.224V6.777zm0 1.601 7.66 13.27H4.34zm-1.387.371L3.97 15.037V7.363zm2.774 0 6.646 3.838v7.674zM5.355 17.44h13.293l-6.646 3.836z"/></svg>""";
+
+    public void Initialize(IServiceProvider? serviceProvider)
+    {
+        var config = serviceProvider?.GetService<IConfiguration>();
+        _http = BowireHttpClientFactory.Create(config, Id, TimeSpan.FromSeconds(30));
+    }
 
     public async Task<List<BowireServiceInfo>> DiscoverAsync(
         string serverUrl, bool showInternalServices, CancellationToken ct = default)
@@ -213,7 +232,7 @@ public sealed class BowireGraphQLProtocol : IBowireProtocol
     /// with <c>Accept: text/event-stream</c>, then read the resulting SSE
     /// stream and yield each <c>event: next</c> payload as a JSON envelope.
     /// </summary>
-    private static async IAsyncEnumerable<string> StreamViaSseAsync(
+    private async IAsyncEnumerable<string> StreamViaSseAsync(
         string serverUrl,
         string operation,
         JsonElement? variables,
@@ -240,7 +259,7 @@ public sealed class BowireGraphQLProtocol : IBowireProtocol
         string? sendError = null;
         try
         {
-            response = await s_http.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, ct);
+            response = await _http.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, ct);
             response.EnsureSuccessStatusCode();
         }
         catch (Exception ex)
@@ -545,7 +564,7 @@ public sealed class BowireGraphQLProtocol : IBowireProtocol
         _ => ("string", false)
     };
 
-    private static async Task<JsonElement> SendOperationAsync(
+    private async Task<JsonElement> SendOperationAsync(
         string endpoint,
         string query,
         JsonElement? variables,
@@ -567,7 +586,7 @@ public sealed class BowireGraphQLProtocol : IBowireProtocol
 
         request.Content = JsonContent.Create(payload, options: s_jsonOptions);
 
-        using var response = await s_http.SendAsync(request, ct);
+        using var response = await _http.SendAsync(request, ct);
         response.EnsureSuccessStatusCode();
 
         return await response.Content.ReadFromJsonAsync<JsonElement>(s_jsonOptions, ct);
