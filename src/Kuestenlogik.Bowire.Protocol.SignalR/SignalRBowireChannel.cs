@@ -96,7 +96,8 @@ internal sealed class SignalRBowireChannel : IBowireChannel
         bool isServerStreaming,
         Dictionary<string, string>? headers,
         CancellationToken ct,
-        MtlsConfig? mtlsConfig = null)
+        MtlsConfig? mtlsConfig = null,
+        bool trustLocalhostCert = false)
     {
         MtlsCertOwner? mtlsOwner = null;
         if (mtlsConfig is not null)
@@ -107,6 +108,14 @@ internal sealed class SignalRBowireChannel : IBowireChannel
                 throw new InvalidOperationException(mtlsError ?? "mTLS configuration invalid");
             }
         }
+
+        // Trust the self-signed ASP.NET Core dev cert (and any other
+        // localhost-served cert) only when the consuming host has
+        // explicitly opted in via Bowire:SignalR:TrustLocalhostCert =
+        // true. Off by default — production URLs must always go
+        // through the OS trust store. We never apply this for non-
+        // localhost hosts no matter the flag.
+        var allowSelfSigned = trustLocalhostCert && IsLocalhostUrl(hubUrl) && mtlsOwner is null;
 
         var builder = new HubConnectionBuilder()
             .WithUrl(hubUrl, options =>
@@ -152,6 +161,34 @@ internal sealed class SignalRBowireChannel : IBowireChannel
                             ws.RemoteCertificateValidationCallback = (sender, cert, chain, errs) =>
                                 validator(sender, cert as System.Security.Cryptography.X509Certificates.X509Certificate2, chain, errs);
                         }
+                    };
+                }
+                else if (allowSelfSigned)
+                {
+                    // Localhost dev-cert opt-in (Bowire:SignalR:TrustLocalhostCert).
+                    // CA5359 fires here because the callback returns true
+                    // unconditionally — we suppress it explicitly: the
+                    // outer guard `allowSelfSigned` already requires the
+                    // host to be loopback AND the consumer to have
+                    // opted in via configuration; a relaxed validator
+                    // for any other host wouldn't reach this branch.
+                    options.HttpMessageHandlerFactory = inner =>
+                    {
+#pragma warning disable CA2000, CA5400, CA5359
+                        var handler = new HttpClientHandler
+                        {
+                            ServerCertificateCustomValidationCallback = (_, _, _, _) => true,
+                            CheckCertificateRevocationList = false,
+                        };
+#pragma warning restore CA2000, CA5400, CA5359
+                        inner.Dispose();
+                        return handler;
+                    };
+                    options.WebSocketConfiguration = ws =>
+                    {
+#pragma warning disable CA5359
+                        ws.RemoteCertificateValidationCallback = (_, _, _, _) => true;
+#pragma warning restore CA5359
                     };
                 }
             })
@@ -260,5 +297,21 @@ internal sealed class SignalRBowireChannel : IBowireChannel
             : "null";
 
         await _responses.Writer.WriteAsync(json, token);
+    }
+
+    /// <summary>
+    /// True when the URL points at localhost / 127.0.0.1 / ::1. Used to
+    /// scope the trust-localhost-cert opt-in: the relaxed validation
+    /// callback only ever fires when the URL is loopback, even if the
+    /// flag was accidentally enabled in production. Defence in depth.
+    /// </summary>
+    internal static bool IsLocalhostUrl(string url)
+    {
+        if (!Uri.TryCreate(url, UriKind.Absolute, out var u)) return false;
+        var host = u.Host;
+        return string.Equals(host, "localhost", StringComparison.OrdinalIgnoreCase)
+            || host == "127.0.0.1"
+            || host == "::1"
+            || host == "[::1]";
     }
 }

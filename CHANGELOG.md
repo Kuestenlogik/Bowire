@@ -1,5 +1,44 @@
 # Changelog
 
+## v1.0.2 — SignalR localhost cert opt-in + mobile polish (2026-05-04)
+
+### Fixes
+- SignalR plugin: hub connections to a self-signed dev cert
+  (`https://localhost`) used to fail the TLS handshake ~45 ms after
+  Execute, surfacing as a generic "Stream error occurred" in the
+  Bowire UI. Adds a defensive **opt-in** trust path for localhost:
+  set `Bowire:SignalR:TrustLocalhostCert = true` in appsettings
+  (or via the `BOWIRE__SIGNALR__TRUSTLOCALHOSTCERT` env var) and
+  hub connections to `localhost` / `127.0.0.1` / `::1` skip the
+  OS cert-store check. **Off by default** — production URLs always
+  validate strictly, and the relaxed callback only fires when the
+  URL itself is loopback. mTLS configurations are unaffected.
+
+### Site / docs
+- Mobile header: burger sits flush against the right viewport edge
+  with the same optical breathing room as the logo on the left.
+  Five action icons fit on a 412 px-wide phone with a tighter gap.
+- Mobile burger menu: 1 px slit between the header bottom edge and
+  the open submenu is gone (anchored at calc(header-height − 1px)
+  so it overlaps the border).
+- Mobile comparison table: only Bowire + the active competitor are
+  rendered. Sticky positioning + fixed table-layout dropped, so
+  the Bowire column no longer overlaps the picked competitor cell.
+  Wrap forced overflow:hidden so a stray cell can't widen the body.
+- Mobile section-rail (scrollspy dots + outline trigger) hidden on
+  phones — the dots overlapped article text and the outline ≡
+  trigger duplicated the burger menu icon.
+- Pagefind search results: drop the 30 % thumbnail-column phantom
+  indent (Pagefind reserves it on every result, even when no image
+  is provided).
+- Coming-soon protocol card: title pinned left so it matches the
+  alignment of the other cards.
+- Akka.NET protocol-card chip: trim "Mailbox tap (Server-streaming
+  Tap/MonitorMessages)" to "Mailbox tap (Server-streaming)".
+
+### Plugins (separate repos, no Bowire-version bump for these)
+- Akka.NET 0.10.0 (already shipped in 1.0.1) — DeadLetters capture.
+
 ## v1.0.1 — Standalone first-run polish (2026-05-04)
 
 ### Fixes

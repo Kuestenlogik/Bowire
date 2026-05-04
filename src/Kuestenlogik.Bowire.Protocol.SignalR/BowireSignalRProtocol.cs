@@ -4,6 +4,8 @@
 using System.Runtime.CompilerServices;
 using Kuestenlogik.Bowire.Auth;
 using Kuestenlogik.Bowire.Models;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Kuestenlogik.Bowire.Protocol.SignalR;
 
@@ -15,6 +17,16 @@ namespace Kuestenlogik.Bowire.Protocol.SignalR;
 public sealed class BowireSignalRProtocol : IBowireProtocol
 {
     private IServiceProvider? _serviceProvider;
+    /// <summary>
+    /// Read once at Initialize from
+    /// <c>Bowire:SignalR:TrustLocalhostCert</c> in IConfiguration.
+    /// Off by default — production hosts always validate strictly.
+    /// When on AND the hub URL points at localhost, the SignalR
+    /// HubConnection's TLS-validation callbacks are short-circuited
+    /// to accept any cert, so the ASP.NET Core dev-certs --trust step
+    /// becomes optional for development workflows.
+    /// </summary>
+    private bool _trustLocalhostCert;
 
     public string Name => "SignalR";
     public string Id => "signalr";
@@ -29,6 +41,8 @@ public sealed class BowireSignalRProtocol : IBowireProtocol
     public void Initialize(IServiceProvider? serviceProvider)
     {
         _serviceProvider = serviceProvider;
+        var config = serviceProvider?.GetService<IConfiguration>();
+        _trustLocalhostCert = config?.GetValue<bool>("Bowire:SignalR:TrustLocalhostCert") ?? false;
     }
 
     public Task<List<BowireServiceInfo>> DiscoverAsync(
@@ -57,7 +71,7 @@ public sealed class BowireSignalRProtocol : IBowireProtocol
         var sanitisedMetadata = mtlsConfig is null ? metadata : MtlsConfig.StripMarker(metadata);
 
         await using var invoker = new SignalRInvoker();
-        await invoker.ConnectAsync(hubUrl, sanitisedMetadata, mtlsConfig, ct);
+        await invoker.ConnectAsync(hubUrl, sanitisedMetadata, mtlsConfig, ct, _trustLocalhostCert);
         return await invoker.InvokeAsync(method, jsonMessages, ct);
     }
 
@@ -73,7 +87,7 @@ public sealed class BowireSignalRProtocol : IBowireProtocol
         var sanitisedMetadata = mtlsConfig is null ? metadata : MtlsConfig.StripMarker(metadata);
 
         await using var invoker = new SignalRInvoker();
-        await invoker.ConnectAsync(hubUrl, sanitisedMetadata, mtlsConfig, ct);
+        await invoker.ConnectAsync(hubUrl, sanitisedMetadata, mtlsConfig, ct, _trustLocalhostCert);
 
         await foreach (var response in invoker.StreamAsync(method, jsonMessages, ct))
             yield return response;
@@ -97,7 +111,7 @@ public sealed class BowireSignalRProtocol : IBowireProtocol
         var sanitisedMetadata = mtlsConfig is null ? metadata : MtlsConfig.StripMarker(metadata);
 
         return await SignalRBowireChannel.CreateAsync(
-            hubUrl, method, isClientStreaming, isServerStreaming, headers: sanitisedMetadata, ct, mtlsConfig);
+            hubUrl, method, isClientStreaming, isServerStreaming, headers: sanitisedMetadata, ct, mtlsConfig, _trustLocalhostCert);
     }
 
     /// <summary>

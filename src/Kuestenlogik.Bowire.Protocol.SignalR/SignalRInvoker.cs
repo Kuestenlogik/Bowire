@@ -22,7 +22,7 @@ internal sealed class SignalRInvoker : IAsyncDisposable
     public Task ConnectAsync(string hubUrl, Dictionary<string, string>? headers, CancellationToken ct)
         => ConnectAsync(hubUrl, headers, mtlsConfig: null, ct);
 
-    public async Task ConnectAsync(string hubUrl, Dictionary<string, string>? headers, MtlsConfig? mtlsConfig, CancellationToken ct)
+    public async Task ConnectAsync(string hubUrl, Dictionary<string, string>? headers, MtlsConfig? mtlsConfig, CancellationToken ct, bool trustLocalhostCert = false)
     {
         if (mtlsConfig is not null)
         {
@@ -32,6 +32,12 @@ internal sealed class SignalRInvoker : IAsyncDisposable
                 throw new InvalidOperationException(mtlsError ?? "mTLS configuration invalid");
             }
         }
+
+        // Trust localhost self-signed certs only when the host explicitly
+        // opted in via Bowire:SignalR:TrustLocalhostCert and the URL
+        // actually is loopback. Off by default — production URLs are
+        // never relaxed. Mirrors SignalRBowireChannel.CreateAsync.
+        var allowSelfSigned = trustLocalhostCert && SignalRBowireChannel.IsLocalhostUrl(hubUrl) && _mtlsOwner is null;
 
         var builder = new HubConnectionBuilder()
             .WithUrl(hubUrl, options =>
@@ -80,6 +86,30 @@ internal sealed class SignalRInvoker : IAsyncDisposable
                             ws.RemoteCertificateValidationCallback = (sender, cert, chain, errs) =>
                                 validator(sender, cert as System.Security.Cryptography.X509Certificates.X509Certificate2, chain, errs);
                         }
+                    };
+                }
+                else if (allowSelfSigned)
+                {
+                    // See SignalRBowireChannel for why CA5359 is
+                    // suppressed: outer guard scopes this to the
+                    // opt-in localhost path only.
+                    options.HttpMessageHandlerFactory = inner =>
+                    {
+#pragma warning disable CA2000, CA5400, CA5359
+                        var handler = new HttpClientHandler
+                        {
+                            ServerCertificateCustomValidationCallback = (_, _, _, _) => true,
+                            CheckCertificateRevocationList = false,
+                        };
+#pragma warning restore CA2000, CA5400, CA5359
+                        inner.Dispose();
+                        return handler;
+                    };
+                    options.WebSocketConfiguration = ws =>
+                    {
+#pragma warning disable CA5359
+                        ws.RemoteCertificateValidationCallback = (_, _, _, _) => true;
+#pragma warning restore CA5359
                     };
                 }
             })
