@@ -116,13 +116,21 @@ public sealed class BowireSignalRProtocol : IBowireProtocol
     }
 
     /// <summary>
-    /// Resolves the full hub URL. The service's Package field contains the hub path
-    /// (e.g. "/chatHub"). Combine with the server base URL.
+    /// Resolves the full hub URL. Discovery returns the hub path in the
+    /// service's Package field (e.g. <c>/hubs/port-calls</c> when the host
+    /// did <c>app.MapHub&lt;PortCallHub&gt;("/hubs/port-calls")</c>) and
+    /// the class name in Name (<c>PortCallHub</c>). The invoke endpoint
+    /// passes whichever the caller supplied. We look up the discovered
+    /// service so we always pick the configured Package — falling back
+    /// to the literal name only when discovery has nothing to say
+    /// (standalone CLI without an app to scan).
     /// </summary>
-    private static string ResolveHubUrl(string serverUrl, string service)
+    private string ResolveHubUrl(string serverUrl, string service)
     {
-        // Service might be the hub name (e.g. "ChatHub") or the path (e.g. "/chatHub")
-        var path = service.StartsWith('/') ? service : $"/{service}";
+        var services = SignalRHubDiscovery.DiscoverHubs(_serviceProvider);
+        var svc = services.FirstOrDefault(s => s.Name == service || s.Package == service);
+        var raw = !string.IsNullOrEmpty(svc?.Package) ? svc.Package : service;
+        var path = raw.StartsWith('/') ? raw : $"/{raw}";
         var baseUrl = serverUrl.TrimEnd('/');
         return $"{baseUrl}{path}";
     }

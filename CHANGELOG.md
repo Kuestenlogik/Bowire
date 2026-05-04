@@ -1,5 +1,19 @@
 # Changelog
 
+## v1.0.4 — SignalR hub-URL resolution fix (2026-05-04)
+
+### Fixes
+- SignalR plugin's `ResolveHubUrl` used the service display name
+  (e.g. `PortCallHub`) as the URL path even when the host had
+  mapped the hub to a custom path with `app.MapHub<T>(...)`. The
+  resulting GET hit the wrong path and returned 404 from the
+  Negotiate endpoint, surfacing as "Stream error occurred" in
+  the UI. Look up the discovered service first and use its
+  Package field (the configured route) — falling back to the
+  literal name only when discovery has no entry (standalone CLI
+  paths). This was a regression hidden by the cert-trust fix in
+  1.0.3 chasing the same symptom.
+
 ## v1.0.3 — Generalised localhost-cert trust + WebSocket plugin (2026-05-04)
 
 ### Changes
