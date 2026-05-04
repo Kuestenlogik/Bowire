@@ -37,7 +37,11 @@ internal static class BowireApiEndpoints
         // helper class so every endpoint shares the same cached instance.
         // Plugins receive the app's service provider here so they can
         // resolve their own dependencies later.
-        var registry = BowireProtocolRegistry.Discover(startupLogger);
+        // Honour Bowire:DisabledPlugins (or options.DisabledPlugins
+        // populated by the CLI's --disable-plugin flag) so a known-bad
+        // plugin can be muted at host startup before its load path
+        // ever runs.
+        var registry = BowireProtocolRegistry.Discover(options.DisabledPlugins, startupLogger);
         foreach (var protocol in registry.Protocols)
         {
             protocol.Initialize(endpoints.ServiceProvider);

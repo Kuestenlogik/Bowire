@@ -208,6 +208,22 @@ internal static class BowireConfiguration
             options.ServerUrls.AddRange(cliUrls);
         }
 
+        // --disable-plugin merges with whatever Bowire:DisabledPlugins
+        // already gave us. Repeated flag and comma-separated forms are
+        // both supported (System.CommandLine handles repeats; we split
+        // each captured token on ','). Same idea as ServerUrls but no
+        // 'CLI wins' replace — disabling on top of the appsettings list
+        // is the natural intent.
+        var cliDisabled = ExtractRepeatedTokens(args, "--disable-plugin");
+        foreach (var raw in cliDisabled)
+        {
+            foreach (var part in raw.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+            {
+                if (!options.DisabledPlugins.Contains(part, StringComparer.OrdinalIgnoreCase))
+                    options.DisabledPlugins.Add(part);
+            }
+        }
+
         // Keep ServerUrl and ServerUrls in sync. When the list is
         // non-empty the primary is always its first element — this
         // matters most when AddCommandLine's switch mapping picked the
@@ -250,6 +266,31 @@ internal static class BowireConfiguration
             }
         }
         return urls;
+    }
+
+    /// <summary>
+    /// Generic version of <see cref="ExtractRepeatedUrls"/> for any
+    /// repeated string-array CLI flag. Captures both <c>--flag value</c>
+    /// and <c>--flag=value</c> forms, in order of appearance. Caller is
+    /// responsible for any further splitting (e.g. comma-separated).
+    /// </summary>
+    private static List<string> ExtractRepeatedTokens(string[] args, string flagName)
+    {
+        var prefix = flagName + "=";
+        var tokens = new List<string>();
+        for (var i = 0; i < args.Length; i++)
+        {
+            var a = args[i];
+            if (a.StartsWith(prefix, StringComparison.Ordinal))
+            {
+                tokens.Add(a[prefix.Length..]);
+            }
+            else if (a == flagName && i + 1 < args.Length)
+            {
+                tokens.Add(args[++i]);
+            }
+        }
+        return tokens;
     }
 
     private static string[] ExpandBooleanFlags(string[] args, HashSet<string> booleanFlags)

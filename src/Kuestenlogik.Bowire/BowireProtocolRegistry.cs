@@ -77,8 +77,31 @@ public sealed class BowireProtocolRegistry
     /// doesn't show up).
     /// </summary>
     public static BowireProtocolRegistry Discover(ILogger? logger = null)
+        => Discover(disabledPluginIds: null, logger: logger);
+
+    /// <summary>
+    /// Same as <see cref="Discover(ILogger?)"/> but also accepts a list
+    /// of plugin ids to skip during the scan. Used for the
+    /// <c>--disable-plugin</c> CLI flag and the
+    /// <c>Bowire:DisabledPlugins</c> appsettings option — handy when a
+    /// plugin's load path is broken or its discovery probe is too
+    /// expensive for the current host's network.
+    /// </summary>
+    /// <param name="disabledPluginIds">
+    /// Plugin ids to exclude. Matched case-insensitively against
+    /// <see cref="IBowireProtocol.Id"/>. <c>null</c> or empty means
+    /// "scan everything", same as the parameterless overload.
+    /// </param>
+    /// <param name="logger">Optional warning logger.</param>
+    public static BowireProtocolRegistry Discover(
+        IEnumerable<string>? disabledPluginIds,
+        ILogger? logger = null)
     {
         ForceLoadReferencedBowireAssemblies(logger);
+
+        var disabled = disabledPluginIds is null
+            ? new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+            : new HashSet<string>(disabledPluginIds, StringComparer.OrdinalIgnoreCase);
 
         var registry = new BowireProtocolRegistry();
         foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
@@ -91,7 +114,18 @@ public sealed class BowireProtocolRegistry
                     if (type.IsAbstract || type.IsInterface) continue;
                     if (!typeof(IBowireProtocol).IsAssignableFrom(type)) continue;
                     if (Activator.CreateInstance(type) is IBowireProtocol protocol)
+                    {
+                        if (disabled.Contains(protocol.Id))
+                        {
+#pragma warning disable CA1873 // logger is already null-checked
+                            logger?.LogInformation(
+                                "Skipping disabled protocol plugin '{PluginId}' (Bowire:DisabledPlugins).",
+                                protocol.Id);
+#pragma warning restore CA1873
+                            continue;
+                        }
                         registry.Register(protocol);
+                    }
                 }
             }
             catch (Exception ex)

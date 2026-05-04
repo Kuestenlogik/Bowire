@@ -59,6 +59,14 @@ internal sealed class BrowserUiOptions
     public List<string> ServerUrls { get; set; } = [];
 
     /// <summary>
+    /// Plugin ids to skip when scanning for protocol implementations.
+    /// Bound from <c>Bowire:DisabledPlugins</c> in appsettings.json
+    /// and merged with any <c>--disable-plugin</c> CLI flags by
+    /// <see cref="BowireConfiguration.BuildBrowserUiOptions"/>.
+    /// </summary>
+    public List<string> DisabledPlugins { get; set; } = [];
+
+    /// <summary>
     /// Suppress auto-opening the browser on startup. Also implied in
     /// headless environments (<c>DOTNET_RUNNING_IN_CONTAINER</c>,
     /// <c>CI</c>, or when the process isn't user-interactive).

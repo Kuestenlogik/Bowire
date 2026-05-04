@@ -43,6 +43,9 @@ internal static class BrowserUiHost
             options.ServerUrl = ui.PrimaryUrl;
             foreach (var u in ui.ServerUrls) options.ServerUrls.Add(u);
             options.LockServerUrl = ui.LockServerUrl;
+            // Forward --disable-plugin / Bowire:DisabledPlugins through
+            // so the protocol-registry assembly scan honours it.
+            foreach (var p in ui.DisabledPlugins) options.DisabledPlugins.Add(p);
         });
 
         if (ui.EnableMcpAdapter)

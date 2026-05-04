@@ -1,5 +1,39 @@
 # Changelog
 
+## v1.0.6 — Plugin hint URL syntax + `--disable-plugin` (2026-05-04)
+
+### Adds
+- **Plugin hint URLs**: prefix any server URL with `<plugin-id>@`
+  to route discovery and invoke straight to that plugin and skip
+  every other plugin's probe. Example:
+  `bowire --url grpc@https://api.example.com:443`. Saves the
+  ~12 s gRPC HTTP/2 handshake when the URL belongs to a non-gRPC
+  service. The hint is optional — `https://…` URLs without a
+  hint keep the existing "probe everything" behaviour. Parser
+  is careful with URI userinfo (`https://user:pwd@host`) and
+  bare email-style strings (`alice@example.com`): both pass
+  through untouched. Helper exposed as
+  `Kuestenlogik.Bowire.BowireServerUrl.Parse`.
+- **`--disable-plugin` CLI flag** (and `Bowire:DisabledPlugins`
+  in appsettings.json) excludes named plugins from the assembly
+  scan at startup. Use it when a plugin DLL won't load or its
+  discovery probe is too slow for the current host. Repeatable
+  and comma-separated forms both supported. Process-startup
+  config — for per-URL plugin selection use the `hint@url`
+  syntax instead.
+
+### Notes
+- The hint is opaque: validation that it names an actually-
+  loaded plugin happens at the call site, not in the parser.
+  An unknown hint will simply produce zero matches in the
+  discovery loop and the user sees an empty service list — the
+  same as a typo in `body.Protocol`.
+- `BowirePluginSetting` UI toggles (per-plugin feature flags
+  persisted in localStorage) are unchanged. The three layers —
+  `--disable-plugin` (startup), `hint@url` (per-URL), and
+  `BowirePluginSetting` (per-feature) — operate at different
+  scopes and complement each other.
+
 ## v1.0.5 — SignalR no-arg streaming fix (2026-05-04)
 
 ### Fixes

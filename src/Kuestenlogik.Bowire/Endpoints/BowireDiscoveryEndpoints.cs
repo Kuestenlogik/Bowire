@@ -45,8 +45,14 @@ internal static class BowireDiscoveryEndpoints
         // List all services (proto sources + protocol plugins, merged)
         endpoints.MapGet($"/{prefix}/api/services", async (HttpContext ctx) =>
         {
-            var serverUrl = ctx.Request.Query["serverUrl"].FirstOrDefault()
+            var rawServerUrl = ctx.Request.Query["serverUrl"].FirstOrDefault()
                 ?? BowireEndpointHelpers.ResolveServerUrl(options, ctx.Request);
+
+            // Optional 'hint@url' form: when present, narrow the
+            // plugin loop below to the named plugin only. Saves the
+            // ~12 s cost of probing every plugin against a URL the
+            // caller already knows belongs to one of them.
+            var (pluginHint, serverUrl) = BowireServerUrl.Parse(rawServerUrl);
 
             // Standalone tool launched without --url and with no proto
             // uploads / sources to consult: there is genuinely nothing
@@ -84,7 +90,12 @@ internal static class BowireDiscoveryEndpoints
             var allProtocolServices = new List<BowireServiceInfo>();
             var discoveryErrors = new List<string>();
 
-            foreach (var protocol in registry.Protocols)
+            var protocolsToProbe = pluginHint is null
+                ? registry.Protocols
+                : registry.Protocols.Where(p =>
+                    string.Equals(p.Id, pluginHint, StringComparison.OrdinalIgnoreCase));
+
+            foreach (var protocol in protocolsToProbe)
             {
                 try
                 {

@@ -31,8 +31,17 @@ internal static class BowireInvokeEndpoints
             if (body is null)
                 return Results.BadRequest(new { error = "Invalid request body." });
 
-            var serverUrl = ctx.Request.Query["serverUrl"].FirstOrDefault()
+            var rawServerUrl = ctx.Request.Query["serverUrl"].FirstOrDefault()
                 ?? BowireEndpointHelpers.ResolveServerUrl(options, ctx.Request);
+
+            // Strip an optional 'hint@url' prefix before any URL
+            // manipulation runs — query-auth append, plugin selection,
+            // recording capture all want the bare URL. The hint
+            // overrides body.Protocol when present.
+            var (urlHint, urlAfterHint) = BowireServerUrl.Parse(rawServerUrl);
+            var serverUrl = urlAfterHint;
+            if (urlHint is not null)
+                body = body with { Protocol = urlHint };
 
             // ---- Auth: query-string API key ----
             // The JS apikey helper with location='query' marks its entries
@@ -183,8 +192,12 @@ internal static class BowireInvokeEndpoints
             ctx.Response.Headers.CacheControl = "no-cache";
             ctx.Response.Headers.Connection = "keep-alive";
 
-            var serverUrl = ctx.Request.Query["serverUrl"].FirstOrDefault()
+            var rawServerUrl = ctx.Request.Query["serverUrl"].FirstOrDefault()
                 ?? BowireEndpointHelpers.ResolveServerUrl(options, ctx.Request);
+            // Strip 'hint@url' prefix; hint overrides protocolId.
+            var (urlHint, urlAfterHint) = BowireServerUrl.Parse(rawServerUrl);
+            var serverUrl = urlAfterHint;
+            if (urlHint is not null) protocolId = urlHint;
             (serverUrl, metadata) = BowireEndpointHelpers.ApplyQueryAuthHints(serverUrl, metadata);
 
             var registry = BowireEndpointHelpers.GetRegistry();

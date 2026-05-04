@@ -92,6 +92,19 @@ public sealed class BowireOptions
     public List<string> ServerUrls { get; } = [];
 
     /// <summary>
+    /// Plugin ids to exclude from the assembly-scan registry — handy
+    /// when one of the installed plugins fails to load (broken DLL,
+    /// missing dependency) or its discovery probe is too expensive
+    /// for the current host's network. Wire it via
+    /// <c>Bowire:DisabledPlugins</c> in <c>appsettings.json</c>, the
+    /// <c>--disable-plugin</c> CLI flag, or by appending to this
+    /// list directly when calling <c>AddBowire(opts =&gt;
+    /// opts.DisabledPlugins.Add("grpc"))</c>. Matched case-
+    /// insensitively against <see cref="IBowireProtocol.Id"/>.
+    /// </summary>
+    public List<string> DisabledPlugins { get; } = [];
+
+    /// <summary>
     /// When <c>true</c>, the server-URL input in the UI is read-only.
     /// Use this for CI, demos, or hardened deployments where you want users
     /// to browse the pre-configured service but not point the workbench at

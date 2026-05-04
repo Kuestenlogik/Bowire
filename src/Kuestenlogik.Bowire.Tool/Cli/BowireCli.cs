@@ -58,6 +58,11 @@ internal static class BowireCli
         root.Add(new Option<bool>("--enable-mcp-adapter") { Description = "Expose discovered services as MCP tools." });
         root.Add(new Option<bool>("--lock-server-url") { Description = "Disable URL editing in the UI." });
         root.Add(new Option<string>("--plugin-dir") { Description = "Override the plugin directory." });
+        root.Add(new Option<string[]>("--disable-plugin")
+        {
+            Description = "Skip a protocol plugin at startup. Repeat or comma-separate ('--disable-plugin grpc --disable-plugin signalr' or '--disable-plugin grpc,signalr'). Useful when a plugin DLL won't load or its discovery probe is too slow for the current host.",
+            AllowMultipleArgumentsPerToken = true,
+        });
 
         root.SetAction(async (_, ct) =>
             await BrowserUiHost.RunAsync(originalArgs, cfg, pluginDir, ct).ConfigureAwait(false));

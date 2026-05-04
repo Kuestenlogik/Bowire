@@ -48,15 +48,77 @@ the empty-state landing surfaces a per-URL status table with retry
 buttons for the failed ones — see the [Empty-State Landing](../features/empty-state.md)
 feature page for screenshots of every state.
 
+### Plugin hint syntax (`hint@url`)
+
+By default Bowire probes every loaded plugin against each URL — fast
+in practice but slow when one plugin needs a long network round-trip
+to discover that the URL isn't theirs (e.g. the gRPC plugin opening
+an HTTP/2 channel against an HTTP/1.1 GraphQL server and waiting for
+the handshake to time out).
+
+Prefix the URL with `<plugin-id>@` to skip every other plugin's
+discovery probe and route the URL straight to that plugin:
+
+```bash
+bowire --url grpc@https://api.example.com:443
+bowire --url signalr@https://api.example.com/hubs/chat
+bowire --url graphql@https://api.example.com/graphql
+```
+
+The hint is optional — `bowire --url https://...` keeps the original
+"probe everything" behaviour. The parser is careful with URI userinfo
+(`https://user:pass@host`) and email-style strings (`alice@example.com`):
+both pass through untouched because they don't match the hint's
+clean-token-then-`://` shape. Plugin schemes (`udp://`, `kafka://`,
+`dis://`) need no hint — the scheme itself selects the plugin.
+
+### Disabling plugins (`--disable-plugin`)
+
+When a plugin DLL fails to load (broken dependency, version mismatch)
+or its discovery probe is too expensive to leave running, skip it at
+startup with `--disable-plugin`:
+
+```bash
+# Single plugin
+bowire --url https://api.example.com --disable-plugin grpc
+
+# Multiple, comma-separated
+bowire --url https://api.example.com --disable-plugin grpc,signalr
+
+# Multiple, repeated flag
+bowire --url https://api.example.com \
+        --disable-plugin grpc \
+        --disable-plugin signalr
+```
+
+This removes the plugin from the protocol-registry assembly scan
+entirely — it never reaches the AppDomain, never runs an `Initialize`
+callback, never participates in Discovery. Equivalent settings in
+`appsettings.json`:
+
+```jsonc
+{
+  "Bowire": {
+    "DisabledPlugins": [ "grpc", "signalr" ]
+  }
+}
+```
+
+`--disable-plugin` is process-startup config — use the `hint@url`
+syntax above for per-URL plugin selection without disabling anything
+else, and per-plugin UI toggles (rendered from `BowirePluginSetting`)
+for runtime feature switches inside an already-loaded plugin.
+
 ## Options
 
 | Option | Description | Default |
 |---|---|---|
-| `--url <url>` | Server URL to discover (repeatable for multi-URL) | none |
+| `--url <url>` | Server URL to discover (repeatable for multi-URL). Optional `<plugin>@` prefix routes the URL to a single plugin. | none |
 | `--port <n>` | Bowire UI port | `5080` |
 | `--title <text>` | Browser title | `Bowire` |
 | `--no-browser` | Don't auto-open the browser | `false` |
 | `--enable-mcp-adapter` | Expose discovered methods as MCP tools at `/bowire/mcp/sse` | `false` |
+| `--disable-plugin <id>` | Skip a protocol plugin at startup. Repeat or comma-separate. | none |
 
 ## Examples
 
