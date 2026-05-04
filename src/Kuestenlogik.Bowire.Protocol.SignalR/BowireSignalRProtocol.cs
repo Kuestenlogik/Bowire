@@ -18,15 +18,14 @@ public sealed class BowireSignalRProtocol : IBowireProtocol
 {
     private IServiceProvider? _serviceProvider;
     /// <summary>
-    /// Read once at Initialize from
-    /// <c>Bowire:SignalR:TrustLocalhostCert</c> in IConfiguration.
-    /// Off by default — production hosts always validate strictly.
-    /// When on AND the hub URL points at localhost, the SignalR
-    /// HubConnection's TLS-validation callbacks are short-circuited
-    /// to accept any cert, so the ASP.NET Core dev-certs --trust step
-    /// becomes optional for development workflows.
+    /// Application config picked up at <see cref="Initialize"/>. The plugin
+    /// hands this to <see cref="LocalhostCertTrust.IsTrustedFor"/> on every
+    /// connect call so changes to <c>Bowire:TrustLocalhostCert</c> /
+    /// <c>Bowire:signalr:TrustLocalhostCert</c> at runtime take effect
+    /// without a host restart (IConfiguration is reload-on-change-aware
+    /// when the host wires it up).
     /// </summary>
-    private bool _trustLocalhostCert;
+    private IConfiguration? _configuration;
 
     public string Name => "SignalR";
     public string Id => "signalr";
@@ -41,8 +40,7 @@ public sealed class BowireSignalRProtocol : IBowireProtocol
     public void Initialize(IServiceProvider? serviceProvider)
     {
         _serviceProvider = serviceProvider;
-        var config = serviceProvider?.GetService<IConfiguration>();
-        _trustLocalhostCert = config?.GetValue<bool>("Bowire:SignalR:TrustLocalhostCert") ?? false;
+        _configuration = serviceProvider?.GetService<IConfiguration>();
     }
 
     public Task<List<BowireServiceInfo>> DiscoverAsync(
@@ -71,7 +69,8 @@ public sealed class BowireSignalRProtocol : IBowireProtocol
         var sanitisedMetadata = mtlsConfig is null ? metadata : MtlsConfig.StripMarker(metadata);
 
         await using var invoker = new SignalRInvoker();
-        await invoker.ConnectAsync(hubUrl, sanitisedMetadata, mtlsConfig, ct, _trustLocalhostCert);
+        var trustLocalhost = LocalhostCertTrust.IsTrustedFor(_configuration, Id, hubUrl);
+        await invoker.ConnectAsync(hubUrl, sanitisedMetadata, mtlsConfig, ct, trustLocalhost);
         return await invoker.InvokeAsync(method, jsonMessages, ct);
     }
 
@@ -87,7 +86,8 @@ public sealed class BowireSignalRProtocol : IBowireProtocol
         var sanitisedMetadata = mtlsConfig is null ? metadata : MtlsConfig.StripMarker(metadata);
 
         await using var invoker = new SignalRInvoker();
-        await invoker.ConnectAsync(hubUrl, sanitisedMetadata, mtlsConfig, ct, _trustLocalhostCert);
+        var trustLocalhost = LocalhostCertTrust.IsTrustedFor(_configuration, Id, hubUrl);
+        await invoker.ConnectAsync(hubUrl, sanitisedMetadata, mtlsConfig, ct, trustLocalhost);
 
         await foreach (var response in invoker.StreamAsync(method, jsonMessages, ct))
             yield return response;
@@ -110,8 +110,9 @@ public sealed class BowireSignalRProtocol : IBowireProtocol
         var mtlsConfig = MtlsConfig.TryParseFromMetadata(metadata);
         var sanitisedMetadata = mtlsConfig is null ? metadata : MtlsConfig.StripMarker(metadata);
 
+        var trustLocalhost = LocalhostCertTrust.IsTrustedFor(_configuration, Id, hubUrl);
         return await SignalRBowireChannel.CreateAsync(
-            hubUrl, method, isClientStreaming, isServerStreaming, headers: sanitisedMetadata, ct, mtlsConfig, _trustLocalhostCert);
+            hubUrl, method, isClientStreaming, isServerStreaming, headers: sanitisedMetadata, ct, mtlsConfig, trustLocalhost);
     }
 
     /// <summary>

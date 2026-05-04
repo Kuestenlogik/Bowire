@@ -70,7 +70,8 @@ internal sealed class WebSocketBowireChannel : IBowireChannel
         Dictionary<string, string>? headers,
         IReadOnlyList<string>? subProtocols,
         CancellationToken ct,
-        MtlsConfig? mtlsConfig = null)
+        MtlsConfig? mtlsConfig = null,
+        bool trustLocalhostCert = false)
     {
         var socket = new ClientWebSocket();
         MtlsCertOwner? mtlsOwner = null;
@@ -90,6 +91,16 @@ internal sealed class WebSocketBowireChannel : IBowireChannel
                     socket.Options.RemoteCertificateValidationCallback = (sender, cert, chain, errs) =>
                         validator(sender, cert as System.Security.Cryptography.X509Certificates.X509Certificate2, chain, errs);
                 }
+            }
+            else if (trustLocalhostCert && LocalhostCertTrust.IsLocalhostUrl(uri.ToString()))
+            {
+                // Localhost dev-cert opt-in (Bowire:TrustLocalhostCert or
+                // Bowire:websocket:TrustLocalhostCert). Same defence-in-
+                // depth as SignalR — relaxed validator never fires on a
+                // non-loopback URL even if the flag is on.
+#pragma warning disable CA5359
+                socket.Options.RemoteCertificateValidationCallback = (_, _, _, _) => true;
+#pragma warning restore CA5359
             }
 
             if (headers is not null)

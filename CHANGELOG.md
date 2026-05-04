@@ -1,5 +1,32 @@
 # Changelog
 
+## v1.0.3 — Generalised localhost-cert trust + WebSocket plugin (2026-05-04)
+
+### Changes
+- `Bowire:SignalR:TrustLocalhostCert` is replaced by a global key:
+  **`Bowire:TrustLocalhostCert`** (in `appsettings.json` or via the
+  `BOWIRE__TRUSTLOCALHOSTCERT=true` env var). Every TLS-bearing
+  protocol plugin reads the same flag, so a single switch covers
+  the whole host. Per-plugin override `Bowire:{pluginId}:Trust
+  LocalhostCert` still works as an escape hatch when one plugin
+  needs different cert handling than the rest.
+- WebSocket plugin gains the same opt-in: `wss://localhost` with
+  the ASP.NET Core dev cert no longer fails the TLS handshake when
+  the flag is on. mTLS configurations are unaffected.
+- New helper `Kuestenlogik.Bowire.Auth.LocalhostCertTrust` owns the
+  loopback URL check + config lookup. Plugins that need this in
+  the future just call `LocalhostCertTrust.IsTrustedFor(config,
+  pluginId, url)` instead of writing the same logic again.
+- Defence in depth: relaxed validation only fires when the URL's
+  host actually is `localhost` / `127.0.0.1` / `::1`, regardless
+  of how the flag was configured.
+
+### Pending follow-ups
+- HttpClient-based plugins (REST / GraphQL / SSE / OData / MCP /
+  gRPC reflection) currently rely on the OS trust store — they'll
+  pick up the same opt-in once `BowireHttpClientFactory` lands as
+  a shared helper. Tracked separately.
+
 ## v1.0.2 — SignalR localhost cert opt-in + mobile polish (2026-05-04)
 
 ### Fixes

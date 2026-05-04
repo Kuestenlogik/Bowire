@@ -3,7 +3,9 @@
 
 using System.Runtime.CompilerServices;
 using System.Text.Json;
+using Kuestenlogik.Bowire.Auth;
 using Kuestenlogik.Bowire.Models;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Kuestenlogik.Bowire.Protocol.WebSocket;
@@ -32,6 +34,7 @@ public sealed class BowireWebSocketProtocol : IBowireProtocol, IInlineWebSocketC
 
     private static readonly List<WebSocketEndpointInfo> s_registeredEndpoints = [];
     private IServiceProvider? _serviceProvider;
+    private IConfiguration? _configuration;
 
     public string Name => "WebSocket";
     public string Id => "websocket";
@@ -67,7 +70,11 @@ public sealed class BowireWebSocketProtocol : IBowireProtocol, IInlineWebSocketC
     /// <summary>Clears all statically registered endpoints. Primarily for testing.</summary>
     internal static void ClearRegisteredEndpoints() => s_registeredEndpoints.Clear();
 
-    public void Initialize(IServiceProvider? serviceProvider) => _serviceProvider = serviceProvider;
+    public void Initialize(IServiceProvider? serviceProvider)
+    {
+        _serviceProvider = serviceProvider;
+        _configuration = serviceProvider?.GetService<IConfiguration>();
+    }
 
     public Task<List<BowireServiceInfo>> DiscoverAsync(
         string serverUrl, bool showInternalServices, CancellationToken ct = default)
@@ -126,7 +133,8 @@ public sealed class BowireWebSocketProtocol : IBowireProtocol, IInlineWebSocketC
         // also leak onto the upgrade request as a literal HTTP header.
         var (headers, subProtocols) = ExtractSubProtocols(sanitised);
 
-        return await WebSocketBowireChannel.CreateAsync(uri, headers, subProtocols, ct, mtlsConfig);
+        var trustLocalhost = LocalhostCertTrust.IsTrustedFor(_configuration, Id, uri.ToString());
+        return await WebSocketBowireChannel.CreateAsync(uri, headers, subProtocols, ct, mtlsConfig, trustLocalhost);
     }
 
     /// <inheritdoc />
@@ -142,7 +150,8 @@ public sealed class BowireWebSocketProtocol : IBowireProtocol, IInlineWebSocketC
         if (!Uri.TryCreate(url, UriKind.Absolute, out var uri))
             throw new InvalidOperationException($"Invalid WebSocket URL: '{url}'.");
 
-        return await WebSocketBowireChannel.CreateAsync(uri, headers, subProtocols, ct);
+        var trustLocalhost = LocalhostCertTrust.IsTrustedFor(_configuration, Id, url);
+        return await WebSocketBowireChannel.CreateAsync(uri, headers, subProtocols, ct, mtlsConfig: null, trustLocalhostCert: trustLocalhost);
     }
 
     private static (Dictionary<string, string>? Headers, IReadOnlyList<string>? SubProtocols) ExtractSubProtocols(

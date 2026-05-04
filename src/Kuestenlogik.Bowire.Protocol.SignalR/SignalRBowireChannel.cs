@@ -109,13 +109,11 @@ internal sealed class SignalRBowireChannel : IBowireChannel
             }
         }
 
-        // Trust the self-signed ASP.NET Core dev cert (and any other
-        // localhost-served cert) only when the consuming host has
-        // explicitly opted in via Bowire:SignalR:TrustLocalhostCert =
-        // true. Off by default — production URLs must always go
-        // through the OS trust store. We never apply this for non-
-        // localhost hosts no matter the flag.
-        var allowSelfSigned = trustLocalhostCert && IsLocalhostUrl(hubUrl) && mtlsOwner is null;
+        // The plugin already resolved the per-call trust flag through
+        // LocalhostCertTrust.IsTrustedFor (config + URL scope). We only
+        // double-check the loopback guard here as defence-in-depth so a
+        // future caller can't accidentally pass true for a real host.
+        var allowSelfSigned = trustLocalhostCert && LocalhostCertTrust.IsLocalhostUrl(hubUrl) && mtlsOwner is null;
 
         var builder = new HubConnectionBuilder()
             .WithUrl(hubUrl, options =>
@@ -299,19 +297,4 @@ internal sealed class SignalRBowireChannel : IBowireChannel
         await _responses.Writer.WriteAsync(json, token);
     }
 
-    /// <summary>
-    /// True when the URL points at localhost / 127.0.0.1 / ::1. Used to
-    /// scope the trust-localhost-cert opt-in: the relaxed validation
-    /// callback only ever fires when the URL is loopback, even if the
-    /// flag was accidentally enabled in production. Defence in depth.
-    /// </summary>
-    internal static bool IsLocalhostUrl(string url)
-    {
-        if (!Uri.TryCreate(url, UriKind.Absolute, out var u)) return false;
-        var host = u.Host;
-        return string.Equals(host, "localhost", StringComparison.OrdinalIgnoreCase)
-            || host == "127.0.0.1"
-            || host == "::1"
-            || host == "[::1]";
-    }
 }

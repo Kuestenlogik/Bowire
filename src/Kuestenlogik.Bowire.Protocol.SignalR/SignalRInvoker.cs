@@ -33,11 +33,9 @@ internal sealed class SignalRInvoker : IAsyncDisposable
             }
         }
 
-        // Trust localhost self-signed certs only when the host explicitly
-        // opted in via Bowire:SignalR:TrustLocalhostCert and the URL
-        // actually is loopback. Off by default — production URLs are
-        // never relaxed. Mirrors SignalRBowireChannel.CreateAsync.
-        var allowSelfSigned = trustLocalhostCert && SignalRBowireChannel.IsLocalhostUrl(hubUrl) && _mtlsOwner is null;
+        // The plugin resolved the trust flag through LocalhostCertTrust.
+        // Loopback double-guard mirrors SignalRBowireChannel.
+        var allowSelfSigned = trustLocalhostCert && LocalhostCertTrust.IsLocalhostUrl(hubUrl) && _mtlsOwner is null;
 
         var builder = new HubConnectionBuilder()
             .WithUrl(hubUrl, options =>
