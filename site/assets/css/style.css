@@ -4299,16 +4299,13 @@ p a:not([class]):hover,
     text-align: center;
     border-top: none;
 }
-/* The closing CTA used to paint its own elevated background to lift
-   off the preceding feature group, but that produced a third colour
-   step right before the footer (page bg → elevated cta → footer)
-   and the elevated band read as a separate stripe. Now we keep the
-   block transparent and let the footer's own band + border-top be
-   the only visual transition.
-   The .features-page-cta-alt selector is preserved (still applied in
-   markup) for the spacing it inherits from .features-page-cta. */
+/* The closing CTA paints its own elevated band to lift off the
+   preceding feature-group strip — without it the block reads as
+   one long flat region with the page body and the title gradient
+   has nothing to sit on. Visual order from the bottom of the
+   feature list down: page bg → elevated CTA → footer band. */
 .features-page-cta-alt {
-    background: transparent;
+    background: var(--bg-elevated);
 }
 .features-page-cta-inner {
     max-width: 720px;
