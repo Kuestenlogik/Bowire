@@ -24,7 +24,7 @@ namespace Kuestenlogik.Bowire.Tests;
 /// "good enough" by covering the event parser, comment lines, multi-line
 /// data fields, and the retry+id+event header path.
 /// </summary>
-[Collection("Sse")]
+[Collection<SseTestGroup>]
 public sealed class SseSubscriberLiveServerTests : IAsyncDisposable
 {
     private readonly WebApplication _app;

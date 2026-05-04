@@ -20,7 +20,7 @@ namespace Kuestenlogik.Bowire.Tests;
 /// <see cref="WebApplication"/> so the metadata pipeline is the same one
 /// the production discovery path walks.
 /// </summary>
-[Collection("Sse")]
+[Collection<SseTestGroup>]
 public sealed class SseEndpointDiscoveryTests : IDisposable
 {
     public SseEndpointDiscoveryTests()

@@ -11,7 +11,7 @@ namespace Kuestenlogik.Bowire.Tests;
 /// (<c>InvokeStreamAsync</c> / <c>SubscribeAsync</c>) is integration-tier
 /// territory — covered by Kuestenlogik.Bowire.IntegrationTests, not here.
 /// </summary>
-[Collection("Sse")]
+[Collection<SseTestGroup>]
 public sealed class BowireSseProtocolTests : IDisposable
 {
     public BowireSseProtocolTests()

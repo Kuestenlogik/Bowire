@@ -8,7 +8,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Kuestenlogik.Bowire.Tests;
 
-[Collection("Sse")]
+[Collection<SseTestGroup>]
 public sealed class BowireSseExtensionsTests : IDisposable
 {
     public BowireSseExtensionsTests()
