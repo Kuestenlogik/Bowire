@@ -16,11 +16,41 @@
 const { chromium } = require('@playwright/test');
 const path = require('path');
 const fs = require('fs');
+const https = require('https');
 
-// Node-side fetch traffic generators (e.g. graphql) hit the sample over
-// https with a self-signed dev cert. Skip cert validation for the
-// capture process so the mutation goes through.
-process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
+// Node-side traffic generators (currently only the GraphQL mutation below)
+// hit local sample servers over https with self-signed dev certs. Use a
+// dedicated https.Agent scoped to that one request rather than setting
+// NODE_TLS_REJECT_UNAUTHORIZED process-wide, so the cert bypass stays
+// local to the call site and doesn't apply to anything else this script
+// (or its dependencies) might do over TLS.
+const localhostHttpsAgent = new https.Agent({ rejectUnauthorized: false });
+
+/**
+ * Minimal HTTPS POST helper for talking to local sample servers with
+ * self-signed dev certs. Returns once the response ends; failures are
+ * swallowed because traffic generators are best-effort — the screenshot
+ * pipeline keeps running even if the mutation didn't land.
+ */
+function postLocalhostJson(port, pathName, body) {
+    const payload = Buffer.from(body, 'utf8');
+    return new Promise((resolve) => {
+        const req = https.request({
+            hostname: 'localhost',
+            port,
+            path: pathName,
+            method: 'POST',
+            agent: localhostHttpsAgent,
+            headers: {
+                'Content-Type': 'application/json',
+                'Content-Length': payload.length,
+            },
+        }, (res) => { res.resume(); res.on('end', resolve); res.on('error', () => resolve()); });
+        req.on('error', () => resolve());
+        req.write(payload);
+        req.end();
+    });
+}
 
 const OUT = path.resolve(__dirname, '..', 'site', 'assets', 'images', 'screenshots');
 const DOCS_OUT = path.resolve(__dirname, '..', 'docs', 'images', 'screenshots');
@@ -177,17 +207,16 @@ async function capture(target) {
             // GraphQL HarborSubscription emits on store.PortCallChanged.
             // Stand-alone GraphQL sample has no REST endpoint to PATCH —
             // we trigger the same store from a GraphQL mutation instead.
-            // Node.js-side fetch (not page.evaluate) so CORS doesn't
-            // block the cross-origin :5079→:5115 request inside the
-            // browser context.
+            // Node.js-side request (not page.evaluate) so CORS doesn't
+            // block the cross-origin :5079→:5115 call inside the browser
+            // context. Uses postLocalhostJson with a localhost-scoped
+            // https.Agent so the self-signed dev cert is accepted only
+            // for this call.
             traffic: async () => {
                 const statuses = ['APPROACHING', 'DOCKED', 'DEPARTING', 'COMPLETED'];
                 const status = statuses[Math.floor(Math.random() * statuses.length)];
-                await fetch('https://localhost:5115/graphql', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ query: `mutation { updatePortCallStatus(id: 1, status: ${status}) { id status } }` }),
-                }).catch(() => {});
+                const body = JSON.stringify({ query: `mutation { updatePortCallStatus(id: 1, status: ${status}) { id status } }` });
+                await postLocalhostJson(5115, '/graphql', body);
             },
         },
         sse:     { url: 'https://localhost:5114/bowire', methodText: 'Slow keep-alive',   waitMs: 12000, shotName: 'streaming-sse' },
