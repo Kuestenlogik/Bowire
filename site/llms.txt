@@ -8,27 +8,27 @@ Apache-2.0 licensed. Source at https://github.com/Kuestenlogik/Bowire. Distribut
 
 ## Getting started
 
-- [Quickstart](https://kuestenlogik.github.io/Bowire/quickstart.html): five-minute walkthrough — embed in an ASP.NET app or run the CLI against any URL.
-- [Downloads](https://kuestenlogik.github.io/Bowire/downloads.html): .NET tool, NuGet packages, container image, OS-specific archives.
-- [Why Bowire](https://kuestenlogik.github.io/Bowire/why-bowire.html): design rationale and how it compares to Postman / Insomnia / Bruno.
-- [Features overview](https://kuestenlogik.github.io/Bowire/features.html): UI tour at a glance.
+- [Quickstart](https://bowire.io/quickstart.html): five-minute walkthrough — embed in an ASP.NET app or run the CLI against any URL.
+- [Downloads](https://bowire.io/downloads.html): .NET tool, NuGet packages, container image, OS-specific archives.
+- [Why Bowire](https://bowire.io/why-bowire.html): design rationale and how it compares to Postman / Insomnia / Bruno.
+- [Features overview](https://bowire.io/features.html): UI tour at a glance.
 
 ## Documentation
 
-- [Documentation home](https://kuestenlogik.github.io/Bowire/docs/): full reference manual.
-- [Setup](https://kuestenlogik.github.io/Bowire/docs/setup/): install paths — embedded middleware, standalone CLI, Docker sidecar, building from source.
-- [UI guide](https://kuestenlogik.github.io/Bowire/docs/ui-guide/): every pane and action in the browser workbench, with screenshots.
-- [Protocol guides](https://kuestenlogik.github.io/Bowire/docs/protocols/): per-plugin behaviour and configuration. Built-in: gRPC, REST, GraphQL, SignalR, WebSocket, SSE, MQTT, Socket.IO, OData, MCP. Sister-repo plugins: DIS, UDP, Storm, Kafka. Includes a guide for writing your own.
-- [Features reference](https://kuestenlogik.github.io/Bowire/docs/features/): mock server, recording/replay, response chaining, test assertions, environments, flows, command palette, plugin system, performance graphs, freeform requests, multi-channel duplex.
-- [Architecture](https://kuestenlogik.github.io/Bowire/docs/architecture/): plugin pipeline, package layout, extension points for embedding deeply.
-- [API reference](https://kuestenlogik.github.io/Bowire/docs/api/Kuestenlogik.Bowire.html): types, methods, and extension points generated from the source.
+- [Documentation home](https://bowire.io/docs/): full reference manual.
+- [Setup](https://bowire.io/docs/setup/): install paths — embedded middleware, standalone CLI, Docker sidecar, building from source.
+- [UI guide](https://bowire.io/docs/ui-guide/): every pane and action in the browser workbench, with screenshots.
+- [Protocol guides](https://bowire.io/docs/protocols/): per-plugin behaviour and configuration. Built-in: gRPC, REST, GraphQL, SignalR, WebSocket, SSE, MQTT, Socket.IO, OData, MCP. Sister-repo plugins: DIS, UDP, Storm, Kafka. Includes a guide for writing your own.
+- [Features reference](https://bowire.io/docs/features/): mock server, recording/replay, response chaining, test assertions, environments, flows, command palette, plugin system, performance graphs, freeform requests, multi-channel duplex.
+- [Architecture](https://bowire.io/docs/architecture/): plugin pipeline, package layout, extension points for embedding deeply.
+- [API reference](https://bowire.io/docs/api/Kuestenlogik.Bowire.html): types, methods, and extension points generated from the source.
 
 ## Workflows by audience
 
-- [Backend developers](https://kuestenlogik.github.io/Bowire/workflows/backend.html): inspect and exercise your own services without writing a client.
-- [Testers / QA](https://kuestenlogik.github.io/Bowire/workflows/testers.html): record / replay, assertions, no-code flows for CI, HTML reports.
-- [AI agent builders](https://kuestenlogik.github.io/Bowire/workflows/ai-agents.html): MCP server adapter — every discovered method becomes an MCP tool with JSON Schema input, ready for Claude Desktop, Cursor, or any MCP-aware agent.
-- [Docs teams](https://kuestenlogik.github.io/Bowire/workflows/docs-teams.html): export OpenAPI / proto / GraphQL schemas and generate samples from running services.
+- [Backend developers](https://bowire.io/workflows/backend.html): inspect and exercise your own services without writing a client.
+- [Testers / QA](https://bowire.io/workflows/testers.html): record / replay, assertions, no-code flows for CI, HTML reports.
+- [AI agent builders](https://bowire.io/workflows/ai-agents.html): MCP server adapter — every discovered method becomes an MCP tool with JSON Schema input, ready for Claude Desktop, Cursor, or any MCP-aware agent.
+- [Docs teams](https://bowire.io/workflows/docs-teams.html): export OpenAPI / proto / GraphQL schemas and generate samples from running services.
 
 ## Project
 

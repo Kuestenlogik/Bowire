@@ -84,7 +84,7 @@ Sister-repo plugins:
 dotnet new bowire-plugin -n Contoso.Bowire.Protocol.Foo --Preset rest
 ```
 
-Implement `IBowireProtocol` (Name / Id / IconSvg / DiscoverAsync / InvokeAsync / InvokeStreamAsync / OpenChannelAsync) and `IBowireChannel` for duplex protocols. The full interface contract is documented at https://kuestenlogik.github.io/Bowire/docs/protocols/custom.html and is what the existing 13 protocol plugins all implement.
+Implement `IBowireProtocol` (Name / Id / IconSvg / DiscoverAsync / InvokeAsync / InvokeStreamAsync / OpenChannelAsync) and `IBowireChannel` for duplex protocols. The full interface contract is documented at https://bowire.io/docs/protocols/custom.html and is what the existing 13 protocol plugins all implement.
 
 Tag your published nupkg with `<PackageTags>bowire bowire-plugin</PackageTags>` so it surfaces in Bowire's in-app marketplace and on https://github.com/topics/bowire-plugin.
 
@@ -140,11 +140,11 @@ A: https://github.com/Kuestenlogik/Bowire/issues for the core. Per-plugin sister
 
 ## Map of resources
 
-- Site: https://kuestenlogik.github.io/Bowire/
-- Docs: https://kuestenlogik.github.io/Bowire/docs/
-- Quickstart: https://kuestenlogik.github.io/Bowire/quickstart.html
-- Custom-protocol guide: https://kuestenlogik.github.io/Bowire/docs/protocols/custom.html
-- API reference: https://kuestenlogik.github.io/Bowire/docs/api/Kuestenlogik.Bowire.html
+- Site: https://bowire.io/
+- Docs: https://bowire.io/docs/
+- Quickstart: https://bowire.io/quickstart.html
+- Custom-protocol guide: https://bowire.io/docs/protocols/custom.html
+- API reference: https://bowire.io/docs/api/Kuestenlogik.Bowire.html
 - Source (core): https://github.com/Kuestenlogik/Bowire
 - Source (plugin templates): https://github.com/Kuestenlogik/Bowire.Templates
 - Source (samples): https://github.com/Kuestenlogik/Bowire.Samples

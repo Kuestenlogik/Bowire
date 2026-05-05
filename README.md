@@ -6,9 +6,9 @@
 
 **A multi-protocol API workbench for .NET — gRPC, REST, GraphQL, MQTT, SignalR, WebSocket, SSE, MCP, OData, Socket.IO, DIS, UDP — runs against any service URL with zero code changes.**
 
-[Quickstart](https://kuestenlogik.github.io/Bowire/quickstart.html) · [Features](https://kuestenlogik.github.io/Bowire/features.html) · [Why Bowire](https://kuestenlogik.github.io/Bowire/why-bowire.html) · [Docs](https://kuestenlogik.github.io/Bowire/docs/) · [Downloads](https://kuestenlogik.github.io/Bowire/downloads.html)
+[Quickstart](https://bowire.io/quickstart.html) · [Features](https://bowire.io/features.html) · [Why Bowire](https://bowire.io/why-bowire.html) · [Docs](https://bowire.io/docs/) · [Downloads](https://bowire.io/downloads.html)
 
-[![Bowire workbench — discover, invoke, stream, record across protocols](https://raw.githubusercontent.com/Kuestenlogik/Bowire/main/site/assets/images/screenshots/ready.png)](https://kuestenlogik.github.io/Bowire/)
+[![Bowire workbench — discover, invoke, stream, record across protocols](https://raw.githubusercontent.com/Kuestenlogik/Bowire/main/site/assets/images/screenshots/ready.png)](https://bowire.io/)
 
 ## What it is
 
@@ -30,7 +30,7 @@ dotnet tool install -g Kuestenlogik.Bowire.Tool
 docker run --rm -p 5080:5080 ghcr.io/kuestenlogik/bowire:latest
 ```
 
-→ **[Read the 5-minute Quickstart](https://kuestenlogik.github.io/Bowire/quickstart.html)** — covers the standalone CLI path *and* embedded ASP.NET integration.
+→ **[Read the 5-minute Quickstart](https://bowire.io/quickstart.html)** — covers the standalone CLI path *and* embedded ASP.NET integration.
 
 ## Embedded mode
 
@@ -46,7 +46,7 @@ app.MapBowire();   // visit /bowire
 app.Run();
 ```
 
-→ See [Setup → Embedded](https://kuestenlogik.github.io/Bowire/docs/setup/embedded.html) for the per-protocol wiring.
+→ See [Setup → Embedded](https://bowire.io/docs/setup/embedded.html) for the per-protocol wiring.
 
 ## What's in it
 
@@ -62,21 +62,21 @@ app.Run();
 
 → Side-by-side comparison with every major API tool — positioning,
 features, license, price — lives on the site under
-[Pick the right tool](https://kuestenlogik.github.io/Bowire/#comparison).
+[Pick the right tool](https://bowire.io/#comparison).
 
 ## Documentation
 
-- [Quickstart](https://kuestenlogik.github.io/Bowire/quickstart.html) — zero to first call in five minutes
-- [Features](https://kuestenlogik.github.io/Bowire/features.html) — guided tour of every workbench surface
-- [Setup](https://kuestenlogik.github.io/Bowire/docs/setup/) — embedded, standalone, Docker, sidecar
-- [Protocols](https://kuestenlogik.github.io/Bowire/docs/protocols/) — per-protocol setup, conventions, gotchas
-- [Architecture](https://kuestenlogik.github.io/Bowire/docs/architecture/) — plugin model, host packages, ALC isolation
-- [API reference](https://kuestenlogik.github.io/Bowire/docs/api/) — DocFX-generated reference for every public type
+- [Quickstart](https://bowire.io/quickstart.html) — zero to first call in five minutes
+- [Features](https://bowire.io/features.html) — guided tour of every workbench surface
+- [Setup](https://bowire.io/docs/setup/) — embedded, standalone, Docker, sidecar
+- [Protocols](https://bowire.io/docs/protocols/) — per-protocol setup, conventions, gotchas
+- [Architecture](https://bowire.io/docs/architecture/) — plugin model, host packages, ALC isolation
+- [API reference](https://bowire.io/docs/api/) — DocFX-generated reference for every public type
 
 ## Roadmap & Community
 
 - [ROADMAP.md](https://github.com/Kuestenlogik/Bowire/blob/main/ROADMAP.md) — what shipped, what's planned, what's deliberately out of scope
-- [Community](https://kuestenlogik.github.io/Bowire/community.html) — Discord, Discussions, Issues, Contributions
+- [Community](https://bowire.io/community.html) — Discord, Discussions, Issues, Contributions
 - [CONTRIBUTING.md](https://github.com/Kuestenlogik/Bowire/blob/main/CONTRIBUTING.md) — how to write a plugin, run the smoke tests, prepare a PR
 
 ## License

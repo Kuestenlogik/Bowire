@@ -47,8 +47,8 @@ Tags:
 ReleaseNotesUrl: https://github.com/Kuestenlogik/Bowire/releases/tag/v__VERSION__
 Documentation:
   - DocumentLabel: Documentation
-    DocumentUrl: https://kuestenlogik.github.io/Bowire/docs/
+    DocumentUrl: https://bowire.io/docs/
   - DocumentLabel: Quick Start
-    DocumentUrl: https://kuestenlogik.github.io/Bowire/docs/quickstart.html
+    DocumentUrl: https://bowire.io/docs/quickstart.html
 ManifestType: defaultLocale
 ManifestVersion: 1.6.0

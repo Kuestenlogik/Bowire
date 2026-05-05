@@ -433,7 +433,7 @@
         }));
         footer.appendChild(el('a', {
             className: 'bowire-landing-footer-btn',
-            href: 'https://kuestenlogik.github.io/Bowire/docs/',
+            href: 'https://bowire.io/docs/',
             target: '_blank',
             rel: 'noopener',
             textContent: 'Open docs →'

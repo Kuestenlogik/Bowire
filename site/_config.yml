@@ -1,7 +1,7 @@
 title: Bowire
 description: Multi-protocol API workbench for .NET. Auto-discovers gRPC / REST / GraphQL / MQTT / SignalR / WebSocket / SSE / MCP / OData services and gives you a single browser UI to inspect, invoke, stream, mock, and replay them — embedded in your app or as a standalone CLI.
-url: "https://kuestenlogik.github.io"
-baseurl: "/Bowire"
+url: "https://bowire.io"
+baseurl: ""
 
 # Used by jekyll-seo-tag to emit og:image / twitter:card image, and by
 # the Bowire brand wrapper everywhere else (about page, footer, etc.).

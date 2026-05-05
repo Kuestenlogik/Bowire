@@ -62,7 +62,7 @@ jobs:
         run: |
           cd site
           bundle install
-          bundle exec jekyll build --baseurl "/Bowire"
+          bundle exec jekyll build
 
       # Combine: Jekyll output + DocFX output
       - name: Combine outputs

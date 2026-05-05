@@ -369,7 +369,7 @@
 
         var linksRow = el('div', { className: 'bowire-settings-about-links' });
         linksRow.appendChild(aboutLink('GitHub Repository',  'https://github.com/Kuestenlogik/Bowire'));
-        linksRow.appendChild(aboutLink('Documentation',      'https://kuestenlogik.github.io/Bowire/docs/'));
+        linksRow.appendChild(aboutLink('Documentation',      'https://bowire.io/docs/'));
         linksRow.appendChild(aboutLink('License (Apache-2.0)','https://github.com/Kuestenlogik/Bowire/blob/main/LICENSE'));
         linksRow.appendChild(aboutLink('Issues',             'https://github.com/Kuestenlogik/Bowire/issues'));
         section.appendChild(linksRow);

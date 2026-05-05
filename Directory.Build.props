@@ -31,7 +31,7 @@
     <Copyright>Copyright (c) 2026 Küstenlogik</Copyright>
     <RepositoryType>git</RepositoryType>
     <RepositoryUrl>https://github.com/Kuestenlogik/Bowire</RepositoryUrl>
-    <PackageProjectUrl>https://kuestenlogik.github.io/Bowire/</PackageProjectUrl>
+    <PackageProjectUrl>https://bowire.io/</PackageProjectUrl>
     <PackageLicenseFile>LICENSE</PackageLicenseFile>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageIcon>icon.png</PackageIcon>

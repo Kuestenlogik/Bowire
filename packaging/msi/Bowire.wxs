@@ -61,7 +61,7 @@
              unpackaged-Win32 path. -->
         <Property Id="ARPPRODUCTICON" Value="bowire.ico" />
         <Property Id="ARPHELPLINK" Value="https://github.com/Kuestenlogik/Bowire" />
-        <Property Id="ARPURLINFOABOUT" Value="https://kuestenlogik.github.io/Bowire/" />
+        <Property Id="ARPURLINFOABOUT" Value="https://bowire.io/" />
         <Property Id="ARPURLUPDATEINFO" Value="https://github.com/Kuestenlogik/Bowire/releases" />
         <Property Id="ARPCONTACT" Value="https://github.com/Kuestenlogik/Bowire/issues" />
         <Property Id="ARPNOMODIFY" Value="1" />
