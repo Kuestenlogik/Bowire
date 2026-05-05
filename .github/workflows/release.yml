@@ -128,11 +128,17 @@ jobs:
       # DEB + RPM via nfpm (x64 + arm64)
       # ============================================================
 
-      - name: Install nfpm
+      - name: Install nfpm (latest)
         run: |
-          NFPM_VERSION=2.43.0
-          curl -sSL "https://github.com/goreleaser/nfpm/releases/download/v${NFPM_VERSION}/nfpm_${NFPM_VERSION}_Linux_x86_64.tar.gz" \
-              | sudo tar -xz -C /usr/local/bin nfpm
+          # Resolve the latest nfpm release via the GitHub API (jq is
+          # pre-installed on ubuntu-latest) so we don't pin a stale
+          # version. If nfpm introduces a breaking change in the
+          # future we'll see it on the next release run, not silently
+          # months later.
+          NFPM_URL=$(curl -fsSL https://api.github.com/repos/goreleaser/nfpm/releases/latest \
+              | jq -r '.assets[] | select(.name | endswith("Linux_x86_64.tar.gz")) | .browser_download_url')
+          echo "Downloading nfpm from $NFPM_URL"
+          curl -fsSL "$NFPM_URL" | sudo tar -xz -C /usr/local/bin nfpm
           nfpm --version
 
       - name: Build DEB + RPM (x64)
