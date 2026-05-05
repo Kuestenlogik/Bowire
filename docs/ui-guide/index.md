@@ -11,12 +11,10 @@ Bowire's browser UI is a single-page application built with pure HTML, CSS, and 
 The UI is organized into four main areas. Click any region in the
 diagram below to jump to its detail page:
 
-<object class="theme-img-dark" type="image/svg+xml" data="../images/ui-anatomy-dark.svg" aria-label="Bowire workbench layout — click any region to open its UI Guide page">
-  <img src="../images/ui-anatomy-dark.svg" alt="Bowire workbench layout">
-</object>
-<object class="theme-img-light" type="image/svg+xml" data="../images/ui-anatomy-light.svg" aria-label="Bowire workbench layout — click any region to open its UI Guide page">
-  <img src="../images/ui-anatomy-light.svg" alt="Bowire workbench layout">
-</object>
+<picture class="ui-anatomy-picture">
+  <source srcset="../images/ui-anatomy-dark.svg" media="(prefers-color-scheme: dark)">
+  <img class="ui-anatomy-img" src="../images/ui-anatomy-light.svg" alt="Bowire workbench layout — click any region to open its UI Guide page">
+</picture>
 
 1. **[Sidebar](sidebar.md)** &mdash; service list, search, favorites, protocol tabs
 2. **[Request Pane](request-pane.md)** &mdash; form/JSON editor, metadata headers, import

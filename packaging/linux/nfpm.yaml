@@ -45,8 +45,16 @@ contents:
   # don't try to FHS-split them across /usr/{bin,lib,share} because
   # the .NET single-folder publish layout assumes everything sits in
   # one directory next to the entrypoint exe.
+  #
+  # `type: tree` recursively copies the directory and preserves
+  # subdirectory structure. Without it nfpm flattens the glob, which
+  # breaks because the .NET publish output contains per-locale
+  # subdirs (de/, es/, fr/, ja/ ...) all carrying the same DLL names
+  # (e.g. System.CommandLine.resources.dll) — those collide on a flat
+  # destination.
   - src: ${PUBLISH_DIR}/
     dst: /opt/bowire/
+    type: tree
 
   # Convenience symlink so `bowire …` works straight from the user's
   # PATH without manual export. /usr/bin is the FHS spot for vendor

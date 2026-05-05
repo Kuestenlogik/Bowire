@@ -1879,3 +1879,28 @@ object.theme-img-dark, object.theme-img-light {
     background: transparent;
     margin: 0 auto 32px;
 }
+
+/* The UI anatomy <picture> uses prefers-color-scheme to pick the
+   right SVG natively. The two overrides below honour the explicit
+   theme toggle in the DocFX header — when the user picks "Dark" or
+   "Light" we swap the rendered image via `content: url(...)`, which
+   replaces an <img>'s source through CSS and is supported in every
+   evergreen browser. The article column already constrains width, so
+   the picture itself just needs the centring margin. */
+.ui-anatomy-picture {
+    display: block;
+    max-width: 100%;
+    margin: 0 auto 32px;
+}
+.ui-anatomy-img {
+    display: block;
+    width: 100%;
+    height: auto;
+    background: transparent;
+}
+:root[data-theme="dark"] .ui-anatomy-img {
+    content: url("../images/ui-anatomy-dark.svg");
+}
+:root[data-theme="light"] .ui-anatomy-img {
+    content: url("../images/ui-anatomy-light.svg");
+}
