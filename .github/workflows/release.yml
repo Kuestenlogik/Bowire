@@ -181,9 +181,17 @@ jobs:
       # MSI via WiX v5 (x64 + arm64)
       # ============================================================
 
-      - name: Install WiX
-        run: dotnet tool install --global wix
+      # Pinned to v5: WiX v7 added an OSMF EULA gate that blocks
+       # `wix build` until accepted (`error WIX7015`). v5 is the last
+      # major without the gate and is feature-complete for our needs.
+      - name: Install WiX (v5)
+        run: dotnet tool install --global wix --version '5.*'
 
+      # PublishDir must be absolute — WiX resolves the `-d` value
+      # relative to the .wxs file's directory, not the working
+      # directory of the wix invocation. Without `$GITHUB_WORKSPACE/`
+      # in front, WiX silently writes a 1.5 MB MSI containing only
+      # the WiX metadata and an empty Files harvest.
       - name: Build MSI (x64)
         env:
           V: ${{ steps.version.outputs.VERSION }}
@@ -191,7 +199,7 @@ jobs:
           wix build packaging/msi/Bowire.wxs \
             -arch x64 \
             -d Version=$V \
-            -d PublishDir=publish/bowire-win-x64 \
+            -d "PublishDir=${GITHUB_WORKSPACE}/publish/bowire-win-x64" \
             -o "publish/archives/Bowire-$V-x64.msi"
           # Phase 3 signing hook would slot in here:
           #   if: ${{ secrets.WINDOWS_SIGN_CERT_BASE64 != '' }}
@@ -210,7 +218,7 @@ jobs:
           wix build packaging/msi/Bowire.wxs \
             -arch arm64 \
             -d Version=$V \
-            -d PublishDir=publish/bowire-win-arm64 \
+            -d "PublishDir=${GITHUB_WORKSPACE}/publish/bowire-win-arm64" \
             -o "publish/archives/Bowire-$V-arm64.msi"
           cp "publish/archives/Bowire-$V-arm64.msi" publish/archives/bowire-arm64.msi
 
