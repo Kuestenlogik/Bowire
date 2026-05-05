@@ -19,6 +19,7 @@ namespace Kuestenlogik.Bowire.Tests;
 /// the integration suite — here we drive the in-process branches that don't
 /// need a server.
 /// </summary>
+[Collection(nameof(OpenApiUploadStoreTestGroup))]
 public sealed class BowireRestProtocolTests
 {
     public BowireRestProtocolTests()
@@ -736,6 +737,7 @@ public sealed class RestInvokerTests
 /// through the in-memory store and asserts the lifecycle (Add → GetAll →
 /// HasUploads → Clear).
 /// </summary>
+[Collection(nameof(OpenApiUploadStoreTestGroup))]
 public sealed class OpenApiUploadStoreTests : IDisposable
 {
     public OpenApiUploadStoreTests()
