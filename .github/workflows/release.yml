@@ -48,6 +48,14 @@ jobs:
   release:
     runs-on: ubuntu-latest
 
+    # Job-level env so optional secrets are visible in `if:` expressions
+    # (the `secrets` context isn't available there directly). Empty
+    # values when the secret isn't set, so `env.X != ''` gates work.
+    env:
+      DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+      DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+      NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+
     steps:
       - uses: actions/checkout@v6
         with:
@@ -269,14 +277,14 @@ jobs:
             -p:ContainerRegistry=ghcr.io
 
       - name: Login to Docker Hub
-        if: ${{ github.ref_type == 'tag' && secrets.DOCKERHUB_TOKEN != '' }}
+        if: ${{ github.ref_type == 'tag' && env.DOCKERHUB_TOKEN != '' }}
         uses: docker/login-action@v3
         with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          username: ${{ env.DOCKERHUB_USERNAME }}
+          password: ${{ env.DOCKERHUB_TOKEN }}
 
       - name: Push container to Docker Hub (multi-arch)
-        if: ${{ github.ref_type == 'tag' && secrets.DOCKERHUB_TOKEN != '' }}
+        if: ${{ github.ref_type == 'tag' && env.DOCKERHUB_TOKEN != '' }}
         env:
           V: ${{ steps.version.outputs.VERSION }}
         run: |
@@ -302,9 +310,7 @@ jobs:
 
       - name: Publish to nuget.org
         if: ${{ github.ref_type == 'tag' && !contains(github.ref, '-rc') && env.NUGET_API_KEY != '' }}
-        env:
-          NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
-        run: dotnet nuget push "artifacts/packages/*.nupkg" --source https://api.nuget.org/v3/index.json --api-key "$NUGET_API_KEY" --skip-duplicate
+        run: dotnet nuget push "artifacts/packages/*.nupkg" --source https://api.nuget.org/v3/index.json --api-key "${{ env.NUGET_API_KEY }}" --skip-duplicate
 
       # ============================================================
       # GitHub Release with all assets, only on tag pushes
