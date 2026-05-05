@@ -1,5 +1,41 @@
 # Changelog
 
+## v1.0.11 — Socket.IO namespace selection (2026-05-05)
+
+### Adds
+- **`X-Bowire-SocketIo-Namespace` metadata header** lets a Socket.IO
+  caller select the namespace per request. The plugin defaults to
+  the root namespace (`/`); set the header to `/harbor` (or any
+  other namespace path the server exposes) and the plugin will
+  connect to that namespace instead. Surfaced as
+  `BowireSocketIoProtocol.NamespaceMetadataKey` for code-export
+  and recording paths.
+- **URL-path fallback** — passing `http://host:port/harbor` as the
+  server URL also lands on the `/harbor` namespace, no header
+  needed. The two paths complement each other: URL-path is great
+  for `bowire --url` invocations, the metadata header keeps the
+  same base URL across multiple methods that target different
+  namespaces.
+
+### Resolution order
+- Explicit URL path wins when both are present
+  (`bowire --url http://host/admin` + `X-Bowire-SocketIo-Namespace: /harbor`
+  → `/admin` because the URL was explicit).
+- Empty / missing header falls through to whatever the URL says.
+
+### Sample
+- `Bowire.Samples.SocketIo/server.js` simplified back to broadcasting
+  on `/harbor` only — the natural Socket.IO pattern (one namespace
+  per business domain). The earlier dual-namespace broadcast was a
+  pragmatic workaround for v1.0.9 / v1.0.10 captures; with the
+  namespace selector landed, the sample matches real-world Socket.IO
+  layouts.
+
+### Tests
+- 5 new unit tests for `ResolveUrl`: trim / namespace from metadata /
+  leading-slash normalisation / URL-path-beats-metadata / empty-header
+  passthrough. Total core test count is now 721 (up from 716).
+
 ## v1.0.10 — Method-detail header layout fix (2026-05-05)
 
 ### Fixes

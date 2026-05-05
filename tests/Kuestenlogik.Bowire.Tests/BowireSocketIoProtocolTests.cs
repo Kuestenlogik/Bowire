@@ -214,6 +214,76 @@ public sealed class BowireSocketIoProtocolTests
         Assert.Equal(["event", "data", "timestamp"], msg.Fields.Select(f => f.Name).ToArray());
     }
 
+    // ---- ResolveUrl: namespace metadata header ----
+
+    [Fact]
+    public void ResolveUrl_Returns_Trimmed_Url_When_No_Metadata()
+    {
+        Assert.Equal("http://localhost:3000",
+            InvokeResolveUrl("http://localhost:3000/", null));
+        Assert.Equal("http://localhost:3000",
+            InvokeResolveUrl("http://localhost:3000", null));
+    }
+
+    [Fact]
+    public void ResolveUrl_Appends_Namespace_From_Metadata()
+    {
+        var meta = new Dictionary<string, string>
+        {
+            [BowireSocketIoProtocol.NamespaceMetadataKey] = "/harbor"
+        };
+        Assert.Equal("http://localhost:3000/harbor",
+            InvokeResolveUrl("http://localhost:3000", meta));
+    }
+
+    [Fact]
+    public void ResolveUrl_Adds_Leading_Slash_To_Namespace()
+    {
+        // The user wrote `harbor` (no leading slash) — the helper still
+        // produces a valid /-prefixed namespace path.
+        var meta = new Dictionary<string, string>
+        {
+            [BowireSocketIoProtocol.NamespaceMetadataKey] = "harbor"
+        };
+        Assert.Equal("http://localhost:3000/harbor",
+            InvokeResolveUrl("http://localhost:3000", meta));
+    }
+
+    [Fact]
+    public void ResolveUrl_Url_Path_Beats_Metadata_When_Both_Present()
+    {
+        // Explicit URL path should win over the metadata fallback so the
+        // user can override per-method without unsetting the header.
+        var meta = new Dictionary<string, string>
+        {
+            [BowireSocketIoProtocol.NamespaceMetadataKey] = "/harbor"
+        };
+        Assert.Equal("http://localhost:3000/admin",
+            InvokeResolveUrl("http://localhost:3000/admin", meta));
+    }
+
+    [Fact]
+    public void ResolveUrl_Ignores_Empty_Namespace_Header()
+    {
+        var meta = new Dictionary<string, string>
+        {
+            [BowireSocketIoProtocol.NamespaceMetadataKey] = ""
+        };
+        Assert.Equal("http://localhost:3000",
+            InvokeResolveUrl("http://localhost:3000", meta));
+    }
+
+    private static string InvokeResolveUrl(string serverUrl, Dictionary<string, string>? metadata)
+    {
+        var method = typeof(BowireSocketIoProtocol).GetMethod(
+            "ResolveUrl",
+            BindingFlags.NonPublic | BindingFlags.Static);
+        Assert.NotNull(method);
+        var result = method!.Invoke(null, [serverUrl, metadata]);
+        Assert.NotNull(result);
+        return (string)result!;
+    }
+
     private static T InvokeStaticHelper<T>(string methodName)
     {
         var method = typeof(BowireSocketIoProtocol).GetMethod(

@@ -2,6 +2,11 @@
 
 ## Completed
 
+### v1.0.11 — Socket.IO namespace selection (2026-05-05)
+- [x] **`X-Bowire-SocketIo-Namespace` metadata header** for per-request namespace selection. Defaults to `/`; set to `/harbor` (or any namespace path) to connect there. Exposed as `BowireSocketIoProtocol.NamespaceMetadataKey`.
+- [x] **URL-path fallback**: `http://host:port/harbor` as server URL also lands on `/harbor`. Explicit URL path beats metadata header when both present.
+- [x] Sample server (`Bowire.Samples.SocketIo/server.js`) simplified back to a single `/harbor` namespace — the natural Socket.IO layout pattern.
+
 ### v1.0.10 — Method-detail header layout fix (2026-05-05)
 - [x] **Protocol-name in icon slot** — render-main.js used `bowire-breadcrumb-icon` (12×12) for the multi-character protocol-name span; the text overflowed the slot and collided with the method-title on the right. Most visible on Socket.IO. Fixed to `bowire-breadcrumb-item`.
 - [x] **Method-name duplicated** in breadcrumb + headerName. Breadcrumb now ends at the service segment; method name is the prominent title alone.

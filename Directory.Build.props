@@ -38,9 +38,9 @@
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(IsPackable)' != 'false'">
-    <Version>1.0.10</Version>
-    <AssemblyVersion>1.0.10</AssemblyVersion>
-    <FileVersion>1.0.10</FileVersion>
+    <Version>1.0.11</Version>
+    <AssemblyVersion>1.0.11</AssemblyVersion>
+    <FileVersion>1.0.11</FileVersion>
   </PropertyGroup>
 
   <!-- Mark all Kuestenlogik.Bowire.Protocol.* projects as Bowire plugins so

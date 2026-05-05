@@ -197,16 +197,18 @@ async function capture(target) {
         mqtt:    { url: 'http://localhost:5079/bowire',  methodText: 'harbor/crane/1/status', waitMs: 7000, shotName: 'streaming-mqtt' },
         // Socket.IO sample is a Node.js server (no embedded /bowire). Run
         // its `node server.js` from src/Kuestenlogik.Bowire.Samples.SocketIo
-        // and point a standalone bowire CLI at it on :5079:
-        //   bowire --port 5079 --no-browser --url http://localhost:3000
-        // The sample's /harbor namespace broadcasts a port-call-changed
-        // event every 3 s, which the 'listen' method surfaces as a stream.
+        // and point a standalone bowire CLI at the /harbor namespace:
+        //   bowire --port 5079 --no-browser --url http://localhost:3000/harbor
+        // (or pass the X-Bowire-SocketIo-Namespace header instead — both
+        // work, see the SocketIo plugin's NamespaceMetadataKey doc.)
+        // The /harbor namespace broadcasts a port-call-changed event every
+        // second, which the `listen` method surfaces as a stream.
         socketio:{
             url: 'http://localhost:5079/bowire',
             methodText: 'listen',
             waitMs: 8000,
             shotName: 'streaming-socketio',
-            // Filter to the broadcast event the sample emits every 3 s.
+            // Filter to the broadcast event the sample emits every second.
             formValues: { event: 'port-call-changed' },
         },
     };
