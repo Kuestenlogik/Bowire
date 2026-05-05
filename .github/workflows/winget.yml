@@ -27,10 +27,15 @@
 
 name: winget
 
-# Temporarily manual-trigger only. Auto-publish to the Windows
-# Package Manager waits until the release.yml pipeline that produces
-# the win-x64 / win-arm64 ZIP artefacts is back online.
+# Auto-publish on every published GitHub release. The release.yml
+# pipeline uploads the win-x64 / win-arm64 ZIPs as part of its asset
+# set, so by the time `release.published` fires those assets are
+# available for download here. Manual `workflow_dispatch` is kept for
+# re-runs (e.g. when a winget submission needs to be retried after
+# upstream review feedback).
 on:
+  release:
+    types: [published]
   workflow_dispatch:
 
 permissions:
