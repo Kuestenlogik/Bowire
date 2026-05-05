@@ -3,32 +3,37 @@ name: Release
 # Tag-driven full release pipeline. Push a `v*` tag → builds standalone
 # binaries for 6 RIDs, MSI/DEB/RPM, multi-arch container, DocFX docs
 # (HTML zip + custom-rendered PDF), then publishes everything to:
-#   - GitHub Releases (all assets)
+#   - GitHub Releases (all assets, all tags)
 #   - GitHub Packages   (NuGets, non-RC tags only)
 #   - nuget.org         (NuGets, non-RC tags only, gated on NUGET_API_KEY)
 #   - GHCR              (multi-arch container, always on tag)
 #   - Docker Hub        (multi-arch container, gated on DOCKERHUB_TOKEN)
 #
-# Hybrid signing-ready (Phase 3): today this ships unsigned binaries.
-# Future signing slots in as additional steps without restructuring:
-#   - MSI signing → after each `Build MSI` step, gated on
-#     `secrets.WINDOWS_SIGN_CERT_BASE64 != ''`, runs signtool against
-#     the .msi outputs (timestamped, sha256). Marker comment in the
-#     MSI step shows the exact insertion point.
-#   - macOS notarization → after `Archive standalone binaries`, gated
-#     on `secrets.APPLE_DEVELOPER_ID_CERT != ''`, runs codesign +
-#     `xcrun notarytool submit --wait` on the osx-* tarballs.
-# Without those secrets the pipeline is identical; with them, the gated
-# steps engage.
+# Job split:
+#   - build-linux  (ubuntu-latest): NuGet pack, 6-RID publish + tar/zip
+#                  archives, DEB/RPM via nfpm, DocFX HTML + custom PDF,
+#                  container push, NuGet push.
+#   - build-msi    (windows-latest): WiX MSI builds for win-x64 + win-arm64.
+#                  WiX v5 is Windows-only (`warning WIX0000: WiX Toolset
+#                  only supports Windows`), so the MSI step can't share
+#                  the Linux runner. Runs in parallel.
+#   - release      (ubuntu-latest, needs: [build-linux, build-msi]):
+#                  downloads both artifact sets and creates the GitHub
+#                  Release. Skipped on workflow_dispatch dry-runs.
 #
-# SemVer prerelease tags (v*-rc*, v*-beta*, v*-preview*) flow through
-# build/test/pack/publish-artefact but skip nuget.org and GitHub
-# Packages publishing — the GitHub Release is marked prerelease so
-# consumers don't accidentally pick up RC bits.
+# Hybrid signing-ready (Phase 3): today this ships unsigned binaries.
+# Signing slots in as additional steps without restructuring:
+#   - MSI signing → after each `Build MSI` step in build-msi, gated on
+#     `secrets.WINDOWS_SIGN_CERT_BASE64 != ''`, runs signtool against
+#     the .msi outputs (timestamped, sha256).
+#   - macOS notarization → after `Archive standalone binaries` in
+#     build-linux, gated on `secrets.APPLE_DEVELOPER_ID_CERT != ''`,
+#     runs codesign + `xcrun notarytool submit --wait`.
 #
 # Manual `workflow_dispatch` trigger is enabled for dry runs without
-# tagging — publish/upload steps are gated to `tag` ref-type, so a
-# dispatch run exercises every build step but doesn't push anywhere.
+# tagging — every build step exercises end-to-end, but container/NuGet
+# push and the GitHub Release upload are gated to `tag` ref-type so a
+# dispatch run never publishes anything.
 
 on:
   push:
@@ -45,7 +50,11 @@ permissions:
   packages: write   # nuget push to GitHub Packages + container push to GHCR
 
 jobs:
-  release:
+  # ================================================================
+  # build-linux: NuGets, RID archives, DEB/RPM, docs, container push
+  # ================================================================
+  build-linux:
+    name: Build (Linux artefacts + container)
     runs-on: ubuntu-latest
 
     # Job-level env so optional secrets are visible in `if:` expressions
@@ -81,9 +90,9 @@ jobs:
             echo "VERSION=0.0.0-dispatch.${GITHUB_RUN_NUMBER}" >> $GITHUB_OUTPUT
           fi
 
-      # ============================================================
+      # ----------------------------------------------------------
       # NuGet packages
-      # ============================================================
+      # ----------------------------------------------------------
 
       - name: Restore
         run: dotnet restore Kuestenlogik.Bowire.slnx
@@ -96,9 +105,9 @@ jobs:
       - name: Pack (NuGet)
         run: dotnet pack Kuestenlogik.Bowire.slnx -c Release --no-build -o artifacts/packages -p:Version=${{ steps.version.outputs.VERSION }}
 
-      # ============================================================
+      # ----------------------------------------------------------
       # Standalone binaries (Linux / Windows / macOS × x64 / arm64)
-      # ============================================================
+      # ----------------------------------------------------------
 
       - name: Publish standalone binaries (6 RIDs)
         env:
@@ -129,20 +138,13 @@ jobs:
       #   if: ${{ secrets.APPLE_DEVELOPER_ID_CERT != '' }}
       #   - codesign --deep --sign "$APPLE_DEV_ID" publish/bowire-osx-*/bowire
       #   - xcrun notarytool submit publish/archives/bowire-osx-*.tar.gz --wait
-      # Without secrets the unsigned tarballs ship as-is; users on
-      # macOS need to remove the quarantine attribute manually.
 
-      # ============================================================
+      # ----------------------------------------------------------
       # DEB + RPM via nfpm (x64 + arm64)
-      # ============================================================
+      # ----------------------------------------------------------
 
       - name: Install nfpm (latest)
         run: |
-          # Resolve the latest nfpm release via the GitHub API (jq is
-          # pre-installed on ubuntu-latest) so we don't pin a stale
-          # version. If nfpm introduces a breaking change in the
-          # future we'll see it on the next release run, not silently
-          # months later.
           NFPM_URL=$(curl -fsSL https://api.github.com/repos/goreleaser/nfpm/releases/latest \
               | jq -r '.assets[] | select(.name | endswith("Linux_x86_64.tar.gz")) | .browser_download_url')
           echo "Downloading nfpm from $NFPM_URL"
@@ -177,54 +179,9 @@ jobs:
           nfpm pkg --packager deb --target "publish/archives/bowire_${VERSION}_arm64.deb"   --config /tmp/nfpm-arm64.yaml
           nfpm pkg --packager rpm --target "publish/archives/bowire-${VERSION}.aarch64.rpm" --config /tmp/nfpm-arm64.yaml
 
-      # ============================================================
-      # MSI via WiX v5 (x64 + arm64)
-      # ============================================================
-
-      # Pinned to v5: WiX v7 added an OSMF EULA gate that blocks
-       # `wix build` until accepted (`error WIX7015`). v5 is the last
-      # major without the gate and is feature-complete for our needs.
-      - name: Install WiX (v5)
-        run: dotnet tool install --global wix --version '5.*'
-
-      # PublishDir must be absolute — WiX resolves the `-d` value
-      # relative to the .wxs file's directory, not the working
-      # directory of the wix invocation. Without `$GITHUB_WORKSPACE/`
-      # in front, WiX silently writes a 1.5 MB MSI containing only
-      # the WiX metadata and an empty Files harvest.
-      - name: Build MSI (x64)
-        env:
-          V: ${{ steps.version.outputs.VERSION }}
-        run: |
-          wix build packaging/msi/Bowire.wxs \
-            -arch x64 \
-            -d Version=$V \
-            -d "PublishDir=${GITHUB_WORKSPACE}/publish/bowire-win-x64" \
-            -o "publish/archives/Bowire-$V-x64.msi"
-          # Phase 3 signing hook would slot in here:
-          #   if: ${{ secrets.WINDOWS_SIGN_CERT_BASE64 != '' }}
-          #   echo "$WINDOWS_SIGN_CERT_BASE64" | base64 -d > /tmp/cert.pfx
-          #   osslsigncode sign -pkcs12 /tmp/cert.pfx -pass "$WINDOWS_SIGN_CERT_PWD" \
-          #       -t http://timestamp.digicert.com -h sha256 \
-          #       -in  publish/archives/Bowire-$V-x64.msi \
-          #       -out publish/archives/Bowire-$V-x64.signed.msi
-          #   mv publish/archives/Bowire-$V-x64.signed.msi publish/archives/Bowire-$V-x64.msi
-          cp "publish/archives/Bowire-$V-x64.msi" publish/archives/bowire-x64.msi
-
-      - name: Build MSI (arm64)
-        env:
-          V: ${{ steps.version.outputs.VERSION }}
-        run: |
-          wix build packaging/msi/Bowire.wxs \
-            -arch arm64 \
-            -d Version=$V \
-            -d "PublishDir=${GITHUB_WORKSPACE}/publish/bowire-win-arm64" \
-            -o "publish/archives/Bowire-$V-arm64.msi"
-          cp "publish/archives/Bowire-$V-arm64.msi" publish/archives/bowire-arm64.msi
-
-      # ============================================================
+      # ----------------------------------------------------------
       # Documentation: HTML site (zip) + custom-rendered PDF
-      # ============================================================
+      # ----------------------------------------------------------
 
       - name: Install DocFX
         run: dotnet tool install -g docfx
@@ -260,9 +217,9 @@ jobs:
           cp publish/archives/bowire-docs-$V.tar.gz publish/archives/bowire-docs.tar.gz
           cp publish/archives/bowire-docs.pdf       publish/archives/bowire-docs-$V.pdf
 
-      # ============================================================
+      # ----------------------------------------------------------
       # Multi-arch container → GHCR (always) + Docker Hub (optional)
-      # ============================================================
+      # ----------------------------------------------------------
       # Tool csproj has the full container config (base image, port,
       # OCI labels, repo). `dotnet publish /t:PublishContainer` builds
       # both arches in a single call when ContainerRuntimeIdentifiers
@@ -311,13 +268,13 @@ jobs:
             -p:ContainerImageTags="$V;latest" \
             -p:ContainerRegistry=docker.io
 
-      # ============================================================
+      # ----------------------------------------------------------
       # Publish NuGets (Github Packages + nuget.org), gated
-      # ============================================================
+      # ----------------------------------------------------------
       # `-rc` tags (and the workflow_dispatch dry runs) skip both
-      # publishes — the GitHub Release below stays prerelease for RCs
-      # so the .nupkg artefacts are downloadable without entering the
-      # public NuGet feeds.
+      # publishes — the GitHub Release in the release job stays
+      # prerelease for RCs so the .nupkg artefacts are downloadable
+      # without entering the public NuGet feeds.
 
       - name: Publish to GitHub Packages
         if: ${{ github.ref_type == 'tag' && !contains(github.ref, '-rc') }}
@@ -327,12 +284,139 @@ jobs:
         if: ${{ github.ref_type == 'tag' && !contains(github.ref, '-rc') && env.NUGET_API_KEY != '' }}
         run: dotnet nuget push "artifacts/packages/*.nupkg" --source https://api.nuget.org/v3/index.json --api-key "${{ env.NUGET_API_KEY }}" --skip-duplicate
 
-      # ============================================================
-      # GitHub Release with all assets, only on tag pushes
-      # ============================================================
+      # ----------------------------------------------------------
+      # Hand artefacts off to the release job
+      # ----------------------------------------------------------
+
+      - name: Upload Linux artefacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: artefacts-linux
+          path: |
+            artifacts/packages/
+            publish/archives/
+          retention-days: 1
+
+  # ================================================================
+  # build-msi: WiX MSI builds (Windows-only)
+  # ================================================================
+  build-msi:
+    name: Build (Windows MSI)
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Extract version
+        id: version
+        shell: bash
+        run: |
+          if [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
+            echo "VERSION=${GITHUB_REF_NAME#v}" >> $GITHUB_OUTPUT
+          else
+            echo "VERSION=0.0.0-dispatch.${GITHUB_RUN_NUMBER}" >> $GITHUB_OUTPUT
+          fi
+
+      # Self-contained publish for the two Windows arches feeds the
+      # Files harvest in Bowire.wxs. Linux and macOS RIDs are skipped
+      # here — the Linux job already produces those.
+      - name: Publish standalone binaries (Windows RIDs)
+        shell: bash
+        env:
+          V: ${{ steps.version.outputs.VERSION }}
+        run: |
+          for rid in win-x64 win-arm64; do
+            dotnet publish src/Kuestenlogik.Bowire.Tool \
+              -c Release -r "$rid" --self-contained \
+              -o "publish/bowire-$rid" \
+              -p:Version=$V
+          done
+
+      # Pinned to v5: WiX v7 added an OSMF EULA gate that blocks
+      # `wix build` until accepted (`error WIX7015`). v5 is the last
+      # major without the gate and is feature-complete for our needs.
+      # WiX v5 is Windows-only (`warning WIX0000: WiX Toolset only
+      # supports Windows`), which is why this entire job runs on
+      # windows-latest instead of sharing the Linux runner.
+      - name: Install WiX (v5)
+        shell: bash
+        run: dotnet tool install --global wix --version '5.*'
+
+      # PublishDir must be absolute — WiX resolves the `-d` value
+      # relative to the .wxs file's directory, not the working
+      # directory of the wix invocation. Without `$GITHUB_WORKSPACE/`
+      # in front, WiX silently writes a 1.5 MB MSI containing only
+      # the WiX metadata and an empty Files harvest.
+      - name: Build MSI (x64)
+        shell: bash
+        env:
+          V: ${{ steps.version.outputs.VERSION }}
+        run: |
+          mkdir -p publish/archives
+          wix build packaging/msi/Bowire.wxs \
+            -arch x64 \
+            -d Version=$V \
+            -d "PublishDir=${GITHUB_WORKSPACE}/publish/bowire-win-x64" \
+            -o "publish/archives/Bowire-$V-x64.msi"
+          # Phase 3 signing hook would slot in here:
+          #   if: ${{ secrets.WINDOWS_SIGN_CERT_BASE64 != '' }}
+          #   echo "$WINDOWS_SIGN_CERT_BASE64" | base64 -d > /tmp/cert.pfx
+          #   signtool sign /f /tmp/cert.pfx /p "$WINDOWS_SIGN_CERT_PWD" \
+          #       /tr http://timestamp.digicert.com /td sha256 /fd sha256 \
+          #       publish/archives/Bowire-$V-x64.msi
+          cp "publish/archives/Bowire-$V-x64.msi" publish/archives/bowire-x64.msi
+
+      - name: Build MSI (arm64)
+        shell: bash
+        env:
+          V: ${{ steps.version.outputs.VERSION }}
+        run: |
+          wix build packaging/msi/Bowire.wxs \
+            -arch arm64 \
+            -d Version=$V \
+            -d "PublishDir=${GITHUB_WORKSPACE}/publish/bowire-win-arm64" \
+            -o "publish/archives/Bowire-$V-arm64.msi"
+          cp "publish/archives/Bowire-$V-arm64.msi" publish/archives/bowire-arm64.msi
+
+      - name: Upload MSI artefacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: artefacts-msi
+          path: publish/archives/
+          retention-days: 1
+
+  # ================================================================
+  # release: download both artefact sets, create the GitHub Release
+  # ================================================================
+  # Skipped on workflow_dispatch dry-runs — only fires on tag pushes.
+  # build-linux already pushed the container + NuGets; this job is
+  # purely about assembling the GitHub Release.
+  release:
+    name: GitHub Release
+    needs: [build-linux, build-msi]
+    if: ${{ github.ref_type == 'tag' }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download Linux artefacts
+        uses: actions/download-artifact@v4
+        with:
+          name: artefacts-linux
+          path: ./
+
+      - name: Download MSI artefacts
+        uses: actions/download-artifact@v4
+        with:
+          name: artefacts-msi
+          path: publish/archives/
 
       - name: Create GitHub Release
-        if: ${{ github.ref_type == 'tag' }}
         uses: softprops/action-gh-release@v2
         with:
           generate_release_notes: true
