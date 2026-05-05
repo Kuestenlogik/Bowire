@@ -1700,13 +1700,21 @@ body.bowire-docs-mode-standalone .bowire-docs-hero-logo {
     padding: 0;
     border: none;
     display: block;
-    font-size: clamp(1.75rem, 4vw, 2.25rem);
+    /* Match the marketing-site hero scale (features.html etc.) so the
+       online docs landing page has the same visual weight as siblings
+       on bowire.io. The standalone override below restores the smaller
+       cover-card scale for the PDF / offline ZIP build. */
+    font-size: clamp(2.25rem, 5vw, 3.25rem);
     font-weight: 800;
     letter-spacing: -0.02em;
     background: linear-gradient(135deg, var(--bs-emphasis-color) 0%, var(--bowire-accent-hover) 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
+}
+body.bowire-docs-mode-standalone .bowire-docs-hero-title,
+body.bowire-docs-mode-standalone .bowire-docs-hero h1 {
+    font-size: clamp(1.75rem, 4vw, 2.25rem);
 }
 .bowire-docs-hero-tagline {
     /* Centre the tagline under the online hero — the parent
@@ -1715,13 +1723,14 @@ body.bowire-docs-mode-standalone .bowire-docs-hero-logo {
        standalone override below pins it left for the cover-card. */
     margin: 0 auto 1.5rem;
     color: var(--bs-secondary-color);
-    font-size: 1rem;
+    font-size: 1.125rem;
     line-height: 1.5;
     max-width: 880px;
 }
 body.bowire-docs-mode-standalone .bowire-docs-hero-tagline {
     margin-left: 0;
     margin-right: 0;
+    font-size: 1rem;
 }
 .bowire-docs-hero-cta {
     display: flex;
