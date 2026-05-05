@@ -149,14 +149,20 @@ jobs:
           curl -fsSL "$NFPM_URL" | sudo tar -xz -C /usr/local/bin nfpm
           nfpm --version
 
+      # nfpm's built-in env substitution only covers a fixed set of
+      # top-level fields (Name, Version, Arch, Maintainer, etc.) — not
+      # `contents.src`. We pre-expand the yaml with envsubst so PUBLISH_DIR
+      # lands in the right place. gettext-base (and thus envsubst) is
+      # pre-installed on ubuntu-latest.
       - name: Build DEB + RPM (x64)
         env:
           VERSION: ${{ steps.version.outputs.VERSION }}
           ARCH: amd64
           PUBLISH_DIR: publish/bowire-linux-x64
         run: |
-          nfpm pkg --packager deb --target "publish/archives/bowire_${VERSION}_amd64.deb"  --config packaging/linux/nfpm.yaml
-          nfpm pkg --packager rpm --target "publish/archives/bowire-${VERSION}.x86_64.rpm" --config packaging/linux/nfpm.yaml
+          envsubst < packaging/linux/nfpm.yaml > /tmp/nfpm-x64.yaml
+          nfpm pkg --packager deb --target "publish/archives/bowire_${VERSION}_amd64.deb"  --config /tmp/nfpm-x64.yaml
+          nfpm pkg --packager rpm --target "publish/archives/bowire-${VERSION}.x86_64.rpm" --config /tmp/nfpm-x64.yaml
           # Unversioned aliases for the marketing-site download links.
           cp "publish/archives/bowire_${VERSION}_amd64.deb"    publish/archives/bowire_amd64.deb
           cp "publish/archives/bowire-${VERSION}.x86_64.rpm"   publish/archives/bowire.x86_64.rpm
@@ -167,8 +173,9 @@ jobs:
           ARCH: arm64
           PUBLISH_DIR: publish/bowire-linux-arm64
         run: |
-          nfpm pkg --packager deb --target "publish/archives/bowire_${VERSION}_arm64.deb"   --config packaging/linux/nfpm.yaml
-          nfpm pkg --packager rpm --target "publish/archives/bowire-${VERSION}.aarch64.rpm" --config packaging/linux/nfpm.yaml
+          envsubst < packaging/linux/nfpm.yaml > /tmp/nfpm-arm64.yaml
+          nfpm pkg --packager deb --target "publish/archives/bowire_${VERSION}_arm64.deb"   --config /tmp/nfpm-arm64.yaml
+          nfpm pkg --packager rpm --target "publish/archives/bowire-${VERSION}.aarch64.rpm" --config /tmp/nfpm-arm64.yaml
 
       # ============================================================
       # MSI via WiX v5 (x64 + arm64)
