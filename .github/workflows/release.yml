@@ -404,6 +404,13 @@ jobs:
             -o "publish/archives/Bowire-$V-arm64.msi"
           cp "publish/archives/Bowire-$V-arm64.msi" publish/archives/bowire-arm64.msi
 
+      # Drop the wix debug PDBs — they're build-side debugging artefacts,
+      # not consumer downloads. Without this they otherwise ride along
+      # because the upload-artifact path is `publish/archives/` glob.
+      - name: Strip WiX debug symbols
+        shell: bash
+        run: rm -f publish/archives/*.wixpdb
+
       - name: Upload MSI artefacts
         uses: actions/upload-artifact@v4
         with:
@@ -424,6 +431,14 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          # We only need RELEASE_NOTES.md, but checkout@v6 doesn't have
+          # a sparse-checkout shorthand; full clone is fine here, the
+          # release job has nothing else to do.
+          fetch-depth: 1
+
       - name: Download Linux artefacts
         uses: actions/download-artifact@v4
         with:
@@ -436,9 +451,46 @@ jobs:
           name: artefacts-msi
           path: publish/archives/
 
+      # Pull the matching version block out of RELEASE_NOTES.md and
+      # write it into release-body.md. Format expected per block:
+      #   ## <version> — <date>
+      #   <free-form prose>
+      # Block ends at the next `## ` heading or `---` separator. If the
+      # file doesn't carry a block for this tag, fall back to a generic
+      # heading so the release isn't body-less. The auto-generated
+      # 'What's Changed' list is appended underneath via the action's
+      # generate_release_notes / append_body combination.
+      - name: Extract version block from RELEASE_NOTES.md
+        env:
+          V: ${{ needs.build-linux.outputs.version || github.ref_name }}
+        run: |
+          TAG="${GITHUB_REF_NAME}"
+          VERSION="${TAG#v}"
+          NOTES=$(awk -v v="$VERSION" '
+            BEGIN { found=0 }
+            /^## / {
+              if (found) exit
+              if ($0 ~ "^## "v"( |$|\\b)") { found=1; print; next }
+            }
+            /^---$/ { if (found) exit }
+            found { print }
+          ' RELEASE_NOTES.md)
+          if [[ -z "$NOTES" ]]; then
+            echo "## $TAG" > release-body.md
+            echo "" >> release-body.md
+            echo "_See the auto-generated change list below._" >> release-body.md
+          else
+            echo "$NOTES" > release-body.md
+          fi
+          echo "----- release-body.md -----"
+          cat release-body.md
+          echo "----- end -----"
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
+          body_path: release-body.md
+          append_body: true
           generate_release_notes: true
           prerelease: ${{ contains(github.ref, '-rc') }}
           files: |
