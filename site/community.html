@@ -134,13 +134,26 @@ description: Join the Bowire community — contribute code, file issues, follow 
       </ul>
     </div>
 
-    <form class="community-contact-form" id="community-contact-form" novalidate>
+    <form class="community-contact-form" id="community-contact-form" novalidate
+          action="https://api.web3forms.com/submit" method="POST">
       <h3>Send a message</h3>
-      <p class="community-contact-form-lede">Fill this in and we'll open the message in your mail app &mdash; nothing is sent from this page.</p>
+      <p class="community-contact-form-lede">Goes straight to <code>info@kuestenlogik.com</code>. We'll reply from there.</p>
+
+      <!-- web3forms.com configuration. The access key is per-form
+           (Küstenlogik account) and identifies which inbox the
+           submission lands in. Subject + from_name show up in the
+           email's headers; the user's own email becomes the reply-to
+           via the `email` field below (web3forms picks it up
+           automatically). -->
+      <input type="hidden" name="access_key" value="WEB3FORMS_ACCESS_KEY_PLACEHOLDER">
+      <input type="hidden" name="subject" value="Bowire contact form">
+      <input type="hidden" name="from_name" value="bowire.io contact form">
+      <!-- Honeypot: bots fill this in, humans don't see it. -->
+      <input type="checkbox" name="botcheck" style="display:none" tabindex="-1" autocomplete="off">
 
       <label class="community-contact-form-field">
         <span class="community-contact-form-label">Your email</span>
-        <input type="email" name="from" required placeholder="you@example.com" autocomplete="email">
+        <input type="email" name="email" required placeholder="you@example.com" autocomplete="email">
       </label>
 
       <label class="community-contact-form-field">
@@ -161,10 +174,12 @@ description: Join the Bowire community — contribute code, file issues, follow 
 
       <button type="submit" class="community-contact-form-submit">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
-        Open in your mail app
+        Send message
       </button>
 
-      <p class="community-contact-form-hint">No JavaScript? Email us at <a href="mailto:info@kuestenlogik.com">info@kuestenlogik.com</a> directly.</p>
+      <p class="community-contact-form-status" role="status" aria-live="polite"></p>
+
+      <p class="community-contact-form-hint">Or email <a href="mailto:info@kuestenlogik.com">info@kuestenlogik.com</a> directly.</p>
     </form>
 
   </div>
@@ -236,23 +251,65 @@ description: Join the Bowire community — contribute code, file issues, follow 
 </script>
 
 <script>
+// Contact form — POST to web3forms.com, render an inline status
+// message instead of opening the user's mail app. Submit is async so
+// the page doesn't navigate away on success. If web3forms is
+// unreachable (offline, blocked by adblocker) we fall back to a
+// pre-filled mailto: link so the message isn't lost.
 (function () {
   var form = document.getElementById('community-contact-form');
   if (!form) return;
-  form.addEventListener('submit', function (e) {
+  var status = form.querySelector('.community-contact-form-status');
+  var submit = form.querySelector('.community-contact-form-submit');
+
+  function setStatus(text, kind) {
+    if (!status) return;
+    status.textContent = text;
+    status.className = 'community-contact-form-status'
+      + (kind ? ' community-contact-form-status-' + kind : '');
+  }
+
+  form.addEventListener('submit', async function (e) {
     e.preventDefault();
     if (!form.checkValidity()) {
       form.reportValidity();
       return;
     }
-    var from = form.elements['from'].value.trim();
-    var topic = form.elements['topic'].value;
-    var message = form.elements['message'].value.trim();
-    var subject = '[Bowire] ' + topic;
-    var body = 'From: ' + from + '\n\n' + message + '\n\n—\nSent from bowire.kuestenlogik.com';
-    window.location.href = 'mailto:info@kuestenlogik.com'
-      + '?subject=' + encodeURIComponent(subject)
-      + '&body=' + encodeURIComponent(body);
+    submit.disabled = true;
+    setStatus('Sending…');
+
+    var fd = new FormData(form);
+    // The select-name 'topic' isn't a web3forms-recognised field; fold
+    // it into the subject so it shows up in the email headers.
+    var topic = fd.get('topic');
+    if (topic) fd.set('subject', 'Bowire contact form — ' + topic);
+
+    try {
+      var res = await fetch(form.action, {
+        method: 'POST',
+        body: fd,
+        headers: { 'Accept': 'application/json' }
+      });
+      if (res.ok) {
+        form.reset();
+        setStatus('Thanks — your message is on its way. We\'ll reply from info@kuestenlogik.com.', 'success');
+      } else {
+        var data = await res.json().catch(function () { return {}; });
+        throw new Error(data.message || ('HTTP ' + res.status));
+      }
+    } catch (err) {
+      var fallback = 'mailto:info@kuestenlogik.com'
+        + '?subject=' + encodeURIComponent('[Bowire] ' + (fd.get('topic') || 'Contact'))
+        + '&body=' + encodeURIComponent('From: ' + (fd.get('email') || '(no email)') + '\n\n' + (fd.get('message') || ''));
+      setStatus('Sending failed (' + err.message + '). Please email info@kuestenlogik.com instead.', 'error');
+      // Surface the mailto fallback as a clickable link.
+      var link = document.createElement('a');
+      link.href = fallback;
+      link.textContent = ' Open in mail app →';
+      status.appendChild(link);
+    } finally {
+      submit.disabled = false;
+    }
   });
 })();
 </script>
