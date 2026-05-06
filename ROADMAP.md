@@ -2,6 +2,19 @@
 
 ## Completed
 
+### v1.0.12 — Custom domain, full release pipeline, samples page (2026-05-06)
+- [x] **Custom domain `bowire.io`** live with HTTPS-enforced + auto-renewing Let's Encrypt cert. Old `kuestenlogik.github.io/Bowire/` URLs continue to work via 301 redirect. Every reference inside Bowire (NuGet `PackageProjectUrl`, MSI `ARPURLINFOABOUT`, Winget `DocumentUrl`, in-app About / landing-footer links) updated to the apex.
+- [x] **Release pipeline back online** as a tag-driven, three-job workflow (Linux artefacts + container, Windows MSI, GitHub Release). Single `v*` tag now produces:
+    - 14 NuGet packages → GitHub Packages + nuget.org
+    - 6 self-contained standalone bundles (Linux / Windows / macOS × x64 / arm64)
+    - MSI installers (x64 + arm64), DEB + RPM packages (x64 + arm64) via WiX v5 + nfpm
+    - Multi-arch OCI container → GHCR (public) + Docker Hub (gated on `DOCKERHUB_TOKEN`)
+    - DocFX HTML zip + custom-Playwright-rendered PDF docs snapshot
+    - Auto-PR to `microsoft/winget-pkgs` for stable tags
+- [x] **`RELEASE_NOTES.md` editorial layer** — hand-curated highlights per version, extracted at tag time and prepended to GitHub's auto-generated commit list. Mirrors the akkadotnet/akka.net release-page format.
+- [x] **Bowire.Samples site page** at <https://bowire.io/samples.html> with one card per protocol sample (Combined, gRPC, REST, SignalR, WebSocket, SSE, GraphQL, OData, MQTT, SocketIo, MCP, Akka). Bidirectional link from the samples repo's homepage.
+- [x] **Marketing-site polish**: real Storm + Apache Kafka marks, Akka.NET card on downloads, container section with GHCR + Docker Hub now wired up, copy-button layout fix for long package names, full-bleed background fix on the features-page CTA, mobile-header burger right-aligned, docs-landing alternating-band sections.
+
 ### v1.0.11 — Socket.IO namespace selection (2026-05-05)
 - [x] **`X-Bowire-SocketIo-Namespace` metadata header** for per-request namespace selection. Defaults to `/`; set to `/harbor` (or any namespace path) to connect there. Exposed as `BowireSocketIoProtocol.NamespaceMetadataKey`.
 - [x] **URL-path fallback**: `http://host:port/harbor` as server URL also lands on `/harbor`. Explicit URL path beats metadata header when both present.

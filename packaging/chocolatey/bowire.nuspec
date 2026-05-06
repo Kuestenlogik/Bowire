@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Chocolatey package metadata for Bowire.
+
+  The version + checksum get patched in by the release pipeline
+  (.github/workflows/chocolatey.yml) before `choco pack` runs:
+    - <version> is replaced with the SemVer string for the tag
+      (e.g. 1.0.12)
+    - tools/chocolateyInstall.ps1 has the SHA256 of the corresponding
+      MSI baked in for chocolatey-side download verification.
+
+  Chocolatey community-feed submission goes through a moderation
+  queue — first submission for a new package can take 1-7 days, later
+  versions usually pass within hours. The pipeline runs `choco push`
+  on every stable tag; the moderation step is async on the chocolatey
+  side and not blocking the rest of the release.
+-->
+<package xmlns="http://schemas.microsoft.com/packaging/2015/06/nuspec.xsd">
+  <metadata>
+    <id>bowire</id>
+    <version>__VERSION__</version>
+    <packageSourceUrl>https://github.com/Kuestenlogik/Bowire/tree/main/packaging/chocolatey</packageSourceUrl>
+    <owners>Küstenlogik</owners>
+
+    <title>Bowire</title>
+    <authors>Küstenlogik</authors>
+    <projectUrl>https://bowire.io/</projectUrl>
+    <iconUrl>https://raw.githubusercontent.com/Kuestenlogik/Bowire/main/images/bowire_logo_small.png</iconUrl>
+    <copyright>Copyright (c) Küstenlogik</copyright>
+    <licenseUrl>https://github.com/Kuestenlogik/Bowire/blob/main/LICENSE</licenseUrl>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <projectSourceUrl>https://github.com/Kuestenlogik/Bowire</projectSourceUrl>
+    <docsUrl>https://bowire.io/docs/</docsUrl>
+    <bugTrackerUrl>https://github.com/Kuestenlogik/Bowire/issues</bugTrackerUrl>
+    <tags>bowire api api-client api-testing aspnet dotnet graphql grpc http kafka mcp mqtt postman-alternative rest signalr websocket</tags>
+    <summary>Interactive multi-protocol API workbench and CLI for .NET — gRPC, REST, GraphQL, SignalR, MCP, SSE, WebSocket, MQTT, Socket.IO, OData, Storm, Kafka, DIS, UDP.</summary>
+    <description><![CDATA[
+**Bowire** is the multi-protocol API workbench for .NET. Discover and invoke endpoints across gRPC (with reflection + transcoding), REST (OpenAPI / Swagger), GraphQL, SignalR, MCP, SSE, WebSocket, MQTT, Socket.IO, OData, plus sibling plugins for Küstenlogik Storm, Apache Kafka, IEEE 1278 DIS, and raw UDP. Embed it next to your ASP.NET app or run the standalone `bowire` CLI against any host.
+
+Bowire is 100% local — no accounts, no telemetry, no cloud dependency. Recordings, environments, and credentials persist on disk under `~/.bowire/`.
+
+### What this package installs
+
+The `bowire` CLI on PATH, backed by the same per-machine MSI used by the Winget channel. `choco upgrade bowire` swaps to the latest version cleanly via WiX's `MajorUpgrade` rule.
+
+### Quick start after install
+
+```
+bowire --url https://api.example.com
+```
+
+Then open <http://localhost:5080/bowire> in a browser. See <https://bowire.io/quickstart.html> for the five-minute tour.
+]]></description>
+    <releaseNotes>https://github.com/Kuestenlogik/Bowire/releases/tag/v__VERSION__</releaseNotes>
+  </metadata>
+  <files>
+    <file src="tools\**" target="tools" />
+  </files>
+</package>
