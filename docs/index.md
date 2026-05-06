@@ -19,6 +19,8 @@ summary: 'The reference manual for the multi-protocol API workbench: how to inst
   </p>
 </div>
 
+<section class="bowire-docs-section bowire-docs-section-alt" markdown="1">
+
 ## Where to start
 
 Three entry points depending on what you need:
@@ -32,8 +34,14 @@ Reference material is split further:
 - **[Protocol Guides](protocols/index.md)** &mdash; behaviour and setup for each protocol plugin (gRPC, REST, GraphQL, SignalR, WebSocket, SSE, MQTT, Socket.IO, OData, MCP) plus how to write your own.
 - **[Architecture](architecture/index.md)** &mdash; internals, the plugin pipeline, discovery, and data locations &mdash; for anyone extending or embedding Bowire deeply.
 
+</section>
+
+<section class="bowire-docs-section" markdown="1">
+
 ## About these docs
 
 These pages cover the application itself &mdash; the CLI, the embedded host integration, and every panel of the browser UI.
 
 Every tagged release on GitHub ships a [versioned offline snapshot](https://github.com/Kuestenlogik/Bowire/releases/latest) of these docs (HTML zip + single-file PDF) so you can pin to a specific version or browse offline.
+
+</section>

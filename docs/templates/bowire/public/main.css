@@ -1732,6 +1732,46 @@ body.bowire-docs-mode-standalone .bowire-docs-hero-tagline {
     margin-right: 0;
     font-size: 1rem;
 }
+
+/* Alternating-band sections on the docs landing page (docs/index.md).
+   Mirrors the .community-section / .community-section-alt pattern from
+   the marketing site so the docs hero → 'Where to start' → 'About these
+   docs' progression has the same visual rhythm as features.html /
+   community.html.
+   Full-bleed background via the negative-margin trick — the page sits
+   inside DocFX's article column with a max-width, but the alt-band
+   should fill viewport edge-to-edge. `calc(50% - 50vw)` is the offset
+   from the column edge to the viewport edge; matching positive padding
+   restores the inner content to its original width. */
+.bowire-docs-section {
+    padding: 56px 0;
+}
+.bowire-docs-section-alt {
+    background: rgba(var(--bowire-accent-rgb, 99, 102, 241), 0.04);
+    margin-left: calc(50% - 50vw);
+    margin-right: calc(50% - 50vw);
+    padding-left: calc(50vw - 50%);
+    padding-right: calc(50vw - 50%);
+}
+:root[data-theme="dark"] .bowire-docs-section-alt,
+:root[data-bs-theme="dark"] .bowire-docs-section-alt {
+    background: rgba(var(--bowire-accent-rgb, 99, 102, 241), 0.07);
+}
+/* Match the marketing-site h2 weight so the docs landing page reads as
+   part of the same visual system as features.html / community.html. */
+.bowire-docs-section h2 {
+    font-size: clamp(1.5rem, 3vw, 2rem);
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    margin: 0 0 18px;
+    background: linear-gradient(135deg, var(--bs-emphasis-color) 0%, var(--bowire-accent-hover) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    border: none;
+    padding: 0;
+}
+
 .bowire-docs-hero-cta {
     display: flex;
     gap: 12px;
