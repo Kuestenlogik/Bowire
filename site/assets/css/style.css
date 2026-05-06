@@ -3343,12 +3343,23 @@ button.comparison-bestfor-card.active .comparison-bestfor-name {
         top: var(--header-height);
         left: 0;
         right: 0;
-        background: rgba(15, 15, 23, 0.97);
+        /* Background must match .site-header.scrolled so there's no
+           alpha-step at the seam between bar and open menu. The bar
+           uses 0.88; we use the same here. backdrop-filter is also
+           identical, so the two layers read as one continuous panel. */
+        background: rgba(15, 15, 23, 0.88);
         backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
         flex-direction: column;
         padding: 16px 24px;
         gap: 16px;
         border-bottom: 1px solid var(--border);
+    }
+    /* Light-mode counterpart — same alpha as .site-header.scrolled
+       in light mode (defined further up in the file) so the seam
+       stays clean in both themes. */
+    :root[data-theme="light"] .header-nav {
+        background: rgba(250, 250, 255, 0.85);
     }
 
     .header-nav.open {
@@ -3381,22 +3392,16 @@ button.comparison-bestfor-card.active .comparison-bestfor-name {
         padding: 4px 0 4px 4px;
         margin-right: -7px;
     }
-    /* The open burger menu used to sit 1–2 px below the header bar:
-       1) When the header is scrolled, .site-header.scrolled adds a
-          1 px solid border-bottom that visually fills the bottom
-          edge of the bar.
-       2) The header background is rgba(...0.88) while the open nav
-          uses rgba(...0.97), so even at flush positioning the alpha
-          mismatch reads as a thin seam.
-       Two-part fix: (a) hide the scrolled header's border when the
-       nav is open via :has(), so the bar's bottom edge is one solid
-       block; (b) lift the nav 2 px instead of 1 to absorb any sub-
-       pixel rendering when device-pixel-ratio is non-integer. */
+    /* With box-sizing:border-box globally and the nav background now
+       matching the scrolled-header alpha, top:var(--header-height)
+       sits flush against the header's outer bottom edge — no overlap
+       margin needed.
+       The .scrolled border-bottom would still show as a 1 px line
+       between the (now identical-alpha) bar and the menu, so hide it
+       via :has(). The bar's bottom edge becomes one uninterrupted
+       block whenever the menu is open. */
     .site-header.scrolled:has(.header-nav.open) {
         border-bottom-color: transparent;
-    }
-    .header-nav.open {
-        top: calc(var(--header-height) - 2px);
     }
 
     /* Belt-and-suspenders against horizontal overflow on phones —
