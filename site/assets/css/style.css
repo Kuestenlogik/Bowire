@@ -6287,32 +6287,6 @@ html[data-theme="light"] {
     border-color: var(--accent-hover);
     transform: translateY(-1px);
 }
-.community-contact-form-submit:disabled {
-    opacity: 0.6;
-    cursor: progress;
-    transform: none;
-}
-/* Inline submit-status line — empty when idle, populated by the form
-   handler with 'Sending…' / 'Thanks…' / 'Sending failed…'. The two
-   modifier classes tint it green / red so success vs error reads at
-   a glance without an extra icon. */
-.community-contact-form-status {
-    margin: 4px 0 0;
-    font-size: 0.875rem;
-    color: var(--text-secondary);
-    min-height: 1.25em;
-}
-.community-contact-form-status-success {
-    color: var(--success, #4ade80);
-}
-.community-contact-form-status-error {
-    color: var(--danger, #f87171);
-}
-.community-contact-form-status a {
-    color: inherit;
-    text-decoration: underline;
-    margin-left: 4px;
-}
 .community-contact-form-hint {
     margin: 4px 0 0;
     font-size: 0.8125rem;
