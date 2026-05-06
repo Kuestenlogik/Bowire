@@ -484,9 +484,53 @@ description: All the ways to install and run Bowire — NuGet packages, global .
 
   <!-- ---- Docker / container ---- -->
   <div class="downloads-section">
-    <h3>Docker / container <span class="downloads-status-planned">Planned</span></h3>
-    <p class="downloads-section-desc">First-class Docker and Kubernetes / Helm images for the sidecar deployment pattern are on the roadmap &mdash; so non-.NET teams can drop Bowire next to their Go / Rust / Python / Node service with a single manifest.</p>
-    <a class="downloads-roadmap-link" href="{{ '/#roadmap' | relative_url }}">See the roadmap &rarr;</a>
+    <h3>Docker / container</h3>
+    <p class="downloads-section-desc">Multi-arch OCI image (<code>linux/amd64</code> + <code>linux/arm64</code>) published on every tagged release. Drop it next to a non-.NET service as a sidecar &mdash; no .NET runtime on the host, one <code>docker run</code> to deploy.</p>
+
+    <ul class="downloads-pkgs downloads-pkgs-icons">
+      <li>
+        <div class="downloads-pkg-icon" aria-hidden="true">
+          <!-- GitHub Container Registry — GitHub mark in white-on-black accent. -->
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.37-12-12-12z"/></svg>
+        </div>
+        <div class="downloads-pkg-body">
+          <div class="downloads-pkg-head">
+            <a href="https://github.com/Kuestenlogik/Bowire/pkgs/container/bowire" target="_blank" rel="noopener"><code>ghcr.io/kuestenlogik/bowire</code></a>
+            <button class="copy-btn downloads-pkg-copy" type="button" data-copy="docker pull ghcr.io/kuestenlogik/bowire:latest" aria-label="Copy pull command" title="docker pull ghcr.io/kuestenlogik/bowire:latest">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+            </button>
+          </div>
+          <span class="downloads-pkg-desc"><strong>Primary registry.</strong> No login required for pulls, no rate limits for public packages, ties straight back to the source repo.</span>
+        </div>
+      </li>
+      <li>
+        <div class="downloads-pkg-icon" aria-hidden="true">
+          <!-- Docker — official whale (simpleicons), in Docker blue. -->
+          <svg viewBox="0 0 24 24" fill="#2496ED" aria-hidden="true"><path d="M13.983 11.078h2.119a.186.186 0 00.186-.185V9.006a.186.186 0 00-.186-.186h-2.119a.185.185 0 00-.185.185v1.888c0 .102.083.185.185.185m-2.954-5.43h2.118a.186.186 0 00.186-.186V3.574a.186.186 0 00-.186-.185h-2.118a.185.185 0 00-.185.185v1.888c0 .102.082.185.185.186m0 2.716h2.118a.187.187 0 00.186-.186V6.29a.186.186 0 00-.186-.185h-2.118a.185.185 0 00-.185.185v1.887c0 .102.082.185.185.186m-2.93 0h2.12a.186.186 0 00.184-.186V6.29a.185.185 0 00-.185-.185H8.1a.185.185 0 00-.185.185v1.887c0 .102.083.185.185.186m-2.964 0h2.119a.186.186 0 00.185-.186V6.29a.185.185 0 00-.185-.185H5.136a.186.186 0 00-.186.185v1.887c0 .102.084.185.186.186m5.893 2.715h2.118a.186.186 0 00.186-.185V9.006a.186.186 0 00-.186-.186h-2.118a.185.185 0 00-.185.185v1.888c0 .102.082.185.185.185m-2.93 0h2.12a.185.185 0 00.184-.185V9.006a.185.185 0 00-.184-.186h-2.12a.185.185 0 00-.184.185v1.888c0 .102.083.185.185.185m-2.964 0h2.119a.185.185 0 00.185-.185V9.006a.185.185 0 00-.184-.186h-2.12a.186.186 0 00-.186.186v1.887c0 .102.084.185.186.185m-2.92 0h2.12a.185.185 0 00.184-.185V9.006a.185.185 0 00-.184-.186h-2.12a.185.185 0 00-.184.185v1.888c0 .102.082.185.185.185M23.763 9.89c-.065-.051-.672-.51-1.954-.51-.338.001-.676.03-1.01.087-.248-1.7-1.653-2.53-1.716-2.566l-.344-.199-.226.327c-.284.438-.49.922-.612 1.43-.23.97-.09 1.882.403 2.661-.595.332-1.55.413-1.744.42H.751a.751.751 0 00-.75.748 11.376 11.376 0 00.692 4.062c.545 1.428 1.355 2.48 2.41 3.124 1.18.723 3.1 1.137 5.275 1.137.983.003 1.963-.086 2.93-.266a12.248 12.248 0 003.823-1.389c.98-.567 1.86-1.288 2.61-2.136 1.252-1.418 1.998-2.997 2.553-4.4h.221c1.372 0 2.215-.549 2.68-1.009.309-.293.55-.65.707-1.046l.098-.288Z"/></svg>
+        </div>
+        <div class="downloads-pkg-body">
+          <div class="downloads-pkg-head">
+            <a href="https://hub.docker.com/r/kuestenlogik/bowire" target="_blank" rel="noopener"><code>docker.io/kuestenlogik/bowire</code></a>
+            <button class="copy-btn downloads-pkg-copy" type="button" data-copy="docker pull kuestenlogik/bowire:latest" aria-label="Copy pull command" title="docker pull kuestenlogik/bowire:latest">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+            </button>
+          </div>
+          <span class="downloads-pkg-desc"><strong>Mirror on Docker Hub.</strong> Identical image content, same tags. Useful when your tooling defaults to the Docker Hub namespace or your registry mirror only sees <code>docker.io</code>.</span>
+        </div>
+      </li>
+    </ul>
+
+    <p class="downloads-section-desc" style="margin-top:18px;">
+      Available tags: <code>latest</code> (newest stable), <code>&lt;version&gt;</code> (e.g. <code>1.0.12</code>) for pinning. Multi-arch manifest list &mdash; <code>docker</code> picks the right architecture automatically.
+    </p>
+
+    <pre class="community-quickstart-code" style="margin-top:14px;"><code>docker run --rm -p 5080:5080 \
+  ghcr.io/kuestenlogik/bowire:latest \
+  --url https://api.example.com</code></pre>
+
+    <p class="downloads-section-desc" style="margin-top:14px;">
+      Then open <a href="http://localhost:5080/bowire">http://localhost:5080/bowire</a> in your browser. See the <a href="{{ '/docs/setup/docker.html' | relative_url }}">container setup docs</a> for plugin-volume mounts, MCP-adapter mode, and embedded-mode integration in your own image.
+    </p>
   </div>
 </section>
 

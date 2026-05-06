@@ -4,25 +4,101 @@ summary: "Bowire ships with first-class container support via the .NET 10 SDK's"
 
 # Containers / OCI
 
-Bowire ships with first-class container support via the .NET 10 SDK's
-built-in container builder. **No Dockerfile, no docker daemon, no
-multi-stage build is required** to produce a runnable image.
+Bowire is published as a multi-arch (`linux/amd64` + `linux/arm64`) OCI
+image on every tagged release. Pull it from one of two registries:
+
+| Registry | Image | Notes |
+|----------|-------|-------|
+| **GHCR** | `ghcr.io/kuestenlogik/bowire` | Primary — no login required for pulls, no rate limits, signed by the release workflow's `GITHUB_TOKEN`. |
+| **Docker Hub** | `docker.io/kuestenlogik/bowire` (or just `kuestenlogik/bowire`) | Mirror, identical content. Use this when your tooling defaults to the Docker Hub namespace or your local registry mirror only proxies `docker.io`. |
+
+Tags: `latest` (newest stable) and `<version>` (e.g. `1.0.12`) for pinning. The
+multi-arch manifest list lets `docker` pick the right architecture
+automatically — no `--platform` flag needed.
 
 ## Quick start
 
+Pull and run from either registry:
+
 ```bash
-scripts/publish-container.sh 0.9.4 linux-x64
-docker load < artifacts/containers/bowire-0.9.4-linux-x64.tar.gz
-docker run --rm -p 5080:5080 kuestenlogik/bowire:0.9.4 \
-    --url https://my-grpc-server:443 --no-browser
+# GHCR (recommended)
+docker pull ghcr.io/kuestenlogik/bowire:latest
+docker run --rm -p 5080:5080 \
+  ghcr.io/kuestenlogik/bowire:latest \
+  --url https://my-grpc-server:443
+
+# Or via Docker Hub
+docker pull kuestenlogik/bowire:latest
+docker run --rm -p 5080:5080 \
+  kuestenlogik/bowire:latest \
+  --url https://my-grpc-server:443
 ```
 
-Then open `http://localhost:5080/bowire` in your browser.
+Then open `http://localhost:5080/bowire` in your browser. The image runs
+the standalone Bowire workbench on port `5080`.
+
+`--no-browser` is auto-detected when the container has no controlling
+TTY (which is always the case for `docker run`), so you don't need to
+pass it explicitly.
+
+## Plugin and recording persistence
+
+Bowire stores plugins under `~/.bowire/plugins/` and recordings + environments
+under `~/.bowire/`. Inside the container, that maps to
+`/home/app/.bowire/...` (the chiseled base image runs as the non-root
+`app` user). Mount a host directory there so state survives restarts:
+
+```bash
+mkdir -p ~/.bowire
+docker run --rm -p 5080:5080 \
+  -v ~/.bowire:/home/app/.bowire \
+  ghcr.io/kuestenlogik/bowire:latest
+```
+
+Install plugins into the volume with a one-shot install container:
+
+```bash
+docker run --rm \
+  -v ~/.bowire:/home/app/.bowire \
+  ghcr.io/kuestenlogik/bowire:latest \
+  plugin install Kuestenlogik.Bowire.Protocol.Storm
+```
+
+## docker-compose
+
+```yaml
+services:
+  bowire:
+    image: ghcr.io/kuestenlogik/bowire:latest
+    ports:
+      - "5080:5080"
+    volumes:
+      - ./.bowire:/home/app/.bowire
+    command:
+      - "--url"
+      - "https://api.example.com/openapi.json"
+    restart: unless-stopped
+```
+
+## Building locally
+
+If you don't want to pull from a registry — for an air-gapped install,
+a security-scanning pre-step, or because you've patched the source
+locally — build the image yourself with the .NET SDK's container
+builder. **No Dockerfile, no docker daemon, no multi-stage build is
+required**:
+
+```bash
+scripts/publish-container.sh 1.0.12 linux-x64
+docker load < artifacts/containers/bowire-1.0.12-linux-x64.tar.gz
+docker run --rm -p 5080:5080 kuestenlogik/bowire:1.0.12 \
+    --url https://my-grpc-server:443
+```
 
 The PowerShell variant works the same way:
 
 ```powershell
-scripts\publish-container.ps1 -Version 0.9.4 -Arch linux-x64
+scripts\publish-container.ps1 -Version 1.0.12 -Arch linux-x64
 ```
 
 ## How it works
@@ -117,11 +193,11 @@ three advantages:
 Build a separate tarball per architecture:
 
 ```bash
-scripts/publish-container.sh 0.9.4 linux-x64
-scripts/publish-container.sh 0.9.4 linux-arm64
+scripts/publish-container.sh 1.0.12 linux-x64
+scripts/publish-container.sh 1.0.12 linux-arm64
 ```
 
-You'll get `bowire-0.9.4-linux-x64.tar.gz` and `bowire-0.9.4-linux-arm64.tar.gz`.
+You'll get `bowire-1.0.12-linux-x64.tar.gz` and `bowire-1.0.12-linux-arm64.tar.gz`.
 Push both with the same repository name to a registry to assemble a
 multi-arch manifest list (e.g. via `docker buildx imagetools create`).
 
@@ -132,9 +208,9 @@ Two options:
 **Option A — load and push manually:**
 
 ```bash
-docker load < artifacts/containers/bowire-0.9.4-linux-x64.tar.gz
-docker tag kuestenlogik/bowire:0.9.4 ghcr.io/kuestenlogik/bowire:0.9.4
-docker push ghcr.io/kuestenlogik/bowire:0.9.4
+docker load < artifacts/containers/bowire-1.0.12-linux-x64.tar.gz
+docker tag kuestenlogik/bowire:1.0.12 ghcr.io/kuestenlogik/bowire:1.0.12
+docker push ghcr.io/kuestenlogik/bowire:1.0.12
 ```
 
 **Option B — let the SDK push directly** (skip the tarball, push to a
@@ -143,8 +219,8 @@ registry your local credential helper has access to):
 ```bash
 dotnet publish src/Kuestenlogik.Bowire.Tool \
   -c Release -r linux-x64 \
-  -p:Version=0.9.4 \
-  -p:ContainerImageTags='"0.9.4;latest"' \
+  -p:Version=1.0.12 \
+  -p:ContainerImageTags='"1.0.12;latest"' \
   -p:ContainerRegistry=ghcr.io/kuestenlogik \
   -t:PublishContainer
 ```
@@ -154,14 +230,14 @@ This requires `docker login ghcr.io` (or equivalent) ahead of time.
 ## Running the container
 
 ```bash
-docker run --rm -p 5080:5080 kuestenlogik/bowire:0.9.4 \
+docker run --rm -p 5080:5080 kuestenlogik/bowire:1.0.12 \
     --url https://my-grpc-server:443 --no-browser
 ```
 
 The CLI mode also works:
 
 ```bash
-docker run --rm kuestenlogik/bowire:0.9.4 \
+docker run --rm kuestenlogik/bowire:1.0.12 \
     call --url https://staging:443 health.HealthService/Check -d '{}' --compact
 ```
 
