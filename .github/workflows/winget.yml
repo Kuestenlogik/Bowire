@@ -53,6 +53,14 @@ jobs:
     name: Submit / update microsoft/winget-pkgs
     runs-on: windows-latest
 
+    # Skip RC / beta / preview tags — winget reviewers expect the
+    # microsoft/winget-pkgs repo to carry stable releases only, and a
+    # prerelease submission tends to trigger back-and-forth on the PR.
+    # Manual workflow_dispatch runs (which have no release tag) still
+    # pass this gate; the WINGET_TOKEN check inside the job stops them
+    # cleanly if no token is configured.
+    if: ${{ github.event_name != 'release' || (!contains(github.event.release.tag_name, '-rc') && !contains(github.event.release.tag_name, '-beta') && !contains(github.event.release.tag_name, '-preview')) }}
+
     steps:
       - name: Bail out if WINGET_TOKEN is missing
         if: ${{ env.WINGET_TOKEN == '' }}
