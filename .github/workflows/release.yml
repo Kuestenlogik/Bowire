@@ -235,6 +235,11 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      # ContainerImageTags carries a `;`-separated list. Bash strips the
+      # outer double-quotes and dotnet then sees the `;` as an
+      # argument separator (`MSB1006: Property is not valid. Switch:
+      # latest`). Escape the inner quotes so they reach MSBuild
+      # literally as the value delimiter.
       - name: Push container to GHCR (multi-arch)
         if: ${{ github.ref_type == 'tag' }}
         env:
@@ -244,8 +249,8 @@ jobs:
             -c Release \
             -t:PublishContainer \
             -p:Version=$V \
-            -p:ContainerRuntimeIdentifiers='"linux-x64;linux-arm64"' \
-            -p:ContainerImageTags="$V;latest" \
+            "-p:ContainerRuntimeIdentifiers=\"linux-x64;linux-arm64\"" \
+            "-p:ContainerImageTags=\"$V;latest\"" \
             -p:ContainerRegistry=ghcr.io
 
       - name: Login to Docker Hub
@@ -264,8 +269,8 @@ jobs:
             -c Release \
             -t:PublishContainer \
             -p:Version=$V \
-            -p:ContainerRuntimeIdentifiers='"linux-x64;linux-arm64"' \
-            -p:ContainerImageTags="$V;latest" \
+            "-p:ContainerRuntimeIdentifiers=\"linux-x64;linux-arm64\"" \
+            "-p:ContainerImageTags=\"$V;latest\"" \
             -p:ContainerRegistry=docker.io
 
       # ----------------------------------------------------------
