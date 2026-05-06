@@ -240,14 +240,24 @@ jobs:
       # argument separator (`MSB1006: Property is not valid. Switch:
       # latest`). Escape the inner quotes so they reach MSBuild
       # literally as the value delimiter.
+      #
+      # The pre-restore is needed because `ContainerRuntimeIdentifiers`
+      # makes publish call into the project once per RID, but the
+      # solution-level restore at the top of the job only resolved the
+      # host RID. Without the explicit multi-RID restore here, the
+      # container publish fails with `NETSDK1047: Assets file ...
+      # doesn't have a target for 'net10.0/linux-arm64'`.
       - name: Push container to GHCR (multi-arch)
         if: ${{ github.ref_type == 'tag' }}
         env:
           V: ${{ steps.version.outputs.VERSION }}
         run: |
+          dotnet restore src/Kuestenlogik.Bowire.Tool \
+            "-p:RuntimeIdentifiers=\"linux-x64;linux-arm64\""
           dotnet publish src/Kuestenlogik.Bowire.Tool \
             -c Release \
             -t:PublishContainer \
+            --no-restore \
             -p:Version=$V \
             "-p:ContainerRuntimeIdentifiers=\"linux-x64;linux-arm64\"" \
             "-p:ContainerImageTags=\"$V;latest\"" \
@@ -260,6 +270,10 @@ jobs:
           username: ${{ env.DOCKERHUB_USERNAME }}
           password: ${{ env.DOCKERHUB_TOKEN }}
 
+      # GHCR step above already restored the multi-RID assets, so the
+      # `--no-restore` here re-uses that work — second container
+      # publish is just the additional registry push, image is the
+      # same artefact.
       - name: Push container to Docker Hub (multi-arch)
         if: ${{ github.ref_type == 'tag' && env.DOCKERHUB_TOKEN != '' }}
         env:
@@ -268,6 +282,7 @@ jobs:
           dotnet publish src/Kuestenlogik.Bowire.Tool \
             -c Release \
             -t:PublishContainer \
+            --no-restore \
             -p:Version=$V \
             "-p:ContainerRuntimeIdentifiers=\"linux-x64;linux-arm64\"" \
             "-p:ContainerImageTags=\"$V;latest\"" \
