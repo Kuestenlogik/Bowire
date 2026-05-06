@@ -4521,9 +4521,19 @@ p a:not([class]):hover,
    preceding feature-group strip — without it the block reads as
    one long flat region with the page body and the title gradient
    has nothing to sit on. Visual order from the bottom of the
-   feature list down: page bg → elevated CTA → footer band. */
+   feature list down: page bg → elevated CTA → footer band.
+   Negative margin + matching padding is the full-bleed trick — the
+   section sits inside the page's .container (max-width), but we
+   want the alt-band background to fill viewport edge-to-edge.
+   `calc(50% - 50vw)` is the offset from the container edge to the
+   viewport edge; matching positive padding restores the inner
+   content to its original column width. */
 .features-page-cta-alt {
     background: var(--bg-elevated);
+    margin-left: calc(50% - 50vw);
+    margin-right: calc(50% - 50vw);
+    padding-left: calc(50vw - 50%);
+    padding-right: calc(50vw - 50%);
 }
 .features-page-cta-inner {
     max-width: 720px;
