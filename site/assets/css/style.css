@@ -3326,6 +3326,17 @@ button.comparison-bestfor-card.active .comparison-bestfor-name {
         padding: 120px 0 72px;
     }
 
+    /* On mobile the main .header-nav becomes a fullscreen-ish drawer
+       triggered by the burger toggle, so it leaves the inline header
+       grid. Drop the third grid column so .header-actions actually
+       lands flush against the right viewport edge — without this the
+       grid keeps the now-empty third 1fr cell on the right and pushes
+       the actions block leftward into the middle of the bar. */
+    .header-inner {
+        grid-template-columns: 1fr auto;
+        gap: 8px;
+    }
+
     .header-nav {
         display: none;
         position: absolute;
