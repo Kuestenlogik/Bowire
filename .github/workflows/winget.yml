@@ -205,7 +205,20 @@ jobs:
           # `winget validate` is the same checker the upstream PR
           # pipeline runs. Failing here saves a round-trip through
           # microsoft/winget-pkgs review.
-          winget validate "out/manifests/k/KuestenLogik/Bowire/${{ steps.meta.outputs.version }}"
+          #
+          # winget returns a non-zero exit code for both errors AND
+          # warnings (e.g. unknown schema fields, deprecated values).
+          # The upstream review pipeline only blocks on errors, so we
+          # mirror that: capture the output, treat 'succeeded with
+          # warnings' as success, and surface the warning text in the
+          # workflow log so it stays visible.
+          $output = winget validate "out/manifests/k/KuestenLogik/Bowire/${{ steps.meta.outputs.version }}" 2>&1 | Out-String
+          Write-Host $output
+          if ($output -match 'Manifest validation succeeded') {
+              Write-Host "::notice::winget validate passed (warnings, if any, are shown above)"
+              exit 0
+          }
+          throw "winget validate reported errors — see output above"
 
       - name: Submit PR to microsoft/winget-pkgs
         shell: pwsh

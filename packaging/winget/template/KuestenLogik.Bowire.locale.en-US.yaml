@@ -1,4 +1,4 @@
-# yaml-language-server: $schema=https://aka.ms/winget-manifest.defaultLocale.1.6.0.schema.json
+# yaml-language-server: $schema=https://aka.ms/winget-manifest.defaultLocale.1.10.0.schema.json
 #
 # Default-locale manifest — human-facing metadata (name, description,
 # license, URLs, tags). winget shows these in `winget show
@@ -51,4 +51,4 @@ Documentation:
   - DocumentLabel: Quick Start
     DocumentUrl: https://bowire.io/docs/quickstart.html
 ManifestType: defaultLocale
-ManifestVersion: 1.6.0
+ManifestVersion: 1.10.0
