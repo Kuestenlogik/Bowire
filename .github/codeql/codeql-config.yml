@@ -1,0 +1,27 @@
+# CodeQL configuration for Bowire.
+#
+# Picked up automatically by GitHub's default-setup CodeQL analysis
+# (placed at the conventional path .github/codeql/codeql-config.yml).
+# If you switch to advanced-setup later, reference this same file
+# from the workflow's `with: config-file:` input.
+
+name: "Bowire CodeQL config"
+
+# These two files are build-time fragments for a concatenated JS
+# bundle, not standalone scripts:
+#
+#   prologue.js opens an IIFE — `(function () { 'use strict'; …`
+#   init.js     closes the same IIFE — `})();`
+#
+# An MSBuild step at compile-time concatenates every <BowireJsFragment>
+# in `.csproj` into a single `wwwroot/bowire.js` that the runtime
+# serves. Per-file the two fragments are syntactically incomplete
+# (mismatched parens), which causes CodeQL's JavaScript extractor to
+# raise "A parse error occurred: Unexpected token". The other
+# `wwwroot/js/` files are valid standalone JS — they only contain
+# function declarations, top-level `var`/`function` statements, etc.
+# — so we keep them in scope so security queries (`auth.js`,
+# `helpers.js`, `settings.js`, ...) still run.
+paths-ignore:
+  - 'src/Kuestenlogik.Bowire/wwwroot/js/prologue.js'
+  - 'src/Kuestenlogik.Bowire/wwwroot/js/init.js'
