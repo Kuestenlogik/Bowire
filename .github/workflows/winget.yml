@@ -37,6 +37,11 @@ on:
   release:
     types: [published]
   workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag to submit (e.g. v1.0.12)'
+        required: true
+        type: string
 
 permissions:
   contents: read
@@ -81,8 +86,11 @@ jobs:
         shell: pwsh
         run: |
           # Strip the leading 'v' from the tag — winget expects a plain
-          # SemVer string in PackageVersion.
-          $version = "${{ github.event.release.tag_name }}".TrimStart('v')
+          # SemVer string in PackageVersion. Tag source: release event
+          # for auto-trigger, dispatch input for manual re-runs.
+          $tag = "${{ github.event.release.tag_name || github.event.inputs.tag }}"
+          if ([string]::IsNullOrEmpty($tag)) { throw "No tag resolved — release event payload empty and no dispatch input provided." }
+          $version = $tag.TrimStart('v')
           $date = (Get-Date).ToString('yyyy-MM-dd')
           "version=$version" | Out-File -Append $env:GITHUB_OUTPUT
           "release_date=$date" | Out-File -Append $env:GITHUB_OUTPUT
@@ -94,7 +102,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          $tag = "${{ github.event.release.tag_name }}"
+          $tag = "${{ github.event.release.tag_name || github.event.inputs.tag }}"
           New-Item -ItemType Directory -Force -Path artifacts | Out-Null
           gh release download $tag --repo $env:GITHUB_REPOSITORY --pattern 'Bowire-*.msi' --dir artifacts
           Get-ChildItem artifacts

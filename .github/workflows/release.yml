@@ -496,9 +496,19 @@ jobs:
           cat release-body.md
           echo "----- end -----"
 
+      # Token preference: RELEASE_PAT first, GITHUB_TOKEN fallback.
+      # GitHub's anti-recursion rule means events fired by the default
+      # GITHUB_TOKEN do NOT trigger other workflows — that's why the
+      # winget workflow's `release: published` trigger sat silent on
+      # v1.0.12. A user-owned PAT (fine-grained, scope: contents:write
+      # + actions:write on this repo) does fire downstream events, so
+      # winget.yml auto-runs after the release lands. Without the PAT
+      # the release still gets created cleanly via GITHUB_TOKEN; the
+      # downstream workflow then needs a manual workflow_dispatch.
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
+          token: ${{ secrets.RELEASE_PAT || secrets.GITHUB_TOKEN }}
           body_path: release-body.md
           generate_release_notes: true
           prerelease: ${{ contains(github.ref, '-rc') }}
