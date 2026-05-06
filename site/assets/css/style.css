@@ -6001,6 +6001,37 @@ html[data-theme="light"] {
     margin: 0;
 }
 
+/* Inline code block for the samples-page quickstart snippet. Reads
+   like a terminal capture — monospace, slight background tint, the
+   accent border so it doesn't disappear into the section background. */
+.community-quickstart {
+    margin: 0 auto;
+    max-width: 720px;
+}
+.community-quickstart-code {
+    margin: 0;
+    padding: 18px 22px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    font-family: var(--font-mono, ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace);
+    font-size: 0.85rem;
+    line-height: 1.55;
+    color: var(--text);
+    overflow-x: auto;
+    white-space: pre;
+}
+
+/* Three-button row for the closing CTA on the samples page. Wraps to
+   stacked on narrow viewports; the buttons keep their existing
+   .btn / .btn-primary / .btn-secondary sizing. */
+.community-cta-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    justify-content: center;
+}
+
 /* 2×2 channel-card grid — Contribute / Stay in the loop / Discord / Ask.
    Collapses to a single column on narrow viewports. */
 .community-channels {
