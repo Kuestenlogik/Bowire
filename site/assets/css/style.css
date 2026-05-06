@@ -3381,13 +3381,22 @@ button.comparison-bestfor-card.active .comparison-bestfor-name {
         padding: 4px 0 4px 4px;
         margin-right: -7px;
     }
-    /* Burger menu drops a 1 px gap between the header bottom edge and
-       the open submenu — caused by the .site-header's border-bottom +
-       the absolute-positioned nav anchored at top:var(--header-height)
-       (which sits below the border). Pull the nav up by 1 px so it
-       butts up against the header without a transparent slit. */
+    /* The open burger menu used to sit 1–2 px below the header bar:
+       1) When the header is scrolled, .site-header.scrolled adds a
+          1 px solid border-bottom that visually fills the bottom
+          edge of the bar.
+       2) The header background is rgba(...0.88) while the open nav
+          uses rgba(...0.97), so even at flush positioning the alpha
+          mismatch reads as a thin seam.
+       Two-part fix: (a) hide the scrolled header's border when the
+       nav is open via :has(), so the bar's bottom edge is one solid
+       block; (b) lift the nav 2 px instead of 1 to absorb any sub-
+       pixel rendering when device-pixel-ratio is non-integer. */
+    .site-header.scrolled:has(.header-nav.open) {
+        border-bottom-color: transparent;
+    }
     .header-nav.open {
-        top: calc(var(--header-height) - 1px);
+        top: calc(var(--header-height) - 2px);
     }
 
     /* Belt-and-suspenders against horizontal overflow on phones —
