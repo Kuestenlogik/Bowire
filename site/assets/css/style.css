@@ -292,10 +292,17 @@ pre > code {
 }
 
 .hero-glow {
+    /* Centred behind the hero logo: .hero has padding-top:112px and
+       the logo (clamp 120-195px width, 1.69:1 aspect) is the first
+       element inside .hero-inner — its visual centre lands roughly
+       170px down from the .hero top. translate(-50%, -50%) places
+       the radial-gradient's centre on that point so the glow halo
+       wraps the logo evenly above and below instead of cresting only
+       at the top. */
     position: absolute;
-    top: -200px;
+    top: 170px;
     left: 50%;
-    transform: translateX(-50%);
+    transform: translate(-50%, -50%);
     width: 800px;
     height: 600px;
     background: radial-gradient(ellipse at center, rgba(99, 102, 241, 0.12) 0%, transparent 70%);
