@@ -457,12 +457,15 @@ jobs:
       #   <free-form prose>
       # Block ends at the next `## ` heading or `---` separator. If the
       # file doesn't carry a block for this tag, fall back to a generic
-      # heading so the release isn't body-less. The auto-generated
-      # 'What's Changed' list is appended underneath via the action's
-      # generate_release_notes / append_body combination.
+      # heading so the release isn't body-less.
+      #
+      # softprops/action-gh-release with `body_path` + `generate_release
+      # _notes: true` prepends the file's content above the auto-gen
+      # 'What's Changed' list. We append a horizontal rule + a hint
+      # line ourselves so the seam between the curated highlights and
+      # the auto-gen commit list is visually obvious — without the
+      # separator the two sections collide and read as one wall.
       - name: Extract version block from RELEASE_NOTES.md
-        env:
-          V: ${{ needs.build-linux.outputs.version || github.ref_name }}
         run: |
           TAG="${GITHUB_REF_NAME}"
           VERSION="${TAG#v}"
@@ -475,13 +478,20 @@ jobs:
             /^---$/ { if (found) exit }
             found { print }
           ' RELEASE_NOTES.md)
-          if [[ -z "$NOTES" ]]; then
-            echo "## $TAG" > release-body.md
-            echo "" >> release-body.md
-            echo "_See the auto-generated change list below._" >> release-body.md
-          else
-            echo "$NOTES" > release-body.md
-          fi
+          {
+            if [[ -z "$NOTES" ]]; then
+              echo "## $TAG"
+              echo ""
+              echo "_See the auto-generated change list below._"
+            else
+              echo "$NOTES"
+            fi
+            echo ""
+            echo "---"
+            echo ""
+            echo "_The full commit list, contributors, and compare-URL diff are auto-generated below._"
+            echo ""
+          } > release-body.md
           echo "----- release-body.md -----"
           cat release-body.md
           echo "----- end -----"
@@ -490,7 +500,6 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           body_path: release-body.md
-          append_body: true
           generate_release_notes: true
           prerelease: ${{ contains(github.ref, '-rc') }}
           files: |
