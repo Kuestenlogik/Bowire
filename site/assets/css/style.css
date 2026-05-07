@@ -2909,6 +2909,77 @@ button.comparison-bestfor-card.active .comparison-bestfor-name {
     margin: 0 auto;
 }
 
+/* "Recently shipped" mini-list — sits above the .roadmap-grid as a
+   compact retrospective so the section reads top-to-bottom from
+   "what just landed" to "what's next". Lighter visual weight than
+   the numbered cards so the eye still treats the cards as the
+   primary call. */
+.roadmap-shipped {
+    max-width: 800px;
+    margin: 0 auto 36px;
+    padding: 18px 24px 20px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+}
+.roadmap-shipped-label,
+.roadmap-next-label {
+    max-width: 800px;
+    margin: 0 auto 10px;
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-secondary);
+}
+.roadmap-shipped-label {
+    margin: 0 0 12px;
+    color: var(--accent);
+}
+.roadmap-next-label {
+    margin-top: 0;
+}
+.roadmap-shipped-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+.roadmap-shipped-list li {
+    font-size: 0.9375rem;
+    color: var(--text-secondary);
+    line-height: 1.55;
+    padding-left: 22px;
+    position: relative;
+}
+.roadmap-shipped-list li::before {
+    content: "✓";
+    position: absolute;
+    left: 0;
+    top: 0;
+    color: var(--accent);
+    font-weight: 700;
+}
+.roadmap-shipped-tag {
+    display: inline-block;
+    margin-right: 8px;
+    padding: 1px 8px;
+    border-radius: 999px;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--text);
+    vertical-align: 1px;
+}
+.roadmap-shipped-list code {
+    font-size: 0.85em;
+}
+
 .roadmap-card {
     background: var(--bg);
     border: 1px solid var(--border);

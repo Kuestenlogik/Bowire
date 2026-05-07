@@ -1,56 +1,78 @@
 <section class="roadmap" id="roadmap">
   <div class="container">
     <h2 class="section-title">What&rsquo;s next</h2>
-    <p class="section-subtitle">A short look at what&rsquo;s on the roadmap.</p>
+    <p class="section-subtitle">A short look at what just landed &mdash; and what&rsquo;s on the way.</p>
 
+    <div class="roadmap-shipped">
+      <p class="roadmap-shipped-label">Recently shipped</p>
+      <ul class="roadmap-shipped-list">
+        <li>
+          <span class="roadmap-shipped-tag">v1.0.12</span>
+          Custom domain (<a href="https://bowire.io">bowire.io</a>), full release pipeline (NuGet, MSI, DEB, RPM, multi-arch container on GHCR + Docker Hub), Winget + Chocolatey publishing.
+        </li>
+        <li>
+          <span class="roadmap-shipped-tag">v0.9.x</span>
+          <code>bowire mock</code> server &mdash; replay any recording as a live endpoint. REST, gRPC (unary + streaming + bidi), WebSocket, SSE, SignalR, Socket.IO, MQTT, GraphQL subscriptions. Hot-reload, chaos injection, schema-only mode (OpenAPI / gRPC / GraphQL), stateful mode, capture-on-miss.
+        </li>
+        <li>
+          <span class="roadmap-shipped-tag">plugins</span>
+          New protocol plugins: <strong>Akka.NET</strong> (mailbox tap), <strong>OData</strong>, <strong>Socket.IO</strong>, <strong>DIS</strong> (IEEE 1278), <strong>UDP</strong>.
+        </li>
+        <li>
+          <span class="roadmap-shipped-tag">workbench</span>
+          Visual flow editor (Request / Condition / Loop / Delay / Variable nodes, branching, response chaining, import/export).
+        </li>
+      </ul>
+    </div>
+
+    <p class="roadmap-next-label">Up next</p>
     <div class="roadmap-grid">
 
       <a class="roadmap-card roadmap-card-link" href="https://github.com/Kuestenlogik/Bowire/blob/main/ROADMAP.md" target="_blank" rel="noopener">
         <div class="roadmap-number" aria-hidden="true">1</div>
         <div class="roadmap-card-body">
-          <h3>Replay recordings as a mock server</h3>
-          <p>A <code>bowire mock</code> CLI that turns any captured recording into a live endpoint &mdash; same services, same payloads, same timing. Swap protocols on match, simulate latency, hot-reload on edit.</p>
+          <h3>Polyglot plugins via sidecar bridge</h3>
+          <p>Run plugins as sidecar processes &mdash; JSON-RPC over stdio, the same transport LSP / MCP / DAP settled on for exactly this polyglot problem. Per-language SDKs for Python, Node.js, Go, Rust so a Zenoh, paho-mqtt, NATS-Go, or Temporal plugin doesn&rsquo;t need to be ported to .NET to plug in.</p>
         </div>
       </a>
 
       <a class="roadmap-card roadmap-card-link" href="https://github.com/Kuestenlogik/Bowire/blob/main/ROADMAP.md" target="_blank" rel="noopener">
         <div class="roadmap-number" aria-hidden="true">2</div>
         <div class="roadmap-card-body">
-          <h3>More protocols: SOAP, NATS, Akka.NET</h3>
-          <p>SOAP for the enterprise legacy that still runs your invoicing, NATS for cloud-native messaging, Akka.NET actor inspection for distributed-system introspection. One UI, three very different wire protocols, zero context-switching.</p>
+          <h3>MQTT plugin</h3>
+          <p>MQTT 3.1.1 / 5.0 via MQTTnet. Topics map to services, publish/subscribe map to unary/streaming. Discovery scans <code>$SYS/#</code> or a configured topic prefix. Embedded mode hooks into MQTTnet&rsquo;s in-process server; standalone connects to any broker via <code>--url mqtt://broker:1883</code>. Closes the IoT gap &mdash; no other GUI tool does MQTT + gRPC + REST in one surface.</p>
         </div>
       </a>
 
       <a class="roadmap-card roadmap-card-link" href="https://github.com/Kuestenlogik/Bowire/blob/main/ROADMAP.md" target="_blank" rel="noopener">
         <div class="roadmap-number" aria-hidden="true">3</div>
         <div class="roadmap-card-body">
-          <h3>Full MCP spec + AI-driven testing</h3>
-          <p>Expose Bowire&rsquo;s own discovery / invoke / record primitives as MCP tools so an agent can chain <em>discover &rarr; invoke &rarr; assert &rarr; switch env &rarr; replay</em>. Ship the full MCP spec &mdash; <code>resources</code> + <code>prompts</code> alongside tools, plus SSE / HTTP transport so remote clients like Cursor and Copilot can connect without stdio.</p>
+          <h3>Kafka topics + Schema Registry</h3>
+          <p>Apache Kafka via <code>Confluent.Kafka</code>. Confluent Schema Registry feeds the topic / Avro / Proto / JSON-Schema tree directly into Bowire&rsquo;s service / method model. Cluster &harr; server, topic &harr; method, produce &harr; unary, consume &harr; server-streaming with per-partition offset selection. The biggest gap in Bowire&rsquo;s current event-streaming coverage.</p>
         </div>
       </a>
 
       <a class="roadmap-card roadmap-card-link" href="https://github.com/Kuestenlogik/Bowire/blob/main/ROADMAP.md" target="_blank" rel="noopener">
         <div class="roadmap-number" aria-hidden="true">4</div>
         <div class="roadmap-card-body">
-          <h3>Sidecar packaging for non-.NET teams</h3>
-          <p>First-class Docker / Compose / Kubernetes images so teams running Go, Rust, Python, or Node services can drop Bowire next to their API with a single manifest &mdash; no .NET toolchain on the host required.</p>
+          <h3>Storm tap-stream browser</h3>
+          <p>Storm topics map to services, partitions / consumers map to methods, the tap envelope (<code>event</code>, <code>topic</code>, <code>partition</code>, <code>offset</code>, <code>principal</code>, <code>reason</code>) is already recognised by Bowire&rsquo;s frame pane. Sibling repo + plugin scaffolding ready &mdash; blocked on the <code>KL.Storm.Client</code> SDK going public.</p>
         </div>
       </a>
 
       <a class="roadmap-card roadmap-card-link" href="https://github.com/Kuestenlogik/Bowire/blob/main/ROADMAP.md" target="_blank" rel="noopener">
         <div class="roadmap-number" aria-hidden="true">5</div>
         <div class="roadmap-card-body">
-          <h3>Schema registry + proto / Hyperion decoding</h3>
-          <p>Ship a message-type registry (Storm-compatible) that feeds the protocol plugins. Binary Proto payloads and Akka.NET <code>Hyperion</code>-serialized messages decode inline &mdash; no need to pre-load every <code>.proto</code> file or manually register types.</p>
-          <p>Doubles as a <strong>developer-to-developer schema distribution channel</strong>: publish your API&rsquo;s schemas to the registry, and any Bowire instance can pull and explore them &mdash; the OSS alternative to Postman Public Workspaces or hosted Scalar docs, without a marketing portal.</p>
+          <h3>More protocols: SOAP, NATS, Connect (Buf)</h3>
+          <p>SOAP 1.1/1.2 with WSDL discovery for the enterprise legacy that still runs your invoicing. NATS core + JetStream for cloud-native messaging. Connect (Buf) as a wire-format flag on the existing gRPC plugin &mdash; same schema, same discovery, just a different framing. Plus AMQP and a generic JSON-RPC browser on the same wave.</p>
         </div>
       </a>
 
       <a class="roadmap-card roadmap-card-link" href="https://github.com/Kuestenlogik/Bowire/blob/main/ROADMAP.md" target="_blank" rel="noopener">
         <div class="roadmap-number" aria-hidden="true">6</div>
         <div class="roadmap-card-body">
-          <h3>Kafka / Storm topics</h3>
-          <p>Browse topics as services, produce &amp; consume messages with consumer-group awareness, decode payloads through the schema registry (Avro, Proto, Hyperion). One UI for request/response and event-stream surfaces in the same stack.</p>
+          <h3>Full MCP spec + AI-driven testing</h3>
+          <p>Expose Bowire&rsquo;s own discovery / invoke / record primitives as MCP tools so an agent can chain <em>discover &rarr; invoke &rarr; assert &rarr; switch env &rarr; replay</em>. Ship the full MCP spec &mdash; <code>resources</code> + <code>prompts</code> alongside tools, plus SSE / HTTP transport so remote clients like Cursor and Copilot can connect without stdio.</p>
         </div>
       </a>
 
