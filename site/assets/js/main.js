@@ -531,9 +531,14 @@ document.querySelectorAll('.copy-btn').forEach(btn => {
     if (sections.length < 2) return;
 
     function sectionLabel(section) {
-        // Prefer the <h2 class="section-title"> content; fall back to any
-        // <h2>/<h1>, then to "Top" for the hero.
-        const title = section.querySelector('h2.section-title, h2, h1');
+        // Prefer the <h2 class="section-title"> content; fall back to
+        // any <h2>/<h1>, then any <h3>, then "Top" for the hero.
+        // The h3 fallback covers /why-bowire.html where each section
+        // wraps a single .features-block whose heading is an <h3>
+        // (the page's only <h1> is in the hero, no <h2>s anywhere
+        // else) — without it the outline modal showed six 'Section'
+        // entries instead of the actual feature names.
+        const title = section.querySelector('h2.section-title, h2, h1, h3');
         const text  = title ? title.textContent.trim() : '';
         if (text) return text;
         if (section.classList.contains('hero')) return 'Top';
