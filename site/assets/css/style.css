@@ -4156,15 +4156,13 @@ h4.downloads-sub {
     font-weight: 600;
     margin-right: 4px;
 }
-.legal-footnote {
-    max-width: 720px;
-    margin: 32px auto 0;
-    padding: 20px 0 0;
-    border-top: 1px solid var(--border);
-    text-align: center;
-    font-size: 0.875rem;
-    color: var(--text-secondary);
-}
+/* .legal-footnote removed: the standalone "See also" line that used
+   to live below the last alt-section drew an inset top border (max-
+   width 720, not full-bleed) and a centred grey footnote style that
+   read as a different element class than the section paragraphs
+   above. The cross-link now sits in its own .legal-section instead,
+   so the alternating-band rhythm continues uninterrupted and the
+   text styling matches every other paragraph on the page. */
 
 /* ===== About page ===== */
 .about-hero {
