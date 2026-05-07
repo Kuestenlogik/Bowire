@@ -1124,7 +1124,7 @@ var BOWIRE_PROTOCOLS = [
         packageId: 'Kuestenlogik.Bowire.Protocol.Storm',
         urlPlaceholder: 'storm://broker:9092',
         category: 'third-party',
-        setupNote: 'Surgewave-native protocol via the KL.Storm.Client SDK. Use <code>?protocol=kafka</code> on the URL to switch to the Kafka-compat wire.',
+        setupNote: 'Surgewave-native protocol via the Kuestenlogik.Surgewave.Client SDK. Use <code>?protocol=kafka</code> on the URL to switch to the Kafka-compat wire.',
         docUrl: 'https://github.com/Kuestenlogik/Bowire.Protocol.Storm'
     },
     {
