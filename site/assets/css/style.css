@@ -3244,9 +3244,11 @@ button.comparison-bestfor-card.active .comparison-bestfor-name {
 .footer-bottom {
     /* Full-width divider bar — border-top spans edge-to-edge because this
        element sits outside the .container, with its own centred container
-       wrapping the copyright text. */
+       wrapping the copyright text. Padding bumped down from 20→8 px so
+       the gap between '© Küstenlogik' and the viewport bottom isn't
+       a full extra line of dead space. */
     margin-top: 40px;
-    padding: 20px 0;
+    padding: 12px 0 8px;
     border-top: 1px solid var(--border);
     text-align: center;
 }
