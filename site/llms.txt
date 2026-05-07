@@ -2,7 +2,7 @@
 
 > Multi-protocol API workbench for .NET. Auto-discovers gRPC, REST/OpenAPI, GraphQL, SignalR, WebSocket, SSE, MQTT, Socket.IO, OData, and MCP services from a running endpoint and gives you a single browser UI to inspect schemas, call methods, stream messages, mock backends, record/replay sessions, and assert on responses. Ships embedded as ASP.NET middleware (`MapBowire()`) or as a standalone .NET tool / container.
 
-Bowire is plugin-based: each protocol is a separate NuGet package implementing `IBowireProtocol`, loaded out of `~/.bowire/plugins/` at startup. Sister repos extend the surface to wire-protocols (DIS, UDP) and event streams (Storm, Kafka). New plugins can be scaffolded with `dotnet new bowire-plugin`.
+Bowire is plugin-based: each protocol is a separate NuGet package implementing `IBowireProtocol`, loaded out of `~/.bowire/plugins/` at startup. Sister repos extend the surface to wire-protocols (DIS, UDP) and event streams (Surgewave, Kafka). New plugins can be scaffolded with `dotnet new bowire-plugin`.
 
 Apache-2.0 licensed. Source at https://github.com/Kuestenlogik/Bowire. Distributed via nuget.org as `Kuestenlogik.Bowire.*` libraries and `Kuestenlogik.Bowire.Tool` for the CLI.
 
@@ -18,7 +18,7 @@ Apache-2.0 licensed. Source at https://github.com/Kuestenlogik/Bowire. Distribut
 - [Documentation home](https://bowire.io/docs/): full reference manual.
 - [Setup](https://bowire.io/docs/setup/): install paths — embedded middleware, standalone CLI, Docker sidecar, building from source.
 - [UI guide](https://bowire.io/docs/ui-guide/): every pane and action in the browser workbench, with screenshots.
-- [Protocol guides](https://bowire.io/docs/protocols/): per-plugin behaviour and configuration. Built-in: gRPC, REST, GraphQL, SignalR, WebSocket, SSE, MQTT, Socket.IO, OData, MCP. Sister-repo plugins: DIS, UDP, Storm, Kafka. Includes a guide for writing your own.
+- [Protocol guides](https://bowire.io/docs/protocols/): per-plugin behaviour and configuration. Built-in: gRPC, REST, GraphQL, SignalR, WebSocket, SSE, MQTT, Socket.IO, OData, MCP. Sister-repo plugins: DIS, UDP, Surgewave, Kafka. Includes a guide for writing your own.
 - [Features reference](https://bowire.io/docs/features/): mock server, recording/replay, response chaining, test assertions, environments, flows, command palette, plugin system, performance graphs, freeform requests, multi-channel duplex.
 - [Architecture](https://bowire.io/docs/architecture/): plugin pipeline, package layout, extension points for embedding deeply.
 - [API reference](https://bowire.io/docs/api/Kuestenlogik.Bowire.html): types, methods, and extension points generated from the source.
@@ -45,6 +45,6 @@ Apache-2.0 licensed. Source at https://github.com/Kuestenlogik/Bowire. Distribut
 - [Bowire.Samples](https://github.com/Kuestenlogik/Bowire.Samples): runnable examples of common host configurations.
 - [Bowire.Protocol.Dis](https://github.com/Kuestenlogik/Bowire.Protocol.Dis): IEEE 1278.1 Distributed Interactive Simulation plugin.
 - [Bowire.Protocol.Udp](https://github.com/Kuestenlogik/Bowire.Protocol.Udp): generic UDP datagram inspection plugin.
-- [Bowire.Protocol.Storm](https://github.com/Kuestenlogik/Bowire.Protocol.Storm): KL.Storm distribution-fabric tap stream plugin.
+- [Bowire.Protocol.Storm](https://github.com/Kuestenlogik/Bowire.Protocol.Storm): Surgewave distribution-fabric tap stream plugin.
 - [Bowire.Protocol.Kafka](https://github.com/Kuestenlogik/Bowire.Protocol.Kafka): Apache Kafka producer / consumer plugin.
 - [llms.txt](https://llmstxt.org/): about this file format.

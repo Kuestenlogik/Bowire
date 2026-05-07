@@ -339,24 +339,24 @@
 
       <a class="protocol-card" href="{{ '/docs/protocols/storm.html' | relative_url }}" data-feature-modal tabindex="0">
         <div class="protocol-icon">
-          <!-- Storm — Küstenlogik blue, three diverging streams echoing
+          <!-- Surgewave — Küstenlogik blue, three diverging streams echoing
                the broker's data-distribution fan-out. -->
           <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="1.5" aria-hidden="true"><path d="M4 12h4"/><path d="M8 12 L14 6"/><path d="M8 12 L14 12"/><path d="M8 12 L14 18"/><circle cx="15.5" cy="6" r="1.3" fill="#38bdf8"/><circle cx="15.5" cy="12" r="1.3" fill="#38bdf8"/><circle cx="15.5" cy="18" r="1.3" fill="#38bdf8"/></svg>
         </div>
         <div class="protocol-content">
-          <h3>Storm</h3>
-          <p>Küstenlogik's Storm broker — native protocol via the KL.Storm.Client SDK or Kafka-compatible wire (<code>?protocol=kafka</code>). Topic browse, produce, server-streaming consume, in-process tap via <code>storm://embedded</code>.</p>
+          <h3>Surgewave</h3>
+          <p>Küstenlogik's Surgewave broker — native protocol via the KL.Storm.Client SDK or Kafka-compatible wire (<code>?protocol=kafka</code>). Topic browse, produce, server-streaming consume, in-process tap via <code>storm://embedded</code>.</p>
           <div class="protocol-install">
             <code><span class="protocol-install-prompt">$</span> bowire plugin install Kuestenlogik.Bowire.Protocol.Storm</code>
-            <button class="protocol-install-copy copy-btn" data-copy="bowire plugin install Kuestenlogik.Bowire.Protocol.Storm" aria-label="Copy install command for Storm"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></button>
+            <button class="protocol-install-copy copy-btn" data-copy="bowire plugin install Kuestenlogik.Bowire.Protocol.Storm" aria-label="Copy install command for Surgewave"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></button>
           </div>
         </div>
         <template class="feature-card-detail">
           <div class="features-block features-block-reverse">
             <div class="features-block-text">
-              <h3>Storm</h3>
+              <h3>Surgewave</h3>
               <p class="features-block-lead">First-class support for Küstenlogik's own broker &mdash; including the in-process <code>storm://embedded</code> tap that needs zero broker installed.</p>
-              <p>Connect with the native KL.Storm.Client SDK, or hit any Storm broker through its Kafka-compatible wire by appending <code>?protocol=kafka</code>. Topic discovery, produce, partitioned consume, and consumer-group state are all visible in the same UI &mdash; the embedded mode is the fastest path from "is my pipeline producing?" to a green frame in the response pane.</p>
+              <p>Connect with the native KL.Storm.Client SDK, or hit any Surgewave broker through its Kafka-compatible wire by appending <code>?protocol=kafka</code>. Topic discovery, produce, partitioned consume, and consumer-group state are all visible in the same UI &mdash; the embedded mode is the fastest path from "is my pipeline producing?" to a green frame in the response pane.</p>
               <ul class="features-block-capabilities">
                 <li>Topic produce (Unary)</li>
                 <li>partitioned consume (Server-streaming)</li>
@@ -365,7 +365,7 @@
               <a class="features-block-docs-link" href="{{ '/docs/protocols/storm.html' | relative_url }}">Read the full docs &rarr;</a>
             </div>
             <div class="features-block-screenshot">
-              {% include themed-img.html src="/assets/images/screenshots/streaming.png" alt="Storm partitioned consume streaming into Bowire's frame pane" %}
+              {% include themed-img.html src="/assets/images/screenshots/streaming.png" alt="Surgewave partitioned consume streaming into Bowire's frame pane" %}
             </div>
           </div>
         </template>
@@ -434,7 +434,7 @@
             <div class="features-block-text">
               <h3>DIS</h3>
               <p class="features-block-lead">Typed PDU rendering for IEEE 1278 traffic &mdash; EntityState / Fire / Detonation / Collision get a real form, not just a hex blob.</p>
-              <p>Subscribe to a multicast group, watch live PDUs land in the streaming pane with structured fields per type. Anything Bowire doesn't have a typed renderer for falls back to a canonical hex dump so binary inspection still works. Built for the same simulation environments as Storm and the Estuary stack.</p>
+              <p>Subscribe to a multicast group, watch live PDUs land in the streaming pane with structured fields per type. Anything Bowire doesn't have a typed renderer for falls back to a canonical hex dump so binary inspection still works. Built for the same simulation environments as Surgewave and the Estuary stack.</p>
               <ul class="features-block-capabilities">
                 <li>UDP-multicast PDU listen</li>
                 <li>typed PDU rendering</li>

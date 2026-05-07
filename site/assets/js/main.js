@@ -1119,12 +1119,12 @@ var BOWIRE_PROTOCOLS = [
     // Third-party plugins — sibling repos, ship via NuGet on their own
     // release cadence. CLI installs on demand.
     {
-        id: 'storm', label: 'Storm',
+        id: 'storm', label: 'Surgewave',
         hint: 'Kafka-compatible broker, native + Kafka-wire',
         packageId: 'Kuestenlogik.Bowire.Protocol.Storm',
         urlPlaceholder: 'storm://broker:9092',
         category: 'third-party',
-        setupNote: 'Storm-native protocol via the KL.Storm.Client SDK. Use <code>?protocol=kafka</code> on the URL to switch to the Kafka-compat wire.',
+        setupNote: 'Surgewave-native protocol via the KL.Storm.Client SDK. Use <code>?protocol=kafka</code> on the URL to switch to the Kafka-compat wire.',
         docUrl: 'https://github.com/Kuestenlogik/Bowire.Protocol.Storm'
     },
     {
@@ -1439,10 +1439,10 @@ function createBowireCombobox(hostEl, allItems, defaultSelectedIds, placeholder)
 
     var nugetCombo = createBowireCombobox(
         root.querySelector('[data-combobox-nuget]'), BOWIRE_PROTOCOLS, nugetDefaults,
-        'Search protocols (gRPC, REST, Storm, Kafka, …)');
+        'Search protocols (gRPC, REST, Surgewave, Kafka, …)');
     var cliCombo = createBowireCombobox(
         root.querySelector('[data-combobox-cli]'), thirdParty, [],
-        'Search third-party plugins (Storm, Kafka, DIS, UDP)');
+        'Search third-party plugins (Surgewave, Kafka, DIS, UDP)');
 
     var currentStep = 1;
     var pickedBoat = null;

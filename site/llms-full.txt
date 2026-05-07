@@ -76,7 +76,7 @@ Sister-repo plugins:
 - `Kuestenlogik.Bowire.Protocol.Udp` — generic UDP listener (multicast / broadcast / unicast)
 - `Kuestenlogik.Bowire.Protocol.Dis` — IEEE 1278.1 DIS with typed PDU decode
 - `Kuestenlogik.Bowire.Protocol.Kafka` — Apache Kafka via Confluent.Kafka, schema registry
-- `Kuestenlogik.Bowire.Protocol.Storm` — Küstenlogik Storm distribution-fabric tap (private)
+- `Kuestenlogik.Bowire.Protocol.Storm` — Küstenlogik Surgewave distribution-fabric tap (private)
 
 ## Writing your own plugin
 
@@ -132,8 +132,8 @@ A: Bowire embeds via ASP.NET middleware. The CLI talks to any HTTP/gRPC/MQTT/etc
 **Q: How is it different from Postman / Insomnia / Bruno / Hoppscotch?**
 A: Those are HTTP-first clients. Bowire starts with multi-protocol auto-discovery (no manual collection authoring), supports embedded mode (lives next to your service), records sessions to replay them as mock servers, and exposes everything as MCP tools for AI agents. The single-tool-many-protocols story plus embed-mode are the two main differentiators.
 
-**Q: What's the relationship to Storm?**
-A: Storm is Küstenlogik's separate distribution-fabric product. `Kuestenlogik.Bowire.Protocol.Storm` is an optional plugin that lets Bowire tap Storm event streams. Storm itself is not yet public.
+**Q: What's the relationship to Surgewave?**
+A: Surgewave is Küstenlogik's separate distribution-fabric product. `Kuestenlogik.Bowire.Protocol.Storm` is an optional plugin that lets Bowire tap Surgewave event streams. Surgewave itself is not yet public.
 
 **Q: Where do I report bugs / request features?**
 A: https://github.com/Kuestenlogik/Bowire/issues for the core. Per-plugin sister repos have their own issue trackers.

@@ -3998,7 +3998,7 @@ h4.downloads-sub {
 }
 .downloads-pkg-icon img {
     /* Mirror the .downloads-pkg-icon svg sizing so external SVG marks
-       (e.g. the Storm logo loaded as <img>) fill the icon slot the
+       (e.g. the Surgewave logo loaded as <img>) fill the icon slot the
        same way inline SVGs do. */
     width: 100%;
     height: 100%;

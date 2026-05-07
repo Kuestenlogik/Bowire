@@ -177,7 +177,7 @@ docker run --rm -p 5080:5080 \
         </div>
       </div>
 
-      <p>Every package ships <strong>every first-party protocol plugin</strong> bundled (gRPC, REST, GraphQL, SignalR, WebSocket, SSE, MQTT, Socket.IO, OData, MCP). Sibling plugins (Storm, Kafka, DIS, UDP) install separately &mdash; see step 5.</p>
+      <p>Every package ships <strong>every first-party protocol plugin</strong> bundled (gRPC, REST, GraphQL, SignalR, WebSocket, SSE, MQTT, Socket.IO, OData, MCP). Sibling plugins (Surgewave, Kafka, DIS, UDP) install separately &mdash; see step 5.</p>
       <p class="quickstart-page-step-links">
         <a class="features-block-docs-link" href="{{ '/downloads.html' | relative_url }}">Every install path on the downloads page &rarr;</a>
         <a class="features-block-docs-link" href="{{ '/docs/setup/standalone.html' | relative_url }}">Configuration options (port, plugin dir, theme) &rarr;</a>
@@ -220,7 +220,7 @@ docker run --rm -p 5080:5080 \
     <div class="quickstart-page-step-num">5</div>
     <div class="quickstart-page-step-body">
       <h2>Install a sibling plugin <span class="quickstart-page-step-tag">optional</span></h2>
-      <p class="features-block-lead">For protocols that don't ship with the CLI bundle &mdash; Storm, Kafka, DIS, UDP &mdash; pull the plugin from NuGet:</p>
+      <p class="features-block-lead">For protocols that don't ship with the CLI bundle &mdash; Surgewave, Kafka, DIS, UDP &mdash; pull the plugin from NuGet:</p>
 
 <pre><code class="lang-bash">bowire plugin install Kuestenlogik.Bowire.Protocol.Kafka
 bowire plugin install Kuestenlogik.Bowire.Protocol.Storm
@@ -271,7 +271,7 @@ dotnet add package Kuestenlogik.Bowire.Protocol.Grpc
 dotnet add package Kuestenlogik.Bowire.Protocol.Rest
 dotnet add package Kuestenlogik.Bowire.Protocol.SignalR</code></pre>
 
-      <p>Every first-party protocol (gRPC, REST, GraphQL, SignalR, WebSocket, SSE, MQTT, Socket.IO, OData, MCP) is its own package &mdash; same versioning, same release cadence. Sibling plugins (Storm, Kafka, DIS, UDP) follow the same pattern from their separate repositories.</p>
+      <p>Every first-party protocol (gRPC, REST, GraphQL, SignalR, WebSocket, SSE, MQTT, Socket.IO, OData, MCP) is its own package &mdash; same versioning, same release cadence. Sibling plugins (Surgewave, Kafka, DIS, UDP) follow the same pattern from their separate repositories.</p>
       <p class="quickstart-page-step-links">
         <a class="features-block-docs-link" href="{{ '/downloads.html' | relative_url }}">Every package on the downloads page &rarr;</a>
         <a class="features-block-docs-link" href="{{ '/docs/setup/embedded.html' | relative_url }}">Configuration options (mount path, theme, auth) &rarr;</a>
@@ -324,7 +324,7 @@ app.Run();</code></pre>
     <div class="quickstart-page-step-num">5</div>
     <div class="quickstart-page-step-body">
       <h2>Add a sibling plugin <span class="quickstart-page-step-tag">optional</span></h2>
-      <p class="features-block-lead">For protocols that ship from sibling repositories &mdash; Storm, Kafka, DIS, UDP &mdash; the same <code>dotnet add package</code> path applies.</p>
+      <p class="features-block-lead">For protocols that ship from sibling repositories &mdash; Surgewave, Kafka, DIS, UDP &mdash; the same <code>dotnet add package</code> path applies.</p>
 
 <pre><code class="lang-bash">dotnet add package Kuestenlogik.Bowire.Protocol.Kafka
 dotnet add package Kuestenlogik.Bowire.Protocol.Storm
