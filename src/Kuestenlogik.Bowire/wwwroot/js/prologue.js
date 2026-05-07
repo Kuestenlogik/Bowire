@@ -721,10 +721,17 @@
     }
 
     // ---- Sidebar width (drag-to-resize splitter between sidebar and main) ----
-    // Default is the CSS var `--bowire-sidebar-width` (320 px). User-set
+    // Default is the CSS var `--bowire-sidebar-width` (400 px). User-set
     // values persist across reloads. 0 means "use CSS default" — lets the
     // responsive breakpoints in bowire.css take over on tablet/mobile.
-    const SIDEBAR_WIDTH_MIN = 220;
+    //
+    // Min is set so all four view tabs (Services / Favorites /
+    // Environments / Flows) still fit on a single row — below 360 the
+    // 'Environments' label pushes 'Flows' onto a wrapped second line
+    // (or worse, off the edge) and the user loses sight of features.
+    // The CSS keeps `flex-wrap: wrap` as a safety net, but the
+    // resize handle won't push you into that state by accident.
+    const SIDEBAR_WIDTH_MIN = 360;
     const SIDEBAR_WIDTH_MAX = 720;
     let sidebarWidth = (function () {
         try {

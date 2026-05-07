@@ -58,7 +58,11 @@
     --bowire-shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
     --bowire-shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.5);
 
-    --bowire-sidebar-width: 320px;
+    /* Default width fits all four sidebar tabs (Services / Favorites /
+       Environments / Flows) on one row without wrap, including the
+       'Environments' label which is the longest. Bumped from 320 to
+       400 because the original value clipped 'Flows' on the right edge. */
+    --bowire-sidebar-width: 400px;
     --bowire-transition: 150ms ease;
 }
 
@@ -1344,6 +1348,12 @@ img.bowire-logo-icon {
     padding: 0 12px;
     border-bottom: 1px solid var(--bowire-border);
     flex-shrink: 0;
+    /* Wrap onto a second row instead of clipping when the sidebar is
+       narrower than the four labels can fit (mobile, manual splitter
+       drag). The default sidebar width + the SIDEBAR_WIDTH_MIN cap
+       in prologue.js are sized so all four tabs sit on one line in
+       the normal flow — wrap is the safety net, not the default. */
+    flex-wrap: wrap;
 }
 
 .bowire-view-pill {
