@@ -4401,6 +4401,13 @@ p a:not([class]):hover,
     gap: 48px;
     align-items: center;
     border-top: 1px solid var(--border);
+    /* Anchor-scroll target offset: the html { scroll-padding-top: 0 }
+       global puts the block-top flush against the viewport top, but
+       the .site-header is fixed at var(--header-height) and covers
+       those first pixels. Reserve that space here so a deep-link from
+       e.g. /why-bowire.html#flows lands the block right below the
+       header, with the block's own 60 px top-padding above the h3. */
+    scroll-margin-top: var(--header-height);
 }
 .features-group .features-block:first-of-type {
     border-top: none;
