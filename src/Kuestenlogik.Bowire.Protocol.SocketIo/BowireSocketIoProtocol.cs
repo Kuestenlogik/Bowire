@@ -110,17 +110,7 @@ public sealed class BowireSocketIoProtocol : IBowireProtocol
         await client.ConnectAsync();
         try
         {
-            string eventName;
-            string? eventData;
-            try
-            {
-                var doc = JsonDocument.Parse(payload);
-                eventName = doc.RootElement.TryGetProperty("event", out var evProp)
-                    ? evProp.GetString() ?? "message" : "message";
-                eventData = doc.RootElement.TryGetProperty("data", out var dataProp)
-                    ? dataProp.ToString() : payload;
-            }
-            catch { eventName = "message"; eventData = payload; }
+            var (eventName, eventData) = ParseEmitPayload(payload);
 
             client.OnAny((name, response) =>
             {
@@ -152,24 +142,7 @@ public sealed class BowireSocketIoProtocol : IBowireProtocol
         [EnumeratorCancellation] CancellationToken ct = default)
     {
         var url = ResolveUrl(serverUrl, metadata);
-
-        // Optional event-name filter from the form body. When present, only
-        // events whose name matches are forwarded — the same shape SSE uses
-        // for its `url` override. Empty / missing means "every event".
-        string? eventFilter = null;
-        if (jsonMessages.Count > 0)
-        {
-            try
-            {
-                using var doc = JsonDocument.Parse(jsonMessages[0]);
-                if (doc.RootElement.TryGetProperty("event", out var evProp))
-                {
-                    var v = evProp.GetString();
-                    if (!string.IsNullOrEmpty(v)) eventFilter = v;
-                }
-            }
-            catch (JsonException) { /* ignore — empty filter */ }
-        }
+        var eventFilter = ExtractEventFilter(jsonMessages);
 
         // method == "listen" is the generic catch-all method. Dynamically
         // discovered events surface as their own per-event method, in which
@@ -262,6 +235,53 @@ public sealed class BowireSocketIoProtocol : IBowireProtocol
         catch (JsonException)
         {
             return JsonSerializer.SerializeToElement(raw);
+        }
+    }
+
+    /// <summary>
+    /// Decode the first <c>jsonMessages</c> entry submitted to
+    /// <see cref="InvokeAsync"/> into an <c>(eventName, eventData)</c>
+    /// pair. The form sends <c>{"event":"…","data":"…"}</c> in the
+    /// well-formed case; missing fields default to <c>"message"</c> /
+    /// the raw payload, malformed JSON gracefully degrades to the
+    /// same defaults so an emit never fails on payload-shape alone.
+    /// </summary>
+    private static (string EventName, string EventData) ParseEmitPayload(string payload)
+    {
+        try
+        {
+            using var doc = JsonDocument.Parse(payload);
+            var eventName = doc.RootElement.TryGetProperty("event", out var evProp)
+                ? evProp.GetString() ?? "message" : "message";
+            var eventData = doc.RootElement.TryGetProperty("data", out var dataProp)
+                ? dataProp.ToString() : payload;
+            return (eventName, eventData);
+        }
+        catch (JsonException)
+        {
+            return ("message", payload);
+        }
+    }
+
+    /// <summary>
+    /// Pull the optional event-name filter from <see cref="InvokeStreamAsync"/>'s
+    /// first message. When set, the streaming pane forwards only matching
+    /// events; <c>null</c> (no filter, no event field, empty value, or
+    /// malformed JSON) means "every event reaches the pane".
+    /// </summary>
+    private static string? ExtractEventFilter(List<string> jsonMessages)
+    {
+        if (jsonMessages.Count == 0) return null;
+        try
+        {
+            using var doc = JsonDocument.Parse(jsonMessages[0]);
+            if (!doc.RootElement.TryGetProperty("event", out var evProp)) return null;
+            var value = evProp.GetString();
+            return string.IsNullOrEmpty(value) ? null : value;
+        }
+        catch (JsonException)
+        {
+            return null;
         }
     }
 
