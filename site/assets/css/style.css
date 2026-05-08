@@ -2909,18 +2909,22 @@ button.comparison-bestfor-card.active .comparison-bestfor-name {
     margin: 0 auto;
 }
 
-/* Section labels above the two roadmap-grids ("Recently shipped"
-   and the divider "Next on course") — same monospace eyebrow as
-   other section sub-headings. */
+/* Section labels above the two roadmap-grids — match the
+   .roadmap-divider-label typography exactly so both eyebrows
+   ("Recently shipped" above the shipped grid, "Up next" inside
+   the divider below it) read as one consistent rhythm. The only
+   difference is the surrounding rule lines, which the divider
+   adds via its own grid. */
 .roadmap-section-label {
     max-width: 800px;
     margin: 0 auto 14px;
+    text-align: center;
     font-family: var(--font-mono);
     font-size: 0.75rem;
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.08em;
-    color: var(--accent);
+    color: var(--text-secondary);
 }
 
 /* Divider between shipped + next — pair of horizontal lines with
@@ -2948,11 +2952,12 @@ button.comparison-bestfor-card.active .comparison-bestfor-name {
 }
 
 /* "Shipped" coin variant — same sizing as .roadmap-number, only
-   the inverted-fill becomes accent-coloured so the checkmark still
-   reads as a status badge rather than a counter. The shipped cards
-   themselves keep the same .roadmap-card layout. */
+   the inverted-fill becomes the success-green so the checkmark
+   reads as a status badge ("done"), distinct from both the
+   numbered counter and any accent-coloured CTAs. The shipped
+   cards themselves keep the same .roadmap-card layout. */
 .roadmap-number-shipped {
-    background: var(--accent);
+    background: var(--success);
     color: #fff;
 }
 .roadmap-number-shipped svg {
