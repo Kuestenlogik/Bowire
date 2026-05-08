@@ -4,3 +4,5 @@
   href: plugin-architecture.md
 - name: Packages
   href: packages.md
+- name: File Formats
+  href: file-formats.md

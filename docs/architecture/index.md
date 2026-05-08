@@ -97,4 +97,4 @@ All endpoints are prefixed with the configured `RoutePrefix` (default: `bowire`)
 
 The browser UI is a single-page application packaged as static assets. Pure HTML, CSS, and JavaScript &mdash; no framework dependency. It talks to the API via standard HTTP and SSE.
 
-See also: [Plugin architecture](plugin-architecture.md) · [Packages](packages.md)
+See also: [Plugin architecture](plugin-architecture.md) · [Packages](packages.md) · [File formats](file-formats.md)
