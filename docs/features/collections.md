@@ -24,7 +24,7 @@ Open the Collection Manager from the sidebar. The modal has two panes:
 | Button | Description |
 |--------|-------------|
 | **Run All** | Execute every item sequentially with the current environment |
-| **Export** | Download the collection as a `.blc` JSON file |
+| **Export** | Download the collection as a `.bwc` JSON file |
 | **Import Postman** | Import a Postman Collection v2.1 JSON file |
 | **Delete** | Delete the entire collection (with confirmation) |
 
@@ -89,7 +89,7 @@ The two stores are kept in sync automatically. Every edit (add, remove, rename, 
 
 ## Export format
 
-Exported collections use the `.blc` extension and contain the full collection JSON:
+Exported collections use the `.bwc` extension and contain the full collection JSON:
 
 ```json
 {
@@ -112,7 +112,7 @@ Exported collections use the `.blc` extension and contain the full collection JS
 }
 ```
 
-Share `.blc` files with teammates or commit them to version control.
+Share `.bwc` files with teammates or commit them to version control.
 
 ## Tips
 

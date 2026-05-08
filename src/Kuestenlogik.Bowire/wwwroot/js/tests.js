@@ -59,7 +59,7 @@
                     var blob = new Blob([json], { type: 'application/json' });
                     var a = document.createElement('a');
                     a.href = URL.createObjectURL(blob);
-                    a.download = (selectedMethod.name || 'tests') + '.bowire-tests.json';
+                    a.download = (selectedMethod.name || 'tests') + '.bwt';
                     a.click();
                     URL.revokeObjectURL(a.href);
                 }

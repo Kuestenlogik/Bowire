@@ -193,7 +193,7 @@
         var blob = new Blob([json], { type: 'application/json' });
         var a = document.createElement('a');
         a.href = URL.createObjectURL(blob);
-        a.download = (flow.name || 'flow').replace(/[^a-zA-Z0-9_-]/g, '_') + '.blf';
+        a.download = (flow.name || 'flow').replace(/[^a-zA-Z0-9_-]/g, '_') + '.bwf';
         a.click();
         URL.revokeObjectURL(a.href);
     }
@@ -201,7 +201,7 @@
     function importFlow() {
         var input = document.createElement('input');
         input.type = 'file';
-        input.accept = '.blf,.json';
+        input.accept = '.bwf,.json';
         input.onchange = function () {
             if (!input.files || !input.files[0]) return;
             var reader = new FileReader();
@@ -466,8 +466,8 @@
         header.appendChild(el('button', {
             id: 'bowire-flow-export-btn',
             className: 'bowire-flow-canvas-action-btn',
-            title: 'Export as .blf',
-            'aria-label': 'Export as .blf',
+            title: 'Export as .bwf',
+            'aria-label': 'Export as .bwf',
             onClick: function () { exportFlow(flow.id); }
         }, el('span', { innerHTML: svgIcon('download') })));
 
@@ -487,8 +487,8 @@
         header.appendChild(el('button', {
             id: 'bowire-flow-import-btn',
             className: 'bowire-flow-canvas-action-btn',
-            title: 'Import .blf flow',
-            'aria-label': 'Import .blf flow',
+            title: 'Import .bwf flow',
+            'aria-label': 'Import .bwf flow',
             onClick: importFlow
         }, el('span', { innerHTML: svgIcon('upload') })));
 

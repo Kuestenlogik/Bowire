@@ -14,7 +14,7 @@ Turn any Bowire recording into a standalone HTTP mock server that replays the ca
 
 ```bash
 dotnet tool install -g Kuestenlogik.Bowire.Tool
-bowire mock --recording scenario.bowire-recording.json --port 7070
+bowire mock --recording scenario.bwr --port 7070
 ```
 
 | Flag | Default | Notes |
@@ -38,7 +38,7 @@ var builder = WebApplication.CreateBuilder();
 builder.Services.AddControllers();
 var app = builder.Build();
 
-app.UseBowireMock("tests/fixtures/payments-happy.bowire-recording.json", opts =>
+app.UseBowireMock("tests/fixtures/payments-happy.bwr", opts =>
 {
     opts.PassThroughOnMiss = true;  // unmatched requests fall through to the live pipeline
     opts.Watch = false;              // tests shouldn't race with file watches
@@ -107,7 +107,7 @@ Minimal sample with a single REST step:
 Save the file, then:
 
 ```bash
-bowire mock --recording weather.bowire-recording.json --port 7070
+bowire mock --recording weather.bwr --port 7070
 ```
 
 And hit it:

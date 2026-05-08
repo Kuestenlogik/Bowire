@@ -39,7 +39,7 @@ namespace Kuestenlogik.Bowire.App.Configuration;
 /// </remarks>
 internal sealed class MockCliOptions
 {
-    /// <summary>Path to a <c>.bowire-recording.json</c> file. Mutex with <see cref="SchemaPath"/>.</summary>
+    /// <summary>Path to a <c>.bwr</c> recording file. Mutex with <see cref="SchemaPath"/>.</summary>
     public string? RecordingPath { get; set; }
 
     /// <summary>Path to an OpenAPI 3 document. Mutex with <see cref="RecordingPath"/>.</summary>

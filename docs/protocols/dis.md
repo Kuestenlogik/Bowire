@@ -68,7 +68,7 @@ Each step carries:
 - `capturedAt` — millisecond timestamp used for emission pacing
 - optional `metadata` (only on the first DIS step — applied to the whole DIS sub-sequence)
 
-Replay is a thin relay — the emitter doesn't re-decode the PDUs, it ships the captured bytes verbatim. Use `bowire mock --recording my-exercise.bowire-recording.json --loop` for repeated replay.
+Replay is a thin relay — the emitter doesn't re-decode the PDUs, it ships the captured bytes verbatim. Use `bowire mock --recording my-exercise.bwr --loop` for repeated replay.
 
 ## Relationship to the UDP plugin
 

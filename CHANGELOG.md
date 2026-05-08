@@ -453,7 +453,7 @@ error against the ASP.NET Core dev cert when it wasn't installed.
 - Bowire.Protocol.Udp — new harbour-domain sample with multicast
   AIS-style position pings + unicast port-call status.
 - Bowire.Protocol.Dis — new harbour-domain sample replaying the
-  bundled `convoy.bowire-recording.json` onto the standard DIS
+  bundled `convoy.bwr` onto the standard DIS
   multicast group.
 
 ### Tests

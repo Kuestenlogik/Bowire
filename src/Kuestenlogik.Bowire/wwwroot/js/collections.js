@@ -230,7 +230,7 @@
                 var blob = new Blob([JSON.stringify(col, null, 2)], { type: 'application/json' });
                 var a = document.createElement('a');
                 a.href = URL.createObjectURL(blob);
-                a.download = (col.name || 'collection').replace(/[^a-zA-Z0-9._-]/g, '_') + '.blc';
+                a.download = (col.name || 'collection').replace(/[^a-zA-Z0-9._-]/g, '_') + '.bwc';
                 a.click();
                 URL.revokeObjectURL(a.href);
             }

@@ -252,7 +252,7 @@ User-visible payoff: anyone installing `Kuestenlogik.Bowire` or `Kuestenlogik.Bo
 - [x] "Run against last response" button to re-evaluate without firing a new request
 - [x] "Remove all" button + per-row remove
 - [x] Full integration with the existing pipeline — auth, environments, chaining, console, performance all work with assertions on top
-- [x] **Test collection JSON format + UI Import/Export** (v0.8.3) — portable file format `{ name, serverUrl, protocol, environment, tests: [{ name, service, method, messages, metadata, assert }] }`. Tests tab gets **Export collection** (downloads `.bowire-tests.json`) and **Import collection** buttons. Same format consumed by the CLI runner.
+- [x] **Test collection JSON format + UI Import/Export** (v0.8.3) — portable file format `{ name, serverUrl, protocol, environment, tests: [{ name, service, method, messages, metadata, assert }] }`. Tests tab gets **Export collection** (downloads `.bwt`) and **Import collection** buttons. Same format consumed by the CLI runner.
 - [x] **CLI test runner** (v0.8.3) — `bowire test <collection.json>` subcommand. Loads the JSON file, initializes the protocol registry in-process (no HTTP detour), discovers each serverUrl via the matching plugin, invokes each test, runs assertions in C#, prints colorized pass/fail output, exits with code 0 (all pass) or 1 (any fail). All operators ported from JS: eq/ne/gt/gte/lt/lte/contains/matches/exists/notexists/type. Same `${var}` substitution engine including system variables (now/uuid/timestamp/...).
 - [x] **HTML report export** (v0.8.3) — `--report path.html` flag on the CLI runner generates a self-contained HTML file with inlined dark-theme CSS, per-test status/duration, per-assertion pass/fail with actual-vs-expected diff. Suitable as a CI artifact.
 
@@ -617,7 +617,7 @@ Complement the existing Recordings feature (auto-captured sessions) with manuall
     - ✅ Variable forwarding between nodes via `${response.X}` — the output of one node feeds the input of the next.
     - ✅ **Recursive runner** executes the node tree top-to-bottom, following condition branches and looping body arrays, with live pulse animation on the active node.
     - ✅ **Response viewer** — expandable per-node result panel showing response JSON, error messages, and timing.
-    - ✅ **Import/Export** — flows as `.blf` JSON files. Duplicate flow, import from file picker.
+    - ✅ **Import/Export** — flows as `.bwf` JSON files. Duplicate flow, import from file picker.
     - ✅ **Sidebar tab** (4th tab) with flow list, create/select. Visual node editor in main pane.
     - ✅ **Drag-to-reorder**, inline editing (click-to-expand), move up/down, duplicate, delete per node.
     - [ ] **Export as test** — flatten a flow into a linear collection for CI execution (no visual editor needed in CI).

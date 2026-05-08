@@ -115,7 +115,7 @@ The disk file is plain JSON and human-readable -- you can edit it in any text ed
 
 The manager footer has three buttons:
 
-- **Export** downloads `bowire-environments.json` containing all environments, globals and the active id.
+- **Export** downloads `bowire-environments.bwe` containing all environments, globals and the active id.
 - **Import** loads a previously exported file, replacing the current state.
 - **Clear all** wipes everything -- both the localStorage cache and `~/.bowire/environments.json` on disk. This is irreversible and prompts for confirmation.
 

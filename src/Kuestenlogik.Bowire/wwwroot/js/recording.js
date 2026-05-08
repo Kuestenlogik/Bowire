@@ -380,7 +380,7 @@
         var rec = recordingsList.find(function (r) { return r.id === id; });
         if (!rec) return;
         var blob = new Blob([JSON.stringify(rec, null, 2)], { type: 'application/json' });
-        downloadBlob(blob, sanitizeFilename(rec.name) + '.blr');
+        downloadBlob(blob, sanitizeFilename(rec.name) + '.bwr');
     }
 
     // ---- Export: HAR 1.2 ----

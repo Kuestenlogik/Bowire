@@ -492,7 +492,7 @@
                 var blob = new Blob([json], { type: 'application/json' });
                 var a = document.createElement('a');
                 a.href = URL.createObjectURL(blob);
-                a.download = 'bowire-environments.json';
+                a.download = 'bowire-environments.bwe';
                 a.click();
                 URL.revokeObjectURL(a.href);
             }
