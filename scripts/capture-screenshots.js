@@ -79,13 +79,54 @@ async function resetToSidebar(page) {
         await servicesPill.click().catch(() => {});
     }
     await page.waitForTimeout(300);
-    // Re-expand any service groups that re-collapsed on the view switch
-    // — otherwise downstream `.click()` calls on method-items hit hidden
-    // elements and time out.
+    await expandAllGroups(page);
+}
+
+// Click every collapsed-group header. Idempotent — running it twice in
+// a row is a no-op for groups that are already expanded.
+async function expandAllGroups(page) {
     for (const g of await page.locator('.bowire-service-group.collapsed .bowire-service-group-header').all()) {
         await g.click().catch(() => {});
     }
     await page.waitForTimeout(300);
+}
+
+// Click a method-item by name, robust against the post-view-switch
+// race where the item is DOM-attached but hidden behind a
+// `display: none` group ancestor or scrolled out of the sidebar
+// viewport. Three escalating strategies:
+//   1. Re-expand groups + scroll into view + normal Playwright click.
+//   2. Playwright force-click (bypasses actionability checks).
+//   3. Direct DOM .click() via page.evaluate — bypasses Playwright's
+//      visibility wall entirely. Bowire's sidebar wires its handler
+//      with addEventListener('click'), so the synthetic event fires
+//      the same way a user click would.
+async function clickMethodItem(page, text) {
+    await expandAllGroups(page);
+    const item = page.locator('.bowire-method-item', { hasText: text }).first();
+    await item.waitFor({ state: 'attached', timeout: 10000 });
+    try { await item.scrollIntoViewIfNeeded({ timeout: 5000 }); } catch { /* fine */ }
+    try {
+        await item.click({ timeout: 8000 });
+        return;
+    } catch { /* fall through to force */ }
+    try {
+        await item.click({ force: true, timeout: 5000 });
+        return;
+    } catch { /* fall through to JS click */ }
+    // Last resort: synthetic DOM click. Items render their text inside
+    // a child span, so we walk every method-item and substring-match
+    // on textContent.
+    const clicked = await page.evaluate((needle) => {
+        const items = Array.from(document.querySelectorAll('.bowire-method-item'));
+        const target = items.find(i => (i.textContent || '').includes(needle));
+        if (!target) return false;
+        target.click();
+        return true;
+    }, text);
+    if (!clicked) {
+        throw new Error(`clickMethodItem: no .bowire-method-item matched ${JSON.stringify(text)}`);
+    }
 }
 
 (async () => {
@@ -147,7 +188,7 @@ async function resetToSidebar(page) {
     // until the HttpClient timeout.)
     try {
         log('json-chaining…');
-        await page.locator('.bowire-method-item', { hasText: 'List' }).first().click();
+        await clickMethodItem(page, 'List');
         await page.waitForTimeout(1200);
         const execBtn = page.locator('.bowire-execute-btn, #bowire-execute-btn').first();
         await execBtn.waitFor({ state: 'visible', timeout: 10000 });
@@ -186,7 +227,7 @@ async function resetToSidebar(page) {
     // WatchCrane is a gRPC server-streaming RPC — ticks come in every
     // second from the sample's background timer.
     log('streaming…');
-    await page.locator('.bowire-method-item', { hasText: 'WatchCrane' }).first().click();
+    await clickMethodItem(page, 'WatchCrane');
     await page.waitForTimeout(800);
     await page.locator('input[data-field-key="craneId"]').first().fill('1');
     await page.locator('.bowire-execute-btn, #bowire-execute-btn').first().click();
@@ -248,14 +289,14 @@ async function resetToSidebar(page) {
         await recordBtn.click();
         await page.waitForTimeout(500);
 
-        await page.locator('.bowire-method-item', { hasText: 'GetPortCall' }).first().click();
+        await clickMethodItem(page, 'GetPortCall');
         await page.waitForTimeout(600);
         const recId = page.locator('input[data-field-key="portCallId"], input[data-field-key="id"]').first();
         if (await recId.isVisible().catch(() => false)) await recId.fill('1');
         await page.locator('.bowire-execute-btn, #bowire-execute-btn').first().click();
         await page.waitForTimeout(1200);
 
-        await page.locator('.bowire-method-item', { hasText: 'SchedulePortCall' }).first().click();
+        await clickMethodItem(page, 'SchedulePortCall');
         await page.waitForTimeout(600);
         const shipId = page.locator('input[data-field-key="shipId"]').first();
         if (await shipId.isVisible().catch(() => false)) await shipId.fill('1');
@@ -303,7 +344,7 @@ async function resetToSidebar(page) {
     // Pick a unary method and open the Performance tab in the response
     // pane. GetPortCall (SignalR) is a safe unary pick — 50 round-trips
     // fill the latency chart without mutating state.
-    await page.locator('.bowire-method-item', { hasText: 'GetPortCall' }).first().click();
+    await clickMethodItem(page, 'GetPortCall');
     await page.waitForTimeout(600);
     const perfId = page.locator('input[data-field-key="portCallId"], input[data-field-key="id"]').first();
     if (await perfId.isVisible().catch(() => false)) await perfId.fill('1');
@@ -449,14 +490,24 @@ async function resetToSidebar(page) {
         });
         await page.reload({ waitUntil: 'domcontentloaded' });
         await page.waitForSelector('#bowire-app.bowire-app-ready', { timeout: 15000 });
-        await page.waitForSelector('.bowire-method-item', { timeout: 30000 });
+        // Same DOM-attached / not-yet-visible distinction as the
+        // top-of-script wait — collapsed groups would block a
+        // visibility wait until expandAllGroups runs below.
+        await page.waitForSelector('.bowire-method-item', { state: 'attached', timeout: 30000 });
+        await expandAllGroups(page);
         await page.waitForTimeout(800);
         await shotQuickstart(page, 'ready');
 
-        // method-detail: pick a method, full pane visible
-        const m = page.locator('.bowire-method-item').first();
-        if (await m.isVisible().catch(() => false)) {
-            await m.click();
+        // method-detail: pick the first method, full pane visible.
+        // Synthetic DOM .click() bypasses the collapsed-group visibility
+        // wall the same way clickMethodItem's last-resort branch does.
+        const clicked = await page.evaluate(() => {
+            const first = document.querySelector('.bowire-method-item');
+            if (!first) return false;
+            first.click();
+            return true;
+        });
+        if (clicked) {
             await page.waitForTimeout(800);
             await shotQuickstart(page, 'method-detail');
         }
