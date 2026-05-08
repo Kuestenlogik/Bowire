@@ -74,8 +74,45 @@ internal static class BowireCli
         root.Add(BuildMcpCommand());
         root.Add(BuildPluginCommand(cfg, pluginDir));
         root.Add(BuildTestCommand(cfg));
+        root.Add(BuildImportCommand());
 
         return root;
+    }
+
+    // -------------------- import --------------------
+
+    private static Command BuildImportCommand()
+    {
+        var fileArg = new Argument<string>("file") { Description = "Path to the HAR document." };
+        var outOpt = new Option<string?>("--out", "-o")
+        {
+            Description = "Output path for the recording. Use \"-\" to stream to stdout. " +
+                          "Default: <har-basename>.bwr next to the input file."
+        };
+        var nameOpt = new Option<string?>("--name", "-n")
+        { Description = "Recording name. Defaults to the HAR creator name or \"Imported HAR\"." };
+
+        var har = new Command("har", "Convert a HAR 1.2 document into a .bwr recording.");
+        har.Add(fileArg); har.Add(outOpt); har.Add(nameOpt);
+        har.SetAction(async (pr, _) =>
+        {
+            var input = pr.GetValue(fileArg) ?? "";
+            var output = pr.GetValue(outOpt);
+            var name = pr.GetValue(nameOpt);
+            // Sensible default: drop the .bwr next to the HAR with the same
+            // basename. Stays predictable regardless of cwd.
+            if (string.IsNullOrEmpty(output))
+            {
+                var basename = Path.GetFileNameWithoutExtension(input);
+                var dir = Path.GetDirectoryName(Path.GetFullPath(input)) ?? "";
+                output = Path.Combine(dir, basename + ".bwr");
+            }
+            return await HarImporter.ImportAsync(input, output, name).ConfigureAwait(false);
+        });
+
+        var import = new Command("import", "Convert external trace formats into Bowire recordings.");
+        import.Add(har);
+        return import;
     }
 
     // -------------------- list / describe / call --------------------
