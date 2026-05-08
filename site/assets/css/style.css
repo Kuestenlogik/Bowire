@@ -1518,7 +1518,8 @@ pre > code {
     color: var(--text);
     white-space: nowrap;
 }
-.usp-protocol-badges li svg {
+.usp-protocol-badges li svg,
+.usp-protocol-badges li img {
     width: 14px;
     height: 14px;
     flex-shrink: 0;
@@ -1737,7 +1738,8 @@ pre > code {
     background: var(--surface);
     border-radius: var(--radius);
 }
-.protocol-icon svg {
+.protocol-icon svg,
+.protocol-icon img {
     width: 22px;
     height: 22px;
 }
