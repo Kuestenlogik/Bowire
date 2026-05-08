@@ -1,31 +1,59 @@
 <section class="roadmap" id="roadmap">
   <div class="container">
-    <h2 class="section-title">What&rsquo;s next</h2>
+    <h2 class="section-title">Next on course</h2>
     <p class="section-subtitle">A short look at what just landed &mdash; and what&rsquo;s on the way.</p>
 
-    <div class="roadmap-shipped">
-      <p class="roadmap-shipped-label">Recently shipped</p>
-      <ul class="roadmap-shipped-list">
-        <li>
-          <span class="roadmap-shipped-tag">v1.0.12</span>
-          Custom domain (<a href="https://bowire.io">bowire.io</a>), full release pipeline (NuGet, MSI, DEB, RPM, multi-arch container on GHCR + Docker Hub), Winget + Chocolatey publishing.
-        </li>
-        <li>
-          <span class="roadmap-shipped-tag">v0.9.x</span>
-          <code>bowire mock</code> server &mdash; replay any recording as a live endpoint. REST, gRPC (unary + streaming + bidi), WebSocket, SSE, SignalR, Socket.IO, MQTT, GraphQL subscriptions. Hot-reload, chaos injection, schema-only mode (OpenAPI / gRPC / GraphQL), stateful mode, capture-on-miss.
-        </li>
-        <li>
-          <span class="roadmap-shipped-tag">plugins</span>
-          New protocol plugins: <strong>Akka.NET</strong> (mailbox tap), <strong>OData</strong>, <strong>Socket.IO</strong>, <strong>DIS</strong> (IEEE 1278), <strong>UDP</strong>.
-        </li>
-        <li>
-          <span class="roadmap-shipped-tag">workbench</span>
-          Visual flow editor (Request / Condition / Loop / Delay / Variable nodes, branching, response chaining, import/export).
-        </li>
-      </ul>
+    <p class="roadmap-section-label">Recently shipped</p>
+    <div class="roadmap-grid">
+
+      <a class="roadmap-card roadmap-card-link roadmap-card-shipped" href="https://github.com/Kuestenlogik/Bowire/blob/main/RELEASE_NOTES.md" target="_blank" rel="noopener">
+        <div class="roadmap-number roadmap-number-shipped" aria-label="Shipped">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="5 12 10 17 19 8"/></svg>
+        </div>
+        <div class="roadmap-card-body">
+          <h3>Custom domain + full release pipeline <span class="roadmap-card-tag">v1.0.12</span></h3>
+          <p>The site moved to <a href="https://bowire.io">bowire.io</a> and the release pipeline now produces every download artefact for a tag &mdash; NuGet, MSI, DEB, RPM, multi-arch container on GHCR + Docker Hub &mdash; plus auto-publish to Winget and Chocolatey.</p>
+        </div>
+      </a>
+
+      <a class="roadmap-card roadmap-card-link roadmap-card-shipped" href="https://github.com/Kuestenlogik/Bowire/blob/main/ROADMAP.md" target="_blank" rel="noopener">
+        <div class="roadmap-number roadmap-number-shipped" aria-label="Shipped">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="5 12 10 17 19 8"/></svg>
+        </div>
+        <div class="roadmap-card-body">
+          <h3>Replay recordings as a mock server <span class="roadmap-card-tag">v0.9.x</span></h3>
+          <p><code>bowire mock</code> turns any captured recording into a live endpoint. REST, gRPC (unary + streaming + bidi), WebSocket, SSE, SignalR, Socket.IO, MQTT, GraphQL subscriptions. Hot-reload, chaos injection, schema-only mode (OpenAPI / gRPC / GraphQL), stateful cursors, capture-on-miss.</p>
+        </div>
+      </a>
+
+      <a class="roadmap-card roadmap-card-link roadmap-card-shipped" href="https://github.com/Kuestenlogik/Bowire/blob/main/ROADMAP.md" target="_blank" rel="noopener">
+        <div class="roadmap-number roadmap-number-shipped" aria-label="Shipped">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="5 12 10 17 19 8"/></svg>
+        </div>
+        <div class="roadmap-card-body">
+          <h3>New protocol plugins <span class="roadmap-card-tag">plugins</span></h3>
+          <p>Five sibling plugins joined the family: <strong>Akka.NET</strong> (mailbox tap), <strong>OData</strong>, <strong>Socket.IO</strong>, <strong>DIS</strong> (IEEE 1278), and <strong>UDP</strong>. Each ships from its own NuGet package on an independent cadence.</p>
+        </div>
+      </a>
+
+      <a class="roadmap-card roadmap-card-link roadmap-card-shipped" href="{{ '/docs/features/flows.html' | relative_url }}">
+        <div class="roadmap-number roadmap-number-shipped" aria-label="Shipped">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="5 12 10 17 19 8"/></svg>
+        </div>
+        <div class="roadmap-card-body">
+          <h3>Visual flow editor <span class="roadmap-card-tag">workbench</span></h3>
+          <p>Five node types &mdash; Request, Condition (with true/false branches), Loop, Delay, Variable &mdash; chain into a visual pipeline with response chaining via <code>${response.X}</code>, import / export as <code>.blf</code> files, and a recursive runner that walks the tree top-to-bottom with live pulse animation.</p>
+        </div>
+      </a>
+
     </div>
 
-    <p class="roadmap-next-label">Up next</p>
+    <div class="roadmap-divider" aria-hidden="true">
+      <span class="roadmap-divider-line"></span>
+      <span class="roadmap-divider-label">Next on course</span>
+      <span class="roadmap-divider-line"></span>
+    </div>
+
     <div class="roadmap-grid">
 
       <a class="roadmap-card roadmap-card-link" href="https://github.com/Kuestenlogik/Bowire/blob/main/ROADMAP.md" target="_blank" rel="noopener">

@@ -2909,23 +2909,36 @@ button.comparison-bestfor-card.active .comparison-bestfor-name {
     margin: 0 auto;
 }
 
-/* "Recently shipped" mini-list — sits above the .roadmap-grid as a
-   compact retrospective so the section reads top-to-bottom from
-   "what just landed" to "what's next". Lighter visual weight than
-   the numbered cards so the eye still treats the cards as the
-   primary call. */
-.roadmap-shipped {
+/* Section labels above the two roadmap-grids ("Recently shipped"
+   and the divider "Next on course") — same monospace eyebrow as
+   other section sub-headings. */
+.roadmap-section-label {
     max-width: 800px;
-    margin: 0 auto 36px;
-    padding: 18px 24px 20px;
-    background: var(--bg);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-lg);
+    margin: 0 auto 14px;
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--accent);
 }
-.roadmap-shipped-label,
-.roadmap-next-label {
+
+/* Divider between shipped + next — pair of horizontal lines with
+   a centred "Next on course" label so the eye registers the gear-
+   shift from retrospective to upcoming. */
+.roadmap-divider {
     max-width: 800px;
-    margin: 0 auto 10px;
+    margin: 32px auto 18px;
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    gap: 16px;
+}
+.roadmap-divider-line {
+    height: 1px;
+    background: var(--border);
+}
+.roadmap-divider-label {
     font-family: var(--font-mono);
     font-size: 0.75rem;
     font-weight: 600;
@@ -2933,51 +2946,37 @@ button.comparison-bestfor-card.active .comparison-bestfor-name {
     letter-spacing: 0.08em;
     color: var(--text-secondary);
 }
-.roadmap-shipped-label {
-    margin: 0 0 12px;
-    color: var(--accent);
+
+/* "Shipped" coin variant — same sizing as .roadmap-number, only
+   the inverted-fill becomes accent-coloured so the checkmark still
+   reads as a status badge rather than a counter. The shipped cards
+   themselves keep the same .roadmap-card layout. */
+.roadmap-number-shipped {
+    background: var(--accent);
+    color: #fff;
 }
-.roadmap-next-label {
-    margin-top: 0;
+.roadmap-number-shipped svg {
+    width: 22px;
+    height: 22px;
 }
-.roadmap-shipped-list {
-    list-style: none;
-    margin: 0;
-    padding: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-}
-.roadmap-shipped-list li {
-    font-size: 0.9375rem;
-    color: var(--text-secondary);
-    line-height: 1.55;
-    padding-left: 22px;
-    position: relative;
-}
-.roadmap-shipped-list li::before {
-    content: "✓";
-    position: absolute;
-    left: 0;
-    top: 0;
-    color: var(--accent);
-    font-weight: 700;
-}
-.roadmap-shipped-tag {
+
+/* Inline tag inside the shipped-card h3 — surfaces the version /
+   bucket label (v1.0.12, plugins, workbench) without dropping a
+   second line below the title. */
+.roadmap-card-tag {
     display: inline-block;
-    margin-right: 8px;
+    margin-left: 8px;
     padding: 1px 8px;
     border-radius: 999px;
     background: var(--bg-elevated);
     border: 1px solid var(--border);
     font-family: var(--font-mono);
-    font-size: 0.75rem;
+    font-size: 0.7rem;
     font-weight: 600;
-    color: var(--text);
-    vertical-align: 1px;
-}
-.roadmap-shipped-list code {
-    font-size: 0.85em;
+    color: var(--text-secondary);
+    text-transform: lowercase;
+    letter-spacing: 0;
+    vertical-align: 2px;
 }
 
 .roadmap-card {
