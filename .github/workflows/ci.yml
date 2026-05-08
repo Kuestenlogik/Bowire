@@ -40,7 +40,27 @@ jobs:
         run: dotnet build Kuestenlogik.Bowire.slnx -c Release --no-restore -p:Version=$VERSION
 
       - name: Test
-        run: dotnet test Kuestenlogik.Bowire.slnx -c Release --no-build -v normal
+        # XPlat Code Coverage drops one coverage.cobertura.xml per test
+        # project under artifacts/coverage/<guid>/. codecov/codecov-action
+        # globs them up directly — no merge step needed on our side.
+        run: >
+          dotnet test Kuestenlogik.Bowire.slnx -c Release --no-build -v normal
+          --collect:"XPlat Code Coverage"
+          --results-directory artifacts/coverage
+
+      - name: Upload coverage to Codecov
+        # Skip when running on a fork PR — Codecov tokenless uploads
+        # work on push events but the secret isn't injected into PRs
+        # from forks, so the upload would fail noisily for outside
+        # contributors.
+        if: ${{ !github.event.pull_request.head.repo.fork }}
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          directory: artifacts/coverage
+          files: '**/coverage.cobertura.xml'
+          flags: unittests
+          fail_ci_if_error: false
 
       - name: Pack
         run: dotnet pack Kuestenlogik.Bowire.slnx -c Release --no-build -o artifacts/packages -p:Version=$VERSION

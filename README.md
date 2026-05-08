@@ -1,6 +1,7 @@
 # Bowire
 
 [![CI](https://img.shields.io/github/actions/workflow/status/Kuestenlogik/Bowire/ci.yml?branch=main&label=CI)](https://github.com/Kuestenlogik/Bowire/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/Kuestenlogik/Bowire/branch/main/graph/badge.svg)](https://codecov.io/gh/Kuestenlogik/Bowire)
 [![NuGet](https://img.shields.io/nuget/v/Kuestenlogik.Bowire)](https://www.nuget.org/packages/Kuestenlogik.Bowire)
 [![License](https://img.shields.io/github/license/Kuestenlogik/Bowire)](https://github.com/Kuestenlogik/Bowire/blob/main/LICENSE)
 

@@ -1,0 +1,34 @@
+# Codecov configuration — keeps the coverage signal honest.
+# https://docs.codecov.com/docs/codecovyml-reference
+
+coverage:
+  status:
+    project:
+      default:
+        # Don't fail the check on small dips; we tolerate a 1 % regression
+        # before flagging. Hard floors live on individual flags below.
+        target: auto
+        threshold: 1%
+    patch:
+      default:
+        # New code on a PR should hit at least this much coverage to
+        # pass the patch check. Tolerates the no-tests-for-DTOs cases.
+        target: 70%
+        threshold: 5%
+
+comment:
+  layout: "reach, diff, flags, files"
+  behavior: default
+  require_changes: true
+
+ignore:
+  - "**/Migrations/**"
+  - "**/*.Designer.cs"
+  - "**/Generated/**"
+  - "**/obj/**"
+  - "**/bin/**"
+  - "tests/**"
+  - "samples/**"
+  - "benchmarks/**"
+  - "src/**/wwwroot/**"
+  - "scripts/**"
