@@ -113,8 +113,8 @@ dotnet test       # all tests, Docker ones included
 dotnet test --filter "Category!=Docker"   # hermetic only
 ```
 
-## Relationship to the Storm plugin
+## Relationship to the Surgewave plugin
 
-This plugin is the generic Kafka baseline — schema-registry-agnostic, serializer-agnostic, usable against any cluster. The [`Bowire.Protocol.Storm`](storm.md) plugin layers Storm-specific conventions (schema-registry URL resolution, typed payload decoders, Storm topic-naming awareness) on top for users inside the Storm ecosystem. Run either alone or install both side by side — each registers under its own protocol id (`kafka` vs `storm`).
+This plugin is the generic Kafka baseline — schema-registry-agnostic, serializer-agnostic, usable against any cluster. The [`Bowire.Protocol.Storm`](storm.md) plugin layers Surgewave-specific conventions (schema-registry URL resolution, typed payload decoders, Surgewave topic-naming awareness) on top for users inside the Surgewave ecosystem. Run either alone or install both side by side — each registers under its own protocol id (`kafka` vs `storm`).
 
-See also: [Storm](storm.md), [Authentication](../features/authentication.md), [Recording](../features/recording.md).
+See also: [Surgewave](storm.md), [Authentication](../features/authentication.md), [Recording](../features/recording.md).

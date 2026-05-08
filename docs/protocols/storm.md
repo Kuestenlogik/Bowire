@@ -1,10 +1,10 @@
 ---
-summary: 'The Storm plugin browses topics and produces / consumes messages against a Küstenlogik Storm broker over the native Storm wire or a Kafka-compatible wire on the same broker.'
+summary: 'The Surgewave plugin browses topics and produces / consumes messages against a Küstenlogik Surgewave broker over the native Surgewave wire or a Kafka-compatible wire on the same broker.'
 ---
 
-# Storm
+# Surgewave
 
-The Storm plugin browses topics and produces / consumes messages against a [Küstenlogik Storm](https://github.com/Kuestenlogik/Storm) broker. Storm's broker speaks both the native Storm wire and the Kafka wire — the plugin lets you pick which protocol it uses against the same broker, including Confluent Schema Registry decode in Kafka mode.
+The Surgewave plugin browses topics and produces / consumes messages against a [Küstenlogik Surgewave](https://github.com/Kuestenlogik/Surgewave) broker. Surgewave's broker speaks both the native Surgewave wire and the Kafka wire — the plugin lets you pick which protocol it uses against the same broker, including Confluent Schema Registry decode in Kafka mode.
 
 **Package:** `Kuestenlogik.Bowire.Protocol.Storm` (sibling repo, not bundled with the CLI)
 
@@ -39,7 +39,7 @@ In-process testing has a `storm://embedded` URL that taps the host's broker with
 storm://broker.example:9092                                            # single broker, auto-detect protocol
 storm://b1:9092,b2:9092                                                # bootstrap servers CSV
 broker.example:9094                                                    # bare host:port also accepted
-storm://broker:9092?protocol=storm                                     # force the native Storm wire
+storm://broker:9092?protocol=storm                                     # force the native Surgewave wire
 storm://broker:9092?protocol=kafka                                     # force the Kafka-compatible wire
 storm://broker:9092?protocol=kafka&schema-registry=http://sr:8081      # Kafka-mode + Confluent Schema Registry
 storm://embedded                                                       # in-process broker tap
@@ -59,7 +59,7 @@ Unknown values fall back to `auto`, so a typo never breaks discovery.
 
 ## Discovery
 
-Connects via `StormClient.Create(...).BuildAsync()` and surfaces a `Cluster` service with broker metadata. Topic enumeration on the native Storm protocol is pending an admin/metadata API on the client SDK — once that lands, topics populate the sidebar the same way the [Kafka plugin](kafka.md) already does via `IAdminClient.GetMetadata`. Until then, type the topic name into the workbench's method dropdown.
+Connects via `StormClient.Create(...).BuildAsync()` and surfaces a `Cluster` service with broker metadata. Topic enumeration on the native Surgewave protocol is pending an admin/metadata API on the client SDK — once that lands, topics populate the sidebar the same way the [Kafka plugin](kafka.md) already does via `IAdminClient.GetMetadata`. Until then, type the topic name into the workbench's method dropdown.
 
 ## Methods
 
@@ -80,7 +80,7 @@ The wire-format decoder is duplicated from [`Bowire.Protocol.Kafka`](kafka.md) (
 
 ## Security
 
-Storm reuses the same auth markers as the [Kafka plugin](kafka.md) — see [Authentication](../features/authentication.md):
+Surgewave reuses the same auth markers as the [Kafka plugin](kafka.md) — see [Authentication](../features/authentication.md):
 
 - `__bowireMtls__` for client-cert + CA bundle (PEM strings, no temp files)
 - `__bowireKafkaSasl__` for SASL/PLAIN, SCRAM-SHA-256/512, OAUTHBEARER
@@ -100,6 +100,6 @@ Payload source: `responseBinary` (base64) wins so binary payloads round-trip byt
 
 ## Relationship to the Kafka plugin
 
-Both ship side by side and register under their own protocol id (`storm` vs `kafka`). Run them together when a single environment hits both Storm and Kafka brokers; recordings stay portable between the two because the consume / produce envelopes are identical.
+Both ship side by side and register under their own protocol id (`storm` vs `kafka`). Run them together when a single environment hits both Surgewave and Kafka brokers; recordings stay portable between the two because the consume / produce envelopes are identical.
 
 See also: [Kafka](kafka.md), [Authentication](../features/authentication.md), [Recording](../features/recording.md).

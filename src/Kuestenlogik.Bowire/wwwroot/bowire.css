@@ -2787,7 +2787,7 @@ img.bowire-logo-icon {
     border-color: rgba(168, 85, 247, 0.4);
 }
 
-/* ---------- Storm broker-tap badges ---------- */
+/* ---------- Surgewave broker-tap badges ---------- */
 /* Surfaced on `storm://embedded` streams — each event kind gets
    its own colour so the list pane reads at a glance like an event
    log (green = acknowledged, blue = dispatched, red = refused,

@@ -247,7 +247,7 @@
     // isn't a tap event.
     //
     // The `event` field (produced/consumed/rejected/rebalanced) is the
-    // unambiguous discriminator — the Kafka / non-tap Storm envelopes
+    // unambiguous discriminator — the Kafka / non-tap Surgewave envelopes
     // don't carry it.
     function detectStormTapEvent(data) {
         if (!data || typeof data !== 'string') return null;

@@ -1,10 +1,10 @@
 ---
-summary: 'Bowire ships with ten first-party protocol plugins plus five sibling plugins (Storm, Kafka, DIS, UDP, Akka.NET) that install via the CLI.'
+summary: 'Bowire ships with ten first-party protocol plugins plus five sibling plugins (Surgewave, Kafka, DIS, UDP, Akka.NET) that install via the CLI.'
 ---
 
 # Protocol Guides
 
-Bowire ships with **ten first-party protocol plugins** plus **five sibling plugins** (Storm, Kafka, DIS, UDP, Akka.NET) that live in their own NuGet packages and install via `bowire plugin install`. Each implements `IBowireProtocol` and auto-registers at startup. Install only the ones you need.
+Bowire ships with **ten first-party protocol plugins** plus **five sibling plugins** (Surgewave, Kafka, DIS, UDP, Akka.NET) that live in their own NuGet packages and install via `bowire plugin install`. Each implements `IBowireProtocol` and auto-registers at startup. Install only the ones you need.
 
 ## First-party protocols
 
@@ -27,7 +27,7 @@ These ship from their own repos / NuGet packages on independent release cadences
 
 | Protocol | Package | Discovery | Call types |
 |----------|---------|-----------|------------|
-| [Storm](storm.md) | `Kuestenlogik.Bowire.Protocol.Storm` | Cluster service · pending native admin API | Consume (ServerStreaming), Produce (Unary) |
+| [Surgewave](storm.md) | `Kuestenlogik.Bowire.Protocol.Storm` | Cluster service · pending native admin API | Consume (ServerStreaming), Produce (Unary) |
 | [Kafka](kafka.md) | `Kuestenlogik.Bowire.Protocol.Kafka` | `IAdminClient.GetMetadata` | Consume (ServerStreaming), Produce (Unary) |
 | [DIS](dis.md) | `Kuestenlogik.Bowire.Protocol.Dis` | Mock-emit only (replay path) | UDP-multicast PDU bytes |
 | [UDP](udp.md) | `Kuestenlogik.Bowire.Protocol.Udp` | URL-bind any UDP endpoint | Datagram listener (multicast / broadcast / unicast) |
@@ -49,7 +49,7 @@ graph LR
     A --> I[Socket.IO]
     A --> J[OData]
     A --> K[MCP]
-    A --> M[Storm]
+    A --> M[Surgewave]
     A --> N[Kafka]
     A --> O[DIS]
     A --> P[UDP]

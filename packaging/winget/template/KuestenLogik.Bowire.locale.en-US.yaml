@@ -15,12 +15,12 @@ PackageUrl: https://github.com/Kuestenlogik/Bowire
 License: Apache-2.0
 LicenseUrl: https://github.com/Kuestenlogik/Bowire/blob/main/LICENSE
 Copyright: Copyright (c) Küstenlogik
-ShortDescription: Interactive multi-protocol API browser and CLI for .NET — gRPC, REST, GraphQL, SignalR, MCP, SSE, WebSocket, MQTT, Socket.IO, OData, Storm, Kafka, DIS, UDP.
+ShortDescription: Interactive multi-protocol API browser and CLI for .NET — gRPC, REST, GraphQL, SignalR, MCP, SSE, WebSocket, MQTT, Socket.IO, OData, Surgewave, Kafka, DIS, UDP.
 Description: |-
   Bowire is the multi-protocol API workbench for .NET. Discover and
   invoke endpoints across gRPC (with reflection + transcoding), REST
   (OpenAPI / Swagger), GraphQL, SignalR, MCP, SSE, WebSocket, MQTT,
-  Socket.IO, OData, plus sibling plugins for Küstenlogik Storm, Apache
+  Socket.IO, OData, plus sibling plugins for Küstenlogik Surgewave, Apache
   Kafka, IEEE 1278 DIS, and raw UDP. Embed it next to your ASP.NET app
   or run the standalone `bowire` CLI against any host.
 

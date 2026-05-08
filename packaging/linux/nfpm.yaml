@@ -30,7 +30,7 @@ license: Apache-2.0
 description: |
   Interactive multi-protocol API workbench and CLI for .NET.
   Discover and invoke gRPC, REST, GraphQL, SignalR, MCP, SSE,
-  WebSocket, MQTT, Socket.IO, OData, Storm, Kafka, DIS, and UDP
+  WebSocket, MQTT, Socket.IO, OData, Surgewave, Kafka, DIS, and UDP
   endpoints from one tool. Embed it next to your ASP.NET service
   or run the standalone bowire command against any host.
 

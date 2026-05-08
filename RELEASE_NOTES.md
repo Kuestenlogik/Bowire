@@ -32,7 +32,7 @@ and uses it as the GitHub Release body.
   reference apps from `Kuestenlogik.Bowire.Samples` — one per protocol plus
   the Combined showcase that runs five protocols against the same
   `HarborStore`.
-- **Marketing-site polish.** Real Storm / Apache Kafka marks on the
+- **Marketing-site polish.** Real Surgewave / Apache Kafka marks on the
   downloads page, Akka.NET card added, native-installer links wired up to
   `releases/latest/download/`, copy-button layout fixed for long package
   names without widening the cards.

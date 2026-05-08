@@ -43,7 +43,7 @@
   <text x="600" y="395" fill="#cdd0e0" font-family="Inter, system-ui, sans-serif"
         font-size="34" font-weight="600" text-anchor="middle">Multi-protocol API workbench for .NET</text>
   <text x="600" y="438" fill="#9ea3bd" font-family="Inter, system-ui, sans-serif"
-        font-size="22" font-weight="400" text-anchor="middle">gRPC · REST · GraphQL · MQTT · SignalR · WebSocket · SSE · MCP · OData · Akka.NET · Storm · Kafka</text>
+        font-size="22" font-weight="400" text-anchor="middle">gRPC · REST · GraphQL · MQTT · SignalR · WebSocket · SSE · MCP · OData · Akka.NET · Surgewave · Kafka</text>
 
   <!-- Bottom strip: install command + "by Küstenlogik" attribution. -->
   <rect x="96" y="500" width="1008" height="60" rx="14" fill="#1f1f33" stroke="#2a2a3d" stroke-width="1"/>

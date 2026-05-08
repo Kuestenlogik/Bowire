@@ -39,7 +39,7 @@ docker run --rm -p 5080:5080 \
 Open <http://localhost:5080/bowire> in a browser. Every protocol
 plugin bundled with the CLI (gRPC, REST, GraphQL, SignalR, MCP, SSE,
 WebSocket, MQTT, Socket.IO, OData) is loaded by default; sibling
-plugins (Storm, Kafka, DIS, UDP) need to be installed via the
+plugins (Surgewave, Kafka, DIS, UDP) need to be installed via the
 plugin volume mount described below.
 
 ### Plugin persistence

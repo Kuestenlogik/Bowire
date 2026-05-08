@@ -2051,7 +2051,7 @@
         return item;
     }
 
-    // One-line summary of a Storm tap event for the list preview:
+    // One-line summary of a Surgewave tap event for the list preview:
     //   produced:   'orders/p0@42 · alice · "…payload preview…"'
     //   consumed:   'orders/p0@42 → group-a, group-b'
     //   rejected:   'orders · bob · acl-deny'
