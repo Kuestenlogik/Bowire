@@ -79,6 +79,13 @@ async function resetToSidebar(page) {
         await servicesPill.click().catch(() => {});
     }
     await page.waitForTimeout(300);
+    // Re-expand any service groups that re-collapsed on the view switch
+    // — otherwise downstream `.click()` calls on method-items hit hidden
+    // elements and time out.
+    for (const g of await page.locator('.bowire-service-group.collapsed .bowire-service-group-header').all()) {
+        await g.click().catch(() => {});
+    }
+    await page.waitForTimeout(300);
 }
 
 (async () => {
@@ -105,7 +112,9 @@ async function resetToSidebar(page) {
     }, THEME);
     await page.reload({ waitUntil: 'domcontentloaded' });
     await page.waitForSelector('#bowire-app.bowire-app-ready', { timeout: 20000 });
-    await page.waitForSelector('.bowire-method-item', { timeout: 30000 });
+    // Items render inside collapsed groups, so wait for DOM attachment
+    // rather than visibility — the expand-loop below makes them visible.
+    await page.waitForSelector('.bowire-method-item', { state: 'attached', timeout: 30000 });
     // Expand every collapsed service group once.
     for (const g of await page.locator('.bowire-service-group.collapsed .bowire-service-group-header').all()) {
         await g.click().catch(() => {});
