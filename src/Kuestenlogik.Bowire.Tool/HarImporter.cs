@@ -189,7 +189,14 @@ internal static class HarImporter
     /// </summary>
     internal static (string Path, string? Host) SplitUrl(string url)
     {
-        if (Uri.TryCreate(url, UriKind.Absolute, out var abs))
+        // Restrict the absolute-URL path to web schemes. On POSIX,
+        // Uri.TryCreate("/foo/bar", UriKind.Absolute, ...) parses as
+        // a `file://` URI (Linux treats the leading slash as a real
+        // filesystem path), which would mis-route a relative HAR URL
+        // through the absolute branch and emit `file://` as the host.
+        if (Uri.TryCreate(url, UriKind.Absolute, out var abs)
+            && (abs.Scheme == Uri.UriSchemeHttp || abs.Scheme == Uri.UriSchemeHttps
+                || abs.Scheme == Uri.UriSchemeWs || abs.Scheme == Uri.UriSchemeWss))
         {
             var path = abs.PathAndQuery;
             if (string.IsNullOrEmpty(path)) path = "/";
