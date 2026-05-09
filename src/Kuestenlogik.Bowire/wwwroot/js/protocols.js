@@ -239,8 +239,8 @@
         return null;
     }
 
-    // Recognise the JSON envelope that the Bowire.Protocol.Storm plugin
-    // emits on `storm://embedded` streams — a superset of the normal
+    // Recognise the JSON envelope that the Bowire.Protocol.Surgewave plugin
+    // emits on `surgewave://embedded` streams — a superset of the normal
     // consume envelope with an `event` kind string plus broker-scoped
     // fields (principal, reason, consumers[]). Returns the decoded
     // fields used by the badge renderer, or null when the message
@@ -249,7 +249,7 @@
     // The `event` field (produced/consumed/rejected/rebalanced) is the
     // unambiguous discriminator — the Kafka / non-tap Surgewave envelopes
     // don't carry it.
-    function detectStormTapEvent(data) {
+    function detectSurgewaveTapEvent(data) {
         if (!data || typeof data !== 'string') return null;
         var trimmed = data.trim();
         if (trimmed.length === 0 || trimmed.charAt(0) !== '{') return null;

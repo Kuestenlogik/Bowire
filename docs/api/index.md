@@ -31,7 +31,7 @@ Auto-generated from XML doc-comments across the published assemblies. Use the si
 
 These ship from their own NuGet packages with independent release cadences — see the [Protocol Guides](../protocols/index.md) for install snippets.
 
-- `Kuestenlogik.Bowire.Protocol.Storm`
+- `Kuestenlogik.Bowire.Protocol.Surgewave`
 - `Kuestenlogik.Bowire.Protocol.Kafka`
 - `Kuestenlogik.Bowire.Protocol.Dis`
 - `Kuestenlogik.Bowire.Protocol.Udp`

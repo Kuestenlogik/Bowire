@@ -29,12 +29,12 @@ public class MissingPluginDetectorTests
     [Fact]
     public void Detect_SomeMissing_FlagsThemWithSuggestedPackage()
     {
-        var rec = RecordingWith("grpc", "storm", "rest");
+        var rec = RecordingWith("grpc", "surgewave", "rest");
         var missing = MissingPluginDetector.Detect(rec, ["grpc", "rest"]);
 
         var single = Assert.Single(missing);
-        Assert.Equal("storm", single.ProtocolId);
-        Assert.Equal("Kuestenlogik.Bowire.Protocol.Storm", single.SuggestedPackageId);
+        Assert.Equal("surgewave", single.ProtocolId);
+        Assert.Equal("Kuestenlogik.Bowire.Protocol.Surgewave", single.SuggestedPackageId);
     }
 
     [Fact]
@@ -69,8 +69,8 @@ public class MissingPluginDetectorTests
     [Fact]
     public void Detect_PreservesFirstOccurrenceOrder()
     {
-        var rec = RecordingWith("kafka", "storm", "rest", "kafka");
+        var rec = RecordingWith("kafka", "surgewave", "rest", "kafka");
         var missing = MissingPluginDetector.Detect(rec, []);
-        Assert.Equal(["kafka", "storm", "rest"], missing.Select(m => m.ProtocolId));
+        Assert.Equal(["kafka", "surgewave", "rest"], missing.Select(m => m.ProtocolId));
     }
 }

@@ -337,7 +337,7 @@
         </template>
       </a>
 
-      <a class="protocol-card" href="{{ '/docs/protocols/storm.html' | relative_url }}" data-feature-modal tabindex="0">
+      <a class="protocol-card" href="{{ '/docs/protocols/surgewave.html' | relative_url }}" data-feature-modal tabindex="0">
         <div class="protocol-icon">
           <!-- Official Surgewave mark — adaptive variant, theme-aware via
                prefers-color-scheme. Sourced from Kuestenlogik.Surgewave/images. -->
@@ -345,24 +345,24 @@
         </div>
         <div class="protocol-content">
           <h3>Surgewave</h3>
-          <p>Küstenlogik's Surgewave broker — native protocol via the Kuestenlogik.Surgewave.Client SDK or Kafka-compatible wire (<code>?protocol=kafka</code>). Topic browse, produce, server-streaming consume, in-process tap via <code>storm://embedded</code>.</p>
+          <p>Küstenlogik's Surgewave broker — native protocol via the Kuestenlogik.Surgewave.Client SDK or Kafka-compatible wire (<code>?protocol=kafka</code>). Topic browse, produce, server-streaming consume, in-process tap via <code>surgewave://embedded</code>.</p>
           <div class="protocol-install">
-            <code><span class="protocol-install-prompt">$</span> bowire plugin install Kuestenlogik.Bowire.Protocol.Storm</code>
-            <button class="protocol-install-copy copy-btn" data-copy="bowire plugin install Kuestenlogik.Bowire.Protocol.Storm" aria-label="Copy install command for Surgewave"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></button>
+            <code><span class="protocol-install-prompt">$</span> bowire plugin install Kuestenlogik.Bowire.Protocol.Surgewave</code>
+            <button class="protocol-install-copy copy-btn" data-copy="bowire plugin install Kuestenlogik.Bowire.Protocol.Surgewave" aria-label="Copy install command for Surgewave"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></button>
           </div>
         </div>
         <template class="feature-card-detail">
           <div class="features-block features-block-reverse">
             <div class="features-block-text">
               <h3>Surgewave</h3>
-              <p class="features-block-lead">First-class support for Küstenlogik's own broker &mdash; including the in-process <code>storm://embedded</code> tap that needs zero broker installed.</p>
+              <p class="features-block-lead">First-class support for Küstenlogik's own broker &mdash; including the in-process <code>surgewave://embedded</code> tap that needs zero broker installed.</p>
               <p>Connect with the native Kuestenlogik.Surgewave.Client SDK, or hit any Surgewave broker through its Kafka-compatible wire by appending <code>?protocol=kafka</code>. Topic discovery, produce, partitioned consume, and consumer-group state are all visible in the same UI &mdash; the embedded mode is the fastest path from "is my pipeline producing?" to a green frame in the response pane.</p>
               <ul class="features-block-capabilities">
                 <li>Topic produce (Unary)</li>
                 <li>partitioned consume (Server-streaming)</li>
                 <li>in-process tap</li>
               </ul>
-              <a class="features-block-docs-link" href="{{ '/docs/protocols/storm.html' | relative_url }}">Read the full docs &rarr;</a>
+              <a class="features-block-docs-link" href="{{ '/docs/protocols/surgewave.html' | relative_url }}">Read the full docs &rarr;</a>
             </div>
             <div class="features-block-screenshot">
               {% include themed-img.html src="/assets/images/screenshots/streaming.png" alt="Surgewave partitioned consume streaming into Bowire's frame pane" %}

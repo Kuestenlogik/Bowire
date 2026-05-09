@@ -27,7 +27,7 @@ These ship from their own repos / NuGet packages on independent release cadences
 
 | Protocol | Package | Discovery | Call types |
 |----------|---------|-----------|------------|
-| [Surgewave](storm.md) | `Kuestenlogik.Bowire.Protocol.Storm` | Cluster service · pending native admin API | Consume (ServerStreaming), Produce (Unary) |
+| [Surgewave](surgewave.md) | `Kuestenlogik.Bowire.Protocol.Surgewave` | Cluster service · pending native admin API | Consume (ServerStreaming), Produce (Unary) |
 | [Kafka](kafka.md) | `Kuestenlogik.Bowire.Protocol.Kafka` | `IAdminClient.GetMetadata` | Consume (ServerStreaming), Produce (Unary) |
 | [DIS](dis.md) | `Kuestenlogik.Bowire.Protocol.Dis` | Mock-emit only (replay path) | UDP-multicast PDU bytes |
 | [UDP](udp.md) | `Kuestenlogik.Bowire.Protocol.Udp` | URL-bind any UDP endpoint | Datagram listener (multicast / broadcast / unicast) |

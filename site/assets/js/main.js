@@ -1119,13 +1119,13 @@ var BOWIRE_PROTOCOLS = [
     // Third-party plugins — sibling repos, ship via NuGet on their own
     // release cadence. CLI installs on demand.
     {
-        id: 'storm', label: 'Surgewave',
+        id: 'surgewave', label: 'Surgewave',
         hint: 'Kafka-compatible broker, native + Kafka-wire',
-        packageId: 'Kuestenlogik.Bowire.Protocol.Storm',
-        urlPlaceholder: 'storm://broker:9092',
+        packageId: 'Kuestenlogik.Bowire.Protocol.Surgewave',
+        urlPlaceholder: 'surgewave://broker:9092',
         category: 'third-party',
         setupNote: 'Surgewave-native protocol via the Kuestenlogik.Surgewave.Client SDK. Use <code>?protocol=kafka</code> on the URL to switch to the Kafka-compat wire.',
-        docUrl: 'https://github.com/Kuestenlogik/Bowire.Protocol.Storm'
+        docUrl: 'https://github.com/Kuestenlogik/Bowire.Protocol.Surgewave'
     },
     {
         id: 'kafka', label: 'Kafka',

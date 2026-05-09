@@ -39,7 +39,7 @@ public static class PluginPackageMap
 
         // Third-party / external plugins — sibling repos. Same
         // installer pipeline, separate release cadence.
-        ["storm"]     = "Kuestenlogik.Bowire.Protocol.Storm",
+        ["surgewave"] = "Kuestenlogik.Bowire.Protocol.Surgewave",
         ["kafka"]     = "Kuestenlogik.Bowire.Protocol.Kafka",
         ["dis"]       = "Kuestenlogik.Bowire.Protocol.Dis",
         ["udp"]       = "Kuestenlogik.Bowire.Protocol.Udp",

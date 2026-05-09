@@ -63,7 +63,7 @@ container:
 docker run --rm \
     -v ~/.bowire/plugins:/home/app/.bowire/plugins \
     ghcr.io/kuestenlogik/bowire:latest \
-    plugin install Kuestenlogik.Bowire.Protocol.Storm
+    plugin install Kuestenlogik.Bowire.Protocol.Surgewave
 ```
 
 ### Recordings + environments

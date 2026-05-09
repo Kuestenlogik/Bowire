@@ -12,7 +12,7 @@ public class PluginPackageMapTests
     [InlineData("rest", "Kuestenlogik.Bowire.Protocol.Rest")]
     [InlineData("signalr", "Kuestenlogik.Bowire.Protocol.SignalR")]
     [InlineData("graphql", "Kuestenlogik.Bowire.Protocol.GraphQL")]
-    [InlineData("storm", "Kuestenlogik.Bowire.Protocol.Storm")]
+    [InlineData("surgewave", "Kuestenlogik.Bowire.Protocol.Surgewave")]
     [InlineData("kafka", "Kuestenlogik.Bowire.Protocol.Kafka")]
     [InlineData("dis", "Kuestenlogik.Bowire.Protocol.Dis")]
     [InlineData("udp", "Kuestenlogik.Bowire.Protocol.Udp")]

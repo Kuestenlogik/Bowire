@@ -45,6 +45,6 @@ Apache-2.0 licensed. Source at https://github.com/Kuestenlogik/Bowire. Distribut
 - [Bowire.Samples](https://github.com/Kuestenlogik/Bowire.Samples): runnable examples of common host configurations.
 - [Bowire.Protocol.Dis](https://github.com/Kuestenlogik/Bowire.Protocol.Dis): IEEE 1278.1 Distributed Interactive Simulation plugin.
 - [Bowire.Protocol.Udp](https://github.com/Kuestenlogik/Bowire.Protocol.Udp): generic UDP datagram inspection plugin.
-- [Bowire.Protocol.Storm](https://github.com/Kuestenlogik/Bowire.Protocol.Storm): Surgewave distribution-fabric tap stream plugin.
+- [Bowire.Protocol.Surgewave](https://github.com/Kuestenlogik/Bowire.Protocol.Surgewave): Surgewave distribution-fabric tap stream plugin.
 - [Bowire.Protocol.Kafka](https://github.com/Kuestenlogik/Bowire.Protocol.Kafka): Apache Kafka producer / consumer plugin.
 - [llms.txt](https://llmstxt.org/): about this file format.

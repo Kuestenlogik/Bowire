@@ -2788,11 +2788,11 @@ img.bowire-logo-icon {
 }
 
 /* ---------- Surgewave broker-tap badges ---------- */
-/* Surfaced on `storm://embedded` streams — each event kind gets
+/* Surfaced on `surgewave://embedded` streams — each event kind gets
    its own colour so the list pane reads at a glance like an event
    log (green = acknowledged, blue = dispatched, red = refused,
    orange = coordination event). */
-.bowire-storm-tap-badge {
+.bowire-surgewave-tap-badge {
     display: inline-block;
     padding: 1px 6px;
     margin: 0 6px;
@@ -2806,22 +2806,22 @@ img.bowire-logo-icon {
     color: #94a3b8;
     border: 1px solid rgba(148, 163, 184, 0.4);
 }
-.bowire-storm-tap-produced {
+.bowire-surgewave-tap-produced {
     background: rgba(34, 197, 94, 0.18);
     color: #4ade80;
     border-color: rgba(34, 197, 94, 0.4);
 }
-.bowire-storm-tap-consumed {
+.bowire-surgewave-tap-consumed {
     background: rgba(59, 130, 246, 0.18);
     color: #60a5fa;
     border-color: rgba(59, 130, 246, 0.4);
 }
-.bowire-storm-tap-rejected {
+.bowire-surgewave-tap-rejected {
     background: rgba(239, 68, 68, 0.18);
     color: #f87171;
     border-color: rgba(239, 68, 68, 0.4);
 }
-.bowire-storm-tap-rebalanced {
+.bowire-surgewave-tap-rebalanced {
     background: rgba(251, 146, 60, 0.18);
     color: #fdba74;
     border-color: rgba(251, 146, 60, 0.4);

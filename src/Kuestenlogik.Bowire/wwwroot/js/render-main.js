@@ -1990,7 +1990,7 @@
         var wsType = detectWebSocketFrameType(raw);
         var disPdu = detectDisPdu(raw);
         var udp = disPdu ? null : detectUdpDatagram(raw);
-        var stormTap = (disPdu || udp) ? null : detectStormTapEvent(raw);
+        var surgewaveTap = (disPdu || udp) ? null : detectSurgewaveTapEvent(raw);
         var item = el('div', {
             className: 'bowire-stream-list-item',
             dataset: { idx: String(idx) },
@@ -2006,15 +2006,15 @@
                 textContent: wsType.toUpperCase()
             }));
         }
-        if (stormTap) {
+        if (surgewaveTap) {
             item.appendChild(el('span', {
-                className: 'bowire-storm-tap-badge bowire-storm-tap-' + stormTap.event,
-                textContent: stormTap.event.toUpperCase(),
-                title: formatStormTapTooltip(stormTap)
+                className: 'bowire-surgewave-tap-badge bowire-surgewave-tap-' + surgewaveTap.event,
+                textContent: surgewaveTap.event.toUpperCase(),
+                title: formatSurgewaveTapTooltip(surgewaveTap)
             }));
             item.appendChild(el('span', {
                 className: 'bowire-stream-list-preview',
-                textContent: formatStormTapPreview(stormTap)
+                textContent: formatSurgewaveTapPreview(surgewaveTap)
             }));
         } else if (disPdu) {
             item.appendChild(el('span', {
@@ -2056,7 +2056,7 @@
     //   consumed:   'orders/p0@42 → group-a, group-b'
     //   rejected:   'orders · bob · acl-deny'
     //   rebalanced: 'orders · group-a, group-b'
-    function formatStormTapPreview(tap) {
+    function formatSurgewaveTapPreview(tap) {
         var parts = [];
         if (tap.topic) {
             var loc = tap.topic;
@@ -2081,7 +2081,7 @@
         return parts.length > 0 ? parts.join(' · ') : tap.event;
     }
 
-    function formatStormTapTooltip(tap) {
+    function formatSurgewaveTapTooltip(tap) {
         switch (tap.event) {
             case 'produced': return 'Broker accepted a produce' +
                 (tap.principal ? ' from ' + tap.principal : '');
@@ -2161,33 +2161,33 @@
 
         var disPdu = detectDisPdu(raw);
         var udp = disPdu ? null : detectUdpDatagram(raw);
-        var stormTap = (disPdu || udp) ? null : detectStormTapEvent(raw);
-        if (stormTap) {
+        var surgewaveTap = (disPdu || udp) ? null : detectSurgewaveTapEvent(raw);
+        if (surgewaveTap) {
             header.appendChild(el('span', { className: 'bowire-stream-detail-sep', textContent: '•' }));
             header.appendChild(el('span', {
-                className: 'bowire-storm-tap-badge bowire-storm-tap-' + stormTap.event,
-                textContent: stormTap.event.toUpperCase(),
-                title: formatStormTapTooltip(stormTap)
+                className: 'bowire-surgewave-tap-badge bowire-surgewave-tap-' + surgewaveTap.event,
+                textContent: surgewaveTap.event.toUpperCase(),
+                title: formatSurgewaveTapTooltip(surgewaveTap)
             }));
-            if (stormTap.topic) {
+            if (surgewaveTap.topic) {
                 header.appendChild(el('span', { className: 'bowire-stream-detail-sep', textContent: '•' }));
                 header.appendChild(el('span', {
                     className: 'bowire-stream-detail-meta',
-                    textContent: stormTap.topic + (stormTap.partition != null && stormTap.partition >= 0 ? ' · p' + stormTap.partition : '')
+                    textContent: surgewaveTap.topic + (surgewaveTap.partition != null && surgewaveTap.partition >= 0 ? ' · p' + surgewaveTap.partition : '')
                 }));
             }
-            if (stormTap.principal) {
+            if (surgewaveTap.principal) {
                 header.appendChild(el('span', { className: 'bowire-stream-detail-sep', textContent: '•' }));
                 header.appendChild(el('span', {
                     className: 'bowire-stream-detail-meta',
-                    textContent: '@' + stormTap.principal
+                    textContent: '@' + surgewaveTap.principal
                 }));
             }
-            if (stormTap.event === 'rejected' && stormTap.reason) {
+            if (surgewaveTap.event === 'rejected' && surgewaveTap.reason) {
                 header.appendChild(el('span', { className: 'bowire-stream-detail-sep', textContent: '•' }));
                 header.appendChild(el('span', {
                     className: 'bowire-stream-detail-meta',
-                    textContent: stormTap.reason
+                    textContent: surgewaveTap.reason
                 }));
             }
         }
