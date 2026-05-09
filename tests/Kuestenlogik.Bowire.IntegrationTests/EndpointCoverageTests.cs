@@ -246,4 +246,168 @@ public sealed class EndpointCoverageTests : IClassFixture<BowireTestFixture>
         var json = await resp.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
         Assert.Contains("packageId", json, StringComparison.OrdinalIgnoreCase);
     }
+
+    // ---------- BowireUploadEndpoints ----------
+
+    [Fact]
+    public async Task ProtoUpload_EmptyBody_Returns400()
+    {
+        using var content = new StringContent("", Encoding.UTF8, "text/plain");
+
+        var resp = await _client.PostAsync(
+            new Uri("/bowire/api/proto/upload", UriKind.Relative),
+            content, TestContext.Current.CancellationToken);
+
+        Assert.Equal(HttpStatusCode.BadRequest, resp.StatusCode);
+        var json = await resp.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
+        Assert.Contains("proto", json, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task ProtoUpload_ValidContent_ReturnsImportedCount()
+    {
+        // Tiny proto with one service so the parser returns >0 services.
+        const string Proto = """
+            syntax = "proto3";
+            package demo;
+            service Pinger { rpc Ping (Empty) returns (Empty); }
+            message Empty {}
+            """;
+        using var content = new StringContent(Proto, Encoding.UTF8, "text/plain");
+
+        var resp = await _client.PostAsync(
+            new Uri("/bowire/api/proto/upload", UriKind.Relative),
+            content, TestContext.Current.CancellationToken);
+
+        Assert.Equal(HttpStatusCode.OK, resp.StatusCode);
+        var json = await resp.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
+        using var doc = JsonDocument.Parse(json);
+        Assert.True(doc.RootElement.TryGetProperty("imported", out var imported));
+        Assert.True(imported.GetInt32() >= 1);
+    }
+
+    [Fact]
+    public async Task ProtoUpload_Delete_ClearsStore()
+    {
+        using var req = new HttpRequestMessage(HttpMethod.Delete,
+            new Uri("/bowire/api/proto/upload", UriKind.Relative));
+
+        var resp = await _client.SendAsync(req, TestContext.Current.CancellationToken);
+
+        Assert.Equal(HttpStatusCode.OK, resp.StatusCode);
+        var json = await resp.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
+        Assert.Contains("\"cleared\"", json, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task OpenApiUpload_EmptyBody_Returns400()
+    {
+        using var content = new StringContent("", Encoding.UTF8, "application/json");
+
+        var resp = await _client.PostAsync(
+            new Uri("/bowire/api/openapi/upload", UriKind.Relative),
+            content, TestContext.Current.CancellationToken);
+
+        Assert.Equal(HttpStatusCode.BadRequest, resp.StatusCode);
+        var json = await resp.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
+        Assert.Contains("OpenAPI", json, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task OpenApiUpload_WithName_Query_ReturnsId()
+    {
+        // Minimal OpenAPI 3 doc — body content isn't validated by the
+        // store, the REST plugin parses it lazily on first discovery.
+        const string Spec = """{"openapi":"3.0.0","info":{"title":"x","version":"1"}}""";
+        using var content = new StringContent(Spec, Encoding.UTF8, "application/json");
+
+        var resp = await _client.PostAsync(
+            new Uri("/bowire/api/openapi/upload?name=demo.json", UriKind.Relative),
+            content, TestContext.Current.CancellationToken);
+
+        Assert.Equal(HttpStatusCode.OK, resp.StatusCode);
+        var json = await resp.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
+        using var doc = JsonDocument.Parse(json);
+        Assert.True(doc.RootElement.GetProperty("uploaded").GetBoolean());
+        Assert.False(string.IsNullOrEmpty(doc.RootElement.GetProperty("id").GetString()));
+    }
+
+    [Fact]
+    public async Task OpenApiUpload_Delete_ClearsStore()
+    {
+        using var req = new HttpRequestMessage(HttpMethod.Delete,
+            new Uri("/bowire/api/openapi/upload", UriKind.Relative));
+
+        var resp = await _client.SendAsync(req, TestContext.Current.CancellationToken);
+
+        Assert.Equal(HttpStatusCode.OK, resp.StatusCode);
+    }
+
+    // ---------- BowireWorkspaceEndpoints ----------
+
+    [Fact]
+    public async Task Workspace_Get_NoFile_ReturnsEmptyDefaults()
+    {
+        // The fixture's working directory typically has no .blw — Get
+        // should respond with the empty WorkspaceFile shape rather than
+        // 404'ing or throwing.
+        var resp = await _client.GetAsync(
+            new Uri("/bowire/api/workspace", UriKind.Relative),
+            TestContext.Current.CancellationToken);
+
+        Assert.Equal(HttpStatusCode.OK, resp.StatusCode);
+        var json = await resp.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
+        using var doc = JsonDocument.Parse(json);
+        // Properties exist (camel-cased by JsonSerializer default for records)
+        Assert.True(doc.RootElement.TryGetProperty("urls", out var urls)
+            || doc.RootElement.TryGetProperty("Urls", out urls));
+        Assert.Equal(JsonValueKind.Array, urls.ValueKind);
+    }
+
+    [Fact]
+    public async Task Workspace_Put_InvalidJson_Returns400()
+    {
+        using var req = new HttpRequestMessage(HttpMethod.Put,
+            new Uri("/bowire/api/workspace", UriKind.Relative))
+        {
+            Content = new StringContent("{ broken", Encoding.UTF8, "application/json")
+        };
+
+        var resp = await _client.SendAsync(req, TestContext.Current.CancellationToken);
+
+        Assert.Equal(HttpStatusCode.BadRequest, resp.StatusCode);
+    }
+
+    // ---------- BowireEnvironmentEndpoints ----------
+
+    [Fact]
+    public async Task Environments_Get_ReturnsJsonShape()
+    {
+        var resp = await _client.GetAsync(
+            new Uri("/bowire/api/environments", UriKind.Relative),
+            TestContext.Current.CancellationToken);
+
+        Assert.Equal(HttpStatusCode.OK, resp.StatusCode);
+        var json = await resp.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
+        using var doc = JsonDocument.Parse(json);
+        // EnvironmentStore.Load contract: envelope with globals + environments.
+        Assert.True(doc.RootElement.TryGetProperty("globals", out _));
+        Assert.True(doc.RootElement.TryGetProperty("environments", out _));
+    }
+
+    [Fact]
+    public async Task Environments_Put_InvalidJson_Returns400()
+    {
+        using var req = new HttpRequestMessage(HttpMethod.Put,
+            new Uri("/bowire/api/environments", UriKind.Relative))
+        {
+            Content = new StringContent("{ broken", Encoding.UTF8, "application/json")
+        };
+
+        var resp = await _client.SendAsync(req, TestContext.Current.CancellationToken);
+
+        Assert.Equal(HttpStatusCode.BadRequest, resp.StatusCode);
+        var json = await resp.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
+        Assert.Contains("Invalid JSON", json, StringComparison.OrdinalIgnoreCase);
+    }
 }
