@@ -12,7 +12,12 @@ namespace Kuestenlogik.Bowire;
 /// </summary>
 internal static class EnvironmentStore
 {
-    private static readonly string StorePath = Path.Combine(
+    /// <summary>
+    /// On-disk store location. Settable so tests can redirect into a temp
+    /// directory without clobbering the developer's real <c>~/.bowire/</c>.
+    /// Production callers leave it at the default.
+    /// </summary>
+    internal static string StorePath { get; set; } = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
         ".bowire", "environments.json");
 
