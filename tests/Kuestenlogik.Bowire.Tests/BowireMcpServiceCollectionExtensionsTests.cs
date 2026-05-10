@@ -107,4 +107,59 @@ public class BowireMcpServiceCollectionExtensionsTests
         // Singleton — same instance both times.
         Assert.Same(first, second);
     }
+
+    [Fact]
+    public async Task AddBowireMcp_Resolves_BowireProtocolRegistry_Singleton_Instance()
+    {
+        var services = new ServiceCollection();
+
+        services.AddBowireMcp();
+        await using var sp = services.BuildServiceProvider();
+
+        // Triggers the AddSingleton factory body (logger + Discover scan).
+        var first = sp.GetRequiredService<BowireProtocolRegistry>();
+        var second = sp.GetRequiredService<BowireProtocolRegistry>();
+
+        Assert.NotNull(first);
+        Assert.Same(first, second);
+        Assert.NotNull(first.Protocols);
+    }
+
+    [Fact]
+    public async Task AddBowireMcp_ServerInfo_ConfigureCallback_Sets_Bowire_Identity()
+    {
+        var services = new ServiceCollection();
+
+        services.AddBowireMcp();
+        await using var sp = services.BuildServiceProvider();
+
+        // Resolving the SDK's IOptions<McpServerOptions> triggers the
+        // configure callback registered via AddMcpServer(o => …), which
+        // writes ServerInfo. The lookup is reflective so the test doesn't
+        // take a hard compile-time dependency on the SDK's surface — the
+        // type may live in either ModelContextProtocol or
+        // ModelContextProtocol.Core depending on the package version.
+        var optionsType = AppDomain.CurrentDomain.GetAssemblies()
+            .Where(a => a.FullName?.StartsWith("ModelContextProtocol", StringComparison.Ordinal) == true)
+            .SelectMany(a =>
+            {
+                try { return a.GetTypes(); }
+                catch (System.Reflection.ReflectionTypeLoadException ex) { return ex.Types.Where(t => t is not null)!; }
+            })
+            .FirstOrDefault(t => t!.FullName == "ModelContextProtocol.Server.McpServerOptions");
+        Assert.NotNull(optionsType);
+
+        var iopt = typeof(IOptions<>).MakeGenericType(optionsType!);
+        var resolved = sp.GetRequiredService(iopt);
+        var value = iopt.GetProperty("Value")!.GetValue(resolved);
+        Assert.NotNull(value);
+
+        var serverInfo = value!.GetType().GetProperty("ServerInfo")!.GetValue(value);
+        Assert.NotNull(serverInfo);
+
+        var name = (string?)serverInfo!.GetType().GetProperty("Name")!.GetValue(serverInfo);
+        var title = (string?)serverInfo.GetType().GetProperty("Title")!.GetValue(serverInfo);
+        Assert.Equal("bowire-mcp", name);
+        Assert.Contains("Bowire", title, StringComparison.Ordinal);
+    }
 }
