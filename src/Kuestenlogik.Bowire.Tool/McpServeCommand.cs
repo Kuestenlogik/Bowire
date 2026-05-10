@@ -24,6 +24,23 @@ namespace Kuestenlogik.Bowire.App;
 /// </summary>
 internal static class McpServeCommand
 {
+    // internal: lets tests intercept the actual stdio/http host launch
+    // without spawning a real process or binding a port. Defaults
+    // reproduce the original inline behaviour exactly.
+    internal static Func<McpServeConfig, Task<int>> StdioRunner { get; set; } = DefaultServeStdio;
+    internal static Func<McpServeConfig, Task<int>> HttpRunner { get; set; } = DefaultServeHttp;
+
+    /// <summary>
+    /// Subset of <see cref="RunAsync"/>'s typed inputs the test seams
+    /// need to assert wiring without actually launching a host. Keeps
+    /// the seam type-stable when new flags get added.
+    /// </summary>
+    internal sealed record McpServeConfig(
+        Action<BowireMcpOptions> ConfigureOptions,
+        int Port,
+        bool AllowArbitraryUrls,
+        bool NoEnvAllowlist);
+
     public static Task<int> RunAsync(string bind, int port, bool allowArbitraryUrls, bool noEnvAllowlist)
     {
         Action<BowireMcpOptions> configureOpts = o =>
@@ -32,15 +49,17 @@ internal static class McpServeCommand
             o.LoadAllowlistFromEnvironments = !noEnvAllowlist;
         };
 
+        var cfg = new McpServeConfig(configureOpts, port, allowArbitraryUrls, noEnvAllowlist);
+
         return bind switch
         {
-            "stdio" => ServeStdio(configureOpts, allowArbitraryUrls),
-            "http" => ServeHttp(configureOpts, port, allowArbitraryUrls),
+            "stdio" => StdioRunner(cfg),
+            "http" => HttpRunner(cfg),
             _ => Fail($"Unknown --bind value: {bind} (expected 'stdio' or 'http').")
         };
     }
 
-    private static async Task<int> ServeStdio(Action<BowireMcpOptions> configureOpts, bool allowArbitrary)
+    private static async Task<int> DefaultServeStdio(McpServeConfig cfg)
     {
         var builder = Host.CreateApplicationBuilder();
 
@@ -49,36 +68,36 @@ internal static class McpServeCommand
         builder.Logging.SetMinimumLevel(LogLevel.Warning);
 
         builder.Services
-            .AddBowireMcp(configureOpts)
+            .AddBowireMcp(cfg.ConfigureOptions)
             .WithStdioServerTransport()
             .WithTools<BowireMcpTools>();
 
-        if (allowArbitrary)
+        if (cfg.AllowArbitraryUrls)
             await Console.Error.WriteLineAsync("[bowire-mcp] WARNING: --allow-arbitrary-urls set; bowire.invoke / bowire.subscribe accept any URL the agent supplies.").ConfigureAwait(false);
 
         await builder.Build().RunAsync().ConfigureAwait(false);
         return 0;
     }
 
-    private static async Task<int> ServeHttp(Action<BowireMcpOptions> configureOpts, int port, bool allowArbitrary)
+    private static async Task<int> DefaultServeHttp(McpServeConfig cfg)
     {
         var builder = WebApplication.CreateBuilder();
         builder.Logging.SetMinimumLevel(LogLevel.Warning);
 
         builder.Services
-            .AddBowireMcp(configureOpts)
+            .AddBowireMcp(cfg.ConfigureOptions)
             .WithHttpTransport(o => o.Stateless = true)
             .WithTools<BowireMcpTools>();
 
         var app = builder.Build();
         app.MapMcp("/bowire/mcp");
 
-        Console.WriteLine($"  Bowire MCP - listening on http://localhost:{port}/bowire/mcp");
-        if (allowArbitrary)
+        Console.WriteLine($"  Bowire MCP - listening on http://localhost:{cfg.Port}/bowire/mcp");
+        if (cfg.AllowArbitraryUrls)
             Console.WriteLine("  WARNING: --allow-arbitrary-urls is set; URL allowlist is disabled.");
         Console.WriteLine("  Connect Claude Desktop / Cursor with the URL above; or POST JSON-RPC directly.");
 
-        await app.RunAsync($"http://localhost:{port}").ConfigureAwait(false);
+        await app.RunAsync($"http://localhost:{cfg.Port}").ConfigureAwait(false);
         return 0;
     }
 
