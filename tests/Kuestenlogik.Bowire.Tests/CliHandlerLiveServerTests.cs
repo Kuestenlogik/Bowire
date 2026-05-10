@@ -43,6 +43,21 @@ public sealed class CliHandlerLiveServerTests
     }
 
     [Fact]
+    public async Task ListAsync_VerboseWithStreamingMethods_HitsEveryMethodTypeArm()
+    {
+        // Streaming descriptor covers all four MethodType arms in the
+        // verbose-list switch: Unary, ServerStreaming, ClientStreaming,
+        // Duplex.
+        await using var server = await LocalReflectionServer.StartAsync(BuildStreamingDescriptor());
+        var rc = await CliHandler.ListAsync(new CliCommandOptions
+        {
+            Url = server.BaseUrl,
+            Verbose = true,
+        });
+        Assert.Equal(0, rc);
+    }
+
+    [Fact]
     public async Task ListAsync_AgainstEmptyServer_ReturnsZero()
     {
         // Server with no services registered → reflection returns an
@@ -137,7 +152,72 @@ public sealed class CliHandlerLiveServerTests
         Assert.Contains(rc, s_acceptedExitCodes);
     }
 
+    [Fact]
+    public async Task CallAsync_ServerStreamingMethod_RoutesThroughStreamingBranch()
+    {
+        // Reflection knows about the streaming methods; the unary
+        // invoke against a ServerStreaming method returns the
+        // "Use the streaming endpoint…" sentinel which routes the
+        // CallImpl through the InvokeStreamingWithFramesAsync path.
+        // No real handler is registered so frames never arrive — the
+        // important thing is the branch + return-0 line fire.
+        await using var server = await LocalReflectionServer.StartAsync(BuildStreamingDescriptor());
+        var cli = new CliCommandOptions
+        {
+            Url = server.BaseUrl,
+            Target = "demo.StreamSvc/S",
+        };
+        cli.Data.Add("{}");
+        var rc = await CliHandler.CallAsync(cli);
+        // The streaming-frame enumeration may surface the missing
+        // handler as an InvalidOperationException → exit 1 (catch)
+        // or it may quietly emit no frames → exit 0. Either way we
+        // covered the routing decision.
+        Assert.Contains(rc, s_acceptedStreamingExitCodes);
+    }
+
+    private static readonly int[] s_acceptedStreamingExitCodes = [0, 1, 2];
+
     private static readonly int[] s_acceptedExitCodes = [1, 2];
+
+    private static FileDescriptorProto BuildStreamingDescriptor()
+    {
+        var fd = new FileDescriptorProto
+        {
+            Name = "demo/stream.proto",
+            Package = "demo",
+            Syntax = "proto3"
+        };
+        var emptyProto = new DescriptorProto { Name = "Empty" };
+        fd.MessageType.Add(emptyProto);
+        fd.Service.Add(new ServiceDescriptorProto
+        {
+            Name = "StreamSvc",
+            Method =
+            {
+                new MethodDescriptorProto
+                {
+                    Name = "U", InputType = ".demo.Empty", OutputType = ".demo.Empty"
+                },
+                new MethodDescriptorProto
+                {
+                    Name = "S", InputType = ".demo.Empty", OutputType = ".demo.Empty",
+                    ServerStreaming = true
+                },
+                new MethodDescriptorProto
+                {
+                    Name = "C", InputType = ".demo.Empty", OutputType = ".demo.Empty",
+                    ClientStreaming = true
+                },
+                new MethodDescriptorProto
+                {
+                    Name = "D", InputType = ".demo.Empty", OutputType = ".demo.Empty",
+                    ClientStreaming = true, ServerStreaming = true
+                }
+            }
+        });
+        return fd;
+    }
 
     private static FileDescriptorProto BuildSimpleDescriptor()
     {

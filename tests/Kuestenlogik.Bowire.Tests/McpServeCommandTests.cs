@@ -7,7 +7,7 @@ using Kuestenlogik.Bowire.Mcp;
 namespace Kuestenlogik.Bowire.Tests;
 
 /// <summary>
-/// Tests the bind-value dispatch in <see cref="McpServeCommand.RunAsync"/>.
+/// Tests the bind-value dispatch in <c>McpServeCommand.RunAsync</c>.
 /// The two happy paths (stdio + http) normally launch a real host;
 /// here we swap the internal runner seams so the dispatch + options
 /// configuration can be exercised without ever binding stdin/stdout or
@@ -26,7 +26,8 @@ public sealed class McpServeCommandTests
             bind: "nonsense",
             port: 5081,
             allowArbitraryUrls: false,
-            noEnvAllowlist: false);
+            noEnvAllowlist: false,
+            ct: TestContext.Current.CancellationToken);
         Assert.Equal(2, rc);
     }
 
@@ -38,7 +39,8 @@ public sealed class McpServeCommandTests
             bind: "",
             port: 5081,
             allowArbitraryUrls: false,
-            noEnvAllowlist: false);
+            noEnvAllowlist: false,
+            ct: TestContext.Current.CancellationToken);
         Assert.Equal(2, rc);
     }
 
@@ -51,14 +53,15 @@ public sealed class McpServeCommandTests
         var httpCalls = 0;
         try
         {
-            McpServeCommand.StdioRunner = cfg => { seen = cfg; return Task.FromResult(7); };
-            McpServeCommand.HttpRunner = _ => { httpCalls++; return Task.FromResult(99); };
+            McpServeCommand.StdioRunner = (cfg, _) => { seen = cfg; return Task.FromResult(7); };
+            McpServeCommand.HttpRunner = (_, _) => { httpCalls++; return Task.FromResult(99); };
 
             var rc = await McpServeCommand.RunAsync(
                 bind: "stdio",
                 port: 5081,
                 allowArbitraryUrls: true,
-                noEnvAllowlist: true);
+                noEnvAllowlist: true,
+                ct: TestContext.Current.CancellationToken);
 
             Assert.Equal(7, rc);
             Assert.Equal(0, httpCalls);
@@ -90,14 +93,15 @@ public sealed class McpServeCommandTests
         var stdioCalls = 0;
         try
         {
-            McpServeCommand.StdioRunner = _ => { stdioCalls++; return Task.FromResult(99); };
-            McpServeCommand.HttpRunner = cfg => { seen = cfg; return Task.FromResult(13); };
+            McpServeCommand.StdioRunner = (_, _) => { stdioCalls++; return Task.FromResult(99); };
+            McpServeCommand.HttpRunner = (cfg, _) => { seen = cfg; return Task.FromResult(13); };
 
             var rc = await McpServeCommand.RunAsync(
                 bind: "http",
                 port: 6543,
                 allowArbitraryUrls: false,
-                noEnvAllowlist: false);
+                noEnvAllowlist: false,
+                ct: TestContext.Current.CancellationToken);
 
             Assert.Equal(13, rc);
             Assert.Equal(0, stdioCalls);
@@ -124,14 +128,59 @@ public sealed class McpServeCommandTests
         var prevStdio = McpServeCommand.StdioRunner;
         try
         {
-            McpServeCommand.StdioRunner = _ => Task.FromResult(42);
-            var rc = await McpServeCommand.RunAsync("stdio", 0, false, false);
+            McpServeCommand.StdioRunner = (_, _) => Task.FromResult(42);
+            var rc = await McpServeCommand.RunAsync("stdio", 0, false, false, TestContext.Current.CancellationToken);
             Assert.Equal(42, rc);
         }
         finally
         {
             McpServeCommand.StdioRunner = prevStdio;
         }
+    }
+
+    [Fact]
+    public async Task RunAsync_DefaultStdioRunner_PreCancelledTokenExitsCleanly()
+    {
+        // Drive the real DefaultServeStdio with a pre-cancelled token so
+        // it sets up the host, hits the warning line (AllowArbitraryUrls
+        // = true), then RunAsync(ct) trips the OperationCanceled catch
+        // and returns 0.
+        using var cts = new CancellationTokenSource();
+        await cts.CancelAsync();
+        var rc = await McpServeCommand.RunAsync(
+            bind: "stdio",
+            port: 0,
+            allowArbitraryUrls: true,
+            noEnvAllowlist: false,
+            ct: cts.Token);
+        Assert.Equal(0, rc);
+    }
+
+    [Fact]
+    public async Task RunAsync_DefaultHttpRunner_PreCancelledTokenExitsCleanly()
+    {
+        // DefaultServeHttp: builder.Build() + MapMcp run, then
+        // app.RunAsync wrapped in WaitAsync(ct) trips immediately with
+        // the pre-cancelled token, the catch calls StopAsync and we
+        // return 0.
+        using var cts = new CancellationTokenSource();
+        await cts.CancelAsync();
+        var rc = await McpServeCommand.RunAsync(
+            bind: "http",
+            port: GetFreePort(),
+            allowArbitraryUrls: true,
+            noEnvAllowlist: true,
+            ct: cts.Token);
+        Assert.Equal(0, rc);
+    }
+
+    private static int GetFreePort()
+    {
+        using var listener = new System.Net.Sockets.TcpListener(System.Net.IPAddress.Loopback, 0);
+        listener.Start();
+        var port = ((System.Net.IPEndPoint)listener.LocalEndpoint).Port;
+        listener.Stop();
+        return port;
     }
 }
 

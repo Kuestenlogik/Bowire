@@ -26,12 +26,13 @@ internal static class McpServeCommand
 {
     // internal: lets tests intercept the actual stdio/http host launch
     // without spawning a real process or binding a port. Defaults
-    // reproduce the original inline behaviour exactly.
-    internal static Func<McpServeConfig, Task<int>> StdioRunner { get; set; } = DefaultServeStdio;
-    internal static Func<McpServeConfig, Task<int>> HttpRunner { get; set; } = DefaultServeHttp;
+    // reproduce the original inline behaviour exactly when called with
+    // CancellationToken.None.
+    internal static Func<McpServeConfig, CancellationToken, Task<int>> StdioRunner { get; set; } = DefaultServeStdio;
+    internal static Func<McpServeConfig, CancellationToken, Task<int>> HttpRunner { get; set; } = DefaultServeHttp;
 
     /// <summary>
-    /// Subset of <see cref="RunAsync"/>'s typed inputs the test seams
+    /// Subset of the <c>RunAsync</c> typed inputs the test seams
     /// need to assert wiring without actually launching a host. Keeps
     /// the seam type-stable when new flags get added.
     /// </summary>
@@ -42,6 +43,13 @@ internal static class McpServeCommand
         bool NoEnvAllowlist);
 
     public static Task<int> RunAsync(string bind, int port, bool allowArbitraryUrls, bool noEnvAllowlist)
+        => RunAsync(bind, port, allowArbitraryUrls, noEnvAllowlist, CancellationToken.None);
+
+    // internal: tests pass a pre-cancelled token so DefaultServeStdio /
+    // DefaultServeHttp exit promptly without blocking on stdin/stdout
+    // or a Kestrel socket. Public surface is the CT-less overload above
+    // — production callers keep that.
+    internal static Task<int> RunAsync(string bind, int port, bool allowArbitraryUrls, bool noEnvAllowlist, CancellationToken ct)
     {
         Action<BowireMcpOptions> configureOpts = o =>
         {
@@ -53,13 +61,13 @@ internal static class McpServeCommand
 
         return bind switch
         {
-            "stdio" => StdioRunner(cfg),
-            "http" => HttpRunner(cfg),
+            "stdio" => StdioRunner(cfg, ct),
+            "http" => HttpRunner(cfg, ct),
             _ => Fail($"Unknown --bind value: {bind} (expected 'stdio' or 'http').")
         };
     }
 
-    private static async Task<int> DefaultServeStdio(McpServeConfig cfg)
+    private static async Task<int> DefaultServeStdio(McpServeConfig cfg, CancellationToken ct)
     {
         var builder = Host.CreateApplicationBuilder();
 
@@ -75,11 +83,15 @@ internal static class McpServeCommand
         if (cfg.AllowArbitraryUrls)
             await Console.Error.WriteLineAsync("[bowire-mcp] WARNING: --allow-arbitrary-urls set; bowire.invoke / bowire.subscribe accept any URL the agent supplies.").ConfigureAwait(false);
 
-        await builder.Build().RunAsync().ConfigureAwait(false);
+        try
+        {
+            await builder.Build().RunAsync(ct).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException) { /* graceful shutdown */ }
         return 0;
     }
 
-    private static async Task<int> DefaultServeHttp(McpServeConfig cfg)
+    private static async Task<int> DefaultServeHttp(McpServeConfig cfg, CancellationToken ct)
     {
         var builder = WebApplication.CreateBuilder();
         builder.Logging.SetMinimumLevel(LogLevel.Warning);
@@ -97,7 +109,14 @@ internal static class McpServeCommand
             Console.WriteLine("  WARNING: --allow-arbitrary-urls is set; URL allowlist is disabled.");
         Console.WriteLine("  Connect Claude Desktop / Cursor with the URL above; or POST JSON-RPC directly.");
 
-        await app.RunAsync($"http://localhost:{cfg.Port}").ConfigureAwait(false);
+        try
+        {
+            await app.RunAsync($"http://localhost:{cfg.Port}").WaitAsync(ct).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException)
+        {
+            await app.StopAsync(TimeSpan.FromSeconds(1)).ConfigureAwait(false);
+        }
         return 0;
     }
 
