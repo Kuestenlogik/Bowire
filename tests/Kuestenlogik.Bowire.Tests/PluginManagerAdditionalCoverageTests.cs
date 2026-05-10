@@ -217,6 +217,30 @@ public sealed class PluginManagerAdditionalCoverageTests : IDisposable
     }
 
     [Fact]
+    public async Task InstallFromFileAsync_DepMissingFromFeed_TriggersCleanupBranch()
+    {
+        // Root nupkg references a dep that the supplied --source local
+        // feed doesn't carry → NuGetPackageInstaller.InstallFromFileAsync
+        // throws → PluginManager.InstallFromFileAsync's catch deletes
+        // the half-written plugin dir + prints "Failed to install …" +
+        // returns 1.
+        var feed = Path.Combine(_tempDir, "feed-missing-dep");
+        Directory.CreateDirectory(feed);
+        await File.WriteAllBytesAsync(
+            Path.Combine(feed, "broken.root.1.0.0.nupkg"),
+            NuGetPackageInstallerTests_NupkgFactory.WithDep(
+                "Broken.Root", "1.0.0", "Ghost.Dep", "1.0.0"),
+            TestContext.Current.CancellationToken);
+        var nupkg = Path.Combine(feed, "broken.root.1.0.0.nupkg");
+
+        var rc = await PluginManager.InstallFromFileAsync(
+            nupkg, pluginDir: _tempDir, sources: [feed],
+            ct: TestContext.Current.CancellationToken);
+        Assert.Equal(1, rc);
+        Assert.False(Directory.Exists(Path.Combine(_tempDir, "Broken.Root")));
+    }
+
+    [Fact]
     public async Task UpdateAsync_PluginJsonOnlyHasVersionField_FallsBackThroughReadResolvedVersion()
     {
         // plugin.json missing resolvedVersion → ReadResolvedVersion
