@@ -410,4 +410,146 @@ public sealed class EndpointCoverageTests : IClassFixture<BowireTestFixture>
         var json = await resp.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
         Assert.Contains("Invalid JSON", json, StringComparison.OrdinalIgnoreCase);
     }
+
+    // ---------- BowireChannelEndpoints — happy paths via FakeChannelProtocol ----------
+    //
+    // The Fakes.FakeChannelProtocol is auto-discovered by
+    // BowireProtocolRegistry.Discover() because the IntegrationTests
+    // assembly name contains "Bowire". Its OpenChannelAsync returns an
+    // in-memory IBowireChannel that echoes every send back through the
+    // response channel and completes cleanly on close. That covers the
+    // open / send / close / SSE branches without needing a real
+    // gRPC or WebSocket listener.
+
+    private static async Task<string> OpenFakeChannelAsync(HttpClient client, CancellationToken ct)
+    {
+        var openBody = """{"protocol":"fake","service":"echo.Service","method":"Echo"}""";
+        using var openContent = new StringContent(openBody, Encoding.UTF8, "application/json");
+        var openResp = await client.PostAsync(
+            new Uri("/bowire/api/channel/open", UriKind.Relative), openContent, ct);
+        Assert.Equal(HttpStatusCode.OK, openResp.StatusCode);
+        var openJson = await openResp.Content.ReadAsStringAsync(ct);
+        using var openDoc = JsonDocument.Parse(openJson);
+        return openDoc.RootElement.GetProperty("channelId").GetString()!;
+    }
+
+    [Fact]
+    public async Task ChannelOpen_FakeProtocol_Returns200WithChannelId()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var openBody = """{"protocol":"fake","service":"echo.Service","method":"Echo"}""";
+        using var content = new StringContent(openBody, Encoding.UTF8, "application/json");
+
+        var resp = await _client.PostAsync(
+            new Uri("/bowire/api/channel/open", UriKind.Relative), content, ct);
+
+        Assert.Equal(HttpStatusCode.OK, resp.StatusCode);
+        var json = await resp.Content.ReadAsStringAsync(ct);
+        using var doc = JsonDocument.Parse(json);
+        // FakeChannel sets both streaming flags to true so the response
+        // exercises the negotiated-channel branch in the open handler.
+        Assert.False(string.IsNullOrEmpty(doc.RootElement.GetProperty("channelId").GetString()));
+        Assert.True(doc.RootElement.GetProperty("clientStreaming").GetBoolean());
+        Assert.True(doc.RootElement.GetProperty("serverStreaming").GetBoolean());
+    }
+
+    [Fact]
+    public async Task ChannelSend_OpenChannel_ReturnsSequence()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var channelId = await OpenFakeChannelAsync(_client, ct);
+
+        // Two sends — second response should report sequence == 2.
+        using var send1 = new StringContent("""{"message":"\"hello\""}""",
+            Encoding.UTF8, "application/json");
+        var resp1 = await _client.PostAsync(
+            new Uri($"/bowire/api/channel/{channelId}/send", UriKind.Relative), send1, ct);
+        Assert.Equal(HttpStatusCode.OK, resp1.StatusCode);
+
+        using var send2 = new StringContent("""{"message":"\"world\""}""",
+            Encoding.UTF8, "application/json");
+        var resp2 = await _client.PostAsync(
+            new Uri($"/bowire/api/channel/{channelId}/send", UriKind.Relative), send2, ct);
+        Assert.Equal(HttpStatusCode.OK, resp2.StatusCode);
+        var json2 = await resp2.Content.ReadAsStringAsync(ct);
+        using var doc2 = JsonDocument.Parse(json2);
+        Assert.True(doc2.RootElement.GetProperty("sent").GetBoolean());
+        Assert.Equal(2, doc2.RootElement.GetProperty("sequence").GetInt32());
+    }
+
+    [Fact]
+    public async Task ChannelClose_OpenChannel_ReturnsClosedTrue()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var channelId = await OpenFakeChannelAsync(_client, ct);
+
+        using var send = new StringContent("""{"message":"\"once\""}""",
+            Encoding.UTF8, "application/json");
+        await _client.PostAsync(
+            new Uri($"/bowire/api/channel/{channelId}/send", UriKind.Relative), send, ct);
+
+        using var closeContent = new StringContent("", Encoding.UTF8, "application/json");
+        var resp = await _client.PostAsync(
+            new Uri($"/bowire/api/channel/{channelId}/close", UriKind.Relative), closeContent, ct);
+
+        Assert.Equal(HttpStatusCode.OK, resp.StatusCode);
+        var json = await resp.Content.ReadAsStringAsync(ct);
+        using var doc = JsonDocument.Parse(json);
+        Assert.True(doc.RootElement.GetProperty("closed").GetBoolean());
+        Assert.Equal(1, doc.RootElement.GetProperty("sentCount").GetInt32());
+    }
+
+    [Fact]
+    public async Task ChannelSend_AfterClose_Returns400()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var channelId = await OpenFakeChannelAsync(_client, ct);
+
+        using var closeContent = new StringContent("", Encoding.UTF8, "application/json");
+        await _client.PostAsync(
+            new Uri($"/bowire/api/channel/{channelId}/close", UriKind.Relative), closeContent, ct);
+
+        // After close, send should hit the IsClosed branch and return 400.
+        using var send = new StringContent("""{"message":"\"late\""}""",
+            Encoding.UTF8, "application/json");
+        var resp = await _client.PostAsync(
+            new Uri($"/bowire/api/channel/{channelId}/send", UriKind.Relative), send, ct);
+
+        Assert.Equal(HttpStatusCode.BadRequest, resp.StatusCode);
+    }
+
+    [Fact]
+    public async Task ChannelResponses_AfterSendAndClose_StreamsEventsAndDone()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var channelId = await OpenFakeChannelAsync(_client, ct);
+
+        // Send + close BEFORE we connect to /responses so the SSE handler
+        // can drain the queue and emit `event: done` immediately. This
+        // makes the test deterministic — no race between SSE reader and
+        // the send/close pump.
+        using var send = new StringContent("""{"message":"\"ping\""}""",
+            Encoding.UTF8, "application/json");
+        await _client.PostAsync(
+            new Uri($"/bowire/api/channel/{channelId}/send", UriKind.Relative), send, ct);
+        using var closeContent = new StringContent("", Encoding.UTF8, "application/json");
+        await _client.PostAsync(
+            new Uri($"/bowire/api/channel/{channelId}/close", UriKind.Relative), closeContent, ct);
+
+        var resp = await _client.GetAsync(
+            new Uri($"/bowire/api/channel/{channelId}/responses", UriKind.Relative), ct);
+        Assert.Equal(HttpStatusCode.OK, resp.StatusCode);
+        Assert.Equal("text/event-stream", resp.Content.Headers.ContentType?.MediaType);
+
+        var body = await resp.Content.ReadAsStringAsync(ct);
+        // Each `data: <json>` line carries `{"index":0,"data":...,"timestampMs":...}`.
+        // The fake echoes back the input JSON wrapped in `{"echo": ...}`,
+        // which the SSE handler re-encodes as a string field — so the
+        // payload arrives as `"data":"{\"echo\":\"ping\"}"` over the wire.
+        Assert.Contains("echo", body, StringComparison.Ordinal);
+        Assert.Contains("\"index\":0", body, StringComparison.Ordinal);
+        // Channel completed → `event: done` line with sentCount/durationMs.
+        Assert.Contains("event: done", body, StringComparison.Ordinal);
+        Assert.Contains("\"sentCount\":1", body, StringComparison.Ordinal);
+    }
 }
