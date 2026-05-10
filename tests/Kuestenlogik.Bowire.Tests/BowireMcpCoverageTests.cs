@@ -499,4 +499,104 @@ public sealed class BowireMcpCoverageTests : IAsyncDisposable
             CancellationToken ct = default)
             => Task.FromResult<IBowireChannel?>(null);
     }
+
+    // ----- catch-branch closers (BowireMcpTools.cs:176 + BowireMockHandleRegistry.cs:57) -----
+
+    [Fact]
+    public async Task Subscribe_Window_Elapsed_Returns_Collected_Frames()
+    {
+        // Stream yields one frame then blocks indefinitely. With a 100 ms
+        // window the linked CTS cancels mid-await, InvokeStreamAsync throws
+        // OperationCanceledException, the Subscribe catch on line 176 swallows
+        // it, and the collected frame is returned.
+        var registry = new BowireProtocolRegistry();
+        registry.Register(new BlockingStreamProtocol("blockingstream", "Blocking"));
+        var tools = BuildTools(registry: registry,
+            options: new BowireMcpOptions
+            {
+                AllowArbitraryUrls = true,
+                LoadAllowlistFromEnvironments = false
+            });
+
+        var json = await tools.Subscribe(
+            url: "http://localhost",
+            service: "irrelevant",
+            method: "irrelevant",
+            protocol: "blockingstream",
+            durationMs: 100,
+            ct: TestContext.Current.CancellationToken);
+
+        using var doc = JsonDocument.Parse(json);
+        Assert.Equal(1, doc.RootElement.GetProperty("frameCount").GetInt32());
+        Assert.Equal("first", doc.RootElement.GetProperty("frames")[0].GetString());
+    }
+
+    [Fact]
+    public async Task DisposeAsync_Swallows_Throwing_Handle()
+    {
+        // RegisterRaw lets us inject a faulty IAsyncDisposable so the catch on
+        // line 57 of BowireMockHandleRegistry fires. The throwing entry must
+        // not break the loop — the other (well-behaved) entry has to dispose
+        // afterwards.
+        var registry = NewMockHandles();
+        // CA2000: the registry takes ownership and disposes both entries
+        // inside its own DisposeAsync — that's exactly what this test
+        // exercises.
+#pragma warning disable CA2000
+        var good = new TrackingDisposable();
+        registry.RegisterRaw(new ThrowOnDisposable());
+        registry.RegisterRaw(good);
+#pragma warning restore CA2000
+
+        await registry.DisposeAsync();
+
+        Assert.True(good.Disposed);
+    }
+
+    private sealed class BlockingStreamProtocol : IBowireProtocol
+    {
+        public BlockingStreamProtocol(string id, string name) { Id = id; Name = name; }
+        public string Id { get; }
+        public string Name { get; }
+        public string IconSvg => "<svg/>";
+
+        public Task<List<BowireServiceInfo>> DiscoverAsync(
+            string serverUrl, bool showInternalServices, CancellationToken ct = default)
+            => Task.FromResult(new List<BowireServiceInfo>());
+
+        public Task<InvokeResult> InvokeAsync(
+            string serverUrl, string service, string method,
+            List<string> jsonMessages, bool showInternalServices,
+            Dictionary<string, string>? metadata = null, CancellationToken ct = default)
+            => Task.FromResult(new InvokeResult(null, 0, "OK", []));
+
+        public async IAsyncEnumerable<string> InvokeStreamAsync(
+            string serverUrl, string service, string method,
+            List<string> jsonMessages, bool showInternalServices,
+            Dictionary<string, string>? metadata = null,
+            [EnumeratorCancellation] CancellationToken ct = default)
+        {
+            yield return "first";
+            // Block until cancelled so the linked CTS's CancelAfter fires.
+            await Task.Delay(Timeout.Infinite, ct);
+        }
+
+        public Task<IBowireChannel?> OpenChannelAsync(
+            string serverUrl, string service, string method,
+            bool showInternalServices, Dictionary<string, string>? metadata = null,
+            CancellationToken ct = default)
+            => Task.FromResult<IBowireChannel?>(null);
+    }
+
+    private sealed class ThrowOnDisposable : IAsyncDisposable
+    {
+        public ValueTask DisposeAsync()
+            => throw new InvalidOperationException("intentional dispose failure");
+    }
+
+    private sealed class TrackingDisposable : IAsyncDisposable
+    {
+        public bool Disposed { get; private set; }
+        public ValueTask DisposeAsync() { Disposed = true; return ValueTask.CompletedTask; }
+    }
 }
