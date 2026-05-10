@@ -41,12 +41,29 @@ jobs:
 
       - name: Test
         # XPlat Code Coverage drops one coverage.cobertura.xml per test
-        # project under artifacts/coverage/<guid>/. codecov/codecov-action
-        # globs them up directly — no merge step needed on our side.
+        # project under artifacts/coverage/<guid>/. We merge them in
+        # the next step before uploading — Codecov's server-side merge
+        # de-duplicates by file but doesn't union per-line hits across
+        # sessions, which under-counts lines that one project covers
+        # while another one doesn't (~6 pp gap measured on this repo).
         run: >
           dotnet test Kuestenlogik.Bowire.slnx -c Release --no-build -v normal
           --collect:"XPlat Code Coverage"
           --results-directory artifacts/coverage
+
+      - name: Merge coverage reports
+        # ReportGenerator union-merges per-line hits across all input
+        # files into one Cobertura output. Filters mirror codecov.yml's
+        # `ignore` list so the merged file already excludes obj/, bin/,
+        # wwwroot/, tests/, samples/, benchmarks/. Codecov then sees a
+        # single, authoritative session per commit.
+        run: |
+          dotnet tool install -g dotnet-reportgenerator-globaltool
+          reportgenerator \
+            -reports:'artifacts/coverage/*/coverage.cobertura.xml' \
+            -targetdir:artifacts/coverage-merged \
+            -reporttypes:Cobertura \
+            -filefilters:'-**/obj/**;-**/wwwroot/**;-**/bin/**;-tests/**;-samples/**;-benchmarks/**'
 
       - name: Upload coverage to Codecov
         # Skip when running on a fork PR — Codecov tokenless uploads
@@ -57,8 +74,7 @@ jobs:
         uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          directory: artifacts/coverage
-          files: '**/coverage.cobertura.xml'
+          files: artifacts/coverage-merged/Cobertura.xml
           flags: unittests
           fail_ci_if_error: false
 
