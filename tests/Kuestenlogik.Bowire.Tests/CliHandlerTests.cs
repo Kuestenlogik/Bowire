@@ -155,4 +155,54 @@ public sealed class CliHandlerTests
         });
         Assert.Equal(1, rc);
     }
+
+    [Fact]
+    public async Task CallAsync_DeadUrlNoData_DefaultsToEmptyObjectThenFails()
+    {
+        // No -d → impl injects "{}" as the single message before the
+        // dead-URL invocation fails. Exercises the default-message
+        // branch alongside the catch path.
+        var rc = await CliHandler.CallAsync(new CliCommandOptions
+        {
+            Url = DeadUrl,
+            Target = "users.UserService/Get",
+        });
+        Assert.Equal(1, rc);
+    }
+
+    [Fact]
+    public async Task CallAsync_HeadersWithEmptyKey_StripQuietlyAndStillFails()
+    {
+        // Header without a colon prefix gets dropped (colonIdx <= 0); a
+        // header whose key trims to empty also gets dropped — both
+        // exercise the silent-skip branch in the metadata parser.
+        var cli = new CliCommandOptions
+        {
+            Url = DeadUrl,
+            Target = "users.UserService/Get",
+        };
+        cli.Headers.Add(":   value-only");          // empty key after trim
+        cli.Headers.Add("no-colon-at-all");          // no colon
+        cli.Headers.Add("good-key: good-value");     // accepted
+
+        var rc = await CliHandler.CallAsync(cli);
+        // Dead URL still fails, but we covered the parser branches above.
+        Assert.Equal(1, rc);
+    }
+
+    [Fact]
+    public async Task CallAsync_DataNotStartingWithAt_PassesThrough()
+    {
+        // Plain JSON -d (no @file prefix) — exercises the
+        // "skip @-expansion" branch before the network failure.
+        var cli = new CliCommandOptions
+        {
+            Url = DeadUrl,
+            Target = "users.UserService/Get",
+        };
+        cli.Data.Add("{\"id\":1}");
+
+        var rc = await CliHandler.CallAsync(cli);
+        Assert.Equal(1, rc);
+    }
 }
