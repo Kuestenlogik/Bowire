@@ -29,6 +29,13 @@ internal static class BrowserUiHost
         var builder = Microsoft.AspNetCore.Builder.WebApplication.CreateBuilder(args);
         builder.WebHost.UseUrls($"http://localhost:{ui.Port}");
         builder.Services.AddResponseCompression(opts => opts.EnableForHttps = true);
+        // Run every loaded plugin's IBowireProtocolServices.ConfigureServices
+        // so prerequisites like services.AddGrpcReflection() actually land
+        // in the container. Without this, MapBowire's per-plugin
+        // MapDiscoveryEndpoints can fail with the "required services not
+        // registered" warning even though the workbench itself renders
+        // fine.
+        builder.Services.AddBowire();
 
         var app = builder.Build();
         app.UseResponseCompression();

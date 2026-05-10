@@ -49,7 +49,16 @@ internal static class BowireApiEndpoints
             // Let plugins that implement IBowireProtocolServices map their
             // discovery endpoints (e.g. gRPC Reflection). This is the Map-phase
             // counterpart to AddBowire()'s ConfigureServices calls.
-            if (protocol is IBowireProtocolServices setup)
+            //
+            // Only meaningful in Embedded mode: there, Bowire is mounted
+            // inside the customer's gRPC / SignalR / whatever host, and the
+            // plugin exposes that host's reflection / hub-list / etc. so the
+            // workbench UI can introspect it through bowire's own endpoint.
+            // In Standalone mode Bowire is the *client* — there's no host
+            // surface to reflect, so calling MapGrpcReflectionService here
+            // would just log a spurious "required services not registered"
+            // warning on a no-op endpoint.
+            if (options.Mode == BowireMode.Embedded && protocol is IBowireProtocolServices setup)
             {
                 try { setup.MapDiscoveryEndpoints(endpoints); }
                 catch (Exception ex)
