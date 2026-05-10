@@ -395,8 +395,22 @@ public sealed class BowireMcpTools
         }
     }
 
+    /// <summary>
+    /// Test-only override for the home directory the MCP tools read
+    /// <c>environments.json</c> / <c>recordings.json</c> from. Lets the
+    /// coverage tests point at a temp folder instead of the real
+    /// <c>~/.bowire/</c> — `Environment.GetFolderPath(UserProfile)` ignores
+    /// <c>USERPROFILE</c> on Windows, so without this hook a test that
+    /// crashed mid-run would leave the developer's actual config files
+    /// in a half-written state. Production callers leave it null and the
+    /// regular user-profile lookup wins.
+    /// </summary>
+    internal static string? HomeDirOverride { get; set; }
+
     private static string BowireConfigPath(string filename) =>
-        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".bowire", filename);
+        Path.Combine(
+            HomeDirOverride ?? Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
+            ".bowire", filename);
 
     private IReadOnlyList<IBowireProtocol> SelectProtocols(string? protocolId)
     {

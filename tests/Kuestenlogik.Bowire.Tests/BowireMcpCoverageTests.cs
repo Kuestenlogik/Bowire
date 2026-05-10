@@ -12,9 +12,9 @@ using Microsoft.Extensions.Options;
 namespace Kuestenlogik.Bowire.Tests;
 
 /// <summary>
-/// Serialises tests that mutate <c>~/.bowire/{environments,recordings}.json</c>
-/// — see <see cref="BowireMcpCoverageTests"/>. xUnit requires the
-/// collection-definition class to be public.
+/// Serialises tests that flip <see cref="BowireMcpTools.HomeDirOverride"/>
+/// — the override is process-global, so concurrent xUnit workers would
+/// race. xUnit requires the collection-definition class to be public.
 /// </summary>
 [CollectionDefinition(nameof(BowireConfigFixture))]
 [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1515:Consider making public types internal", Justification = "xUnit collection definition must be public.")]
@@ -28,12 +28,14 @@ public sealed class BowireConfigFixture { }
 /// these tests focus on file-system, error-branch, and lifecycle paths.
 ///
 /// <para>
-/// Tests that touch <c>~/.bowire/{environments,recordings}.json</c>
-/// are serialized via <see cref="BowireConfigFixture"/> because
-/// <see cref="Environment.GetFolderPath(Environment.SpecialFolder)"/>
-/// for <c>UserProfile</c> ignores the <c>USERPROFILE</c> env var on
-/// Windows, so each test must back up and restore the real file under
-/// the user's profile.
+/// Tests that touch <c>environments.json</c> / <c>recordings.json</c>
+/// flip the test-only <see cref="BowireMcpTools.HomeDirOverride"/> so
+/// the lookups land in a per-test temp dir instead of the real
+/// <c>~/.bowire/</c>. <see cref="BowireConfigFixture"/> serialises them
+/// because the override is a process-wide static. This avoids ever
+/// touching the developer's actual config files (a previous version of
+/// these tests backed them up in-place — risky if the run was killed
+/// mid-test).
 /// </para>
 /// </summary>
 [Collection(nameof(BowireConfigFixture))]
@@ -412,64 +414,50 @@ public sealed class BowireMcpCoverageTests : IAsyncDisposable
     // -------------------- Helpers --------------------
 
     /// <summary>
-    /// Backup-and-replace the <c>~/.bowire/{filename}</c> file with
-    /// <paramref name="newContents"/> for the duration of <paramref name="action"/>,
-    /// then restore the original. <c>Environment.GetFolderPath(UserProfile)</c>
-    /// ignores <c>USERPROFILE</c> on Windows, so this is the only way to
-    /// drive the file-present branches without refactoring production
-    /// code. Serialised by <see cref="BowireConfigFixture"/>.
+    /// Point <see cref="BowireMcpTools.HomeDirOverride"/> at a fresh temp
+    /// directory containing only <c>.bowire/{filename}</c> with
+    /// <paramref name="newContents"/>, run <paramref name="action"/>, then
+    /// drop the temp dir + clear the override. Serialised by
+    /// <see cref="BowireConfigFixture"/> because the override is process-global.
     /// </summary>
     private static void WithSwappedConfigFile(string filename, string newContents, Action action)
     {
-        var dir = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
-            ".bowire");
-        Directory.CreateDirectory(dir);
-        var path = Path.Combine(dir, filename);
-
-        byte[]? backup = File.Exists(path) ? File.ReadAllBytes(path) : null;
+        var previousOverride = BowireMcpTools.HomeDirOverride;
+        var tempHome = Path.Combine(Path.GetTempPath(), $"bowire-mcp-cfg-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(Path.Combine(tempHome, ".bowire"));
+        File.WriteAllText(Path.Combine(tempHome, ".bowire", filename), newContents);
+        BowireMcpTools.HomeDirOverride = tempHome;
         try
         {
-            File.WriteAllText(path, newContents);
             action();
         }
         finally
         {
-            if (backup is null)
-            {
-                if (File.Exists(path)) File.Delete(path);
-            }
-            else
-            {
-                File.WriteAllBytes(path, backup);
-            }
+            BowireMcpTools.HomeDirOverride = previousOverride;
+            try { Directory.Delete(tempHome, recursive: true); } catch { /* best-effort */ }
         }
     }
 
     /// <summary>
-    /// Move <c>~/.bowire/{filename}</c> aside (if present) for the duration
-    /// of <paramref name="action"/> so the file-missing branches can be
-    /// exercised regardless of the current user's <c>~/.bowire</c> state.
+    /// Same dance, but the per-test home is empty — exercises the
+    /// file-missing branch without touching the developer's real
+    /// <c>~/.bowire/</c>.
     /// </summary>
     private static void WithRemovedConfigFile(string filename, Action action)
     {
-        var dir = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
-            ".bowire");
-        var path = Path.Combine(dir, filename);
-        byte[]? backup = File.Exists(path) ? File.ReadAllBytes(path) : null;
+        _ = filename; // kept for call-site readability — the file is absent by construction
+        var previousOverride = BowireMcpTools.HomeDirOverride;
+        var tempHome = Path.Combine(Path.GetTempPath(), $"bowire-mcp-cfg-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(Path.Combine(tempHome, ".bowire"));
+        BowireMcpTools.HomeDirOverride = tempHome;
         try
         {
-            if (backup is not null) File.Delete(path);
             action();
         }
         finally
         {
-            if (backup is not null)
-            {
-                Directory.CreateDirectory(dir);
-                File.WriteAllBytes(path, backup);
-            }
+            BowireMcpTools.HomeDirOverride = previousOverride;
+            try { Directory.Delete(tempHome, recursive: true); } catch { /* best-effort */ }
         }
     }
 
