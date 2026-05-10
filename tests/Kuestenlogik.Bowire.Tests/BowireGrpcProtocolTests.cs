@@ -271,6 +271,117 @@ public sealed class ProtobufSampleEncoderTests
     }
 
     [Fact]
+    public void Encode_Enum_Field_Picks_First_Declared_Value()
+    {
+        // Covers EncodeSingleValue's FieldType.Enum branch (lines 134-137).
+        var fdProto = new FileDescriptorProto
+        {
+            Name = "enum-sample.proto",
+            Package = "demo",
+            Syntax = "proto3"
+        };
+        fdProto.EnumType.Add(new EnumDescriptorProto
+        {
+            Name = "Status",
+            Value =
+            {
+                new EnumValueDescriptorProto { Name = "OK", Number = 0 },
+                new EnumValueDescriptorProto { Name = "BAD", Number = 1 }
+            }
+        });
+        fdProto.MessageType.Add(new DescriptorProto
+        {
+            Name = "WithEnum",
+            Field =
+            {
+                new FieldDescriptorProto
+                {
+                    Name = "s", Number = 1,
+                    Type = FieldDescriptorProto.Types.Type.Enum,
+                    TypeName = ".demo.Status",
+                    Label = FieldDescriptorProto.Types.Label.Optional,
+                    JsonName = "s"
+                }
+            }
+        });
+        var fd = FileDescriptor.BuildFromByteStrings(new[] { fdProto.ToByteString() })[0];
+        var msg = fd.MessageTypes.First(m => m.Name == "WithEnum");
+
+        var bytes = ProtobufSampleEncoder.Encode(msg);
+
+        // Tag (varint, field 1) = 0x08, value = 0 (first declared enum number).
+        Assert.Equal(2, bytes.Length);
+        Assert.Equal(0x08, bytes[0]);
+        Assert.Equal(0x00, bytes[1]);
+    }
+
+    [Fact]
+    public void Encode_Map_Field_Emits_Three_Map_Entries()
+    {
+        // Covers EncodeMapField (lines 90-108) and the IsMap branch (70-71).
+        // proto3 map<string,string> desugars to a synthetic nested
+        // map_entry message — both descriptor-level pieces need to be
+        // present for FieldDescriptor.IsMap to flip true.
+        var fdProto = new FileDescriptorProto
+        {
+            Name = "map-sample.proto",
+            Package = "demo",
+            Syntax = "proto3"
+        };
+        var entry = new DescriptorProto
+        {
+            Name = "AttrsEntry",
+            Options = new MessageOptions { MapEntry = true },
+            Field =
+            {
+                new FieldDescriptorProto
+                {
+                    Name = "key", Number = 1,
+                    Type = FieldDescriptorProto.Types.Type.String,
+                    Label = FieldDescriptorProto.Types.Label.Optional,
+                    JsonName = "key"
+                },
+                new FieldDescriptorProto
+                {
+                    Name = "value", Number = 2,
+                    Type = FieldDescriptorProto.Types.Type.String,
+                    Label = FieldDescriptorProto.Types.Label.Optional,
+                    JsonName = "value"
+                }
+            }
+        };
+        var outer = new DescriptorProto
+        {
+            Name = "WithMap",
+            NestedType = { entry },
+            Field =
+            {
+                new FieldDescriptorProto
+                {
+                    Name = "attrs", Number = 1,
+                    Type = FieldDescriptorProto.Types.Type.Message,
+                    TypeName = ".demo.WithMap.AttrsEntry",
+                    Label = FieldDescriptorProto.Types.Label.Repeated,
+                    JsonName = "attrs"
+                }
+            }
+        };
+        fdProto.MessageType.Add(outer);
+
+        var fd = FileDescriptor.BuildFromByteStrings(new[] { fdProto.ToByteString() })[0];
+        var msg = fd.MessageTypes.First(m => m.Name == "WithMap");
+
+        var bytes = ProtobufSampleEncoder.Encode(msg);
+
+        // Three map entries emitted; non-empty bytes contain "sample".
+        Assert.NotEmpty(bytes);
+        var asString = System.Text.Encoding.UTF8.GetString(bytes);
+        // Three "sample" occurrences for keys + three for values = six.
+        var matches = System.Text.RegularExpressions.Regex.Matches(asString, "sample");
+        Assert.True(matches.Count >= 3);
+    }
+
+    [Fact]
     public void Encode_Nested_Message_Recurses()
     {
         const string protoFile = "nested.proto";

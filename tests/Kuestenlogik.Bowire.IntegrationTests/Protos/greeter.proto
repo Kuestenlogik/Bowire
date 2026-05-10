@@ -5,6 +5,8 @@ package test;
 service Greeter {
   rpc SayHello (HelloRequest) returns (HelloReply);
   rpc SayHelloStream (HelloRequest) returns (stream HelloReply);
+  rpc CollectHellos (stream HelloRequest) returns (HelloReply);
+  rpc ChatHellos (stream HelloRequest) returns (stream HelloReply);
 }
 
 message HelloRequest {
