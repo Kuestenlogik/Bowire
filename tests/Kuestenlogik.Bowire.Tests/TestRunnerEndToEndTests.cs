@@ -196,6 +196,69 @@ public sealed class TestRunnerEndToEndTests : IDisposable
     }
 
     private static readonly int[] s_acceptedExitCodes = [0, 1];
+
+    [Fact]
+    public async Task RunAsync_StubProtocol_NonJsonResponse_AssertionsStillRun()
+    {
+        // Service "non-json" tells the stub to return a body that
+        // JsonNode.Parse can't handle → the catch around the parse
+        // attempt (TestRunner line ~224) runs; assertions on the raw
+        // body fall through to string compare.
+        var path = Path.Combine(_tempDir, "non-json.json");
+        await File.WriteAllTextAsync(path, """
+            {
+              "name": "nj",
+              "protocol": "_test_runner_stub",
+              "serverUrl": "http://stub.local",
+              "tests": [
+                {
+                  "name": "raw",
+                  "service": "non-json",
+                  "method": "raw",
+                  "assert": [
+                    { "path": "response", "op": "contains", "expected": "not json" }
+                  ]
+                }
+              ]
+            }
+            """, TestContext.Current.CancellationToken);
+
+        var rc = await TestRunner.RunAsync(new TestCliOptions { CollectionPath = path });
+        Assert.Equal(0, rc);
+    }
+
+    [Fact]
+    public async Task RunAsync_StubProtocol_MalformedRegex_RecordsAssertionError()
+    {
+        // The "matches" operator runs Regex.IsMatch with the expected
+        // value as a pattern. A pattern with an unmatched group throws
+        // → EvaluateAssertion's catch sets rendered.Error → the
+        // PrintTestResult branch at line 457 ("error: …") runs.
+        var path = Path.Combine(_tempDir, "regex-err.json");
+        await File.WriteAllTextAsync(path, """
+            {
+              "name": "rx",
+              "protocol": "_test_runner_stub",
+              "serverUrl": "http://stub.local",
+              "tests": [
+                {
+                  "name": "bad-rx",
+                  "service": "Svc",
+                  "method": "Echo",
+                  "messages": ["{\"id\": 1}"],
+                  "assert": [
+                    { "path": "echo", "op": "matches", "expected": "(unclosed-group" }
+                  ]
+                }
+              ]
+            }
+            """, TestContext.Current.CancellationToken);
+
+        var rc = await TestRunner.RunAsync(new TestCliOptions { CollectionPath = path });
+        // Assertion failed → exit 1; the per-assertion Error message
+        // was rendered so the line we care about ran.
+        Assert.Equal(1, rc);
+    }
 }
 
 /// <summary>
@@ -229,6 +292,17 @@ internal sealed class StubBowireProtocol : IBowireProtocol
     {
         if (string.Equals(service, "throw", StringComparison.Ordinal))
             throw new InvalidOperationException("stub: invocation deliberately failed");
+
+        // Non-JSON response branch: lets the JsonNode.Parse catch in
+        // TestRunner.RunTestAsync run.
+        if (string.Equals(service, "non-json", StringComparison.Ordinal))
+        {
+            return Task.FromResult(new InvokeResult(
+                Response: "literally not json {{",
+                DurationMs: 1,
+                Status: "OK",
+                Metadata: new Dictionary<string, string>()));
+        }
 
         // Echo back the id from the first message + a couple of fixed
         // fields so tests can hit gt/contains/type/exists branches.
