@@ -82,4 +82,109 @@ public class GraphQLQueryBuilderTests
         Assert.Contains("$title: String!", operation, StringComparison.Ordinal);
         Assert.Contains("$year: Int", operation, StringComparison.Ordinal);
     }
+
+    [Fact]
+    public void Build_MalformedVariablesJson_FallsBackToEmptyObject()
+    {
+        // The caller may pass an unparseable variables payload (e.g.
+        // when the user is mid-edit). The builder should still emit a
+        // valid operation and return an empty {} variables element.
+        var method = Method("getBook", Field("id", "string", required: true));
+
+        var (operation, variables) = GraphQLQueryBuilder.Build("query", method, "{ broken");
+
+        Assert.Contains("query getBook($id: String!)", operation, StringComparison.Ordinal);
+        Assert.Equal(System.Text.Json.JsonValueKind.Object, variables.ValueKind);
+        Assert.False(variables.EnumerateObject().Any());
+    }
+
+    [Fact]
+    public void Build_WhitespaceVariables_StillEmitsValidOperation()
+    {
+        // Empty / whitespace variables JSON triggers the IsNullOrWhiteSpace
+        // branch which short-circuits to "{}".
+        var method = Method("ping");
+
+        var (operation, variables) = GraphQLQueryBuilder.Build("query", method, "");
+
+        Assert.Contains("query ping {", operation, StringComparison.Ordinal);
+        Assert.Equal(System.Text.Json.JsonValueKind.Object, variables.ValueKind);
+    }
+
+    [Theory]
+    [InlineData("int32", "Int")]
+    [InlineData("int64", "Int")]
+    [InlineData("uint32", "Int")]
+    [InlineData("uint64", "Int")]
+    [InlineData("float", "Float")]
+    [InlineData("double", "Float")]
+    [InlineData("bool", "Boolean")]
+    [InlineData("string", "String")]
+    [InlineData("custom-future", "String")]
+    public void Build_ScalarTypeMapping_EmitsExpectedGraphQLTypeName(string bowireType, string expected)
+    {
+        var method = Method("op", Field("v", bowireType));
+
+        var (operation, _) = GraphQLQueryBuilder.Build("query", method, "{}");
+
+        Assert.Contains("$v: " + expected, operation, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Build_MessageField_WithMessageType_EmitsTypeName()
+    {
+        var nested = new BowireMessageInfo("UserInput", "UserInput", []);
+        var input = new BowireFieldInfo(
+            Name: "input",
+            Number: 1,
+            Type: "message",
+            Label: "required",
+            IsMap: false,
+            IsRepeated: false,
+            MessageType: nested,
+            EnumValues: null)
+        {
+            Required = true
+        };
+        var method = new BowireMethodInfo(
+            Name: "createUser",
+            FullName: "Mutation/createUser",
+            ClientStreaming: false,
+            ServerStreaming: false,
+            InputType: new BowireMessageInfo("Variables", "Variables", [input]),
+            OutputType: new BowireMessageInfo("Result", "Result", []),
+            MethodType: "Unary");
+
+        var (operation, _) = GraphQLQueryBuilder.Build("mutation", method, "{\"input\":{}}");
+
+        Assert.Contains("$input: UserInput!", operation, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Build_MessageField_WithoutMessageType_FallsBackToJsonScalar()
+    {
+        // The fallback when MessageType is null — used when discovery
+        // couldn't resolve the input object's name.
+        var input = new BowireFieldInfo(
+            Name: "blob",
+            Number: 1,
+            Type: "message",
+            Label: "optional",
+            IsMap: false,
+            IsRepeated: false,
+            MessageType: null,
+            EnumValues: null);
+        var method = new BowireMethodInfo(
+            Name: "save",
+            FullName: "Mutation/save",
+            ClientStreaming: false,
+            ServerStreaming: false,
+            InputType: new BowireMessageInfo("Variables", "Variables", [input]),
+            OutputType: new BowireMessageInfo("Result", "Result", []),
+            MethodType: "Unary");
+
+        var (operation, _) = GraphQLQueryBuilder.Build("mutation", method, "{\"blob\":{}}");
+
+        Assert.Contains("$blob: JSON", operation, StringComparison.Ordinal);
+    }
 }
