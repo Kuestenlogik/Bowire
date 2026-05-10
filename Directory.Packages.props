@@ -24,7 +24,7 @@
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.5.1" />
     <PackageVersion Include="xunit.v3" Version="3.2.2" />
     <PackageVersion Include="xunit.runner.visualstudio" Version="3.1.5" />
-    <PackageVersion Include="coverlet.collector" Version="6.0.4" />
+    <PackageVersion Include="coverlet.collector" Version="10.0.0" />
     <!-- NuGet.Protocol: used by `bowire plugin install` to fetch
          plugin packages directly from any NuGet feed, skipping the old
          dotnet-restore-a-temp-csproj detour (so bowire no longer
@@ -44,8 +44,8 @@
          expose the workbench as an MCP server for AI agents. Two
          packages from modelcontextprotocol/csharp-sdk: the host/DI
          flavour and .AspNetCore for HTTP/SSE transport. -->
-    <PackageVersion Include="ModelContextProtocol" Version="1.2.0" />
-    <PackageVersion Include="ModelContextProtocol.AspNetCore" Version="1.2.0" />
+    <PackageVersion Include="ModelContextProtocol" Version="1.3.0" />
+    <PackageVersion Include="ModelContextProtocol.AspNetCore" Version="1.3.0" />
     <!-- System.CommandLine 2.0.7 — stable after the beta-to-stable
          API rework. Used by Kuestenlogik.Bowire.Tool to declare the CLI's
          subcommand tree (list/describe/call/mock/mcp/plugin/test) and
