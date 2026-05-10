@@ -32,3 +32,14 @@ ignore:
   - "benchmarks/**"
   - "src/**/wwwroot/**"
   - "scripts/**"
+
+parsers:
+  # Count Cobertura branch-partials (lines with `if (a || b)` where only
+  # one branch is exercised) as full hits — matches the convention every
+  # other coverage tool uses. Without this, Codecov reports a coverage
+  # number that's ~5–6 pts pessimistic vs. ReportGenerator's line-rate
+  # because the ~700 partials sit in the denominator but not the
+  # numerator. With `partials_as_hits`, Codecov shows the same number
+  # as `dotnet test --collect:"XPlat Code Coverage"` does locally.
+  cobertura:
+    partials_as_hits: true
