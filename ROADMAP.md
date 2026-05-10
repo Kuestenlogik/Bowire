@@ -2,6 +2,24 @@
 
 ## Completed
 
+### Unreleased — Coverage hardening + Surgewave brand migration (post-2026-05-06)
+- [x] **Storm → Surgewave brand migration (Phase 3)** across the Bowire main repo. Rename swept docs (`docs/protocols/storm.md` → `surgewave.md`), C# namespaces (`Kuestenlogik.Bowire.Protocol.Storm` → `…Surgewave`), JS detector (`detectStormTapEvent` → `detectSurgewaveTapEvent`), CSS classes (`bowire-storm-tap-*` → `bowire-surgewave-tap-*`), URL scheme (`storm://` → `surgewave://`), plugin slug (`["storm"]` → `["surgewave"]` in `PluginPackageMap`), package id, and repo URLs. Marketing-site Storm icon swapped to the official Surgewave mark (commit `b9ed819`). Phase 1+2 (sibling plugin repo + SDK) had landed earlier.
+- [x] **Codecov CI integration** rolled out to the main repo plus all 5 sibling-plugin repos (Akka, Surgewave, Udp, Dis, Kafka). `codecov/codecov-action@v5` wired into each test job; per-repo `CODECOV_TOKEN` secret set; org-admin granted access to the Kuestenlogik organisation in the Codecov GitHub OAuth app so all repos appear in the dashboard.
+- [x] **Sibling plugin bump** (Akka, Udp, Dis, Kafka) from `Bowire 1.0.10` → `1.0.12` baseline; tagged `v1.0.1` on each.
+- [x] **Coverage Track A — sync helper coverage** (89 new tests). WebSocket / GraphQL / MQTT helper surfaces now under unit test.
+- [x] **Coverage Track B — endpoint integration tests** (28 tests across Channel / Auth / Plugin / Upload / Workspace / Environment endpoints).
+- [x] **Coverage Track C — store internals**. `EnvironmentStore` and `RecordingStore` got an internal-settable `StorePath` so tests can drop a temp dir → 100% line coverage on both.
+- [x] **OAuth proxy refactor — `IHttpClientFactory` adoption**. The four `BowireAuthEndpoints` proxy endpoints (`oauth-token`, `oauth-code-exchange`, `oauth-refresh`, `custom-token`) used to allocate `new HttpClient { Timeout = 15s }` per request — anti-pattern under churn and a test seam-killer. Switched to a named `bowire-oauth` client registered in `AddBowire()` via `services.AddHttpClient(...)`. Primary handler routed through `BowireHttpClientFactory.CreateHandler(config, "oauth")` so `Bowire:TrustLocalhostCert` (and the per-plugin `Bowire:oauth:TrustLocalhostCert` override) covers OAuth-proxy calls against a local IdP with a self-signed cert — same gate as the protocol plugins. New `OAuthEndpointTests` fixture builds its own `WebApplication` with a `RecordingMockHandler` swapped onto the named client via `ConfigurePrimaryHttpMessageHandler`; nine tests cover happy + error paths for all four endpoints.
+- [x] **Channel-endpoint happy-path coverage** via `Fakes.FakeChannelProtocol` in the IntegrationTests assembly. `BowireProtocolRegistry.Discover()` picks it up automatically (the test assembly name contains "Bowire"). Its in-memory `FakeChannel` echoes every send through a `System.Threading.Channels.Channel<string>` and completes the queue on close — five new tests cover open / send / close / SSE-with-`event: done` without needing a real gRPC or WebSocket listener.
+- [x] **Endpoint coverage delta** after all tracks (line-rate):
+    - `BowireUploadEndpoints` 50% → 100%
+    - `BowireAuthEndpoints` 41% → 87%
+    - `BowireChannelEndpoints` 41% → 88%
+    - `BowireEnvironmentEndpoints` 60% → 88%
+    - `BowireWorkspaceEndpoints` 53% → 74%
+    - `BowireRecordingEndpoints` / `BowireDiscoveryEndpoints` already ≥88%, unchanged
+    - Remaining lower-coverage classes (`BowirePluginEndpoints` 59%, `BowireInvokeEndpoints` 67%) need external dependencies (NuGet API, `bowire` CLI for install; real HTTP/2 listener for streaming-invoke) — out of scope for in-process tests.
+
 ### v1.0.12 — Custom domain, full release pipeline, samples page (2026-05-06)
 - [x] **Custom domain `bowire.io`** live with HTTPS-enforced + auto-renewing Let's Encrypt cert. Old `kuestenlogik.github.io/Bowire/` URLs continue to work via 301 redirect. Every reference inside Bowire (NuGet `PackageProjectUrl`, MSI `ARPURLINFOABOUT`, Winget `DocumentUrl`, in-app About / landing-footer links) updated to the apex.
 - [x] **Release pipeline back online** as a tag-driven, three-job workflow (Linux artefacts + container, Windows MSI, GitHub Release). Single `v*` tag now produces:
