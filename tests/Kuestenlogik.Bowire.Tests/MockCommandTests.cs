@@ -101,6 +101,31 @@ public sealed class MockCommandTests
     }
 
     [Fact]
+    public async Task RunAsync_KnownMissingProtocol_PrintsInstallHint()
+    {
+        // Recording references "kafka" — mapped in PluginPackageMap but
+        // not loaded in this host. Without --auto-install, MockCommand
+        // calls PrintMissingPlugins which lists the suggested
+        // `bowire plugin install …` command, then returns 1.
+        var dir = Directory.CreateTempSubdirectory("bowire-mock-pmp-").FullName;
+        var rec = Path.Combine(dir, "rec.json");
+        try
+        {
+            await File.WriteAllTextAsync(rec, MakeRecordingJson("kafka"),
+                TestContext.Current.CancellationToken);
+
+            var cli = new MockCliOptions { RecordingPath = rec };
+            var rc = await MockCommand.RunAsync(cli, TestContext.Current.CancellationToken);
+
+            Assert.Equal(1, rc);
+        }
+        finally
+        {
+            try { Directory.Delete(dir, recursive: true); } catch { /* best-effort */ }
+        }
+    }
+
+    [Fact]
     public async Task RunAsync_AutoInstallWithThirdPartyProtocol_FailsFast()
     {
         // --auto-install + an unknown protocol id with no entry in

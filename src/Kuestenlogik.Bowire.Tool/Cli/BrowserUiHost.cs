@@ -17,8 +17,23 @@ namespace Kuestenlogik.Bowire.App.Cli;
 /// </summary>
 internal static class BrowserUiHost
 {
+    // internal: lets tests swap the browser-launch + ASP.NET host without
+    // spawning a real Process or binding a real Kestrel port. The
+    // defaults exactly reproduce the original inline behaviour.
+    internal static Func<string, CancellationToken, Task> OpenBrowserAsync { get; set; } = DefaultOpenBrowser;
+
+    // internal: tests substitute a TestServer-friendly runner that
+    // captures the configured port + URL list instead of binding a real
+    // socket. The default builds the live WebApplication exactly as the
+    // original inline code did.
+    internal static Func<string[], BrowserUiOptions, CancellationToken, Task<int>> HostRunner { get; set; } = DefaultHostRunner;
+
     public static async Task<int> RunAsync(string[] args, IConfiguration bootstrapConfig, string pluginDir, CancellationToken ct)
     {
+        ArgumentNullException.ThrowIfNull(args);
+        ArgumentNullException.ThrowIfNull(bootstrapConfig);
+        _ = pluginDir; // resolved via the configuration stack by BuildBrowserUiOptions
+
         var ui = BowireConfiguration.BuildBrowserUiOptions(bootstrapConfig, args);
 
         // Plugins must be loaded before MapBowire's reflection scan
@@ -26,6 +41,52 @@ internal static class BrowserUiHost
         // call is idempotent for the host's load context.
         PluginManager.LoadPlugins(ui.PluginDir);
 
+        var noBrowser = ui.NoBrowser
+            || Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER") == "true"
+            || Environment.GetEnvironmentVariable("CI") is not null
+            || !Environment.UserInteractive;
+
+        Console.WriteLine();
+        Console.WriteLine($"  Bowire is running at:  http://localhost:{ui.Port}/");
+        if (ui.EnableMcpAdapter)
+            Console.WriteLine($"  MCP adapter (opt-in):   http://localhost:{ui.Port}/mcp");
+        foreach (var u in ui.ServerUrls)
+            Console.WriteLine($"  Connected to:           {u}");
+        Console.WriteLine();
+        Console.WriteLine("  Press Ctrl+C to stop.");
+        Console.WriteLine();
+
+        if (!noBrowser)
+        {
+            var browserUrl = $"http://localhost:{ui.Port}/";
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    await OpenBrowserAsync(browserUrl, ct).ConfigureAwait(false);
+                }
+                catch
+                {
+                    // Headless / CI / browser unavailable — silently swallow.
+                }
+            }, ct);
+        }
+
+        return await HostRunner(args, ui, ct).ConfigureAwait(false);
+    }
+
+    private static async Task DefaultOpenBrowser(string url, CancellationToken ct)
+    {
+        await Task.Delay(500, ct).ConfigureAwait(false);
+        System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+        {
+            FileName = url,
+            UseShellExecute = true
+        });
+    }
+
+    private static async Task<int> DefaultHostRunner(string[] args, BrowserUiOptions ui, CancellationToken ct)
+    {
         var builder = Microsoft.AspNetCore.Builder.WebApplication.CreateBuilder(args);
         builder.WebHost.UseUrls($"http://localhost:{ui.Port}");
         builder.Services.AddResponseCompression(opts => opts.EnableForHttps = true);
@@ -68,41 +129,6 @@ internal static class BrowserUiHost
             // Standalone mounts at "/" — pass "" so the MCP adapter lands at `/mcp`,
             // not `/bowire/mcp`.
             bowire.WithMcpAdapter(mcpServerUrl, prefix: string.Empty);
-        }
-
-        var noBrowser = ui.NoBrowser
-            || Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER") == "true"
-            || Environment.GetEnvironmentVariable("CI") is not null
-            || !Environment.UserInteractive;
-
-        Console.WriteLine();
-        Console.WriteLine($"  Bowire is running at:  http://localhost:{ui.Port}/");
-        if (ui.EnableMcpAdapter)
-            Console.WriteLine($"  MCP adapter (opt-in):   http://localhost:{ui.Port}/mcp");
-        foreach (var u in ui.ServerUrls)
-            Console.WriteLine($"  Connected to:           {u}");
-        Console.WriteLine();
-        Console.WriteLine("  Press Ctrl+C to stop.");
-        Console.WriteLine();
-
-        if (!noBrowser)
-        {
-            _ = Task.Run(async () =>
-            {
-                await Task.Delay(500, ct).ConfigureAwait(false);
-                try
-                {
-                    System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
-                    {
-                        FileName = $"http://localhost:{ui.Port}/",
-                        UseShellExecute = true
-                    });
-                }
-                catch
-                {
-                    // Headless / CI / browser unavailable — silently swallow.
-                }
-            }, ct);
         }
 
         await app.RunAsync(ct).ConfigureAwait(false);
