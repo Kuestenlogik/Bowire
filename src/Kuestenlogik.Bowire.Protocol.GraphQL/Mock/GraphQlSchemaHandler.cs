@@ -308,7 +308,11 @@ public sealed class GraphQlSchemaHandler
     // Strip the NonNullType / ListType wrappers off a GraphQL type
     // reference, returning the underlying named type + whether it was
     // wrapped in a list at any level.
-    private static (string NamedType, bool IsList) FlattenType(GraphQLType type)
+    // internal (not private) so the test suite can hand-craft inputs that
+    // hit the defensive default-arm — the SDL parser only ever emits
+    // NamedType / ListType / NonNullType for valid input, so the fallback
+    // is otherwise unreachable.
+    internal static (string NamedType, bool IsList) FlattenType(GraphQLType? type)
     {
         var isList = false;
         var current = type;

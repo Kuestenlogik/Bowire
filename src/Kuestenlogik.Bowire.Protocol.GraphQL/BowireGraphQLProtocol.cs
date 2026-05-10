@@ -45,6 +45,15 @@ public sealed class BowireGraphQLProtocol : IBowireProtocol
 
     private static readonly string[] s_graphqlTransportWsSubProtocols = ["graphql-transport-ws"];
 
+    // Test-only override for the protocol registry used by the
+    // subscription dispatch in InvokeStreamAsync. Production callers leave
+    // it null and the regular global discovery scan runs; tests can hand in
+    // a curated registry (e.g. one without the WebSocket plugin) to drive
+    // the "WS plugin not loaded" error envelope and the
+    // graphql-transport-ws frame-shape fallbacks without orchestrating an
+    // assembly-discovery wobble.
+    internal static Func<BowireProtocolRegistry>? RegistryFactory { get; set; }
+
     public string Name => "GraphQL";
     public string Id => "graphql";
 
@@ -157,7 +166,7 @@ public sealed class BowireGraphQLProtocol : IBowireProtocol
         // Default ordering: WebSocket first (graphql-transport-ws is the
         // canonical modern transport), then SSE. Forced preferences skip
         // straight to one transport.
-        var registry = BowireProtocolRegistry.Discover();
+        var registry = RegistryFactory?.Invoke() ?? BowireProtocolRegistry.Discover();
         var wsChannel = registry.FindWebSocketChannel();
 
         if (transportPreference == "sse" || (transportPreference is null && wsChannel is null))

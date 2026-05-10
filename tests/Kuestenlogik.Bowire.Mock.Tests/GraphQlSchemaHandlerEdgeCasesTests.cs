@@ -269,4 +269,17 @@ public sealed class GraphQlSchemaHandlerEdgeCasesTests : IDisposable
         var ms = (MemoryStream)ctx.Response.Body;
         return Encoding.UTF8.GetString(ms.ToArray());
     }
+
+    [Fact]
+    public void FlattenType_Null_Falls_Back_To_String()
+    {
+        // The SDL parser only emits NamedType / ListType / NonNullType, so
+        // the default arm at the end of FlattenType is genuinely defensive.
+        // Drive it with null — the switch's positive patterns all miss and
+        // execution reaches the fallback.
+        var (named, isList) = GraphQlSchemaHandler.FlattenType(null);
+
+        Assert.Equal("String", named);
+        Assert.False(isList);
+    }
 }
