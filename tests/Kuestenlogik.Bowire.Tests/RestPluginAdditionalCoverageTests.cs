@@ -423,10 +423,12 @@ public sealed class RestInvokerUnitExtensionTests
         { HttpMethod = "GET", HttpPath = "/x" };
 
         using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(5) };
-        // Relative base URL — Uri.TryCreate(absolute) fails and the invoker
-        // emits the "Could not build request URL" error path.
+        // Space in the authority — Uri.TryCreate(absolute) fails on every
+        // OS and trips the "Could not build request URL" branch. A relative
+        // path here works on Windows but parses as `file://...` on Linux,
+        // which then reaches HttpClient and throws.
         var result = await RestInvoker.InvokeAsync(
-            http, "/relative-only", method,
+            http, "http:// invalid host", method,
             ["{}"], null, TestContext.Current.CancellationToken);
 
         Assert.Equal("Error", result.Status);
