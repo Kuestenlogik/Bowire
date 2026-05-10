@@ -323,5 +323,42 @@ public sealed class PluginManagerTests : IDisposable
         Assert.NotNull(emitters);
     }
 
+    [Fact]
+    public void Inspect_StubPluginNoDlls_ReturnsZero()
+    {
+        // Inspect on a real subdirectory with a plugin.json + zero DLLs
+        // exercises the metadata read, ALC creation, and the "no Bowire
+        // contracts found" diagnostic without needing a real plugin
+        // assembly. We don't redirect Console.Out — that's process-wide
+        // and races with parallel tests in other classes.
+        var pluginSub = Path.Combine(_tempDir, "stub-inspect");
+        Directory.CreateDirectory(pluginSub);
+        File.WriteAllText(Path.Combine(pluginSub, "plugin.json"),
+            """
+            {
+              "packageId": "stub-inspect",
+              "version": "0.1.0",
+              "resolvedVersion": "0.1.0",
+              "installedAt": "2026-01-01T00:00:00Z",
+              "sources": ["https://api.nuget.org/v3/index.json"],
+              "files": []
+            }
+            """);
+
+        var rc = PluginManager.Inspect("stub-inspect", _tempDir);
+        Assert.Equal(0, rc);
+    }
+
+    [Fact]
+    public void EnumeratePluginServices_NoPluginsLoaded_ReturnsEmpty()
+    {
+        // No LoadPlugins() call before this test → s_pluginContexts may be
+        // non-empty from prior tests, but the contract type is private to
+        // this file so nothing in any plugin ALC implements it.
+        var hits = PluginManager.EnumeratePluginServices<DummyContract>();
+        Assert.NotNull(hits);
+        Assert.Empty(hits);
+    }
+
     private sealed class DummyContract { /* contract probe — never instantiated */ }
 }

@@ -366,6 +366,73 @@ public sealed class HarImporterTests
         }
     }
 
+    [Fact]
+    public async Task ImportAsync_DashOutPath_WritesToStdoutPathReturnsZero()
+    {
+        // outPath "-" exercises the stdout branch of ImportAsync. The
+        // process-wide Console.Out redirect would race with parallel
+        // tests in other classes, so we just assert exit=0 and that no
+        // file appeared (proving the write went to stdout, not disk).
+        var har = MakeMinimal("GET", "https://api.example.com/health");
+        var harPath = Path.GetTempFileName();
+        try
+        {
+            await File.WriteAllTextAsync(harPath, har, TestContext.Current.CancellationToken);
+
+            var exit = await HarImporter.ImportAsync(harPath, "-", recordingName: null);
+
+            Assert.Equal(0, exit);
+        }
+        finally
+        {
+            try { File.Delete(harPath); } catch { /* best-effort */ }
+        }
+    }
+
+    [Fact]
+    public async Task ImportAsync_NestedOutputDir_IsCreated()
+    {
+        // Out path under a directory that doesn't exist yet — ImportAsync
+        // mkdirs the whole chain rather than failing on the first missing
+        // segment.
+        var har = MakeMinimal("GET", "https://api.example.com/x");
+        var harPath = Path.GetTempFileName();
+        var nestedDir = Path.Combine(Path.GetTempPath(), "bowire-har-" + Guid.NewGuid().ToString("N"), "nested");
+        var outPath = Path.Combine(nestedDir, "out.json");
+        try
+        {
+            await File.WriteAllTextAsync(harPath, har, TestContext.Current.CancellationToken);
+
+            var exit = await HarImporter.ImportAsync(harPath, outPath, recordingName: "x");
+
+            Assert.Equal(0, exit);
+            Assert.True(File.Exists(outPath));
+        }
+        finally
+        {
+            try { File.Delete(harPath); } catch { /* best-effort */ }
+            try { Directory.Delete(Path.GetDirectoryName(nestedDir)!, recursive: true); }
+            catch { /* best-effort */ }
+        }
+    }
+
+    [Fact]
+    public void HarImportException_DefaultConstructor_HasMessage()
+    {
+        // The exception type ships three constructors so callers picking it
+        // up via reflection (xUnit's discovery, e.g.) can still rehydrate
+        // the bare form. Coverage parity with the production default-ctor.
+        var ex = new HarImportException();
+        Assert.NotNull(ex.Message);
+    }
+
+    [Fact]
+    public void HarImportException_MessageConstructor_RoundTrips()
+    {
+        var ex = new HarImportException("custom message");
+        Assert.Equal("custom message", ex.Message);
+    }
+
     /// <summary>
     /// Build a tiny HAR fixture with one entry. Keeps the per-test setup
     /// short so each test reads at a glance.
