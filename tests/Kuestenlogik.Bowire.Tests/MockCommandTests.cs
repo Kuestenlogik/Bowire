@@ -124,6 +124,96 @@ public sealed class MockCommandTests
         }
     }
 
+    [Fact]
+    public async Task RunAsync_RecordingFileMissing_ReturnsErrorExit()
+    {
+        // Recording path is set but the file doesn't exist on disk →
+        // the loader throws on Load → catch path returns 1.
+        var dir = Directory.CreateTempSubdirectory("bowire-mock-").FullName;
+        try
+        {
+            var cli = new MockCliOptions
+            {
+                RecordingPath = Path.Combine(dir, "absent.bwr"),
+            };
+            var rc = await MockCommand.RunAsync(cli, TestContext.Current.CancellationToken);
+            Assert.Equal(1, rc);
+        }
+        finally
+        {
+            try { Directory.Delete(dir, recursive: true); } catch { /* best-effort */ }
+        }
+    }
+
+    [Fact]
+    public async Task RunAsync_RecordingMalformedJson_ReturnsErrorExit()
+    {
+        // Recording exists but is not valid JSON → load throws → catch
+        // path returns 1.
+        var dir = Directory.CreateTempSubdirectory("bowire-mock-").FullName;
+        var rec = Path.Combine(dir, "broken.bwr");
+        try
+        {
+            await File.WriteAllTextAsync(rec, "{ not json", TestContext.Current.CancellationToken);
+            var cli = new MockCliOptions { RecordingPath = rec };
+            var rc = await MockCommand.RunAsync(cli, TestContext.Current.CancellationToken);
+            Assert.Equal(1, rc);
+        }
+        finally
+        {
+            try { Directory.Delete(dir, recursive: true); } catch { /* best-effort */ }
+        }
+    }
+
+    [Fact]
+    public async Task RunAsync_SchemaPathMissing_ReturnsErrorExit()
+    {
+        // Schema file pointed at by --schema doesn't exist → MockServer
+        // bubbles the IO error up; exit 1.
+        var dir = Directory.CreateTempSubdirectory("bowire-mock-").FullName;
+        try
+        {
+            var cli = new MockCliOptions
+            {
+                SchemaPath = Path.Combine(dir, "missing-openapi.yml"),
+            };
+            var rc = await MockCommand.RunAsync(cli, TestContext.Current.CancellationToken);
+            Assert.Equal(1, rc);
+        }
+        finally
+        {
+            try { Directory.Delete(dir, recursive: true); } catch { /* best-effort */ }
+        }
+    }
+
+    private static readonly int[] s_acceptedExitCodes = [0, 1];
+
+    [Fact]
+    public async Task RunAsync_PreCancelledToken_DoesNotPropagateException()
+    {
+        // Token already cancelled → MockServer.StartAsync throws
+        // OperationCanceledException → MockCommand swallows it and
+        // returns 0 (graceful Ctrl+C path), or surfaces the IO error
+        // before the cancel hits. Either way we want the call to
+        // return cleanly, no exception escaping.
+        var dir = Directory.CreateTempSubdirectory("bowire-mock-").FullName;
+        try
+        {
+            var cli = new MockCliOptions
+            {
+                SchemaPath = Path.Combine(dir, "anything.yml"),
+            };
+            using var cts = new CancellationTokenSource();
+            await cts.CancelAsync();
+            var rc = await MockCommand.RunAsync(cli, cts.Token);
+            Assert.Contains(rc, s_acceptedExitCodes);
+        }
+        finally
+        {
+            try { Directory.Delete(dir, recursive: true); } catch { /* best-effort */ }
+        }
+    }
+
     private static string MakeRecordingJson(string protocolId) => $$"""
         {
           "id": "rec_test",

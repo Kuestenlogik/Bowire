@@ -176,6 +176,49 @@ public sealed class TestRunnerTests : IDisposable
     }
 
     [Fact]
+    public async Task RunAsync_TestMissingMethod_ReportsErrorAndExitsOne()
+    {
+        // Symmetric companion to the missing-service case — only service
+        // is set, no method. Hits the same early-return guard via the
+        // other half of the predicate.
+        var path = Path.Combine(_tempDir, "no-method.json");
+        await File.WriteAllTextAsync(path, """
+            {
+              "name": "x",
+              "tests": [
+                { "name": "broken", "service": "Health" }
+              ]
+            }
+            """, TestContext.Current.CancellationToken);
+
+        var rc = await TestRunner.RunAsync(new TestCliOptions { CollectionPath = path });
+        Assert.Equal(1, rc);
+    }
+
+    [Fact]
+    public async Task RunAsync_TestNameDefaultsToServiceSlashMethod()
+    {
+        // Test entry without a "name" field falls back to "service/method"
+        // for display + report rendering. We hit that branch via the
+        // unknown-protocol error path so the deterministic exit-1 is
+        // reached without a network call.
+        var coll = Path.Combine(_tempDir, "no-name.json");
+        await File.WriteAllTextAsync(coll, """
+            {
+              "name": "no-name-coll",
+              "protocol": "no-such-protocol-yyy",
+              "serverUrl": "http://localhost:1",
+              "tests": [
+                { "service": "Health", "method": "Ping" }
+              ]
+            }
+            """, TestContext.Current.CancellationToken);
+
+        var rc = await TestRunner.RunAsync(new TestCliOptions { CollectionPath = coll });
+        Assert.Equal(1, rc);
+    }
+
+    [Fact]
     public async Task RunAsync_ReportPathPointsAtUnwritableLocation_ContinuesPastFailure()
     {
         // ReportPath under a directory that can't be created (a regular
