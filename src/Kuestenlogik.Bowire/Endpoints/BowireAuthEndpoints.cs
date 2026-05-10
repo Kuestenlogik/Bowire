@@ -7,6 +7,7 @@ using Kuestenlogik.Bowire.Auth;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
 namespace Kuestenlogik.Bowire.Endpoints;
@@ -63,7 +64,9 @@ internal static class BowireAuthEndpoints
                 if (!Uri.TryCreate(body.TokenUrl, UriKind.Absolute, out var tokenUri))
                     return Results.Json(new { error = "tokenUrl is not a valid absolute URL" }, BowireEndpointHelpers.JsonOptions, statusCode: 400);
 
-                using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(15) };
+                var http = ctx.RequestServices
+                    .GetRequiredService<IHttpClientFactory>()
+                    .CreateClient("bowire-oauth");
                 using var content = new FormUrlEncodedContent(form);
                 using var resp = await http.PostAsync(tokenUri, content, ctx.RequestAborted);
                 var responseBody = await resp.Content.ReadAsStringAsync(ctx.RequestAborted);
@@ -126,7 +129,9 @@ internal static class BowireAuthEndpoints
                 if (!string.IsNullOrEmpty(body.CodeVerifier)) form.Add(new("code_verifier", body.CodeVerifier));
                 if (!string.IsNullOrEmpty(body.ClientSecret)) form.Add(new("client_secret", body.ClientSecret));
 
-                using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(15) };
+                var http = ctx.RequestServices
+                    .GetRequiredService<IHttpClientFactory>()
+                    .CreateClient("bowire-oauth");
                 using var content = new FormUrlEncodedContent(form);
                 using var resp = await http.PostAsync(tokenUri, content, ctx.RequestAborted);
                 var responseBody = await resp.Content.ReadAsStringAsync(ctx.RequestAborted);
@@ -184,7 +189,9 @@ internal static class BowireAuthEndpoints
                 if (!string.IsNullOrEmpty(body.ClientSecret)) form.Add(new("client_secret", body.ClientSecret));
                 if (!string.IsNullOrEmpty(body.Scope)) form.Add(new("scope", body.Scope));
 
-                using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(15) };
+                var http = ctx.RequestServices
+                    .GetRequiredService<IHttpClientFactory>()
+                    .CreateClient("bowire-oauth");
                 using var content = new FormUrlEncodedContent(form);
                 using var resp = await http.PostAsync(tokenUri, content, ctx.RequestAborted);
                 var responseBody = await resp.Content.ReadAsStringAsync(ctx.RequestAborted);
@@ -231,7 +238,9 @@ internal static class BowireAuthEndpoints
 
             try
             {
-                using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(15) };
+                var http = ctx.RequestServices
+                    .GetRequiredService<IHttpClientFactory>()
+                    .CreateClient("bowire-oauth");
                 using var request = new HttpRequestMessage(
                     new HttpMethod(string.IsNullOrEmpty(body.Method) ? "POST" : body.Method.ToUpperInvariant()),
                     tokenUri);

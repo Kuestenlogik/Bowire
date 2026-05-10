@@ -75,6 +75,16 @@ public static class BowireServiceCollectionExtensions
         // by the CLR yet (same logic as BowireProtocolRegistry.Discover).
         ForceLoadBowireAssemblies();
 
+        // Named HttpClient for the OAuth proxy endpoints in
+        // BowireAuthEndpoints. IHttpClientFactory pools the underlying
+        // HttpMessageHandler (avoids socket-exhaustion under churn) and
+        // gives tests a clean DI seam — ConfigurePrimaryHttpMessageHandler
+        // can swap in a mock handler without touching the endpoint code.
+        services.AddHttpClient("bowire-oauth", client =>
+        {
+            client.Timeout = TimeSpan.FromSeconds(15);
+        });
+
         foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
         {
             if (assembly.FullName?.Contains("Bowire") != true) continue;
