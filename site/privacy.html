@@ -21,7 +21,32 @@ description: Privacy policy for the Bowire website.
     <li><strong>LocalStorage only</strong>: your selected theme (<code>theme</code> = light / dark / auto) so your choice sticks across visits. That&rsquo;s it. No tracking, no user identifiers, no advertising cookies.</li>
     <li>No session cookies. No analytics SDK. No tag manager.</li>
   </ul>
+  <p class="legal-reset">
+    <button type="button" class="btn btn-secondary" id="bowire-reset-storage">Clear stored theme</button>
+    <span class="legal-reset-status" id="bowire-reset-status" role="status" aria-live="polite"></span>
+  </p>
 </section>
+
+<script>
+  // Reset button: drops the single localStorage key the site sets (`theme`)
+  // and snaps the page back to the OS-default colour scheme — i.e. the
+  // exact state a fresh visitor sees in a clean browser. Inline because the
+  // privacy page is the only consumer.
+  (function () {
+    var btn = document.getElementById('bowire-reset-storage');
+    var status = document.getElementById('bowire-reset-status');
+    if (!btn || !status) return;
+    btn.addEventListener('click', function () {
+      var hadKey = false;
+      try { hadKey = localStorage.getItem('theme') !== null; localStorage.removeItem('theme'); }
+      catch (_) { /* private mode / quota error — fall through */ }
+      // Match the bootstrap in _layouts/default.html: no key ⇒ follow OS.
+      var prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+      document.documentElement.setAttribute('data-theme', prefersDark ? 'dark' : 'light');
+      status.textContent = hadKey ? 'Cleared. Theme follows your OS again.' : 'Nothing was stored.';
+    });
+  })();
+</script>
 
 <section class="legal-section legal-section-alt">
   <h2>Third-party resources loaded by this site</h2>
