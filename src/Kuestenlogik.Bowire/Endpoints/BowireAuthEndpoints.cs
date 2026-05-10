@@ -25,14 +25,14 @@ namespace Kuestenlogik.Bowire.Endpoints;
 internal static class BowireAuthEndpoints
 {
     public static IEndpointRouteBuilder MapBowireAuthEndpoints(
-        this IEndpointRouteBuilder endpoints, BowireOptions options, string prefix)
+        this IEndpointRouteBuilder endpoints, BowireOptions options, string basePath)
     {
         // ---- OAuth 2.0 client_credentials proxy ----
         // Browsers can't call most OAuth token endpoints directly because they
         // don't allow CORS. Bowire proxies the request server-side. The
         // browser keeps an in-memory cache so it only hits this endpoint when
         // the cached token is missing or near expiry.
-        endpoints.MapPost($"/{prefix}/api/auth/oauth-token", async (HttpContext ctx) =>
+        endpoints.MapPost($"{basePath}/api/auth/oauth-token", async (HttpContext ctx) =>
         {
             OauthTokenRequest? body;
             try
@@ -96,7 +96,7 @@ internal static class BowireAuthEndpoints
         // as a CORS-bypass proxy so the JS doesn't need to call the
         // identity provider's token endpoint directly (most providers
         // don't enable CORS on /token).
-        endpoints.MapPost($"/{prefix}/api/auth/oauth-code-exchange", async (HttpContext ctx) =>
+        endpoints.MapPost($"{basePath}/api/auth/oauth-code-exchange", async (HttpContext ctx) =>
         {
             OauthCodeExchangeRequest? body;
             try
@@ -157,7 +157,7 @@ internal static class BowireAuthEndpoints
         // OAuth 2.0 refresh_token: trade an old refresh_token for a fresh
         // access_token (and possibly a rotated refresh_token). Same CORS
         // bypass story as the code exchange above.
-        endpoints.MapPost($"/{prefix}/api/auth/oauth-refresh", async (HttpContext ctx) =>
+        endpoints.MapPost($"{basePath}/api/auth/oauth-refresh", async (HttpContext ctx) =>
         {
             OauthRefreshRequest? body;
             try
@@ -218,7 +218,7 @@ internal static class BowireAuthEndpoints
         // body, headers } request for the response body so the JS layer can
         // pluck a token out of an arbitrary HTTP endpoint without hitting
         // CORS. Used by the "Bearer with auto-refresh" auth helper.
-        endpoints.MapPost($"/{prefix}/api/auth/custom-token", async (HttpContext ctx) =>
+        endpoints.MapPost($"{basePath}/api/auth/custom-token", async (HttpContext ctx) =>
         {
             CustomTokenRequest? body;
             try
@@ -283,7 +283,7 @@ internal static class BowireAuthEndpoints
         // here after they approve the consent screen. The page reads the
         // ?code=...&state=... from its own URL and postMessages them to
         // its window.opener (the Bowire UI), then closes itself.
-        endpoints.MapGet($"/{prefix}/oauth-callback", (HttpContext ctx) =>
+        endpoints.MapGet($"{basePath}/oauth-callback", (HttpContext ctx) =>
         {
             ctx.Response.ContentType = "text/html; charset=utf-8";
             return Results.Content(OauthCallbackHtml, "text/html");
@@ -294,7 +294,7 @@ internal static class BowireAuthEndpoints
         // calls these to render the current jar contents and to clear the
         // jar when the user wants to log out / start over. The actual
         // store lives in Kuestenlogik.Bowire.Auth.CookieJar (in-memory, per envId).
-        endpoints.MapGet($"/{prefix}/api/auth/cookie-jar", (HttpContext ctx) =>
+        endpoints.MapGet($"{basePath}/api/auth/cookie-jar", (HttpContext ctx) =>
         {
             var envId = ctx.Request.Query["env"].ToString();
             if (string.IsNullOrEmpty(envId))
@@ -303,7 +303,7 @@ internal static class BowireAuthEndpoints
             return Results.Json(new { env = envId, cookies = snapshot }, BowireEndpointHelpers.JsonOptions);
         }).ExcludeFromDescription();
 
-        endpoints.MapDelete($"/{prefix}/api/auth/cookie-jar", (HttpContext ctx) =>
+        endpoints.MapDelete($"{basePath}/api/auth/cookie-jar", (HttpContext ctx) =>
         {
             var envId = ctx.Request.Query["env"].ToString();
             if (string.IsNullOrEmpty(envId))
@@ -345,7 +345,7 @@ internal static class BowireAuthEndpoints
         Dictionary<string, string>? Headers);
 
     /// <summary>
-    /// Static HTML page served at <c>/{prefix}/oauth-callback</c>. The IdP
+    /// Static HTML page served at <c>/{basePath}/oauth-callback</c>. The IdP
     /// redirects the browser here after the user approves consent; the
     /// page parses the <c>?code=...&amp;state=...</c> from its own URL and
     /// posts them to its <c>window.opener</c> via <c>postMessage</c>, then

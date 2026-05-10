@@ -18,10 +18,10 @@ namespace Kuestenlogik.Bowire.Endpoints;
 internal static class BowireChannelEndpoints
 {
     public static IEndpointRouteBuilder MapBowireChannelEndpoints(
-        this IEndpointRouteBuilder endpoints, BowireOptions options, string prefix)
+        this IEndpointRouteBuilder endpoints, BowireOptions options, string basePath)
     {
         // Open a channel
-        endpoints.MapPost($"/{prefix}/api/channel/open", async (HttpContext ctx) =>
+        endpoints.MapPost($"{basePath}/api/channel/open", async (HttpContext ctx) =>
         {
             var body = await JsonSerializer.DeserializeAsync<ChannelOpenRequest>(
                 ctx.Request.Body, BowireEndpointHelpers.JsonOptions, ctx.RequestAborted);
@@ -73,7 +73,7 @@ internal static class BowireChannelEndpoints
         }).ExcludeFromDescription();
 
         // Send a message to an open channel
-        endpoints.MapPost($"/{prefix}/api/channel/{{id}}/send", async (string id, HttpContext ctx) =>
+        endpoints.MapPost($"{basePath}/api/channel/{{id}}/send", async (string id, HttpContext ctx) =>
         {
             var body = await JsonSerializer.DeserializeAsync<ChannelSendRequest>(
                 ctx.Request.Body, BowireEndpointHelpers.JsonOptions, ctx.RequestAborted);
@@ -102,7 +102,7 @@ internal static class BowireChannelEndpoints
         }).ExcludeFromDescription();
 
         // Close the request stream
-        endpoints.MapPost($"/{prefix}/api/channel/{{id}}/close", async (string id) =>
+        endpoints.MapPost($"{basePath}/api/channel/{{id}}/close", async (string id) =>
         {
             var channel = ChannelStore.Get(id);
             if (channel is null)
@@ -113,7 +113,7 @@ internal static class BowireChannelEndpoints
         }).ExcludeFromDescription();
 
         // SSE stream of responses from the channel
-        endpoints.MapGet($"/{prefix}/api/channel/{{id}}/responses", async (string id, HttpContext ctx) =>
+        endpoints.MapGet($"{basePath}/api/channel/{{id}}/responses", async (string id, HttpContext ctx) =>
         {
             var channel = ChannelStore.Get(id);
             if (channel is null)

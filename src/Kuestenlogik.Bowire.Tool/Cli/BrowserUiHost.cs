@@ -40,7 +40,12 @@ internal static class BrowserUiHost
         var app = builder.Build();
         app.UseResponseCompression();
 
-        var bowire = app.MapBowire(options =>
+        // Standalone CLI mounts the workbench at the site root ("/") —
+        // there's no host app sharing the route table, so a `/bowire`
+        // prefix would just be a wasted hop. Embedded callers keep the
+        // default `/bowire` (or whatever pattern they pass) so they don't
+        // collide with their own routes.
+        var bowire = app.MapBowire("/", options =>
         {
             options.Mode = Kuestenlogik.Bowire.BowireMode.Standalone;
             options.Title = ui.Title;
@@ -60,10 +65,10 @@ internal static class BrowserUiHost
             var mcpServerUrl = !string.IsNullOrEmpty(ui.PrimaryUrl)
                 ? ui.PrimaryUrl
                 : $"http://localhost:{ui.Port}";
-            bowire.WithMcpAdapter(mcpServerUrl);
+            // Standalone mounts at "/" — pass "" so the MCP adapter lands at `/mcp`,
+            // not `/bowire/mcp`.
+            bowire.WithMcpAdapter(mcpServerUrl, prefix: string.Empty);
         }
-
-        app.MapGet("/", () => Microsoft.AspNetCore.Http.Results.Redirect("/bowire"));
 
         var noBrowser = ui.NoBrowser
             || Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER") == "true"
@@ -71,9 +76,9 @@ internal static class BrowserUiHost
             || !Environment.UserInteractive;
 
         Console.WriteLine();
-        Console.WriteLine($"  Bowire is running at:  http://localhost:{ui.Port}/bowire");
+        Console.WriteLine($"  Bowire is running at:  http://localhost:{ui.Port}/");
         if (ui.EnableMcpAdapter)
-            Console.WriteLine($"  MCP adapter (opt-in):   http://localhost:{ui.Port}/bowire/mcp");
+            Console.WriteLine($"  MCP adapter (opt-in):   http://localhost:{ui.Port}/mcp");
         foreach (var u in ui.ServerUrls)
             Console.WriteLine($"  Connected to:           {u}");
         Console.WriteLine();
@@ -89,7 +94,7 @@ internal static class BrowserUiHost
                 {
                     System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
                     {
-                        FileName = $"http://localhost:{ui.Port}/bowire",
+                        FileName = $"http://localhost:{ui.Port}/",
                         UseShellExecute = true
                     });
                 }

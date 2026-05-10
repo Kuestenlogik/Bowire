@@ -36,9 +36,9 @@ internal static class BowireWorkspaceEndpoints
         Path.Combine(Directory.GetCurrentDirectory(), ".blw");
 
     public static IEndpointRouteBuilder MapBowireWorkspaceEndpoints(
-        this IEndpointRouteBuilder endpoints, string prefix)
+        this IEndpointRouteBuilder endpoints, string basePath)
     {
-        endpoints.MapGet($"/{prefix}/api/workspace", () =>
+        endpoints.MapGet($"{basePath}/api/workspace", () =>
         {
             if (!File.Exists(WorkspacePath))
                 return Results.Ok(new WorkspaceFile());
@@ -55,7 +55,7 @@ internal static class BowireWorkspaceEndpoints
             }
         }).ExcludeFromDescription();
 
-        endpoints.MapPut($"/{prefix}/api/workspace", async (HttpContext ctx) =>
+        endpoints.MapPut($"{basePath}/api/workspace", async (HttpContext ctx) =>
         {
             var body = await new StreamReader(ctx.Request.Body).ReadToEndAsync();
             try

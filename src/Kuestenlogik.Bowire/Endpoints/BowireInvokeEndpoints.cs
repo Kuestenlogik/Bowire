@@ -20,10 +20,10 @@ namespace Kuestenlogik.Bowire.Endpoints;
 internal static class BowireInvokeEndpoints
 {
     public static IEndpointRouteBuilder MapBowireInvokeEndpoints(
-        this IEndpointRouteBuilder endpoints, BowireOptions options, string prefix)
+        this IEndpointRouteBuilder endpoints, BowireOptions options, string basePath)
     {
         // Invoke a unary or client-streaming call
-        endpoints.MapPost($"/{prefix}/api/invoke", async (HttpContext ctx) =>
+        endpoints.MapPost($"{basePath}/api/invoke", async (HttpContext ctx) =>
         {
             var body = await JsonSerializer.DeserializeAsync<InvokeRequest>(
                 ctx.Request.Body, BowireEndpointHelpers.JsonOptions, ctx.RequestAborted);
@@ -34,7 +34,7 @@ internal static class BowireInvokeEndpoints
             var rawServerUrl = ctx.Request.Query["serverUrl"].FirstOrDefault()
                 ?? BowireEndpointHelpers.ResolveServerUrl(options, ctx.Request);
 
-            // Strip an optional 'hint@url' prefix before any URL
+            // Strip an optional 'hint@url' basePath before any URL
             // manipulation runs — query-auth append, plugin selection,
             // recording capture all want the bare URL. The hint
             // overrides body.Protocol when present.
@@ -45,9 +45,9 @@ internal static class BowireInvokeEndpoints
 
             // ---- Auth: query-string API key ----
             // The JS apikey helper with location='query' marks its entries
-            // with a magic prefix so the metadata dict can carry both real
+            // with a magic basePath so the metadata dict can carry both real
             // headers and "this needs to go on the URL" hints. Strip the
-            // prefix here, append the values to the server URL, and pass
+            // basePath here, append the values to the server URL, and pass
             // only the actual headers down to the plugin.
             (serverUrl, var sanitizedMeta) = BowireEndpointHelpers.ApplyQueryAuthHints(serverUrl, body.Metadata);
             body = body with { Metadata = sanitizedMeta };
@@ -148,7 +148,7 @@ internal static class BowireInvokeEndpoints
         }).ExcludeFromDescription();
 
         // SSE endpoint for server-streaming and duplex calls
-        endpoints.MapGet($"/{prefix}/api/invoke/stream", async (HttpContext ctx) =>
+        endpoints.MapGet($"{basePath}/api/invoke/stream", async (HttpContext ctx) =>
         {
             var service = ctx.Request.Query["service"].ToString();
             var method = ctx.Request.Query["method"].ToString();
@@ -194,7 +194,7 @@ internal static class BowireInvokeEndpoints
 
             var rawServerUrl = ctx.Request.Query["serverUrl"].FirstOrDefault()
                 ?? BowireEndpointHelpers.ResolveServerUrl(options, ctx.Request);
-            // Strip 'hint@url' prefix; hint overrides protocolId.
+            // Strip 'hint@url' basePath; hint overrides protocolId.
             var (urlHint, urlAfterHint) = BowireServerUrl.Parse(rawServerUrl);
             var serverUrl = urlAfterHint;
             if (urlHint is not null) protocolId = urlHint;

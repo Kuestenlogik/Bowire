@@ -20,14 +20,14 @@ namespace Kuestenlogik.Bowire.Endpoints;
 internal static class BowireRecordingEndpoints
 {
     public static IEndpointRouteBuilder MapBowireRecordingEndpoints(
-        this IEndpointRouteBuilder endpoints, BowireOptions options, string prefix)
+        this IEndpointRouteBuilder endpoints, BowireOptions options, string basePath)
     {
-        endpoints.MapGet($"/{prefix}/api/recordings", () =>
+        endpoints.MapGet($"{basePath}/api/recordings", () =>
         {
             return Results.Content(RecordingStore.Load(), "application/json");
         }).ExcludeFromDescription();
 
-        endpoints.MapPut($"/{prefix}/api/recordings", async (HttpContext ctx) =>
+        endpoints.MapPut($"{basePath}/api/recordings", async (HttpContext ctx) =>
         {
             var json = await new StreamReader(ctx.Request.Body).ReadToEndAsync(ctx.RequestAborted);
             try
@@ -43,7 +43,7 @@ internal static class BowireRecordingEndpoints
             }
         }).ExcludeFromDescription();
 
-        endpoints.MapDelete($"/{prefix}/api/recordings", () =>
+        endpoints.MapDelete($"{basePath}/api/recordings", () =>
         {
             RecordingStore.Save("""{"recordings":[]}""");
             return Results.Json(new { cleared = true }, BowireEndpointHelpers.JsonOptions);

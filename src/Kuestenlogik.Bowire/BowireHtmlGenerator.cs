@@ -149,7 +149,12 @@ internal static class BowireHtmlGenerator
 
     public static string GenerateIndexHtml(BowireOptions options, HttpRequest request)
     {
-        var prefix = options.RoutePrefix.TrimStart('/').TrimEnd('/');
+        // Same shape as BowireApiEndpoints.Map: an empty RoutePrefix means
+        // the workbench is mounted at site root, so the JS-side `prefix`
+        // must collapse to "" — otherwise `fetch(`${config.prefix}/api/…`)`
+        // sees `//api/…` and 404s.
+        var trimmedPrefix = options.RoutePrefix.TrimStart('/').TrimEnd('/');
+        var prefix = trimmedPrefix.Length == 0 ? string.Empty : "/" + trimmedPrefix;
         var theme = options.Theme == BowireTheme.Dark ? "dark" : "light";
         var css = CssContent.Value;
         var js = JsContent.Value;
@@ -192,7 +197,7 @@ internal static class BowireHtmlGenerator
                        window.__BOWIRE_CONFIG__ = {
                            title: "{{title}}",
                            description: "{{desc}}",
-                           prefix: "/{{prefix}}",
+                           prefix: "{{prefix}}",
                            theme: "{{theme}}",
                            showInternalServices: {{showInternal}},
                            serverUrl: "{{serverUrl}}",

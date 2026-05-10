@@ -24,10 +24,10 @@ internal static class BowirePluginEndpoints
         ".bowire", "plugins");
 
     public static IEndpointRouteBuilder MapBowirePluginEndpoints(
-        this IEndpointRouteBuilder endpoints, string prefix)
+        this IEndpointRouteBuilder endpoints, string basePath)
     {
         // List installed plugins
-        endpoints.MapGet($"/{prefix}/api/plugins", () =>
+        endpoints.MapGet($"{basePath}/api/plugins", () =>
         {
             var plugins = new List<object>();
             if (!Directory.Exists(PluginDir))
@@ -60,7 +60,7 @@ internal static class BowirePluginEndpoints
         }).ExcludeFromDescription();
 
         // Search NuGet for Bowire plugins
-        endpoints.MapGet($"/{prefix}/api/plugins/search", async (HttpContext ctx) =>
+        endpoints.MapGet($"{basePath}/api/plugins/search", async (HttpContext ctx) =>
         {
             var query = ctx.Request.Query["q"].ToString();
             // Default search: look for the bowire-plugin tag so both
@@ -97,7 +97,7 @@ internal static class BowirePluginEndpoints
         // The catalog map lets the modal offer an install command for
         // every protocol Bowire knows about without duplicating the
         // hardcoded protocol→package mapping on the JS side.
-        endpoints.MapGet($"/{prefix}/api/plugins/protocols", () =>
+        endpoints.MapGet($"{basePath}/api/plugins/protocols", () =>
         {
             var registry = BowireEndpointHelpers.GetRegistry();
             var loaded = registry.Protocols
@@ -110,7 +110,7 @@ internal static class BowirePluginEndpoints
 
         // Install a plugin (runs dotnet nuget download + extract)
 
-        endpoints.MapPost($"/{prefix}/api/plugins/install", async (HttpContext ctx) =>
+        endpoints.MapPost($"{basePath}/api/plugins/install", async (HttpContext ctx) =>
         {
             var body = await new StreamReader(ctx.Request.Body).ReadToEndAsync();
             var req = JsonSerializer.Deserialize<JsonElement>(body);

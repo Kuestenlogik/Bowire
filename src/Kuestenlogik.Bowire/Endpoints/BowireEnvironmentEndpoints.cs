@@ -19,14 +19,14 @@ namespace Kuestenlogik.Bowire.Endpoints;
 internal static class BowireEnvironmentEndpoints
 {
     public static IEndpointRouteBuilder MapBowireEnvironmentEndpoints(
-        this IEndpointRouteBuilder endpoints, BowireOptions options, string prefix)
+        this IEndpointRouteBuilder endpoints, BowireOptions options, string basePath)
     {
-        endpoints.MapGet($"/{prefix}/api/environments", () =>
+        endpoints.MapGet($"{basePath}/api/environments", () =>
         {
             return Results.Content(EnvironmentStore.Load(), "application/json");
         }).ExcludeFromDescription();
 
-        endpoints.MapPut($"/{prefix}/api/environments", async (HttpContext ctx) =>
+        endpoints.MapPut($"{basePath}/api/environments", async (HttpContext ctx) =>
         {
             var json = await new StreamReader(ctx.Request.Body).ReadToEndAsync(ctx.RequestAborted);
             try
@@ -42,7 +42,7 @@ internal static class BowireEnvironmentEndpoints
             }
         }).ExcludeFromDescription();
 
-        endpoints.MapDelete($"/{prefix}/api/environments", () =>
+        endpoints.MapDelete($"{basePath}/api/environments", () =>
         {
             EnvironmentStore.Save("""{"globals":{},"environments":[],"activeEnvId":""}""");
             return Results.Json(new { cleared = true }, BowireEndpointHelpers.JsonOptions);

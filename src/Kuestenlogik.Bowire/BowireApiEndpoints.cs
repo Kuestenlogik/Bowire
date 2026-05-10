@@ -71,24 +71,32 @@ internal static class BowireApiEndpoints
         }
         BowireEndpointHelpers.SetRegistry(registry);
 
-        var prefix = options.RoutePrefix.TrimStart('/').TrimEnd('/');
+        // basePath is the URL fragment all routes are anchored under:
+        //   • RoutePrefix = "bowire"  →  basePath = "/bowire"  (embedded default)
+        //   • RoutePrefix = ""        →  basePath = ""         (standalone CLI: workbench at root)
+        // Pre-computing it once (vs. re-formatting per-route with
+        // `$"/{prefix}"`) avoids the `"//api/..."` glitch when the prefix
+        // collapses to empty.
+        var trimmedPrefix = options.RoutePrefix.TrimStart('/').TrimEnd('/');
+        var basePath = trimmedPrefix.Length == 0 ? string.Empty : "/" + trimmedPrefix;
 
-        // Serve the HTML UI at the root of the prefix
-        endpoints.MapGet($"/{prefix}", (HttpContext ctx) =>
+        // Serve the HTML UI at the root of the prefix.
+        var uiPath = basePath.Length == 0 ? "/" : basePath;
+        endpoints.MapGet(uiPath, (HttpContext ctx) =>
         {
             var html = BowireHtmlGenerator.GenerateIndexHtml(options, ctx.Request);
             return Results.Content(html, "text/html");
         }).ExcludeFromDescription();
 
         endpoints
-            .MapBowireDiscoveryEndpoints(options, prefix)
-            .MapBowireInvokeEndpoints(options, prefix)
-            .MapBowireChannelEndpoints(options, prefix)
-            .MapBowireUploadEndpoints(options, prefix)
-            .MapBowireEnvironmentEndpoints(options, prefix)
-            .MapBowireRecordingEndpoints(options, prefix)
-            .MapBowireAuthEndpoints(options, prefix)
-            .MapBowireWorkspaceEndpoints(prefix)
-            .MapBowirePluginEndpoints(prefix);
+            .MapBowireDiscoveryEndpoints(options, basePath)
+            .MapBowireInvokeEndpoints(options, basePath)
+            .MapBowireChannelEndpoints(options, basePath)
+            .MapBowireUploadEndpoints(options, basePath)
+            .MapBowireEnvironmentEndpoints(options, basePath)
+            .MapBowireRecordingEndpoints(options, basePath)
+            .MapBowireAuthEndpoints(options, basePath)
+            .MapBowireWorkspaceEndpoints(basePath)
+            .MapBowirePluginEndpoints(basePath);
     }
 }

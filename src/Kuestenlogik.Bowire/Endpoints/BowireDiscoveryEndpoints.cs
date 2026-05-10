@@ -18,10 +18,10 @@ namespace Kuestenlogik.Bowire.Endpoints;
 internal static class BowireDiscoveryEndpoints
 {
     public static IEndpointRouteBuilder MapBowireDiscoveryEndpoints(
-        this IEndpointRouteBuilder endpoints, BowireOptions options, string prefix)
+        this IEndpointRouteBuilder endpoints, BowireOptions options, string basePath)
     {
         // List available protocol plugins (id, name, icon)
-        endpoints.MapGet($"/{prefix}/api/protocols", (HttpContext ctx) =>
+        endpoints.MapGet($"{basePath}/api/protocols", (HttpContext ctx) =>
         {
             var registry = BowireEndpointHelpers.GetRegistry();
             var protocols = registry.Protocols.Select(p => new
@@ -43,7 +43,7 @@ internal static class BowireDiscoveryEndpoints
         }).ExcludeFromDescription();
 
         // List all services (proto sources + protocol plugins, merged)
-        endpoints.MapGet($"/{prefix}/api/services", async (HttpContext ctx) =>
+        endpoints.MapGet($"{basePath}/api/services", async (HttpContext ctx) =>
         {
             var rawServerUrl = ctx.Request.Query["serverUrl"].FirstOrDefault()
                 ?? BowireEndpointHelpers.ResolveServerUrl(options, ctx.Request);

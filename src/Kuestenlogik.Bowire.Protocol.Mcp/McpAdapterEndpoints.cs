@@ -38,7 +38,13 @@ public static class McpAdapterEndpoints
         foreach (var protocol in registry.Protocols)
             protocol.Initialize(endpoints.ServiceProvider);
 
-        return endpoints.MapBowireMcpAdapter(registry, serverUrl ?? "http://localhost", prefix);
+        // Normalise the same way BowireApiEndpoints.Map does so an empty
+        // prefix collapses cleanly — the standalone CLI mounts at site
+        // root and passes "" here.
+        var trimmed = prefix.TrimStart('/').TrimEnd('/');
+        var basePath = trimmed.Length == 0 ? string.Empty : "/" + trimmed;
+
+        return endpoints.MapBowireMcpAdapter(registry, serverUrl ?? "http://localhost", basePath);
     }
 
     /// <summary>
@@ -58,11 +64,11 @@ public static class McpAdapterEndpoints
         this IEndpointRouteBuilder endpoints,
         BowireProtocolRegistry registry,
         string serverUrl,
-        string prefix = "bowire")
+        string basePath = "/bowire")
     {
         var server = new McpAdapterServer(registry, serverUrl);
 
-        endpoints.MapPost($"/{prefix}/mcp", HandleMessage).ExcludeFromDescription();
+        endpoints.MapPost($"{basePath}/mcp", HandleMessage).ExcludeFromDescription();
 
         return endpoints;
 

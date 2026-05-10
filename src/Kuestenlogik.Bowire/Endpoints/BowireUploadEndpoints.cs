@@ -18,10 +18,10 @@ namespace Kuestenlogik.Bowire.Endpoints;
 internal static class BowireUploadEndpoints
 {
     public static IEndpointRouteBuilder MapBowireUploadEndpoints(
-        this IEndpointRouteBuilder endpoints, BowireOptions options, string prefix)
+        this IEndpointRouteBuilder endpoints, BowireOptions options, string basePath)
     {
         // Upload .proto file content (standalone mode)
-        endpoints.MapPost($"/{prefix}/api/proto/upload", async (HttpContext ctx) =>
+        endpoints.MapPost($"{basePath}/api/proto/upload", async (HttpContext ctx) =>
         {
             var body = await new StreamReader(ctx.Request.Body).ReadToEndAsync(ctx.RequestAborted);
 
@@ -37,7 +37,7 @@ internal static class BowireUploadEndpoints
         }).ExcludeFromDescription();
 
         // Clear all uploaded proto files
-        endpoints.MapDelete($"/{prefix}/api/proto/upload", () =>
+        endpoints.MapDelete($"{basePath}/api/proto/upload", () =>
         {
             ProtoUploadStore.Clear();
             return Results.Json(new { cleared = true }, BowireEndpointHelpers.JsonOptions);
@@ -46,7 +46,7 @@ internal static class BowireUploadEndpoints
         // Upload an OpenAPI / Swagger document (JSON or YAML). Stored raw and
         // parsed by the REST protocol plugin during discovery, so no OpenAPI
         // reader dependency lives in the core assembly.
-        endpoints.MapPost($"/{prefix}/api/openapi/upload", async (HttpContext ctx) =>
+        endpoints.MapPost($"{basePath}/api/openapi/upload", async (HttpContext ctx) =>
         {
             var body = await new StreamReader(ctx.Request.Body).ReadToEndAsync(ctx.RequestAborted);
 
@@ -60,7 +60,7 @@ internal static class BowireUploadEndpoints
             return Results.Json(new { uploaded = true, id }, BowireEndpointHelpers.JsonOptions);
         }).ExcludeFromDescription();
 
-        endpoints.MapDelete($"/{prefix}/api/openapi/upload", () =>
+        endpoints.MapDelete($"{basePath}/api/openapi/upload", () =>
         {
             OpenApiUploadStore.Clear();
             return Results.Json(new { cleared = true }, BowireEndpointHelpers.JsonOptions);
