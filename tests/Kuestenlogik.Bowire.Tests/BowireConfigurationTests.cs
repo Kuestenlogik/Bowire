@@ -155,6 +155,43 @@ public sealed class BowireConfigurationTests : IDisposable
     }
 
     [Fact]
+    public void BuildBrowserUiOptions_RepeatedDisablePluginCommaSeparated_MergesIntoList()
+    {
+        // Both forms — repeated --disable-plugin and a single
+        // comma-separated value — drop into DisabledPlugins without
+        // duplicates.
+        var config = new ConfigurationBuilder().Build();
+        var options = BowireConfiguration.BuildBrowserUiOptions(
+            config,
+            ["--disable-plugin", "grpc",
+             "--disable-plugin=signalr,mqtt",
+             "--disable-plugin", "GRPC"]); // dup, case-insensitive
+
+        Assert.Equal(3, options.DisabledPlugins.Count);
+        Assert.Contains("grpc", options.DisabledPlugins, StringComparer.OrdinalIgnoreCase);
+        Assert.Contains("signalr", options.DisabledPlugins, StringComparer.OrdinalIgnoreCase);
+        Assert.Contains("mqtt", options.DisabledPlugins, StringComparer.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void BuildBrowserUiOptions_UrlEqualsForm_AndShortFlag_PopulateServerUrls()
+    {
+        // -u=, --url=, and -u <value> all feed ExtractRepeatedUrls.
+        var config = new ConfigurationBuilder().Build();
+        var options = BowireConfiguration.BuildBrowserUiOptions(
+            config,
+            ["-u=http://a.local",
+             "--url=http://b.local",
+             "-u", "http://c.local"]);
+
+        Assert.Equal(3, options.ServerUrls.Count);
+        Assert.Equal("http://a.local", options.ServerUrls[0]);
+        Assert.Equal("http://b.local", options.ServerUrls[1]);
+        Assert.Equal("http://c.local", options.ServerUrls[2]);
+        Assert.True(options.LockServerUrl);
+    }
+
+    [Fact]
     public void AddBowirePlugins_IConfigurationOverload_UsesBoundPluginDir()
     {
         // An empty but valid directory — the extension is a no-op since
