@@ -87,4 +87,128 @@ public sealed class TestRunnerTests : IDisposable
         var rc = await TestRunner.RunAsync(new TestCliOptions { CollectionPath = path });
         Assert.Equal(2, rc);
     }
+
+    [Fact]
+    public async Task RunAsync_TestMissingService_ReportsErrorAndExitsOne()
+    {
+        // Test entry has a name + method but no service → RunTestAsync
+        // sets result.Error before any protocol call. Whole run is a
+        // single failed test → exit 1.
+        var path = Path.Combine(_tempDir, "no-service.json");
+        await File.WriteAllTextAsync(path, """
+            {
+              "name": "x",
+              "tests": [
+                { "name": "broken", "method": "Get" }
+              ]
+            }
+            """, TestContext.Current.CancellationToken);
+
+        var rc = await TestRunner.RunAsync(new TestCliOptions { CollectionPath = path });
+        Assert.Equal(1, rc);
+    }
+
+    [Fact]
+    public async Task RunAsync_UnknownProtocolId_ReportsErrorAndExitsOne()
+    {
+        // protocol id that no plugin registers → RunTestAsync hits
+        // "Protocol '...' not registered". Exercises the env merge +
+        // ${var} substitution path (both feed into the message
+        // pipeline before the protocol check).
+        var path = Path.Combine(_tempDir, "unknown-proto.json");
+        await File.WriteAllTextAsync(path, """
+            {
+              "name": "env-merge-coverage",
+              "protocol": "no-such-protocol-xyz",
+              "serverUrl": "http://localhost:1",
+              "environment": { "userId": "42", "host": "from-collection" },
+              "tests": [
+                {
+                  "name": "with-vars",
+                  "service": "users",
+                  "method": "Get",
+                  "environment": { "host": "from-test" },
+                  "messages": ["{\"id\": ${userId}, \"host\": \"${host}\", \"unknown\": \"${missing}\"}"],
+                  "metadata": { "x-host": "${host}" }
+                }
+              ]
+            }
+            """, TestContext.Current.CancellationToken);
+
+        var rc = await TestRunner.RunAsync(new TestCliOptions { CollectionPath = path });
+        Assert.Equal(1, rc);
+    }
+
+    [Fact]
+    public async Task RunAsync_UnknownProtocolWithReports_WritesHtmlAndJUnit()
+    {
+        // Unknown protocol → guaranteed "Protocol not registered" failure
+        // (no network race). Verifies both --report and --junit files
+        // are written, exercising those branches in RunAsync proper.
+        var coll = Path.Combine(_tempDir, "with-reports.json");
+        var report = Path.Combine(_tempDir, "report.html");
+        var junit = Path.Combine(_tempDir, "junit.xml");
+        await File.WriteAllTextAsync(coll, """
+            {
+              "name": "rep",
+              "protocol": "no-such-protocol-zzz",
+              "serverUrl": "http://localhost:1",
+              "tests": [
+                { "name": "ping", "service": "Health", "method": "Get" }
+              ]
+            }
+            """, TestContext.Current.CancellationToken);
+
+        var rc = await TestRunner.RunAsync(new TestCliOptions
+        {
+            CollectionPath = coll,
+            ReportPath = report,
+            JUnitPath = junit,
+        });
+
+        Assert.Equal(1, rc);
+        Assert.True(File.Exists(report));
+        Assert.True(File.Exists(junit));
+        var html = await File.ReadAllTextAsync(report, TestContext.Current.CancellationToken);
+        Assert.StartsWith("<!doctype html>", html, StringComparison.Ordinal);
+        var xml = await File.ReadAllTextAsync(junit, TestContext.Current.CancellationToken);
+        Assert.Contains("<testsuite", xml, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task RunAsync_ReportPathPointsAtUnwritableLocation_ContinuesPastFailure()
+    {
+        // ReportPath under a directory that can't be created (a regular
+        // file used as a parent) → the report write throws, the runner
+        // catches and reports "Failed to write report" but keeps going.
+        // Exit code still reflects the underlying test outcome.
+        var coll = Path.Combine(_tempDir, "blocked.json");
+        await File.WriteAllTextAsync(coll, """
+            {
+              "name": "blocked-report",
+              "protocol": "no-such-protocol",
+              "serverUrl": "http://localhost:1",
+              "tests": [
+                { "name": "t", "service": "s", "method": "m" }
+              ]
+            }
+            """, TestContext.Current.CancellationToken);
+
+        // Use a regular file as the "parent" so File.WriteAllTextAsync
+        // fails when it tries to create the report under it.
+        var blockingFile = Path.Combine(_tempDir, "as-parent");
+        await File.WriteAllTextAsync(blockingFile, "x", TestContext.Current.CancellationToken);
+        var report = Path.Combine(blockingFile, "report.html");
+        var junit = Path.Combine(blockingFile, "junit.xml");
+
+        var rc = await TestRunner.RunAsync(new TestCliOptions
+        {
+            CollectionPath = coll,
+            ReportPath = report,
+            JUnitPath = junit,
+        });
+
+        Assert.Equal(1, rc);
+        Assert.False(File.Exists(report));
+    }
 }
