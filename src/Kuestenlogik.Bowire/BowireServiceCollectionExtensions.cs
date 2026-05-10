@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 using System.Reflection;
+using Kuestenlogik.Bowire.Net;
 using Kuestenlogik.Bowire.PluginLoading;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -80,10 +81,16 @@ public static class BowireServiceCollectionExtensions
         // HttpMessageHandler (avoids socket-exhaustion under churn) and
         // gives tests a clean DI seam — ConfigurePrimaryHttpMessageHandler
         // can swap in a mock handler without touching the endpoint code.
+        // The primary handler is built through BowireHttpClientFactory so
+        // the same Bowire:TrustLocalhostCert / Bowire:oauth:TrustLocalhostCert
+        // opt-in that the protocol plugins honour also covers OAuth-proxy
+        // calls against a local IdP with a self-signed cert.
         services.AddHttpClient("bowire-oauth", client =>
         {
             client.Timeout = TimeSpan.FromSeconds(15);
-        });
+        }).ConfigurePrimaryHttpMessageHandler(sp =>
+            BowireHttpClientFactory.CreateHandler(
+                sp.GetService<IConfiguration>(), "oauth"));
 
         foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
         {
