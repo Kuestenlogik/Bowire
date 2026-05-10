@@ -55,8 +55,10 @@ jobs:
         # ReportGenerator union-merges per-line hits across all input
         # files into one Cobertura output. Filters mirror codecov.yml's
         # `ignore` list so the merged file already excludes obj/, bin/,
-        # wwwroot/, tests/, samples/, benchmarks/. Codecov then sees a
-        # single, authoritative session per commit.
+        # wwwroot/, tests/, samples/, benchmarks/. We then delete the
+        # raw per-test-project files so Codecov's auto-search only
+        # finds the merged one — `files:` alone doesn't suppress the
+        # auto-search, it only adds explicit picks on top.
         run: |
           dotnet tool install -g dotnet-reportgenerator-globaltool
           reportgenerator \
@@ -64,6 +66,7 @@ jobs:
             -targetdir:artifacts/coverage-merged \
             -reporttypes:Cobertura \
             -filefilters:'-**/obj/**;-**/wwwroot/**;-**/bin/**;-tests/**;-samples/**;-benchmarks/**'
+          rm -rf artifacts/coverage
 
       - name: Upload coverage to Codecov
         # Skip when running on a fork PR — Codecov tokenless uploads
