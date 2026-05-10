@@ -20,6 +20,14 @@ namespace Kuestenlogik.Bowire.App;
 /// </summary>
 internal static class MockCommand
 {
+    // internal: tests swap this with a canned installer so the auto-install
+    // path can be exercised without ever reaching nuget.org. Default
+    // forwards to PluginManager.InstallAsync exactly as the old inline
+    // call did.
+    internal static Func<string, string?, IReadOnlyList<string>?, CancellationToken, Task<int>> AutoInstallInvoker { get; set; }
+        = (packageId, pluginDir, sources, ct) =>
+            PluginManager.InstallAsync(packageId, version: null, pluginDir, sources, ct);
+
     public static async Task<int> RunAsync(MockCliOptions cli, CancellationToken ct)
     {
         ArgumentNullException.ThrowIfNull(cli);
@@ -249,12 +257,12 @@ internal static class MockCommand
             // version=null + sources=null → InstallAsync uses the
             // default NuGet feed (nuget.org) plus whatever
             // appsettings/env-var configuration the host already has.
-            var exit = await PluginManager.InstallAsync(
-                packageId: m.SuggestedPackageId!,
-                version: null,
-                pluginDir: pluginDir,
-                sources: null,
-                ct: ct);
+            // Routed through AutoInstallInvoker so tests can intercept.
+            var exit = await AutoInstallInvoker(
+                m.SuggestedPackageId!,
+                pluginDir,
+                null,
+                ct);
             if (exit != 0) failures++;
         }
         await Console.Out.WriteLineAsync();
