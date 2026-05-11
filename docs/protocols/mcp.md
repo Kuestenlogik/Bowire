@@ -1,15 +1,19 @@
 ---
-summary: 'The MCP (Model Context Protocol) plugin has two distinct sides:'
+summary: 'Bowire and MCP intersect in four distinct roles — pick the one that matches what you want to build.'
 ---
 
 # MCP Protocol
 
-The MCP (Model Context Protocol) plugin has two distinct sides:
+Bowire and the **Model Context Protocol** intersect in **four distinct roles**. They live in different packages with different CLI / DI entry points; pick the one that matches what you want to build:
 
-1. **MCP Client (discovery)** — point Bowire at any MCP server URL, browse its tools / resources / prompts, and invoke them. Analogous to the gRPC and REST plugins.
-2. **MCP Adapter (opt-in feature)** — expose Bowire's discovered API services as MCP tools so AI agents (Claude, Copilot, Cursor) can call your gRPC / REST / SignalR methods. **Disabled by default** to prevent silently exposing an internal API surface.
+| Role | What it does | Package | Mount / Entry |
+|------|-------------|---------|--------------|
+| **1. MCP client** | Bowire connects to any MCP server URL and surfaces its tools / resources / prompts. | `Kuestenlogik.Bowire.Protocol.Mcp` | `bowire --url http://…/mcp` |
+| **2. MCP adapter** | Bowire wraps every API method it can discover (gRPC, REST, SignalR, …) as an MCP tool so AI agents can call them. Opt-in. | `Kuestenlogik.Bowire.Protocol.Mcp` | `.WithMcpAdapter()` *(embedded)* or `--enable-mcp-adapter` *(standalone)* |
+| **3. Bowire as MCP server — HTTP** | Bowire exposes itself (its discovery / invoke / record / mock / replay surface) as an MCP server over HTTP so AI agents can drive Bowire. | `Kuestenlogik.Bowire.Mcp` | `services.AddBowireMcp()` + `endpoints.MapBowireMcp()` |
+| **4. Bowire as MCP server — stdio** | Same toolset as role 3, but spoken over stdio for agents that prefer process-level transport (Claude Desktop, Cursor stdin/stdout). | `Kuestenlogik.Bowire.Mcp` | `bowire mcp serve` |
 
-**Package:** `Kuestenlogik.Bowire.Protocol.Mcp`
+Roles **1** and **2** are about other people's APIs (or your own gRPC/REST/SignalR APIs) flowing **through** Bowire. Roles **3** and **4** turn Bowire **itself** into something AI agents can drive — list discovered services, invoke methods, start/stop mocks, inspect recordings.
 
 ## MCP Client — discovering an external MCP server
 
@@ -74,31 +78,45 @@ The `.WithMcpAdapter()` extension only exists when the `Kuestenlogik.Bowire.Prot
 bowire --url https://localhost:5005 --enable-mcp-adapter
 ```
 
-Without the flag, `bowire` runs as an MCP **client** only. With it, the adapter is mapped at `/bowire/mcp/sse` + `/bowire/mcp/message`.
+Without the flag, `bowire` runs as an MCP **client** only. With it, the adapter is mapped at `POST /mcp` (the workbench itself mounts at `/` in standalone, so there's no `/bowire` prefix).
 
 ### Adapter endpoints
 
 | Endpoint | Description |
 |----------|-------------|
-| `POST /{prefix}/mcp` | MCP <i>streamable HTTP</i> transport (MCP 2025-03-26): a single endpoint, JSON-RPC 2.0 in, JSON out. Handles `initialize`, `tools/list`, `tools/call`, `ping`. This is what `bowire --url` should target. |
+| `POST {basePath}/mcp` | MCP <i>streamable HTTP</i> transport (MCP 2025-03-26): a single endpoint, JSON-RPC 2.0 in, JSON out. Handles `initialize`, `tools/list`, `tools/call`, `ping`. |
+
+`{basePath}` is empty in the standalone `bowire` CLI (workbench at site root → adapter at `/mcp`) and `/bowire` (or whatever `MapBowire("/your/prefix")` you passed) in embedded mode.
 
 The legacy SSE+POST split (`/sse` event stream + `/messages` POST) from the older MCP 2024-11-05 spec is intentionally not supported here.
 
 ### Agent configuration
 
-Claude Desktop (`claude_desktop_config.json`):
+Claude Desktop (`claude_desktop_config.json`), standalone CLI:
 
 ```json
 {
   "mcpServers": {
     "bowire": {
-      "url": "http://localhost:5080/bowire/mcp/sse"
+      "url": "http://localhost:5080/mcp"
     }
   }
 }
 ```
 
-Cursor uses the same `mcpServers` shape. Other MCP clients accept either the SSE URL or the message endpoint URL directly.
+Embedded mode with the default prefix:
+
+```json
+{
+  "mcpServers": {
+    "your-api": {
+      "url": "https://your-host/bowire/mcp"
+    }
+  }
+}
+```
+
+Cursor uses the same `mcpServers` shape. Other MCP clients accept the message endpoint URL directly.
 
 ### Tool naming
 
@@ -123,7 +141,80 @@ Run it on port 5005 and Bowire standalone can browse it both ways:
 
 ```bash
 bowire --url https://localhost:5005               # gRPC reflection
-bowire --url https://localhost:5005/bowire/mcp   # MCP client
+bowire --url https://localhost:5005/bowire/mcp   # MCP client (embedded sample keeps the /bowire prefix)
 ```
+
+## Bowire as an MCP server — controlling Bowire from an AI agent
+
+`Kuestenlogik.Bowire.Mcp` is a separate package that goes the other way: it exposes the Bowire **workbench itself** — discovery, invocation, recording, mocking, replay — as an MCP server so an AI agent can drive Bowire end-to-end.
+
+This is distinct from the MCP **adapter** above: the adapter wraps the **discovered APIs** (your gRPC / REST / SignalR methods); the MCP server wraps **Bowire's own tools** (`bowire.discover`, `bowire.invoke`, `bowire.record`, `bowire.mock.start`, `bowire.recordings.list`, …). An agent uses it to ask Bowire "what's running at this URL, invoke method X with payload Y, capture the response, mock the next call, replay it".
+
+Two transports ship in the box; pick the one your agent prefers.
+
+### Role 3 — HTTP transport (embedded)
+
+Mount it next to your existing Bowire endpoint:
+
+```csharp
+using Kuestenlogik.Bowire;
+using Kuestenlogik.Bowire.Mcp;
+
+builder.Services.AddBowire();
+builder.Services.AddBowireMcp(opts =>
+{
+    // Without an allowlist, all server URLs are reachable. In production
+    // host code you almost always want to constrain this.
+    opts.AllowedServerUrls.Add("https://my-trusted-api.example.com");
+});
+
+var app = builder.Build();
+app.MapBowire();      // workbench UI + REST/gRPC discovery
+app.MapBowireMcp();   // MCP server for AI agents
+```
+
+`AddBowireMcp()` registers the tools and a singleton `BowireMockHandleRegistry` (for the start-mock / stop-mock tools). `MapBowireMcp()` attaches the streamable-HTTP endpoint. Default URL: `POST /mcp` next to your Bowire workbench. Allowlist enforcement lives in `BowireMcpOptions.AllowedServerUrls` — empty means "trust any URL the agent asks about", which is convenient for local dev but should be tightened in production hosts.
+
+### Role 4 — stdio transport (`bowire mcp serve`)
+
+For agents that prefer process-level transport (Claude Desktop's `command:` flavour, Cursor's stdio mode), invoke the CLI:
+
+```bash
+bowire mcp serve --allow-arbitrary-urls
+```
+
+Same toolset, JSON-RPC over stdin/stdout. The process exits when the agent closes the stream. `--allow-arbitrary-urls` is the stdio equivalent of leaving `AllowedServerUrls` empty.
+
+Claude Desktop config:
+
+```json
+{
+  "mcpServers": {
+    "bowire": {
+      "command": "bowire",
+      "args": ["mcp", "serve", "--allow-arbitrary-urls"]
+    }
+  }
+}
+```
+
+### Tool surface (roles 3 + 4)
+
+Both transports expose the same toolset. Top-level tools include:
+
+| Tool | Purpose |
+|------|---------|
+| `bowire.discover` | List services + methods at a target URL via the appropriate protocol plugin. |
+| `bowire.invoke` | Call a unary method with a JSON payload. |
+| `bowire.subscribe` | Sample a streaming method for a bounded window and return collected frames. |
+| `bowire.env.list` / `bowire.env.get` | Read environments stored under `~/.bowire/environments.json`. |
+| `bowire.recordings.list` / `bowire.recording.get` | Browse captured recordings. |
+| `bowire.mock.start` / `bowire.mock.stop` / `bowire.mock.list` | Spin up an in-process mock server from a recording, stop it, list active handles. |
+
+The full tool list is generated from the discovered `BowireMcpTools` class via the ModelContextProtocol C# SDK — call `tools/list` on the running server to see the current schemas.
+
+### Security warning (roles 3 + 4)
+
+The MCP server lets an agent drive any URL that's allowlisted (or any URL at all if no allowlist is configured). Treat it the same way you'd treat a CLI with shell access: only run it against trusted target systems, and prefer the `AllowedServerUrls` allowlist for non-localhost production hosts.
 
 See also: [Quick Start](../setup/index.md), [Plugin System](../features/plugin-system.md)
