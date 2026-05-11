@@ -10,6 +10,66 @@ and uses it as the GitHub Release body.
 
 ---
 
+## 1.2.0 — 2026-05-11
+
+### Highlights
+
+- **gRPC-Web transport in the gRPC plugin.** Opt-in via the URL hint
+  `grpcweb@<server>` or the metadata header
+  `X-Bowire-Grpc-Transport: web`. The default stays native HTTP/2,
+  so existing callers are unaffected. Useful for services that ship
+  gRPC-Web alongside native gRPC (e.g. Rheinmetall TacticalAPI on
+  4267/4268) and for browser-fronted backends behind an HTTP/1.1
+  ingress. Server-streaming + unary work fully; client-streaming
+  and duplex stay native-only — the HTTP/1.1 trailer + framing
+  constraints in `GrpcWebMode.GrpcWeb` don't carry them cleanly.
+- **New sibling plugin: `Kuestenlogik.Bowire.Protocol.TacticalApi`
+  (v0.1.0, preview).** Wraps Rheinmetall's TacticalAPI for
+  situational-awareness systems. Build-time fetch of the upstream
+  `.proto` files from a pinned commit, compile via `Grpc.Tools`,
+  ship only the generated bindings — the EPL-2.0 `.proto` source
+  never enters Bowire's Apache-2.0 tree. Install via
+  `bowire plugin install Kuestenlogik.Bowire.Protocol.TacticalApi`
+  and target with `bowire --url tacticalapi@<server>`. v0.1.0 covers
+  descriptor discovery and the sidebar projection; typed CRUD +
+  server-streaming pump come in v0.2.0. Ships from a sibling repo
+  with its own release cadence — see
+  <https://github.com/Kuestenlogik/Bowire.Protocol.TacticalApi>.
+- **URL-hint surface extended.** The existing `<plugin>@<url>` syntax
+  now supports transport-variant hints alongside plugin pins.
+  `grpcweb@` is the first such hint; the extension point lives in
+  `BowireEndpointHelpers.ResolveHint(hint) → (PluginId, Metadata?)`
+  so future transports (e.g. WebTransport / HTTP/3 variants) can
+  plug in the same way.
+- **Site, DocFX docs, and social-media banner refreshed.** Marketing
+  site lists the new TacticalAPI plugin (with a `preview` chip) and
+  the gRPC card now mentions gRPC-Web. Docs site gains a dedicated
+  TacticalAPI protocol guide and a `gRPC-Web transport` section in
+  the gRPC guide. Open Graph card (`og-image.png`) regenerated via
+  a new reproducible Playwright pipeline; the Storm→Surgewave rename
+  finally reaches the social preview too.
+
+### Behind the scenes
+
+- `GrpcChannelBuilder.cs` consolidates the previous three
+  `GrpcChannel.ForAddress(...)` call sites into one helper that
+  picks native or web based on a single `GrpcTransportMode`.
+  Discovery, invoke, and channel-open all flow through it.
+- mTLS composes with gRPC-Web: when both are active, the existing
+  client-cert `SocketsHttpHandler` becomes the inner of the
+  `GrpcWebHandler`.
+
+### Migration
+
+- **None for existing callers.** No URL changes, no metadata changes,
+  no breaking API. Opt into gRPC-Web only when the target requires it.
+- Bowire.Samples already floats `Kuestenlogik.Bowire 1.1.*` — no
+  sample-side action needed for 1.2.0 (none of the samples actually
+  exercise gRPC-Web today). Bump to `1.2.*` only when a sample is
+  added that demonstrates the new transport.
+
+---
+
 ## 1.1.0 — 2026-05-11
 
 ### ⚠ Breaking change for the standalone CLI
