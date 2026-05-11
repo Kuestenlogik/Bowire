@@ -23,6 +23,22 @@
     <EmbeddedResource Include="wwwroot\bowire.js" LogicalName="Kuestenlogik.Bowire.wwwroot.bowire.js" />
     <EmbeddedResource Include="wwwroot\favicon.svg" LogicalName="Kuestenlogik.Bowire.wwwroot.favicon.svg" />
     <EmbeddedResource Include="wwwroot\kuestenlogik_lockup.svg" LogicalName="Kuestenlogik.Bowire.wwwroot.kuestenlogik_lockup.svg" />
+    <!--
+      MapLibre extension assets — served at
+      /api/ui/extensions/kuestenlogik.maplibre/{name}. The widget bundle
+      (wwwroot/js/widgets/map.js) is ALSO baked into the bowire.js
+      concat below so it loads alongside the rest of the workbench;
+      the standalone resource only exists so tooling / lazy-import
+      flows can pull the file directly.
+    -->
+    <EmbeddedResource Include="wwwroot\js\widgets\map.js"
+                      LogicalName="Kuestenlogik.Bowire.wwwroot.js.widgets.map.js" />
+    <EmbeddedResource Include="wwwroot\maplibre\maplibre-gl.js"
+                      LogicalName="Kuestenlogik.Bowire.wwwroot.maplibre.maplibre-gl.js" />
+    <EmbeddedResource Include="wwwroot\maplibre\maplibre-gl.css"
+                      LogicalName="Kuestenlogik.Bowire.wwwroot.maplibre.maplibre-gl.css" />
+    <EmbeddedResource Include="wwwroot\maplibre\LICENSE"
+                      LogicalName="Kuestenlogik.Bowire.wwwroot.maplibre.LICENSE" />
   </ItemGroup>
 
   <!--
@@ -86,8 +102,17 @@
     <BowireJsFragment Include="wwwroot\js\perf-diff.js" />
     <BowireJsFragment Include="wwwroot\js\response-diff.js" />
     <BowireJsFragment Include="wwwroot\js\settings.js" />
+    <!--
+      Frame-semantics framework + built-in widgets. extensions.js MUST
+      come before any widget bundle so window.BowireExtensions.register
+      exists when the widget calls it. widgets/*.js are widget modules
+      that self-register against the framework — order between widgets
+      is not significant (their kinds don't overlap).
+    -->
+    <BowireJsFragment Include="wwwroot\js\extensions.js" />
+    <BowireJsFragment Include="wwwroot\js\widgets\map.js" />
     <BowireJsFragment Include="wwwroot\js\init.js" />
-    <Watch Include="wwwroot\js\*.js" />
+    <Watch Include="wwwroot\js\**\*.js" />
   </ItemGroup>
 
   <UsingTask TaskName="ConcatFiles"

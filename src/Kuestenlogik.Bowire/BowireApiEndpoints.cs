@@ -97,6 +97,7 @@ internal static class BowireApiEndpoints
             .MapBowireRecordingEndpoints(options, basePath)
             .MapBowireAuthEndpoints(options, basePath)
             .MapBowireWorkspaceEndpoints(basePath)
-            .MapBowirePluginEndpoints(basePath);
+            .MapBowirePluginEndpoints(basePath)
+            .MapBowireSemanticsEndpoints(basePath);
     }
 }

@@ -419,6 +419,12 @@
                 // Chaining: capture the inner data payload (last message wins)
                 if (parsed && parsed.data !== undefined) captureResponse(parsed.data);
                 addConsoleEntry({ type: 'stream', method: fullName, body: parsed.data || event.data });
+                // Frame-semantics extension framework — forward the
+                // parsed frame to any viewer mounted against the active
+                // method's annotations (Phase 3).
+                if (window.__bowireExtFramework) {
+                    window.__bowireExtFramework.dispatchStreamMessage(parsed);
+                }
                 // Fast-path: surgically append a single list item to the
                 // streaming output instead of nuking the whole app DOM. The
                 // first message of a stream still falls through to render()
@@ -427,8 +433,12 @@
                     render();
                 }
             } catch {
-                streamMessages.push({ index: streamMessages.length, data: event.data, _clientReceivedAtMs: receivedAt });
+                const fallback = { index: streamMessages.length, data: event.data, _clientReceivedAtMs: receivedAt };
+                streamMessages.push(fallback);
                 addConsoleEntry({ type: 'stream', method: fullName, body: event.data });
+                if (window.__bowireExtFramework) {
+                    window.__bowireExtFramework.dispatchStreamMessage(fallback);
+                }
                 if (!window.bowireAppendStreamMessage || !window.bowireAppendStreamMessage()) {
                     render();
                 }
