@@ -32,6 +32,21 @@ public sealed class BowireGrpcProtocol : IBowireProtocol, IBowireProtocolService
     public string Name => "gRPC";
     public string Id => "grpc";
 
+    /// <summary>
+    /// Metadata key callers use to opt into gRPC-Web transport for a single
+    /// call. Value is "web" (case-insensitive) for gRPC-Web, anything else
+    /// (or absence) for the default native HTTP/2 gRPC. Symmetric to the
+    /// <c>grpcweb@</c> URL hint, which Bowire's discovery + invoke endpoints
+    /// translate into this header before dispatching to the plugin.
+    /// <para>
+    /// Spelled <c>X-Bowire-Grpc-Transport</c> so it travels safely through
+    /// every HTTP intermediary as a regular request header — gRPC strips
+    /// HTTP/2 pseudo-headers, but custom <c>x-</c>-prefixed entries pass
+    /// through both native gRPC trailers and gRPC-Web's HTTP framing.
+    /// </para>
+    /// </summary>
+    public const string TransportMetadataKey = "X-Bowire-Grpc-Transport";
+
     public void Initialize(IServiceProvider? serviceProvider)
     {
         _configuration = serviceProvider?.GetService<IConfiguration>();
@@ -52,13 +67,19 @@ public sealed class BowireGrpcProtocol : IBowireProtocol, IBowireProtocolService
         // run land on a hung "Loading services…" spinner.
         if (string.IsNullOrWhiteSpace(serverUrl)) return [];
 
+        // Pull the transport mode (if any) out of the URL — the discovery
+        // endpoint stitches __bowireGrpcTransport=web onto URLs that came in
+        // via the `grpcweb@` hint because DiscoverAsync has no metadata bag.
+        var (cleanUrl, transportMode) = GrpcChannelBuilder.ExtractTransportFromUrl(serverUrl);
+
         // Discovery doesn't currently carry per-environment metadata, so
         // mTLS-protected gRPC servers can't be reflected against today.
         // Once IBowireProtocol.DiscoverAsync grows a metadata parameter
         // (planned alongside SSE-MCP / streamable discovery), the same
         // MtlsConfig.TryParseFromMetadata path below kicks in here too.
         using var client = new GrpcReflectionClient(
-            serverUrl, showInternalServices, mtlsConfig: null, configuration: _configuration);
+            cleanUrl, showInternalServices, mtlsConfig: null,
+            configuration: _configuration, transportMode: transportMode);
         return await client.ListServicesAsync(ct);
     }
 
@@ -68,11 +89,13 @@ public sealed class BowireGrpcProtocol : IBowireProtocol, IBowireProtocolService
         Dictionary<string, string>? metadata, CancellationToken ct)
     {
         var mtlsConfig = MtlsConfig.TryParseFromMetadata(metadata);
-        var sanitisedMetadata = mtlsConfig is null ? metadata : MtlsConfig.StripMarker(metadata);
+        var transportMode = GrpcChannelBuilder.ResolveMode(metadata);
+        var afterMtls = mtlsConfig is null ? metadata : MtlsConfig.StripMarker(metadata);
+        var sanitisedMetadata = GrpcChannelBuilder.StripTransportMarker(afterMtls);
         using var reflectionClient = new GrpcReflectionClient(
-            serverUrl, showInternalServices, mtlsConfig, _configuration);
+            serverUrl, showInternalServices, mtlsConfig, _configuration, transportMode);
         using var invoker = new GrpcInvoker(
-            serverUrl, reflectionClient, mtlsConfig, _configuration);
+            serverUrl, reflectionClient, mtlsConfig, _configuration, transportMode);
         return await invoker.InvokeUnaryAsync(service, method, jsonMessages, sanitisedMetadata, ct);
     }
 
@@ -83,11 +106,13 @@ public sealed class BowireGrpcProtocol : IBowireProtocol, IBowireProtocolService
         [EnumeratorCancellation] CancellationToken ct)
     {
         var mtlsConfig = MtlsConfig.TryParseFromMetadata(metadata);
-        var sanitisedMetadata = mtlsConfig is null ? metadata : MtlsConfig.StripMarker(metadata);
+        var transportMode = GrpcChannelBuilder.ResolveMode(metadata);
+        var afterMtls = mtlsConfig is null ? metadata : MtlsConfig.StripMarker(metadata);
+        var sanitisedMetadata = GrpcChannelBuilder.StripTransportMarker(afterMtls);
         using var reflectionClient = new GrpcReflectionClient(
-            serverUrl, showInternalServices, mtlsConfig, _configuration);
+            serverUrl, showInternalServices, mtlsConfig, _configuration, transportMode);
         using var invoker = new GrpcInvoker(
-            serverUrl, reflectionClient, mtlsConfig, _configuration);
+            serverUrl, reflectionClient, mtlsConfig, _configuration, transportMode);
         await foreach (var frame in invoker.InvokeStreamingWithFramesAsync(service, method, jsonMessages, sanitisedMetadata, ct))
             yield return frame.Json;
     }
@@ -106,11 +131,13 @@ public sealed class BowireGrpcProtocol : IBowireProtocol, IBowireProtocolService
         [EnumeratorCancellation] CancellationToken ct)
     {
         var mtlsConfig = MtlsConfig.TryParseFromMetadata(metadata);
-        var sanitisedMetadata = mtlsConfig is null ? metadata : MtlsConfig.StripMarker(metadata);
+        var transportMode = GrpcChannelBuilder.ResolveMode(metadata);
+        var afterMtls = mtlsConfig is null ? metadata : MtlsConfig.StripMarker(metadata);
+        var sanitisedMetadata = GrpcChannelBuilder.StripTransportMarker(afterMtls);
         using var reflectionClient = new GrpcReflectionClient(
-            serverUrl, showInternalServices, mtlsConfig, _configuration);
+            serverUrl, showInternalServices, mtlsConfig, _configuration, transportMode);
         using var invoker = new GrpcInvoker(
-            serverUrl, reflectionClient, mtlsConfig, _configuration);
+            serverUrl, reflectionClient, mtlsConfig, _configuration, transportMode);
         await foreach (var frame in invoker.InvokeStreamingWithFramesAsync(service, method, jsonMessages, sanitisedMetadata, ct))
             yield return frame;
     }

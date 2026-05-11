@@ -10,6 +10,7 @@ using Grpc.Reflection.V1Alpha;
 using Kuestenlogik.Bowire.Auth;
 using Kuestenlogik.Bowire.Models;
 using Kuestenlogik.Bowire.Net;
+using Kuestenlogik.Bowire.Protocol.Grpc;
 using Microsoft.Extensions.Configuration;
 
 namespace Kuestenlogik.Bowire;
@@ -48,7 +49,8 @@ internal sealed class GrpcReflectionClient : IDisposable
         string serverUrl,
         bool showInternalServices,
         MtlsConfig? mtlsConfig = null,
-        IConfiguration? configuration = null)
+        IConfiguration? configuration = null,
+        GrpcTransportMode transportMode = GrpcTransportMode.Native)
     {
         _showInternalServices = showInternalServices;
 
@@ -75,11 +77,11 @@ internal sealed class GrpcReflectionClient : IDisposable
                 configuration, "grpc", serverUrl);
         }
 
-        _channel = GrpcChannel.ForAddress(serverUrl, new GrpcChannelOptions
-        {
-            HttpHandler = httpHandler,
-            DisposeHttpClient = false  // owned by us / by _mtlsOwner
-        });
+        // Route through GrpcChannelBuilder so gRPC-Web mode wraps the inner
+        // handler with GrpcWebHandler. Server-reflection over gRPC-Web is
+        // uncommon — most gRPC-Web deployments don't expose reflection —
+        // but when they do, the same plumbing works.
+        _channel = GrpcChannelBuilder.BuildChannel(serverUrl, httpHandler, transportMode);
         _client = new ServerReflection.ServerReflectionClient(_channel);
     }
 

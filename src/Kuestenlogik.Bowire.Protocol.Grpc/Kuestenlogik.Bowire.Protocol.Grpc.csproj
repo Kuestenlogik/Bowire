@@ -28,6 +28,7 @@
     <PackageReference Include="Grpc.AspNetCore" />
     <PackageReference Include="Grpc.AspNetCore.Server.Reflection" />
     <PackageReference Include="Grpc.Net.Client" />
+    <PackageReference Include="Grpc.Net.Client.Web" />
     <PackageReference Include="Grpc.Reflection" />
     <PackageReference Include="Google.Protobuf" />
   </ItemGroup>

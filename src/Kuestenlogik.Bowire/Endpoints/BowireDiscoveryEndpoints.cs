@@ -54,6 +54,26 @@ internal static class BowireDiscoveryEndpoints
             // caller already knows belongs to one of them.
             var (pluginHint, serverUrl) = BowireServerUrl.Parse(rawServerUrl);
 
+            // Transport-variant hints (e.g. `grpcweb@`) map to an existing
+            // plugin id plus a side-channel metadata entry. DiscoverAsync
+            // takes no metadata bag, so we stitch the side-channel onto the
+            // URL as a __bowireGrpcTransport=web marker; the gRPC plugin
+            // strips it before opening the channel. Plain hints (no
+            // transport variant) flow through unchanged.
+            if (pluginHint is not null)
+            {
+                var (mappedId, transportMeta) = BowireEndpointHelpers.ResolveHint(pluginHint);
+                pluginHint = mappedId;
+                if (transportMeta is { } tm && string.Equals(mappedId, "grpc", StringComparison.OrdinalIgnoreCase))
+                {
+                    var sep = serverUrl.Contains('?', StringComparison.Ordinal) ? '&' : '?';
+                    // grpc plugin's URL marker name — must stay aligned with
+                    // GrpcChannelBuilder.TransportUrlMarker. Hard-coded as a
+                    // string here so core doesn't take a plugin reference.
+                    serverUrl = $"{serverUrl}{sep}__bowireGrpcTransport={Uri.EscapeDataString(tm.Value)}";
+                }
+            }
+
             // Standalone tool launched without --url and with no proto
             // uploads / sources to consult: there is genuinely nothing
             // to discover. Returning an empty list immediately keeps the

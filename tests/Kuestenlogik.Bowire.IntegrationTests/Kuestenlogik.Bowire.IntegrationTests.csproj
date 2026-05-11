@@ -12,6 +12,9 @@
     <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" />
     <PackageReference Include="Grpc.AspNetCore" />
     <PackageReference Include="Grpc.AspNetCore.Server.Reflection" />
+    <!-- Used by GrpcWebIntegrationTests to host the GreeterService
+         fixture behind app.UseGrpcWeb() over HTTP/1.1. -->
+    <PackageReference Include="Grpc.AspNetCore.Web" />
     <PackageReference Include="Grpc.Tools" PrivateAssets="All" />
   </ItemGroup>
   <ItemGroup>

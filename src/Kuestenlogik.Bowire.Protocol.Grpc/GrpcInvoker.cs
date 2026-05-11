@@ -11,6 +11,7 @@ using Grpc.Core;
 using Grpc.Net.Client;
 using Kuestenlogik.Bowire.Auth;
 using Kuestenlogik.Bowire.Net;
+using Kuestenlogik.Bowire.Protocol.Grpc;
 using Microsoft.Extensions.Configuration;
 
 namespace Kuestenlogik.Bowire;
@@ -29,7 +30,8 @@ internal sealed class GrpcInvoker : IDisposable
         string serverUrl,
         GrpcReflectionClient reflectionClient,
         MtlsConfig? mtlsConfig = null,
-        IConfiguration? configuration = null)
+        IConfiguration? configuration = null,
+        GrpcTransportMode transportMode = GrpcTransportMode.Native)
     {
         // When a client cert is supplied via the mTLS auth helper, build a
         // SocketsHttpHandler with the cert attached to SslOptions and route
@@ -54,11 +56,10 @@ internal sealed class GrpcInvoker : IDisposable
                 configuration, "grpc", serverUrl);
         }
 
-        _channel = GrpcChannel.ForAddress(serverUrl, new GrpcChannelOptions
-        {
-            HttpHandler = httpHandler,
-            DisposeHttpClient = false  // owned by us / by _mtlsOwner
-        });
+        // Route channel construction through GrpcChannelBuilder so gRPC-Web
+        // mode wraps the inner handler with GrpcWebHandler — both with and
+        // without the mTLS SocketsHttpHandler inner.
+        _channel = GrpcChannelBuilder.BuildChannel(serverUrl, httpHandler, transportMode);
         _reflectionClient = reflectionClient;
     }
 
