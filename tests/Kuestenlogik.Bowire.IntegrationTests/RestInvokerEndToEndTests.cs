@@ -12,12 +12,27 @@ using Microsoft.AspNetCore.Http;
 namespace Kuestenlogik.Bowire.IntegrationTests;
 
 /// <summary>
+/// xUnit collection definition that serialises every test in
+/// <see cref="RestInvokerEndToEndTests"/> + <see cref="BowireRestProtocolEndToEndTests"/>.
+/// Each test opens an ephemeral TCP port via <c>GetFreeTcpPort()</c>
+/// (bind to port 0, read, close), then hands that port to Kestrel.
+/// Parallel test execution can — and on Linux CI does — race two tests
+/// on the same returned port number, causing "address already in use".
+/// Forcing the collection to run sequentially trades a few seconds of
+/// wallclock for deterministic CI runs.
+/// </summary>
+[CollectionDefinition(nameof(RestInvokerEndToEndCollection))]
+[System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1515:Consider making public types internal", Justification = "xUnit collection definition must be public.")]
+public sealed class RestInvokerEndToEndCollection { }
+
+/// <summary>
 /// Full-stack <see cref="RestInvoker"/> coverage that needs a real socket —
 /// query / header / body field bucketing, repeated query, metadata header
 /// passthrough, AWS SigV4 round-trip, server-error mapping, HEAD/DELETE
 /// no-body paths, multipart array repetition and a malformed-base64 binary.
 /// Single Kestrel host per test keeps each scenario isolated.
 /// </summary>
+[Collection(nameof(RestInvokerEndToEndCollection))]
 public sealed class RestInvokerEndToEndTests
 {
     [Fact]
@@ -487,6 +502,7 @@ public sealed class RestInvokerEndToEndTests
 /// <see cref="IInlineHttpInvoker"/> path, and verify the cache-priming
 /// fall-through on cold invocation.
 /// </summary>
+[Collection(nameof(RestInvokerEndToEndCollection))]
 public sealed class BowireRestProtocolEndToEndTests
 {
     [Fact]
