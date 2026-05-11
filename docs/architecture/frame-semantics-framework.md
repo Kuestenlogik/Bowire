@@ -170,7 +170,7 @@ Plugins that ship hints out of the box (eventual):
 - **Kuestenlogik.Bowire.Protocol.TacticalApi** — discriminator and
   WGS84 location annotations for situation objects.
 
-### User manual annotation
+### User manual annotation — shipped in v1.3.0 Phase 4
 
 The right-click menu on any field in the response tree:
 
@@ -196,6 +196,66 @@ $.position.x       Auto-detected: coordinate.latitude
 
 Default scope is the narrowest one (current discriminator value only).
 Cross-type propagation is opt-in.
+
+**UI shape — popup menu, not modal dialog.** The menu floats over the
+response pane via `position: fixed`, with a viewport-clamping step that
+reads `getBoundingClientRect()` once after first render and shifts the
+menu inward when its right or bottom edge would otherwise leave the
+viewport. A modal would interrupt the user's reading flow on every
+right-click; the popup keeps the response tree visible and dismisses on
+Escape, click-outside, or after a successful action. Long-press on
+touch devices opens the same menu (600 ms — below that the gesture
+conflicts with native scroll/select).
+
+**Companion-field suggestion — follow-up toast, not menu-internal
+step.** Marking a field as `coordinate.latitude` triggers an
+asynchronous walk of sibling fields under the same parent path; the
+framework picks the top two numeric candidates and offers them as
+single-click buttons inside an `info` toast: *"Pair with a longitude?
+\[field_a] \[field_b] \[None]"*. Click → writes the companion
+annotation under the chosen sibling at the same tier as the source
+mark. Symmetric for `coordinate.longitude`, `coordinate.ecef.{x,y,z}`,
+`image.bytes` ↔ `image.mime-type`, `audio.bytes` ↔ `audio.sample-rate`.
+The suggester never blocks the menu close — failure or absence of
+candidates is silent.
+
+**Badge palette — neutral / accent-tint / accent.** Every annotated
+leaf in the response tree carries a `.bowire-semantics-badge` showing
+`kind (source)`. Colour-coded by source tier:
+`(auto)` → neutral grey, matches the rest of the tree's secondary text;
+`(plugin)` → accent-subtle background with accent foreground, marking
+plugin-supplied hints; `(user)` → solid accent background, the
+user-pinned annotation. Clicking a badge opens the same menu the
+contextmenu event opens (same `bowireOpenSemanticsMenu` entry point).
+Unannotated leaves carry no badge — clean visual.
+
+**Persistence sticky default.** "Persist for ▸" picks the storage
+tier; the choice persists across the rest of the session in
+`localStorage.bowire_semantics_persist_default` (allowed values
+`session` / `user` / `project`) so a power user who consistently
+promotes to the project file doesn't re-pick "project" every time.
+First-time use defaults to `session`.
+
+**Scope picker — bounded by the seen-discriminators catalogue.** The
+"All message types in this method where this path exists" and "all
+matching path names" options would in principle be quadratic over the
+schema universe. In practice the framework only writes to discriminator
+values + path leaves the workbench has already streamed through — the
+`bowire:stream-message` event handler updates a write-only catalogue
+that the scope expander reads. A new method with a single
+discriminator value seen so far translates "all message types" into
+"the one type" — no work amplification on cold methods.
+
+**HTTP endpoints.** `POST /api/semantics/annotation` writes one
+annotation at the named tier and returns the resulting effective tag
+(so the UI badge can update atomically). `DELETE` removes it from the
+named tier and returns the *new* effective tag — important for the
+cross-tier-survival semantics: deleting a user-tier `none` reveals the
+auto-detector's `coordinate.latitude` beneath, and the badge changes
+from "user/suppressed" to "auto/latitude" without a refresh round-trip.
+Tier-disabled deployments (empty `SchemaHintsPath`, missing project
+file) return 404 on the unavailable tier — graceful degrade to the
+remaining tiers.
 
 ## Persistence
 

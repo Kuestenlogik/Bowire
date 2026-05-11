@@ -202,6 +202,37 @@ public sealed class JsonFileAnnotationLayer : IDisposable
         return _cache.TryGetValue(key, out var tag) ? tag : null;
     }
 
+    /// <summary>
+    /// Insert or replace the tag at <paramref name="key"/>. Touches only
+    /// the in-memory cache; call <see cref="SaveAsync"/> to persist.
+    /// </summary>
+    /// <remarks>
+    /// Phase 4 — the right-click UI's "Persist for user / project"
+    /// path lands here. The session-tier layer uses
+    /// <see cref="InMemoryAnnotationLayer.Set"/> directly; this method
+    /// is the file-tier mirror so all three tiers share a single
+    /// write surface from the caller's perspective.
+    /// </remarks>
+    public JsonFileAnnotationLayer Set(AnnotationKey key, SemanticTag tag)
+    {
+        ArgumentNullException.ThrowIfNull(key);
+        ArgumentNullException.ThrowIfNull(tag);
+        _cache[key] = tag;
+        _loaded = true;
+        return this;
+    }
+
+    /// <summary>
+    /// Remove the entry at <paramref name="key"/>. Returns <c>true</c>
+    /// when an entry was actually removed. Touches only the in-memory
+    /// cache; call <see cref="SaveAsync"/> to persist the deletion.
+    /// </summary>
+    public bool Remove(AnnotationKey key)
+    {
+        ArgumentNullException.ThrowIfNull(key);
+        return _cache.TryRemove(key, out _);
+    }
+
     /// <summary>Snapshot of every cached entry.</summary>
     public IReadOnlyCollection<KeyValuePair<AnnotationKey, SemanticTag>> Entries => [.. _cache];
 

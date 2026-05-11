@@ -663,12 +663,27 @@
 
     /**
      * Forget cached effective-schema entries — Phase-4's right-click
-     * persistence path will call this when a user-supplied annotation
-     * changes the resolution. v1.3 has no UI for that yet but the
-     * test code uses it.
+     * persistence path calls this when a user-supplied annotation
+     * changes the resolution. The semantics-menu fragment dispatches
+     * `bowire:semantics-changed` after a successful write; the listener
+     * installed at the bottom of this fragment clears the cache and
+     * lets render-main.js's next call re-fetch the effective schema.
      */
     function bowireClearEffectiveCache() {
         bowireEffectiveCache = {};
+    }
+
+    /**
+     * Expose the cached effective-schema entries for the Phase-4
+     * companion-field suggestion. Returns the annotations array for
+     * the (service, method) pair, or null when the cache has nothing
+     * for that pair. Read-only — callers must not mutate the returned
+     * list.
+     */
+    function bowireEffectiveCacheFor(serviceId, methodId) {
+        var key = bowireEffectiveCacheKey(serviceId, methodId);
+        var entry = bowireEffectiveCache[key];
+        return entry && Array.isArray(entry.annotations) ? entry.annotations : null;
     }
 
     /**
@@ -816,6 +831,11 @@
         dispatchStreamMessage: bowireDispatchStreamMessage,
         recordSelectionSnapshot: bowireRecordSelectionSnapshot,
         clearEffectiveCache: bowireClearEffectiveCache,
+        // Phase 4 — read-only accessor for the cached effective-schema
+        // entries so the semantics-menu's companion-field suggester
+        // can find already-marked siblings without re-fetching.
+        effectiveCacheFor: bowireEffectiveCacheFor,
+        fetchEffective: bowireFetchEffective,
         // Phase 3.1 — expose the preferred-extension lookup so the
         // workbench (render-main.js) can ask "which built-in viewer
         // handles coordinate.wgs84?" without having to walk byId itself.
@@ -833,3 +853,29 @@
         // simulates a single ctx's per-event state machine.
         _applySelectionMode: bowireApplySelectionMode
     };
+
+    // Phase 4 — listen for the semantics-changed event the menu
+    // dispatches after a successful write. Clear the effective-schema
+    // cache so the next mountWidgetsForMethod / fetchEffective sees the
+    // new resolution. Listening here (in extensions.js, not the menu
+    // fragment) keeps the cache-internals private to the framework.
+    document.addEventListener('bowire:semantics-changed', function () {
+        bowireClearEffectiveCache();
+    });
+
+    // Phase 4 — every stream message also updates the workbench-local
+    // discriminator + path catalogue so the scope picker can offer
+    // "all message types in this method" without enumerating the
+    // entire schema universe. The catalogue is a write-only sink from
+    // here — the semantics-menu reads it through
+    // `window.__bowireSemanticsCatalogue`.
+    document.addEventListener('bowire:stream-message', function (evt) {
+        var d = evt && evt.detail;
+        if (!d || !d.service || !d.method) return;
+        if (window.__bowireSemanticsMenu) {
+            try {
+                window.__bowireSemanticsMenu.recordSeenDiscriminator(
+                    d.service, d.method, d.discriminator);
+            } catch (e) { /* swallow */ }
+        }
+    });

@@ -8710,3 +8710,135 @@ details[open] > .bowire-json-tree-summary::before {
     padding: 12px 18px;
     border-top: 1px solid var(--bowire-border);
 }
+
+/* ----------------------------------------------------------------------
+   Frame-semantics framework — Phase 4 right-click menu, badges, and
+   companion-field suggestion. The menu floats over the response pane
+   via `position: fixed`; viewport-clamping happens in JS so the CSS
+   only needs to describe a small popup at (0, 0).
+   ---------------------------------------------------------------------- */
+
+.bowire-semantics-menu {
+    background: var(--bowire-bg-elevated);
+    border: 1px solid var(--bowire-border);
+    border-radius: var(--bowire-radius-md);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+    min-width: 240px;
+    max-width: 360px;
+    padding: 4px;
+    font-size: 13px;
+    color: var(--bowire-text);
+    outline: none;
+}
+
+.bowire-semantics-menu-header {
+    padding: 8px 10px;
+    font-size: 11px;
+    color: var(--bowire-text-secondary);
+    border-bottom: 1px solid var(--bowire-border);
+    margin-bottom: 4px;
+    word-break: break-all;
+}
+
+.bowire-semantics-menu-item {
+    display: block;
+    width: 100%;
+    text-align: left;
+    background: none;
+    border: 0;
+    color: inherit;
+    font-size: inherit;
+    padding: 6px 10px;
+    border-radius: var(--bowire-radius-sm);
+    cursor: pointer;
+}
+.bowire-semantics-menu-item:hover {
+    background: var(--bowire-accent-subtle);
+    color: var(--bowire-accent);
+}
+
+.bowire-semantics-menu-divider {
+    height: 1px;
+    background: var(--bowire-border);
+    margin: 4px 0;
+}
+
+.bowire-semantics-menu-submenu {
+    position: relative;
+}
+.bowire-semantics-menu-submenu-trigger::after {
+    content: '';
+}
+.bowire-semantics-menu-submenu-panel {
+    display: none;
+    position: absolute;
+    left: 100%;
+    top: 0;
+    background: var(--bowire-bg-elevated);
+    border: 1px solid var(--bowire-border);
+    border-radius: var(--bowire-radius-md);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+    min-width: 220px;
+    padding: 4px;
+    z-index: 1;
+}
+.bowire-semantics-menu-submenu:hover > .bowire-semantics-menu-submenu-panel,
+.bowire-semantics-menu-submenu:focus-within > .bowire-semantics-menu-submenu-panel {
+    display: block;
+}
+
+.bowire-semantics-menu-custom-row {
+    padding: 6px 10px;
+}
+.bowire-semantics-menu-custom-input {
+    width: 100%;
+    box-sizing: border-box;
+    background: var(--bowire-bg);
+    border: 1px solid var(--bowire-border);
+    border-radius: var(--bowire-radius-sm);
+    color: inherit;
+    font-size: inherit;
+    padding: 4px 6px;
+}
+
+/* Inline semantic badge next to a response-tree leaf label. The colour
+   tier reflects the annotation source — neutral grey for auto-detected,
+   a slight accent tint for plugin hints, full accent for user-pinned
+   values. Click-target is the whole badge; it shares the right-click
+   handler with the label itself. */
+.bowire-semantics-badge {
+    display: inline-block;
+    margin-left: 6px;
+    padding: 1px 6px;
+    border-radius: var(--bowire-radius-sm);
+    font-size: 10px;
+    line-height: 14px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    cursor: pointer;
+    user-select: none;
+    vertical-align: middle;
+    border: 1px solid transparent;
+}
+.bowire-semantics-badge-auto {
+    background: var(--bowire-bg-elevated);
+    color: var(--bowire-text-secondary);
+    border-color: var(--bowire-border);
+}
+.bowire-semantics-badge-plugin {
+    background: var(--bowire-accent-subtle);
+    color: var(--bowire-accent);
+    border-color: var(--bowire-accent-subtle);
+}
+.bowire-semantics-badge-user {
+    background: var(--bowire-accent);
+    color: var(--bowire-bg);
+    border-color: var(--bowire-accent);
+}
+
+.bowire-semantics-companion-actions {
+    display: flex;
+    gap: 6px;
+    margin-top: 6px;
+    flex-wrap: wrap;
+}

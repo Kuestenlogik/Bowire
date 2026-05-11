@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 using System.Net;
+using System.Net.Http.Json;
 using System.Text.Json;
 using Kuestenlogik.Bowire.Semantics;
 using Microsoft.AspNetCore.Builder;
@@ -265,6 +266,270 @@ public sealed class BowireSemanticsEndpointsTests
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
             var body = await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
             Assert.Contains("MapLibre", body, StringComparison.OrdinalIgnoreCase);
+        }
+    }
+
+    // ----------------------------------------------------------------
+    // Phase 4 — POST/DELETE /api/semantics/annotation
+    // ----------------------------------------------------------------
+
+    /// <summary>
+    /// Build a host where the user-tier file layer is materialised
+    /// against a per-test temp path so the on-disk write surface of
+    /// POST/DELETE can be exercised without polluting <c>~/.bowire</c>.
+    /// </summary>
+    private static async Task<(WebApplication App, string UserFilePath)> BuildAppWithUserFileAsync()
+    {
+        var dir = Path.Combine(Path.GetTempPath(), "bowire-phase4-tests", Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(dir);
+        var path = Path.Combine(dir, "schema-hints.json");
+
+        var builder = WebApplication.CreateBuilder();
+        builder.WebHost.UseTestServer();
+        builder.Logging.ClearProviders();
+        builder.Services.AddBowire(opts => opts.SchemaHintsPath = path);
+
+        var app = builder.Build();
+        app.MapBowire("/bowire");
+        await app.StartAsync(TestContext.Current.CancellationToken);
+        return (app, path);
+    }
+
+    [Fact]
+    public async Task PostAnnotation_Writes_To_Session_Tier_And_Returns_Effective_Tag()
+    {
+        var app = await BuildAppAsync();
+        await using (app)
+        {
+            var client = app.GetTestClient();
+            var body = new
+            {
+                service = "harbor.HarborService",
+                method = "WatchCrane",
+                messageType = "*",
+                jsonPath = "$.position.lat",
+                semantic = "coordinate.latitude",
+                scope = "session",
+            };
+            var response = await client.PostAsJsonAsync(
+                new Uri("/bowire/api/semantics/annotation", UriKind.Relative),
+                body,
+                TestContext.Current.CancellationToken);
+
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+            using var doc = JsonDocument.Parse(
+                await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken));
+            var root = doc.RootElement;
+            Assert.Equal("coordinate.latitude", root.GetProperty("semantic").GetString());
+            Assert.Equal("user", root.GetProperty("source").GetString());
+            Assert.Equal("$.position.lat", root.GetProperty("jsonPath").GetString());
+            Assert.Equal("*", root.GetProperty("messageType").GetString());
+
+            // And the session layer must hold the write so the GET
+            // returns the same tag.
+            var store = app.Services.GetRequiredService<LayeredAnnotationStore>();
+            var tag = store.UserSessionLayer.Get(
+                AnnotationKey.ForSingleType("harbor.HarborService", "WatchCrane", "$.position.lat"));
+            Assert.NotNull(tag);
+            Assert.Equal("coordinate.latitude", tag!.Kind);
+        }
+    }
+
+    [Fact]
+    public async Task PostAnnotation_Writes_To_User_Tier_File()
+    {
+        var (app, userFilePath) = await BuildAppWithUserFileAsync();
+        await using (app)
+        {
+            var client = app.GetTestClient();
+            var body = new
+            {
+                service = "svc",
+                method = "m",
+                messageType = "*",
+                jsonPath = "$.lat",
+                semantic = "coordinate.latitude",
+                scope = "user",
+            };
+            var response = await client.PostAsJsonAsync(
+                new Uri("/bowire/api/semantics/annotation", UriKind.Relative),
+                body,
+                TestContext.Current.CancellationToken);
+
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+            Assert.True(File.Exists(userFilePath),
+                $"User-tier file was not created at {userFilePath}");
+            var fileText = await File.ReadAllTextAsync(userFilePath, TestContext.Current.CancellationToken);
+            Assert.Contains("coordinate.latitude", fileText, StringComparison.Ordinal);
+            Assert.Contains("$.lat", fileText, StringComparison.Ordinal);
+        }
+    }
+
+    [Fact]
+    public async Task PostAnnotation_Returns_NotFound_When_User_Tier_Is_Disabled()
+    {
+        // SchemaHintsPath = "" disables the user-tier file entirely.
+        var app = await BuildAppAsync();
+        await using (app)
+        {
+            var client = app.GetTestClient();
+            var body = new
+            {
+                service = "svc",
+                method = "m",
+                jsonPath = "$.lat",
+                semantic = "coordinate.latitude",
+                scope = "user",
+            };
+            var response = await client.PostAsJsonAsync(
+                new Uri("/bowire/api/semantics/annotation", UriKind.Relative),
+                body,
+                TestContext.Current.CancellationToken);
+
+            Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+        }
+    }
+
+    [Fact]
+    public async Task PostAnnotation_Returns_BadRequest_For_Missing_Fields()
+    {
+        var app = await BuildAppAsync();
+        await using (app)
+        {
+            var client = app.GetTestClient();
+            // No `service` field.
+            var body = new
+            {
+                method = "m",
+                jsonPath = "$.lat",
+                semantic = "coordinate.latitude",
+                scope = "session",
+            };
+            var response = await client.PostAsJsonAsync(
+                new Uri("/bowire/api/semantics/annotation", UriKind.Relative),
+                body,
+                TestContext.Current.CancellationToken);
+
+            Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        }
+    }
+
+    [Fact]
+    public async Task PostAnnotation_Returns_BadRequest_For_Unknown_Scope()
+    {
+        var app = await BuildAppAsync();
+        await using (app)
+        {
+            var client = app.GetTestClient();
+            var body = new
+            {
+                service = "svc",
+                method = "m",
+                jsonPath = "$.lat",
+                semantic = "coordinate.latitude",
+                scope = "global", // not one of session/user/project
+            };
+            var response = await client.PostAsJsonAsync(
+                new Uri("/bowire/api/semantics/annotation", UriKind.Relative),
+                body,
+                TestContext.Current.CancellationToken);
+
+            Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        }
+    }
+
+    [Fact]
+    public async Task DeleteAnnotation_Session_Tier_Reveals_Plugin_Or_Auto_Beneath()
+    {
+        var app = await BuildAppAsync();
+        await using (app)
+        {
+            var store = app.Services.GetRequiredService<LayeredAnnotationStore>();
+            var key = AnnotationKey.ForSingleType("svc", "m", "$.x");
+
+            // Auto layer holds CoordinateLatitude; session-tier user
+            // overrides with `none` (suppression).
+            store.AutoDetectorLayer.Set(key, BuiltInSemanticTags.CoordinateLatitude);
+            store.UserSessionLayer.Set(key, BuiltInSemanticTags.None);
+
+            var client = app.GetTestClient();
+            var body = new
+            {
+                service = "svc",
+                method = "m",
+                messageType = "*",
+                jsonPath = "$.x",
+                scope = "session",
+            };
+            using var request = new HttpRequestMessage(HttpMethod.Delete,
+                new Uri("/bowire/api/semantics/annotation", UriKind.Relative))
+            {
+                Content = JsonContent.Create(body),
+            };
+            var response = await client.SendAsync(request, TestContext.Current.CancellationToken);
+
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+            using var doc = JsonDocument.Parse(
+                await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken));
+            var root = doc.RootElement;
+            // The session-tier 'none' is gone; auto-tier latitude wins.
+            Assert.Equal("coordinate.latitude", root.GetProperty("semantic").GetString());
+            Assert.Equal("auto", root.GetProperty("source").GetString());
+        }
+    }
+
+    [Fact]
+    public async Task DeleteAnnotation_Returns_Null_Semantic_When_Nothing_Remains()
+    {
+        var app = await BuildAppAsync();
+        await using (app)
+        {
+            var store = app.Services.GetRequiredService<LayeredAnnotationStore>();
+            var key = AnnotationKey.ForSingleType("svc", "m", "$.x");
+            store.UserSessionLayer.Set(key, BuiltInSemanticTags.CoordinateLatitude);
+
+            var client = app.GetTestClient();
+            var body = new
+            {
+                service = "svc",
+                method = "m",
+                messageType = "*",
+                jsonPath = "$.x",
+                scope = "session",
+            };
+            using var request = new HttpRequestMessage(HttpMethod.Delete,
+                new Uri("/bowire/api/semantics/annotation", UriKind.Relative))
+            {
+                Content = JsonContent.Create(body),
+            };
+            var response = await client.SendAsync(request, TestContext.Current.CancellationToken);
+
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+            using var doc = JsonDocument.Parse(
+                await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken));
+            var root = doc.RootElement;
+            Assert.Equal(JsonValueKind.Null, root.GetProperty("semantic").ValueKind);
+            Assert.Equal("none", root.GetProperty("source").GetString());
+        }
+    }
+
+    [Fact]
+    public async Task DeleteAnnotation_Returns_BadRequest_For_Missing_Fields()
+    {
+        var app = await BuildAppAsync();
+        await using (app)
+        {
+            var client = app.GetTestClient();
+            // No `service` field — same missing-field check as POST.
+            var body = new { method = "m", jsonPath = "$.lat", scope = "session" };
+            using var request = new HttpRequestMessage(HttpMethod.Delete,
+                new Uri("/bowire/api/semantics/annotation", UriKind.Relative))
+            {
+                Content = JsonContent.Create(body),
+            };
+            var response = await client.SendAsync(request, TestContext.Current.CancellationToken);
+
+            Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
         }
     }
 }

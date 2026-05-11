@@ -120,6 +120,15 @@
     <BowireJsFragment Include="wwwroot\js\layout.js" />
     <BowireJsFragment Include="wwwroot\js\extensions.js" />
     <BowireJsFragment Include="wwwroot\js\widgets\map.js" />
+    <!--
+      Phase 4 — manual user override UI. Attaches the right-click menu
+      to response-tree leaves and issues writes to the new POST/DELETE
+      /api/semantics/annotation endpoints. Loaded after extensions.js so
+      it can read __bowireExtFramework's effective-schema cache; loaded
+      before init.js so the workbench's first render can mount the
+      handler against existing leaves.
+    -->
+    <BowireJsFragment Include="wwwroot\js\widgets\semantics-menu.js" />
     <BowireJsFragment Include="wwwroot\js\init.js" />
     <Watch Include="wwwroot\js\**\*.js" />
   </ItemGroup>

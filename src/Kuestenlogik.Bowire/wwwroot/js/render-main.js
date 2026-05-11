@@ -3287,6 +3287,20 @@
                     ? renderJsonTree(responseData)
                     : highlightJsonInteractive(responseData);
                 respBody.appendChild(output);
+
+                // Phase 4 — mount per-leaf semantic badges + right-click
+                // handlers. The decoration runs asynchronously (it
+                // depends on /api/semantics/effective which the
+                // extensions framework already fetches for the active
+                // method). Failure is silent — the response tree is
+                // perfectly usable without the badges.
+                if (typeof bowireDecorateResponseTreeForSemantics === 'function'
+                    && selectedService && selectedMethod) {
+                    try {
+                        bowireDecorateResponseTreeForSemantics(
+                            output, selectedService.name, selectedMethod.name);
+                    } catch (e) { console.error('[bowire-semantics] decorate', e); }
+                }
             }
         } else {
             respBody.appendChild(el('div', { className: 'bowire-no-response' },
