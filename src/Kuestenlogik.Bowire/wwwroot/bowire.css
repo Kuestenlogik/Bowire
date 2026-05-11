@@ -3023,6 +3023,100 @@ img.bowire-logo-icon {
     box-shadow: inset 3px 0 0 var(--bowire-accent);
 }
 
+/* Phase 3.1 — multi-select highlight. The active row keeps its
+   ".selected" inset accent (always one item); ".multi-selected" is the
+   collective set the map widget subscribes to. The accent-tinted
+   background separates "the row you're inspecting" from "the rows that
+   feed the map". An item can carry both classes. */
+.bowire-stream-list-item.multi-selected {
+    background: color-mix(in srgb, var(--bowire-accent) 12%, transparent);
+}
+.bowire-stream-list-item.multi-selected.selected {
+    background: color-mix(in srgb, var(--bowire-accent) 22%, var(--bowire-surface));
+}
+
+/* Phase 3.1 — split-pane primitive. The layout.js helper writes inline
+   styles for the slot sizes (flex-basis tracks the ratio), so this
+   rule only carries the divider chrome and the focus ring. The
+   divider element itself has tabIndex=0 so keyboard users can nudge
+   it via the arrow handlers in layout.js. */
+.bowire-split-pane {
+    width: 100%;
+    height: 100%;
+    box-sizing: border-box;
+}
+.bowire-split-pane-divider {
+    background: var(--bowire-border-subtle);
+    transition: background var(--bowire-transition);
+}
+.bowire-split-pane-divider:hover,
+.bowire-split-pane-divider:focus {
+    background: var(--bowire-accent);
+    outline: none;
+}
+
+/* Layout-toggle pill in the widget header. Kept minimal — the icon
+   itself carries the affordance and the title attribute spells out
+   the next state. */
+.bowire-widget-layout-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    border: 1px solid var(--bowire-border-subtle);
+    background: transparent;
+    color: var(--bowire-text-secondary);
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background var(--bowire-transition), color var(--bowire-transition);
+}
+.bowire-widget-layout-toggle:hover {
+    background: var(--bowire-surface-hover);
+    color: var(--bowire-text);
+}
+.bowire-widget-layout-toggle svg {
+    width: 14px;
+    height: 14px;
+}
+
+/* Wrapper around the widget area when the layout-mode is split-*. The
+   pane provides its own flex/height defaults so widgets like map.js
+   that style their own container against 100%/100% get the parent
+   they expect. */
+.bowire-widget-split-host {
+    display: flex;
+    width: 100%;
+    height: 100%;
+    min-height: 360px;
+}
+.bowire-widget-split-host > .bowire-split-pane-slot > .bowire-widget-pane {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+.bowire-widget-pane-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 10px;
+    font-size: 12px;
+    color: var(--bowire-text-secondary);
+    border-bottom: 1px solid var(--bowire-border-subtle);
+    background: var(--bowire-surface);
+}
+.bowire-widget-pane-header-title {
+    flex: 1;
+    font-weight: 600;
+}
+.bowire-widget-pane-body {
+    flex: 1;
+    min-height: 0;
+    position: relative;
+}
+
 .bowire-stream-list-idx {
     flex-shrink: 0;
     color: var(--bowire-text-tertiary);

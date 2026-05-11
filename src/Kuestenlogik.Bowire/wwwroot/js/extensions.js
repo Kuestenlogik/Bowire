@@ -10,9 +10,19 @@
 // mountWidgetsForMethod(...) picks viewers based on the semantic
 // annotations returned by /api/semantics/effective.
 //
-// The v1.0 ctx surface is deliberately tight (frames$, theme, viewport,
-// host). Anything beyond it is a v1.1+ additive concern; widgets that
-// reach for a missing field should fall back gracefully.
+// The v1.0 ctx surface is deliberately tight (frames$, selection$,
+// theme, viewport, host). Anything beyond it is a v1.1+ additive
+// concern; widgets that reach for a missing field should fall back
+// gracefully.
+//
+// selection$ — added in Phase 3.1 — is a snapshot stream (not a
+// delta stream) of `{ selectedFrameIds }` events bridged from the
+// `bowire:frames-selection-changed` custom event the workbench
+// dispatches when the user clicks frames in the Streaming-Frames pane.
+// "Snapshot" means a viewer doesn't have to accumulate state to know
+// what's selected — every yielded value is the complete current
+// selection. A widget that joins mid-stream gets the current snapshot
+// on its first `await` and stays in sync from there.
 // ----------------------------------------------------------------------
 
     /**
@@ -345,6 +355,37 @@
     }
 
     /**
+     * Module-local mirror of the most recently dispatched selection
+     * snapshot. The Streaming-Frames pane writes to it via
+     * `bowireRecordSelectionSnapshot`; new ctxs read it on
+     * construction so a widget that mounts AFTER the user has already
+     * made a selection (e.g. switched tabs) sees the current state on
+     * its first `await ctx.selection$.next()`. Empty by default — no
+     * frames selected.
+     */
+    var bowireCurrentSelection = { selectedFrameIds: [] };
+
+    /**
+     * Called by render-main.js whenever the workbench's selected-frame
+     * set changes. Updates the module-local mirror and dispatches the
+     * `bowire:frames-selection-changed` custom event so every active
+     * ctx's selection$ iterator yields the new snapshot. The contract
+     * is "one event = one full N-snapshot"; callers MUST NOT dispatch
+     * one event per delta entry.
+     */
+    function bowireRecordSelectionSnapshot(selectedFrameIds) {
+        var ids = Array.isArray(selectedFrameIds) ? selectedFrameIds.slice() : [];
+        bowireCurrentSelection = { selectedFrameIds: ids };
+        try {
+            document.dispatchEvent(new CustomEvent('bowire:frames-selection-changed', {
+                detail: bowireCurrentSelection
+            }));
+        } catch (e) {
+            console.error('[bowire-ext] dispatchSelection', e);
+        }
+    }
+
+    /**
      * Build a viewer ctx for a specific (extension, pairing-match,
      * stream-subscription) tuple. Each mount gets its own ctx so
      * unsubscribe / cleanup happens on the right scope when the widget
@@ -363,6 +404,25 @@
             framesPipe.push(detail);
         };
         document.addEventListener('bowire:stream-message', streamHandler);
+
+        // Selection stream — snapshot semantics. The pipe yields the
+        // current selection immediately (priming the first `await`)
+        // and then one snapshot per dispatched event.
+        var selectionPipe = bowireMakeFramesAsyncIterable();
+        selectionPipe.push(bowireCurrentSelection);
+        var selectionHandler = function (evt) {
+            var detail = evt && evt.detail;
+            if (!detail) return;
+            // Snapshot semantics: each event carries the FULL selected
+            // set, not a delta. The widget can treat every yielded
+            // value as the authoritative current state.
+            selectionPipe.push({
+                selectedFrameIds: Array.isArray(detail.selectedFrameIds)
+                    ? detail.selectedFrameIds.slice()
+                    : []
+            });
+        };
+        document.addEventListener('bowire:frames-selection-changed', selectionHandler);
 
         // Viewport: a minimal resize-observer-backed object. on('resize')
         // delivers width + height; the widget bursts out a re-layout on
@@ -390,6 +450,7 @@
         return {
             ctx: {
                 frames$: framesPipe.iterator,
+                selection$: selectionPipe.iterator,
                 interpretations: opts.kinds || {},
                 discriminator: opts.discriminator || '*',
                 theme: bowireExtensionTheme(),
@@ -433,8 +494,10 @@
             },
             cleanup: function () {
                 document.removeEventListener('bowire:stream-message', streamHandler);
+                document.removeEventListener('bowire:frames-selection-changed', selectionHandler);
                 if (ro) { try { ro.disconnect(); } catch {} }
                 framesPipe.close();
+                selectionPipe.close();
             }
         };
     }
@@ -631,7 +694,16 @@
         register: bowireRegisterExtension,
         mountWidgetsForMethod: bowireMountWidgetsForMethod,
         dispatchStreamMessage: bowireDispatchStreamMessage,
+        recordSelectionSnapshot: bowireRecordSelectionSnapshot,
         clearEffectiveCache: bowireClearEffectiveCache,
+        // Phase 3.1 — expose the preferred-extension lookup so the
+        // workbench (render-main.js) can ask "which built-in viewer
+        // handles coordinate.wgs84?" without having to walk byId itself.
+        preferredExtension: bowirePreferredExtension,
+        findPairingMatches: bowireFindPairingMatches,
+        makeViewerCtx: bowireMakeViewerCtx,
+        // Read-only accessor for the current selection snapshot.
+        currentSelection: function () { return bowireCurrentSelection; },
         // Test seams
         _findPairingMatches: bowireFindPairingMatches,
         _findPairingHints: bowireFindPairingHints,

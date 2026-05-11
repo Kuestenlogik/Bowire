@@ -283,6 +283,42 @@ rather than mounting with degraded state. Image-viewer pairs
 `image.bytes` with optional `image.mime-type`. Audio-player pairs
 `audio.bytes` with `audio.sample-rate`.
 
+### Layout manager
+
+How a viewer gets mounted is the **workbench**'s call, not the widget's.
+The widget contract above only says "here is what mounts when a kind is
+present"; the layout decision — tab in the response pane, side-by-side
+split, future floating window — lives one layer up so the workbench can
+keep the surface evolving without forcing widget authors through a
+breaking-contract migration every time a new layout mode lands.
+
+Per-kind defaults live in `wwwroot/js/layout.js → defaultLayoutForKind`:
+
+- `coordinate.wgs84` → `split-horizontal` (list-on-left, map-on-right).
+  The map needs to react to multi-selected frames in real time, which
+  only works if the streaming-frames list stays visible alongside it.
+- every other kind → `tab` (unchanged behaviour — the response pane
+  carries the viewer next to "Response" and "Response Metadata").
+
+The user can override the default per-(service, method, widget) tuple.
+The choice persists to `localStorage` under
+`bowire_widget_layout:${serviceId}:${methodId}:${widgetId}` with a
+forward-compatible shape: `{ mode: 'tab' | 'split-horizontal' |
+'split-vertical' | 'floating', ratio?: number }`. v1.3.1 ships
+`tab` and `split-horizontal` from the toggle UI only; the other two
+modes are accepted by the persistence layer so a future minor version
+can light them up without a migration. `floating` (pop-out window) is
+reserved for v1.x and explicitly out of scope for 3.1.
+
+The split-pane primitive itself (`layout.js → createSplitPane`) is
+deliberately widget-agnostic — vanilla JS, two named slots, one
+draggable divider, ratio persisted under a caller-supplied
+localStorage key, mobile-fallback to a vertical stack below 720px.
+The divider drag handler attaches `mousemove` / `mouseup` to the
+`document` only for the duration of a single drag and detaches both
+on `mouseup`, so a `render()` that tears down and rebuilds the split
+pane never leaks handlers across recreates.
+
 ### Layer behaviour for mixed discriminators
 
 When several discriminator values in the same method produce frames
@@ -553,6 +589,8 @@ window.BowireExtensions.register({
     mount(container, ctx) {
       // ctx.frames$       — async iterable of { frame, interpretations,
       //                     discriminator } events on the response stream
+      // ctx.selection$    — async iterable of { selectedFrameIds }
+      //                     SNAPSHOTS (Phase 3.1, see below)
       // ctx.theme         — { mode: 'light' | 'dark', accent, font }
       // ctx.viewport      — { width, height, on(event, cb) → unsubscribe }
       // ctx.host          — { subscribeSse(url), fetch(url, init) }
@@ -575,6 +613,24 @@ window.BowireExtensions.register({
   }
 });
 ```
+
+**`selection$` — snapshot stream, not deltas (Phase 3.1).** The workbench
+broadcasts the current set of user-selected frames every time the
+Streaming-Frames pane's selection changes. Each event the widget pulls
+from `ctx.selection$` carries the **complete** `{ selectedFrameIds:
+ReadonlyArray<string|number> }` snapshot — never a "+id" / "-id" delta.
+This means a viewer never has to accumulate state to know what's
+selected; the first awaited value IS the current selection, and every
+subsequent value IS the new authoritative state. As a corollary, a
+widget that mounts AFTER the user already made a selection (e.g. they
+selected three frames, then switched layout from tab to split,
+spinning up a fresh map) gets the current snapshot on its first
+`await` — no manual rehydration needed. The transport is a custom
+`bowire:frames-selection-changed` DOM event the workbench dispatches
+exactly once per logical change (so N selected frames produce one
+N-entry snapshot, never N delta events). Frame ids on the snapshot are
+the same `${service}/${method}#${index}` keys the workbench mints when
+each frame arrives over the SSE stream.
 
 Deliberately **not** in v1.0:
 - Recording playback controls (`currentStep`, `setStep`, `totalSteps`).

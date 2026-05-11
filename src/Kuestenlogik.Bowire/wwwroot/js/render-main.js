@@ -1991,10 +1991,18 @@
         var disPdu = detectDisPdu(raw);
         var udp = disPdu ? null : detectUdpDatagram(raw);
         var surgewaveTap = (disPdu || udp) ? null : detectSurgewaveTapEvent(raw);
+        // Phase 3.1 — multi-select click handler. Ctrl/Cmd toggles
+        // membership; Shift extends a range from the last anchor;
+        // plain click replaces with a single-member selection. The
+        // helper centralises the snapshot dispatch so the call site
+        // here stays narrow.
         var item = el('div', {
-            className: 'bowire-stream-list-item',
-            dataset: { idx: String(idx) },
-            onClick: function () { selectStreamMessage(idx, true); }
+            className: 'bowire-stream-list-item'
+                + (msg && msg.id && streamSelectedIds.has(msg.id) ? ' multi-selected' : ''),
+            dataset: { idx: String(idx), frameId: (msg && msg.id) || '' },
+            onClick: function (e) {
+                handleStreamFrameClick(idx, e);
+            }
         });
         item.appendChild(el('span', {
             className: 'bowire-stream-list-idx',
@@ -2425,6 +2433,15 @@
         }));
         toolbar.appendChild(autoBtn);
 
+        // Phase 3.1 \u2014 layout-mode toggle. Visible only when the active
+        // method has a split-eligible widget AND the user has opted into
+        // tab mode (the default for those methods is split, so the
+        // toggle on the widget pane header is enough \u2014 but once the
+        // user has switched to tab there's no widget pane and we need
+        // an alternate escape hatch).
+        var toolbarToggle = renderStreamingToolbarLayoutToggle();
+        if (toolbarToggle) toolbar.appendChild(toolbarToggle);
+
         output.appendChild(toolbar);
 
         // ---- List pane ----
@@ -2481,6 +2498,192 @@
         return output;
     }
 
+    // ---- Phase 3.1: streaming pane composed with split-mode widgets ----
+    //
+    // When the active method has annotations that match a widget whose
+    // default layout is `split-horizontal` (the map widget on
+    // coordinate.wgs84 is the only one in v1.3.1), wrap the streaming
+    // pane and the widget pane in a split-pane primitive so the user
+    // can multi-select frames AND watch the map react in real time.
+    //
+    // Falls back to the plain streaming output when:
+    //   - no extension is registered
+    //   - the extension framework hasn't loaded yet
+    //   - no method is selected (would happen on a freeform request)
+    //   - the user has overridden the layout to `tab` (the widget
+    //     stays mountable via Phase-4's right-click menu, but the
+    //     streaming pane goes back to its original shape).
+    //
+    // The widget(s) mount asynchronously via `mountWidgetsForMethod`
+    // (fetches `/api/semantics/effective`), so the widget slot starts
+    // empty and fills in once the annotation lookup resolves. The
+    // streaming pane is fully rendered + interactive while that's
+    // pending — the split layout is the only thing that depends on a
+    // synchronous "is this method map-eligible?" answer.
+    //
+    // The cleanup function returned by `mountWidgetsForMethod` is
+    // tracked on the wrapper so the next render() can tear down
+    // viewers cleanly. Without that, every render() would leave the
+    // previous mount's frames$ subscription dangling.
+    var bowireWidgetUnmounts = [];
+    function disposeWidgetMounts() {
+        for (var i = 0; i < bowireWidgetUnmounts.length; i++) {
+            try { bowireWidgetUnmounts[i](); } catch (e) { console.error('[bowire-widget]', e); }
+        }
+        bowireWidgetUnmounts = [];
+    }
+
+    function renderStreamingPaneWithWidgets() {
+        var fw = window.__bowireExtFramework;
+        var layout = window.__bowireLayout;
+
+        // The straightforward fallbacks — no extension framework, no
+        // selected method, etc. — return the plain streaming output
+        // unchanged. Anything that wants the split layout is on the
+        // happy path below.
+        if (!fw || !layout || !selectedService || !selectedMethod) {
+            disposeWidgetMounts();
+            return renderStreamingOutput();
+        }
+
+        // Synchronously decide whether the active method is split-
+        // eligible. The decision is based on the extension's default
+        // layout per kind PLUS the per-(service, method, widget) user
+        // override stored in localStorage. We don't actually know
+        // which extensions are mountable until /api/semantics/effective
+        // resolves — but the split decision is per-kind, so a single
+        // "is any registered extension's default split-horizontal?"
+        // check is enough.
+        //
+        // For v1.3.1 the only split-default kind is `coordinate.wgs84`.
+        // Future kinds extend this set in layout.js → defaultLayoutForKind.
+        var splitKindExt = fw.preferredExtension('coordinate.wgs84');
+        var saved = splitKindExt
+            ? layout.loadWidgetLayout(selectedService.name, selectedMethod.name, splitKindExt.id, splitKindExt.kind)
+            : null;
+        var splitActive = !!(splitKindExt
+            && saved
+            && (saved.mode === 'split-horizontal' || saved.mode === 'split-vertical'));
+
+        if (!splitActive) {
+            disposeWidgetMounts();
+            return renderStreamingOutput();
+        }
+
+        // Build the split-pane host. We re-create the wrapper on every
+        // render — morphdom diffs it against the previous wrapper at
+        // the same position — but the split-pane primitive owns the
+        // divider drag listeners only for the lifetime of THIS wrapper.
+        // dispose() runs on every cleanup pass via disposeWidgetMounts.
+        disposeWidgetMounts();
+
+        var host = el('div', { className: 'bowire-widget-split-host' });
+        var pane = layout.createSplitPane(host, {
+            orientation: saved.mode === 'split-vertical' ? 'vertical' : 'horizontal',
+            initialRatio: typeof saved.ratio === 'number' ? saved.ratio : 0.5,
+            storageKey: 'bowire_widget_split_ratio:' + splitKindExt.id
+        });
+        bowireWidgetUnmounts.push(function () { pane.dispose(); });
+
+        // Left slot: the streaming-frames pane (Wireshark list + detail).
+        pane.firstSlot.appendChild(renderStreamingOutput());
+
+        // Right slot: the widget pane with its own header (title +
+        // layout toggle). The actual viewer DOM is attached
+        // asynchronously by mountWidgetsForMethod, which fetches the
+        // effective annotations first.
+        var widgetPane = el('div', { className: 'bowire-widget-pane' });
+        var widgetHeader = el('div', { className: 'bowire-widget-pane-header' },
+            el('span', {
+                className: 'bowire-widget-pane-header-title',
+                textContent: (splitKindExt.viewer && splitKindExt.viewer.label) || splitKindExt.kind
+            }),
+            el('button', {
+                className: 'bowire-widget-layout-toggle',
+                title: 'Toggle layout (Tab ↔ Split)',
+                onClick: function () {
+                    var current = saved.mode;
+                    var nextMode = layout.cycleLayoutMode(current, splitKindExt.kind);
+                    layout.saveWidgetLayout(selectedService.name, selectedMethod.name, splitKindExt.id, {
+                        mode: nextMode,
+                        ratio: pane.getRatio()
+                    });
+                    render();
+                },
+                innerHTML: bowireLayoutIcon('layout-split')
+            })
+        );
+        var widgetBody = el('div', { className: 'bowire-widget-pane-body' });
+        widgetPane.appendChild(widgetHeader);
+        widgetPane.appendChild(widgetBody);
+        pane.secondSlot.appendChild(widgetPane);
+
+        // Kick off the asynchronous mount. mountWidgetsForMethod
+        // resolves /api/semantics/effective, finds pairing matches,
+        // and calls each viewer's mount() on its own slot. We return
+        // the cleanup so the next render() can dispose this mount.
+        var widgetCleanup = fw.mountWidgetsForMethod(
+            selectedService.name, selectedMethod.name, widgetBody);
+        if (typeof widgetCleanup === 'function') {
+            bowireWidgetUnmounts.push(widgetCleanup);
+        }
+
+        return host;
+    }
+
+    /**
+     * Render the small toolbar button that appears in the streaming
+     * pane's toolbar when the active method has a split-eligible
+     * widget AND the user has currently opted into `tab` mode (no
+     * widget pane → no header → toolbar is the only place left to
+     * surface the toggle). Returns null in every other case so the
+     * caller can skip appending.
+     */
+    function renderStreamingToolbarLayoutToggle() {
+        var fw = window.__bowireExtFramework;
+        var layout = window.__bowireLayout;
+        if (!fw || !layout || !selectedService || !selectedMethod) return null;
+        var splitKindExt = fw.preferredExtension('coordinate.wgs84');
+        if (!splitKindExt) return null;
+        var saved = layout.loadWidgetLayout(
+            selectedService.name, selectedMethod.name, splitKindExt.id, splitKindExt.kind);
+        if (saved.mode !== 'tab') return null;
+        return el('button', {
+            className: 'bowire-widget-layout-toggle',
+            title: 'Switch to split layout (' + (splitKindExt.viewer && splitKindExt.viewer.label || splitKindExt.kind) + ')',
+            onClick: function () {
+                layout.saveWidgetLayout(selectedService.name, selectedMethod.name, splitKindExt.id, {
+                    mode: 'split-horizontal',
+                    ratio: typeof saved.ratio === 'number' ? saved.ratio : 0.5
+                });
+                render();
+            },
+            innerHTML: bowireLayoutIcon('layout-split')
+        });
+    }
+
+    /**
+     * Inline-SVG layout icons. Two states: tab (stacked rectangles)
+     * and split (side-by-side rectangles). Matches the visual style
+     * of svgIcon() in helpers.js (16x16 viewBox, currentColor,
+     * 2px stroke) so the workbench's icon family stays consistent.
+     */
+    function bowireLayoutIcon(name) {
+        switch (name) {
+            case 'layout-tab':
+                return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">'
+                    + '<rect x="3" y="5" width="18" height="14" rx="2"/>'
+                    + '<line x1="3" y1="9" x2="21" y2="9"/>'
+                    + '</svg>';
+            case 'layout-split':
+            default:
+                return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">'
+                    + '<rect x="3" y="5" width="18" height="14" rx="2"/>'
+                    + '<line x1="12" y1="5" x2="12" y2="19"/>'
+                    + '</svg>';
+        }
+    }
+
     function appendStreamMessage(parsed) {
         // Fast-path called from sseSource.onmessage / channel onmessage AFTER
         // the message has been pushed onto streamMessages. Returns true when
@@ -2534,6 +2737,103 @@
         }
         updateStreamDetail();
         updateStreamSelection();
+    }
+
+    // ---- Phase 3.1: multi-select handler + snapshot dispatch ----
+    //
+    // Three click modes, matching what every Wireshark-style UI does:
+    //   plain click       → replace selection with this one frame
+    //   Ctrl/Cmd click    → toggle membership
+    //   Shift click       → extend a contiguous range from the anchor
+    //                       (the last single-clicked row)
+    // The detail pane keeps tracking the most recently clicked row —
+    // that's `streamSelectedIndex`, set by selectStreamMessage. The
+    // multi-select set lives in `streamSelectedIds` and is read by the
+    // map widget through the `ctx.selection$` async iterable. We emit
+    // ONE `bowire:frames-selection-changed` event per logical change
+    // (carrying the full N-snapshot) so widgets don't have to
+    // accumulate state — see selection-stream wiring in extensions.js.
+    function handleStreamFrameClick(idx, e) {
+        if (idx < 0 || idx >= streamMessages.length) return;
+        var msg = streamMessages[idx];
+        var id = msg && msg.id;
+
+        if (e && (e.ctrlKey || e.metaKey) && id != null) {
+            // Toggle this frame in/out of the selected set. The detail
+            // pane still snaps to whatever the user clicked so the
+            // single-frame inspection flow keeps working.
+            if (streamSelectedIds.has(id)) streamSelectedIds.delete(id);
+            else streamSelectedIds.add(id);
+            streamSelectionAnchorIdx = idx;
+            selectStreamMessage(idx, true);
+            dispatchFramesSelectionSnapshot();
+            refreshMultiSelectClasses();
+            return;
+        }
+
+        if (e && e.shiftKey && streamSelectionAnchorIdx != null) {
+            // Range select between anchor and clicked index. Replaces
+            // the current set rather than additive-extending — most
+            // users expect "Shift defines the new range from anchor".
+            var lo = Math.min(streamSelectionAnchorIdx, idx);
+            var hi = Math.max(streamSelectionAnchorIdx, idx);
+            streamSelectedIds = new Set();
+            for (var i = lo; i <= hi; i++) {
+                var rid = streamMessages[i] && streamMessages[i].id;
+                if (rid != null) streamSelectedIds.add(rid);
+            }
+            selectStreamMessage(idx, true);
+            dispatchFramesSelectionSnapshot();
+            refreshMultiSelectClasses();
+            return;
+        }
+
+        // Plain click — replace selection with just this frame.
+        if (id != null) {
+            streamSelectedIds = new Set([id]);
+        } else {
+            streamSelectedIds = new Set();
+        }
+        streamSelectionAnchorIdx = idx;
+        selectStreamMessage(idx, true);
+        dispatchFramesSelectionSnapshot();
+        refreshMultiSelectClasses();
+    }
+
+    /**
+     * Send the current snapshot to the extension framework. The
+     * framework re-broadcasts it as a `bowire:frames-selection-changed`
+     * DOM event, which every active widget's `ctx.selection$` iterable
+     * pulls from. ONE event per logical change — never one per delta.
+     */
+    function dispatchFramesSelectionSnapshot() {
+        if (!window.__bowireExtFramework
+            || typeof window.__bowireExtFramework.recordSelectionSnapshot !== 'function') {
+            return;
+        }
+        var ids = [];
+        streamSelectedIds.forEach(function (v) { ids.push(v); });
+        window.__bowireExtFramework.recordSelectionSnapshot(ids);
+    }
+
+    /**
+     * Surgically toggle the .multi-selected class on each list item.
+     * We don't go through the full render() path because the
+     * Streaming-Frames pane is on the hot path (one row per frame, up
+     * to thousands per second); the existing append fast-path skips
+     * render() entirely. Class-toggling matches that performance
+     * envelope and keeps morphdom out of the loop.
+     */
+    function refreshMultiSelectClasses() {
+        var list = document.getElementById('bowire-stream-list');
+        if (!list) return;
+        var children = list.children;
+        for (var i = 0; i < children.length; i++) {
+            var c = children[i];
+            var fid = c && c.dataset ? c.dataset.frameId : '';
+            if (fid && streamSelectedIds.has(fid)) c.classList.add('multi-selected');
+            else c.classList.remove('multi-selected');
+        }
     }
 
     function updateStreamDetail() {
@@ -2896,7 +3196,16 @@
             // The full DOM is built once per render() (start / done / error);
             // new in-flight messages take the appendStreamMessage() fast path
             // and never trigger a sidebar/main re-render.
-            respBody.appendChild(renderStreamingOutput());
+            //
+            // Phase 3.1: when the active method carries annotations
+            // that mount a widget defaulting to split-horizontal (the
+            // map widget on coordinate.wgs84 is the only consumer in
+            // v1.3.1), the streaming list and the widget share the
+            // pane via the split-pane primitive instead of competing
+            // for the same tab slot. Falls through to the original
+            // single-pane render when no such widget is mountable —
+            // identical behaviour for every other method.
+            respBody.appendChild(renderStreamingPaneWithWidgets());
         } else if (diffViewOpen && getResponseSnapshots().length >= 2) {
             // Multi-snapshot diff view — replaces the normal response body
             // with snapshot selectors and a line-by-line comparison.

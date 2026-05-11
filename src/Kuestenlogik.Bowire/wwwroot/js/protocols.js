@@ -432,10 +432,23 @@
             duplexSseSource.onmessage = function (event) {
                 try {
                     var parsed = JSON.parse(event.data);
+                    // Phase 3.1 — mint the same `${service}/${method}#${index}`
+                    // frame id the unary streaming path produces so a
+                    // duplex channel's frames can be selected and the
+                    // map widget reacts identically.
+                    var frameIndex = (typeof parsed.index === 'number') ? parsed.index : streamMessages.length;
+                    if (parsed.id === undefined) {
+                        parsed.id = (selectedService ? selectedService.name : 'duplex')
+                            + '/' + (selectedMethod ? selectedMethod.name : 'channel')
+                            + '#' + frameIndex;
+                    }
                     streamMessages.push(parsed);
                     if (parsed && parsed.data !== undefined) captureResponse(parsed.data);
                     addConsoleEntry({ type: 'stream', method: fullName, body: parsed.data || event.data });
                     receivedCount++;
+                    if (window.__bowireExtFramework) {
+                        window.__bowireExtFramework.dispatchStreamMessage(parsed);
+                    }
                     // Fast-path: append-only DOM update on the streaming output
                     // instead of a full app re-render per message. Falls back
                     // to render() for the first message (container not built
@@ -453,7 +466,14 @@
                         }
                     });
                 } catch (e) {
-                    streamMessages.push({ index: streamMessages.length, data: event.data });
+                    var fbIdx = streamMessages.length;
+                    streamMessages.push({
+                        index: fbIdx,
+                        id: (selectedService ? selectedService.name : 'duplex')
+                            + '/' + (selectedMethod ? selectedMethod.name : 'channel')
+                            + '#' + fbIdx,
+                        data: event.data
+                    });
                     receivedCount++;
                     if (!window.bowireAppendStreamMessage || !window.bowireAppendStreamMessage()) {
                         render();

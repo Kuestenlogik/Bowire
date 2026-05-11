@@ -108,7 +108,16 @@
       exists when the widget calls it. widgets/*.js are widget modules
       that self-register against the framework — order between widgets
       is not significant (their kinds don't overlap).
+
+      layout.js (Phase 3.1) ships the split-pane primitive consumed by
+      both the extension-framework mount path (when a widget defaults
+      to split-horizontal — e.g. coordinate.wgs84) and the workbench's
+      own split layouts. Pure vanilla DOM (no `el(...)` dependency), so
+      it can sit anywhere — placed here so extensions.js and any
+      consumer can reach `window.__bowireLayout` without checking for
+      it lazily.
     -->
+    <BowireJsFragment Include="wwwroot\js\layout.js" />
     <BowireJsFragment Include="wwwroot\js\extensions.js" />
     <BowireJsFragment Include="wwwroot\js\widgets\map.js" />
     <BowireJsFragment Include="wwwroot\js\init.js" />

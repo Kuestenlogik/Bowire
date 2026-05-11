@@ -272,6 +272,19 @@
     let streamDetailMaximized = false;  // Hide list, show detail full-height
     let streamListSizePct = 45;         // Splitter position: list pane height as % (10..90)
     let streamFilterQuery = '';         // Substring filter applied to the visible stream list
+    // Phase 3.1 — multi-select selection set for the Streaming-Frames
+    // pane. Ctrl/Cmd-click toggles membership, Shift-click extends a
+    // range from the last anchor, plain click replaces with a single-
+    // member set. Empty set = "no manual selection" (the detail pane
+    // still follows `streamSelectedIndex` for the active item).
+    //
+    // The set holds frame `id` strings minted by api.js/protocols.js
+    // (`${service}/${method}#${index}`) so a snapshot is portable across
+    // tabs and recordings. Snapshots dispatched on
+    // `bowire:frames-selection-changed` carry the full N-member array
+    // exactly once per logical change — never one event per delta.
+    let streamSelectedIds = new Set();
+    let streamSelectionAnchorIdx = null;   // last single-click index for shift-range
     let responseViewMode = 'json';      // 'json' (pretty/syntax) or 'tree' (collapsible nodes)
     let showAllHistory = false; // Whether history tab shows all methods or filtered
 
@@ -573,6 +586,8 @@
             statusInfo = null;
         }
         streamSelectedIndex = null;
+        streamSelectedIds = new Set();
+        streamSelectionAnchorIdx = null;
         streamAutoScroll = true;
         streamDetailMaximized = false;
         formValidationErrors = {};
@@ -618,6 +633,8 @@
             statusInfo = null;
         }
         streamSelectedIndex = null;
+        streamSelectedIds = new Set();
+        streamSelectionAnchorIdx = null;
         streamAutoScroll = true;
         streamDetailMaximized = false;
         formValidationErrors = {};
@@ -669,6 +686,8 @@
                     statusInfo = null;
                 }
                 streamSelectedIndex = null;
+                streamSelectedIds = new Set();
+                streamSelectionAnchorIdx = null;
                 streamAutoScroll = true;
                 streamDetailMaximized = false;
                 formValidationErrors = {};

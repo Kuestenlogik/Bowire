@@ -415,6 +415,17 @@
             try {
                 const parsed = JSON.parse(event.data);
                 parsed._clientReceivedAtMs = receivedAt;
+                // Phase 3.1 — mint a stable per-frame id used by the
+                // Streaming-Frames selection sync. The server already
+                // ships a monotonic `index`; we wrap it in
+                // `${service}/${method}#${index}` so collisions across
+                // method tabs in the same session are impossible. The
+                // `id` is dispatched alongside the frame in the
+                // `bowire:stream-message` event so widgets can correlate
+                // selection-snapshot ids with frame events without
+                // having to reach into method-state.
+                var frameIndex = (typeof parsed.index === 'number') ? parsed.index : streamMessages.length;
+                if (parsed.id === undefined) parsed.id = service + '/' + method + '#' + frameIndex;
                 streamMessages.push(parsed);
                 // Chaining: capture the inner data payload (last message wins)
                 if (parsed && parsed.data !== undefined) captureResponse(parsed.data);
@@ -433,7 +444,13 @@
                     render();
                 }
             } catch {
-                const fallback = { index: streamMessages.length, data: event.data, _clientReceivedAtMs: receivedAt };
+                var fbIdx = streamMessages.length;
+                const fallback = {
+                    index: fbIdx,
+                    id: service + '/' + method + '#' + fbIdx,
+                    data: event.data,
+                    _clientReceivedAtMs: receivedAt
+                };
                 streamMessages.push(fallback);
                 addConsoleEntry({ type: 'stream', method: fullName, body: event.data });
                 if (window.__bowireExtFramework) {

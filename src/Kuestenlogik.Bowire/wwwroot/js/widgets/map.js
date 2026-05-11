@@ -246,15 +246,38 @@
         }
 
         map.addSource('bowire-points', { type: 'geojson', data: pointsSource });
+        // Data-driven styling: the `selected` feature property switches
+        // the radius + stroke colour without rebuilding the layer.
+        // Selection sync (Phase 3.1) flips `selected` on per-feature
+        // through a single `setData(...)` call — no layer thrashing on
+        // every Ctrl-click. See `applySelectionRestyle` below.
         map.addLayer({
             id: 'bowire-points-layer',
             type: 'circle',
             source: 'bowire-points',
             paint: {
-                'circle-radius': 6,
+                'circle-radius': [
+                    'match', ['get', 'selected'],
+                    'yes', 9,
+                    /* default */ 6
+                ],
                 'circle-color': ['get', 'color'],
-                'circle-stroke-width': 1.5,
-                'circle-stroke-color': '#ffffff'
+                'circle-stroke-width': [
+                    'match', ['get', 'selected'],
+                    'yes', 2.5,
+                    /* default */ 1.5
+                ],
+                'circle-stroke-color': [
+                    'match', ['get', 'selected'],
+                    'yes', (ctx.theme && ctx.theme.accent) || '#4f46e5',
+                    /* default */ '#ffffff'
+                ],
+                'circle-opacity': [
+                    'match', ['get', 'selected'],
+                    'yes', 1.0,
+                    'no-but-others-are', 0.55,
+                    /* default */ 1.0
+                ]
             }
         });
 
@@ -299,17 +322,51 @@
             return null;
         }
 
+        // Phase 3.1 — selected-frame tracking. We hold the snapshot
+        // separately from the feature collection so a re-styled feature
+        // can be flagged in O(1) on each selection event. The
+        // userMovedCamera flag suppresses auto-fit once the user has
+        // panned/zoomed — same instinct as the existing 5-pin auto-fit
+        // cutoff, just extended for the selection-driven camera moves.
+        var selectedFrameIds = new Set();
+        var userMovedCamera = false;
+        map.on('dragstart', function () { userMovedCamera = true; });
+        map.on('zoomstart', function (e) {
+            // MapLibre fires zoomstart for programmatic flyTo / fitBounds
+            // too; only count it as user-driven when there's no
+            // originalEvent attached (originalEvent is set on
+            // mousewheel/touch).
+            if (e && e.originalEvent) userMovedCamera = true;
+        });
+
         function addPin(frame) {
             var coord = extractCoord(frame);
             if (!coord) return;
             var discriminator = (frame && frame.discriminator) || '*';
             var color = bowireMapDiscriminatorColor(discriminator, paletteStore);
+            var frameId = (frame && frame.id) || null;
+
+            var anySelected = selectedFrameIds.size > 0;
+            var isSelected = frameId != null && selectedFrameIds.has(frameId);
+            // `selected` is a tristate so the layer's match expression
+            // can switch radius/opacity in one place:
+            //   'yes'                — this pin is selected
+            //   'no-but-others-are'  — selection is non-empty but this pin isn't in it
+            //   absent / 'no'        — no selection at all (normal)
+            var selectedTag = isSelected
+                ? 'yes'
+                : (anySelected ? 'no-but-others-are' : 'no');
 
             pointsSource.features.push({
                 type: 'Feature',
                 id: ++pinSeq,
                 geometry: { type: 'Point', coordinates: [coord.lon, coord.lat] },
-                properties: { color: color, discriminator: discriminator }
+                properties: {
+                    color: color,
+                    discriminator: discriminator,
+                    frameId: frameId,
+                    selected: selectedTag
+                }
             });
 
             // Trim pin count to avoid unbounded memory in long streams.
@@ -330,7 +387,68 @@
             }
             // Auto-fit on the first few pins, then leave navigation to
             // the user. Avoids the jitter of a re-fit on every frame.
-            if (pointsSource.features.length <= 5) maybeFit();
+            // Once the user has moved the camera (drag/zoom) OR a
+            // selection has driven the camera, skip auto-fit so we
+            // don't fight the user.
+            if (pointsSource.features.length <= 5 && !userMovedCamera) maybeFit();
+        }
+
+        /**
+         * Re-flag every feature's `selected` property and push the
+         * collection back to the source in a single `setData(...)`
+         * call. MapLibre's data-driven `match` expression on the
+         * paint properties resolves the new value on the next
+         * frame — no layer rebuilds, no per-pin DOM churn.
+         */
+        function applySelectionRestyle() {
+            var anySelected = selectedFrameIds.size > 0;
+            for (var i = 0; i < pointsSource.features.length; i++) {
+                var f = pointsSource.features[i];
+                var fid = f.properties && f.properties.frameId;
+                var isSelected = fid != null && selectedFrameIds.has(fid);
+                f.properties.selected = isSelected
+                    ? 'yes'
+                    : (anySelected ? 'no-but-others-are' : 'no');
+            }
+            var src = map.getSource('bowire-points');
+            if (src) src.setData(pointsSource);
+        }
+
+        /**
+         * Camera rule per the Phase 3.1 spec:
+         *   0 selected → no change (preserve user pan/zoom)
+         *   1 selected → flyTo({ center, zoom: 14 }) for that frame's
+         *                first coord pair
+         *   N selected → fitBounds(...) of every selected frame's
+         *                coord pairs, ~40px padding
+         */
+        function applySelectionCamera() {
+            var ids = selectedFrameIds;
+            if (ids.size === 0) return;
+
+            // Walk the feature collection (cheaper than re-resolving
+            // JSONPaths on the raw frames) and collect coords for any
+            // feature whose frameId is in the selected set.
+            var coords = [];
+            for (var i = 0; i < pointsSource.features.length; i++) {
+                var f = pointsSource.features[i];
+                var fid = f.properties && f.properties.frameId;
+                if (fid != null && ids.has(fid)) {
+                    coords.push(f.geometry.coordinates);
+                }
+            }
+            if (coords.length === 0) return;
+
+            // Mark the upcoming camera move as programmatic so the
+            // dragstart/zoomstart heuristic above doesn't latch
+            // `userMovedCamera` and disable auto-fit forever after.
+            if (coords.length === 1) {
+                try { map.flyTo({ center: coords[0], zoom: 14, duration: 350 }); } catch {}
+            } else {
+                var b = new maplibregl.LngLatBounds(coords[0], coords[0]);
+                for (var j = 1; j < coords.length; j++) b.extend(coords[j]);
+                try { map.fitBounds(b, { padding: 40, duration: 350, maxZoom: 14 }); } catch {}
+            }
         }
 
         // Stream loop — pull from the framework's async iterable.
@@ -344,6 +462,28 @@
                 if (!disposed) console.error('[bowire-map] stream loop ended:', e);
             }
         })();
+
+        // Selection loop — pulls full snapshots and re-flags pins +
+        // moves the camera per the rule above. The first iteration
+        // primes from `ctx.selection$`'s buffered current snapshot,
+        // so a widget mounted AFTER the user already made a selection
+        // syncs without an extra event.
+        if (ctx.selection$) {
+            (async function consumeSelection() {
+                try {
+                    for await (var snap of ctx.selection$) {
+                        if (disposed) return;
+                        var ids = (snap && Array.isArray(snap.selectedFrameIds))
+                            ? snap.selectedFrameIds : [];
+                        selectedFrameIds = new Set(ids);
+                        applySelectionRestyle();
+                        applySelectionCamera();
+                    }
+                } catch (e) {
+                    if (!disposed) console.error('[bowire-map] selection loop ended:', e);
+                }
+            })();
+        }
 
         return function unmount() {
             disposed = true;
