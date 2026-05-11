@@ -49,11 +49,15 @@ it has no host app sharing the route table.
   HTTP (`AddBowireMcp` + `MapBowireMcp`), Bowire-as-MCP-server over stdio
   (`bowire mcp serve`). Claude Desktop config examples for both standalone
   and embedded mounts.
-- **Storm → Surgewave brand migration (Phase 3)** swept across the main
-  repo: docs, namespaces (`Protocol.Storm` → `…Surgewave`), JS detector,
-  CSS classes, URL scheme (`storm://` → `surgewave://`), plugin slug,
-  package id. Phase 1+2 (sibling plugin + SDK) had landed earlier;
-  this completes the rename inside the main workbench.
+- **Internal codename `Storm` rename to `Surgewave` finished inside the
+  main repo (Phase 3).** Storm was Küstenlogik's internal placeholder
+  while the product was being built; Surgewave is the public name it
+  ships under. Phase 1+2 already brought the sibling plugin and its SDK
+  in line; this completes the rename inside the main workbench — docs,
+  namespaces (`Protocol.Storm` → `…Surgewave`), JS detector, CSS
+  classes, URL scheme (`storm://` → `surgewave://`), plugin slug,
+  package id. Pure source-tree hygiene — no external users were ever
+  exposed to "Storm".
 - **OAuth proxy uses `IHttpClientFactory`** instead of `new HttpClient()`
   per request — handler pooling, clean test seam, and `Bowire:Trust
   LocalhostCert` opt-in now also applies to OAuth proxy calls against a
