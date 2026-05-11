@@ -55,14 +55,14 @@
       <div class="screenshot-carousel-track">
 
         <!-- ===== Landing states ===== -->
-
-        <a class="screenshot-card" href="{{ '/features.html#empty-states' | relative_url }}">
-          {% include themed-img.html src="/assets/images/screenshots/ready.png" alt="Bowire ready landing — connected to a server, services discovered, waiting for method selection" %}
-          <div class="screenshot-card-body">
-            <h4>Connected &amp; ready</h4>
-            <p>Service summary, recent-history quick-recall, keyboard shortcut tips, guided tour entry point.</p>
-          </div>
-        </a>
+        <!-- Trimmed deliberately to two of the most visually distinct
+             variants. The other landing states (multi-URL status table,
+             discovery-failed error guidance, schema-file upload) live
+             on features.html under #empty-states / #schema-upload where
+             they're shown side-by-side in a grid with clear captions —
+             putting all five into the carousel made them look like
+             near-identical "connected" screens because their main UI
+             chrome is shared. -->
 
         <a class="screenshot-card" href="{{ '/features.html#empty-states' | relative_url }}">
           {% include themed-img.html src="/assets/images/screenshots/first-run.png" alt="First-run welcome screen with two onboarding cards — connect to a server, or upload a schema file" %}
@@ -73,30 +73,18 @@
         </a>
 
         <a class="screenshot-card" href="{{ '/features.html#empty-states' | relative_url }}">
-          {% include themed-img.html src="/assets/images/screenshots/multi-url.png" alt="Multi-URL setup with one connected server and one failed — per-URL status table with retry buttons" %}
+          {% include themed-img.html src="/assets/images/screenshots/ready.png" alt="Bowire ready landing — connected to a server, services discovered, waiting for method selection" %}
           <div class="screenshot-card-body">
-            <h4>Multi-URL discovery</h4>
-            <p>Connect to multiple servers in parallel — per-URL status table with retry buttons for any that fail.</p>
-          </div>
-        </a>
-
-        <a class="screenshot-card" href="{{ '/features.html#empty-states' | relative_url }}">
-          {% include themed-img.html src="/assets/images/screenshots/discovery-failed.png" alt="Discovery failed against an unreachable server — error message plus four troubleshoot bullets" %}
-          <div class="screenshot-card-body">
-            <h4>Smart error guidance</h4>
-            <p>When discovery fails, the landing surfaces the actual error plus four common-cause troubleshoot bullets.</p>
+            <h4>Connected &amp; ready</h4>
+            <p>Service summary, recent-history quick-recall, keyboard shortcut tips, guided tour entry point.</p>
           </div>
         </a>
 
         <!-- ===== Core workflows ===== -->
-
-        <a class="screenshot-card" href="{{ '/features.html#schema-upload' | relative_url }}">
-          {% include themed-img.html src="/assets/images/screenshots/schema-upload.png" alt="Schema upload — drop in a .proto, OpenAPI spec, or GraphQL SDL and browse the API offline" %}
-          <div class="screenshot-card-body">
-            <h4>Work offline with a schema file</h4>
-            <p>Drop in a <code>.proto</code>, OpenAPI spec, or GraphQL SDL and browse the API without a running server. Great for reviewing a contract during code review.</p>
-          </div>
-        </a>
+        <!-- Ordered so adjacent cards are visually as different as
+             possible: each shift introduces a new UI region or layout
+             (sidebar pane vs. graph editor vs. detail-pane stream vs.
+             modal palette vs. histogram). -->
 
         <a class="screenshot-card" href="{{ '/features.html#flow-editor' | relative_url }}">
           {% include themed-img.html src="/assets/images/screenshots/flow-editor.png" alt="Visual flow editor — pipeline of API calls with branching conditions and loops" %}

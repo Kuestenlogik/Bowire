@@ -44,7 +44,11 @@ function log(m) { console.log(new Date().toISOString().slice(11, 19), m); }
     for (const { name, port } of STATES) {
         log(`${name} (port ${port}, theme=${THEME})…`);
         try {
-            await page.goto(`http://localhost:${port}/bowire`, { waitUntil: 'domcontentloaded' });
+            // Standalone bowire (v1.2.0+) mounts at /, not /bowire — the
+            // /bowire path is reserved for embedded-mode hosts. Each of
+            // the four ports below is its own standalone process, so /
+            // is the correct entry.
+            await page.goto(`http://localhost:${port}/`, { waitUntil: 'domcontentloaded' });
             // Force the theme pref before first paint and reload so the
             // capture lands in the explicitly-themed render rather than
             // whatever the OS pref says.
