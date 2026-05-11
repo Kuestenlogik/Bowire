@@ -54,6 +54,42 @@ Pre-populate the proto cache before invoking `dotnet build`:
 
 Drop the six upstream `.proto` files (same filenames as on `Rheinmetall/tacticalapi`) into that directory and the build's `DownloadFile` target short-circuits because the files already exist. Consumers of the **published NuGet package** don't need network access &mdash; only contributors and CI building from source do.
 
+## Try it — upstream test client as data populator
+
+Rheinmetall ships an [official C# test client](https://github.com/Rheinmetall/tacticalapi/tree/main/testclient/csharp) alongside the proto set. It's a small CLI that exercises every operation in `Situation` &mdash; `--observesituation` (server-streaming), `--printsituation` (unary polling), `--sendsymbol` (create), `--changesymbolname` (update), `--deletesymbol` (delete). For Bowire users the test client is the fastest way to **populate a server with realistic data** so the workbench has something interesting to render.
+
+End-to-end demo, against either a live TacticalAPI server or the upstream `TacNet` instance:
+
+```bash
+# 1. Build the upstream test client (one-time)
+git clone https://github.com/Rheinmetall/tacticalapi
+cd tacticalapi/testclient/csharp
+dotnet build TacticalApi.TestClient.csproj
+
+# 2. Place a handful of symbols at WGS84 coordinates near Hamburg
+#    (the test client takes lat / lon as positional args)
+dotnet TacticalApi.TestClient.dll --sendsymbol 53.5 9.9
+dotnet TacticalApi.TestClient.dll --sendsymbol 53.55 10.0
+dotnet TacticalApi.TestClient.dll --sendsymbol 53.6 10.05
+
+# 3. Point Bowire at the same server — native HTTP/2 transport
+bowire --url grpc@https://localhost:4267
+#    …or gRPC-Web over HTTP/1.1 if the server exposes :4268 too
+bowire --url grpcweb@https://localhost:4268
+
+# 4. In the workbench, pick Situation → SubscribeSituationObjectEvents.
+#    Click Execute. With the Frame-Semantics Framework live in
+#    Bowire 1.3.0+, the workbench auto-detects the lat/lon fields on
+#    every SituationObjectLocation and mounts a Map tab next to the
+#    streaming-frames pane — every symbol the test client created
+#    appears as a pin, every new --sendsymbol from a parallel
+#    terminal lights up live.
+```
+
+Why this demo carries weight: **no Bowire-side configuration was involved**. No `bowire.schema-hints.json`, no `IBowireSchemaHints` implementation, no manual right-click on a field. The TacticalAPI plugin ships transport-only; the framework recognises `coordinate.latitude` / `coordinate.longitude` from the field names + WGS84 ranges and routes the data into the map widget on its own. The pgAdmin pattern: shape-of-data drives viewer choice, not protocol-author opt-in.
+
+A companion walkthrough in **[the mock-server docs](../features/mock-server.md#external-client-validation)** uses the same test client to validate `bowire mock` &mdash; a useful inverse comparison if you ever want to verify Bowire reproduces a real server's behaviour faithfully.
+
 ## Roadmap
 
 - **v0.1.0 (this release)** &mdash; bundled-schema discovery, plugin registration, identity API, generated client stubs available to consumers.

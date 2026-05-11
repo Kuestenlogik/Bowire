@@ -627,8 +627,51 @@ Recordings that predate Phase 1c (i.e. have no `schemaDescriptor`) still replay 
 - **Path-template matching** &mdash; `/users/{id}` bindings. Phase 2.
 - **Stateful mode**, **scenario switching**, **chaos injection**, **schema-only mocks** (without a recording), **request capture on miss**. All Phase 3.
 
+## External-client validation
+
+The strongest correctness signal a mock can get isn't its own test suite &mdash; the test suite was written by the same hands that wrote the mock. A third-party client built for the **real** server is a much harder yardstick, because nobody bent it to pass the mock's tests.
+
+The TacticalAPI ecosystem ships exactly such a client: [Rheinmetall's official C# test client](https://github.com/Rheinmetall/tacticalapi/tree/main/testclient/csharp). It's a small CLI built against the upstream `.proto` set, used in `TacNet` development for ad-hoc poking. Pointing it at `bowire mock` is a single line that exercises every call type the mock claims to support &mdash; unary CRUD plus server-streaming subscribe &mdash; using bytes the mock never sees from its own test fixtures.
+
+Walkthrough &mdash; one terminal serving the mock, one running the client:
+
+```bash
+# Terminal 1 — start bowire mock against the bundled TacticalAPI descriptors.
+# The proto set covers Identity, Situation, EditableSituationObjects, …
+bowire mock --schema rheinmetall/tactical_api/v0/situation.proto --port 4267
+
+# Terminal 2 — run Rheinmetall's test client against the mock.
+git clone https://github.com/Rheinmetall/tacticalapi
+cd tacticalapi/testclient/csharp
+dotnet build TacticalApi.TestClient.csproj
+
+# 1. Place a few symbols at WGS84 coordinates near Hamburg
+dotnet TacticalApi.TestClient.dll --sendsymbol 53.5 9.9
+dotnet TacticalApi.TestClient.dll --sendsymbol 53.55 10.0
+dotnet TacticalApi.TestClient.dll --sendsymbol 53.6 10.05
+
+# 2. List what's there now
+dotnet TacticalApi.TestClient.dll --printsituation
+# Expected: three symbols with distinct GUIDs and the lat/lon you sent
+
+# 3. Subscribe to the live event stream
+dotnet TacticalApi.TestClient.dll --observesituation
+# Expected: connection opens, no error, the mock pushes the three
+# existing symbols then keeps the stream alive
+
+# 4. From another terminal, run --sendsymbol again. The
+#    --observesituation stream should emit a new event for it.
+```
+
+Each step crosses a different mock surface: stateful storage (sendsymbol persists for printsituation), server-streaming replay (observesituation), GUID generation (sendsymbol allocates), and &mdash; if the test client is configured for port 4268 instead of 4267 &mdash; **gRPC-Web** framing on top of HTTP/1.1, which a wire-level bug would expose immediately.
+
+The point of the exercise isn't that the mock is "correct" once these commands pass &mdash; the test client also has its own assumptions baked in. It's that an *independent third party's* assumptions about the protocol are met. When they aren't, you have a concrete, reproducible delta that's easy to fix on whichever side is wrong.
+
+**Bowire's [TacticalAPI plugin docs](../protocols/tacticalapi.md#try-it--upstream-test-client-as-data-populator)** include a companion walkthrough that points the same test client at a real Rheinmetall server instead &mdash; useful for the inverse comparison ("does Bowire reproduce what the real server does?").
+
 ## See also
 
 - [Roadmap: Replay-Mock-Server](https://github.com/Kuestenlogik/Bowire/blob/main/ROADMAP.md#replay-mock-server--recordings-as-api-endpoints) &mdash; the three-phase plan.
 - [Recorder](recording.md) &mdash; how to produce the recording files the mock replays.
 - [CLI Mode](cli-mode.md) &mdash; the parent `bowire` command, of which `bowire mock` is one subcommand.
+- [TacticalAPI plugin](../protocols/tacticalapi.md) &mdash; the sibling plugin that ships the proto descriptors used in the walkthrough above.
