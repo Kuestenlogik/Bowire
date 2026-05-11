@@ -121,7 +121,10 @@ public sealed class BrowserUiHostTests
                     Assert.Equal(0, rc);
                     Assert.True(captured.Task.IsCompletedSuccessfully);
                     var openedUrl = await captured.Task;
-                    Assert.Contains("localhost:5180/bowire", openedUrl, StringComparison.Ordinal);
+                    // Standalone CLI mounts the workbench at the site root,
+                    // so the auto-open URL is just `http://localhost:5180/`.
+                    Assert.Contains("localhost:5180/", openedUrl, StringComparison.Ordinal);
+                    Assert.DoesNotContain("/bowire", openedUrl, StringComparison.Ordinal);
                 }
                 else
                 {
