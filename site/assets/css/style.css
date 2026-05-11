@@ -4404,9 +4404,80 @@ p a:not([class]):hover,
    CTA if what they've seen doesn't fit their case. Use-cases + protocols
    share the same style. */
 .use-cases-cta,
+/* Search box under the protocol grid — submits as a normal GET to
+   nuget.org's filtered-by-PackageType=BowirePlugin search. Sized to
+   match the visual weight of the CTA below it without dominating the
+   end of the section. */
+.protocols-search {
+    margin: 48px auto 0;
+    max-width: 520px;
+    text-align: center;
+}
+.protocols-search-label {
+    display: block;
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    margin-bottom: 10px;
+}
+.protocols-search-row {
+    display: flex;
+    gap: 8px;
+    align-items: stretch;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 4px;
+    transition: border-color 0.15s, box-shadow 0.15s;
+}
+.protocols-search-row:focus-within {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent);
+}
+.protocols-search-input {
+    flex: 1;
+    min-width: 0;
+    background: transparent;
+    border: 0;
+    outline: none;
+    padding: 10px 12px;
+    font: inherit;
+    color: var(--text);
+}
+.protocols-search-input::placeholder {
+    color: var(--text-secondary);
+    opacity: 0.7;
+}
+.protocols-search-submit {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--accent);
+    color: #fff;
+    border: 0;
+    border-radius: calc(var(--radius-lg) - 4px);
+    padding: 0 14px;
+    font-weight: 600;
+    font-size: 0.875rem;
+    cursor: pointer;
+    transition: background-color 0.15s;
+    white-space: nowrap;
+}
+.protocols-search-submit:hover {
+    background: var(--accent-hover);
+}
+.protocols-search-hint {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    margin: 8px 0 0;
+}
+.protocols-search-hint code {
+    font-size: inherit;
+    padding: 0 4px;
+}
+
 .protocols-cta {
     text-align: center;
-    margin: 48px 0 0;
+    margin: 24px 0 0;
     font-size: 0.875rem;
     color: var(--text-secondary);
 }

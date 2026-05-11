@@ -618,8 +618,35 @@
 
     </div>
 
+    <form class="protocols-search" role="search"
+          action="https://www.nuget.org/packages" method="get" target="_blank" rel="noopener">
+      <!-- packagetype=BowirePlugin filters nuget.org to packages declaring
+           <PackageType>BowirePlugin</PackageType> in their nuspec — catches
+           every Küstenlogik plugin AND any third-party that follows the
+           convention, regardless of package-id prefix. Name-prefix search
+           (q=Bowire.Protocol) would miss differently-named third-party
+           packages. The action submits as a normal GET so the browser
+           navigates to the constructed URL in a new tab; no JS required. -->
+      <input type="hidden" name="packagetype" value="BowirePlugin">
+      <label for="protocols-search-input" class="protocols-search-label">Looking for another protocol?</label>
+      <div class="protocols-search-row">
+        <input id="protocols-search-input"
+               class="protocols-search-input"
+               type="search"
+               name="q"
+               placeholder="e.g. soap, nats, kafka, dis"
+               autocomplete="off"
+               aria-label="Protocol keyword">
+        <button type="submit" class="protocols-search-submit">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><line x1="20" y1="20" x2="16.5" y2="16.5"/></svg>
+          Search nuget.org
+        </button>
+      </div>
+      <p class="protocols-search-hint">Filtered to <code>BowirePlugin</code> packages &mdash; third-party plugins surface automatically.</p>
+    </form>
+
     <p class="protocols-cta">
-      For another protocol: <a href="#cta-section">join the crew
+      Want to ship one? <a href="#cta-section">Join the crew
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg>
       </a>
     </p>
