@@ -25,6 +25,11 @@ namespace Kuestenlogik.Bowire.IntegrationTests;
 /// HTTP/2 host is intentionally unreachable from these tests so we can prove
 /// the plugin is hitting the gRPC-Web endpoint, not silently falling back.
 /// </summary>
+// Each test allocates an ephemeral TCP port via GetFreeTcpPort (bind-to-0,
+// read, close), then hands it to Kestrel. Run in parallel on Linux CI the
+// returned port can race between close and bind. Pin to the same xUnit
+// collection the Rest end-to-end tests use so they all serialise.
+[Collection(nameof(RestInvokerEndToEndFixture))]
 public sealed class GrpcWebIntegrationTests
 {
     [Fact]
