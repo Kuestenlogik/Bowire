@@ -571,10 +571,20 @@
             viewer: {
                 label: 'Map',
                 icon: 'map-pin',
+                // Phase 3.2 — the map naturally renders >1 selected
+                // pin (the existing Phase 3.1 camera + restyle logic
+                // already fitBounds(...)es N coords), so the viewer
+                // opts into multi-select snapshot delivery. Without
+                // this flag the framework would truncate every
+                // snapshot to [lastSelected].
+                selectionMode: 'multi',
                 mount: bowireMapViewerMount
             },
             editor: {
                 label: 'Pick on map',
+                // The coordinate editor only ever cares about a single
+                // (lat, lon) pair, so leave it on the safe default.
+                selectionMode: 'single',
                 mount: bowireMapEditorMount
             }
         });

@@ -66,6 +66,15 @@
      * Validate the registration shape — fast-fail with a console
      * warning if a required field is missing rather than letting the
      * extension half-mount and produce confusing failures downstream.
+     *
+     * Phase 3.2 adds the per-block `selectionMode` capability — a
+     * `'single' | 'multi'` flag declared at registration time. Unknown
+     * values don't silently coerce: the offending block is dropped
+     * from the registration with a `console.warn`, so a typo'd
+     * `selectionMode: 'multiple'` produces a loud failure instead of a
+     * widget that quietly never sees the selection stream's deltas.
+     * Default is `'single'` when omitted — safe for new widget authors
+     * who haven't thought about multi-select yet.
      */
     function bowireValidateRegistration(reg) {
         if (!reg || typeof reg !== 'object') {
@@ -86,6 +95,44 @@
         if (reg.editor && typeof reg.editor.mount !== 'function') {
             throw new Error('BowireExtensions.register[' + reg.id + ']: editor.mount must be a function');
         }
+        // Phase 3.2 — validate + normalise selectionMode per block. The
+        // field is per-block (viewer vs editor) so a viewer can declare
+        // 'multi' while the editor sticks to 'single' (a coordinate
+        // editor only cares about one (lat, lon) pair).
+        if (reg.viewer && !bowireNormaliseSelectionMode(reg, 'viewer')) {
+            delete reg.viewer;
+        }
+        if (reg.editor && !bowireNormaliseSelectionMode(reg, 'editor')) {
+            delete reg.editor;
+        }
+        if (!reg.viewer && !reg.editor) {
+            throw new Error('BowireExtensions.register[' + reg.id + ']: all blocks rejected (invalid selectionMode)');
+        }
+    }
+
+    /**
+     * Phase 3.2 — coerce `block.selectionMode` to a known value or
+     * reject the block. Returns `true` when the block is keep-able,
+     * `false` when the caller should drop it. Missing → default
+     * `'single'`. Anything other than `'single'` / `'multi'` produces
+     * a `console.warn` and drops the block; the caller deletes the
+     * field so the rest of the registry stays consistent.
+     */
+    function bowireNormaliseSelectionMode(reg, blockName) {
+        var block = reg[blockName];
+        if (!block) return false;
+        if (block.selectionMode === undefined || block.selectionMode === null) {
+            block.selectionMode = 'single';
+            return true;
+        }
+        if (block.selectionMode === 'single' || block.selectionMode === 'multi') {
+            return true;
+        }
+        console.warn(
+            '[bowire] extension ' + reg.id + '.' + blockName
+            + ': unknown selectionMode "' + String(block.selectionMode)
+            + '" — must be \'single\' or \'multi\'. Block ignored.');
+        return false;
     }
 
     /**
@@ -386,6 +433,60 @@
     }
 
     /**
+     * Phase 3.2 — apply a widget's declared `selectionMode` to one
+     * incoming snapshot. Pure function: no side effects beyond the
+     * `state` ledger the caller hands in (one ledger per ctx so two
+     * widgets on the same method stay independent).
+     *
+     * `'multi'` → pass-through, the widget gets the full snapshot.
+     * `'single'` → deliver `[lastSelected]`, where lastSelected is:
+     *   - the LAST id newly added vs the previous snapshot (delta-add
+     *     case — handles Shift-click extending from `a` to `c` by
+     *     picking `c`, and select-all by picking the last array entry);
+     *   - the previous `lastSelected` if it survives the new snapshot
+     *     (deselect of some other id — the widget shouldn't jump);
+     *   - the last entry of the new snapshot as a fallback (the prior
+     *     lastSelected was deselected but others remain).
+     * Empty snapshots stay empty in both modes — a widget needs to be
+     * able to render "nothing selected".
+     */
+    function bowireApplySelectionMode(currentIds, mode, state) {
+        if (mode === 'multi') {
+            state.prev = currentIds.slice();
+            // lastSelected still tracked for parity with mode flips, even
+            // though it's unused in multi mode.
+            state.lastSelected = currentIds.length === 0
+                ? null
+                : currentIds[currentIds.length - 1];
+            return currentIds;
+        }
+        if (currentIds.length === 0) {
+            state.prev = [];
+            state.lastSelected = null;
+            return [];
+        }
+        var prev = state.prev || [];
+        var prevSet = {};
+        for (var i = 0; i < prev.length; i++) prevSet[prev[i]] = true;
+        var newest = null;
+        for (var j = 0; j < currentIds.length; j++) {
+            if (!prevSet[currentIds[j]]) newest = currentIds[j];
+        }
+        var pick;
+        if (newest !== null) {
+            pick = newest;
+        } else if (state.lastSelected !== null
+                   && currentIds.indexOf(state.lastSelected) >= 0) {
+            pick = state.lastSelected;
+        } else {
+            pick = currentIds[currentIds.length - 1];
+        }
+        state.prev = currentIds.slice();
+        state.lastSelected = pick;
+        return [pick];
+    }
+
+    /**
      * Build a viewer ctx for a specific (extension, pairing-match,
      * stream-subscription) tuple. Each mount gets its own ctx so
      * unsubscribe / cleanup happens on the right scope when the widget
@@ -408,19 +509,32 @@
         // Selection stream — snapshot semantics. The pipe yields the
         // current selection immediately (priming the first `await`)
         // and then one snapshot per dispatched event.
+        //
+        // Phase 3.2 — the snapshot is filtered through `bowireApplySelectionMode`
+        // at push time so each ctx applies its declared `selectionMode`
+        // independently. State for the filter (the previous snapshot +
+        // the running lastSelected pointer) lives on the closure below
+        // — per-ctx, never shared, so two widgets on the same method
+        // with different selectionModes don't cross wires.
         var selectionPipe = bowireMakeFramesAsyncIterable();
-        selectionPipe.push(bowireCurrentSelection);
+        var selectionFilterState = { prev: [], lastSelected: null };
+        var selectionMode = opts.selectionMode === 'multi' ? 'multi' : 'single';
+        function pushSelection(snapshot) {
+            var raw = Array.isArray(snapshot && snapshot.selectedFrameIds)
+                ? snapshot.selectedFrameIds.slice()
+                : [];
+            var delivered = bowireApplySelectionMode(raw, selectionMode, selectionFilterState);
+            selectionPipe.push({ selectedFrameIds: delivered });
+        }
+        // Prime — the framework's spec is "first awaited value IS the
+        // current selection". We run it through the same filter as
+        // subsequent events so a single-mode widget that mounts AFTER
+        // a multi-select sees `[lastSelected]` and not the full set.
+        pushSelection(bowireCurrentSelection);
         var selectionHandler = function (evt) {
             var detail = evt && evt.detail;
             if (!detail) return;
-            // Snapshot semantics: each event carries the FULL selected
-            // set, not a delta. The widget can treat every yielded
-            // value as the authoritative current state.
-            selectionPipe.push({
-                selectedFrameIds: Array.isArray(detail.selectedFrameIds)
-                    ? detail.selectedFrameIds.slice()
-                    : []
-            });
+            pushSelection(detail);
         };
         document.addEventListener('bowire:frames-selection-changed', selectionHandler);
 
@@ -629,7 +743,13 @@
                     var ctxBundle = bowireMakeViewerCtx({
                         container: slot,
                         kinds: match.kinds,
-                        discriminator: '*'
+                        discriminator: '*',
+                        // Phase 3.2 — propagate the viewer block's
+                        // declared selectionMode into the ctx so the
+                        // selection-stream filter knows whether to
+                        // truncate to [lastSelected]. Default 'single'
+                        // is enforced at registration time.
+                        selectionMode: ext.viewer && ext.viewer.selectionMode
                     });
 
                     var unmount;
@@ -707,5 +827,9 @@
         // Test seams
         _findPairingMatches: bowireFindPairingMatches,
         _findPairingHints: bowireFindPairingHints,
-        _parentPath: bowireParentPath
+        _parentPath: bowireParentPath,
+        // Phase 3.2 — pure-function test seam for the selection-mode
+        // filter. Callers pass their own ledger so each invocation
+        // simulates a single ctx's per-event state machine.
+        _applySelectionMode: bowireApplySelectionMode
     };

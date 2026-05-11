@@ -586,11 +586,14 @@ window.BowireExtensions.register({
   viewer: {
     label: 'Map',
     icon: 'map-pin',
+    selectionMode: 'multi',   // Phase 3.2 — 'single' (default) | 'multi'
     mount(container, ctx) {
       // ctx.frames$       — async iterable of { frame, interpretations,
       //                     discriminator } events on the response stream
       // ctx.selection$    — async iterable of { selectedFrameIds }
-      //                     SNAPSHOTS (Phase 3.1, see below)
+      //                     SNAPSHOTS (Phase 3.1, see below). Filtered
+      //                     to [lastSelected] when selectionMode is
+      //                     'single' (Phase 3.2).
       // ctx.theme         — { mode: 'light' | 'dark', accent, font }
       // ctx.viewport      — { width, height, on(event, cb) → unsubscribe }
       // ctx.host          — { subscribeSse(url), fetch(url, init) }
@@ -602,6 +605,7 @@ window.BowireExtensions.register({
 
   editor: {
     label: 'Pick on map',
+    selectionMode: 'single',  // Phase 3.2 — default
     mount(container, ctx) {
       // ctx.value         — { 'coordinate.latitude': 53.5, … }
       //                     (paired annotation kinds → current values)
@@ -631,6 +635,29 @@ exactly once per logical change (so N selected frames produce one
 N-entry snapshot, never N delta events). Frame ids on the snapshot are
 the same `${service}/${method}#${index}` keys the workbench mints when
 each frame arrives over the SSE stream.
+
+**`selectionMode` — per-block capability declaration (Phase 3.2).** A
+widget that can render only one selected item (a key-value detail view,
+a single-coordinate editor) declares `selectionMode: 'single'` on its
+viewer / editor block; widgets that can sensibly render N selected
+items (the map, a future timeseries chart) declare `'multi'`. This is
+a **capability declaration, not a user-facing setting** — the user
+still controls *which* items end up selected; the widget controls
+*whether* the framework lets it see the full set. When a `'single'`
+widget is mounted, the framework wraps `ctx.selection$` so each yielded
+snapshot is truncated to `[lastSelected]` (the most-recently-added id
+vs. the previous snapshot; on multi-add events like select-all, the
+last entry in array order); empty snapshots stay empty. `'multi'`
+widgets receive the snapshot unfiltered. Default is `'single'` —
+conservative for new widget authors who haven't yet thought about
+multi-select. The field is per-block so a viewer can be `'multi'`
+while the same widget's editor is `'single'`; per-ctx filter state
+keeps two widgets on the same method independent. Built-in defaults:
+**Map viewer → `'multi'`** (the existing fitBounds-the-selected-set
+camera + restyle logic ships in Phase 3.1), **Map editor → `'single'`**
+(one coordinate pair at a time). Validation at `register({...})` time
+rejects any value other than `'single'` / `'multi'` with a
+`console.warn` and drops the offending block — no silent coercion.
 
 Deliberately **not** in v1.0:
 - Recording playback controls (`currentStep`, `setStep`, `totalSteps`).
