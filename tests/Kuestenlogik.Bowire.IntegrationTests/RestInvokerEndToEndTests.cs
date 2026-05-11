@@ -21,9 +21,9 @@ namespace Kuestenlogik.Bowire.IntegrationTests;
 /// Forcing the collection to run sequentially trades a few seconds of
 /// wallclock for deterministic CI runs.
 /// </summary>
-[CollectionDefinition(nameof(RestInvokerEndToEndCollection))]
+[CollectionDefinition(nameof(RestInvokerEndToEndFixture))]
 [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1515:Consider making public types internal", Justification = "xUnit collection definition must be public.")]
-public sealed class RestInvokerEndToEndCollection { }
+public sealed class RestInvokerEndToEndFixture { }
 
 /// <summary>
 /// Full-stack <see cref="RestInvoker"/> coverage that needs a real socket —
@@ -32,7 +32,7 @@ public sealed class RestInvokerEndToEndCollection { }
 /// no-body paths, multipart array repetition and a malformed-base64 binary.
 /// Single Kestrel host per test keeps each scenario isolated.
 /// </summary>
-[Collection(nameof(RestInvokerEndToEndCollection))]
+[Collection(nameof(RestInvokerEndToEndFixture))]
 public sealed class RestInvokerEndToEndTests
 {
     [Fact]
@@ -502,7 +502,7 @@ public sealed class RestInvokerEndToEndTests
 /// <see cref="IInlineHttpInvoker"/> path, and verify the cache-priming
 /// fall-through on cold invocation.
 /// </summary>
-[Collection(nameof(RestInvokerEndToEndCollection))]
+[Collection(nameof(RestInvokerEndToEndFixture))]
 public sealed class BowireRestProtocolEndToEndTests
 {
     [Fact]
