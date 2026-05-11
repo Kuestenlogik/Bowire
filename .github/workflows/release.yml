@@ -297,7 +297,11 @@ jobs:
       # without entering the public NuGet feeds.
 
       - name: Publish to GitHub Packages
-        if: ${{ github.ref_type == 'tag' && !contains(github.ref, '-rc') }}
+        # RC tags also publish here so sample-repo smoke rounds can
+        # restore against a real NuGet feed instead of a local
+        # `dotnet pack` artefact dump. nuget.org publish stays gated on
+        # non-RC tags only.
+        if: ${{ github.ref_type == 'tag' }}
         run: dotnet nuget push "artifacts/packages/*.nupkg" --source "https://nuget.pkg.github.com/Kuestenlogik/index.json" --api-key ${{ secrets.GITHUB_TOKEN }} --skip-duplicate
 
       - name: Publish to nuget.org
