@@ -1,6 +1,7 @@
 // Copyright 2026 Küstenlogik
 // SPDX-License-Identifier: Apache-2.0
 
+using System.Text.Json;
 using System.Text.Json.Serialization;
 
 namespace Kuestenlogik.Bowire.Mocking;
@@ -42,8 +43,79 @@ public sealed class BowireRecording
     [JsonPropertyName("recordingFormatVersion")]
     public int? RecordingFormatVersion { get; set; }
 
+    /// <summary>
+    /// Frozen snapshot of the effective frame-semantics annotations active
+    /// at record-time — populated by Phase-5 captures so a replayed recording
+    /// mounts the same widgets the original session showed, even if the local
+    /// annotation store has drifted since. Optional: recordings made before
+    /// Phase 5 leave this <c>null</c> and the workbench falls back to the
+    /// live annotation store on load (same behaviour as pre-v1.3).
+    /// </summary>
+    [JsonPropertyName("schemaSnapshot")]
+    public BowireRecordingSchemaSnapshot? SchemaSnapshot { get; set; }
+
     [JsonPropertyName("steps")]
     public IList<BowireRecordingStep> Steps { get; init; } = new List<BowireRecordingStep>();
+}
+
+/// <summary>
+/// Sidecar carried at the top of a Phase-5+ recording file — the set of
+/// effective annotations the workbench had resolved for the recorded
+/// service+method pairs at record-time. The mock and the recording-replay
+/// path use it to mount the same widgets the original session showed,
+/// independent of the local annotation store's current state.
+/// </summary>
+/// <remarks>
+/// Optional by design: a recording can omit <c>schemaSnapshot</c> entirely
+/// (pre-Phase-5 captures, or a hardened workbench that doesn't share
+/// annotations into recordings) and the loader treats this as "ask the live
+/// store at replay time" — strictly backwards-compatible with v1.x
+/// recordings.
+/// </remarks>
+public sealed class BowireRecordingSchemaSnapshot
+{
+    /// <summary>
+    /// Annotations active at record-time, one entry per
+    /// <c>(messageType, jsonPath)</c> combination per <c>(service, method)</c>
+    /// pair. The wire-shape mirrors what the workbench's
+    /// <c>GET /api/semantics/effective</c> endpoint returns, so the JS-side
+    /// extension router can consume it without a separate path.
+    /// </summary>
+    [JsonPropertyName("annotations")]
+    public IList<BowireRecordingSchemaAnnotation> Annotations { get; init; }
+        = new List<BowireRecordingSchemaAnnotation>();
+}
+
+/// <summary>
+/// One effective annotation snapshot inside a
+/// <see cref="BowireRecordingSchemaSnapshot"/>. Matches the four-dimensional
+/// addressing the frame-semantics framework uses, plus the resolved
+/// <see cref="Semantic"/> string the workbench uses to pick a widget.
+/// </summary>
+public sealed class BowireRecordingSchemaAnnotation
+{
+    /// <summary>Service identifier (e.g. <c>"harbor.HarborService"</c>).</summary>
+    [JsonPropertyName("service")]
+    public string Service { get; set; } = "";
+
+    /// <summary>Method identifier (e.g. <c>"WatchCrane"</c>).</summary>
+    [JsonPropertyName("method")]
+    public string Method { get; set; } = "";
+
+    /// <summary>
+    /// Discriminator value — <c>"*"</c> for single-type methods, a concrete
+    /// type name (<c>"EntityStatePdu"</c>) for multi-type channels.
+    /// </summary>
+    [JsonPropertyName("messageType")]
+    public string MessageType { get; set; } = "*";
+
+    /// <summary>JSONPath rooted at the message body (e.g. <c>$.position.lat</c>).</summary>
+    [JsonPropertyName("jsonPath")]
+    public string JsonPath { get; set; } = "";
+
+    /// <summary>Resolved semantic kind-string (e.g. <c>"coordinate.latitude"</c>).</summary>
+    [JsonPropertyName("semantic")]
+    public string Semantic { get; set; } = "";
 }
 
 /// <summary>
@@ -156,7 +228,85 @@ public sealed class BowireRecordingStep
     /// </summary>
     [JsonPropertyName("receivedMessages")]
     public IList<BowireRecordingFrame>? ReceivedMessages { get; init; }
+
+    /// <summary>
+    /// Phase-5 discriminator-VALUE for this step — e.g. <c>"EntityStatePdu"</c>
+    /// for a DIS PDU-type frame, or <c>"*"</c> when the method carries a
+    /// single payload shape (no discriminator declared). Optional: pre-Phase-5
+    /// recordings omit this and the framework treats the step as wildcard.
+    /// </summary>
+    /// <remarks>
+    /// The field carries the resolved value, not the discriminator declaration —
+    /// the declaration lives at the schema level (see
+    /// <see cref="BowireRecordingSchemaSnapshot"/>).
+    /// </remarks>
+    [JsonPropertyName("discriminator")]
+    public string? Discriminator { get; set; }
+
+    /// <summary>
+    /// Phase-5 interpretations — one entry per widget-mountable annotation
+    /// active at record-time. Replay re-emits these alongside each frame so
+    /// the workbench shows the same widget state regardless of how detector
+    /// heuristics have drifted since capture. Optional: pre-Phase-5 captures
+    /// have no <c>interpretations</c> field and the workbench falls back to
+    /// running the live <see cref="Semantics.Detectors.IFrameProber"/> on the
+    /// replayed frame — strictly backwards-compatible with v1.x recordings.
+    /// </summary>
+    [JsonPropertyName("interpretations")]
+    public IList<RecordedInterpretation>? Interpretations { get; init; }
 }
+
+/// <summary>
+/// One captured interpretation inside a <see cref="BowireRecordingStep"/> —
+/// the addressing path the parent-grouping uses, the resolved
+/// <see cref="Kind"/> (the <see cref="Semantics.SemanticTag"/> value),
+/// and the type-specific payload inlined as a free-form
+/// <see cref="JsonElement"/> so the replay viewer doesn't have to
+/// re-resolve from the raw frame.
+/// </summary>
+/// <remarks>
+/// <para>
+/// The <see cref="Payload"/> shape is kind-specific by convention:
+/// </para>
+/// <list type="bullet">
+///   <item><description>
+///   <c>coordinate.wgs84</c> — <c>{ "lat": number, "lon": number }</c>.
+///   </description></item>
+///   <item><description>
+///   <c>image.bytes</c> — <c>{ "data": "&lt;base64&gt;", "mimeType": "image/png" }</c>
+///   (mimeType optional).
+///   </description></item>
+///   <item><description>
+///   <c>audio.bytes</c> — <c>{ "data": "&lt;base64&gt;", "sampleRate": 44100 }</c>
+///   (sampleRate optional).
+///   </description></item>
+/// </list>
+/// <para>
+/// The payload is open by design — a free-form <see cref="JsonElement"/>
+/// — so the framework doesn't freeze itself into one widget's payload
+/// shape this early. Widgets read the fields they need; unknown fields
+/// flow through unchanged.
+/// </para>
+/// </remarks>
+/// <param name="Kind">
+/// The semantic kind-string this interpretation carries (e.g.
+/// <c>"coordinate.wgs84"</c>). Matches the value the JS-side widget
+/// router groups by.
+/// </param>
+/// <param name="Path">
+/// JSONPath of the parent object the pairing logic groups under
+/// (e.g. <c>$.position</c> for a lat/lon pair). The same path the
+/// frame-semantics framework's pairing logic uses on the live path.
+/// </param>
+/// <param name="Payload">
+/// Kind-specific payload as inlined data. Carried as a
+/// <see cref="JsonElement"/> so the on-disk shape, the wire shape, and
+/// the C# model agree byte-for-byte across save/load cycles.
+/// </param>
+public sealed record RecordedInterpretation(
+    [property: JsonPropertyName("kind")] string Kind,
+    [property: JsonPropertyName("path")] string Path,
+    [property: JsonPropertyName("payload")] JsonElement Payload);
 
 /// <summary>
 /// One frame inside a streaming or duplex recording step — carries the frame
@@ -185,4 +335,22 @@ public sealed class BowireRecordingFrame
     /// </summary>
     [JsonPropertyName("responseBinary")]
     public string? ResponseBinary { get; set; }
+
+    /// <summary>
+    /// Phase-5 discriminator value for this frame — <c>"*"</c> for
+    /// single-type methods, a concrete type name for multi-type channels.
+    /// Optional: pre-Phase-5 captures omit the field and the framework
+    /// treats the frame as wildcard.
+    /// </summary>
+    [JsonPropertyName("discriminator")]
+    public string? Discriminator { get; set; }
+
+    /// <summary>
+    /// Phase-5 interpretations captured for this frame. Replay re-emits
+    /// these verbatim instead of re-running detection — see
+    /// <see cref="RecordingReplayInterpretationResolver"/>. Optional;
+    /// pre-Phase-5 frames omit the field.
+    /// </summary>
+    [JsonPropertyName("interpretations")]
+    public IList<RecordedInterpretation>? Interpretations { get; init; }
 }

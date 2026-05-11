@@ -83,6 +83,13 @@
             // The mock-server loader accepts the versions it was built for
             // and rejects anything newer. See docs/concepts/mock-server-phase1.md.
             recordingFormatVersion: 2,
+            // Phase-5 schema sidecar — accumulated as steps arrive so the
+            // recording remembers which annotations the workbench saw
+            // active for each (service, method) at capture time. Replay
+            // mounts widgets off the sidecar instead of the replayer's
+            // local annotation store, so a recording made by one user
+            // renders identically for another whose annotations differ.
+            schemaSnapshot: { annotations: [] },
             steps: []
         };
         recordingsList.push(rec);
@@ -116,9 +123,60 @@
             id: nextStepId(),
             capturedAt: Date.now()
         }, entry));
+        // Phase-5 schema-snapshot accumulation — fold the cached effective
+        // annotations for (entry.service, entry.method) into the recording's
+        // sidecar. The cache is populated by extensions.js whenever the
+        // workbench fetches /api/semantics/effective for a method; if the
+        // method has never been opened (no widgets mounted) the cache may
+        // be empty and the snapshot just skips that pair. De-dupes by the
+        // four-dimensional addressing tuple so re-recording the same
+        // method twice doesn't double-count.
+        try {
+            mergeRecordingSchemaSnapshot(rec, entry.service, entry.method);
+        } catch (_) { /* snapshot is a side-channel — recording stays valid */ }
         persistRecordings();
         // Don't re-render here — addHistory's caller already calls render()
         // after the response has been processed.
+    }
+
+    function mergeRecordingSchemaSnapshot(rec, service, method) {
+        if (!rec || !service || !method) return;
+        if (!rec.schemaSnapshot) rec.schemaSnapshot = { annotations: [] };
+        if (!Array.isArray(rec.schemaSnapshot.annotations)) rec.schemaSnapshot.annotations = [];
+
+        // Walk the JS-side effective-cache populated by extensions.js. The
+        // cache is keyed by (service, method) and shaped exactly like the
+        // /api/semantics/effective response. When the workbench hasn't
+        // touched this method yet the cache is empty; we leave the
+        // sidecar untouched rather than firing a synchronous fetch from
+        // the recorder.
+        var cached = (window.__bowireExtFramework
+            && typeof window.__bowireExtFramework.effectiveCacheFor === 'function')
+            ? window.__bowireExtFramework.effectiveCacheFor(service, method)
+            : null;
+        if (!cached || !Array.isArray(cached)) return;
+
+        // Index existing entries so the merge stays O(annotations) instead
+        // of O(annotations²) on long recordings.
+        var seen = {};
+        for (var i = 0; i < rec.schemaSnapshot.annotations.length; i++) {
+            var a = rec.schemaSnapshot.annotations[i];
+            seen[a.service + '/' + a.method + '/' + (a.messageType || '*') + '/' + a.jsonPath] = true;
+        }
+        for (var j = 0; j < cached.length; j++) {
+            var n = cached[j];
+            if (!n || !n.jsonPath) continue;
+            var k = service + '/' + method + '/' + (n.messageType || '*') + '/' + n.jsonPath;
+            if (seen[k]) continue;
+            rec.schemaSnapshot.annotations.push({
+                service: service,
+                method: method,
+                messageType: n.messageType || '*',
+                jsonPath: n.jsonPath,
+                semantic: n.semantic
+            });
+            seen[k] = true;
+        }
     }
 
     function deleteRecording(id) {

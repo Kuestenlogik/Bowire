@@ -83,6 +83,22 @@ human-readable, ideal for committing to a repo as a regression
 fixture, or sharing with other Bowire users (who can drop it
 into their `~/.bowire/recordings.json`).
 
+## Frame-semantics preservation
+
+Captures made under Bowire v1.3 and later pick up the frame-semantics
+framework's per-frame `interpretations` and a top-level `schemaSnapshot`
+sidecar — the resolved coordinate / image / audio / ... payloads the
+workbench mounted widgets against at record-time, plus the effective
+annotation set that produced them. Replay reads both off disk and skips
+detection entirely, so a recording made against one user's annotations
+mounts identical widgets for another user with different local
+annotations, and identically again under v1.4+ even if detector
+heuristics drift between releases. Pre-v1.3 recordings (no
+`interpretations`, no `schemaSnapshot`) load and replay unchanged —
+the workbench falls back to the live annotation store. See the
+[frame-semantics framework ADR](../architecture/frame-semantics-framework.md)
+for the full design.
+
 ## How it persists
 
 Recordings live at `~/.bowire/recordings.json` (next to the existing

@@ -361,7 +361,17 @@
                 // mock server can expose gRPC Server Reflection.
                 schemaDescriptor: selectedService?.schemaDescriptor || null,
                 httpPath: selectedMethod?.httpPath || null,
-                httpVerb: selectedMethod?.httpMethod || null
+                httpVerb: selectedMethod?.httpMethod || null,
+                // Phase-5 frame-semantics fields: the server resolved the
+                // effective annotations against this frame and shipped the
+                // typed interpretations + the discriminator value alongside
+                // the response so replay can re-emit widgets deterministically.
+                // Pre-Phase-5 servers leave both fields undefined; recording
+                // captures from older Bowire builds round-trip unchanged.
+                discriminator: (result && typeof result === 'object' && result.discriminator) || null,
+                interpretations: (result && typeof result === 'object' && Array.isArray(result.interpretations))
+                    ? result.interpretations
+                    : null
             });
         } catch (e) {
             responseError = e.message;
@@ -514,7 +524,12 @@
                         // supply per-frame wire bytes via the envelope's
                         // responseBinary field. The Phase-2d mock-server
                         // replay path emits them 1:1 without re-encoding.
-                        responseBinary: (m && typeof m.responseBinary === 'string') ? m.responseBinary : null
+                        responseBinary: (m && typeof m.responseBinary === 'string') ? m.responseBinary : null,
+                        // Phase-5 per-frame discriminator + interpretations.
+                        // Older recordings (no Phase-5 server, no fields)
+                        // round-trip unchanged because both keys stay null.
+                        discriminator: (m && typeof m.discriminator === 'string') ? m.discriminator : null,
+                        interpretations: (m && Array.isArray(m.interpretations)) ? m.interpretations : null
                     };
                 }),
                 httpPath: selectedMethod?.httpPath || null,

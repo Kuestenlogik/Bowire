@@ -486,7 +486,7 @@ Bowire's no-network guarantee survives:
 The framework itself has no network dependency — tile downloads
 are an optional enhancement, not a requirement.
 
-## Recording / replay integration
+## Recording / replay integration — shipped in v1.3.0 Phase 5
 
 The recording-step schema gains two **additive, optional** fields:
 
@@ -498,8 +498,12 @@ The recording-step schema gains two **additive, optional** fields:
   "responseBinary": "...",
   "discriminator": "EntityStatePdu",
   "interpretations": [
-    { "kind": "coordinate.wgs84", "path": "$.position",
-      "lat": 53.5478, "lon": 9.9925 }
+    { "kind": "coordinate.wgs84",
+      "path": "$.position",
+      "payload": { "lat": 53.5478, "lon": 9.9925,
+                   "latPath": "$.position.lat",
+                   "lonPath": "$.position.lon" }
+    }
   ]
 }
 ```
@@ -509,10 +513,75 @@ no `interpretations`) replay unchanged — the framework re-runs
 detection on load. Recordings made with v1.3+ replay deterministically
 even if detector heuristics drift between versions.
 
-The effective schema annotations active at record-time are also
-captured as a sidecar at the top of the recording file, so a
-replayed recording shows the same widgets that the live session
-showed, even if the user's local annotations have changed since.
+**`RecordedInterpretation.Payload` shape conventions.** The payload is
+deliberately a free-form `JsonElement` so the framework doesn't freeze
+itself into one widget's shape this early. For built-in kinds:
+
+- **`coordinate.wgs84`** — `{ "lat": number, "lon": number, "latPath": "...", "lonPath": "..." }`. Lat/lon inlined as numbers so the map widget reads directly without re-resolving JSONPaths; the per-axis paths round-trip for round-trip-fidelity (the editor uses them to write back into the request).
+- **`image.bytes`** — `{ "data": "<base64>", "mimeType": "image/png"?, "bytesPath": "...", "mimePath": "..."? }`. The `mimeType` and `mimePath` keys appear only when an `image.mime-type` companion annotation pairs with the bytes at the same parent.
+- **`audio.bytes`** — `{ "data": "<base64>", "sampleRate": 44100?, "bytesPath": "...", "ratePath": "..."? }`. Same companion-optional shape.
+
+Unknown / unhandled semantic kinds are silently skipped at capture
+time — they round-trip through the schema sidecar (see below) but
+don't emit per-frame interpretations until a future phase wires
+their payload extraction.
+
+**Effective-schema sidecar.** A frozen snapshot of the effective
+annotation set at record-time lives at the top of the recording file
+alongside the existing metadata:
+
+```json
+{
+  "recordingFormatVersion": 2,
+  "recordedAt": "...",
+  "schemaSnapshot": {
+    "annotations": [
+      { "service": "harbor.HarborService",
+        "method": "WatchCrane",
+        "messageType": "*",
+        "jsonPath": "$.position.lat",
+        "semantic": "coordinate.latitude" },
+      { "service": "harbor.HarborService",
+        "method": "WatchCrane",
+        "messageType": "*",
+        "jsonPath": "$.position.lon",
+        "semantic": "coordinate.longitude" }
+    ]
+  },
+  "steps": [ ... ]
+}
+```
+
+The sidecar is what the workbench uses to mount widgets when a recording
+is opened — so a recording made against one user's annotations renders
+identically for another user whose local annotations differ. **v1-vs-v2
+file detection is by presence of `schemaSnapshot`, not by bumping the
+file-format version field.** `recordingFormatVersion` stays at `2`
+(set by the Phase-1b gRPC-binary work); the loader treats the field's
+absence as "ask the live annotation store at replay time" — strictly
+backwards-compatible with every v1 / v2-pre-Phase-5 recording on disk.
+Explicit `"none"` suppression entries round-trip unchanged so a
+user-tier `none` replayed against a different store still suppresses
+the lower-tier proposal.
+
+**`RecordingReplayInterpretationResolver` — short-circuit semantics.**
+The replay path consults this helper per emitted frame. When the step
+carries `interpretations` the helper hands the list back verbatim and
+skips the prober entirely — captured payloads win regardless of how
+detector heuristics have drifted since record-time. When the step
+lacks the field (pre-Phase-5 recordings), the helper runs the live
+`IFrameProber` and `RecordingInterpretationBuilder` as a fall-back, so
+older recordings replay through detection exactly as v1.2 did. The
+prober's `ProbedTripleCount` is the test seam that verifies the
+short-circuit: a v2 recording (interpretations captured) never ticks
+the counter on replay.
+
+**Sample.** `Bowire.Samples/SchemaSemantics` — a deliberately
+plain-vanilla gRPC server-streaming method that emits
+`{ ship, lat, lon, status }` frames. No `IBowireSchemaHints`
+implementation, no plugin awareness, no manual user annotation file
+shipped — the pgAdmin proof: the framework finds the coordinates by
+content alone and the map mounts automatically.
 
 ## Out of scope for v1.3
 

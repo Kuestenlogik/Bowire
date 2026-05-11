@@ -2,7 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
 using System.Text.Json;
+using Kuestenlogik.Bowire.Mocking;
 using Kuestenlogik.Bowire.Models;
+using Kuestenlogik.Bowire.Semantics;
 using Kuestenlogik.Bowire.Semantics.Detectors;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
@@ -134,6 +136,14 @@ internal static class BowireInvokeEndpoints
                     body.Messages ?? ["{}"], options.ShowInternalServices,
                     body.Metadata, ctx.RequestAborted);
 
+                // Phase-5 unary interpretations channel — same shape as the
+                // SSE envelope. The workbench JS picks the field off the
+                // /api/invoke response and stores it on the recording step
+                // so replay re-emits the same widget state.
+                var annotationStore = ctx.RequestServices.GetService<IAnnotationStore>();
+                var interpretations = ResolveLiveInterpretations(
+                    annotationStore, body.Service, body.Method, result.Response);
+
                 return Results.Json(new
                 {
                     response = result.Response,
@@ -146,7 +156,9 @@ internal static class BowireInvokeEndpoints
                     // replay can emit the bytes 1:1.
                     response_binary = result.ResponseBinary is { } rb
                         ? Convert.ToBase64String(rb)
-                        : null
+                        : null,
+                    discriminator = AnnotationKey.Wildcard,
+                    interpretations,
                 }, BowireEndpointHelpers.JsonOptions);
             }
             catch (Exception ex)
@@ -257,6 +269,15 @@ internal static class BowireInvokeEndpoints
                 // opt-out path).
                 var prober = ctx.RequestServices.GetService<IFrameProber>();
 
+                // Phase-5 interpretations channel: the annotation store
+                // resolves each frame's effective tags + their typed
+                // payloads, which the recorder persists alongside the
+                // raw frame so replay can re-emit widgets without
+                // re-running detection. Null when AddBowire wasn't
+                // called — degrades gracefully (no `interpretations`
+                // field in the envelope).
+                var annotationStore = ctx.RequestServices.GetService<IAnnotationStore>();
+
                 // Plugins that expose wire bytes (gRPC today) route through
                 // InvokeStreamWithFramesAsync so the recorder can persist
                 // `responseBinary` per frame — needed for Phase-2d gRPC
@@ -268,6 +289,8 @@ internal static class BowireInvokeEndpoints
                         serverUrl, service, method, messages, options.ShowInternalServices, metadata, ctx.RequestAborted))
                     {
                         FrameProbingMiddleware.Observe(prober, service, method, frame.Json);
+                        var interpretations = ResolveLiveInterpretations(
+                            annotationStore, service, method, frame.Json);
                         var eventData = JsonSerializer.Serialize(new
                         {
                             index,
@@ -275,7 +298,9 @@ internal static class BowireInvokeEndpoints
                             timestampMs = Environment.TickCount64 - streamStartMs,
                             responseBinary = frame.Binary is null
                                 ? null
-                                : Convert.ToBase64String(frame.Binary)
+                                : Convert.ToBase64String(frame.Binary),
+                            discriminator = AnnotationKey.Wildcard,
+                            interpretations,
                         }, BowireEndpointHelpers.JsonOptions);
 
                         await ctx.Response.WriteAsync($"data: {eventData}\n\n", ctx.RequestAborted);
@@ -289,11 +314,15 @@ internal static class BowireInvokeEndpoints
                         serverUrl, service, method, messages, options.ShowInternalServices, metadata, ctx.RequestAborted))
                     {
                         FrameProbingMiddleware.Observe(prober, service, method, response);
+                        var interpretations = ResolveLiveInterpretations(
+                            annotationStore, service, method, response);
                         var eventData = JsonSerializer.Serialize(new
                         {
                             index,
                             data = response,
-                            timestampMs = Environment.TickCount64 - streamStartMs
+                            timestampMs = Environment.TickCount64 - streamStartMs,
+                            discriminator = AnnotationKey.Wildcard,
+                            interpretations,
                         }, BowireEndpointHelpers.JsonOptions);
 
                         await ctx.Response.WriteAsync($"data: {eventData}\n\n", ctx.RequestAborted);
@@ -403,4 +432,47 @@ internal static class BowireInvokeEndpoints
     }
 
     private sealed record TranscodedFieldInfo(string Name, string? Type, string? Source);
+
+    /// <summary>
+    /// Phase-5 helper — resolve the per-frame interpretations against the
+    /// effective annotation store. Returns <c>null</c> when the input is
+    /// missing or non-JSON so the SSE envelope omits the field (rather than
+    /// shipping an empty array on every frame, which would inflate the
+    /// recording file). The recorder treats the absence of the field the
+    /// same as the absence of annotations.
+    /// </summary>
+    /// <remarks>
+    /// Plugin-side discriminator wiring isn't in place yet — Phase 5 plumbs
+    /// <see cref="AnnotationKey.Wildcard"/> as the discriminator value for
+    /// every frame, matching the live-detection path's behaviour. Concrete
+    /// discriminator resolution is a Phase 6+ concern; the field is on the
+    /// SSE envelope (and on the recording-step model) so it round-trips
+    /// when a future phase fills it.
+    /// </remarks>
+    private static IReadOnlyList<RecordedInterpretation>? ResolveLiveInterpretations(
+        IAnnotationStore? store, string service, string method, string? frameJson)
+    {
+        if (store is null) return null;
+        if (string.IsNullOrEmpty(frameJson)) return null;
+
+        JsonDocument doc;
+        try
+        {
+            doc = JsonDocument.Parse(frameJson);
+        }
+        catch (JsonException)
+        {
+            return null;
+        }
+
+        try
+        {
+            return RecordingInterpretationBuilder.Build(
+                store, service, method, AnnotationKey.Wildcard, doc.RootElement);
+        }
+        finally
+        {
+            doc.Dispose();
+        }
+    }
 }
