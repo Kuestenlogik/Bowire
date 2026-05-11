@@ -17,6 +17,8 @@ namespace Kuestenlogik.Bowire.Tests;
 // Shared CWD lock with every other config-tests class — all three
 // flip Directory.SetCurrentDirectory to isolate their appsettings.json
 // fixture, so xUnit must serialise them to avoid cross-class races.
+// See CwdSerialisedCollectionDefinition.cs for the matching
+// DisableParallelization = true definition.
 [Collection("CwdSerialised")]
 public sealed class BowireConfigurationTests : IDisposable
 {
