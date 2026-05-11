@@ -30,5 +30,7 @@
   href: udp.md
 - name: Akka.NET
   href: akka.md
+- name: TacticalAPI
+  href: tacticalapi.md
 - name: Custom Protocols
   href: custom.md

@@ -1,10 +1,10 @@
 ---
-summary: 'Bowire ships with ten first-party protocol plugins plus five sibling plugins (Surgewave, Kafka, DIS, UDP, Akka.NET) that install via the CLI.'
+summary: 'Bowire ships with ten first-party protocol plugins plus six sibling plugins (Surgewave, Kafka, DIS, UDP, Akka.NET, TacticalAPI) that install via the CLI.'
 ---
 
 # Protocol Guides
 
-Bowire ships with **ten first-party protocol plugins** plus **five sibling plugins** (Surgewave, Kafka, DIS, UDP, Akka.NET) that live in their own NuGet packages and install via `bowire plugin install`. Each implements `IBowireProtocol` and auto-registers at startup. Install only the ones you need.
+Bowire ships with **ten first-party protocol plugins** plus **six sibling plugins** (Surgewave, Kafka, DIS, UDP, Akka.NET, TacticalAPI) that live in their own NuGet packages and install via `bowire plugin install`. Each implements `IBowireProtocol` and auto-registers at startup. Install only the ones you need.
 
 ## First-party protocols
 
@@ -32,6 +32,7 @@ These ship from their own repos / NuGet packages on independent release cadences
 | [DIS](dis.md) | `Kuestenlogik.Bowire.Protocol.Dis` | Mock-emit only (replay path) | UDP-multicast PDU bytes |
 | [UDP](udp.md) | `Kuestenlogik.Bowire.Protocol.Udp` | URL-bind any UDP endpoint | Datagram listener (multicast / broadcast / unicast) |
 | [Akka.NET](akka.md) | `Kuestenlogik.Bowire.Protocol.Akka` | DI-resolved `ActorSystem` (embedded only) | Mailbox tap (server-streaming `Tap/MonitorMessages`) |
+| [TacticalAPI](tacticalapi.md) (preview) | `Kuestenlogik.Bowire.Protocol.TacticalApi` | Bundled `.proto` set (no Server Reflection required) | Descriptor discovery in v0.1.0; typed CRUD + server-streaming pump in v0.2.0 |
 
 Writing your own: see [Custom protocols](custom.md).
 
@@ -54,9 +55,11 @@ graph LR
     A --> O[DIS]
     A --> P[UDP]
     A --> Q["Akka.NET"]
+    A --> R["TacticalAPI (preview)"]
     A --> L[Custom plugins]
     style A fill:#6366f1,color:#fff
     style L stroke-dasharray: 5 5
+    style R stroke-dasharray: 3 3
 ```
 
 ## What every plugin provides

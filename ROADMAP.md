@@ -2,6 +2,14 @@
 
 ## Completed
 
+### v1.2.0 site + DocFX updates: gRPC-Web prose, TacticalAPI plugin docs (2026-05-11)
+- [x] **gRPC card on the marketing site** now mentions gRPC-Web as a supported transport variant in both the short-card paragraph and the expanded feature-block paragraph (the capabilities-list bullet was already there, but neither prose blurb called it out). Comparison-table `data-detail` for the gRPC row picked up the same nuance.
+- [x] **New protocol card for TacticalAPI** in `site/_includes/protocols.html`, positioned next to Akka.NET (sibling-plugin family). Custom radar-sweep / SA-feed glyph (accent stroke; deliberately not Rheinmetall's brand mark). New `.protocol-tag-preview` chip on the h3 (and reused in the expanded feature-block) flags v0.1.0 as preview. Comparison-table row added with `preview` instead of `✓`, surfacing the v0.1.0 scope on hover.
+- [x] **`docs/protocols/grpc.md`** grew a `## gRPC-Web transport` section — both opt-in paths (`grpcweb@` URL hint, `X-Bowire-Grpc-Transport: web` metadata header), per-call-type support matrix, the client-streaming + duplex limitation (HTTP/1.1 trailers + `GrpcWebMode.GrpcWebText` framing constraints), mTLS composition, and a TacticalAPI cross-reference as the canonical use case.
+- [x] **New `docs/protocols/tacticalapi.md`** page modelled on the Akka plugin guide — preview-status callout up top, install + use snippets, the EPL-2.0 (.proto upstream) vs Apache-2.0 (plugin code) licensing rationale, the build-time proto-fetch pin, air-gapped-build instructions, weekly upstream-drift bot, full roadmap to v0.3.0. Slotted into `docs/protocols/toc.yml` between Akka and Custom Protocols.
+- [x] **`docs/protocols/index.md`** counts bumped (5 → 6 sibling plugins) and TacticalAPI row added to the sibling-plugin table + the protocol-fanout mermaid diagram (dashed edge to flag the preview status). `docs/api/index.md` gained a "gRPC-Web support" note under the gRPC entry and a callout under the sibling-plugin list pointing at the TacticalAPI sibling repo (its API surface isn't in the main repo's DocFX scope).
+- [x] **`site/_includes/roadmap.html`** picked up a new "Recently shipped" card summarising v1.2.0 (gRPC-Web + TacticalAPI preview).
+
 ### gRPC-Web transport opt-in for the gRPC plugin (2026-05-11)
 - [x] **gRPC plugin gains a gRPC-Web transport variant.** Same plugin, same `.proto`, same service catalogue — opt-in flips the inner pipeline to wrap `SocketsHttpHandler` in `GrpcWebHandler`, pins the HTTP version to 1.1, and routes gRPC framing through the gRPC-Web encoding so callers can hit browser-fronted services and HTTP/1.1-only ingresses (Envoy / grpcwebproxy / ASP.NET `UseGrpcWeb`). Typical case: services like Rheinmetall's TacticalAPI that expose both native gRPC on `:4267` and gRPC-Web on `:4268`.
 - [x] **Two opt-in paths**, in priority order:

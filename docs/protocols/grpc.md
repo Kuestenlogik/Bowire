@@ -174,6 +174,41 @@ Open an interactive channel to send and receive messages simultaneously. Both di
 
 As an alternative to server reflection, you can import `.proto` files directly. This is useful when connecting to services that do not have reflection enabled.
 
+## gRPC-Web transport
+
+The same plugin can speak **gRPC-Web** instead of native HTTP/2 gRPC. Useful for services that only expose gRPC-Web behind an L7 proxy (Envoy, `grpcwebproxy`, browser-fronted backends behind ASP.NET's `UseGrpcWeb()`), or that publish *both* a native and a gRPC-Web endpoint on different ports — Rheinmetall's [TacticalAPI](tacticalapi.md) is the canonical case (`:4267` native, `:4268` gRPC-Web).
+
+Two equivalent opt-in paths, in priority order:
+
+1. **URL hint** — prefix the server URL with `grpcweb@`. Symmetric to the existing `grpc@` hint:
+
+    ```bash
+    bowire --url grpcweb@http://tactical.example:4268
+    ```
+
+2. **Metadata header** — `X-Bowire-Grpc-Transport: web` on a per-call basis. Exposed as `BowireGrpcProtocol.TransportMetadataKey` for callers that build the metadata dict programmatically. Anything else (or absence) falls back to the default **native HTTP/2** transport.
+
+| Call type             | Native (default) | gRPC-Web |
+|-----------------------|:----------------:|:--------:|
+| Unary                 | ✓                | ✓        |
+| Server streaming      | ✓                | ✓        |
+| Client streaming      | ✓                | ✗        |
+| Duplex (bidirectional)| ✓                | ✗        |
+
+### Known limitation: client-streaming + duplex over gRPC-Web
+
+`OpenChannelAsync` returns `null` in web mode, and the JS layer hides the "open channel" affordance on `grpcweb@` URLs. The reason is below the plugin: gRPC-Web rides HTTP/1.1, which doesn't carry trailers, and the only variant Bowire enables (`GrpcWebMode.GrpcWebText`) round-trips its frames as length-prefixed base64 inside the request / response bodies — workable for half-duplex but not for the long-lived, simultaneously-flowing streams a duplex call needs. Even the binary `GrpcWebMode.GrpcWeb` variant requires trailers for status reporting, so it can't fall back without an HTTP/2-upgrade or WebSocket layer that the spec doesn't standardise. Unary and server-streaming work cleanly through `InvokeAsync` / `InvokeStreamAsync` either way.
+
+If you need client-streaming or duplex against a TacticalAPI-style server, point Bowire at the native HTTP/2 port (e.g. TacticalAPI's `:4267`) and leave the default transport on. The transport choice is per call, so the same workbench session can mix both.
+
+### How the URL hint resolves
+
+`grpcweb@<url>` is handled by `BowireEndpointHelpers.ResolveHint`, which expands it to `("grpc", X-Bowire-Grpc-Transport=web)` and dispatches into this plugin. Discovery — which has no metadata bag on the public `IBowireProtocol.DiscoverAsync` interface — piggy-backs the choice on a `__bowireGrpcTransport=web` query-string marker that `GrpcChannelBuilder.ExtractTransportFromUrl(...)` strips before opening the channel. The end server never sees the marker; downstream services don't see the `X-Bowire-Grpc-Transport` header either, because `GrpcChannelBuilder.StripTransportMarker(...)` removes it from the forwarded metadata.
+
+### mTLS composes with web mode
+
+When both an mTLS marker and the gRPC-Web hint are present, `MtlsHandlerOwner`'s `SocketsHttpHandler` becomes the inner of the `GrpcWebHandler` — TLS at the bottom, gRPC-Web framing on top. The cert-trust opt-in (`Bowire:TrustLocalhostCert`) covers both transports.
+
 ## Metadata
 
 gRPC metadata (headers) can be added to any call via the Headers panel. Common uses:
@@ -181,6 +216,7 @@ gRPC metadata (headers) can be added to any call via the Headers panel. Common u
 - `authorization: Bearer <token>` -- authentication
 - `x-request-id: <uuid>` -- request tracing
 - `grpc-timeout: 30S` -- call deadline
+- `X-Bowire-Grpc-Transport: web` -- opt into gRPC-Web for this call (see [gRPC-Web transport](#grpc-web-transport))
 
 ## Standalone Mode
 

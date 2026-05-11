@@ -1784,6 +1784,19 @@ pre > code {
     background: var(--surface);
 }
 
+/* Preview / pre-release plugin chip — sits next to the protocol h3 so the
+   reader sees "this is here but not done" before they read the blurb. Uses
+   the warning palette so it pops against the (often green / blue) protocol
+   accents without inventing a new colour token. */
+.protocol-tag-preview {
+    color: var(--warning);
+    background: rgba(245, 158, 11, 0.12);
+    margin-left: 8px;
+    vertical-align: middle;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
 /* Terminal-style install snippet replaces the old protocol-tag — the actual
    command reads as a hint AND a one-click copy, which is more useful than a
    bare package name. Sized so card heights stay comparable to the old design. */

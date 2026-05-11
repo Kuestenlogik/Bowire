@@ -11,7 +11,7 @@
         </div>
         <div class="protocol-content">
           <h3>gRPC</h3>
-          <p>Server Reflection, proto schema browser, all four streaming types (unary / server / client / duplex). Auto-generated request templates from protobuf definitions, plus HTTP transcoding for methods with <code>google.api.http</code> annotations.</p>
+          <p>Server Reflection, proto schema browser, all four streaming types (unary / server / client / duplex) over native HTTP/2 or gRPC-Web. Auto-generated request templates from protobuf definitions, plus HTTP transcoding for methods with <code>google.api.http</code> annotations.</p>
           <div class="protocol-install">
             <code><span class="protocol-install-prompt">$</span> dotnet add package Kuestenlogik.Bowire.Protocol.Grpc</code>
             <button class="protocol-install-copy copy-btn" data-copy="dotnet add package Kuestenlogik.Bowire.Protocol.Grpc" aria-label="Copy install command for gRPC"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></button>
@@ -22,7 +22,7 @@
             <div class="features-block-text">
               <h3>gRPC</h3>
               <p class="features-block-lead">All four streaming flavours land in the same Wireshark-style frame pane &mdash; no separate tool for client-stream or duplex.</p>
-              <p>Bowire pulls the service tree from Server Reflection, generates typed request forms straight off the proto, and renders streaming responses frame-by-frame with per-message detail. HTTP transcoding kicks in automatically for methods carrying <code>google.api.http</code>, so REST-style hits work side by side with the gRPC call.</p>
+              <p>Bowire pulls the service tree from Server Reflection, generates typed request forms straight off the proto, and renders streaming responses frame-by-frame with per-message detail. The same plugin speaks native HTTP/2 gRPC <em>and</em> gRPC-Web &mdash; opt into web mode with a <code>grpcweb@</code> URL hint or the <code>X-Bowire-Grpc-Transport: web</code> metadata header to reach browser-fronted services and HTTP/1.1-only ingresses (Envoy, <code>grpcwebproxy</code>, ASP.NET <code>UseGrpcWeb</code>). HTTP transcoding kicks in automatically for methods carrying <code>google.api.http</code>, so REST-style hits work side by side with the gRPC call.</p>
               <ul class="features-block-capabilities">
                 <li>Unary</li>
                 <li>Server-streaming</li>
@@ -535,6 +535,55 @@
             </div>
             <div class="features-block-screenshot">
               {% include themed-img.html src="/assets/images/screenshots/streaming-akka.png" alt="Akka.NET BowireTapMailbox streaming live Tell messages" %}
+            </div>
+          </div>
+        </template>
+      </a>
+
+      <a class="protocol-card" href="{{ '/docs/protocols/tacticalapi.html' | relative_url }}" data-feature-modal tabindex="0">
+        <div class="protocol-icon">
+          <!-- TacticalAPI — generic radar-sweep / situational-awareness
+               glyph (we deliberately don't reuse Rheinmetall brand
+               assets). Outer scope ring + inner range ring + a sweep
+               wedge anchored at the centre, with two contact dots on
+               the bearing line so it reads as "live SA feed". Accent
+               stroke + faint accent-tinted wedge to differentiate it
+               from the DIS card's defence-green radar. -->
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="9"/>
+            <circle cx="12" cy="12" r="4.5"/>
+            <path d="M12 12 L20.5 12 A9 9 0 0 1 15 20.4 Z" fill="var(--accent)" fill-opacity="0.18" stroke="none"/>
+            <line x1="12" y1="12" x2="20.5" y2="12"/>
+            <line x1="12" y1="3" x2="12" y2="6"/>
+            <line x1="12" y1="18" x2="12" y2="21"/>
+            <line x1="3" y1="12" x2="6" y2="12"/>
+            <circle cx="16.5" cy="9" r="0.9" fill="var(--accent)" stroke="none"/>
+            <circle cx="9" cy="15.5" r="0.9" fill="var(--accent)" stroke="none"/>
+          </svg>
+        </div>
+        <div class="protocol-content">
+          <h3>TacticalAPI <span class="protocol-tag protocol-tag-preview">preview</span></h3>
+          <p>Rheinmetall's TacticalAPI &mdash; gRPC interface for situational-awareness systems. Bundled schema means the <code>Situation</code> service tree shows up in the sidebar even without Server Reflection. v0.1.0: descriptor discovery; typed CRUD + server-streaming pump in 0.2.0.</p>
+          <div class="protocol-install">
+            <code><span class="protocol-install-prompt">$</span> dotnet add package Kuestenlogik.Bowire.Protocol.TacticalApi</code>
+            <button class="protocol-install-copy copy-btn" data-copy="dotnet add package Kuestenlogik.Bowire.Protocol.TacticalApi" aria-label="Copy install command for TacticalAPI"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></button>
+          </div>
+        </div>
+        <template class="feature-card-detail">
+          <div class="features-block">
+            <div class="features-block-text">
+              <h3>TacticalAPI <span class="protocol-tag protocol-tag-preview">preview &middot; v0.1.0</span></h3>
+              <p class="features-block-lead">A typed discovery sidebar for Rheinmetall's situational-awareness gRPC interface &mdash; even when the target server doesn't expose Server Reflection.</p>
+              <p>The plugin downloads the upstream <code>.proto</code> set at build time (pinned commit, EPL-2.0 upstream, never redistributed), compiles it with <code>Grpc.Tools</code>, and ships only the generated bindings &mdash; so installing the package gives Bowire enough schema to render the <code>Situation</code> service tree out of the box. Connect with <code>bowire --url tacticalapi@host:50051</code>. Pairs naturally with the gRPC plugin's gRPC-Web transport for TacticalAPI's HTTP/1.1 port (<code>:4268</code>) alongside the native HTTP/2 port (<code>:4267</code>).</p>
+              <ul class="features-block-capabilities">
+                <li>Descriptor discovery (this release)</li>
+                <li>Typed unary CRUD (v0.2.0)</li>
+                <li>Server-streaming pump (v0.2.0)</li>
+              </ul>
+              <a class="features-block-docs-link" href="{{ '/docs/protocols/tacticalapi.html' | relative_url }}">Read the full docs &rarr;</a>
+            </div>
+            <div class="features-block-screenshot">
+              {% include themed-img.html src="/assets/images/screenshots/method-detail.png" alt="TacticalAPI Situation service discovered in the Bowire sidebar" %}
             </div>
           </div>
         </template>

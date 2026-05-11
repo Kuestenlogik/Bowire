@@ -16,7 +16,7 @@ Auto-generated from XML doc-comments across the published assemblies. Use the si
 
 ## First-party protocol plugins
 
-- <xref:Kuestenlogik.Bowire.Protocol.Grpc>
+- <xref:Kuestenlogik.Bowire.Protocol.Grpc> — includes **gRPC-Web support** via `GrpcTransportMode` and `BowireGrpcProtocol.TransportMetadataKey`; see the [gRPC-Web transport](../protocols/grpc.md#grpc-web-transport) section in the protocol guide.
 - <xref:Kuestenlogik.Bowire.Protocol.Rest>
 - <xref:Kuestenlogik.Bowire.Protocol.GraphQL>
 - <xref:Kuestenlogik.Bowire.Protocol.SignalR>
@@ -36,3 +36,5 @@ These ship from their own NuGet packages with independent release cadences — s
 - `Kuestenlogik.Bowire.Protocol.Dis`
 - `Kuestenlogik.Bowire.Protocol.Udp`
 - `Kuestenlogik.Bowire.Protocol.Akka`
+
+> **TacticalAPI (preview)** — `Kuestenlogik.Bowire.Protocol.TacticalApi` ships from <https://github.com/Kuestenlogik/Bowire.Protocol.TacticalApi> with its own release cadence; its API surface is not part of this DocFX scope. See the [TacticalAPI protocol guide](../protocols/tacticalapi.md) for install + usage, and the sibling repo's README for the proto-fetch licensing rationale.
