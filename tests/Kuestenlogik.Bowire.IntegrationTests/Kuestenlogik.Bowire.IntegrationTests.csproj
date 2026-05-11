@@ -19,6 +19,13 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\Kuestenlogik.Bowire\Kuestenlogik.Bowire.csproj" />
+    <!-- Reference the MapLibre extension so the asset-endpoint tests
+         (BowireSemanticsEndpointsTests, SemanticsEndpointIntegrationTests)
+         find the embedded bundle + vendor assets via the registry's
+         assembly-scan sweep. Without this reference the assembly is
+         absent from the test AppDomain and `Discover()` returns an
+         empty UI-extension list. -->
+    <ProjectReference Include="..\..\src\Kuestenlogik.Bowire.Extension.MapLibre\Kuestenlogik.Bowire.Extension.MapLibre.csproj" />
     <ProjectReference Include="..\..\src\Kuestenlogik.Bowire.Protocol.Grpc\Kuestenlogik.Bowire.Protocol.Grpc.csproj" />
     <ProjectReference Include="..\..\src\Kuestenlogik.Bowire.Protocol.SignalR\Kuestenlogik.Bowire.Protocol.SignalR.csproj" />
     <ProjectReference Include="..\..\src\Kuestenlogik.Bowire.Protocol.GraphQL\Kuestenlogik.Bowire.Protocol.GraphQL.csproj" />

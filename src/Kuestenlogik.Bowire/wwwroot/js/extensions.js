@@ -713,6 +713,47 @@
                 kindsSeen[annotations[i].semantic] = true;
             }
 
+            // Phase 3-R — placeholder cards for any annotation kind
+            // that has NO extension registered. We render one card per
+            // distinct package suggestion so a method that lights up
+            // both `coordinate.latitude` and `coordinate.longitude`
+            // doesn't double-render the MapLibre placeholder. The
+            // suggestion table only ships well-known coordinate kinds
+            // today; future kinds (image.bytes, audio.bytes) plug in
+            // additively without changing the routing code.
+            var placeholdersEmitted = {};
+            for (var kind in kindsSeen) {
+                if (!Object.prototype.hasOwnProperty.call(kindsSeen, kind)) continue;
+                var suggestion = bowirePackageSuggestions[kind];
+                if (!suggestion) continue;
+                // Skip when the kind is already covered by a registered
+                // extension — either directly (the umbrella kind has a
+                // viewer) or as a `pairing.required` companion.
+                if (bowireExtensions.byKind[kind] && bowireExtensions.byKind[kind].length > 0) {
+                    continue;
+                }
+                var covered = false;
+                for (var rid in bowireExtensions.byId) {
+                    if (!Object.prototype.hasOwnProperty.call(bowireExtensions.byId, rid)) continue;
+                    var rext = bowireExtensions.byId[rid];
+                    if (rext.pairing && rext.pairing.required
+                        && rext.pairing.required.indexOf(kind) >= 0) {
+                        covered = true; break;
+                    }
+                }
+                if (covered) continue;
+                if (placeholdersEmitted[suggestion]) continue;
+                placeholdersEmitted[suggestion] = true;
+
+                var placeholder = bowireRenderPlaceholder(kind, suggestion);
+                paneContainer.appendChild(placeholder);
+                cleanups.push((function (el) {
+                    return function () {
+                        if (el.parentNode) el.parentNode.removeChild(el);
+                    };
+                })(placeholder));
+            }
+
             // For each registered extension whose primary kind shows up
             // (or whose pairing.required[0] shows up), find pairing
             // matches and mount one tab per match.
@@ -821,6 +862,185 @@
         }
     }
 
+    // ---------------------------------------------------------------
+    // Phase 3-R — external-extension bootstrap + placeholder-tab
+    //
+    // Built-in widgets used to be concat'd into core's bowire.js. After
+    // Phase 3-R every viewer/editor (including MapLibre) ships as a
+    // separate NuGet package — its JS bundle lives as an
+    // EmbeddedResource on the extension assembly and is served at
+    // `/api/ui/extensions/{id}/{bundle}` by the core asset endpoint.
+    // The workbench fetches `/api/ui/extensions` at boot and
+    // dynamic-loads each declared bundle via `<script src=…>` + an
+    // optional `<link rel="stylesheet">`. Same-origin only — bundles
+    // are served by Bowire itself, never an external CDN.
+    //
+    // The placeholder-tab path runs INSIDE mountWidgetsForMethod: when
+    // an annotation references a `kind` for which no extension has
+    // registered, the framework mounts a grey-text "Install
+    // Kuestenlogik.Bowire.Extension.X" placeholder card so the user
+    // discovers extensions organically when their payload's data shape
+    // suggests one.
+    // ---------------------------------------------------------------
+
+    /**
+     * Map from semantic-kind → suggested package id. Used to render
+     * helpful "Install Kuestenlogik.Bowire.Extension.MapLibre" messages
+     * when an annotation exists but no extension has registered against
+     * the kind. Generic across kinds — the kind name is the lookup key,
+     * the package id is the recommendation text.
+     */
+    var bowirePackageSuggestions = {
+        // Direct umbrella-kind hits — when an annotation explicitly
+        // carries `coordinate.wgs84` (rather than the per-axis latitude
+        // / longitude companions the auto-detector produces).
+        'coordinate.wgs84': 'Kuestenlogik.Bowire.Extension.MapLibre',
+        // Companion-kind hits — the auto-detector writes
+        // `coordinate.latitude` + `coordinate.longitude` annotations;
+        // the umbrella kind never lands in the store. Suggest the map
+        // extension as soon as EITHER companion shows up so the user
+        // discovers the package on day one.
+        'coordinate.latitude': 'Kuestenlogik.Bowire.Extension.MapLibre',
+        'coordinate.longitude': 'Kuestenlogik.Bowire.Extension.MapLibre'
+    };
+
+    /**
+     * Pull the listing of server-side-declared extensions and load each
+     * one's JS bundle + optional stylesheet. Idempotent — calling twice
+     * is safe; already-loaded ids are skipped. Returns a promise that
+     * resolves when every declared bundle has either loaded or failed
+     * (the framework never blocks on a single misbehaving extension).
+     */
+    var bowireExternalsLoaded = null;
+    function bowireLoadExternalExtensions() {
+        if (bowireExternalsLoaded) return bowireExternalsLoaded;
+        var url = config.prefix + '/api/ui/extensions';
+        bowireExternalsLoaded = fetch(url, { headers: { 'Accept': 'application/json' } })
+            .then(function (r) { return r.ok ? r.json() : { extensions: [] }; })
+            .then(function (data) {
+                var list = (data && data.extensions) || [];
+                var loads = [];
+                for (var i = 0; i < list.length; i++) {
+                    loads.push(bowireLoadOneExtension(list[i]));
+                }
+                return Promise.allSettled(loads);
+            })
+            .catch(function (e) {
+                console.warn('[bowire-ext] failed to enumerate /api/ui/extensions', e);
+                return [];
+            });
+        return bowireExternalsLoaded;
+    }
+
+    /**
+     * Inject the stylesheet + script tags for one extension descriptor.
+     * Both URLs are same-origin (the asset endpoint serves the embedded
+     * resource out of the extension's assembly). Failure of one tag
+     * doesn't fail the whole bootstrap — the warning sticks in the
+     * console and the placeholder-tab path renders for the missing kind.
+     */
+    function bowireLoadOneExtension(desc) {
+        if (!desc || typeof desc.id !== 'string' || !desc.id) {
+            return Promise.resolve();
+        }
+        // Already-registered? Skip — built-ins (if any future fragment
+        // re-registers under the same id) win the tie-break, and a
+        // second script tag would be wasted bandwidth.
+        if (bowireExtensions.byId[desc.id]) return Promise.resolve();
+
+        var stylesPromise = Promise.resolve();
+        if (desc.stylesUrl) {
+            var cssId = 'bowire-ext-css-' + desc.id.replace(/[^a-z0-9]/gi, '-');
+            if (!document.getElementById(cssId)) {
+                var link = document.createElement('link');
+                link.id = cssId;
+                link.rel = 'stylesheet';
+                link.href = desc.stylesUrl;
+                document.head.appendChild(link);
+            }
+        }
+        if (!desc.bundleUrl) return stylesPromise;
+
+        return stylesPromise.then(function () {
+            return new Promise(function (resolve) {
+                var script = document.createElement('script');
+                script.src = desc.bundleUrl;
+                script.async = false; // preserve register-order
+                script.onload = function () { resolve(); };
+                script.onerror = function () {
+                    console.warn('[bowire-ext] failed to load bundle for ' + desc.id
+                        + ' from ' + desc.bundleUrl);
+                    resolve();
+                };
+                document.head.appendChild(script);
+            });
+        });
+    }
+
+    /**
+     * Render a placeholder card when the workbench sees an annotation
+     * kind for which no extension is registered. Generic across kinds —
+     * the message names the kind so the user knows what data the
+     * suggested package would render. Includes a small copy-to-clipboard
+     * affordance next to the package id; Bowire core can't install
+     * packages from the workbench, but a one-click clipboard write keeps
+     * the friction low.
+     */
+    function bowireRenderPlaceholder(kind, suggestion) {
+        var card = document.createElement('div');
+        card.className = 'bowire-ext-placeholder';
+        card.dataset.kind = kind;
+        card.setAttribute('role', 'note');
+        // Inline styles so the card renders against any theme without
+        // depending on bowire.css being loaded yet. Mirrors the same
+        // independent-rendering rule the map widget itself follows.
+        card.style.padding = '14px 16px';
+        card.style.margin = '8px 0';
+        card.style.borderRadius = '6px';
+        card.style.font = '13px system-ui, sans-serif';
+        card.style.color = 'var(--bowire-fg-muted, #6b7280)';
+        card.style.background = 'var(--bowire-bg-elevated, rgba(120, 120, 120, 0.06))';
+        card.style.border = '1px dashed var(--bowire-border-muted, rgba(120, 120, 120, 0.25))';
+
+        var msg = document.createElement('span');
+        msg.textContent = 'Install ';
+        card.appendChild(msg);
+
+        var code = document.createElement('code');
+        code.textContent = suggestion;
+        code.style.padding = '2px 6px';
+        code.style.borderRadius = '4px';
+        code.style.background = 'var(--bowire-bg-code, rgba(0, 0, 0, 0.08))';
+        code.style.fontFamily = 'ui-monospace, SFMono-Regular, Menlo, monospace';
+        card.appendChild(code);
+
+        var copyBtn = document.createElement('button');
+        copyBtn.type = 'button';
+        copyBtn.textContent = 'Copy';
+        copyBtn.title = 'Copy package id to clipboard';
+        copyBtn.style.marginLeft = '8px';
+        copyBtn.style.padding = '2px 8px';
+        copyBtn.style.font = 'inherit';
+        copyBtn.style.cursor = 'pointer';
+        copyBtn.addEventListener('click', function () {
+            try {
+                if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+                    navigator.clipboard.writeText(suggestion).then(function () {
+                        copyBtn.textContent = 'Copied!';
+                        setTimeout(function () { copyBtn.textContent = 'Copy'; }, 1200);
+                    });
+                }
+            } catch { /* clipboard API unavailable — ignore */ }
+        });
+        card.appendChild(copyBtn);
+
+        var tail = document.createElement('span');
+        tail.textContent = ' to render `' + kind + '` annotations on a map.';
+        card.appendChild(tail);
+
+        return card;
+    }
+
     // Public-from-the-IIFE handles used by other fragments — kept on
     // the closure-local namespace so the existing window contract stays
     // minimal (just `BowireExtensions`).
@@ -844,6 +1064,19 @@
         makeViewerCtx: bowireMakeViewerCtx,
         // Read-only accessor for the current selection snapshot.
         currentSelection: function () { return bowireCurrentSelection; },
+        // Phase 3-R — kicks off the external-bundle bootstrap. Init
+        // calls this once after services are loaded so every declared
+        // extension's JS lands before the first mountWidgetsForMethod.
+        loadExternalExtensions: bowireLoadExternalExtensions,
+        // Phase 3-R — placeholder-card factory exposed for tests +
+        // future widget overrides. Returns a detached DOM node.
+        renderPlaceholder: bowireRenderPlaceholder,
+        // Phase 3-R — kind → package-id suggestion table. Read-only
+        // for callers; framework consults it in mountWidgetsForMethod
+        // when an unregistered kind shows up in the annotations.
+        packageSuggestionFor: function (kind) {
+            return bowirePackageSuggestions[kind] || null;
+        },
         // Test seams
         _findPairingMatches: bowireFindPairingMatches,
         _findPairingHints: bowireFindPairingHints,

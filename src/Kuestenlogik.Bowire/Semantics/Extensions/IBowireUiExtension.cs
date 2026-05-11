@@ -79,4 +79,21 @@ public interface IBowireUiExtension
     /// dedicated CSS (most do).
     /// </summary>
     string? StylesResourceName { get; }
+
+    /// <summary>
+    /// Extra asset names served under <c>/api/ui/extensions/{Id}/{name}</c>.
+    /// Use this list to ship vendor libraries (e.g. a map renderer's JS +
+    /// CSS), embedded glyph PBFs, sprite atlases or LICENSE files that the
+    /// JS bundle needs to dynamic-load at runtime. The asset-serving
+    /// endpoint only resolves request paths whose leaf filename appears
+    /// in this list (or matches the bundle / styles names) — anything
+    /// else is rejected with 404 so the endpoint never serves arbitrary
+    /// files out of the plugin assembly.
+    /// </summary>
+    /// <remarks>
+    /// Default implementation returns an empty list — most extensions
+    /// only ship the bundle + optional stylesheet and don't need this
+    /// surface.
+    /// </remarks>
+    IReadOnlyList<string> AdditionalAssetNames => [];
 }

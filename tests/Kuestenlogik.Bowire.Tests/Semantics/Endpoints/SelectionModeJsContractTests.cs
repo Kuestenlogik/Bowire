@@ -60,21 +60,12 @@ public sealed class SelectionModeJsContractTests
         Assert.Contains("function bowireApplySelectionMode", bundle, StringComparison.Ordinal);
     }
 
-    [Fact]
-    public void Map_Viewer_Opts_Into_Multi_Map_Editor_Stays_Single()
-    {
-        var bundle = JsBundle.Value;
-        // Order matters in the bundle (viewer-block first, editor-block
-        // second inside the registration object) so a single ordered
-        // regex pin both sides at once. The intermediate `mount:` is
-        // a structural anchor — if someone reshapes the block we want
-        // this test to fail loudly so they re-check the declaration.
-        var pattern = new Regex(
-            @"viewer:\s*\{[^}]*selectionMode:\s*'multi'[^}]*mount:\s*bowireMapViewerMount" +
-            @"[^}]*\}[^}]*editor:\s*\{[^}]*selectionMode:\s*'single'[^}]*mount:\s*bowireMapEditorMount",
-            RegexOptions.Singleline);
-        Assert.Matches(pattern, bundle);
-    }
+    // Phase 3-R — `Map_Viewer_Opts_Into_Multi_Map_Editor_Stays_Single`
+    // moved to the Kuestenlogik.Bowire.Extension.MapLibre.Tests project
+    // alongside the rest of the MapLibre descriptor tests. The
+    // selectionMode contract for the framework's pure-filter functions
+    // is core, but the map widget's registration shape rides with the
+    // package that ships it.
 
     [Fact]
     public void Ctx_Mount_Propagates_SelectionMode_From_Viewer_Block()

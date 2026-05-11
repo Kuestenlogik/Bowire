@@ -417,7 +417,18 @@ gets classified the first time it shows up, not at initial subscribe.
 
 ## Map widget — the first viewer/editor
 
-The framework's first concrete consumer. Implementation choices:
+The framework's first concrete consumer. Ships in its own NuGet package
+**`Kuestenlogik.Bowire.Extension.MapLibre`** (Phase 3-R — extracted out
+of core in the v1.3.0 pre-release refactor so users who never invoke a
+coordinate-carrying method don't pay the ~870 KB bundle cost). The
+package follows the standard extension model — `[BowireExtension]`
+descriptor + embedded JS/CSS/vendor assets — and is the dogfood proof
+that the same shape third parties write against is the shape Bowire's
+own widgets use. Install via `dotnet add package
+Kuestenlogik.Bowire.Extension.MapLibre`; the workbench's
+`/api/ui/extensions` enumeration auto-discovers it at boot, dynamic-
+loads the bundle via `bowireLoadExternalExtensions`, and registers the
+viewer + editor against `coordinate.wgs84`. Implementation choices:
 
 ### Map library: MapLibre GL JS
 
@@ -476,12 +487,30 @@ without re-running detection.
 
 Bowire's no-network guarantee survives:
 
-- MapLibre JS + CSS are bundled into the workbench JS chunk (concat
-  target — same mechanism as morphdom today).
+- MapLibre JS + CSS ship as embedded resources of the
+  `Kuestenlogik.Bowire.Extension.MapLibre` NuGet package
+  (Phase 3-R — moved out of core for the bandwidth win). Same-origin
+  served via `/api/ui/extensions/kuestenlogik.maplibre/{name}`. Users
+  who install the package pay the ~870 KB asset cost once at first
+  map mount; users who don't install it never see the bundle at all.
 - Default behaviour without `Bowire:MapTileUrl`: blank grid + pins
   on top. Renders correctly with zero outbound HTTP.
 - Sample / docs reference a local Protomaps single-file
   (`tileserver-gl` style) for the "with tiles" demo.
+
+**Glyph / sprite lockdown (Phase 3-R).** The MapLibre style declared by
+the widget intentionally omits both the `glyphs` URL and the `sprite`
+URL — regardless of whether `Bowire:MapTileUrl` is set. MapLibre only
+fetches glyph PBFs when a `symbol` layer with a `text-field` paint
+property is mounted, and only fetches sprite atlases when an
+`icon-image` layer is mounted; the widget renders pins through the
+`circle` layer primitive (per-discriminator colour, multi-select
+restyle) which needs neither. A regex-over-bundle CI test pins the
+absence of both fields plus the absence of `text-field` / `icon-image`
+references — any future style tweak that re-introduces an outbound
+glyph or sprite fetch fails the build before the no-network guarantee
+leaks. When the user does set a tile URL, the tile fetch is the only
+external request the workbench ever makes against that origin.
 
 The framework itself has no network dependency — tile downloads
 are an optional enhancement, not a requirement.
@@ -643,10 +672,31 @@ Loading sequence at workbench startup:
    pick up the new viewers/editors without any core code change.
 
 The built-in viewers (map, image, audio, table) ship as regular
-`BowireExtension` packages bundled with the Bowire distribution —
-which means the extension API is dogfooded by the same code that
-third parties write against. Any gap in the API surfaces immediately
-during Bowire's own development.
+`BowireExtension` packages — **not bundled with Bowire core**. After
+Phase 3-R the only thing core ships is the framework itself
+(`extensions.js`, the `/api/ui/extensions` endpoint, the placeholder-
+tab path); every viewer/editor — including the MapLibre map — is a
+separate NuGet package the user explicitly installs. Same code path
+third-party widget authors write against; gap in the API surfaces
+immediately during Bowire's own development.
+
+**Placeholder tab for unregistered kinds (Phase 3-R).** When the
+workbench sees an annotation kind for which no extension has registered
+— for example `coordinate.latitude` from the auto-detector but
+`Kuestenlogik.Bowire.Extension.MapLibre` is not installed — the
+framework mounts a generic placeholder card in the viewer slot:
+`Install Kuestenlogik.Bowire.Extension.MapLibre to render
+\`coordinate.latitude\` annotations on a map.` The package id is
+copy-to-clipboard-able next to the message; Bowire core cannot install
+NuGet packages from the workbench, so the card is informational only.
+The placeholder is generic across kinds: a `kind → packageId`
+suggestion table in `extensions.js` plugs new entries in additively as
+new built-in extensions ship. The card suppresses itself when the
+kind is covered by an already-registered extension's
+`pairing.required` list (so MapLibre being installed makes the
+companion-kind cards disappear), and dedupes by suggestion id so a
+method that surfaces both `coordinate.latitude` and
+`coordinate.longitude` doesn't double-render the MapLibre card.
 
 ### C# contracts
 

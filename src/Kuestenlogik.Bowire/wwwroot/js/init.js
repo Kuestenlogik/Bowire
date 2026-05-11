@@ -181,6 +181,21 @@
         // Load flows from localStorage
         flowsList = loadFlows();
 
+        // Phase 3-R — kick off the external-extension bootstrap. Each
+        // discovered extension's JS bundle + optional stylesheet
+        // dynamic-loads in parallel; the framework's
+        // `mountWidgetsForMethod` path waits on this implicitly through
+        // the registration cache (a registered extension is mountable;
+        // an unregistered one renders the placeholder card). We don't
+        // block the first render on it — extensions are an enhancement,
+        // and the workbench's core surface (sidebar, request form, …)
+        // ships work without them.
+        if (window.__bowireExtFramework
+            && typeof window.__bowireExtFramework.loadExternalExtensions === 'function') {
+            try { window.__bowireExtFramework.loadExternalExtensions(); }
+            catch (e) { console.warn('[bowire-ext] bootstrap failed', e); }
+        }
+
         Promise.allSettled([
             loadEnvironmentsFromDisk(),
             loadRecordingsFromDisk()

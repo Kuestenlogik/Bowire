@@ -58,6 +58,18 @@
      * renders pins on top of a solid background even when no tile source
      * is configured — exactly the behaviour the ADR's "Offline mode"
      * section pins.
+     *
+     * Phase 3-R — no-network lockdown. The style intentionally OMITS
+     * `glyphs` AND `sprite` URLs. MapLibre only requests glyph PBFs
+     * when a `symbol` layer with `text-field` is mounted; the workbench
+     * widget renders entirely through `circle` layers (per-discriminator
+     * colour, multi-select restyle) so no glyphs are needed, and no
+     * glyph fetch can leak to an external host. Same story for sprite
+     * atlases — no `symbol` layer references a sprite icon, so the
+     * `sprite` URL stays absent. A regex-over-bundle test pins the
+     * absence; any future style tweak that re-introduces a labelled
+     * symbol layer must also explicitly opt into a glyph source (and
+     * own the offline-mode consequences).
      */
     function bowireMapBlankStyle(themeMode) {
         var bg = themeMode === 'light' ? '#eef2f8' : '#1a1d2b';
@@ -68,12 +80,7 @@
                 id: 'background',
                 type: 'background',
                 paint: { 'background-color': bg }
-            }],
-            // Required-but-meaningless empty glyph URL — MapLibre refuses
-            // to render without one when symbol layers exist; we keep
-            // the stub here so future labelled-pin styles work without
-            // a separate config change.
-            glyphs: 'about:blank/{fontstack}/{range}.pbf'
+            }]
         };
     }
 
@@ -200,6 +207,14 @@
         var tileUrl = bowireMapTileUrl();
         var style;
         if (tileUrl) {
+            // User has explicitly opted into an external tile source by
+            // configuring Bowire:MapTileUrl. That's the only path where
+            // the widget reaches an external host; offline-default has
+            // no `sources`, no `glyphs`, no `sprite` (see
+            // bowireMapBlankStyle for the lockdown rationale). When a
+            // tile URL IS configured, we still omit `glyphs` / `sprite`
+            // because the workbench's pin-rendering doesn't use them —
+            // adding either would silently widen the egress surface.
             style = {
                 version: 8,
                 sources: {
@@ -214,8 +229,7 @@
                     id: 'bowire-tiles-layer',
                     type: 'raster',
                     source: 'bowire-tiles'
-                }],
-                glyphs: 'about:blank/{fontstack}/{range}.pbf'
+                }]
             };
         } else {
             style = bowireMapBlankStyle(ctx.theme && ctx.theme.mode);

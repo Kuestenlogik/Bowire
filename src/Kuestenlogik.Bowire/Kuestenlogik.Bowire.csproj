@@ -24,21 +24,15 @@
     <EmbeddedResource Include="wwwroot\favicon.svg" LogicalName="Kuestenlogik.Bowire.wwwroot.favicon.svg" />
     <EmbeddedResource Include="wwwroot\kuestenlogik_lockup.svg" LogicalName="Kuestenlogik.Bowire.wwwroot.kuestenlogik_lockup.svg" />
     <!--
-      MapLibre extension assets — served at
-      /api/ui/extensions/kuestenlogik.maplibre/{name}. The widget bundle
-      (wwwroot/js/widgets/map.js) is ALSO baked into the bowire.js
-      concat below so it loads alongside the rest of the workbench;
-      the standalone resource only exists so tooling / lazy-import
-      flows can pull the file directly.
+      Phase 3-R — the MapLibre map widget moved to a separate package
+      (Kuestenlogik.Bowire.Extension.MapLibre). Its JS bundle + vendor
+      assets ship as EmbeddedResources on that assembly and are served
+      through the same /api/ui/extensions/{id}/{name} endpoint via
+      EmbeddedExtensionAsset's manifest-resource loader. Core no longer
+      bakes the ~800 KB MapLibre renderer (or the 24 KB widget bundle)
+      into bowire.js — users who never invoke a coordinate-carrying
+      method don't pay the bandwidth cost.
     -->
-    <EmbeddedResource Include="wwwroot\js\widgets\map.js"
-                      LogicalName="Kuestenlogik.Bowire.wwwroot.js.widgets.map.js" />
-    <EmbeddedResource Include="wwwroot\maplibre\maplibre-gl.js"
-                      LogicalName="Kuestenlogik.Bowire.wwwroot.maplibre.maplibre-gl.js" />
-    <EmbeddedResource Include="wwwroot\maplibre\maplibre-gl.css"
-                      LogicalName="Kuestenlogik.Bowire.wwwroot.maplibre.maplibre-gl.css" />
-    <EmbeddedResource Include="wwwroot\maplibre\LICENSE"
-                      LogicalName="Kuestenlogik.Bowire.wwwroot.maplibre.LICENSE" />
   </ItemGroup>
 
   <!--
@@ -119,7 +113,16 @@
     -->
     <BowireJsFragment Include="wwwroot\js\layout.js" />
     <BowireJsFragment Include="wwwroot\js\extensions.js" />
-    <BowireJsFragment Include="wwwroot\js\widgets\map.js" />
+    <!--
+      Phase 3-R — widgets/map.js no longer ships inside core. It rides
+      its own extension assembly (Kuestenlogik.Bowire.Extension.MapLibre)
+      and the workbench dynamic-loads it from the asset endpoint on boot
+      via `bowireLoadExternalExtensions` in extensions.js. The
+      <Watch> glob below keeps wwwroot/js/**/*.js coverage so a future
+      built-in widget that ships under widgets/ (e.g. semantics-menu.js
+      which stays in core as part of the framework's right-click surface)
+      still gets dev-loop hot-reload.
+    -->
     <!--
       Phase 4 — manual user override UI. Attaches the right-click menu
       to response-tree leaves and issues writes to the new POST/DELETE

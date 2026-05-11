@@ -663,6 +663,14 @@ dotnet TacticalApi.TestClient.dll --observesituation
 #    --observesituation stream should emit a new event for it.
 ```
 
+To visualise the symbols on a map while the walkthrough runs, install the optional MapLibre extension on the Bowire workbench host:
+
+```bash
+dotnet add package Kuestenlogik.Bowire.Extension.MapLibre
+```
+
+The map widget mounts automatically against any annotation pair the frame-semantics framework resolves to `coordinate.wgs84` (the latitude/longitude on each symbol). When the package is absent the workbench shows a "Install `Kuestenlogik.Bowire.Extension.MapLibre`" placeholder card next to the streaming-frames pane &mdash; the data still flows, the map just isn't rendered.
+
 Each step crosses a different mock surface: stateful storage (sendsymbol persists for printsituation), server-streaming replay (observesituation), GUID generation (sendsymbol allocates), and &mdash; if the test client is configured for port 4268 instead of 4267 &mdash; **gRPC-Web** framing on top of HTTP/1.1, which a wire-level bug would expose immediately.
 
 The point of the exercise isn't that the mock is "correct" once these commands pass &mdash; the test client also has its own assumptions baked in. It's that an *independent third party's* assumptions about the protocol are met. When they aren't, you have a concrete, reproducible delta that's easy to fix on whichever side is wrong.

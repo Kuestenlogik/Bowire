@@ -1,0 +1,38 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Description>Bowire UI extension — MapLibre GL JS map widget for the coordinate.wgs84 semantic kind. Ships the WebGL map viewer + editor as a separate package so users who never need geographic rendering don't pay the ~870 KB JS/CSS cost on every workbench load.</Description>
+    <PackageId>Kuestenlogik.Bowire.Extension.MapLibre</PackageId>
+    <PackageTags>bowire;bowire-extension;maplibre;map;geospatial;wgs84;developer-tools</PackageTags>
+    <IsPackable>true</IsPackable>
+    <!-- Bowire's plugin / extension marker for the in-UI marketplace +
+         NuGet consumers. Same shape as <PackageType>BowirePlugin</PackageType>
+         on the Protocol.* projects, only the package-class differs. -->
+    <PackageType>BowireExtension</PackageType>
+  </PropertyGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="Kuestenlogik.Bowire.Extension.MapLibre.Tests" />
+    <InternalsVisibleTo Include="Kuestenlogik.Bowire.IntegrationTests" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Kuestenlogik.Bowire\Kuestenlogik.Bowire.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <!--
+      Extension assets — served by the core
+      /api/ui/extensions/kuestenlogik.maplibre/{name} endpoint via
+      EmbeddedExtensionAsset.OpenRead against this assembly. The widget
+      bundle and the MapLibre vendored stylesheet are the two hot-path
+      assets (BundleResourceName / StylesResourceName on the descriptor);
+      maplibre-gl.js and LICENSE are AdditionalAssets the bundle pulls in
+      lazily when the first map widget mounts.
+    -->
+    <EmbeddedResource Include="wwwroot\js\widgets\map.js"
+                      LogicalName="Kuestenlogik.Bowire.Extension.MapLibre.wwwroot.js.widgets.map.js" />
+    <EmbeddedResource Include="wwwroot\maplibre\maplibre-gl.js"
+                      LogicalName="Kuestenlogik.Bowire.Extension.MapLibre.wwwroot.maplibre.maplibre-gl.js" />
+    <EmbeddedResource Include="wwwroot\maplibre\maplibre-gl.css"
+                      LogicalName="Kuestenlogik.Bowire.Extension.MapLibre.wwwroot.maplibre.maplibre-gl.css" />
+    <EmbeddedResource Include="wwwroot\maplibre\LICENSE"
+                      LogicalName="Kuestenlogik.Bowire.Extension.MapLibre.wwwroot.maplibre.LICENSE" />
+  </ItemGroup>
+</Project>

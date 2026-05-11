@@ -327,14 +327,11 @@ internal static class BowireSemanticsEndpoints
         }
 
         // Extras declared by extensions that ship more than the two
-        // hot-path assets (the built-in MapLibre extension's vendored
-        // maplibre-gl.js + LICENSE).
-        if (ext is MapLibreExtension ml)
+        // hot-path assets — the MapLibre extension's vendored
+        // maplibre-gl.js + LICENSE + glyph PBF are an example.
+        foreach (var extra in ext.AdditionalAssetNames)
         {
-            foreach (var extra in ml.AdditionalAssetNames)
-            {
-                if (LeafEquals(extra, name)) return extra;
-            }
+            if (LeafEquals(extra, name)) return extra;
         }
 
         return null;

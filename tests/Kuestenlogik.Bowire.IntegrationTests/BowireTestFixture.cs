@@ -57,6 +57,11 @@ public sealed class BowireTestFixture : IAsyncLifetime
         // typeof() triggers assembly loading by the CLR.
         _ = typeof(Kuestenlogik.Bowire.Protocol.Grpc.BowireGrpcProtocol).Assembly;
         _ = typeof(Kuestenlogik.Bowire.Protocol.SignalR.BowireSignalRProtocol).Assembly;
+        // Same idea for the MapLibre UI extension (Phase 3-R) — the
+        // descriptor lives in its own assembly now, and the test asset
+        // endpoint flow can only find it after the CLR has loaded the
+        // type.
+        _ = typeof(Kuestenlogik.Bowire.Semantics.Extensions.MapLibreExtension).Assembly;
     }
 
     public async ValueTask DisposeAsync()

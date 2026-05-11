@@ -32,6 +32,14 @@ public sealed class BowireSemanticsEndpointsTests
 
     private static async Task<WebApplication> BuildAppAsync()
     {
+        // Phase 3-R — force-load the MapLibre extension assembly so the
+        // registry-discovery sweep finds it. Without this typeof() the
+        // assembly is loaded lazily on first reflection touch, which is
+        // AFTER ResetCachedRegistryForTests + Discover() has already
+        // run, and the asset-endpoint tests get a 404 instead of the
+        // bundle.
+        _ = typeof(Kuestenlogik.Bowire.Semantics.Extensions.MapLibreExtension).Assembly;
+
         var builder = WebApplication.CreateBuilder();
         builder.WebHost.UseTestServer();
         builder.Logging.ClearProviders();
@@ -280,6 +288,9 @@ public sealed class BowireSemanticsEndpointsTests
     /// </summary>
     private static async Task<(WebApplication App, string UserFilePath)> BuildAppWithUserFileAsync()
     {
+        // Same Phase 3-R force-load as BuildAppAsync — see comment there.
+        _ = typeof(Kuestenlogik.Bowire.Semantics.Extensions.MapLibreExtension).Assembly;
+
         var dir = Path.Combine(Path.GetTempPath(), "bowire-phase4-tests", Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(dir);
         var path = Path.Combine(dir, "schema-hints.json");

@@ -1,6 +1,7 @@
 <Solution>
   <Folder Name="/src/">
     <Project Path="src/Kuestenlogik.Bowire/Kuestenlogik.Bowire.csproj" />
+    <Project Path="src/Kuestenlogik.Bowire.Extension.MapLibre/Kuestenlogik.Bowire.Extension.MapLibre.csproj" />
     <Project Path="src/Kuestenlogik.Bowire.Protocol.Grpc/Kuestenlogik.Bowire.Protocol.Grpc.csproj" />
     <Project Path="src/Kuestenlogik.Bowire.Protocol.SignalR/Kuestenlogik.Bowire.Protocol.SignalR.csproj" />
     <Project Path="src/Kuestenlogik.Bowire.Protocol.Mcp/Kuestenlogik.Bowire.Protocol.Mcp.csproj" />
@@ -19,5 +20,6 @@
     <Project Path="tests/Kuestenlogik.Bowire.Tests/Kuestenlogik.Bowire.Tests.csproj" />
     <Project Path="tests/Kuestenlogik.Bowire.IntegrationTests/Kuestenlogik.Bowire.IntegrationTests.csproj" />
     <Project Path="tests/Kuestenlogik.Bowire.Mock.Tests/Kuestenlogik.Bowire.Mock.Tests.csproj" />
+    <Project Path="tests/Kuestenlogik.Bowire.Extension.MapLibre.Tests/Kuestenlogik.Bowire.Extension.MapLibre.Tests.csproj" />
   </Folder>
 </Solution>

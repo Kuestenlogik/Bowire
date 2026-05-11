@@ -72,12 +72,19 @@ dotnet TacticalApi.TestClient.dll --sendsymbol 53.5 9.9
 dotnet TacticalApi.TestClient.dll --sendsymbol 53.55 10.0
 dotnet TacticalApi.TestClient.dll --sendsymbol 53.6 10.05
 
-# 3. Point Bowire at the same server — native HTTP/2 transport
+# 3. Add the optional map-widget extension so SituationObjectLocation
+#    pins land on a MapLibre canvas next to the streaming-frames pane.
+#    (Skip this step if you only want the raw JSON view — Bowire still
+#    auto-detects the lat/lon fields, it just falls back to a
+#    "Install …Extension.MapLibre" placeholder card instead of a map.)
+dotnet add package Kuestenlogik.Bowire.Extension.MapLibre
+
+# 4. Point Bowire at the same server — native HTTP/2 transport
 bowire --url grpc@https://localhost:4267
 #    …or gRPC-Web over HTTP/1.1 if the server exposes :4268 too
 bowire --url grpcweb@https://localhost:4268
 
-# 4. In the workbench, pick Situation → SubscribeSituationObjectEvents.
+# 5. In the workbench, pick Situation → SubscribeSituationObjectEvents.
 #    Click Execute. With the Frame-Semantics Framework live in
 #    Bowire 1.3.0+, the workbench auto-detects the lat/lon fields on
 #    every SituationObjectLocation and mounts a Map tab next to the
@@ -86,7 +93,7 @@ bowire --url grpcweb@https://localhost:4268
 #    terminal lights up live.
 ```
 
-Why this demo carries weight: **no Bowire-side configuration was involved**. No `bowire.schema-hints.json`, no `IBowireSchemaHints` implementation, no manual right-click on a field. The TacticalAPI plugin ships transport-only; the framework recognises `coordinate.latitude` / `coordinate.longitude` from the field names + WGS84 ranges and routes the data into the map widget on its own. The pgAdmin pattern: shape-of-data drives viewer choice, not protocol-author opt-in.
+Why this demo carries weight: **no Bowire-side configuration was involved**. No `bowire.schema-hints.json`, no `IBowireSchemaHints` implementation, no manual right-click on a field. The TacticalAPI plugin ships transport-only; the framework recognises `coordinate.latitude` / `coordinate.longitude` from the field names + WGS84 ranges and routes the data into the map widget on its own. The pgAdmin pattern: shape-of-data drives viewer choice, not protocol-author opt-in. The map widget itself rides its own NuGet package (`Kuestenlogik.Bowire.Extension.MapLibre`) so Bowire core stays ~870 KB lighter for users who never need geographic rendering &mdash; same plugin model as the protocol packages.
 
 A companion walkthrough in **[the mock-server docs](../features/mock-server.md#external-client-validation)** uses the same test client to validate `bowire mock` &mdash; a useful inverse comparison if you ever want to verify Bowire reproduces a real server's behaviour faithfully.
 
