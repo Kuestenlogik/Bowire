@@ -156,6 +156,19 @@ public sealed class BowireOptions
     /// will contribute to <c>User</c>-priority annotations.
     /// </summary>
     public string? SchemaHintsPath { get; set; }
+
+    /// <summary>
+    /// When <c>true</c>, the five built-in
+    /// <c>IBowireFieldDetector</c>s shipped by Bowire core
+    /// (WGS84 coordinate, GeoJSON Point, image bytes, audio bytes,
+    /// timestamp) are NOT registered. Useful for hardened deployments
+    /// that want to ship their own detector set without the
+    /// built-ins racing them, or for tests pinning a deterministic
+    /// detector list. The <see cref="Semantics.Detectors.IFrameProber"/>
+    /// singleton is still registered — it just has nothing to run
+    /// until the host adds its own detectors to the container.
+    /// </summary>
+    public bool DisableBuiltInDetectors { get; set; }
 }
 
 /// <summary>

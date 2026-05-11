@@ -5,6 +5,7 @@ using System.Reflection;
 using Kuestenlogik.Bowire.Net;
 using Kuestenlogik.Bowire.PluginLoading;
 using Kuestenlogik.Bowire.Semantics;
+using Kuestenlogik.Bowire.Semantics.Detectors;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -102,6 +103,7 @@ public static class BowireServiceCollectionExtensions
         configure?.Invoke(bootstrapOptions);
 
         RegisterSemanticsStore(services, bootstrapOptions);
+        RegisterFrameDetectors(services, bootstrapOptions);
 
         // Named HttpClient for the OAuth proxy endpoints in
         // BowireAuthEndpoints. IHttpClientFactory pools the underlying
@@ -324,6 +326,60 @@ public static class BowireServiceCollectionExtensions
         // resolve effective tags can take an IAnnotationStore without
         // depending on the layer concrete types.
         services.AddSingleton<IAnnotationStore>(sp => sp.GetRequiredService<LayeredAnnotationStore>());
+    }
+
+    /// <summary>
+    /// Wire the Phase-2 auto-detector layer: the five built-in
+    /// <see cref="IBowireFieldDetector"/> instances (opt-out via
+    /// <see cref="BowireOptions.DisableBuiltInDetectors"/>) plus the
+    /// <see cref="IFrameProber"/> singleton that the SSE stream
+    /// endpoint feeds frames into.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The detectors are registered as <see cref="IEnumerable{T}"/> of
+    /// <see cref="IBowireFieldDetector"/> so the prober (and any future
+    /// consumer) can pull the whole set with one DI resolution. Each
+    /// detector type is also registered as a singleton on itself, which
+    /// keeps it reachable for diagnostic / introspection code without
+    /// duplicating instances.
+    /// </para>
+    /// <para>
+    /// The prober pulls its auto layer from the existing
+    /// <see cref="LayeredAnnotationStore"/> singleton, so writes land
+    /// in the same store the resolver reads from. Phase 1 left
+    /// <see cref="LayeredAnnotationStore.AutoDetectorLayer"/> empty
+    /// for Phase 2 to fill — this is the wiring that does it.
+    /// </para>
+    /// </remarks>
+    private static void RegisterFrameDetectors(
+        IServiceCollection services, BowireOptions bootstrapOptions)
+    {
+        if (!bootstrapOptions.DisableBuiltInDetectors)
+        {
+            // Singleton-per-detector + IEnumerable<IBowireFieldDetector>
+            // alias so consumers that just need "every registered
+            // detector" can take an enumerable and stay decoupled from
+            // the concrete types.
+            services.AddSingleton<Wgs84CoordinateDetector>();
+            services.AddSingleton<GeoJsonPointDetector>();
+            services.AddSingleton<ImageBytesDetector>();
+            services.AddSingleton<AudioBytesDetector>();
+            services.AddSingleton<TimestampDetector>();
+
+            services.AddSingleton<IBowireFieldDetector>(sp => sp.GetRequiredService<Wgs84CoordinateDetector>());
+            services.AddSingleton<IBowireFieldDetector>(sp => sp.GetRequiredService<GeoJsonPointDetector>());
+            services.AddSingleton<IBowireFieldDetector>(sp => sp.GetRequiredService<ImageBytesDetector>());
+            services.AddSingleton<IBowireFieldDetector>(sp => sp.GetRequiredService<AudioBytesDetector>());
+            services.AddSingleton<IBowireFieldDetector>(sp => sp.GetRequiredService<TimestampDetector>());
+        }
+
+        services.AddSingleton<IFrameProber>(sp =>
+        {
+            var store = sp.GetRequiredService<LayeredAnnotationStore>();
+            var detectors = sp.GetServices<IBowireFieldDetector>();
+            return new FrameProber(detectors, store.AutoDetectorLayer);
+        });
     }
 
     /// <summary>

@@ -3,9 +3,11 @@
 
 using System.Text.Json;
 using Kuestenlogik.Bowire.Models;
+using Kuestenlogik.Bowire.Semantics.Detectors;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
 namespace Kuestenlogik.Bowire.Endpoints;
@@ -247,6 +249,14 @@ internal static class BowireInvokeEndpoints
                 var streamStartMs = Environment.TickCount64;
                 var index = 0;
 
+                // Frame-semantics auto-detector hook. The prober's
+                // ObserveFrame call is a single dictionary lookup on
+                // the repeat path (already-probed triples), so it
+                // doesn't slow high-frequency streams. Null when no
+                // detectors are registered (DisableBuiltInDetectors
+                // opt-out path).
+                var prober = ctx.RequestServices.GetService<IFrameProber>();
+
                 // Plugins that expose wire bytes (gRPC today) route through
                 // InvokeStreamWithFramesAsync so the recorder can persist
                 // `responseBinary` per frame — needed for Phase-2d gRPC
@@ -257,6 +267,7 @@ internal static class BowireInvokeEndpoints
                     await foreach (var frame in binStream.InvokeStreamWithFramesAsync(
                         serverUrl, service, method, messages, options.ShowInternalServices, metadata, ctx.RequestAborted))
                     {
+                        FrameProbingMiddleware.Observe(prober, service, method, frame.Json);
                         var eventData = JsonSerializer.Serialize(new
                         {
                             index,
@@ -277,6 +288,7 @@ internal static class BowireInvokeEndpoints
                     await foreach (var response in protocol.InvokeStreamAsync(
                         serverUrl, service, method, messages, options.ShowInternalServices, metadata, ctx.RequestAborted))
                     {
+                        FrameProbingMiddleware.Observe(prober, service, method, response);
                         var eventData = JsonSerializer.Serialize(new
                         {
                             index,
