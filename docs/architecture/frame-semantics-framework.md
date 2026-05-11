@@ -434,27 +434,309 @@ showed, even if the user's local annotations have changed since.
   but only the map viewer ships in v1.3.0. The first additional
   viewer follows in v1.4.
 
-## Plugin author surface
+## Extension framework
 
-Plugins keep their existing contract. New, **all optional**:
+The framework above only solves the *built-in* viewer/editor case.
+The companion problem is: **how does a third party ship a new viewer
+or editor without forking Bowire core?** Map / image / audio / chart /
+grid are not exhaustive — users will eventually want a MIL-STD-2525
+symbol viewer, a hex viewer for embedded-systems debugging, a
+Mermaid-diagram renderer for `text/mermaid` payloads, a Protobuf-wire-
+bytes inspector, a 3D-point-cloud viewer, … . Baking all of those into
+core is the wrong direction; the extension surface is.
 
-- **Schema annotations in Discovery descriptor** — a plugin that
-  knows its payloads carry coordinates (TacticalAPI) or has a
-  discriminator (DIS, MQTT-envelope-aware plugins) can pre-populate
-  the annotation set. Skipped plugins still work, users just do
-  more clicking.
-- **Custom viewer or editor bundles** — a plugin can ship its own
-  JS bundle that registers an additional viewer on a `kind` string
-  not covered by Bowire's defaults. Loaded through the existing
-  workbench JS concat path. No-JS plugins are unaffected.
-- **Custom detector** — a plugin can register a server-side
-  `IFieldDetector` that adds proposals for fields the core
-  heuristic can't reach. Same as a hint, but rule-based instead
-  of static.
+Bowire already has an extension model that works: protocol plugins
+ship as separate NuGet packages, auto-discover via assembly scan, and
+register against a stable contract. Viewer/editor/detector extensions
+get the same model — only a different package type.
 
-The plugin author tax for "my protocol now supports the map widget"
-is zero if the schema uses conventional field names, one schema-hint
-file entry if it doesn't.
+### Packaging and loading
+
+```
+NuGet package
+└── Kuestenlogik.Bowire.Extension.MapLibre
+    ├── csproj with <PackageType>BowireExtension</PackageType>
+    ├── BowireMapLibreExtension.cs        — C# registration + metadata
+    └── EmbeddedResource: bundle.js + bundle.css
+                                          — JS implementation, served
+                                            from the local Bowire host
+```
+
+Loading sequence at workbench startup:
+
+1. Host assembly-scans for types attributed with `[BowireExtension]`
+   (mirroring `[BowireProtocol]` discovery today).
+2. Workbench calls `GET /api/ui/extensions` → JSON list of
+   `{ id, version, bowireApi, kinds, capabilities, bundleUrl, stylesUrl? }`.
+3. Per extension, the workbench dynamically imports the bundle URL.
+   The URL serves the embedded resource from the local Bowire host
+   — **never from a third-party CDN**. Offline-safe by construction.
+4. The bundle calls `window.BowireExtensions.register({...})` with
+   its registration record (see JS contract below).
+5. The annotation → widget routing now treats the new `kind` as
+   mountable. Existing screens (response panes, request forms)
+   pick up the new viewers/editors without any core code change.
+
+The built-in viewers (map, image, audio, table) ship as regular
+`BowireExtension` packages bundled with the Bowire distribution —
+which means the extension API is dogfooded by the same code that
+third parties write against. Any gap in the API surfaces immediately
+during Bowire's own development.
+
+### C# contracts
+
+```csharp
+[BowireExtension]
+public sealed class MapLibreExtension : IBowireUiExtension
+{
+    public string Id => "kuestenlogik.maplibre";
+    public string BowireApiRange => "1.x";          // semver range
+    public string[] Kinds => ["coordinate.wgs84"];
+    public ExtensionCapabilities Capabilities
+        => ExtensionCapabilities.Viewer | ExtensionCapabilities.Editor;
+
+    // Embedded resources, served at /api/ui/extensions/{Id}/{name}:
+    public string BundleResourceName => "bundle.js";
+    public string? StylesResourceName => "bundle.css";
+
+    // Future, post-v1.0: required permissions, declared kinds,
+    // dependent extensions. Empty in v1.0 — most extensions need none.
+}
+```
+
+Server-side detectors register through a sibling contract — same
+attribute, different interface:
+
+```csharp
+[BowireExtension]
+public sealed class MilSymbolDetector : IBowireFieldDetector
+{
+    public string Id => "kuestenlogik.milsymbol-detector";
+    public string BowireApiRange => "1.x";
+
+    public DetectionResult? Detect(FieldContext ctx) =>
+        ctx.Name.EndsWith("Sidc", StringComparison.Ordinal) &&
+        ctx.Value is string s && Sidc.IsValid(s)
+            ? DetectionResult.Propose("mil.symbol-code")
+            : null;
+}
+```
+
+A single NuGet package can ship multiple `[BowireExtension]` types
+together — the MapLibre extension ships its UI extension; a future
+MIL-symbol package would ship a detector *and* a viewer in the same
+nupkg.
+
+### JS contract — `BowireExtensions.register`
+
+This is the API that becomes a public commitment once published.
+v1.0 is deliberately tight; everything that doesn't need to ship in
+v1.0 waits for v1.1 to avoid baking premature decisions into a
+contract we can't break.
+
+**v1.0 `ctx` surface** (minimal, evolves additively):
+
+```javascript
+window.BowireExtensions.register({
+  id: 'kuestenlogik.maplibre',
+  bowireApi: '1.x',
+  kind: 'coordinate.wgs84',
+
+  pairing: {
+    required: ['coordinate.latitude', 'coordinate.longitude'],
+    scope: 'same-parent'   // 'any' | 'same-parent' | 'same-object'
+  },
+
+  viewer: {
+    label: 'Map',
+    icon: 'map-pin',
+    mount(container, ctx) {
+      // ctx.frames$       — async iterable of { frame, interpretations,
+      //                     discriminator } events on the response stream
+      // ctx.theme         — { mode: 'light' | 'dark', accent, font }
+      // ctx.viewport      — { width, height, on(event, cb) → unsubscribe }
+      // ctx.host          — { subscribeSse(url), fetch(url, init) }
+      //                     fetch uses Bowire's auth + CSP context;
+      //                     subscribeSse closes itself on unmount.
+      // returns: () => void   — unmount cleanup
+    }
+  },
+
+  editor: {
+    label: 'Pick on map',
+    mount(container, ctx) {
+      // ctx.value         — { 'coordinate.latitude': 53.5, … }
+      //                     (paired annotation kinds → current values)
+      // ctx.onChange(p)   — patches the request payload with `p`
+      // ctx.disabled      — boolean (e.g. during request execution)
+      // ctx.theme / ctx.viewport / ctx.host — same as viewer side
+      // returns: () => void
+    }
+  }
+});
+```
+
+Deliberately **not** in v1.0:
+- Recording playback controls (`currentStep`, `setStep`, `totalSteps`).
+  Recordings still display, but the scrub-control surface is added
+  in v1.1 once we know what extensions actually need.
+- Cross-extension messaging. A v1.1 concern if real demand emerges.
+- Persistence helpers for per-extension state. Extensions can use
+  `localStorage` for now; first-class store comes later if needed.
+
+Everything in `ctx` is **frozen for the v1.x lifetime**. Adding
+fields is allowed in minor versions; removing or repurposing
+existing fields is a v2.x change.
+
+### Versioning and compatibility
+
+- Extension declares `bowireApi: '1.x'` (semver range).
+- Workbench checks compatibility on load. Incompatible major → the
+  extension is skipped with a UI badge "needs Bowire 2.x" in the
+  Extensions marketplace tab, no silent failure.
+- Bowire core MUST remain backwards-compatible within a major. That
+  discipline is the reason `ctx` ships tight in v1.0 — every field
+  added to the contract is something we can't take back without
+  a breaking release.
+
+### Permissions model
+
+Categorical for v1.0, with an explicit user opt-in moment:
+
+- Default: extension runs inside the workbench origin, can render
+  arbitrary DOM, can subscribe to Bowire-internal streams via
+  `ctx.host.subscribeSse`. Cannot make outbound HTTP fetches outside
+  the Bowire origin (CSP-blocked at the response level).
+- An extension that needs an outbound fetch (e.g. a tile-server
+  consumer for the map widget) declares it in its registration:
+  ```javascript
+  permissions: ['fetch:protomaps.com/*']
+  ```
+- On first load of such an extension, the workbench prompts the user
+  once: "*Extension kuestenlogik.maplibre wants to fetch tiles from
+  api.protomaps.com. Allow? [Just this session / Always / Never]*".
+  The choice is persisted per-extension in `~/.bowire/extensions.json`.
+
+Two-class model: zero-permission extensions install silently, network-
+hungry extensions go through a one-time consent. Granular per-resource
+permissions (e.g. read-only vs. read-write tile cache) are a v1.x
+additive surface if the categorical model proves too coarse — but
+shipping coarse-first means most extensions never trigger a prompt,
+which is what users actually want.
+
+### Extension conflict resolution
+
+Two extensions can register for the same `kind`. Resolution rule:
+
+1. **Default**: the built-in extension wins. The user's installed
+   third-party extension still appears in the Extensions tab, but
+   isn't auto-mounted.
+2. **Per-binding override**: the response pane has a viewer-picker
+   dropdown when more than one extension is registered for the
+   active `kind`. Choosing a non-default extension persists the
+   choice in the same `bowire.schema-hints.json` file that carries
+   the annotation, under a `viewer` companion field:
+   ```json
+   {
+     "service": "harbor.HarborService",
+     "method": "WatchCrane",
+     "types": {
+       "*": {
+         "$.position.lat": "coordinate.latitude",
+         "$.position.lon": "coordinate.longitude"
+       }
+     },
+     "viewers": {
+       "coordinate.wgs84": "acme.super-map"
+     }
+   }
+   ```
+3. The viewer override has the same three persistence tiers as the
+   annotations themselves (session / user / project). Default scope
+   is the narrowest one.
+
+No registry-wide priority ordering, no automatic version-based
+preference — explicit user choice every time. Avoids the "why is
+this random extension rendering my data?" surprise; matches the
+pattern users already learn from the annotation system itself.
+
+### Cross-extension dependencies
+
+An extension can introduce a new kind that other extensions consume.
+Bowire maintains a runtime kind registry:
+
+- Built-in kinds (`coordinate.wgs84`, `coordinate.ecef`,
+  `image.bytes`, `audio.bytes`, `timeseries.value`,
+  `table.row-array`, …) are registered by the core.
+- Extension kinds are declared at `register(…)` time:
+  ```javascript
+  declareKinds: ['mil.symbol-code', 'mil.echelon']
+  ```
+- Dependent extensions list their required kinds. On load, the
+  workbench checks the registry; if a required kind is missing, the
+  extension shows a disabled state in the Extensions tab with
+  "requires `acme.utm-detector`". Lazy resolution — when a missing
+  kind later becomes available (another extension loaded), the
+  disabled extension is rebound without restart.
+
+### Marketplace UI
+
+A dedicated tab in the workbench:
+
+- **Installed**: built-ins (map, image, audio, table) on top,
+  third-party below. Per-row: id, version, status (active /
+  blocked-permission / blocked-bowire-version / blocked-dependency),
+  link to source repo.
+- **Discover**: nuget.org query with
+  `packageType:BowireExtension`. Click → install:
+  - **Embedded mode**: writes a `<PackageReference>` to the host
+    project's csproj, runs `dotnet restore`, prompts for an app
+    restart.
+  - **Standalone mode**: downloads the nupkg to
+    `~/.bowire/extensions/{id}/`, the assembly is loaded on the
+    next bowire start.
+- **Permissions**: per-extension toggle for any granted permissions.
+  Revoking is immediate; the extension is re-prompted on next use.
+
+### Scaffolding
+
+`dotnet new bowire-extension --kind audio.opus --name acme.opus-player`
+creates:
+
+- csproj with `<PackageType>BowireExtension</PackageType>` and the
+  correct `<EmbeddedResource>` wiring for the JS bundle.
+- C# registration class implementing `IBowireUiExtension` with
+  pre-filled `Id` / `Kinds` / `Capabilities`.
+- JS bundle stub with `register({...})` skeleton and a TypeScript
+  `.d.ts` for the v1.0 `ctx` API surface.
+- README with the publish-to-nuget.org checklist.
+- GitHub Action template covering build → pack → push, matching
+  the release pipeline already used by Bowire's own plugin repos.
+
+Without scaffolding the boilerplate-cost is high enough to deter
+authors. The template is what turns "you *could* write an extension"
+into "you'll spend an evening on it."
+
+### Plugin author tax for protocol plugins
+
+Protocol plugins (gRPC, REST, MQTT, …) keep their existing contract
+unchanged. The framework above only *adds* optional surfaces — none
+of them are mandatory:
+
+- Schema annotations in Discovery descriptor: optional, lets the
+  plugin pre-fill annotations for known field shapes (e.g.
+  TacticalAPI tagging location fields as `coordinate.wgs84`,
+  DIS declaring its PDU-type discriminator). Skipping it means
+  users do more right-clicking, nothing breaks.
+- Bundled viewer/editor: optional. A protocol plugin can ship its
+  own `[BowireExtension]` if its payloads have a non-generic shape
+  worth a dedicated visualisation. Most won't.
+- Custom detector: optional, server-side rule that proposes
+  annotations the built-in heuristic can't reach.
+
+The tax for "my protocol now supports the map widget" is zero if
+the schema uses conventional field names, one schema-hint file
+entry if it doesn't.
 
 ## Risks and open questions
 
