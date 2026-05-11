@@ -6,5 +6,5 @@
   href: packages.md
 - name: File Formats
   href: file-formats.md
-- name: Map widget (design)
-  href: map-widget.md
+- name: Frame semantics framework (design)
+  href: frame-semantics-framework.md
