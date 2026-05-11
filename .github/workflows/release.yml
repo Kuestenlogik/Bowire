@@ -4,8 +4,10 @@ name: Release
 # binaries for 6 RIDs, MSI/DEB/RPM, multi-arch container, DocFX docs
 # (HTML zip + custom-rendered PDF), then publishes everything to:
 #   - GitHub Releases (all assets, all tags)
-#   - GitHub Packages   (NuGets, non-RC tags only)
-#   - nuget.org         (NuGets, non-RC tags only, gated on NUGET_API_KEY)
+#   - GitHub Packages   (NuGets, every tag — RCs included)
+#   - nuget.org         (NuGets, every tag, gated on NUGET_API_KEY; RCs
+#                        show up as pre-release versions and only flow
+#                        to consumers who opt in via `--prerelease`)
 #   - GHCR              (multi-arch container, always on tag)
 #   - Docker Hub        (multi-arch container, gated on DOCKERHUB_TOKEN)
 #
@@ -289,23 +291,21 @@ jobs:
             -p:ContainerRegistry=docker.io
 
       # ----------------------------------------------------------
-      # Publish NuGets (Github Packages + nuget.org), gated
+      # Publish NuGets (GitHub Packages + nuget.org)
       # ----------------------------------------------------------
-      # `-rc` tags (and the workflow_dispatch dry runs) skip both
-      # publishes — the GitHub Release in the release job stays
-      # prerelease for RCs so the .nupkg artefacts are downloadable
-      # without entering the public NuGet feeds.
+      # Every tag publishes to both feeds, RCs included. SemVer's
+      # `-rc.N` suffix marks them as pre-release, so consumers only
+      # receive them on an explicit opt-in (`--prerelease` flag or a
+      # pinned `Version="1.1.0-rc.3"`). The stable restore path is
+      # untouched. (workflow_dispatch dry runs still skip — the gate
+      # is on `github.ref_type == 'tag'`.)
 
       - name: Publish to GitHub Packages
-        # RC tags also publish here so sample-repo smoke rounds can
-        # restore against a real NuGet feed instead of a local
-        # `dotnet pack` artefact dump. nuget.org publish stays gated on
-        # non-RC tags only.
         if: ${{ github.ref_type == 'tag' }}
         run: dotnet nuget push "artifacts/packages/*.nupkg" --source "https://nuget.pkg.github.com/Kuestenlogik/index.json" --api-key ${{ secrets.GITHUB_TOKEN }} --skip-duplicate
 
       - name: Publish to nuget.org
-        if: ${{ github.ref_type == 'tag' && !contains(github.ref, '-rc') && env.NUGET_API_KEY != '' }}
+        if: ${{ github.ref_type == 'tag' && env.NUGET_API_KEY != '' }}
         run: dotnet nuget push "artifacts/packages/*.nupkg" --source https://api.nuget.org/v3/index.json --api-key "${{ env.NUGET_API_KEY }}" --skip-duplicate
 
       # ----------------------------------------------------------
