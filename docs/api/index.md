@@ -8,24 +8,24 @@ Auto-generated from XML doc-comments across the published assemblies. Use the si
 
 ## Core
 
-- [`Kuestenlogik.Bowire`](Kuestenlogik.Bowire.html) — `IBowireProtocol` contract, `BowireOptions`, `MapBowire()` extension, plugin-loading host.
-- [`Kuestenlogik.Bowire.Auth`](Kuestenlogik.Bowire.Auth.html) — cookie jar, mTLS handler, AWS Sig v4 signer.
-- [`Kuestenlogik.Bowire.Mocking`](Kuestenlogik.Bowire.Mocking.html) — recording / step / mock-emitter contracts shared across plugins.
-- [`Kuestenlogik.Bowire.Models`](Kuestenlogik.Bowire.Models.html) — service / method / message / field info DTOs the dispatcher sees.
-- [`Kuestenlogik.Bowire.PluginLoading`](Kuestenlogik.Bowire.PluginLoading.html) — `AssemblyLoadContext` plumbing for `bowire plugin install`.
+- <xref:Kuestenlogik.Bowire> — `IBowireProtocol` contract, `BowireOptions`, `MapBowire()` extension, plugin-loading host.
+- <xref:Kuestenlogik.Bowire.Auth> — cookie jar, mTLS handler, AWS Sig v4 signer.
+- <xref:Kuestenlogik.Bowire.Mocking> — recording / step / mock-emitter contracts shared across plugins.
+- <xref:Kuestenlogik.Bowire.Models> — service / method / message / field info DTOs the dispatcher sees.
+- <xref:Kuestenlogik.Bowire.PluginLoading> — `AssemblyLoadContext` plumbing for `bowire plugin install`.
 
 ## First-party protocol plugins
 
-- [`Kuestenlogik.Bowire.Protocol.Grpc`](Kuestenlogik.Bowire.Protocol.Grpc.html)
-- [`Kuestenlogik.Bowire.Protocol.Rest`](Kuestenlogik.Bowire.Protocol.Rest.html)
-- [`Kuestenlogik.Bowire.Protocol.GraphQL`](Kuestenlogik.Bowire.Protocol.GraphQL.html)
-- [`Kuestenlogik.Bowire.Protocol.SignalR`](Kuestenlogik.Bowire.Protocol.SignalR.html)
-- [`Kuestenlogik.Bowire.Protocol.WebSocket`](Kuestenlogik.Bowire.Protocol.WebSocket.html)
-- [`Kuestenlogik.Bowire.Protocol.Sse`](Kuestenlogik.Bowire.Protocol.Sse.html)
-- [`Kuestenlogik.Bowire.Protocol.Mqtt`](Kuestenlogik.Bowire.Protocol.Mqtt.html)
-- [`Kuestenlogik.Bowire.Protocol.SocketIo`](Kuestenlogik.Bowire.Protocol.SocketIo.html)
-- [`Kuestenlogik.Bowire.Protocol.OData`](Kuestenlogik.Bowire.Protocol.OData.html)
-- [`Kuestenlogik.Bowire.Protocol.Mcp`](Kuestenlogik.Bowire.Protocol.Mcp.html)
+- <xref:Kuestenlogik.Bowire.Protocol.Grpc>
+- <xref:Kuestenlogik.Bowire.Protocol.Rest>
+- <xref:Kuestenlogik.Bowire.Protocol.GraphQL>
+- <xref:Kuestenlogik.Bowire.Protocol.SignalR>
+- <xref:Kuestenlogik.Bowire.Protocol.WebSocket>
+- <xref:Kuestenlogik.Bowire.Protocol.Sse>
+- <xref:Kuestenlogik.Bowire.Protocol.Mqtt>
+- <xref:Kuestenlogik.Bowire.Protocol.SocketIo>
+- <xref:Kuestenlogik.Bowire.Protocol.OData>
+- <xref:Kuestenlogik.Bowire.Protocol.Mcp>
 
 ## Sibling plugins
 
