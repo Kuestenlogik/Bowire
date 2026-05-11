@@ -37,10 +37,20 @@
     <PackageIcon>icon.png</PackageIcon>
   </PropertyGroup>
 
+  <!-- Version is the *floor* for local + CI-without-tag builds. The
+       release pipeline derives the real version from the git tag (see
+       .github/workflows/release.yml: `-p:Version=${VERSION}`) and that
+       always wins for the published nupkg + binaries. The "-dev" suffix
+       on this default is deliberate: any artefact built outside the
+       tag-driven release pipeline carries it, so a crash report or
+       "About" dialog from such a build immediately admits it is not a
+       released version. Only bump this when the *next* target major /
+       minor changes — e.g. 1.x → 2.x. Per-release patch bumps happen
+       on the git tag, not here. -->
   <PropertyGroup Condition="'$(IsPackable)' != 'false'">
-    <Version>1.2.0</Version>
-    <AssemblyVersion>1.2.0</AssemblyVersion>
-    <FileVersion>1.2.0</FileVersion>
+    <Version>1.3.0-dev</Version>
+    <AssemblyVersion>1.3.0</AssemblyVersion>
+    <FileVersion>1.3.0</FileVersion>
   </PropertyGroup>
 
   <!-- Mark all Kuestenlogik.Bowire.Protocol.* projects as Bowire plugins so
