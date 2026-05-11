@@ -41,7 +41,22 @@ internal static class BowireInvokeEndpoints
             var (urlHint, urlAfterHint) = BowireServerUrl.Parse(rawServerUrl);
             var serverUrl = urlAfterHint;
             if (urlHint is not null)
-                body = body with { Protocol = urlHint };
+            {
+                // Transport-variant hints (e.g. `grpcweb@`) resolve to an
+                // existing plugin id plus a side-channel metadata entry. The
+                // plugin id pins dispatch; the metadata entry is added to
+                // body.Metadata so the plugin sees both knobs at once.
+                var (mappedId, transportMeta) = BowireEndpointHelpers.ResolveHint(urlHint);
+                body = body with { Protocol = mappedId };
+                if (transportMeta is { } tm)
+                {
+                    var meta = body.Metadata is null
+                        ? new Dictionary<string, string>(StringComparer.Ordinal)
+                        : new Dictionary<string, string>(body.Metadata, StringComparer.Ordinal);
+                    meta[tm.Key] = tm.Value;
+                    body = body with { Metadata = meta };
+                }
+            }
 
             // ---- Auth: query-string API key ----
             // The JS apikey helper with location='query' marks its entries
@@ -197,7 +212,18 @@ internal static class BowireInvokeEndpoints
             // Strip 'hint@url' basePath; hint overrides protocolId.
             var (urlHint, urlAfterHint) = BowireServerUrl.Parse(rawServerUrl);
             var serverUrl = urlAfterHint;
-            if (urlHint is not null) protocolId = urlHint;
+            if (urlHint is not null)
+            {
+                // Transport-variant hints (e.g. `grpcweb@`) resolve to an
+                // existing plugin id plus a side-channel metadata entry.
+                var (mappedId, transportMeta) = BowireEndpointHelpers.ResolveHint(urlHint);
+                protocolId = mappedId;
+                if (transportMeta is { } tm)
+                {
+                    metadata ??= new Dictionary<string, string>(StringComparer.Ordinal);
+                    metadata[tm.Key] = tm.Value;
+                }
+            }
             (serverUrl, metadata) = BowireEndpointHelpers.ApplyQueryAuthHints(serverUrl, metadata);
 
             var registry = BowireEndpointHelpers.GetRegistry();

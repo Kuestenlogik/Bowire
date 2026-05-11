@@ -25,6 +25,10 @@ internal sealed class GrpcBowireChannel : IBowireChannel
     // the descriptors and opens the gRPC channel before returning the
     // instance, so by the time anyone holds a reference everything is wired.
     private readonly GrpcChannel _grpcChannel;
+    // The HTTP message handler is owned by the channel: GrpcChannelBuilder.BuildChannel
+    // pins DisposeHttpClient=false so the GrpcChannel can be shared, so we
+    // dispose the handler ourselves in DisposeAsync.
+    private readonly HttpMessageHandler _ownedHandler;
     private readonly MessageDescriptor _inputType;
     private readonly MessageDescriptor _outputType;
     private readonly Channel<byte[]> _outgoing = Channel.CreateUnbounded<byte[]>(new UnboundedChannelOptions
@@ -49,6 +53,7 @@ internal sealed class GrpcBowireChannel : IBowireChannel
 
     private GrpcBowireChannel(
         GrpcChannel grpcChannel,
+        HttpMessageHandler ownedHandler,
         string serviceName,
         string methodName,
         MessageDescriptor inputType,
@@ -59,6 +64,7 @@ internal sealed class GrpcBowireChannel : IBowireChannel
         CancellationToken ct)
     {
         _grpcChannel = grpcChannel;
+        _ownedHandler = ownedHandler;
         _serviceName = serviceName;
         _methodName = methodName;
         _inputType = inputType;
@@ -125,8 +131,19 @@ internal sealed class GrpcBowireChannel : IBowireChannel
     /// <summary>
     /// Resolve the gRPC method descriptors via reflection, open the channel,
     /// and return a fully-wired <see cref="GrpcBowireChannel"/>.
+    /// <para>
+    /// Returns <c>null</c> when the caller asks for gRPC-Web transport (via
+    /// <see cref="BowireGrpcProtocol.TransportMetadataKey"/>). gRPC-Web's
+    /// HTTP/1.1 framing can't carry duplex traffic, and even
+    /// <c>GrpcWebMode.GrpcWebText</c>'s client-streaming round-trip behaves
+    /// inconsistently across servers (Envoy, grpc-web-proxy, ASP.NET's
+    /// <c>UseGrpcWeb</c> all disagree on how to flush request frames). The
+    /// Bowire workbench surfaces this back to the UI as "duplex not
+    /// supported on gRPC-Web" rather than silently buffering forever.
+    /// Future tracks may revisit once the spec stabilises upstream.
+    /// </para>
     /// </summary>
-    public static async Task<GrpcBowireChannel> CreateAsync(
+    public static async Task<GrpcBowireChannel?> CreateAsync(
         string serverUrl,
         string serviceName,
         string methodName,
@@ -135,6 +152,18 @@ internal sealed class GrpcBowireChannel : IBowireChannel
         CancellationToken ct,
         IConfiguration? configuration = null)
     {
+        var transportMode = GrpcChannelBuilder.ResolveMode(metadata);
+        if (transportMode == GrpcTransportMode.Web)
+        {
+            // Surface a null channel; BowireGrpcProtocol.OpenChannelAsync
+            // returns it to the workbench unchanged. Bowire's channel
+            // endpoint already treats null as "this method/transport
+            // combination isn't supported by the plugin" and ships a
+            // friendly error to the UI.
+            return null;
+        }
+
+        var sanitisedMetadata = GrpcChannelBuilder.StripTransportMarker(metadata);
         using var reflectionClient = new GrpcReflectionClient(
             serverUrl, showInternalServices, mtlsConfig: null, configuration: configuration);
 
@@ -164,28 +193,35 @@ internal sealed class GrpcBowireChannel : IBowireChannel
         var outputType = methodDesc.OutputType
             ?? throw new InvalidOperationException($"OutputType is null for {serviceName}/{methodName}.");
 
-        var grpcChannel = GrpcChannel.ForAddress(serverUrl, new GrpcChannelOptions
-        {
-            HttpHandler = BowireHttpClientFactory.CreateSocketsHttpHandler(
-                configuration, "grpc", serverUrl)
-        });
-
+#pragma warning disable CA2000
+        // Ownership of the SocketsHttpHandler transfers to the
+        // GrpcBowireChannel on success (disposed by DisposeAsync); on the
+        // failure path the catch arm disposes it before re-throwing.
+        // Same shape as MtlsHandlerOwner.CreateSocketsHttpHandler — the
+        // analyzer can't follow ownership across the try/catch + factory
+        // hand-off.
+        var handler = BowireHttpClientFactory.CreateSocketsHttpHandler(configuration, "grpc", serverUrl);
+#pragma warning restore CA2000
+        GrpcChannel? grpcChannel = null;
         try
         {
+            grpcChannel = GrpcChannelBuilder.BuildChannel(serverUrl, handler, GrpcTransportMode.Native);
             return new GrpcBowireChannel(
                 grpcChannel,
+                handler,
                 serviceName,
                 methodName,
                 inputType,
                 outputType,
                 methodDesc.IsClientStreaming,
                 methodDesc.IsServerStreaming,
-                metadata,
+                sanitisedMetadata,
                 ct);
         }
         catch
         {
-            grpcChannel.Dispose();
+            grpcChannel?.Dispose();
+            handler.Dispose();
             throw;
         }
     }
@@ -219,6 +255,7 @@ internal sealed class GrpcBowireChannel : IBowireChannel
         await _cts.CancelAsync();
         _cts.Dispose();
         _grpcChannel.Dispose();
+        _ownedHandler.Dispose();
     }
 
     private async Task RunDuplexAsync(Method<byte[], byte[]> rawMethod)

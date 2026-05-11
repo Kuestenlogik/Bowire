@@ -29,8 +29,23 @@ internal static class BowireChannelEndpoints
             if (body is null || string.IsNullOrEmpty(body.Service) || string.IsNullOrEmpty(body.Method))
                 return Results.BadRequest(new { error = "Missing 'service' or 'method'." });
 
-            var serverUrl = ctx.Request.Query["serverUrl"].FirstOrDefault()
+            var rawServerUrl = ctx.Request.Query["serverUrl"].FirstOrDefault()
                 ?? BowireEndpointHelpers.ResolveServerUrl(options, ctx.Request);
+            var (urlHint, serverUrl) = BowireServerUrl.Parse(rawServerUrl);
+            if (urlHint is not null)
+            {
+                // Transport-variant hints (`grpcweb@`) resolve to plugin + metadata.
+                var (mappedId, transportMeta) = BowireEndpointHelpers.ResolveHint(urlHint);
+                body = body with { Protocol = mappedId };
+                if (transportMeta is { } tm)
+                {
+                    var meta = body.Metadata is null
+                        ? new Dictionary<string, string>(StringComparer.Ordinal)
+                        : new Dictionary<string, string>(body.Metadata, StringComparer.Ordinal);
+                    meta[tm.Key] = tm.Value;
+                    body = body with { Metadata = meta };
+                }
+            }
             (serverUrl, var channelMeta) = BowireEndpointHelpers.ApplyQueryAuthHints(serverUrl, body.Metadata);
             body = body with { Metadata = channelMeta };
 

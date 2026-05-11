@@ -132,4 +132,16 @@ public sealed class BowireServerUrlTests
         Assert.Equal("https://api.example.com", BowireServerUrl.StripHint("https://api.example.com"));
         Assert.Equal("https://alice:pwd@host.com", BowireServerUrl.StripHint("https://alice:pwd@host.com"));
     }
+
+    [Fact]
+    public void Parse_GrpcWeb_Hint_Splits_Like_Any_Other_Plugin_Hint()
+    {
+        // The grammar is opaque to plugin variant names; grpcweb is no
+        // different from grpc here. The mapping to plugin id + transport
+        // metadata happens later in BowireEndpointHelpers.ResolveHint.
+        var (hint, url) = BowireServerUrl.Parse("grpcweb@http://localhost:4268");
+
+        Assert.Equal("grpcweb", hint);
+        Assert.Equal("http://localhost:4268", url);
+    }
 }

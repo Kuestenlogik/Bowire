@@ -50,6 +50,46 @@ internal static class BowireEndpointHelpers
     /// </summary>
     internal const string QueryAuthPrefix = "__bowireQuery__";
 
+    /// <summary>
+    /// Resolve a hint token to its target plugin id and any side-channel
+    /// metadata the plugin should see for this call. The hint mechanism is
+    /// primarily a plugin pin (<c>grpc@</c>, <c>rest@</c>, ...) but a few
+    /// hints are <em>transport variants</em> of an existing plugin and need
+    /// to carry an extra "use transport X" bit into the dispatch — Bowire's
+    /// first such variant is <c>grpcweb@</c>, which pins the gRPC plugin
+    /// while flipping it to gRPC-Web mode via the
+    /// <c>X-Bowire-Grpc-Transport: web</c> header
+    /// (<c>BowireGrpcProtocol.TransportMetadataKey</c> in the grpc plugin).
+    /// <para>
+    /// The mapping table here is intentionally tiny and lives in core (not
+    /// in the gRPC plugin) so the discovery + invoke endpoints can apply it
+    /// uniformly without taking a hard reference to plugin assemblies — the
+    /// metadata key stays a magic string at the dispatch boundary. Future
+    /// plugins (Akka classic/cluster, MQTT v3/v5, ...) can extend this
+    /// table the same way without changing the
+    /// <see cref="BowireServerUrl"/> grammar.
+    /// </para>
+    /// </summary>
+    internal static (string PluginId, KeyValuePair<string, string>? TransportMetadata) ResolveHint(string hint)
+    {
+        if (string.IsNullOrEmpty(hint))
+            return (hint, null);
+
+        // CA1308 prefers ToUpperInvariant for case normalisation, but
+        // comparing against a lowercase literal is the natural shape; use
+        // OrdinalIgnoreCase equality instead so we don't pay the CA1308 hit
+        // and don't double-allocate the input string.
+        if (string.Equals(hint, "grpcweb", StringComparison.OrdinalIgnoreCase))
+        {
+            // grpcweb@ pins the gRPC plugin and asks it to wrap the inner
+            // handler with GrpcWebHandler — see the plugin's BuildChannel.
+            return ("grpc",
+                new KeyValuePair<string, string>(
+                    "X-Bowire-Grpc-Transport", "web"));
+        }
+        return (hint, null);
+    }
+
     private static BowireProtocolRegistry? _registry;
 
     /// <summary>
