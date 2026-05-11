@@ -4,6 +4,7 @@
 using System.Reflection;
 using Kuestenlogik.Bowire.Net;
 using Kuestenlogik.Bowire.PluginLoading;
+using Kuestenlogik.Bowire.Semantics;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -70,11 +71,37 @@ public static class BowireServiceCollectionExtensions
     /// <seealso cref="IBowireProtocolServices"/>
     /// <seealso cref="BowireEndpointRouteBuilderExtensions.MapBowire(Microsoft.AspNetCore.Routing.IEndpointRouteBuilder, string, System.Action{BowireOptions})"/>
     public static IServiceCollection AddBowire(this IServiceCollection services)
+        => AddBowire(services, configure: null);
+
+    /// <summary>
+    /// Overload that exposes a configuration callback for the subset of
+    /// <see cref="BowireOptions"/> that needs to be settled at
+    /// <c>AddServices</c> time rather than at
+    /// <see cref="BowireEndpointRouteBuilderExtensions.MapBowire(Microsoft.AspNetCore.Routing.IEndpointRouteBuilder, string, System.Action{BowireOptions})"/>
+    /// time. Today the only such option is
+    /// <see cref="BowireOptions.SchemaHintsPath"/> — the user-local
+    /// schema-hints file path that the
+    /// <see cref="LayeredAnnotationStore"/> singleton needs at
+    /// construction. Everything else still flows through the regular
+    /// <c>MapBowire</c> callback.
+    /// </summary>
+    public static IServiceCollection AddBowire(
+        this IServiceCollection services,
+        Action<BowireOptions>? configure)
     {
         // Force-load all Kuestenlogik.Bowire*.dll assemblies from the output directory
         // so assembly scanning finds protocol plugins that haven't been touched
         // by the CLR yet (same logic as BowireProtocolRegistry.Discover).
         ForceLoadBowireAssemblies();
+
+        // Materialise the bootstrap options. MapBowire builds its own
+        // BowireOptions later — that's the one bound to the workbench
+        // UI surface. The one here only carries the AddServices-time
+        // settings (SchemaHintsPath today), so the two never drift.
+        var bootstrapOptions = new BowireOptions();
+        configure?.Invoke(bootstrapOptions);
+
+        RegisterSemanticsStore(services, bootstrapOptions);
 
         // Named HttpClient for the OAuth proxy endpoints in
         // BowireAuthEndpoints. IHttpClientFactory pools the underlying
@@ -121,7 +148,7 @@ public static class BowireServiceCollectionExtensions
     /// <summary>
     /// Load every <c>.dll</c> under <paramref name="pluginDir"/> into the
     /// default <see cref="System.Runtime.Loader.AssemblyLoadContext"/> so
-    /// the subsequent <see cref="AddBowire"/> reflection pass picks the
+    /// the subsequent <see cref="AddBowire(IServiceCollection)"/> reflection pass picks the
     /// plugins up. Intended for embedded hosts that want to extend the
     /// workbench with out-of-tree protocol plugins without depending on
     /// the <c>bowire</c> CLI tool.
@@ -138,7 +165,7 @@ public static class BowireServiceCollectionExtensions
     /// blindly pass a configured directory even when no plugins have been
     /// installed yet. DLLs that fail to load are silently skipped — the
     /// equivalent behaviour to the <c>bowire</c> CLI's plugin loader.
-    /// Call this <i>before</i> <see cref="AddBowire"/>.
+    /// Call this <i>before</i> <see cref="AddBowire(IServiceCollection)"/>.
     /// </remarks>
     public static IServiceCollection AddBowirePlugins(
         this IServiceCollection services, string pluginDir)
@@ -232,6 +259,108 @@ public static class BowireServiceCollectionExtensions
         ArgumentNullException.ThrowIfNull(configuration);
         var dir = configuration["Bowire:PluginDir"];
         return string.IsNullOrWhiteSpace(dir) ? services : services.AddBowirePlugins(dir);
+    }
+
+    /// <summary>
+    /// Wire the <see cref="LayeredAnnotationStore"/> singleton plus
+    /// supporting layers for the frame-semantics framework. The store
+    /// is constructed lazily from a factory so the
+    /// <see cref="BowireProtocolRegistry"/> doesn't have to exist at
+    /// AddServices time — embedded hosts typically build it later,
+    /// inside the request pipeline.
+    /// </summary>
+    private static void RegisterSemanticsStore(
+        IServiceCollection services, BowireOptions bootstrapOptions)
+    {
+        // Resolve user / project file paths up-front. The empty-string
+        // sentinel on SchemaHintsPath disables the user-local file
+        // entirely — for hardened deployments that don't want any
+        // disk side-effect from Bowire.
+        var userFilePath = bootstrapOptions.SchemaHintsPath ?? DefaultUserSchemaHintsPath();
+        var projectFilePath = DefaultProjectSchemaHintsPath();
+
+        services.AddSingleton<LayeredAnnotationStore>(sp =>
+        {
+            // Empty user-file path is the opt-out: no user-local file
+            // layer at all. Otherwise build the layer eagerly and let
+            // its first Load happen lazily on first access.
+            JsonFileAnnotationLayer? userLayer = string.IsNullOrEmpty(userFilePath)
+                ? null
+                : new JsonFileAnnotationLayer(userFilePath);
+
+            JsonFileAnnotationLayer? projectLayer
+                = projectFilePath is not null && File.Exists(projectFilePath)
+                    ? new JsonFileAnnotationLayer(projectFilePath)
+                    : null;
+
+            // Plugin hints are pulled lazily from the registered
+            // BowireProtocolRegistry (when one exists). The store
+            // calls back through this lambda per (service, method)
+            // query — caching is the registry's responsibility.
+            IEnumerable<Annotation> PluginHints(string serviceId, string methodId)
+            {
+                var registry = sp.GetService<BowireProtocolRegistry>();
+                if (registry is null) yield break;
+                foreach (var protocol in registry.Protocols)
+                {
+                    if (protocol is not IBowireSchemaHints hints) continue;
+                    foreach (var annotation in hints.GetSchemaHints(serviceId, methodId))
+                    {
+                        if (annotation is null) continue;
+                        yield return annotation;
+                    }
+                }
+            }
+
+            return new LayeredAnnotationStore(
+                userSessionLayer: new InMemoryAnnotationLayer(),
+                userFileLayer: userLayer,
+                projectFileLayer: projectLayer,
+                autoDetectorLayer: new InMemoryAnnotationLayer(),
+                pluginHints: PluginHints);
+        });
+
+        // Expose the read interface so consumers that only need to
+        // resolve effective tags can take an IAnnotationStore without
+        // depending on the layer concrete types.
+        services.AddSingleton<IAnnotationStore>(sp => sp.GetRequiredService<LayeredAnnotationStore>());
+    }
+
+    /// <summary>
+    /// Canonical default for the user-local schema-hints file:
+    /// <c>~/.bowire/schema-hints.json</c>. Returns the empty string
+    /// when the user-profile directory can't be resolved, signalling
+    /// "no user-local layer" — Bowire degrades to session-only +
+    /// project-file semantics rather than crashing.
+    /// </summary>
+    internal static string DefaultUserSchemaHintsPath()
+    {
+        var home = Environment.GetFolderPath(
+            Environment.SpecialFolder.UserProfile,
+            Environment.SpecialFolderOption.None);
+        if (string.IsNullOrEmpty(home)) return string.Empty;
+        return Path.Combine(home, ".bowire", "schema-hints.json");
+    }
+
+    /// <summary>
+    /// Canonical default for the project-local schema-hints file:
+    /// <c>bowire.schema-hints.json</c> in the current working directory.
+    /// Returns the path unconditionally (existence-check lives in the
+    /// store factory), or <c>null</c> when the CWD can't be resolved.
+    /// </summary>
+    internal static string? DefaultProjectSchemaHintsPath()
+    {
+        try
+        {
+            return Path.Combine(Environment.CurrentDirectory, "bowire.schema-hints.json");
+        }
+        catch (Exception)
+        {
+            // Environment.CurrentDirectory can throw on platforms where
+            // the CWD has been deleted out from under the process.
+            // Treat that as "no project file."
+            return null;
+        }
     }
 
     private static void ForceLoadBowireAssemblies()

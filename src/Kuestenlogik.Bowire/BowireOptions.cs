@@ -143,6 +143,19 @@ public sealed class BowireOptions
     /// take precedence (they are considered the authoritative schema).
     /// </remarks>
     public List<ProtoSource> ProtoSources { get; } = [];
+
+    /// <summary>
+    /// Override for the user-local schema-hints file path. When
+    /// <c>null</c> (the default), Bowire resolves to
+    /// <c>~/.bowire/schema-hints.json</c> — the canonical location
+    /// described by the frame-semantics-framework ADR. Set this to
+    /// redirect the file (e.g. for tests that need an isolated path,
+    /// or for hardened deployments that pin the location). Setting it
+    /// to the empty string disables the user-local layer entirely;
+    /// only the project-local file (when present) and session edits
+    /// will contribute to <c>User</c>-priority annotations.
+    /// </summary>
+    public string? SchemaHintsPath { get; set; }
 }
 
 /// <summary>
