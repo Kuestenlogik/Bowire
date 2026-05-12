@@ -15,6 +15,7 @@ namespace Kuestenlogik.Bowire.Tests;
 /// handler. The result confirms BuildRoot wires every documented
 /// subcommand at the correct nesting level.
 /// </summary>
+[Collection("ConsoleOutSerialised")]
 public sealed class BowireCliTests
 {
     private static IConfiguration EmptyConfig() =>

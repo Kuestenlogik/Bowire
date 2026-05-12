@@ -13,6 +13,7 @@ namespace Kuestenlogik.Bowire.Tests;
 /// (<c>InstallAsync</c> happy-path) needs network and is left for the
 /// integration harness.
 /// </summary>
+[Collection("ConsoleOutSerialised")]
 public sealed class PluginManagerTests : IDisposable
 {
     private readonly string _tempDir;

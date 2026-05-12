@@ -29,9 +29,15 @@ internal static class EnvironmentStore
 
     private static readonly Lock FileLock = new();
 
+    private const string EmptyEnvelope = """{"globals":{},"environments":[],"activeEnvId":""}""";
+
     /// <summary>
-    /// Load the raw JSON document. Returns an empty default shape when the file
-    /// does not exist or is corrupt — never throws so the UI keeps working.
+    /// Load the JSON document normalised to the current envelope shape
+    /// (<c>globals</c> + <c>environments</c> + <c>activeEnvId</c>). Returns the
+    /// empty default when the file does not exist or is corrupt — never throws
+    /// so the UI keeps working. Pre-globals files on disk (envelope missing
+    /// <c>globals</c> or <c>activeEnvId</c>) are extended in-memory so every
+    /// consumer sees the same shape regardless of upgrade history.
     /// </summary>
     public static string Load()
     {
@@ -40,17 +46,44 @@ internal static class EnvironmentStore
             try
             {
                 if (!File.Exists(StorePath))
-                    return """{"globals":{},"environments":[],"activeEnvId":""}""";
+                    return EmptyEnvelope;
 
                 var json = File.ReadAllText(StorePath);
+                using var doc = JsonDocument.Parse(json);
+                if (doc.RootElement.ValueKind != JsonValueKind.Object)
+                    return EmptyEnvelope;
 
-                // Validate parseability — if corrupt, return empty so the UI can recover
-                using var _ = JsonDocument.Parse(json);
-                return json;
+                var hasGlobals = doc.RootElement.TryGetProperty("globals", out _);
+                var hasEnvs = doc.RootElement.TryGetProperty("environments", out _);
+                var hasActive = doc.RootElement.TryGetProperty("activeEnvId", out _);
+                if (hasGlobals && hasEnvs && hasActive)
+                    return json;
+
+                using var ms = new MemoryStream();
+                using (var writer = new Utf8JsonWriter(ms, new JsonWriterOptions { Indented = true }))
+                {
+                    writer.WriteStartObject();
+                    if (!hasGlobals)
+                    {
+                        writer.WriteStartObject("globals");
+                        writer.WriteEndObject();
+                    }
+                    if (!hasEnvs)
+                    {
+                        writer.WriteStartArray("environments");
+                        writer.WriteEndArray();
+                    }
+                    if (!hasActive)
+                        writer.WriteString("activeEnvId", "");
+                    foreach (var prop in doc.RootElement.EnumerateObject())
+                        prop.WriteTo(writer);
+                    writer.WriteEndObject();
+                }
+                return System.Text.Encoding.UTF8.GetString(ms.ToArray());
             }
             catch
             {
-                return """{"globals":{},"environments":[],"activeEnvId":""}""";
+                return EmptyEnvelope;
             }
         }
     }
