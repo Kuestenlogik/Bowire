@@ -51,6 +51,21 @@ public sealed class Wgs84CoordinateDetectorTests
     }
 
     [Fact]
+    public void Matches_Lat_Lon_Variant()
+    {
+        // "lon" is the most common longitude spelling in real-world
+        // APIs — GeoJSON-derived schemas almost always use it. Was a
+        // deliberate gap in the original ADR regex; covered now.
+        var ctx = Ctx("""{"lat": 53.5, "lon": 9.9}""");
+
+        var results = s_detector.Detect(in ctx).ToList();
+
+        Assert.Equal(2, results.Count);
+        Assert.Contains(results, r => r.Key.JsonPath == "$.lat" && r.Semantic == BuiltInSemanticTags.CoordinateLatitude);
+        Assert.Contains(results, r => r.Key.JsonPath == "$.lon" && r.Semantic == BuiltInSemanticTags.CoordinateLongitude);
+    }
+
+    [Fact]
     public void Match_Is_Case_Insensitive()
     {
         var ctx = Ctx("""{"Latitude": 53.5, "LONGITUDE": 9.9}""");

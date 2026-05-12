@@ -115,6 +115,12 @@ public sealed partial class Wgs84CoordinateDetector : IBowireFieldDetector
     [GeneratedRegex("^lat(itude)?$", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
     private static partial Regex LatPattern();
 
-    [GeneratedRegex("^lo?ng(itude)?$", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
+    // `lon` was a deliberate gap in the original ADR-derived regex
+    // (`lo?ng(itude)?` only covers `lng` / `long` / `longitude`), but
+    // `lon` is the single most common longitude-field name in real
+    // APIs — GeoJSON-derived schemas almost always use it. The
+    // extended pattern below adds `lon` as a third valid alternative
+    // alongside the `lo?ng(itude)?` family.
+    [GeneratedRegex("^(lon|lo?ng(itude)?)$", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
     private static partial Regex LonPattern();
 }

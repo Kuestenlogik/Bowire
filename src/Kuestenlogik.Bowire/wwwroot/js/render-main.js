@@ -2313,11 +2313,26 @@
             return { header: header, body: body };
         }
 
-        var body = el('pre', {
+        // Switch from highlightJson() to renderJsonTree() so the body
+        // carries the .bowire-json-tree-label[data-json-path] markers
+        // that the Phase 4 semantics decorator anchors badges onto.
+        // The previous <pre> + highlightJson path produced a monospace
+        // block with no per-key anchors, so badges never appeared on
+        // streaming-frame detail panes. The visual difference is
+        // minimal — renderJsonTree wraps each row in a .bowire-json-tree
+        // row that the existing response-pane uses too.
+        var body = el('div', {
             className: 'bowire-stream-detail-body',
             id: 'bowire-stream-detail-body'
         });
-        body.innerHTML = highlightJson(raw);
+        body.innerHTML = renderJsonTree(raw);
+        if (typeof bowireDecorateResponseTreeForSemantics === 'function'
+            && selectedService && selectedMethod) {
+            try {
+                bowireDecorateResponseTreeForSemantics(
+                    body, selectedService.name, selectedMethod.name);
+            } catch (e) { console.error('[bowire-semantics] decorate stream-detail', e); }
+        }
 
         return { header: header, body: body };
     }

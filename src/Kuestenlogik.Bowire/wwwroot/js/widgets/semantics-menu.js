@@ -755,9 +755,19 @@
 
         loader.then(function (data) {
             var annotations = (data && data.annotations) || [];
+            // Path convention bridge: annotations from
+            // /api/semantics/effective use the JSONPath convention
+            // ("$.lat", "$.position.lat") while renderJsonTree's
+            // data-json-path attributes use the chain-variable
+            // convention ("lat", "position.lat") because that's what
+            // ${response.X} expects. Normalize the annotation side by
+            // stripping the leading "$." so the lookup matches.
             var byPath = {};
             for (var i = 0; i < annotations.length; i++) {
-                byPath[annotations[i].jsonPath] = annotations[i];
+                var key = annotations[i].jsonPath || '';
+                if (key.indexOf('$.') === 0) key = key.slice(2);
+                else if (key === '$') key = '';
+                byPath[key] = annotations[i];
             }
             // Each label span carries data-json-path; that's our hook.
             var labels = output.querySelectorAll('.bowire-json-tree-label[data-json-path]');
