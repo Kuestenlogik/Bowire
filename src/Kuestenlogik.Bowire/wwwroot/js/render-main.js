@@ -2567,7 +2567,25 @@
 
         if (!splitActive) {
             disposeWidgetMounts();
-            return renderStreamingOutput();
+            // Even when no extension is registered for a split-default
+            // kind, the framework may still have placeholder cards to
+            // mount — annotations exist for an unregistered kind and
+            // the workbench wants to invite the user to install the
+            // matching package (Phase 3-R). Append a thin slot AFTER
+            // the streaming output and call mountWidgetsForMethod
+            // against it; if there's nothing to mount the slot stays
+            // empty and folds away.
+            var streamingOut = renderStreamingOutput();
+            var wrapper = el('div', { className: 'bowire-streaming-with-placeholders' });
+            wrapper.appendChild(streamingOut);
+            var placeholderSlot = el('div', { className: 'bowire-placeholder-slot' });
+            wrapper.appendChild(placeholderSlot);
+            var cleanup = fw.mountWidgetsForMethod(
+                selectedService.name, selectedMethod.name, placeholderSlot);
+            if (typeof cleanup === 'function') {
+                bowireWidgetUnmounts.push(cleanup);
+            }
+            return wrapper;
         }
 
         // Build the split-pane host. We re-create the wrapper on every
