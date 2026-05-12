@@ -1709,6 +1709,11 @@ pre > code {
     border-radius: var(--radius-lg);
     padding: 22px 22px 18px;
     transition: border-color 0.2s, transform 0.2s;
+    /* Anchor for the diagonal preview ribbon (top-right corner). The
+       ribbon overflows the corner intentionally and we clip it with
+       the rounded border-radius so it follows the card edge. */
+    position: relative;
+    overflow: hidden;
     /* Cards render as <a> tags — strip link underlines + keep text
        colour inheriting from the surrounding section. */
     color: inherit;
@@ -1787,7 +1792,9 @@ pre > code {
 /* Preview / pre-release plugin chip — sits next to the protocol h3 so the
    reader sees "this is here but not done" before they read the blurb. Uses
    the warning palette so it pops against the (often green / blue) protocol
-   accents without inventing a new colour token. */
+   accents without inventing a new colour token. Kept for the expanded
+   modal view where a banderole would be out of scale — the card itself
+   uses .protocol-card-ribbon instead. */
 .protocol-tag-preview {
     color: var(--warning);
     background: rgba(245, 158, 11, 0.12);
@@ -1795,6 +1802,33 @@ pre > code {
     vertical-align: middle;
     text-transform: uppercase;
     letter-spacing: 0.04em;
+}
+
+/* Corner banderole pinned to the top-right of a protocol card.
+   Classic 45°-rotated ribbon: an oversized rectangle anchored above
+   the corner, rotated so it spans the diagonal, and clipped by the
+   card's overflow: hidden + border-radius so its ends follow the
+   rounded edge. Warning palette matches the inline preview chip so
+   the visual vocabulary stays consistent between the card and the
+   expanded modal. */
+.protocol-card-ribbon {
+    position: absolute;
+    top: 16px;
+    right: -42px;
+    width: 150px;
+    transform: rotate(45deg);
+    background: var(--warning);
+    color: #1a1f29;
+    text-align: center;
+    padding: 3px 0;
+    font-family: var(--font-mono);
+    font-size: 0.68rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+    pointer-events: none;
+    z-index: 1;
 }
 
 /* Terminal-style install snippet replaces the old protocol-tag — the actual
