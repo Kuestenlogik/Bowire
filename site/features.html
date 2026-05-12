@@ -298,28 +298,7 @@ body.items[0]     type "object"   <span class="check-pass">&#10003;</span></code
       <a class="features-block-docs-link" href="{{ '/docs/features/authentication.html' | relative_url }}">Read the technical docs &rarr;</a>
     </div>
     <div class="features-block-screenshot">
-      <div class="code-block">
-        <div class="code-block-header">
-          <span class="code-block-lang">auth schemes</span>
-          <span class="code-block-hint">env: staging</span>
-          <button class="copy-btn" data-copy="Bearer token        ✓ auto-refresh
-HTTP Basic          ✓
-API key (header)    ✓
-JWT (HS / RS / ES)  ✓ custom claims
-OAuth 2.0 client    ✓
-OAuth 2.0 + PKCE    ✓
-AWS Sig v4          ✓" aria-label="Copy">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
-          </button>
-        </div>
-        <pre><code>Bearer token        <span class="check-pass">&#10003;</span> auto-refresh
-HTTP Basic          <span class="check-pass">&#10003;</span>
-API key (header)    <span class="check-pass">&#10003;</span>
-JWT (HS / RS / ES)  <span class="check-pass">&#10003;</span> custom claims
-OAuth 2.0 client    <span class="check-pass">&#10003;</span>
-OAuth 2.0 + PKCE    <span class="check-pass">&#10003;</span>
-AWS Sig v4          <span class="check-pass">&#10003;</span></code></pre>
-      </div>
+      {% include themed-img.html src="/assets/images/screenshots/auth.png" alt="Auth tab in the env editor — OAuth 2.0 client_credentials with token URL, client ID, scope, audience, plus a Fetch-token test button" %}
     </div>
   </div>
 
