@@ -119,6 +119,13 @@ The auto-detector half of the framework: five stateless `IBowireFieldDetector` i
 - [x] **`docs/protocols/index.md`** counts bumped (5 → 6 sibling plugins) and TacticalAPI row added to the sibling-plugin table + the protocol-fanout mermaid diagram (dashed edge to flag the preview status). `docs/api/index.md` gained a "gRPC-Web support" note under the gRPC entry and a callout under the sibling-plugin list pointing at the TacticalAPI sibling repo (its API surface isn't in the main repo's DocFX scope).
 - [x] **`site/_includes/roadmap.html`** picked up a new "Recently shipped" card summarising v1.2.0 (gRPC-Web + TacticalAPI preview).
 
+### Streaming pane filter polish (2026-05-12)
+
+- [x] **Counter on its own row** above the message list — separates monotonic digit-growth ("12 → 1234 messages") from the toolbar layout so the right-hand buttons (`Follow latest`, tab/split toggle) no longer shift as messages arrive.
+- [x] **Filter input moved into a collapsible panel** below the toolbar. Closed by default (one `▼ Filter` toolbar button instead of a 180px input); auto-highlights when a filter is active so a collapsed predicate stays visible.
+- [x] **Key-scoped queries**: `topic:foo` / `status:200` / `craneId:1` match only when the named JSON property (case-insensitive, at any nesting depth) has a stringified value containing the right-hand side. Plain queries still substring-match against the raw payload as before. Falls back to substring when the message isn't JSON so the shorthand stays useful for raw text frames.
+- [x] **Panel structured as `.bowire-stream-filter-row` children** so the planned advanced mode — multi-rule rows, pick-from-known-keys dropdown, OTLP-style attribute filters — can append rows without reshaping the layout.
+
 ### gRPC-Web transport opt-in for the gRPC plugin (2026-05-11)
 - [x] **gRPC plugin gains a gRPC-Web transport variant.** Same plugin, same `.proto`, same service catalogue — opt-in flips the inner pipeline to wrap `SocketsHttpHandler` in `GrpcWebHandler`, pins the HTTP version to 1.1, and routes gRPC framing through the gRPC-Web encoding so callers can hit browser-fronted services and HTTP/1.1-only ingresses (Envoy / grpcwebproxy / ASP.NET `UseGrpcWeb`). Typical case: services like Rheinmetall's TacticalAPI that expose both native gRPC on `:4267` and gRPC-Web on `:4268`.
 - [x] **Two opt-in paths**, in priority order:

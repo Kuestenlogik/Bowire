@@ -1965,15 +1965,51 @@
         return s.length > maxLen ? s.substring(0, maxLen) + '\u2026' : s;
     }
 
-    // Filter predicate for the stream list. Empty query matches every
-    // message — that's the default. The substring match runs against
-    // the raw payload (already stringified for non-string data) so it
-    // catches both keys and values inside structured messages.
+    // Filter predicate for the stream list. Two modes:
+    //   1. Substring  — "abc"            matches anywhere in the payload.
+    //   2. Key-scoped — "topic:abc"      matches only when a JSON property
+    //      named `topic` (case-insensitive, at any nesting depth) has a
+    //      stringified value that contains `abc`.
+    // Falls back to substring when the message isn't valid JSON so the
+    // shorthand stays useful for raw text frames too.
     function streamMessageMatchesFilter(msg) {
         var q = (streamFilterQuery || '').trim();
         if (!q) return true;
-        var hay = streamMessageRaw(msg).toLowerCase();
-        return hay.indexOf(q.toLowerCase()) !== -1;
+        var raw = streamMessageRaw(msg);
+        var keyMatch = q.match(/^([\w.\-]+)\s*:\s*(.+)$/);
+        if (keyMatch) {
+            var key = keyMatch[1].toLowerCase();
+            var want = keyMatch[2].toLowerCase();
+            try {
+                var data = JSON.parse(raw);
+                return streamJsonHasKeyValue(data, key, want);
+            } catch {
+                // Not JSON — keep the prefix-aware string searchable as
+                // a substring so users aren't stuck typing escapes.
+                return raw.toLowerCase().indexOf(q.toLowerCase()) !== -1;
+            }
+        }
+        return raw.toLowerCase().indexOf(q.toLowerCase()) !== -1;
+    }
+
+    function streamJsonHasKeyValue(node, key, want) {
+        if (node === null || typeof node !== 'object') return false;
+        if (Array.isArray(node)) {
+            for (var i = 0; i < node.length; i++) {
+                if (streamJsonHasKeyValue(node[i], key, want)) return true;
+            }
+            return false;
+        }
+        for (var k in node) {
+            if (!Object.prototype.hasOwnProperty.call(node, k)) continue;
+            var v = node[k];
+            if (k.toLowerCase() === key) {
+                var s = (typeof v === 'string') ? v : JSON.stringify(v);
+                if (s !== undefined && s.toLowerCase().indexOf(want) !== -1) return true;
+            }
+            if (streamJsonHasKeyValue(v, key, want)) return true;
+        }
+        return false;
     }
 
     function streamEffectiveIndex() {
@@ -2391,44 +2427,38 @@
             className: 'bowire-stream-status-text',
             textContent: isExecuting ? 'Streaming' : 'Stream ended'
         }));
-        // When a filter is active the count reads "X / Y" so the user
-        // sees both the matched and total message count at a glance.
-        var visibleCount = streamMessages.filter(streamMessageMatchesFilter).length;
         var hasFilter = (streamFilterQuery || '').trim().length > 0;
-        toolbar.appendChild(el('span', {
-            className: 'bowire-stream-count',
-            id: 'bowire-stream-count',
-            textContent: hasFilter
-                ? (visibleCount + ' / ' + streamMessages.length + ' messages')
-                : (streamMessages.length + (streamMessages.length === 1 ? ' message' : ' messages'))
-        }));
 
-        // Filter input — substring match across each message's raw
-        // payload. Updates streamFilterQuery on every keystroke and
-        // triggers a render so the list reflects the new predicate.
-        // The selection stays put even when the active item is
-        // filtered out, so the detail pane keeps showing context.
-        var filterInput = el('input', {
-            type: 'text',
-            className: 'bowire-stream-filter',
-            id: 'bowire-stream-filter-input',
-            placeholder: 'Filter messages\u2026',
-            value: streamFilterQuery,
-            spellcheck: 'false',
-            onInput: function (e) {
-                streamFilterQuery = e.target.value;
+        toolbar.appendChild(el('span', { className: 'bowire-stream-toolbar-spacer' }));
+
+        // Filter toggle button. The actual input lives in a panel
+        // below the toolbar (see renderStreamFilterPanel) so its
+        // variable width + the growing digit count can't shift the
+        // right-hand buttons around as messages roll in. Stays
+        // highlighted while a filter is active even when the panel
+        // is closed, so users don't lose track of an applied
+        // predicate.
+        var filterToggle = el('button', {
+            className: 'bowire-stream-toolbar-btn' + ((streamFilterPanelOpen || hasFilter) ? ' is-on' : ''),
+            id: 'bowire-stream-filter-toggle',
+            title: streamFilterPanelOpen
+                ? 'Hide filter panel'
+                : (hasFilter ? 'Filter is active \u2014 click to edit' : 'Open the filter panel'),
+            onClick: function () {
+                streamFilterPanelOpen = !streamFilterPanelOpen;
                 render();
-                // Restore caret position so morphdom doesn't snap focus.
-                var inp = document.getElementById('bowire-stream-filter-input');
-                if (inp) {
-                    inp.focus();
-                    inp.selectionStart = inp.selectionEnd = inp.value.length;
+                if (streamFilterPanelOpen) {
+                    var inp = document.getElementById('bowire-stream-filter-input');
+                    if (inp) inp.focus();
                 }
             }
         });
-        toolbar.appendChild(filterInput);
-
-        toolbar.appendChild(el('span', { className: 'bowire-stream-toolbar-spacer' }));
+        filterToggle.appendChild(el('span', {
+            textContent: hasFilter
+                ? '\u25bc Filter \u00b7 on'
+                : '\u25bc Filter'
+        }));
+        toolbar.appendChild(filterToggle);
 
         // "Follow latest" — when on, every new arrival auto-selects
         // and scrolls to the newest message. When off, the view stays
@@ -2458,6 +2488,71 @@
         if (toolbarToggle) toolbar.appendChild(toolbarToggle);
 
         output.appendChild(toolbar);
+
+        // ---- Filter panel (collapsible) ----
+        // Structured as rows so future "advanced" filter modes (e.g.
+        // pick from known message keys, multiple key:value rules) can
+        // append additional `.bowire-stream-filter-row` children without
+        // reshaping the layout. Only mounted when the toggle is open so
+        // closed state contributes zero height.
+        if (streamFilterPanelOpen) {
+            var panel = el('div', {
+                className: 'bowire-stream-filter-panel',
+                id: 'bowire-stream-filter-panel'
+            });
+            var basicRow = el('div', { className: 'bowire-stream-filter-row' });
+            var filterInput = el('input', {
+                type: 'text',
+                className: 'bowire-stream-filter',
+                id: 'bowire-stream-filter-input',
+                placeholder: 'Filter messages…  (e.g. topic:foo, status:200, or any substring)',
+                value: streamFilterQuery,
+                spellcheck: 'false',
+                onInput: function (e) {
+                    streamFilterQuery = e.target.value;
+                    render();
+                    var inp = document.getElementById('bowire-stream-filter-input');
+                    if (inp) {
+                        inp.focus();
+                        inp.selectionStart = inp.selectionEnd = inp.value.length;
+                    }
+                }
+            });
+            basicRow.appendChild(filterInput);
+            if (hasFilter) {
+                var clearBtn = el('button', {
+                    className: 'bowire-stream-filter-clear',
+                    type: 'button',
+                    title: 'Clear filter',
+                    onClick: function () {
+                        streamFilterQuery = '';
+                        render();
+                    }
+                });
+                clearBtn.appendChild(el('span', { textContent: '✕' }));
+                basicRow.appendChild(clearBtn);
+            }
+            panel.appendChild(basicRow);
+            output.appendChild(panel);
+        }
+
+        // ---- Count line ----
+        // Sits directly above the list, on its own row, so the
+        // monotonic growth of the message count never reflows the
+        // toolbar buttons. Shows "X / Y messages" while a filter
+        // hides some rows.
+        var visibleCount = streamMessages.filter(streamMessageMatchesFilter).length;
+        var countText;
+        if (hasFilter) {
+            countText = visibleCount + ' / ' + streamMessages.length + ' messages';
+        } else {
+            countText = streamMessages.length + (streamMessages.length === 1 ? ' message' : ' messages');
+        }
+        output.appendChild(el('div', {
+            className: 'bowire-stream-count-row',
+            id: 'bowire-stream-count',
+            textContent: countText
+        }));
 
         // ---- List pane ----
         var listPane = el('div', {

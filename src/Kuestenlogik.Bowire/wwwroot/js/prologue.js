@@ -271,7 +271,8 @@
     let streamAutoScroll = true;        // Auto-scroll list + auto-select latest while live
     let streamDetailMaximized = false;  // Hide list, show detail full-height
     let streamListSizePct = 45;         // Splitter position: list pane height as % (10..90)
-    let streamFilterQuery = '';         // Substring filter applied to the visible stream list
+    let streamFilterQuery = '';         // Substring or key:value filter applied to the visible stream list
+    let streamFilterPanelOpen = false;  // Whether the collapsible filter panel above the list is expanded
     // Phase 3.1 — multi-select selection set for the Streaming-Frames
     // pane. Ctrl/Cmd-click toggles membership, Shift-click extends a
     // range from the last anchor, plain click replaces with a single-

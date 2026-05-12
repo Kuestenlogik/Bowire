@@ -2935,10 +2935,62 @@ img.bowire-logo-icon {
     white-space: nowrap;
 }
 
-.bowire-stream-count {
+/* Count is its own row directly above the message list — keeps the
+   toolbar buttons stable as the digit-count grows and aligns the
+   metric next to the data it counts. */
+.bowire-stream-count-row {
+    padding: 4px 14px;
     color: var(--bowire-text-tertiary);
     font-variant-numeric: tabular-nums;
+    font-size: 11px;
+    font-family: var(--bowire-font-sans);
+    background: var(--bowire-bg);
+    border-bottom: 1px solid var(--bowire-border);
     white-space: nowrap;
+    flex-shrink: 0;
+}
+
+/* Collapsible filter panel — slides in below the toolbar when the
+   filter toggle is on. Structured as a column of
+   `.bowire-stream-filter-row`s so future "advanced" modes (filter by
+   known keys, multiple key:value rules) can append rows without
+   reshaping the layout. */
+.bowire-stream-filter-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 8px 14px;
+    background: var(--bowire-bg-elevated);
+    border-bottom: 1px solid var(--bowire-border);
+    flex-shrink: 0;
+}
+
+.bowire-stream-filter-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.bowire-stream-filter-row .bowire-stream-filter {
+    flex: 1;
+    width: auto;
+}
+
+.bowire-stream-filter-clear {
+    background: transparent;
+    border: 1px solid var(--bowire-border);
+    color: var(--bowire-text-secondary);
+    padding: 4px 8px;
+    border-radius: var(--bowire-radius-sm);
+    font-size: 11px;
+    cursor: pointer;
+    transition: all var(--bowire-transition);
+    font-family: var(--bowire-font-sans);
+    flex-shrink: 0;
+}
+.bowire-stream-filter-clear:hover {
+    background: var(--bowire-surface-hover);
+    color: var(--bowire-text);
 }
 
 .bowire-stream-toolbar-spacer {
