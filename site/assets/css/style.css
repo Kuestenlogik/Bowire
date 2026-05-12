@@ -1789,6 +1789,14 @@ pre > code {
     background: var(--surface);
 }
 
+/* Comparison-table tool picker is mobile-only: at desktop widths every
+   competitor column fits side-by-side so the dropdown is redundant. The
+   matching `display: flex` lives inside the @media (max-width: 768px)
+   block below — this base rule hides it everywhere else. */
+.comparison-tool-picker {
+    display: none;
+}
+
 /* Preview / pre-release plugin chip — sits next to the protocol h3 so the
    reader sees "this is here but not done" before they read the blurb. Uses
    the warning palette so it pops against the (often green / blue) protocol
@@ -3617,7 +3625,9 @@ button.comparison-bestfor-card.active .comparison-bestfor-name {
         display: table-cell;
     }
     /* The dropdown is appended by main.js as .comparison-tool-picker;
-       label + select sit above the table on a flush bar. */
+       label + select sit above the table on a flush bar. Visible only
+       in this mobile media query — at desktop widths every competitor
+       column fits side-by-side and the picker is redundant. */
     .comparison-tool-picker {
         display: flex;
         align-items: center;
