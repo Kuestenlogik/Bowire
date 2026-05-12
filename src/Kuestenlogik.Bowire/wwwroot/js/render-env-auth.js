@@ -771,7 +771,11 @@
             onChange: function (e) {
                 var val = e.target.value;
                 envManagerDiffTargetId = val || null;
-                renderEnvManager();
+                // renderEnvManager is a no-op stub since the env editor
+                // moved inline (renderEnvironmentEditor in render-main.js)
+                // — call the global render() so the diff body actually
+                // re-renders when the user picks a compare-target.
+                render();
             }
         });
         select.appendChild(el('option', { value: '', textContent: '(none)' }));
@@ -1032,7 +1036,11 @@
                 className: 'bowire-auth-select',
                 onChange: function (e) {
                     setAuth(Object.assign({}, getAuth(), { algorithm: e.target.value }));
-                    renderEnvManager(); // refresh: secret label / textarea changes
+                    // Same renderEnvManager-stub story as the compare-
+                    // dropdown above: the env editor moved inline, the
+                    // helper is now a no-op, full render() is required
+                    // to actually re-paint the secret-label / textarea.
+                    render();
                 }
             });
             var jwtAlgGroups = [
