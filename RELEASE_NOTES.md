@@ -10,6 +10,149 @@ and uses it as the GitHub Release body.
 
 ---
 
+## 1.3.0 — 2026-05-12
+
+### Highlights
+
+- **Frame-semantics framework — Bowire now mounts viewers and editors
+  based on payload shape, not protocol.** Stream a `{ship, lat, lng,
+  status}` message over any transport and a map tab appears alongside
+  the streaming-frames pane the moment the first frame arrives; drop
+  a PNG byte field into the response and an image viewer is the
+  obvious next step. The detection is content-driven — Bowire's
+  built-in heuristics match WGS84 coordinates, GeoJSON points, image
+  magic bytes (PNG / JPEG / GIF / WebP / AVIF), audio magic bytes
+  (WAV / Ogg / FLAC / MP3), and ISO-8601 / epoch timestamps against
+  any payload that flows through `/api/invoke/stream`, regardless of
+  whether the bytes arrived via gRPC, REST, GraphQL, SignalR, MQTT,
+  WebSocket, Socket.IO, OData, MCP, or one of the sibling-plugin
+  protocols. **Plugins ship transport-only — the framework does the
+  rest.** The pgAdmin pattern: shape-of-data drives viewer choice,
+  not protocol-author opt-in. See
+  `docs/architecture/frame-semantics-framework.md` for the full
+  architecture.
+
+- **Auto-mounted map widget via the new
+  `Kuestenlogik.Bowire.Extension.MapLibre` package.** Ships
+  separately from Bowire core, so users who never invoke a
+  coordinate-bearing method pay nothing for ~900 KB of MapLibre.
+  Install with `dotnet add package Kuestenlogik.Bowire.Extension.MapLibre`;
+  without it, the workbench surfaces a *"Install
+  Kuestenlogik.Bowire.Extension.MapLibre to render coordinates on a
+  map"* placeholder card next to the streaming-frames pane so the
+  discovery path is self-documenting. The map uses MapLibre GL JS
+  4.7.1 (BSD-3-Clause), vendored under the extension's embedded
+  resources — **never a CDN reference, never an outbound HTTP fetch
+  unless `Bowire:MapTileUrl` is explicitly configured** with a tile
+  source the user picks. Offline-default style locked down at the
+  source: no `glyphs`, no `sprite`, no labelled symbol layers, regex-
+  over-bundle CI test pinning the absence so future tweaks can't
+  silently re-introduce them.
+
+- **Right-click semantic editing in the response tree.** Every leaf
+  field carries a small `kind (source)` badge — `coordinate.latitude
+  (auto)`, `image.bytes (plugin)`, `coordinate.ecef.x (user)`, …
+  Right-click or click-on-badge opens a menu with three actions
+  (Accept current / Reinterpret as / Suppress), three persistence
+  tiers (session / user / project), and a scope picker
+  (current discriminator only / all message types where path exists
+  / all matching path names). Companion-field suggestions follow up
+  every coordinate mark — if you tag `$.position.lat`, Bowire offers
+  the most-likely sibling field as the longitude partner.
+
+- **`bowire.schema-hints.json` persists annotations.** Three tiers,
+  explicit escalation: session (in-memory, default), user
+  (`~/.bowire/schema-hints.json`), project (`bowire.schema-hints.json`
+  in the repo root, version-controlled, team-shared). Recording-step
+  schema gains additive `discriminator` + `interpretations` fields —
+  recordings made with 1.3.0 replay deterministically against any
+  future detector heuristic drift; recordings captured under earlier
+  Bowire versions still load unchanged.
+
+- **Split-pane layout for paired streaming + viewer panes.**
+  Coordinate-annotated methods default to a draggable horizontal
+  split (streaming-frames list on the left, map on the right), per
+  user preference persisted to `localStorage`. Multi-selecting frames
+  in the streaming list (Ctrl/Shift-click) flies the map camera to
+  the selection bounds.
+
+- **New sample: `Bowire.Samples/SchemaSemantics`.** A deliberately
+  plain-vanilla gRPC server that streams `{ ship, lat, lng, status }`
+  frames at 1 Hz around Hamburg-Harbour. No `IBowireSchemaHints`, no
+  Bowire-side companion, no annotations file — point Bowire at it,
+  invoke `Ships/WatchShips`, watch the auto-detector mount the map
+  widget by itself. The pgAdmin proof in a runnable form. Ships in
+  the sibling `Bowire.Samples` repo, alongside the existing
+  per-protocol samples.
+
+### Behind the scenes
+
+- The framework shipped in five phases plus a pre-release refactor:
+  Phase 1 (annotation data model + layered persistence + resolution
+  priority), Phase 2 (built-in detectors + sample-frame probe),
+  Phase 3 (extension framework + map widget), Phase 3.1 (split-pane
+  primitive + selection sync), Phase 3.2 (widget `selectionMode`
+  capability), Phase 4 (right-click override UI), Phase 5
+  (recording-side persistence + replay determinism), Phase 3-R
+  (extract MapLibre into its own NuGet package + offline lockdown).
+  Each phase landed independently testable; the integration story is
+  in the ADR.
+- Frame-prober runs once per `(service, method, message-type)` tuple
+  exactly — the auto-detector pre-populates an `InMemoryAnnotationLayer`
+  at `Auto` priority; on-the-fly resolution never re-scans the live
+  frame. Performance characteristic is `O(sample-set)` once, not
+  `O(frames)` ongoing.
+- Annotation resolver enforces `User > Plugin > Auto` priority with
+  `SemanticTag.None` acting as explicit suppression — the same one
+  mechanism handles "this is a coordinate" and "no it's not".
+- 2071 tests cover the new code paths; the v1.2.0 baseline was
+  1923 tests.
+
+### Live-smoke fixes shipped in the 1.3.0 release window
+
+End-to-end smoke against the SchemaSemantics sample with the
+MapLibre extension installed surfaced four bugs the unit + integration
+suites couldn't have caught — all fixed before the release tag:
+
+- `bounds.isFinite()` is a Mapbox-GL-JS API that doesn't exist on
+  MapLibre's `LngLatBounds` — the guard `!bounds.isFinite` silently
+  early-returned every `maybeFit()` call, so the map stayed centered
+  at `(0, 0)` zoom 1 regardless of how many pins landed.
+- `mountWidgetsForMethod` was only invoked when an extension was
+  registered for the active kind, so the *placeholder-card path*
+  that Phase 3-R landed never got a chance to fire when the user
+  hadn't installed the extension yet.
+- Extracted `widgets/map.js` referenced `config.prefix` from the
+  core IIFE's closure scope — that scope doesn't exist in an
+  external extension bundle. Fixed by deriving the base URL from
+  `document.currentScript.src`.
+- Streaming-frame detail pane used `highlightJson()` (no
+  data-json-path anchors) instead of `renderJsonTree()` (which the
+  Phase 4 semantics decorator needs), and even after the switch the
+  decorator's path lookup was off by a `$.` prefix between JSONPath
+  convention (annotations) and chain-variable convention
+  (DOM data attrs). Both fixed.
+
+### Migration
+
+- **None breaking.** Existing recordings replay unchanged. Existing
+  CLI invocations work. The framework is opt-in by content — methods
+  that don't carry conventional coordinate / image / audio / timestamp
+  field shapes see no UI change.
+- The map widget IS opt-in by package: `dotnet add package
+  Kuestenlogik.Bowire.Extension.MapLibre` to mount it. Without that
+  package, coordinate-annotated methods surface a placeholder card
+  with the install hint rather than a map.
+- Recording-file format version remains 2 (set in 1.1.0). The new
+  `discriminator` + `interpretations` step fields are additive and
+  optional — readers tolerate their absence.
+- Bowire.Samples floats `Kuestenlogik.Bowire 1.2.*` today. Bump to
+  `1.3.*` after 1.3.0 indexes on nuget.org if a sample wants the
+  frame-semantics framework, otherwise leave alone — none of the
+  protocol samples need it for what they currently demonstrate.
+
+---
+
 ## 1.2.0 — 2026-05-11
 
 ### Highlights
