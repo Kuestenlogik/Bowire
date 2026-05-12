@@ -19,11 +19,31 @@
      */
     var bowireMapLibreLoading = null;
 
+    /**
+     * Capture the bundle's own URL once at module-load time so the
+     * MapLibre vendor files (served by the SAME extension-asset
+     * endpoint) can be addressed without knowing whether Bowire is
+     * mounted at `/` or under a `/bowire` prefix. The core IIFE's
+     * `config` symbol that the in-core widget used to read isn't
+     * visible from external extensions — they load as separate
+     * scripts outside the core's closure. document.currentScript.src
+     * is the only stable signal an external bundle has about where
+     * it lives.
+     */
+    var bowireMapBundleUrl = (function () {
+        try {
+            if (document.currentScript && document.currentScript.src) {
+                return document.currentScript.src.replace(/\/[^/]+$/, '');
+            }
+        } catch { /* ignore */ }
+        return '/api/ui/extensions/kuestenlogik.maplibre';
+    })();
+
     function bowireLoadMapLibre() {
         if (window.maplibregl) return Promise.resolve(window.maplibregl);
         if (bowireMapLibreLoading) return bowireMapLibreLoading;
 
-        var baseUrl = config.prefix + '/api/ui/extensions/kuestenlogik.maplibre';
+        var baseUrl = bowireMapBundleUrl;
 
         // Inject the stylesheet first so it parses while the script
         // downloads. Idempotent — re-mounting the widget on a second
