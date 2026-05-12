@@ -2085,6 +2085,122 @@ pre > code {
     margin-bottom: 12px;
 }
 
+/* ===== Deployment modes ===== */
+/* Three-card section that pairs the "kinds of workflows" narrative
+   above with the deployment shapes those workflows land on. Sits on
+   the base bg so it visually flows into the comparison section below
+   while breaking from use-cases (elevated) above. */
+.deployment-modes {
+    padding: 100px 0;
+    background: var(--bg);
+}
+
+.deployment-mode-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 22px;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.deployment-mode-card {
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 28px 24px;
+    transition: border-color 0.2s, transform 0.2s;
+    /* Anchor for the optional `preview` corner ribbon — same pattern as
+       .protocol-card so the visual vocabulary stays consistent. */
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.deployment-mode-card:hover {
+    border-color: var(--accent);
+    transform: translateY(-2px);
+}
+.deployment-mode-card:hover h3 {
+    color: var(--accent);
+    transition: color 0.2s;
+}
+
+.deployment-mode-diagram {
+    /* Lift the SVG into a tinted plate so the diagram reads as a
+       distinct visual layer above the body copy without needing a
+       border. Centre the SVG inside it. */
+    background: rgba(99, 102, 241, 0.06);
+    border-radius: var(--radius);
+    padding: 14px 12px;
+    margin-bottom: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.deployment-mode-card h3 {
+    font-size: 1.125rem;
+    font-weight: 600;
+    margin-bottom: 4px;
+}
+
+.deployment-mode-tag {
+    color: var(--accent);
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-bottom: 12px;
+}
+
+.deployment-mode-card > p {
+    color: var(--text-secondary);
+    font-size: 0.9375rem;
+    line-height: 1.6;
+    margin-bottom: 14px;
+}
+
+.deployment-mode-traits {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 14px 0;
+    font-size: 0.8125rem;
+    color: var(--text-secondary);
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    padding: 10px 0;
+}
+.deployment-mode-traits li {
+    padding: 3px 0;
+}
+.deployment-mode-traits li strong {
+    color: var(--text);
+    font-weight: 600;
+    margin-right: 6px;
+}
+
+.deployment-mode-snippet {
+    /* Bottom-anchored install snippet keeps card heights aligned
+       across the row regardless of body-copy length. */
+    margin-top: auto;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 10px 12px;
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    line-height: 1.5;
+    color: var(--text);
+    overflow-x: auto;
+    white-space: pre;
+}
+.deployment-mode-snippet code {
+    background: transparent;
+    padding: 0;
+    color: inherit;
+}
+
 .use-case-tools {
     color: var(--text-secondary);
     font-size: 0.8125rem;
@@ -3570,6 +3686,13 @@ button.comparison-bestfor-card.active .comparison-bestfor-name {
 
     .use-case-grid {
         grid-template-columns: 1fr;
+    }
+
+    .deployment-mode-grid {
+        grid-template-columns: 1fr;
+    }
+    .deployment-modes {
+        padding: 60px 0;
     }
 
     .cta-snippets {
