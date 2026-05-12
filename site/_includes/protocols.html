@@ -573,18 +573,18 @@
         <template class="feature-card-detail">
           <div class="features-block">
             <div class="features-block-text">
-              <h3>TacticalAPI <span class="protocol-tag protocol-tag-preview">preview &middot; v0.1.0</span></h3>
+              <h3>TacticalAPI <span class="protocol-tag protocol-tag-preview">preview &middot; v0.2.0</span></h3>
               <p class="features-block-lead">A typed discovery sidebar for Rheinmetall's situational-awareness gRPC interface &mdash; even when the target server doesn't expose Server Reflection.</p>
               <p>The plugin downloads the upstream <code>.proto</code> set at build time (pinned commit, EPL-2.0 upstream, never redistributed), compiles it with <code>Grpc.Tools</code>, and ships only the generated bindings &mdash; so installing the package gives Bowire enough schema to render the <code>Situation</code> service tree out of the box. Connect with <code>bowire --url tacticalapi@host:50051</code>. Pairs naturally with the gRPC plugin's gRPC-Web transport for TacticalAPI's HTTP/1.1 port (<code>:4268</code>) alongside the native HTTP/2 port (<code>:4267</code>).</p>
               <ul class="features-block-capabilities">
-                <li>Descriptor discovery (this release)</li>
-                <li>Typed unary CRUD (v0.2.0)</li>
-                <li>Server-streaming pump (v0.2.0)</li>
+                <li>Descriptor discovery</li>
+                <li>Typed unary invoke</li>
+                <li>Server-streaming SubscribeSituationObjectEvents</li>
               </ul>
               <a class="features-block-docs-link" href="{{ '/docs/protocols/tacticalapi.html' | relative_url }}">Read the full docs &rarr;</a>
             </div>
             <div class="features-block-screenshot">
-              {% include themed-img.html src="/assets/images/screenshots/tacticalapi.png" alt="Bowire workbench connected via tacticalapi@ — Situation service tree with the radar icon in the sidebar, GetSituationObjects returning seeded MIL-2525C symbols along the German North Sea coast" %}
+              {% include themed-img.html src="/assets/images/screenshots/tacticalapi-map.png" alt="Bowire workbench connected via tacticalapi@ — SubscribeSituationObjectEvents server-streaming the seeded Situation snapshot, split-pane layout with the JSON tree on the left and a MapLibre map pane on the right (the workbench reserves the map slot because the WGS84 detector recognised the GeoPoint coordinates)" %}
             </div>
           </div>
         </template>

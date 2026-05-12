@@ -119,6 +119,19 @@ The auto-detector half of the framework: five stateless `IBowireFieldDetector` i
 - [x] **`docs/protocols/index.md`** counts bumped (5 → 6 sibling plugins) and TacticalAPI row added to the sibling-plugin table + the protocol-fanout mermaid diagram (dashed edge to flag the preview status). `docs/api/index.md` gained a "gRPC-Web support" note under the gRPC entry and a callout under the sibling-plugin list pointing at the TacticalAPI sibling repo (its API surface isn't in the main repo's DocFX scope).
 - [x] **`site/_includes/roadmap.html`** picked up a new "Recently shipped" card summarising v1.2.0 (gRPC-Web + TacticalAPI preview).
 
+### Map widget — aggregate N pin-bearing pairings into one canvas (2026-05-12)
+
+Phase 3.2's `selectionMode: 'multi'` declares that the map viewer accepts more than one selected frame, and the framework's `findPairingMatches` finds every (lat, lon) pairing in a response — but the current mount logic stamps one independent `.maplibregl-map` per pairing. The Rheinmetall TacticalAPI sample exposed it cleanly: `GetSituationObjects` returns three `Symbol`s, each with its own `GeoPoint`, so Bowire mounts three blank maps instead of one map with three pins.
+
+- [ ] **Aggregate sibling pairings into one viewer mount** — when several pairings share the same widget-pane slot AND the viewer advertises `selectionMode: 'multi'`, fold them into a single `mount(ctx)` call whose `ctx.frames[]` carries every pairing's `(lat, lon)`. The map's `fitBounds` call already handles N points; the gap is upstream in `mountWidgetsForMethod`.
+- [ ] **Marker styling per situation-object** — the seeded TacticalAPI sample tags each `Symbol` with a MIL-2525C identifier (`SFGPUCI*`, `SHGPEWA*`, `SNGPUCRRO*`). Once one-map-many-pins works, a follow-up wires the symbol code into the marker icon — friend (blue square), hostile (red diamond), neutral (green clover). Out of scope until the aggregation lands.
+
+### Unary response auto-widget mount (2026-05-12)
+
+`renderStreamingPaneWithWidgets` mounts viewer widgets for the active method when the response is a stream; the unary response path (`renderResponseOutput`-equivalent in render-main.js, ~line 3414) appends the JSON tree without an analogous split-pane host. Result: a unary RPC whose response contains lat/lon pairs (TacticalAPI's `GetSituationObjects`, many REST GETs, gRPC unary CRUD) gets the WGS84 detector firing, the annotations land in the store, but no widget mounts. The user has to switch to a streaming method to see the map.
+
+- [ ] **Mirror the split-pane mount into the unary path** — same `layout.createSplitPane(...)` + `mountWidgetsForMethod(...)` pair that the streaming branch uses, gated by the same `splitKindExt` detection. Layout-toggle / per-method override (Phase 3.1) should compose with this for free since the storage key is keyed on `(service, method, widget-id)`.
+
 ### Streaming pane filter polish (2026-05-12)
 
 - [x] **Counter on its own row** above the message list — separates monotonic digit-growth ("12 → 1234 messages") from the toolbar layout so the right-hand buttons (`Follow latest`, tab/split toggle) no longer shift as messages arrive.

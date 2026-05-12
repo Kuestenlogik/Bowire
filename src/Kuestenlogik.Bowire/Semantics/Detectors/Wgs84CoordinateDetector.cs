@@ -111,8 +111,13 @@ public sealed partial class Wgs84CoordinateDetector : IBowireFieldDetector
     }
 
     // Anchored case-insensitive name patterns. ADR keeps them strict —
-    // "Lat" / "latitude" yes, "latency" no.
-    [GeneratedRegex("^lat(itude)?$", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
+    // "Lat" / "latitude" yes, "latency" no. The optional `coordinate`
+    // suffix accepts schemas that spell their geo fields out fully
+    // (Rheinmetall TacticalAPI's `latitudeCoordinate` /
+    // `longitudeCoordinate` are the upstream example) without
+    // widening to `*lat*` substring matches that would catch
+    // `latency`, `latex`, etc.
+    [GeneratedRegex("^lat(itude)?(coordinate)?$", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
     private static partial Regex LatPattern();
 
     // `lon` was a deliberate gap in the original ADR-derived regex
@@ -120,7 +125,8 @@ public sealed partial class Wgs84CoordinateDetector : IBowireFieldDetector
     // `lon` is the single most common longitude-field name in real
     // APIs — GeoJSON-derived schemas almost always use it. The
     // extended pattern below adds `lon` as a third valid alternative
-    // alongside the `lo?ng(itude)?` family.
-    [GeneratedRegex("^(lon|lo?ng(itude)?)$", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
+    // alongside the `lo?ng(itude)?` family, plus the same optional
+    // `coordinate` suffix the latitude side accepts.
+    [GeneratedRegex("^(lon|lo?ng(itude)?)(coordinate)?$", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
     private static partial Regex LonPattern();
 }

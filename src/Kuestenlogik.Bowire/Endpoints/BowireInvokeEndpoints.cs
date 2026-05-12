@@ -136,6 +136,17 @@ internal static class BowireInvokeEndpoints
                     body.Messages ?? ["{}"], options.ShowInternalServices,
                     body.Metadata, ctx.RequestAborted);
 
+                // Frame-semantics auto-detector hook on the unary path —
+                // streaming already feeds every frame to ObserveFrame, but
+                // unary calls used to bypass the prober entirely, so a
+                // method that only ever runs as unary (e.g. TacticalAPI's
+                // GetSituationObjects, REST GETs, gRPC unary CRUD) never
+                // accumulated annotations and the WGS84 / future Phase-3
+                // viewers never auto-mounted. ObserveFrame is a dictionary
+                // lookup on the repeat path, so the cost stays negligible.
+                var prober = ctx.RequestServices.GetService<IFrameProber>();
+                FrameProbingMiddleware.Observe(prober, body.Service, body.Method, result.Response);
+
                 // Phase-5 unary interpretations channel — same shape as the
                 // SSE envelope. The workbench JS picks the field off the
                 // /api/invoke response and stores it on the recording step
