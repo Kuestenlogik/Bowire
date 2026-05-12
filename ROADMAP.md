@@ -751,6 +751,33 @@ Bowire plugins today are .NET assemblies implementing `IBowireProtocol`. That lo
 
 Unlocks: Rust-based Zenoh plugin, Python plugins for every paho-mqtt / aiokafka / AWS-IoT library, Node.js Socket.IO bridge that uses the real socket.io-client instead of hand-rolling the protocol, Go plugins for Temporal / NATS JetStream. Larger architectural lift than any single new protocol plugin, but lifts the ceiling on what Bowire can ever cover.
 
+### Auth-provider extension SPI (Phase A, core seam)
+
+Today's `bowire` standalone has no auth surface — every endpoint is open on whatever URL the user binds to. That's fine on a developer laptop, but the moment someone wants to install Bowire on a shared host and let a team connect to it, the gate has to exist. Rather than ship OIDC (and `Microsoft.Identity.Web`'s transitive weight) in core, give Bowire a third extension type so identity providers slot in the same way protocols and UI widgets do.
+
+- [ ] **`IBowireAuthProvider` SPI** — sibling to `IBowireProtocol` and `IBowireUiExtension`. Surface area: an `AddAuthentication(IServiceCollection, BowireAuthOptions)` hook that wires up the authentication scheme, and a `BuildDefaultPolicy(AuthorizationPolicyBuilder)` hook so endpoints can require the auth before serving. The provider declares an id (`"oidc"`, `"saml"`, `"apikey"`, …) that maps to a CLI flag.
+- [ ] **`--auth-provider <id>` CLI flag** (default: none) plus provider-namespaced flags (`--auth-oidc-authority`, `--auth-oidc-client-id`, …). When unset, behaviour is identical to today — no auth, no policy attached to endpoints. When set, the named provider must be discoverable in the plugin load path or `bowire` fails fast with a clear error.
+- [ ] **Endpoint integration** — `BowireApiEndpoints.Map` reads the active auth provider once at startup and applies `.RequireAuthorization()` to every map-call. MCP adapter + UI shell follow the same gate. Embedded mode is unchanged: when the host has its own auth pipeline configured, the host's policy wins (Bowire's hook is opt-in only).
+- [ ] **Plugin-load privilege** — auth providers need slightly broader access than protocol plugins (they touch `IApplicationBuilder`, not just `IBowireProtocol`). Either extend `BowirePluginLoadContext` with an `IsAuthProvider` capability flag, or load auth assemblies through a separate load-context. Either way: protocol plugins can't accidentally hijack the auth pipeline.
+
+### Auth: OIDC provider plugin (Phase A, first concrete impl)
+
+The first concrete auth-provider plugin, riding the SPI above. Ships as `Kuestenlogik.Bowire.Auth.Oidc` (separate NuGet) so the heavy `Microsoft.Identity.Web` dependency only lands in installs that actually use OIDC — same MapLibre-style separation that kept ~870 KB of map assets out of the core distribution.
+
+- [ ] **`Kuestenlogik.Bowire.Auth.Oidc` plugin** implementing `IBowireAuthProvider` with id `"oidc"`. Built on `Microsoft.Identity.Web` so Azure AD, Okta, Keycloak, and any OIDC-compliant IdP work without provider-specific code paths.
+- [ ] **CLI surface** — `--auth-provider oidc --auth-oidc-authority https://login.example.com --auth-oidc-client-id <id> --auth-oidc-required-claim <claim>=<value>`. Required-claim filter is the access gate ("must be member of group X") since Bowire still has no native user/group model.
+- [ ] **Single-tenant gate, not multi-tenant**: every authenticated caller sees the same `~/.bowire/`. Data separation needs Phase B — Phase A is "lock the door", not "give every user their own room".
+- [ ] **Token forwarding to target services** — if the user is calling a downstream gRPC/REST service that itself wants the OIDC token, the auth middleware exposes the access token via `HttpContext.User` so the request pane's Auth tab can pick "Use my session token" as a forwarding mode.
+
+### Multi-tenant data model + SCIM (Phase B, blocked on Phase A)
+
+Once Bowire knows who's calling, the next ceiling is "everyone shares one `~/.bowire/`". For real multi-user installs each authenticated identity needs its own slice of state — recordings, environments, collections, flows, plugin installs. Then SCIM endpoints fall out almost for free because there's finally an identity model to provision against.
+
+- [ ] **User-scoped storage** — replace `Path.Combine(homeDir, ".bowire", "environments.json")` with a `IBowireUserStore` that resolves to `~/.bowire-server/users/<sub>/environments.json` (or a real DB for installations that prefer that). Every consumer (`EnvironmentStore`, `RecordingStore`, `CollectionStore`, `FlowStore`, `PluginManager`) routes through the seam. Standalone single-user mode keeps the flat layout by binding the store to a synthetic "default" user.
+- [ ] **SCIM 2.0 endpoints** — `/scim/v2/Users` + `/scim/v2/Groups` per RFC 7644. List/Get/Create/PATCH/Delete on the user-store. Compliance test suite to verify Okta + Azure AD's provisioning sync round-trips correctly.
+- [ ] **Per-user plugin installs** — today `bowire plugin install` writes to a global `~/.bowire/plugins/`. Multi-tenant mode would split this into a system-wide tier (admin-managed) plus a per-user overlay so users can install workflow-specific plugins without admin help.
+- [ ] **Migration path** — single-user installs upgrading into multi-tenant need a one-shot migration that promotes the existing flat `~/.bowire/` into the calling user's slot. No data loss on upgrade.
+
 ### Collections + Flows (Postman-style test suites)
 
 Complement the existing Recordings feature (auto-captured sessions) with manually curated request collections and conditional execution flows.
