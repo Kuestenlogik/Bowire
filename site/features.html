@@ -261,6 +261,20 @@ body.items[0]     type "object"   <span class="check-pass">&#10003;</span></code
     <p class="features-group-lede">Compare what&rsquo;s actually running where, work from a schema when the server isn&rsquo;t reachable, authenticate against any auth scheme, and script everything from the CLI when you don&rsquo;t want the UI.</p>
   </header>
 
+  <!-- ---- Globals and Environments ---- -->
+  <div class="features-block features-block-reverse" id="environments">
+    <div class="features-block-text">
+      <h3>Globals and Environments</h3>
+      <p class="features-block-lead">A typed variable store per environment, plus a Globals layer everyone inherits &mdash; the same <code>${name}</code> you'd reach for in any HTTP client, scoped properly.</p>
+      <p>Define <strong>Globals</strong> once (machine-wide constants you never change &mdash; timeouts, retry-counts, the base URL of your local Docker registry) and per-environment named scopes on top of them (<em>Dev</em>, <em>Staging</em>, <em>Production</em>, …). Variables surface as <code>${api_url}</code>, <code>${timeout_ms}</code>, <code>${prod_token}</code> in any request body, metadata header, URL field, script &mdash; the workbench substitutes at request time with the resolution chain Globals &rarr; active environment, per-environment overrides winning by name.</p>
+      <p>Variables persist to <code>~/.bowire/environments.json</code> on disk (the workbench mirrors them to <code>localStorage</code> for instant access). Export / Import buttons round-trip the full env set as a <code>.bwe</code> file &mdash; commit it to your repo, share it with a colleague, restore it on a fresh laptop. Switching the active environment from the topbar instantly re-resolves every <code>${...}</code> in the request editor so a single keystroke flips between dev and prod without a single textual edit.</p>
+      <a class="features-block-docs-link" href="{{ '/docs/features/environments.html' | relative_url }}">Read the technical docs &rarr;</a>
+    </div>
+    <div class="features-block-screenshot">
+      {% include themed-img.html src="/assets/images/screenshots/environments.png" alt="Environments editor — Variables tab showing a populated Staging environment alongside Globals and Production in the sidebar" %}
+    </div>
+  </div>
+
   <!-- ---- Environment diff ---- -->
   <div class="features-block" id="env-diff">
     <div class="features-block-text">
