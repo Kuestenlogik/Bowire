@@ -317,9 +317,17 @@
 
         var bounds = null;
         function maybeFit() {
-            if (!bounds || !bounds.isFinite || !bounds.isFinite()) return;
+            // MapLibre's LngLatBounds doesn't expose isFinite() — that's a
+            // Mapbox-GL-JS API. An earlier guard `!bounds.isFinite || !bounds.isFinite()`
+            // here read as `!undefined || …` which silently early-returned
+            // every call, so fitBounds was NEVER invoked and the map stayed
+            // centred at (0, 0) zoom 1 regardless of how many pins landed.
+            // The bounds object IS validated by fitBounds itself; the
+            // wrapping try/catch + an explicit !bounds short-circuit is
+            // enough.
+            if (!bounds) return;
             try { map.fitBounds(bounds, { padding: 30, maxZoom: 12, duration: 0 }); }
-            catch {}
+            catch { /* fitBounds rejects only on degenerate input — leave camera alone */ }
         }
 
         // Pull (lat, lon) out of one frame using the resolved kind →
