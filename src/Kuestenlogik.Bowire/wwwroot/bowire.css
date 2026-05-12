@@ -2926,11 +2926,19 @@ img.bowire-logo-icon {
     text-transform: uppercase;
     letter-spacing: 0.04em;
     font-size: 11px;
+    /* Without `white-space: nowrap` these labels collapse into a single
+       character-per-line column when the streaming pane is squeezed (the
+       split-pane half-width path is the normal trigger); the inner flex
+       item gets a narrow column allocation and the words break across
+       every glyph. nowrap pins them as a single horizontal run so the
+       toolbar layout falls back to overflow rather than vertical-stack. */
+    white-space: nowrap;
 }
 
 .bowire-stream-count {
     color: var(--bowire-text-tertiary);
     font-variant-numeric: tabular-nums;
+    white-space: nowrap;
 }
 
 .bowire-stream-toolbar-spacer {
