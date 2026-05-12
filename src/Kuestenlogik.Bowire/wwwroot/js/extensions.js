@@ -787,9 +787,68 @@
                     continue;
                 }
 
+                if (!ext.viewer) continue;
+
+                // Aggregate sibling pairings when the viewer opts into
+                // multi-select. Without this, a response with N nested
+                // pairings (e.g. TacticalAPI's situationObjects[N].…
+                // .geoPoint) stamps N independent slots, so a map widget
+                // ends up with N empty canvases instead of one canvas
+                // with N pins. The viewer.selectionMode === 'multi'
+                // declaration is the framework's existing signal that
+                // the widget can render >1 thing — we extend it here to
+                // mean "and >1 pairing path too". Single-match callers
+                // keep the legacy single-slot behaviour so widgets that
+                // need separate canvases per pairing aren't affected.
+                var aggregate = matches.length > 1
+                    && ext.viewer.selectionMode === 'multi';
+
+                if (aggregate) {
+                    var slot = document.createElement('div');
+                    slot.className = 'bowire-ext-mount bowire-ext-mount-' + ext.kind.replace(/\./g, '-');
+                    slot.dataset.extensionId = ext.id;
+                    // dataset.parentPath stays single-valued for backwards
+                    // compat (single-match callers still set it); the
+                    // aggregated counterpart lists every parent so test
+                    // queries / DOM inspectors can see the full set.
+                    slot.dataset.parentPaths = matches.map(function (mm) { return mm.parentPath; }).join(',');
+                    paneContainer.appendChild(slot);
+
+                    // ctx.interpretations is an Array<kindMap> in
+                    // aggregated mode — one kindMap per pairing path.
+                    // Single-match callers continue to receive the
+                    // existing object shape; viewers detect Array.isArray
+                    // and walk each entry. Documented in the extension
+                    // SPI for third parties.
+                    var aggregatedKinds = matches.map(function (mm) { return mm.kinds; });
+                    var ctxBundle = bowireMakeViewerCtx({
+                        container: slot,
+                        kinds: aggregatedKinds,
+                        discriminator: '*',
+                        selectionMode: ext.viewer.selectionMode
+                    });
+
+                    var unmount;
+                    try {
+                        unmount = ext.viewer.mount(slot, ctxBundle.ctx);
+                    } catch (e) {
+                        console.error('[bowire-ext] viewer.mount threw for ' + ext.id, e);
+                        unmount = null;
+                    }
+
+                    cleanups.push((function (slot, ctxBundle, unmount) {
+                        return function () {
+                            try { if (typeof unmount === 'function') unmount(); }
+                            catch (e) { console.error('[bowire-ext]', e); }
+                            ctxBundle.cleanup();
+                            if (slot.parentNode) slot.parentNode.removeChild(slot);
+                        };
+                    })(slot, ctxBundle, unmount));
+                    continue;
+                }
+
                 for (var m = 0; m < matches.length; m++) {
                     var match = matches[m];
-                    if (!ext.viewer) continue;
                     var slot = document.createElement('div');
                     slot.className = 'bowire-ext-mount bowire-ext-mount-' + ext.kind.replace(/\./g, '-');
                     slot.dataset.extensionId = ext.id;

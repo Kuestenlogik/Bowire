@@ -106,17 +106,63 @@
 
     /**
      * Resolve `Bowire:MapTileUrl` from the host config. The host
-     * surfaces it as a top-level config key when set; absence means
-     * "offline blank style" (the ADR's default).
+     * surfaces it as a top-level config key when set; absence falls
+     * through to the demotiles default (see bowireMapBasemapSpec).
      */
     function bowireMapTileUrl() {
-        // Allow the host to pre-bake the URL into __BOWIRE_CONFIG__ via
-        // a future field; for v1.3, an env var or appsettings entry
-        // could surface it, but the bowire-options binding for it is
-        // out of Phase 3 scope. The widget reads window.__BOWIRE_CONFIG__
-        // defensively in case a future host injection lands.
         var cfg = window.__BOWIRE_CONFIG__;
         return (cfg && cfg.mapTileUrl) || null;
+    }
+
+    /**
+     * Resolve the basemap to render under the pins. Three modes:
+     *
+     *   1. Custom URL — `config.mapBasemap` is a raster tile URL with
+     *      {z}/{x}/{y} placeholders, or a style.json URL. Picks the
+     *      shape automatically by inspecting the URL's tail.
+     *   2. Named alias — `config.mapBasemap` is "osm" / "demotiles" /
+     *      "none". "osm" hits openstreetmap.org with attribution;
+     *      "demotiles" hits MapLibre's free demo dataset (the
+     *      recommended free-tier fallback); "none" reverts to the
+     *      pre-v0.3 blank-style behaviour for true offline installs.
+     *   3. Default — demotiles. Works in any browser that can reach
+     *      MapLibre's CDN without an API key. Custom URL is still the
+     *      preferred answer for internal-mapserver setups, configured
+     *      via host appsettings (Bowire:Map:Basemap key) or per-user
+     *      via the Settings dialog (planned).
+     *
+     * Returns either { kind: 'styleUrl', url } / { kind: 'raster', url }
+     * / { kind: 'blank' } so the caller can build the MapLibre style
+     * object without re-parsing the URL.
+     */
+    function bowireMapBasemapSpec() {
+        var cfg = window.__BOWIRE_CONFIG__ || {};
+        // Legacy mapTileUrl still honoured as an explicit raster source.
+        if (cfg.mapTileUrl) {
+            return { kind: 'raster', url: cfg.mapTileUrl, attribution: '' };
+        }
+
+        var basemap = cfg.mapBasemap;
+        if (basemap === 'none') return { kind: 'blank' };
+        if (basemap === 'osm') {
+            return {
+                kind: 'raster',
+                url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                attribution: '© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>'
+            };
+        }
+        if (basemap === 'demotiles' || !basemap) {
+            return {
+                kind: 'styleUrl',
+                url: 'https://demotiles.maplibre.org/style.json'
+            };
+        }
+        // Heuristic: a string ending in .json is treated as a full
+        // style URL; anything else as a raster tile URL.
+        if (/\.json(\?.*)?$/i.test(basemap)) {
+            return { kind: 'styleUrl', url: basemap };
+        }
+        return { kind: 'raster', url: basemap, attribution: '' };
     }
 
     /**
@@ -224,25 +270,28 @@
         }
         if (disposed) return function () {};
 
-        var tileUrl = bowireMapTileUrl();
+        var basemap = bowireMapBasemapSpec();
         var style;
-        if (tileUrl) {
-            // User has explicitly opted into an external tile source by
-            // configuring Bowire:MapTileUrl. That's the only path where
-            // the widget reaches an external host; offline-default has
-            // no `sources`, no `glyphs`, no `sprite` (see
-            // bowireMapBlankStyle for the lockdown rationale). When a
-            // tile URL IS configured, we still omit `glyphs` / `sprite`
-            // because the workbench's pin-rendering doesn't use them —
-            // adding either would silently widen the egress surface.
+        if (basemap.kind === 'styleUrl') {
+            // MapLibre accepts a style URL directly — that's the path
+            // for demotiles and other style.json-shaped basemaps. The
+            // map constructor fetches it and wires glyphs/sprite if
+            // the style declares them.
+            style = basemap.url;
+        } else if (basemap.kind === 'raster') {
+            // Self-built raster style for a single tile URL. Custom
+            // mapserver setups and the OSM alias both land here.
+            // glyphs/sprite stay omitted because the workbench's
+            // pin-rendering doesn't use them — adding either would
+            // silently widen the egress surface.
             style = {
                 version: 8,
                 sources: {
                     'bowire-tiles': {
                         type: 'raster',
-                        tiles: [tileUrl],
+                        tiles: [basemap.url],
                         tileSize: 256,
-                        attribution: ''
+                        attribution: basemap.attribution || ''
                     }
                 },
                 layers: [{
@@ -252,6 +301,7 @@
                 }]
             };
         } else {
+            // `mapBasemap: 'none'` — true offline fallback.
             style = bowireMapBlankStyle(ctx.theme && ctx.theme.mode);
         }
 
@@ -260,7 +310,11 @@
             style: style,
             center: [0, 0],
             zoom: 1,
-            attributionControl: false
+            // Show attribution when a basemap is in play — OSM's tile
+            // usage policy requires it, and demotiles/MapLibre style.json
+            // wires it for free. Pure-blank fallback has no attribution
+            // to render.
+            attributionControl: basemap.kind !== 'blank' ? { compact: true } : false
         });
         map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
 
@@ -330,38 +384,77 @@
             catch { /* fitBounds rejects only on degenerate input — leave camera alone */ }
         }
 
-        // Pull (lat, lon) out of one frame using the resolved kind →
-        // path mapping from ctx.interpretations.
-        function extractCoord(frame) {
+        // Resolve ctx.interpretations into the list of (latPath, lonPath)
+        // pairs we need to extract from every incoming frame. Two
+        // shapes ship from the framework today:
+        //   - Object (legacy / single-pairing): one kindMap with
+        //     coordinate.latitude + coordinate.longitude
+        //   - Array  (multi-pairing, Phase 3.2+): one entry per sibling
+        //     pairing the framework folded into this mount, e.g. when
+        //     the response has `situationObjects[N]` and the WGS84
+        //     detector wrote N annotations. extensions.js does the fold
+        //     when viewer.selectionMode === 'multi'.
+        var interpretationPairs = (function () {
             var kinds = ctx.interpretations || {};
-            var latPath = kinds['coordinate.latitude'];
-            var lonPath = kinds['coordinate.longitude'];
-            if (!latPath || !lonPath) return null;
+            var rawList = Array.isArray(kinds) ? kinds : [kinds];
+            var pairs = [];
+            for (var i = 0; i < rawList.length; i++) {
+                var k = rawList[i] || {};
+                var lat = k['coordinate.latitude'];
+                var lon = k['coordinate.longitude'];
+                if (lat && lon) pairs.push({ lat: lat, lon: lon });
+            }
+            return pairs;
+        })();
 
-            // Frames coming through the SSE stream wrap the payload in
-            // a `data` field. Try both shapes so the widget works for
-            // raw frames AND for wrapped envelopes.
+        // Walk a frame through every interpretation pair, returning
+        // every valid (lat, lon) we find. Returns [] when the frame
+        // carries no coordinates the widget can plot. Each pair is
+        // tried against the unwrapped frame roots (the SSE envelope
+        // wraps the payload in `data`/`frame`, so we try both shapes).
+        function extractCoords(frame) {
+            if (interpretationPairs.length === 0) return [];
+
             var roots = [];
             if (frame && frame.data !== undefined) roots.push(frame.data);
             if (frame && frame.frame !== undefined) roots.push(frame.frame);
             roots.push(frame);
 
-            for (var i = 0; i < roots.length; i++) {
-                var root = roots[i];
+            var parsedRoots = [];
+            for (var r = 0; r < roots.length; r++) {
+                var root = roots[r];
                 if (root && typeof root === 'string') {
                     try { root = JSON.parse(root); } catch { continue; }
                 }
-                var lat = bowireResolveJsonPath(root, latPath);
-                var lon = bowireResolveJsonPath(root, lonPath);
-                lat = typeof lat === 'number' ? lat : parseFloat(lat);
-                lon = typeof lon === 'number' ? lon : parseFloat(lon);
-                if (isFinite(lat) && isFinite(lon)
-                    && lat >= -90 && lat <= 90
-                    && lon >= -180 && lon <= 180) {
-                    return { lat: lat, lon: lon };
+                if (root !== undefined && root !== null) parsedRoots.push(root);
+            }
+
+            var out = [];
+            for (var p = 0; p < interpretationPairs.length; p++) {
+                var pair = interpretationPairs[p];
+                for (var i = 0; i < parsedRoots.length; i++) {
+                    var lat = bowireResolveJsonPath(parsedRoots[i], pair.lat);
+                    var lon = bowireResolveJsonPath(parsedRoots[i], pair.lon);
+                    lat = typeof lat === 'number' ? lat : parseFloat(lat);
+                    lon = typeof lon === 'number' ? lon : parseFloat(lon);
+                    if (isFinite(lat) && isFinite(lon)
+                        && lat >= -90 && lat <= 90
+                        && lon >= -180 && lon <= 180) {
+                        out.push({ lat: lat, lon: lon });
+                        break; // one root match per pair is enough
+                    }
                 }
             }
-            return null;
+            return out;
+        }
+
+        // Back-compat shim — single-coord extraction still has internal
+        // callers (selection-driven camera moves, hover/pin testing).
+        // Returns the FIRST extracted coord or null, preserving the
+        // pre-aggregation contract for those callsites.
+        function extractCoord(frame) {
+            var coords = extractCoords(frame);
+            return coords.length > 0 ? coords[0] : null;
         }
 
         // Phase 3.1 — selected-frame tracking. We hold the snapshot
@@ -382,8 +475,15 @@
         });
 
         function addPin(frame) {
-            var coord = extractCoord(frame);
-            if (!coord) return;
+            // Aggregated mode (Phase 3.2+ multi-pairing fold) returns
+            // every (lat, lon) the frame carries, single-pairing mode
+            // returns one. Either way, this loop emits a pin per
+            // resolved coord. The shared `frameId` / `selected` /
+            // `discriminator` properties tie each pin back to its
+            // source frame for selection re-styling, exactly like the
+            // single-coord path used to.
+            var coords = extractCoords(frame);
+            if (coords.length === 0) return;
             var discriminator = (frame && frame.discriminator) || '*';
             var color = bowireMapDiscriminatorColor(discriminator, paletteStore);
             var frameId = (frame && frame.id) || null;
@@ -399,17 +499,32 @@
                 ? 'yes'
                 : (anySelected ? 'no-but-others-are' : 'no');
 
-            pointsSource.features.push({
-                type: 'Feature',
-                id: ++pinSeq,
-                geometry: { type: 'Point', coordinates: [coord.lon, coord.lat] },
-                properties: {
-                    color: color,
-                    discriminator: discriminator,
-                    frameId: frameId,
-                    selected: selectedTag
+            for (var c = 0; c < coords.length; c++) {
+                var coord = coords[c];
+                pointsSource.features.push({
+                    type: 'Feature',
+                    id: ++pinSeq,
+                    geometry: { type: 'Point', coordinates: [coord.lon, coord.lat] },
+                    properties: {
+                        color: color,
+                        discriminator: discriminator,
+                        frameId: frameId,
+                        selected: selectedTag
+                    }
+                });
+                // Extend the bounds for EVERY coord in this frame —
+                // without this, a multi-pairing frame (e.g.
+                // TacticalAPI's situationObjects[N]) only widened the
+                // viewport with the loop's last `coord` thanks to
+                // `var` hoisting, so the auto-fit centred on one pin
+                // and the others sat off-screen.
+                if (!bounds) {
+                    bounds = new maplibregl.LngLatBounds(
+                        [coord.lon, coord.lat], [coord.lon, coord.lat]);
+                } else {
+                    bounds.extend([coord.lon, coord.lat]);
                 }
-            });
+            }
 
             // Trim pin count to avoid unbounded memory in long streams.
             // The cap mirrors what render-main.js does for streamMessages.
@@ -421,12 +536,6 @@
             var src = map.getSource('bowire-points');
             if (src) src.setData(pointsSource);
 
-            if (!bounds) {
-                bounds = new maplibregl.LngLatBounds(
-                    [coord.lon, coord.lat], [coord.lon, coord.lat]);
-            } else {
-                bounds.extend([coord.lon, coord.lat]);
-            }
             // Auto-fit on the first few pins, then leave navigation to
             // the user. Avoids the jitter of a re-fit on every frame.
             // Once the user has moved the camera (drag/zoom) OR a
