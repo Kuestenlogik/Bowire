@@ -6467,6 +6467,30 @@ html[data-theme="light"] {
        back to the base bg so it pops against the alt stripe. */
     background: var(--bg);
 }
+
+/* Live Discord widget — centred iframe with shadow + rounded corners
+   so it reads as a UI surface, not an embedded frame. Two iframes
+   share the slot (dark + light theme variants); the theme-img-*
+   classes from the screenshot system hide whichever doesn't match
+   the active page theme, so the widget follows the theme switcher
+   without JS. */
+.community-discord-live .community-discord-widget {
+    display: flex;
+    justify-content: center;
+    margin: 0 auto;
+    max-width: 380px;
+}
+.community-discord-widget-iframe {
+    border-radius: var(--radius-lg);
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.18);
+    max-width: 100%;
+}
+@media (max-width: 480px) {
+    .community-discord-widget-iframe {
+        width: 100%;
+        height: 460px;
+    }
+}
 .community-channel-label {
     font-size: 0.75rem;
     font-weight: 600;
