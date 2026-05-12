@@ -3128,12 +3128,18 @@ button.comparison-bestfor-card.active .comparison-bestfor-name {
    the inverted-fill becomes the success-green so the checkmark
    reads as a status badge ("done"), distinct from both the
    numbered counter and any accent-coloured CTAs. The shipped
-   cards themselves keep the same .roadmap-card layout. */
-.roadmap-number-shipped {
+   cards themselves keep the same .roadmap-card layout.
+
+   Chained `.roadmap-number.roadmap-number-shipped` to lift the
+   selector above the bare `.roadmap-number` rule that follows
+   later in the file — without the bump, source-order would let
+   the default `background: var(--text)` win and the coins fell
+   back to the neutral palette. */
+.roadmap-number.roadmap-number-shipped {
     background: var(--success);
     color: #fff;
 }
-.roadmap-number-shipped svg {
+.roadmap-number.roadmap-number-shipped svg {
     width: 22px;
     height: 22px;
 }
