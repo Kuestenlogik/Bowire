@@ -367,6 +367,85 @@
           closeLightbox();
         }
       }, true);
+
+      // ---- Gallery thumbnail switcher ------------------------------
+      // Each features-block-media popup ships a big "hero" image inside
+      // .features-block-media-video and N thumbnails inside
+      // .features-block-media-gallery. Without this handler clicking a
+      // thumbnail did nothing — the modal looked broken because only the
+      // hero variant was ever shown.
+      //
+      // Themed-img renders TWO <img> tags per slot (dark + light pair);
+      // CSS hides whichever doesn't match the active theme. The switcher
+      // updates BOTH images in the hero slot so theme switches after a
+      // thumbnail click still pick up the right variant.
+      function baseSrcOf(src) {
+        // Strip query/hash so the regex matches purely on the path.
+        var clean = (src || '').split('?')[0].split('#')[0];
+        return clean.replace(/-(dark|light)\.png$/i, '.png');
+      }
+      function activateThumb(gallery, base) {
+        var thumbs = gallery.querySelectorAll('img');
+        for (var i = 0; i < thumbs.length; i++) {
+          var isActive = baseSrcOf(thumbs[i].currentSrc || thumbs[i].src) === base;
+          thumbs[i].classList.toggle('is-active', isActive);
+        }
+      }
+      function swapHero(media, base) {
+        var hero = media.querySelector('.features-block-media-video');
+        if (!hero) return;
+        var darkImg = hero.querySelector('.theme-img-dark');
+        var lightImg = hero.querySelector('.theme-img-light');
+        if (darkImg) darkImg.src = base.replace(/\.png$/i, '-dark.png');
+        if (lightImg) lightImg.src = base.replace(/\.png$/i, '-light.png');
+      }
+      document.addEventListener('click', function (e) {
+        var thumb = e.target.closest('.features-block-media-gallery img');
+        if (!thumb) return;
+        // Lightbox handler runs in capture phase against
+        // .features-block-screenshot images — gallery thumbs are a
+        // distinct class, so they slip through. Still stopPropagation
+        // here so the modal's outside-click handler doesn't pick this
+        // event up as a "click on modal backdrop".
+        e.preventDefault();
+        e.stopPropagation();
+        var gallery = thumb.closest('.features-block-media-gallery');
+        var media = thumb.closest('.features-block-media');
+        if (!gallery || !media) return;
+        var base = baseSrcOf(thumb.currentSrc || thumb.src);
+        swapHero(media, base);
+        activateThumb(gallery, base);
+      });
+      // Make thumbs keyboard-activatable. The image element isn't
+      // focusable by default — set tabindex + treat Enter/Space as
+      // click. Runs each time the modal opens because the popup body
+      // is freshly cloned from the template.
+      var origOpen = open;
+      open = function (card) {
+        origOpen(card);
+        var thumbs = body.querySelectorAll('.features-block-media-gallery img');
+        for (var i = 0; i < thumbs.length; i++) {
+          thumbs[i].setAttribute('tabindex', '0');
+          thumbs[i].setAttribute('role', 'button');
+          thumbs[i].setAttribute('aria-label',
+            'Show ' + (thumbs[i].alt || 'this screenshot') + ' as the main image');
+        }
+        // Prime the active marker on the hero's current source so the
+        // first thumbnail matching it lights up.
+        var media = body.querySelector('.features-block-media');
+        var heroImg = body.querySelector('.features-block-media-video .theme-img-dark, .features-block-media-video .theme-img-light, .features-block-media-video img');
+        var gallery = body.querySelector('.features-block-media-gallery');
+        if (media && heroImg && gallery) {
+          activateThumb(gallery, baseSrcOf(heroImg.currentSrc || heroImg.src));
+        }
+      };
+      document.addEventListener('keydown', function (e) {
+        if (e.key !== 'Enter' && e.key !== ' ') return;
+        var thumb = e.target && e.target.closest && e.target.closest('.features-block-media-gallery img');
+        if (!thumb) return;
+        e.preventDefault();
+        thumb.click();
+      });
     })();
   </script>
 

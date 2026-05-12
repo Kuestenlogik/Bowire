@@ -4868,6 +4868,18 @@ p a:not([class]):hover,
     border-color: var(--accent);
     transform: scale(1.02);
 }
+.features-block-media-gallery img:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+}
+.features-block-media-gallery img.is-active {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 1px var(--accent);
+    cursor: default;
+}
+.features-block-media-gallery img.is-active:hover {
+    transform: none;
+}
 @media (max-width: 720px) {
     .features-block-media-gallery {
         grid-template-columns: repeat(2, 1fr);
