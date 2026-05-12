@@ -724,9 +724,24 @@ internal static class PluginManager
 
         foreach (var subDir in Directory.GetDirectories(dir))
         {
+            var normalised = Path.GetFullPath(subDir);
+            // Idempotent re-entry: Program.cs and BrowserUiHost both call
+            // LoadPlugins as a defence-in-depth measure for embedded vs.
+            // CLI entry points. Without this skip every second invocation
+            // would spin up a fresh BowirePluginLoadContext for the same
+            // subdir, so AppDomain.CurrentDomain.GetAssemblies() ends up
+            // with N copies of every plugin assembly and
+            // BowireProtocolRegistry.Discover registers each protocol N
+            // times — visible to users as duplicate entries in the sidebar.
+            if (!s_loadedSubdirs.Add(normalised)) continue;
+
             BowirePluginLoadContext ctx;
             try { ctx = new BowirePluginLoadContext(subDir); }
-            catch { continue; }
+            catch
+            {
+                s_loadedSubdirs.Remove(normalised);
+                continue;
+            }
             s_pluginContexts.Add(ctx);
 
             foreach (var dll in Directory.GetFiles(subDir, "*.dll"))
@@ -747,6 +762,11 @@ internal static class PluginManager
     // callers (mock emitters, future replayers, ...) can enumerate
     // them without re-walking the plugin directory.
     private static readonly List<BowirePluginLoadContext> s_pluginContexts = new();
+
+    // Subdirectory paths LoadPlugins has already processed. Guards against
+    // double-loading when both Program.cs and BrowserUiHost run the loader.
+    private static readonly HashSet<string> s_loadedSubdirs =
+        new(StringComparer.OrdinalIgnoreCase);
 
     /// <summary>
     /// Instantiate every <typeparamref name="T"/> contributed by a
