@@ -1,41 +1,50 @@
 <section class="deployment-modes" id="deployment-modes">
   <div class="container">
-    <h2 class="section-title">Pick where it runs</h2>
-    <p class="section-subtitle">The workflows above land on three deployment shapes. Same product, different relationship between Bowire and the rest of your stack.</p>
+    <h2 class="section-title">Pick your vessel</h2>
+    <p class="section-subtitle">Same workbench, three different ships. Pack it inside the application's own container, ride a speedboat from your desk, or run a passenger ship the whole team boards.</p>
 
     <div class="deployment-mode-grid">
 
       <article class="deployment-mode-card">
         <div class="deployment-mode-diagram">
-          <!-- Embedded: one outer "Your app" rect with a smaller
-               "Bowire" rect inside it. One user arrow lands on the
-               combined surface. The sidecar variant (caption-only) is
-               described in the card text — same topological story,
-               two boxes glued together. -->
-          <svg width="160" height="110" viewBox="0 0 160 110" fill="none" stroke="var(--accent)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <!-- User -->
-            <circle cx="80" cy="14" r="6"/>
-            <path d="M80 22 L80 32" />
-            <polyline points="76 28 80 32 84 28" />
-            <!-- Your app (outer) -->
-            <rect x="22" y="40" width="116" height="56" rx="6"/>
-            <text x="32" y="56" fill="var(--text-secondary)" stroke="none" font-size="9" font-family="var(--font-sans)">Your app</text>
-            <!-- Bowire (inner) -->
-            <rect x="84" y="62" width="46" height="24" rx="4" fill="rgba(99, 102, 241, 0.12)"/>
-            <text x="93" y="78" fill="var(--accent)" stroke="none" font-size="9" font-weight="600" font-family="var(--font-mono)">Bowire</text>
-            <!-- API endpoints inside the host -->
-            <line x1="34" y1="68" x2="72" y2="68"/>
-            <line x1="34" y1="76" x2="64" y2="76"/>
-            <line x1="34" y1="84" x2="70" y2="84"/>
+          <!-- Container ship — silhouette with three container stacks
+               on deck and the bridge tower at the stern. One container
+               is highlighted as "Bowire" so the reader sees the
+               metaphor mapping back to Docker / embedded: Bowire is
+               one of the boxes the host app already ships in. -->
+          <svg width="170" height="110" viewBox="0 0 170 110" fill="none" stroke="var(--accent)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <!-- Containers (bottom row) -->
+            <rect x="22" y="48" width="22" height="16" rx="1"/>
+            <rect x="46" y="48" width="22" height="16" rx="1"/>
+            <rect x="70" y="48" width="22" height="16" rx="1" fill="rgba(99, 102, 241, 0.18)"/>
+            <rect x="94" y="48" width="22" height="16" rx="1"/>
+            <!-- Containers (top row, half-coverage) -->
+            <rect x="34" y="32" width="22" height="16" rx="1"/>
+            <rect x="58" y="32" width="22" height="16" rx="1"/>
+            <rect x="82" y="32" width="22" height="16" rx="1"/>
+            <!-- "Bowire" label inside the highlighted container -->
+            <text x="73" y="60" fill="var(--accent)" stroke="none" font-size="8" font-weight="700" font-family="var(--font-mono)">Bowire</text>
+            <!-- Bridge tower at the stern -->
+            <rect x="120" y="28" width="20" height="36" rx="1"/>
+            <line x1="124" y1="36" x2="136" y2="36"/>
+            <line x1="124" y1="44" x2="136" y2="44"/>
+            <line x1="124" y1="52" x2="136" y2="52"/>
+            <!-- Stack -->
+            <line x1="146" y1="28" x2="146" y2="40"/>
+            <!-- Hull -->
+            <path d="M14 64 L156 64 L148 80 L22 80 Z"/>
+            <!-- Waterline -->
+            <path d="M4 86 q8 -3 16 0 t16 0 t16 0 t16 0 t16 0 t16 0 t16 0 t16 0 t16 0 t14 0" stroke-opacity="0.6"/>
+            <path d="M4 94 q10 -3 20 0 t20 0 t20 0 t20 0 t20 0 t20 0 t20 0 t20 0" stroke-opacity="0.35"/>
           </svg>
         </div>
-        <h3>Embedded · sidecar</h3>
-        <p class="deployment-mode-tag">prime use case · one app · zero account walls</p>
-        <p>Add <code>app.MapBowire()</code> to the ASP.NET host and every endpoint is browsable at <code>/bowire</code>. Or run the published container <strong>next to</strong> the app and point it at one upstream URL — same effect, different process boundary.</p>
+        <h3>Container ship</h3>
+        <p class="deployment-mode-tag">embedded · sidecar · prime use case</p>
+        <p>Bowire packs into the same container the host app ships in. Add <code>app.MapBowire()</code> and every endpoint is browsable at <code>/bowire</code>, or run the published Docker image as a sidecar pointed at one upstream URL — same effect, different process boundary.</p>
         <ul class="deployment-mode-traits">
           <li><strong>Data:</strong> per-app, no persistence required</li>
           <li><strong>Auth:</strong> whatever the host pipeline does</li>
-          <li><strong>Users:</strong> as many as the host serves</li>
+          <li><strong>Crew:</strong> as many as the host serves</li>
         </ul>
         <pre class="deployment-mode-snippet"><code>dotnet add package Kuestenlogik.Bowire
 app.MapBowire();</code></pre>
@@ -43,36 +52,37 @@ app.MapBowire();</code></pre>
 
       <article class="deployment-mode-card">
         <div class="deployment-mode-diagram">
-          <!-- Local dev tool: laptop with Bowire on the screen,
-               arrows fanning out to multiple API targets. The point
-               of this diagram is "one developer, many targets" — the
-               opposite of the embedded card. -->
-          <svg width="160" height="110" viewBox="0 0 160 110" fill="none" stroke="var(--accent)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <!-- Laptop -->
-            <rect x="40" y="20" width="80" height="46" rx="3"/>
-            <path d="M30 70 L130 70 L122 78 L38 78 Z"/>
-            <!-- Bowire label inside screen -->
-            <rect x="62" y="34" width="36" height="18" rx="3" fill="rgba(99, 102, 241, 0.12)"/>
-            <text x="70" y="46" fill="var(--accent)" stroke="none" font-size="9" font-weight="600" font-family="var(--font-mono)">Bowire</text>
-            <!-- Connections to API targets -->
-            <path d="M58 78 L34 96"/>
-            <path d="M80 80 L80 100"/>
-            <path d="M102 78 L126 96"/>
-            <rect x="20" y="96" width="28" height="10" rx="2"/>
-            <text x="26" y="104" fill="var(--text-secondary)" stroke="none" font-size="7" font-family="var(--font-mono)">REST</text>
-            <rect x="66" y="100" width="28" height="10" rx="2"/>
-            <text x="71" y="108" fill="var(--text-secondary)" stroke="none" font-size="7" font-family="var(--font-mono)">gRPC</text>
-            <rect x="112" y="96" width="28" height="10" rx="2"/>
-            <text x="119" y="104" fill="var(--text-secondary)" stroke="none" font-size="7" font-family="var(--font-mono)">MQTT</text>
+          <!-- Speedboat — low, sleek hull with one figure at the
+               wheel. Speed lines off the stern signal "fast, single
+               helmsman, no schedule". This is the developer-laptop
+               story: one user, point and shoot at whatever's in
+               range. -->
+          <svg width="170" height="110" viewBox="0 0 170 110" fill="none" stroke="var(--accent)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <!-- Helmsman -->
+            <circle cx="92" cy="40" r="4"/>
+            <path d="M88 48 L88 56 M96 48 L96 56 M88 48 L96 48"/>
+            <!-- Windscreen -->
+            <path d="M82 56 L94 44 L104 44 L104 56" />
+            <!-- "Bowire" label inside the hull -->
+            <text x="60" y="73" fill="var(--accent)" stroke="none" font-size="9" font-weight="700" font-family="var(--font-mono)">Bowire</text>
+            <!-- Hull (pointed bow on the right, narrowing stern on the left) -->
+            <path d="M30 64 L150 64 L138 80 L42 80 Z" fill="rgba(99, 102, 241, 0.10)"/>
+            <!-- Speed lines off the stern -->
+            <line x1="14" y1="68" x2="26" y2="68" stroke-opacity="0.45"/>
+            <line x1="10" y1="76" x2="28" y2="76" stroke-opacity="0.45"/>
+            <line x1="16" y1="84" x2="30" y2="84" stroke-opacity="0.45"/>
+            <!-- Waterline -->
+            <path d="M4 90 q10 -3 20 0 t20 0 t20 0 t20 0 t20 0 t20 0 t20 0 t20 0" stroke-opacity="0.55"/>
+            <path d="M4 98 q12 -3 24 0 t24 0 t24 0 t24 0 t24 0 t24 0 t22 0" stroke-opacity="0.3"/>
           </svg>
         </div>
-        <h3>Local dev tool</h3>
-        <p class="deployment-mode-tag">one laptop · one user · many target services</p>
-        <p>Installed as a global <code>dotnet tool</code> on the developer's machine. Point it at whatever you're working on right now — staging gRPC service in the morning, local REST API after lunch, a colleague's WebSocket server in the afternoon.</p>
+        <h3>Speedboat</h3>
+        <p class="deployment-mode-tag">one helmsman · fast · any heading</p>
+        <p>Installed as a global <code>dotnet tool</code> on the developer's laptop. No fixed route — point Bowire at the staging gRPC service in the morning, a local REST API after lunch, a colleague's WebSocket server in the afternoon.</p>
         <ul class="deployment-mode-traits">
           <li><strong>Data:</strong> <code>~/.bowire/</code> on the local disk</li>
-          <li><strong>Auth:</strong> none (you're the only user)</li>
-          <li><strong>Users:</strong> single — you</li>
+          <li><strong>Auth:</strong> none (you're the only one aboard)</li>
+          <li><strong>Crew:</strong> single — you</li>
         </ul>
         <pre class="deployment-mode-snippet"><code>dotnet tool install -g Kuestenlogik.Bowire.Tool
 bowire --url https://staging.example.com</code></pre>
@@ -81,44 +91,50 @@ bowire --url https://staging.example.com</code></pre>
       <article class="deployment-mode-card deployment-mode-card-preview">
         <span class="protocol-card-ribbon" aria-hidden="true">preview</span>
         <div class="deployment-mode-diagram">
-          <!-- Shared instance: a central Bowire surface with a lock
-               glyph, several user dots fanning in from above and a
-               curated set of target URLs fanning out below. The
-               lock signals the planned OIDC gate; the curated row
-               below signals the "central URL catalogue" the user
-               described. -->
-          <svg width="160" height="110" viewBox="0 0 160 110" fill="none" stroke="var(--accent)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <!-- Three users -->
-            <circle cx="40" cy="14" r="5"/>
-            <circle cx="80" cy="10" r="5"/>
-            <circle cx="120" cy="14" r="5"/>
-            <path d="M40 22 L60 42"/>
-            <path d="M80 18 L80 42"/>
-            <path d="M120 22 L100 42"/>
-            <!-- Bowire central surface with lock -->
-            <rect x="30" y="42" width="100" height="32" rx="6" fill="rgba(99, 102, 241, 0.12)"/>
-            <text x="56" y="58" fill="var(--accent)" stroke="none" font-size="9" font-weight="600" font-family="var(--font-mono)">Bowire</text>
-            <rect x="100" y="50" width="9" height="8" rx="1" fill="none"/>
-            <path d="M102 50 L102 47 a3 3 0 0 1 6 0 L108 50"/>
-            <!-- Curated URL catalogue -->
-            <line x1="50" y1="74" x2="50" y2="86"/>
-            <line x1="80" y1="74" x2="80" y2="86"/>
-            <line x1="110" y1="74" x2="110" y2="86"/>
-            <rect x="34" y="86" width="32" height="10" rx="2"/>
-            <text x="40" y="94" fill="var(--text-secondary)" stroke="none" font-size="6.5" font-family="var(--font-mono)">api.dev</text>
-            <rect x="64" y="86" width="32" height="10" rx="2"/>
-            <text x="69" y="94" fill="var(--text-secondary)" stroke="none" font-size="6.5" font-family="var(--font-mono)">api.stg</text>
-            <rect x="94" y="86" width="32" height="10" rx="2"/>
-            <text x="100" y="94" fill="var(--text-secondary)" stroke="none" font-size="6.5" font-family="var(--font-mono)">api.prd</text>
+          <!-- Passenger ship — multi-deck hull with several figures on
+               the promenade and three port calls (api.dev / api.stg /
+               api.prd) inked along the waterline. The locked
+               gangway signals the planned OIDC gate; the row of
+               curated URLs maps to "everyone aboard sees the same
+               route catalogue, but their own cabin state". -->
+          <svg width="170" height="110" viewBox="0 0 170 110" fill="none" stroke="var(--accent)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <!-- Flag + smokestacks -->
+            <line x1="74" y1="14" x2="74" y2="26"/>
+            <path d="M74 14 L82 17 L74 20"/>
+            <rect x="78" y="22" width="6" height="14" rx="1"/>
+            <rect x="90" y="22" width="6" height="14" rx="1"/>
+            <!-- Upper deck (promenade with passengers) -->
+            <rect x="34" y="36" width="106" height="12" rx="1" fill="rgba(99, 102, 241, 0.15)"/>
+            <circle cx="44" cy="42" r="1.4" fill="var(--accent)" stroke="none"/>
+            <circle cx="56" cy="42" r="1.4" fill="var(--accent)" stroke="none"/>
+            <circle cx="68" cy="42" r="1.4" fill="var(--accent)" stroke="none"/>
+            <circle cx="84" cy="42" r="1.4" fill="var(--accent)" stroke="none"/>
+            <circle cx="100" cy="42" r="1.4" fill="var(--accent)" stroke="none"/>
+            <circle cx="116" cy="42" r="1.4" fill="var(--accent)" stroke="none"/>
+            <!-- Main deck with Bowire label -->
+            <rect x="26" y="48" width="122" height="16" rx="1"/>
+            <text x="74" y="60" fill="var(--accent)" stroke="none" font-size="9" font-weight="700" font-family="var(--font-mono)">Bowire</text>
+            <!-- Lock glyph on the boarding gate -->
+            <rect x="148" y="51" width="8" height="8" rx="1"/>
+            <path d="M150 51 L150 49 a2 2 0 0 1 4 0 L154 51"/>
+            <!-- Hull -->
+            <path d="M14 64 L160 64 L150 80 L24 80 Z"/>
+            <!-- Port calls below the hull -->
+            <rect x="22" y="88" width="32" height="10" rx="1"/>
+            <text x="28" y="96" fill="var(--text-secondary)" stroke="none" font-size="6.5" font-family="var(--font-mono)">api.dev</text>
+            <rect x="64" y="88" width="32" height="10" rx="1"/>
+            <text x="70" y="96" fill="var(--text-secondary)" stroke="none" font-size="6.5" font-family="var(--font-mono)">api.stg</text>
+            <rect x="106" y="88" width="32" height="10" rx="1"/>
+            <text x="113" y="96" fill="var(--text-secondary)" stroke="none" font-size="6.5" font-family="var(--font-mono)">api.prd</text>
           </svg>
         </div>
-        <h3>Shared instance</h3>
-        <p class="deployment-mode-tag">team · curated URL space · per-user state</p>
-        <p>One Bowire server, several authenticated callers. Operators pin a curated set of target URLs; each user keeps their own recordings, environments, and collections across sessions. Today: works behind your own OIDC reverse proxy. Coming via the <a href="https://github.com/Kuestenlogik/Bowire/blob/main/ROADMAP.md#auth-provider-extension-spi-phase-a-core-seam" target="_blank" rel="noopener">Auth-provider extension SPI</a>: native OIDC + per-user data slots.</p>
+        <h3>Passenger ship</h3>
+        <p class="deployment-mode-tag">crew aboard · scheduled routes · per-cabin state</p>
+        <p>One Bowire server, several authenticated passengers. Operators pin the scheduled port calls; each user keeps their own cabin state — recordings, environments, collections — across sessions. Today: works behind your own OIDC reverse proxy. Coming via the <a href="https://github.com/Kuestenlogik/Bowire/blob/main/ROADMAP.md#auth-provider-extension-spi-phase-a-core-seam" target="_blank" rel="noopener">Auth-provider extension SPI</a>: native OIDC + per-user data slots.</p>
         <ul class="deployment-mode-traits">
-          <li><strong>Data:</strong> per-user (Phase B)</li>
+          <li><strong>Data:</strong> per-passenger (Phase B)</li>
           <li><strong>Auth:</strong> OIDC plugin (Phase A, opt-in)</li>
-          <li><strong>Users:</strong> as many as the host allows</li>
+          <li><strong>Crew:</strong> as many as the host allows</li>
         </ul>
         <pre class="deployment-mode-snippet"><code>docker run -p 5080:5080 \
   ghcr.io/kuestenlogik/bowire:latest \
