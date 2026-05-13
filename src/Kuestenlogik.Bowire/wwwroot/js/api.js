@@ -300,6 +300,30 @@
                 responseData = result.response;
                 captureResponse(result.response); // for ${response.X} chaining
                 captureResponseForDiff(service, method, result.response, result.status, result.duration_ms);
+
+                // Dispatch the unary response as a single synthetic frame
+                // to the extension framework so any registered widget
+                // (the MapLibre map on coordinate.wgs84 today) gets a
+                // chance to render against it — same path the streaming
+                // branch uses for every emitted frame. The dispatch
+                // replay-cache absorbs the ordering against the async
+                // mountWidgetsForMethod that the response pane will kick
+                // off on the next render() pass. The frame id follows the
+                // `service/method#index` format `bowireReplayKeyFor`
+                // expects (single-frame unary → index 0).
+                if (window.__bowireExtFramework) {
+                    var unaryFrame = {
+                        id: service + '/' + method + '#0',
+                        index: 0,
+                        data: result.response,
+                        discriminator: (result && typeof result === 'object' && result.discriminator) || null,
+                        interpretations: (result && typeof result === 'object' && Array.isArray(result.interpretations))
+                            ? result.interpretations
+                            : null,
+                        _clientReceivedAtMs: Date.now()
+                    };
+                    window.__bowireExtFramework.dispatchStreamMessage(unaryFrame);
+                }
                 var reqSize = new Blob([JSON.stringify({ service: service, method: method, messages: messages })]).size;
                 statusInfo = {
                     status: result.status,

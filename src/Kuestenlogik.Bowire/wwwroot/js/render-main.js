@@ -2789,6 +2789,131 @@
     }
 
     /**
+     * Unary counterpart to renderStreamingPaneWithWidgets. The unary
+     * response pane defaults to "JSON tree only" (no widgets), but
+     * when the response shape carries annotations a registered viewer
+     * cares about — TacticalAPI's GetSituationObjects returns lat/lon
+     * pairs, REST GETs against geo APIs do the same — we want the
+     * same split-pane affordance the streaming path already gives
+     * users: JSON tree on the left, the widget (map) on the right.
+     *
+     * Caller passes the already-built response output element so we
+     * don't reproduce its GraphQL-errors banner / MCP-content
+     * banner logic here — only the wrapping changes. Returns the
+     * `outputElement` unchanged when:
+     *   • the extension framework / layout primitive isn't available
+     *   • no registered extension claims the active method's kind
+     *   • the user has the per-method layout set to `tab` (no split)
+     *
+     * The unary response was already dispatched as a single synthetic
+     * frame from api.js, so the framework's replay-cache covers the
+     * mount race (widget attaches after the dispatch fired — same
+     * trick the streaming path uses).
+     */
+    function renderResponseWithWidgets(outputElement) {
+        var fw = window.__bowireExtFramework;
+        var layout = window.__bowireLayout;
+        if (!fw || !layout || !selectedService || !selectedMethod) {
+            disposeWidgetMounts();
+            return outputElement;
+        }
+
+        var splitKindExt = fw.preferredExtension('coordinate.wgs84');
+        var saved = splitKindExt
+            ? layout.loadWidgetLayout(selectedService.name, selectedMethod.name, splitKindExt.id, splitKindExt.kind)
+            : null;
+        var splitActive = !!(splitKindExt
+            && saved
+            && (saved.mode === 'split-horizontal' || saved.mode === 'split-vertical'));
+
+        if (!splitActive) {
+            // Single-pane: the response output keeps its full width.
+            // Append a placeholder slot AFTER the output so the
+            // framework can mount placeholder cards for unregistered
+            // kinds (Phase 3-R extension-discovery hint). If nothing
+            // mounts the slot folds away.
+            disposeWidgetMounts();
+            var wrapper = el('div', { className: 'bowire-unary-with-placeholders' });
+            wrapper.appendChild(outputElement);
+            var placeholderSlot = el('div', { className: 'bowire-placeholder-slot' });
+            wrapper.appendChild(placeholderSlot);
+            var cleanup = fw.mountWidgetsForMethod(
+                selectedService.name, selectedMethod.name, placeholderSlot);
+            if (typeof cleanup === 'function') {
+                bowireWidgetUnmounts.push(cleanup);
+            }
+            return wrapper;
+        }
+
+        // Split mode — same construction as the streaming pane: JSON
+        // output on the left, widget pane on the right, sharing a
+        // resizable divider. The widget pane keeps its own header so
+        // the maximize toggle and layout cycle work the same way
+        // they do in streaming mode.
+        disposeWidgetMounts();
+        var host = el('div', { className: 'bowire-widget-split-host' });
+        var pane = layout.createSplitPane(host, {
+            orientation: saved.mode === 'split-vertical' ? 'vertical' : 'horizontal',
+            initialRatio: typeof saved.ratio === 'number' ? saved.ratio : 0.5,
+            storageKey: 'bowire_widget_split_ratio:' + splitKindExt.id
+        });
+        bowireWidgetUnmounts.push(function () { pane.dispose(); });
+
+        pane.firstSlot.appendChild(outputElement);
+
+        var widgetPane = el('div', {
+            className: 'bowire-widget-pane' + (widgetPaneMaximized ? ' is-maximized' : '')
+        });
+        var widgetHeader = el('div', { className: 'bowire-widget-pane-header' },
+            el('span', {
+                className: 'bowire-widget-pane-header-title',
+                textContent: (splitKindExt.viewer && splitKindExt.viewer.label) || splitKindExt.kind
+            }),
+            el('button', {
+                className: 'bowire-widget-pane-maximize',
+                title: widgetPaneMaximized
+                    ? 'Restore widget to its slot (Esc)'
+                    : 'Maximize widget to fill the window',
+                onClick: function () {
+                    widgetPaneMaximized = !widgetPaneMaximized;
+                    var p = document.querySelector('.bowire-widget-pane');
+                    if (p) p.classList.toggle('is-maximized', widgetPaneMaximized);
+                    this.innerHTML = bowireLayoutIcon(widgetPaneMaximized ? 'minimize' : 'maximize');
+                    this.title = widgetPaneMaximized
+                        ? 'Restore widget to its slot (Esc)'
+                        : 'Maximize widget to fill the window';
+                },
+                innerHTML: bowireLayoutIcon(widgetPaneMaximized ? 'minimize' : 'maximize')
+            }),
+            el('button', {
+                className: 'bowire-widget-layout-toggle',
+                title: 'Toggle layout (Tab ↔ Split)',
+                onClick: function () {
+                    var nextMode = layout.cycleLayoutMode(saved.mode, splitKindExt.kind);
+                    layout.saveWidgetLayout(selectedService.name, selectedMethod.name, splitKindExt.id, {
+                        mode: nextMode,
+                        ratio: pane.getRatio()
+                    });
+                    render();
+                },
+                innerHTML: bowireLayoutIcon('layout-split')
+            })
+        );
+        var widgetBody = el('div', { className: 'bowire-widget-pane-body' });
+        widgetPane.appendChild(widgetHeader);
+        widgetPane.appendChild(widgetBody);
+        pane.secondSlot.appendChild(widgetPane);
+
+        var widgetCleanup = fw.mountWidgetsForMethod(
+            selectedService.name, selectedMethod.name, widgetBody);
+        if (typeof widgetCleanup === 'function') {
+            bowireWidgetUnmounts.push(widgetCleanup);
+        }
+
+        return host;
+    }
+
+    /**
      * Render the small toolbar button that appears in the streaming
      * pane's toolbar when the active method has a split-eligible
      * widget AND the user has currently opted into `tab` mode (no
@@ -3459,7 +3584,18 @@
                 output.innerHTML = responseViewMode === 'tree'
                     ? renderJsonTree(responseData)
                     : highlightJsonInteractive(responseData);
-                respBody.appendChild(output);
+                // Wrap the response output in a split-pane host when a
+                // registered viewer claims the active method's kind
+                // (e.g. MapLibre on coordinate.wgs84). For unary RPCs
+                // whose response carries lat/lon — TacticalAPI's
+                // GetSituationObjects, REST GETs against geo APIs —
+                // this surfaces the same map widget the streaming
+                // path already mounted, without forcing the user to
+                // switch to a streaming method. Falls through to the
+                // single-pane `output` element on the standard path
+                // (no registered widget / per-method layout = tab),
+                // so non-geo responses look exactly as before.
+                respBody.appendChild(renderResponseWithWidgets(output));
 
                 // Phase 4 — mount per-leaf semantic badges + right-click
                 // handlers. The decoration runs asynchronously (it
