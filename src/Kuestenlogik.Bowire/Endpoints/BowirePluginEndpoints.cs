@@ -87,6 +87,26 @@ internal static class BowirePluginEndpoints
             }
         }).ExcludeFromDescription();
 
+        // Plugin load health — surfaces the PluginLoadResult set the
+        // loader produced at startup. Operators looking at "0 services"
+        // can hit this endpoint to see WHY a sibling plugin failed
+        // (contract major mismatch after a tool update, manifest
+        // missing, etc.) instead of debugging in the dark. Empty
+        // array before the first LoadPlugins call (no plugin dir
+        // configured / no plugins installed).
+        endpoints.MapGet($"{basePath}/api/plugins/health", () =>
+        {
+            var latest = PluginLoading.PluginLoadResultStore.Latest;
+            var entries = latest.Select(r => new
+            {
+                packageId = r.PackageId,
+                directory = r.DirectoryPath,
+                status = r.Status.ToString(),
+                errorMessage = r.ErrorMessage,
+            }).ToArray();
+            return Results.Ok(new { plugins = entries });
+        }).ExcludeFromDescription();
+
         // List the protocol ids currently registered in the
         // BowireProtocolRegistry — what the in-process replay path
         // can actually dispatch to. Distinct from /api/plugins (which

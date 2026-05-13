@@ -720,7 +720,12 @@ internal static class PluginManager
     public static IReadOnlyList<PluginLoadResult> LoadPlugins(string? pluginDir = null)
     {
         var dir = ResolvePluginDir(pluginDir);
-        if (!Directory.Exists(dir)) return Array.Empty<PluginLoadResult>();
+        if (!Directory.Exists(dir))
+        {
+            s_lastLoadResults = Array.Empty<PluginLoadResult>();
+            PluginLoadResultStore.Publish(s_lastLoadResults);
+            return s_lastLoadResults;
+        }
 
         var results = new List<PluginLoadResult>();
         foreach (var subDir in Directory.GetDirectories(dir))
@@ -813,13 +818,36 @@ internal static class PluginManager
                     $"LoadFromAssemblyPath failed for {manifest}: {ex.Message}"));
             }
         }
-        return results;
+        s_lastLoadResults = results.AsReadOnly();
+        PluginLoadResultStore.Publish(s_lastLoadResults);
+        return s_lastLoadResults;
     }
 
     // Tracks plugin contexts created by LoadPlugins so extension-point
     // callers (mock emitters, future replayers, ...) can enumerate
     // them without re-walking the plugin directory.
     private static readonly List<BowirePluginLoadContext> s_pluginContexts = new();
+
+    // Most recent PluginLoadResult set the loader produced. Static so
+    // the host's /api/plugins/health endpoint can surface it without
+    // having to re-walk the plugin directory or call LoadPlugins again
+    // (a second LoadPlugins would no-op on subdirs already in
+    // s_loadedSubdirs and lose every "not loaded" reason). Lock-free
+    // reads: assignment is reference-only, the published list is
+    // immutable (`Array.Empty<>` on init, `List<>.AsReadOnly()` after
+    // a load run).
+    private static IReadOnlyList<PluginLoadResult> s_lastLoadResults =
+        Array.Empty<PluginLoadResult>();
+
+    /// <summary>
+    /// The <see cref="PluginLoadResult"/> set produced by the most
+    /// recent <see cref="LoadPlugins"/> call (every plugin in the
+    /// configured plugin directory, including the ones that failed to
+    /// load). The host's <c>/api/plugins/health</c> endpoint reads
+    /// this so a Workbench-side panel can flag broken installs without
+    /// re-running the load. Empty array before the first LoadPlugins.
+    /// </summary>
+    public static IReadOnlyList<PluginLoadResult> LastLoadResults => s_lastLoadResults;
 
     // Subdirectory paths LoadPlugins has already processed. Guards against
     // double-loading when both Program.cs and BrowserUiHost run the loader.

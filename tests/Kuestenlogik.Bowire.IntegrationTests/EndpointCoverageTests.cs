@@ -210,6 +210,24 @@ public sealed class EndpointCoverageTests : IClassFixture<BowireTestFixture>
     }
 
     [Fact]
+    public async Task Plugins_Health_ReturnsEnvelopeWithPluginsArray()
+    {
+        // /api/plugins/health surfaces the PluginLoadResult set the
+        // loader produced at startup. The integration fixture loads
+        // its plugins via the project-reference chain (no plugin-dir
+        // walk), so the latest-results store starts empty — confirm
+        // the endpoint shape stays correct in that no-op state.
+        var resp = await _client.GetAsync(
+            new Uri("/bowire/api/plugins/health", UriKind.Relative),
+            TestContext.Current.CancellationToken);
+
+        Assert.Equal(HttpStatusCode.OK, resp.StatusCode);
+        var json = await resp.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
+        using var doc = JsonDocument.Parse(json);
+        Assert.Equal(JsonValueKind.Array, doc.RootElement.GetProperty("plugins").ValueKind);
+    }
+
+    [Fact]
     public async Task Plugins_Protocols_ReturnsLoadedAndCatalog()
     {
         var resp = await _client.GetAsync(
