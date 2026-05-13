@@ -149,54 +149,104 @@ public sealed class MapLibreOfflineLockdownTests
     }
 
     [Fact]
-    public void Tile_Url_Style_Has_No_Glyphs_Or_Sprite_Url()
+    public void Raster_Tile_Style_Has_No_Glyphs_Or_Sprite_Url()
     {
-        // The tile-URL branch (Bowire:MapTileUrl set) also stays free of
-        // glyphs / sprite because the workbench's pin rendering doesn't
-        // use either. The tile fetch itself is the only network egress
-        // — adding a glyph or sprite source would silently widen the
-        // egress surface. Find the bowireMapViewerMount function and
-        // check the tile-URL branch.
+        // Raster-tile branch (operator opts into osm / satellite /
+        // arbitrary tile URL) stays free of glyphs / sprite. The tile
+        // fetch itself is the explicit egress the operator opted into;
+        // adding a glyph or sprite source would silently widen the
+        // surface. Locate the synthetic raster style the widget builds
+        // for any `basemap.kind === 'raster'` spec and pin the absence.
         var stripped = StripJsComments(WidgetBundle.Value);
-        // Find the section where `if (tileUrl) { ... } else { ... }` is.
+        // The raster-style construction is the
+        // `basemap.kind === 'raster'` branch. Match from that condition
+        // through the next `else`.
         var pattern = new Regex(
-            @"if\s*\(\s*tileUrl\s*\)\s*\{[\s\S]*?else\s*\{",
+            @"basemap\.kind\s*===\s*'raster'[\s\S]*?else",
             RegexOptions.Singleline);
         var match = pattern.Match(stripped);
-        Assert.True(match.Success, "tileUrl branch not found in widget bundle");
+        Assert.True(match.Success, "raster-style branch not found in widget bundle");
         var branch = match.Value;
         Assert.False(
             branch.Contains("glyphs", StringComparison.Ordinal),
-            "Tile-URL style branch declares `glyphs` — would widen offline-mode egress.");
+            "Raster-style branch declares `glyphs` — would widen offline-mode egress.");
         Assert.False(
             branch.Contains("sprite", StringComparison.Ordinal),
-            "Tile-URL style branch declares `sprite` — would widen offline-mode egress.");
+            "Raster-style branch declares `sprite` — would widen offline-mode egress.");
     }
 
+    /// <summary>
+    /// Opt-in basemap origins the widget intentionally references in
+    /// <see cref="Widget_Bundle_Has_No_Unknown_External_Origins"/>.
+    /// Each entry is a host that's only contacted when the operator
+    /// explicitly sets <c>Bowire:MapBasemap</c> to the matching alias
+    /// (or passes a custom tile/style URL); the default path stays on
+    /// the offline blank style. Update this list when a new alias
+    /// lands — the test reads from it directly so a bare URL literal
+    /// in the bundle without a matching allowlist entry fails CI.
+    /// </summary>
+    private static readonly string[] AllowedExternalHosts =
+    {
+        // OSM raster tiles + attribution link, alias: 'osm'
+        "tile.openstreetmap.org",
+        "www.openstreetmap.org",
+        // ESRI World Imagery satellite mosaic + attribution link,
+        // alias: 'satellite'
+        "server.arcgisonline.com",
+        "www.esri.com",
+        // MapLibre demotiles default vector style, alias: 'demotiles'
+        // (also the implicit default when no basemap is configured)
+        "demotiles.maplibre.org",
+        // W3C XML namespace constants for inline SVG icons (MIL-2525C
+        // affinity sprite frames). The string is a namespace identifier
+        // baked into every well-formed SVG document — never fetched by
+        // browsers, just compared as a literal — but the URL regex
+        // can't tell that apart from a tile URL without context, so the
+        // allowlist names it explicitly.
+        "www.w3.org",
+    };
+
     [Fact]
-    public void Widget_Bundle_Contains_No_External_Origin_References()
+    public void Widget_Bundle_Has_No_Unknown_External_Origins()
     {
         // The widget bundle is a self-contained JS file that gets
         // served from `/api/ui/extensions/kuestenlogik.maplibre/map.js`.
-        // It must NOT reach for any external http(s):// origin at
-        // runtime; the asset endpoints (baseUrl prefix + path) are all
-        // same-origin by construction.
+        // The default (no-config) path renders against the bundled
+        // demotiles style — the only origin reached without operator
+        // opt-in. Named aliases (`osm` / `satellite`) add a small,
+        // documented set of additional opt-in hosts. ANY external URL
+        // in the bundle that doesn't match the allowlist above is a
+        // regression: it would mean the widget started reaching for a
+        // host the operator never explicitly enabled.
         //
         // Comments and JSDoc references are excluded by stripping line
-        // and block comments before the regex pass. Empty-string URLs
-        // like attribution: '' are fine.
-        var bundle = WidgetBundle.Value;
-        var stripped = StripJsComments(bundle);
+        // and block comments before the regex pass.
+        var stripped = StripJsComments(WidgetBundle.Value);
 
-        // Match http:// or https:// followed by anything non-whitespace,
-        // not inside a string-templated path segment like '{...}'. A
-        // matched URL whose first character after the scheme is a
-        // placeholder ({fontstack}, {z}, {x}) belongs to a style
-        // template — but Phase 3-R removed every such template, so any
-        // hit is a regression.
         var urlPattern = new Regex(@"https?://[^\s'""<>]+", RegexOptions.Multiline);
         var hits = urlPattern.Matches(stripped);
-        Assert.Empty(hits);
+
+        var unknownOrigins = new List<string>();
+        foreach (Match hit in hits)
+        {
+            var url = hit.Value;
+            // Trim any trailing punctuation accidentally caught.
+            url = url.TrimEnd(',', ';', ')', ']', '}', '.');
+            // Extract the host portion (between `://` and the next `/`).
+            var schemeEnd = url.IndexOf("://", StringComparison.Ordinal);
+            if (schemeEnd < 0) { unknownOrigins.Add(url); continue; }
+            var hostStart = schemeEnd + 3;
+            var hostEnd = url.IndexOf('/', hostStart);
+            var host = hostEnd < 0
+                ? url.Substring(hostStart)
+                : url.Substring(hostStart, hostEnd - hostStart);
+            if (!AllowedExternalHosts.Contains(host, StringComparer.Ordinal))
+            {
+                unknownOrigins.Add(url);
+            }
+        }
+
+        Assert.Empty(unknownOrigins);
     }
 
     [Fact]
@@ -217,24 +267,58 @@ public sealed class MapLibreOfflineLockdownTests
     }
 
     [Fact]
-    public void Widget_Pins_Use_Circle_Layer_Not_Symbol_With_Text_Field()
+    public void Widget_Pins_Do_Not_Require_Glyph_Source()
     {
         // The structural shape that keeps the offline guarantee
-        // unbreakable: pin rendering uses MapLibre's `circle` layer
-        // type, never a `symbol` layer with `text-field` (which would
-        // demand a glyphs source) or `icon-image` (which would demand
-        // a sprite atlas). Pin both sides — `type: 'circle'` present,
-        // and no `text-field` or `icon-image` outside of documentation
-        // comments.
+        // unbreakable: pin rendering may use a `symbol` layer (the
+        // MIL-2525C affinity icons sit on one), but the bundle MUST
+        // NOT use `text-field` — that single property is what forces
+        // MapLibre to fetch glyph PBFs from the style's `glyphs` URL.
+        // Icon-image is fine here because the widget registers its
+        // sprite frames at runtime via `map.addImage` with inline SVG
+        // data URLs (see bowireRegisterMapIcon + BOWIRE_MAP_AFFINITY_ICONS).
+        // That path is the documented MapLibre escape hatch for
+        // sprite-atlas-less symbol layers — addImage takes an
+        // HTMLImageElement directly, the style's `sprite` URL stays
+        // absent, and the renderer never reaches for an atlas.
         var bundle = WidgetBundle.Value;
+        // The selection-halo layer keeps the circle path alive, so
+        // the `circle` layer type still has to be present in the
+        // bundle alongside the new symbol layer.
         Assert.Contains("type: 'circle'", bundle, StringComparison.Ordinal);
+        Assert.Contains("type: 'symbol'", bundle, StringComparison.Ordinal);
         var stripped = StripJsComments(bundle);
         Assert.False(
             stripped.Contains("text-field", StringComparison.Ordinal),
             "Widget references `text-field` outside comments — would require a glyph source.");
+    }
+
+    [Fact]
+    public void Widget_Symbol_Layer_Loads_Icons_From_Inline_Svg_Only()
+    {
+        // The icon-image expression on the symbol layer must resolve
+        // every sprite name through `map.addImage`-registered inline
+        // SVGs (data URLs) — not from a remote sprite atlas URL on the
+        // style. Pin BOTH sides: (1) the icon-image expression names
+        // the documented `bowire-affinity-*` sprite frames, and (2)
+        // the bundle declares zero `sprite:` URL fields. Together,
+        // these keep the symbol-layer addition from quietly leaking
+        // egress to a sprite atlas host.
+        var stripped = StripJsComments(WidgetBundle.Value);
+        Assert.Contains("'bowire-affinity-friend'", stripped, StringComparison.Ordinal);
+        Assert.Contains("'bowire-affinity-hostile'", stripped, StringComparison.Ordinal);
+        Assert.Contains("'bowire-affinity-neutral'", stripped, StringComparison.Ordinal);
+        Assert.Contains("'bowire-affinity-unknown'", stripped, StringComparison.Ordinal);
+        // Self-built style objects must not declare a `sprite:` URL.
+        // `bowireMapBlankStyle` and the raster-style branch are already
+        // pinned for `sprite` absence individually; this is the
+        // bundle-wide net.
+        var spriteUrlPattern = new Regex(
+            @"sprite\s*:\s*['""]https?://",
+            RegexOptions.Singleline);
         Assert.False(
-            stripped.Contains("icon-image", StringComparison.Ordinal),
-            "Widget references `icon-image` outside comments — would require a sprite atlas.");
+            spriteUrlPattern.IsMatch(stripped),
+            "Widget bundle declares a `sprite:` URL field — addImage path should be the only sprite source.");
     }
 
     /// <summary>

@@ -234,6 +234,15 @@
      * blue, FirePdu red) — same scheme the ADR sketches under "Layer
      * behaviour for mixed discriminators". For v1.3 we cycle a small
      * palette deterministically; explicit colour overrides land later.
+     *
+     * Note: when a frame carries a MIL-2525C SIDC the symbol layer
+     * (below) overrides the per-discriminator colour with the
+     * affinity-coloured tactical icon (Friend cyan square / Hostile red
+     * diamond / Neutral green square / Unknown yellow circle). The
+     * discriminator palette stays in place as a fallback for frames
+     * that lack a SIDC — including the WGS84 detector's bread-and-butter
+     * non-military shapes (GPS traces, weather buoys, AIS without
+     * symbol code).
      */
     var BOWIRE_MAP_PALETTE = [
         '#4f46e5', '#dc2626', '#16a34a', '#d97706',
@@ -245,6 +254,210 @@
             store[key] = BOWIRE_MAP_PALETTE[Object.keys(store).length % BOWIRE_MAP_PALETTE.length];
         }
         return store[key];
+    }
+
+    /**
+     * MIL-2525C / APP-6 affinity icons. Rendered as inline SVG and
+     * uploaded to the MapLibre sprite atlas via `map.addImage` on load.
+     * Four shapes covering the standard-identity space — the same four
+     * NATO planners draw on paper maps:
+     *
+     *   - Friend    → cyan-blue rectangle (sea-surface vessel framing
+     *                 in MIL-STD-2525C Appendix A is a rectangle for
+     *                 friend, with the affinity carried by the cyan
+     *                 fill colour).
+     *   - Hostile   → red diamond (rotated square per the affinity
+     *                 chart; reads as "threat" at a glance against
+     *                 satellite imagery).
+     *   - Neutral   → green square (NATO neutral colour, square outline
+     *                 for sea-surface objects).
+     *   - Unknown   → yellow filled circle with question mark; reserved
+     *                 for affinity P/U/A/J/K/etc. when no clean shape
+     *                 mapping applies.
+     *
+     * White stroke and a deliberately high-contrast palette so the
+     * icons stay legible on both OSM and the ESRI satellite basemap.
+     * 32x32 viewBox uploads at MapLibre's pixel-ratio-aware default
+     * resolution — same approach Mapbox's own MIL-2525 demos use.
+     */
+    var BOWIRE_MAP_AFFINITY_ICONS = {
+        friend:
+            '<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">' +
+              '<rect x="5" y="10" width="22" height="13" rx="1" ry="1"' +
+              ' fill="#22d3ee" stroke="#ffffff" stroke-width="2"/>' +
+            '</svg>',
+        hostile:
+            '<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">' +
+              '<polygon points="16,3 29,16 16,29 3,16"' +
+              ' fill="#dc2626" stroke="#ffffff" stroke-width="2"/>' +
+            '</svg>',
+        neutral:
+            '<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">' +
+              '<rect x="6" y="6" width="20" height="20"' +
+              ' fill="#16a34a" stroke="#ffffff" stroke-width="2"/>' +
+            '</svg>',
+        unknown:
+            '<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">' +
+              '<circle cx="16" cy="16" r="11"' +
+              ' fill="#facc15" stroke="#ffffff" stroke-width="2"/>' +
+              '<text x="16" y="22" font-family="Arial, Helvetica, sans-serif"' +
+              ' font-size="16" font-weight="bold" fill="#1c1917"' +
+              ' text-anchor="middle">?</text>' +
+            '</svg>'
+    };
+
+    /**
+     * Load an SVG string into the MapLibre sprite atlas under `name`.
+     * MapLibre's `addImage` accepts HTMLImageElement, so we route the
+     * SVG through a data URL → Image() → addImage path. The promise
+     * resolves once the image has been registered (or rejects if the
+     * SVG fails to decode).
+     */
+    function bowireRegisterMapIcon(map, name, svg) {
+        return new Promise(function (resolve, reject) {
+            // Bail early if the image is already present (re-mount path).
+            if (map.hasImage(name)) { resolve(); return; }
+            var img = new Image(32, 32);
+            img.onload = function () {
+                try {
+                    if (!map.hasImage(name)) map.addImage(name, img);
+                    resolve();
+                } catch (e) { reject(e); }
+            };
+            img.onerror = function () {
+                reject(new Error('Failed to decode SVG for icon ' + name));
+            };
+            // Inline data URL avoids hitting the network and stays
+            // immune to CORS issues with cross-origin sprite hosts.
+            img.src = 'data:image/svg+xml;charset=utf-8,'
+                    + encodeURIComponent(svg);
+        });
+    }
+
+    /**
+     * MIL-2525C SIDC pattern. 15 characters, first character is a
+     * coding-scheme letter, second character is the standard identity
+     * (the bit we actually use for affinity colouring), the remaining
+     * 13 are battle-dimension/function-id/etc. Standard identity uses
+     * the 14-letter set listed in MIL-STD-2525C Appendix A; the regex
+     * accepts both the live affinities (F/H/N/U/...) and the wildcard
+     * `-`/`*` fillers seeded examples and real coalition feeds use.
+     */
+    var BOWIRE_SIDC_RE = /^[A-Z][PUAFNSHGWMDLJK\-\*][A-Z\-\*][A-Z\-\*][PAUFM\-\*][A-Z\-\*]{10}$/;
+
+    /**
+     * Recursive depth-first scan for the first string in `value` that
+     * matches the SIDC pattern. Used as the per-entity lookup once
+     * `findSidcForPair` has narrowed `value` down to the entity root —
+     * the standard TacticalAPI shape buries the SIDC at
+     * `symbol.symbolIdentifier.content.stringIdentifier`, but the scan
+     * stays schema-agnostic so symbol catalogues that nest the
+     * identifier differently still light up.
+     */
+    function bowireFindSidcInValue(value) {
+        if (value == null) return null;
+        if (typeof value === 'string') {
+            return BOWIRE_SIDC_RE.test(value) ? value : null;
+        }
+        if (Array.isArray(value)) {
+            for (var i = 0; i < value.length; i++) {
+                var f = bowireFindSidcInValue(value[i]);
+                if (f) return f;
+            }
+            return null;
+        }
+        if (typeof value === 'object') {
+            for (var k in value) {
+                if (Object.prototype.hasOwnProperty.call(value, k)) {
+                    var f2 = bowireFindSidcInValue(value[k]);
+                    if (f2) return f2;
+                }
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Strip the trailing path segment (object key or array index) off
+     * a JSONPath-ish string. Used by `findSidcForPair` to walk upward
+     * from the lat/lon parent toward the entity root.
+     */
+    function bowireDropLastSegment(path) {
+        return path.replace(/\.[^.\[\]]+$|\[\d+\]$/, '');
+    }
+
+    /**
+     * Longest common prefix of two JSONPath strings, computed in
+     * structural units (segments separated by `.` or `[N]`). For
+     * `$.situationObjects[0].symbol.location.content.point.geoPoint.latitudeCoordinate`
+     * + the same path with `longitudeCoordinate` at the tail, this
+     * returns `$.situationObjects[0].symbol.location.content.point.geoPoint`
+     * — i.e. the lat/lon parent (`geoPoint`).
+     */
+    function bowireCommonPathPrefix(a, b) {
+        var min = Math.min(a.length, b.length);
+        var lastSep = 0;
+        for (var i = 0; i < min; i++) {
+            if (a[i] !== b[i]) break;
+            if (a[i] === '.' || a[i] === '[' || a[i] === ']') lastSep = i;
+        }
+        if (lastSep === 0) {
+            // No structural separator matched — bail to the leading
+            // root marker. Caller resolves '$' as the whole root which
+            // still gives DFS scan a chance to find the SIDC.
+            return '$';
+        }
+        return a.substring(0, lastSep);
+    }
+
+    /**
+     * Per-pair SIDC lookup. Walks UP from the lat/lon common parent,
+     * level-by-level, doing a depth-first SIDC scan at each level.
+     * Stops at the first ancestor that yields a SIDC — that's the
+     * entity root for this coord pair. Walking UP rather than
+     * scanning the whole frame matters for multi-pairing responses
+     * (e.g. `situationObjects[N]`): a frame-wide DFS would always
+     * return entity[0]'s SIDC regardless of which entity the coord
+     * belonged to.
+     */
+    function bowireFindSidcForPair(parsedRoot, latPath, lonPath) {
+        if (parsedRoot == null) return null;
+        var common = bowireCommonPathPrefix(latPath, lonPath);
+        var probe = common;
+        var safety = 16;
+        while (safety-- > 0 && probe && probe !== '') {
+            var node = bowireResolveJsonPath(parsedRoot, probe);
+            if (node != null) {
+                var hit = bowireFindSidcInValue(node);
+                if (hit) return hit;
+            }
+            if (probe === '$') break;
+            var next = bowireDropLastSegment(probe);
+            if (next === probe) break;
+            probe = next || '$';
+        }
+        return null;
+    }
+
+    /**
+     * MIL-2525C standard-identity character (position 2 of the SIDC) →
+     * affinity bucket. Buckets line up with the four icons the
+     * symbol layer paints:
+     *
+     *   F (Friend), A (AssumedFriend), M (ExerciseFriend),
+     *   W (ExerciseAssumedFriend)                              → friend
+     *   H (Hostile), S (Suspect), L (ExerciseHostile)          → hostile
+     *   N (Neutral), D (ExerciseNeutral)                       → neutral
+     *   P (Pending), U (Unknown), G (ExercisePending),
+     *   J (Joker), K (Faker), other/blank                      → unknown
+     */
+    function bowireSidcAffinity(sidc) {
+        if (!sidc || sidc.length < 2) return 'unknown';
+        var c = sidc.charAt(1).toUpperCase();
+        if (c === 'F' || c === 'A' || c === 'M' || c === 'W') return 'friend';
+        if (c === 'H' || c === 'S' || c === 'L') return 'hostile';
+        if (c === 'N' || c === 'D') return 'neutral';
+        return 'unknown';
     }
 
     /**
@@ -366,34 +579,93 @@
             return function () {};
         }
 
+        // Register the MIL-2525C affinity icons in the sprite atlas
+        // before the symbol layer references them. addLayer is forgiving
+        // when an icon-image points at a not-yet-registered name, but
+        // the first frame the consumer loop hands us would silently
+        // render the layer's `icon-image` fallback ('unknown') for
+        // every pin until the icons land — racy and ugly. Await the
+        // four registrations up front and the symbol layer always has
+        // its sprites ready when addPin fires.
+        try {
+            await Promise.all([
+                bowireRegisterMapIcon(map, 'bowire-affinity-friend',
+                    BOWIRE_MAP_AFFINITY_ICONS.friend),
+                bowireRegisterMapIcon(map, 'bowire-affinity-hostile',
+                    BOWIRE_MAP_AFFINITY_ICONS.hostile),
+                bowireRegisterMapIcon(map, 'bowire-affinity-neutral',
+                    BOWIRE_MAP_AFFINITY_ICONS.neutral),
+                bowireRegisterMapIcon(map, 'bowire-affinity-unknown',
+                    BOWIRE_MAP_AFFINITY_ICONS.unknown)
+            ]);
+        } catch (e) {
+            // SVG decode failure leaves the layer falling back to its
+            // 'unknown' default for every pin — degraded but not broken.
+            console.warn('[bowire-map] failed to register affinity icons:', e);
+        }
+        if (disposed) {
+            try { map.remove(); } catch {}
+            return function () {};
+        }
+
         map.addSource('bowire-points', { type: 'geojson', data: pointsSource });
-        // Data-driven styling: the `selected` feature property switches
-        // the radius + stroke colour without rebuilding the layer.
-        // Selection sync (Phase 3.1) flips `selected` on per-feature
-        // through a single `setData(...)` call — no layer thrashing on
-        // every Ctrl-click. See `applySelectionRestyle` below.
+
+        // Selection halo — a circle layer sitting UNDER the symbol
+        // layer that paints an accent-coloured ring around any pin
+        // with selected === 'yes'. Pulled out of the old combined
+        // circle layer so the affinity icon on top stays unobscured
+        // by the halo, and so unselected pins are visually
+        // affinity-driven (no leftover circle artefact). circle-opacity
+        // is gated on the selection state so the halo doesn't show
+        // around unselected pins at all.
         map.addLayer({
-            id: 'bowire-points-layer',
+            id: 'bowire-points-halo',
             type: 'circle',
             source: 'bowire-points',
             paint: {
-                'circle-radius': [
+                'circle-radius': 14,
+                'circle-color': 'rgba(0,0,0,0)',
+                'circle-stroke-width': 3,
+                'circle-stroke-color': (ctx.theme && ctx.theme.accent) || '#4f46e5',
+                'circle-opacity': 1,
+                'circle-stroke-opacity': [
                     'match', ['get', 'selected'],
-                    'yes', 9,
-                    /* default */ 6
+                    'yes', 0.95,
+                    /* default */ 0.0
+                ]
+            }
+        });
+
+        // Tactical symbology layer. The icon-image expression picks
+        // one of the four registered sprites (friend / hostile /
+        // neutral / unknown) based on the feature's `affinity`
+        // property, which extractCoords derived from the SIDC's
+        // standard-identity character (MIL-2525C Appendix A position
+        // 2). icon-size + icon-opacity carry the selection state so a
+        // selection event doesn't need a layer rebuild — same
+        // single-setData re-render path Phase 3.1's circle layer used.
+        map.addLayer({
+            id: 'bowire-points-layer',
+            type: 'symbol',
+            source: 'bowire-points',
+            layout: {
+                'icon-image': [
+                    'match', ['get', 'affinity'],
+                    'friend', 'bowire-affinity-friend',
+                    'hostile', 'bowire-affinity-hostile',
+                    'neutral', 'bowire-affinity-neutral',
+                    /* default */ 'bowire-affinity-unknown'
                 ],
-                'circle-color': ['get', 'color'],
-                'circle-stroke-width': [
+                'icon-size': [
                     'match', ['get', 'selected'],
-                    'yes', 2.5,
-                    /* default */ 1.5
+                    'yes', 1.2,
+                    /* default */ 0.85
                 ],
-                'circle-stroke-color': [
-                    'match', ['get', 'selected'],
-                    'yes', (ctx.theme && ctx.theme.accent) || '#4f46e5',
-                    /* default */ '#ffffff'
-                ],
-                'circle-opacity': [
+                'icon-allow-overlap': true,
+                'icon-ignore-placement': true
+            },
+            paint: {
+                'icon-opacity': [
                     'match', ['get', 'selected'],
                     'yes', 1.0,
                     'no-but-others-are', 0.55,
@@ -473,7 +745,21 @@
                     if (isFinite(lat) && isFinite(lon)
                         && lat >= -90 && lat <= 90
                         && lon >= -180 && lon <= 180) {
-                        out.push({ lat: lat, lon: lon });
+                        // Per-pair SIDC lookup. Walks UP from the lat/lon
+                        // common parent until the first ancestor whose
+                        // subtree contains a SIDC-shaped string — the
+                        // entity root for THIS coord pair. Non-tactical
+                        // frames (GPS traces, AIS without symbol code,
+                        // weather buoys) return null → affinity defaults
+                        // to 'unknown', which still renders as a yellow
+                        // circle icon so the pin remains visible.
+                        var sidc = bowireFindSidcForPair(
+                            parsedRoots[i], pair.lat, pair.lon);
+                        out.push({
+                            lat: lat, lon: lon,
+                            sidc: sidc,
+                            affinity: bowireSidcAffinity(sidc)
+                        });
                         break; // one root match per pair is enough
                     }
                 }
@@ -542,7 +828,14 @@
                         color: color,
                         discriminator: discriminator,
                         frameId: frameId,
-                        selected: selectedTag
+                        selected: selectedTag,
+                        // affinity drives the symbol-layer's
+                        // icon-image expression (friend/hostile/neutral/
+                        // unknown → matching sprite). sidc is stashed
+                        // for future per-pin tooltips and downstream
+                        // detectors that key off the full identifier.
+                        affinity: coord.affinity || 'unknown',
+                        sidc: coord.sidc || ''
                     }
                 });
                 // Extend the bounds for EVERY coord in this frame —
