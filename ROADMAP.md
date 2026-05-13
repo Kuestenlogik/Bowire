@@ -2,6 +2,16 @@
 
 ## In progress
 
+### MapBasemap config wired end-to-end (2026-05-13)
+
+The MapLibre widget has accepted `window.__BOWIRE_CONFIG__.mapBasemap` since the satellite-alias work landed, but the host never actually surfaced the value — the JSDoc and the lockdown tests both referenced a `Bowire:MapBasemap` config key that didn't exist as an actual option. Closed the loop:
+
+- [x] **`BowireOptions.MapBasemap`** — new optional string property accepting any of the documented shapes (`"osm"` / `"satellite"` / `"demotiles"` / `"none"`, a custom tile URL with `{z}/{x}/{y}` placeholders, or a `style.json` URL). Default `null` means "use the widget's built-in default" (demotiles) and ships zero implicit external egress.
+- [x] **`BowireHtmlGenerator` surfaces it to `__BOWIRE_CONFIG__.mapBasemap`** as a JSON string literal (`"satellite"`) or `null` when unset. Same `EscapeJs` helper protects custom URLs against quote/backslash injection that Title and Description already use.
+- [x] **`--map-basemap` CLI flag + `Bowire:MapBasemap` config key** — switch-mapping entry in `BowireConfiguration` so `--map-basemap satellite` lands at `Bowire:MapBasemap`, `BrowserUiOptions` binds it from there, and `BrowserUiHost` forwards to `BowireOptions.MapBasemap` next to the existing `LockServerUrl` / `DisabledPlugins` propagation. Help-text describes the four accepted shapes.
+- [x] **`capture-tacticalapi-screenshot.js` simplified** — replaced the `addInitScript` setter trap on `window.__BOWIRE_CONFIG__` with a plain `--map-basemap satellite` CLI flag. Same effect, no more browser-side JS hack, and the script now exercises the same config surface operators use in appsettings.json.
+- [x] **Tests** — three new `BowireHtmlGenerator` cases pin the default-null shape, the alias round-trip, and the EscapeJs-via-custom-URL escaping. 15 of the existing HTML-generator tests stay green alongside.
+
 ### Plugin loader — gold-standard ALC + pre-load contract check (2026-05-13)
 
 Plugins installed via `bowire plugin install` survive a tool update (they live under `~/.bowire/plugins/`, outside the dotnet-tool install dir), but until now an old plugin compiled against an older Bowire major version would silently disappear from `/api/protocols` — the host loaded its ALC, the plugin's `IBowireProtocol` bound to a contract type the host had since changed, the runtime's `IsAssignableFrom` check in `BowireProtocolRegistry.Discover` returned false, and the user got no signal beyond "0 services."

@@ -129,6 +129,10 @@ internal static class BrowserUiHost
             // Forward --disable-plugin / Bowire:DisabledPlugins through
             // so the protocol-registry assembly scan honours it.
             foreach (var p in ui.DisabledPlugins) options.DisabledPlugins.Add(p);
+            // Forward --map-basemap / Bowire:MapBasemap so the MapLibre
+            // widget picks the operator-chosen basemap (osm / satellite /
+            // demotiles / custom URL) instead of the bundled default.
+            options.MapBasemap = ui.MapBasemap;
         });
 
         if (ui.EnableMcpAdapter)

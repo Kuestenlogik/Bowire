@@ -169,6 +169,38 @@ public sealed class BowireOptions
     /// until the host adds its own detectors to the container.
     /// </summary>
     public bool DisableBuiltInDetectors { get; set; }
+
+    /// <summary>
+    /// Basemap that the MapLibre map widget paints under its pins. Read
+    /// from <c>Bowire:MapBasemap</c> when surfaced through configuration;
+    /// flows out to the JS bundle as <c>window.__BOWIRE_CONFIG__.mapBasemap</c>
+    /// for the widget's <c>bowireMapBasemapSpec()</c> to consume.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Three shapes the widget accepts:
+    /// </para>
+    /// <list type="bullet">
+    ///   <item><description>Named alias — <c>"osm"</c> (OpenStreetMap raster tiles),
+    ///   <c>"satellite"</c> (ESRI World Imagery), <c>"demotiles"</c> (MapLibre's
+    ///   free demo vector style — the implicit default when this is null),
+    ///   or <c>"none"</c> for the true offline blank-style fallback.</description></item>
+    ///   <item><description>Custom raster URL — anything with <c>{z}/{x}/{y}</c>
+    ///   placeholders is treated as a tile-server URL the widget wraps in its
+    ///   own raster style.</description></item>
+    ///   <item><description>Custom style URL — a URL ending in <c>.json</c> is
+    ///   treated as a MapLibre style.json that the map constructor consumes
+    ///   directly.</description></item>
+    /// </list>
+    /// <para>
+    /// Unset (the default) means "let the widget pick its built-in default" —
+    /// currently the demotiles vector style. The opt-in aliases each contact
+    /// exactly one documented external host (locked down by the
+    /// <c>MapLibreOfflineLockdownTests</c>); no implicit external egress
+    /// happens until an operator sets this key.
+    /// </para>
+    /// </remarks>
+    public string? MapBasemap { get; set; }
 }
 
 /// <summary>

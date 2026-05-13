@@ -166,6 +166,55 @@ public class BowireHtmlGeneratorRenderTests
     }
 
     [Fact]
+    public void GenerateIndexHtml_MapBasemap_Defaults_To_Null()
+    {
+        // Unset MapBasemap (the empty-state default) emits JSON null
+        // — the widget's bowireMapBasemapSpec() reads that as "use the
+        // built-in demotiles default" and pays no network egress until
+        // an operator opts in.
+        var options = new BowireOptions(); // MapBasemap null
+
+        var html = BowireHtmlGenerator.GenerateIndexHtml(options, BuildRequest());
+
+        Assert.Contains("mapBasemap: null", html, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void GenerateIndexHtml_MapBasemap_Named_Alias_Round_Trips()
+    {
+        // Operators set Bowire:MapBasemap=satellite (or any other alias)
+        // and the widget's spec resolver picks up the ESRI / OSM /
+        // demotiles config branch. The HTML carries it as a JSON
+        // string literal — quoting is the generator's job because the
+        // widget reads it as window.__BOWIRE_CONFIG__.mapBasemap.
+        var options = new BowireOptions { MapBasemap = "satellite" };
+
+        var html = BowireHtmlGenerator.GenerateIndexHtml(options, BuildRequest());
+
+        Assert.Contains("mapBasemap: \"satellite\"", html, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void GenerateIndexHtml_MapBasemap_Custom_Url_Round_Trips_With_Escaping()
+    {
+        // Custom tile URL with backslashes and quotes in it (paranoid —
+        // real URLs don't, but the JS-string escape needs to survive
+        // hostile input the same way Title does). Confirms the same
+        // EscapeJs helper that protects every other config string also
+        // protects MapBasemap.
+        var options = new BowireOptions
+        {
+            MapBasemap = "https://maps.example.com/\"odd\\path\"/{z}/{x}/{y}.png"
+        };
+
+        var html = BowireHtmlGenerator.GenerateIndexHtml(options, BuildRequest());
+
+        Assert.Contains(
+            "mapBasemap: \"https://maps.example.com/\\\"odd\\\\path\\\"/{z}/{x}/{y}.png\"",
+            html, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void GenerateIndexHtml_Carries_Assembly_Version_From_Manifest()
     {
         var options = new BowireOptions();

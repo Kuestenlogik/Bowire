@@ -89,6 +89,15 @@ internal sealed class BrowserUiOptions
     public string? PluginDir { get; set; }
 
     /// <summary>
+    /// Basemap alias / tile-URL / style-URL forwarded to the MapLibre
+    /// widget via <c>window.__BOWIRE_CONFIG__.mapBasemap</c>. Bound from
+    /// <c>Bowire:MapBasemap</c> in appsettings.json and overrideable via
+    /// the <c>--map-basemap</c> CLI flag. See
+    /// <see cref="BowireOptions.MapBasemap"/> for the accepted shapes.
+    /// </summary>
+    public string? MapBasemap { get; set; }
+
+    /// <summary>
     /// True when the user (or config) locked discovery to a fixed URL
     /// list — the UI disables the URL input in that case.
     /// </summary>

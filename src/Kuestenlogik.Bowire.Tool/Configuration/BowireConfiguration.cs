@@ -61,6 +61,7 @@ internal static class BowireConfiguration
         ["-u"] = "Bowire:ServerUrl",
         ["--no-browser"] = "Bowire:NoBrowser",
         ["--enable-mcp-adapter"] = "Bowire:EnableMcpAdapter",
+        ["--map-basemap"] = "Bowire:MapBasemap",
         // Subcommand-specific flags that also appear in the top-level
         // pass (because Program.cs builds the bootstrap config from the
         // whole arg list to resolve --plugin-dir). Bind them to

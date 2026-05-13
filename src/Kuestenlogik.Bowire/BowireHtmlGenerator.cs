@@ -165,6 +165,15 @@ internal static class BowireHtmlGenerator
         var desc = EscapeJs(options.Description);
         var serverUrl = options.ServerUrl is not null ? EscapeJs(options.ServerUrl) : "";
 
+        // MapBasemap surfaces to the JS bundle as either a JSON string
+        // ("\"satellite\"" / "\"osm\"" / a custom tile URL) or `null` when
+        // the operator hasn't configured one — the widget's
+        // bowireMapBasemapSpec() picks its built-in demotiles default
+        // when the field is null/absent, so this is the right empty-state.
+        var mapBasemap = string.IsNullOrEmpty(options.MapBasemap)
+            ? "null"
+            : "\"" + EscapeJs(options.MapBasemap) + "\"";
+
         // Build the serverUrls JSON array. Merge in the legacy single ServerUrl if
         // it isn't already in the list, so existing setups keep working unchanged.
         var allUrls = new List<string>(options.ServerUrls);
@@ -204,6 +213,7 @@ internal static class BowireHtmlGenerator
                            serverUrls: {{serverUrlsJson}},
                            lockServerUrl: {{lockServerUrl}},
                            embeddedMode: {{(options.Mode == BowireMode.Embedded ? "true" : "false")}},
+                           mapBasemap: {{mapBasemap}},
                            logoIcon: "{{FaviconDataUrl.Value}}",
                            logoIconMono: "{{FaviconMonoDataUrl.Value}}",
                            version: "{{AssemblyVersionString.Value}}",

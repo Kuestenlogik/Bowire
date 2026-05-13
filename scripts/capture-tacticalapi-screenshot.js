@@ -137,22 +137,6 @@ async function capture(theme) {
         colorScheme: theme === 'light' ? 'light' : 'dark',
     });
 
-    // Setter trap on window.__BOWIRE_CONFIG__ — the inline <script>
-    // tag the server emits assigns the object once on first parse;
-    // we intercept that assignment and fold in `mapBasemap: 'satellite'`
-    // so the widget reaches ESRI World Imagery instead of the offline
-    // demotiles default. No server-side host plumbing needed.
-    await ctx.addInitScript(() => {
-        let _config = null;
-        Object.defineProperty(window, '__BOWIRE_CONFIG__', {
-            configurable: true,
-            get() { return _config; },
-            set(v) {
-                _config = Object.assign({}, v || {}, { mapBasemap: 'satellite' });
-            }
-        });
-    });
-
     const page = await ctx.newPage();
     // Surface browser-side errors — fetchServices failures, MapLibre
     // load issues, the extension framework's "kind not registered"
@@ -268,7 +252,13 @@ async function capture(theme) {
              '--port', '5079',
              '--no-browser',
              '--plugin-dir', stagedPluginDir,
-             '--url', `tacticalapi@${SAMPLE_GRPC_URL}`],
+             '--url', `tacticalapi@${SAMPLE_GRPC_URL}`,
+             // --map-basemap satellite lands in __BOWIRE_CONFIG__.mapBasemap
+             // server-side via BowireOptions.MapBasemap. Replaces the
+             // earlier client-side setter-trap on window.__BOWIRE_CONFIG__
+             // — now the same config knob that an operator would use in
+             // appsettings.json drives the capture.
+             '--map-basemap', 'satellite'],
             {
                 stdio: ['ignore', 'inherit', 'inherit'],
                 shell: process.platform === 'win32',
