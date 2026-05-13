@@ -22,8 +22,15 @@
             <rect x="34" y="32" width="22" height="16" rx="1"/>
             <rect x="58" y="32" width="22" height="16" rx="1"/>
             <rect x="82" y="32" width="22" height="16" rx="1"/>
-            <!-- "Bowire" label inside the highlighted container -->
-            <text x="73" y="60" fill="var(--accent)" stroke="none" font-size="8" font-weight="700" font-family="var(--font-mono)">Bowire</text>
+            <!-- "Bowire" label inside the highlighted container.
+                 Centred via text-anchor=middle + the container's centre
+                 x=81 (container x=70..92, w=22), font-size shrunk to 6
+                 so the 6-character mono string fits the 22px box width —
+                 the original size-8 spilled ~10px into the next
+                 container. dominant-baseline=central pairs with y=56
+                 (container y=48..64) to keep the label vertically
+                 centred too. -->
+            <text x="81" y="56" text-anchor="middle" dominant-baseline="central" fill="var(--accent)" stroke="none" font-size="6" font-weight="700" font-family="var(--font-mono)">Bowire</text>
             <!-- Bridge tower at the stern -->
             <rect x="120" y="28" width="20" height="36" rx="1"/>
             <line x1="124" y1="36" x2="136" y2="36"/>
@@ -63,8 +70,13 @@ app.MapBowire();</code></pre>
             <path d="M88 48 L88 56 M96 48 L96 56 M88 48 L96 48"/>
             <!-- Windscreen -->
             <path d="M82 56 L94 44 L104 44 L104 56" />
-            <!-- "Bowire" label inside the hull -->
-            <text x="60" y="73" fill="var(--accent)" stroke="none" font-size="9" font-weight="700" font-family="var(--font-mono)">Bowire</text>
+            <!-- "Bowire" label inside the hull, centred along the
+                 hull's midline (x=90 sits between bow at x=150 and
+                 stern at x=30) and the lower-hull strip (y=64..80,
+                 centre y=72). Was previously left-anchored at x=60
+                 which left the label visibly off-centre against the
+                 symmetric hull silhouette. -->
+            <text x="90" y="72" text-anchor="middle" dominant-baseline="central" fill="var(--accent)" stroke="none" font-size="9" font-weight="700" font-family="var(--font-mono)">Bowire</text>
             <!-- Hull (pointed bow on the right, narrowing stern on the left) -->
             <path d="M30 64 L150 64 L138 80 L42 80 Z" fill="rgba(99, 102, 241, 0.10)"/>
             <!-- Speed lines off the stern -->
@@ -111,21 +123,30 @@ bowire --url https://staging.example.com</code></pre>
             <circle cx="84" cy="42" r="1.4" fill="var(--accent)" stroke="none"/>
             <circle cx="100" cy="42" r="1.4" fill="var(--accent)" stroke="none"/>
             <circle cx="116" cy="42" r="1.4" fill="var(--accent)" stroke="none"/>
-            <!-- Main deck with Bowire label -->
+            <!-- Main deck with Bowire label, centred on the deck's
+                 centre (x=26..148 → centre 87, y=48..64 → centre 56)
+                 instead of the previous manual x=74 offset that read
+                 as left-of-centre against the symmetric deck. -->
             <rect x="26" y="48" width="122" height="16" rx="1"/>
-            <text x="74" y="60" fill="var(--accent)" stroke="none" font-size="9" font-weight="700" font-family="var(--font-mono)">Bowire</text>
+            <text x="87" y="56" text-anchor="middle" dominant-baseline="central" fill="var(--accent)" stroke="none" font-size="9" font-weight="700" font-family="var(--font-mono)">Bowire</text>
             <!-- Lock glyph on the boarding gate -->
             <rect x="148" y="51" width="8" height="8" rx="1"/>
             <path d="M150 51 L150 49 a2 2 0 0 1 4 0 L154 51"/>
             <!-- Hull -->
             <path d="M14 64 L160 64 L150 80 L24 80 Z"/>
-            <!-- Port calls below the hull -->
+            <!-- Port calls below the hull. Centred labels via
+                 text-anchor=middle + each box's own centre x
+                 (38 / 80 / 122 — boxes start at x=22, 64, 106 with
+                 width 32). y=93 = box centre (y=88..98) with
+                 dominant-baseline=central. The earlier manual
+                 x-offsets (28 / 70 / 113) drifted progressively
+                 left of centre. -->
             <rect x="22" y="88" width="32" height="10" rx="1"/>
-            <text x="28" y="96" fill="var(--text-secondary)" stroke="none" font-size="6.5" font-family="var(--font-mono)">api.dev</text>
+            <text x="38" y="93" text-anchor="middle" dominant-baseline="central" fill="var(--text-secondary)" stroke="none" font-size="6.5" font-family="var(--font-mono)">api.dev</text>
             <rect x="64" y="88" width="32" height="10" rx="1"/>
-            <text x="70" y="96" fill="var(--text-secondary)" stroke="none" font-size="6.5" font-family="var(--font-mono)">api.stg</text>
+            <text x="80" y="93" text-anchor="middle" dominant-baseline="central" fill="var(--text-secondary)" stroke="none" font-size="6.5" font-family="var(--font-mono)">api.stg</text>
             <rect x="106" y="88" width="32" height="10" rx="1"/>
-            <text x="113" y="96" fill="var(--text-secondary)" stroke="none" font-size="6.5" font-family="var(--font-mono)">api.prd</text>
+            <text x="122" y="93" text-anchor="middle" dominant-baseline="central" fill="var(--text-secondary)" stroke="none" font-size="6.5" font-family="var(--font-mono)">api.prd</text>
           </svg>
         </div>
         <h3>Passenger ship</h3>
