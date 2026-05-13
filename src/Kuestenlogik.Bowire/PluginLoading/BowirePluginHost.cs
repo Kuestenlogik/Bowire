@@ -77,10 +77,26 @@ public sealed class BowirePluginHost
         }
 
         var ctx = new BowirePluginLoadContext(pluginDir, _additionalSharedPrefixes);
-        foreach (var dll in Directory.EnumerateFiles(pluginDir, "*.dll"))
+
+        // Load ONLY the manifest assembly (named after the package id,
+        // matching the install layout `<pluginDir>/<packageId>/<packageId>.dll`).
+        // The ALC's Load callback resolves every transitive reference on
+        // demand — shared-prefix names delegate to the default ALC so
+        // contract types (IBowireProtocol, BowireServiceInfo, …) keep a
+        // single identity across the host ↔ plugin boundary; everything
+        // else falls back to a filename lookup inside the plugin folder.
+        //
+        // See PluginManager.LoadPlugins for the long-form explanation —
+        // the same dual-load bug existed here and the fix is the same:
+        // never call LoadFromAssemblyPath on a copy of Kuestenlogik.Bowire
+        // that ships next to the plugin, because that creates a second
+        // identity of every contract type and breaks
+        // BowireProtocolRegistry.Discover's `IsAssignableFrom` check.
+        var manifest = Path.Combine(pluginDir, key + ".dll");
+        if (File.Exists(manifest))
         {
-            try { ctx.LoadFromAssemblyPath(Path.GetFullPath(dll)); }
-            catch { /* skip DLLs that fail to load — same contract as PluginManager.LoadPlugins */ }
+            try { ctx.LoadFromAssemblyPath(Path.GetFullPath(manifest)); }
+            catch { /* skip — plugin appears empty in discovery */ }
         }
         _contexts[key] = ctx;
         return ctx;

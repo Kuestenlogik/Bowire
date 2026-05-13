@@ -744,15 +744,44 @@ internal static class PluginManager
             }
             s_pluginContexts.Add(ctx);
 
-            foreach (var dll in Directory.GetFiles(subDir, "*.dll"))
+            // Load ONLY the manifest assembly (named after the package
+            // id — the install path lays it out as
+            // <pluginDir>/<packageId>/<packageId>.dll). The runtime then
+            // walks its metadata table and asks ctx.Load() for each
+            // referenced assembly on demand; ctx.Load() delegates
+            // shared-prefix names (Kuestenlogik.Bowire*, System.*,
+            // Microsoft.*) to the default ALC so the plugin and the
+            // host share the same IBowireProtocol type identity, and
+            // resolves everything else from the plugin folder.
+            //
+            // History: an earlier version of this loop walked
+            // `Directory.GetFiles(subDir, "*.dll")` and naively
+            // LoadFromAssemblyPath'd every file — including
+            // Kuestenlogik.Bowire.dll, which `dotnet publish` copies
+            // into the plugin's output folder alongside the plugin's
+            // own assembly. That created a SECOND copy of the contract
+            // assembly in the plugin's ALC, alongside the host's copy
+            // in the default ALC. The plugin's IBowireProtocol then
+            // bound to the plugin-ALC type, BowireProtocolRegistry.Discover's
+            // `IsAssignableFrom` check saw two distinct types, and the
+            // protocol silently failed to register.
+            //
+            // A "skip shared-prefix DLLs" hotfix was tried first but
+            // over-matched: every plugin's own assembly is also named
+            // Kuestenlogik.Bowire.Protocol.*, so that filter would
+            // skip the manifest itself. Loading only the manifest is
+            // the structurally correct answer — the ALC's Load
+            // callback was always meant to do the transitive resolution.
+            var packageId = Path.GetFileName(normalised);
+            var manifest = Path.Combine(subDir, packageId + ".dll");
+            if (File.Exists(manifest))
             {
-                try
-                {
-                    ctx.LoadFromAssemblyPath(Path.GetFullPath(dll));
-                }
+                try { ctx.LoadFromAssemblyPath(Path.GetFullPath(manifest)); }
                 catch
                 {
-                    // Skip DLLs that fail to load
+                    // Manifest failed — record but don't tear the
+                    // process down; plugin appears as "loaded but
+                    // empty" in BowireProtocolRegistry.Discover.
                 }
             }
         }
