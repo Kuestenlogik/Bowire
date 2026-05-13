@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 using Kuestenlogik.Bowire.App;
+using Kuestenlogik.Bowire.PluginLoading;
 
 namespace Kuestenlogik.Bowire.Tests;
 
@@ -538,13 +539,35 @@ public sealed class PluginManagerTests : IDisposable
     {
         // Should silently return — exercised here so the early-out
         // branch is covered without any side-effects.
-        PluginManager.LoadPlugins(Path.Combine(_tempDir, "nope"));
+        var results = PluginManager.LoadPlugins(Path.Combine(_tempDir, "nope"));
+        Assert.Empty(results);
     }
 
     [Fact]
     public void LoadPlugins_EmptyDir_NoOp()
     {
-        PluginManager.LoadPlugins(_tempDir);
+        var results = PluginManager.LoadPlugins(_tempDir);
+        Assert.Empty(results);
+    }
+
+    [Fact]
+    public void LoadPlugins_PluginSubdirWithoutManifest_ReportsManifestMissing()
+    {
+        // A subdirectory without a <packageId>.dll manifest surfaces
+        // as ManifestMissing — the loader doesn't create an ALC for
+        // it, and the caller (and /api/plugins/health) sees the
+        // empty install with a clear status code instead of just
+        // "service not discovered". Regression guard for the silent-
+        // skip behaviour the loader used to have.
+        var subDir = Path.Combine(_tempDir, "Empty.Plugin");
+        Directory.CreateDirectory(subDir);
+
+        var results = PluginManager.LoadPlugins(_tempDir);
+
+        var entry = Assert.Single(results, r => r.PackageId == "Empty.Plugin");
+        Assert.Equal(PluginLoadStatus.ManifestMissing, entry.Status);
+        Assert.NotNull(entry.ErrorMessage);
+        Assert.Contains("Empty.Plugin.dll", entry.ErrorMessage, StringComparison.Ordinal);
     }
 
     [Fact]

@@ -38,8 +38,18 @@ internal static class BrowserUiHost
 
         // Plugins must be loaded before MapBowire's reflection scan
         // sees them. The CLI dispatcher already loaded them once; this
-        // call is idempotent for the host's load context.
-        PluginManager.LoadPlugins(ui.PluginDir);
+        // call is idempotent for the host's load context. We surface
+        // per-plugin load outcomes to stderr so operators see version
+        // mismatches and load failures up-front instead of debugging
+        // a silently-missing protocol later.
+        var pluginResults = PluginManager.LoadPlugins(ui.PluginDir);
+        foreach (var r in pluginResults)
+        {
+            if (r.Status == Kuestenlogik.Bowire.PluginLoading.PluginLoadStatus.Loaded
+                || r.Status == Kuestenlogik.Bowire.PluginLoading.PluginLoadStatus.AlreadyLoaded)
+                continue;
+            await Console.Error.WriteLineAsync($"  Plugin '{r.PackageId}' failed to load ({r.Status}): {r.ErrorMessage}").ConfigureAwait(false);
+        }
 
         var noBrowser = ui.NoBrowser
             || Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER") == "true"

@@ -65,6 +65,7 @@ public sealed class BowirePluginLoadContext : AssemblyLoadContext
 
     private readonly string _pluginDir;
     private readonly IReadOnlyList<string> _sharedPrefixes;
+    private readonly AssemblyDependencyResolver? _resolver;
 
     /// <summary>
     /// Build a context for the plugin whose DLLs live under
@@ -87,6 +88,24 @@ public sealed class BowirePluginLoadContext : AssemblyLoadContext
         _sharedPrefixes = additionalSharedPrefixes is null
             ? DefaultSharedPrefixes
             : DefaultSharedPrefixes.Concat(additionalSharedPrefixes).ToList();
+
+        // Best-effort AssemblyDependencyResolver — the .NET-recommended
+        // path for plugin ALCs. Reads `<manifest>.deps.json` next to
+        // the plugin's main DLL and uses it to find both managed
+        // dependencies and native libraries with correct RID-specific
+        // resolution. Falls back to plain filename lookup in `Load`
+        // below when no .deps.json is present (the legacy `bowire
+        // plugin install` from a flat-folder nupkg ships managed DLLs
+        // without `.deps.json` — the resolver-less path still works
+        // for that shape).
+        var packageId = Path.GetFileName(_pluginDir.TrimEnd(
+            Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar));
+        var manifestPath = Path.Combine(_pluginDir, packageId + ".dll");
+        if (File.Exists(manifestPath))
+        {
+            try { _resolver = new AssemblyDependencyResolver(manifestPath); }
+            catch { /* no .deps.json or invalid layout — stay on the filename-lookup path */ }
+        }
     }
 
     private static string DeriveName(string pluginDir)
@@ -128,10 +147,18 @@ public sealed class BowirePluginLoadContext : AssemblyLoadContext
             return null;
         }
 
-        // Plugin-private: look for <assemblyName>.dll in the plugin's
-        // folder. Plugins downloaded via `bowire plugin install`
-        // produce a flat DLL layout in that folder, so filename-based
-        // resolution is correct.
+        // Plugin-private. Resolver path first — when the plugin shipped
+        // with a `.deps.json` we honour what the build system declared
+        // (correct RID-specific assemblies, NuGet RID-graph fall-through,
+        // etc.). Falls back to plain filename lookup so flat-folder
+        // installs without `.deps.json` still load — that's how
+        // `bowire plugin install` lays packages out today.
+        if (_resolver is not null)
+        {
+            var resolved = _resolver.ResolveAssemblyToPath(assemblyName);
+            if (resolved is not null) return LoadFromAssemblyPath(resolved);
+        }
+
         if (string.IsNullOrEmpty(assemblyName.Name)) return null;
         var candidate = Path.Combine(_pluginDir, assemblyName.Name + ".dll");
         return File.Exists(candidate) ? LoadFromAssemblyPath(candidate) : null;
@@ -140,10 +167,18 @@ public sealed class BowirePluginLoadContext : AssemblyLoadContext
     /// <inheritdoc />
     protected override IntPtr LoadUnmanagedDll(string unmanagedDllName)
     {
-        // Same layout contract as Load: native deps live in the plugin
-        // folder. Platform-specific naming (lib*.so on Linux,
-        // *.dylib on macOS, *.dll on Windows) is handled by
-        // LoadUnmanagedDllFromPath — we just have to find the file.
+        // Resolver path is the only correct answer for native libs —
+        // it knows about RID-specific (`runtimes/win-x64/native/…`)
+        // layouts that a naive filename lookup wouldn't find. When
+        // the plugin shipped without a `.deps.json`, fall back to the
+        // legacy filename-in-pluginDir lookup so existing flat-folder
+        // native installs keep working.
+        if (_resolver is not null)
+        {
+            var resolved = _resolver.ResolveUnmanagedDllToPath(unmanagedDllName);
+            if (resolved is not null) return LoadUnmanagedDllFromPath(resolved);
+        }
+
         var candidate = Path.Combine(_pluginDir, unmanagedDllName);
         if (File.Exists(candidate)) return LoadUnmanagedDllFromPath(candidate);
 
