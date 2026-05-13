@@ -59,30 +59,53 @@ app.MapBowire();</code></pre>
 
       <article class="deployment-mode-card">
         <div class="deployment-mode-diagram">
-          <!-- Speedboat — low, sleek hull with one figure at the
-               wheel. Speed lines off the stern signal "fast, single
-               helmsman, no schedule". This is the developer-laptop
-               story: one user, point and shoot at whatever's in
-               range. -->
+          <!-- Speedboat — sleek planing hull with one figure at the
+               wheel. The bow lifts out of the water, a fan of spray
+               trails up forward of the bow, and a long set of speed
+               lines streams off the stern. This is the developer-
+               laptop story: one user, point and shoot at whatever's
+               in range. -->
           <svg width="170" height="110" viewBox="0 0 170 110" fill="none" stroke="var(--accent)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <!-- Helmsman -->
-            <circle cx="92" cy="40" r="4"/>
+            <!-- Helmsman, head leaned slightly forward into the wind
+                 (cx 94 / cy 38 instead of the upright 92 / 40). Same
+                 body lines so the wheel grip stays anchored. -->
+            <circle cx="94" cy="38" r="4"/>
             <path d="M88 48 L88 56 M96 48 L96 56 M88 48 L96 48"/>
-            <!-- Windscreen -->
-            <path d="M82 56 L94 44 L104 44 L104 56" />
+            <!-- Windscreen, raked back toward the bow so it tracks
+                 the planing hull's tilt instead of standing vertical. -->
+            <path d="M82 56 L92 42 L106 44 L108 56" />
             <!-- "Bowire" label inside the hull, centred along the
-                 hull's midline (x=90 sits between bow at x=150 and
-                 stern at x=30) and the lower-hull strip (y=64..80,
-                 centre y=72). Was previously left-anchored at x=60
-                 which left the label visibly off-centre against the
-                 symmetric hull silhouette. -->
-            <text x="90" y="72" text-anchor="middle" dominant-baseline="central" fill="var(--accent)" stroke="none" font-size="9" font-weight="700" font-family="var(--font-mono)">Bowire</text>
-            <!-- Hull (pointed bow on the right, narrowing stern on the left) -->
-            <path d="M30 64 L150 64 L138 80 L42 80 Z" fill="rgba(99, 102, 241, 0.10)"/>
-            <!-- Speed lines off the stern -->
-            <line x1="14" y1="68" x2="26" y2="68" stroke-opacity="0.45"/>
-            <line x1="10" y1="76" x2="28" y2="76" stroke-opacity="0.45"/>
-            <line x1="16" y1="84" x2="30" y2="84" stroke-opacity="0.45"/>
+                 tilted hull's midline. Hull top at x=90 sits around
+                 y=61 and the bottom around y=76, so y=68 keeps the
+                 label vertically centred with dominant-baseline=central. -->
+            <text x="90" y="68" text-anchor="middle" dominant-baseline="central" fill="var(--accent)" stroke="none" font-size="9" font-weight="700" font-family="var(--font-mono)">Bowire</text>
+            <!-- Planing hull: bow (right side) lifts up off the water
+                 while the stern (left side) stays planted. Top edge
+                 angles up toward the bow tip (y=58), bow cuts back
+                 down to the waterline at (150, 70), bottom edge runs
+                 angled from stern at (42, 80) up to the bow corner.
+                 Replaces the previous symmetric trapezoid that read
+                 as "moored" instead of "planing". -->
+            <path d="M30 64 L155 58 L150 70 L42 80 Z" fill="rgba(99, 102, 241, 0.10)"/>
+            <!-- Bow spray: three short curved plumes arcing up and
+                 forward of the bow waterline, suggesting water
+                 displaced as the hull cuts through. Reads as motion
+                 even without animation. -->
+            <path d="M148 72 Q158 66 164 56" stroke-opacity="0.4"/>
+            <path d="M146 74 Q156 70 162 62" stroke-opacity="0.32"/>
+            <path d="M144 76 Q154 74 160 68" stroke-opacity="0.24"/>
+            <!-- Speed lines off the stern. Wider span and longer
+                 lengths than the original three short ticks — the
+                 top two ride at helmsman / windscreen height so the
+                 wind reads visibly against the figure, the bottom
+                 four trail through the hull-and-waterline band the
+                 stern is sitting in. -->
+            <line x1="2" y1="42" x2="18" y2="42" stroke-opacity="0.22"/>
+            <line x1="2" y1="52" x2="22" y2="52" stroke-opacity="0.30"/>
+            <line x1="2" y1="60" x2="24" y2="60" stroke-opacity="0.38"/>
+            <line x1="2" y1="68" x2="28" y2="68" stroke-opacity="0.45"/>
+            <line x1="2" y1="76" x2="30" y2="76" stroke-opacity="0.45"/>
+            <line x1="2" y1="84" x2="34" y2="84" stroke-opacity="0.40"/>
             <!-- Waterline -->
             <path d="M4 90 q10 -3 20 0 t20 0 t20 0 t20 0 t20 0 t20 0 t20 0 t20 0" stroke-opacity="0.55"/>
             <path d="M4 98 q12 -3 24 0 t24 0 t24 0 t24 0 t24 0 t24 0 t22 0" stroke-opacity="0.3"/>
