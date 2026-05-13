@@ -277,6 +277,53 @@ document.querySelectorAll('.copy-btn').forEach(btn => {
     });
 });
 
+// Pick-your-vessel deployment cards — clicking the card copies its
+// install snippet to the clipboard, flashes a "Copied" pill, and
+// triggers a brief per-vessel SVG animation (container ship rocks,
+// speedboat surges, passenger ship puffs smoke). The whole card is
+// the call-to-action; the snippet `<pre>` doubles as the click
+// target so users can also drag-select the text — `click` only
+// fires when the mousedown + mouseup land on the same element, so
+// text selection doesn't trigger the copy unexpectedly.
+document.querySelectorAll('.deployment-mode-card[data-vessel]').forEach(card => {
+    function readSnippet() {
+        const code = card.querySelector('.deployment-mode-snippet code');
+        return code ? code.textContent.trim() : '';
+    }
+
+    function fireTap() {
+        const snippet = readSnippet();
+        if (!snippet) return;
+        if (!navigator.clipboard) return;
+        navigator.clipboard.writeText(snippet).then(() => {
+            // Two distinct timed classes so the SVG animation and the
+            // pill feedback can have independent durations without
+            // bleeding into each other.
+            card.classList.add('is-animating', 'is-copied');
+            setTimeout(() => card.classList.remove('is-animating'), 950);
+            setTimeout(() => card.classList.remove('is-copied'), 1500);
+        }).catch(() => { /* clipboard refused — silent no-op */ });
+    }
+
+    card.addEventListener('click', (e) => {
+        // Snippet links / anchors inside the card body (e.g. the
+        // ROADMAP link in the passenger-ship description) should
+        // still navigate normally. Bail when the click landed on
+        // any anchor or interactive element so they keep working.
+        if (e.target.closest('a, button')) return;
+        fireTap();
+    });
+
+    card.addEventListener('keydown', (e) => {
+        // Enter / Space activate the role="button" semantics so
+        // keyboard users get the same affordance as mouse users.
+        if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            fireTap();
+        }
+    });
+});
+
 // Screenshot carousel — auto-drift, prev/next buttons, dot indicators,
 // click-to-jump. Auto-drift is JS-driven (not CSS keyframe) so pause /
 // resume is seamless: the current scroll position stays put, the drift

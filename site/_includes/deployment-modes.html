@@ -5,7 +5,7 @@
 
     <div class="deployment-mode-grid">
 
-      <article class="deployment-mode-card">
+      <article class="deployment-mode-card" data-vessel="container" tabindex="0" role="button" aria-label="Copy install command for the embedded / container-ship deployment mode">
         <div class="deployment-mode-diagram">
           <!-- Container ship — silhouette with three container stacks
                on deck and the bridge tower at the stern. One container
@@ -55,9 +55,10 @@
         </ul>
         <pre class="deployment-mode-snippet"><code>dotnet add package Kuestenlogik.Bowire
 app.MapBowire();</code></pre>
+        <span class="deployment-mode-copy-pill" aria-live="polite">Copied install command</span>
       </article>
 
-      <article class="deployment-mode-card">
+      <article class="deployment-mode-card" data-vessel="speedboat" tabindex="0" role="button" aria-label="Copy install command for the standalone CLI / speedboat deployment mode">
         <div class="deployment-mode-diagram">
           <!-- Speedboat — sleek planing hull with one figure at the
                wheel. The bow lifts out of the water, a fan of spray
@@ -121,9 +122,10 @@ app.MapBowire();</code></pre>
         </ul>
         <pre class="deployment-mode-snippet"><code>dotnet tool install -g Kuestenlogik.Bowire.Tool
 bowire --url https://staging.example.com</code></pre>
+        <span class="deployment-mode-copy-pill" aria-live="polite">Copied install command</span>
       </article>
 
-      <article class="deployment-mode-card deployment-mode-card-preview">
+      <article class="deployment-mode-card deployment-mode-card-preview" data-vessel="passenger" tabindex="0" role="button" aria-label="Copy install command for the multi-user / passenger-ship deployment mode (preview)">
         <span class="protocol-card-ribbon" aria-hidden="true">preview</span>
         <div class="deployment-mode-diagram">
           <!-- Passenger ship — multi-deck hull with several figures on
@@ -133,6 +135,12 @@ bowire --url https://staging.example.com</code></pre>
                curated URLs maps to "everyone aboard sees the same
                route catalogue, but their own cabin state". -->
           <svg width="170" height="110" viewBox="0 0 170 110" fill="none" stroke="var(--accent)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <!-- Smoke puffs above the smokestacks. Opacity 0 until
+                 the card receives `is-animating`; CSS animates them
+                 upward and fades them out for a brief "ship cast
+                 off" cue when the user clicks the card. -->
+            <circle class="vessel-smoke" cx="81" cy="16" r="3.5" fill="rgba(99, 102, 241, 0.55)" stroke="none"/>
+            <circle class="vessel-smoke vessel-smoke--lag" cx="93" cy="14" r="2.5" fill="rgba(99, 102, 241, 0.4)" stroke="none"/>
             <!-- Flag + smokestacks -->
             <line x1="74" y1="14" x2="74" y2="26"/>
             <path d="M74 14 L82 17 L74 20"/>
@@ -183,6 +191,7 @@ bowire --url https://staging.example.com</code></pre>
         <pre class="deployment-mode-snippet"><code>docker run -p 5080:5080 \
   ghcr.io/kuestenlogik/bowire:latest \
   --url-file /etc/bowire/targets.txt</code></pre>
+        <span class="deployment-mode-copy-pill" aria-live="polite">Copied install command</span>
       </article>
 
     </div>

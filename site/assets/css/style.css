@@ -2115,6 +2115,14 @@ pre > code {
     overflow: hidden;
     display: flex;
     flex-direction: column;
+    /* Cards behave as buttons: clicking anywhere copies the install
+       snippet (see main.js). Cursor + tab-stop affordance comes from
+       the role/tabindex on the article; the cursor pointer reinforces
+       it visually. The outline:none is paired with a focus-visible
+       ring further down so keyboard users still get a clear focus
+       indicator. */
+    cursor: pointer;
+    outline: none;
 }
 
 .deployment-mode-card:hover {
@@ -2124,6 +2132,103 @@ pre > code {
 .deployment-mode-card:hover h3 {
     color: var(--accent);
     transition: color 0.2s;
+}
+.deployment-mode-card:focus-visible {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.35);
+}
+
+/* ---- Per-vessel tap animations (~700ms each, triggered by main.js
+   adding `is-animating` on click). Keep the SVG transform-origins
+   centred so the motion reads as in-place liveliness, not a layout
+   jolt. ----------------------------------------------------------- */
+.deployment-mode-card[data-vessel] svg {
+    transform-origin: 50% 70%;
+    transition: transform 0.2s ease-out;
+}
+
+/* Container ship — gentle starboard-to-port rock as if cargo is
+   settling. Subtle on purpose: containers are heavy, the metaphor
+   is "Bowire packs into the host's container", not "speed". */
+.deployment-mode-card[data-vessel="container"].is-animating svg {
+    animation: vessel-rock 700ms ease-in-out;
+}
+@keyframes vessel-rock {
+    0%, 100% { transform: rotate(0deg); }
+    25% { transform: rotate(-1.8deg); }
+    75% { transform: rotate(1.8deg); }
+}
+
+/* Speedboat — quick forward surge plus a tiny lift, picking up the
+   "fast" copy beside it. Returns to rest with a slight overshoot
+   so the deceleration reads as planing settling back into the wake. */
+.deployment-mode-card[data-vessel="speedboat"].is-animating svg {
+    animation: vessel-surge 600ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+@keyframes vessel-surge {
+    0% { transform: translate(0, 0); }
+    35% { transform: translate(7px, -1px); }
+    65% { transform: translate(-1px, 0); }
+    100% { transform: translate(0, 0); }
+}
+
+/* Passenger ship — both smokestack puffs rise and fade as the ship
+   casts off. CSS doesn't observe individual SVG element transforms
+   cleanly under non-Safari renderers, so the two circles ride one
+   animation with a slight delay on the second to suggest staggered
+   bursts. Reduced motion preferences pin everything to opacity-only. */
+.deployment-mode-card[data-vessel="passenger"] .vessel-smoke {
+    opacity: 0;
+    transform-origin: 50% 100%;
+}
+.deployment-mode-card[data-vessel="passenger"].is-animating .vessel-smoke {
+    animation: vessel-smoke-puff 900ms ease-out forwards;
+}
+.deployment-mode-card[data-vessel="passenger"].is-animating .vessel-smoke--lag {
+    animation-delay: 120ms;
+}
+@keyframes vessel-smoke-puff {
+    0%   { opacity: 0;    transform: translateY(0) scale(0.4); }
+    25%  { opacity: 0.8;  transform: translateY(-2px) scale(1); }
+    100% { opacity: 0;    transform: translateY(-14px) scale(1.6); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .deployment-mode-card[data-vessel].is-animating svg,
+    .deployment-mode-card[data-vessel].is-animating .vessel-smoke {
+        animation: none;
+    }
+    /* Still surface the copy result for users who opt out of motion. */
+    .deployment-mode-card[data-vessel="passenger"].is-animating .vessel-smoke {
+        opacity: 0.6;
+        transition: opacity 0.3s ease-in-out;
+    }
+}
+
+/* ---- "Copied install command" pill ---------------------------- */
+.deployment-mode-copy-pill {
+    position: absolute;
+    top: 14px;
+    left: 50%;
+    transform: translate(-50%, -8px);
+    background: var(--accent);
+    color: white;
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    padding: 5px 11px;
+    border-radius: 999px;
+    box-shadow: 0 6px 18px rgba(99, 102, 241, 0.35);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease-out, transform 0.2s ease-out;
+    /* Sits above the preview-ribbon corner-anchor so the pill stays
+       visible on the passenger-ship card. */
+    z-index: 2;
+}
+.deployment-mode-card.is-copied .deployment-mode-copy-pill {
+    opacity: 1;
+    transform: translate(-50%, 0);
 }
 
 .deployment-mode-diagram {
