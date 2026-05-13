@@ -55,6 +55,32 @@
                     renderShortcutsOverlay();
                     return;
                 }
+                // Restore a maximized widget pane (map widget, future
+                // viewers) before stop-streaming so a user mashing Esc
+                // to "make this small again" doesn't accidentally kill
+                // the live stream too. CSS toggle only, no render() —
+                // see the maximize-button click handler in render-main.js
+                // for why a full render would dispose the live widget.
+                if (widgetPaneMaximized) {
+                    widgetPaneMaximized = false;
+                    var maxPane = document.querySelector('.bowire-widget-pane');
+                    if (maxPane) maxPane.classList.remove('is-maximized');
+                    var maxBtn = document.querySelector('.bowire-widget-pane-maximize');
+                    if (maxBtn) {
+                        // Same SVG path bowireLayoutIcon('maximize')
+                        // produces — inlined because the icon helper
+                        // lives in render-main.js's IIFE and isn't
+                        // reachable from here.
+                        maxBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
+                            + '<polyline points="4 9 4 4 9 4"/>'
+                            + '<polyline points="20 9 20 4 15 4"/>'
+                            + '<polyline points="20 15 20 20 15 20"/>'
+                            + '<polyline points="4 15 4 20 9 20"/>'
+                            + '</svg>';
+                        maxBtn.title = 'Maximize widget to fill the window';
+                    }
+                    return;
+                }
                 if (isExecuting && sseSource) {
                     stopStreaming();
                     render();

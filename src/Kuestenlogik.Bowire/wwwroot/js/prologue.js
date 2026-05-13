@@ -273,6 +273,7 @@
     let streamListSizePct = 45;         // Splitter position: list pane height as % (10..90)
     let streamFilterQuery = '';         // Substring or key:value filter applied to the visible stream list
     let streamFilterPanelOpen = false;  // Whether the collapsible filter panel above the list is expanded
+    let widgetPaneMaximized = false;    // When true, the split-pane widget slot (map, future viewers) fills the viewport
     // Phase 3.1 — multi-select selection set for the Streaming-Frames
     // pane. Ctrl/Cmd-click toggles membership, Shift-click extends a
     // range from the last anchor, plain click replaces with a single-
@@ -591,6 +592,7 @@
         streamSelectionAnchorIdx = null;
         streamAutoScroll = true;
         streamDetailMaximized = false;
+        widgetPaneMaximized = false;
         formValidationErrors = {};
         diffViewOpen = false;
         diffSnapshotA = null;
@@ -638,6 +640,7 @@
         streamSelectionAnchorIdx = null;
         streamAutoScroll = true;
         streamDetailMaximized = false;
+        widgetPaneMaximized = false;
         formValidationErrors = {};
         diffViewOpen = false;
         diffSnapshotA = null;

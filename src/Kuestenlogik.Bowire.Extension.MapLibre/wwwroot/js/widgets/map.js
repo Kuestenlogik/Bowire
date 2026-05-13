@@ -120,11 +120,13 @@
      *   1. Custom URL — `config.mapBasemap` is a raster tile URL with
      *      {z}/{x}/{y} placeholders, or a style.json URL. Picks the
      *      shape automatically by inspecting the URL's tail.
-     *   2. Named alias — `config.mapBasemap` is "osm" / "demotiles" /
-     *      "none". "osm" hits openstreetmap.org with attribution;
-     *      "demotiles" hits MapLibre's free demo dataset (the
-     *      recommended free-tier fallback); "none" reverts to the
-     *      pre-v0.3 blank-style behaviour for true offline installs.
+     *   2. Named alias — `config.mapBasemap` is "osm" / "satellite" /
+     *      "demotiles" / "none". "osm" hits openstreetmap.org;
+     *      "satellite" hits ESRI's free World Imagery service (no API
+     *      key, attribution required); "demotiles" hits MapLibre's
+     *      free demo vector dataset (the recommended free-tier
+     *      fallback); "none" reverts to the pre-v0.3 blank-style
+     *      behaviour for true offline installs.
      *   3. Default — demotiles. Works in any browser that can reach
      *      MapLibre's CDN without an API key. Custom URL is still the
      *      preferred answer for internal-mapserver setups, configured
@@ -149,6 +151,17 @@
                 kind: 'raster',
                 url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
                 attribution: '© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>'
+            };
+        }
+        if (basemap === 'satellite') {
+            // ESRI's World Imagery service — free, no API key required,
+            // attribution-required, and one of the highest-resolution
+            // free satellite mosaics. Used widely by Leaflet / MapLibre
+            // tutorials as the "just works" satellite default.
+            return {
+                kind: 'raster',
+                url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+                attribution: 'Tiles © <a href="https://www.esri.com" target="_blank" rel="noopener">Esri</a> &mdash; Source: Esri, Maxar, Earthstar Geographics, and the GIS User Community'
             };
         }
         if (basemap === 'demotiles' || !basemap) {
@@ -247,6 +260,13 @@
         container.style.minHeight = '320px';
         container.style.width = '100%';
         container.style.position = 'relative';
+        // Fill the available height (not just minHeight) so the canvas
+        // grows when the widget pane changes geometry — maximize toggle,
+        // split-pane drag. Without an explicit height rule the slot
+        // would size to its content (== the canvas at mount-time
+        // dimensions) and never grow.
+        container.style.height = '100%';
+        container.style.flex = '1 1 auto';
 
         var pinsByDiscriminator = {};
         var paletteStore = {};
@@ -317,6 +337,19 @@
             attributionControl: basemap.kind !== 'blank' ? { compact: true } : false
         });
         map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+
+        // Bowire's ResizeObserver fires whenever the widget container
+        // changes geometry — split-pane drag, maximize toggle (CSS
+        // position-fixed to fill the viewport), window resize.
+        // MapLibre's own ResizeObserver in v3+ usually catches the
+        // same event, but position-fixed transitions trip it on some
+        // browsers — calling map.resize() explicitly is cheap and
+        // makes the maximize-to-fullscreen story robust.
+        if (ctx.viewport && typeof ctx.viewport.on === 'function') {
+            ctx.viewport.on('resize', function () {
+                try { map.resize(); } catch (e) { /* map disposed */ }
+            });
+        }
 
         // Lazy-attach a "points" source on first frame so the empty
         // state has nothing on the map until data flows.

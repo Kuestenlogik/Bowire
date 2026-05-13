@@ -2720,11 +2720,40 @@
         // layout toggle). The actual viewer DOM is attached
         // asynchronously by mountWidgetsForMethod, which fetches the
         // effective annotations first.
-        var widgetPane = el('div', { className: 'bowire-widget-pane' });
+        var widgetPane = el('div', {
+            className: 'bowire-widget-pane' + (widgetPaneMaximized ? ' is-maximized' : '')
+        });
         var widgetHeader = el('div', { className: 'bowire-widget-pane-header' },
             el('span', {
                 className: 'bowire-widget-pane-header-title',
                 textContent: (splitKindExt.viewer && splitKindExt.viewer.label) || splitKindExt.kind
+            }),
+            el('button', {
+                className: 'bowire-widget-pane-maximize',
+                title: widgetPaneMaximized
+                    ? 'Restore widget to its slot (Esc)'
+                    : 'Maximize widget to fill the window',
+                onClick: function () {
+                    // Toggle the CSS class directly without calling
+                    // render(). Every render() pass tears the widget
+                    // pane down via disposeWidgetMounts() and re-runs
+                    // mountWidgetsForMethod, which for a MapLibre
+                    // viewer means losing the WebGL canvas + the
+                    // basemap tiles + the camera state — defeats the
+                    // purpose of maximizing. Direct DOM manipulation
+                    // preserves the live MapLibre instance; its
+                    // internal ResizeObserver picks up the new
+                    // viewport-filling geometry and calls
+                    // map.resize() automatically.
+                    widgetPaneMaximized = !widgetPaneMaximized;
+                    var pane = document.querySelector('.bowire-widget-pane');
+                    if (pane) pane.classList.toggle('is-maximized', widgetPaneMaximized);
+                    this.innerHTML = bowireLayoutIcon(widgetPaneMaximized ? 'minimize' : 'maximize');
+                    this.title = widgetPaneMaximized
+                        ? 'Restore widget to its slot (Esc)'
+                        : 'Maximize widget to fill the window';
+                },
+                innerHTML: bowireLayoutIcon(widgetPaneMaximized ? 'minimize' : 'maximize')
             }),
             el('button', {
                 className: 'bowire-widget-layout-toggle',
@@ -2802,6 +2831,22 @@
                 return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">'
                     + '<rect x="3" y="5" width="18" height="14" rx="2"/>'
                     + '<line x1="3" y1="9" x2="21" y2="9"/>'
+                    + '</svg>';
+            case 'maximize':
+                // Four outward-pointing brackets — universal "expand" glyph.
+                return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
+                    + '<polyline points="4 9 4 4 9 4"/>'
+                    + '<polyline points="20 9 20 4 15 4"/>'
+                    + '<polyline points="20 15 20 20 15 20"/>'
+                    + '<polyline points="4 15 4 20 9 20"/>'
+                    + '</svg>';
+            case 'minimize':
+                // Four inward-pointing brackets — the inverse of maximize.
+                return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
+                    + '<polyline points="9 4 9 9 4 9"/>'
+                    + '<polyline points="15 4 15 9 20 9"/>'
+                    + '<polyline points="15 20 15 15 20 15"/>'
+                    + '<polyline points="9 20 9 15 4 15"/>'
                     + '</svg>';
             case 'layout-split':
             default:

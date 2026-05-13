@@ -3177,6 +3177,55 @@ img.bowire-logo-icon {
     position: relative;
 }
 
+/* Maximize button — same visual shell as the layout toggle so they
+   read as a button pair. Reused for any current/future widget; the
+   header lives in render-main.js's renderStreamingPaneWithWidgets. */
+.bowire-widget-pane-maximize {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    border: 1px solid var(--bowire-border-subtle);
+    background: transparent;
+    color: var(--bowire-text-secondary);
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background var(--bowire-transition), color var(--bowire-transition);
+}
+.bowire-widget-pane-maximize:hover {
+    background: var(--bowire-surface-hover);
+    color: var(--bowire-text);
+}
+.bowire-widget-pane-maximize svg {
+    width: 14px;
+    height: 14px;
+}
+
+/* Maximized state — the widget pane lifts out of its split-pane slot
+   and covers the entire viewport. position: fixed pins it against
+   the browser window, z-index parks it above everything else
+   including modals (which run at z: 100). The map widget's
+   internal ResizeObserver picks up the new container dimensions
+   automatically and re-flows MapLibre via map.resize(), so no
+   extra wiring needed on the viewer side. */
+.bowire-widget-pane.is-maximized {
+    position: fixed;
+    inset: 0;
+    z-index: 200;
+    width: 100vw;
+    height: 100vh;
+    background: var(--bowire-bg);
+    box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.5);
+}
+.bowire-widget-pane.is-maximized .bowire-widget-pane-header {
+    /* Slight bump so the maximized header reads as its own bar
+       distinct from the rest-of-app header which is now obscured. */
+    padding: 10px 14px;
+    font-size: 13px;
+}
+
 .bowire-stream-list-idx {
     flex-shrink: 0;
     color: var(--bowire-text-tertiary);
