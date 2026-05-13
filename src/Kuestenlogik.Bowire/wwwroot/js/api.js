@@ -440,18 +440,34 @@
                 // Chaining: capture the inner data payload (last message wins)
                 if (parsed && parsed.data !== undefined) captureResponse(parsed.data);
                 addConsoleEntry({ type: 'stream', method: fullName, body: parsed.data || event.data });
-                // Frame-semantics extension framework — forward the
-                // parsed frame to any viewer mounted against the active
-                // method's annotations (Phase 3).
-                if (window.__bowireExtFramework) {
-                    window.__bowireExtFramework.dispatchStreamMessage(parsed);
-                }
                 // Fast-path: surgically append a single list item to the
                 // streaming output instead of nuking the whole app DOM. The
                 // first message of a stream still falls through to render()
                 // because the container doesn't exist yet.
+                //
+                // ORDER MATTERS: the render/append step has to run BEFORE
+                // we dispatch the frame to the extension framework. The
+                // first frame of any stream is where the workbench mounts
+                // the widget pane (renderStreamingPaneWithWidgets →
+                // mountWidgetsForMethod → bowireMakeViewerCtx), which is
+                // also where the `bowire:stream-message` listener gets
+                // attached to document. Dispatching FIRST (the old order)
+                // meant the event fired into an empty room — the widget's
+                // frames-pipe was buffered, but the document-level
+                // listener that feeds the pipe wasn't installed yet, so
+                // the frame went nowhere. Map pins stayed off-screen until
+                // a SECOND frame arrived, which the streaming-only
+                // TacticalAPI sample never produced.
                 if (!window.bowireAppendStreamMessage || !window.bowireAppendStreamMessage()) {
                     render();
+                }
+                // Frame-semantics extension framework — forward the
+                // parsed frame to any viewer mounted against the active
+                // method's annotations (Phase 3). Safe to call now that
+                // the widget-mount listener is installed (either freshly
+                // by the render() above or already from a previous frame).
+                if (window.__bowireExtFramework) {
+                    window.__bowireExtFramework.dispatchStreamMessage(parsed);
                 }
             } catch {
                 var fbIdx = streamMessages.length;
@@ -463,11 +479,13 @@
                 };
                 streamMessages.push(fallback);
                 addConsoleEntry({ type: 'stream', method: fullName, body: event.data });
-                if (window.__bowireExtFramework) {
-                    window.__bowireExtFramework.dispatchStreamMessage(fallback);
-                }
+                // Same render-before-dispatch ordering as the JSON path
+                // above — see the long comment there.
                 if (!window.bowireAppendStreamMessage || !window.bowireAppendStreamMessage()) {
                     render();
+                }
+                if (window.__bowireExtFramework) {
+                    window.__bowireExtFramework.dispatchStreamMessage(fallback);
                 }
             }
         };

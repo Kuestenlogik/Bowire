@@ -499,12 +499,27 @@
         // The handler is installed once per ctx; the widget receives
         // every frame-shaped event the workbench produces, plus the
         // pairing's resolved JSON paths as `interpretations`.
-        var streamHandler = function (evt) {
-            var detail = evt && evt.detail;
+        function pushFrame(detail) {
             if (!detail) return;
             framesPipe.push(detail);
+        }
+        var streamHandler = function (evt) {
+            pushFrame(evt && evt.detail);
         };
         document.addEventListener('bowire:stream-message', streamHandler);
+
+        // Drain the dispatch-replay cache for this method synchronously
+        // so a widget that came up AFTER the first frame already fired
+        // still gets that frame in order. Without this, the first frame
+        // of a stream slipped through the gap between dispatch (sync,
+        // happens during the SSE onmessage handler) and listener attach
+        // (async, gated behind bowireFetchEffective's round-trip). The
+        // TacticalAPI SubscribeSituationObjectEvents sample exposed it
+        // cleanly: stream emits ONE snapshot then idles, and that one
+        // snapshot used to disappear into the void.
+        if (opts.serviceId && opts.methodId) {
+            bowireReplayCachedFrames(opts.serviceId, opts.methodId, pushFrame);
+        }
 
         // Selection stream — snapshot semantics. The pipe yields the
         // current selection immediately (priming the first `await`)
@@ -825,7 +840,12 @@
                         container: slot,
                         kinds: aggregatedKinds,
                         discriminator: '*',
-                        selectionMode: ext.viewer.selectionMode
+                        selectionMode: ext.viewer.selectionMode,
+                        // Carry the (service, method) tuple through so the
+                        // ctx can drain the dispatch-replay cache for
+                        // frames that fired before this mount existed.
+                        serviceId: serviceId,
+                        methodId: methodId
                     });
 
                     var unmount;
@@ -864,7 +884,9 @@
                         // selection-stream filter knows whether to
                         // truncate to [lastSelected]. Default 'single'
                         // is enforced at registration time.
-                        selectionMode: ext.viewer && ext.viewer.selectionMode
+                        selectionMode: ext.viewer && ext.viewer.selectionMode,
+                        serviceId: serviceId,
+                        methodId: methodId
                     });
 
                     var unmount;
@@ -912,13 +934,82 @@
      * event on document; each viewer's ctx.frames$ async iterator picks
      * it up via the document-level listener installed in
      * bowireMakeViewerCtx.
+     *
+     * Plus a tiny replay cache so the FIRST frame doesn't get swallowed
+     * by the mount/remount race that Phase 3 introduced. Sequence on a
+     * fresh method execution: SSE arrives → render() rebuilds the
+     * streaming pane → mountWidgetsForMethod kicks off `bowireFetchEffective()`
+     * (a round-trip to /api/semantics/effective) → THEN bowireMakeViewerCtx
+     * runs and attaches its document listener. The first dispatch
+     * happens before that listener exists. Without the cache, the
+     * widget came up to an empty pipe and the only useful frame
+     * (TacticalAPI's SubscribeSituationObjectEvents emits a single
+     * snapshot then idles) was lost — the map never plotted pins.
+     *
+     * Cache size is small (32 frames per method) — high enough to
+     * absorb a burst of early frames while the effective-cache fetch
+     * resolves, low enough that long-running streams don't accumulate
+     * memory. Eviction is per-(service, method) so switching methods
+     * doesn't leak.
      */
+    var bowireDispatchReplayCache = {
+        byMethod: Object.create(null),
+        MAX_PER_METHOD: 32
+    };
     function bowireDispatchStreamMessage(detail) {
         try {
+            var key = bowireReplayKeyFor(detail);
+            if (key) {
+                var bucket = bowireDispatchReplayCache.byMethod[key];
+                if (!bucket) {
+                    bucket = [];
+                    bowireDispatchReplayCache.byMethod[key] = bucket;
+                }
+                bucket.push(detail);
+                if (bucket.length > bowireDispatchReplayCache.MAX_PER_METHOD) {
+                    bucket.shift();
+                }
+            }
             document.dispatchEvent(new CustomEvent('bowire:stream-message', { detail: detail }));
         } catch (e) {
             console.error('[bowire-ext] dispatchStreamMessage', e);
         }
+    }
+
+    /**
+     * Replay every cached frame for the given (service, method) tuple
+     * synchronously to a freshly-attached listener. Called by
+     * bowireMakeViewerCtx on mount so a widget that came up after the
+     * first dispatch still gets the buffered frames in order.
+     */
+    function bowireReplayCachedFrames(serviceId, methodId, handler) {
+        var key = bowireReplayKey(serviceId, methodId);
+        var bucket = bowireDispatchReplayCache.byMethod[key];
+        if (!bucket) return;
+        for (var i = 0; i < bucket.length; i++) {
+            try { handler(bucket[i]); }
+            catch (e) { console.error('[bowire-ext] replayCachedFrames', e); }
+        }
+    }
+
+    /**
+     * Frame ids are minted as `${service}/${method}#${index}` by the
+     * SSE consumer in api.js — we slice the leading `${service}/${method}`
+     * out to key the cache. Falls back to null when the detail shape
+     * doesn't carry an id (rare, but defensive).
+     */
+    function bowireReplayKeyFor(detail) {
+        var id = detail && detail.id;
+        if (typeof id !== 'string') return null;
+        var hashIdx = id.lastIndexOf('#');
+        return hashIdx > 0 ? id.substring(0, hashIdx) : null;
+    }
+    function bowireReplayKey(serviceId, methodId) {
+        return serviceId + '/' + methodId;
+    }
+    function bowireResetReplayCacheFor(serviceId, methodId) {
+        var key = bowireReplayKey(serviceId, methodId);
+        delete bowireDispatchReplayCache.byMethod[key];
     }
 
     // ---------------------------------------------------------------
