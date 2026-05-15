@@ -60,56 +60,71 @@ app.MapBowire();</code></pre>
 
       <article class="deployment-mode-card" data-vessel="speedboat" tabindex="0" role="button" aria-label="Copy install command for the standalone CLI / speedboat deployment mode">
         <div class="deployment-mode-diagram">
-          <!-- Speedboat — sleek planing hull with one figure at the
-               wheel. The bow lifts out of the water, a fan of spray
-               trails up forward of the bow, and a long set of speed
-               lines streams off the stern. This is the developer-
-               laptop story: one user, point and shoot at whatever's
-               in range. -->
+          <!-- Racing speedboat — long sharp bow lifted clear of the
+               water, low slung cockpit with the helmsman seated
+               behind a swept windscreen, single outboard motor at
+               the stern, a wide bow-spray fan and a long stern wake.
+               Reads as "fast hull, single helmsman, points at
+               whatever's downrange" without animation. -->
           <svg width="170" height="110" viewBox="0 0 170 110" fill="none" stroke="var(--accent)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <!-- Helmsman, head leaned slightly forward into the wind
-                 (cx 94 / cy 38 instead of the upright 92 / 40). Same
-                 body lines so the wheel grip stays anchored. -->
-            <circle cx="94" cy="38" r="4"/>
-            <path d="M88 48 L88 56 M96 48 L96 56 M88 48 L96 48"/>
-            <!-- Windscreen, raked back toward the bow so it tracks
-                 the planing hull's tilt instead of standing vertical. -->
-            <path d="M82 56 L92 42 L106 44 L108 56" />
-            <!-- "Bowire" label inside the hull, centred along the
-                 tilted hull's midline. Hull top at x=90 sits around
-                 y=61 and the bottom around y=76, so y=68 keeps the
-                 label vertically centred with dominant-baseline=central. -->
-            <text x="90" y="68" text-anchor="middle" dominant-baseline="central" fill="var(--accent)" stroke="none" font-size="9" font-weight="700" font-family="var(--font-mono)">Bowire</text>
-            <!-- Planing hull: bow (right side) lifts up off the water
-                 while the stern (left side) stays planted. Top edge
-                 angles up toward the bow tip (y=58), bow cuts back
-                 down to the waterline at (150, 70), bottom edge runs
-                 angled from stern at (42, 80) up to the bow corner.
-                 Replaces the previous symmetric trapezoid that read
-                 as "moored" instead of "planing". -->
-            <path d="M30 64 L155 58 L150 70 L42 80 Z" fill="rgba(99, 102, 241, 0.10)"/>
-            <!-- Bow spray: three short curved plumes arcing up and
-                 forward of the bow waterline, suggesting water
-                 displaced as the hull cuts through. Reads as motion
-                 even without animation. -->
-            <path d="M148 72 Q158 66 164 56" stroke-opacity="0.4"/>
-            <path d="M146 74 Q156 70 162 62" stroke-opacity="0.32"/>
-            <path d="M144 76 Q154 74 160 68" stroke-opacity="0.24"/>
-            <!-- Speed lines off the stern. Wider span and longer
-                 lengths than the original three short ticks — the
-                 top two ride at helmsman / windscreen height so the
-                 wind reads visibly against the figure, the bottom
-                 four trail through the hull-and-waterline band the
-                 stern is sitting in. -->
-            <line x1="2" y1="42" x2="18" y2="42" stroke-opacity="0.22"/>
-            <line x1="2" y1="52" x2="22" y2="52" stroke-opacity="0.30"/>
-            <line x1="2" y1="60" x2="24" y2="60" stroke-opacity="0.38"/>
-            <line x1="2" y1="68" x2="28" y2="68" stroke-opacity="0.45"/>
-            <line x1="2" y1="76" x2="30" y2="76" stroke-opacity="0.45"/>
-            <line x1="2" y1="84" x2="34" y2="84" stroke-opacity="0.40"/>
-            <!-- Waterline -->
-            <path d="M4 90 q10 -3 20 0 t20 0 t20 0 t20 0 t20 0 t20 0 t20 0 t20 0" stroke-opacity="0.55"/>
-            <path d="M4 98 q12 -3 24 0 t24 0 t24 0 t24 0 t24 0 t24 0 t22 0" stroke-opacity="0.3"/>
+            <!-- Helmsman: seated low in the cockpit (cx 86 cy 50
+                 instead of standing upright at cy 38), arms
+                 extended forward to the wheel. The forward lean
+                 reads as racing posture. -->
+            <circle cx="86" cy="50" r="3.5"/>
+            <path d="M83 55 L92 60 M89 55 L98 60" stroke-linecap="round"/>
+            <!-- Wraparound racing windscreen: low, swept aggressively
+                 back from the bow. Two strakes inside hint at the
+                 plexi-pane divider — a real Cigarette-style speedboat
+                 detail that reads instantly as "racing". -->
+            <path d="M68 56 Q82 38 110 44 L114 56" />
+            <path d="M84 47 L84 56" stroke-opacity="0.55"/>
+            <path d="M96 44 L96 56" stroke-opacity="0.55"/>
+            <!-- Racing stripe — accent-filled stripe running the
+                 length of the hull above the chine. The number "01"
+                 on it picks up the "one helmsman" copy. -->
+            <path d="M44 64 L150 60 L150 64 L46 68 Z" fill="rgba(99, 102, 241, 0.22)" stroke-opacity="0.6"/>
+            <text x="74" y="65" text-anchor="middle" dominant-baseline="central" fill="var(--accent)" stroke="none" font-size="5.5" font-weight="700" font-family="var(--font-mono)">01</text>
+            <!-- "Bowire" label inside the hull's lower strake. y=72
+                 sits in the painted-side of the planing hull just
+                 below the racing stripe. -->
+            <text x="100" y="72" text-anchor="middle" dominant-baseline="central" fill="var(--accent)" stroke="none" font-size="7" font-weight="700" font-family="var(--font-mono)">Bowire</text>
+            <!-- Planing V-hull. The bow (right) is a long sharp
+                 point lifted clear of the water; the stern (left)
+                 keeps a wide flat transom for the outboard to bolt
+                 to. The hard chine line at y=64 separates the
+                 painted side from the deeper-V running wet beneath. -->
+            <path d="M40 60 L160 56 L156 70 L40 76 L34 70 Z" fill="rgba(99, 102, 241, 0.10)"/>
+            <!-- Hard chine (running strake just above the waterline) -->
+            <path d="M40 70 L156 66" stroke-opacity="0.45"/>
+            <!-- Stern transom -->
+            <path d="M34 70 L40 76" stroke-opacity="0.7"/>
+            <!-- Outboard motor cowling on the transom (the
+                 obvious "powerful" detail). Hangs off the stern
+                 with the prop submerged below the waterline. -->
+            <rect x="20" y="68" width="14" height="10" rx="1.5" fill="rgba(99, 102, 241, 0.25)"/>
+            <line x1="22" y1="71" x2="32" y2="71" stroke-opacity="0.55"/>
+            <line x1="22" y1="74" x2="32" y2="74" stroke-opacity="0.45"/>
+            <!-- Skeg + propeller -->
+            <path d="M27 78 L27 86 L24 86 L30 86" stroke-opacity="0.7" stroke-linecap="round"/>
+            <!-- Bow spray fan: five plumes arcing up and forward,
+                 fading in opacity with distance from the bow. -->
+            <path d="M158 60 Q166 52 172 42" stroke-opacity="0.5"/>
+            <path d="M156 62 Q164 56 170 48" stroke-opacity="0.4"/>
+            <path d="M154 64 Q162 60 168 54" stroke-opacity="0.32"/>
+            <path d="M152 66 Q160 64 166 60" stroke-opacity="0.24"/>
+            <path d="M150 68 Q158 68 164 66" stroke-opacity="0.18"/>
+            <!-- Stern wake / prop wash trailing left of the boat.
+                 Layered streaks that fan out away from the prop. -->
+            <line x1="2" y1="38" x2="18" y2="38" stroke-opacity="0.18"/>
+            <line x1="2" y1="50" x2="20" y2="50" stroke-opacity="0.26"/>
+            <line x1="2" y1="62" x2="22" y2="62" stroke-opacity="0.34"/>
+            <line x1="2" y1="68" x2="22" y2="71" stroke-opacity="0.46"/>
+            <line x1="2" y1="76" x2="24" y2="78" stroke-opacity="0.46"/>
+            <line x1="2" y1="84" x2="26" y2="84" stroke-opacity="0.40"/>
+            <!-- Waterline (boat is planing well above it). -->
+            <path d="M4 92 q10 -3 20 0 t20 0 t20 0 t20 0 t20 0 t20 0 t20 0 t20 0" stroke-opacity="0.55"/>
+            <path d="M4 100 q12 -3 24 0 t24 0 t24 0 t24 0 t24 0 t24 0 t22 0" stroke-opacity="0.3"/>
           </svg>
         </div>
         <h3>Speedboat</h3>
