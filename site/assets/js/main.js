@@ -298,10 +298,16 @@ document.querySelectorAll('.deployment-mode-card[data-vessel]').forEach(card => 
         navigator.clipboard.writeText(snippet).then(() => {
             // Two distinct timed classes so the SVG animation and the
             // pill feedback can have independent durations without
-            // bleeding into each other.
+            // bleeding into each other. The is-animating window
+            // (1800ms) covers the longest of the per-vessel keyframes
+            // — the passenger ship's 1500ms smoke-puff plus its
+            // 220ms staggered-delay second puff — so no animation
+            // gets cut short. The is-copied pill stays visible a
+            // beat longer so the feedback sticks past the SVG
+            // settling back to rest.
             card.classList.add('is-animating', 'is-copied');
-            setTimeout(() => card.classList.remove('is-animating'), 950);
-            setTimeout(() => card.classList.remove('is-copied'), 1500);
+            setTimeout(() => card.classList.remove('is-animating'), 1800);
+            setTimeout(() => card.classList.remove('is-copied'), 2000);
         }).catch(() => { /* clipboard refused — silent no-op */ });
     }
 

@@ -2147,50 +2147,63 @@ pre > code {
     transition: transform 0.2s ease-out;
 }
 
-/* Container ship — gentle starboard-to-port rock as if cargo is
-   settling. Subtle on purpose: containers are heavy, the metaphor
-   is "Bowire packs into the host's container", not "speed". */
+/* Container ship — port-to-starboard rock as if a swell hits the
+   hull. Two full sway cycles within the duration so the motion
+   reads as deliberate, not a twitch. Includes a slight vertical
+   bob at the centre points to suggest the boat riding up over a
+   wave crest before settling back. */
 .deployment-mode-card[data-vessel="container"].is-animating svg {
-    animation: vessel-rock 700ms ease-in-out;
+    animation: vessel-rock 1300ms ease-in-out;
 }
 @keyframes vessel-rock {
-    0%, 100% { transform: rotate(0deg); }
-    25% { transform: rotate(-1.8deg); }
-    75% { transform: rotate(1.8deg); }
+    0%   { transform: rotate(0deg) translateY(0); }
+    15%  { transform: rotate(-3deg) translateY(-1px); }
+    35%  { transform: rotate(3deg) translateY(0); }
+    55%  { transform: rotate(-2.4deg) translateY(-1px); }
+    75%  { transform: rotate(2deg) translateY(0); }
+    100% { transform: rotate(0deg) translateY(0); }
 }
 
-/* Speedboat — quick forward surge plus a tiny lift, picking up the
-   "fast" copy beside it. Returns to rest with a slight overshoot
-   so the deceleration reads as planing settling back into the wake. */
+/* Speedboat — pronounced forward surge with a planing lift, then
+   a snappy return through a tiny overshoot. The translate-x reach
+   is large enough to register against the speed lines without the
+   hull clipping the card border (overflow: hidden on the card
+   would crop a too-aggressive translate). */
 .deployment-mode-card[data-vessel="speedboat"].is-animating svg {
-    animation: vessel-surge 600ms cubic-bezier(0.22, 1, 0.36, 1);
+    animation: vessel-surge 1000ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 @keyframes vessel-surge {
-    0% { transform: translate(0, 0); }
-    35% { transform: translate(7px, -1px); }
-    65% { transform: translate(-1px, 0); }
+    0%   { transform: translate(0, 0); }
+    30%  { transform: translate(13px, -3px); }
+    55%  { transform: translate(8px, -1px); }
+    80%  { transform: translate(-2px, 0); }
     100% { transform: translate(0, 0); }
 }
 
-/* Passenger ship — both smokestack puffs rise and fade as the ship
-   casts off. CSS doesn't observe individual SVG element transforms
-   cleanly under non-Safari renderers, so the two circles ride one
-   animation with a slight delay on the second to suggest staggered
-   bursts. Reduced motion preferences pin everything to opacity-only. */
+/* Passenger ship — two big smokestack puffs rising and growing as
+   the ship casts off. Bigger scale at the peak (2.2x vs the old
+   1.6x), larger rise (28px vs 14px), and a clearer staggered delay
+   on the second puff so the eye reads them as separate gusts
+   rather than one fuzz. CSS doesn't observe individual SVG
+   element transforms cleanly under non-Safari renderers, so the
+   transform-origin is anchored on the circle's own bottom and the
+   animation is opacity-driven first; the scale and translate
+   compose at the renderer's discretion. */
 .deployment-mode-card[data-vessel="passenger"] .vessel-smoke {
     opacity: 0;
     transform-origin: 50% 100%;
 }
 .deployment-mode-card[data-vessel="passenger"].is-animating .vessel-smoke {
-    animation: vessel-smoke-puff 900ms ease-out forwards;
+    animation: vessel-smoke-puff 1500ms ease-out forwards;
 }
 .deployment-mode-card[data-vessel="passenger"].is-animating .vessel-smoke--lag {
-    animation-delay: 120ms;
+    animation-delay: 220ms;
 }
 @keyframes vessel-smoke-puff {
     0%   { opacity: 0;    transform: translateY(0) scale(0.4); }
-    25%  { opacity: 0.8;  transform: translateY(-2px) scale(1); }
-    100% { opacity: 0;    transform: translateY(-14px) scale(1.6); }
+    20%  { opacity: 0.95; transform: translateY(-3px) scale(1.1); }
+    55%  { opacity: 0.6;  transform: translateY(-14px) scale(1.7); }
+    100% { opacity: 0;    transform: translateY(-28px) scale(2.2); }
 }
 
 @media (prefers-reduced-motion: reduce) {
