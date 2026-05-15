@@ -89,6 +89,13 @@
 
     // ---- Protocol State ----
     let protocols = [];          // Available protocols [{id, name, icon}]
+    // /api/plugins/health snapshot. Populated lazily by settings.js
+    // when the Plugins tab opens — the workbench surfaces failed
+    // plugin loads (ContractMajorMismatch, ManifestMissing, …) as a
+    // banner so operators don't have to curl the endpoint by hand to
+    // find out why a sibling plugin silently disappeared after a tool
+    // update. Empty array before the first fetch / between fetches.
+    let pluginHealth = [];
     // Multi-select filter: Set of protocol ids that should remain visible
     // in the service list. Empty set = no filter = show everything. The
     // filter lives in a popup next to the search bar (renderProtocolFilter

@@ -4752,6 +4752,60 @@ details[open] > .bowire-json-tree-summary::before {
     padding: 16px 0;
 }
 
+/* Plugin health banner — shows above the installed-plugins list
+   when /api/plugins/health reports one or more rows whose status is
+   not Loaded / AlreadyLoaded. Hidden via an empty <div> fragment in
+   the JS when every install is healthy. */
+.bowire-settings-plugin-health {
+    background: rgba(239, 68, 68, 0.08);
+    border: 1px solid rgba(239, 68, 68, 0.35);
+    border-radius: 8px;
+    padding: 12px 14px;
+    margin-bottom: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+.bowire-settings-plugin-health-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: #fca5a5;
+}
+.bowire-settings-plugin-health-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+}
+.bowire-settings-plugin-health-status {
+    flex-shrink: 0;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    padding: 3px 8px;
+    border-radius: 999px;
+    background: rgba(239, 68, 68, 0.22);
+    color: #fecaca;
+}
+.bowire-settings-plugin-health-status.status-ManifestMissing {
+    background: rgba(234, 179, 8, 0.25);
+    color: #fde68a;
+}
+.bowire-settings-plugin-health-text { flex: 1; min-width: 0; }
+.bowire-settings-plugin-health-pkg {
+    font-size: 12px;
+    font-family: var(--bowire-mono);
+    color: var(--bowire-text);
+    font-weight: 600;
+}
+.bowire-settings-plugin-health-msg {
+    font-size: 11px;
+    color: var(--bowire-text-tertiary);
+    margin-top: 3px;
+    line-height: 1.4;
+    word-break: break-word;
+}
+
 /* Plugins list — one row per installed plugin with an enable toggle. */
 .bowire-settings-plugin-list {
     display: flex;

@@ -497,6 +497,20 @@
     // server-side so a re-enable is instant (no round trip).
     function renderSettingsPlugins() {
         var section = el('div', { className: 'bowire-settings-section' });
+
+        // Plugin health banner — surfaces every plugin in the
+        // configured plugin-dir whose load didn't reach the Loaded /
+        // AlreadyLoaded state. Fetch is fire-and-forget; the banner
+        // appears once the response lands and a re-render runs. Empty
+        // when every install is healthy so the section stays quiet
+        // for the common case.
+        section.appendChild(renderPluginHealthBanner());
+        // Trigger a refresh every time the user opens this tab so a
+        // newly-installed (or newly-broken) plugin shows up without a
+        // full page reload. Cached snapshot is shown until the new
+        // response lands.
+        fetchPluginHealth();
+
         section.appendChild(el('h3', {
             className: 'bowire-settings-section-title',
             textContent: 'Installed protocol plugins'
@@ -553,6 +567,78 @@
         }
         section.appendChild(list);
         return section;
+    }
+
+    /**
+     * Fire-and-forget refresh of the plugin-health snapshot. Updates
+     * the module-level `pluginHealth` array; re-renders the settings
+     * dialog when fresh data arrives so the banner inside the Plugins
+     * tab reflects the current loader state. Silent on transport
+     * failures — surfacing a banner about the banner being broken
+     * doesn't help the operator.
+     */
+    function fetchPluginHealth() {
+        try {
+            fetch(`${config.prefix}/api/plugins/health`)
+                .then(function (resp) { return resp.ok ? resp.json() : null; })
+                .then(function (body) {
+                    if (!body || !Array.isArray(body.plugins)) return;
+                    pluginHealth = body.plugins;
+                    // Re-render only when the dialog is still open and
+                    // sitting on the Plugins tab — anything else means
+                    // the user has navigated away and a re-render would
+                    // be wasted work.
+                    if (settingsOpen && settingsTab === 'plugins') {
+                        renderSettingsDialog();
+                    }
+                })
+                .catch(function () { /* network failure — leave the cache as is */ });
+        } catch { /* fetch threw synchronously — same handling */ }
+    }
+
+    /**
+     * Pull the per-plugin failure rows out of the cached health
+     * snapshot and render a banner above the protocol list. Returns
+     * an empty fragment when every plugin is healthy so the section
+     * stays quiet on the common case. Each row carries the package
+     * id, the loader's status enum, and the human-readable error
+     * message — same shape /api/plugins/health surfaces.
+     */
+    function renderPluginHealthBanner() {
+        var unhealthy = pluginHealth.filter(function (r) {
+            return r.status !== 'Loaded' && r.status !== 'AlreadyLoaded';
+        });
+        if (unhealthy.length === 0) {
+            return el('div'); // empty placeholder, takes no space
+        }
+        var banner = el('div', { className: 'bowire-settings-plugin-health' });
+        banner.appendChild(el('div', {
+            className: 'bowire-settings-plugin-health-title',
+            textContent: unhealthy.length === 1
+                ? '1 plugin failed to load'
+                : unhealthy.length + ' plugins failed to load'
+        }));
+        for (var i = 0; i < unhealthy.length; i++) {
+            (function (r) {
+                var row = el('div', { className: 'bowire-settings-plugin-health-row' });
+                row.appendChild(el('span', {
+                    className: 'bowire-settings-plugin-health-status status-' + r.status,
+                    textContent: r.status
+                }));
+                row.appendChild(el('div', { className: 'bowire-settings-plugin-health-text' },
+                    el('div', {
+                        className: 'bowire-settings-plugin-health-pkg',
+                        textContent: r.packageId
+                    }),
+                    el('div', {
+                        className: 'bowire-settings-plugin-health-msg',
+                        textContent: r.errorMessage || ''
+                    })
+                ));
+                banner.appendChild(row);
+            })(unhealthy[i]);
+        }
+        return banner;
     }
 
     function renderPluginSettings(plugin) {
