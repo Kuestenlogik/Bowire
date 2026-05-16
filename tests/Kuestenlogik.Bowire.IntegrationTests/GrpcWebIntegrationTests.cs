@@ -203,14 +203,19 @@ public sealed class GrpcWebIntegrationTests
         // ASP.NET Core's UseGrpcWeb middleware bridges between an HTTP/1.1
         // request body and the gRPC pipeline. We host on HTTP/1.1 only —
         // a real Envoy-fronted setup looks identical from the client side.
-        var port = GetFreeTcpPort();
-        var url = $"http://127.0.0.1:{port}";
-
+        //
+        // Port allocation: let Kestrel pick the port itself via
+        // ListenLocalhost(0) and read back the bound URL from `app.Urls`
+        // after start. The earlier "bind-to-0 / close / hand-port-to-
+        // Kestrel" pattern raced with other processes on busy CI
+        // runners (observed against port 45647). Letting Kestrel keep
+        // the listener open across the handshake closes the race.
         var builder = WebApplication.CreateBuilder();
-        builder.WebHost.UseUrls(url);
         builder.WebHost.ConfigureKestrel(opts =>
         {
-            opts.ConfigureEndpointDefaults(lo => lo.Protocols = HttpProtocols.Http1);
+            opts.Listen(IPAddress.Loopback, 0, lo => lo.Protocols = HttpProtocols.Http1);
+            // ^ Kestrel picks the port; reading it back from app.Urls
+            // post-StartAsync avoids the bind-0 / close / rebind race.
         });
         builder.Logging.ClearProviders();
         builder.Services.AddGrpc();
@@ -229,22 +234,20 @@ public sealed class GrpcWebIntegrationTests
         app.MapGrpcReflectionService();
 
         await app.StartAsync(TestContext.Current.CancellationToken);
-        return new GreeterHost(app, url);
+        return new GreeterHost(app, ResolveBoundUrl(app));
     }
 
     private static async Task<GreeterHost> StartGreeterNativeHostAsync()
     {
         // Stripped-down copy of GrpcChannelIntegrationTests.StartGreeterHostAsync —
         // duplicated rather than shared to keep this file self-contained
-        // for the negative-path test.
-        var port = GetFreeTcpPort();
-        var url = $"http://127.0.0.1:{port}";
-
+        // for the negative-path test. Same Kestrel-picks-port pattern as
+        // StartGreeterWebHostAsync above so the two hosts can't race
+        // each other on shared CI infrastructure.
         var builder = WebApplication.CreateBuilder();
-        builder.WebHost.UseUrls(url);
         builder.WebHost.ConfigureKestrel(opts =>
         {
-            opts.ConfigureEndpointDefaults(lo => lo.Protocols = HttpProtocols.Http2);
+            opts.Listen(IPAddress.Loopback, 0, lo => lo.Protocols = HttpProtocols.Http2);
         });
         builder.Logging.ClearProviders();
         builder.Services.AddGrpc();
@@ -255,7 +258,29 @@ public sealed class GrpcWebIntegrationTests
         app.MapGrpcReflectionService();
 
         await app.StartAsync(TestContext.Current.CancellationToken);
-        return new GreeterHost(app, url);
+        return new GreeterHost(app, ResolveBoundUrl(app));
+    }
+
+    /// <summary>
+    /// Read the actual bound URL out of the WebApplication once Kestrel
+    /// has assigned a port. ListenLocalhost(0) tells Kestrel to pick;
+    /// <c>app.Urls</c> publishes the resolved URLs post-StartAsync.
+    /// Falls back to a localhost loopback string if the URL list is
+    /// empty (shouldn't happen with the explicit ListenLocalhost
+    /// configuration, but guards against future Kestrel changes).
+    /// </summary>
+    private static string ResolveBoundUrl(Microsoft.AspNetCore.Builder.WebApplication app)
+    {
+        foreach (var u in app.Urls)
+        {
+            // Normalize 0.0.0.0 / wildcard hosts to loopback so the
+            // test client can dial the same endpoint regardless of
+            // Kestrel's representation.
+            var normalised = u.Replace("[::]", "127.0.0.1", StringComparison.Ordinal)
+                              .Replace("0.0.0.0", "127.0.0.1", StringComparison.Ordinal);
+            return normalised;
+        }
+        throw new InvalidOperationException("Kestrel didn't publish any bound URL after StartAsync.");
     }
 
     private static int GetFreeTcpPort()
