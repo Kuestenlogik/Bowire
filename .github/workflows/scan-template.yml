@@ -1,0 +1,147 @@
+name: Bowire scan (reusable)
+
+# Reusable security-scan workflow. Other repositories call this via
+# `uses: Kuestenlogik/Bowire/.github/workflows/scan-template.yml@<ref>`,
+# pass a target URL, and get a SARIF artifact + a Code Scanning upload
+# back in the calling repo's Security tab.
+#
+# Install strategy: `dotnet tool install -g Kuestenlogik.Bowire.Tool`.
+# Picked over a build-from-source path because the consuming repo only
+# wants to run `bowire scan`, not rebuild it — the tool publish on
+# nuget.org is already part of the Bowire release pipeline, so the
+# `g` install is one transparent step and pulls every first-party
+# protocol plugin pre-bundled.
+#
+# SARIF lands in two places:
+#   1. As a build artifact (`bowire-findings`) so non-GitHub-Code-Scanning
+#      consumers (GitLab mirrors, Azure DevOps re-imports, manual review)
+#      can download the raw file.
+#   2. Via `github/codeql-action/upload-sarif@v3` into the calling repo's
+#      Security tab so each finding becomes a Code Scanning alert with
+#      stable rule IDs, severity, and remediation copy.
+
+on:
+  workflow_call:
+    inputs:
+      target:
+        description: 'Target URL to scan (https://... or grpc://...). Required.'
+        required: true
+        type: string
+      corpus:
+        description: 'Directory of vulnerability-template files (relative to the calling repo''s checkout). Defaults to the seed corpus shipped in this repo.'
+        required: false
+        type: string
+        default: 'docs/security/examples'
+      severity:
+        description: 'Minimum severity to report (low | medium | high | critical). Default: low (report everything).'
+        required: false
+        type: string
+        default: 'low'
+      dotnet-version:
+        description: '.NET SDK version used to install + run the bowire CLI. Default: 10.0.x (matches the Bowire build matrix).'
+        required: false
+        type: string
+        default: '10.0.x'
+      tool-version:
+        description: 'Specific version of Kuestenlogik.Bowire.Tool to install. Default: latest published.'
+        required: false
+        type: string
+        default: ''
+      fail-on-finding:
+        description: 'Set to "true" to fail the job when any finding at >= --severity fires. Default: false (upload-only, gate later via Code Scanning rules).'
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+  # Required for github/codeql-action/upload-sarif@v3 to push findings
+  # into the Security tab. SARIF upload is a no-op without it; the
+  # action returns 403 on the calling repo's run otherwise.
+  security-events: write
+
+jobs:
+  scan:
+    name: bowire scan
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout calling repo
+        uses: actions/checkout@v4
+
+      - name: Set up .NET ${{ inputs.dotnet-version }}
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ inputs.dotnet-version }}
+
+      - name: Install Bowire CLI
+        # Either a pinned version (when `tool-version` is provided) or
+        # the latest published tool. Pinning is recommended for
+        # reproducible scans in production pipelines.
+        run: |
+          if [ -n "${{ inputs.tool-version }}" ]; then
+            dotnet tool install -g Kuestenlogik.Bowire.Tool --version "${{ inputs.tool-version }}"
+          else
+            dotnet tool install -g Kuestenlogik.Bowire.Tool
+          fi
+          echo "$HOME/.dotnet/tools" >> "$GITHUB_PATH"
+
+      - name: Print bowire version
+        run: bowire --version
+
+      - name: Run bowire scan
+        id: scan
+        # `--allow-self-signed-certs` is intentionally NOT passed by
+        # default — callers that need it should fork this workflow or
+        # we'll add it as an opt-in input. Same for --no-builtins.
+        #
+        # `continue-on-error` keeps the upload-sarif step alive even
+        # when --fail-on-finding is set, so findings still reach Code
+        # Scanning before the gate fails the job.
+        continue-on-error: true
+        run: |
+          ARGS=(
+            scan
+            --target "${{ inputs.target }}"
+            --out findings.sarif
+            --severity "${{ inputs.severity }}"
+          )
+          if [ -d "${{ inputs.corpus }}" ]; then
+            ARGS+=(--corpus "${{ inputs.corpus }}")
+          else
+            echo "::notice::Corpus directory '${{ inputs.corpus }}' not found in the calling repo — running built-in checks only."
+          fi
+          if [ "${{ inputs.fail-on-finding }}" = "true" ]; then
+            ARGS+=(--fail-on-finding)
+          fi
+          bowire "${ARGS[@]}"
+
+      - name: Upload SARIF as build artifact
+        # Runs even if the scan step failed (e.g. fail-on-finding tripped)
+        # so the raw SARIF is recoverable for non-GitHub consumers.
+        if: always() && hashFiles('findings.sarif') != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: bowire-findings
+          path: findings.sarif
+          if-no-files-found: warn
+
+      - name: Upload SARIF to GitHub Code Scanning
+        # `always()` mirrors the artifact step — Code Scanning needs the
+        # upload regardless of the scan's exit code so previously-found
+        # alerts close out when they stop firing.
+        if: always() && hashFiles('findings.sarif') != ''
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: findings.sarif
+          category: bowire-scan
+
+      - name: Re-surface scan failure
+        # When --fail-on-finding tripped the bowire run we want the job
+        # to end red — but only AFTER the SARIF upload completed. The
+        # earlier `continue-on-error: true` step swallowed the exit
+        # code; this step re-checks the outcome and exits 1 to match.
+        if: inputs.fail-on-finding && steps.scan.outcome == 'failure'
+        run: |
+          echo "::error::bowire scan reported findings at or above '${{ inputs.severity }}' severity."
+          exit 1

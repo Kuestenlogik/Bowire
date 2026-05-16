@@ -1,0 +1,53 @@
+name: Bowire scan (self-smoke)
+
+# Self-smoke for the reusable scan workflow. Calls scan-template.yml
+# against a known-stable public target (example.com) so we can verify
+# end-to-end that:
+#   1. The reusable workflow's tool install path still resolves.
+#   2. The scan emits a SARIF file the upload-sarif action accepts.
+#   3. The seed corpus + built-in checks fire without throwing.
+#
+# We deliberately do NOT scan a sample-server we'd have to spin up here
+# — that adds a moving piece (docker compose / health-check / cleanup)
+# whose failures would mask real regressions in the scan workflow.
+# example.com is HTTPS, Cloudflare-fronted, and predictably surfaces
+# the low-severity TLS-1.0/1.1 + banner-disclosure findings the
+# built-in checks ship with, which is exactly what we want to assert
+# the pipeline survives.
+#
+# `fail-on-finding: false` because we expect (and want) findings — the
+# test is "the workflow runs to completion and SARIF lands in the
+# Security tab", not "the target is clean".
+
+on:
+  # Manual trigger for ad-hoc validation after editing scan-template.yml.
+  workflow_dispatch:
+  # Re-run whenever scan-template.yml itself changes so a broken
+  # refactor is caught on the PR that introduces it, not on the next
+  # consumer who tries to call it.
+  pull_request:
+    paths:
+      - '.github/workflows/scan-template.yml'
+      - '.github/workflows/scan-self.yml'
+  # Weekly smoke so a silent break (e.g. nuget.org tool de-list, .NET
+  # SDK channel rotation) surfaces inside a week rather than the next
+  # time a downstream consumer tries to wire the action.
+  schedule:
+    - cron: '17 6 * * 1'
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  smoke:
+    name: scan example.com
+    uses: ./.github/workflows/scan-template.yml
+    with:
+      target: https://example.com
+      # The seed corpus is in this repo at the default path — pass it
+      # explicitly here so the smoke also exercises the corpus-loading
+      # code path, not only the built-in checks.
+      corpus: docs/security/examples
+      severity: low
+      fail-on-finding: false

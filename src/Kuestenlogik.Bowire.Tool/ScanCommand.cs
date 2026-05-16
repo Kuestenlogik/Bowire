@@ -78,11 +78,35 @@ internal static class ScanCommand
             return 2;
         }
 
+        // Resolve scope and refuse the scan if the target itself
+        // falls outside it — typical mistake: pasted the wrong host
+        // into --target after typing the scope. The default scope
+        // (when --scope is empty) is "the target's own host", so the
+        // built-in case always passes; this check fires when an
+        // operator widened scope but the target slipped out.
+        var inScope = CompileScope(options.Scope, options.Target);
+        string targetHost;
+        try { targetHost = new Uri(options.Target).Host; }
+        catch (UriFormatException)
+        {
+            await Console.Error.WriteLineAsync($"  Could not parse --target '{options.Target}' as a URL.").ConfigureAwait(false);
+            return 2;
+        }
+        if (!inScope(targetHost))
+        {
+            await Console.Error.WriteLineAsync($"  Refusing to scan: target host '{targetHost}' is outside the configured --scope set. Widen the scope (`--scope {targetHost}`) or change the target.").ConfigureAwait(false);
+            return 2;
+        }
+
         Console.WriteLine();
         Console.WriteLine($"  Scanning {options.Target}");
         var pieces = $"{templates.Count} template(s) loaded";
         if (options.RunBuiltins) pieces += " + built-in checks (TLS / banner / verbose-errors)";
         Console.WriteLine($"  {pieces}; min severity = {options.MinSeverity ?? "any"}");
+        var scopeDesc = options.Scope is { Count: > 0 }
+            ? string.Join(", ", options.Scope)
+            : $"{targetHost} (implicit; widen with --scope)";
+        Console.WriteLine($"  Scope: {scopeDesc}");
         Console.WriteLine();
 
         var minRank = SeverityRank(options.MinSeverity ?? "");
@@ -187,7 +211,16 @@ internal static class ScanCommand
         Justification = "CheckCertificateRevocationList is set explicitly below when the operator hasn't opted into self-signed certs.")]
     private static HttpClient BuildHttpClient(ScanOptions options)
     {
-        var handler = new HttpClientHandler();
+        var handler = new HttpClientHandler
+        {
+            // Scope-awareness: never follow a redirect off the
+            // declared scope. A probe that gets 30x'd to a different
+            // host should surface AS a redirect — not silently retry
+            // against whatever Location says. Operators who want the
+            // redirect target tested supply it as an explicit scope
+            // entry instead.
+            AllowAutoRedirect = false,
+        };
         if (options.AllowSelfSignedCerts)
         {
             // Operator explicitly opted into accepting self-signed
@@ -202,6 +235,58 @@ internal static class ScanCommand
         return new HttpClient(handler, disposeHandler: true)
         {
             Timeout = TimeSpan.FromSeconds(options.TimeoutSeconds),
+        };
+    }
+
+    /// <summary>
+    /// Compile the scope-glob list into a single host-membership
+    /// predicate. Patterns: plain hostname (literal match), or a
+    /// leading <c>*.</c> wildcard (matches any sub-domain but not
+    /// the apex). Empty scope list ⇒ derive from the target's own
+    /// host so accidental cross-host probes are blocked by default.
+    /// </summary>
+    internal static Func<string, bool> CompileScope(IList<string> scope, string targetUrl)
+    {
+        var patterns = new List<string>();
+        if (scope is { Count: > 0 })
+        {
+            foreach (var raw in scope)
+            {
+                if (string.IsNullOrWhiteSpace(raw)) continue;
+                // CLI flags may be comma-separated AND repeated — split each
+                // value on `,` so `--scope a.com,b.com` works alongside
+                // `--scope a.com --scope b.com`.
+                foreach (var part in raw.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+                    patterns.Add(part);
+            }
+        }
+        if (patterns.Count == 0)
+        {
+            try
+            {
+                var u = new Uri(targetUrl);
+                patterns.Add(u.Host);
+            }
+            catch (UriFormatException) { /* leave list empty — scope check passes everything */ }
+        }
+        if (patterns.Count == 0) return _ => true;
+
+        return host =>
+        {
+            foreach (var p in patterns)
+            {
+                if (p.StartsWith("*.", StringComparison.Ordinal))
+                {
+                    var suffix = p[1..]; // ".example.com"
+                    if (host.EndsWith(suffix, StringComparison.OrdinalIgnoreCase)
+                        && host.Length > suffix.Length) return true;
+                }
+                else if (string.Equals(host, p, StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
+            }
+            return false;
         };
     }
 
@@ -377,6 +462,17 @@ internal sealed class ScanOptions
     public int TimeoutSeconds { get; init; } = 30;
     public bool AllowSelfSignedCerts { get; init; }
     public bool RunBuiltins { get; init; } = true;
+    /// <summary>
+    /// Hostname-glob patterns the scanner is allowed to probe. Each
+    /// entry is a literal hostname (<c>api.example.com</c>) or a
+    /// glob with leading <c>*</c> (<c>*.example.com</c> matches
+    /// <c>api.example.com</c> and <c>internal.example.com</c> but
+    /// NOT <c>example.com</c> itself). Empty list = the scope is
+    /// implicit, derived from the target's own host. Operators who
+    /// want explicit cross-host scope (e.g. probing redirect-target
+    /// hosts) widen it via repeated <c>--scope</c> CLI flags.
+    /// </summary>
+    public IList<string> Scope { get; init; } = new List<string>();
 }
 
 /// <summary>One scan-result row — what happened when the template was run against the target.</summary>

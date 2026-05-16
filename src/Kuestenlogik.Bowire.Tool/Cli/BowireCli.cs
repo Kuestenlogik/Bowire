@@ -80,8 +80,48 @@ internal static class BowireCli
         root.Add(BuildTestCommand(cfg));
         root.Add(BuildImportCommand());
         root.Add(BuildScanCommand());
+        root.Add(BuildJwtCommand());
 
         return root;
+    }
+
+    // -------------------- jwt --------------------
+
+    private static Command BuildJwtCommand()
+    {
+        var jwt = new Command("jwt",
+            "JWT decode / tamper toolkit. Tier-2 anchor of the security-testing lane (see docs/architecture/security-testing.md).");
+
+        var tokenArg = new Argument<string>("token") { Description = "The JWT to operate on (header.payload.signature)." };
+
+        var decode = new Command("decode", "Decode a JWT and pretty-print the header + payload.");
+        decode.Add(tokenArg);
+        decode.SetAction(async (pr, ct) =>
+            await JwtCommand.RunDecodeAsync(pr.GetValue(tokenArg) ?? "", ct).ConfigureAwait(false));
+
+        var tamper = new Command("tamper", "Produce a tampered JWT (alg:none downgrade, claim mutation, optional HS256 re-signing).");
+        var algNoneOpt = new Option<bool>("--alg-none") { Description = "Downgrade the token to alg:none (drops the signature; the classic JWT bypass)." };
+        var setOpt = new Option<string[]>("--set")
+        {
+            Description = "Mutate a payload claim: --set claim=value. Repeatable. Values parsed as JSON literals first (so --set exp=9999999999 lands as number) and fall back to string.",
+            AllowMultipleArgumentsPerToken = true,
+        };
+        var secretOpt = new Option<string>("--secret") { Description = "Re-sign with HMAC-SHA256 using this secret (overrides --alg-none). Useful when probing weak-secret-based JWT validation." };
+        tamper.Add(tokenArg);
+        tamper.Add(algNoneOpt);
+        tamper.Add(setOpt);
+        tamper.Add(secretOpt);
+        tamper.SetAction(async (pr, ct) =>
+            await JwtCommand.RunTamperAsync(
+                pr.GetValue(tokenArg) ?? "",
+                pr.GetValue(algNoneOpt),
+                pr.GetValue(setOpt) ?? Array.Empty<string>(),
+                pr.GetValue(secretOpt),
+                ct).ConfigureAwait(false));
+
+        jwt.Add(decode);
+        jwt.Add(tamper);
+        return jwt;
     }
 
     // -------------------- scan --------------------
@@ -99,6 +139,11 @@ internal static class BowireCli
         var timeoutOpt = new Option<int>("--timeout") { Description = "Per-probe HTTP timeout in seconds. Default 30." };
         var allowSelfSignedOpt = new Option<bool>("--allow-self-signed-certs") { Description = "Accept self-signed / untrusted TLS certs on the target. Off by default — use only when probing a known dev/staging cert." };
         var noBuiltinsOpt = new Option<bool>("--no-builtins") { Description = "Skip the built-in passive checks (TLS-version enumeration, version-disclosing headers, verbose-error detection). Built-ins run by default." };
+        var scopeOpt = new Option<string[]>("--scope")
+        {
+            Description = "In-scope hostname or glob (e.g. `api.example.com` or `*.example.com` — the leading `*.` matches sub-domains but NOT the apex). Repeat or comma-separate. Defaults to the target's own host, so accidental cross-host probes are blocked unless explicitly widened.",
+            AllowMultipleArgumentsPerToken = true,
+        };
 
         scan.Add(targetOpt);
         scan.Add(corpusOpt);
@@ -108,6 +153,7 @@ internal static class BowireCli
         scan.Add(timeoutOpt);
         scan.Add(allowSelfSignedOpt);
         scan.Add(noBuiltinsOpt);
+        scan.Add(scopeOpt);
 
         scan.SetAction(async (pr, ct) =>
         {
@@ -121,6 +167,7 @@ internal static class BowireCli
                 TimeoutSeconds = pr.GetValue(timeoutOpt) is int t and > 0 ? t : 30,
                 AllowSelfSignedCerts = pr.GetValue(allowSelfSignedOpt),
                 RunBuiltins = !pr.GetValue(noBuiltinsOpt),
+                Scope = pr.GetValue(scopeOpt) ?? Array.Empty<string>(),
             };
             return await ScanCommand.RunAsync(options, ct).ConfigureAwait(false);
         });
