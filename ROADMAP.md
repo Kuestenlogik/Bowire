@@ -2,6 +2,24 @@
 
 ## In progress
 
+### Bowire as a cyber-security testing tool (2026-05-16)
+
+ADR: [`docs/architecture/security-testing.md`](docs/architecture/security-testing.md). The product positioning: **"Burp Suite for the non-HTTP protocols, with schema-awareness, self-hosted, with AI-assisted threat modeling via MCP."** None of the incumbents (Burp / ZAP / Nuclei / Postman / 42Crunch) own the intersection of multi-protocol-native + schema-aware + self-hosted that the existing Bowire stack already covers; the security lane extends the existing discovery + recording + replay primitives into vulnerability testing.
+
+Four capability tiers from the ADR. Tier 1 lands incrementally; higher tiers track to follow-up releases.
+
+- [ ] **Tier 1 anchor — Recording-as-attack-replay**: `BowireRecording` gains optional `attack` + `vulnerability` + `vulnerableWhen` fields. New `bowire scan --target X --corpus Y` subcommand walks every template in the corpus, replays its probe against the target, evaluates the predicate-tree against the response, emits findings (console table + SARIF for CI uploads). Three seed templates land alongside: gRPC Server-Reflection in production, GraphQL `__schema` introspection in production, REST missing security-headers (Tier 1 passive check).
+- [ ] **Tier 1 — Active-scanner built-in passive checks**: same `bowire scan` subcommand grows TLS-version / cipher enumeration, verbose-error detection, banner/version disclosure modules. Same predicate engine, additional built-in invocations.
+- [ ] **Tier 1 — Authentication profile**: pre-scan login flow captures a token, carries it through every subsequent probe. Without this, scans of authenticated APIs are blind.
+- [ ] **Tier 1 — Scope-awareness**: explicit in-scope / out-of-scope URL list so scans can't accidentally probe a third-party CDN or partner API.
+- [ ] **Tier 2 anchor — Schema-aware fuzzing**: right-click on a JSON-tree field → "Fuzz this field with [SQLi / XSS / pathTrav / cmdInj]". Frame-semantics layer skips fields whose `kind` doesn't match the payload class (don't throw SQL at `coordinate.latitude`; magic-byte-mutate `image.bytes` instead of XSS).
+- [ ] **Tier 2 — JWT toolkit**: decode any `Authorization: Bearer` in a recording; tamper-and-replay; built-in checks for the known JWT attacks (`alg:none`, key-confusion, `kid` injection).
+- [ ] **Tier 2 — Multi-protocol attack template library** in `kuestenlogik/bowire-vulndb` (separate repo, MIT-licensed). Per-PR CI validation against vulnerable-by-design containers; monthly NVD-sync opens issues for new CVEs that lack templates. `bowire vulndb update` plumbing for sync.
+- [ ] **Tier 3 — Intercepting proxy** (parity-with-Burp anchor; largest UX investment of all tiers; separate Phase).
+- [ ] **Tier 4 — MCP-driven threat modeling**: Bowire's MCP adapter exposes a `bowire.threat-model` prompt → LLM looks at the discovered service tree and proposes top-N riskiest endpoints + attack templates. Operator confirms → templates run. LLM is the smart-default picker; Bowire is the execution engine.
+
+Pricing / branding considered as a separate axis in the ADR — the open core stays "Bowire + `bowire scan` + public vulndb"; commercial tier adds intercepting proxy, private vulndb subscription, hosted-LLM threat-modeling.
+
 ### MapBasemap config wired end-to-end (2026-05-13)
 
 The MapLibre widget has accepted `window.__BOWIRE_CONFIG__.mapBasemap` since the satellite-alias work landed, but the host never actually surfaced the value — the JSDoc and the lockdown tests both referenced a `Bowire:MapBasemap` config key that didn't exist as an actual option. Closed the loop:
