@@ -72,15 +72,17 @@ internal static class ScanCommand
             }
         }
 
-        if (templates.Count == 0)
+        if (templates.Count == 0 && !options.RunBuiltins)
         {
-            await Console.Error.WriteLineAsync("  No vulnerability templates found. Provide --corpus <dir> or --template <file>.").ConfigureAwait(false);
+            await Console.Error.WriteLineAsync("  No vulnerability templates found and built-ins disabled. Provide --corpus <dir> or --template <file>, OR drop --no-builtins.").ConfigureAwait(false);
             return 2;
         }
 
         Console.WriteLine();
         Console.WriteLine($"  Scanning {options.Target}");
-        Console.WriteLine($"  {templates.Count} template(s) loaded; min severity = {options.MinSeverity ?? "any"}");
+        var pieces = $"{templates.Count} template(s) loaded";
+        if (options.RunBuiltins) pieces += " + built-in checks (TLS / banner / verbose-errors)";
+        Console.WriteLine($"  {pieces}; min severity = {options.MinSeverity ?? "any"}");
         Console.WriteLine();
 
         var minRank = SeverityRank(options.MinSeverity ?? "");
@@ -115,6 +117,28 @@ internal static class ScanCommand
             catch (Exception ex)
             {
                 findings.Add(ScanFinding.Error(tmpl, ex.Message));
+            }
+        }
+
+        if (options.RunBuiltins)
+        {
+            var builtinResults = await SecurityBuiltins.RunAllAsync(options.Target, http, ct).ConfigureAwait(false);
+            foreach (var f in builtinResults)
+            {
+                var sev = f.Template.Recording.Vulnerability?.Severity ?? "info";
+                if (SeverityRank(sev) < minRank && f.Status == ScanFindingStatus.Vulnerable)
+                {
+                    findings.Add(new ScanFinding
+                    {
+                        Template = f.Template,
+                        Status = ScanFindingStatus.Skipped,
+                        Detail = "below severity threshold",
+                    });
+                }
+                else
+                {
+                    findings.Add(f);
+                }
             }
         }
 
@@ -352,6 +376,7 @@ internal sealed class ScanOptions
     public string? MinSeverity { get; init; }
     public int TimeoutSeconds { get; init; } = 30;
     public bool AllowSelfSignedCerts { get; init; }
+    public bool RunBuiltins { get; init; } = true;
 }
 
 /// <summary>One scan-result row — what happened when the template was run against the target.</summary>

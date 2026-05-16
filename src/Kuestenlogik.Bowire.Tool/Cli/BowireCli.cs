@@ -98,6 +98,7 @@ internal static class BowireCli
         var severityOpt = new Option<string>("--severity") { Description = "Minimum severity to report: low / medium / high / critical. Lower-severity templates still load but are reported as skipped." };
         var timeoutOpt = new Option<int>("--timeout") { Description = "Per-probe HTTP timeout in seconds. Default 30." };
         var allowSelfSignedOpt = new Option<bool>("--allow-self-signed-certs") { Description = "Accept self-signed / untrusted TLS certs on the target. Off by default — use only when probing a known dev/staging cert." };
+        var noBuiltinsOpt = new Option<bool>("--no-builtins") { Description = "Skip the built-in passive checks (TLS-version enumeration, version-disclosing headers, verbose-error detection). Built-ins run by default." };
 
         scan.Add(targetOpt);
         scan.Add(corpusOpt);
@@ -106,6 +107,7 @@ internal static class BowireCli
         scan.Add(severityOpt);
         scan.Add(timeoutOpt);
         scan.Add(allowSelfSignedOpt);
+        scan.Add(noBuiltinsOpt);
 
         scan.SetAction(async (pr, ct) =>
         {
@@ -118,6 +120,7 @@ internal static class BowireCli
                 MinSeverity = pr.GetValue(severityOpt),
                 TimeoutSeconds = pr.GetValue(timeoutOpt) is int t and > 0 ? t : 30,
                 AllowSelfSignedCerts = pr.GetValue(allowSelfSignedOpt),
+                RunBuiltins = !pr.GetValue(noBuiltinsOpt),
             };
             return await ScanCommand.RunAsync(options, ct).ConfigureAwait(false);
         });
