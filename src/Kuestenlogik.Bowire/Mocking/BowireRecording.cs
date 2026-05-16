@@ -3,6 +3,7 @@
 
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using Kuestenlogik.Bowire.Security;
 
 namespace Kuestenlogik.Bowire.Mocking;
 
@@ -56,6 +57,35 @@ public sealed class BowireRecording
 
     [JsonPropertyName("steps")]
     public IList<BowireRecordingStep> Steps { get; init; } = new List<BowireRecordingStep>();
+
+    /// <summary>
+    /// When <see langword="true"/>, this recording is a security-test
+    /// probe (a "vulnerability template" in the
+    /// <c>docs/architecture/security-testing.md</c> ADR), not a
+    /// captured fixture. The <c>bowire scan</c> subcommand picks these
+    /// up; the mock-server replay path explicitly skips them so an
+    /// attack template never accidentally serves traffic. Optional;
+    /// default <see langword="false"/> preserves backwards-compat with
+    /// every pre-v1.4 recording.
+    /// </summary>
+    [JsonPropertyName("attack")]
+    public bool Attack { get; set; }
+
+    /// <summary>
+    /// Identifying + classification metadata for the vulnerability the
+    /// template probes for. Required when <see cref="Attack"/> is
+    /// <see langword="true"/>, ignored otherwise.
+    /// </summary>
+    [JsonPropertyName("vulnerability")]
+    public AttackVulnerability? Vulnerability { get; set; }
+
+    /// <summary>
+    /// Predicate-tree that, when matched against the response of the
+    /// probe (the recording's first step), identifies the target as
+    /// vulnerable. Required when <see cref="Attack"/> is <see langword="true"/>.
+    /// </summary>
+    [JsonPropertyName("vulnerableWhen")]
+    public AttackPredicate? VulnerableWhen { get; set; }
 }
 
 /// <summary>

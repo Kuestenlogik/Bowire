@@ -1,0 +1,54 @@
+{
+  "id": "bwr-grpc-001-reflection",
+  "name": "gRPC Server Reflection exposes internal services in production",
+  "description": "Probes the gRPC Server Reflection endpoint via its gRPC-Web HTTP/1.1 surface (so the scan can hit it without an HTTP/2 client). Vulnerable when reflection is enabled in production and returns a non-empty service list — leaks service catalogue + method signatures to anyone who can reach the port.",
+  "createdAt": 1747526400000,
+  "recordingFormatVersion": 2,
+  "attack": true,
+  "vulnerability": {
+    "id": "BWR-GRPC-001",
+    "cve": [],
+    "cwe": "CWE-540",
+    "owaspApi": "API3-2023-BOPLA",
+    "severity": "high",
+    "cvss": 7.5,
+    "protocols": ["grpc", "grpc-web"],
+    "authors": ["thomas-stegemann"],
+    "introduced": "2026-05-16",
+    "references": [
+      "https://github.com/grpc/grpc/blob/master/doc/server-reflection.md",
+      "https://owasp.org/API-Security/editions/2023/en/0xa3-broken-object-property-level-authorization/"
+    ],
+    "remediation": "In ASP.NET Core, drop `app.MapGrpcReflectionService()` from the production build, OR gate it behind `.RequireAuthorization(\"Admin\")`. Verify with `grpcurl -plaintext <host> list` — should return \"Failed to list services: ...\". Some incident-response runbooks ALWAYS treat reflection in prod as a finding regardless of authentication, since it widens the attack surface even for valid admin users."
+  },
+  "steps": [
+    {
+      "id": "probe-1",
+      "capturedAt": 1747526400000,
+      "protocol": "graphql",
+      "service": "grpc.reflection.v1alpha.ServerReflection",
+      "method": "ServerReflectionInfo",
+      "methodType": "Unary",
+      "httpVerb": "POST",
+      "httpPath": "/grpc.reflection.v1alpha.ServerReflection/ServerReflectionInfo",
+      "metadata": {
+        "Accept": "application/grpc-web-text"
+      },
+      "body": "{\"listServices\":\"\"}",
+      "messages": ["{\"listServices\":\"\"}"],
+      "status": "OK"
+    }
+  ],
+  "vulnerableWhen": {
+    "allOf": [
+      { "statusIn": [200, 415] },
+      {
+        "anyOf": [
+          { "bodyJsonPath": { "path": "$.listServicesResponse.service", "exists": true } },
+          { "bodyMatches": "\"name\"\\s*:\\s*\"" },
+          { "bodyContains": "ServerReflection" }
+        ]
+      }
+    ]
+  }
+}

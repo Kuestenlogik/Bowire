@@ -1,0 +1,47 @@
+{
+  "id": "bwr-rest-001-missing-security-headers",
+  "name": "REST endpoint missing baseline security headers",
+  "description": "Hits the target's root path with a plain GET, then asserts the response carries the minimum browser-protection headers. Missing headers indicate the server is shipping a default ASP.NET / Express / Spring response without security-headers middleware — exploitable via clickjacking (X-Frame-Options), MIME-sniffing (X-Content-Type-Options), and downgrade attacks (HSTS).",
+  "createdAt": 1747526400000,
+  "recordingFormatVersion": 2,
+  "attack": true,
+  "vulnerability": {
+    "id": "BWR-REST-001",
+    "cve": [],
+    "cwe": "CWE-693",
+    "owaspApi": "API8-2023-SECMISCONF",
+    "severity": "low",
+    "cvss": 4.3,
+    "protocols": ["rest", "http"],
+    "authors": ["thomas-stegemann"],
+    "introduced": "2026-05-16",
+    "references": [
+      "https://owasp.org/www-project-secure-headers/",
+      "https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Security-Policy",
+      "https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Strict-Transport-Security"
+    ],
+    "remediation": "Add a security-headers middleware before the routing pipeline:\n\nASP.NET Core — `app.UseSecurityHeaders()` (NetEscapades.AspNetCore.SecurityHeaders) wired with Csp / Hsts / FrameOptions / ContentTypeOptions defaults.\nExpress.js — `app.use(helmet())`.\nSpring Boot — `http.headers().contentSecurityPolicy(\"...\").frameOptions().sameOrigin().contentTypeOptions().and().httpStrictTransportSecurity().includeSubDomains(true)`.\n\nValidate via the same Bowire scan after the middleware lands — the finding should clear."
+  },
+  "steps": [
+    {
+      "id": "probe-1",
+      "capturedAt": 1747526400000,
+      "protocol": "rest",
+      "service": "root",
+      "method": "GET /",
+      "methodType": "Unary",
+      "httpVerb": "GET",
+      "httpPath": "/",
+      "messages": [],
+      "status": "OK"
+    }
+  ],
+  "vulnerableWhen": {
+    "anyOf": [
+      { "headerMissing": ["X-Frame-Options"] },
+      { "headerMissing": ["X-Content-Type-Options"] },
+      { "headerMissing": ["Strict-Transport-Security"] },
+      { "headerMissing": ["Content-Security-Policy"] }
+    ]
+  }
+}

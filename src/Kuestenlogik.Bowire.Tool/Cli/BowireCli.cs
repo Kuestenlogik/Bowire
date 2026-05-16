@@ -79,8 +79,50 @@ internal static class BowireCli
         root.Add(BuildPluginCommand(cfg, pluginDir));
         root.Add(BuildTestCommand(cfg));
         root.Add(BuildImportCommand());
+        root.Add(BuildScanCommand());
 
         return root;
+    }
+
+    // -------------------- scan --------------------
+
+    private static Command BuildScanCommand()
+    {
+        var scan = new Command("scan",
+            "Run vulnerability templates against a target URL. The Tier-1 anchor of the security-testing lane (see docs/architecture/security-testing.md).");
+
+        var targetOpt = new Option<string>("--target") { Description = "Target base URL (e.g. https://api.example.com).", Required = true };
+        var corpusOpt = new Option<string>("--corpus") { Description = "Directory of *.json vulnerability templates to run." };
+        var templateOpt = new Option<string>("--template") { Description = "Single template *.json file to run (combinable with --corpus)." };
+        var outOpt = new Option<string>("--out") { Description = "Write findings as SARIF 2.1.0 JSON to this path (for CI dashboards: GitHub Code Scanning, GitLab, Azure DevOps)." };
+        var severityOpt = new Option<string>("--severity") { Description = "Minimum severity to report: low / medium / high / critical. Lower-severity templates still load but are reported as skipped." };
+        var timeoutOpt = new Option<int>("--timeout") { Description = "Per-probe HTTP timeout in seconds. Default 30." };
+        var allowSelfSignedOpt = new Option<bool>("--allow-self-signed-certs") { Description = "Accept self-signed / untrusted TLS certs on the target. Off by default — use only when probing a known dev/staging cert." };
+
+        scan.Add(targetOpt);
+        scan.Add(corpusOpt);
+        scan.Add(templateOpt);
+        scan.Add(outOpt);
+        scan.Add(severityOpt);
+        scan.Add(timeoutOpt);
+        scan.Add(allowSelfSignedOpt);
+
+        scan.SetAction(async (pr, ct) =>
+        {
+            var options = new ScanOptions
+            {
+                Target = pr.GetValue(targetOpt) ?? "",
+                Corpus = pr.GetValue(corpusOpt),
+                Template = pr.GetValue(templateOpt),
+                OutSarif = pr.GetValue(outOpt),
+                MinSeverity = pr.GetValue(severityOpt),
+                TimeoutSeconds = pr.GetValue(timeoutOpt) is int t and > 0 ? t : 30,
+                AllowSelfSignedCerts = pr.GetValue(allowSelfSignedOpt),
+            };
+            return await ScanCommand.RunAsync(options, ct).ConfigureAwait(false);
+        });
+
+        return scan;
     }
 
     // -------------------- import --------------------

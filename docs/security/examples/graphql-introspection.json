@@ -1,0 +1,53 @@
+{
+  "id": "bwr-graphql-001-introspection",
+  "name": "GraphQL __schema introspection enabled in production",
+  "description": "Sends the standard `__schema { types { name } }` introspection query to /graphql. Vulnerable when the server returns a populated `types` array — every public schema field is now an attack-surface map for the caller. Most GraphQL frameworks ship with introspection ON by default; production deployments are expected to flip it off.",
+  "createdAt": 1747526400000,
+  "recordingFormatVersion": 2,
+  "attack": true,
+  "vulnerability": {
+    "id": "BWR-GRAPHQL-001",
+    "cve": [],
+    "cwe": "CWE-200",
+    "owaspApi": "API3-2023-BOPLA",
+    "severity": "medium",
+    "cvss": 5.3,
+    "protocols": ["graphql"],
+    "authors": ["thomas-stegemann"],
+    "introduced": "2026-05-16",
+    "references": [
+      "https://graphql.org/learn/introspection/",
+      "https://owasp.org/www-project-api-security/"
+    ],
+    "remediation": "Disable introspection in production. HotChocolate: `.AddGraphQLServer().AddType<...>().ModifyOptions(o => o.DefaultBindingBehavior = BindingBehavior.Explicit)` and set introspection options per environment. Apollo Server: `introspection: false`. Strawberry: `introspection: false`. Validate via `curl -X POST -H 'Content-Type: application/json' -d '{\"query\":\"{__schema{types{name}}}\"}' <target>/graphql` — production should return a 200 with an `errors` array, not a populated `types` list."
+  },
+  "steps": [
+    {
+      "id": "probe-1",
+      "capturedAt": 1747526400000,
+      "protocol": "graphql",
+      "service": "graphql",
+      "method": "introspection",
+      "methodType": "Unary",
+      "httpVerb": "POST",
+      "httpPath": "/graphql",
+      "metadata": {
+        "Accept": "application/json"
+      },
+      "body": "{\"query\":\"{ __schema { types { name } } }\"}",
+      "messages": ["{\"query\":\"{ __schema { types { name } } }\"}"],
+      "status": "OK"
+    }
+  ],
+  "vulnerableWhen": {
+    "allOf": [
+      { "status": 200 },
+      { "bodyJsonPath": { "path": "$.data.__schema.types", "exists": true } },
+      {
+        "not": {
+          "bodyJsonPath": { "path": "$.errors[0].message", "exists": true }
+        }
+      }
+    ]
+  }
+}
