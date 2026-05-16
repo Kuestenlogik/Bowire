@@ -81,8 +81,57 @@ internal static class BowireCli
         root.Add(BuildImportCommand());
         root.Add(BuildScanCommand());
         root.Add(BuildJwtCommand());
+        root.Add(BuildFuzzCommand());
 
         return root;
+    }
+
+    // -------------------- fuzz --------------------
+
+    private static Command BuildFuzzCommand()
+    {
+        var fuzz = new Command("fuzz",
+            "Schema-aware fuzzing of a single field. Tier-2 anchor of the security-testing lane.");
+
+        var targetOpt = new Option<string>("--target") { Description = "Target base URL.", Required = true };
+        var templateOpt = new Option<string>("--template") { Description = "Recording-style JSON file describing the request shape (httpVerb / httpPath / body).", Required = true };
+        var fieldOpt = new Option<string>("--field") { Description = "JSONPath into the request body identifying the field to fuzz (e.g. $.username or $.filter.id).", Required = true };
+        var categoryOpt = new Option<string>("--payloads") { Description = "Payload category: sqli / xss / pathtrav / cmdinj.", Required = true };
+        var forceOpt = new Option<bool>("--force") { Description = "Run even when the field's value-shape doesn't match the payload class (e.g. fuzz a numeric field with string payloads anyway)." };
+        var timeoutOpt = new Option<int>("--timeout") { Description = "Per-payload HTTP timeout in seconds. Default 30." };
+        var allowSelfSignedOpt = new Option<bool>("--allow-self-signed-certs") { Description = "Accept self-signed certs on the target." };
+        var authHeaderOpt = new Option<string[]>("--auth-header")
+        {
+            Description = "Add an HTTP header to every fuzz request (typically Authorization: Bearer …). Repeatable.",
+            AllowMultipleArgumentsPerToken = false,
+        };
+
+        fuzz.Add(targetOpt);
+        fuzz.Add(templateOpt);
+        fuzz.Add(fieldOpt);
+        fuzz.Add(categoryOpt);
+        fuzz.Add(forceOpt);
+        fuzz.Add(timeoutOpt);
+        fuzz.Add(allowSelfSignedOpt);
+        fuzz.Add(authHeaderOpt);
+
+        fuzz.SetAction(async (pr, ct) =>
+        {
+            var options = new FuzzOptions
+            {
+                Target = pr.GetValue(targetOpt) ?? "",
+                Template = pr.GetValue(templateOpt),
+                Field = pr.GetValue(fieldOpt),
+                Category = pr.GetValue(categoryOpt),
+                Force = pr.GetValue(forceOpt),
+                TimeoutSeconds = pr.GetValue(timeoutOpt) is int t and > 0 ? t : 30,
+                AllowSelfSignedCerts = pr.GetValue(allowSelfSignedOpt),
+                AuthHeaders = pr.GetValue(authHeaderOpt) ?? Array.Empty<string>(),
+            };
+            return await FuzzCommand.RunAsync(options, ct).ConfigureAwait(false);
+        });
+
+        return fuzz;
     }
 
     // -------------------- jwt --------------------
@@ -144,6 +193,11 @@ internal static class BowireCli
             Description = "In-scope hostname or glob (e.g. `api.example.com` or `*.example.com` — the leading `*.` matches sub-domains but NOT the apex). Repeat or comma-separate. Defaults to the target's own host, so accidental cross-host probes are blocked unless explicitly widened.",
             AllowMultipleArgumentsPerToken = true,
         };
+        var authHeaderOpt = new Option<string[]>("--auth-header")
+        {
+            Description = "Add an HTTP header to every probe — typically `Authorization: Bearer <token>` or `X-Api-Key: <key>`. Repeatable for multiple headers (cookies, multi-header auth schemes). Without this flag, scans of authenticated APIs land on the login wall and the scanner reports misleading 'endpoint missing' findings.",
+            AllowMultipleArgumentsPerToken = false,
+        };
 
         scan.Add(targetOpt);
         scan.Add(corpusOpt);
@@ -154,6 +208,7 @@ internal static class BowireCli
         scan.Add(allowSelfSignedOpt);
         scan.Add(noBuiltinsOpt);
         scan.Add(scopeOpt);
+        scan.Add(authHeaderOpt);
 
         scan.SetAction(async (pr, ct) =>
         {
@@ -168,6 +223,7 @@ internal static class BowireCli
                 AllowSelfSignedCerts = pr.GetValue(allowSelfSignedOpt),
                 RunBuiltins = !pr.GetValue(noBuiltinsOpt),
                 Scope = pr.GetValue(scopeOpt) ?? Array.Empty<string>(),
+                AuthHeaders = pr.GetValue(authHeaderOpt) ?? Array.Empty<string>(),
             };
             return await ScanCommand.RunAsync(options, ct).ConfigureAwait(false);
         });

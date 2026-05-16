@@ -41,12 +41,16 @@ internal static class SecurityBuiltins
     /// one wedged probe (e.g. a connection refused on a TLS sub-test)
     /// doesn't take the rest of the scan down.
     /// </summary>
-    public static async Task<IReadOnlyList<ScanFinding>> RunAllAsync(string target, HttpClient http, CancellationToken ct)
+    public static async Task<IReadOnlyList<ScanFinding>> RunAllAsync(string target, HttpClient http, IList<string> authHeaders, CancellationToken ct)
     {
         var results = new List<ScanFinding>();
+        // TLS handshake check is socket-level — auth headers don't
+        // factor in. The HTTP-class checks (banner, verbose errors)
+        // carry the auth headers so they probe authenticated endpoints
+        // alongside anonymous ones.
         results.AddRange(await TlsVersionEnumerationAsync(target, ct).ConfigureAwait(false));
-        results.AddRange(await BannerDisclosureAsync(target, http, ct).ConfigureAwait(false));
-        results.AddRange(await VerboseErrorDetectionAsync(target, http, ct).ConfigureAwait(false));
+        results.AddRange(await BannerDisclosureAsync(target, http, authHeaders, ct).ConfigureAwait(false));
+        results.AddRange(await VerboseErrorDetectionAsync(target, http, authHeaders, ct).ConfigureAwait(false));
         return results;
     }
 
@@ -193,12 +197,13 @@ internal static class SecurityBuiltins
     /// Each disclosed header becomes its own finding so reports group
     /// them under the right rule id in SARIF.
     /// </summary>
-    private static async Task<IReadOnlyList<ScanFinding>> BannerDisclosureAsync(string target, HttpClient http, CancellationToken ct)
+    private static async Task<IReadOnlyList<ScanFinding>> BannerDisclosureAsync(string target, HttpClient http, IList<string> authHeaders, CancellationToken ct)
     {
         var findings = new List<ScanFinding>();
         try
         {
             using var req = new HttpRequestMessage(HttpMethod.Get, target);
+            ScanCommand.ApplyAuthHeaders(req, authHeaders);
             using var resp = await http.SendAsync(req, ct).ConfigureAwait(false);
 
             foreach (var (header, severity, why) in s_disclosureHeaders)
@@ -261,7 +266,7 @@ internal static class SecurityBuiltins
     /// match emits a finding so the operator knows the production
     /// build is leaking debug-only output.
     /// </summary>
-    private static async Task<IReadOnlyList<ScanFinding>> VerboseErrorDetectionAsync(string target, HttpClient http, CancellationToken ct)
+    private static async Task<IReadOnlyList<ScanFinding>> VerboseErrorDetectionAsync(string target, HttpClient http, IList<string> authHeaders, CancellationToken ct)
     {
         var findings = new List<ScanFinding>();
         var probes = new[]
@@ -277,6 +282,7 @@ internal static class SecurityBuiltins
             {
                 var url = CombineUrl(target, path);
                 using var req = new HttpRequestMessage(HttpMethod.Get, url);
+                ScanCommand.ApplyAuthHeaders(req, authHeaders);
                 using var resp = await http.SendAsync(req, ct).ConfigureAwait(false);
                 var body = await resp.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
                 foreach (var pattern in s_errorMarkers)

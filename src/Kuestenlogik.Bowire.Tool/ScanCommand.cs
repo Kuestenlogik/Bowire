@@ -132,7 +132,7 @@ internal static class ScanCommand
 
             try
             {
-                var response = await SendHttpProbeAsync(http, options.Target, probe, ct).ConfigureAwait(false);
+                var response = await SendHttpProbeAsync(http, options.Target, probe, options.AuthHeaders, ct).ConfigureAwait(false);
                 var matched = AttackPredicateEvaluator.Evaluate(tmpl.Recording.VulnerableWhen!, response);
                 findings.Add(matched
                     ? ScanFinding.Vulnerable(tmpl, response)
@@ -146,7 +146,7 @@ internal static class ScanCommand
 
         if (options.RunBuiltins)
         {
-            var builtinResults = await SecurityBuiltins.RunAllAsync(options.Target, http, ct).ConfigureAwait(false);
+            var builtinResults = await SecurityBuiltins.RunAllAsync(options.Target, http, options.AuthHeaders, ct).ConfigureAwait(false);
             foreach (var f in builtinResults)
             {
                 var sev = f.Template.Recording.Vulnerability?.Severity ?? "info";
@@ -290,7 +290,8 @@ internal static class ScanCommand
         };
     }
 
-    private static async Task<AttackProbeResponse> SendHttpProbeAsync(HttpClient http, string target, BowireRecordingStep probe, CancellationToken ct)
+    private static async Task<AttackProbeResponse> SendHttpProbeAsync(HttpClient http, string target, BowireRecordingStep probe,
+        IList<string> authHeaders, CancellationToken ct)
     {
         var basePath = probe.HttpPath ?? "/";
         var url = CombineUrl(target, basePath);
@@ -307,6 +308,12 @@ internal static class ScanCommand
                 }
             }
         }
+
+        // Auth-profile headers apply to EVERY probe — they sit on top
+        // of any template-supplied metadata so an operator can carry
+        // a session token / API key into every scan without rewriting
+        // every template's metadata block.
+        ApplyAuthHeaders(req, authHeaders);
 
         if (!string.IsNullOrEmpty(probe.Body) && verb is "POST" or "PUT" or "PATCH" or "DELETE")
         {
@@ -336,6 +343,30 @@ internal static class ScanCommand
         var b = baseUrl.TrimEnd('/');
         var p = string.IsNullOrEmpty(path) ? "/" : (path.StartsWith('/') ? path : "/" + path);
         return b + p;
+    }
+
+    /// <summary>
+    /// Apply the operator-supplied auth headers to a probe request.
+    /// Each entry is a <c>Name: Value</c> string; the first colon is
+    /// the separator (so a value with embedded colons like a Bearer
+    /// token containing dots works). Names that fail validation
+    /// (e.g. with spaces) are silently dropped — the scanner is best-
+    /// effort here; the operator can debug with --verbose if a header
+    /// is misformed.
+    /// </summary>
+    internal static void ApplyAuthHeaders(HttpRequestMessage req, IList<string> headers)
+    {
+        if (headers is null || headers.Count == 0) return;
+        foreach (var raw in headers)
+        {
+            if (string.IsNullOrWhiteSpace(raw)) continue;
+            var colon = raw.IndexOf(':', StringComparison.Ordinal);
+            if (colon <= 0) continue;
+            var name = raw[..colon].Trim();
+            var value = raw[(colon + 1)..].TrimStart();
+            if (name.Length == 0) continue;
+            req.Headers.TryAddWithoutValidation(name, value);
+        }
     }
 
     private static void WriteConsoleReport(List<ScanFinding> findings)
@@ -473,6 +504,17 @@ internal sealed class ScanOptions
     /// hosts) widen it via repeated <c>--scope</c> CLI flags.
     /// </summary>
     public IList<string> Scope { get; init; } = new List<string>();
+
+    /// <summary>
+    /// Auth headers applied to every HTTP-class probe (template +
+    /// builtin). Each entry is a `Name: Value` string, e.g.
+    /// <c>"Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."</c>
+    /// or <c>"X-Api-Key: abc123"</c>. Repeatable on the CLI. Without an
+    /// auth header, scans of authenticated APIs are blind — every
+    /// probe lands on the login wall and the scanner reports false
+    /// "endpoint missing" findings.
+    /// </summary>
+    public IList<string> AuthHeaders { get; init; } = new List<string>();
 }
 
 /// <summary>One scan-result row — what happened when the template was run against the target.</summary>
