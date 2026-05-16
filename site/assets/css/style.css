@@ -688,6 +688,13 @@ pre > code {
     background: rgba(255, 255, 255, 0.05);
 }
 
+/* Shared post-click feedback for every icon-style copy affordance on
+   the marketing site. Every copy button (.copy-btn, .protocol-install-copy,
+   .downloads-copy, .downloads-pkg-copy, …) carries .copy-btn as a
+   base class, so a single .copy-btn.copied rule covers all of them —
+   the variant-specific `.copied` rules that used to live next to
+   each variant's button styles were dead duplicates and have been
+   removed. JS toggles .copied on for 1500ms via main.js:264. */
 .copy-btn.copied {
     color: var(--success);
 }
@@ -1900,9 +1907,9 @@ pre > code {
     color: var(--accent);
     background: rgba(99, 102, 241, 0.1);
 }
-.protocol-install-copy.copied {
-    color: var(--success);
-}
+/* .copied feedback handled by the shared .copy-btn.copied rule
+   further up — every .protocol-install-copy button also carries
+   .copy-btn so the cascade reaches it. */
 .protocol-install-dim {
     border-style: dashed;
     color: var(--text-secondary);
@@ -4412,9 +4419,8 @@ h4.downloads-sub {
     color: var(--accent);
     background: rgba(99, 102, 241, 0.1);
 }
-.downloads-copy.copied {
-    color: var(--success);
-}
+/* .copied feedback handled by the shared .copy-btn.copied rule
+   — every .downloads-copy button also carries .copy-btn. */
 
 .downloads-roadmap-link {
     display: inline-block;
