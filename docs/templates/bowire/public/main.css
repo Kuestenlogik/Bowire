@@ -1316,6 +1316,48 @@ article pre code {
     border: none;
 }
 
+/* Fenced-code block chrome — DocFX renders bare `<pre><code>` for every
+   triple-backtick block; the inline script at the bottom of the master
+   template wraps each one in a `.docs-code-block` element with a copy
+   button so the docs reach parity with the marketing site's
+   `.code-block` + `.copy-btn` affordance (style.css ~640). Idempotent
+   so re-renders / hot reloads don't double-wrap. */
+article .docs-code-block {
+    position: relative;
+    margin: 1rem 0;
+}
+article .docs-code-block pre {
+    margin: 0;
+}
+article .docs-code-copy {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background: transparent;
+    border: 1px solid var(--bs-border-color);
+    color: var(--bs-secondary-color);
+    padding: 5px 7px;
+    border-radius: 6px;
+    cursor: pointer;
+    line-height: 0;
+    opacity: 0;
+    transition: opacity 0.15s ease, color 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+}
+article .docs-code-block:hover .docs-code-copy,
+article .docs-code-copy:focus-visible {
+    opacity: 1;
+}
+article .docs-code-copy:hover {
+    color: var(--bs-link-color);
+    border-color: var(--bs-link-color);
+    background: rgba(99, 102, 241, 0.08);
+}
+article .docs-code-copy.is-copied {
+    color: #16a34a;
+    border-color: #16a34a;
+    opacity: 1;
+}
+
 /* highlight.js — Bowire brand palette */
 .hljs {
     background: var(--bs-tertiary-bg) !important;

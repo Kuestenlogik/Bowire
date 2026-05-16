@@ -901,6 +901,71 @@
       })();
     </script>
 
+    {{!--- Fenced-code-block copy buttons — wraps every `<pre><code>`
+          inside the article with a hover-revealed copy button that
+          mirrors the marketing site's .copy-btn pattern. Idempotent:
+          re-running over an already-wrapped block is a no-op so DocFX
+          hot-reload doesn't double-wrap. Bails on `<pre>` that already
+          has a parent .docs-code-block (e.g. server-side template
+          rewrites in the future). -----------------------------------}}
+    <script>
+      (function () {
+        function svg(path) {
+          return '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + path + '</svg>';
+        }
+        var COPY_ICON = svg('<rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>');
+        var CHECK_ICON = svg('<polyline points="20 6 9 17 4 12"/>');
+
+        function wrapPre(pre) {
+          if (!pre || pre.parentElement && pre.parentElement.classList.contains('docs-code-block')) return;
+          var code = pre.querySelector('code');
+          if (!code) return;
+          var snippet = code.textContent.replace(/\s+$/, '');
+          if (!snippet) return;
+
+          var wrapper = document.createElement('div');
+          wrapper.className = 'docs-code-block';
+          pre.parentNode.insertBefore(wrapper, pre);
+          wrapper.appendChild(pre);
+
+          var btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = 'docs-code-copy';
+          btn.setAttribute('aria-label', 'Copy code');
+          btn.setAttribute('title', 'Copy');
+          btn.innerHTML = COPY_ICON;
+          wrapper.appendChild(btn);
+
+          btn.addEventListener('click', function (e) {
+            e.preventDefault();
+            if (!navigator.clipboard) return;
+            navigator.clipboard.writeText(snippet).then(function () {
+              btn.classList.add('is-copied');
+              btn.innerHTML = CHECK_ICON;
+              setTimeout(function () {
+                btn.classList.remove('is-copied');
+                btn.innerHTML = COPY_ICON;
+              }, 1500);
+            }).catch(function () { /* swallow — clipboard refused */ });
+          });
+        }
+
+        function wrapAll() {
+          var article = document.querySelector('main article');
+          if (!article) return;
+          var preEls = article.querySelectorAll('pre');
+          for (var i = 0; i < preEls.length; i++) wrapPre(preEls[i]);
+        }
+
+        document.addEventListener('DOMContentLoaded', wrapAll);
+        // DocFX populates some content asynchronously (xref resolution
+        // can inject code blocks after DOMContentLoaded). Run a single
+        // late pass via window.load so any post-DCL `<pre>` blocks get
+        // wrapped too.
+        window.addEventListener('load', wrapAll);
+      })();
+    </script>
+
     {{!--- BOWIRE FOOTER — mirrors site/_includes/footer.html in the
           normal build, collapses to a minimal brand + copyright bar in
           _standalone mode so we don't advertise dead links in the
