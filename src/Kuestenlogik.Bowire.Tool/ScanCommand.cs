@@ -454,17 +454,42 @@ internal static class ScanCommand
                                 "medium" => "warning",
                                 _ => "note",
                             },
-                            Message = new SarifMessage { Text = f.Template.Recording.Name },
+                            // Include the scan target in the message so the
+                            // Code Scanning UI carries the context — physical
+                            // locations are omitted on purpose; see PartialFingerprints
+                            // below.
+                            Message = new SarifMessage { Text = $"{f.Template.Recording.Name} (target: {target})" },
+                            // `bowire scan` is DAST — findings don't have a
+                            // source-file location and Code Scanning rejects
+                            // SARIF that points an ArtifactLocation at the
+                            // target URL with `SARIF URI scheme "https" did
+                            // not match the checkout URI scheme "file"`.
+                            // Surfacing the target via `logicalLocations`
+                            // keeps the context in the UI without claiming a
+                            // checkout-relative file path.
                             Locations =
                             [
                                 new SarifLocation
                                 {
-                                    PhysicalLocation = new SarifPhysicalLocation
-                                    {
-                                        ArtifactLocation = new SarifArtifactLocation { Uri = target },
-                                    },
+                                    LogicalLocations =
+                                    [
+                                        new SarifLogicalLocation
+                                        {
+                                            Name = target,
+                                            FullyQualifiedName = target,
+                                            Kind = "resource",
+                                        },
+                                    ],
                                 },
                             ],
+                            // Stable per-finding fingerprint = ruleId + target
+                            // so re-scans of the same target collapse to one
+                            // alert and a fix surfaces as "closed" rather than
+                            // a new alert.
+                            PartialFingerprints = new Dictionary<string, string>(StringComparer.Ordinal)
+                            {
+                                ["bowireRuleAndTarget"] = (f.Template.Recording.Vulnerability?.Id ?? "unknown") + "@" + target,
+                            },
                         })
                         .ToList(),
                 },
@@ -611,11 +636,26 @@ internal sealed class SarifResult
     [JsonPropertyName("level")] public string Level { get; init; } = "note";
     [JsonPropertyName("message")] public SarifMessage Message { get; init; } = new();
     [JsonPropertyName("locations")] public IList<SarifLocation> Locations { get; init; } = new List<SarifLocation>();
+    [JsonPropertyName("partialFingerprints")] public IDictionary<string, string>? PartialFingerprints { get; init; }
 }
 
 internal sealed class SarifLocation
 {
-    [JsonPropertyName("physicalLocation")] public SarifPhysicalLocation PhysicalLocation { get; init; } = new();
+    // DAST runs use `logicalLocations` instead of `physicalLocation`
+    // because the finding's target is a URL, not a file in the
+    // checkout — Code Scanning rejects the latter when the scheme
+    // isn't `file:`.
+    [JsonPropertyName("physicalLocation"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public SarifPhysicalLocation? PhysicalLocation { get; init; }
+    [JsonPropertyName("logicalLocations"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public IList<SarifLogicalLocation>? LogicalLocations { get; init; }
+}
+
+internal sealed class SarifLogicalLocation
+{
+    [JsonPropertyName("name")] public string Name { get; init; } = "";
+    [JsonPropertyName("fullyQualifiedName")] public string FullyQualifiedName { get; init; } = "";
+    [JsonPropertyName("kind")] public string Kind { get; init; } = "resource";
 }
 
 internal sealed class SarifPhysicalLocation
