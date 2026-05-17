@@ -83,6 +83,7 @@
     <BowireJsFragment Include="wwwroot\js\recording.js" />
     <BowireJsFragment Include="wwwroot\js\collections.js" />
     <BowireJsFragment Include="wwwroot\js\flows.js" />
+    <BowireJsFragment Include="wwwroot\js\proxy-view.js" />
     <BowireJsFragment Include="wwwroot\js\api.js" />
     <BowireJsFragment Include="wwwroot\js\protocols.js" />
     <BowireJsFragment Include="wwwroot\js\execute.js" />

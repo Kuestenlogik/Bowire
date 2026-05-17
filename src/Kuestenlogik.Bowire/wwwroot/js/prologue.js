@@ -741,12 +741,12 @@
     let sidebarView = (function () {
         try {
             var v = localStorage.getItem(SIDEBAR_VIEW_KEY);
-            if (v === 'favorites' || v === 'environments' || v === 'flows') return v;
+            if (v === 'favorites' || v === 'environments' || v === 'flows' || v === 'proxy') return v;
             return 'services';
         } catch { return 'services'; }
     })();
     function setSidebarView(v) {
-        sidebarView = (v === 'favorites' || v === 'environments' || v === 'flows') ? v : 'services';
+        sidebarView = (v === 'favorites' || v === 'environments' || v === 'flows' || v === 'proxy') ? v : 'services';
         try { localStorage.setItem(SIDEBAR_VIEW_KEY, sidebarView); } catch {}
     }
 

@@ -698,11 +698,13 @@
             ? 'env'
             : sidebarView === 'flows'
                 ? 'flows-' + (flowEditorSelectedId || 'none')
-                : freeformRequest
-                    ? 'freeform'
-                    : selectedMethod
-                        ? (selectedService ? selectedService.name : '') + '-' + selectedMethod.name
-                        : 'landing';
+                : sidebarView === 'proxy'
+                    ? 'proxy-' + (proxyFlowSelectedId || 'none')
+                    : freeformRequest
+                        ? 'freeform'
+                        : selectedMethod
+                            ? (selectedService ? selectedService.name : '') + '-' + selectedMethod.name
+                            : 'landing';
         const main = el('div', { id: 'bowire-main-' + mainViewKey, className: 'bowire-main' });
 
         // When the sidebar is in Environments view, the main pane
@@ -717,6 +719,12 @@
         // Flow canvas — visual node editor
         if (sidebarView === 'flows') {
             main.appendChild(renderFlowCanvas());
+            return main;
+        }
+
+        // Proxy view — captured-flow detail pane
+        if (sidebarView === 'proxy') {
+            main.appendChild(renderProxyMainPane());
             return main;
         }
 

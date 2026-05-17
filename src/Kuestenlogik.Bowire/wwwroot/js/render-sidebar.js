@@ -768,6 +768,31 @@
                 : null
         ));
 
+        // Tier-3 Stage C — captured-flows view (sidecar `bowire proxy` API).
+        // Badge reflects the live snapshot count; the SSE subscriber
+        // updates it as flows land.
+        var proxyCountForSwitch = (typeof proxyFlows !== 'undefined' && proxyFlows) ? proxyFlows.length : 0;
+        viewSwitch.appendChild(el('button', {
+            id: 'bowire-view-pill-proxy',
+            className: 'bowire-view-pill' + (sidebarView === 'proxy' ? ' active' : ''),
+            role: 'tab',
+            'aria-label': 'Proxy view',
+            'aria-selected': sidebarView === 'proxy' ? 'true' : 'false',
+            title: 'Captured HTTP/HTTPS traffic from `bowire proxy`',
+            onClick: function () {
+                if (sidebarView === 'proxy') return;
+                setSidebarView('proxy');
+                if (typeof bowireProxyConnect === 'function') bowireProxyConnect();
+                render();
+            }
+        },
+            el('span', { className: 'bowire-view-pill-icon', innerHTML: svgIcon('connect') }),
+            el('span', { textContent: 'Proxy' }),
+            proxyCountForSwitch > 0
+                ? el('span', { className: 'bowire-view-pill-badge', textContent: String(proxyCountForSwitch) })
+                : null
+        ));
+
         // "+" button — always visible in the tab row, all views
         viewSwitch.appendChild(el('span', { style: 'flex:1' }));
         var newBtnWrapper = el('div', { className: 'bowire-new-btn-wrapper' });
@@ -1221,6 +1246,8 @@
             renderEnvironmentsListInto(list);
         } else if (sidebarView === 'flows') {
             renderFlowsListInto(list);
+        } else if (sidebarView === 'proxy') {
+            renderProxyListInto(list);
         } else if (sidebarView === 'favorites') {
             renderFavoritesListInto(list);
         } else if (services.length === 0) {
