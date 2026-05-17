@@ -199,6 +199,25 @@ internal static class ScanCommand
         _ => 0,
     };
 
+    /// <summary>
+    /// Map a severity label to a numeric CVSS-band midpoint. GitHub
+    /// Code Scanning's SARIF ingest requires the `security-severity`
+    /// property to parse as a float; "info" / "low" / etc. as a
+    /// string verbatim is rejected with "invalid security severity
+    /// value, is not a number". Templates that supply an explicit
+    /// CVSS via <c>AttackVulnerability.Cvss</c> still win — this
+    /// helper is the fallback when the template only carries a
+    /// qualitative severity label.
+    /// </summary>
+    private static double SeverityToScore(string severity) => severity.ToUpperInvariant() switch
+    {
+        "CRITICAL" => 9.5,
+        "HIGH" => 7.5,
+        "MEDIUM" => 5.5,
+        "LOW" => 3.5,
+        _ => 0.0,
+    };
+
     private static bool IsHttpClassProtocol(string protocol) => protocol switch
     {
         "REST" or "GRAPHQL" or "ODATA" or "HTTP" or "SSE" => true,
@@ -469,8 +488,19 @@ internal static class ScanCommand
             HelpUri = g.First().References.Count > 0 ? g.First().References[0] : null,
             Properties = new Dictionary<string, object>(StringComparer.Ordinal)
             {
+                // GitHub Code Scanning requires `security-severity` to
+                // be a NUMERIC string parseable as float — it rejects
+                // SARIF that carries "info" / "low" / "medium" / etc.
+                // verbatim. Map the severity label to a CVSS-band
+                // midpoint when the template didn't supply an explicit
+                // Cvss score:
+                //   critical  → 9.5
+                //   high      → 7.5
+                //   medium    → 5.5
+                //   low       → 3.5
+                //   info / *  → 0.0
                 ["security-severity"] = g.First().Cvss?.ToString("F1", CultureInfo.InvariantCulture)
-                    ?? g.First().Severity,
+                    ?? SeverityToScore(g.First().Severity).ToString("F1", CultureInfo.InvariantCulture),
                 ["cwe"] = g.First().Cwe ?? "",
                 ["owaspApi"] = g.First().OwaspApi ?? "",
             },
