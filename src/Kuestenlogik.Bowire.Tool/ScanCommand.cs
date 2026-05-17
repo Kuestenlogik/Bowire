@@ -460,17 +460,31 @@ internal static class ScanCommand
                             // below.
                             Message = new SarifMessage { Text = $"{f.Template.Recording.Name} (target: {target})" },
                             // `bowire scan` is DAST — findings don't have a
-                            // source-file location and Code Scanning rejects
-                            // SARIF that points an ArtifactLocation at the
-                            // target URL with `SARIF URI scheme "https" did
-                            // not match the checkout URI scheme "file"`.
-                            // Surfacing the target via `logicalLocations`
-                            // keeps the context in the UI without claiming a
-                            // checkout-relative file path.
+                            // real source-file location. Code Scanning's
+                            // validator is strict about TWO things and they
+                            // pull in opposite directions:
+                            //   (a) `physicalLocation` is required on every
+                            //       result (`expected a physical location`).
+                            //   (b) `artifactLocation.uri` must NOT be an
+                            //       https:// URL (`SARIF URI scheme "https"
+                            //       did not match the checkout URI scheme
+                            //       "file"`).
+                            // The pragmatic intersection: point the physical
+                            // location at the .github/workflows/scan-self.yml
+                            // file (a real checkout-relative path that
+                            // describes what was scanned) and carry the
+                            // actual scan target via `logicalLocations`.
                             Locations =
                             [
                                 new SarifLocation
                                 {
+                                    PhysicalLocation = new SarifPhysicalLocation
+                                    {
+                                        ArtifactLocation = new SarifArtifactLocation
+                                        {
+                                            Uri = ".github/workflows/scan-self.yml",
+                                        },
+                                    },
                                     LogicalLocations =
                                     [
                                         new SarifLogicalLocation
