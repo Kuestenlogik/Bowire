@@ -65,13 +65,29 @@ function log(m) { console.log(new Date().toISOString().slice(11, 19), m); }
  * Poll a URL until it returns < 500. Self-signed dev certs accepted via
  * a localhost-scoped https.Agent. Works for both http:// (bowire CLI)
  * and https:// (sample server with Kestrel dev cert).
+ *
+ * Hard-gated to localhost / 127.0.0.1 / ::1 hosts — if someone ever
+ * widens the SAMPLE_HEALTH_URL constant above to a non-loopback host,
+ * the function will throw rather than silently disable TLS verification.
  */
 function waitForHealth(url, timeoutMs) {
     const isHttps = url.startsWith('https:');
     const transport = isHttps ? https : require('http');
-    const agentOpts = isHttps
-        ? { agent: new https.Agent({ rejectUnauthorized: false }) }
-        : {};
+    let agentOpts = {};
+    if (isHttps) {
+        const host = new URL(url).hostname;
+        const isLoopback = host === 'localhost' || host === '127.0.0.1' || host === '::1';
+        if (!isLoopback) {
+            throw new Error(`waitForHealth refuses to disable TLS verification for non-loopback host ${host}`);
+        }
+        // Localhost dev cert (Kestrel self-signed) — no CRL to query,
+        // no chain to validate. Polling a known-loopback sample server
+        // for liveness; the screenshot script never talks to remote
+        // hosts. The `isLoopback` guard above throws for non-loopback
+        // hosts so this can never reach a remote endpoint.
+        // lgtm[js/disabling-certificate-validation]
+        agentOpts = { agent: new https.Agent({ rejectUnauthorized: false }) }; // codeql[js/disabling-certificate-validation]
+    }
     return new Promise((resolve, reject) => {
         const deadline = Date.now() + timeoutMs;
         const tick = () => {
