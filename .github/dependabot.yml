@@ -1,0 +1,75 @@
+version: 2
+
+# Dependabot keeps Bowire's NuGet + GitHub-Actions + npm dependencies
+# fresh on a weekly cadence. Each ecosystem opens at most a handful of
+# PRs at a time so the queue can't drown the review process; the
+# companion .github/workflows/dependabot-auto-merge.yml auto-merges
+# whatever passes CI (squash + delete-branch) so the loop stays
+# hands-off for routine bumps.
+
+updates:
+  # ---- .NET / NuGet (the bulk of the dependency surface) ----
+  - package-ecosystem: "nuget"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      # Sunday night UTC — PRs land in time for Monday-morning review
+      # without colliding with weekday work.
+      day: "sunday"
+    open-pull-requests-limit: 10
+    labels:
+      - "dependencies"
+      - "nuget"
+    commit-message:
+      prefix: "chore(deps)"
+      include: "scope"
+    groups:
+      # Bundle related package families so we don't get one PR per
+      # ASP.NET / xUnit / Grpc / Roslyn package on each minor bump.
+      grpc:
+        patterns:
+          - "Grpc.*"
+          - "Google.Protobuf*"
+      xunit:
+        patterns:
+          - "xunit*"
+          - "Microsoft.NET.Test.Sdk"
+          - "coverlet*"
+      aspnetcore:
+        patterns:
+          - "Microsoft.AspNetCore*"
+          - "Microsoft.Extensions.*"
+      maplibre:
+        # The MapLibre extension carries a vendored MapLibre GL JS
+        # blob; the NuGet ecosystem doesn't watch the JS, but it
+        # does watch the System.Text.Json / Json.NET-style helpers
+        # the extension pulls in. Keep them grouped.
+        patterns:
+          - "*JsonSchema*"
+          - "*OpenApi*"
+
+  # ---- GitHub Actions used by .github/workflows/*.yml ----
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "sunday"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "github-actions"
+    commit-message:
+      prefix: "chore(actions)"
+
+  # ---- npm (Playwright + screenshot tooling under scripts/) ----
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "sunday"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "npm"
+    commit-message:
+      prefix: "chore(npm)"

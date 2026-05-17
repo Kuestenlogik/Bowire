@@ -1,0 +1,40 @@
+# Auto-merge Dependabot PRs once CI is green.
+#
+# Triggered on every Dependabot PR opened against main. We fetch the
+# PR's metadata, then queue an auto-merge with `gh pr merge --auto`.
+# GitHub holds the merge until every required check passes, so we don't
+# have to poll ourselves — if CI fails, the merge silently does NOT
+# happen and the PR stays open for a human to look at.
+#
+# Squash strategy + delete-branch keeps main's history linear and the
+# branch list lean (the Dependabot temp branch otherwise lingers until
+# someone clicks "Delete branch" in the UI).
+#
+# Patch + minor bumps auto-merge unconditionally. Major bumps are NOT
+# auto-merged: they typically carry breaking-change semver semantics
+# and deserve a manual review.
+
+name: Dependabot auto-merge
+
+on: pull_request_target
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  auto-merge:
+    runs-on: ubuntu-latest
+    if: ${{ github.actor == 'dependabot[bot]' }}
+    steps:
+      - name: Fetch Dependabot metadata
+        id: meta
+        uses: dependabot/fetch-metadata@v2
+
+      - name: Queue auto-merge for patch + minor bumps
+        if: ${{ steps.meta.outputs.update-type == 'version-update:semver-patch'
+             || steps.meta.outputs.update-type == 'version-update:semver-minor' }}
+        run: gh pr merge --auto --squash --delete-branch "$PR_URL"
+        env:
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
