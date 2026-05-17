@@ -982,6 +982,25 @@
         toolbar.appendChild(el('button', {
             className: 'bowire-recording-action-btn',
             disabled: rec.steps.length === 0,
+            title: 'Project this recording into a visual flow (Request nodes per step). Edit + replay from the Flow tab.',
+            onClick: function () {
+                var flowId = convertRecordingToFlow(rec.id);
+                if (!flowId) return;
+                // Switch the sidebar to the Flows view and open the new flow.
+                recordingManagerOpen = false;
+                renderRecordingManager();
+                if (typeof setSidebarView === 'function') setSidebarView('flows');
+                flowEditorSelectedId = flowId;
+                render();
+                toast('Flow created from recording', 'success');
+            }
+        },
+            el('span', { textContent: 'Convert to Flow' })
+        ));
+
+        toolbar.appendChild(el('button', {
+            className: 'bowire-recording-action-btn',
+            disabled: rec.steps.length === 0,
             title: 'Download as HAR 1.2 (Chrome DevTools / Postman / Insomnia compatible)',
             onClick: function () { exportRecordingAsHar(rec.id); }
         },

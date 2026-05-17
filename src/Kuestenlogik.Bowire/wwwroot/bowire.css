@@ -9398,3 +9398,28 @@ details[open] > .bowire-json-tree-summary::before {
     white-space: nowrap;
     max-width: 240px;
 }
+
+/* Flow editor — schema-aware service/method picker toggle */
+.bowire-flow-service-picker-toggle {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 6px;
+}
+.bowire-flow-service-picker-mode {
+    background: transparent;
+    border: 1px solid var(--bowire-border);
+    color: var(--bowire-text-secondary);
+    padding: 3px 10px;
+    border-radius: 12px;
+    font-size: 11px;
+    cursor: pointer;
+}
+.bowire-flow-service-picker-mode:hover {
+    background: var(--bowire-bg-elevated);
+}
+.bowire-flow-service-picker-mode.active {
+    background: var(--bowire-accent);
+    color: var(--bowire-bg);
+    border-color: var(--bowire-accent);
+}

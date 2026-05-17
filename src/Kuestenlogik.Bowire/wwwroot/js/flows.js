@@ -495,6 +495,41 @@
         return null;
     }
 
+    /**
+     * Project a recording (recordingsList entry) into a fresh flow with
+     * one Request node per step. The Tier-3 + Recording-tab synergy:
+     * captured traffic flows into the workbench's recording store via
+     * the proxy's "Send to recording" action, then one click turns it
+     * into an editable + replayable flow with inline assertions on the
+     * recorded status. Returns the new flow's id.
+     */
+    function convertRecordingToFlow(recordingId) {
+        if (typeof recordingsList === 'undefined' || !Array.isArray(recordingsList)) return null;
+        var rec = recordingsList.find(function (r) { return r.id === recordingId; });
+        if (!rec || !Array.isArray(rec.steps) || rec.steps.length === 0) return null;
+
+        var flow = createFlow(rec.name + ' (flow)');
+        for (var i = 0; i < rec.steps.length; i++) {
+            var step = rec.steps[i];
+            // The recorded `status` becomes the default assertion so
+            // replaying the flow surfaces drift from the captured shape.
+            var node = {
+                type: 'request',
+                protocol: step.protocol || (protocols.length > 0 ? protocols[0].id : 'grpc'),
+                service: step.service || '',
+                method: step.method || '',
+                serverUrl: step.serverUrl || '',
+                body: step.body || '{}',
+                serviceMethodMode: 'custom',  // recordings often carry services the discovery tree doesn't have yet
+                assertions: step.status
+                    ? [{ path: 'status', op: 'eq', value: String(step.status) }]
+                    : [],
+            };
+            addNodeToFlow(flow.id, node);
+        }
+        return flow.id;
+    }
+
     function tryParseAsJson(value) {
         if (value == null) return null;
         if (typeof value !== 'string') return value;
@@ -960,10 +995,17 @@
                 if (isExpanded) {
                     var editor = el('div', { className: 'bowire-flow-card-editor' });
                     if (node.type === 'request') {
-                        editor.appendChild(flowField('Protocol', 'select', node.protocol || '', function (v) { node.protocol = v; persistFlows(); },
+                        editor.appendChild(flowField('Protocol', 'select', node.protocol || '', function (v) { node.protocol = v; node.method = ''; persistFlows(); render(); },
                             protocols.map(function (p) { return { value: p.id, label: p.name }; })));
-                        editor.appendChild(flowField('Service', 'text', node.service || '', function (v) { node.service = v; persistFlows(); }));
-                        editor.appendChild(flowField('Method', 'text', node.method || '', function (v) { node.method = v; persistFlows(); }));
+                        // Schema-aware picker: when the workbench has
+                        // already discovered services, present
+                        // Service + Method as dropdowns scoped to the
+                        // chosen protocol. Operators can drop back to
+                        // free-text via the "Custom" toggle for ad-hoc
+                        // services that aren't part of the discovery
+                        // tree yet (recordings from a different server,
+                        // schema-less HTTP endpoints, ...).
+                        editor.appendChild(renderServiceMethodPicker(node));
                         editor.appendChild(flowField('Server URL', 'text', node.serverUrl || '', function (v) { node.serverUrl = v; persistFlows(); }));
                         editor.appendChild(flowField('Body', 'textarea', node.body || '{}', function (v) { node.body = v; persistFlows(); }));
                         // Inline assertions: turn the request-node into
@@ -1288,6 +1330,93 @@
         });
         field.addEventListener('input', render);
         field.addEventListener('blur', function () { setTimeout(close, 100); });
+    }
+
+    /**
+     * Schema-aware Service / Method picker. When the workbench has
+     * discovered services (`services` global state), the request-node
+     * binds to a (service, method) pair via dropdowns scoped to the
+     * chosen protocol. Falling back to free-text via the "Custom" toggle
+     * keeps the editor usable for ad-hoc services that aren't in the
+     * discovery tree (different server, schema-less HTTP, …).
+     *
+     * Selecting a method pre-fills:
+     *   • node.method (display name)
+     *   • node.service (display name)
+     *   • node.body — empty `{}` for now; the schema-form-driven sample
+     *     payload is a follow-up since BowireFieldInfo isn't shipped
+     *     into the flow runner's HTTP path yet.
+     */
+    function renderServiceMethodPicker(node) {
+        var wrap = el('div', { className: 'bowire-flow-service-picker' });
+        var protoId = node.protocol || (protocols.length > 0 ? protocols[0].id : null);
+        var protoServices = (services || []).filter(function (s) {
+            return !protoId || s.source === protoId;
+        });
+        var useCustom = node.serviceMethodMode === 'custom' || protoServices.length === 0;
+
+        // Toggle row — only meaningful when discovery DOES have results.
+        if (protoServices.length > 0) {
+            wrap.appendChild(el('div', { className: 'bowire-flow-service-picker-toggle' },
+                el('label', { className: 'bowire-flow-field-label' }, el('span', { textContent: 'Service' })),
+                el('button', {
+                    type: 'button',
+                    className: 'bowire-flow-service-picker-mode' + (useCustom ? '' : ' active'),
+                    onClick: function (e) {
+                        e.stopPropagation();
+                        node.serviceMethodMode = 'discovered';
+                        persistFlows();
+                        render();
+                    },
+                    textContent: 'From discovery (' + protoServices.length + ')',
+                }),
+                el('button', {
+                    type: 'button',
+                    className: 'bowire-flow-service-picker-mode' + (useCustom ? ' active' : ''),
+                    onClick: function (e) {
+                        e.stopPropagation();
+                        node.serviceMethodMode = 'custom';
+                        persistFlows();
+                        render();
+                    },
+                    textContent: 'Custom',
+                })
+            ));
+        }
+
+        if (useCustom) {
+            wrap.appendChild(flowField('Service', 'text', node.service || '', function (v) { node.service = v; persistFlows(); }));
+            wrap.appendChild(flowField('Method', 'text', node.method || '', function (v) { node.method = v; persistFlows(); }));
+            return wrap;
+        }
+
+        // Discovered-mode: dropdowns.
+        var serviceOptions = [{ value: '', label: '(pick a service)' }].concat(
+            protoServices.map(function (s) { return { value: s.name, label: s.name }; })
+        );
+        wrap.appendChild(flowField('Service', 'select', node.service || '', function (v) {
+            node.service = v;
+            // Clear method when service changes — the previous selection
+            // probably doesn't exist on the new service.
+            node.method = '';
+            persistFlows();
+            render();
+        }, serviceOptions));
+
+        var chosenService = protoServices.find(function (s) { return s.name === node.service; });
+        var methodOptions = chosenService && Array.isArray(chosenService.methods)
+            ? [{ value: '', label: '(pick a method)' }].concat(
+                chosenService.methods.map(function (m) {
+                    var label = m.name + (m.methodType && m.methodType !== 'Unary' ? '  · ' + m.methodType : '');
+                    return { value: m.name, label: label };
+                }))
+            : [{ value: '', label: '(select a service first)' }];
+        wrap.appendChild(flowField('Method', 'select', node.method || '', function (v) {
+            node.method = v;
+            persistFlows();
+        }, methodOptions));
+
+        return wrap;
     }
 
     /**
