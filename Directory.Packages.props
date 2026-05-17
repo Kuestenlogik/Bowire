@@ -45,7 +45,7 @@
          into Bowire source on the exact commit a given nupkg was
          built from. Only takes effect for packable projects (gated
          in Directory.Build.props). -->
-    <PackageVersion Include="Microsoft.SourceLink.GitHub" Version="10.0.203" />
+    <PackageVersion Include="Microsoft.SourceLink.GitHub" Version="10.0.300" />
     <!-- GraphQL-Parser: SDL + query parser for the GraphQL schema-only
          mock mode. Lightweight, focused package from the graphql-dotnet
          team; only parsing (not execution) which is all we need. -->
