@@ -87,6 +87,84 @@ public sealed class BowireProxyServerTests
         Assert.Equal(HttpStatusCode.NotImplemented, resp.StatusCode);
     }
 
+    [Fact]
+    public async Task GetRequest_ForwardsWithNoBodyAndCapturesFlow()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        await using var upstream = await StartUpstreamAsync(ct);
+        var upstreamUrl = upstream.Urls.First();
+
+        var store = new CapturedFlowStore();
+        await using var proxy = new BowireProxyServer(store, port: 0);
+        await proxy.StartAsync(ct);
+
+        var proxyAddress = new Uri($"http://127.0.0.1:{proxy.Port}");
+        using var handler = new HttpClientHandler { Proxy = new WebProxy(proxyAddress), UseProxy = true };
+        using var http = new HttpClient(handler);
+        using var req = new HttpRequestMessage(HttpMethod.Get, $"{upstreamUrl.TrimEnd('/')}/hello");
+        using var resp = await http.SendAsync(req, ct);
+        Assert.Equal(HttpStatusCode.OK, resp.StatusCode);
+
+        var snap = store.Snapshot();
+        Assert.Single(snap);
+        Assert.Equal("GET", snap[0].Method);
+        Assert.Null(snap[0].RequestBody);
+        Assert.Null(snap[0].RequestBodyBase64);
+        Assert.Equal("text", snap[0].ResponseBody);   // upstream's /hello returns plain "text"
+    }
+
+    [Fact]
+    public async Task UpstreamUnreachable_RecordsFlowWithErrorAndReturns502()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var store = new CapturedFlowStore();
+        await using var proxy = new BowireProxyServer(store, port: 0);
+        await proxy.StartAsync(ct);
+
+        // Point the client at the proxy + at a black-hole target.
+        var proxyAddress = new Uri($"http://127.0.0.1:{proxy.Port}");
+        using var handler = new HttpClientHandler { Proxy = new WebProxy(proxyAddress), UseProxy = true };
+        using var http = new HttpClient(handler) { Timeout = TimeSpan.FromSeconds(3) };
+        using var req = new HttpRequestMessage(HttpMethod.Get, "http://127.0.0.1:1/never-bound");
+        using var resp = await http.SendAsync(req, ct);
+        Assert.Equal(HttpStatusCode.BadGateway, resp.StatusCode);
+
+        var snap = store.Snapshot();
+        Assert.Single(snap);
+        Assert.NotNull(snap[0].Error);
+        Assert.Equal(0, snap[0].ResponseStatus);
+    }
+
+    [Fact]
+    public async Task BinaryRequestBody_IsBase64EncodedInCapturedFlow()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        await using var upstream = await StartUpstreamAsync(ct);
+        var upstreamUrl = upstream.Urls.First();
+
+        var store = new CapturedFlowStore();
+        await using var proxy = new BowireProxyServer(store, port: 0);
+        await proxy.StartAsync(ct);
+
+        var proxyAddress = new Uri($"http://127.0.0.1:{proxy.Port}");
+        using var handler = new HttpClientHandler { Proxy = new WebProxy(proxyAddress), UseProxy = true };
+        using var http = new HttpClient(handler);
+        // Bytes with embedded NUL → IsLikelyUtf8 returns false → base64 path.
+        var raw = new byte[] { 0x01, 0x02, 0x00, 0x04, 0x05 };
+        using var req = new HttpRequestMessage(HttpMethod.Post, $"{upstreamUrl.TrimEnd('/')}/echo")
+        {
+            Content = new ByteArrayContent(raw),
+        };
+        req.Content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/octet-stream");
+        using var resp = await http.SendAsync(req, ct);
+
+        var snap = store.Snapshot();
+        Assert.Single(snap);
+        Assert.Null(snap[0].RequestBody);
+        Assert.NotNull(snap[0].RequestBodyBase64);
+        Assert.Equal(Convert.ToBase64String(raw), snap[0].RequestBodyBase64);
+    }
+
     private static async Task<WebApplication> StartUpstreamAsync(CancellationToken cancellationToken)
     {
         var builder = WebApplication.CreateSlimBuilder();
@@ -104,6 +182,12 @@ public sealed class BowireProxyServerTests
             ctx.Response.StatusCode = 201;
             ctx.Response.ContentType = "application/json";
             await ctx.Response.Body.WriteAsync(ms.ToArray(), ctx.RequestAborted);
+        });
+        app.MapGet("/hello", async (HttpContext ctx) =>
+        {
+            ctx.Response.StatusCode = 200;
+            ctx.Response.ContentType = "text/plain";
+            await ctx.Response.WriteAsync("text", ctx.RequestAborted);
         });
         await app.StartAsync(cancellationToken);
         return app;

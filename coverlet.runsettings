@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RunSettings>
+  <DataCollectionRunSettings>
+    <DataCollectors>
+      <DataCollector friendlyName="XPlat code coverage">
+        <Configuration>
+          <Format>cobertura</Format>
+          <!--
+            Exclude generated code from the coverage denominator —
+            it's compiler output we don't author and can't meaningfully
+            test. The Regex source generator emits ~1.3k lines into
+            artifacts/obj/.../RegexGenerator.g.cs alone, which would
+            otherwise eat ~6 percentage points of the project total.
+          -->
+          <ExcludeByFile>**/*.g.cs,**/*.designer.cs,**/artifacts/obj/**/*.cs</ExcludeByFile>
+          <!--
+            Exclude code marked with [GeneratedCodeAttribute] — same
+            rationale as above for the inline-emit path used by
+            System.Text.Json source-gen + minimal-api source-gen.
+          -->
+          <ExcludeByAttribute>GeneratedCode,CompilerGenerated</ExcludeByAttribute>
+          <!--
+            DTOs whose only public surface is auto-properties are
+            structural classes — including them inflates the line
+            count without testing any behaviour. Excluded here so the
+            metric reflects "code with branches" not "code at all".
+          -->
+          <SkipAutoProps>true</SkipAutoProps>
+          <UseSourceLink>false</UseSourceLink>
+        </Configuration>
+      </DataCollector>
+    </DataCollectors>
+  </DataCollectionRunSettings>
+</RunSettings>
