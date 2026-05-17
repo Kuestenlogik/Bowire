@@ -55,7 +55,7 @@ on:
 
 permissions:
   contents: read
-  # Required for github/codeql-action/upload-sarif@v3 to push findings
+  # Required for github/codeql-action/upload-sarif@v4 to push findings
   # into the Security tab. SARIF upload is a no-op without it; the
   # action returns 403 on the calling repo's run otherwise.
   security-events: write
@@ -131,7 +131,7 @@ jobs:
         # upload regardless of the scan's exit code so previously-found
         # alerts close out when they stop firing.
         if: always() && hashFiles('findings.sarif') != ''
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: findings.sarif
           category: bowire-scan
