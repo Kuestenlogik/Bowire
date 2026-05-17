@@ -303,10 +303,10 @@ internal static class SecurityBuiltins
                 }
                 nextProbe:;
             }
-            catch (Exception ex) when (ex is HttpRequestException or OperationCanceledException)
+            catch (Exception ex) when (ex is HttpRequestException or OperationCanceledException or UriFormatException or InvalidOperationException)
             {
-                // Probe failed (connect / timeout) — silently skip, this
-                // built-in is best-effort and one network blip
+                // Probe failed (connect / timeout / malformed-target URL) —
+                // silently skip, this built-in is best-effort and one network blip
                 // shouldn't tank the rest of the scan.
             }
         }

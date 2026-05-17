@@ -40,8 +40,13 @@ public sealed class ProxyCommandTests
     public async Task RunAsync_ProxyPortAlreadyInUse_ReturnsErrorCode1()
     {
         var ct = TestContext.Current.CancellationToken;
-        // Hold port 1 (which won't bind on the test runner anyway — privileged port).
-        var options = new ProxyCommand.ProxyOptions { Port = 1, ApiPort = 0, Capacity = 10 };
+        // Bind a TcpListener on a dynamic port, then ask ProxyCommand
+        // to bind the SAME port — should fail cleanly with exit 1.
+        using var blocker = new System.Net.Sockets.TcpListener(System.Net.IPAddress.Loopback, 0);
+        blocker.Start();
+        var occupied = ((System.Net.IPEndPoint)blocker.LocalEndpoint).Port;
+
+        var options = new ProxyCommand.ProxyOptions { Port = occupied, ApiPort = 0, Capacity = 10 };
         var code = await ProxyCommand.RunAsync(options, ct);
         Assert.Equal(1, code);
     }

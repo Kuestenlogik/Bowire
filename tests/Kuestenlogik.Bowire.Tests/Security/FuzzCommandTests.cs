@@ -18,6 +18,7 @@ namespace Kuestenlogik.Bowire.Tests.Security;
 /// argument-validation branches without network traffic, then a few
 /// happy-path runs against an in-process Kestrel upstream.
 /// </summary>
+[Collection("ConsoleRedirect")]
 [System.Diagnostics.CodeAnalysis.SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "Test scope")]
 public sealed class FuzzCommandTests
 {

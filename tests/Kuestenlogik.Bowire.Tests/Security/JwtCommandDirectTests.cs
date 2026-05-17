@@ -16,6 +16,7 @@ namespace Kuestenlogik.Bowire.Tests.Security;
 /// of every token shape) shows up in the coverage report instead of
 /// the spawned-subprocess shadow we get from CLI tests.
 /// </summary>
+[Collection("ConsoleRedirect")]
 public sealed class JwtCommandDirectTests
 {
     private static readonly string[] s_threeClaims = { "role=admin", "exp=9999999999", "isAdmin=true" };

@@ -49,11 +49,16 @@ public sealed class SecurityBuiltinsTests
     {
         var ct = TestContext.Current.CancellationToken;
         using var http = new HttpClient();
-        var findings = await SecurityBuiltins.RunAllAsync("::not a url::", http, new List<string>(), ct);
+        // Unclosed IPv6 literal → UriFormatException in
+        // TlsVersionEnumeration's `new Uri(...)`. All three sub-checks
+        // recover gracefully (TlsEnumeration via UriFormatException
+        // guard; BannerDisclosure via blanket catch; VerboseError via
+        // widened catch covering the URL-parse path).
+        var findings = await SecurityBuiltins.RunAllAsync("http://[unclosed", http, new List<string>(), ct);
         Assert.Contains(findings, f => f.Status == ScanFindingStatus.Error);
     }
 
-    [Fact]
+[Fact]
     public async Task RunAllAsync_DiscloseServerHeader_EmitsBannerFinding()
     {
         var ct = TestContext.Current.CancellationToken;
