@@ -269,6 +269,31 @@
 
         menu.appendChild(bowireDivider());
 
+        // Fuzz this field ▸ — Tier-2 security-testing entry-point.
+        // Submenu lists the four built-in payload categories the
+        // /api/security/fuzz endpoint accepts (sqli / xss / pathtrav /
+        // cmdinj). Choosing one POSTs to the endpoint with the current
+        // request body + the right-clicked field's JSONPath, then
+        // opens the result panel below.
+        var fuzz = bowireSubmenuItem('Fuzz this field ▸');
+        var fuzzCategories = [
+            ['sqli', 'SQL injection'],
+            ['xss', 'Cross-site scripting'],
+            ['pathtrav', 'Path traversal'],
+            ['cmdinj', 'Command injection'],
+        ];
+        for (var fi = 0; fi < fuzzCategories.length; fi++) {
+            (function (cat, label) {
+                fuzz.submenu.appendChild(bowireMenuItem(label, function () {
+                    bowireCloseSemanticsMenu();
+                    bowireRunFuzzAgainstField(opts, cat);
+                }));
+            })(fuzzCategories[fi][0], fuzzCategories[fi][1]);
+        }
+        menu.appendChild(fuzz.element);
+
+        menu.appendChild(bowireDivider());
+
         // Persist for ▸ submenu. The label echoes the current sticky
         // default so the user sees what "Enter" would do if there
         // were a hot-key path.
@@ -825,6 +850,220 @@
         badge.title = 'Click to refine — ' + currentTag + ' (' + currentSource + ')';
         badge.textContent = ' ' + currentTag + ' (' + currentSource + ')';
         return badge;
+    }
+
+    // ---------------------------------------------------------------
+    // Fuzz this field — Tier-2 right-click integration.
+    // Grabs the live workbench request shape (server URL, http verb /
+    // path, current body, auth metadata) and POSTs to the
+    // /api/security/fuzz endpoint; renders the per-payload result rows
+    // in a floating panel anchored to the response pane.
+    // ---------------------------------------------------------------
+
+    function bowireRunFuzzAgainstField(opts, category) {
+        if (typeof window.toast !== 'function' && typeof toast === 'undefined') {
+            // Worst case: no toast helper available — fall through and
+            // surface errors via console / panel header.
+        }
+        var notify = (typeof toast === 'function') ? toast : function (msg, _kind) { console.warn(msg); };
+
+        // Resolve the live request body. The workbench keeps the
+        // current request payload(s) in `requestMessages` (see
+        // execute.js); the editor's textarea value mirrors it. For
+        // unary methods the body is requestMessages[0]; streaming
+        // methods are not fuzz-eligible in v1 (one body per probe).
+        var body = '{}';
+        try {
+            if (typeof requestMessages !== 'undefined'
+                && requestMessages
+                && requestMessages.length > 0) {
+                body = requestMessages[0] || '{}';
+            } else {
+                // Fallback: peek the visible editor textarea.
+                var ed = document.querySelector('.bowire-editor, .bowire-message-editor');
+                if (ed && ed.value) body = ed.value;
+            }
+        } catch { /* keep body = '{}' */ }
+
+        // Validate the field actually exists in the body before we
+        // ship the request — fuzzing a path that resolves to nothing
+        // is just network noise. Use the same JSONPath subset the
+        // backend FuzzExecutor walks.
+        var parsed;
+        try { parsed = JSON.parse(body); }
+        catch {
+            notify('Cannot fuzz: request body is not valid JSON. Edit the body, then retry.', 'error');
+            return;
+        }
+        if (!bowireFuzzFieldExists(parsed, opts.jsonPath)) {
+            notify('Cannot fuzz: field ' + opts.jsonPath + ' not found in the current request body. Right-click happened on a response field?', 'error');
+            return;
+        }
+
+        // Resolve target URL — prefer the active workbench server URL,
+        // fall through to the embedded host. serverUrls[0] is the
+        // common case (one configured target); embedded mode resolves
+        // via window.location.
+        var target = '';
+        try {
+            if (typeof serverUrls !== 'undefined' && serverUrls && serverUrls.length > 0) {
+                target = serverUrls[0];
+            } else if (typeof getPrimaryServerUrl === 'function') {
+                target = getPrimaryServerUrl();
+            }
+        } catch { /* fall through */ }
+        if (!target) {
+            // Last resort: same-origin loopback. Most embedded-mode
+            // workbenches are pointed at their own host.
+            target = window.location.origin;
+        }
+
+        // Method shape — Bowire's request envelope carries httpVerb /
+        // httpPath on the protocol-resolved metadata for REST / OData
+        // / GraphQL. Default to POST + the recorded path when present.
+        var httpVerb = (typeof selectedMethod !== 'undefined' && selectedMethod && selectedMethod.httpMethod)
+            ? selectedMethod.httpMethod : 'POST';
+        var httpPath = (typeof selectedMethod !== 'undefined' && selectedMethod && selectedMethod.httpPath)
+            ? selectedMethod.httpPath : '/';
+
+        var panel = bowireOpenFuzzPanel(opts, category);
+        bowireRenderFuzzPanelHeader(panel, opts, category, 'sending probes…');
+
+        var prefix = (window.__BOWIRE_CONFIG__ && window.__BOWIRE_CONFIG__.prefix) || '';
+        fetch(prefix + '/api/security/fuzz', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                target: target,
+                httpVerb: httpVerb,
+                httpPath: httpPath,
+                body: body,
+                field: opts.jsonPath,
+                category: category,
+                timeoutSeconds: 30
+            })
+        }).then(function (resp) {
+            if (!resp.ok) {
+                return resp.text().then(function (txt) { throw new Error(txt || ('HTTP ' + resp.status)); });
+            }
+            return resp.json();
+        }).then(function (result) {
+            bowireRenderFuzzPanelResults(panel, opts, category, target, result);
+        }).catch(function (err) {
+            bowireRenderFuzzPanelError(panel, err.message || String(err));
+        });
+    }
+
+    /** Verify the JSONPath resolves in the given parsed body. */
+    function bowireFuzzFieldExists(root, path) {
+        if (!path || path === '$') return true;
+        var trimmed = path;
+        if (trimmed.indexOf('$.') === 0) trimmed = trimmed.substring(2);
+        else if (trimmed.charAt(0) === '$') trimmed = trimmed.substring(1);
+        var segments = trimmed.split('.').filter(Boolean);
+        var cur = root;
+        for (var i = 0; i < segments.length; i++) {
+            if (cur === null || typeof cur !== 'object') return false;
+            if (!Object.prototype.hasOwnProperty.call(cur, segments[i])) return false;
+            cur = cur[segments[i]];
+        }
+        return true;
+    }
+
+    /** Open (or recycle) the fuzz-result panel anchored to the document. */
+    function bowireOpenFuzzPanel(_opts, _category) {
+        var existing = document.getElementById('bowire-fuzz-panel');
+        if (existing) existing.remove();
+        var panel = document.createElement('div');
+        panel.id = 'bowire-fuzz-panel';
+        panel.className = 'bowire-fuzz-panel';
+        panel.setAttribute('role', 'dialog');
+        panel.setAttribute('aria-label', 'Fuzz results');
+        document.body.appendChild(panel);
+
+        // Closer button — Esc + click-outside aren't wired here
+        // because the panel is non-modal (operator should be able to
+        // scroll the workbench while results render).
+        var close = document.createElement('button');
+        close.type = 'button';
+        close.className = 'bowire-fuzz-panel-close';
+        close.setAttribute('aria-label', 'Close fuzz panel');
+        close.textContent = '×';
+        close.addEventListener('click', function () { panel.remove(); });
+        panel.appendChild(close);
+
+        return panel;
+    }
+
+    function bowireRenderFuzzPanelHeader(panel, opts, category, statusLine) {
+        var header = panel.querySelector('.bowire-fuzz-panel-header')
+            || document.createElement('div');
+        header.className = 'bowire-fuzz-panel-header';
+        header.textContent = 'Fuzz ' + opts.jsonPath + ' · ' + category + ' — ' + statusLine;
+        if (!header.parentNode) panel.appendChild(header);
+    }
+
+    function bowireRenderFuzzPanelError(panel, message) {
+        var body = panel.querySelector('.bowire-fuzz-panel-body')
+            || document.createElement('div');
+        body.className = 'bowire-fuzz-panel-body';
+        body.textContent = 'Error: ' + message;
+        if (!body.parentNode) panel.appendChild(body);
+    }
+
+    function bowireRenderFuzzPanelResults(panel, opts, category, target, result) {
+        var header = panel.querySelector('.bowire-fuzz-panel-header');
+        var rows = result.rows || [];
+        var vulnCount = rows.filter(function (r) { return r.outcome === 'Vulnerable'; }).length;
+        if (header) {
+            header.textContent = 'Fuzz ' + opts.jsonPath + ' · ' + category
+                + ' — ' + rows.length + ' payload(s), ' + vulnCount + ' suspicious';
+        }
+
+        var body = panel.querySelector('.bowire-fuzz-panel-body')
+            || document.createElement('div');
+        body.className = 'bowire-fuzz-panel-body';
+        body.replaceChildren();
+        if (!body.parentNode) panel.appendChild(body);
+
+        var targetLine = document.createElement('div');
+        targetLine.className = 'bowire-fuzz-panel-target';
+        targetLine.textContent = target;
+        body.appendChild(targetLine);
+
+        if (result.baselineStatus !== undefined && result.baselineStatus !== null) {
+            var baseline = document.createElement('div');
+            baseline.className = 'bowire-fuzz-panel-baseline';
+            baseline.textContent = 'baseline: status=' + result.baselineStatus
+                + ' body=' + (result.baselineBodySize || 0) + 'B latency=' + (result.baselineLatencyMs || 0) + 'ms';
+            body.appendChild(baseline);
+        }
+
+        for (var i = 0; i < rows.length; i++) {
+            var r = rows[i];
+            var row = document.createElement('div');
+            row.className = 'bowire-fuzz-panel-row bowire-fuzz-row-' + (r.outcome || 'safe').toLowerCase();
+            var marker = document.createElement('span');
+            marker.className = 'bowire-fuzz-panel-row-marker';
+            marker.textContent = r.outcome === 'Vulnerable' ? '[VULN]'
+                              : r.outcome === 'Error' ? '[err]'
+                              : '[ok]';
+            row.appendChild(marker);
+            var payloadEl = document.createElement('code');
+            payloadEl.className = 'bowire-fuzz-panel-row-payload';
+            payloadEl.textContent = r.payload;
+            row.appendChild(payloadEl);
+            var detail = document.createElement('span');
+            detail.className = 'bowire-fuzz-panel-row-detail';
+            detail.textContent = r.detail || '';
+            row.appendChild(detail);
+            body.appendChild(row);
+        }
+
+        var note = document.createElement('div');
+        note.className = 'bowire-fuzz-panel-note';
+        note.textContent = 'Heuristics fire on response shape, not confirmation. Verify each finding by hand before reporting.';
+        body.appendChild(note);
     }
 
     // ---------------------------------------------------------------

@@ -8964,6 +8964,90 @@ details[open] > .bowire-json-tree-summary::before {
     padding: 4px 6px;
 }
 
+/* Floating fuzz-result panel — opens when the right-click semantics
+   menu's "Fuzz this field" submenu fires. Anchored bottom-right of the
+   viewport; non-modal so the operator can keep editing the request
+   while results arrive. Closes via the explicit × button (top-right)
+   or by triggering another fuzz (the new panel replaces the old). */
+.bowire-fuzz-panel {
+    position: fixed;
+    right: 16px;
+    bottom: 16px;
+    width: 560px;
+    max-height: 60vh;
+    overflow-y: auto;
+    z-index: 9500;
+    background: var(--bowire-bg-elevated);
+    border: 1px solid var(--bowire-border);
+    border-radius: var(--bowire-radius);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+    font-size: 13px;
+    color: var(--bowire-text);
+}
+.bowire-fuzz-panel-close {
+    position: absolute;
+    top: 4px;
+    right: 6px;
+    background: transparent;
+    border: none;
+    color: var(--bowire-text-tertiary);
+    font-size: 18px;
+    cursor: pointer;
+    padding: 2px 6px;
+    line-height: 1;
+}
+.bowire-fuzz-panel-close:hover { color: var(--bowire-text); }
+.bowire-fuzz-panel-header {
+    padding: 10px 32px 8px 14px;
+    font-weight: 600;
+    border-bottom: 1px solid var(--bowire-border-subtle);
+}
+.bowire-fuzz-panel-body {
+    padding: 10px 14px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+.bowire-fuzz-panel-target,
+.bowire-fuzz-panel-baseline {
+    font-family: var(--bowire-mono);
+    font-size: 11px;
+    color: var(--bowire-text-tertiary);
+}
+.bowire-fuzz-panel-row {
+    display: grid;
+    grid-template-columns: 56px minmax(0, 1fr) minmax(0, 2fr);
+    gap: 8px;
+    padding: 4px 0;
+    border-top: 1px dashed var(--bowire-border-subtle);
+    align-items: baseline;
+}
+.bowire-fuzz-panel-row-marker {
+    font-family: var(--bowire-mono);
+    font-size: 11px;
+    font-weight: 700;
+}
+.bowire-fuzz-row-vulnerable .bowire-fuzz-panel-row-marker { color: #ef4444; }
+.bowire-fuzz-row-error .bowire-fuzz-panel-row-marker { color: #eab308; }
+.bowire-fuzz-row-safe .bowire-fuzz-panel-row-marker { color: var(--bowire-text-tertiary); }
+.bowire-fuzz-panel-row-payload {
+    font-family: var(--bowire-mono);
+    font-size: 11px;
+    word-break: break-all;
+    color: var(--bowire-text);
+}
+.bowire-fuzz-panel-row-detail {
+    font-size: 11px;
+    color: var(--bowire-text-secondary);
+    word-break: break-word;
+}
+.bowire-fuzz-panel-note {
+    margin-top: 8px;
+    font-size: 11px;
+    color: var(--bowire-text-tertiary);
+    font-style: italic;
+}
+
 /* Inline semantic badge next to a response-tree leaf label. The colour
    tier reflects the annotation source — neutral grey for auto-detected,
    a slight accent tint for plugin hints, full accent for user-pinned
