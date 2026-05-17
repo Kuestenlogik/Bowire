@@ -39,7 +39,7 @@
          plugin packages directly from any NuGet feed, skipping the old
          dotnet-restore-a-temp-csproj detour (so bowire no longer
          requires the .NET SDK at install time, only the runtime). -->
-    <PackageVersion Include="NuGet.Protocol" Version="7.3.1" />
+    <PackageVersion Include="NuGet.Protocol" Version="7.6.0" />
     <!-- SourceLink: bakes per-file GitHub raw-content URLs into the
          portable PDBs at build time, so consumer debuggers can step
          into Bowire source on the exact commit a given nupkg was
