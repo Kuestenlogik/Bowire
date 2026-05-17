@@ -9304,3 +9304,97 @@ details[open] > .bowire-json-tree-summary::before {
     color: #f85149;
     background: rgba(248, 81, 73, 0.08);
 }
+
+/* ------------------------------------------------------------------
+ * Flow editor — Variable Watch Panel + ${var}-autocomplete dropdown
+ * ------------------------------------------------------------------ */
+.bowire-flow-watch {
+    margin-top: 24px;
+    padding: 12px 16px;
+    border-top: 1px solid var(--bowire-border);
+    background: var(--bowire-bg-elevated);
+}
+.bowire-flow-watch-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+}
+.bowire-flow-watch-title {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--bowire-text-secondary);
+    flex: 1;
+}
+.bowire-flow-watch-state {
+    font-size: 11px;
+    color: var(--bowire-text-secondary);
+    font-style: italic;
+}
+.bowire-flow-watch-empty {
+    font-size: 12px;
+    color: var(--bowire-text-secondary);
+    font-style: italic;
+    padding: 4px 0;
+}
+.bowire-flow-watch-list {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+.bowire-flow-watch-row {
+    display: grid;
+    grid-template-columns: 220px 1fr;
+    gap: 12px;
+    font-family: var(--bowire-font-mono, monospace);
+    font-size: 12px;
+    padding: 3px 0;
+}
+.bowire-flow-watch-name {
+    color: var(--bowire-accent);
+    font-weight: 600;
+}
+.bowire-flow-watch-value {
+    color: var(--bowire-text-primary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.bowire-flow-var-autocomplete {
+    position: fixed;
+    z-index: 10000;
+    background: var(--bowire-bg-elevated);
+    border: 1px solid var(--bowire-border);
+    border-radius: 4px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+    max-height: 240px;
+    overflow-y: auto;
+    font-family: var(--bowire-font-mono, monospace);
+    font-size: 12px;
+}
+.bowire-flow-var-autocomplete-row {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 12px;
+    padding: 5px 10px;
+    cursor: pointer;
+}
+.bowire-flow-var-autocomplete-row:hover,
+.bowire-flow-var-autocomplete-row.active {
+    background: var(--bowire-accent-subtle);
+}
+.bowire-flow-var-autocomplete-name {
+    color: var(--bowire-accent);
+    font-weight: 600;
+}
+.bowire-flow-var-autocomplete-hint {
+    color: var(--bowire-text-secondary);
+    font-size: 11px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 240px;
+}

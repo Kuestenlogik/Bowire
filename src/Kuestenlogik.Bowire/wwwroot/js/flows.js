@@ -686,7 +686,90 @@
         ));
 
         canvas.appendChild(pipeline);
+
+        // Variable-Watch panel pinned to the canvas footer. Shows the
+        // live flowVars bindings (Variable + Foreach + extracted-from-
+        // response) so the user can see what ${name} resolves to during
+        // / after a run. Empty bindings show a hint instead.
+        canvas.appendChild(renderFlowWatchPanel());
+
         return canvas;
+    }
+
+    /**
+     * Watch-panel — one row per live flow-var binding. Updated by render()
+     * after each runSingleNode tick, so iterations of a Foreach loop
+     * visibly cycle the bound ${item}.
+     */
+    function renderFlowWatchPanel() {
+        var panel = el('div', { id: 'bowire-flow-watch', className: 'bowire-flow-watch' });
+        panel.appendChild(el('div', { className: 'bowire-flow-watch-header' },
+            el('span', { className: 'bowire-flow-watch-title', textContent: 'Variables' }),
+            el('span', { className: 'bowire-flow-watch-state',
+                textContent: flowRunStatus === 'running'
+                    ? 'running…'
+                    : flowRunStatus === 'done'
+                        ? 'last run complete'
+                        : 'idle' })
+        ));
+
+        var entries = Object.keys(flowVars).sort();
+        if (entries.length === 0) {
+            panel.appendChild(el('div', { className: 'bowire-flow-watch-empty',
+                textContent: flowRunStatus === null
+                    ? 'No variables yet — Variable / Foreach nodes show their live bindings here during the run.'
+                    : 'No flow-var bindings produced by this run.'
+            }));
+            return panel;
+        }
+
+        var list = el('div', { className: 'bowire-flow-watch-list' });
+        for (var i = 0; i < entries.length; i++) {
+            var name = entries[i];
+            list.appendChild(el('div', { className: 'bowire-flow-watch-row' },
+                el('span', { className: 'bowire-flow-watch-name', textContent: '${' + name + '}' }),
+                el('span', { className: 'bowire-flow-watch-value', textContent: truncateForDisplay(flowVars[name]),
+                    title: String(flowVars[name]) })
+            ));
+        }
+        panel.appendChild(list);
+        return panel;
+    }
+
+    /**
+     * Suggestion-set for the ${var}-autocomplete dropdown. Combines:
+     *   - per-run flow-vars (current run snapshot)
+     *   - environment vars (merged global + active env)
+     *   - system vars (now, uuid, …)
+     *   - response.foo paths (top-level keys from lastResponseJson)
+     * Returned as { name, hint } so the dropdown can show a contextual
+     * second column without re-fetching each one.
+     */
+    function flowVariableSuggestions() {
+        var seen = new Set();
+        var out = [];
+        function add(name, hint) {
+            if (seen.has(name)) return;
+            seen.add(name);
+            out.push({ name: name, hint: hint });
+        }
+        Object.keys(flowVars || {}).forEach(function (k) { add(k, 'flow-var · ' + truncateForDisplay(flowVars[k])); });
+        try {
+            var merged = (typeof getMergedVars === 'function') ? getMergedVars() : {};
+            Object.keys(merged).forEach(function (k) { add(k, 'env · ' + truncateForDisplay(merged[k])); });
+        } catch { /* env machinery not ready */ }
+        // System vars from history-env.js — hard-coded names since the
+        // resolver doesn't expose an enumeration.
+        ['now', 'nowMs', 'timestamp', 'uuid', 'random'].forEach(function (k) { add(k, 'system'); });
+        // Response chaining
+        add('response', 'last response (whole body)');
+        if (lastResponseJson && typeof lastResponseJson === 'object') {
+            var keys = Array.isArray(lastResponseJson)
+                ? lastResponseJson.slice(0, 5).map(function (_, i) { return String(i); })
+                : Object.keys(lastResponseJson).slice(0, 8);
+            keys.forEach(function (k) { add('response.' + k, 'last response field'); });
+        }
+        return out;
     }
 
     var NODE_COLORS = {
@@ -1073,23 +1156,138 @@
             }
             row.appendChild(sel);
         } else if (type === 'textarea') {
-            row.appendChild(el('textarea', {
+            var ta = el('textarea', {
                 className: 'bowire-flow-field-input bowire-flow-field-textarea',
                 value: value,
                 spellcheck: 'false',
                 rows: '4',
                 onInput: function (e) { onChange(e.target.value); }
-            }));
+            });
+            attachFlowVarAutocomplete(ta);
+            row.appendChild(ta);
         } else {
-            row.appendChild(el('input', {
+            var input = el('input', {
                 type: type || 'text',
                 className: 'bowire-flow-field-input',
                 value: value,
                 spellcheck: 'false',
                 onInput: function (e) { onChange(e.target.value); }
-            }));
+            });
+            // Numeric inputs (delay, count) don't need autocomplete.
+            if (type !== 'number') attachFlowVarAutocomplete(input);
+            row.appendChild(input);
         }
         return row;
+    }
+
+    /**
+     * Attach a ${var}-autocomplete dropdown to an input / textarea.
+     * The dropdown appears as the user types `${`, filtered by what's
+     * after the cursor's open-brace, and inserts the chosen variable
+     * including the closing brace. Lightweight — no virtualisation,
+     * the suggestion set rarely exceeds 10 entries.
+     */
+    function attachFlowVarAutocomplete(field) {
+        var dropdown = null;
+        var activeIndex = 0;
+        var lastSuggestions = [];
+
+        function close() {
+            if (dropdown && dropdown.parentNode) dropdown.parentNode.removeChild(dropdown);
+            dropdown = null;
+            activeIndex = 0;
+        }
+
+        function position() {
+            if (!dropdown) return;
+            var rect = field.getBoundingClientRect();
+            dropdown.style.left = rect.left + 'px';
+            dropdown.style.top = (rect.bottom + 2) + 'px';
+            dropdown.style.minWidth = rect.width + 'px';
+        }
+
+        function detectOpenBracePrefix() {
+            var val = field.value;
+            var pos = field.selectionStart;
+            if (typeof pos !== 'number') return null;
+            // Walk back from cursor until we find `${` without a `}`
+            // between cursor and the brace pair start.
+            for (var i = pos - 1; i >= 0; i--) {
+                var ch = val.charAt(i);
+                if (ch === '}') return null;
+                if (ch === '{' && i > 0 && val.charAt(i - 1) === '$') {
+                    return { start: i - 1, query: val.substring(i + 1, pos) };
+                }
+            }
+            return null;
+        }
+
+        function render() {
+            var ctx = detectOpenBracePrefix();
+            if (!ctx) { close(); return; }
+            var suggestions = flowVariableSuggestions();
+            var q = ctx.query.toLowerCase();
+            var filtered = suggestions.filter(function (s) {
+                return q === '' || s.name.toLowerCase().indexOf(q) !== -1;
+            });
+            if (filtered.length === 0) { close(); return; }
+            lastSuggestions = filtered;
+            if (!dropdown) {
+                dropdown = el('div', { className: 'bowire-flow-var-autocomplete' });
+                document.body.appendChild(dropdown);
+            }
+            dropdown.innerHTML = '';
+            activeIndex = Math.min(activeIndex, filtered.length - 1);
+            for (var i = 0; i < filtered.length; i++) {
+                (function (entry, idx) {
+                    var row = el('div', {
+                        className: 'bowire-flow-var-autocomplete-row' + (idx === activeIndex ? ' active' : ''),
+                        onMouseDown: function (e) { e.preventDefault(); choose(idx); },
+                    },
+                        el('span', { className: 'bowire-flow-var-autocomplete-name', textContent: '${' + entry.name + '}' }),
+                        el('span', { className: 'bowire-flow-var-autocomplete-hint', textContent: entry.hint || '' })
+                    );
+                    dropdown.appendChild(row);
+                })(filtered[i], i);
+            }
+            position();
+        }
+
+        function choose(idx) {
+            var ctx = detectOpenBracePrefix();
+            if (!ctx || !lastSuggestions[idx]) { close(); return; }
+            var entry = lastSuggestions[idx];
+            var val = field.value;
+            var before = val.substring(0, ctx.start);
+            var after = val.substring(field.selectionStart);
+            // Trim a trailing `}` from `after` so we don't double-close.
+            var insertion = '${' + entry.name + '}';
+            field.value = before + insertion + after;
+            var caret = before.length + insertion.length;
+            field.setSelectionRange(caret, caret);
+            field.dispatchEvent(new Event('input', { bubbles: true }));
+            close();
+        }
+
+        field.addEventListener('keydown', function (e) {
+            if (!dropdown) return;
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                activeIndex = (activeIndex + 1) % lastSuggestions.length;
+                render();
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                activeIndex = (activeIndex - 1 + lastSuggestions.length) % lastSuggestions.length;
+                render();
+            } else if (e.key === 'Enter' || e.key === 'Tab') {
+                e.preventDefault();
+                choose(activeIndex);
+            } else if (e.key === 'Escape') {
+                close();
+            }
+        });
+        field.addEventListener('input', render);
+        field.addEventListener('blur', function () { setTimeout(close, 100); });
     }
 
     /**
