@@ -15,9 +15,10 @@ name: Bowire scan (self-smoke)
 # built-in checks ship with, which is exactly what we want to assert
 # the pipeline survives.
 #
-# `fail-on-finding: false` because we expect (and want) findings — the
-# test is "the workflow runs to completion and SARIF lands in the
-# Security tab", not "the target is clean".
+# We expect (and want) findings here — the test is "the workflow runs
+# to completion and SARIF lands in the Security tab", not "the target
+# is clean". `bowire scan` exits 0 even with findings (findings are the
+# product), so the job stays green naturally.
 
 on:
   # Manual trigger for ad-hoc validation after editing scan-template.yml.
@@ -50,4 +51,3 @@ jobs:
       # code path, not only the built-in checks.
       corpus: docs/security/examples
       severity: low
-      fail-on-finding: false

@@ -41,7 +41,7 @@ internal static class ScanCommand
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
     };
 
-    /// <summary>One scan-subcommand invocation. Returns the process exit code (0 = clean, 1 = at least one finding above the severity threshold, 2 = usage error).</summary>
+    /// <summary>One scan-subcommand invocation. Returns the process exit code: 0 = the scanner ran end-to-end (with or without findings; findings are the product, not a failure), 1 = reserved for unhandled tool crashes / unexpected scanner aborts, 2 = usage / configuration error before the scan starts.</summary>
     public static async Task<int> RunAsync(ScanOptions options, CancellationToken ct)
     {
         ArgumentNullException.ThrowIfNull(options);
@@ -175,8 +175,16 @@ internal static class ScanCommand
             Console.WriteLine($"  SARIF report → {options.OutSarif}");
         }
 
-        var anyVulnerable = findings.Exists(f => f.Status == ScanFindingStatus.Vulnerable);
-        return anyVulnerable ? 1 : 0;
+        // A successful scan is "the tool ran end-to-end and produced a
+        // report" — findings are the *product*, not a failure. So we
+        // exit 0 here regardless of whether the target was vulnerable.
+        // Exit 1 stays reserved for actual tool crashes / unhandled
+        // exceptions surfacing from the CLI host; exit 2 is the
+        // usage-error code returned above. Callers that want the
+        // scan-step itself to gate a pipeline should post-process the
+        // SARIF (jq on `runs[0].results.length`) — that keeps the
+        // gating logic in the CI yaml, not in the tool's exit code.
+        return 0;
     }
 
     private static IEnumerable<string> EnumerateTemplatePaths(ScanOptions options)

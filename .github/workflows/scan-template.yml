@@ -16,9 +16,17 @@ name: Bowire scan (reusable)
 #   1. As a build artifact (`bowire-findings`) so non-GitHub-Code-Scanning
 #      consumers (GitLab mirrors, Azure DevOps re-imports, manual review)
 #      can download the raw file.
-#   2. Via `github/codeql-action/upload-sarif@v3` into the calling repo's
+#   2. Via `github/codeql-action/upload-sarif@v4` into the calling repo's
 #      Security tab so each finding becomes a Code Scanning alert with
 #      stable rule IDs, severity, and remediation copy.
+#
+# Exit-code contract: `bowire scan` exits 0 whenever the scan ran
+# end-to-end — findings are the *product* of the scan, not a failure
+# signal. Pipelines that want to gate on findings should add their
+# own post-processing step (jq on the SARIF, or a Code Scanning
+# branch-protection rule). The workflow therefore lets the scan step
+# fail naturally if the *tool itself* crashes (unhandled exception,
+# template parse fault, ...), which is the right behaviour.
 
 on:
   workflow_call:
@@ -47,11 +55,6 @@ on:
         required: false
         type: string
         default: ''
-      fail-on-finding:
-        description: 'Set to "true" to fail the job when any finding at >= --severity fires. Default: false (upload-only, gate later via Code Scanning rules).'
-        required: false
-        type: boolean
-        default: false
 
 permissions:
   contents: read
@@ -90,15 +93,13 @@ jobs:
         run: bowire --version
 
       - name: Run bowire scan
-        id: scan
         # `--allow-self-signed-certs` is intentionally NOT passed by
         # default — callers that need it should fork this workflow or
         # we'll add it as an opt-in input. Same for --no-builtins.
-        #
-        # `continue-on-error` keeps the upload-sarif step alive even
-        # when --fail-on-finding is set, so findings still reach Code
-        # Scanning before the gate fails the job.
-        continue-on-error: true
+        # No `continue-on-error` here: the scan only exits non-zero
+        # when the tool itself blew up (template parse fault, scope
+        # rejection, etc.), and those should fail the workflow loudly
+        # so the operator notices.
         run: |
           ARGS=(
             scan
@@ -111,14 +112,11 @@ jobs:
           else
             echo "::notice::Corpus directory '${{ inputs.corpus }}' not found in the calling repo — running built-in checks only."
           fi
-          if [ "${{ inputs.fail-on-finding }}" = "true" ]; then
-            ARGS+=(--fail-on-finding)
-          fi
           bowire "${ARGS[@]}"
 
       - name: Upload SARIF as build artifact
-        # Runs even if the scan step failed (e.g. fail-on-finding tripped)
-        # so the raw SARIF is recoverable for non-GitHub consumers.
+        # `always()` so the raw SARIF is still recoverable even when
+        # the scan step itself crashed (helps debug a broken template).
         if: always() && hashFiles('findings.sarif') != ''
         uses: actions/upload-artifact@v7
         with:
@@ -135,13 +133,3 @@ jobs:
         with:
           sarif_file: findings.sarif
           category: bowire-scan
-
-      - name: Re-surface scan failure
-        # When --fail-on-finding tripped the bowire run we want the job
-        # to end red — but only AFTER the SARIF upload completed. The
-        # earlier `continue-on-error: true` step swallowed the exit
-        # code; this step re-checks the outcome and exits 1 to match.
-        if: inputs.fail-on-finding && steps.scan.outcome == 'failure'
-        run: |
-          echo "::error::bowire scan reported findings at or above '${{ inputs.severity }}' severity."
-          exit 1
