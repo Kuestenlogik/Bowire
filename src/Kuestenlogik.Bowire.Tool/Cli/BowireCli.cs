@@ -92,15 +92,21 @@ internal static class BowireCli
     private static Command BuildProxyCommand()
     {
         var proxy = new Command("proxy",
-            "Intercepting HTTP proxy. Tier-3 anchor of the security-testing lane (see docs/architecture/security-testing.md).");
+            "Intercepting HTTP/HTTPS proxy. Tier-3 anchor of the security-testing lane (see docs/architecture/security-testing.md).");
 
         var portOpt = new Option<int>("--port") { Description = "Port the proxy listens on (point browser / client at it). Default 8888." };
         var apiPortOpt = new Option<int>("--api-port") { Description = "Sidecar API port the workbench's Proxy tab reads captured flows from. Default 8889." };
         var capacityOpt = new Option<int>("--capacity") { Description = "Maximum number of flows retained in memory (FIFO eviction). Default 1000." };
+        var noMitmOpt = new Option<bool>("--no-mitm") { Description = "Disable HTTPS interception — CONNECT requests are tunneled-and-rejected with 501. Default: MITM enabled." };
+        var caDirOpt = new Option<string?>("--ca-dir") { Description = "Override the CA storage directory. Default: ~/.bowire (PFX + DER cert persisted there)." };
+        var exportCaOpt = new Option<string?>("--export-ca") { Description = "Copy the public CA certificate to this path (.crt) and exit. Install the file into your trust store to suppress client-side warnings during HTTPS interception." };
 
         proxy.Add(portOpt);
         proxy.Add(apiPortOpt);
         proxy.Add(capacityOpt);
+        proxy.Add(noMitmOpt);
+        proxy.Add(caDirOpt);
+        proxy.Add(exportCaOpt);
 
         proxy.SetAction(async (pr, ct) =>
         {
@@ -109,6 +115,9 @@ internal static class BowireCli
                 Port = pr.GetValue(portOpt) is int p and > 0 ? p : 8888,
                 ApiPort = pr.GetValue(apiPortOpt) is int ap and > 0 ? ap : 8889,
                 Capacity = pr.GetValue(capacityOpt) is int c and > 0 ? c : 1000,
+                MitmHttps = !pr.GetValue(noMitmOpt),
+                CaDir = pr.GetValue(caDirOpt),
+                ExportCa = pr.GetValue(exportCaOpt),
             };
             return await ProxyCommand.RunAsync(options, ct).ConfigureAwait(false);
         });
