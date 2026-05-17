@@ -510,7 +510,7 @@ jobs:
       # the release still gets created cleanly via GITHUB_TOKEN; the
       # downstream workflow then needs a manual workflow_dispatch.
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           token: ${{ secrets.RELEASE_PAT || secrets.GITHUB_TOKEN }}
           body_path: release-body.md
