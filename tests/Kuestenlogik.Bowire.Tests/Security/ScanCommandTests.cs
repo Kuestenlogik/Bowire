@@ -215,12 +215,15 @@ public sealed class ScanCommandTests
     // ---------------- happy path via in-process upstream ----------------
 
     [Fact]
-    public async Task RunAsync_TemplateMatchesUpstream_ReportsVulnerableAndReturns1()
+    public async Task RunAsync_TemplateMatchesUpstream_ReportsVulnerableAndReturns0()
     {
         var ct = TestContext.Current.CancellationToken;
         await using var upstream = await StartUpstreamAsync(ct);
 
         // Template expects status 200; upstream returns 200 → match.
+        // Findings are the scanner's *product*, not a failure — so
+        // even with a vulnerable target the scan-step itself exits 0.
+        // Pipelines that want to gate on findings post-process SARIF.
         var path = await WriteAsync(AttackRecording(expectedStatus: 200), ct);
         try
         {
@@ -231,7 +234,7 @@ public sealed class ScanCommandTests
                 RunBuiltins = false,
                 TimeoutSeconds = 10,
             }, ct));
-            Assert.Equal(1, code);
+            Assert.Equal(0, code);
             Assert.Contains("[VULN]", stdout, StringComparison.Ordinal);
             Assert.Contains("BWR-T-001", stdout, StringComparison.Ordinal);
         }
@@ -355,7 +358,7 @@ public sealed class ScanCommandTests
                 RunBuiltins = false,
                 TimeoutSeconds = 10,
             }, ct));
-            Assert.Equal(1, code);
+            Assert.Equal(0, code);
             Assert.Contains("[VULN]", stdout, StringComparison.Ordinal);
             Assert.Contains("[ok]", stdout, StringComparison.Ordinal);
         }
@@ -379,7 +382,7 @@ public sealed class ScanCommandTests
                 RunBuiltins = false,
                 TimeoutSeconds = 10,
             }, ct));
-            Assert.Equal(1, code);
+            Assert.Equal(0, code);
             Assert.True(File.Exists(sarifPath));
             var sarif = await File.ReadAllTextAsync(sarifPath, ct);
             Assert.Contains("\"BWR-T-001\"", sarif, StringComparison.Ordinal);
@@ -413,7 +416,7 @@ public sealed class ScanCommandTests
                 RunBuiltins = false,
                 TimeoutSeconds = 10,
             }, ct));
-            Assert.Equal(1, code);
+            Assert.Equal(0, code);
             Assert.Contains("Skipping bad.json", stderr, StringComparison.Ordinal);
         }
         finally { Directory.Delete(corpusDir, recursive: true); }
@@ -431,7 +434,7 @@ public sealed class ScanCommandTests
             RunBuiltins = true,  // hits the builtin-merge branch
             TimeoutSeconds = 5,
         }, ct));
-        Assert.Equal(1, code);
+        Assert.Equal(0, code);
         Assert.Contains("[VULN]", stdout, StringComparison.Ordinal);
         Assert.Contains("BWR-BUILTIN-TLS-001", stdout, StringComparison.Ordinal);  // plaintext-http finding
     }
