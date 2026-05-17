@@ -61,6 +61,6 @@
          subcommand tree (list/describe/call/mock/mcp/plugin/test) and
          get auto-generated help, validation, and tab-completion in one
          place instead of hand-rolled args.Contains() across files. -->
-    <PackageVersion Include="System.CommandLine" Version="2.0.7" />
+    <PackageVersion Include="System.CommandLine" Version="2.0.8" />
   </ItemGroup>
 </Project>
