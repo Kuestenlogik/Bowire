@@ -4410,6 +4410,23 @@ details[open] > .bowire-json-tree-summary::before {
     outline: none;
     border-color: var(--bowire-accent);
 }
+/* The Body / Mock-Response textareas reuse the generic .bowire-editor
+   styling, which has no border or background tint (the embedded code
+   editor lives inside a dedicated pane that supplies the chrome). In
+   the freeform builder there's no surrounding pane, so the textarea
+   blended into the page background and looked like static text.
+   Match the freeform-input chrome here so the body field is visibly
+   an input. */
+.bowire-freeform-body-row .bowire-editor {
+    background: var(--bowire-bg-elevated);
+    border: 1px solid var(--bowire-border);
+    border-radius: var(--bowire-radius-sm);
+    padding: 8px 10px;
+    transition: border-color 120ms ease;
+}
+.bowire-freeform-body-row .bowire-editor:focus {
+    border-color: var(--bowire-accent);
+}
 .bowire-freeform-select {
     background: var(--bowire-bg-elevated);
     border: 1px solid var(--bowire-border);
