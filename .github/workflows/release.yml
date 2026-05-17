@@ -444,13 +444,13 @@ jobs:
           fetch-depth: 1
 
       - name: Download Linux artefacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: artefacts-linux
           path: ./
 
       - name: Download MSI artefacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: artefacts-msi
           path: publish/archives/
