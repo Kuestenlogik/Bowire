@@ -392,6 +392,67 @@ public sealed class ScanCommandTests
         }
     }
 
+    [Fact]
+    public async Task RunAsync_CorruptTemplateInCorpus_SkippedWithWarning()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        await using var upstream = await StartUpstreamAsync(ct);
+
+        var corpusDir = Path.Combine(Path.GetTempPath(), $"bowire-corpus-corrupt-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(corpusDir);
+        try
+        {
+            // One usable template + one corrupt JSON.
+            await File.WriteAllTextAsync(Path.Combine(corpusDir, "good.json"), JsonSerializer.Serialize(AttackRecording()), ct);
+            await File.WriteAllTextAsync(Path.Combine(corpusDir, "bad.json"), "{not json", ct);
+
+            var (code, _, stderr) = Capture(() => ScanCommand.RunAsync(new ScanOptions
+            {
+                Target = upstream.Urls.First(),
+                Corpus = corpusDir,
+                RunBuiltins = false,
+                TimeoutSeconds = 10,
+            }, ct));
+            Assert.Equal(1, code);
+            Assert.Contains("Skipping bad.json", stderr, StringComparison.Ordinal);
+        }
+        finally { Directory.Delete(corpusDir, recursive: true); }
+    }
+
+    [Fact]
+    public async Task RunAsync_WithBuiltinsAgainstHttpTarget_EmitsBuiltinFindings()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        await using var upstream = await StartUpstreamAsync(ct);
+
+        var (code, stdout, _) = Capture(() => ScanCommand.RunAsync(new ScanOptions
+        {
+            Target = upstream.Urls.First(),
+            RunBuiltins = true,  // hits the builtin-merge branch
+            TimeoutSeconds = 5,
+        }, ct));
+        Assert.Equal(1, code);
+        Assert.Contains("[VULN]", stdout, StringComparison.Ordinal);
+        Assert.Contains("BWR-BUILTIN-TLS-001", stdout, StringComparison.Ordinal);  // plaintext-http finding
+    }
+
+    [Fact]
+    public async Task RunAsync_BuiltinFindingBelowSeverityThreshold_MarkedSkipped()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        await using var upstream = await StartUpstreamAsync(ct);
+
+        var (code, stdout, _) = Capture(() => ScanCommand.RunAsync(new ScanOptions
+        {
+            Target = upstream.Urls.First(),
+            RunBuiltins = true,
+            MinSeverity = "critical",   // every finding is below this, including the high-sev plaintext-http
+            TimeoutSeconds = 5,
+        }, ct));
+        Assert.Equal(0, code);
+        Assert.Contains("below severity threshold", stdout, StringComparison.Ordinal);
+    }
+
     private static async Task<WebApplication> StartUpstreamAsync(CancellationToken ct)
     {
         var builder = WebApplication.CreateSlimBuilder();

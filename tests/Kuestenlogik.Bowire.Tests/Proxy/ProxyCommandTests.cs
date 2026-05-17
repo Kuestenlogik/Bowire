@@ -50,4 +50,76 @@ public sealed class ProxyCommandTests
         var code = await ProxyCommand.RunAsync(options, ct);
         Assert.Equal(1, code);
     }
+
+    [Fact]
+    public async Task RunAsync_ExportCa_WritesPublicCertAndExits()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var caDir = Path.Combine(Path.GetTempPath(), $"bowire-proxy-test-ca-{Guid.NewGuid():N}");
+        var exportPath = Path.Combine(caDir, "out", "bowire-ca.crt");
+        try
+        {
+            var options = new ProxyCommand.ProxyOptions
+            {
+                Port = 0,
+                ApiPort = 0,
+                Capacity = 10,
+                CaDir = caDir,
+                ExportCa = exportPath,
+            };
+            var code = await ProxyCommand.RunAsync(options, ct);
+            Assert.Equal(0, code);
+            Assert.True(File.Exists(exportPath));
+        }
+        finally
+        {
+            if (Directory.Exists(caDir)) Directory.Delete(caDir, recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task RunAsync_MitmDisabled_StartsAndExitsCleanlyOnCancellation()
+    {
+        using var cts = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
+        cts.CancelAfter(TimeSpan.FromSeconds(2));
+
+        var options = new ProxyCommand.ProxyOptions
+        {
+            Port = 0,
+            ApiPort = 0,
+            Capacity = 10,
+            MitmHttps = false,    // hits the no-CA branch
+        };
+        var code = await ProxyCommand.RunAsync(options, cts.Token);
+        Assert.Equal(0, code);
+    }
+
+    [Fact]
+    public async Task RunAsync_ApiPortInUse_ReturnsErrorCode1()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        // Hold the API port, then ask ProxyCommand to bind the same one.
+        using var blocker = new System.Net.Sockets.TcpListener(System.Net.IPAddress.Loopback, 0);
+        blocker.Start();
+        var occupied = ((System.Net.IPEndPoint)blocker.LocalEndpoint).Port;
+
+        // Use a fresh CA dir so we don't pollute ~/.bowire on the test machine.
+        var caDir = Path.Combine(Path.GetTempPath(), $"bowire-proxy-api-test-ca-{Guid.NewGuid():N}");
+        try
+        {
+            var options = new ProxyCommand.ProxyOptions
+            {
+                Port = 0,
+                ApiPort = occupied,
+                Capacity = 10,
+                CaDir = caDir,
+            };
+            var code = await ProxyCommand.RunAsync(options, ct);
+            Assert.Equal(1, code);
+        }
+        finally
+        {
+            if (Directory.Exists(caDir)) Directory.Delete(caDir, recursive: true);
+        }
+    }
 }

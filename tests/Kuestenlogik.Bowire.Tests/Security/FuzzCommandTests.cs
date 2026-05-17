@@ -285,4 +285,166 @@ public sealed class FuzzCommandTests
         var ct = TestContext.Current.CancellationToken;
         await Assert.ThrowsAsync<ArgumentNullException>(async () => await FuzzCommand.RunAsync(null!, ct));
     }
+
+    [Fact]
+    public async Task RunAsync_ProbeBodyInvalidJson_ReturnsParseError()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var rec = MakeRecording(body: "{not json");
+        var path = WriteTemplate(rec);
+        try
+        {
+            var (code, _, stderr) = Capture(() => FuzzCommand.RunAsync(new FuzzOptions
+            {
+                Target = "http://example.invalid", Template = path, Field = "$.u", Category = "sqli",
+            }, ct));
+            Assert.Equal(1, code);
+            Assert.Contains("not valid JSON", stderr, StringComparison.Ordinal);
+        }
+        finally { File.Delete(path); }
+    }
+
+    [Fact]
+    public async Task RunAsync_NumericFieldWithForce_RunsPayloads()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var builder = WebApplication.CreateSlimBuilder();
+        builder.Logging.ClearProviders();
+        builder.WebHost.ConfigureKestrel(o => o.Listen(IPAddress.Loopback, 0, l => l.Protocols = HttpProtocols.Http1));
+        var upstream = builder.Build();
+        ((IApplicationBuilder)upstream).Run(async ctx =>
+        {
+            ctx.Response.StatusCode = 200;
+            await ctx.Response.WriteAsync("{}", ctx.RequestAborted);
+        });
+        await upstream.StartAsync(ct);
+        await using var _ = upstream;
+
+        var rec = MakeRecording(body: "{\"limit\":10}");
+        var path = WriteTemplate(rec);
+        try
+        {
+            var (code, stdout, _) = Capture(() => FuzzCommand.RunAsync(new FuzzOptions
+            {
+                Target = upstream.Urls.First(),
+                Template = path,
+                Field = "$.limit",
+                Category = "sqli",
+                Force = true,    // overrides the numeric-skip guard
+                TimeoutSeconds = 10,
+            }, ct));
+            Assert.Equal(0, code);
+            Assert.Contains("Fuzzing", stdout, StringComparison.Ordinal);
+            Assert.Contains("(Number)", stdout, StringComparison.Ordinal);
+        }
+        finally { File.Delete(path); }
+    }
+
+    [Fact]
+    public async Task RunAsync_BaselineUpstreamUnreachable_StillRunsPayloads()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        // No upstream listening — baseline fetch fails; the payload
+        // loop runs anyway and surfaces "err" rows for each payload.
+        var rec = MakeRecording();
+        var path = WriteTemplate(rec);
+        try
+        {
+            var (code, stdout, _) = Capture(() => FuzzCommand.RunAsync(new FuzzOptions
+            {
+                Target = "http://127.0.0.1:1",   // unbindable port → connection refused
+                Template = path,
+                Field = "$.username",
+                Category = "sqli",
+                TimeoutSeconds = 2,
+            }, ct));
+            Assert.True(code == 0);
+            Assert.Contains("baseline FAILED", stdout, StringComparison.Ordinal);
+            Assert.Contains("[err]", stdout, StringComparison.Ordinal);
+        }
+        finally { File.Delete(path); }
+    }
+
+    [Fact]
+    public async Task RunAsync_PathOutsideBody_PayloadSubstitutionFails()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var builder = WebApplication.CreateSlimBuilder();
+        builder.Logging.ClearProviders();
+        builder.WebHost.ConfigureKestrel(o => o.Listen(IPAddress.Loopback, 0, l => l.Protocols = HttpProtocols.Http1));
+        var upstream = builder.Build();
+        ((IApplicationBuilder)upstream).Run(async ctx =>
+        {
+            ctx.Response.StatusCode = 200;
+            await ctx.Response.WriteAsync("{}", ctx.RequestAborted);
+        });
+        await upstream.StartAsync(ct);
+        await using var _ = upstream;
+
+        // Probe body is just a string (not an object) — TryNavigatePath
+        // accepts $.foo but ReplaceField bails because the root isn't a dict.
+        var rec = new BowireRecording
+        {
+            Name = "stringroot",
+            Steps =
+            {
+                new BowireRecordingStep
+                {
+                    Protocol = "rest",
+                    HttpVerb = "POST",
+                    HttpPath = "/",
+                    Body = "\"top-level-string\"",
+                },
+            },
+        };
+        var path = WriteTemplate(rec);
+        try
+        {
+            // TryNavigatePath fails on a string root with $.foo path → "field not found".
+            var (code, _, stderr) = Capture(() => FuzzCommand.RunAsync(new FuzzOptions
+            {
+                Target = upstream.Urls.First(),
+                Template = path,
+                Field = "$.foo",
+                Category = "sqli",
+                TimeoutSeconds = 10,
+            }, ct));
+            Assert.Equal(1, code);
+            Assert.Contains("not found", stderr, StringComparison.OrdinalIgnoreCase);
+        }
+        finally { File.Delete(path); }
+    }
+
+    [Fact]
+    public async Task RunAsync_NestedField_MutatesAtRightPath()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var builder = WebApplication.CreateSlimBuilder();
+        builder.Logging.ClearProviders();
+        builder.WebHost.ConfigureKestrel(o => o.Listen(IPAddress.Loopback, 0, l => l.Protocols = HttpProtocols.Http1));
+        var upstream = builder.Build();
+        ((IApplicationBuilder)upstream).Run(async ctx =>
+        {
+            ctx.Response.StatusCode = 200;
+            await ctx.Response.WriteAsync("{}", ctx.RequestAborted);
+        });
+        await upstream.StartAsync(ct);
+        await using var _ = upstream;
+
+        var rec = MakeRecording(body: "{\"filter\":{\"id\":\"abc\"},\"nested\":{\"obj\":{\"inner\":true}}}");
+        var path = WriteTemplate(rec);
+        try
+        {
+            var (code, _, _) = Capture(() => FuzzCommand.RunAsync(new FuzzOptions
+            {
+                Target = upstream.Urls.First(),
+                Template = path,
+                Field = "$.filter.id",
+                Category = "xss",
+                TimeoutSeconds = 10,
+            }, ct));
+            Assert.Equal(0, code);
+        }
+        finally { File.Delete(path); }
+    }
 }

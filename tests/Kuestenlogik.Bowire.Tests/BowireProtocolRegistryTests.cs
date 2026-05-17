@@ -15,6 +15,10 @@ namespace Kuestenlogik.Bowire.Tests;
 /// </summary>
 public class BowireProtocolRegistryTests
 {
+    private static readonly string[] s_disabledRestGrpc = { "rest", "grpc" };
+    private static readonly string[] s_disabledRestUpper = { "REST" };
+
+
     [Fact]
     public void Register_Adds_To_Protocols_List()
     {
@@ -99,6 +103,41 @@ public class BowireProtocolRegistryTests
         registry.Register(new HttpInvokerPlugin());
 
         Assert.Same(invoker, registry.FindHttpInvoker());
+    }
+
+    [Fact]
+    public void Discover_FindsBuiltInProtocols()
+    {
+        // The test project pulls in every protocol plugin via
+        // ProjectReference, so each plugin's IBowireProtocol type
+        // should land in the registry on a fresh discovery scan.
+        var registry = BowireProtocolRegistry.Discover();
+        Assert.NotEmpty(registry.Protocols);
+        Assert.Contains(registry.Protocols, p => p.Id == "rest");
+    }
+
+    [Fact]
+    public void Discover_DisabledPluginIds_AreSkipped()
+    {
+        var registry = BowireProtocolRegistry.Discover(disabledPluginIds: s_disabledRestGrpc);
+        Assert.DoesNotContain(registry.Protocols, p => p.Id == "rest");
+        Assert.DoesNotContain(registry.Protocols, p => p.Id == "grpc");
+        // Other plugins still loaded — graphql / websocket / etc.
+        Assert.NotEmpty(registry.Protocols);
+    }
+
+    [Fact]
+    public void Discover_DisabledPluginIds_IsCaseInsensitive()
+    {
+        var registry = BowireProtocolRegistry.Discover(disabledPluginIds: s_disabledRestUpper);
+        Assert.DoesNotContain(registry.Protocols, p => p.Id == "rest");
+    }
+
+    [Fact]
+    public void Discover_NullDisabledList_BehavesLikeNoOpt()
+    {
+        var registry = BowireProtocolRegistry.Discover(disabledPluginIds: null);
+        Assert.NotEmpty(registry.Protocols);
     }
 
     [Fact]
