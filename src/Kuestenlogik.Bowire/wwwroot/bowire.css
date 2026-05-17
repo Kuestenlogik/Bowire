@@ -9238,3 +9238,69 @@ details[open] > .bowire-json-tree-summary::before {
     color: var(--bowire-text-secondary);
     font-style: italic;
 }
+
+/* ------------------------------------------------------------------
+ * Flow editor — inline assertions on Request-nodes (Phase 3 anchor)
+ * ------------------------------------------------------------------ */
+.bowire-flow-assertions {
+    margin-top: 12px;
+    padding-top: 10px;
+    border-top: 1px dashed var(--bowire-border);
+}
+.bowire-flow-assertions-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 6px;
+}
+.bowire-flow-assertions-title {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--bowire-text-secondary);
+    flex: 1;
+}
+.bowire-flow-assertions-empty {
+    font-size: 11px;
+    color: var(--bowire-text-secondary);
+    font-style: italic;
+    padding: 4px 0;
+}
+.bowire-flow-assertion-row {
+    display: grid;
+    grid-template-columns: 1fr 90px 1fr 28px;
+    gap: 6px;
+    margin-bottom: 4px;
+    align-items: center;
+}
+.bowire-flow-assertion-row .bowire-flow-field-input {
+    font-family: var(--bowire-font-mono, monospace);
+    font-size: 12px;
+    padding: 3px 6px;
+}
+.bowire-flow-assertion-row .bowire-flow-assertion-op {
+    text-align: center;
+}
+
+.bowire-flow-assertion-results {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 8px 12px;
+    background: var(--bowire-bg);
+    border-bottom: 1px solid var(--bowire-border);
+    font-family: var(--bowire-font-mono, monospace);
+    font-size: 12px;
+}
+.bowire-flow-assertion-result {
+    padding: 2px 6px;
+    border-radius: 3px;
+}
+.bowire-flow-assertion-result.pass {
+    color: #2ea043;
+}
+.bowire-flow-assertion-result.fail {
+    color: #f85149;
+    background: rgba(248, 81, 73, 0.08);
+}

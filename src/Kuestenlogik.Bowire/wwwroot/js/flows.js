@@ -13,7 +13,7 @@
     const FLOWS_KEY = 'bowire_flows';
     let flowsList = [];
     let flowEditorSelectedId = null;
-    // Results keyed by node.id: { [nodeId]: { pass, status, durationMs, response, error, iteration? } }
+    // Results keyed by node.id: { [nodeId]: { pass, status, durationMs, response, error, iteration?, assertions? } }
     let flowRunResults = {};
     let flowRunActiveNodeId = null;
     let flowRunStatus = null; // null | 'running' | 'done' | 'stopped'
@@ -21,6 +21,11 @@
     let flowExpandedNodeId = null;
     let flowResultExpandedNodeId = null; // which node's response viewer is open
     let flowDragState = null;
+    // Per-run variable store. Variable + Foreach + Request-extract nodes
+    // write here; substituteVars (in history-env.js) reads it so ${name}
+    // placeholders in any later node's body resolve at run-time. Cleared
+    // at run start and pinned to the Watch-Panel in the canvas footer.
+    let flowVars = {};
 
     function loadFlows() {
         try {
@@ -239,6 +244,7 @@
         flowRunActiveNodeId = null;
         flowRunStatus = 'running';
         flowRunFlowId = id;
+        flowVars = {};        // reset per-run vars; the Watch-Panel reflects this
         render();
 
         try {
@@ -293,30 +299,70 @@
 
             } else if (node.type === 'variable') {
                 var val = resolveResponseVar(node.path || '');
-                if (val !== null) {
-                    flowRunResults[node.id] = { pass: true, status: 'Set ' + node.varName + ' = ' + val };
+                if (val !== null && node.varName) {
+                    // Write into the per-run var store so substituteVars
+                    // can resolve ${varName} from any later node.
+                    flowVars[node.varName] = val;
+                    flowRunResults[node.id] = { pass: true, status: 'Set ' + node.varName + ' = ' + truncateForDisplay(val) };
+                } else if (!node.varName) {
+                    flowRunResults[node.id] = { pass: false, status: 'Variable name is empty' };
                 } else {
                     flowRunResults[node.id] = { pass: false, status: 'Path not found: ' + node.path };
                 }
 
             } else if (node.type === 'loop') {
-                var maxIter = node.loopType === 'count' ? (node.loopCount || 1) : 100;
-                var iterations = 0;
-                for (var li = 0; li < maxIter; li++) {
-                    if (flowRunStatus !== 'running') break;
-                    iterations++;
-                    flowRunResults[node.id] = { pass: true, status: 'Iteration ' + iterations + '/' + maxIter, iteration: iterations };
-                    render();
-                    if (node.body && node.body.length > 0) {
-                        await runNodeList(node.body);
+                var loopType = node.loopType || 'count';
+                if (loopType === 'foreach') {
+                    // Foreach: walk the source JSONPath against the last
+                    // response (or a previously-stored object var), iterate
+                    // each entry as ${itemVar}. Bulk-API / batch-import
+                    // pattern — "for each user in users[] do this request".
+                    var sourceArr = resolveForeachSource(node.loopSource || '');
+                    if (!Array.isArray(sourceArr)) {
+                        flowRunResults[node.id] = { pass: false, status: 'Foreach source is not an array: ' + (node.loopSource || '(empty)') };
+                        break;
                     }
-                    // For while-loops, check condition after each iteration
-                    if (node.loopType === 'while') {
-                        var loopCond = evaluateCondition(node);
-                        if (!loopCond) break;
+                    var itemVar = (node.loopItemVar || 'item').trim();
+                    var iterations = 0;
+                    for (var fi = 0; fi < sourceArr.length; fi++) {
+                        if (flowRunStatus !== 'running') break;
+                        iterations++;
+                        // Bind the item AND a parallel ${itemVar_index}
+                        // so loops over [a,b,c] can also reference position.
+                        flowVars[itemVar] = typeof sourceArr[fi] === 'object'
+                            ? JSON.stringify(sourceArr[fi])
+                            : String(sourceArr[fi]);
+                        flowVars[itemVar + '_index'] = String(fi);
+                        flowRunResults[node.id] = { pass: true, status: 'Iteration ' + iterations + '/' + sourceArr.length + ' — ${' + itemVar + '} = ' + truncateForDisplay(flowVars[itemVar]), iteration: iterations };
+                        render();
+                        if (node.body && node.body.length > 0) {
+                            await runNodeList(node.body);
+                        }
                     }
+                    // Clean up the per-iteration bindings so a downstream
+                    // node doesn't accidentally pick up the last value.
+                    delete flowVars[itemVar];
+                    delete flowVars[itemVar + '_index'];
+                    flowRunResults[node.id] = { pass: true, status: iterations + ' iteration' + (iterations !== 1 ? 's' : '') + ' completed (foreach)', iteration: iterations };
+                } else {
+                    var maxIter = loopType === 'count' ? (node.loopCount || 1) : 100;
+                    var iterations = 0;
+                    for (var li = 0; li < maxIter; li++) {
+                        if (flowRunStatus !== 'running') break;
+                        iterations++;
+                        flowRunResults[node.id] = { pass: true, status: 'Iteration ' + iterations + '/' + maxIter, iteration: iterations };
+                        render();
+                        if (node.body && node.body.length > 0) {
+                            await runNodeList(node.body);
+                        }
+                        // For while-loops, check condition after each iteration
+                        if (loopType === 'while') {
+                            var loopCond = evaluateCondition(node);
+                            if (!loopCond) break;
+                        }
+                    }
+                    flowRunResults[node.id] = { pass: true, status: iterations + ' iteration' + (iterations !== 1 ? 's' : '') + ' completed', iteration: iterations };
                 }
-                flowRunResults[node.id] = { pass: true, status: iterations + ' iteration' + (iterations !== 1 ? 's' : '') + ' completed', iteration: iterations };
             }
         } catch (e) {
             flowRunResults[node.id] = { pass: false, status: 'Error', error: e.message };
@@ -339,15 +385,126 @@
             })
         }).then(function (resp) {
             return resp.json().then(function (json) {
+                var baseStatus = json.status || (resp.ok ? 'OK' : 'Error');
+                var baseOk = resp.ok && !json.error;
+                // Evaluate inline assertions against an envelope that
+                // carries both the response body AND the call metadata
+                // (status / durationMs / error), so a request-node can
+                // assert on either without an extra Condition-node.
+                var envelope = {
+                    status: baseStatus,
+                    durationMs: json.duration_ms || 0,
+                    error: json.error || null,
+                    response: tryParseAsJson(json.response),
+                };
+                var assertionResults = evaluateAssertions(node.assertions || [], envelope);
+                var allAssertionsPassed = assertionResults.every(function (a) { return a.pass; });
                 return {
-                    pass: resp.ok && !json.error,
-                    status: json.status || (resp.ok ? 'OK' : 'Error'),
+                    pass: baseOk && allAssertionsPassed,
+                    status: assertionResults.length === 0
+                        ? baseStatus
+                        : baseStatus + ' · ' + assertionResults.filter(function (a) { return a.pass; }).length + '/' + assertionResults.length + ' assertions',
                     durationMs: json.duration_ms || 0,
                     response: json.response,
-                    error: json.error || null
+                    error: json.error || null,
+                    assertions: assertionResults,
                 };
             });
         });
+    }
+
+    /**
+     * Resolve an assertion path against the request-envelope
+     * { status, durationMs, error, response }. Three forms:
+     *   `$.field` or `$` — alias for `response.field` / response root.
+     *                       90% of assertions target the body, so this
+     *                       is the ergonomic shortcut.
+     *   `response.foo` / `status` / `durationMs` — explicit envelope key.
+     *   `field` — plain dotted path against the body (no $-anchor).
+     */
+    function resolveAssertionPath(envelope, path) {
+        if (envelope == null) return undefined;
+        var trimmed = path == null ? '' : String(path).trim();
+        if (trimmed === '' || trimmed === '$') return envelope.response;
+        if (trimmed.indexOf('$.') === 0) {
+            return walkJsonPath(envelope.response, trimmed.substring(2));
+        }
+        if (trimmed === 'response') return envelope.response;
+        // Top-level envelope keys go through directly; everything
+        // else is treated as a body-relative path.
+        if (trimmed.indexOf('.') === -1 && Object.prototype.hasOwnProperty.call(envelope, trimmed)) {
+            return envelope[trimmed];
+        }
+        if (trimmed.indexOf('response.') === 0) {
+            return walkJsonPath(envelope.response, trimmed.substring('response.'.length));
+        }
+        return walkJsonPath(envelope.response, trimmed);
+    }
+
+    /**
+     * Drive an array of {path, op, value} assertions against a
+     * parsed response object. Returns one row per assertion with
+     * pass/fail + a human-readable detail string for the result
+     * viewer. The op vocabulary matches Condition-nodes so users
+     * don't have to learn a second predicate language.
+     */
+    function evaluateAssertions(assertions, envelope) {
+        if (!Array.isArray(assertions) || assertions.length === 0) return [];
+        return assertions.map(function (a) {
+            var actual = resolveAssertionPath(envelope, a.path || '');
+            var pass = false;
+            var op = a.op || 'eq';
+            var expected = a.value;
+            if (op === 'eq') pass = String(actual) === String(expected);
+            else if (op === 'neq') pass = String(actual) !== String(expected);
+            else if (op === 'gt') pass = Number(actual) > Number(expected);
+            else if (op === 'lt') pass = Number(actual) < Number(expected);
+            else if (op === 'contains') pass = String(actual).indexOf(String(expected)) !== -1;
+            else if (op === 'exists') pass = actual !== undefined && actual !== null;
+            else if (op === 'missing') pass = actual === undefined || actual === null;
+            return {
+                path: a.path || '$',
+                op: op,
+                expected: expected,
+                actual: actual === undefined ? null : (typeof actual === 'object' ? JSON.stringify(actual) : String(actual)),
+                pass: pass,
+            };
+        });
+    }
+
+    /**
+     * Resolve the Foreach loop's source — a JSONPath into the last
+     * response (or a previously-bound array variable). Accepts:
+     *   $.users       — array nested in the captured response
+     *   $             — whole response (when it IS an array)
+     *   myArray       — a ${myArray} bound via Variable / Foreach
+     */
+    function resolveForeachSource(path) {
+        var trimmed = (path || '').trim();
+        if (!trimmed) return null;
+        if (trimmed === '$' || trimmed.indexOf('$.') === 0 || trimmed.charAt(0) === '$') {
+            var inner = trimmed === '$' ? '' : (trimmed.indexOf('$.') === 0 ? trimmed.substring(2) : trimmed.substring(1));
+            return walkJsonPath(lastResponseJson, inner);
+        }
+        // Try as a flow-var name — Variable-node may have captured
+        // an array into ${name} via JSON.stringify; parse it back.
+        if (Object.prototype.hasOwnProperty.call(flowVars, trimmed)) {
+            var stored = flowVars[trimmed];
+            try { return JSON.parse(stored); } catch { return null; }
+        }
+        return null;
+    }
+
+    function tryParseAsJson(value) {
+        if (value == null) return null;
+        if (typeof value !== 'string') return value;
+        try { return JSON.parse(value); } catch { return value; }
+    }
+
+    function truncateForDisplay(s) {
+        if (s == null) return '';
+        var str = String(s);
+        return str.length <= 60 ? str : str.slice(0, 57) + '…';
     }
 
     function evaluateCondition(node) {
@@ -632,7 +789,11 @@
                 var content = el('div', { className: 'bowire-flow-card-content' });
                 if (node.type === 'request') {
                     content.appendChild(el('div', { className: 'bowire-flow-card-title', textContent: (node.method || 'Untitled') }));
-                    content.appendChild(el('div', { className: 'bowire-flow-card-subtitle', textContent: (node.service || '') + (node.protocol ? ' \u00B7 ' + node.protocol : '') }));
+                    var subtitle = (node.service || '') + (node.protocol ? ' \u00B7 ' + node.protocol : '');
+                    if (Array.isArray(node.assertions) && node.assertions.length > 0) {
+                        subtitle += ' \u00B7 ' + node.assertions.length + ' assert' + (node.assertions.length === 1 ? '' : 's');
+                    }
+                    content.appendChild(el('div', { className: 'bowire-flow-card-subtitle', textContent: subtitle }));
                 } else if (node.type === 'delay') {
                     content.appendChild(el('div', { className: 'bowire-flow-card-title', textContent: 'Delay ' + (node.delayMs || 1000) + 'ms' }));
                 } else if (node.type === 'condition') {
@@ -644,9 +805,12 @@
                     content.appendChild(el('div', { className: 'bowire-flow-card-subtitle',
                         textContent: (node.varName || '') + ' = ${response.' + (node.path || '') + '}' }));
                 } else if (node.type === 'loop') {
-                    var loopLabel = node.loopType === 'while'
+                    var loopTypeForLabel = node.loopType || 'count';
+                    var loopLabel = loopTypeForLabel === 'while'
                         ? 'While ' + (node.conditionPath || '') + ' ' + opLabel(node.conditionOp) + ' ' + (node.conditionValue || '')
-                        : 'Repeat ' + (node.loopCount || 1) + '\u00D7';
+                        : loopTypeForLabel === 'foreach'
+                            ? 'Foreach over ' + (node.loopSource || '?') + ' as ${' + (node.loopItemVar || 'item') + '}'
+                            : 'Repeat ' + (node.loopCount || 1) + '\u00D7';
                     content.appendChild(el('div', { className: 'bowire-flow-card-title', textContent: 'Loop' }));
                     content.appendChild(el('div', { className: 'bowire-flow-card-subtitle', textContent: loopLabel }));
                 }
@@ -719,6 +883,10 @@
                         editor.appendChild(flowField('Method', 'text', node.method || '', function (v) { node.method = v; persistFlows(); }));
                         editor.appendChild(flowField('Server URL', 'text', node.serverUrl || '', function (v) { node.serverUrl = v; persistFlows(); }));
                         editor.appendChild(flowField('Body', 'textarea', node.body || '{}', function (v) { node.body = v; persistFlows(); }));
+                        // Inline assertions: turn the request-node into
+                        // a fully-validated probe without an extra chain
+                        // of downstream Condition-nodes.
+                        editor.appendChild(renderAssertionsEditor(node));
                     } else if (node.type === 'delay') {
                         editor.appendChild(flowField('Delay (ms)', 'number', String(node.delayMs || 1000), function (v) { node.delayMs = parseInt(v, 10) || 1000; persistFlows(); }));
                     } else if (node.type === 'condition') {
@@ -731,10 +899,18 @@
                         editor.appendChild(flowField('Variable Name', 'text', node.varName || '', function (v) { node.varName = v; persistFlows(); }));
                         editor.appendChild(flowField('Response Path', 'text', node.path || '', function (v) { node.path = v; persistFlows(); }));
                     } else if (node.type === 'loop') {
-                        editor.appendChild(flowField('Loop Type', 'select', node.loopType || 'count', function (v) { node.loopType = v; persistFlows(); render(); },
-                            [{ value: 'count', label: 'Count (N times)' }, { value: 'while', label: 'While (condition)' }]));
-                        if ((node.loopType || 'count') === 'count') {
+                        var loopTypeNow = node.loopType || 'count';
+                        editor.appendChild(flowField('Loop Type', 'select', loopTypeNow, function (v) { node.loopType = v; persistFlows(); render(); },
+                            [
+                                { value: 'count', label: 'Count (N times)' },
+                                { value: 'while', label: 'While (condition)' },
+                                { value: 'foreach', label: 'Foreach (over array)' },
+                            ]));
+                        if (loopTypeNow === 'count') {
                             editor.appendChild(flowField('Iterations', 'number', String(node.loopCount || 1), function (v) { node.loopCount = parseInt(v, 10) || 1; persistFlows(); }));
+                        } else if (loopTypeNow === 'foreach') {
+                            editor.appendChild(flowField('Source ($.users / $)', 'text', node.loopSource || '', function (v) { node.loopSource = v; persistFlows(); }));
+                            editor.appendChild(flowField('Item Variable', 'text', node.loopItemVar || 'item', function (v) { node.loopItemVar = v; persistFlows(); }));
                         } else {
                             editor.appendChild(flowField('Path', 'text', node.conditionPath || '', function (v) { node.conditionPath = v; persistFlows(); }));
                             editor.appendChild(flowField('Operator', 'select', node.conditionOp || 'eq', function (v) { node.conditionOp = v; persistFlows(); },
@@ -754,6 +930,25 @@
                             textContent: runResult.status }),
                         runResult.durationMs ? el('span', { className: 'bowire-flow-result-time', textContent: runResult.durationMs + 'ms' }) : null
                     ));
+                    // Assertion outcomes — one row per evaluated tuple.
+                    if (Array.isArray(runResult.assertions) && runResult.assertions.length > 0) {
+                        var assertList = el('div', { className: 'bowire-flow-assertion-results' });
+                        for (var ari = 0; ari < runResult.assertions.length; ari++) {
+                            var a = runResult.assertions[ari];
+                            var opLbl = opLabel(a.op);
+                            var line = a.op === 'exists' || a.op === 'missing'
+                                ? a.path + ' ' + opLbl
+                                : a.path + ' ' + opLbl + ' ' + a.expected;
+                            var detail = a.pass
+                                ? '✓ ' + line
+                                : '✗ ' + line + ' — got: ' + truncateForDisplay(a.actual);
+                            assertList.appendChild(el('div', {
+                                className: 'bowire-flow-assertion-result ' + (a.pass ? 'pass' : 'fail'),
+                                textContent: detail,
+                            }));
+                        }
+                        viewer.appendChild(assertList);
+                    }
                     if (runResult.error) {
                         viewer.appendChild(el('pre', { className: 'bowire-flow-result-body error', textContent: runResult.error }));
                     }
@@ -828,7 +1023,7 @@
     }
 
     function opLabel(op) {
-        var labels = { eq: '==', neq: '!=', gt: '>', lt: '<', contains: '\u2283', exists: '\u2203' };
+        var labels = { eq: '==', neq: '!=', gt: '>', lt: '<', contains: '\u2283', exists: '\u2203', missing: '\u2204' };
         return labels[op] || op || '==';
     }
 
@@ -847,7 +1042,7 @@
                     className: 'bowire-flow-add-btn bowire-flow-add-btn-' + t.color,
                     onClick: function () {
                         var defaults = {
-                            request: { type: 'request', protocol: protocols.length > 0 ? protocols[0].id : 'grpc', service: '', method: '', body: '{}' },
+                            request: { type: 'request', protocol: protocols.length > 0 ? protocols[0].id : 'grpc', service: '', method: '', body: '{}', assertions: [] },
                             delay: { type: 'delay', delayMs: 1000 },
                             condition: { type: 'condition', conditionPath: 'status', conditionOp: 'eq', conditionValue: 'OK', trueBranch: [], falseBranch: [] },
                             variable: { type: 'variable', varName: 'myVar', path: '' },
@@ -895,6 +1090,96 @@
             }));
         }
         return row;
+    }
+
+    /**
+     * Inline-assertion editor — rendered inside the expanded
+     * Request-Node editor. Each row is a (path, op, value) tuple
+     * exercising the same predicate vocabulary as Condition-nodes.
+     * The Add-row button appends a fresh empty entry; per-row × removes.
+     */
+    function renderAssertionsEditor(node) {
+        if (!Array.isArray(node.assertions)) node.assertions = [];
+        var wrap = el('div', { className: 'bowire-flow-assertions' });
+
+        var header = el('div', { className: 'bowire-flow-assertions-header' },
+            el('span', { className: 'bowire-flow-assertions-title', textContent: 'Assertions' }),
+            el('button', {
+                className: 'bowire-flow-card-action-btn',
+                title: 'Add assertion',
+                'aria-label': 'Add assertion',
+                innerHTML: svgIcon('plus'),
+                onClick: function (e) {
+                    e.stopPropagation();
+                    node.assertions.push({ path: 'status', op: 'eq', value: 'OK' });
+                    persistFlows();
+                    render();
+                },
+            })
+        );
+        wrap.appendChild(header);
+
+        if (node.assertions.length === 0) {
+            wrap.appendChild(el('div', { className: 'bowire-flow-assertions-empty',
+                textContent: 'No assertions — request passes whenever the call returns OK.' }));
+            return wrap;
+        }
+
+        for (var ai = 0; ai < node.assertions.length; ai++) {
+            (function (assertion, idx) {
+                var row = el('div', { className: 'bowire-flow-assertion-row' });
+                row.appendChild(el('input', {
+                    type: 'text', className: 'bowire-flow-field-input bowire-flow-assertion-path',
+                    placeholder: '$.id',
+                    value: assertion.path || '',
+                    spellcheck: 'false',
+                    onInput: function (e) { node.assertions[idx].path = e.target.value; persistFlows(); },
+                }));
+                var opSel = el('select', {
+                    className: 'bowire-flow-field-input bowire-flow-assertion-op',
+                    onChange: function (e) { node.assertions[idx].op = e.target.value; persistFlows(); render(); },
+                });
+                var opEntries = [
+                    { value: 'eq', label: '==' },
+                    { value: 'neq', label: '!=' },
+                    { value: 'gt', label: '>' },
+                    { value: 'lt', label: '<' },
+                    { value: 'contains', label: 'contains' },
+                    { value: 'exists', label: 'exists' },
+                    { value: 'missing', label: 'missing' },
+                ];
+                for (var oi = 0; oi < opEntries.length; oi++) {
+                    var opt = el('option', { value: opEntries[oi].value, textContent: opEntries[oi].label });
+                    if (opEntries[oi].value === (assertion.op || 'eq')) opt.selected = true;
+                    opSel.appendChild(opt);
+                }
+                row.appendChild(opSel);
+                // exists/missing operators don't need a value field.
+                if (assertion.op !== 'exists' && assertion.op !== 'missing') {
+                    row.appendChild(el('input', {
+                        type: 'text', className: 'bowire-flow-field-input bowire-flow-assertion-value',
+                        placeholder: 'expected',
+                        value: assertion.value == null ? '' : String(assertion.value),
+                        spellcheck: 'false',
+                        onInput: function (e) { node.assertions[idx].value = e.target.value; persistFlows(); },
+                    }));
+                }
+                row.appendChild(el('button', {
+                    className: 'bowire-flow-card-action-btn danger',
+                    title: 'Remove assertion',
+                    'aria-label': 'Remove assertion',
+                    innerHTML: svgIcon('trash'),
+                    onClick: function (e) {
+                        e.stopPropagation();
+                        node.assertions.splice(idx, 1);
+                        persistFlows();
+                        render();
+                    },
+                }));
+                wrap.appendChild(row);
+            })(node.assertions[ai], ai);
+        }
+        return wrap;
     }
 
     function createSvgConnector() {

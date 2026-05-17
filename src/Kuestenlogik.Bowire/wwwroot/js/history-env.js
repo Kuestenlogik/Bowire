@@ -298,6 +298,16 @@
 
             var sys = resolveSystemVar(key);
             if (sys !== null) return sys;
+
+            // Per-flow-run vars (Variable-node assignments, Foreach
+            // loop item). These shadow global / env vars so a flow
+            // can introduce a temporary binding without colliding
+            // with a long-lived environment variable of the same name.
+            if (typeof flowVars !== 'undefined' && flowVars
+                && Object.prototype.hasOwnProperty.call(flowVars, key)) {
+                return String(flowVars[key]);
+            }
+
             return Object.prototype.hasOwnProperty.call(vars, key) ? String(vars[key]) : match;
         });
     }
