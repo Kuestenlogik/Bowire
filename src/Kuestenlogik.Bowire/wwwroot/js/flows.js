@@ -320,30 +320,30 @@
                     var sourceArr = resolveForeachSource(node.loopSource || '');
                     if (!Array.isArray(sourceArr)) {
                         flowRunResults[node.id] = { pass: false, status: 'Foreach source is not an array: ' + (node.loopSource || '(empty)') };
-                        break;
-                    }
-                    var itemVar = (node.loopItemVar || 'item').trim();
-                    var iterations = 0;
-                    for (var fi = 0; fi < sourceArr.length; fi++) {
-                        if (flowRunStatus !== 'running') break;
-                        iterations++;
-                        // Bind the item AND a parallel ${itemVar_index}
-                        // so loops over [a,b,c] can also reference position.
-                        flowVars[itemVar] = typeof sourceArr[fi] === 'object'
-                            ? JSON.stringify(sourceArr[fi])
-                            : String(sourceArr[fi]);
-                        flowVars[itemVar + '_index'] = String(fi);
-                        flowRunResults[node.id] = { pass: true, status: 'Iteration ' + iterations + '/' + sourceArr.length + ' — ${' + itemVar + '} = ' + truncateForDisplay(flowVars[itemVar]), iteration: iterations };
-                        render();
-                        if (node.body && node.body.length > 0) {
-                            await runNodeList(node.body);
+                    } else {
+                        var itemVar = (node.loopItemVar || 'item').trim();
+                        var iterations = 0;
+                        for (var fi = 0; fi < sourceArr.length; fi++) {
+                            if (flowRunStatus !== 'running') break;
+                            iterations++;
+                            // Bind the item AND a parallel ${itemVar_index}
+                            // so loops over [a,b,c] can also reference position.
+                            flowVars[itemVar] = typeof sourceArr[fi] === 'object'
+                                ? JSON.stringify(sourceArr[fi])
+                                : String(sourceArr[fi]);
+                            flowVars[itemVar + '_index'] = String(fi);
+                            flowRunResults[node.id] = { pass: true, status: 'Iteration ' + iterations + '/' + sourceArr.length + ' — ${' + itemVar + '} = ' + truncateForDisplay(flowVars[itemVar]), iteration: iterations };
+                            render();
+                            if (node.body && node.body.length > 0) {
+                                await runNodeList(node.body);
+                            }
                         }
+                        // Clean up the per-iteration bindings so a downstream
+                        // node doesn't accidentally pick up the last value.
+                        delete flowVars[itemVar];
+                        delete flowVars[itemVar + '_index'];
+                        flowRunResults[node.id] = { pass: true, status: iterations + ' iteration' + (iterations !== 1 ? 's' : '') + ' completed (foreach)', iteration: iterations };
                     }
-                    // Clean up the per-iteration bindings so a downstream
-                    // node doesn't accidentally pick up the last value.
-                    delete flowVars[itemVar];
-                    delete flowVars[itemVar + '_index'];
-                    flowRunResults[node.id] = { pass: true, status: iterations + ' iteration' + (iterations !== 1 ? 's' : '') + ' completed (foreach)', iteration: iterations };
                 } else {
                     var maxIter = loopType === 'count' ? (node.loopCount || 1) : 100;
                     var iterations = 0;
