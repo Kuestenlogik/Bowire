@@ -7,7 +7,7 @@
 
     const config = window.__BOWIRE_CONFIG__ || {
         title: 'Bowire',
-        description: 'gRPC API Browser',
+        description: 'Multi-protocol API workbench',
         prefix: '/bowire',
         theme: 'dark',
         showInternalServices: false

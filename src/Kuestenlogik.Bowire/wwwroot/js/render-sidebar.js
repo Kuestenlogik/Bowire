@@ -827,6 +827,17 @@
                                 };
                                 selectedMethod = null;
                                 selectedService = null;
+                                // The freeform-builder lives in the main
+                                // pane reserved for the Services view —
+                                // when the user fires "+ → MCP" while
+                                // the sidebar is parked on Flows / Proxy
+                                // / Environments, the renderMain branch
+                                // for that view wins and the freeform
+                                // pane never paints. Bounce back to
+                                // Services so the builder actually shows.
+                                if (sidebarView !== 'services' && sidebarView !== 'favorites') {
+                                    setSidebarView('services');
+                                }
                                 dropdown.remove();
                                 render();
                             }

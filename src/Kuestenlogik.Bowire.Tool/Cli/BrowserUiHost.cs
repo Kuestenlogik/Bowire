@@ -122,7 +122,7 @@ internal static class BrowserUiHost
             options.Title = ui.Title;
             options.Description = ui.LockServerUrl
                 ? (ui.ServerUrls.Count == 1 ? $"Connected to {ui.PrimaryUrl}" : $"Connected to {ui.ServerUrls.Count} URLs")
-                : "Enter a gRPC server URL to connect";
+                : "Enter a server URL to connect — gRPC / REST / GraphQL / MQTT / WebSocket / SignalR / OData / Socket.IO / SSE / MCP";
             options.ServerUrl = ui.PrimaryUrl;
             foreach (var u in ui.ServerUrls) options.ServerUrls.Add(u);
             options.LockServerUrl = ui.LockServerUrl;

@@ -41,11 +41,11 @@ public sealed class BowireOptions
 
     /// <summary>
     /// Short tagline rendered below the <see cref="Title"/> in the header.
-    /// Defaults to <c>"gRPC API Browser"</c> for historical reasons; set it
-    /// to something meaningful for your service (e.g. the service name or
+    /// Defaults to <c>"Multi-protocol API workbench"</c>; set it to
+    /// something meaningful for your service (e.g. the service name or
     /// environment).
     /// </summary>
-    public string Description { get; set; } = "gRPC API Browser";
+    public string Description { get; set; } = "Multi-protocol API workbench";
 
     /// <summary>
     /// Initial UI theme. Users can flip theme from the header toggle at any
