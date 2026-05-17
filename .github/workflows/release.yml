@@ -107,6 +107,24 @@ jobs:
       - name: Pack (NuGet)
         run: dotnet pack Kuestenlogik.Bowire.slnx -c Release --no-build -o artifacts/packages -p:Version=${{ steps.version.outputs.VERSION }}
 
+      # Quick-download bundle: every official Küstenlogik NuGet for
+      # this release, zipped into a single asset. Saves consumers
+      # who want offline-install (air-gapped CI, embedded host setup)
+      # from clicking through 15 individual .nupkg downloads on the
+      # release page. The marketing-site download dropdown links the
+      # unversioned alias `bowire-nugets.zip`; the versioned name
+      # alongside lets consumers pin a release.
+      - name: Bundle NuGets into one ZIP
+        env:
+          V: ${{ steps.version.outputs.VERSION }}
+        run: |
+          mkdir -p publish/archives
+          cd artifacts/packages
+          zip -q "../../publish/archives/bowire-nugets-$V.zip" *.nupkg
+          cd ../..
+          cp "publish/archives/bowire-nugets-$V.zip" publish/archives/bowire-nugets.zip
+          ls -lh publish/archives/bowire-nugets*.zip
+
       # ----------------------------------------------------------
       # Standalone binaries (Linux / Windows / macOS × x64 / arm64)
       # ----------------------------------------------------------
