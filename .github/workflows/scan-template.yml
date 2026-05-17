@@ -120,7 +120,7 @@ jobs:
         # Runs even if the scan step failed (e.g. fail-on-finding tripped)
         # so the raw SARIF is recoverable for non-GitHub consumers.
         if: always() && hashFiles('findings.sarif') != ''
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: bowire-findings
           path: findings.sarif
