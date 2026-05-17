@@ -5,8 +5,8 @@ description: Multi-protocol API security testing, self-hosted. Burp Suite for th
 ---
 
 <section class="features-page-hero">
-  <h1>Multi-protocol API security testing, self-hosted</h1>
-  <p class="features-page-tagline">Burp for the non-HTTP protocols.<br>Schema-aware. MIT-licensed. Yours to run.</p>
+  <h1>Security</h1>
+  <p class="features-page-tagline">Multi-protocol API security testing, self-hosted.<br>Burp for the non-HTTP protocols &mdash; schema-aware, MIT-licensed.</p>
   <p class="features-page-note">Bowire's discovery, recording, and replay primitives extend into vulnerability scanning &mdash; one workbench, one CLI, one CI job for every protocol on the wire.</p>
 </section>
 
@@ -178,22 +178,22 @@ jobs:
         </li>
 
         <li class="security-roadmap-item">
-          <span class="security-roadmap-indicator" aria-label="Planned">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/></svg>
+          <span class="security-roadmap-indicator security-roadmap-indicator-partial" aria-label="In progress">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15.5 14"/></svg>
           </span>
           <div class="security-roadmap-body">
-            <h3>Tier 2 &mdash; Specialty <span class="roadmap-card-tag">where Bowire wins</span></h3>
-            <p>Schema-aware fuzzing driven by the frame-semantics layer, JWT toolkit, multi-protocol attack templates (gRPC reflection, GraphQL introspection, OData IDOR, SignalR brute-force, MQTT topic enumeration), and the <code>kuestenlogik/bowire-vulndb</code> community-corpus repo with per-PR CI validation.</p>
+            <h3>Tier 2 &mdash; Specialty <span class="roadmap-card-tag">partial &mdash; toolkit + seed corpus shipped</span></h3>
+            <p>Shipped: JWT toolkit (<code>bowire jwt decode</code>, <code>bowire jwt tamper</code>) and the first multi-protocol attack templates (gRPC Server-Reflection, GraphQL <code>__schema</code> introspection, REST missing-security-headers) plus the built-in TLS / banner / verbose-error passive checks. Still on the list: schema-aware fuzzing driven by the frame-semantics layer, SignalR brute-force and MQTT topic-enumeration templates, and the <code>kuestenlogik/bowire-vulndb</code> community-corpus repo with per-PR CI validation.</p>
           </div>
         </li>
 
         <li class="security-roadmap-item">
-          <span class="security-roadmap-indicator" aria-label="Planned">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/></svg>
+          <span class="security-roadmap-indicator security-roadmap-indicator-partial" aria-label="In progress">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15.5 14"/></svg>
           </span>
           <div class="security-roadmap-body">
-            <h3>Tier 3 &mdash; Pro-grade catch-up <span class="roadmap-card-tag">parity with Burp / ZAP</span></h3>
-            <p>Intercepting proxy with breakpoints and conditional pass-through, active fuzzer with curated wordlists, sensitive-data scanner for PII / API keys / JWTs, first-class GitHub Action, BOLA / BFLA two-token tests.</p>
+            <h3>Tier 3 &mdash; Pro-grade catch-up <span class="roadmap-card-tag">partial &mdash; intercepting proxy + GitHub Action shipped</span></h3>
+            <p>Shipped: the intercepting proxy with HTTPS MITM via a self-minted root CA (CONNECT-tunnel hijack, raw <code>TcpListener</code> + <code>SslStream</code>, leaf-cert cache), workbench-side Proxy view with live SSE flow stream and one-click "send to recording", and the reusable <code>scan-template.yml</code> GitHub Action that consuming repos pull in via <code>uses:</code>. Still on the list: active fuzzer with curated wordlists, sensitive-data scanner (PII / API keys / JWTs), proxy-level breakpoints with conditional pass-through, BOLA / BFLA two-token tests.</p>
           </div>
         </li>
 
@@ -298,6 +298,11 @@ jobs:
     background: rgba(74, 222, 128, 0.12);
     border-color: rgba(74, 222, 128, 0.4);
     color: #4ade80;
+  }
+  .security-roadmap-indicator-partial {
+    background: rgba(251, 191, 36, 0.12);
+    border-color: rgba(251, 191, 36, 0.4);
+    color: #fbbf24;
   }
   .security-roadmap-body {
     flex: 1 1 auto;
