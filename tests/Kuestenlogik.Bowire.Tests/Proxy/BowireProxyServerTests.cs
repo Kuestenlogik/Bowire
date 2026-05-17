@@ -129,7 +129,16 @@ public sealed class BowireProxyServerTests
         using var resp = await http.SendAsync(req, ct);
         Assert.Equal(HttpStatusCode.BadGateway, resp.StatusCode);
 
-        var snap = store.Snapshot();
+        // The proxy's per-connection handler records the failed flow
+        // in a `finally` block that runs AFTER the response is flushed
+        // to the client, so the test thread can race ahead before
+        // store.Add lands. Poll up to 2 s for the flow to appear.
+        var deadline = DateTime.UtcNow.AddSeconds(2);
+        IReadOnlyList<CapturedFlow> snap;
+        while ((snap = store.Snapshot()).Count == 0 && DateTime.UtcNow < deadline)
+        {
+            await Task.Delay(25, ct);
+        }
         Assert.Single(snap);
         Assert.NotNull(snap[0].Error);
         Assert.Equal(0, snap[0].ResponseStatus);

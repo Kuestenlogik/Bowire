@@ -13,7 +13,7 @@ public class BowireOptionsTests
         var options = new BowireOptions();
 
         Assert.Equal("Bowire", options.Title);
-        Assert.Equal("gRPC API Browser", options.Description);
+        Assert.Equal("Multi-protocol API workbench", options.Description);
         Assert.Equal(BowireTheme.Dark, options.Theme);
         Assert.Equal("bowire", options.RoutePrefix);
         Assert.Null(options.ServerUrl);

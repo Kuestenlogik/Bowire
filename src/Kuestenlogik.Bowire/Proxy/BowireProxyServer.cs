@@ -498,7 +498,14 @@ public sealed class BowireProxyServer : IAsyncDisposable
     private static Uri? ResolveUpstreamUri(string target, Dictionary<string, string> headers, string scheme)
     {
         // Absolute-form (proxy-aware client): target IS the URL.
-        if (Uri.TryCreate(target, UriKind.Absolute, out var direct)) return direct;
+        // Gate on http/https — `Uri.TryCreate("/foo", Absolute, …)` returns
+        // true on Linux with a file:// scheme, which is nonsense as a proxy
+        // upstream and silently broke 502-out four edge-case tests in CI.
+        if (Uri.TryCreate(target, UriKind.Absolute, out var direct)
+            && (direct.Scheme == Uri.UriSchemeHttp || direct.Scheme == Uri.UriSchemeHttps))
+        {
+            return direct;
+        }
 
         // Origin-form: combine with Host header.
         if (!headers.TryGetValue("Host", out var host) || string.IsNullOrEmpty(host)) return null;
