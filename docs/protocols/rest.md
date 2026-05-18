@@ -145,8 +145,12 @@ Don't have a running server but you do have an OpenAPI doc on disk? Use the **Sc
 Upload also works programmatically:
 
 ```bash
-curl -X POST "http://localhost:5080/bowire/api/openapi/upload?name=customers.yaml" \
+# Standalone CLI — endpoints land at the root (empty prefix).
+curl -X POST "http://localhost:5080/api/openapi/upload?name=customers.yaml" \
      --data-binary @./customers.yaml
+
+# Embedded mode — prefix the host's MapBowire mount-point (default `/bowire`).
+# curl -X POST "http://localhost:5001/bowire/api/openapi/upload?name=customers.yaml" …
 ```
 
 ## Schema-aware nested body editing

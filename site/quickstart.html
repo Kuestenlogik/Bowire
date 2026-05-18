@@ -196,7 +196,18 @@ brew tap kuestenlogik/bowire &amp;&amp; brew install bowire</code></pre>
       <h2>Add protocol plugins <span class="quickstart-page-step-tag">optional</span></h2>
       <p class="features-block-lead">The CLI bundle ships every first-party protocol pre-installed (gRPC, REST, GraphQL, SignalR, WebSocket, SSE, MQTT, Socket.IO, OData, MCP). Skip this step if those cover you &mdash; add a sibling plugin (Surgewave, Kafka, DIS, UDP) only when you need it.</p>
 
-<pre><code class="lang-bash">bowire plugin install Kuestenlogik.Bowire.Protocol.Kafka
+      <!-- Live plugin picker — same combobox the launch stepper uses on
+           the home page (Step 2 in CLI mode). Selections become `bowire
+           plugin install` lines in the snippet below; the snippet updates
+           on every change. All four third-party plugins are pre-selected
+           so the initial state matches the static example; deselect to
+           narrow down. JS init lives in main.js (search "data-qs-plugin-
+           picker"). -->
+      <div class="qs-plugin-picker" data-qs-plugin-picker>
+        {% include protocol-picker.html mode="cli" label="Pick the sibling plugins you need:" %}
+      </div>
+
+<pre><code class="lang-bash" data-qs-plugin-recipe>bowire plugin install Kuestenlogik.Bowire.Protocol.Kafka
 bowire plugin install Kuestenlogik.Bowire.Protocol.Surgewave
 bowire plugin install Kuestenlogik.Bowire.Protocol.Dis
 bowire plugin install Kuestenlogik.Bowire.Protocol.Udp</code></pre>
@@ -288,10 +299,11 @@ bowire plugin install --file ./bundle/kl.bowire.protocol.kafka.0.9.4.nupkg \
 <pre><code class="lang-bash" data-qs-embed-recipe># Add Bowire core
 dotnet add package Kuestenlogik.Bowire</code></pre>
 
-      <p>Every first-party protocol (gRPC, REST, GraphQL, SignalR, WebSocket, SSE, MQTT, Socket.IO, OData, MCP) is its own package &mdash; same versioning, same release cadence. Sibling plugins (Surgewave, Kafka, DIS, UDP) follow the same pattern from their separate repositories.</p>
+      <p>Every first-party protocol (gRPC, REST, GraphQL, SignalR, WebSocket, SSE, MQTT, Socket.IO, OData, MCP) is its own package &mdash; same versioning, same release cadence. Sibling plugins from separate repositories (Surgewave, Kafka, DIS, UDP) are in the same picker; tick them and they appear as <code>dotnet add package</code> lines too. The plugin host loads each package into its own <code>AssemblyLoadContext</code>, so transitive-dependency conflicts between plugins can't reach your app.</p>
       <p class="quickstart-page-step-links">
         <a class="features-block-docs-link" href="{{ '/downloads.html' | relative_url }}">Every package on the downloads page &rarr;</a>
         <a class="features-block-docs-link" href="{{ '/docs/setup/embedded.html' | relative_url }}">Configuration options (mount path, theme, auth) &rarr;</a>
+        <a class="features-block-docs-link" href="{{ '/docs/features/plugin-system.html' | relative_url }}">Plugin system docs &rarr;</a>
       </p>
     </div>
   </article>
@@ -333,23 +345,6 @@ app.Run();</code></pre>
 # Open https://localhost:5001/bowire in your browser</code></pre>
 
       <p>Bowire picks up every protocol prerequisite for you: gRPC plugins call <code>AddGrpcReflection()</code> and <code>MapGrpcReflectionService()</code>, REST plugins read your <code>IApiDescriptionGroupCollectionProvider</code>, SignalR plugins enumerate mapped hubs via <code>EndpointDataSource</code>. Side effects scoped to dev / staging environments only &mdash; the production path stays untouched.</p>
-    </div>
-  </article>
-
-  <!-- Step 5 — Sibling plugins (optional) -->
-  <article class="quickstart-page-step quickstart-page-step-optional" id="embed-plugins" data-path="embedded" hidden>
-    <div class="quickstart-page-step-num">5</div>
-    <div class="quickstart-page-step-body">
-      <h2>Add a sibling plugin <span class="quickstart-page-step-tag">optional</span></h2>
-      <p class="features-block-lead">For protocols that ship from sibling repositories &mdash; Surgewave, Kafka, DIS, UDP &mdash; the same <code>dotnet add package</code> path applies.</p>
-
-<pre><code class="lang-bash">dotnet add package Kuestenlogik.Bowire.Protocol.Kafka
-dotnet add package Kuestenlogik.Bowire.Protocol.Surgewave
-dotnet add package Kuestenlogik.Bowire.Protocol.Dis
-dotnet add package Kuestenlogik.Bowire.Protocol.Udp</code></pre>
-
-      <p>The plugin host loads each package into its own <code>AssemblyLoadContext</code>, so transitive-dependency conflicts between plugins don't reach your app. No host-side wiring needed beyond <code>AddBowire()</code>.</p>
-      <a class="features-block-docs-link" href="{{ '/docs/features/plugin-system.html' | relative_url }}">Plugin system docs &rarr;</a>
     </div>
   </article>
 
