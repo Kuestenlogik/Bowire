@@ -1,16 +1,21 @@
 {% comment %}
-  Quickstart stepper — three steps from slipway to running Bowire.
+  Quickstart stepper — three steps from zero to running Bowire.
 
-  Step 1 ("Pick your boat") chooses the persona; that selection
+  Step 1 ("Pick your role") chooses the persona; that selection
   determines which install + run snippets show in steps 2 + 3. An
   optional URL input feeds substitutions in step 3. The whole
   thing is vanilla JS state — see the corresponding handler in
   assets/js/main.js.
+
+  The "role" framing is deliberate — the deployment-modes section
+  below ("Pick your vessel") is the topology axis (container ship /
+  speedboat / passenger ship). Two axes, two metaphors: here you
+  pick who you are, there you pick where Bowire lives.
 {% endcomment %}
 <section class="launch" id="launch">
   <div class="container">
     <h2 class="section-title">Straight into the water</h2>
-    <p class="section-subtitle">Three steps from slipway to running Bowire.</p>
+    <p class="section-subtitle">From zero to running in three steps. Pick the role — install + run snippets tailor themselves.</p>
 
     <div class="launch-stepper" data-launch>
 
@@ -18,7 +23,7 @@
       <div class="launch-steps" role="tablist" aria-label="Quickstart steps">
         <button type="button" class="launch-step active" data-step-indicator="1" role="tab" aria-selected="true">
           <span class="launch-step-num"><span class="launch-step-num-digit">1</span></span>
-          <span class="launch-step-label">Pick your boat</span>
+          <span class="launch-step-label">Pick your role</span>
         </button>
         <span class="launch-step-connector"></span>
         <button type="button" class="launch-step" data-step-indicator="2" role="tab" aria-selected="false" aria-disabled="true">
@@ -32,9 +37,9 @@
         </button>
       </div>
 
-      <!-- Step 1: pick your boat -->
+      <!-- Step 1: pick your role -->
       <div class="launch-panel active" data-step-panel="1" role="tabpanel">
-        <p class="launch-prompt">Which boat are you stepping into today?</p>
+        <p class="launch-prompt">Which role are you stepping into today?</p>
         <div class="launch-boats">
 
           <button type="button" class="launch-boat" data-boat="backend">
@@ -123,7 +128,7 @@
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
             </button>
           </div>
-          <pre><code data-recipe-content>Pick a boat in step 1 first.</code></pre>
+          <pre><code data-recipe-content>Pick a role in step 1 first.</code></pre>
         </div>
 
         <div class="launch-nav">
@@ -161,7 +166,7 @@
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
             </button>
           </div>
-          <pre><code data-recipe-content-3>Pick a boat in step 1 first.</code></pre>
+          <pre><code data-recipe-content-3>Pick a role in step 1 first.</code></pre>
         </div>
 
         <p class="launch-then" data-launch-then></p>
@@ -181,7 +186,7 @@
             Back
           </button>
           <button type="button" class="launch-nav-btn launch-nav-restart" data-step-restart>
-            Pick another boat
+            Pick another role
           </button>
         </div>
       </div>

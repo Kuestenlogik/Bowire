@@ -1498,9 +1498,10 @@ pre > code {
 }
 
 /* Protocol badges inside the hero card — neater than a comma-separated
-   sentence that wraps in unpredictable places. Tight max-width forces a
-   balanced two-row layout (roughly 5+5) so MCP never ends up alone on
-   its own line. Still wraps further on narrower viewports. */
+   sentence that wraps in unpredictable places. max-width sized to fit
+   the current 15-chip set in a balanced two-row layout (roughly 8+7)
+   so no lone chip ends up alone on a third line. Still wraps further
+   on narrower viewports. Re-tune when the chip count changes. */
 .usp-protocol-badges {
     display: flex;
     flex-wrap: wrap;
@@ -1509,7 +1510,7 @@ pre > code {
     list-style: none;
     padding: 0;
     margin: 16px auto 20px;
-    max-width: 520px;
+    max-width: 720px;
 }
 .usp-protocol-badges li {
     display: inline-flex;
