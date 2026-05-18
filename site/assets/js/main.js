@@ -1764,6 +1764,61 @@ function createBowireCombobox(hostEl, allItems, defaultSelectedIds, placeholder)
 
 
 // ====================================================================
+// Quickstart standalone Step 3 — live `bowire plugin install` picker.
+// Same combobox-driven recipe as embedded Step 2, but tuned to CLI-mode
+// plugin installation. The picker lists third-party plugins only
+// (Surgewave / Kafka / DIS / UDP) because the first-party set ships
+// pre-installed in the CLI bundle. Selections build `bowire plugin
+// install` lines in the snippet below.
+// ====================================================================
+(function () {
+    var pickerHost = document.querySelector('[data-qs-plugin-picker]');
+    if (!pickerHost) return;
+    var recipeCode = document.querySelector('[data-qs-plugin-recipe]');
+    if (!recipeCode) return;
+    var comboboxHost = pickerHost.querySelector('[data-combobox-cli]');
+    if (!comboboxHost) return;
+
+    function findProtocol(id) {
+        for (var i = 0; i < BOWIRE_PROTOCOLS.length; i++) {
+            if (BOWIRE_PROTOCOLS[i].id === id) return BOWIRE_PROTOCOLS[i];
+        }
+        return null;
+    }
+
+    var thirdParty = BOWIRE_PROTOCOLS.filter(function (p) { return p.category === 'third-party'; });
+    // Pre-select every third-party plugin so the initial render matches
+    // the static example block users saw before the picker landed. They
+    // can deselect to narrow down — better than an empty "tick a plugin"
+    // placeholder when the user lands here for the first time.
+    var cliDefaults = thirdParty.map(function (p) { return p.id; });
+
+    var combobox = createBowireCombobox(
+        comboboxHost,
+        thirdParty,
+        cliDefaults,
+        'Search third-party plugins (Surgewave, Kafka, DIS, UDP)'
+    );
+
+    function render() {
+        var ids = combobox.getSelected();
+        if (ids.length === 0) {
+            recipeCode.textContent = '# Tick a plugin above to see the install command';
+            return;
+        }
+        var lines = ids.map(function (id) {
+            var proto = findProtocol(id);
+            return proto ? 'bowire plugin install ' + proto.packageId : null;
+        }).filter(function (l) { return l !== null; });
+        recipeCode.textContent = lines.join('\n');
+    }
+
+    combobox.onChange(render);
+    render();
+})();
+
+
+// ====================================================================
 // Quickstart install tabs — pick a Windows / macOS / Linux / .NET
 // tool / Container snippet on the /quickstart.html page. Auto-selects
 // the visitor's platform on page load (UA sniffing, same approach as

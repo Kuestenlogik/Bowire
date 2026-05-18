@@ -209,7 +209,7 @@ Fields:
 | **Client Secret** | Optional. Public clients (mobile / SPA) leave this empty — PKCE is enabled for them automatically. Confidential clients fill it in. |
 | **Scope** | Space-separated list (e.g. `openid profile email`) |
 
-The **Redirect URI** is shown read-only in the auth panel — copy it and register it verbatim with your IdP. The exact value depends on Bowire's port and the configured prefix, e.g. `http://localhost:5080/bowire/oauth-callback`.
+The **Redirect URI** is shown read-only in the auth panel — copy it and register it verbatim with your IdP. The exact value depends on Bowire's port and the configured prefix — `http://localhost:5080/oauth-callback` in standalone mode (empty prefix), `http://localhost:{host-port}/bowire/oauth-callback` in the embedded default.
 
 Status panel shows the current authorization state with a TTL countdown ("Authorized — token expires in 1842s"), an **Authorize** / **Re-authorize** button, and a **Sign out** button that clears the cache for the current environment.
 

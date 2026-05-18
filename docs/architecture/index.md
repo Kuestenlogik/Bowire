@@ -59,20 +59,20 @@ sequenceDiagram
     API->>Browser: JSON response
 ```
 
-Streaming and duplex calls open an SSE connection to `/bowire/api/invoke/stream` or a channel endpoint. The plugin yields messages as they arrive; each one is forwarded as an SSE event.
+Streaming and duplex calls open an SSE connection to `<base>/api/invoke/stream` or a channel endpoint, where `<base>` is the configured mount path (empty in standalone mode, `/bowire` in the embedded default). The plugin yields messages as they arrive; each one is forwarded as an SSE event.
 
 ## No CORS proxy needed
 
 The request flow above is the reason Bowire talks to any API without a CORS shim:
 
-- The **browser** only ever calls `localhost:5080/bowire/api/*` &mdash; same origin as the UI, so same-origin policy is satisfied trivially and no preflight is issued.
+- The **browser** only ever calls `localhost:5080/api/*` (standalone) or `localhost:{host-port}/bowire/api/*` (embedded) &mdash; same origin as the UI, so same-origin policy is satisfied trivially and no preflight is issued.
 - The **target service** is reached by the Bowire host process, not by the browser. Server-to-server traffic isn't subject to the same-origin policy, so endpoints without permissive `Access-Control-Allow-Origin` headers still work.
 
 In other words, Bowire's architecture *is* the CORS proxy. There's no separate proxy layer to configure, no `*`-origin hole to poke in the target service, and no dev-tunnel / nginx rewrite to maintain. The one scenario that would invalidate this &mdash; upgrading a streaming channel directly from the browser to a non-Bowire endpoint &mdash; isn't how any current protocol plugin works.
 
 ## API endpoints
 
-All endpoints are prefixed with the configured `RoutePrefix` (default: `bowire`).
+All endpoints are prefixed with the configured `RoutePrefix`. The standalone CLI mounts at the site root (empty prefix, `/api/...`); the embedded helper `MapBowire()` defaults to `/bowire`, callers can override (`MapBowire("/tools/api", …)`).
 
 | Endpoint | Purpose |
 |----------|---------|
