@@ -2093,240 +2093,6 @@ pre > code {
     margin-bottom: 12px;
 }
 
-/* ===== Deployment modes ===== */
-/* Three-card section that pairs the "kinds of workflows" narrative
-   above with the deployment shapes those workflows land on. Sits on
-   the base bg so it visually flows into the comparison section below
-   while breaking from use-cases (elevated) above. */
-.deployment-modes {
-    padding: 100px 0;
-    background: var(--bg);
-}
-
-.deployment-mode-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 22px;
-    max-width: 1200px;
-    margin: 0 auto;
-}
-
-.deployment-mode-card {
-    background: var(--bg-elevated);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-lg);
-    padding: 28px 24px;
-    transition: border-color 0.2s, transform 0.2s;
-    /* Anchor for the optional `preview` corner ribbon — same pattern as
-       .protocol-card so the visual vocabulary stays consistent. */
-    position: relative;
-    overflow: hidden;
-    display: flex;
-    flex-direction: column;
-    /* Cards behave as buttons: clicking anywhere copies the install
-       snippet (see main.js). Cursor + tab-stop affordance comes from
-       the role/tabindex on the article; the cursor pointer reinforces
-       it visually. The outline:none is paired with a focus-visible
-       ring further down so keyboard users still get a clear focus
-       indicator. */
-    cursor: pointer;
-    outline: none;
-}
-
-.deployment-mode-card:hover {
-    border-color: var(--accent);
-    transform: translateY(-2px);
-}
-.deployment-mode-card:hover h3 {
-    color: var(--accent);
-    transition: color 0.2s;
-}
-.deployment-mode-card:focus-visible {
-    border-color: var(--accent);
-    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.35);
-}
-
-/* ---- Per-vessel tap animations (~700ms each, triggered by main.js
-   adding `is-animating` on click). Keep the SVG transform-origins
-   centred so the motion reads as in-place liveliness, not a layout
-   jolt. ----------------------------------------------------------- */
-.deployment-mode-card[data-vessel] svg {
-    transform-origin: 50% 70%;
-    transition: transform 0.2s ease-out;
-}
-
-/* Container ship — port-to-starboard rock as if a swell hits the
-   hull. Two full sway cycles within the duration so the motion
-   reads as deliberate, not a twitch. Includes a slight vertical
-   bob at the centre points to suggest the boat riding up over a
-   wave crest before settling back. */
-.deployment-mode-card[data-vessel="container"].is-animating svg {
-    animation: vessel-rock 1300ms ease-in-out;
-}
-@keyframes vessel-rock {
-    0%   { transform: rotate(0deg) translateY(0); }
-    15%  { transform: rotate(-3deg) translateY(-1px); }
-    35%  { transform: rotate(3deg) translateY(0); }
-    55%  { transform: rotate(-2.4deg) translateY(-1px); }
-    75%  { transform: rotate(2deg) translateY(0); }
-    100% { transform: rotate(0deg) translateY(0); }
-}
-
-/* Speedboat — pronounced forward surge with a planing lift, then
-   a snappy return through a tiny overshoot. The translate-x reach
-   is large enough to register against the speed lines without the
-   hull clipping the card border (overflow: hidden on the card
-   would crop a too-aggressive translate). */
-.deployment-mode-card[data-vessel="speedboat"].is-animating svg {
-    animation: vessel-surge 1000ms cubic-bezier(0.22, 1, 0.36, 1);
-}
-@keyframes vessel-surge {
-    0%   { transform: translate(0, 0); }
-    30%  { transform: translate(13px, -3px); }
-    55%  { transform: translate(8px, -1px); }
-    80%  { transform: translate(-2px, 0); }
-    100% { transform: translate(0, 0); }
-}
-
-/* Passenger ship — two big smokestack puffs rising and growing as
-   the ship casts off. Bigger scale at the peak (2.2x vs the old
-   1.6x), larger rise (28px vs 14px), and a clearer staggered delay
-   on the second puff so the eye reads them as separate gusts
-   rather than one fuzz. CSS doesn't observe individual SVG
-   element transforms cleanly under non-Safari renderers, so the
-   transform-origin is anchored on the circle's own bottom and the
-   animation is opacity-driven first; the scale and translate
-   compose at the renderer's discretion. */
-.deployment-mode-card[data-vessel="passenger"] .vessel-smoke {
-    opacity: 0;
-    transform-origin: 50% 100%;
-}
-.deployment-mode-card[data-vessel="passenger"].is-animating .vessel-smoke {
-    animation: vessel-smoke-puff 1500ms ease-out forwards;
-}
-.deployment-mode-card[data-vessel="passenger"].is-animating .vessel-smoke--lag {
-    animation-delay: 220ms;
-}
-@keyframes vessel-smoke-puff {
-    0%   { opacity: 0;    transform: translateY(0) scale(0.4); }
-    20%  { opacity: 0.95; transform: translateY(-3px) scale(1.1); }
-    55%  { opacity: 0.6;  transform: translateY(-14px) scale(1.7); }
-    100% { opacity: 0;    transform: translateY(-28px) scale(2.2); }
-}
-
-@media (prefers-reduced-motion: reduce) {
-    .deployment-mode-card[data-vessel].is-animating svg,
-    .deployment-mode-card[data-vessel].is-animating .vessel-smoke {
-        animation: none;
-    }
-    /* Still surface the copy result for users who opt out of motion. */
-    .deployment-mode-card[data-vessel="passenger"].is-animating .vessel-smoke {
-        opacity: 0.6;
-        transition: opacity 0.3s ease-in-out;
-    }
-}
-
-/* ---- "Copied install command" pill ---------------------------- */
-.deployment-mode-copy-pill {
-    position: absolute;
-    top: 14px;
-    left: 50%;
-    transform: translate(-50%, -8px);
-    background: var(--accent);
-    color: white;
-    font-size: 0.75rem;
-    font-weight: 600;
-    letter-spacing: 0.02em;
-    padding: 5px 11px;
-    border-radius: 999px;
-    box-shadow: 0 6px 18px rgba(99, 102, 241, 0.35);
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 0.2s ease-out, transform 0.2s ease-out;
-    /* Sits above the preview-ribbon corner-anchor so the pill stays
-       visible on the passenger-ship card. */
-    z-index: 2;
-}
-.deployment-mode-card.is-copied .deployment-mode-copy-pill {
-    opacity: 1;
-    transform: translate(-50%, 0);
-}
-
-.deployment-mode-diagram {
-    /* Lift the SVG into a tinted plate so the diagram reads as a
-       distinct visual layer above the body copy without needing a
-       border. Centre the SVG inside it. */
-    background: rgba(99, 102, 241, 0.06);
-    border-radius: var(--radius);
-    padding: 14px 12px;
-    margin-bottom: 18px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.deployment-mode-card h3 {
-    font-size: 1.125rem;
-    font-weight: 600;
-    margin-bottom: 4px;
-}
-
-.deployment-mode-tag {
-    color: var(--accent);
-    font-size: 0.75rem;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-    margin-bottom: 12px;
-}
-
-.deployment-mode-card > p {
-    color: var(--text-secondary);
-    font-size: 0.9375rem;
-    line-height: 1.6;
-    margin-bottom: 14px;
-}
-
-.deployment-mode-traits {
-    list-style: none;
-    padding: 0;
-    margin: 0 0 14px 0;
-    font-size: 0.8125rem;
-    color: var(--text-secondary);
-    border-top: 1px solid var(--border);
-    border-bottom: 1px solid var(--border);
-    padding: 10px 0;
-}
-.deployment-mode-traits li {
-    padding: 3px 0;
-}
-.deployment-mode-traits li strong {
-    color: var(--text);
-    font-weight: 600;
-    margin-right: 6px;
-}
-
-.deployment-mode-snippet {
-    /* Bottom-anchored install snippet keeps card heights aligned
-       across the row regardless of body-copy length. */
-    margin-top: auto;
-    background: var(--bg);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 10px 12px;
-    font-family: var(--font-mono);
-    font-size: 0.78rem;
-    line-height: 1.5;
-    color: var(--text);
-    overflow-x: auto;
-    white-space: pre;
-}
-.deployment-mode-snippet code {
-    background: transparent;
-    padding: 0;
-    color: inherit;
-}
-
 .use-case-tools {
     color: var(--text-secondary);
     font-size: 0.8125rem;
@@ -3818,13 +3584,6 @@ button.comparison-bestfor-card.active .comparison-bestfor-name {
 
     .use-case-grid {
         grid-template-columns: 1fr;
-    }
-
-    .deployment-mode-grid {
-        grid-template-columns: 1fr;
-    }
-    .deployment-modes {
-        padding: 60px 0;
     }
 
     .cta-snippets {
@@ -7166,6 +6925,10 @@ html[data-theme="light"] {
 }
 
 /* Boat picker — 4 cards in a 2x2 / 4x1 grid. */
+/* Five-up grid for the ship cards. Mobile is 2 columns (last card
+   wraps alone on the third row); tablet jumps to 3 so the five fit
+   3+2; desktop opens up to a single row of five once there's room
+   for ~210px per card. */
 .launch-boats {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
@@ -7174,19 +6937,25 @@ html[data-theme="light"] {
 
 @media (min-width: 760px) {
     .launch-boats {
-        grid-template-columns: repeat(4, 1fr);
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+@media (min-width: 1180px) {
+    .launch-boats {
+        grid-template-columns: repeat(5, 1fr);
     }
 }
 
 .launch-boat {
     display: flex;
     flex-direction: column;
-    align-items: flex-start;
+    align-items: stretch;
     gap: 8px;
-    padding: 18px 16px;
+    padding: 16px 14px 18px;
     background: var(--bg-elevated);
     border: 1.5px solid var(--border, #2a2a3a);
-    border-radius: 10px;
+    border-radius: 12px;
     cursor: pointer;
     text-align: left;
     transition: all 0.18s ease;
@@ -7206,37 +6975,73 @@ html[data-theme="light"] {
     box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.25);
 }
 
-.launch-boat-icon {
+/* SVG ship diagram — takes the full card width, preserves the 170:110
+   aspect ratio so the ship art doesn't crop awkwardly when the grid
+   columns flex. Background tint is the same accent-glow the rest of
+   the launch panel uses so the diagram reads as a labelled icon, not
+   a floating illustration. */
+.launch-boat-diagram {
+    width: 100%;
+    aspect-ratio: 170 / 110;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     color: var(--accent);
-    line-height: 0;
+    background: rgba(99, 102, 241, 0.04);
+    border-radius: 8px;
+    overflow: hidden;
 }
 
-.launch-boat-mode {
-    margin: 0;
-    font-size: 15px;
+.launch-boat-diagram svg {
+    width: 100%;
+    height: auto;
+    max-width: 170px;
+}
+
+.launch-boat-name {
+    margin: 6px 0 0;
+    font-size: 17px;
     font-weight: 600;
+    line-height: 1.25;
     color: var(--text, #e8e8f0);
-    line-height: 1.3;
+    letter-spacing: -0.01em;
 }
 
-.launch-boat-title {
+/* Mode tag — small uppercase pill-style label sitting under the ship
+   name. Was previously the boat title (Persona name); the persona
+   layer is gone now and "Mode" is what readers actually need to
+   match against their stack — Embedded vs Standalone vs Sidecar etc. */
+.launch-boat-mode {
     margin: 0;
     font-size: 11px;
     text-transform: uppercase;
     letter-spacing: 0.06em;
-    /* --accent (#6366f1) on the launch-boat tile bg falls a hair below
-       the WCAG AA contrast threshold for small text. --accent-light
-       is the same hue, lifted just enough to pass both light and dark
-       mode against the surrounding tile chrome. */
     color: var(--accent-light);
     font-weight: 600;
 }
 
 .launch-boat-desc {
-    margin: 0;
+    margin: 4px 0 0;
     font-size: 13px;
     line-height: 1.45;
     color: var(--text-muted, #8a8aa0);
+}
+
+/* "preview" pill on the Passenger ship card — same shape as the
+   protocol-card-ribbon used elsewhere on the site, scaled down so it
+   sits inline next to the h3 ship name without overpowering it. */
+.launch-boat-preview-tag {
+    display: inline-block;
+    margin-left: 6px;
+    padding: 2px 8px;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    vertical-align: middle;
+    color: var(--accent);
+    background: rgba(99, 102, 241, 0.14);
+    border-radius: 999px;
 }
 
 /* Protocol picker on step 2 — only shown when the boat needs the

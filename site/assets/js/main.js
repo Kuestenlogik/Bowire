@@ -277,59 +277,6 @@ document.querySelectorAll('.copy-btn').forEach(btn => {
     });
 });
 
-// Pick-your-vessel deployment cards — clicking the card copies its
-// install snippet to the clipboard, flashes a "Copied" pill, and
-// triggers a brief per-vessel SVG animation (container ship rocks,
-// speedboat surges, passenger ship puffs smoke). The whole card is
-// the call-to-action; the snippet `<pre>` doubles as the click
-// target so users can also drag-select the text — `click` only
-// fires when the mousedown + mouseup land on the same element, so
-// text selection doesn't trigger the copy unexpectedly.
-document.querySelectorAll('.deployment-mode-card[data-vessel]').forEach(card => {
-    function readSnippet() {
-        const code = card.querySelector('.deployment-mode-snippet code');
-        return code ? code.textContent.trim() : '';
-    }
-
-    function fireTap() {
-        const snippet = readSnippet();
-        if (!snippet) return;
-        if (!navigator.clipboard) return;
-        navigator.clipboard.writeText(snippet).then(() => {
-            // Two distinct timed classes so the SVG animation and the
-            // pill feedback can have independent durations without
-            // bleeding into each other. The is-animating window
-            // (1800ms) covers the longest of the per-vessel keyframes
-            // — the passenger ship's 1500ms smoke-puff plus its
-            // 220ms staggered-delay second puff — so no animation
-            // gets cut short. The is-copied pill stays visible a
-            // beat longer so the feedback sticks past the SVG
-            // settling back to rest.
-            card.classList.add('is-animating', 'is-copied');
-            setTimeout(() => card.classList.remove('is-animating'), 1800);
-            setTimeout(() => card.classList.remove('is-copied'), 2000);
-        }).catch(() => { /* clipboard refused — silent no-op */ });
-    }
-
-    card.addEventListener('click', (e) => {
-        // Snippet links / anchors inside the card body (e.g. the
-        // ROADMAP link in the passenger-ship description) should
-        // still navigate normally. Bail when the click landed on
-        // any anchor or interactive element so they keep working.
-        if (e.target.closest('a, button')) return;
-        fireTap();
-    });
-
-    card.addEventListener('keydown', (e) => {
-        // Enter / Space activate the role="button" semantics so
-        // keyboard users get the same affordance as mouse users.
-        if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault();
-            fireTap();
-        }
-    });
-});
-
 // Screenshot carousel — auto-drift, prev/next buttons, dot indicators,
 // click-to-jump. Auto-drift is JS-driven (not CSS keyframe) so pause /
 // resume is seamless: the current scroll position stays put, the drift
@@ -1395,9 +1342,12 @@ function createBowireCombobox(hostEl, allItems, defaultSelectedIds, placeholder)
     var root = document.querySelector('[data-launch]');
     if (!root) return;
 
-    // The four boats. Each carries the install + run snippets the
-    // stepper renders on steps 2 + 3, plus prompt copy and a flag
-    // for whether step 3 surfaces the URL input.
+    // The five boats — each a maritime metaphor for an install +
+    // run mode (Container ship = embedded, Speedboat = standalone
+    // CLI, Decoy = mock-replay, Tugboat = sidecar + MCP adapter,
+    // Passenger ship = multi-user preview). Each carries the install
+    // + run snippets the stepper renders on steps 2 + 3, plus
+    // prompt copy and a flag for whether step 3 surfaces the URL input.
     var RECIPES = {
         backend: {
             installLang: 'bash',
@@ -1468,6 +1418,28 @@ function createBowireCombobox(hostEl, allItems, defaultSelectedIds, placeholder)
             urlPlaceholder: 'https://my-internal-service:8443',
             installPrompt: 'Container image — runs anywhere Docker does.',
             runPrompt: 'Drop in your service URL, hand the MCP endpoint to your agent.'
+        },
+        passenger: {
+            installLang: 'bash',
+            install:
+                '# Run Bowire as a long-lived multi-user server\n' +
+                'docker run -p 5080:5080 \\\n' +
+                '  ghcr.io/kuestenlogik/bowire:latest \\\n' +
+                '  --url-file /etc/bowire/targets.txt',
+            runLang: 'bash',
+            run:
+                '# Front the container with your OIDC reverse proxy.\n' +
+                '# Example with nginx + oauth2-proxy:\n' +
+                '\n' +
+                'location /bowire/ {\n' +
+                '    auth_request /oauth2/auth;\n' +
+                '    proxy_pass   http://bowire:5080/;\n' +
+                '}',
+            then:
+                'Each authenticated passenger gets their own cabin state — recordings, environments, collections — keyed off the proxy-injected user header. Scheduled port calls come from <code>--url-file</code> so operators pin the routes; users see the same catalogue but their own per-cabin data.<br><br><strong>Preview:</strong> native OIDC + per-user data slots arrive with the <a href="https://github.com/Kuestenlogik/Bowire/blob/main/ROADMAP.md#auth-provider-extension-spi-phase-a-core-seam" target="_blank" rel="noopener">Auth-provider extension SPI</a> — Phase A wires the seam, Phase B lights up per-user storage.',
+            urlInput: false,
+            installPrompt: 'Server-side container — front it with your own OIDC proxy until Phase A ships.',
+            runPrompt: 'Bowire trusts the proxy-injected user header. Wire it once in the proxy, every passenger boards authenticated.'
         }
     };
 

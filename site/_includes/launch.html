@@ -1,21 +1,25 @@
 {% comment %}
   Quickstart stepper — three steps from zero to running Bowire.
 
-  Step 1 ("Pick your role") chooses the persona; that selection
-  determines which install + run snippets show in steps 2 + 3. An
-  optional URL input feeds substitutions in step 3. The whole
-  thing is vanilla JS state — see the corresponding handler in
-  assets/js/main.js.
+  Step 1 ("Pick your boat") chooses the install + run mode by picking
+  a ship metaphor: Container ship (embedded in your ASP.NET app),
+  Speedboat (standalone CLI), Decoy (mock-server replay), Tugboat
+  (sidecar + MCP adapter for AI agents), or Passenger ship (multi-user
+  preview). That selection determines which install + run snippets
+  show in steps 2 + 3. An optional URL input feeds substitutions in
+  step 3. The whole thing is vanilla JS state — see the corresponding
+  handler in assets/js/main.js.
 
-  The "role" framing is deliberate — the deployment-modes section
-  below ("Pick your vessel") is the topology axis (container ship /
-  speedboat / passenger ship). Two axes, two metaphors: here you
-  pick who you are, there you pick where Bowire lives.
+  This section absorbed the former "Pick your vessel" deployment-modes
+  panel — the two had heavy conceptual overlap (boats = install-mode,
+  vessels = topology) so the ship art + trait detail now lives here
+  inline on the picker cards. data-boat keys stay (backend / tester /
+  mock / ai / passenger) so URLs + JS state are unchanged.
 {% endcomment %}
 <section class="launch" id="launch">
   <div class="container">
     <h2 class="section-title">Straight into the water</h2>
-    <p class="section-subtitle">From zero to running in three steps. Pick the role — install + run snippets tailor themselves.</p>
+    <p class="section-subtitle">From zero to running in three steps. Pick the boat — install + run snippets tailor themselves.</p>
 
     <div class="launch-stepper" data-launch>
 
@@ -23,7 +27,7 @@
       <div class="launch-steps" role="tablist" aria-label="Quickstart steps">
         <button type="button" class="launch-step active" data-step-indicator="1" role="tab" aria-selected="true">
           <span class="launch-step-num"><span class="launch-step-num-digit">1</span></span>
-          <span class="launch-step-label">Pick your role</span>
+          <span class="launch-step-label">Pick your boat</span>
         </button>
         <span class="launch-step-connector"></span>
         <button type="button" class="launch-step" data-step-indicator="2" role="tab" aria-selected="false" aria-disabled="true">
@@ -37,63 +41,179 @@
         </button>
       </div>
 
-      <!-- Step 1: pick your role -->
+      <!-- Step 1: pick your boat -->
       <div class="launch-panel active" data-step-panel="1" role="tabpanel">
-        <p class="launch-prompt">Which role are you stepping into today?</p>
+        <p class="launch-prompt">Which boat are you launching today?</p>
         <div class="launch-boats">
 
           <button type="button" class="launch-boat" data-boat="backend">
-            <div class="launch-boat-icon">
-              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                <polyline points="16 18 22 12 16 6"/>
-                <polyline points="8 6 2 12 8 18"/>
+            <div class="launch-boat-diagram">
+              <!-- Container ship — silhouette with three container stacks
+                   on deck and the bridge tower at the stern. One container
+                   is highlighted as "Bowire" so the reader sees the
+                   metaphor map back to Docker / embedded: Bowire is one
+                   of the boxes the host app already ships in. -->
+              <svg width="170" height="110" viewBox="0 0 170 110" fill="none" stroke="var(--accent)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="22" y="48" width="22" height="16" rx="1"/>
+                <rect x="46" y="48" width="22" height="16" rx="1"/>
+                <rect x="70" y="48" width="22" height="16" rx="1" fill="rgba(99, 102, 241, 0.18)"/>
+                <rect x="94" y="48" width="22" height="16" rx="1"/>
+                <rect x="34" y="32" width="22" height="16" rx="1"/>
+                <rect x="58" y="32" width="22" height="16" rx="1"/>
+                <rect x="82" y="32" width="22" height="16" rx="1"/>
+                <text x="81" y="56" text-anchor="middle" dominant-baseline="central" fill="var(--accent)" stroke="none" font-size="6" font-weight="700" font-family="var(--font-mono)">Bowire</text>
+                <rect x="120" y="28" width="20" height="36" rx="1"/>
+                <line x1="124" y1="36" x2="136" y2="36"/>
+                <line x1="124" y1="44" x2="136" y2="44"/>
+                <line x1="124" y1="52" x2="136" y2="52"/>
+                <line x1="146" y1="28" x2="146" y2="40"/>
+                <path d="M14 64 L156 64 L148 80 L22 80 Z"/>
+                <path d="M4 86 q8 -3 16 0 t16 0 t16 0 t16 0 t16 0 t16 0 t16 0 t16 0 t16 0 t14 0" stroke-opacity="0.6"/>
+                <path d="M4 94 q10 -3 20 0 t20 0 t20 0 t20 0 t20 0 t20 0 t20 0 t20 0" stroke-opacity="0.35"/>
               </svg>
             </div>
-            <h3 class="launch-boat-mode">Embedded mode</h3>
-            <p class="launch-boat-title">Backend developer</p>
-            <p class="launch-boat-desc">Embed Bowire in your own ASP.NET service. Auto-discovers everything you ship.</p>
+            <h3 class="launch-boat-name">Container ship</h3>
+            <p class="launch-boat-mode">Embedded mode</p>
+            <p class="launch-boat-desc">Bowire ships inside your ASP.NET container. Add <code>app.MapBowire()</code> and every endpoint is browsable at <code>/bowire</code> next to your own routes.</p>
           </button>
 
           <button type="button" class="launch-boat" data-boat="tester">
-            <div class="launch-boat-icon">
-              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                <path d="M9 11l3 3L22 4"/>
-                <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/>
+            <div class="launch-boat-diagram">
+              <!-- Racing speedboat — long sharp bow lifted clear of the
+                   water, low slung cockpit with helmsman seated behind a
+                   swept windscreen, outboard motor + bow-spray fan +
+                   stern wake. Single-helmsman fast hull. -->
+              <svg width="170" height="110" viewBox="0 0 170 110" fill="none" stroke="var(--accent)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="86" cy="50" r="3.5"/>
+                <path d="M83 55 L92 60 M89 55 L98 60" stroke-linecap="round"/>
+                <path d="M68 56 Q82 38 110 44 L114 56"/>
+                <path d="M84 47 L84 56" stroke-opacity="0.55"/>
+                <path d="M96 44 L96 56" stroke-opacity="0.55"/>
+                <path d="M44 64 L150 60 L150 64 L46 68 Z" fill="rgba(99, 102, 241, 0.22)" stroke-opacity="0.6"/>
+                <text x="74" y="65" text-anchor="middle" dominant-baseline="central" fill="var(--accent)" stroke="none" font-size="5.5" font-weight="700" font-family="var(--font-mono)">01</text>
+                <text x="100" y="72" text-anchor="middle" dominant-baseline="central" fill="var(--accent)" stroke="none" font-size="7" font-weight="700" font-family="var(--font-mono)">Bowire</text>
+                <path d="M40 60 L160 56 L156 70 L40 76 L34 70 Z" fill="rgba(99, 102, 241, 0.10)"/>
+                <path d="M40 70 L156 66" stroke-opacity="0.45"/>
+                <path d="M34 70 L40 76" stroke-opacity="0.7"/>
+                <rect x="20" y="68" width="14" height="10" rx="1.5" fill="rgba(99, 102, 241, 0.25)"/>
+                <line x1="22" y1="71" x2="32" y2="71" stroke-opacity="0.55"/>
+                <line x1="22" y1="74" x2="32" y2="74" stroke-opacity="0.45"/>
+                <path d="M27 78 L27 86 L24 86 L30 86" stroke-opacity="0.7" stroke-linecap="round"/>
+                <path d="M158 60 Q166 52 172 42" stroke-opacity="0.5"/>
+                <path d="M156 62 Q164 56 170 48" stroke-opacity="0.4"/>
+                <path d="M154 64 Q162 60 168 54" stroke-opacity="0.32"/>
+                <line x1="2" y1="50" x2="20" y2="50" stroke-opacity="0.26"/>
+                <line x1="2" y1="62" x2="22" y2="62" stroke-opacity="0.34"/>
+                <line x1="2" y1="68" x2="22" y2="71" stroke-opacity="0.46"/>
+                <line x1="2" y1="76" x2="24" y2="78" stroke-opacity="0.46"/>
+                <line x1="2" y1="84" x2="26" y2="84" stroke-opacity="0.40"/>
+                <path d="M4 92 q10 -3 20 0 t20 0 t20 0 t20 0 t20 0 t20 0 t20 0 t20 0" stroke-opacity="0.55"/>
+                <path d="M4 100 q12 -3 24 0 t24 0 t24 0 t24 0 t24 0 t24 0 t22 0" stroke-opacity="0.3"/>
               </svg>
             </div>
-            <h3 class="launch-boat-mode">Standalone CLI</h3>
-            <p class="launch-boat-title">API tester</p>
-            <p class="launch-boat-desc">Browse + record someone else&rsquo;s API. Replay against Dev / Staging / Prod.</p>
+            <h3 class="launch-boat-name">Speedboat</h3>
+            <p class="launch-boat-mode">Standalone CLI</p>
+            <p class="launch-boat-desc">Installed as a global <code>dotnet tool</code> on your laptop. Point Bowire at any URL &mdash; staging gRPC in the morning, REST after lunch, WebSocket all afternoon.</p>
           </button>
 
           <button type="button" class="launch-boat" data-boat="mock">
-            <div class="launch-boat-icon">
-              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                <circle cx="12" cy="12" r="10"/>
-                <path d="M8 14s1.5 2 4 2 4-2 4-2"/>
-                <line x1="9" y1="9" x2="9.01" y2="9"/>
-                <line x1="15" y1="9" x2="15.01" y2="9"/>
+            <div class="launch-boat-diagram">
+              <!-- Decoy — a working-ship outline drawn entirely in dashed
+                   strokes so it reads as "looks like a real backend, but
+                   isn't one". The REPLAY tag at the stern is the
+                   actual function: serve recorded sessions back instead
+                   of a live process. -->
+              <svg width="170" height="110" viewBox="0 0 170 110" fill="none" stroke="var(--accent)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="78" y="22" width="6" height="12" rx="1" stroke-dasharray="2 2"/>
+                <rect x="56" y="32" width="50" height="20" rx="1.5" stroke-dasharray="3 2" fill="rgba(99, 102, 241, 0.10)"/>
+                <line x1="62" y1="40" x2="100" y2="40" stroke-opacity="0.5" stroke-dasharray="2 2"/>
+                <line x1="62" y1="46" x2="100" y2="46" stroke-opacity="0.35" stroke-dasharray="2 2"/>
+                <text x="81" y="42" text-anchor="middle" dominant-baseline="central" fill="var(--accent)" stroke="none" font-size="7" font-weight="700" font-family="var(--font-mono)">Bowire</text>
+                <rect x="114" y="36" width="32" height="11" rx="1" fill="rgba(99, 102, 241, 0.22)" stroke-dasharray="2 2"/>
+                <text x="130" y="41.5" text-anchor="middle" dominant-baseline="central" fill="var(--accent)" stroke="none" font-size="6" font-weight="700" font-family="var(--font-mono)">REPLAY</text>
+                <path d="M24 52 L150 52 L142 72 L34 72 Z" stroke-dasharray="3 2" fill="rgba(99, 102, 241, 0.06)"/>
+                <line x1="22" y1="40" x2="22" y2="56" stroke-dasharray="2 2"/>
+                <path d="M22 40 L34 44 L22 48" stroke-dasharray="2 2"/>
+                <path d="M4 82 q8 -3 16 0 t16 0 t16 0 t16 0 t16 0 t16 0 t16 0 t16 0 t16 0 t14 0" stroke-opacity="0.55" stroke-dasharray="2 4"/>
+                <path d="M4 92 q10 -3 20 0 t20 0 t20 0 t20 0 t20 0 t20 0 t20 0 t20 0" stroke-opacity="0.3" stroke-dasharray="1 5"/>
               </svg>
             </div>
-            <h3 class="launch-boat-mode">Bowire mock</h3>
-            <p class="launch-boat-title">Mock author</p>
-            <p class="launch-boat-desc">Replay a recorded session as a standalone mock server &mdash; no live backend required.</p>
+            <h3 class="launch-boat-name">Decoy</h3>
+            <p class="launch-boat-mode">Replay mock</p>
+            <p class="launch-boat-desc">Looks like the real backend, isn&rsquo;t. Replay a recorded session as a standalone mock server &mdash; pin responses, ship it to CI, no live host required.</p>
           </button>
 
           <button type="button" class="launch-boat" data-boat="ai">
-            <div class="launch-boat-icon">
-              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                <rect x="4" y="7" width="16" height="13" rx="2"/>
-                <circle cx="9" cy="13" r="1" fill="currentColor"/>
-                <circle cx="15" cy="13" r="1" fill="currentColor"/>
-                <path d="M9 17h6"/>
-                <path d="M12 7V4"/>
-                <circle cx="12" cy="3" r="1" fill="currentColor"/>
+            <div class="launch-boat-diagram">
+              <!-- Tugboat — squat hull, fat smokestack with smoke,
+                   bumper fenders along the bow, towing line off the bow
+                   running to a labelled AGENT cargo. Reads as "this
+                   small companion ship pulls a bigger thing along" —
+                   the sidecar / MCP-adapter metaphor. -->
+              <svg width="170" height="110" viewBox="0 0 170 110" fill="none" stroke="var(--accent)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="76" cy="14" r="3" fill="rgba(99, 102, 241, 0.55)" stroke="none"/>
+                <circle cx="82" cy="10" r="2" fill="rgba(99, 102, 241, 0.4)" stroke="none"/>
+                <rect x="70" y="20" width="12" height="16" rx="1" fill="rgba(99, 102, 241, 0.18)"/>
+                <line x1="72" y1="26" x2="80" y2="26" stroke-opacity="0.6"/>
+                <rect x="52" y="34" width="22" height="14" rx="1.5" fill="rgba(99, 102, 241, 0.10)"/>
+                <line x1="56" y1="38" x2="70" y2="38" stroke-opacity="0.5"/>
+                <line x1="56" y1="42" x2="70" y2="42" stroke-opacity="0.4"/>
+                <rect x="76" y="40" width="36" height="14" rx="1"/>
+                <text x="94" y="47" text-anchor="middle" dominant-baseline="central" fill="var(--accent)" stroke="none" font-size="7" font-weight="700" font-family="var(--font-mono)">Bowire</text>
+                <circle cx="46" cy="56" r="3" fill="rgba(99, 102, 241, 0.25)"/>
+                <circle cx="46" cy="62" r="3" fill="rgba(99, 102, 241, 0.25)"/>
+                <path d="M40 54 L116 54 L110 70 L46 70 Z" fill="rgba(99, 102, 241, 0.10)"/>
+                <path d="M40 58 Q26 50 14 48" stroke-opacity="0.7"/>
+                <rect x="2" y="40" width="14" height="20" rx="1.5" fill="rgba(99, 102, 241, 0.20)"/>
+                <text x="9" y="51" text-anchor="middle" dominant-baseline="central" fill="var(--accent)" stroke="none" font-size="5" font-weight="700" font-family="var(--font-mono)">AGENT</text>
+                <line x1="2" y1="62" x2="16" y2="62" stroke-opacity="0.35"/>
+                <path d="M4 82 q8 -3 16 0 t16 0 t16 0 t16 0 t16 0 t16 0 t16 0 t16 0 t16 0 t14 0" stroke-opacity="0.6"/>
+                <path d="M4 92 q10 -3 20 0 t20 0 t20 0 t20 0 t20 0 t20 0 t20 0 t20 0" stroke-opacity="0.35"/>
               </svg>
             </div>
-            <h3 class="launch-boat-mode">Sidecar + MCP adapter</h3>
-            <p class="launch-boat-title">AI agent builder</p>
-            <p class="launch-boat-desc">Expose any service as MCP tools so Claude / Cursor / Copilot can call them.</p>
+            <h3 class="launch-boat-name">Tugboat</h3>
+            <p class="launch-boat-mode">Sidecar + MCP adapter</p>
+            <p class="launch-boat-desc">Towed alongside your AI agent. Bowire exposes every discovered method as an MCP tool &mdash; Claude / Cursor / Copilot see them with JSON Schema input.</p>
+          </button>
+
+          <button type="button" class="launch-boat" data-boat="passenger">
+            <div class="launch-boat-diagram">
+              <!-- Passenger ship — multi-deck hull with passengers on the
+                   promenade and three port calls along the waterline
+                   (api.dev / api.stg / api.prd). Locked gangway signals
+                   the OIDC gate. One Bowire, many authenticated users,
+                   per-cabin state. Preview tier — feature still being
+                   delivered through the auth-provider extension SPI. -->
+              <svg width="170" height="110" viewBox="0 0 170 110" fill="none" stroke="var(--accent)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="81" cy="16" r="3.5" fill="rgba(99, 102, 241, 0.55)" stroke="none"/>
+                <circle cx="93" cy="14" r="2.5" fill="rgba(99, 102, 241, 0.4)" stroke="none"/>
+                <line x1="74" y1="14" x2="74" y2="26"/>
+                <path d="M74 14 L82 17 L74 20"/>
+                <rect x="78" y="22" width="6" height="14" rx="1"/>
+                <rect x="90" y="22" width="6" height="14" rx="1"/>
+                <rect x="34" y="36" width="106" height="12" rx="1" fill="rgba(99, 102, 241, 0.15)"/>
+                <circle cx="44" cy="42" r="1.4" fill="var(--accent)" stroke="none"/>
+                <circle cx="56" cy="42" r="1.4" fill="var(--accent)" stroke="none"/>
+                <circle cx="68" cy="42" r="1.4" fill="var(--accent)" stroke="none"/>
+                <circle cx="84" cy="42" r="1.4" fill="var(--accent)" stroke="none"/>
+                <circle cx="100" cy="42" r="1.4" fill="var(--accent)" stroke="none"/>
+                <circle cx="116" cy="42" r="1.4" fill="var(--accent)" stroke="none"/>
+                <rect x="26" y="48" width="122" height="16" rx="1"/>
+                <text x="87" y="56" text-anchor="middle" dominant-baseline="central" fill="var(--accent)" stroke="none" font-size="9" font-weight="700" font-family="var(--font-mono)">Bowire</text>
+                <rect x="148" y="51" width="8" height="8" rx="1"/>
+                <path d="M150 51 L150 49 a2 2 0 0 1 4 0 L154 51"/>
+                <path d="M14 64 L160 64 L150 80 L24 80 Z"/>
+                <rect x="22" y="88" width="32" height="10" rx="1"/>
+                <text x="38" y="93" text-anchor="middle" dominant-baseline="central" fill="var(--text-secondary)" stroke="none" font-size="6.5" font-family="var(--font-mono)">api.dev</text>
+                <rect x="64" y="88" width="32" height="10" rx="1"/>
+                <text x="80" y="93" text-anchor="middle" dominant-baseline="central" fill="var(--text-secondary)" stroke="none" font-size="6.5" font-family="var(--font-mono)">api.stg</text>
+                <rect x="106" y="88" width="32" height="10" rx="1"/>
+                <text x="122" y="93" text-anchor="middle" dominant-baseline="central" fill="var(--text-secondary)" stroke="none" font-size="6.5" font-family="var(--font-mono)">api.prd</text>
+              </svg>
+            </div>
+            <h3 class="launch-boat-name">Passenger ship <span class="launch-boat-preview-tag">preview</span></h3>
+            <p class="launch-boat-mode">Multi-user · OIDC</p>
+            <p class="launch-boat-desc">One Bowire, several authenticated passengers. Per-user state across sessions, scheduled port calls. Today: works behind your OIDC reverse proxy.</p>
           </button>
 
         </div>
@@ -123,7 +243,7 @@
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
             </button>
           </div>
-          <pre><code data-recipe-content>Pick a role in step 1 first.</code></pre>
+          <pre><code data-recipe-content>Pick a boat in step 1 first.</code></pre>
         </div>
 
         <div class="launch-nav">
@@ -161,7 +281,7 @@
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
             </button>
           </div>
-          <pre><code data-recipe-content-3>Pick a role in step 1 first.</code></pre>
+          <pre><code data-recipe-content-3>Pick a boat in step 1 first.</code></pre>
         </div>
 
         <p class="launch-then" data-launch-then></p>
@@ -181,7 +301,7 @@
             Back
           </button>
           <button type="button" class="launch-nav-btn launch-nav-restart" data-step-restart>
-            Pick another role
+            Pick another boat
           </button>
         </div>
       </div>
