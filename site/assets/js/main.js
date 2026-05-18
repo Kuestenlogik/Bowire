@@ -1709,6 +1709,61 @@ function createBowireCombobox(hostEl, allItems, defaultSelectedIds, placeholder)
 
 
 // ====================================================================
+// Quickstart embedded Step 2 — live NuGet picker. Mirrors the home-
+// page launch stepper's protocol picker, but standalone (no boat
+// selection, no run-snippet linkage). Selections in the combobox
+// become `dotnet add package` lines in the snippet below. Shares
+// createBowireCombobox + BOWIRE_PROTOCOLS with the stepper.
+// ====================================================================
+(function () {
+    var pickerHost = document.querySelector('[data-qs-embed-picker]');
+    if (!pickerHost) return;
+    var recipeCode = document.querySelector('[data-qs-embed-recipe]');
+    if (!recipeCode) return;
+    var comboboxHost = pickerHost.querySelector('[data-combobox-nuget]');
+    if (!comboboxHost) return;
+
+    function findProtocol(id) {
+        for (var i = 0; i < BOWIRE_PROTOCOLS.length; i++) {
+            if (BOWIRE_PROTOCOLS[i].id === id) return BOWIRE_PROTOCOLS[i];
+        }
+        return null;
+    }
+
+    var nugetDefaults = BOWIRE_PROTOCOLS
+        .filter(function (p) { return p.defaultBackend; })
+        .map(function (p) { return p.id; });
+
+    var combobox = createBowireCombobox(
+        comboboxHost,
+        BOWIRE_PROTOCOLS,
+        nugetDefaults,
+        'Search protocols (gRPC, REST, Surgewave, Kafka, …)'
+    );
+
+    function render() {
+        var lines = [
+            '# Add Bowire core',
+            'dotnet add package Kuestenlogik.Bowire'
+        ];
+        var ids = combobox.getSelected();
+        if (ids.length > 0) {
+            lines.push('');
+            lines.push('# ' + (ids.length === 1 ? 'Plus the protocol plugin you need' : 'Plus the protocol plugins you need'));
+            ids.forEach(function (id) {
+                var proto = findProtocol(id);
+                if (proto) lines.push('dotnet add package ' + proto.packageId);
+            });
+        }
+        recipeCode.textContent = lines.join('\n');
+    }
+
+    combobox.onChange(render);
+    render();
+})();
+
+
+// ====================================================================
 // Quickstart install tabs — pick a Windows / macOS / Linux / .NET
 // tool / Container snippet on the /quickstart.html page. Auto-selects
 // the visitor's platform on page load (UA sniffing, same approach as

@@ -30,7 +30,7 @@ Launch Bowire pointed at a target server URL:
 bowire --url https://my-grpc-server:443
 ```
 
-Bowire starts a local HTTP server on `http://localhost:5080/bowire`
+Bowire starts a local HTTP server on `http://localhost:5080`
 and auto-opens your default browser. The sidebar populates as
 discovery completes (typically <1 second against a local server).
 
