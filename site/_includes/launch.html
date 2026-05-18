@@ -48,33 +48,62 @@
 
           <button type="button" class="launch-boat" data-boat="backend">
             <div class="launch-boat-diagram">
-              <!-- Container ship — silhouette with three container stacks
-                   on deck and the bridge tower at the stern. One container
-                   is highlighted as "Bowire" so the reader sees the
-                   metaphor map back to Docker / embedded: Bowire is one
-                   of the boxes the host app already ships in. -->
+              <!-- Sailboat — sloop with mainsail + jib, riding wind from
+                   the left. The metaphor: no engine of its own. Bowire
+                   embedded has no webserver, no process — it rides the
+                   host ASP.NET app's runtime. The host drives, Bowire
+                   sails along on the same wind. Mainsail carries a
+                   subtle accent fill so the "Bowire" hull label reads as
+                   the cargo identity, not the vehicle. Sail seams add
+                   detail texture; rigging lines pin the sail's shape to
+                   the mast + boom for visual coherence. -->
               <svg width="170" height="110" viewBox="0 0 170 110" fill="none" stroke="var(--accent)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <rect x="22" y="48" width="22" height="16" rx="1"/>
-                <rect x="46" y="48" width="22" height="16" rx="1"/>
-                <rect x="70" y="48" width="22" height="16" rx="1" fill="rgba(99, 102, 241, 0.18)"/>
-                <rect x="94" y="48" width="22" height="16" rx="1"/>
-                <rect x="34" y="32" width="22" height="16" rx="1"/>
-                <rect x="58" y="32" width="22" height="16" rx="1"/>
-                <rect x="82" y="32" width="22" height="16" rx="1"/>
-                <text x="81" y="56" text-anchor="middle" dominant-baseline="central" fill="var(--accent)" stroke="none" font-size="6" font-weight="700" font-family="var(--font-mono)">Bowire</text>
-                <rect x="120" y="28" width="20" height="36" rx="1"/>
-                <line x1="124" y1="36" x2="136" y2="36"/>
-                <line x1="124" y1="44" x2="136" y2="44"/>
-                <line x1="124" y1="52" x2="136" y2="52"/>
-                <line x1="146" y1="28" x2="146" y2="40"/>
-                <path d="M14 64 L156 64 L148 80 L22 80 Z"/>
-                <path d="M4 86 q8 -3 16 0 t16 0 t16 0 t16 0 t16 0 t16 0 t16 0 t16 0 t16 0 t14 0" stroke-opacity="0.6"/>
-                <path d="M4 94 q10 -3 20 0 t20 0 t20 0 t20 0 t20 0 t20 0 t20 0 t20 0" stroke-opacity="0.35"/>
+                <defs>
+                  <linearGradient id="sailboat-sail" x1="0%" y1="0%" x2="0%" y2="100%">
+                    <stop offset="0%" stop-color="rgba(139, 125, 255, 0.32)"/>
+                    <stop offset="100%" stop-color="rgba(139, 125, 255, 0.10)"/>
+                  </linearGradient>
+                  <linearGradient id="sailboat-hull" x1="0%" y1="0%" x2="0%" y2="100%">
+                    <stop offset="0%" stop-color="rgba(99, 102, 241, 0.22)"/>
+                    <stop offset="100%" stop-color="rgba(99, 102, 241, 0.06)"/>
+                  </linearGradient>
+                </defs>
+                <!-- Wind streaks coming from the left, fading as they approach -->
+                <path d="M4 28 q12 -2 22 0" stroke-opacity="0.35"/>
+                <path d="M4 40 q14 -2 26 0" stroke-opacity="0.45"/>
+                <path d="M4 52 q10 -2 20 0" stroke-opacity="0.28"/>
+                <!-- Mast -->
+                <line x1="90" y1="14" x2="90" y2="68"/>
+                <!-- Pennant on top of mast -->
+                <path d="M90 14 L98 17 L90 20" stroke-opacity="0.75"/>
+                <!-- Mainsail: curved triangle, leech billowing leeward (right). -->
+                <path d="M90 20 Q126 44 102 66 L90 66 Z" fill="url(#sailboat-sail)" stroke="var(--accent)" stroke-opacity="0.85"/>
+                <!-- Sail seams - subtle horizontal stitches showing panel construction -->
+                <path d="M96 30 Q108 34 113 40" stroke-opacity="0.30"/>
+                <path d="M94 42 Q106 46 109 52" stroke-opacity="0.30"/>
+                <path d="M92 54 Q102 56 104 60" stroke-opacity="0.25"/>
+                <!-- Jib (smaller foresail) at the bow -->
+                <path d="M90 30 Q72 54 90 58 Z" fill="url(#sailboat-sail)" stroke-opacity="0.75"/>
+                <!-- Boom (horizontal spar at the bottom of mainsail) -->
+                <line x1="90" y1="66" x2="104" y2="66" stroke-opacity="0.65"/>
+                <!-- Hull V-shape with a subtle bowsprit -->
+                <path d="M50 68 L130 68 L120 82 L60 82 Z" fill="url(#sailboat-hull)"/>
+                <!-- Deck rail line -->
+                <line x1="54" y1="68" x2="126" y2="68" stroke-opacity="0.45"/>
+                <!-- Bowire label on the hull -->
+                <text x="90" y="75" text-anchor="middle" dominant-baseline="central" fill="var(--accent)" stroke="none" font-size="7" font-weight="700" font-family="var(--font-mono)">Bowire</text>
+                <!-- Keel underneath -->
+                <line x1="90" y1="82" x2="90" y2="88" stroke-opacity="0.45"/>
+                <!-- Hull shadow ellipse on the water -->
+                <ellipse cx="90" cy="89" rx="36" ry="2" fill="rgba(0,0,0,0.25)" stroke="none"/>
+                <!-- Waterline waves -->
+                <path d="M4 92 q10 -3 20 0 t20 0 t20 0 t20 0 t20 0 t20 0 t20 0 t20 0" stroke-opacity="0.55"/>
+                <path d="M4 100 q12 -3 24 0 t24 0 t24 0 t24 0 t24 0 t22 0" stroke-opacity="0.32"/>
               </svg>
             </div>
-            <h3 class="launch-boat-name">Container ship</h3>
+            <h3 class="launch-boat-name">Sailboat</h3>
             <p class="launch-boat-mode">Embedded mode</p>
-            <p class="launch-boat-desc">Bowire ships inside your ASP.NET container. Add <code>app.MapBowire()</code> and every endpoint is browsable at <code>/bowire</code> next to your own routes.</p>
+            <p class="launch-boat-desc">No engine of its own &mdash; sails with the host's wind. Bowire embeds into your ASP.NET app's process. Add <code>app.MapBowire()</code> and every endpoint is browsable at <code>/bowire</code> next to your own routes.</p>
           </button>
 
           <button type="button" class="launch-boat" data-boat="tester">
@@ -84,15 +113,25 @@
                    swept windscreen, outboard motor + bow-spray fan +
                    stern wake. Single-helmsman fast hull. -->
               <svg width="170" height="110" viewBox="0 0 170 110" fill="none" stroke="var(--accent)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <defs>
+                  <linearGradient id="speedboat-hull" x1="0%" y1="0%" x2="0%" y2="100%">
+                    <stop offset="0%" stop-color="rgba(99, 102, 241, 0.22)"/>
+                    <stop offset="100%" stop-color="rgba(99, 102, 241, 0.05)"/>
+                  </linearGradient>
+                  <linearGradient id="speedboat-stripe" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%" stop-color="rgba(139, 125, 255, 0.35)"/>
+                    <stop offset="100%" stop-color="rgba(139, 125, 255, 0.20)"/>
+                  </linearGradient>
+                </defs>
                 <circle cx="86" cy="50" r="3.5"/>
                 <path d="M83 55 L92 60 M89 55 L98 60" stroke-linecap="round"/>
                 <path d="M68 56 Q82 38 110 44 L114 56"/>
                 <path d="M84 47 L84 56" stroke-opacity="0.55"/>
                 <path d="M96 44 L96 56" stroke-opacity="0.55"/>
-                <path d="M44 64 L150 60 L150 64 L46 68 Z" fill="rgba(99, 102, 241, 0.22)" stroke-opacity="0.6"/>
+                <path d="M44 64 L150 60 L150 64 L46 68 Z" fill="url(#speedboat-stripe)" stroke-opacity="0.6"/>
                 <text x="74" y="65" text-anchor="middle" dominant-baseline="central" fill="var(--accent)" stroke="none" font-size="5.5" font-weight="700" font-family="var(--font-mono)">01</text>
                 <text x="100" y="72" text-anchor="middle" dominant-baseline="central" fill="var(--accent)" stroke="none" font-size="7" font-weight="700" font-family="var(--font-mono)">Bowire</text>
-                <path d="M40 60 L160 56 L156 70 L40 76 L34 70 Z" fill="rgba(99, 102, 241, 0.10)"/>
+                <path d="M40 60 L160 56 L156 70 L40 76 L34 70 Z" fill="url(#speedboat-hull)"/>
                 <path d="M40 70 L156 66" stroke-opacity="0.45"/>
                 <path d="M34 70 L40 76" stroke-opacity="0.7"/>
                 <rect x="20" y="68" width="14" height="10" rx="1.5" fill="rgba(99, 102, 241, 0.25)"/>
@@ -107,6 +146,8 @@
                 <line x1="2" y1="68" x2="22" y2="71" stroke-opacity="0.46"/>
                 <line x1="2" y1="76" x2="24" y2="78" stroke-opacity="0.46"/>
                 <line x1="2" y1="84" x2="26" y2="84" stroke-opacity="0.40"/>
+                <!-- Hull shadow ellipse on the water -->
+                <ellipse cx="98" cy="84" rx="58" ry="2" fill="rgba(0,0,0,0.22)" stroke="none"/>
                 <path d="M4 92 q10 -3 20 0 t20 0 t20 0 t20 0 t20 0 t20 0 t20 0 t20 0" stroke-opacity="0.55"/>
                 <path d="M4 100 q12 -3 24 0 t24 0 t24 0 t24 0 t24 0 t24 0 t22 0" stroke-opacity="0.3"/>
               </svg>
@@ -124,16 +165,29 @@
                    actual function: serve recorded sessions back instead
                    of a live process. -->
               <svg width="170" height="110" viewBox="0 0 170 110" fill="none" stroke="var(--accent)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <defs>
+                  <linearGradient id="decoy-cabin" x1="0%" y1="0%" x2="0%" y2="100%">
+                    <stop offset="0%" stop-color="rgba(139, 125, 255, 0.20)"/>
+                    <stop offset="100%" stop-color="rgba(139, 125, 255, 0.06)"/>
+                  </linearGradient>
+                  <linearGradient id="decoy-hull" x1="0%" y1="0%" x2="0%" y2="100%">
+                    <stop offset="0%" stop-color="rgba(99, 102, 241, 0.14)"/>
+                    <stop offset="100%" stop-color="rgba(99, 102, 241, 0.02)"/>
+                  </linearGradient>
+                </defs>
                 <rect x="78" y="22" width="6" height="12" rx="1" stroke-dasharray="2 2"/>
-                <rect x="56" y="32" width="50" height="20" rx="1.5" stroke-dasharray="3 2" fill="rgba(99, 102, 241, 0.10)"/>
+                <rect x="56" y="32" width="50" height="20" rx="1.5" stroke-dasharray="3 2" fill="url(#decoy-cabin)"/>
                 <line x1="62" y1="40" x2="100" y2="40" stroke-opacity="0.5" stroke-dasharray="2 2"/>
                 <line x1="62" y1="46" x2="100" y2="46" stroke-opacity="0.35" stroke-dasharray="2 2"/>
                 <text x="81" y="42" text-anchor="middle" dominant-baseline="central" fill="var(--accent)" stroke="none" font-size="7" font-weight="700" font-family="var(--font-mono)">Bowire</text>
-                <rect x="114" y="36" width="32" height="11" rx="1" fill="rgba(99, 102, 241, 0.22)" stroke-dasharray="2 2"/>
+                <rect x="114" y="36" width="32" height="11" rx="1" fill="rgba(139, 125, 255, 0.28)" stroke-dasharray="2 2"/>
                 <text x="130" y="41.5" text-anchor="middle" dominant-baseline="central" fill="var(--accent)" stroke="none" font-size="6" font-weight="700" font-family="var(--font-mono)">REPLAY</text>
-                <path d="M24 52 L150 52 L142 72 L34 72 Z" stroke-dasharray="3 2" fill="rgba(99, 102, 241, 0.06)"/>
+                <path d="M24 52 L150 52 L142 72 L34 72 Z" stroke-dasharray="3 2" fill="url(#decoy-hull)"/>
                 <line x1="22" y1="40" x2="22" y2="56" stroke-dasharray="2 2"/>
                 <path d="M22 40 L34 44 L22 48" stroke-dasharray="2 2"/>
+                <!-- Phantom shadow ellipse — dashed because the whole
+                     ship is a phantom; the water under it ought to be too. -->
+                <ellipse cx="87" cy="78" rx="48" ry="1.8" fill="rgba(0,0,0,0.15)" stroke="none"/>
                 <path d="M4 82 q8 -3 16 0 t16 0 t16 0 t16 0 t16 0 t16 0 t16 0 t16 0 t16 0 t14 0" stroke-opacity="0.55" stroke-dasharray="2 4"/>
                 <path d="M4 92 q10 -3 20 0 t20 0 t20 0 t20 0 t20 0 t20 0 t20 0 t20 0" stroke-opacity="0.3" stroke-dasharray="1 5"/>
               </svg>
@@ -145,38 +199,79 @@
 
           <button type="button" class="launch-boat" data-boat="ai">
             <div class="launch-boat-diagram">
-              <!-- Tugboat — squat hull, fat smokestack with smoke,
-                   bumper fenders along the bow, towing line off the bow
-                   running to a labelled AGENT cargo. Reads as "this
-                   small companion ship pulls a bigger thing along" —
-                   the sidecar / MCP-adapter metaphor. -->
+              <!-- Container ship — Bowire and the AI agent ride as two
+                   sidecar-style containers on the same vessel (Docker
+                   compose or a Kubernetes Pod). The Bowire container
+                   gets the lavender accent fill; the AGENT container
+                   uses a complementary coral so the two roles read as
+                   distinct but-paired. A subtle arrow connector hints
+                   at the MCP tool-surface relationship: Bowire serves
+                   the discovered methods, the agent consumes them.
+                   Reads on the metaphor's double meaning — maritime
+                   container + Docker container. -->
               <svg width="170" height="110" viewBox="0 0 170 110" fill="none" stroke="var(--accent)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <circle cx="76" cy="14" r="3" fill="rgba(99, 102, 241, 0.55)" stroke="none"/>
-                <circle cx="82" cy="10" r="2" fill="rgba(99, 102, 241, 0.4)" stroke="none"/>
-                <rect x="70" y="20" width="12" height="16" rx="1" fill="rgba(99, 102, 241, 0.18)"/>
-                <line x1="72" y1="26" x2="80" y2="26" stroke-opacity="0.6"/>
-                <rect x="52" y="34" width="22" height="14" rx="1.5" fill="rgba(99, 102, 241, 0.10)"/>
-                <line x1="56" y1="38" x2="70" y2="38" stroke-opacity="0.5"/>
-                <line x1="56" y1="42" x2="70" y2="42" stroke-opacity="0.4"/>
-                <rect x="76" y="40" width="36" height="14" rx="1"/>
-                <text x="94" y="47" text-anchor="middle" dominant-baseline="central" fill="var(--accent)" stroke="none" font-size="7" font-weight="700" font-family="var(--font-mono)">Bowire</text>
-                <circle cx="46" cy="56" r="3" fill="rgba(99, 102, 241, 0.25)"/>
-                <circle cx="46" cy="62" r="3" fill="rgba(99, 102, 241, 0.25)"/>
-                <path d="M40 54 L116 54 L110 70 L46 70 Z" fill="rgba(99, 102, 241, 0.10)"/>
-                <path d="M40 58 Q26 50 14 48" stroke-opacity="0.7"/>
-                <rect x="2" y="40" width="14" height="20" rx="1.5" fill="rgba(99, 102, 241, 0.20)"/>
-                <text x="9" y="51" text-anchor="middle" dominant-baseline="central" fill="var(--accent)" stroke="none" font-size="5" font-weight="700" font-family="var(--font-mono)">AGENT</text>
-                <line x1="2" y1="62" x2="16" y2="62" stroke-opacity="0.35"/>
-                <path d="M4 82 q8 -3 16 0 t16 0 t16 0 t16 0 t16 0 t16 0 t16 0 t16 0 t16 0 t14 0" stroke-opacity="0.6"/>
-                <path d="M4 92 q10 -3 20 0 t20 0 t20 0 t20 0 t20 0 t20 0 t20 0 t20 0" stroke-opacity="0.35"/>
+                <defs>
+                  <linearGradient id="containership-hull" x1="0%" y1="0%" x2="0%" y2="100%">
+                    <stop offset="0%" stop-color="rgba(99, 102, 241, 0.18)"/>
+                    <stop offset="100%" stop-color="rgba(99, 102, 241, 0.04)"/>
+                  </linearGradient>
+                  <linearGradient id="containership-bowire-box" x1="0%" y1="0%" x2="0%" y2="100%">
+                    <stop offset="0%" stop-color="rgba(139, 125, 255, 0.50)"/>
+                    <stop offset="100%" stop-color="rgba(139, 125, 255, 0.22)"/>
+                  </linearGradient>
+                  <linearGradient id="containership-agent-box" x1="0%" y1="0%" x2="0%" y2="100%">
+                    <stop offset="0%" stop-color="rgba(252, 165, 165, 0.50)"/>
+                    <stop offset="100%" stop-color="rgba(252, 165, 165, 0.22)"/>
+                  </linearGradient>
+                </defs>
+                <!-- Smokestack puffs (rising upper-right) -->
+                <circle cx="146" cy="14" r="3" fill="rgba(99, 102, 241, 0.55)" stroke="none"/>
+                <circle cx="152" cy="9" r="2" fill="rgba(99, 102, 241, 0.35)" stroke="none"/>
+                <!-- Bridge tower at the stern with deck-level windows -->
+                <rect x="124" y="22" width="20" height="40" rx="1" fill="rgba(99, 102, 241, 0.10)"/>
+                <line x1="128" y1="30" x2="140" y2="30" stroke-opacity="0.50"/>
+                <line x1="128" y1="38" x2="140" y2="38" stroke-opacity="0.45"/>
+                <line x1="128" y1="46" x2="140" y2="46" stroke-opacity="0.40"/>
+                <line x1="128" y1="54" x2="140" y2="54" stroke-opacity="0.35"/>
+                <!-- Smokestack on top of bridge -->
+                <rect x="146" y="26" width="6" height="12" rx="1" fill="rgba(99, 102, 241, 0.20)"/>
+                <line x1="148" y1="32" x2="150" y2="32" stroke-opacity="0.5"/>
+                <!-- Top row of containers — AGENT highlighted in coral -->
+                <rect x="30" y="32" width="22" height="16" rx="1" stroke-opacity="0.65"/>
+                <rect x="54" y="32" width="22" height="16" rx="1" fill="url(#containership-agent-box)" stroke="rgba(252, 165, 165, 0.95)"/>
+                <text x="65" y="40" text-anchor="middle" dominant-baseline="central" fill="rgba(252, 165, 165, 1)" stroke="none" font-size="6" font-weight="700" font-family="var(--font-mono)">AGENT</text>
+                <rect x="78" y="32" width="22" height="16" rx="1" stroke-opacity="0.65"/>
+                <rect x="102" y="32" width="20" height="16" rx="1" stroke-opacity="0.65"/>
+                <!-- Bottom row of containers — Bowire highlighted in lavender -->
+                <rect x="18" y="48" width="22" height="16" rx="1" stroke-opacity="0.65"/>
+                <rect x="42" y="48" width="22" height="16" rx="1" stroke-opacity="0.65"/>
+                <rect x="66" y="48" width="22" height="16" rx="1" fill="url(#containership-bowire-box)" stroke="var(--accent)"/>
+                <text x="77" y="56" text-anchor="middle" dominant-baseline="central" fill="var(--accent)" stroke="none" font-size="6" font-weight="700" font-family="var(--font-mono)">Bowire</text>
+                <rect x="90" y="48" width="22" height="16" rx="1" stroke-opacity="0.65"/>
+                <rect x="114" y="48" width="8" height="16" rx="1" stroke-opacity="0.55"/>
+                <!-- Connector dot pair between Bowire ↑ AGENT — the
+                     MCP tool-surface. -->
+                <circle cx="65" cy="46" r="1.4" fill="rgba(252, 165, 165, 1)" stroke="none"/>
+                <line x1="65" y1="46" x2="77" y2="50" stroke="rgba(176, 145, 210, 0.6)" stroke-width="1"/>
+                <circle cx="77" cy="50" r="1.4" fill="var(--accent)" stroke="none"/>
+                <!-- Hull -->
+                <path d="M10 64 L156 64 L148 80 L18 80 Z" fill="url(#containership-hull)"/>
+                <!-- Waterline plate seam on the hull -->
+                <line x1="20" y1="72" x2="146" y2="72" stroke-opacity="0.30"/>
+                <!-- Hull shadow ellipse on the water -->
+                <ellipse cx="83" cy="87" rx="68" ry="2.5" fill="rgba(0,0,0,0.28)" stroke="none"/>
+                <!-- Waterline waves -->
+                <path d="M4 91 q10 -3 20 0 t20 0 t20 0 t20 0 t20 0 t20 0 t20 0 t20 0" stroke-opacity="0.55"/>
+                <path d="M4 100 q12 -3 24 0 t24 0 t24 0 t24 0 t24 0 t22 0" stroke-opacity="0.32"/>
               </svg>
             </div>
-            <h3 class="launch-boat-name">Tugboat</h3>
+            <h3 class="launch-boat-name">Container ship</h3>
             <p class="launch-boat-mode">Sidecar + MCP adapter</p>
-            <p class="launch-boat-desc">Towed alongside your AI agent. Bowire exposes every discovered method as an MCP tool &mdash; Claude / Cursor / Copilot see them with JSON Schema input.</p>
+            <p class="launch-boat-desc">Bowire and your AI agent ride as sidecar containers on the same Docker compose or Kubernetes pod. Every discovered method becomes an MCP tool so Claude / Cursor / Copilot can call them with JSON Schema input.</p>
           </button>
 
           <button type="button" class="launch-boat" data-boat="passenger">
+            <span class="protocol-card-ribbon" aria-hidden="true">preview</span>
             <div class="launch-boat-diagram">
               <!-- Passenger ship — multi-deck hull with passengers on the
                    promenade and three port calls along the waterline
@@ -185,24 +280,43 @@
                    per-cabin state. Preview tier — feature still being
                    delivered through the auth-provider extension SPI. -->
               <svg width="170" height="110" viewBox="0 0 170 110" fill="none" stroke="var(--accent)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <defs>
+                  <linearGradient id="passenger-hull" x1="0%" y1="0%" x2="0%" y2="100%">
+                    <stop offset="0%" stop-color="rgba(99, 102, 241, 0.20)"/>
+                    <stop offset="100%" stop-color="rgba(99, 102, 241, 0.05)"/>
+                  </linearGradient>
+                  <linearGradient id="passenger-deck" x1="0%" y1="0%" x2="0%" y2="100%">
+                    <stop offset="0%" stop-color="rgba(139, 125, 255, 0.25)"/>
+                    <stop offset="100%" stop-color="rgba(139, 125, 255, 0.10)"/>
+                  </linearGradient>
+                  <linearGradient id="passenger-mainband" x1="0%" y1="0%" x2="0%" y2="100%">
+                    <stop offset="0%" stop-color="rgba(99, 102, 241, 0.12)"/>
+                    <stop offset="100%" stop-color="rgba(99, 102, 241, 0.04)"/>
+                  </linearGradient>
+                </defs>
                 <circle cx="81" cy="16" r="3.5" fill="rgba(99, 102, 241, 0.55)" stroke="none"/>
                 <circle cx="93" cy="14" r="2.5" fill="rgba(99, 102, 241, 0.4)" stroke="none"/>
                 <line x1="74" y1="14" x2="74" y2="26"/>
                 <path d="M74 14 L82 17 L74 20"/>
                 <rect x="78" y="22" width="6" height="14" rx="1"/>
                 <rect x="90" y="22" width="6" height="14" rx="1"/>
-                <rect x="34" y="36" width="106" height="12" rx="1" fill="rgba(99, 102, 241, 0.15)"/>
+                <!-- Upper promenade with passengers along the rail -->
+                <rect x="34" y="36" width="106" height="12" rx="1" fill="url(#passenger-deck)"/>
                 <circle cx="44" cy="42" r="1.4" fill="var(--accent)" stroke="none"/>
                 <circle cx="56" cy="42" r="1.4" fill="var(--accent)" stroke="none"/>
                 <circle cx="68" cy="42" r="1.4" fill="var(--accent)" stroke="none"/>
                 <circle cx="84" cy="42" r="1.4" fill="var(--accent)" stroke="none"/>
                 <circle cx="100" cy="42" r="1.4" fill="var(--accent)" stroke="none"/>
                 <circle cx="116" cy="42" r="1.4" fill="var(--accent)" stroke="none"/>
-                <rect x="26" y="48" width="122" height="16" rx="1"/>
+                <!-- Main deck band carrying the Bowire wordmark -->
+                <rect x="26" y="48" width="122" height="16" rx="1" fill="url(#passenger-mainband)"/>
                 <text x="87" y="56" text-anchor="middle" dominant-baseline="central" fill="var(--accent)" stroke="none" font-size="9" font-weight="700" font-family="var(--font-mono)">Bowire</text>
                 <rect x="148" y="51" width="8" height="8" rx="1"/>
                 <path d="M150 51 L150 49 a2 2 0 0 1 4 0 L154 51"/>
-                <path d="M14 64 L160 64 L150 80 L24 80 Z"/>
+                <!-- Hull -->
+                <path d="M14 64 L160 64 L150 80 L24 80 Z" fill="url(#passenger-hull)"/>
+                <!-- Hull shadow ellipse -->
+                <ellipse cx="87" cy="84" rx="68" ry="2" fill="rgba(0,0,0,0.22)" stroke="none"/>
                 <rect x="22" y="88" width="32" height="10" rx="1"/>
                 <text x="38" y="93" text-anchor="middle" dominant-baseline="central" fill="var(--text-secondary)" stroke="none" font-size="6.5" font-family="var(--font-mono)">api.dev</text>
                 <rect x="64" y="88" width="32" height="10" rx="1"/>
@@ -211,7 +325,7 @@
                 <text x="122" y="93" text-anchor="middle" dominant-baseline="central" fill="var(--text-secondary)" stroke="none" font-size="6.5" font-family="var(--font-mono)">api.prd</text>
               </svg>
             </div>
-            <h3 class="launch-boat-name">Passenger ship <span class="launch-boat-preview-tag">preview</span></h3>
+            <h3 class="launch-boat-name">Passenger ship</h3>
             <p class="launch-boat-mode">Multi-user · OIDC</p>
             <p class="launch-boat-desc">One Bowire, several authenticated passengers. Per-user state across sessions, scheduled port calls. Today: works behind your OIDC reverse proxy.</p>
           </button>
