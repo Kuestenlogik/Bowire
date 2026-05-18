@@ -4469,8 +4469,8 @@ h4.downloads-sub {
    Note: the elevated section sits inside `.container` which sits
    inside `.page-content`, so we match on any descendant rather than
    the `>` direct child variant. */
-.page-content:has(.downloads-group-alt:last-child),
-.page-content:has(.features-page-cta-elevated:last-child) {
+.page-content:has(.downloads-group-alt:last-of-type),
+.page-content:has(.features-page-cta-elevated:last-of-type) {
     padding-bottom: 0;
 }
 
@@ -5404,6 +5404,12 @@ p a:not([class]):hover,
     box-shadow: 0 0 0 100vmax var(--bg-elevated);
     clip-path: inset(0 -100vmax);
     margin-top: 64px;
+}
+/* When the previous section is already an elevated band (.features-group-alt),
+   the 64px margin-top above would surface the page-bg between two same-coloured
+   strips — a stray dark gap. Collapse the gap so the bands flow into each other. */
+.features-group-alt + .features-page-cta.features-page-cta-elevated {
+    margin-top: 0;
 }
 .quickstart-page-step-body {
     flex: 1 1 auto;
