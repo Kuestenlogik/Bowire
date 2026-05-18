@@ -4,7 +4,7 @@ summary: 'Strategy + architecture for evolving Bowire into a multi-protocol, sch
 
 # Bowire as a cyber-security testing tool
 
-**Status:** draft (v1.4+ candidate). The Tier-1 anchor — recording-as-attack-replay — is the first incremental piece. Higher tiers track to subsequent releases.
+**Status:** Tiers 1 + 2 shipped through v1.4.x. Tier 3's intercepting-proxy anchor shipped; remaining Tier 3 items + Tier 4 are open work tracked on the [ROADMAP](../../ROADMAP.md).
 
 ## Why this is a distinct lane
 
@@ -27,57 +27,42 @@ The product positioning: **"Burp Suite for the non-HTTP protocols, with schema-a
 
 Roadmap unfolds in four tiers. Each tier is sellable on its own; the upper tiers compound on the lower ones.
 
-### Tier 1 — Foundation
+### Tier 1 — Foundation — shipped
 
-The minimum that makes Bowire a credible security tool at all.
+The minimum that makes Bowire a credible security tool at all. Covered by `bowire scan` + the seed templates in `kuestenlogik/Bowire.VulnDb`. Live items: active scanner subcommand with built-in passive checks (HTTP security-headers, TLS version + cipher enumeration, verbose-error detection, banner/version disclosure); vulnerability-template format (YAML + JSON DSL, multi-protocol-first, schema-aware); SARIF + HTML + console reporting for CI/CD integration; authentication profile (`--auth-header`); scope-awareness (`--scope`); vulnerable-by-design sample app for regression testing.
 
-- **Active Scanner subcommand** (`bowire scan --target X`) with built-in passive checks:
-    - HTTP security-headers (CSP, HSTS, X-Frame-Options, Permissions-Policy, Cross-Origin-Resource-Policy, X-Content-Type-Options).
-    - TLS version + cipher enumeration against the target.
-    - Verbose-error-detection: probe with malformed input, look for stack-trace / internal-path / framework-version leakage in 500-class responses.
-    - Banner/version disclosure (Server header, X-Powered-By, gRPC reflection trace).
-- **Vulnerability-template format.** YAML-or-JSON DSL, multi-protocol-first, schema-aware. Same DSL the active scanner consumes for its own built-in checks; community contributions land in a separate `kuestenlogik/bowire-vulndb` repo.
-- **Reporting.** Console table for interactive runs. SARIF JSON output for CI/CD integration (GitHub Code Scanning, GitLab Security Dashboard, Azure DevOps consume SARIF directly). HTML report for human-readable artifact upload.
-- **Authentication profile.** Pre-scan login flow that captures a token, carries it through every subsequent request. Without this, scans of authenticated APIs are useless.
-- **Scope-awareness.** Explicit in-scope / out-of-scope URL list. The scanner refuses to probe URLs outside scope so it can't accidentally hit a third party (e.g. a CDN, a partner API).
+### Tier 2 — Specialty — shipped
 
-### Tier 2 — Specialty (where Bowire wins outright)
+The differentiators that no other tool has. Live items: schema-aware fuzzing both as workbench right-click UI ("Fuzz this field ▸") and CLI (`bowire fuzz` with SQLi / XSS / path-traversal / command-injection categories, schema-aware skip for numeric/bool fields, baseline-diff oracle detection); JWT toolkit (`bowire jwt decode` + `bowire jwt tamper` with `--alg-none`, `--set claim=value`, `--secret <key>`); multi-protocol attack template library bootstrap in [`kuestenlogik/Bowire.VulnDb`](https://github.com/Kuestenlogik/Bowire.VulnDb) (initial 7 templates across gRPC / GraphQL / REST / OData, CI validation against the vulnerable-by-design sample).
 
-The differentiators that no other tool has.
-
-- **Schema-aware fuzzing.** Right-click on a JSON-tree field in the workbench → "Fuzz this field with [SQLi / XSS / pathTrav / cmdInj / JNDI / SSTI / nullbyte]". The frame-semantics layer skips fields whose kind doesn't match the payload class (don't fuzz `coordinate.latitude` with `'; DROP TABLE`). `image.bytes` fields get magic-byte mutation; `timestamp` fields get out-of-range probes.
-- **JWT toolkit.** Decode any `Authorization: Bearer` token in a recording; tamper with header / payload / signature; replay the tampered call. Built-in checks for the well-known JWT attacks (`alg:none`, key-confusion, `kid` injection, claims-confusion).
-- **Multi-protocol attack templates** — the killer-feature for the lane:
-    - **gRPC**: Server Reflection in production, unauthenticated server-streaming DoS amplification, oversized-message handling, status-code-leak in `grpc-message` trailers.
-    - **GraphQL**: Introspection-in-production, deep-nesting DoS, alias amplification, batched-query unauth, field-suggestion error-message leak.
-    - **SignalR**: Hub-method brute-force, group-membership-bypass, hub-method-DoS via reconnect storm.
-    - **OData**: `$expand`-driven IDOR, `$filter` injection, navigation-property leak.
-    - **WebSocket**: Subprotocol confusion, message smuggling, missing origin check.
-    - **MQTT**: Topic enumeration, ACL bypass, retained-message disclosure on `$SYS/#`.
-- **CVE-corpus repo** (`kuestenlogik/bowire-vulndb`, MIT-licensed). Community-contributable templates, CI-validated against per-CVE vulnerable-by-design containers. `bowire vulndb update` pulls the latest set.
+**Open:** Multi-protocol attack template **library expansion** — see ROADMAP for the next batch (SignalR brute-force, OData IDOR, MQTT ACL bypass, WebSocket subprotocol confusion, …) plus the monthly NVD-sync workflow + `bowire vulndb update` plumbing.
 
 ### Tier 3 — Pro-grade catch-up (parity with Burp / ZAP)
 
 The features that turn Bowire into a "single tool" choice for a pen-tester instead of "use Bowire AND Burp".
 
-- **Intercepting proxy.** Inline modify of in-flight requests. Largest UX investment of the four tiers — a full request-rewrite UI, breakpoints, conditional-pass-through. Same model Burp's Repeater + Intruder uses.
-- **Active fuzzer with curated payload library.** Wordlists per category (FuzzDB, SecLists), per-field invocation, statistical timing analysis (blind-SQL-injection oracle).
-- **Sensitive-data scanner.** Response-body regex sweep for PII (credit cards, SSN, EU phone formats), API keys (AWS / GCP / Stripe / GitHub formats), JWT / OAuth tokens, internal IP addresses, S3 / Azure / GCS bucket URLs.
-- **CI/CD integration.** First-class GitHub Action (`kuestenlogik/bowire-scan-action`), GitLab template, exit-code-on-finding for fail-on-vuln pipelines.
-- **BOLA / BFLA tests.** Two auth tokens supplied — scanner attempts each tokenized request as the other user, flags 200-when-it-should-401 as Broken-Object-Level-Authorization.
+**Shipped:**
+- **Intercepting proxy** (`bowire proxy`) — Kestrel-hosted forward proxy with capture store + SSE live feed, HTTPS MITM via auto-generated CA + on-the-fly leaf-cert minting, workbench Proxy view that streams captured flows and converts them into recordings.
+- **Active fuzzer** — CLI `bowire fuzz` ships with built-in wordlists per category (sqli / xss / pathtrav / cmdinj). Workbench right-click UI exposes the same engine.
+- **CI/CD integration** — reusable `scan-template.yml` workflow, first-class GitHub Action exit-code semantics (findings are output, not failure), SARIF + GitHub Code Scanning compatibility chain (severity-label → CVSS midpoint mapping, `logicalLocations` for non-https URIs, `physicalLocation` pointing at the scan workflow, `partialFingerprints` for cross-run alert tracking).
+
+**Open:**
+- [ ] **Curated payload library at scale** — beyond the built-in seed wordlists, pull from FuzzDB / SecLists, statistical timing analysis (blind-SQL-injection oracle).
+- [ ] **Sensitive-data scanner.** Response-body regex sweep for PII (credit cards, SSN, EU phone formats), API keys (AWS / GCP / Stripe / GitHub formats), JWT / OAuth tokens, internal IP addresses, S3 / Azure / GCS bucket URLs.
+- [ ] **BOLA / BFLA tests.** Two auth tokens supplied — scanner attempts each tokenised request as the other user, flags 200-when-it-should-401 as Broken-Object-Level-Authorization.
 
 ### Tier 4 — Differentiation
 
-Features that distinguish Bowire from "just another DAST tool".
+Features that distinguish Bowire from "just another DAST tool". All items open.
 
-- **AI-assisted threat modeling via MCP.** Bowire's MCP-server surface (already shipped) lets an LLM call into discovery / replay. New direction: Bowire's MCP adapter exposes a `bowire.threat-model` prompt that asks Claude (or any MCP-aware LLM) to look at the discovered service tree and propose the top-N riskiest endpoints + suggested attack templates. Operator confirms → templates run. The LLM is the smart-default-template-picker; Bowire is the execution engine.
-- **Recording-driven security regression tests.** Known-good attack as a recording, runs in CI after every deploy. Failure = "this vulnerability got fixed but is back". Reuses the Phase-5 replay-determinism machinery so the regression test stays valid across detector drift.
-- **Multi-protocol attack chains.** Sequence: record a gRPC discovery → mutate to extract the schema → replay schema fields as SQL-injection payloads against the same service's REST surface → assert no leak. The chain itself is a recording — versionable, reviewable, replayable.
-- **Compliance mapping.** Automatic OWASP API Top 10 / CWE / CVSS scoring per finding. The HTML report has a compliance-overview tab; the SARIF output carries the mapping in `properties.security-severity` so GitHub Code Scanning groups findings the same way.
+- [ ] **AI-assisted threat modeling via MCP.** Bowire's MCP-server surface (already shipped) lets an LLM call into discovery / replay. New direction: Bowire's MCP adapter exposes a `bowire.threat-model` prompt that asks Claude (or any MCP-aware LLM) to look at the discovered service tree and propose the top-N riskiest endpoints + suggested attack templates. Operator confirms → templates run. The LLM is the smart-default-template-picker; Bowire is the execution engine.
+- [ ] **Recording-driven security regression tests.** Known-good attack as a recording, runs in CI after every deploy. Failure = "this vulnerability got fixed but is back". Reuses the Phase-5 replay-determinism machinery so the regression test stays valid across detector drift.
+- [ ] **Multi-protocol attack chains.** Sequence: record a gRPC discovery → mutate to extract the schema → replay schema fields as SQL-injection payloads against the same service's REST surface → assert no leak. The chain itself is a recording — versionable, reviewable, replayable.
+- [ ] **Compliance mapping.** Automatic OWASP API Top 10 / CWE / CVSS scoring per finding. The HTML report has a compliance-overview tab; the SARIF output carries the mapping in `properties.security-severity` so GitHub Code Scanning groups findings the same way.
 
-## Vulnerability template format (Tier-1 anchor)
+## Vulnerability template format
 
-A vulnerability template is a YAML or JSON document with three sections: identifying metadata, the request that probes for the vulnerability, and the predicate that determines whether the response indicates a vulnerable target.
+The shape every template in [`kuestenlogik/Bowire.VulnDb`](https://github.com/Kuestenlogik/Bowire.VulnDb) follows. YAML or JSON, three sections: identifying metadata, the probe request, the predicate that decides "is this target vulnerable".
 
 ```yaml
 id: BWR-GRPC-001
@@ -131,11 +116,12 @@ Leaf operators:
 - `bodyJsonPath: "<path>"` + `anyValueMatches: "<regex>"` — at least one JSONPath result matches the regex
 - `headerEquals: { Name: "<value>" }` — header value equals
 - `headerExists: ["Name", …]` — header is present
+- `headerMissing: ["Name", …]` — header is absent
 - `latencyMsAtLeast: <int>` — response latency ≥ N ms (blind-SQL-injection / timing-oracle detection)
 
 Composite operators:
 
-- `allOf: [<predicate>, …]` — all sub-predicates match
+- `allOf: [<predicate>, …]` — all sub-predicates match (implicit when multiple leaves sit on one node)
 - `anyOf: [<predicate>, …]` — at least one sub-predicate matches
 - `not: <predicate>` — sub-predicate does NOT match
 
@@ -145,24 +131,11 @@ YAML is human-friendly (multi-line strings, comments, indented hierarchy) — co
 
 ## Pflegemodell — three concentric corpora
 
-1. **Core community corpus** — `kuestenlogik/bowire-vulndb` repo on GitHub, MIT-licensed. PR-driven contributions, CI validates each template against a per-template vulnerable-by-design container (a Bowire sample app intentionally configured wrong). Two CI passes per PR: positive (template fires against vulnerable container) and negative (template stays quiet against patched container). Auto-sync from NVD: monthly job opens issues for new gRPC / GraphQL / etc. CVEs that lack a template.
+1. **Core community corpus** — [`kuestenlogik/Bowire.VulnDb`](https://github.com/Kuestenlogik/Bowire.VulnDb) on GitHub, MIT-licensed. PR-driven contributions, CI validates each template against a per-template vulnerable-by-design container. Two CI passes per PR: positive (template fires against vulnerable container) and negative (template stays quiet against patched container).
 2. **Curated set** — the Top-20 per protocol, reviewed by named maintainers, surfaced on the marketing site as a Trust-Signal page. Subset of the community corpus.
 3. **Private add-ons** — a future commercial differentiator. Proprietary 0-day templates a Bowire customer subscribes to; ships as encrypted bundles unlocked by license-key, separate from the public corpus.
 
-`bowire vulndb update` is the CLI plumbing — `git pull` against the public corpus, `~/.bowire/vulndb-local/` for handwritten templates, license-gate against the private bundle when a subscription is active.
-
-## Replay-as-attack — the Tier-1 implementation
-
-The first concrete piece. Three additive changes:
-
-1. **Recording-format extension.** `BowireRecording` gains optional fields:
-    - `attack: true/false` (default `false` — preserves backwards compat with every existing recording)
-    - `vulnerability: { id, cwe, owaspApi, severity, cvss, protocols, references, remediation }`
-    - `vulnerableWhen: <predicate-tree>`
-2. **Predicate engine** in `Kuestenlogik.Bowire.Security.AttackPredicate`. Walks a recorded response (status + headers + body) against the predicate-tree, returns a boolean. Reusable from the scanner subcommand AND from the workbench's right-click "test as attack" UI later (Tier 2).
-3. **`bowire scan` subcommand.** Takes a target URL + a corpus directory of template files. For each template: replay the probe against the target via the existing protocol-plugin's invoke path, evaluate `vulnerableWhen` against the response, emit a finding. Output: console table by default; `--out findings.sarif` for CI artifact upload; `--severity high` filter; `--format json` for structured pipe-to-jq.
-
-The replay engine is the same one the mock server uses to replay recorded fixtures, just with the direction flipped — we're sending the recording's request to the target (instead of replaying its response back to a client).
+`bowire vulndb update` (planned) is the CLI plumbing — `git pull` against the public corpus, `~/.bowire/vulndb-local/` for handwritten templates, license-gate against the private bundle when a subscription is active.
 
 ## Differentiation vs incumbents
 
@@ -184,22 +157,9 @@ For commercial positioning beyond the open core, a sub-brand may be warranted:
 - **Bowire Probe** — active-scanning-fokussiert.
 - **Surgewave Sentinel** — full sub-product in the Surgewave / Capespire / Sealbolt brand family the org already uses.
 
-The free tier stays "Bowire Core + `bowire scan` subcommand + public vulndb". Paid tier adds Tier-3 features (intercepting proxy, private vulndb subscription, AI threat-modeling via hosted LLM). This keeps the OSS-friendly story while leaving room for a commercial product.
+The free tier stays "Bowire Core + `bowire scan` subcommand + public vulndb". Paid tier adds Tier-3+ features (curated payload library at scale, private vulndb subscription, AI threat-modeling via hosted LLM). This keeps the OSS-friendly story while leaving room for a commercial product.
 
 Pick a name later; the architecture in this ADR doesn't depend on it.
-
-## Roadmap order
-
-1. **Recording-as-attack-replay** (Tier 1 anchor) — recording-format extension, predicate engine, `bowire scan` subcommand, three example templates, SARIF output. Land first because it's mostly mechanical extension of existing infrastructure.
-2. **`bowire scan` built-in passive checks** — headers, TLS, verbose-errors, banners. Same scanner subcommand, additional built-in modules.
-3. **`kuestenlogik/bowire-vulndb` repo** — schema, 20+ Top-OWASP-API templates, CI-validation pipeline, `bowire vulndb update` plumbing.
-4. **Schema-aware fuzzing UI** (Tier 2 anchor) — right-click on JSON-tree field → fuzz with category.
-5. **JWT toolkit** — Tier 2.
-6. **Multi-protocol attack-template library** — gRPC reflection, GraphQL introspection, OData IDOR templates as community contribs to vulndb.
-7. **Intercepting proxy** (Tier 3 anchor) — separate Phase, largest UX surface.
-8. **MCP-driven threat modeling** (Tier 4) — LLM-suggested templates against the discovered service tree.
-
-Each item is a single PR-set of bounded scope; the order minimises rework (the predicate engine from #1 underpins #2-#6, the vulndb repo from #3 holds the templates from #6).
 
 ## What this is NOT
 
