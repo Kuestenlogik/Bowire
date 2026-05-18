@@ -128,14 +128,29 @@ any service URL without code changes.
 
       <div class="qs-install-tabs" data-qs-install-tabs>
         <div class="qs-install-tabs-list" role="tablist" aria-label="Choose install path">
-          <button class="qs-install-tab" type="button" role="tab" data-qs-install-tab="windows" aria-selected="true">Windows</button>
+          <button class="qs-install-tab" type="button" role="tab" data-qs-install-tab="dotnet" aria-selected="true">.NET tool</button>
+          <button class="qs-install-tab" type="button" role="tab" data-qs-install-tab="docker" aria-selected="false">Docker</button>
+          <button class="qs-install-tab" type="button" role="tab" data-qs-install-tab="windows" aria-selected="false">Windows</button>
           <button class="qs-install-tab" type="button" role="tab" data-qs-install-tab="macos" aria-selected="false">macOS</button>
           <button class="qs-install-tab" type="button" role="tab" data-qs-install-tab="linux" aria-selected="false">Linux</button>
-          <button class="qs-install-tab" type="button" role="tab" data-qs-install-tab="dotnet" aria-selected="false">.NET tool</button>
-          <button class="qs-install-tab" type="button" role="tab" data-qs-install-tab="docker" aria-selected="false">Container</button>
         </div>
 
-        <div class="qs-install-tab-panel" role="tabpanel" data-qs-install-panel="windows">
+        <div class="qs-install-tab-panel" role="tabpanel" data-qs-install-panel="dotnet">
+<pre><code class="lang-bash">dotnet tool install -g Kuestenlogik.Bowire.Tool</code></pre>
+          <p class="qs-install-tab-note">Cross-platform path that ships every first-party protocol plugin pre-bundled. Requires the .NET 10 SDK on the host. Update with <code>dotnet tool update -g Kuestenlogik.Bowire.Tool</code>.</p>
+        </div>
+
+        <div class="qs-install-tab-panel" role="tabpanel" data-qs-install-panel="docker" hidden>
+<pre><code class="lang-bash">docker pull ghcr.io/kuestenlogik/bowire:latest
+
+docker run --rm -p 5080:5080 \
+    -v ~/.bowire:/home/app/.bowire \
+    ghcr.io/kuestenlogik/bowire:latest \
+    --url https://api.example.com</code></pre>
+          <p class="qs-install-tab-note">Multi-arch image (linux/amd64 + linux/arm64). The volume mount keeps installed plugins, recordings, and environments persistent across container restarts.</p>
+        </div>
+
+        <div class="qs-install-tab-panel" role="tabpanel" data-qs-install-panel="windows" hidden>
 <pre><code class="lang-bash">winget install KuestenLogik.Bowire</code></pre>
           <p class="qs-install-tab-note">One-line install via the Windows Package Manager. <code>bowire</code> lands on PATH; uninstall via "Apps &amp; Features" or <code>winget uninstall KuestenLogik.Bowire</code>.</p>
         </div>
@@ -159,21 +174,6 @@ yay -S bowire
 # Or Linuxbrew (cross-distro)
 brew tap kuestenlogik/bowire &amp;&amp; brew install bowire</code></pre>
           <p class="qs-install-tab-note">Distro-native packages on every GitHub release. Both x86_64 and aarch64 builds are attached so ARM Linux works out of the box. The Linuxbrew path uses the same formula as macOS.</p>
-        </div>
-
-        <div class="qs-install-tab-panel" role="tabpanel" data-qs-install-panel="dotnet" hidden>
-<pre><code class="lang-bash">dotnet tool install -g Kuestenlogik.Bowire.Tool</code></pre>
-          <p class="qs-install-tab-note">Cross-platform path that ships every first-party protocol plugin pre-bundled. Requires the .NET 10 SDK on the host. Update with <code>dotnet tool update -g Kuestenlogik.Bowire.Tool</code>.</p>
-        </div>
-
-        <div class="qs-install-tab-panel" role="tabpanel" data-qs-install-panel="docker" hidden>
-<pre><code class="lang-bash">docker pull ghcr.io/kuestenlogik/bowire:latest
-
-docker run --rm -p 5080:5080 \
-    -v ~/.bowire:/home/app/.bowire \
-    ghcr.io/kuestenlogik/bowire:latest \
-    --url https://api.example.com</code></pre>
-          <p class="qs-install-tab-note">Multi-arch image (linux/amd64 + linux/arm64). The volume mount keeps installed plugins, recordings, and environments persistent across container restarts.</p>
         </div>
       </div>
 
