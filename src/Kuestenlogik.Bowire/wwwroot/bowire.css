@@ -6,25 +6,33 @@
 /* ---------- Theme Variables ---------- */
 :root,
 [data-theme="dark"] {
-    --bowire-bg: #0f0f17;
-    --bowire-bg-elevated: #161621;
-    --bowire-sidebar-bg: #12121c;
-    --bowire-sidebar-hover: #1c1c2e;
-    --bowire-sidebar-active: #1f1f35;
-    --bowire-surface: #1a1a2e;
-    --bowire-surface-hover: #222240;
-    --bowire-border: #2a2a3d;
-    --bowire-border-subtle: #1e1e30;
+    /* Surface palette — deeper than v1 for richer contrast against the
+       elevated layers + so the mesh-gradient body background has
+       headroom to glow without washing the cards out. */
+    --bowire-bg: #0a0a14;
+    --bowire-bg-elevated: #14141f;
+    --bowire-sidebar-bg: #0e0e18;
+    --bowire-sidebar-hover: #1a1a2a;
+    --bowire-sidebar-active: #1f1f33;
+    --bowire-surface: #16162a;
+    --bowire-surface-hover: #1f1f3a;
+    --bowire-border: #26263a;
+    --bowire-border-subtle: #1a1a2a;
 
     --bowire-text: #e8e8f0;
     --bowire-text-secondary: #9898b0;
     --bowire-text-tertiary: #6a6a82;
     --bowire-text-inverse: #0f0f17;
 
-    --bowire-accent: #6366f1;
-    --bowire-accent-hover: #818cf8;
-    --bowire-accent-subtle: rgba(99, 102, 241, 0.12);
-    --bowire-accent-text: #a5b4fc;
+    /* Vibrant 2026 accent — saturated Lavender/Iris. The v1 Indigo
+       (#6366f1) read as too gentle for hover states + active markers;
+       this saturation gives the sidebar selection bar, focus rings,
+       and primary CTAs the visual weight modern UIs expect. */
+    --bowire-accent: #8b7dff;
+    --bowire-accent-hover: #a99cff;
+    --bowire-accent-subtle: rgba(139, 125, 255, 0.14);
+    --bowire-accent-text: #c2b5ff;
+    --bowire-accent-glow: rgba(139, 125, 255, 0.35);
 
     --bowire-success: #34d399;
     --bowire-success-bg: rgba(52, 211, 153, 0.1);
@@ -35,7 +43,7 @@
     --bowire-info: #60a5fa;
     --bowire-info-bg: rgba(96, 165, 250, 0.1);
 
-    --bowire-badge-unary: #6366f1;
+    --bowire-badge-unary: #8b7dff;
     --bowire-badge-server: #34d399;
     --bowire-badge-client: #a78bfa;
     --bowire-badge-duplex: #fb923c;
@@ -43,9 +51,13 @@
     --bowire-font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     --bowire-font-mono: "JetBrains Mono", "Fira Code", "Cascadia Code", "Consolas", monospace;
 
-    --bowire-radius-sm: 6px;
-    --bowire-radius-md: 8px;
-    --bowire-radius-lg: 12px;
+    /* Radii — pushed up from v1's 6/8/12 so cards read as soft cards
+       instead of boxes. Pill (full-radius) is for badges + active-pill
+       indicators that should track around their content. */
+    --bowire-radius-sm: 10px;
+    --bowire-radius-md: 14px;
+    --bowire-radius-lg: 20px;
+    --bowire-radius-pill: 999px;
     /* Fallback alias: any `var(--bowire-radius)` usage without a suffix
        used to resolve to 0 (undefined var → initial value), making the
        affected elements render as sharp rectangles. Aliasing to the
@@ -54,24 +66,48 @@
        code — this is a safety net, not the primary token. */
     --bowire-radius: var(--bowire-radius-md);
 
-    --bowire-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
-    --bowire-shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
-    --bowire-shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.5);
+    /* Softer, larger shadows for the 2026 depth pass. The deeper bg
+       above gives the larger shadows somewhere to fall — cards lift
+       further off the surface without looking like floating UI. */
+    --bowire-shadow-sm: 0 2px 6px rgba(0, 0, 0, 0.35);
+    --bowire-shadow-md: 0 8px 24px rgba(0, 0, 0, 0.45);
+    --bowire-shadow-lg: 0 16px 48px rgba(0, 0, 0, 0.55);
+
+    /* Glass-material tokens. backdrop-filter does the heavy lifting;
+       the bg alpha keeps a hint of the underlying surface visible
+       behind the blur so depth reads as material, not opaque. */
+    --bowire-glass-bg: rgba(20, 20, 31, 0.65);
+    --bowire-glass-blur: 20px;
+    --bowire-glass-saturate: 180%;
 
     /* Default width fits all four sidebar tabs (Services / Favorites /
        Environments / Flows) on one row without wrap, including the
        'Environments' label which is the longest. Bumped from 320 to
        400 because the original value clipped 'Flows' on the right edge. */
     --bowire-sidebar-width: 400px;
-    --bowire-transition: 150ms ease;
+
+    /* Spring-like transition curve. `cubic-bezier(.34, 1.56, .64, 1)`
+       is easings.net's easeOutBack — gives hover/active transitions a
+       subtle overshoot that reads as alive instead of mechanical.
+       220ms is the sweet spot: long enough to feel deliberate, short
+       enough to stay responsive. Use --bowire-transition-fast for
+       UI feedback (typing, scrolling, layout shifts) where overshoot
+       would distract or feel laggy. */
+    --bowire-transition: 220ms cubic-bezier(0.34, 1.56, 0.64, 1);
+    --bowire-transition-fast: 120ms ease-out;
+
+    /* Headlines (h1–h3) and large numeric displays read tighter at
+       modern type-scale-larger sizes. -0.02em is the Linear / Vercel
+       / Geist convention. */
+    --bowire-heading-tracking: -0.02em;
 }
 
 [data-theme="light"] {
-    --bowire-bg: #f8f9fc;
+    --bowire-bg: #f7f8fc;
     --bowire-bg-elevated: #ffffff;
-    --bowire-sidebar-bg: #f1f3f8;
-    --bowire-sidebar-hover: #e8eaf2;
-    --bowire-sidebar-active: #e0e3ef;
+    --bowire-sidebar-bg: #f0f2f8;
+    --bowire-sidebar-hover: #e6e9f2;
+    --bowire-sidebar-active: #dde0ee;
     --bowire-surface: #ffffff;
     --bowire-surface-hover: #f5f6fa;
     --bowire-border: #d8dae5;
@@ -82,10 +118,13 @@
     --bowire-text-tertiary: #8888a0;
     --bowire-text-inverse: #ffffff;
 
-    --bowire-accent: #4f46e5;
-    --bowire-accent-hover: #6366f1;
-    --bowire-accent-subtle: rgba(79, 70, 229, 0.08);
-    --bowire-accent-text: #4338ca;
+    /* Light-theme accent — same Lavender hue, deeper saturation so
+       the selection marker holds its weight against the white surface. */
+    --bowire-accent: #6e60f5;
+    --bowire-accent-hover: #8b7dff;
+    --bowire-accent-subtle: rgba(110, 96, 245, 0.10);
+    --bowire-accent-text: #5544d5;
+    --bowire-accent-glow: rgba(110, 96, 245, 0.25);
 
     --bowire-success: #059669;
     --bowire-success-bg: rgba(5, 150, 105, 0.08);
@@ -96,14 +135,16 @@
     --bowire-info: #2563eb;
     --bowire-info-bg: rgba(37, 99, 235, 0.08);
 
-    --bowire-badge-unary: #4f46e5;
+    --bowire-badge-unary: #6e60f5;
     --bowire-badge-server: #059669;
     --bowire-badge-client: #7c3aed;
     --bowire-badge-duplex: #ea580c;
 
-    --bowire-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.06);
-    --bowire-shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
-    --bowire-shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.12);
+    --bowire-shadow-sm: 0 2px 6px rgba(15, 15, 35, 0.06);
+    --bowire-shadow-md: 0 8px 24px rgba(15, 15, 35, 0.10);
+    --bowire-shadow-lg: 0 16px 48px rgba(15, 15, 35, 0.14);
+
+    --bowire-glass-bg: rgba(255, 255, 255, 0.7);
 }
 
 /* ---------- Reset & Base ---------- */
@@ -147,7 +188,19 @@ body {
     font-size: 14px;
     line-height: 1.5;
     color: var(--bowire-text);
-    background: var(--bowire-bg);
+    /* Mesh-gradient body background — radial accent-glow top-left
+       plus a warmer secondary hue bottom-right, both at low opacity.
+       The gradient sits behind the topbar so its backdrop-filter has
+       chromatic data to blur — without this, the glass would read
+       as flat-tinted, not actual material. background-attachment:
+       fixed keeps the glow anchored to the viewport when content
+       scrolls, so the gradient feels like ambient lighting on the
+       window, not a pattern that moves with the page. */
+    background:
+        radial-gradient(ellipse 800px 600px at 20% 10%, var(--bowire-accent-glow), transparent 60%),
+        radial-gradient(ellipse 600px 800px at 95% 90%, rgba(255, 110, 200, 0.10), transparent 60%),
+        var(--bowire-bg);
+    background-attachment: fixed;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
 }
@@ -176,9 +229,17 @@ body {
     grid-template-columns: auto 1fr auto;
     align-items: center;
     gap: 20px;
-    padding: 10px 16px;
-    background: var(--bowire-bg-elevated);
-    border-bottom: 1px solid var(--bowire-border);
+    padding: 12px 20px;
+    /* Glass-material — translucent bg + backdrop-filter blur+saturate
+       lets the body's mesh gradient and any content scrolled underneath
+       bleed through, so the topbar reads as a depth layer instead of
+       a solid divider. The border-bottom is dropped to -subtle so the
+       transition from glass to content reads as a soft edge, not a
+       hard rule. */
+    background: var(--bowire-glass-bg);
+    backdrop-filter: blur(var(--bowire-glass-blur)) saturate(var(--bowire-glass-saturate));
+    -webkit-backdrop-filter: blur(var(--bowire-glass-blur)) saturate(var(--bowire-glass-saturate));
+    border-bottom: 1px solid var(--bowire-border-subtle);
     flex-shrink: 0;
     position: relative;
     z-index: 10;
@@ -499,7 +560,10 @@ body {
     width: var(--bowire-sidebar-width);
     min-width: var(--bowire-sidebar-width);
     background: var(--bowire-sidebar-bg);
-    border-right: 1px solid var(--bowire-border);
+    /* Subtle border so the sidebar reads as a layer instead of a
+       hard-rule split from main. The mesh-gradient body background
+       does the depth-cuing here; we don't need a bright divider. */
+    border-right: 1px solid var(--bowire-border-subtle);
     display: flex;
     flex-direction: column;
     overflow: hidden;
@@ -1206,19 +1270,31 @@ img.bowire-logo-icon {
     display: flex;
     align-items: center;
     gap: 8px;
-    padding: 7px 16px 7px 32px;
+    padding: 10px 16px 10px 32px;
     cursor: pointer;
-    transition: background var(--bowire-transition);
+    /* Spring-eased transition on background + transform so hover
+       reads as the row leaning forward, not a flat color swap.
+       transform is overridden to none on .active so the selected
+       row stays anchored even if the cursor passes over it again. */
+    transition: background var(--bowire-transition), transform var(--bowire-transition);
     border-left: 2px solid transparent;
+    position: relative;
 }
 
-.bowire-method-item:hover {
+.bowire-method-item:not(.active):hover {
     background: var(--bowire-sidebar-hover);
+    transform: translateX(2px);
 }
 
 .bowire-method-item.active {
     background: var(--bowire-sidebar-active);
-    border-left-color: var(--bowire-accent);
+    border-left: 3px solid var(--bowire-accent);
+    /* Inner glow on the active row — a 1px subtle accent ring + a
+       wider outer halo. Reads as a depth cue rather than a hard
+       outline, separating the selection from the hover state. */
+    box-shadow:
+        inset 0 0 0 1px var(--bowire-accent-subtle),
+        0 0 24px -8px var(--bowire-accent-glow);
 }
 
 .bowire-method-badge {
@@ -1226,8 +1302,8 @@ img.bowire-logo-icon {
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.06em;
-    padding: 2px 6px;
-    border-radius: 4px;
+    padding: 3px 9px;
+    border-radius: var(--bowire-radius-pill);
     color: white;
     flex-shrink: 0;
     min-width: 28px;
