@@ -1,5 +1,5 @@
 title: Bowire
-description: The .NET-native multi-protocol API workbench. Auto-discovers gRPC / REST / GraphQL / MQTT / SignalR / WebSocket / SSE / MCP / OData services and gives you a single browser UI to inspect, invoke, stream, mock, and replay them — embedded in your app or as a standalone CLI.
+description: The multi-protocol API workbench. Auto-discovers gRPC / REST / GraphQL / MQTT / SignalR / WebSocket / SSE / MCP / OData services and gives you a single browser UI to inspect, invoke, stream, mock, and replay them — embedded in your app or as a standalone CLI.
 url: "https://bowire.io"
 baseurl: ""
 

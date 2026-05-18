@@ -154,7 +154,7 @@
         }));
         hero.appendChild(el('div', { className: 'bowire-landing-hero-headline', textContent: 'Welcome to Bowire' }));
         hero.appendChild(el('div', { className: 'bowire-landing-hero-tagline',
-            textContent: 'The .NET-native multi-protocol API workbench — discover, test, record, and replay any gRPC, REST, GraphQL, SignalR, MCP, SSE or WebSocket service.' }));
+            textContent: 'The multi-protocol API workbench — discover, test, record, and replay any gRPC, REST, GraphQL, SignalR, MCP, SSE or WebSocket service.' }));
 
         var grid = el('div', { className: 'bowire-landing-cta-grid' });
         grid.appendChild(renderFirstRunCard(
