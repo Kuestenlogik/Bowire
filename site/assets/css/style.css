@@ -6950,10 +6950,16 @@ html[data-theme="light"] {
 .launch-boat {
     /* position: relative + overflow: hidden anchor the 45°-rotated
        .protocol-card-ribbon banderole and clip its long edges to the
-       card's rounded corners. Only the Passenger ship card currently
-       carries one (preview tier), but every card pays the layout cost
-       so the hover-lift transform doesn't shift the ribbon either. */
+       card's rounded corners. isolation: isolate forces a permanent
+       stacking context — without it, .launch-boat only became a
+       stacking root on hover (via the transform), so the ribbon
+       flickered into visibility only when hovered. With isolation,
+       the ribbon's z-index:1 anchors against this card from the
+       first paint. Only the Passenger ship card currently carries
+       a ribbon (preview tier), but every card pays the layout cost
+       so cards stay structurally interchangeable. */
     position: relative;
+    isolation: isolate;
     overflow: hidden;
     display: flex;
     flex-direction: column;
@@ -6965,9 +6971,22 @@ html[data-theme="light"] {
     border-radius: 12px;
     cursor: pointer;
     text-align: left;
-    transition: all 0.18s ease;
+    /* Explicit property list instead of `all` to avoid animating the
+       ribbon's bg / position / opacity in lockstep — that animation
+       was what caused the ribbon to flicker as the card transitioned. */
+    transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
     color: inherit;
     font-family: inherit;
+}
+
+/* The Passenger ship's preview ribbon sits over the card's diagram
+   slot — both are children of the same .launch-boat stacking context,
+   so the ribbon needs an explicit z-index that wins against the
+   diagram's background tint. Higher value than the shared
+   .protocol-card-ribbon default (1) so this rule clearly overrides
+   it inside the launch-boat context. */
+.launch-boat > .protocol-card-ribbon {
+    z-index: 5;
 }
 
 .launch-boat:hover {
