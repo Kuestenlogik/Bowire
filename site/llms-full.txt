@@ -1,6 +1,6 @@
 # Bowire — full reference for LLMs
 
-> The .NET-native multi-protocol API workbench. Auto-discovers gRPC, REST/OpenAPI, GraphQL, SignalR, WebSocket, SSE, MQTT, Socket.IO, OData, and MCP services from a running endpoint and gives you a single browser UI to inspect schemas, call methods, stream messages, mock backends, record/replay sessions, and assert on responses. Ships embedded as ASP.NET middleware (`MapBowire()`) or as a standalone .NET tool / container.
+> The multi-protocol API workbench. Auto-discovers gRPC, REST/OpenAPI, GraphQL, SignalR, WebSocket, SSE, MQTT, Socket.IO, OData, and MCP services from a running endpoint and gives you a single browser UI to inspect schemas, call methods, stream messages, mock backends, record/replay sessions, and assert on responses. Ships embedded as ASP.NET middleware (`MapBowire()`) or as a standalone .NET tool / container.
 
 This file is the verbose, AI-readable companion to `llms.txt`. It contains install commands, code snippets, the API surface, and answers to the most common questions in one self-contained document so an agent doesn't need to crawl the site to understand Bowire.
 
