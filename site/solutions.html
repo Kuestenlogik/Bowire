@@ -1,0 +1,252 @@
+---
+layout: page
+title: Solutions — Bowire
+description: How teams ship with Bowire — security testing today, service mocking, recording-driven regression tests, multi-protocol discovery, and frame-semantics for geospatial data on the way.
+---
+
+<section class="features-page-hero">
+  <h1>Solutions</h1>
+  <p class="features-page-tagline">How teams ship with Bowire.<br>One workbench, multiple use cases.</p>
+  <p class="features-page-note">Bowire's core primitives &mdash; discovery, recording, replay, schema-awareness &mdash; compose into different products depending on what you point them at. The first solution shipping the lane end-to-end is API security testing; more are following on the same primitives.</p>
+</section>
+
+<section class="features-group">
+  <header class="features-group-header">
+    <h2 class="features-group-title">Available now</h2>
+    <p class="features-group-lede">The first solution that grew out of the workbench primitives.</p>
+  </header>
+
+  <ul class="solutions-card-list">
+    <li class="solutions-card solutions-card-live">
+      <div class="solutions-card-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 2l8 4v6c0 5-3.5 9.4-8 10-4.5-.6-8-5-8-10V6l8-4z"/>
+          <polyline points="9 12 11 14 15 10"/>
+        </svg>
+      </div>
+      <div class="solutions-card-body">
+        <header class="solutions-card-header">
+          <h3>Security</h3>
+          <span class="solutions-card-tag solutions-card-tag-live">live</span>
+        </header>
+        <p class="solutions-card-lede">Burp Suite for the non-HTTP protocols &mdash; schema-aware, MIT-licensed, with recordings as the vulnerability-template format.</p>
+        <p>Built into the <code>bowire scan</code> subcommand: predicate engine, SARIF 2.1.0 output for GitHub Code Scanning / GitLab / Azure DevOps, JWT toolkit, intercepting proxy with HTTPS MITM, and a reusable <code>scan-template.yml</code> GitHub Action that consuming repos pull in via <code>uses:</code>.</p>
+        <a class="solutions-card-cta" href="{{ '/security.html' | relative_url }}">
+          Explore Security
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 6 15 12 9 18"/></svg>
+        </a>
+      </div>
+    </li>
+  </ul>
+</section>
+
+<section class="features-group features-group-alt">
+  <header class="features-group-header">
+    <h2 class="features-group-title">Coming soon</h2>
+    <p class="features-group-lede">Each one rides on primitives that are already in core &mdash; the work is in the productised UX layer on top.</p>
+  </header>
+
+  <ul class="solutions-coming-list">
+    <li class="solutions-coming-item">
+      <div class="solutions-coming-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="4" width="18" height="16" rx="2"/>
+          <line x1="3" y1="10" x2="21" y2="10"/>
+          <circle cx="7" cy="7" r="0.6" fill="currentColor"/>
+          <circle cx="9.5" cy="7" r="0.6" fill="currentColor"/>
+        </svg>
+      </div>
+      <div class="solutions-coming-body">
+        <h3>Service mocking &amp; virtualization</h3>
+        <p>Turn a recording into a deterministic stand-in for the live service it captured &mdash; same wire shape, same streaming cadence, no upstream needed. Tests run offline, CI doesn't pay the per-run cost of a real broker / database / third-party API. The recording-replay core already does this for one client at a time; productising it means a long-running mock server, latency / error-rate dials, and a multi-tenant control plane.</p>
+      </div>
+    </li>
+
+    <li class="solutions-coming-item">
+      <div class="solutions-coming-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="9"/>
+          <polyline points="12 7 12 12 15.5 14"/>
+          <path d="M5.5 5.5L8 8" stroke-opacity="0.5"/>
+          <path d="M18.5 5.5L16 8" stroke-opacity="0.5"/>
+        </svg>
+      </div>
+      <div class="solutions-coming-body">
+        <h3>Recording-driven regression tests</h3>
+        <p>A recording captured against today's service replays as a contract test against tomorrow's. The same envelope + assertion DSL the visual flow editor already runs in the workbench, lifted into a headless <code>bowire replay</code> CLI that returns a green/red exit code for CI. Cross-protocol fan-out comes free: one suite covers gRPC + REST + MQTT + SignalR.</p>
+      </div>
+    </li>
+
+    <li class="solutions-coming-item">
+      <div class="solutions-coming-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="7"/>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+          <line x1="8" y1="11" x2="14" y2="11"/>
+          <line x1="11" y1="8" x2="11" y2="14"/>
+        </svg>
+      </div>
+      <div class="solutions-coming-body">
+        <h3>Multi-protocol discovery for QA</h3>
+        <p>An auditor-friendly read-only mode of the workbench that surfaces every endpoint Bowire's plugins can see &mdash; gRPC services, REST routes, GraphQL fields, SignalR hubs, MQTT topics &mdash; with last-seen timestamps and per-endpoint sample payloads. The discovery loop is already in core; the QA-facing surface is "frozen view, exportable inventory, no invoke".</p>
+      </div>
+    </li>
+
+    <li class="solutions-coming-item">
+      <div class="solutions-coming-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 19l6-13 5 9 4-5 3 9z"/>
+          <circle cx="9" cy="6" r="1.2" fill="currentColor"/>
+          <circle cx="14" cy="15" r="1.2" fill="currentColor"/>
+        </svg>
+      </div>
+      <div class="solutions-coming-body">
+        <h3>Frame-semantics for geospatial data</h3>
+        <p>The frame-semantics framework that landed in v1.3 already plots GeoJSON / WKT / DIS PDUs on a MapLibre canvas as soon as the workbench sees them &mdash; no annotation work needed for the common shapes. The solution layer on top: vertical templates for tactical / maritime / aviation / logistics dashboards, with the recording-replay core feeding deterministic playback.</p>
+      </div>
+    </li>
+  </ul>
+</section>
+
+<section class="features-page-cta features-page-cta-elevated">
+  <div class="features-page-cta-inner">
+    <h2 class="features-page-cta-title">Have a use case in mind?</h2>
+    <p class="features-page-cta-lede">If the workflow you need is close to but not exactly one of the above &mdash; or completely different &mdash; the Community channel is the fastest path to find out whether the primitives already cover it.</p>
+    <div class="features-page-cta-buttons">
+      <a class="btn btn-primary features-page-cta-btn" href="{{ '/community.html' | relative_url }}">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+        Bring it to the crew
+      </a>
+    </div>
+  </div>
+</section>
+
+<style>
+  /* Page-local styles for the solutions hub. Two block styles
+     (live cards + coming-soon cards) that don't need to live in
+     global style.css because they're only used here. */
+
+  .solutions-card-list,
+  .solutions-coming-list {
+    list-style: none;
+    padding: 0;
+    margin: 1rem 0 0;
+    display: grid;
+    gap: 1rem;
+  }
+  .solutions-coming-list {
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  }
+
+  .solutions-card {
+    display: flex;
+    gap: 1.25rem;
+    align-items: flex-start;
+    padding: 1.5rem;
+    background: var(--surface-elevated, var(--bg-secondary));
+    border: 1px solid var(--border);
+    border-radius: 12px;
+  }
+  .solutions-card-live {
+    border-color: rgba(74, 222, 128, 0.4);
+    background: linear-gradient(180deg, rgba(74, 222, 128, 0.04), var(--surface-elevated, var(--bg-secondary)));
+  }
+  .solutions-card-icon {
+    flex: 0 0 56px;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(74, 222, 128, 0.12);
+    color: #4ade80;
+  }
+  .solutions-card-icon svg {
+    width: 28px;
+    height: 28px;
+  }
+  .solutions-card-body {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+  .solutions-card-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin: 0 0 0.4rem;
+  }
+  .solutions-card-header h3 {
+    margin: 0;
+  }
+  .solutions-card-tag {
+    font-size: 0.72rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 0.2rem 0.55rem;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    color: var(--text-secondary);
+  }
+  .solutions-card-tag-live {
+    background: rgba(74, 222, 128, 0.12);
+    border-color: rgba(74, 222, 128, 0.4);
+    color: #4ade80;
+  }
+  .solutions-card-lede {
+    font-weight: 500;
+    color: var(--text);
+    margin: 0 0 0.65rem;
+  }
+  .solutions-card-cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    margin-top: 0.75rem;
+    font-weight: 600;
+    color: var(--accent, #4ade80);
+    text-decoration: none;
+  }
+  .solutions-card-cta:hover {
+    text-decoration: underline;
+  }
+
+  .solutions-coming-item {
+    display: flex;
+    gap: 1rem;
+    align-items: flex-start;
+    padding: 1.25rem;
+    background: var(--surface-elevated, var(--bg-secondary));
+    border: 1px solid var(--border);
+    border-radius: 10px;
+  }
+  .solutions-coming-icon {
+    flex: 0 0 40px;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg);
+    color: var(--text-secondary);
+    border: 1px solid var(--border);
+  }
+  .solutions-coming-icon svg {
+    width: 22px;
+    height: 22px;
+  }
+  .solutions-coming-body {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+  .solutions-coming-body h3 {
+    margin: 0 0 0.35rem;
+  }
+  .solutions-coming-body p {
+    margin: 0;
+    color: var(--text-secondary);
+    line-height: 1.55;
+  }
+</style>

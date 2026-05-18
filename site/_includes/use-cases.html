@@ -1,6 +1,6 @@
 <section class="use-cases" id="use-cases">
   <div class="container">
-    <h2 class="section-title">Built for four kinds of workflows</h2>
+    <h2 class="section-title">Built for five kinds of workflows</h2>
     <p class="section-subtitle">Bowire isn't a Postman replacement — it's a workbench for the situations where Postman doesn't fit. Pick the workflow that sounds most like yours.</p>
 
     <div class="use-case-grid">
@@ -63,6 +63,19 @@
         <p class="use-case-tag">interactive docs · live examples · code export</p>
         <p>You're writing API docs and you want every example to be runnable without a curl-paste-and-pray loop. Embed Bowire next to your written guides — readers click a method, edit the JSON, hit Send, see the actual response. Export the call as <code>curl</code>, <code>grpcurl</code>, or a typed C# / TypeScript snippet.</p>
         <p class="use-case-tools">→ Live examples · per-language code export · embedded in your own docs site</p>
+      </a>
+
+      <a class="use-case-card use-case-card-link" href="{{ '/workflows/security-engineers.html' | relative_url }}">
+        <div class="use-case-icon">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2l8 4v6c0 5-3.5 9.4-8 10-4.5-.6-8-5-8-10V6l8-4z"/>
+            <polyline points="9 12 11 14 15 10"/>
+          </svg>
+        </div>
+        <h3>Security engineers</h3>
+        <p class="use-case-tag">scan · SARIF · intercepting proxy · templates</p>
+        <p>You're auditing an API surface that spans gRPC, GraphQL, MQTT, SignalR — protocols where Burp Suite and ZAP stop being useful. Recordings double as vulnerability templates; <code>bowire scan</code> replays each one against the target, emits SARIF for GitHub Code Scanning / GitLab / Azure DevOps, and the intercepting proxy with HTTPS MITM captures live traffic the way you're used to.</p>
+        <p class="use-case-tools">→ <code>bowire scan</code> · SARIF 2.1.0 · CA-trusted proxy · JWT toolkit</p>
       </a>
 
     </div>

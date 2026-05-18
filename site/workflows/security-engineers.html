@@ -1,0 +1,117 @@
+---
+layout: page
+title: Bowire for security engineers
+description: Recordings as vulnerability templates, SARIF for the CI dashboard, an intercepting proxy with HTTPS MITM, and a JWT toolkit — schema-aware across every non-HTTP protocol that classic DAST tools won't touch.
+permalink: /workflows/security-engineers.html
+---
+
+<section class="features-page-hero">
+  <p class="workflow-hero-eyebrow">Workflow &middot; Security engineers</p>
+  <h1>Burp for the non-HTTP protocols &mdash; on your terms</h1>
+  <p class="features-page-tagline">You're auditing an API surface that spans gRPC, GraphQL, MQTT, SignalR &mdash; protocols where classic DAST tools stop being useful.</p>
+  <p class="features-page-note">Bowire's discovery, recording, and replay primitives extend into vulnerability scanning. The same recording format you'd use for an integration test becomes a vulnerability template; the same workbench you'd use to drive a call becomes a CA-trusted intercepting proxy.</p>
+</section>
+
+<section class="features-group features-group-alt">
+  <header class="features-group-header">
+    <h2 class="features-group-title">Recordings as vulnerability templates</h2>
+    <p class="features-group-lede">A captured probe + a predicate that says "this is what bad looks like" is a template. Drop it into a corpus, ship it with the service.</p>
+  </header>
+
+  <div class="features-block">
+    <div class="features-block-text">
+      <h3><code>bowire scan</code> &mdash; replay each template, emit SARIF</h3>
+      <p class="features-block-lead">Three seed templates cover the obvious wins today: gRPC Server-Reflection in production, GraphQL <code>__schema</code> introspection in production, REST endpoints missing baseline security headers. The corpus is plain JSON, copy-paste-friendly, version-controlled.</p>
+      <p>Each scan call returns a SARIF 2.1.0 report you can hand to GitHub Code Scanning (alerts land in your Security tab), GitLab (the Security Dashboard reads SARIF), Azure DevOps, or any tool with a SARIF importer. Built-in passive checks add TLS-version enumeration, version-disclosing headers, and verbose-error fingerprinting on top of the template corpus.</p>
+      <a class="features-block-docs-link" href="{{ '/security.html' | relative_url }}">The security solution overview &rarr;</a>
+    </div>
+    <div class="features-block-screenshot">
+      <div class="code-block">
+        <div class="code-block-header">
+          <span class="code-block-lang">bash</span>
+        </div>
+        <pre><code><span class="c"># scan a target, write SARIF for CI dashboards</span>
+$ bowire scan \
+    --target https://api.example.com \
+    --corpus docs/security/examples \
+    --severity low \
+    --out findings.sarif
+
+  6 template(s) processed:
+  [ok]   BWR-GRPC-001           high     gRPC Server-Reflection
+  [VULN] BWR-REST-001           low      Missing baseline headers
+  [VULN] BWR-BUILTIN-BANNER     low      Version-disclosing header
+
+  SARIF report → findings.sarif</code></pre>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="features-group">
+  <header class="features-group-header">
+    <h2 class="features-group-title">Intercepting proxy with HTTPS MITM</h2>
+    <p class="features-group-lede">Self-minted root CA, leaf-cert cache, workbench-side live flow view. The Burp / ZAP muscle memory transfers.</p>
+  </header>
+
+  <div class="features-block features-block-reverse">
+    <div class="features-block-text">
+      <h3>CONNECT hijack, SslStream, leaf-cert minted per host</h3>
+      <p class="features-block-lead">Start <code>bowire proxy</code>, install the printed CA, point your client at it. Every request flows through the proxy &mdash; including HTTPS, fully decrypted, with the leaf cert minted on the fly per hostname and cached for the session.</p>
+      <p>The workbench Proxy view subscribes to the flow stream over SSE and renders each captured request/response live. One-click "send to recording" converts a captured flow into a template you can then run through <code>bowire scan</code>. The CA lives at <code>~/.bowire/proxy-ca.{pfx,crt}</code> and stays untouched across restarts.</p>
+      <a class="features-block-docs-link" href="{{ '/features.html#proxy' | relative_url }}">Intercepting proxy in detail &rarr;</a>
+    </div>
+    <div class="features-block-screenshot">
+      {% include themed-img.html src="/assets/images/screenshots/proxy.png" alt="Workbench Proxy view — live flow list with detail pane" %}
+    </div>
+  </div>
+</section>
+
+<section class="features-group features-group-alt">
+  <header class="features-group-header">
+    <h2 class="features-group-title">JWT toolkit + multi-protocol attack templates</h2>
+    <p class="features-group-lede">Two CLI subcommands cover the boring-but-essential JWT work: decode the header / payload, tamper-test the signature surface.</p>
+  </header>
+
+  <div class="features-block features-block-text-only">
+    <div class="features-block-text">
+      <h3><code>bowire jwt decode</code> + <code>bowire jwt tamper</code></h3>
+      <p class="features-block-lead"><code>decode</code> splits the header / payload / signature, validates exp / nbf / iat, lists the present claims. <code>tamper</code> probes <code>alg: none</code> acceptance, signs with a chosen secret, and lets you override individual claims &mdash; the standard JWT smoke-test sequence in one shell pass.</p>
+      <p>The toolkit is shipped alongside the scan engine, not separately &mdash; it lives in the same CLI binary your CI is already calling. Same goes for the seed corpus: the per-protocol attack templates (gRPC Server-Reflection, GraphQL introspection, REST baseline headers) get loaded out of <code>docs/security/examples/</code> in the source tree, no separate distribution.</p>
+      <a class="features-block-docs-link" href="{{ '/security.html#corpus' | relative_url }}">Browse the seed corpus &rarr;</a>
+    </div>
+  </div>
+</section>
+
+<section class="features-group">
+  <header class="features-group-header">
+    <h2 class="features-group-title">Reusable GitHub Action</h2>
+    <p class="features-group-lede">One <code>uses:</code> line in any consuming repo &mdash; SARIF lands in their Security tab as Code Scanning alerts.</p>
+  </header>
+
+  <div class="features-block features-block-text-only">
+    <div class="features-block-text">
+      <h3><code>uses: Kuestenlogik/Bowire/.github/workflows/scan-template.yml@main</code></h3>
+      <p class="features-block-lead">The reusable workflow installs the bowire CLI, runs the scan against a target you pass in, uploads the SARIF as both a build artefact (for GitLab mirrors / Azure DevOps re-imports / manual review) and to GitHub Code Scanning (so each finding becomes a stable-rule-ID alert).</p>
+      <p>Inputs: <code>target</code>, <code>corpus</code> (defaults to the seed corpus in this repo), <code>severity</code>, <code>dotnet-version</code>, <code>tool-version</code>. Findings are the scan's <em>product</em>, not its failure mode &mdash; the workflow exits 0 even with vulnerabilities so the SARIF upload pipeline stays linear; gating happens via Code Scanning branch-protection rules, not the scan step itself.</p>
+      <a class="features-block-docs-link" href="https://github.com/Kuestenlogik/Bowire/blob/main/.github/workflows/scan-template.yml">scan-template.yml on GitHub &rarr;</a>
+    </div>
+  </div>
+</section>
+
+<section class="features-page-cta">
+  <div class="features-page-cta-inner">
+    <h2 class="features-page-cta-title">Audit what's actually on the wire</h2>
+    <p class="features-page-cta-lede">Read the ADR, pull the seed templates, point <code>bowire scan</code> at staging.</p>
+    <div class="features-page-cta-buttons">
+      <a class="btn btn-secondary features-page-cta-btn" href="{{ '/security.html' | relative_url }}">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2l8 4v6c0 5-3.5 9.4-8 10-4.5-.6-8-5-8-10V6l8-4z"/><polyline points="9 12 11 14 15 10"/></svg>
+        Security solution overview
+      </a>
+      <a class="btn btn-tertiary features-page-cta-btn" href="https://github.com/Kuestenlogik/Bowire/blob/main/docs/architecture/security-testing.md">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+        Read the ADR
+      </a>
+    </div>
+  </div>
+</section>
