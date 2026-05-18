@@ -73,3 +73,5 @@
       href: cli-mode.md
     - name: Plugin system
       href: plugin-system.md
+    - name: UI extensions
+      href: extensions.md
