@@ -1,0 +1,31 @@
+{%- comment -%}
+  Protocol picker — multi-select search-combobox host. Inflated by
+  main.js (createBowireCombobox) on first render. Two modes:
+
+    mode="nuget"  → lists every first-party + third-party protocol
+                    plugin. Used in the embedded backend setup, where
+                    each pick becomes a `dotnet add package
+                    Kuestenlogik.Bowire.Protocol.*` line.
+
+    mode="cli"    → lists only third-party plugins not bundled in the
+                    CLI (Surgewave, Kafka, DIS, UDP). Used in the
+                    standalone CLI setup, where each pick becomes a
+                    `bowire plugin install …` line.
+
+  Parameters:
+    mode    (required) "nuget" or "cli"
+    label   (optional) prompt text above the combobox
+    hidden  (optional) start hidden — used by the launch stepper where
+            visibility toggles per boat selection. Quickstart and other
+            always-visible callers omit this.
+
+  The data attributes are stable hooks for the JS — keep `data-protocols-host`
+  on the wrapper and `data-combobox-{{mode}}` on the inner host so
+  createBowireCombobox can find them.
+{%- endcomment -%}
+{% assign picker_mode = include.mode | default: "nuget" %}
+{% assign picker_label = include.label | default: "Add the protocols you need:" %}
+<div class="launch-protocols" data-protocols-host="{{ picker_mode }}"{% if include.hidden %} hidden{% endif %}>
+  <p class="launch-protocols-label">{{ picker_label }}</p>
+  <div class="launch-combobox-host" data-combobox-{{ picker_mode }}></div>
+</div>

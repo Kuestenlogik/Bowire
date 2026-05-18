@@ -35,23 +35,23 @@ any service URL without code changes.
     {
       "@type": "HowToStep",
       "position": 2,
+      "name": "Add protocol plugins (optional)",
+      "text": "Pull sibling plugins like Kafka, Surgewave, DIS, or UDP via `bowire plugin install`. The CLI bundle ships every first-party protocol pre-installed, so this step is only needed for protocols outside the built-in set.",
+      "url": "{{ '/quickstart.html#plugins' | absolute_url }}"
+    },
+    {
+      "@type": "HowToStep",
+      "position": 3,
       "name": "Run it against your service",
       "text": "Point bowire at any URL. For gRPC enable Server Reflection, for REST drop in any swagger.json, the rest auto-discover.",
       "url": "{{ '/quickstart.html#run' | absolute_url }}"
     },
     {
       "@type": "HowToStep",
-      "position": 3,
+      "position": 4,
       "name": "Open the workbench",
       "text": "Bowire opens a browser tab with the workbench UI showing every discovered service and method, ready to invoke.",
       "url": "{{ '/quickstart.html#browse' | absolute_url }}"
-    },
-    {
-      "@type": "HowToStep",
-      "position": 4,
-      "name": "Install a sibling plugin (optional)",
-      "text": "Add a wire-protocol plugin (DIS, UDP, Kafka) for protocols outside the built-in set — same workbench UI.",
-      "url": "{{ '/quickstart.html#plugins' | absolute_url }}"
     }
   ]
 }
@@ -185,9 +185,46 @@ brew tap kuestenlogik/bowire &amp;&amp; brew install bowire</code></pre>
     </div>
   </article>
 
-  <!-- Step 3 — Run -->
-  <article class="quickstart-page-step" id="run" data-path="standalone" hidden>
+  <!-- Step 3 — Add protocol plugins. Sibling repos (Surgewave / Kafka /
+       DIS / UDP) install via `bowire plugin install` from any host where
+       the CLI is on PATH. Docker users invoke the same subcommand via
+       `docker run` with the host's plugin dir mounted in. Air-gapped
+       users predownload the .nupkg + transitive deps. -->
+  <article class="quickstart-page-step quickstart-page-step-optional" id="plugins" data-path="standalone" hidden>
     <div class="quickstart-page-step-num">3</div>
+    <div class="quickstart-page-step-body">
+      <h2>Add protocol plugins <span class="quickstart-page-step-tag">optional</span></h2>
+      <p class="features-block-lead">The CLI bundle ships every first-party protocol pre-installed (gRPC, REST, GraphQL, SignalR, WebSocket, SSE, MQTT, Socket.IO, OData, MCP). Skip this step if those cover you &mdash; add a sibling plugin (Surgewave, Kafka, DIS, UDP) only when you need it.</p>
+
+<pre><code class="lang-bash">bowire plugin install Kuestenlogik.Bowire.Protocol.Kafka
+bowire plugin install Kuestenlogik.Bowire.Protocol.Surgewave
+bowire plugin install Kuestenlogik.Bowire.Protocol.Dis
+bowire plugin install Kuestenlogik.Bowire.Protocol.Udp</code></pre>
+
+      <p>The plugin lands in <code>~/.bowire/plugins/</code> and survives across CLI updates &mdash; same path whether <code>bowire</code> came from <code>dotnet tool install</code>, <code>winget</code>, <code>brew</code>, or a Linux package.</p>
+
+      <p><strong>Running in Docker?</strong> The container FS is read-only, so plugins live on the host's <code>~/.bowire</code> via volume-mount. Same <code>plugin install</code> subcommand, invoked via <code>docker run</code>:</p>
+
+<pre><code class="lang-bash">docker run --rm -v ~/.bowire:/home/app/.bowire \
+    ghcr.io/kuestenlogik/bowire:latest \
+    plugin install Kuestenlogik.Bowire.Protocol.Kafka</code></pre>
+
+      <p><strong>Air-gapped install?</strong> Download the plugin and its transitive deps on a connected host, transfer the folder, install offline:</p>
+
+<pre><code class="lang-bash"># On the connected host
+bowire plugin download Kuestenlogik.Bowire.Protocol.Kafka --output ./bundle/
+
+# On the offline host (after transferring ./bundle/)
+bowire plugin install --file ./bundle/kl.bowire.protocol.kafka.0.9.4.nupkg \
+                       --source ./bundle/</code></pre>
+
+      <a class="features-block-docs-link" href="{{ '/docs/features/plugin-system.html' | relative_url }}">Plugin system docs &rarr;</a>
+    </div>
+  </article>
+
+  <!-- Step 4 — Run -->
+  <article class="quickstart-page-step" id="run" data-path="standalone" hidden>
+    <div class="quickstart-page-step-num">4</div>
     <div class="quickstart-page-step-body">
       <h2>Run it against your service</h2>
       <p class="features-block-lead">Point Bowire at any URL &mdash; your own ASP.NET app, a remote production service, an OpenAPI document on disk, anything.</p>
@@ -204,39 +241,14 @@ brew tap kuestenlogik/bowire &amp;&amp; brew install bowire</code></pre>
     </div>
   </article>
 
-  <!-- Step 4 — Open -->
+  <!-- Step 5 — Open -->
   <article class="quickstart-page-step" id="browse" data-path="standalone" hidden>
-    <div class="quickstart-page-step-num">4</div>
-    <div class="quickstart-page-step-body">
-      <h2>Open the workbench</h2>
-      <p class="features-block-lead">Bowire opens a browser tab at <code>http://localhost:5080/bowire</code> (or whichever port you passed via <code>--port</code>).</p>
-      <p>The sidebar shows every service the plugins discovered, grouped by URL when you connected to several. Click any method, drop in inputs (typed form or raw JSON, toggle with <kbd>f</kbd>), hit <kbd>Ctrl</kbd>+<kbd>Enter</kbd>, response renders in the right pane. Streaming responses show as a Wireshark-style frame list, duplex protocols open persistent channels, and every call lands on the request history for replay.</p>
-      <a class="features-block-docs-link" href="{{ '/docs/ui-guide/index.html' | relative_url }}">Full UI guide &rarr;</a>
-    </div>
-  </article>
-
-  <!-- Step 5 — Sibling plugins (optional) -->
-  <article class="quickstart-page-step quickstart-page-step-optional" id="plugins" data-path="standalone" hidden>
     <div class="quickstart-page-step-num">5</div>
     <div class="quickstart-page-step-body">
-      <h2>Install a sibling plugin <span class="quickstart-page-step-tag">optional</span></h2>
-      <p class="features-block-lead">For protocols that don't ship with the CLI bundle &mdash; Surgewave, Kafka, DIS, UDP &mdash; pull the plugin from NuGet:</p>
-
-<pre><code class="lang-bash">bowire plugin install Kuestenlogik.Bowire.Protocol.Kafka
-bowire plugin install Kuestenlogik.Bowire.Protocol.Surgewave
-bowire plugin install Kuestenlogik.Bowire.Protocol.Dis
-bowire plugin install Kuestenlogik.Bowire.Protocol.Udp</code></pre>
-
-      <p>Air-gapped install? Download the plugin and its transitive deps on a connected host into a folder, transfer the folder, install offline:</p>
-
-<pre><code class="lang-bash"># On the connected host
-bowire plugin download Kuestenlogik.Bowire.Protocol.Kafka --output ./bundle/
-
-# On the offline host (after transferring ./bundle/)
-bowire plugin install --file ./bundle/kl.bowire.protocol.kafka.0.9.4.nupkg \
-                       --source ./bundle/</code></pre>
-
-      <a class="features-block-docs-link" href="{{ '/docs/features/plugin-system.html' | relative_url }}">Plugin system docs &rarr;</a>
+      <h2>Open the workbench</h2>
+      <p class="features-block-lead">Bowire opens a browser tab at <code>http://localhost:5080</code> (or whichever port you passed via <code>--port</code>).</p>
+      <p>The sidebar shows every service the plugins discovered, grouped by URL when you connected to several. Click any method, drop in inputs (typed form or raw JSON, toggle with <kbd>f</kbd>), hit <kbd>Ctrl</kbd>+<kbd>Enter</kbd>, response renders in the right pane. Streaming responses show as a Wireshark-style frame list, duplex protocols open persistent channels, and every call lands on the request history for replay.</p>
+      <a class="features-block-docs-link" href="{{ '/docs/ui-guide/index.html' | relative_url }}">Full UI guide &rarr;</a>
     </div>
   </article>
 
@@ -264,12 +276,17 @@ bowire plugin install --file ./bundle/kl.bowire.protocol.kafka.0.9.4.nupkg \
       <h2>Add the NuGet packages</h2>
       <p class="features-block-lead">Pick the protocol plugins your service speaks. The core <code>Kuestenlogik.Bowire</code> package is always there; protocols are opt-in so you only ship what you need.</p>
 
-<pre><code class="lang-bash">dotnet add package Kuestenlogik.Bowire
+      <!-- Live protocol picker — same combobox the launch stepper uses on
+           the home page (Step 2). Selections become `dotnet add package`
+           lines in the snippet below; the snippet updates on every change.
+           gRPC + REST are pre-selected as the 80% case for ASP.NET
+           backends. JS init lives in main.js (search "data-qs-embed-picker"). -->
+      <div class="qs-embed-picker" data-qs-embed-picker>
+        {% include protocol-picker.html mode="nuget" label="Pick the protocols your service exposes:" %}
+      </div>
 
-# plus the protocols your service exposes
-dotnet add package Kuestenlogik.Bowire.Protocol.Grpc
-dotnet add package Kuestenlogik.Bowire.Protocol.Rest
-dotnet add package Kuestenlogik.Bowire.Protocol.SignalR</code></pre>
+<pre><code class="lang-bash" data-qs-embed-recipe># Add Bowire core
+dotnet add package Kuestenlogik.Bowire</code></pre>
 
       <p>Every first-party protocol (gRPC, REST, GraphQL, SignalR, WebSocket, SSE, MQTT, Socket.IO, OData, MCP) is its own package &mdash; same versioning, same release cadence. Sibling plugins (Surgewave, Kafka, DIS, UDP) follow the same pattern from their separate repositories.</p>
       <p class="quickstart-page-step-links">

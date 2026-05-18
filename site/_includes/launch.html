@@ -110,16 +110,11 @@
              CLI doesn't bundle (Surgewave, Kafka, …) so tester / mock
              boats can `bowire plugin install` them. The combobox
              code lives in main.js and inflates the host divs below
-             on first render. -->
-        <div class="launch-protocols" data-protocols-host="nuget" hidden>
-          <p class="launch-protocols-label">Add the protocols you need:</p>
-          <div class="launch-combobox-host" data-combobox-nuget></div>
-        </div>
+             on first render. Picker markup is shared with
+             quickstart.html via the protocol-picker include. -->
+        {% include protocol-picker.html mode="nuget" label="Add the protocols you need:" hidden=true %}
 
-        <div class="launch-protocols" data-protocols-host="cli" hidden>
-          <p class="launch-protocols-label">Many protocols ship with the CLI. Add any third-party extras you need:</p>
-          <div class="launch-combobox-host" data-combobox-cli></div>
-        </div>
+        {% include protocol-picker.html mode="cli" label="Many protocols ship with the CLI. Add any third-party extras you need:" hidden=true %}
 
         <div class="code-block launch-recipe" data-recipe-step="2">
           <div class="code-block-header">

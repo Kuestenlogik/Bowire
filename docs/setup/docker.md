@@ -34,7 +34,7 @@ docker run --rm -p 5080:5080 \
   --url https://my-grpc-server:443
 ```
 
-Then open `http://localhost:5080/bowire` in your browser. The image runs
+Then open `http://localhost:5080` in your browser. The image runs
 the standalone Bowire workbench on port `5080`.
 
 `--no-browser` is auto-detected when the container has no controlling
