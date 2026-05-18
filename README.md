@@ -5,7 +5,7 @@
 [![NuGet](https://img.shields.io/nuget/v/Kuestenlogik.Bowire)](https://www.nuget.org/packages/Kuestenlogik.Bowire)
 [![License](https://img.shields.io/github/license/Kuestenlogik/Bowire)](https://github.com/Kuestenlogik/Bowire/blob/main/LICENSE)
 
-**A multi-protocol API workbench for .NET — gRPC, REST, GraphQL, MQTT, SignalR, WebSocket, SSE, MCP, OData, Socket.IO, DIS, UDP — runs against any service URL with zero code changes.**
+**The .NET-native multi-protocol API workbench — gRPC, REST, GraphQL, MQTT, SignalR, WebSocket, SSE, MCP, OData, Socket.IO, DIS, UDP — runs against any service URL with zero code changes.**
 
 [Quickstart](https://bowire.io/quickstart.html) · [Features](https://bowire.io/features.html) · [Why Bowire](https://bowire.io/why-bowire.html) · [Docs](https://bowire.io/docs/) · [Downloads](https://bowire.io/downloads.html)
 

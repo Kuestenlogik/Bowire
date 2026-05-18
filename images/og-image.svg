@@ -41,7 +41,7 @@
 
   <!-- Tagline + protocol list, centred under the logo. -->
   <text x="600" y="395" fill="#cdd0e0" font-family="Inter, system-ui, sans-serif"
-        font-size="34" font-weight="600" text-anchor="middle">Multi-protocol API workbench for .NET</text>
+        font-size="34" font-weight="600" text-anchor="middle">.NET-native multi-protocol API workbench</text>
   <text x="600" y="438" fill="#9ea3bd" font-family="Inter, system-ui, sans-serif"
         font-size="22" font-weight="400" text-anchor="middle">gRPC · REST · GraphQL · MQTT · SignalR · WebSocket · SSE · MCP · OData · Akka.NET · Surgewave · Kafka</text>
 

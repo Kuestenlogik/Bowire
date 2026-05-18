@@ -336,7 +336,7 @@
             el('div', { className: 'bowire-settings-about-brand-text' },
                 el('div', { className: 'bowire-settings-about-brand-name', textContent: 'Bowire' }),
                 el('div', { className: 'bowire-settings-about-brand-version', textContent: 'Version ' + (config.version || 'unknown') }),
-                el('div', { className: 'bowire-settings-about-brand-tagline', textContent: 'Multi-protocol API workbench for .NET' })
+                el('div', { className: 'bowire-settings-about-brand-tagline', textContent: 'The .NET-native multi-protocol API workbench' })
             )
         ));
 
