@@ -1344,7 +1344,7 @@ function createBowireCombobox(hostEl, allItems, defaultSelectedIds, placeholder)
 
     // The five boats — each a maritime metaphor for an install +
     // run mode (Container ship = embedded, Speedboat = standalone
-    // CLI, Decoy = mock-replay, Tugboat = sidecar + MCP adapter,
+    // CLI, Dazzle ship = mock-replay, Tugboat = sidecar + MCP adapter,
     // Cruise ship = multi-user preview). Each carries the install
     // + run snippets the stepper renders on steps 2 + 3, plus
     // prompt copy and a flag for whether step 3 surfaces the URL input.
