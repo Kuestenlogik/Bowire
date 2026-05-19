@@ -1,0 +1,36 @@
+asyncapi: '3.0.0'
+info:
+  title: Multi-Message Demo
+  version: '1.0.0'
+
+servers:
+  broker:
+    host: 'localhost:1883'
+    protocol: mqtt
+
+channels:
+  light:
+    address: 'smarthome/light'
+    messages:
+      lightMeasured:
+        $ref: '#/components/messages/lightMeasured'
+      lightWarning:
+        $ref: '#/components/messages/lightWarning'
+
+operations:
+  receiveAnyLightEvent:
+    action: receive
+    channel:
+      $ref: '#/channels/light'
+    messages:
+      - $ref: '#/components/messages/lightMeasured'
+      - $ref: '#/components/messages/lightWarning'
+
+components:
+  messages:
+    lightMeasured:
+      name: lightMeasured
+      contentType: application/json
+    lightWarning:
+      name: lightWarning
+      contentType: application/json

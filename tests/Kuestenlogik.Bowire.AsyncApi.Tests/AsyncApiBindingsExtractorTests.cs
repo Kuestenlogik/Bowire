@@ -117,6 +117,82 @@ public sealed class AsyncApiBindingsExtractorTests
     }
 
     [Fact]
+    public void Extracts_v3_operation_messages_via_reflection()
+    {
+        // Verifies the V3-message walker that drives multi-message
+        // overload emission. Single-entry and multi-entry both come
+        // out as lists keyed by opKey.
+        var yaml = """
+            asyncapi: '3.0.0'
+            info:
+              title: T
+              version: '1.0.0'
+            operations:
+              singleMsg:
+                action: send
+                channel:
+                  $ref: '#/channels/x'
+                messages:
+                  - $ref: '#/components/messages/foo'
+              multiMsg:
+                action: receive
+                channel:
+                  $ref: '#/channels/x'
+                messages:
+                  - $ref: '#/components/messages/a'
+                  - $ref: '#/components/messages/b'
+            """;
+
+        var assembly = typeof(BowireAsyncApiProtocol).Assembly;
+        var type = assembly.GetType("Kuestenlogik.Bowire.AsyncApi.AsyncApiBindingsExtractor")!;
+        var method = type.GetMethod("ExtractV3OperationMessages", BindingFlags.Public | BindingFlags.Static)!;
+        var result = (IReadOnlyDictionary<string, IReadOnlyList<string>>)
+            method.Invoke(null, new object[] { yaml })!;
+
+        Assert.Equal(2, result.Count);
+        Assert.Equal("foo", Assert.Single(result["singleMsg"]));
+        Assert.Collection(result["multiMsg"],
+            n => Assert.Equal("a", n),
+            n => Assert.Equal("b", n));
+    }
+
+    [Fact]
+    public void Extracts_v2_channel_bindings_per_publish_subscribe_slot()
+    {
+        var yaml = """
+            asyncapi: '2.6.0'
+            info:
+              title: T
+              version: '1.0.0'
+            channels:
+              t1:
+                subscribe:
+                  bindings:
+                    mqtt:
+                      qos: 1
+                      retain: false
+              t2:
+                publish:
+                  bindings:
+                    mqtt:
+                      qos: 2
+            """;
+
+        var assembly = typeof(BowireAsyncApiProtocol).Assembly;
+        var type = assembly.GetType("Kuestenlogik.Bowire.AsyncApi.AsyncApiBindingsExtractor")!;
+        var m = type.GetMethod("ExtractV2ChannelBindings", BindingFlags.Public | BindingFlags.Static)!;
+        var result = (IReadOnlyDictionary<string,
+            IReadOnlyDictionary<string,
+                IReadOnlyDictionary<string,
+                    IReadOnlyDictionary<string, string>>>>)
+            m.Invoke(null, new object[] { yaml })!;
+
+        Assert.Equal("1", result["t1"]["subscribe"]["mqtt"]["qos"]);
+        Assert.Equal("false", result["t1"]["subscribe"]["mqtt"]["retain"]);
+        Assert.Equal("2", result["t2"]["publish"]["mqtt"]["qos"]);
+    }
+
+    [Fact]
     public void Skips_non_scalar_binding_fields()
     {
         // A nested mapping (e.g. mqtt server-binding `lastWill`) is
