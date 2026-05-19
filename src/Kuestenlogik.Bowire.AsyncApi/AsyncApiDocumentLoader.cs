@@ -70,19 +70,29 @@ internal sealed class AsyncApiDocumentLoader
         var raw = await ReadRawAsync(urlOrPath, ct).ConfigureAwait(false);
 
         // YAML pre-normaliser: quote scalars on enum-typed properties that
-        // the SDK reader otherwise mis-deserialises (asyncapi/net-sdk#76).
-        // JSON files don't have the implicit-type problem, so the
-        // normaliser is a no-op on them — running it unconditionally
-        // keeps the code path uniform.
+        // the SDK reader otherwise mis-deserialises (asyncapi/net-sdk#76,
+        // first prong: `asyncapi: 3.0.0` unquoted).
         var normalised = AsyncApiYamlPreNormaliser.Normalise(raw);
 
-        using var stream = new MemoryStream(Encoding.UTF8.GetBytes(normalised));
+        // Strip every `bindings:` block before handing the document to
+        // the SDK reader (asyncapi/net-sdk#76, second prong: typed
+        // binding scalars like `bindings.mqtt.qos: 2` blow up the
+        // reader's enum deserializer). The bindings-extractor runs in
+        // parallel on the un-stripped YAML so the routing layer still
+        // sees the binding fields the operator wrote. JSON files
+        // don't have the implicit-type problem, but the stripper is
+        // YAML-only and skips them via early-return on parse failure.
+        var stripped = AsyncApiBindingsStripper.Strip(normalised);
+
+        using var stream = new MemoryStream(Encoding.UTF8.GetBytes(stripped));
         var document = await reader.ReadAsync(stream, ct).ConfigureAwait(false);
         if (document is null)
         {
             throw new InvalidOperationException(
                 $"AsyncAPI reader returned no document for '{urlOrPath}'.");
         }
+        // NormalisedYaml is the *un-stripped* text so the extractor
+        // can see the bindings the reader just had hidden from it.
         return new LoadResult(document, normalised);
     }
 

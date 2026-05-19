@@ -13,6 +13,19 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\Kuestenlogik.Bowire\Kuestenlogik.Bowire.csproj" />
     <ProjectReference Include="..\..\src\Kuestenlogik.Bowire.AsyncApi\Kuestenlogik.Bowire.AsyncApi.csproj" />
+    <!-- The MQTT plugin only needs to be on the test classpath for
+         the integration test (real broker → real plugin invocation).
+         Unit tests don't touch it; we just need it discoverable by
+         the BowireProtocolRegistry instance the integration test
+         hands to BowireAsyncApiProtocol.Initialize. -->
+    <ProjectReference Include="..\..\src\Kuestenlogik.Bowire.Protocol.Mqtt\Kuestenlogik.Bowire.Protocol.Mqtt.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- In-process MQTT broker for the binding-resolver integration
+         test — no Testcontainers / Docker dependency, matches the
+         Bowire.Samples.Mqtt sample's setup. -->
+    <PackageReference Include="MQTTnet" />
+    <PackageReference Include="MQTTnet.Server" />
   </ItemGroup>
   <ItemGroup>
     <!-- Sample AsyncAPI documents the discovery tests load from disk.
