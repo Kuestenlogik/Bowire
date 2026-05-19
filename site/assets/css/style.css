@@ -7124,6 +7124,55 @@ html[data-theme="light"] {
     font-weight: 600;
 }
 
+/* Optional-add-ons slot in step 2 — same chrome as the protocol
+   picker block above so the two read as a single configuration
+   panel. Currently holds the MCP-adapter toggle for tester / ai. */
+.launch-addons {
+    margin: 0 0 18px;
+    padding: 14px 16px;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border, #2a2a3a);
+    border-radius: 8px;
+}
+
+.launch-addons-label {
+    margin: 0 0 10px;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-muted, #8a8aa0);
+    font-weight: 600;
+}
+
+.launch-addons-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.launch-addon {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+}
+
+.launch-addon input[type="checkbox"] {
+    flex-shrink: 0;
+    margin-top: 2px;
+    cursor: pointer;
+    accent-color: var(--accent);
+}
+
+.launch-addon-label {
+    font-size: 13px;
+    line-height: 1.45;
+    color: var(--text, #e8e8f0);
+    cursor: pointer;
+}
+
 .launch-protocols-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));

@@ -3,7 +3,7 @@
 
   Step 1 ("Pick your boat") chooses the install + run mode by picking
   a ship metaphor: Container ship (embedded in your ASP.NET app),
-  Speedboat (standalone CLI), Decoy (mock-server replay), Tugboat
+  Speedboat (standalone CLI), Dazzle ship (mock-server replay), Tugboat
   (sidecar + MCP adapter for AI agents), or Passenger ship (multi-user
   preview). That selection determines which install + run snippets
   show in steps 2 + 3. An optional URL input feeds substitutions in
@@ -74,13 +74,13 @@
                    loading="lazy" width="680" height="440">
             </div>
             <h3 class="launch-boat-name">Speedboat</h3>
-            <p class="launch-boat-mode">Standalone CLI</p>
+            <p class="launch-boat-mode">Standalone</p>
             <p class="launch-boat-desc">Installed as a global <code>dotnet tool</code> on your laptop. Point Bowire at any URL &mdash; staging gRPC in the morning, REST after lunch, WebSocket all afternoon.</p>
           </button>
 
           <button type="button" class="launch-boat" data-boat="mock">
             <div class="launch-boat-diagram">
-              <!-- Decoy / Dazzle-camo warship photo. The geometric grey
+              <!-- Dazzle ship photo — dazzle-camouflage warship. The geometric grey
                    dazzle pattern reads as "looks deliberately confusing
                    — meant to fake the observer's perception", which
                    maps onto the mock-server function: serve recorded
@@ -89,9 +89,9 @@
                    alt="Naval vessel in geometric dazzle camouflage, Bowire mark on the hull"
                    loading="lazy" width="680" height="440">
             </div>
-            <h3 class="launch-boat-name">Decoy</h3>
+            <h3 class="launch-boat-name">Dazzle ship</h3>
             <p class="launch-boat-mode">Replay mock</p>
-            <p class="launch-boat-desc">Looks like the real backend, isn&rsquo;t. Replay a recorded session as a standalone mock server &mdash; pin responses, ship it to CI, no live host required.</p>
+            <p class="launch-boat-desc">Dazzle camouflage for your API &mdash; looks like the real backend, isn&rsquo;t. Replay a recorded session as a standalone mock server. Pin responses, ship to CI, no live host required.</p>
           </button>
 
           <button type="button" class="launch-boat" data-boat="ai">
@@ -107,8 +107,8 @@
                    loading="lazy" width="680" height="440">
             </div>
             <h3 class="launch-boat-name">Container ship</h3>
-            <p class="launch-boat-mode">Sidecar + MCP adapter</p>
-            <p class="launch-boat-desc">Bowire and your AI agent ride as sidecar containers on the same Docker compose or Kubernetes pod. Every discovered method becomes an MCP tool so Claude / Cursor / Copilot can call them with JSON Schema input.</p>
+            <p class="launch-boat-mode">Docker sidecar</p>
+            <p class="launch-boat-desc">Bowire runs as its own container next to your services &mdash; a docker-compose service or a Kubernetes pod sidecar. Same workbench UI as the standalone CLI, every endpoint browsable from inside the cluster.</p>
           </button>
 
           <button type="button" class="launch-boat" data-boat="passenger">
@@ -124,7 +124,7 @@
                    loading="lazy" width="680" height="440">
             </div>
             <h3 class="launch-boat-name">Passenger ship</h3>
-            <p class="launch-boat-mode">Multi-user · OIDC</p>
+            <p class="launch-boat-mode">Multi-User</p>
             <p class="launch-boat-desc">One Bowire, several authenticated passengers. Per-user state across sessions, scheduled port calls. Today: works behind your OIDC reverse proxy.</p>
           </button>
 
@@ -147,6 +147,17 @@
         {% include protocol-picker.html mode="nuget" label="Add the protocols you need:" hidden=true %}
 
         {% include protocol-picker.html mode="cli" label="Many protocols ship with the CLI. Add any third-party extras you need:" hidden=true %}
+
+        <!-- Optional add-on toggles — currently just the MCP adapter
+             (for AI agents). Shown when the picked boat's recipe
+             declares an addons list (tester + ai today). Each ticked
+             addon appends its runFlag to the step-3 run snippet via
+             the {ADDONS} placeholder. main.js renders the items into
+             data-addons-list at recipe time. -->
+        <div class="launch-addons" data-addons-host hidden>
+          <p class="launch-addons-label">Optional add-ons:</p>
+          <ul class="launch-addons-list" data-addons-list></ul>
+        </div>
 
         <div class="code-block launch-recipe" data-recipe-step="2">
           <div class="code-block-header">
