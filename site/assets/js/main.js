@@ -1405,11 +1405,11 @@ function createBowireCombobox(hostEl, allItems, defaultSelectedIds, placeholder)
             installLang: 'bash',
             install:
                 '# Pull the container image\n' +
-                'docker pull ghcr.io/kuestenlogik/bowire:latest',
+                'docker pull kuestenlogik/bowire:latest',
             runLang: 'bash',
             run:
                 'docker run --rm -p 5080:5080 \\\n' +
-                '  ghcr.io/kuestenlogik/bowire:latest \\\n' +
+                '  kuestenlogik/bowire:latest \\\n' +
                 '  --url {URL} \\\n' +
                 '  --enable-mcp-adapter',
             then:
@@ -1424,7 +1424,7 @@ function createBowireCombobox(hostEl, allItems, defaultSelectedIds, placeholder)
             install:
                 '# Run Bowire as a long-lived multi-user server\n' +
                 'docker run -p 5080:5080 \\\n' +
-                '  ghcr.io/kuestenlogik/bowire:latest \\\n' +
+                '  kuestenlogik/bowire:latest \\\n' +
                 '  --url-file /etc/bowire/targets.txt',
             runLang: 'bash',
             run:

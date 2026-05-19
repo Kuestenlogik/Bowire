@@ -48,58 +48,15 @@
 
           <button type="button" class="launch-boat" data-boat="backend">
             <div class="launch-boat-diagram">
-              <!-- Sailboat — sloop with mainsail + jib, riding wind from
-                   the left. The metaphor: no engine of its own. Bowire
-                   embedded has no webserver, no process — it rides the
-                   host ASP.NET app's runtime. The host drives, Bowire
-                   sails along on the same wind. Mainsail carries a
-                   subtle accent fill so the "Bowire" hull label reads as
-                   the cargo identity, not the vehicle. Sail seams add
-                   detail texture; rigging lines pin the sail's shape to
-                   the mast + boom for visual coherence. -->
-              <svg width="170" height="110" viewBox="0 0 170 110" fill="none" stroke="var(--accent)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <defs>
-                  <linearGradient id="sailboat-sail" x1="0%" y1="0%" x2="0%" y2="100%">
-                    <stop offset="0%" stop-color="rgba(139, 125, 255, 0.32)"/>
-                    <stop offset="100%" stop-color="rgba(139, 125, 255, 0.10)"/>
-                  </linearGradient>
-                  <linearGradient id="sailboat-hull" x1="0%" y1="0%" x2="0%" y2="100%">
-                    <stop offset="0%" stop-color="rgba(99, 102, 241, 0.22)"/>
-                    <stop offset="100%" stop-color="rgba(99, 102, 241, 0.06)"/>
-                  </linearGradient>
-                </defs>
-                <!-- Wind streaks coming from the left, fading as they approach -->
-                <path d="M4 28 q12 -2 22 0" stroke-opacity="0.35"/>
-                <path d="M4 40 q14 -2 26 0" stroke-opacity="0.45"/>
-                <path d="M4 52 q10 -2 20 0" stroke-opacity="0.28"/>
-                <!-- Mast -->
-                <line x1="90" y1="14" x2="90" y2="68"/>
-                <!-- Pennant on top of mast -->
-                <path d="M90 14 L98 17 L90 20" stroke-opacity="0.75"/>
-                <!-- Mainsail: curved triangle, leech billowing leeward (right). -->
-                <path d="M90 20 Q126 44 102 66 L90 66 Z" fill="url(#sailboat-sail)" stroke="var(--accent)" stroke-opacity="0.85"/>
-                <!-- Sail seams - subtle horizontal stitches showing panel construction -->
-                <path d="M96 30 Q108 34 113 40" stroke-opacity="0.30"/>
-                <path d="M94 42 Q106 46 109 52" stroke-opacity="0.30"/>
-                <path d="M92 54 Q102 56 104 60" stroke-opacity="0.25"/>
-                <!-- Jib (smaller foresail) at the bow -->
-                <path d="M90 30 Q72 54 90 58 Z" fill="url(#sailboat-sail)" stroke-opacity="0.75"/>
-                <!-- Boom (horizontal spar at the bottom of mainsail) -->
-                <line x1="90" y1="66" x2="104" y2="66" stroke-opacity="0.65"/>
-                <!-- Hull V-shape — stretched down so the waterline at y=92
-                     crosses the lower portion of the hull, putting the
-                     ship IN the water rather than hovering above it. -->
-                <path d="M50 68 L130 68 L122 92 L58 92 Z" fill="url(#sailboat-hull)"/>
-                <!-- Deck rail line -->
-                <line x1="54" y1="68" x2="126" y2="68" stroke-opacity="0.45"/>
-                <!-- Bowire label on the hull -->
-                <text x="90" y="78" text-anchor="middle" dominant-baseline="central" fill="var(--accent)" stroke="none" font-size="7" font-weight="700" font-family="var(--font-mono)">Bowire</text>
-                <!-- Waterline waves — the upper wave at y=92 visually
-                     intersects the hull-bottom so the ship reads as
-                     sitting in the water, not flying. -->
-                <path d="M4 92 q10 -3 20 0 t20 0 t20 0 t20 0 t20 0 t20 0 t20 0 t20 0" stroke-opacity="0.55"/>
-                <path d="M4 100 q12 -3 24 0 t24 0 t24 0 t24 0 t24 0 t22 0" stroke-opacity="0.32"/>
-              </svg>
+              <!-- Sailboat photo — sloop under full sail with the
+                   Bowire pennant on the mainsail. Metaphor: no engine
+                   of its own. Bowire embedded has no webserver, no
+                   process — it rides the host ASP.NET app's runtime.
+                   The host drives, Bowire sails along on the same
+                   wind. Photo lives at site/assets/images/launch/. -->
+              <img src="{{ '/assets/images/launch/sailboat.jpg' | relative_url }}"
+                   alt="Sailboat under full sail with a Bowire pennant on the mainsail"
+                   loading="lazy" width="680" height="440">
             </div>
             <h3 class="launch-boat-name">Sailboat</h3>
             <p class="launch-boat-mode">Embedded mode</p>
@@ -108,58 +65,13 @@
 
           <button type="button" class="launch-boat" data-boat="tester">
             <div class="launch-boat-diagram">
-              <!-- Racing speedboat — long sharp bow lifted clear of the
-                   water, low slung cockpit with helmsman seated behind a
-                   swept windscreen, outboard motor + bow-spray fan +
-                   stern wake. Single-helmsman fast hull. -->
-              <svg width="170" height="110" viewBox="0 0 170 110" fill="none" stroke="var(--accent)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <defs>
-                  <linearGradient id="speedboat-hull" x1="0%" y1="0%" x2="0%" y2="100%">
-                    <stop offset="0%" stop-color="rgba(99, 102, 241, 0.22)"/>
-                    <stop offset="100%" stop-color="rgba(99, 102, 241, 0.05)"/>
-                  </linearGradient>
-                  <linearGradient id="speedboat-stripe" x1="0%" y1="0%" x2="100%" y2="0%">
-                    <stop offset="0%" stop-color="rgba(139, 125, 255, 0.35)"/>
-                    <stop offset="100%" stop-color="rgba(139, 125, 255, 0.20)"/>
-                  </linearGradient>
-                </defs>
-                <!-- The whole boat block is wrapped in a translate(0, 12)
-                     so every detail (helmsman, windscreen, stripe, hull,
-                     outboard, wakes) drops together — without this the
-                     hull would sit in the water but the helmsman would
-                     hover 12px above. The wake streaks on the left and
-                     the waterline waves stay outside this group so they
-                     don't drift off the bottom of the SVG. -->
-                <g transform="translate(0, 12)">
-                  <circle cx="86" cy="50" r="3.5"/>
-                  <path d="M83 55 L92 60 M89 55 L98 60" stroke-linecap="round"/>
-                  <path d="M68 56 Q82 38 110 44 L114 56"/>
-                  <path d="M84 47 L84 56" stroke-opacity="0.55"/>
-                  <path d="M96 44 L96 56" stroke-opacity="0.55"/>
-                  <path d="M44 64 L150 60 L150 64 L46 68 Z" fill="url(#speedboat-stripe)" stroke-opacity="0.6"/>
-                  <text x="74" y="65" text-anchor="middle" dominant-baseline="central" fill="var(--accent)" stroke="none" font-size="5.5" font-weight="700" font-family="var(--font-mono)">01</text>
-                  <text x="100" y="72" text-anchor="middle" dominant-baseline="central" fill="var(--accent)" stroke="none" font-size="7" font-weight="700" font-family="var(--font-mono)">Bowire</text>
-                  <path d="M40 60 L160 56 L156 70 L40 76 L34 70 Z" fill="url(#speedboat-hull)"/>
-                  <path d="M40 70 L156 66" stroke-opacity="0.45"/>
-                  <path d="M34 70 L40 76" stroke-opacity="0.7"/>
-                  <rect x="20" y="68" width="14" height="10" rx="1.5" fill="rgba(99, 102, 241, 0.25)"/>
-                  <line x1="22" y1="71" x2="32" y2="71" stroke-opacity="0.55"/>
-                  <line x1="22" y1="74" x2="32" y2="74" stroke-opacity="0.45"/>
-                  <path d="M158 60 Q166 52 172 42" stroke-opacity="0.5"/>
-                  <path d="M156 62 Q164 56 170 48" stroke-opacity="0.4"/>
-                  <path d="M154 64 Q162 60 168 54" stroke-opacity="0.32"/>
-                </g>
-                <!-- Stern wake outside the translate so it stays at the
-                     same height as the waterline. -->
-                <line x1="2" y1="78" x2="20" y2="78" stroke-opacity="0.32"/>
-                <line x1="2" y1="84" x2="22" y2="84" stroke-opacity="0.42"/>
-                <line x1="2" y1="90" x2="26" y2="90" stroke-opacity="0.38"/>
-                <!-- Waterline waves at y=92, the upper one grazes the
-                     hull-bottom so the speedboat reads as planing
-                     through water, not above it. -->
-                <path d="M4 92 q10 -3 20 0 t20 0 t20 0 t20 0 t20 0 t20 0 t20 0 t20 0" stroke-opacity="0.55"/>
-                <path d="M4 100 q12 -3 24 0 t24 0 t24 0 t24 0 t24 0 t24 0 t22 0" stroke-opacity="0.3"/>
-              </svg>
+              <!-- Speedboat photo — Cigarette-style racing hull with the
+                   Bowire mark on its side, captured at planing speed
+                   with a wide bow-spray fan. Single helmsman, no fixed
+                   route — point Bowire at any URL. -->
+              <img src="{{ '/assets/images/launch/speedboat.jpg' | relative_url }}"
+                   alt="Racing speedboat at planing speed, Bowire emblem on the bow"
+                   loading="lazy" width="680" height="440">
             </div>
             <h3 class="launch-boat-name">Speedboat</h3>
             <p class="launch-boat-mode">Standalone CLI</p>
@@ -168,41 +80,14 @@
 
           <button type="button" class="launch-boat" data-boat="mock">
             <div class="launch-boat-diagram">
-              <!-- Decoy — a working-ship outline drawn entirely in dashed
-                   strokes so it reads as "looks like a real backend, but
-                   isn't one". The REPLAY tag at the stern is the
-                   actual function: serve recorded sessions back instead
-                   of a live process. -->
-              <svg width="170" height="110" viewBox="0 0 170 110" fill="none" stroke="var(--accent)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <defs>
-                  <linearGradient id="decoy-cabin" x1="0%" y1="0%" x2="0%" y2="100%">
-                    <stop offset="0%" stop-color="rgba(139, 125, 255, 0.20)"/>
-                    <stop offset="100%" stop-color="rgba(139, 125, 255, 0.06)"/>
-                  </linearGradient>
-                  <linearGradient id="decoy-hull" x1="0%" y1="0%" x2="0%" y2="100%">
-                    <stop offset="0%" stop-color="rgba(99, 102, 241, 0.14)"/>
-                    <stop offset="100%" stop-color="rgba(99, 102, 241, 0.02)"/>
-                  </linearGradient>
-                </defs>
-                <rect x="78" y="22" width="6" height="12" rx="1" stroke-dasharray="2 2"/>
-                <rect x="56" y="32" width="50" height="20" rx="1.5" stroke-dasharray="3 2" fill="url(#decoy-cabin)"/>
-                <line x1="62" y1="40" x2="100" y2="40" stroke-opacity="0.5" stroke-dasharray="2 2"/>
-                <line x1="62" y1="46" x2="100" y2="46" stroke-opacity="0.35" stroke-dasharray="2 2"/>
-                <text x="81" y="42" text-anchor="middle" dominant-baseline="central" fill="var(--accent)" stroke="none" font-size="7" font-weight="700" font-family="var(--font-mono)">Bowire</text>
-                <rect x="114" y="36" width="32" height="11" rx="1" fill="rgba(139, 125, 255, 0.28)" stroke-dasharray="2 2"/>
-                <text x="130" y="41.5" text-anchor="middle" dominant-baseline="central" fill="var(--accent)" stroke="none" font-size="6" font-weight="700" font-family="var(--font-mono)">REPLAY</text>
-                <!-- Hull extended down so the dashed waterline at y=82
-                     crosses the lower edge — the phantom-ship floats
-                     IN phantom water, not above it. -->
-                <path d="M24 52 L150 52 L142 84 L34 84 Z" stroke-dasharray="3 2" fill="url(#decoy-hull)"/>
-                <line x1="22" y1="40" x2="22" y2="56" stroke-dasharray="2 2"/>
-                <path d="M22 40 L34 44 L22 48" stroke-dasharray="2 2"/>
-                <!-- Phantom shadow ellipse — subtle, sits right against
-                     the hull-bottom. -->
-                <ellipse cx="87" cy="87" rx="56" ry="1.6" fill="rgba(0,0,0,0.14)" stroke="none"/>
-                <path d="M4 90 q8 -3 16 0 t16 0 t16 0 t16 0 t16 0 t16 0 t16 0 t16 0 t16 0 t14 0" stroke-opacity="0.55" stroke-dasharray="2 4"/>
-                <path d="M4 100 q10 -3 20 0 t20 0 t20 0 t20 0 t20 0 t20 0 t20 0 t20 0" stroke-opacity="0.3" stroke-dasharray="1 5"/>
-              </svg>
+              <!-- Decoy / Dazzle-camo warship photo. The geometric grey
+                   dazzle pattern reads as "looks deliberately confusing
+                   — meant to fake the observer's perception", which
+                   maps onto the mock-server function: serve recorded
+                   sessions back instead of a live process. -->
+              <img src="{{ '/assets/images/launch/mildecoy.jpg' | relative_url }}"
+                   alt="Naval vessel in geometric dazzle camouflage, Bowire mark on the hull"
+                   loading="lazy" width="680" height="440">
             </div>
             <h3 class="launch-boat-name">Decoy</h3>
             <p class="launch-boat-mode">Replay mock</p>
@@ -211,73 +96,15 @@
 
           <button type="button" class="launch-boat" data-boat="ai">
             <div class="launch-boat-diagram">
-              <!-- Container ship — Bowire and the AI agent ride as two
-                   sidecar-style containers on the same vessel (Docker
-                   compose or a Kubernetes Pod). The Bowire container
-                   gets the lavender accent fill; the AGENT container
-                   uses a complementary coral so the two roles read as
-                   distinct but-paired. A subtle arrow connector hints
-                   at the MCP tool-surface relationship: Bowire serves
-                   the discovered methods, the agent consumes them.
-                   Reads on the metaphor's double meaning — maritime
-                   container + Docker container. -->
-              <svg width="170" height="110" viewBox="0 0 170 110" fill="none" stroke="var(--accent)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <defs>
-                  <linearGradient id="containership-hull" x1="0%" y1="0%" x2="0%" y2="100%">
-                    <stop offset="0%" stop-color="rgba(99, 102, 241, 0.18)"/>
-                    <stop offset="100%" stop-color="rgba(99, 102, 241, 0.04)"/>
-                  </linearGradient>
-                  <linearGradient id="containership-bowire-box" x1="0%" y1="0%" x2="0%" y2="100%">
-                    <stop offset="0%" stop-color="rgba(139, 125, 255, 0.50)"/>
-                    <stop offset="100%" stop-color="rgba(139, 125, 255, 0.22)"/>
-                  </linearGradient>
-                  <linearGradient id="containership-agent-box" x1="0%" y1="0%" x2="0%" y2="100%">
-                    <stop offset="0%" stop-color="rgba(252, 165, 165, 0.50)"/>
-                    <stop offset="100%" stop-color="rgba(252, 165, 165, 0.22)"/>
-                  </linearGradient>
-                </defs>
-                <!-- Smokestack puffs (rising upper-right) -->
-                <circle cx="146" cy="14" r="3" fill="rgba(99, 102, 241, 0.55)" stroke="none"/>
-                <circle cx="152" cy="9" r="2" fill="rgba(99, 102, 241, 0.35)" stroke="none"/>
-                <!-- Bridge tower at the stern with deck-level windows -->
-                <rect x="124" y="22" width="20" height="40" rx="1" fill="rgba(99, 102, 241, 0.10)"/>
-                <line x1="128" y1="30" x2="140" y2="30" stroke-opacity="0.50"/>
-                <line x1="128" y1="38" x2="140" y2="38" stroke-opacity="0.45"/>
-                <line x1="128" y1="46" x2="140" y2="46" stroke-opacity="0.40"/>
-                <line x1="128" y1="54" x2="140" y2="54" stroke-opacity="0.35"/>
-                <!-- Smokestack on top of bridge -->
-                <rect x="146" y="26" width="6" height="12" rx="1" fill="rgba(99, 102, 241, 0.20)"/>
-                <line x1="148" y1="32" x2="150" y2="32" stroke-opacity="0.5"/>
-                <!-- Top row of containers — AGENT highlighted in coral -->
-                <rect x="30" y="32" width="22" height="16" rx="1" stroke-opacity="0.65"/>
-                <rect x="54" y="32" width="22" height="16" rx="1" fill="url(#containership-agent-box)" stroke="rgba(252, 165, 165, 0.95)"/>
-                <text x="65" y="40" text-anchor="middle" dominant-baseline="central" fill="rgba(252, 165, 165, 1)" stroke="none" font-size="6" font-weight="700" font-family="var(--font-mono)">AGENT</text>
-                <rect x="78" y="32" width="22" height="16" rx="1" stroke-opacity="0.65"/>
-                <rect x="102" y="32" width="20" height="16" rx="1" stroke-opacity="0.65"/>
-                <!-- Bottom row of containers — Bowire highlighted in lavender -->
-                <rect x="18" y="48" width="22" height="16" rx="1" stroke-opacity="0.65"/>
-                <rect x="42" y="48" width="22" height="16" rx="1" stroke-opacity="0.65"/>
-                <rect x="66" y="48" width="22" height="16" rx="1" fill="url(#containership-bowire-box)" stroke="var(--accent)"/>
-                <text x="77" y="56" text-anchor="middle" dominant-baseline="central" fill="var(--accent)" stroke="none" font-size="6" font-weight="700" font-family="var(--font-mono)">Bowire</text>
-                <rect x="90" y="48" width="22" height="16" rx="1" stroke-opacity="0.65"/>
-                <rect x="114" y="48" width="8" height="16" rx="1" stroke-opacity="0.55"/>
-                <!-- Connector dot pair between Bowire ↑ AGENT — the
-                     MCP tool-surface. -->
-                <circle cx="65" cy="46" r="1.4" fill="rgba(252, 165, 165, 1)" stroke="none"/>
-                <line x1="65" y1="46" x2="77" y2="50" stroke="rgba(176, 145, 210, 0.6)" stroke-width="1"/>
-                <circle cx="77" cy="50" r="1.4" fill="var(--accent)" stroke="none"/>
-                <!-- Hull — extended down so the waterline at y=92 grazes
-                     the lower edge. The ship sits in the water, not
-                     above it. -->
-                <path d="M10 64 L156 64 L150 92 L16 92 Z" fill="url(#containership-hull)"/>
-                <!-- Waterline plate seam on the hull (mid-belt) -->
-                <line x1="20" y1="78" x2="146" y2="78" stroke-opacity="0.30"/>
-                <!-- Hull shadow on the water — sits at the waterline -->
-                <ellipse cx="83" cy="94" rx="72" ry="1.8" fill="rgba(0,0,0,0.22)" stroke="none"/>
-                <!-- Waterline waves -->
-                <path d="M4 92 q10 -3 20 0 t20 0 t20 0 t20 0 t20 0 t20 0 t20 0 t20 0" stroke-opacity="0.55"/>
-                <path d="M4 100 q12 -3 24 0 t24 0 t24 0 t24 0 t24 0 t22 0" stroke-opacity="0.32"/>
-              </svg>
+              <!-- Container ship photo — fully loaded with a Bowire-
+                   branded container stack on deck. Maritime container =
+                   Docker container double-meaning: Bowire packs into
+                   its own container next to the host's services, runs
+                   alongside them on the same compose stack / Kubernetes
+                   pod. -->
+              <img src="{{ '/assets/images/launch/containership.jpg' | relative_url }}"
+                   alt="Container ship loaded with Bowire-branded containers"
+                   loading="lazy" width="680" height="440">
             </div>
             <h3 class="launch-boat-name">Container ship</h3>
             <p class="launch-boat-mode">Sidecar + MCP adapter</p>
@@ -287,57 +114,14 @@
           <button type="button" class="launch-boat" data-boat="passenger">
             <span class="protocol-card-ribbon" aria-hidden="true">preview</span>
             <div class="launch-boat-diagram">
-              <!-- Passenger ship — multi-deck hull with passengers on the
-                   promenade and three port calls along the waterline
-                   (api.dev / api.stg / api.prd). Locked gangway signals
-                   the OIDC gate. One Bowire, many authenticated users,
-                   per-cabin state. Preview tier — feature still being
-                   delivered through the auth-provider extension SPI. -->
-              <svg width="170" height="110" viewBox="0 0 170 110" fill="none" stroke="var(--accent)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <defs>
-                  <linearGradient id="passenger-hull" x1="0%" y1="0%" x2="0%" y2="100%">
-                    <stop offset="0%" stop-color="rgba(99, 102, 241, 0.20)"/>
-                    <stop offset="100%" stop-color="rgba(99, 102, 241, 0.05)"/>
-                  </linearGradient>
-                  <linearGradient id="passenger-deck" x1="0%" y1="0%" x2="0%" y2="100%">
-                    <stop offset="0%" stop-color="rgba(139, 125, 255, 0.25)"/>
-                    <stop offset="100%" stop-color="rgba(139, 125, 255, 0.10)"/>
-                  </linearGradient>
-                  <linearGradient id="passenger-mainband" x1="0%" y1="0%" x2="0%" y2="100%">
-                    <stop offset="0%" stop-color="rgba(99, 102, 241, 0.12)"/>
-                    <stop offset="100%" stop-color="rgba(99, 102, 241, 0.04)"/>
-                  </linearGradient>
-                </defs>
-                <circle cx="81" cy="16" r="3.5" fill="rgba(99, 102, 241, 0.55)" stroke="none"/>
-                <circle cx="93" cy="14" r="2.5" fill="rgba(99, 102, 241, 0.4)" stroke="none"/>
-                <line x1="74" y1="14" x2="74" y2="26"/>
-                <path d="M74 14 L82 17 L74 20"/>
-                <rect x="78" y="22" width="6" height="14" rx="1"/>
-                <rect x="90" y="22" width="6" height="14" rx="1"/>
-                <!-- Upper promenade with passengers along the rail -->
-                <rect x="34" y="36" width="106" height="12" rx="1" fill="url(#passenger-deck)"/>
-                <circle cx="44" cy="42" r="1.4" fill="var(--accent)" stroke="none"/>
-                <circle cx="56" cy="42" r="1.4" fill="var(--accent)" stroke="none"/>
-                <circle cx="68" cy="42" r="1.4" fill="var(--accent)" stroke="none"/>
-                <circle cx="84" cy="42" r="1.4" fill="var(--accent)" stroke="none"/>
-                <circle cx="100" cy="42" r="1.4" fill="var(--accent)" stroke="none"/>
-                <circle cx="116" cy="42" r="1.4" fill="var(--accent)" stroke="none"/>
-                <!-- Main deck band carrying the Bowire wordmark -->
-                <rect x="26" y="48" width="122" height="16" rx="1" fill="url(#passenger-mainband)"/>
-                <text x="87" y="56" text-anchor="middle" dominant-baseline="central" fill="var(--accent)" stroke="none" font-size="9" font-weight="700" font-family="var(--font-mono)">Bowire</text>
-                <rect x="148" y="51" width="8" height="8" rx="1"/>
-                <path d="M150 51 L150 49 a2 2 0 0 1 4 0 L154 51"/>
-                <!-- Hull -->
-                <path d="M14 64 L160 64 L150 80 L24 80 Z" fill="url(#passenger-hull)"/>
-                <!-- Hull shadow ellipse -->
-                <ellipse cx="87" cy="84" rx="68" ry="2" fill="rgba(0,0,0,0.22)" stroke="none"/>
-                <rect x="22" y="88" width="32" height="10" rx="1"/>
-                <text x="38" y="93" text-anchor="middle" dominant-baseline="central" fill="var(--text-secondary)" stroke="none" font-size="6.5" font-family="var(--font-mono)">api.dev</text>
-                <rect x="64" y="88" width="32" height="10" rx="1"/>
-                <text x="80" y="93" text-anchor="middle" dominant-baseline="central" fill="var(--text-secondary)" stroke="none" font-size="6.5" font-family="var(--font-mono)">api.stg</text>
-                <rect x="106" y="88" width="32" height="10" rx="1"/>
-                <text x="122" y="93" text-anchor="middle" dominant-baseline="central" fill="var(--text-secondary)" stroke="none" font-size="6.5" font-family="var(--font-mono)">api.prd</text>
-              </svg>
+              <!-- Passenger ship photo — multi-deck cruise vessel
+                   wearing the Bowire wordmark on the bow. One Bowire
+                   server, many authenticated passengers. Preview tier
+                   — full multi-user + OIDC story still being delivered
+                   through the auth-provider extension SPI. -->
+              <img src="{{ '/assets/images/launch/passengership.jpg' | relative_url }}"
+                   alt="Cruise ship with the Bowire wordmark on the bow"
+                   loading="lazy" width="680" height="440">
             </div>
             <h3 class="launch-boat-name">Passenger ship</h3>
             <p class="launch-boat-mode">Multi-user · OIDC</p>

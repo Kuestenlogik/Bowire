@@ -7006,18 +7006,68 @@ html[data-theme="light"] {
    columns flex. Background tint is the same accent-glow the rest of
    the launch panel uses so the diagram reads as a labelled icon, not
    a floating illustration. */
+/* Photo (or fallback SVG diagram) slot above the card title. Each
+   card holds a 170:110 landscape photo of its ship (sailboat,
+   speedboat, dazzle warship, container ship, passenger ship); the
+   ::after overlay + grayscale filter on .img desaturate it to match
+   the marketing site's vector palette at rest, hover/selected
+   restores full colour so the picked card pops. */
 .launch-boat-diagram {
+    position: relative;
     width: 100%;
     aspect-ratio: 170 / 110;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: var(--accent);
     background: rgba(99, 102, 241, 0.04);
     border-radius: 8px;
     overflow: hidden;
+    color: var(--accent);
+    /* Centring fallback for the SVG variant (kept around in case any
+       boat still ships a vector diagram). For <img> children
+       object-fit: cover handles the layout independently. */
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
+.launch-boat-diagram img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    /* Tone the photo down at rest so it reads as one of many cards in
+       the marketing palette rather than a hero photo. Saturation +
+       brightness lift on hover/selected for interaction feedback. */
+    filter: grayscale(0.55) saturate(0.85) brightness(0.92);
+    transition: filter 0.32s ease;
+}
+
+/* Accent-tinted overlay washes the photo at rest so it pulls toward
+   the site's lavender accent. multiply-blend keeps the photo's tonal
+   range intact (just shifts the chroma); on hover/selected the
+   overlay fades out completely. */
+.launch-boat-diagram::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.18), rgba(139, 125, 255, 0.10));
+    mix-blend-mode: multiply;
+    transition: opacity 0.32s ease;
+    pointer-events: none;
+    opacity: 1;
+}
+
+.launch-boat:hover .launch-boat-diagram img,
+.launch-boat.selected .launch-boat-diagram img {
+    filter: none;
+}
+
+.launch-boat:hover .launch-boat-diagram::after,
+.launch-boat.selected .launch-boat-diagram::after {
+    opacity: 0;
+}
+
+/* Vector-fallback rule — only meaningful if a card keeps an inline
+   SVG diagram instead of a photo. Kept for backwards-compat in case
+   a future card prefers a vector again. */
 .launch-boat-diagram svg {
     width: 100%;
     height: auto;

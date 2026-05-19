@@ -22,7 +22,7 @@ dotnet tool install -g Kuestenlogik.Bowire.Tool
 dotnet add package Kuestenlogik.Bowire
 
 # Container
-docker pull ghcr.io/kuestenlogik/bowire:0.9.4
+docker pull kuestenlogik/bowire:0.9.4
 
 # Native installers (pre-built archives + winget / brew)
 winget install Kuestenlogik.Bowire.Tool
