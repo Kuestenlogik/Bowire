@@ -1324,6 +1324,22 @@ img.bowire-logo-icon {
 .bowire-method-badge[data-type="HTTP_HEAD"]   { background: #6b7280; min-width: 36px; } /* gray */
 .bowire-method-badge[data-type="HTTP_OPTIONS"]{ background: #6b7280; min-width: 52px; } /* gray */
 
+/* AsyncAPI operation direction. The badge carries the official
+   AsyncAPI brand gradient (cyan → purple → magenta) so it reads as
+   "this came from a schema, not from reflection" without needing a
+   separate sidebar pill. Arrow content comes from shortType() in
+   helpers.js — `→` for send (us → broker), `←` for receive
+   (broker → us). Slightly wider min-width so the arrow glyph isn't
+   cramped against the rounded corners. */
+.bowire-method-badge[data-type="asyncapi-send"],
+.bowire-method-badge[data-type="asyncapi-receive"] {
+    background: linear-gradient(135deg, #2dccfd 0%, #a829e2 55%, #e50e99 100%);
+    min-width: 24px;
+    font-size: 12px;
+    line-height: 1;
+    padding: 3px 8px;
+}
+
 /* Favorites drag & drop — visual feedback during reorder */
 .bowire-fav-draggable {
     cursor: grab;
