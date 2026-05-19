@@ -7432,6 +7432,15 @@ html[data-theme="light"] {
     margin-bottom: 14px;
 }
 
+/* `.launch-urls-row` carries `display: flex`, which beats the
+   browser-default `hidden { display: none }` rule by specificity
+   — so without this override the multi-URL block stays visible
+   for boats with `urlInput: false` (backend / mock / passenger)
+   even though main.js correctly toggles the `hidden` attribute. */
+.launch-urls-row[hidden] {
+    display: none;
+}
+
 .launch-url-label {
     font-size: 12px;
     text-transform: uppercase;
