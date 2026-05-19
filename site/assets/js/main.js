@@ -1374,10 +1374,22 @@ function createBowireCombobox(hostEl, allItems, defaultSelectedIds, placeholder)
             runLang: 'csharp',
             run:
                 '// In your Program.cs, after WebApplication.CreateBuilder(...).Build():\n' +
-                'app.MapBowire();\n' +
+                'app.MapBowire(){ADDONS};\n' +
                 '// app.Run();',
+            // MCP adapter is the embedded equivalent of the standalone
+            // `--enable-mcp-adapter` flag — adds an `/bowire/mcp` route
+            // alongside the workbench UI in the host's pipeline. No
+            // separate process, no extra port. The standalone-only
+            // `mcp serve` add-on is intentionally absent here: embedded
+            // hosts already own a process and a port, so spawning a
+            // second Bowire alongside makes little sense.
+            addons: [
+                { id: 'mcp-adapter',
+                  label: 'Expose target methods as MCP tools (AI calls your API — adds /bowire/mcp)',
+                  runFlag: '\n   .WithMcpAdapter()' }
+            ],
             then:
-                'Then run your app and open <code>http://localhost:5000/bowire</code>.<br>Every gRPC, REST, SignalR, GraphQL endpoint your service exposes is browsable there.',
+                'Then run your app and open <code>http://localhost:5000/bowire</code>.<br>Every gRPC, REST, SignalR, GraphQL endpoint your service exposes is browsable there. With the MCP add-on ticked, <code>http://localhost:5000/bowire/mcp</code> is the MCP-streamable-HTTP endpoint your AI client points at.',
             urlInput: false,
             installPrompt: 'NuGet packages — core plus the protocols you ship. Tick whichever you need; the snippet updates live.',
             runPrompt: 'One line in your Program.cs.'
