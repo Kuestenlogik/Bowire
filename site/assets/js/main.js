@@ -1188,8 +1188,21 @@ function createBowireCombobox(hostEl, allItems, defaultSelectedIds, placeholder)
     }
 
     function renderTags() {
-        // Wipe everything except the trailing input.
-        while (wrap.firstChild) wrap.removeChild(wrap.firstChild);
+        // Remove only the existing chip elements — leave the input
+        // in place. The old version did `while (wrap.firstChild)
+        // wrap.removeChild(...)` which yanked the input out of the
+        // DOM and back in on every render; that flush implicitly
+        // fires a blur on the input, the blur queues
+        // setTimeout(closeSuggestions, 120ms), and the dropdown
+        // collapses ~120 ms after the user picked their first chip
+        // — making the picker look one-shot.
+        var existingTags = wrap.querySelectorAll('.launch-combobox-tag');
+        for (var k = 0; k < existingTags.length; k++) {
+            existingTags[k].parentNode.removeChild(existingTags[k]);
+        }
+        if (input.parentNode !== wrap) {
+            wrap.appendChild(input);
+        }
         for (var i = 0; i < selectedIds.length; i++) {
             (function (id) {
                 var item = findItem(id);
@@ -1207,10 +1220,11 @@ function createBowireCombobox(hostEl, allItems, defaultSelectedIds, placeholder)
                     removeSelection(id);
                 });
                 tag.appendChild(rm);
-                wrap.appendChild(tag);
+                // Insert before the input so chips render in order,
+                // input stays at the end as the visual cursor.
+                wrap.insertBefore(tag, input);
             })(selectedIds[i]);
         }
-        wrap.appendChild(input);
     }
 
     function renderSuggestions() {
