@@ -34,15 +34,16 @@ public sealed class BowireAsyncApiProtocol : IBowireProtocol
     // boilerplate is cheap to amortise across discovery calls.
     private static readonly AsyncApiDocumentLoader Loader = new();
 
-    // Discovered V3 documents are cached by their source URL so
+    // Discovered documents are cached by their source URL so
     // InvokeAsync can look up channel + operation + server without
     // re-parsing the YAML on every call. Eviction policy is
     // "rediscover replaces" — a fresh DiscoverAsync of the same URL
-    // overwrites the cached entry. V2 documents are walked once at
-    // discovery time and not cached because the V2 InvokeAsync path
-    // isn't wired up yet (each V2 channel carries its own embedded
-    // operations, no separate operations-by-channel lookup needed).
+    // overwrites the cached entry. V2 and V3 documents go into
+    // separate caches because their downstream lookup shapes are
+    // different enough that branching at invoke time keeps the code
+    // simpler than a tagged-union over IAsyncApiDocument.
     private readonly ConcurrentDictionary<string, V3AsyncApiDocument> _documents = new(StringComparer.Ordinal);
+    private readonly ConcurrentDictionary<string, V2AsyncApiDocument> _v2Documents = new(StringComparer.Ordinal);
 
     // Per-document binding-field extraction (separate cache because we
     // walk the raw YAML via AsyncApiBindingsExtractor — the Neuroglia
@@ -133,6 +134,12 @@ public sealed class BowireAsyncApiProtocol : IBowireProtocol
                     AsyncApiBindingsExtractor.ExtractV3OperationBindings(load.NormalisedYaml);
                 return MapV3Channels(v3, serverUrl);
             case V2AsyncApiDocument v2:
+                // V2 cache lives alongside V3 so InvokeAsync's branch
+                // can find the channel + operation + server without
+                // re-parsing. Bindings extraction for V2 ships in a
+                // later iteration — invocations default to AtLeastOnce
+                // / retain=false until then.
+                _v2Documents[serverUrl] = v2;
                 return MapV2Channels(v2, serverUrl);
             default:
                 return [];
@@ -333,9 +340,18 @@ public sealed class BowireAsyncApiProtocol : IBowireProtocol
         // service = channel key (e.g. "lightingMeasured")
         // method  = operation key (e.g. "sendTurnOnOff")
         //
-        // Walk: cached document → operation lookup → resolve channel + first
-        // server → pick the resolver whose binding matches the server's
-        // declared protocol → delegate.
+        // V2 + V3 documents diverge here: V3 has a separate top-level
+        // operations block keyed by opKey, V2 inlines publish/subscribe
+        // into the channel itself. We try V3 first (the dominant
+        // spec version going forward), fall back to V2 if the URL was
+        // cached as such, and only then report "not discovered".
+        if (_v2Documents.TryGetValue(serverUrl, out var v2Document))
+        {
+            return await InvokeV2Async(
+                v2Document, service, method, jsonMessages, metadata, ct)
+                .ConfigureAwait(false);
+        }
+
         if (!_documents.TryGetValue(serverUrl, out var document))
         {
             return Error("AsyncAPI document has not been discovered yet. " +
@@ -396,6 +412,78 @@ public sealed class BowireAsyncApiProtocol : IBowireProtocol
             BindingFields: bindingFields);
 
         return await resolver.InvokeAsync(ctx, jsonMessages, metadata, ct).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// V2 invocation path. V2's <c>service</c> is the channel key
+    /// (which IS the topic in V2 — no separate <c>address:</c>),
+    /// <c>method</c> is the <c>operationId</c> the author set on
+    /// <c>channel.publish</c> or <c>channel.subscribe</c> (or the
+    /// "publish"/"subscribe" fallback when not set). Server selection +
+    /// resolver routing mirror the V3 path. Bindings extraction for V2
+    /// is a follow-up — for now the resolver gets an empty
+    /// <see cref="AsyncApiChannelContext.BindingFields"/> and falls
+    /// back to its protocol-level defaults.
+    /// </summary>
+    private async Task<InvokeResult> InvokeV2Async(
+        V2AsyncApiDocument document, string service, string method,
+        List<string> jsonMessages, Dictionary<string, string>? metadata,
+        CancellationToken ct)
+    {
+        if (document.Channels is null || !document.Channels.TryGetValue(service, out var channel))
+        {
+            return Error($"Channel '{service}' not found in AsyncAPI v2 document.");
+        }
+
+        // V2 inlines operations as channel.publish / channel.subscribe.
+        // Match the request's `method` against the operationId on each
+        // slot (or the fallback "publish"/"subscribe" label MapV2Channels
+        // synthesises when no operationId is set) so the call lands on
+        // the right direction.
+        var isSend = MatchesV2Operation(channel.Publish, method, fallback: "publish");
+        var isReceive = MatchesV2Operation(channel.Subscribe, method, fallback: "subscribe");
+        if (!isSend && !isReceive)
+        {
+            return Error($"Operation '{method}' not found on V2 channel '{service}'.");
+        }
+
+        if (document.Servers is null || document.Servers.Count == 0)
+        {
+            return Error("AsyncAPI v2 document declares no servers; cannot route invocation.");
+        }
+
+        var (serverName, server) = document.Servers.First();
+        if (string.IsNullOrWhiteSpace(server.Protocol))
+        {
+            return Error($"V2 server '{serverName}' has no protocol declared.");
+        }
+
+        if (!_resolvers.TryGetValue(server.Protocol, out var resolver))
+        {
+            return Error(
+                $"No AsyncAPI binding resolver registered for protocol '{server.Protocol}'. " +
+                "Phase A ships the MQTT resolver only.");
+        }
+
+        var brokerUrl = string.IsNullOrWhiteSpace(server.Url?.OriginalString)
+            ? $"{server.Protocol}://"
+            : server.Url!.OriginalString;
+
+        var ctx = new AsyncApiChannelContext(
+            ServerUrl: brokerUrl,
+            ChannelAddress: service,
+            OperationAction: isSend ? "send" : "receive",
+            BindingFields: new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase));
+
+        return await resolver.InvokeAsync(ctx, jsonMessages, metadata, ct).ConfigureAwait(false);
+    }
+
+    private static bool MatchesV2Operation(
+        V2OperationDefinition? slot, string requestedMethod, string fallback)
+    {
+        if (slot is null) return false;
+        var opName = !string.IsNullOrWhiteSpace(slot.OperationId) ? slot.OperationId! : fallback;
+        return string.Equals(opName, requestedMethod, StringComparison.Ordinal);
     }
 
     private static InvokeResult Error(string message) =>
