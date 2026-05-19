@@ -36,7 +36,7 @@ docker run --rm -p 5080:5080 \
     --url https://api.example.com/openapi.json
 ```
 
-Open <http://localhost:5080/bowire> in a browser. Every protocol
+Open <http://localhost:5080> in a browser. Every protocol
 plugin bundled with the CLI (gRPC, REST, GraphQL, SignalR, MCP, SSE,
 WebSocket, MQTT, Socket.IO, OData) is loaded by default; sibling
 plugins (Surgewave, Kafka, DIS, UDP) need to be installed via the
