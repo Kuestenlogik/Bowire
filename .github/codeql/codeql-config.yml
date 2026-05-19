@@ -1,9 +1,10 @@
 # CodeQL configuration for Bowire.
 #
-# Picked up automatically by GitHub's default-setup CodeQL analysis
-# (placed at the conventional path .github/codeql/codeql-config.yml).
-# If you switch to advanced-setup later, reference this same file
-# from the workflow's `with: config-file:` input.
+# Consumed by the advanced-setup workflow at .github/workflows/codeql.yml
+# via `with: config-file: ./.github/codeql/codeql-config.yml`. GitHub's
+# Default Setup ignores this file outright — that's why Bowire switched
+# from Default Setup to Advanced Setup: the path filters below need to
+# actually take effect.
 
 name: "Bowire CodeQL config"
 
