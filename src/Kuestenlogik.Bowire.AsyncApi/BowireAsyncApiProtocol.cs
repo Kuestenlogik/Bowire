@@ -1,6 +1,7 @@
 // Copyright 2026 Küstenlogik
 // SPDX-License-Identifier: Apache-2.0
 
+using System.Collections.Concurrent;
 using Kuestenlogik.Bowire.Models;
 using Neuroglia.AsyncApi;
 using Neuroglia.AsyncApi.v3;
@@ -32,6 +33,18 @@ public sealed class BowireAsyncApiProtocol : IBowireProtocol
     // boilerplate is cheap to amortise across discovery calls.
     private static readonly AsyncApiDocumentLoader Loader = new();
 
+    // Discovered documents are cached by their source URL so InvokeAsync
+    // can look up channel + operation + server without re-parsing the
+    // YAML on every call. Eviction policy is "rediscover replaces" — a
+    // fresh DiscoverAsync of the same URL overwrites the cached entry.
+    private readonly ConcurrentDictionary<string, V3AsyncApiDocument> _documents = new(StringComparer.Ordinal);
+
+    // Resolvers picked up at Initialize time (one per wire-binding key).
+    // The dict is populated once the host hands us a service provider
+    // carrying a BowireProtocolRegistry; until then InvokeAsync returns
+    // a clear "no registry available" error rather than guessing.
+    private readonly Dictionary<string, IAsyncApiBindingResolver> _resolvers = new(StringComparer.OrdinalIgnoreCase);
+
     public string Name => "AsyncAPI";
 
     public string Id => "asyncapi";
@@ -42,6 +55,29 @@ public sealed class BowireAsyncApiProtocol : IBowireProtocol
         // swapped for the official AsyncAPI mark (subject to licensing
         // check) when the UI surface lands.
         """<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h12"/><path d="M4 12h8"/><path d="M4 17h14"/><path d="M18 7l3 0"/><path d="M15 12l3 0"/><path d="M21 17l-3 -3"/><path d="M21 17l-3 3"/></svg>""";
+
+    /// <summary>
+    /// Hook the AsyncAPI protocol into the host's <see cref="BowireProtocolRegistry"/>.
+    /// We need the registry to dispatch invocations to wire plugins (MQTT,
+    /// Kafka, …); without it the plugin still loads documents and renders
+    /// services, but <see cref="InvokeAsync"/> can't route anywhere.
+    ///
+    /// Called by <c>MapBowire()</c> and <c>WithMcpAdapter()</c> on every
+    /// IBowireProtocol after discovery scans pick it up. Standalone CLI
+    /// passes its own ServiceProvider too.
+    /// </summary>
+    public void Initialize(IServiceProvider? serviceProvider)
+    {
+        if (serviceProvider is null) return;
+        var registry = (BowireProtocolRegistry?)serviceProvider.GetService(typeof(BowireProtocolRegistry));
+        if (registry is null) return;
+
+        // Resolvers are owned by this plugin and pinned to the registry the
+        // host wires up at startup. Phase A3 ships only the MQTT resolver;
+        // Phase A4+ adds Kafka / WebSocket / AMQP / NATS alongside the
+        // corresponding wire-plugin landings.
+        _resolvers["mqtt"] = new MqttBindingResolver(registry);
+    }
 
     public async Task<List<BowireServiceInfo>> DiscoverAsync(
         string serverUrl, bool showInternalServices, CancellationToken ct = default)
@@ -72,17 +108,28 @@ public sealed class BowireAsyncApiProtocol : IBowireProtocol
             return [];
         }
 
+        // Cache the parsed document so InvokeAsync can find the channel +
+        // operation + servers without re-reading the YAML. Keyed by the
+        // exact serverUrl the discovery dispatcher passed in so multi-URL
+        // workbenches keep each AsyncAPI document separate.
+        _documents[serverUrl] = v3;
+
         return MapV3Channels(v3, serverUrl);
     }
 
     /// <summary>
-    /// V3 channel walker. Each channel becomes one <see cref="BowireServiceInfo"/>;
-    /// the service Name is the channel key (e.g. <c>lightingMeasured</c>) and
-    /// the Package mirrors the document's <c>info.title</c> so multiple
-    /// AsyncAPI documents in the same workbench session don't collide. One
-    /// placeholder method per channel goes in for now — Phase A3 replaces it
-    /// with one method per operation that targets this channel, picked from
-    /// <c>document.Operations</c>.
+    /// V3 channel + operation walker. Each channel becomes one
+    /// <see cref="BowireServiceInfo"/>; each operation that targets that
+    /// channel becomes one <see cref="BowireMethodInfo"/> on the service.
+    /// The operation's <c>action</c> (send / receive) drives the streaming
+    /// direction:
+    /// <list type="bullet">
+    ///   <item><c>send</c> → client streams toward the broker (we publish)</item>
+    ///   <item><c>receive</c> → server streams toward us (we subscribe)</item>
+    /// </list>
+    /// Channels that no operation references still get a service entry so the
+    /// sidebar shows the discovered topology — they just stay empty until the
+    /// author adds the operations.
     /// </summary>
     private static List<BowireServiceInfo> MapV3Channels(V3AsyncApiDocument document, string sourceUrl)
     {
@@ -91,29 +138,59 @@ public sealed class BowireAsyncApiProtocol : IBowireProtocol
         var services = new List<BowireServiceInfo>();
         if (document.Channels is null) return services;
 
+        // Bucket operations by the channel they $ref so each channel-service
+        // only iterates its own operations below. Operations whose $ref
+        // can't be resolved get dropped — they wouldn't have anywhere to
+        // attach in Bowire's service/method tree anyway.
+        var opsByChannel = new Dictionary<string, List<(string Key, V3OperationDefinition Op)>>(StringComparer.Ordinal);
+        if (document.Operations is not null)
+        {
+            foreach (var (opKey, op) in document.Operations)
+            {
+                var channelKey = ResolveChannelRef(op.Channel?.Reference);
+                if (channelKey is null) continue;
+                if (!opsByChannel.TryGetValue(channelKey, out var list))
+                {
+                    list = [];
+                    opsByChannel[channelKey] = list;
+                }
+                list.Add((opKey, op));
+            }
+        }
+
         foreach (var (channelKey, channel) in document.Channels)
         {
-            var methodName = channel.Address ?? channelKey;
-            // Placeholder method — full mapping (one per operation, with
-            // send/receive direction wired onto ClientStreaming /
-            // ServerStreaming) lands in Phase A3.
-            var method = new BowireMethodInfo(
-                Name: methodName,
-                FullName: $"{apiTitle}.{channelKey}",
-                ClientStreaming: false,
-                ServerStreaming: true,
-                InputType: new BowireMessageInfo(methodName + "Request", methodName + "Request", []),
-                OutputType: new BowireMessageInfo(methodName + "Response", methodName + "Response", []),
-                MethodType: "asyncapi-channel")
+            var methods = new List<BowireMethodInfo>();
+            if (opsByChannel.TryGetValue(channelKey, out var channelOps))
             {
-                Summary = channel.Title ?? channel.Summary,
-                Description = channel.Description
-            };
+                foreach (var (opKey, op) in channelOps)
+                {
+                    var isSend = op.Action == V3OperationAction.Send;
+                    methods.Add(new BowireMethodInfo(
+                        Name: opKey,
+                        FullName: $"{apiTitle}.{channelKey}.{opKey}",
+                        ClientStreaming: isSend,
+                        ServerStreaming: !isSend,
+                        InputType: new BowireMessageInfo(opKey + "Request", opKey + "Request", []),
+                        OutputType: new BowireMessageInfo(opKey + "Response", opKey + "Response", []),
+                        MethodType: isSend ? "asyncapi-send" : "asyncapi-receive")
+                    {
+                        Summary = channel.Title ?? channel.Summary,
+                        Description = channel.Description,
+                        // HttpPath gets the channel address so the sidebar
+                        // can show `smarthome/light/measured` next to the
+                        // operation key — re-using the existing REST slot
+                        // is a cheap way to render the channel-address
+                        // hint without a new model field.
+                        HttpPath = channel.Address
+                    });
+                }
+            }
 
             services.Add(new BowireServiceInfo(
                 Name: channelKey,
                 Package: apiTitle,
-                Methods: [method])
+                Methods: methods)
             {
                 Source = "asyncapi",
                 Description = document.Info?.Description,
@@ -126,16 +203,84 @@ public sealed class BowireAsyncApiProtocol : IBowireProtocol
         return services;
     }
 
-    public Task<InvokeResult> InvokeAsync(
+    /// <summary>
+    /// Pull the channel key out of an AsyncAPI <c>$ref</c> pointer.
+    /// Accepts <c>#/channels/lightingMeasured</c> form; everything else
+    /// returns <c>null</c> so the operation gets dropped rather than
+    /// landing on a wrong channel.
+    /// </summary>
+    private static string? ResolveChannelRef(string? reference)
+    {
+        if (string.IsNullOrWhiteSpace(reference)) return null;
+        const string prefix = "#/channels/";
+        if (!reference.StartsWith(prefix, StringComparison.Ordinal)) return null;
+        var key = reference[prefix.Length..];
+        return string.IsNullOrEmpty(key) ? null : key;
+    }
+
+    public async Task<InvokeResult> InvokeAsync(
         string serverUrl, string service, string method,
         List<string> jsonMessages, bool showInternalServices,
         Dictionary<string, string>? metadata = null, CancellationToken ct = default)
     {
-        throw new NotSupportedException(
-            "AsyncAPI discovery source has not loaded any channels yet — " +
-            "the Phase A loader is not wired up. Once it is, InvokeAsync " +
-            "will dispatch to the wire plugin named by the channel's binding.");
+        // service = channel key (e.g. "lightingMeasured")
+        // method  = operation key (e.g. "sendTurnOnOff")
+        //
+        // Walk: cached document → operation lookup → resolve channel + first
+        // server → pick the resolver whose binding matches the server's
+        // declared protocol → delegate.
+        if (!_documents.TryGetValue(serverUrl, out var document))
+        {
+            return Error("AsyncAPI document has not been discovered yet. " +
+                $"Call discover with serverUrl '{serverUrl}' first.");
+        }
+
+        if (document.Operations is null || !document.Operations.TryGetValue(method, out var operation))
+        {
+            return Error($"Operation '{method}' not found in AsyncAPI document.");
+        }
+
+        // Server selection: Phase A3 picks the first declared server whose
+        // protocol matches a resolver we have. Multi-server documents and
+        // per-channel servers[] overrides arrive in Phase A4.
+        if (document.Servers is null || document.Servers.Count == 0)
+        {
+            return Error("AsyncAPI document declares no servers; cannot route invocation.");
+        }
+
+        var (serverName, server) = document.Servers.First();
+        if (string.IsNullOrWhiteSpace(server.Protocol))
+        {
+            return Error($"Server '{serverName}' has no protocol declared.");
+        }
+
+        if (!_resolvers.TryGetValue(server.Protocol, out var resolver))
+        {
+            return Error(
+                $"No AsyncAPI binding resolver registered for protocol '{server.Protocol}'. " +
+                "Phase A ships the MQTT resolver only; Kafka / WebSocket / AMQP / NATS " +
+                "join as their wire plugins land (see ROADMAP: AsyncAPI as a discovery source).");
+        }
+
+        var channelKey = ResolveChannelRef(operation.Channel?.Reference);
+        if (channelKey is null || !document.Channels!.TryGetValue(channelKey, out var channel))
+        {
+            return Error($"Operation '{method}' references an unknown channel.");
+        }
+
+        var brokerUrl = $"{server.Protocol}://{server.Host}{server.PathName ?? string.Empty}";
+        var ctx = new AsyncApiChannelContext(
+            ServerUrl: brokerUrl,
+            ChannelAddress: channel.Address ?? channelKey,
+            OperationAction: operation.Action == V3OperationAction.Send ? "send" : "receive",
+            BindingFields: new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase));
+
+        return await resolver.InvokeAsync(ctx, jsonMessages, metadata, ct).ConfigureAwait(false);
     }
+
+    private static InvokeResult Error(string message) =>
+        new(Response: null, DurationMs: 0, Status: "Error",
+            Metadata: new Dictionary<string, string> { ["error"] = message });
 
     public async IAsyncEnumerable<string> InvokeStreamAsync(
         string serverUrl, string service, string method,

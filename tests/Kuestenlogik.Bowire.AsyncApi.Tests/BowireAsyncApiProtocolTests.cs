@@ -60,13 +60,17 @@ public sealed class BowireAsyncApiProtocolTests
             serverUrl: sample, showInternalServices: false,
             ct: TestContext.Current.CancellationToken)
             .ConfigureAwait(true);
+        // Minimal sample has no operations, so the channel is discovered
+        // but the methods list is empty — Bowire still surfaces the
+        // service node so the topology is visible.
         Assert.Single(services);
         Assert.Equal("hello", services[0].Name);
         Assert.Equal("Minimal", services[0].Package);
+        Assert.Empty(services[0].Methods);
     }
 
     [Fact]
-    public async Task Discover_loads_smart_home_sample_and_maps_two_channels()
+    public async Task Discover_loads_smart_home_sample_with_operations_mapped()
     {
         var plugin = new BowireAsyncApiProtocol();
         var sample = Path.Combine("TestData", "smart-home-mqtt.asyncapi.yaml");
@@ -78,31 +82,67 @@ public sealed class BowireAsyncApiProtocolTests
 
         Assert.Equal(2, services.Count);
 
+        // Receive operation → server-streaming (broker → us)
         var measured = services.Single(s => s.Name == "lightingMeasured");
         Assert.Equal("Smart Home Hub", measured.Package);
         Assert.Equal("1.0.0", measured.Version);
         Assert.Equal("asyncapi", measured.Source);
         Assert.Equal(sample, measured.OriginUrl);
-        Assert.Single(measured.Methods);
-        Assert.Equal("smarthome/light/measured", measured.Methods[0].Name);
-        Assert.Equal("asyncapi-channel", measured.Methods[0].MethodType);
+        var measuredOp = Assert.Single(measured.Methods);
+        Assert.Equal("receiveLightMeasurement", measuredOp.Name);
+        Assert.Equal("asyncapi-receive", measuredOp.MethodType);
+        Assert.False(measuredOp.ClientStreaming);
+        Assert.True(measuredOp.ServerStreaming);
+        Assert.Equal("smarthome/light/measured", measuredOp.HttpPath);
 
+        // Send operation → client-streaming (us → broker)
         var turnOnOff = services.Single(s => s.Name == "turnOnOff");
-        Assert.Equal("smarthome/light/{room}/action", turnOnOff.Methods[0].Name);
+        var sendOp = Assert.Single(turnOnOff.Methods);
+        Assert.Equal("sendTurnOnOff", sendOp.Name);
+        Assert.Equal("asyncapi-send", sendOp.MethodType);
+        Assert.True(sendOp.ClientStreaming);
+        Assert.False(sendOp.ServerStreaming);
+        Assert.Equal("smarthome/light/{room}/action", sendOp.HttpPath);
     }
 
     [Fact]
-    public async Task Invoke_throws_NotSupported_until_loader_is_wired()
+    public async Task Invoke_returns_error_when_document_was_never_discovered()
     {
         var plugin = new BowireAsyncApiProtocol();
-        await Assert.ThrowsAsync<NotSupportedException>(() =>
-            plugin.InvokeAsync(
-                serverUrl: "./asyncapi.yaml",
-                service: "light",
-                method: "measured",
-                jsonMessages: [],
-                showInternalServices: false,
-                ct: TestContext.Current.CancellationToken))
+        var result = await plugin.InvokeAsync(
+            serverUrl: "./asyncapi.yaml",
+            service: "light",
+            method: "measured",
+            jsonMessages: [],
+            showInternalServices: false,
+            ct: TestContext.Current.CancellationToken)
             .ConfigureAwait(true);
+        Assert.Equal("Error", result.Status);
+        Assert.Contains("not been discovered", result.Metadata["error"], StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Invoke_returns_error_when_protocol_has_no_resolver()
+    {
+        // Discover first so the document is cached, then invoke an
+        // operation against a server whose protocol has no resolver
+        // registered (here: no Initialize, so the resolvers dict is
+        // empty). Caller should get a clear "no resolver" message
+        // pointing at the AsyncAPI roadmap.
+        var plugin = new BowireAsyncApiProtocol();
+        var sample = Path.Combine("TestData", "smart-home-mqtt.asyncapi.yaml");
+        _ = await plugin.DiscoverAsync(sample, false, TestContext.Current.CancellationToken)
+            .ConfigureAwait(true);
+
+        var result = await plugin.InvokeAsync(
+            serverUrl: sample,
+            service: "turnOnOff",
+            method: "sendTurnOnOff",
+            jsonMessages: ["{\"command\":\"on\"}"],
+            showInternalServices: false,
+            ct: TestContext.Current.CancellationToken)
+            .ConfigureAwait(true);
+        Assert.Equal("Error", result.Status);
+        Assert.Contains("No AsyncAPI binding resolver", result.Metadata["error"], StringComparison.Ordinal);
     }
 }
