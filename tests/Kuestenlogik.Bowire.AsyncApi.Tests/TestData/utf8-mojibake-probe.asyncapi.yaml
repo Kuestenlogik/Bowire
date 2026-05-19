@@ -1,0 +1,7 @@
+asyncapi: 3.0.0
+info:
+  title: Harbor Control Center — Event Stream
+  version: 1.0.0
+channels:
+  ping:
+    address: 'ping'
