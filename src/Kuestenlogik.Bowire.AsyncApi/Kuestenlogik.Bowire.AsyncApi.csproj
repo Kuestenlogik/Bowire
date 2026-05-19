@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Description>Bowire AsyncAPI discovery source — loads an AsyncAPI 2.x/3.0 document and surfaces its channels as Bowire methods. Calls are dispatched to the matching wire-protocol plugin (MQTT, Kafka, WebSocket, …) via the protocol registry, so AsyncAPI is not a transport itself but the schema-side facade over the transports you already have installed.</Description>
+    <PackageId>Kuestenlogik.Bowire.AsyncApi</PackageId>
+    <PackageTags>bowire;bowire-plugin;asyncapi;event-driven;discovery;developer-tools</PackageTags>
+    <IsPackable>true</IsPackable>
+  </PropertyGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="bowire" />
+    <InternalsVisibleTo Include="Kuestenlogik.Bowire.AsyncApi.Tests" />
+    <InternalsVisibleTo Include="Kuestenlogik.Bowire.Tests" />
+    <InternalsVisibleTo Include="Kuestenlogik.Bowire.IntegrationTests" />
+  </ItemGroup>
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- Intentionally NO ProjectReferences to the wire-protocol plugins
+         (Mqtt, Kafka, WebSocket, …). AsyncAPI looks them up at runtime
+         through BowireProtocolRegistry so embedded users only need to
+         install the wire plugins their document actually declares
+         bindings for. A hard reference here would force every embedded
+         consumer of AsyncAPI to also pull in every wire plugin we ever
+         add a binding resolver for, which defeats the modular install
+         story. -->
+    <ProjectReference Include="..\Kuestenlogik.Bowire\Kuestenlogik.Bowire.csproj" />
+  </ItemGroup>
+</Project>
