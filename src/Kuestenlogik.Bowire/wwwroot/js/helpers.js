@@ -412,6 +412,13 @@
             case 'ServerStreaming': return 'SS';
             case 'ClientStreaming': return 'CS';
             case 'Duplex': return 'DX';
+            // AsyncAPI operations carry a direction (`send` from the
+            // application toward the broker, `receive` from the broker
+            // toward the application). Arrows make the polarity readable
+            // at a glance — leftward for "broker → us", rightward for
+            // "us → broker".
+            case 'asyncapi-send': return '→'; // →
+            case 'asyncapi-receive': return '←'; // ←
             default: return type;
         }
     }
@@ -441,6 +448,8 @@
             case 'ServerStreaming': return 'Server Stream';
             case 'ClientStreaming': return 'Client Stream';
             case 'Duplex': return 'Duplex';
+            case 'asyncapi-send': return 'AsyncAPI Send';
+            case 'asyncapi-receive': return 'AsyncAPI Receive';
             default: return type;
         }
     }
