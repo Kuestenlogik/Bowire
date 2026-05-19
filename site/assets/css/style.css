@@ -7046,6 +7046,19 @@ html[data-theme="light"] {
     transition: filter 0.32s ease;
 }
 
+/* Per-photo brightness overrides — the source images don't all share
+   the same exposure baseline (the dazzle ship is naturally a darker
+   warship shot, the passenger / cruise ship was taken at a brighter
+   golden hour). Bump the darker ones at rest so the five cards
+   visually weigh the same in the strip. Hover/selected still resets
+   to filter:none so the full-colour reveal stays consistent. */
+.launch-boat[data-boat="mock"] .launch-boat-diagram img {
+    filter: grayscale(0.45) saturate(0.95) brightness(1.10);
+}
+.launch-boat[data-boat="ai"] .launch-boat-diagram img {
+    filter: grayscale(0.55) saturate(0.85) brightness(0.98);
+}
+
 /* Accent-tinted overlay washes the photo at rest so it pulls toward
    the site's lavender accent. multiply-blend keeps the photo's tonal
    range intact (just shifts the chroma); on hover/selected the
