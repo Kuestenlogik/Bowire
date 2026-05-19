@@ -174,28 +174,25 @@
       <div class="launch-panel" data-step-panel="3" role="tabpanel" aria-hidden="true">
         <p class="launch-prompt" data-launch-prompt-3>Run it.</p>
 
-        <!-- Optional URL input — shown only for tester / mock / ai boats.
-             The hint dropdown next to the input selects a Bowire
-             protocol-disambiguator prefix (grpc@, rest@, graphql@, …)
-             that gets joined onto the URL with an `@`. Default "any"
-             leaves the URL bare so Bowire's auto-detection takes over;
-             the dropdown teaches the user about hints they almost
-             certainly don't know about yet. main.js populates the
-             options from BOWIRE_PROTOCOLS at init time. -->
-        <div class="launch-url-row" data-url-row hidden>
-          <label class="launch-url-label" for="launch-url-input">Target URL</label>
-          <div class="launch-url-controls">
-            <select class="launch-url-hint" data-url-hint aria-label="Protocol hint">
-              <option value="">any</option>
-            </select>
-            <input type="text"
-                   id="launch-url-input"
-                   class="launch-url-input"
-                   data-url-input
-                   placeholder="https://api.example.com/swagger.json"
-                   autocomplete="off"
-                   spellcheck="false">
+        <!-- Multi-URL target list — shown only for tester / mock / ai
+             boats. Each row is a (hint dropdown + URL input + remove
+             button) triple; the run snippet collapses the rows into
+             repeated `--url` flags so `bowire` polls every target in
+             parallel. The hint dropdown disambiguates a target
+             protocol (grpc@, rest@, …) and is filtered to the
+             protocols actually installed in step 2: first-party are
+             always there, third-party only when the picker ticked
+             them. main.js wires it up via data-urls-row / -list /
+             -add at recipe-render time. -->
+        <div class="launch-urls-row" data-urls-row hidden>
+          <label class="launch-url-label">Target URL(s)</label>
+          <div class="launch-urls-list" data-urls-list>
+            <!-- Rows injected by main.js — initial state: one empty row. -->
           </div>
+          <button type="button" class="launch-urls-add" data-urls-add>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Add URL
+          </button>
         </div>
 
         <!-- Optional add-on toggles — currently just the MCP adapter

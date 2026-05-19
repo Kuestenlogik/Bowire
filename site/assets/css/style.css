@@ -7421,8 +7421,11 @@ html[data-theme="light"] {
     margin: 0 0 18px;
 }
 
-/* Optional URL input above the run command. */
-.launch-url-row {
+/* Multi-URL block above the run command. Container holds the
+   label, the list of rows (hint + input + remove), and the add
+   button. Each row is built dynamically in JS — see renderUrlRows
+   in main.js. */
+.launch-urls-row {
     display: flex;
     flex-direction: column;
     gap: 6px;
@@ -7437,14 +7440,64 @@ html[data-theme="light"] {
     font-weight: 600;
 }
 
-/* Side-by-side row that holds the hint <select> and the URL <input>.
-   On narrow viewports the select wraps on top of the input — gap +
-   flex-wrap keep both elements legible without horizontal overflow. */
+.launch-urls-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+/* Side-by-side row that holds the hint <select>, the URL <input>,
+   and (when multiple rows exist) the remove × button. On narrow
+   viewports the select wraps on top of the input — gap + flex-wrap
+   keep both elements legible without horizontal overflow. */
 .launch-url-controls {
     display: flex;
     flex-wrap: wrap;
     gap: 8px;
     align-items: stretch;
+}
+
+.launch-url-remove {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 38px;
+    padding: 0;
+    background: transparent;
+    border: 1.5px solid var(--border, #2a2a3a);
+    border-radius: 8px;
+    color: var(--text-muted, #8a8aa0);
+    cursor: pointer;
+    transition: border-color 0.18s ease, color 0.18s ease, background 0.18s ease;
+}
+
+.launch-url-remove:hover {
+    border-color: var(--danger, #f87171);
+    color: var(--danger, #f87171);
+    background: rgba(248, 113, 113, 0.08);
+}
+
+.launch-urls-add {
+    align-self: flex-start;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 4px;
+    padding: 6px 12px;
+    background: transparent;
+    border: 1.5px dashed var(--border, #2a2a3a);
+    border-radius: 8px;
+    color: var(--text-muted, #8a8aa0);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: border-color 0.18s ease, color 0.18s ease, background 0.18s ease;
+}
+
+.launch-urls-add:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: rgba(99, 102, 241, 0.08);
 }
 
 .launch-url-hint {
@@ -7567,7 +7620,9 @@ html[data-theme="light"] {
     .launch-step,
     .launch-nav-btn,
     .launch-step-num,
-    .launch-url-input {
+    .launch-url-input,
+    .launch-url-remove,
+    .launch-urls-add {
         animation: none !important;
         transition: none !important;
     }
