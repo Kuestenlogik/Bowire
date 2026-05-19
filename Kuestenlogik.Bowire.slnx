@@ -12,6 +12,7 @@
     <Project Path="src/Kuestenlogik.Bowire.Protocol.Mqtt/Kuestenlogik.Bowire.Protocol.Mqtt.csproj" />
     <Project Path="src/Kuestenlogik.Bowire.Protocol.SocketIo/Kuestenlogik.Bowire.Protocol.SocketIo.csproj" />
     <Project Path="src/Kuestenlogik.Bowire.Protocol.OData/Kuestenlogik.Bowire.Protocol.OData.csproj" />
+    <Project Path="src/Kuestenlogik.Bowire.AsyncApi/Kuestenlogik.Bowire.AsyncApi.csproj" />
     <Project Path="src/Kuestenlogik.Bowire.Mock/Kuestenlogik.Bowire.Mock.csproj" />
     <Project Path="src/Kuestenlogik.Bowire.Mcp/Kuestenlogik.Bowire.Mcp.csproj" />
     <Project Path="src/Kuestenlogik.Bowire.Tool/Kuestenlogik.Bowire.Tool.csproj" />
@@ -20,6 +21,7 @@
     <Project Path="tests/Kuestenlogik.Bowire.Tests/Kuestenlogik.Bowire.Tests.csproj" />
     <Project Path="tests/Kuestenlogik.Bowire.IntegrationTests/Kuestenlogik.Bowire.IntegrationTests.csproj" />
     <Project Path="tests/Kuestenlogik.Bowire.Mock.Tests/Kuestenlogik.Bowire.Mock.Tests.csproj" />
+    <Project Path="tests/Kuestenlogik.Bowire.AsyncApi.Tests/Kuestenlogik.Bowire.AsyncApi.Tests.csproj" />
     <Project Path="tests/Kuestenlogik.Bowire.Extension.MapLibre.Tests/Kuestenlogik.Bowire.Extension.MapLibre.Tests.csproj" />
   </Folder>
 </Solution>
