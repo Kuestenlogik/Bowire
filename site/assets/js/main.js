@@ -1375,7 +1375,14 @@ function createBowireCombobox(hostEl, allItems, defaultSelectedIds, placeholder)
                 'dotnet tool install -g Kuestenlogik.Bowire.Tool',
             protocolPicker: 'cli',
             runLang: 'bash',
-            run: 'bowire --url {URL}',
+            run: 'bowire --url {URL}{ADDONS}',
+            // MCP add-on is cross-cutting — not exclusive to the Container
+            // boat. When the operator wants to drive Bowire from an AI agent
+            // (Claude / Cursor / Copilot), ticking this re-uses the same
+            // standalone CLI install with `--enable-mcp-adapter`.
+            addons: [
+                { id: 'mcp', label: 'Expose discovered methods as MCP tools (Claude / Cursor / Copilot)', runFlag: ' --enable-mcp-adapter' }
+            ],
             then:
                 'Bowire opens in your browser, discovers the API, and shows every method in the sidebar. Click Record to capture a session, replay it later against any environment.',
             urlInput: true,
@@ -1410,14 +1417,21 @@ function createBowireCombobox(hostEl, allItems, defaultSelectedIds, placeholder)
             run:
                 'docker run --rm -p 5080:5080 \\\n' +
                 '  kuestenlogik/bowire:latest \\\n' +
-                '  --url {URL} \\\n' +
-                '  --enable-mcp-adapter',
+                '  --url {URL}{ADDONS}',
+            // MCP add-on used to be hard-wired on this boat (it was the
+            // "AI agent" boat). Now it's opt-in via the addons tick like
+            // every other CLI-path boat — the Container card is a generic
+            // Docker-sidecar surface, not an AI-only deployment. Tick the
+            // box to bring the --enable-mcp-adapter flag back.
+            addons: [
+                { id: 'mcp', label: 'Expose discovered methods as MCP tools (Claude / Cursor / Copilot)', runFlag: ' \\\n  --enable-mcp-adapter' }
+            ],
             then:
-                'Add <code>http://localhost:5080/mcp</code> as an MCP server to Claude / Cursor / Copilot. Every discovered method shows up as an MCP tool with JSON Schema input.',
+                'Bowire runs alongside your services. Same workbench UI at <code>http://localhost:5080</code>; with the MCP add-on ticked, <code>http://localhost:5080/mcp</code> becomes an MCP server you can register with Claude / Cursor / Copilot.',
             urlInput: true,
             urlPlaceholder: 'https://my-internal-service:8443',
             installPrompt: 'Container image — runs anywhere Docker does.',
-            runPrompt: 'Drop in your service URL, hand the MCP endpoint to your agent.'
+            runPrompt: 'Drop in your service URL.'
         },
         passenger: {
             installLang: 'bash',
@@ -1452,6 +1466,8 @@ function createBowireCombobox(hostEl, allItems, defaultSelectedIds, placeholder)
     var cliBox = root.querySelector('[data-protocols-host="cli"]');
     var setupNotesBox = root.querySelector('[data-setup-notes]');
     var setupNotesList = root.querySelector('[data-setup-notes-list]');
+    var addonsBox = root.querySelector('[data-addons-host]');
+    var addonsList = root.querySelector('[data-addons-list]');
 
     // Build comboboxes once — defaults pre-select gRPC + REST for the
     // backend (covers 80% of ASP.NET workflows on first reach).
@@ -1472,6 +1488,11 @@ function createBowireCombobox(hostEl, allItems, defaultSelectedIds, placeholder)
     var currentStep = 1;
     var pickedBoat = null;
     var typedUrl = '';
+    // Persist across boat-switches — if the user ticked "MCP adapter"
+    // on one boat (e.g. tester) and switches to another with the same
+    // addon (e.g. ai/container), the choice carries through. Reset
+    // only on full restart from step 1.
+    var selectedAddons = new Set();
 
     function selectedNugetIds() { return nugetCombo.getSelected(); }
     function selectedCliIds() { return cliCombo.getSelected(); }
@@ -1555,6 +1576,56 @@ function createBowireCombobox(hostEl, allItems, defaultSelectedIds, placeholder)
         setupNotesBox.hidden = false;
     }
 
+    // Render the addons tick-box list for the active recipe. MCP-adapter
+    // is the only addon today, but the slot generalises so future
+    // toggles (`--no-browser`, `--allow-self-signed-certs`, …) can land
+    // without re-shaping the recipe model.
+    function renderAddons(recipe) {
+        if (!addonsBox || !addonsList) return;
+        if (!recipe.addons || recipe.addons.length === 0) {
+            addonsBox.hidden = true;
+            addonsList.innerHTML = '';
+            return;
+        }
+        addonsList.innerHTML = '';
+        recipe.addons.forEach(function (addon) {
+            var li = document.createElement('li');
+            li.className = 'launch-addon';
+            var input = document.createElement('input');
+            input.type = 'checkbox';
+            input.id = 'launch-addon-' + addon.id;
+            input.dataset.addonId = addon.id;
+            input.checked = selectedAddons.has(addon.id);
+            input.addEventListener('change', function () {
+                if (input.checked) selectedAddons.add(addon.id);
+                else selectedAddons.delete(addon.id);
+                renderRecipes();
+            });
+            var label = document.createElement('label');
+            label.className = 'launch-addon-label';
+            label.htmlFor = input.id;
+            label.textContent = addon.label;
+            li.appendChild(input);
+            li.appendChild(label);
+            addonsList.appendChild(li);
+        });
+        addonsBox.hidden = false;
+    }
+
+    // Compose the flag-string the recipe.run template substitutes into
+    // its `{ADDONS}` placeholder. Each ticked addon contributes its
+    // runFlag literally (the flag string includes its own leading
+    // space / line-continuation so the recipe author controls
+    // formatting).
+    function buildAddonsFlags(recipe) {
+        if (!recipe.addons || recipe.addons.length === 0) return '';
+        var out = '';
+        recipe.addons.forEach(function (addon) {
+            if (selectedAddons.has(addon.id)) out += addon.runFlag;
+        });
+        return out;
+    }
+
     function renderRecipes() {
         var recipe = pickedBoat ? RECIPES[pickedBoat] : null;
         if (!recipe) return;
@@ -1571,6 +1642,7 @@ function createBowireCombobox(hostEl, allItems, defaultSelectedIds, placeholder)
         else installSnippet = recipe.install;
 
         renderSetupNotes(recipe);
+        renderAddons(recipe);
 
         var installCode = root.querySelector('[data-recipe-content]');
         var installLang = root.querySelector('[data-recipe-lang]');
@@ -1596,7 +1668,8 @@ function createBowireCombobox(hostEl, allItems, defaultSelectedIds, placeholder)
         var placeholder = effectiveUrlPlaceholder(recipe);
         if (urlInput) urlInput.placeholder = placeholder;
         var url = (typedUrl || placeholder || '').trim() || '{URL}';
-        var filled = recipe.run.replace(/\{URL\}/g, url);
+        var addonsFlags = buildAddonsFlags(recipe);
+        var filled = recipe.run.replace(/\{URL\}/g, url).replace(/\{ADDONS\}/g, addonsFlags);
         runCode.textContent = filled;
         runLang.textContent = recipe.runLang;
         runCopy.dataset.copy = filled;
@@ -1652,6 +1725,7 @@ function createBowireCombobox(hostEl, allItems, defaultSelectedIds, placeholder)
         if (ev.target.closest('[data-step-restart]')) {
             pickedBoat = null;
             typedUrl = '';
+            selectedAddons.clear();
             boats.forEach(function (b) { b.classList.remove('selected'); });
             if (urlInput) urlInput.value = '';
             setStep(1);
