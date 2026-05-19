@@ -35,7 +35,7 @@ Click the **Headers** button to reveal the metadata panel. Add key-value pairs t
 
 | Key | Value |
 |-----|-------|
-| `authorization` | `Bearer eyJhbG...` |
+| `authorization` | `Bearer <token>` |
 | `x-request-id` | `550e8400-e29b-41d4-a716-446655440000` |
 
 For gRPC, these are sent as gRPC metadata. For SignalR, they are sent as connection headers.
