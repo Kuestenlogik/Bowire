@@ -25,3 +25,9 @@ name: "Bowire CodeQL config"
 paths-ignore:
   - 'src/Kuestenlogik.Bowire/wwwroot/js/prologue.js'
   - 'src/Kuestenlogik.Bowire/wwwroot/js/init.js'
+  # Screenshot / debug / capture tooling for build + docs pipeline.
+  # Talks to local Kestrel sample servers with self-signed dev certs
+  # over loopback only (guarded by isLoopback checks). Not runtime
+  # code, never reaches a remote host — so `js/disabling-certificate-
+  # validation` findings here are noise.
+  - 'scripts/**'
