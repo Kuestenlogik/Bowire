@@ -59,7 +59,12 @@ internal sealed class AsyncApiDocumentLoader
     /// to the SDK reader. Throws on parse / IO errors so the caller can
     /// surface them as discovery errors rather than masking them.
     /// </summary>
-    public async Task<IAsyncApiDocument> LoadAsync(string urlOrPath, CancellationToken ct)
+    /// <remarks>
+    /// Returns both the typed document and the pre-normalised raw YAML so
+    /// the caller can hand the raw text to <see cref="AsyncApiBindingsExtractor"/>
+    /// without re-fetching the URL.
+    /// </remarks>
+    public async Task<LoadResult> LoadAsync(string urlOrPath, CancellationToken ct)
     {
         var reader = _services.GetRequiredService<IAsyncApiDocumentReader>();
         var raw = await ReadRawAsync(urlOrPath, ct).ConfigureAwait(false);
@@ -73,9 +78,21 @@ internal sealed class AsyncApiDocumentLoader
 
         using var stream = new MemoryStream(Encoding.UTF8.GetBytes(normalised));
         var document = await reader.ReadAsync(stream, ct).ConfigureAwait(false);
-        return document ?? throw new InvalidOperationException(
-            $"AsyncAPI reader returned no document for '{urlOrPath}'.");
+        if (document is null)
+        {
+            throw new InvalidOperationException(
+                $"AsyncAPI reader returned no document for '{urlOrPath}'.");
+        }
+        return new LoadResult(document, normalised);
     }
+
+    /// <summary>
+    /// Outcome of <see cref="LoadAsync"/>: the typed AsyncAPI model from
+    /// the SDK reader plus the same pre-normalised YAML text the reader
+    /// consumed, so secondary walkers (binding-detail extractor,
+    /// pre-flight validators) don't need to re-fetch the URL.
+    /// </summary>
+    public sealed record LoadResult(IAsyncApiDocument Document, string NormalisedYaml);
 
     /// <summary>
     /// Reads the document content as a string so the pre-normaliser can

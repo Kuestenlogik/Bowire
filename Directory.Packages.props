@@ -33,6 +33,12 @@
          Bowire's discovery shape. -->
     <PackageVersion Include="Neuroglia.AsyncApi.Core" Version="3.0.6" />
     <PackageVersion Include="Neuroglia.AsyncApi.IO" Version="3.0.6" />
+    <!-- YamlDotNet powers the bindings-detail extractor in
+         Kuestenlogik.Bowire.AsyncApi (a side-path around the Neuroglia
+         reader's `bindings.mqtt.qos`-style crash, asyncapi/net-sdk#76).
+         Already transitive via Neuroglia.Serialization.YamlDotNet —
+         pinning it here so the direct reference is reproducible. -->
+    <PackageVersion Include="YamlDotNet" Version="16.3.0" />
     <PackageVersion Include="MQTTnet" Version="5.1.0.1559" />
     <PackageVersion Include="MQTTnet.AspNetCore" Version="5.1.0.1559" />
     <PackageVersion Include="MQTTnet.Server" Version="5.1.0.1559" />

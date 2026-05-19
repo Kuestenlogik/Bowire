@@ -70,18 +70,65 @@ internal sealed class MqttBindingResolver : IAsyncApiBindingResolver
                 });
         }
 
+        // Merge the AsyncAPI `bindings.mqtt.qos` / `.retain` fields the
+        // extractor pulled at discovery into the metadata the MQTT
+        // plugin reads. Caller-supplied metadata wins (lets a UI
+        // override the doc's qos for a one-off send); doc bindings
+        // fill in what the caller didn't specify.
+        var mergedMetadata = MergeMqttBindingFields(channel.BindingFields, metadata);
+
         // The MQTT plugin's invoke contract:
         //   serverUrl = broker URL (mqtt://host:port)
         //   service   = topic prefix (used only for sidebar grouping)
         //   method    = full topic path  ←  channel.address from AsyncAPI
-        //   metadata  = optional qos/retain (Phase A4 once bindings parse)
+        //   metadata  = qos / retain — from doc bindings or caller
         return await mqtt.InvokeAsync(
             serverUrl: channel.ServerUrl,
             service: channel.ChannelAddress,
             method: channel.ChannelAddress,
             jsonMessages: jsonMessages,
             showInternalServices: false,
-            metadata: metadata,
+            metadata: mergedMetadata,
             ct: ct).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Translate AsyncAPI's <c>bindings.mqtt.*</c> field map into the
+    /// metadata keys the Bowire MQTT plugin reads (<c>qos</c>,
+    /// <c>retain</c>). AsyncAPI uses integer 0/1/2 for qos; the MQTT
+    /// plugin parses it via <c>Enum.TryParse&lt;MqttQualityOfServiceLevel&gt;</c>
+    /// which accepts both the numeric value and the textual name
+    /// (<c>AtMostOnce</c> / <c>AtLeastOnce</c> / <c>ExactlyOnce</c>).
+    /// Translation: pick the textual name so the plugin's enum parser
+    /// can't misread a stringified integer as something else later.
+    /// Caller-supplied metadata wins; doc fields are the fallback.
+    /// </summary>
+    private static Dictionary<string, string> MergeMqttBindingFields(
+        IReadOnlyDictionary<string, string>? bindingFields,
+        IReadOnlyDictionary<string, string>? callerMetadata)
+    {
+        var merged = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        if (bindingFields is not null)
+        {
+            if (bindingFields.TryGetValue("qos", out var qos))
+            {
+                merged["qos"] = qos switch
+                {
+                    "0" => "AtMostOnce",
+                    "1" => "AtLeastOnce",
+                    "2" => "ExactlyOnce",
+                    _ => qos
+                };
+            }
+            if (bindingFields.TryGetValue("retain", out var retain))
+            {
+                merged["retain"] = retain;
+            }
+        }
+        if (callerMetadata is not null)
+        {
+            foreach (var (k, v) in callerMetadata) merged[k] = v;
+        }
+        return merged;
     }
 }
