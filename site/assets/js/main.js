@@ -1388,6 +1388,7 @@ function createBowireCombobox(hostEl, allItems, defaultSelectedIds, placeholder)
                 '# Install the Bowire CLI as a global .NET tool\n' +
                 'dotnet tool install -g Kuestenlogik.Bowire.Tool',
             protocolPicker: 'cli',
+            pluginInstallTemplate: 'bowire plugin install {PACKAGE}',
             runLang: 'bash',
             run: 'bowire --url {URL}{ADDONS}',
             // MCP add-on is cross-cutting — not exclusive to the Container
@@ -1410,6 +1411,7 @@ function createBowireCombobox(hostEl, allItems, defaultSelectedIds, placeholder)
                 '# Install the CLI (mock is a subcommand)\n' +
                 'dotnet tool install -g Kuestenlogik.Bowire.Tool',
             protocolPicker: 'cli',
+            pluginInstallTemplate: 'bowire plugin install {PACKAGE}',
             runLang: 'bash',
             run:
                 '# Replay a recording you captured earlier:\n' +
@@ -1427,9 +1429,19 @@ function createBowireCombobox(hostEl, allItems, defaultSelectedIds, placeholder)
             install:
                 '# Pull the container image\n' +
                 'docker pull kuestenlogik/bowire:latest',
+            protocolPicker: 'cli',
+            // Container FS is read-only, so third-party plugins install
+            // to a host-mounted ~/.bowire volume — same `plugin install`
+            // subcommand the standalone CLI uses, just wrapped in a
+            // docker run. Persists across container restarts.
+            pluginInstallTemplate:
+                'docker run --rm -v ~/.bowire:/home/app/.bowire \\\n' +
+                '    kuestenlogik/bowire:latest \\\n' +
+                '    plugin install {PACKAGE}',
             runLang: 'bash',
             run:
                 'docker run --rm -p 5080:5080 \\\n' +
+                '  -v ~/.bowire:/home/app/.bowire \\\n' +
                 '  kuestenlogik/bowire:latest \\\n' +
                 '  --url {URL}{ADDONS}',
             // MCP add-on used to be hard-wired on this boat (it was the
@@ -1444,7 +1456,7 @@ function createBowireCombobox(hostEl, allItems, defaultSelectedIds, placeholder)
                 'Bowire runs alongside your services. Same workbench UI at <code>http://localhost:5080</code>; with the MCP add-on ticked, <code>http://localhost:5080/mcp</code> becomes an MCP server you can register with Claude / Cursor / Copilot.',
             urlInput: true,
             urlPlaceholder: 'https://my-internal-service:8443',
-            installPrompt: 'Container image — runs anywhere Docker does.',
+            installPrompt: 'Container image — ships every first-party protocol pre-bundled (gRPC, REST, GraphQL, SignalR, WebSocket, SSE, MQTT, Socket.IO, OData, MCP). Tick any third-party extras you need; they install via the host-mounted plugin dir.',
             runPrompt: 'Drop in your service URL.'
         },
         passenger: {
@@ -1538,6 +1550,12 @@ function createBowireCombobox(hostEl, allItems, defaultSelectedIds, placeholder)
     function buildCliInstall(recipe) {
         var ids = selectedCliIds();
         if (ids.length === 0) return recipe.install;
+        // The standalone CLI invokes `bowire plugin install` directly;
+        // the docker-sidecar boat has to wrap the same subcommand in a
+        // volume-mounted docker-run so the plugin lands on the host's
+        // ~/.bowire/plugins/ instead of the read-only container FS.
+        // Recipes declare their own template — see recipe.pluginInstallTemplate.
+        var template = recipe.pluginInstallTemplate || 'bowire plugin install {PACKAGE}';
         var lines = [
             recipe.install,
             '',
@@ -1545,7 +1563,7 @@ function createBowireCombobox(hostEl, allItems, defaultSelectedIds, placeholder)
         ];
         ids.forEach(function (id) {
             var proto = findProtocol(id);
-            if (proto) lines.push('bowire plugin install ' + proto.packageId);
+            if (proto) lines.push(template.replace(/\{PACKAGE\}/g, proto.packageId));
         });
         return lines.join('\n');
     }
