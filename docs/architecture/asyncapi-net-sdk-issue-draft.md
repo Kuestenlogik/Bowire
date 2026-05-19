@@ -1,11 +1,8 @@
-# Draft: GitHub issue for asyncapi/net-sdk
+# GitHub issue for asyncapi/net-sdk — FILED
 
-**Use this when filing https://github.com/asyncapi/net-sdk/issues — paste
-the title and the body below, replace `<repo>` with your own repro link
-or attach the .yaml if you prefer.**
-
-Once the issue is open, drop the URL into the ROADMAP entry under
-"AsyncAPI as a discovery source" so future work tracks against it.
+**Filed as [asyncapi/net-sdk#76](https://github.com/asyncapi/net-sdk/issues/76)
+on 2026-05-19.** Body kept here for reference / future related issues; the
+canonical version lives upstream now.
 
 ---
 
