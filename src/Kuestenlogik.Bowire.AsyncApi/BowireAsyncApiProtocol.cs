@@ -54,6 +54,14 @@ public sealed class BowireAsyncApiProtocol : IBowireProtocol
     private readonly ConcurrentDictionary<string, IReadOnlyDictionary<string, IReadOnlyDictionary<string, IReadOnlyDictionary<string, string>>>>
         _bindingsByUrl = new(StringComparer.Ordinal);
 
+    // Same idea for V2 documents, but the lookup shape is one level
+    // deeper because V2 bindings nest under `channels[].publish` /
+    // `channels[].subscribe`: source URL → channelKey → slot
+    // ("publish"|"subscribe") → bindingId → field-map.
+    private readonly ConcurrentDictionary<string,
+        IReadOnlyDictionary<string, IReadOnlyDictionary<string, IReadOnlyDictionary<string, IReadOnlyDictionary<string, string>>>>>
+        _v2BindingsByUrl = new(StringComparer.Ordinal);
+
     // Resolvers picked up at Initialize time (one per wire-binding key).
     // The dict is populated once the host hands us a service provider
     // carrying a BowireProtocolRegistry; until then InvokeAsync returns
@@ -132,14 +140,18 @@ public sealed class BowireAsyncApiProtocol : IBowireProtocol
                 _documents[serverUrl] = v3;
                 _bindingsByUrl[serverUrl] =
                     AsyncApiBindingsExtractor.ExtractV3OperationBindings(load.NormalisedYaml);
-                return MapV3Channels(v3, serverUrl);
+                var v3Messages = AsyncApiBindingsExtractor.ExtractV3OperationMessages(load.NormalisedYaml);
+                return MapV3Channels(v3, serverUrl, v3Messages);
             case V2AsyncApiDocument v2:
                 // V2 cache lives alongside V3 so InvokeAsync's branch
                 // can find the channel + operation + server without
-                // re-parsing. Bindings extraction for V2 ships in a
-                // later iteration — invocations default to AtLeastOnce
-                // / retain=false until then.
+                // re-parsing. Bindings extraction for V2 walks the
+                // inline channel.publish/subscribe.bindings — kept in
+                // a separate cache because V2's lookup shape
+                // (channelKey + slot) differs from V3's (opKey).
                 _v2Documents[serverUrl] = v2;
+                _v2BindingsByUrl[serverUrl] =
+                    AsyncApiBindingsExtractor.ExtractV2ChannelBindings(load.NormalisedYaml);
                 return MapV2Channels(v2, serverUrl);
             default:
                 return [];
@@ -160,7 +172,19 @@ public sealed class BowireAsyncApiProtocol : IBowireProtocol
     /// sidebar shows the discovered topology — they just stay empty until the
     /// author adds the operations.
     /// </summary>
-    private static List<BowireServiceInfo> MapV3Channels(V3AsyncApiDocument document, string sourceUrl)
+    /// <summary>
+    /// Convention for naming multi-message overload methods: operation
+    /// key, this delimiter, then the message name. <c>::</c> chosen
+    /// because it's uncommon in YAML keys (so unambiguous to split
+    /// back) and reads in the UI like a C++/Rust qualifier — exactly
+    /// the "one of these messages" semantics the AsyncAPI spec gives
+    /// the `messages[]` array.
+    /// </summary>
+    private const string MessageOverloadSeparator = "::";
+
+    private static List<BowireServiceInfo> MapV3Channels(
+        V3AsyncApiDocument document, string sourceUrl,
+        IReadOnlyDictionary<string, IReadOnlyList<string>> messagesByOp)
     {
         var apiTitle = document.Info?.Title ?? "AsyncAPI";
         var apiVersion = document.Info?.Version;
@@ -195,24 +219,27 @@ public sealed class BowireAsyncApiProtocol : IBowireProtocol
                 foreach (var (opKey, op) in channelOps)
                 {
                     var isSend = op.Action == V3OperationAction.Send;
-                    methods.Add(new BowireMethodInfo(
-                        Name: opKey,
-                        FullName: $"{apiTitle}.{channelKey}.{opKey}",
-                        ClientStreaming: isSend,
-                        ServerStreaming: !isSend,
-                        InputType: new BowireMessageInfo(opKey + "Request", opKey + "Request", []),
-                        OutputType: new BowireMessageInfo(opKey + "Response", opKey + "Response", []),
-                        MethodType: isSend ? "asyncapi-send" : "asyncapi-receive")
+                    var declaredMessages = messagesByOp.TryGetValue(opKey, out var names) ? names : [];
+
+                    if (declaredMessages.Count > 1)
                     {
-                        Summary = channel.Title ?? channel.Summary,
-                        Description = channel.Description,
-                        // HttpPath gets the channel address so the sidebar
-                        // can show `smarthome/light/measured` next to the
-                        // operation key — re-using the existing REST slot
-                        // is a cheap way to render the channel-address
-                        // hint without a new model field.
-                        HttpPath = channel.Address
-                    });
+                        // Multi-message operation — emit one method per
+                        // declared message so the sidebar surfaces the
+                        // choice the spec offers. Name pattern is
+                        // `opKey::messageName`; InvokeAsync splits on
+                        // the separator to recover the operation key.
+                        foreach (var messageName in declaredMessages)
+                        {
+                            methods.Add(BuildV3Method(
+                                $"{opKey}{MessageOverloadSeparator}{messageName}",
+                                messageName, isSend, channel, channelKey, apiTitle));
+                        }
+                    }
+                    else
+                    {
+                        methods.Add(BuildV3Method(
+                            opKey, messageName: null, isSend, channel, channelKey, apiTitle));
+                    }
                 }
             }
 
@@ -245,6 +272,41 @@ public sealed class BowireAsyncApiProtocol : IBowireProtocol
         if (!reference.StartsWith(prefix, StringComparison.Ordinal)) return null;
         var key = reference[prefix.Length..];
         return string.IsNullOrEmpty(key) ? null : key;
+    }
+
+    /// <summary>
+    /// Build a single V3 method node. <paramref name="methodName"/> is
+    /// either <c>opKey</c> (single-message operation) or
+    /// <c>opKey::messageName</c> (multi-message overload). When
+    /// <paramref name="messageName"/> is non-null the input-type's name
+    /// reflects the declared message, otherwise a synthetic
+    /// <c>{op}Request</c> name keeps backwards compat with how Phase A3
+    /// emitted single-method ops.
+    /// </summary>
+    private static BowireMethodInfo BuildV3Method(
+        string methodName, string? messageName, bool isSend,
+        V3ChannelDefinition channel, string channelKey, string apiTitle)
+    {
+        var inputName = messageName ?? methodName + "Request";
+        var outputName = messageName is null ? methodName + "Response" : methodName + "Response";
+        return new BowireMethodInfo(
+            Name: methodName,
+            FullName: $"{apiTitle}.{channelKey}.{methodName}",
+            ClientStreaming: isSend,
+            ServerStreaming: !isSend,
+            InputType: new BowireMessageInfo(inputName, inputName, []),
+            OutputType: new BowireMessageInfo(outputName, outputName, []),
+            MethodType: isSend ? "asyncapi-send" : "asyncapi-receive")
+        {
+            Summary = channel.Title ?? channel.Summary,
+            Description = channel.Description,
+            // HttpPath gets the channel address so the sidebar
+            // can show `smarthome/light/measured` next to the
+            // method name — re-using the existing REST slot is
+            // a cheap way to render the channel-address hint
+            // without a new model field.
+            HttpPath = channel.Address
+        };
     }
 
     /// <summary>
@@ -348,7 +410,7 @@ public sealed class BowireAsyncApiProtocol : IBowireProtocol
         if (_v2Documents.TryGetValue(serverUrl, out var v2Document))
         {
             return await InvokeV2Async(
-                v2Document, service, method, jsonMessages, metadata, ct)
+                serverUrl, v2Document, service, method, jsonMessages, metadata, ct)
                 .ConfigureAwait(false);
         }
 
@@ -358,7 +420,14 @@ public sealed class BowireAsyncApiProtocol : IBowireProtocol
                 $"Call discover with serverUrl '{serverUrl}' first.");
         }
 
-        if (document.Operations is null || !document.Operations.TryGetValue(method, out var operation))
+        // Multi-message operations emit methods named `opKey::messageName`
+        // (see BuildV3Method). Strip the suffix so the operation lookup
+        // resolves to the single declared operation regardless of which
+        // overload the caller invoked. The message-name itself is kept
+        // around for potential message-aware binding fields / payload
+        // schema selection in a later phase.
+        var (opLookupKey, _) = SplitOverloadName(method);
+        if (document.Operations is null || !document.Operations.TryGetValue(opLookupKey, out var operation))
         {
             return Error($"Operation '{method}' not found in AsyncAPI document.");
         }
@@ -400,7 +469,7 @@ public sealed class BowireAsyncApiProtocol : IBowireProtocol
         // combo, resolvers will fall back to their defaults.
         IReadOnlyDictionary<string, string> bindingFields =
             _bindingsByUrl.TryGetValue(serverUrl, out var docBindings)
-            && docBindings.TryGetValue(method, out var opBindings)
+            && docBindings.TryGetValue(opLookupKey, out var opBindings)
             && opBindings.TryGetValue(server.Protocol, out var fields)
                 ? fields
                 : new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
@@ -426,7 +495,7 @@ public sealed class BowireAsyncApiProtocol : IBowireProtocol
     /// back to its protocol-level defaults.
     /// </summary>
     private async Task<InvokeResult> InvokeV2Async(
-        V2AsyncApiDocument document, string service, string method,
+        string serverUrl, V2AsyncApiDocument document, string service, string method,
         List<string> jsonMessages, Dictionary<string, string>? metadata,
         CancellationToken ct)
     {
@@ -469,11 +538,25 @@ public sealed class BowireAsyncApiProtocol : IBowireProtocol
             ? $"{server.Protocol}://"
             : server.Url!.OriginalString;
 
+        // V2 bindings: lookup by channel-key + slot ("publish"/"subscribe").
+        // The slot follows the direction we just determined (send → publish,
+        // receive → subscribe), then the binding-id matches the server
+        // protocol exactly like the V3 path. Source URL came in from the
+        // outer InvokeAsync so we go straight to the cache.
+        var slotKey = isSend ? "publish" : "subscribe";
+        IReadOnlyDictionary<string, string> bindingFields =
+            _v2BindingsByUrl.TryGetValue(serverUrl, out var docBindings)
+            && docBindings.TryGetValue(service, out var channelBindings)
+            && channelBindings.TryGetValue(slotKey, out var slotBindings)
+            && slotBindings.TryGetValue(server.Protocol, out var fields)
+                ? fields
+                : new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
         var ctx = new AsyncApiChannelContext(
             ServerUrl: brokerUrl,
             ChannelAddress: service,
             OperationAction: isSend ? "send" : "receive",
-            BindingFields: new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase));
+            BindingFields: bindingFields);
 
         return await resolver.InvokeAsync(ctx, jsonMessages, metadata, ct).ConfigureAwait(false);
     }
@@ -484,6 +567,21 @@ public sealed class BowireAsyncApiProtocol : IBowireProtocol
         if (slot is null) return false;
         var opName = !string.IsNullOrWhiteSpace(slot.OperationId) ? slot.OperationId! : fallback;
         return string.Equals(opName, requestedMethod, StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// Split <paramref name="methodName"/> into <c>(operationKey, messageName?)</c>
+    /// using the <see cref="MessageOverloadSeparator"/> as the divider.
+    /// Single-message methods (Phase A3 shape) split into
+    /// <c>(opKey, null)</c>. Multi-message overloads return the
+    /// message name as the second tuple element so future routing
+    /// can do message-aware binding lookup or payload-schema picks.
+    /// </summary>
+    private static (string OperationKey, string? MessageName) SplitOverloadName(string methodName)
+    {
+        var idx = methodName.IndexOf(MessageOverloadSeparator, StringComparison.Ordinal);
+        if (idx < 0) return (methodName, null);
+        return (methodName[..idx], methodName[(idx + MessageOverloadSeparator.Length)..]);
     }
 
     private static InvokeResult Error(string message) =>

@@ -1,0 +1,39 @@
+asyncapi: '2.6.0'
+info:
+  title: V2 With MQTT Bindings
+  version: '1.0.0'
+
+servers:
+  broker:
+    url: 'mqtt://localhost:1883'
+    protocol: mqtt
+
+channels:
+  smarthome/light/measured:
+    subscribe:
+      operationId: receiveLightMeasurement
+      bindings:
+        mqtt:
+          qos: 1
+          retain: false
+      message:
+        $ref: '#/components/messages/lightMeasured'
+
+  smarthome/light/{room}/action:
+    publish:
+      operationId: sendTurnOnOff
+      bindings:
+        mqtt:
+          qos: 2
+          retain: true
+      message:
+        $ref: '#/components/messages/turnOnOff'
+
+components:
+  messages:
+    lightMeasured:
+      name: lightMeasured
+      contentType: application/json
+    turnOnOff:
+      name: turnOnOff
+      contentType: application/json

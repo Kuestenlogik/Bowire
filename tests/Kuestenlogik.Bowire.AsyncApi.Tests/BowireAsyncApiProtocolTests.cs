@@ -70,6 +70,56 @@ public sealed class BowireAsyncApiProtocolTests
     }
 
     [Fact]
+    public async Task Discover_emits_one_method_per_message_for_multi_message_operations()
+    {
+        var plugin = new BowireAsyncApiProtocol();
+        var sample = Path.Combine("TestData", "v3-multi-message.asyncapi.yaml");
+        var services = await plugin.DiscoverAsync(
+            serverUrl: sample, showInternalServices: false,
+            ct: TestContext.Current.CancellationToken)
+            .ConfigureAwait(true);
+
+        // One service (the channel) with two methods — one per
+        // message declared on the operation's `messages[]` array.
+        var lightService = Assert.Single(services);
+        Assert.Equal("light", lightService.Name);
+        Assert.Equal(2, lightService.Methods.Count);
+
+        var measured = lightService.Methods.Single(m => m.Name == "receiveAnyLightEvent::lightMeasured");
+        Assert.Equal("asyncapi-receive", measured.MethodType);
+        Assert.Equal("lightMeasured", measured.InputType.Name);
+
+        var warning = lightService.Methods.Single(m => m.Name == "receiveAnyLightEvent::lightWarning");
+        Assert.Equal("asyncapi-receive", warning.MethodType);
+        Assert.Equal("lightWarning", warning.InputType.Name);
+    }
+
+    [Fact]
+    public async Task Invoke_strips_overload_suffix_when_looking_up_operation()
+    {
+        // Invocation on `opKey::messageName` should resolve back to
+        // `opKey`. We don't have a resolver registered so the error
+        // path is "no resolver for protocol" — proves the operation
+        // lookup itself succeeded (otherwise it would have been the
+        // earlier "operation not found" error).
+        var plugin = new BowireAsyncApiProtocol();
+        var sample = Path.Combine("TestData", "v3-multi-message.asyncapi.yaml");
+        _ = await plugin.DiscoverAsync(sample, false, TestContext.Current.CancellationToken)
+            .ConfigureAwait(true);
+
+        var result = await plugin.InvokeAsync(
+            serverUrl: sample,
+            service: "light",
+            method: "receiveAnyLightEvent::lightMeasured",
+            jsonMessages: ["{}"],
+            showInternalServices: false,
+            ct: TestContext.Current.CancellationToken)
+            .ConfigureAwait(true);
+        Assert.Equal("Error", result.Status);
+        Assert.Contains("No AsyncAPI binding resolver", result.Metadata["error"], StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task Invoke_routes_v2_operation_to_protocol_resolver_lookup()
     {
         // Without a registered MQTT resolver the V2 invoke path still
