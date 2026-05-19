@@ -148,17 +148,6 @@
 
         {% include protocol-picker.html mode="cli" label="Many protocols ship with the CLI. Add any third-party extras you need:" hidden=true %}
 
-        <!-- Optional add-on toggles — currently just the MCP adapter
-             (for AI agents). Shown when the picked boat's recipe
-             declares an addons list (tester + ai today). Each ticked
-             addon appends its runFlag to the step-3 run snippet via
-             the {ADDONS} placeholder. main.js renders the items into
-             data-addons-list at recipe time. -->
-        <div class="launch-addons" data-addons-host hidden>
-          <p class="launch-addons-label">Optional add-ons:</p>
-          <ul class="launch-addons-list" data-addons-list></ul>
-        </div>
-
         <div class="code-block launch-recipe" data-recipe-step="2">
           <div class="code-block-header">
             <span class="code-block-lang" data-recipe-lang>bash</span>
@@ -195,6 +184,19 @@
                  placeholder="https://api.example.com/swagger.json"
                  autocomplete="off"
                  spellcheck="false">
+        </div>
+
+        <!-- Optional add-on toggles — currently just the MCP adapter
+             (for AI agents). Lives in step 3 because the effect lands
+             on the run snippet (--enable-mcp-adapter is a runtime
+             flag, not part of the install pipeline). Shown when the
+             picked boat's recipe declares an addons list (tester + ai
+             today). Each ticked addon appends its runFlag to the
+             step-3 run snippet via the {ADDONS} placeholder. main.js
+             renders the items into data-addons-list at recipe time. -->
+        <div class="launch-addons" data-addons-host hidden>
+          <p class="launch-addons-label">Optional add-ons:</p>
+          <ul class="launch-addons-list" data-addons-list></ul>
         </div>
 
         <div class="code-block launch-recipe" data-recipe-step="3">
