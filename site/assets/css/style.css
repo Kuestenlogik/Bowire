@@ -4043,6 +4043,12 @@ h4.downloads-sub {
     flex-direction: column;
     gap: 4px;
     transition: border-color 0.15s;
+    /* position + overflow so the 45°-rotated .protocol-card-ribbon
+       on preview-tier siblings (TacticalAPI today) anchors against
+       the card and clips along the rounded border. No-op for cards
+       that don't carry a ribbon — the body is in normal flow. */
+    position: relative;
+    overflow: hidden;
 }
 .downloads-pkg-head {
     display: flex;
