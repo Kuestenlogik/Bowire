@@ -70,6 +70,52 @@ public sealed class BowireAsyncApiProtocolTests
     }
 
     [Fact]
+    public async Task Invoke_routes_v2_operation_to_protocol_resolver_lookup()
+    {
+        // Without a registered MQTT resolver the V2 invoke path still
+        // has to: (1) recognise the URL was discovered as V2, (2) find
+        // the channel by `service` parameter, (3) match the requested
+        // method against publish/subscribe operationId, (4) reject
+        // with the "no resolver" error rather than the
+        // "not discovered" one. Proves the V2 dispatch landed.
+        var plugin = new BowireAsyncApiProtocol();
+        var sample = Path.Combine("TestData", "v2-smart-home.asyncapi.yaml");
+        _ = await plugin.DiscoverAsync(sample, false, TestContext.Current.CancellationToken)
+            .ConfigureAwait(true);
+
+        var result = await plugin.InvokeAsync(
+            serverUrl: sample,
+            service: "smarthome/light/{room}/action",
+            method: "sendTurnOnOff",
+            jsonMessages: ["{}"],
+            showInternalServices: false,
+            ct: TestContext.Current.CancellationToken)
+            .ConfigureAwait(true);
+        Assert.Equal("Error", result.Status);
+        Assert.Contains("No AsyncAPI binding resolver", result.Metadata["error"], StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Invoke_rejects_v2_method_that_no_channel_slot_matches()
+    {
+        var plugin = new BowireAsyncApiProtocol();
+        var sample = Path.Combine("TestData", "v2-smart-home.asyncapi.yaml");
+        _ = await plugin.DiscoverAsync(sample, false, TestContext.Current.CancellationToken)
+            .ConfigureAwait(true);
+
+        var result = await plugin.InvokeAsync(
+            serverUrl: sample,
+            service: "smarthome/light/{room}/action",
+            method: "nonExistentOp",
+            jsonMessages: ["{}"],
+            showInternalServices: false,
+            ct: TestContext.Current.CancellationToken)
+            .ConfigureAwait(true);
+        Assert.Equal("Error", result.Status);
+        Assert.Contains("not found on V2 channel", result.Metadata["error"], StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task Discover_maps_v2_document_with_publish_and_subscribe()
     {
         var plugin = new BowireAsyncApiProtocol();
