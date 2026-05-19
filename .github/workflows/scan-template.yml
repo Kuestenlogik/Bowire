@@ -55,6 +55,11 @@ on:
         required: false
         type: string
         default: ''
+      upload-to-code-scanning:
+        description: 'Upload the SARIF to GitHub Code Scanning so findings land in the calling repo''s Security tab. Default: true. Set to false for self-smokes that scan an external target (e.g. example.com) — those findings belong to the target, not the calling repo, and would otherwise show up as alerts against the workflow file.'
+        required: false
+        type: boolean
+        default: true
 
 permissions:
   contents: read
@@ -128,7 +133,13 @@ jobs:
         # `always()` mirrors the artifact step — Code Scanning needs the
         # upload regardless of the scan's exit code so previously-found
         # alerts close out when they stop firing.
-        if: always() && hashFiles('findings.sarif') != ''
+        # `inputs.upload-to-code-scanning` lets a self-smoke run that
+        # scans an *external* target (the Bowire repo's own smoke against
+        # example.com) skip the upload — those findings belong to the
+        # target, not to the calling repo. Without the gate, every
+        # example.com header miss landed as a Code Scanning alert in
+        # Bowire's own Security tab.
+        if: always() && inputs.upload-to-code-scanning && hashFiles('findings.sarif') != ''
         uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: findings.sarif

@@ -51,3 +51,11 @@ jobs:
       # code path, not only the built-in checks.
       corpus: docs/security/examples
       severity: low
+      # Do NOT upload to Code Scanning — example.com's missing security
+      # headers belong to example.com, not to Bowire. Without this flag
+      # every smoke run leaves "REST endpoint missing baseline security
+      # headers" + "Version-disclosing header: Server" alerts hanging
+      # in Bowire's own Security tab. The SARIF still uploads as a
+      # build artifact (`bowire-findings`) so the smoke's output stays
+      # inspectable.
+      upload-to-code-scanning: false

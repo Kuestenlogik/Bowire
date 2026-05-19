@@ -585,9 +585,9 @@ internal sealed class ScanOptions
     /// <summary>
     /// Auth headers applied to every HTTP-class probe (template +
     /// builtin). Each entry is a `Name: Value` string, e.g.
-    /// <c>"Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."</c>
-    /// or <c>"X-Api-Key: abc123"</c>. Repeatable on the CLI. Without an
-    /// auth header, scans of authenticated APIs are blind — every
+    /// <c>"Authorization: Bearer &lt;token&gt;"</c>
+    /// or <c>"X-Api-Key: &lt;key&gt;"</c>. Repeatable on the CLI. Without
+    /// an auth header, scans of authenticated APIs are blind — every
     /// probe lands on the login wall and the scanner reports false
     /// "endpoint missing" findings.
     /// </summary>
