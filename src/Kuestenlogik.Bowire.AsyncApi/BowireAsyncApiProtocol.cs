@@ -44,6 +44,15 @@ public sealed class BowireAsyncApiProtocol : IBowireProtocol
     // operations, no separate operations-by-channel lookup needed).
     private readonly ConcurrentDictionary<string, V3AsyncApiDocument> _documents = new(StringComparer.Ordinal);
 
+    // Per-document binding-field extraction (separate cache because we
+    // walk the raw YAML via AsyncApiBindingsExtractor — the Neuroglia
+    // SDK reader doesn't expose typed bindings, and on bindings.mqtt.qos
+    // it actually crashes, see asyncapi/net-sdk#76). Keyed by source
+    // URL → opKey → bindingId → field-map. Empty if the document
+    // declares no operations-level bindings.
+    private readonly ConcurrentDictionary<string, IReadOnlyDictionary<string, IReadOnlyDictionary<string, IReadOnlyDictionary<string, string>>>>
+        _bindingsByUrl = new(StringComparer.Ordinal);
+
     // Resolvers picked up at Initialize time (one per wire-binding key).
     // The dict is populated once the host hands us a service provider
     // carrying a BowireProtocolRegistry; until then InvokeAsync returns
@@ -101,24 +110,27 @@ public sealed class BowireAsyncApiProtocol : IBowireProtocol
             return [];
         }
 
-        IAsyncApiDocument document;
+        AsyncApiDocumentLoader.LoadResult load;
         try
         {
-            document = await Loader.LoadAsync(serverUrl, ct).ConfigureAwait(false);
+            load = await Loader.LoadAsync(serverUrl, ct).ConfigureAwait(false);
         }
         catch (FileNotFoundException) { return []; }
         catch (DirectoryNotFoundException) { return []; }
         catch (HttpRequestException) { return []; }
 
-        switch (document)
+        switch (load.Document)
         {
             case V3AsyncApiDocument v3:
-                // Cache the parsed document so InvokeAsync can find the
-                // channel + operation + servers without re-reading the
-                // YAML. Keyed by the exact serverUrl the discovery
-                // dispatcher passed in so multi-URL workbenches keep
-                // each AsyncAPI document separate.
+                // Cache the parsed document + extracted bindings so
+                // InvokeAsync can find the channel + operation + server
+                // + per-operation binding fields (qos, retain, …)
+                // without re-reading the YAML. Keyed by the exact
+                // serverUrl the discovery dispatcher passed in so
+                // multi-URL workbenches keep each document separate.
                 _documents[serverUrl] = v3;
+                _bindingsByUrl[serverUrl] =
+                    AsyncApiBindingsExtractor.ExtractV3OperationBindings(load.NormalisedYaml);
                 return MapV3Channels(v3, serverUrl);
             case V2AsyncApiDocument v2:
                 return MapV2Channels(v2, serverUrl);
@@ -364,11 +376,24 @@ public sealed class BowireAsyncApiProtocol : IBowireProtocol
         }
 
         var brokerUrl = $"{server.Protocol}://{server.Host}{server.PathName ?? string.Empty}";
+
+        // Pick the binding-specific field map (qos, retain, topic, …)
+        // that the bindings extractor pulled out at discovery time.
+        // Lookup: source-URL → opKey → bindingId. Empty map = the
+        // document declared no fields for this operation/binding
+        // combo, resolvers will fall back to their defaults.
+        IReadOnlyDictionary<string, string> bindingFields =
+            _bindingsByUrl.TryGetValue(serverUrl, out var docBindings)
+            && docBindings.TryGetValue(method, out var opBindings)
+            && opBindings.TryGetValue(server.Protocol, out var fields)
+                ? fields
+                : new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
         var ctx = new AsyncApiChannelContext(
             ServerUrl: brokerUrl,
             ChannelAddress: channel.Address ?? channelKey,
             OperationAction: operation.Action == V3OperationAction.Send ? "send" : "receive",
-            BindingFields: new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase));
+            BindingFields: bindingFields);
 
         return await resolver.InvokeAsync(ctx, jsonMessages, metadata, ct).ConfigureAwait(false);
     }

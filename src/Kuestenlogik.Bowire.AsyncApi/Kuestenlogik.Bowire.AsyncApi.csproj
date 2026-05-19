@@ -20,6 +20,7 @@
          YAML/JSON document readers with $ref resolution. -->
     <PackageReference Include="Neuroglia.AsyncApi.Core" />
     <PackageReference Include="Neuroglia.AsyncApi.IO" />
+    <PackageReference Include="YamlDotNet" />
   </ItemGroup>
   <ItemGroup>
     <!-- Intentionally NO ProjectReferences to the wire-protocol plugins
