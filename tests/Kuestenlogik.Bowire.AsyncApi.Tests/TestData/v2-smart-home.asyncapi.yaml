@@ -1,0 +1,45 @@
+asyncapi: '2.6.0'
+info:
+  title: Smart Home Hub (V2)
+  version: '1.0.0'
+  description: |
+    AsyncAPI 2.x sample. Same topology as the V3 smart-home document
+    (one publish channel, one subscribe channel) but using the V2
+    schema shape where operations live inside the channel object
+    instead of in a separate top-level `operations` block.
+
+servers:
+  productionBroker:
+    url: 'mqtt://localhost:1883'
+    protocol: mqtt
+
+channels:
+  smarthome/light/measured:
+    description: |
+      Light sensor publishes a Lux reading every time the ambient
+      light level changes.
+    subscribe:
+      operationId: receiveLightMeasurement
+      summary: Subscribe to lux readings from every room sensor.
+      message:
+        $ref: '#/components/messages/lightMeasured'
+
+  smarthome/light/{room}/action:
+    description: Toggle the light in a given room.
+    publish:
+      operationId: sendTurnOnOff
+      summary: Send an on/off command to a room.
+      message:
+        $ref: '#/components/messages/turnOnOff'
+
+components:
+  messages:
+    lightMeasured:
+      name: lightMeasured
+      title: Light measured
+      contentType: application/json
+
+    turnOnOff:
+      name: turnOnOff
+      title: Turn on/off
+      contentType: application/json
