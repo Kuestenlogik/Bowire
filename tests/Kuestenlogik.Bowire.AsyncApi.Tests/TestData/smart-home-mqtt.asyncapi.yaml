@@ -1,0 +1,61 @@
+asyncapi: '3.0.0'
+info:
+  title: Smart Home Hub
+  version: '1.0.0'
+  description: |
+    Toy AsyncAPI 3 document used by the Bowire AsyncAPI loader tests.
+    Two channels — mirrors the canonical `light/measured` example
+    from the AsyncAPI tutorials so the test stays recognisable.
+    Phase A2 leaves the per-channel `bindings:` blocks off because
+    the Neuroglia.AsyncApi.Bindings package isn't referenced yet
+    (that lands with Phase A3 when the MQTT resolver is wired up).
+
+servers:
+  production:
+    host: 'broker.local:1883'
+    protocol: mqtt
+    description: Production MQTT broker.
+
+channels:
+  lightingMeasured:
+    address: 'smarthome/light/measured'
+    title: Lighting Measured
+    summary: Lux level reported by a room sensor.
+    description: |
+      Sensor publishes a Lux reading whenever the ambient light level changes
+      by more than 5%. Consumers can use it for dashboards or to drive
+      automation rules (turn the lights on when the room is too dark).
+    messages:
+      lightMeasured:
+        $ref: '#/components/messages/lightMeasured'
+
+  turnOnOff:
+    address: 'smarthome/light/{room}/action'
+    title: Light On/Off Command
+    summary: Toggle the light in a given room.
+    messages:
+      turnOnOff:
+        $ref: '#/components/messages/turnOnOff'
+
+operations:
+  receiveLightMeasurement:
+    action: receive
+    channel:
+      $ref: '#/channels/lightingMeasured'
+
+  sendTurnOnOff:
+    action: send
+    channel:
+      $ref: '#/channels/turnOnOff'
+
+components:
+  messages:
+    lightMeasured:
+      name: lightMeasured
+      title: Light measured
+      summary: Inform about lux level change.
+
+    turnOnOff:
+      name: turnOnOff
+      title: Turn on/off
+      summary: Command a light to turn on or off.
