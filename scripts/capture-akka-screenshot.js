@@ -18,7 +18,7 @@ const OUT = path.resolve(__dirname, '..', 'site', 'assets', 'images', 'screensho
 const DOCS_OUT = path.resolve(__dirname, '..', 'docs', 'images', 'screenshots');
 for (const dir of [OUT, DOCS_OUT]) if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
 
-const URL = 'http://localhost:5080/bowire';
+const URL = 'http://localhost:5080';
 const THEME = (process.env.THEME || 'dark').toLowerCase();
 const NAME = 'streaming-akka';
 

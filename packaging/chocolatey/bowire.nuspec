@@ -49,7 +49,7 @@ The `bowire` CLI on PATH, backed by the same per-machine MSI used by the Winget 
 bowire --url https://api.example.com
 ```
 
-Then open <http://localhost:5080/bowire> in a browser. See <https://bowire.io/quickstart.html> for the five-minute tour.
+Then open <http://localhost:5080> in a browser. See <https://bowire.io/quickstart.html> for the five-minute tour.
 ]]></description>
     <releaseNotes>https://github.com/Kuestenlogik/Bowire/releases/tag/v__VERSION__</releaseNotes>
   </metadata>
