@@ -1,0 +1,9 @@
+asyncapi: '3.0.0'
+info:
+  title: Minimal
+  version: '1.0.0'
+
+channels:
+  hello:
+    address: 'hello'
+    title: Hello channel

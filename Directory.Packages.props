@@ -25,6 +25,14 @@
     <PackageVersion Include="Microsoft.AspNetCore.SignalR.Client" Version="10.0.8" />
     <PackageVersion Include="Microsoft.OpenApi" Version="3.5.3" />
     <PackageVersion Include="Microsoft.OpenApi.YamlReader" Version="3.5.3" />
+    <!-- Neuroglia.AsyncApi is the official AsyncAPI .NET SDK
+         (asyncapi/net-sdk repo, Neuroglia maintains the
+         implementation). Core = AsyncAPI 2.x + 3.0 models; IO =
+         YAML/JSON readers + $ref resolution. Used by
+         Kuestenlogik.Bowire.AsyncApi to turn asyncapi.yaml into
+         Bowire's discovery shape. -->
+    <PackageVersion Include="Neuroglia.AsyncApi.Core" Version="3.0.6" />
+    <PackageVersion Include="Neuroglia.AsyncApi.IO" Version="3.0.6" />
     <PackageVersion Include="MQTTnet" Version="5.1.0.1559" />
     <PackageVersion Include="MQTTnet.AspNetCore" Version="5.1.0.1559" />
     <PackageVersion Include="MQTTnet.Server" Version="5.1.0.1559" />

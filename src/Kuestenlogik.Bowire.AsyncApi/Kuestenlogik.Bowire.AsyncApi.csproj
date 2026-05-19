@@ -15,6 +15,13 @@
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
   </ItemGroup>
   <ItemGroup>
+    <!-- Official AsyncAPI .NET SDK (asyncapi/net-sdk, maintained by
+         Neuroglia). Core = models for AsyncAPI 2.x + 3.0; IO = the
+         YAML/JSON document readers with $ref resolution. -->
+    <PackageReference Include="Neuroglia.AsyncApi.Core" />
+    <PackageReference Include="Neuroglia.AsyncApi.IO" />
+  </ItemGroup>
+  <ItemGroup>
     <!-- Intentionally NO ProjectReferences to the wire-protocol plugins
          (Mqtt, Kafka, WebSocket, …). AsyncAPI looks them up at runtime
          through BowireProtocolRegistry so embedded users only need to
