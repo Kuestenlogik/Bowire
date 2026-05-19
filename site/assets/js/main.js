@@ -1390,13 +1390,18 @@ function createBowireCombobox(hostEl, allItems, defaultSelectedIds, placeholder)
             protocolPicker: 'cli',
             pluginInstallTemplate: 'bowire plugin install {PACKAGE}',
             runLang: 'bash',
-            run: 'bowire --url {URL}{ADDONS}',
-            // MCP add-on is cross-cutting — not exclusive to the Container
-            // boat. When the operator wants to drive Bowire from an AI agent
-            // (Claude / Cursor / Copilot), ticking this re-uses the same
-            // standalone CLI install with `--enable-mcp-adapter`.
+            run: 'bowire {URLS}{ADDONS}',
+            // Two MCP angles, orthogonal — tick one, the other, or both:
+            //   `mcp-adapter` exposes the *target API's* methods as MCP
+            //     tools, so an AI agent can call the API under test.
+            //   `mcp-serve` spins Bowire's *own* ops (discover, record,
+            //     mock, replay, scan) as MCP tools, so an AI agent can
+            //     drive Bowire itself. Different process: `bowire mcp
+            //     serve` runs side by side with `bowire --url`.
             addons: [
-                { id: 'mcp', label: 'Expose discovered methods as MCP tools (Claude / Cursor / Copilot)', runFlag: ' --enable-mcp-adapter' }
+                { id: 'mcp-adapter', label: 'Expose target methods as MCP tools (AI calls your API)', runFlag: ' --enable-mcp-adapter' },
+                { id: 'mcp-serve',   label: 'Run Bowire itself as an MCP server (AI drives Bowire — discover, record, replay)',
+                  extraRun: '# In a second terminal — drive Bowire from Claude / Cursor / Copilot:\nbowire mcp serve --bind stdio' }
             ],
             then:
                 'Bowire opens in your browser, discovers the API, and shows every method in the sidebar. Click Record to capture a session, replay it later against any environment.',
@@ -1443,14 +1448,20 @@ function createBowireCombobox(hostEl, allItems, defaultSelectedIds, placeholder)
                 'docker run --rm -p 5080:5080 \\\n' +
                 '  -v ~/.bowire:/home/app/.bowire \\\n' +
                 '  kuestenlogik/bowire:latest \\\n' +
-                '  --url {URL}{ADDONS}',
-            // MCP add-on used to be hard-wired on this boat (it was the
-            // "AI agent" boat). Now it's opt-in via the addons tick like
-            // every other CLI-path boat — the Container card is a generic
-            // Docker-sidecar surface, not an AI-only deployment. Tick the
-            // box to bring the --enable-mcp-adapter flag back.
+                '  {URLS}{ADDONS}',
+            // Same two MCP angles as the tester boat — see comment
+            // there for the adapter-vs-serve split. `mcp-serve`
+            // wrapped as a second `docker run` so the demo stays a
+            // copy-pasteable two-terminal sequence.
             addons: [
-                { id: 'mcp', label: 'Expose discovered methods as MCP tools (Claude / Cursor / Copilot)', runFlag: ' \\\n  --enable-mcp-adapter' }
+                { id: 'mcp-adapter', label: 'Expose target methods as MCP tools (AI calls your API)', runFlag: ' \\\n  --enable-mcp-adapter' },
+                { id: 'mcp-serve',   label: 'Run Bowire itself as an MCP server (AI drives Bowire — discover, record, replay)',
+                  extraRun:
+                      '# In a second terminal — drive Bowire from Claude / Cursor / Copilot:\n' +
+                      'docker run --rm -i \\\n' +
+                      '  -v ~/.bowire:/home/app/.bowire \\\n' +
+                      '  kuestenlogik/bowire:latest \\\n' +
+                      '  mcp serve --bind stdio' }
             ],
             then:
                 'Bowire runs alongside your services. Same workbench UI at <code>http://localhost:5080</code>; with the MCP add-on ticked, <code>http://localhost:5080/mcp</code> becomes an MCP server you can register with Claude / Cursor / Copilot.',
@@ -1487,8 +1498,9 @@ function createBowireCombobox(hostEl, allItems, defaultSelectedIds, placeholder)
     var connectors = root.querySelectorAll('.launch-step-connector');
     var panels = root.querySelectorAll('[data-step-panel]');
     var boats = root.querySelectorAll('[data-boat]');
-    var urlInput = root.querySelector('[data-url-input]');
-    var urlHintSelect = root.querySelector('[data-url-hint]');
+    var urlsRow = root.querySelector('[data-urls-row]');
+    var urlsList = root.querySelector('[data-urls-list]');
+    var urlsAddBtn = root.querySelector('[data-urls-add]');
     var nugetBox = root.querySelector('[data-protocols-host="nuget"]');
     var cliBox = root.querySelector('[data-protocols-host="cli"]');
     var setupNotesBox = root.querySelector('[data-setup-notes]');
@@ -1514,30 +1526,123 @@ function createBowireCombobox(hostEl, allItems, defaultSelectedIds, placeholder)
 
     var currentStep = 1;
     var pickedBoat = null;
-    var typedUrl = '';
     // Persist across boat-switches — if the user ticked "MCP adapter"
     // on one boat (e.g. tester) and switches to another with the same
     // addon (e.g. ai/container), the choice carries through. Reset
     // only on full restart from step 1.
     var selectedAddons = new Set();
-    // Protocol-hint prefix for the target URL (grpc@, rest@, …). Empty
-    // string = "any", which leaves the URL bare so Bowire's auto-
-    // detection picks the protocol from URL scheme / content-type.
-    var selectedHint = '';
+    // Target URL rows. Each entry: { hint: '', url: '' }. Multi-row
+    // because `bowire --url X --url Y` polls many targets in parallel,
+    // and the marketing stepper should surface that — bonus: each row
+    // gets its own hint so a user can pin `grpc@host:1` and
+    // `rest@host:2` independently. Starts with one empty row; the +
+    // button pushes a fresh row, the × removes one (kept at >= 1).
+    var urls = [{ hint: '', url: '' }];
 
-    // Populate the URL-hint dropdown from BOWIRE_PROTOCOLS. Each
-    // protocol id becomes a select option; the leading "any" stays
-    // as the safe default. The dropdown is teachable — users who
-    // didn't know hints existed at all now see the full list.
-    if (urlHintSelect) {
+    // Returns the protocol-hint options visible to the URL-row's
+    // dropdown given what's been installed in step 2. First-party
+    // protocols always appear (they ship bundled with the CLI / are
+    // pre-selected in the embedded NuGet picker). Third-party only
+    // when picked in step 2 — the dropdown then doesn't tempt the
+    // user with a `kafka@` hint when they haven't actually installed
+    // the Kafka plugin.
+    function availableHintIds() {
+        var picked = pickedBoat ? RECIPES[pickedBoat] : null;
+        // Step-2 picker dictates the visible third-party set. nuget
+        // picker (backend) defaults to gRPC+REST; cli picker (tester
+        // / mock / ai) starts empty. Returned ids drive the <option>
+        // list — caller is responsible for filtering BOWIRE_PROTOCOLS.
+        var pickedIds;
+        if (picked && picked.protocolPicker === 'nuget') {
+            pickedIds = new Set(selectedNugetIds());
+        } else if (picked && picked.protocolPicker === 'cli') {
+            pickedIds = new Set(selectedCliIds());
+        } else {
+            pickedIds = new Set();
+        }
+        var out = [];
         BOWIRE_PROTOCOLS.forEach(function (p) {
-            var opt = document.createElement('option');
-            opt.value = p.id;
-            opt.textContent = p.id;
-            urlHintSelect.appendChild(opt);
+            if (p.category === 'first-party' || pickedIds.has(p.id)) {
+                out.push(p.id);
+            }
         });
-        urlHintSelect.addEventListener('change', function (ev) {
-            selectedHint = ev.target.value || '';
+        return out;
+    }
+
+    // Build a select element with "any" plus every id from
+    // availableHintIds(). Caller wires the change event since the row
+    // index lives in the closure.
+    function buildHintSelect(selectedValue) {
+        var sel = document.createElement('select');
+        sel.className = 'launch-url-hint';
+        sel.setAttribute('aria-label', 'Protocol hint');
+        var anyOpt = document.createElement('option');
+        anyOpt.value = '';
+        anyOpt.textContent = 'any';
+        sel.appendChild(anyOpt);
+        availableHintIds().forEach(function (id) {
+            var opt = document.createElement('option');
+            opt.value = id;
+            opt.textContent = id;
+            if (id === selectedValue) opt.selected = true;
+            sel.appendChild(opt);
+        });
+        // If the previously-picked hint is no longer in the available
+        // set (user un-ticked the corresponding plugin in step 2),
+        // selectedValue stays unmatched and the dropdown falls back to
+        // "any" — that's the right call: an absent plugin can't accept
+        // a hint anyway.
+        return sel;
+    }
+
+    function renderUrlRows() {
+        if (!urlsList) return;
+        urlsList.innerHTML = '';
+        urls.forEach(function (entry, idx) {
+            var row = document.createElement('div');
+            row.className = 'launch-url-controls';
+            var hintSel = buildHintSelect(entry.hint);
+            hintSel.addEventListener('change', function (ev) {
+                urls[idx].hint = ev.target.value || '';
+                if (pickedBoat) renderRecipes();
+            });
+            row.appendChild(hintSel);
+            var input = document.createElement('input');
+            input.type = 'text';
+            input.className = 'launch-url-input';
+            input.autocomplete = 'off';
+            input.spellcheck = false;
+            input.value = entry.url || '';
+            // Placeholder set per render below to track the current
+            // recipe + per-protocol urlPlaceholder selection.
+            input.placeholder = '';
+            input.addEventListener('input', function (ev) {
+                urls[idx].url = ev.target.value;
+                if (pickedBoat) renderRecipes();
+            });
+            row.appendChild(input);
+            if (urls.length > 1) {
+                var rm = document.createElement('button');
+                rm.type = 'button';
+                rm.className = 'launch-url-remove';
+                rm.setAttribute('aria-label', 'Remove URL ' + (idx + 1));
+                rm.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg>';
+                rm.addEventListener('click', function () {
+                    urls.splice(idx, 1);
+                    if (urls.length === 0) urls.push({ hint: '', url: '' });
+                    renderUrlRows();
+                    if (pickedBoat) renderRecipes();
+                });
+                row.appendChild(rm);
+            }
+            urlsList.appendChild(row);
+        });
+    }
+
+    if (urlsAddBtn) {
+        urlsAddBtn.addEventListener('click', function () {
+            urls.push({ hint: '', url: '' });
+            renderUrlRows();
             if (pickedBoat) renderRecipes();
         });
     }
@@ -1675,7 +1780,25 @@ function createBowireCombobox(hostEl, allItems, defaultSelectedIds, placeholder)
         if (!recipe.addons || recipe.addons.length === 0) return '';
         var out = '';
         recipe.addons.forEach(function (addon) {
-            if (selectedAddons.has(addon.id)) out += addon.runFlag;
+            if (addon.runFlag && selectedAddons.has(addon.id)) out += addon.runFlag;
+        });
+        return out;
+    }
+
+    // Some addons aren't flags on the workbench command — they're a
+    // second process the user starts in parallel (e.g. `bowire mcp
+    // serve` exposes Bowire's own ops to an AI agent, running side
+    // by side with `bowire --url`). When such an addon is ticked we
+    // append its `extraRun` snippet under the main run snippet, with
+    // a blank line + leading comment so it reads as "and then run
+    // this too".
+    function buildAddonsExtra(recipe) {
+        if (!recipe.addons || recipe.addons.length === 0) return '';
+        var out = '';
+        recipe.addons.forEach(function (addon) {
+            if (addon.extraRun && selectedAddons.has(addon.id)) {
+                out += '\n\n' + addon.extraRun;
+            }
         });
         return out;
     }
@@ -1707,38 +1830,45 @@ function createBowireCombobox(hostEl, allItems, defaultSelectedIds, placeholder)
         installCopy.dataset.copy = installSnippet;
         if (installPrompt) installPrompt.innerHTML = recipe.installPrompt;
 
-        // Step 3 run snippet — substitute {URL} placeholder.
+        // Step 3 run snippet — substitute {URLS} placeholder.
         var runCode = root.querySelector('[data-recipe-content-3]');
         var runLang = root.querySelector('[data-recipe-lang-3]');
         var runCopy = root.querySelector('[data-recipe-copy-3]');
         var runPrompt = root.querySelector('[data-launch-prompt-3]');
         var thenLine = root.querySelector('[data-launch-then]');
-        var urlRow = root.querySelector('[data-url-row]');
-        // URL placeholder adapts to the first selected protocol so
-        // the run snippet's wire format matches what the user picked
-        // (e.g. `mqtt://broker:1883` after MQTT, `kafka://broker:9092`
-        // after Kafka, etc.). Boat-default kicks in when nothing is
-        // selected.
+        // Show or hide the urls row before mutating placeholders /
+        // re-rendering: cheap toggle, no flash for boats without URL.
+        if (urlsRow) urlsRow.hidden = !recipe.urlInput;
+        // Per-protocol URL placeholder — picks the wire shape of the
+        // first selected plugin (mqtt://, kafka://, …) so the demo
+        // looks right for the picked protocol. Falls back to the
+        // boat's static urlPlaceholder when nothing is picked.
+        // Only the placeholder is touched here; the row count + the
+        // hint-option list update live in rebuildUrlRowsUi() which
+        // gets called on boat / picker change so typing in a URL
+        // input doesn't wipe the input + kill its focus.
         var placeholder = effectiveUrlPlaceholder(recipe);
-        if (urlInput) urlInput.placeholder = placeholder;
-        var url = (typedUrl || placeholder || '').trim() || '{URL}';
-        // Prefix the URL with the selected hint when one is picked
-        // (e.g. grpc@https://api.example.com). The "any" default keeps
-        // selectedHint empty so the URL goes through bare.
-        var fullUrl = selectedHint ? (selectedHint + '@' + url) : url;
+        if (urlsList) {
+            urlsList.querySelectorAll('input.launch-url-input').forEach(function (i) {
+                i.placeholder = placeholder;
+            });
+        }
+        // Compose the multi-URL flag string. One row collapses to
+        // `--url X`; many rows render as `--url X \\\n  --url Y` so
+        // the demo snippet reads as proper shell continuation.
+        var urlFlags = urls.map(function (entry, i) {
+            var raw = (entry.url || placeholder || '').trim() || '{URL}';
+            var withHint = entry.hint ? (entry.hint + '@' + raw) : raw;
+            return (i === 0 ? '--url ' : ' \\\n  --url ') + withHint;
+        }).join('');
         var addonsFlags = buildAddonsFlags(recipe);
-        var filled = recipe.run.replace(/\{URL\}/g, fullUrl).replace(/\{ADDONS\}/g, addonsFlags);
+        var addonsExtra = buildAddonsExtra(recipe);
+        var filled = recipe.run.replace(/\{URLS\}/g, urlFlags).replace(/\{ADDONS\}/g, addonsFlags) + addonsExtra;
         runCode.textContent = filled;
         runLang.textContent = recipe.runLang;
         runCopy.dataset.copy = filled;
         if (runPrompt) runPrompt.innerHTML = recipe.runPrompt;
         if (thenLine) thenLine.innerHTML = recipe.then;
-
-        if (recipe.urlInput) {
-            urlRow.hidden = false;
-        } else {
-            urlRow.hidden = true;
-        }
     }
 
     function setStep(n) {
@@ -1758,7 +1888,14 @@ function createBowireCombobox(hostEl, allItems, defaultSelectedIds, placeholder)
             p.classList.toggle('active', idx === n);
             p.setAttribute('aria-hidden', idx !== n ? 'true' : 'false');
         });
-        if (n >= 2) renderRecipes();
+        if (n >= 2) {
+            // Refresh the URL-row hint options + the snippet. Both
+            // depend on pickedBoat — switching boats can change the
+            // active picker (cli vs nuget) and the available hint
+            // set, so we rebuild the rows once per transition.
+            renderUrlRows();
+            renderRecipes();
+        }
     }
 
     boats.forEach(function (card) {
@@ -1782,12 +1919,10 @@ function createBowireCombobox(hostEl, allItems, defaultSelectedIds, placeholder)
         }
         if (ev.target.closest('[data-step-restart]')) {
             pickedBoat = null;
-            typedUrl = '';
+            urls = [{ hint: '', url: '' }];
             selectedAddons.clear();
-            selectedHint = '';
             boats.forEach(function (b) { b.classList.remove('selected'); });
-            if (urlInput) urlInput.value = '';
-            if (urlHintSelect) urlHintSelect.value = '';
+            renderUrlRows();
             setStep(1);
             return;
         }
@@ -1798,19 +1933,26 @@ function createBowireCombobox(hostEl, allItems, defaultSelectedIds, placeholder)
         }
     });
 
-    if (urlInput) {
-        urlInput.addEventListener('input', function (ev) {
-            typedUrl = ev.target.value;
-            renderRecipes();
-        });
-    }
-
     // Re-render install + run snippets whenever the user adds or
     // removes a protocol in either combobox. Visibility of the two
     // pickers is gated by recipe.protocolPicker up in renderRecipes
-    // — at most one combobox is interactive at a time.
-    nugetCombo.onChange(function () { if (pickedBoat) renderRecipes(); });
-    cliCombo.onChange(function () { if (pickedBoat) renderRecipes(); });
+    // — at most one combobox is interactive at a time. Also refresh
+    // the URL-row hint dropdowns: third-party hint options come and
+    // go with the picker selection.
+    nugetCombo.onChange(function () {
+        if (!pickedBoat) return;
+        renderUrlRows();
+        renderRecipes();
+    });
+    cliCombo.onChange(function () {
+        if (!pickedBoat) return;
+        renderUrlRows();
+        renderRecipes();
+    });
+
+    // Initial render — empty single row, hidden until step 3 makes
+    // the urlsRow container visible.
+    renderUrlRows();
 })();
 
 
