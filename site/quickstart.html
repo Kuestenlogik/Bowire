@@ -141,11 +141,11 @@ any service URL without code changes.
         </div>
 
         <div class="qs-install-tab-panel" role="tabpanel" data-qs-install-panel="docker" hidden>
-<pre><code class="lang-bash">docker pull ghcr.io/kuestenlogik/bowire:latest
+<pre><code class="lang-bash">docker pull kuestenlogik/bowire:latest
 
 docker run --rm -p 5080:5080 \
     -v ~/.bowire:/home/app/.bowire \
-    ghcr.io/kuestenlogik/bowire:latest \
+    kuestenlogik/bowire:latest \
     --url https://api.example.com</code></pre>
           <p class="qs-install-tab-note">Multi-arch image (linux/amd64 + linux/arm64). The volume mount keeps installed plugins, recordings, and environments persistent across container restarts.</p>
         </div>
@@ -217,7 +217,7 @@ bowire plugin install Kuestenlogik.Bowire.Protocol.Udp</code></pre>
       <p><strong>Running in Docker?</strong> The container FS is read-only, so plugins live on the host's <code>~/.bowire</code> via volume-mount. Same <code>plugin install</code> subcommand, invoked via <code>docker run</code>:</p>
 
 <pre><code class="lang-bash">docker run --rm -v ~/.bowire:/home/app/.bowire \
-    ghcr.io/kuestenlogik/bowire:latest \
+    kuestenlogik/bowire:latest \
     plugin install Kuestenlogik.Bowire.Protocol.Kafka</code></pre>
 
       <p><strong>Air-gapped install?</strong> Download the plugin and its transitive deps on a connected host, transfer the folder, install offline:</p>
