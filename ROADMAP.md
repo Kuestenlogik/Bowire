@@ -72,6 +72,18 @@ Complement the existing Recordings feature (auto-captured sessions) and the ship
 - [ ] **OTLP** (`Kuestenlogik.Bowire.Protocol.Otlp`) — OpenTelemetry Protocol listener. Bowire boots a receiver (gRPC `:4317` + HTTP `:4318`), instrumented apps push traces/metrics/logs at it. First passive-listener mode where Bowire is the server, not the client.
 - [ ] **Surgewave** (`Kuestenlogik.Bowire.Protocol.Surgewave`) — Surgewave tap stream browser. Sibling repo + plugin scaffolding ready; **blocked on the `Kuestenlogik.Surgewave.Client` SDK going public**.
 
+### AsyncAPI as a discovery source
+
+AsyncAPI is the OpenAPI analogue for event-driven APIs — a schema spec that describes channels, operations, messages, and the transport bindings (MQTT, Kafka, AMQP, WebSocket, NATS, …) those channels use. Rather than ship "AsyncAPI" as its own wire-plugin (it has no wire — the wire is whatever the binding says), AsyncAPI lands as a *discovery source* that drives Bowire's existing transport plugins. The mental model matches `bowire --url ./openapi.yaml`: hand Bowire the schema, it builds the method list, calls go out over the right transport.
+
+- [ ] **AsyncAPI 3.0 loader** — parse `asyncapi.yaml` / `.json`, follow `$ref` resolution (local + remote), expand `components.messages` / `components.schemas`, surface `servers[]` as Bowire targets. Multi-server documents become multi-URL discoveries (the same `--url X --url Y` shape the workbench already accepts).
+- [ ] **Channel → method mapping** — each channel becomes a Bowire method node in the sidebar. Operations (`send` / `receive`) become the streaming direction. Channel parameters → method parameters. Message payloads → request/response bodies; multiple declared messages surface as method overloads. AsyncAPI tags `send`/`receive` from the application's perspective, Bowire is the test client — polarity inverts once in this mapping layer rather than per binding.
+- [ ] **Phase A — MQTT binding** — translate `bindings.mqtt` (topic, qos, retain) into the existing MQTT plugin's invocation contract. First end-to-end target: a published AsyncAPI doc → discovery → publish/subscribe against a live broker.
+- [ ] **Phase B — Kafka + WebSocket bindings** — extend to `bindings.kafka` (topic, key, schema-registry-ref) and `bindings.ws` (subprotocol, headers). Both plugins exist (Kafka third-party, WebSocket first-party); the work is the binding-translation layer.
+- [ ] **Phase C — AMQP / NATS / SNS-SQS bindings** — gated on the underlying transport plugins landing (see the Tier-2 plugins above). The loader stays the same; each binding adds a translation case.
+- [ ] **Marketing-site listing follows Phase A** — until at least one binding works end-to-end the protocol stays off the public `BOWIRE_PROTOCOLS` list. No "coming soon" tile.
+- [ ] **AsyncAPI schema export** — inverse of the loader: emit an AsyncAPI 3.0 document from the discovered topics/methods of running MQTT/Kafka/WebSocket targets. Mirrors the planned OpenAPI export (see Planned section).
+
 ### Polyglot plugins via sidecar bridge
 
 Bowire plugins today are .NET assemblies implementing `IBowireProtocol`. That locks out teams whose best protocol library lives in Rust (Zenoh), Python (paho-mqtt + the whole IoT/ML stack), Go (NATS core, Temporal), Node.js, or C++. Rather than port every protocol library to .NET, run such plugins as **sidecar processes** and bridge them into the host via JSON-RPC over stdio — the same transport LSP, MCP, and DAP settled on.
