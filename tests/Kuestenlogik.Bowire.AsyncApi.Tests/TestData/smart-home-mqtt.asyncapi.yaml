@@ -1,7 +1,7 @@
-asyncapi: '3.0.0'
+asyncapi: 3.0.0
 info:
   title: Smart Home Hub
-  version: '1.0.0'
+  version: 1.0.0
   description: |
     Toy AsyncAPI 3 document used by the Bowire AsyncAPI loader tests.
     Two channels — mirrors the canonical `light/measured` example

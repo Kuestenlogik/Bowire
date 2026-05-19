@@ -70,6 +70,23 @@ public sealed class BowireAsyncApiProtocolTests
     }
 
     [Fact]
+    public async Task Discover_handles_unquoted_versions_via_prenormaliser()
+    {
+        // asyncapi/net-sdk#76 — without the pre-normaliser this throws.
+        // The sample has `asyncapi: 3.0.0` and `info.version: 1.2.3`
+        // both unquoted; discover should still succeed.
+        var plugin = new BowireAsyncApiProtocol();
+        var sample = Path.Combine("TestData", "unquoted-versions.asyncapi.yaml");
+        var services = await plugin.DiscoverAsync(
+            serverUrl: sample, showInternalServices: false,
+            ct: TestContext.Current.CancellationToken)
+            .ConfigureAwait(true);
+        Assert.Single(services);
+        Assert.Equal("ping", services[0].Name);
+        Assert.Equal("1.2.3", services[0].Version);
+    }
+
+    [Fact]
     public async Task Discover_loads_smart_home_sample_with_operations_mapped()
     {
         var plugin = new BowireAsyncApiProtocol();

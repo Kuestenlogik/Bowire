@@ -1,6 +1,7 @@
 // Copyright 2026 Küstenlogik
 // SPDX-License-Identifier: Apache-2.0
 
+using System.Text;
 using Microsoft.Extensions.DependencyInjection;
 using Neuroglia.AsyncApi;
 using Neuroglia.AsyncApi.IO;
@@ -61,23 +62,35 @@ internal sealed class AsyncApiDocumentLoader
     public async Task<IAsyncApiDocument> LoadAsync(string urlOrPath, CancellationToken ct)
     {
         var reader = _services.GetRequiredService<IAsyncApiDocumentReader>();
+        var raw = await ReadRawAsync(urlOrPath, ct).ConfigureAwait(false);
 
-        // Treat anything with a scheme as a URL, everything else as a file
-        // path. Mirrors the OpenAPI plugin's behaviour for OpenAPI doc
-        // discovery — minimum coverage for the Phase A demo.
+        // YAML pre-normaliser: quote scalars on enum-typed properties that
+        // the SDK reader otherwise mis-deserialises (asyncapi/net-sdk#76).
+        // JSON files don't have the implicit-type problem, so the
+        // normaliser is a no-op on them — running it unconditionally
+        // keeps the code path uniform.
+        var normalised = AsyncApiYamlPreNormaliser.Normalise(raw);
+
+        using var stream = new MemoryStream(Encoding.UTF8.GetBytes(normalised));
+        var document = await reader.ReadAsync(stream, ct).ConfigureAwait(false);
+        return document ?? throw new InvalidOperationException(
+            $"AsyncAPI reader returned no document for '{urlOrPath}'.");
+    }
+
+    /// <summary>
+    /// Reads the document content as a string so the pre-normaliser can
+    /// scan it before the reader. The split between read + parse adds one
+    /// in-memory copy of the document, which for AsyncAPI files (typically
+    /// well under 1 MB) is negligible.
+    /// </summary>
+    private static async Task<string> ReadRawAsync(string urlOrPath, CancellationToken ct)
+    {
         if (Uri.TryCreate(urlOrPath, UriKind.Absolute, out var uri)
             && (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps))
         {
             using var http = new HttpClient();
-            await using var httpStream = await http.GetStreamAsync(uri, ct).ConfigureAwait(false);
-            var fromUrl = await reader.ReadAsync(httpStream, ct).ConfigureAwait(false);
-            return fromUrl ?? throw new InvalidOperationException(
-                $"AsyncAPI reader returned no document for '{urlOrPath}'.");
+            return await http.GetStringAsync(uri, ct).ConfigureAwait(false);
         }
-
-        await using var fileStream = File.OpenRead(urlOrPath);
-        var fromFile = await reader.ReadAsync(fileStream, ct).ConfigureAwait(false);
-        return fromFile ?? throw new InvalidOperationException(
-            $"AsyncAPI reader returned no document for '{urlOrPath}'.");
+        return await File.ReadAllTextAsync(urlOrPath, ct).ConfigureAwait(false);
     }
 }
