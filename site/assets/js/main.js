@@ -1400,8 +1400,12 @@ function createBowireCombobox(hostEl, allItems, defaultSelectedIds, placeholder)
             //     serve` runs side by side with `bowire --url`.
             addons: [
                 { id: 'mcp-adapter', label: 'Expose target methods as MCP tools (AI calls your API)', runFlag: ' --enable-mcp-adapter' },
-                { id: 'mcp-serve',   label: 'Run Bowire itself as an MCP server (AI drives Bowire — discover, record, replay)',
-                  extraRun: '# In a second terminal — drive Bowire from Claude / Cursor / Copilot:\nbowire mcp serve --bind stdio' }
+                { id: 'mcp-serve',   label: 'Run a standalone Bowire MCP server (AI drives a separate Bowire — own discovery, own state)',
+                  extraRun:
+                      '# Standalone Bowire MCP server for Claude / Cursor / Copilot.\n' +
+                      '# Note: this is a separate process — it does NOT attach to the\n' +
+                      '#       workbench above. It runs its own discovery + state.\n' +
+                      'bowire mcp serve --bind stdio' }
             ],
             then:
                 'Bowire opens in your browser, discovers the API, and shows every method in the sidebar. Click Record to capture a session, replay it later against any environment.',
@@ -1455,9 +1459,11 @@ function createBowireCombobox(hostEl, allItems, defaultSelectedIds, placeholder)
             // copy-pasteable two-terminal sequence.
             addons: [
                 { id: 'mcp-adapter', label: 'Expose target methods as MCP tools (AI calls your API)', runFlag: ' \\\n  --enable-mcp-adapter' },
-                { id: 'mcp-serve',   label: 'Run Bowire itself as an MCP server (AI drives Bowire — discover, record, replay)',
+                { id: 'mcp-serve',   label: 'Run a standalone Bowire MCP server (AI drives a separate Bowire — own discovery, own state)',
                   extraRun:
-                      '# In a second terminal — drive Bowire from Claude / Cursor / Copilot:\n' +
+                      '# Standalone Bowire MCP server for Claude / Cursor / Copilot.\n' +
+                      '# Note: this is a separate container — it does NOT attach to the\n' +
+                      '#       workbench above. It runs its own discovery + state.\n' +
                       'docker run --rm -i \\\n' +
                       '  -v ~/.bowire:/home/app/.bowire \\\n' +
                       '  kuestenlogik/bowire:latest \\\n' +
