@@ -1488,6 +1488,7 @@ function createBowireCombobox(hostEl, allItems, defaultSelectedIds, placeholder)
     var panels = root.querySelectorAll('[data-step-panel]');
     var boats = root.querySelectorAll('[data-boat]');
     var urlInput = root.querySelector('[data-url-input]');
+    var urlHintSelect = root.querySelector('[data-url-hint]');
     var nugetBox = root.querySelector('[data-protocols-host="nuget"]');
     var cliBox = root.querySelector('[data-protocols-host="cli"]');
     var setupNotesBox = root.querySelector('[data-setup-notes]');
@@ -1519,6 +1520,27 @@ function createBowireCombobox(hostEl, allItems, defaultSelectedIds, placeholder)
     // addon (e.g. ai/container), the choice carries through. Reset
     // only on full restart from step 1.
     var selectedAddons = new Set();
+    // Protocol-hint prefix for the target URL (grpc@, rest@, …). Empty
+    // string = "any", which leaves the URL bare so Bowire's auto-
+    // detection picks the protocol from URL scheme / content-type.
+    var selectedHint = '';
+
+    // Populate the URL-hint dropdown from BOWIRE_PROTOCOLS. Each
+    // protocol id becomes a select option; the leading "any" stays
+    // as the safe default. The dropdown is teachable — users who
+    // didn't know hints existed at all now see the full list.
+    if (urlHintSelect) {
+        BOWIRE_PROTOCOLS.forEach(function (p) {
+            var opt = document.createElement('option');
+            opt.value = p.id;
+            opt.textContent = p.id;
+            urlHintSelect.appendChild(opt);
+        });
+        urlHintSelect.addEventListener('change', function (ev) {
+            selectedHint = ev.target.value || '';
+            if (pickedBoat) renderRecipes();
+        });
+    }
 
     function selectedNugetIds() { return nugetCombo.getSelected(); }
     function selectedCliIds() { return cliCombo.getSelected(); }
@@ -1700,8 +1722,12 @@ function createBowireCombobox(hostEl, allItems, defaultSelectedIds, placeholder)
         var placeholder = effectiveUrlPlaceholder(recipe);
         if (urlInput) urlInput.placeholder = placeholder;
         var url = (typedUrl || placeholder || '').trim() || '{URL}';
+        // Prefix the URL with the selected hint when one is picked
+        // (e.g. grpc@https://api.example.com). The "any" default keeps
+        // selectedHint empty so the URL goes through bare.
+        var fullUrl = selectedHint ? (selectedHint + '@' + url) : url;
         var addonsFlags = buildAddonsFlags(recipe);
-        var filled = recipe.run.replace(/\{URL\}/g, url).replace(/\{ADDONS\}/g, addonsFlags);
+        var filled = recipe.run.replace(/\{URL\}/g, fullUrl).replace(/\{ADDONS\}/g, addonsFlags);
         runCode.textContent = filled;
         runLang.textContent = recipe.runLang;
         runCopy.dataset.copy = filled;
@@ -1758,8 +1784,10 @@ function createBowireCombobox(hostEl, allItems, defaultSelectedIds, placeholder)
             pickedBoat = null;
             typedUrl = '';
             selectedAddons.clear();
+            selectedHint = '';
             boats.forEach(function (b) { b.classList.remove('selected'); });
             if (urlInput) urlInput.value = '';
+            if (urlHintSelect) urlHintSelect.value = '';
             setStep(1);
             return;
         }

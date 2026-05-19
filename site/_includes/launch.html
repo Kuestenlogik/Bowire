@@ -174,16 +174,28 @@
       <div class="launch-panel" data-step-panel="3" role="tabpanel" aria-hidden="true">
         <p class="launch-prompt" data-launch-prompt-3>Run it.</p>
 
-        <!-- Optional URL input — shown only for tester / mock / ai boats -->
+        <!-- Optional URL input — shown only for tester / mock / ai boats.
+             The hint dropdown next to the input selects a Bowire
+             protocol-disambiguator prefix (grpc@, rest@, graphql@, …)
+             that gets joined onto the URL with an `@`. Default "any"
+             leaves the URL bare so Bowire's auto-detection takes over;
+             the dropdown teaches the user about hints they almost
+             certainly don't know about yet. main.js populates the
+             options from BOWIRE_PROTOCOLS at init time. -->
         <div class="launch-url-row" data-url-row hidden>
           <label class="launch-url-label" for="launch-url-input">Target URL</label>
-          <input type="text"
-                 id="launch-url-input"
-                 class="launch-url-input"
-                 data-url-input
-                 placeholder="https://api.example.com/swagger.json"
-                 autocomplete="off"
-                 spellcheck="false">
+          <div class="launch-url-controls">
+            <select class="launch-url-hint" data-url-hint aria-label="Protocol hint">
+              <option value="">any</option>
+            </select>
+            <input type="text"
+                   id="launch-url-input"
+                   class="launch-url-input"
+                   data-url-input
+                   placeholder="https://api.example.com/swagger.json"
+                   autocomplete="off"
+                   spellcheck="false">
+          </div>
         </div>
 
         <!-- Optional add-on toggles — currently just the MCP adapter
