@@ -83,14 +83,25 @@ internal sealed class AsyncApiDocumentLoader
     /// in-memory copy of the document, which for AsyncAPI files (typically
     /// well under 1 MB) is negligible.
     /// </summary>
+    /// <remarks>
+    /// HTTP reads go through <see cref="HttpClient.GetByteArrayAsync(Uri, CancellationToken)"/>
+    /// rather than <c>GetStringAsync</c> because the latter's encoding
+    /// heuristic only trusts the <c>Content-Type charset=</c> attribute for
+    /// MIME types it considers textual, and <c>application/yaml</c> isn't
+    /// on that list. The result is a silent latin-1 decode of perfectly
+    /// fine UTF-8 bytes — em-dashes turn into <c>â€"</c>. Reading the raw
+    /// bytes and decoding as UTF-8 explicitly avoids that gotcha. BOM is
+    /// preserved by the byte read and stripped by the UTF-8 decoder.
+    /// </remarks>
     private static async Task<string> ReadRawAsync(string urlOrPath, CancellationToken ct)
     {
         if (Uri.TryCreate(urlOrPath, UriKind.Absolute, out var uri)
             && (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps))
         {
             using var http = new HttpClient();
-            return await http.GetStringAsync(uri, ct).ConfigureAwait(false);
+            var bytes = await http.GetByteArrayAsync(uri, ct).ConfigureAwait(false);
+            return System.Text.Encoding.UTF8.GetString(bytes);
         }
-        return await File.ReadAllTextAsync(urlOrPath, ct).ConfigureAwait(false);
+        return await File.ReadAllTextAsync(urlOrPath, System.Text.Encoding.UTF8, ct).ConfigureAwait(false);
     }
 }

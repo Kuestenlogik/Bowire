@@ -70,6 +70,21 @@ public sealed class BowireAsyncApiProtocolTests
     }
 
     [Fact]
+    public async Task Discover_preserves_utf8_em_dash_in_title()
+    {
+        var plugin = new BowireAsyncApiProtocol();
+        var sample = Path.Combine("TestData", "utf8-mojibake-probe.asyncapi.yaml");
+        var services = await plugin.DiscoverAsync(
+            serverUrl: sample, showInternalServices: false,
+            ct: TestContext.Current.CancellationToken)
+            .ConfigureAwait(true);
+        // Title goes into BowireServiceInfo.Package via document.Info.Title.
+        // Em-dash should land intact, not turn into the mojibake triple `â€"`.
+        Assert.Single(services);
+        Assert.Equal("Harbor Control Center — Event Stream", services[0].Package);
+    }
+
+    [Fact]
     public async Task Discover_handles_unquoted_versions_via_prenormaliser()
     {
         // asyncapi/net-sdk#76 — without the pre-normaliser this throws.
