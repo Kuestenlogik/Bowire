@@ -33,7 +33,7 @@ const JPG_QUALITY = 82;
 const PHOTOS = [
     { src: 'sailboat.png',      out: 'sailboat.jpg' },
     { src: 'speedboat.png',     out: 'speedboat.jpg' },
-    { src: 'mildecoy.png',      out: 'mildecoy.jpg' },
+    { src: 'dazzleship.png',    out: 'dazzleship.jpg' },
     { src: 'containership.png', out: 'containership.jpg' },
     { src: 'passengership.png', out: 'passengership.jpg' },
 ];
