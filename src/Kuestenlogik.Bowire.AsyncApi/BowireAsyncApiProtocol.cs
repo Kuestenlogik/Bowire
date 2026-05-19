@@ -4,6 +4,7 @@
 using System.Collections.Concurrent;
 using Kuestenlogik.Bowire.Models;
 using Neuroglia.AsyncApi;
+using Neuroglia.AsyncApi.v2;
 using Neuroglia.AsyncApi.v3;
 
 namespace Kuestenlogik.Bowire.AsyncApi;
@@ -33,10 +34,14 @@ public sealed class BowireAsyncApiProtocol : IBowireProtocol
     // boilerplate is cheap to amortise across discovery calls.
     private static readonly AsyncApiDocumentLoader Loader = new();
 
-    // Discovered documents are cached by their source URL so InvokeAsync
-    // can look up channel + operation + server without re-parsing the
-    // YAML on every call. Eviction policy is "rediscover replaces" — a
-    // fresh DiscoverAsync of the same URL overwrites the cached entry.
+    // Discovered V3 documents are cached by their source URL so
+    // InvokeAsync can look up channel + operation + server without
+    // re-parsing the YAML on every call. Eviction policy is
+    // "rediscover replaces" — a fresh DiscoverAsync of the same URL
+    // overwrites the cached entry. V2 documents are walked once at
+    // discovery time and not cached because the V2 InvokeAsync path
+    // isn't wired up yet (each V2 channel carries its own embedded
+    // operations, no separate operations-by-channel lookup needed).
     private readonly ConcurrentDictionary<string, V3AsyncApiDocument> _documents = new(StringComparer.Ordinal);
 
     // Resolvers picked up at Initialize time (one per wire-binding key).
@@ -105,19 +110,21 @@ public sealed class BowireAsyncApiProtocol : IBowireProtocol
         catch (DirectoryNotFoundException) { return []; }
         catch (HttpRequestException) { return []; }
 
-        // Phase A2 only maps V3 documents; V2 support arrives later.
-        if (document is not V3AsyncApiDocument v3)
+        switch (document)
         {
-            return [];
+            case V3AsyncApiDocument v3:
+                // Cache the parsed document so InvokeAsync can find the
+                // channel + operation + servers without re-reading the
+                // YAML. Keyed by the exact serverUrl the discovery
+                // dispatcher passed in so multi-URL workbenches keep
+                // each AsyncAPI document separate.
+                _documents[serverUrl] = v3;
+                return MapV3Channels(v3, serverUrl);
+            case V2AsyncApiDocument v2:
+                return MapV2Channels(v2, serverUrl);
+            default:
+                return [];
         }
-
-        // Cache the parsed document so InvokeAsync can find the channel +
-        // operation + servers without re-reading the YAML. Keyed by the
-        // exact serverUrl the discovery dispatcher passed in so multi-URL
-        // workbenches keep each AsyncAPI document separate.
-        _documents[serverUrl] = v3;
-
-        return MapV3Channels(v3, serverUrl);
     }
 
     /// <summary>
@@ -219,6 +226,91 @@ public sealed class BowireAsyncApiProtocol : IBowireProtocol
         if (!reference.StartsWith(prefix, StringComparison.Ordinal)) return null;
         var key = reference[prefix.Length..];
         return string.IsNullOrEmpty(key) ? null : key;
+    }
+
+    /// <summary>
+    /// V2 channel + operation walker. Same shape as the V3 walker — one
+    /// service per channel, methods carry the send/receive direction on
+    /// <c>ClientStreaming</c> / <c>ServerStreaming</c> — but V2 wires
+    /// operations into the channel directly via the <c>publish</c> and
+    /// <c>subscribe</c> properties instead of a separate top-level
+    /// <c>operations</c> block. Polarity inverts as in V3: AsyncAPI tags
+    /// from the application's perspective; Bowire is the test client.
+    /// <list type="bullet">
+    ///   <item><c>channel.subscribe</c> = application subscribes from the
+    ///     broker → Bowire receives (server-streaming, "asyncapi-receive")</item>
+    ///   <item><c>channel.publish</c> = application publishes to the
+    ///     broker → Bowire sends (client-streaming, "asyncapi-send")</item>
+    /// </list>
+    /// Channels without operations still get a service entry so the
+    /// sidebar surfaces the topology — matches V3.
+    /// </summary>
+    private static List<BowireServiceInfo> MapV2Channels(V2AsyncApiDocument document, string sourceUrl)
+    {
+        var apiTitle = document.Info?.Title ?? "AsyncAPI";
+        var apiVersion = document.Info?.Version;
+        var services = new List<BowireServiceInfo>();
+        if (document.Channels is null) return services;
+
+        foreach (var (channelKey, channel) in document.Channels)
+        {
+            var methods = new List<BowireMethodInfo>();
+
+            if (channel.Publish is not null)
+            {
+                methods.Add(BuildV2Method(channel.Publish, channel, channelKey, apiTitle, isSend: true));
+            }
+            if (channel.Subscribe is not null)
+            {
+                methods.Add(BuildV2Method(channel.Subscribe, channel, channelKey, apiTitle, isSend: false));
+            }
+
+            services.Add(new BowireServiceInfo(
+                Name: channelKey,
+                Package: apiTitle,
+                Methods: methods)
+            {
+                Source = "asyncapi",
+                Description = document.Info?.Description,
+                Version = apiVersion,
+                OriginUrl = sourceUrl,
+                IsUploaded = false
+            });
+        }
+
+        return services;
+    }
+
+    /// <summary>
+    /// Build the single method node for one V2 publish/subscribe slot.
+    /// Method name comes from <c>operationId</c> when set (carrying the
+    /// author's identifier into the sidebar), else falls back to the
+    /// fixed "publish" / "subscribe" label so the topology stays
+    /// readable on documents that don't bother naming operations.
+    /// </summary>
+    private static BowireMethodInfo BuildV2Method(
+        V2OperationDefinition op, V2ChannelDefinition channel,
+        string channelKey, string apiTitle, bool isSend)
+    {
+        var opName = !string.IsNullOrWhiteSpace(op.OperationId)
+            ? op.OperationId!
+            : (isSend ? "publish" : "subscribe");
+        return new BowireMethodInfo(
+            Name: opName,
+            FullName: $"{apiTitle}.{channelKey}.{opName}",
+            ClientStreaming: isSend,
+            ServerStreaming: !isSend,
+            InputType: new BowireMessageInfo(opName + "Request", opName + "Request", []),
+            OutputType: new BowireMessageInfo(opName + "Response", opName + "Response", []),
+            MethodType: isSend ? "asyncapi-send" : "asyncapi-receive")
+        {
+            Summary = op.Summary ?? channel.Description,
+            Description = op.Description ?? channel.Description,
+            // V2 channels don't carry an `address:` field — the channel
+            // key IS the address. Surface it on HttpPath so the sidebar
+            // shows the topic / subject in the same slot V3 docs use.
+            HttpPath = channelKey
+        };
     }
 
     public async Task<InvokeResult> InvokeAsync(

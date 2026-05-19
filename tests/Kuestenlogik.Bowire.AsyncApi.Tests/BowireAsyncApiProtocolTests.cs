@@ -70,6 +70,41 @@ public sealed class BowireAsyncApiProtocolTests
     }
 
     [Fact]
+    public async Task Discover_maps_v2_document_with_publish_and_subscribe()
+    {
+        var plugin = new BowireAsyncApiProtocol();
+        var sample = Path.Combine("TestData", "v2-smart-home.asyncapi.yaml");
+        var services = await plugin.DiscoverAsync(
+            serverUrl: sample, showInternalServices: false,
+            ct: TestContext.Current.CancellationToken)
+            .ConfigureAwait(true);
+
+        Assert.Equal(2, services.Count);
+        Assert.All(services, s => Assert.Equal("asyncapi", s.Source));
+        Assert.All(services, s => Assert.Equal("Smart Home Hub (V2)", s.Package));
+
+        // The subscribe channel exposes a receive-direction method:
+        // operationId "receiveLightMeasurement" with ServerStreaming
+        // semantics (broker → us).
+        var measured = services.Single(s => s.Name == "smarthome/light/measured");
+        var receiveOp = Assert.Single(measured.Methods);
+        Assert.Equal("receiveLightMeasurement", receiveOp.Name);
+        Assert.Equal("asyncapi-receive", receiveOp.MethodType);
+        Assert.False(receiveOp.ClientStreaming);
+        Assert.True(receiveOp.ServerStreaming);
+        Assert.Equal("smarthome/light/measured", receiveOp.HttpPath);
+
+        // The publish channel exposes a send-direction method.
+        var turnOnOff = services.Single(s => s.Name == "smarthome/light/{room}/action");
+        var sendOp = Assert.Single(turnOnOff.Methods);
+        Assert.Equal("sendTurnOnOff", sendOp.Name);
+        Assert.Equal("asyncapi-send", sendOp.MethodType);
+        Assert.True(sendOp.ClientStreaming);
+        Assert.False(sendOp.ServerStreaming);
+        Assert.Equal("smarthome/light/{room}/action", sendOp.HttpPath);
+    }
+
+    [Fact]
     public async Task Discover_preserves_utf8_em_dash_in_title()
     {
         var plugin = new BowireAsyncApiProtocol();
