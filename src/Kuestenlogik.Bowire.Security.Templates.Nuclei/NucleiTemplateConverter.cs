@@ -26,13 +26,19 @@ public static class NucleiTemplateConverter
 {
     /// <summary>
     /// Produce a <see cref="BowireRecording"/> the security scanner
-    /// can load alongside its native templates. Caller binds the
-    /// target URL at scan time; the converter leaves Nuclei's
-    /// <c>{{BaseURL}}</c> placeholders in the recording's step paths
-    /// for the scanner's existing variable-substitution pass to
-    /// resolve (Phase 2b adds the substitution layer).
+    /// can load alongside its native templates. When
+    /// <paramref name="variableContext"/> is supplied, every Nuclei
+    /// <c>{{...}}</c> placeholder in path / body strings gets
+    /// resolved against the target URL at conversion time so the
+    /// scanner receives ready-to-send probes. When the context is
+    /// <c>null</c> (corpus pre-load before target binding),
+    /// placeholders pass through literally; callers can re-convert
+    /// once the target is known or invoke
+    /// <see cref="ResolveVariables"/> on the resulting recording.
     /// </summary>
-    public static BowireRecording ToBowireRecording(NucleiTemplate template)
+    public static BowireRecording ToBowireRecording(
+        NucleiTemplate template,
+        NucleiVariableContext? variableContext = null)
     {
         ArgumentNullException.ThrowIfNull(template);
 
@@ -72,21 +78,62 @@ public static class NucleiTemplateConverter
         var firstHttp = template.Http.FirstOrDefault();
         if (firstHttp is not null && firstHttp.Path.Count > 0)
         {
+            var rawPath = firstHttp.Path[0];
+            var rawBody = firstHttp.Body;
+            var path = variableContext is null
+                ? rawPath
+                : NucleiVariableResolver.Resolve(rawPath, variableContext);
+            var body = variableContext is null
+                ? rawBody
+                : NucleiVariableResolver.Resolve(rawBody, variableContext);
+
             recording.Steps.Add(new BowireRecordingStep
             {
                 Id = "probe-1",
                 Protocol = "http",
                 Service = "root",
-                Method = $"{firstHttp.Method} {firstHttp.Path[0]}",
+                Method = $"{firstHttp.Method} {path}",
                 MethodType = "Unary",
                 HttpVerb = firstHttp.Method,
-                HttpPath = firstHttp.Path[0],
-                Body = firstHttp.Body,
+                HttpPath = path,
+                Body = body,
                 Status = "OK",
             });
         }
 
         return recording;
+    }
+
+    /// <summary>
+    /// Walk an already-built recording and substitute Nuclei
+    /// placeholders into its step paths + bodies. Useful when the
+    /// corpus is loaded ahead of target binding (Phase 2e flow) and
+    /// the scanner needs to resolve placeholders right before the
+    /// probe goes out.
+    /// </summary>
+    public static void ResolveVariables(BowireRecording recording, NucleiVariableContext context)
+    {
+        ArgumentNullException.ThrowIfNull(recording);
+        ArgumentNullException.ThrowIfNull(context);
+
+        foreach (var step in recording.Steps)
+        {
+            if (!string.IsNullOrEmpty(step.HttpPath))
+            {
+                step.HttpPath = NucleiVariableResolver.Resolve(step.HttpPath, context);
+            }
+            if (!string.IsNullOrEmpty(step.Body))
+            {
+                step.Body = NucleiVariableResolver.Resolve(step.Body!, context);
+            }
+            // Method is `${verb} ${path}` — keep the two in sync so
+            // the sidebar / SARIF location-uri reflect the resolved
+            // path rather than the placeholder.
+            if (!string.IsNullOrEmpty(step.HttpVerb) && !string.IsNullOrEmpty(step.HttpPath))
+            {
+                step.Method = $"{step.HttpVerb} {step.HttpPath}";
+            }
+        }
     }
 
     private static string BuildDescription(NucleiTemplate template)
