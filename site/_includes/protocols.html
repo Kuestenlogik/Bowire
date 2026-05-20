@@ -339,10 +339,11 @@
 
       <!-- AsyncAPI — discovery source, not a wire. Sits at the end
            of the first-party block to make clear it's first-party but
-           routes through a separate wire plugin (MQTT today, Kafka /
-           WebSocket as those wires land). The card text + the modal
-           detail both spell that out so users don't install it
-           expecting standalone wire support. -->
+           routes through a separate wire plugin (MQTT, Kafka, and
+           WebSocket today; AMQP / NATS land alongside the matching
+           wire plugins). The card text + the modal detail both spell
+           that out so users don't install it expecting standalone
+           wire support. -->
       <a class="protocol-card" href="{{ '/docs/protocols/asyncapi.html' | relative_url }}" data-feature-modal tabindex="0">
         <div class="protocol-icon">
           <!-- Official AsyncAPI mark (single-colour primary variant,
@@ -354,7 +355,7 @@
         </div>
         <div class="protocol-content">
           <h3>AsyncAPI</h3>
-          <p><strong>Discovery source &mdash; not a wire.</strong> Drop in an <code>asyncapi.yaml</code> or <code>.json</code> document (2.x + 3.0); Bowire surfaces channels, operations, and per-message overloads in the sidebar, then routes invocations through whichever wire plugin the doc&rsquo;s <code>bindings:</code> declare (MQTT today; Kafka / WebSocket follow).</p>
+          <p><strong>Discovery source &mdash; not a wire.</strong> Drop in an <code>asyncapi.yaml</code> or <code>.json</code> document (2.x + 3.0); Bowire surfaces channels, operations, and per-message overloads in the sidebar, then routes invocations through whichever wire plugin the doc&rsquo;s <code>bindings:</code> declare (MQTT, Kafka, WebSocket today; AMQP / NATS follow).</p>
           <div class="protocol-install">
             <code><span class="protocol-install-prompt">$</span> dotnet add package Kuestenlogik.Bowire.AsyncApi</code>
             <button class="protocol-install-copy copy-btn" data-copy="dotnet add package Kuestenlogik.Bowire.AsyncApi" aria-label="Copy install command for AsyncAPI"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></button>
@@ -365,11 +366,11 @@
             <div class="features-block-text">
               <h3>AsyncAPI</h3>
               <p class="features-block-lead">Discovery source for event-driven APIs &mdash; parse the contract, route invocations through whichever wire the doc&rsquo;s <code>bindings:</code> declare.</p>
-              <p>Bowire loads AsyncAPI 2.x and 3.0 documents (YAML or JSON), walks channels + operations + messages + per-message overloads, and registers them as first-class entries in the sidebar. Each operation knows which wire it speaks (from the <code>bindings:</code> block), so the invoke pane composes the right frame and hands it to the matching wire plugin &mdash; today MQTT (<code>Kuestenlogik.Bowire.Protocol.Mqtt</code>); Kafka / WebSocket as those wires&rsquo; bindings ship.</p>
+              <p>Bowire loads AsyncAPI 2.x and 3.0 documents (YAML or JSON), walks channels + operations + messages + per-message overloads, and registers them as first-class entries in the sidebar. Each operation knows which wire it speaks (from the <code>bindings:</code> block), so the invoke pane composes the right frame and hands it to the matching wire plugin &mdash; today MQTT (<code>Kuestenlogik.Bowire.Protocol.Mqtt</code>), Kafka (<code>Kuestenlogik.Bowire.Protocol.Kafka</code>), and WebSocket (<code>Kuestenlogik.Bowire.Protocol.WebSocket</code>); AMQP / NATS as those wires ship.</p>
               <ul class="features-block-capabilities">
                 <li>AsyncAPI 2.x + 3.0 (YAML / JSON)</li>
                 <li>Channels, operations, per-message overloads</li>
-                <li>MQTT binding today</li>
+                <li>MQTT + Kafka + WebSocket bindings</li>
               </ul>
               <a class="features-block-docs-link" href="{{ '/docs/protocols/asyncapi.html' | relative_url }}">Read the full docs &rarr;</a>
             </div>

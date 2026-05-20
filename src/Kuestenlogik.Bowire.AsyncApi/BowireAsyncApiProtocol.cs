@@ -99,10 +99,16 @@ public sealed class BowireAsyncApiProtocol : IBowireProtocol
         if (registry is null) return;
 
         // Resolvers are owned by this plugin and pinned to the registry the
-        // host wires up at startup. Phase A3 ships only the MQTT resolver;
-        // Phase A4+ adds Kafka / WebSocket / AMQP / NATS alongside the
-        // corresponding wire-plugin landings.
+        // host wires up at startup. Phase A3 shipped MQTT; Phase B adds
+        // Kafka + WebSocket — both wire plugins exist in the Küstenlogik
+        // family (Kafka as sibling repo, WebSocket as first-party). The
+        // resolvers degrade gracefully when the matching wire plugin is
+        // not loaded (they emit a clear error message pointing at the
+        // NuGet package to add). Phase C will follow with AMQP / NATS
+        // when those wire plugins land.
         _resolvers["mqtt"] = new MqttBindingResolver(registry);
+        _resolvers["kafka"] = new KafkaBindingResolver(registry);
+        _resolvers["ws"] = new WebSocketBindingResolver(registry);
     }
 
     public async Task<List<BowireServiceInfo>> DiscoverAsync(
