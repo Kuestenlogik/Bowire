@@ -36,6 +36,144 @@ public static class NucleiTemplateConverter
     /// once the target is known or invoke
     /// <see cref="ResolveVariables"/> on the resulting recording.
     /// </summary>
+    /// <summary>
+    /// Plural counterpart that fully unfolds a Nuclei template: one
+    /// <see cref="BowireRecording"/> per (path × payload-row)
+    /// combination. Single-path single-payload templates collapse to
+    /// a list of one. The id of each emitted recording carries the
+    /// path-index + payload-row in a stable suffix
+    /// (<c>{templateId}#p{N}#r{M}</c>) so SARIF + dashboards can
+    /// group findings by combination without losing the source
+    /// template's identity.
+    /// </summary>
+    public static IReadOnlyList<BowireRecording> ToBowireRecordings(
+        NucleiTemplate template,
+        NucleiVariableContext? variableContext = null)
+    {
+        ArgumentNullException.ThrowIfNull(template);
+
+        var firstHttp = template.Http.FirstOrDefault();
+        if (firstHttp is null)
+        {
+            // Nothing to fire — return a single placeholder recording
+            // so the operator sees the template was loaded but had
+            // no http block. Matches the single-shape contract.
+            return [ToBowireRecording(template, variableContext)];
+        }
+
+        var paths = firstHttp.Path.Count > 0 ? firstHttp.Path : new List<string> { "" };
+        var payloadRows = ExpandPayloadCrossProduct(firstHttp.Payloads);
+
+        var result = new List<BowireRecording>(paths.Count * Math.Max(1, payloadRows.Count));
+        for (var pathIdx = 0; pathIdx < paths.Count; pathIdx++)
+        {
+            for (var rowIdx = 0; rowIdx < payloadRows.Count; rowIdx++)
+            {
+                var clone = ClonePathAndApplyPayload(firstHttp, paths[pathIdx], payloadRows[rowIdx]);
+                var clonedTemplate = WithSingleHttp(template, clone);
+
+                var recording = ToBowireRecording(clonedTemplate, variableContext);
+                // Tag the id only when the unfolding produced more
+                // than one — single-path single-payload templates
+                // keep their original id intact.
+                if (paths.Count > 1 || payloadRows.Count > 1)
+                {
+                    recording.Id = $"{template.Id}#p{pathIdx}#r{rowIdx}";
+                }
+                result.Add(recording);
+            }
+        }
+        return result;
+    }
+
+    /// <summary>
+    /// Expand a payload map (variable → list of values) into rows of
+    /// (variable → single value) by cross-product. Empty map yields
+    /// one empty row (so the caller emits one recording with no
+    /// payload substitutions). Single-variable + multi-variable both
+    /// flow through the same loop.
+    /// </summary>
+    private static List<Dictionary<string, string>> ExpandPayloadCrossProduct(
+        Dictionary<string, List<string>> payloads)
+    {
+        if (payloads.Count == 0) return [new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)];
+
+        var rows = new List<Dictionary<string, string>> { new(StringComparer.OrdinalIgnoreCase) };
+        foreach (var (variableName, values) in payloads)
+        {
+            var next = new List<Dictionary<string, string>>(rows.Count * values.Count);
+            foreach (var row in rows)
+            {
+                foreach (var value in values)
+                {
+                    var clone = new Dictionary<string, string>(row, StringComparer.OrdinalIgnoreCase)
+                    {
+                        [variableName] = value
+                    };
+                    next.Add(clone);
+                }
+            }
+            rows = next;
+        }
+        return rows;
+    }
+
+    /// <summary>
+    /// Build a single-path single-payload-row copy of the request that
+    /// downstream code can treat as a plain "one path, one body"
+    /// template. Substitutes payload-variable placeholders inline so
+    /// the variable resolver doesn't need to know about Nuclei's
+    /// payload semantics.
+    /// </summary>
+    private static NucleiHttpRequest ClonePathAndApplyPayload(
+        NucleiHttpRequest source, string singlePath, IReadOnlyDictionary<string, string> payloadRow)
+    {
+        var clone = new NucleiHttpRequest
+        {
+            Method = source.Method,
+            Body = ApplyPayload(source.Body, payloadRow),
+            MatchersCondition = source.MatchersCondition,
+        };
+        clone.Path.Add(ApplyPayload(singlePath, payloadRow));
+        clone.Matchers.AddRange(source.Matchers);
+        return clone;
+    }
+
+    /// <summary>
+    /// Replace every <c>{{varName}}</c> in <paramref name="input"/>
+    /// with the matching payload-row value. Payload placeholders use
+    /// the same <c>{{...}}</c> syntax as Nuclei's built-in variables;
+    /// matched payload-names take precedence over the variable
+    /// resolver because they're template-scoped, not target-scoped.
+    /// </summary>
+    private static string ApplyPayload(string input, IReadOnlyDictionary<string, string> payloadRow)
+    {
+        if (string.IsNullOrEmpty(input) || payloadRow.Count == 0) return input;
+        var result = input;
+        foreach (var (name, value) in payloadRow)
+        {
+            result = result.Replace("{{" + name + "}}", value, StringComparison.Ordinal);
+        }
+        return result;
+    }
+
+    /// <summary>
+    /// Produce a shallow template clone whose <c>Http</c> is exactly
+    /// one entry — the singular <see cref="ToBowireRecording"/> path
+    /// already handles that shape, so the plural unfolder just hands
+    /// it pre-collapsed slices.
+    /// </summary>
+    private static NucleiTemplate WithSingleHttp(NucleiTemplate original, NucleiHttpRequest single)
+    {
+        var clone = new NucleiTemplate
+        {
+            Id = original.Id,
+            Info = original.Info,
+        };
+        clone.Http.Add(single);
+        return clone;
+    }
+
     public static BowireRecording ToBowireRecording(
         NucleiTemplate template,
         NucleiVariableContext? variableContext = null)

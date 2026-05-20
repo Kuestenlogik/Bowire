@@ -15,7 +15,7 @@ The probe itself is the recording's first `steps` entry. The scanner replays tha
 ## Running them
 
 ```
-bowire scan --target https://api.example.com --corpus docs/security/examples
+bowire scan --target https://api.example.com --templates docs/security/examples
 ```
 
 To run a single template:
@@ -27,13 +27,13 @@ bowire scan --target https://api.example.com --template docs/security/examples/g
 To emit SARIF for CI dashboards (GitHub Code Scanning, GitLab Security Dashboard, Azure DevOps):
 
 ```
-bowire scan --target https://api.example.com --corpus docs/security/examples --out findings.sarif
+bowire scan --target https://api.example.com --templates docs/security/examples --out findings.sarif
 ```
 
 Filter to high-severity findings only:
 
 ```
-bowire scan --target https://api.example.com --corpus docs/security/examples --severity high
+bowire scan --target https://api.example.com --templates docs/security/examples --severity high
 ```
 
 ## The three seeds

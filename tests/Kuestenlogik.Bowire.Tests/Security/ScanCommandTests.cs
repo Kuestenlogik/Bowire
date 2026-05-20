@@ -355,7 +355,7 @@ public sealed class ScanCommandTests
             var (code, stdout, _) = Capture(() => ScanCommand.RunAsync(new ScanOptions
             {
                 Target = upstream.Urls.First(),
-                Corpus = corpusDir,
+                Templates = corpusDir,
                 RunBuiltins = false,
                 TimeoutSeconds = 10,
             }, ct));
@@ -413,7 +413,7 @@ public sealed class ScanCommandTests
             var (code, _, stderr) = Capture(() => ScanCommand.RunAsync(new ScanOptions
             {
                 Target = upstream.Urls.First(),
-                Corpus = corpusDir,
+                Templates = corpusDir,
                 RunBuiltins = false,
                 TimeoutSeconds = 10,
             }, ct));
