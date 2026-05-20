@@ -21,22 +21,31 @@
     <div class="install-panels">
 
       <div class="install-panel active" id="install-panel-scan" role="tabpanel" data-panel="scan">
-        <p class="install-desc">Multi-protocol security scanner. Vulnerability templates + built-in passive checks (TLS, headers, version disclosure) for any HTTP-class target. Emits SARIF 2.1.0 so findings drop straight into GitHub Code Scanning, GitLab Security Dashboard, or Azure DevOps.</p>
+        <p class="install-desc">Multi-protocol security scanner. Bowire&rsquo;s own vulnerability templates + built-in passive checks (TLS, headers, version disclosure) <em>and</em> the <a href="https://github.com/projectdiscovery/nuclei-templates" target="_blank" rel="noopener">projectdiscovery/nuclei-templates</a> corpus (8000+ community templates) via <code>--nuclei</code>. Emits SARIF 2.1.0 so findings drop straight into GitHub Code Scanning, GitLab Security Dashboard, or Azure DevOps.</p>
         <div class="code-block">
           <div class="code-block-header">
             <span class="code-block-lang">bash</span>
-            <button class="copy-btn" data-copy="bowire scan --target https://api.example.com \
+            <button class="copy-btn" data-copy="# Bowire's own vulndb corpus + passive checks
+bowire scan --target https://api.example.com \
             --templates ~/.bowire/vulndb \
-            --out findings.sarif \
-            --severity medium" aria-label="Copy">
+            --out findings.sarif --severity medium
+
+# Or the Nuclei community corpus (8000+ templates)
+bowire scan --target https://api.example.com \
+            --nuclei ~/nuclei-templates \
+            --out findings.sarif --severity medium" aria-label="Copy">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
             </button>
           </div>
-          <pre><code><span class="c"># Scan a target against the community vuln-db corpus + built-in checks</span>
+          <pre><code><span class="c"># Bowire&rsquo;s own vulndb corpus + passive checks</span>
 bowire scan --target https://api.example.com \
             --templates ~/.bowire/vulndb \
-            --out findings.sarif \
-            --severity medium</code></pre>
+            --out findings.sarif --severity medium
+
+<span class="c"># Or the Nuclei community corpus (8000+ templates)</span>
+bowire scan --target https://api.example.com \
+            --nuclei ~/nuclei-templates \
+            --out findings.sarif --severity medium</code></pre>
         </div>
         <p class="install-desc" style="margin-top:14px;"><a href="{{ '/security.html' | relative_url }}">More on the security lane &rarr;</a></p>
       </div>
