@@ -4,6 +4,13 @@
     <PackageId>Kuestenlogik.Bowire.Security.Templates.Nuclei</PackageId>
     <PackageTags>bowire;security;nuclei;projectdiscovery;vulnerability-scanner;templates;developer-tools</PackageTags>
     <IsPackable>true</IsPackable>
+    <!-- CA5394 (Random is not cryptographically secure) is suppressed
+         because the variable resolver uses Random *deliberately* for
+         reproducible {{RandStr}} placeholders — the seed is part of
+         the public API so two scan runs against the same target
+         produce identical probes (essential for SARIF diff + CI
+         baselines). Crypto-RNG would prevent that property. -->
+    <NoWarn>$(NoWarn);CA5394</NoWarn>
   </PropertyGroup>
   <ItemGroup>
     <InternalsVisibleTo Include="Kuestenlogik.Bowire.Security.Templates.Nuclei.Tests" />
