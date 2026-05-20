@@ -17,9 +17,17 @@
 #
 # One-time setup before the first release:
 #   - Fork microsoft/winget-pkgs into the maintainer's GitHub account.
-#   - Create a fine-grained PAT with `Contents: Read & Write` on that
-#     fork only, valid for ~12 months. Save it as repo secret
-#     WINGET_TOKEN.
+#   - Create a **classic** PAT (not fine-grained) with the
+#     `public_repo` scope. Save it as repo secret WINGET_TOKEN.
+#
+# Classic, not fine-grained, on purpose. `wingetcreate submit` opens a
+# cross-org PR (from <maintainer>/winget-pkgs → microsoft/winget-pkgs),
+# and fine-grained PATs can only grant `Pull requests: Write` on repos
+# you own or collaborate on — never on a third-party org's repo. A
+# fine-grained PAT will pass authentication but the PR-open step
+# returns "Resource not accessible by personal access token" (403),
+# which is exactly what we hit on the v1.5.0 release. Microsoft's
+# wingetcreate docs land on the same recommendation.
 #
 # Without WINGET_TOKEN the workflow exits early without failing the
 # release — the Windows ZIPs are still attached to the GitHub release,
@@ -72,7 +80,7 @@ jobs:
         shell: pwsh
         run: |
           Write-Host "::warning::WINGET_TOKEN secret is not set — skipping winget submission."
-          Write-Host "Add a fine-grained PAT with push access to a fork of microsoft/winget-pkgs as WINGET_TOKEN to enable this step."
+          Write-Host "Add a *classic* PAT with the public_repo scope (fine-grained PATs cannot open PRs against third-party orgs like microsoft/winget-pkgs) as WINGET_TOKEN to enable this step."
 
       - name: Stop here if no token
         if: ${{ env.WINGET_TOKEN == '' }}
