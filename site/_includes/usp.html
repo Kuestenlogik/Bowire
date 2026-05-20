@@ -6,7 +6,7 @@
     <div class="usp-grid">
 
       <a class="usp-card usp-hero-card usp-card-link" href="{{ '/#protocols' | relative_url }}">
-        <div class="usp-number">15+</div>
+        <div class="usp-number">17+</div>
         <h3>Protocols in One UI</h3>
         <ul class="usp-protocol-badges" aria-label="Supported protocols">
           <!-- gRPC — community single-path mark (vectorlogo.zone); official SVG on grpc.io is a 130 KB raster-traced file unfit for inline. Brand-coloured to match the card below. -->
@@ -78,6 +78,14 @@
           <li>
             <svg viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="6" width="6" height="4" rx="1"/><rect x="9" y="10" width="6" height="4" rx="1"/><rect x="16" y="14" width="6" height="4" rx="1"/><path d="M14 8h4"/><path d="M14 16h4"/></svg>
             UDP
+          </li>
+          <!-- AsyncAPI — official mark (asyncapi/spec). Discovery source
+               that fans out into MQTT / Kafka / WebSocket via the doc's
+               bindings; sits as a full chip because users still need
+               to recognise it as a first-class option in Bowire. -->
+          <li title="Discovery source for event-driven APIs — routes through MQTT / Kafka / WebSocket wire plugins">
+            <img src="{{ '/assets/images/protocols/asyncapi-mark--primary.svg' | relative_url }}" alt="">
+            AsyncAPI
           </li>
           <li class="usp-protocol-badges-custom" title="Plug your own protocol in via IBowireProtocol">
             <svg viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v1"/></svg>
