@@ -19,5 +19,13 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Kuestenlogik.Bowire\Kuestenlogik.Bowire.csproj" />
+    <!-- Templates.Nuclei lets the `nuclei` flag read the
+         projectdiscovery/nuclei-templates corpus alongside the
+         scanner's native JSON-template shape. Scanner depends on
+         Templates.Nuclei rather than the other way: Templates.Nuclei
+         only emits Core types, so embedded users can pull it
+         standalone (e.g. a corpus-converter tool) without dragging
+         in the scan-engine. -->
+    <ProjectReference Include="..\Kuestenlogik.Bowire.Security.Templates.Nuclei\Kuestenlogik.Bowire.Security.Templates.Nuclei.csproj" />
   </ItemGroup>
 </Project>
