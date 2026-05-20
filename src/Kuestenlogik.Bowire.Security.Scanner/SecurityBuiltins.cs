@@ -9,7 +9,7 @@ using System.Text.RegularExpressions;
 using Kuestenlogik.Bowire.Mocking;
 using Kuestenlogik.Bowire.Security;
 
-namespace Kuestenlogik.Bowire.App;
+namespace Kuestenlogik.Bowire.Security.Scanner;
 
 /// <summary>
 /// Built-in passive security checks the <c>bowire scan</c> subcommand

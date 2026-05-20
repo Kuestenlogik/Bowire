@@ -23,6 +23,7 @@
     <ProjectReference Include="..\..\src\Kuestenlogik.Bowire.Protocol.SignalR\Kuestenlogik.Bowire.Protocol.SignalR.csproj" />
     <ProjectReference Include="..\..\src\Kuestenlogik.Bowire.Protocol.Sse\Kuestenlogik.Bowire.Protocol.Sse.csproj" />
     <ProjectReference Include="..\..\src\Kuestenlogik.Bowire.Mcp\Kuestenlogik.Bowire.Mcp.csproj" />
+    <ProjectReference Include="..\..\src\Kuestenlogik.Bowire.Security.Scanner\Kuestenlogik.Bowire.Security.Scanner.csproj" />
     <!-- Tool brings in BowireConfiguration (bootstrap IConfiguration +
          CLI-flag / legacy-env-var mappings) that the Bowire executable
          uses before WebApplication.CreateBuilder runs. Tested here

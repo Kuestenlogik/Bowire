@@ -3,6 +3,7 @@
 
 using System.CommandLine;
 using Kuestenlogik.Bowire.App.Configuration;
+using Kuestenlogik.Bowire.Cli;
 using Kuestenlogik.Bowire.Mcp;
 using Microsoft.Extensions.Configuration;
 
@@ -67,6 +68,12 @@ internal static class BowireCli
             Description = "Skip a protocol plugin at startup. Repeat or comma-separate ('--disable-plugin grpc --disable-plugin signalr' or '--disable-plugin grpc,signalr'). Useful when a plugin DLL won't load or its discovery probe is too slow for the current host.",
             AllowMultipleArgumentsPerToken = true,
         });
+        var disableCliCommandOpt = new Option<string[]>("--disable-cli-command")
+        {
+            Description = "Skip an auto-discovered CLI subcommand at startup. Mirrors --disable-plugin but for IBowireCliCommand contributions (scan / future plugin commands). Repeat or comma-separate.",
+            AllowMultipleArgumentsPerToken = true,
+        };
+        root.Add(disableCliCommandOpt);
 
         root.SetAction(async (_, ct) =>
             await BrowserUiHost.RunAsync(originalArgs, cfg, pluginDir, ct).ConfigureAwait(false));
@@ -79,12 +86,58 @@ internal static class BowireCli
         root.Add(BuildPluginCommand(cfg, pluginDir));
         root.Add(BuildTestCommand(cfg));
         root.Add(BuildImportCommand());
-        root.Add(BuildScanCommand());
         root.Add(BuildJwtCommand());
         root.Add(BuildFuzzCommand());
         root.Add(BuildProxyCommand());
 
+        // Auto-discovered CLI commands — scanner today, fuzz / proxy /
+        // jwt will follow as they extract out of Tool into their own
+        // projects. Same assembly-scan pattern as BowireProtocolRegistry.
+        // Disabled-ids parsed straight off the args because System.CommandLine
+        // doesn't surface option values before Parse(args), and we need the
+        // list at command-build time.
+        var disabledCli = PreparseRepeatableArg(originalArgs, "--disable-cli-command");
+        foreach (var cmd in BowireCliCommandRegistry.Discover(disabledCli).Commands)
+        {
+            root.Add(cmd.Build());
+        }
+
         return root;
+    }
+
+    /// <summary>
+    /// Pull repeatable option values out of the raw args array before
+    /// System.CommandLine.Parse runs. Needed for options that have to
+    /// influence root-command shape (like --disable-cli-command, which
+    /// gates which subcommands attach at all). Supports both spaced
+    /// (<c>--flag value</c>) and equals (<c>--flag=value</c>) forms,
+    /// plus comma-separated values inside one token.
+    /// </summary>
+    private static List<string> PreparseRepeatableArg(string[] args, string optionName)
+    {
+        var result = new List<string>();
+        for (var i = 0; i < args.Length; i++)
+        {
+            var a = args[i];
+            string? value = null;
+            if (string.Equals(a, optionName, StringComparison.Ordinal)
+                && i + 1 < args.Length)
+            {
+                value = args[++i];
+            }
+            else if (a.StartsWith(optionName + "=", StringComparison.Ordinal))
+            {
+                value = a[(optionName.Length + 1)..];
+            }
+            if (value is not null)
+            {
+                foreach (var part in value.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+                {
+                    result.Add(part);
+                }
+            }
+        }
+        return result;
     }
 
     // -------------------- proxy --------------------
@@ -212,63 +265,9 @@ internal static class BowireCli
         return jwt;
     }
 
-    // -------------------- scan --------------------
-
-    private static Command BuildScanCommand()
-    {
-        var scan = new Command("scan",
-            "Run vulnerability templates against a target URL. The Tier-1 anchor of the security-testing lane (see docs/architecture/security-testing.md).");
-
-        var targetOpt = new Option<string>("--target") { Description = "Target base URL (e.g. https://api.example.com).", Required = true };
-        var corpusOpt = new Option<string>("--corpus") { Description = "Directory of *.json vulnerability templates to run." };
-        var templateOpt = new Option<string>("--template") { Description = "Single template *.json file to run (combinable with --corpus)." };
-        var outOpt = new Option<string>("--out") { Description = "Write findings as SARIF 2.1.0 JSON to this path (for CI dashboards: GitHub Code Scanning, GitLab, Azure DevOps)." };
-        var severityOpt = new Option<string>("--severity") { Description = "Minimum severity to report: low / medium / high / critical. Lower-severity templates still load but are reported as skipped." };
-        var timeoutOpt = new Option<int>("--timeout") { Description = "Per-probe HTTP timeout in seconds. Default 30." };
-        var allowSelfSignedOpt = new Option<bool>("--allow-self-signed-certs") { Description = "Accept self-signed / untrusted TLS certs on the target. Off by default — use only when probing a known dev/staging cert." };
-        var noBuiltinsOpt = new Option<bool>("--no-builtins") { Description = "Skip the built-in passive checks (TLS-version enumeration, version-disclosing headers, verbose-error detection). Built-ins run by default." };
-        var scopeOpt = new Option<string[]>("--scope")
-        {
-            Description = "In-scope hostname or glob (e.g. `api.example.com` or `*.example.com` — the leading `*.` matches sub-domains but NOT the apex). Repeat or comma-separate. Defaults to the target's own host, so accidental cross-host probes are blocked unless explicitly widened.",
-            AllowMultipleArgumentsPerToken = true,
-        };
-        var authHeaderOpt = new Option<string[]>("--auth-header")
-        {
-            Description = "Add an HTTP header to every probe — typically `Authorization: Bearer <token>` or `X-Api-Key: <key>`. Repeatable for multiple headers (cookies, multi-header auth schemes). Without this flag, scans of authenticated APIs land on the login wall and the scanner reports misleading 'endpoint missing' findings.",
-            AllowMultipleArgumentsPerToken = false,
-        };
-
-        scan.Add(targetOpt);
-        scan.Add(corpusOpt);
-        scan.Add(templateOpt);
-        scan.Add(outOpt);
-        scan.Add(severityOpt);
-        scan.Add(timeoutOpt);
-        scan.Add(allowSelfSignedOpt);
-        scan.Add(noBuiltinsOpt);
-        scan.Add(scopeOpt);
-        scan.Add(authHeaderOpt);
-
-        scan.SetAction(async (pr, ct) =>
-        {
-            var options = new ScanOptions
-            {
-                Target = pr.GetValue(targetOpt) ?? "",
-                Corpus = pr.GetValue(corpusOpt),
-                Template = pr.GetValue(templateOpt),
-                OutSarif = pr.GetValue(outOpt),
-                MinSeverity = pr.GetValue(severityOpt),
-                TimeoutSeconds = pr.GetValue(timeoutOpt) is int t and > 0 ? t : 30,
-                AllowSelfSignedCerts = pr.GetValue(allowSelfSignedOpt),
-                RunBuiltins = !pr.GetValue(noBuiltinsOpt),
-                Scope = pr.GetValue(scopeOpt) ?? Array.Empty<string>(),
-                AuthHeaders = pr.GetValue(authHeaderOpt) ?? Array.Empty<string>(),
-            };
-            return await ScanCommand.RunAsync(options, ct).ConfigureAwait(false);
-        });
-
-        return scan;
-    }
+    // scan: contributed via IBowireCliCommand from
+    // Kuestenlogik.Bowire.SecurityScanner — picked up by the auto-
+    // discovery loop above. See ScanCliCommand.Build().
 
     // -------------------- import --------------------
 

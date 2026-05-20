@@ -6,6 +6,7 @@ using System.Text;
 using System.Text.Json;
 using Kuestenlogik.Bowire.Mocking;
 using Kuestenlogik.Bowire.Security;
+using Kuestenlogik.Bowire.Security.Scanner;
 
 namespace Kuestenlogik.Bowire.App;
 

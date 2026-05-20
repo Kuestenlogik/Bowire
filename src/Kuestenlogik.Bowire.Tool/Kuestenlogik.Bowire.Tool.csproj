@@ -102,6 +102,7 @@
     <ProjectReference Include="..\Kuestenlogik.Bowire.Protocol.SocketIo\Kuestenlogik.Bowire.Protocol.SocketIo.csproj" />
     <ProjectReference Include="..\Kuestenlogik.Bowire.Protocol.OData\Kuestenlogik.Bowire.Protocol.OData.csproj" />
     <ProjectReference Include="..\Kuestenlogik.Bowire.AsyncApi\Kuestenlogik.Bowire.AsyncApi.csproj" />
+    <ProjectReference Include="..\Kuestenlogik.Bowire.Security.Scanner\Kuestenlogik.Bowire.Security.Scanner.csproj" />
     <ProjectReference Include="..\Kuestenlogik.Bowire.Mock\Kuestenlogik.Bowire.Mock.csproj" />
     <ProjectReference Include="..\Kuestenlogik.Bowire.Mcp\Kuestenlogik.Bowire.Mcp.csproj" />
     <PackageReference Include="System.CommandLine" />

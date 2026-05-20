@@ -10,7 +10,7 @@ using System.Text.Json.Serialization;
 using Kuestenlogik.Bowire.Mocking;
 using Kuestenlogik.Bowire.Security;
 
-namespace Kuestenlogik.Bowire.App;
+namespace Kuestenlogik.Bowire.Security.Scanner;
 
 /// <summary>
 /// Implementation of <c>bowire scan</c> — the Tier-1 anchor of the
@@ -31,7 +31,7 @@ namespace Kuestenlogik.Bowire.App;
 /// invoke path.
 /// </para>
 /// </remarks>
-internal static class ScanCommand
+public static class ScanCommand
 {
     /// <summary>Loaded JSON options shared across template parse + finding write.</summary>
     private static readonly JsonSerializerOptions s_jsonOpts = new()
@@ -272,7 +272,7 @@ internal static class ScanCommand
     /// the apex). Empty scope list ⇒ derive from the target's own
     /// host so accidental cross-host probes are blocked by default.
     /// </summary>
-    internal static Func<string, bool> CompileScope(IList<string> scope, string targetUrl)
+    public static Func<string, bool> CompileScope(IList<string> scope, string targetUrl)
     {
         var patterns = new List<string>();
         if (scope is { Count: > 0 })
@@ -381,7 +381,7 @@ internal static class ScanCommand
     /// effort here; the operator can debug with --verbose if a header
     /// is misformed.
     /// </summary>
-    internal static void ApplyAuthHeaders(HttpRequestMessage req, IList<string> headers)
+    public static void ApplyAuthHeaders(HttpRequestMessage req, IList<string> headers)
     {
         if (headers is null || headers.Count == 0) return;
         foreach (var raw in headers)
@@ -560,7 +560,7 @@ internal static class ScanCommand
 internal sealed record LoadedTemplate(string Path, BowireRecording Recording);
 
 /// <summary>Bag of <c>bowire scan</c> CLI options resolved from System.CommandLine.</summary>
-internal sealed class ScanOptions
+public sealed class ScanOptions
 {
     public string Target { get; init; } = "";
     public string? Corpus { get; init; }

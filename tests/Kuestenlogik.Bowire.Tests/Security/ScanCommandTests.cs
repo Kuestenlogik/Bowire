@@ -6,6 +6,7 @@ using System.Text.Json;
 using Kuestenlogik.Bowire.App;
 using Kuestenlogik.Bowire.Mocking;
 using Kuestenlogik.Bowire.Security;
+using Kuestenlogik.Bowire.Security.Scanner;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;

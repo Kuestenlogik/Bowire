@@ -3,6 +3,7 @@
 
 using System.Net;
 using Kuestenlogik.Bowire.App;
+using Kuestenlogik.Bowire.Security.Scanner;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
