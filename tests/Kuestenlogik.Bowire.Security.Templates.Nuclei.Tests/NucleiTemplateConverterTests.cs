@@ -60,16 +60,41 @@ public sealed class NucleiTemplateConverterTests
     }
 
     [Fact]
-    public void VulnerableWhen_is_null_until_phase_2b_lands()
+    public void VulnerableWhen_translates_introspection_status_plus_word_matchers()
     {
-        // Predicate translation is deferred — the converter explicitly
-        // leaves VulnerableWhen null so the scanner reports the
-        // template as "no predicate, will not fire" rather than
-        // silently treating every probe as vulnerable. Pin the
-        // contract so a future change to default behaviour breaks
-        // visibly.
+        // matchers-condition: and → AllOf at the top
+        // status [200]                → Status = 200
+        // word [__schema, queryType], condition: and → AllOf of BodyContains
         var path = Path.Combine("TestData", "introspection-enabled.yaml");
         var template = NucleiTemplateReader.ReadFile(path);
+        var recording = NucleiTemplateConverter.ToBowireRecording(template);
+
+        Assert.NotNull(recording.VulnerableWhen);
+        var top = recording.VulnerableWhen!;
+        Assert.NotNull(top.AllOf);
+        Assert.Equal(2, top.AllOf!.Count);
+
+        var statusLeaf = top.AllOf.Single(p => p.Status is not null);
+        Assert.Equal(200, statusLeaf.Status);
+
+        var wordComposite = top.AllOf.Single(p => p.AllOf is not null);
+        Assert.Equal(2, wordComposite.AllOf!.Count);
+        Assert.Contains(wordComposite.AllOf, leaf => leaf.BodyContains == "__schema");
+        Assert.Contains(wordComposite.AllOf, leaf => leaf.BodyContains == "queryType");
+    }
+
+    [Fact]
+    public void VulnerableWhen_is_null_when_template_declares_no_matchers()
+    {
+        // Empty-matchers safety — the converter must not invent a
+        // predicate. Scanner shows it as "no actionable predicate".
+        var template = new NucleiTemplate
+        {
+            Id = "no-matchers",
+            Info = new NucleiInfo { Name = "Empty", Severity = "low" },
+        };
+        template.Http.Add(new NucleiHttpRequest { Method = "GET", Path = { "{{BaseURL}}/" } });
+
         var recording = NucleiTemplateConverter.ToBowireRecording(template);
         Assert.Null(recording.VulnerableWhen);
     }

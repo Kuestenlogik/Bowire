@@ -52,16 +52,23 @@ public static class NucleiTemplateConverter
                 References = new List<string>(template.Info.Reference),
                 Protocols = new List<string> { "rest", "http" },
             },
-            // Predicate translation lands in Phase 2b. Leave null for
-            // now — the scanner reports the template as "no
-            // vulnerableWhen predicate" until then, which is the
-            // right outcome (visible, non-silent).
-            VulnerableWhen = null,
+            // VulnerableWhen translated by NucleiMatcherTranslator —
+            // status / word / regex on the body get full coverage.
+            // Header / response-line matchers + custom matcher types
+            // arrive in Phase 2b+; until then they drop out of the
+            // tree (the surrounding predicate still fires on the
+            // matchers we did translate). Templates with zero
+            // translated matchers end up with VulnerableWhen = null
+            // and the scanner reports them as "no actionable
+            // predicate" — visible, non-silent.
+            VulnerableWhen = template.Http.FirstOrDefault() is { } firstReq
+                ? NucleiMatcherTranslator.Translate(firstReq)
+                : null,
         };
 
         // Phase 2a captures the first http-block's first path as a
         // single Bowire recording step. Multi-path + multi-step
-        // arrive in Phase 2c.
+        // arrive in Phase 2d.
         var firstHttp = template.Http.FirstOrDefault();
         if (firstHttp is not null && firstHttp.Path.Count > 0)
         {
