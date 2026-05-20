@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Description>Nuclei (projectdiscovery/nuclei) template reader for Bowire's security scanner. Translates YAML templates from the 8000+-template community corpus into Bowire's vulnerability-template shape (BowireRecording with attack: true + AttackPredicate). HTTP single-request templates land first; multi-step + OAST + non-HTTP transports arrive in later iterations.</Description>
+    <PackageId>Kuestenlogik.Bowire.Security.Templates.Nuclei</PackageId>
+    <PackageTags>bowire;security;nuclei;projectdiscovery;vulnerability-scanner;templates;developer-tools</PackageTags>
+    <IsPackable>true</IsPackable>
+  </PropertyGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="Kuestenlogik.Bowire.Security.Templates.Nuclei.Tests" />
+    <InternalsVisibleTo Include="Kuestenlogik.Bowire.Tests" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="YamlDotNet" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Kuestenlogik.Bowire\Kuestenlogik.Bowire.csproj" />
+    <ProjectReference Include="..\Kuestenlogik.Bowire.Security.Scanner\Kuestenlogik.Bowire.Security.Scanner.csproj" />
+  </ItemGroup>
+</Project>

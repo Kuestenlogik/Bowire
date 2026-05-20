@@ -1,0 +1,30 @@
+id: graphql-introspection-enabled
+info:
+  name: GraphQL Introspection Enabled
+  author: thomas-stegemann
+  severity: medium
+  description: GraphQL introspection is enabled, exposing the full schema.
+  reference:
+    - https://graphql.org/learn/introspection/
+    - https://owasp.org/www-project-api-security/
+  tags:
+    - graphql
+    - exposure
+    - misconfig
+
+http:
+  - method: POST
+    path:
+      - "{{BaseURL}}/graphql"
+    body: '{"query":"{ __schema { queryType { name } } }"}'
+    matchers-condition: and
+    matchers:
+      - type: status
+        status:
+          - 200
+      - type: word
+        words:
+          - "__schema"
+          - "queryType"
+        condition: and
+        part: body
