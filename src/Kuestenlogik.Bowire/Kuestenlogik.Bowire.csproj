@@ -19,6 +19,14 @@
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
   </ItemGroup>
   <ItemGroup>
+    <!-- System.CommandLine for IBowireCliCommand. The Command type is
+         the contract surface for CLI plugins (security scanner,
+         fuzzer, future third-party subcommands); having it in core
+         means every Bowire-* assembly can contribute a subcommand
+         without each one re-declaring the package version. -->
+    <PackageReference Include="System.CommandLine" />
+  </ItemGroup>
+  <ItemGroup>
     <EmbeddedResource Include="wwwroot\bowire.css" LogicalName="Kuestenlogik.Bowire.wwwroot.bowire.css" />
     <EmbeddedResource Include="wwwroot\bowire.js" LogicalName="Kuestenlogik.Bowire.wwwroot.bowire.js" />
     <EmbeddedResource Include="wwwroot\favicon.svg" LogicalName="Kuestenlogik.Bowire.wwwroot.favicon.svg" />

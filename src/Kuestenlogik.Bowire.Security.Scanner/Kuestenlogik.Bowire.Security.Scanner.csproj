@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Description>Bowire security scanner — Tier-1 anchor of the security-testing lane. Loads vulnerability templates (BowireRecordings flagged with `attack: true`), replays them against a target, evaluates the AttackPredicate against the response, and emits findings as SARIF 2.1.0. Ships with built-in passive checks (TLS-version enumeration, version-disclosing headers, verbose-error detection). Pluggable: scoped, auth-header-aware, per-probe timeout-bounded.</Description>
+    <PackageId>Kuestenlogik.Bowire.Security.Scanner</PackageId>
+    <PackageTags>bowire;security;vulnerability-scanner;sarif;owasp;api-security;developer-tools</PackageTags>
+    <IsPackable>true</IsPackable>
+    <!-- CA1303 (literal strings should be resourced) is suppressed
+         to match Tool's policy — this project carries the same kind
+         of CLI banner / progress output, no localisation planned. -->
+    <NoWarn>$(NoWarn);CA1303</NoWarn>
+  </PropertyGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="bowire" />
+    <InternalsVisibleTo Include="Kuestenlogik.Bowire.Tests" />
+    <InternalsVisibleTo Include="Kuestenlogik.Bowire.IntegrationTests" />
+  </ItemGroup>
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Kuestenlogik.Bowire\Kuestenlogik.Bowire.csproj" />
+  </ItemGroup>
+</Project>
