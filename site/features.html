@@ -25,6 +25,7 @@ description: A closer look at the workflows Bowire is built for — visual flow 
       <h3>Auto-discovery with hot reload</h3>
       <p class="features-block-lead">Plug in a protocol, get a service tree &mdash; no hand-maintained proto / OpenAPI / hub-registration code.</p>
       <p>Each protocol plugin implements a single <code>DiscoverAsync</code> method: gRPC hits Server Reflection, REST reads the OpenAPI spec, SignalR enumerates mapped hubs via <code>EndpointDataSource</code>, GraphQL introspects <code>__schema</code>, MQTT subscribes to <code>$SYS/#</code>, and so on. Bowire merges the results into a single sidebar across every installed plugin.</p>
+      <p>For event-driven APIs that come with their own contract, point Bowire at an <code>asyncapi.yaml</code> / <code>.json</code> document (2.x + 3.0). The AsyncAPI plugin parses channels + operations + bindings, then routes invocations through whichever wire plugin the doc declares &mdash; MQTT today, WebSocket / Kafka as the matching wire plugins land.</p>
       <p>The discovery pass repeats every few seconds against every configured URL. A new method registered on a running server shows up in the sidebar within the next tick &mdash; no page refresh, no re-upload, no &ldquo;disconnect and retry&rdquo; dance.</p>
       <a class="features-block-docs-link" href="{{ '/docs/features/auto-discovery.html' | relative_url }}">Read the technical docs &rarr;</a>
     </div>
@@ -306,8 +307,8 @@ body.items[0]     type "object"   <span class="check-pass">&#10003;</span></code
   <div class="features-block features-block-reverse" id="schema-upload">
     <div class="features-block-text">
       <h3>Work offline from a schema file</h3>
-      <p class="features-block-lead">Drop in a <code>.proto</code>, OpenAPI spec, or GraphQL SDL &mdash; browse the API surface without a running server.</p>
-      <p>Great for reviewing a contract during a PR, sharing a service&rsquo;s shape with a teammate who can&rsquo;t reach staging, prototyping a client before the backend exists, or teaching someone what an API looks like without spinning up infrastructure. Supports <code>.proto</code> (buf-style imports included), OpenAPI 3 / Swagger 2, and GraphQL SDL &mdash; other formats via plugin.</p>
+      <p class="features-block-lead">Drop in a <code>.proto</code>, OpenAPI spec, GraphQL SDL, or AsyncAPI document &mdash; browse the API surface without a running server.</p>
+      <p>Great for reviewing a contract during a PR, sharing a service&rsquo;s shape with a teammate who can&rsquo;t reach staging, prototyping a client before the backend exists, or teaching someone what an API looks like without spinning up infrastructure. Supports <code>.proto</code> (buf-style imports included), OpenAPI 3 / Swagger 2, GraphQL SDL, and AsyncAPI 2.x / 3.0 &mdash; other formats via plugin.</p>
       <a class="features-block-docs-link" href="{{ '/docs/setup/index.html' | relative_url }}">Read the setup docs &rarr;</a>
     </div>
     <div class="features-block-screenshot">

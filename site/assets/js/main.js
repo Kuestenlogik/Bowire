@@ -1116,6 +1116,23 @@ var BOWIRE_PROTOCOLS = [
         setupNote: 'Expose <code>$metadata</code> via <code>app.MapODataRoute(...)</code> so Bowire can read entity sets + actions.',
         docUrl: 'https://github.com/Kuestenlogik/Bowire#odata'
     },
+    // AsyncAPI is a *discovery source*, not a wire protocol — `kind:
+    // 'discovery'` marks that. The hint and setupNote spell it out so
+    // users don't install it expecting standalone wire support;
+    // invocations route through whichever wire plugin the doc's
+    // `bindings:` declare (MQTT today, Kafka / WebSocket as the
+    // matching wire plugins land). Sits at the end of the first-party
+    // block so the wires-first reading order stays intact.
+    {
+        id: 'asyncapi', label: 'AsyncAPI',
+        hint: 'Discovery source for event-driven APIs (needs a wire)',
+        packageId: 'Kuestenlogik.Bowire.AsyncApi',
+        urlPlaceholder: 'https://api.example.com/asyncapi.yaml',
+        category: 'first-party',
+        kind: 'discovery',
+        setupNote: '<strong>Discovery source &mdash; not a wire.</strong> Bowire loads <code>asyncapi.yaml</code> / <code>.json</code> docs (2.x + 3.0), surfaces channels + operations in the sidebar, and routes invocations through the wire plugin the doc&rsquo;s <code>bindings:</code> declare. Install at least one matching wire plugin (MQTT today; Kafka / WebSocket as those wire plugins land).',
+        docUrl: 'https://github.com/Kuestenlogik/Bowire#asyncapi'
+    },
     // Third-party plugins — sibling repos, ship via NuGet on their own
     // release cadence. CLI installs on demand.
     {
