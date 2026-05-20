@@ -457,6 +457,99 @@ public sealed class ScanCommandTests
         Assert.Contains("below severity threshold", stdout, StringComparison.Ordinal);
     }
 
+    [Fact]
+    public async Task RunAsync_NucleiCorpus_LoadsAndFiresFinding()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        await using var upstream = await StartUpstreamAsync(ct);
+
+        // Nuclei template that fires against the upstream's
+        // default response (status 200 + body contains "hello").
+        // Hits the full pipeline: YAML parse → matcher translation
+        // → variable substitution → scanner probe execution.
+        var nucleiDir = Path.Combine(Path.GetTempPath(), $"bowire-nuclei-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(nucleiDir);
+        try
+        {
+            await File.WriteAllTextAsync(Path.Combine(nucleiDir, "hello.yaml"), """
+                id: nuclei-hello-test
+                info:
+                  name: Hello probe
+                  severity: low
+                  description: Test template — fires when upstream returns "hello"
+                http:
+                  - method: GET
+                    path:
+                      - '{{BaseURL}}/'
+                    matchers-condition: and
+                    matchers:
+                      - type: status
+                        status:
+                          - 200
+                      - type: word
+                        words:
+                          - "hello"
+                        part: body
+                """, ct);
+
+            var (code, stdout, _) = Capture(() => ScanCommand.RunAsync(new ScanOptions
+            {
+                Target = upstream.Urls.First(),
+                Nuclei = nucleiDir,
+                RunBuiltins = false,
+                TimeoutSeconds = 10,
+            }, ct));
+
+            Assert.Equal(0, code);
+            Assert.Contains("Loaded 1 nuclei template(s)", stdout, StringComparison.Ordinal);
+            Assert.Contains("[VULN]", stdout, StringComparison.Ordinal);
+            Assert.Contains("nuclei-hello-test", stdout, StringComparison.Ordinal);
+        }
+        finally { Directory.Delete(nucleiDir, recursive: true); }
+    }
+
+    [Fact]
+    public async Task RunAsync_NucleiCorpus_MultiPathUnfoldsAndAllProbe()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        await using var upstream = await StartUpstreamAsync(ct);
+
+        var nucleiDir = Path.Combine(Path.GetTempPath(), $"bowire-nuclei-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(nucleiDir);
+        try
+        {
+            await File.WriteAllTextAsync(Path.Combine(nucleiDir, "multipath.yaml"), """
+                id: nuclei-multipath-test
+                info:
+                  name: Multi-path probe
+                  severity: low
+                http:
+                  - method: GET
+                    path:
+                      - '{{BaseURL}}/admin'
+                      - '{{BaseURL}}/login'
+                      - '{{BaseURL}}/api'
+                    matchers:
+                      - type: status
+                        status:
+                          - 200
+                """, ct);
+
+            var (code, stdout, _) = Capture(() => ScanCommand.RunAsync(new ScanOptions
+            {
+                Target = upstream.Urls.First(),
+                Nuclei = nucleiDir,
+                RunBuiltins = false,
+                TimeoutSeconds = 10,
+            }, ct));
+
+            Assert.Equal(0, code);
+            // Unfolded to 3 recordings — output shows the loaded count.
+            Assert.Contains("Loaded 3 nuclei template(s)", stdout, StringComparison.Ordinal);
+        }
+        finally { Directory.Delete(nucleiDir, recursive: true); }
+    }
+
     private static async Task<WebApplication> StartUpstreamAsync(CancellationToken ct)
     {
         var builder = WebApplication.CreateSlimBuilder();

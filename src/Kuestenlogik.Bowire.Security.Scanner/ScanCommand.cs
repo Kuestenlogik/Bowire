@@ -9,6 +9,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using Kuestenlogik.Bowire.Mocking;
 using Kuestenlogik.Bowire.Security;
+using NucleiTemplates = Kuestenlogik.Bowire.Security.Templates.Nuclei;
 
 namespace Kuestenlogik.Bowire.Security.Scanner;
 
@@ -69,6 +70,43 @@ public static class ScanCommand
             catch (Exception ex)
             {
                 await Console.Error.WriteLineAsync($"  Skipping {Path.GetFileName(path)}: {ex.Message}").ConfigureAwait(false);
+            }
+        }
+
+        // Nuclei corpus loading — read every *.yaml/*.yml under
+        // --nuclei, parse with NucleiTemplateReader, unfold to
+        // BowireRecordings via the converter with a target-bound
+        // variable context. Each unfolded recording lands on the
+        // same templates list the scanner walks, so the scan loop
+        // doesn't need to know which corpus contributed which
+        // template. Loading errors per file get reported + skipped
+        // (matches the native-template behaviour).
+        if (!string.IsNullOrEmpty(options.Nuclei) && Directory.Exists(options.Nuclei))
+        {
+            var nucleiContext = NucleiTemplates.NucleiVariableContext.FromTarget(options.Target);
+            var nucleiCount = 0;
+            foreach (var path in Directory.EnumerateFiles(options.Nuclei, "*.yaml", SearchOption.AllDirectories)
+                .Concat(Directory.EnumerateFiles(options.Nuclei, "*.yml", SearchOption.AllDirectories)))
+            {
+                try
+                {
+                    var template = NucleiTemplates.NucleiTemplateReader.ReadFile(path);
+                    foreach (var rec in NucleiTemplates.NucleiTemplateConverter.ToBowireRecordings(template, nucleiContext))
+                    {
+                        if (rec.VulnerableWhen is null) continue;
+                        if (rec.Steps.Count == 0) continue;
+                        templates.Add(new LoadedTemplate(path, rec));
+                        nucleiCount++;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    await Console.Error.WriteLineAsync($"  Skipping nuclei {Path.GetFileName(path)}: {ex.Message}").ConfigureAwait(false);
+                }
+            }
+            if (nucleiCount > 0)
+            {
+                await Console.Out.WriteLineAsync($"  Loaded {nucleiCount} nuclei template(s) from {options.Nuclei}").ConfigureAwait(false);
             }
         }
 
@@ -564,6 +602,17 @@ public sealed class ScanOptions
 {
     public string Target { get; init; } = "";
     public string? Templates { get; init; }
+
+    /// <summary>
+    /// Directory of Nuclei-format YAML templates
+    /// (<see href="https://github.com/projectdiscovery/nuclei-templates"/>).
+    /// Loaded alongside the Bowire-format <see cref="Templates"/>
+    /// directory; each Nuclei template gets unfolded into one or
+    /// more BowireRecordings (multi-path + payload matrices) at
+    /// load time, with <c>{{BaseURL}}</c> / <c>{{RandStr}}</c>
+    /// placeholders resolved against <see cref="Target"/>.
+    /// </summary>
+    public string? Nuclei { get; init; }
     public string? Template { get; init; }
     public string? OutSarif { get; init; }
     public string? MinSeverity { get; init; }

@@ -20,7 +20,11 @@
     <PackageReference Include="YamlDotNet" />
   </ItemGroup>
   <ItemGroup>
+    <!-- Templates.Nuclei produces BowireRecording / AttackPredicate
+         shapes from Core; it doesn't use any Scanner-specific type,
+         so Scanner is the consumer (Scanner → Templates.Nuclei),
+         not the other way. Lets embedded consumers pull
+         Templates.Nuclei without dragging in the scan-engine. -->
     <ProjectReference Include="..\Kuestenlogik.Bowire\Kuestenlogik.Bowire.csproj" />
-    <ProjectReference Include="..\Kuestenlogik.Bowire.Security.Scanner\Kuestenlogik.Bowire.Security.Scanner.csproj" />
   </ItemGroup>
 </Project>
