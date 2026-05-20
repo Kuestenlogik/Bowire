@@ -6,6 +6,16 @@
     <p class="roadmap-section-label">Recently shipped</p>
     <div class="roadmap-grid">
 
+      <a class="roadmap-card roadmap-card-link roadmap-card-shipped" href="{{ '/#protocols' | relative_url }}">
+        <div class="roadmap-number roadmap-number-shipped" aria-label="Shipped">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="5 12 10 17 19 8"/></svg>
+        </div>
+        <div class="roadmap-card-body">
+          <h3>AsyncAPI discovery source + Nuclei template runner <span class="roadmap-card-tag">v1.5.0</span></h3>
+          <p>Point Bowire at an <code>asyncapi.yaml</code> / <code>.json</code> document (2.x + 3.0) and channels + operations show up in the sidebar; invocations route through whichever wire plugin the doc&rsquo;s <code>bindings:</code> declare (MQTT today, Kafka / WebSocket follow). Plus <code>bowire scan --nuclei &lt;dir&gt;</code> reads the 8000+ <a href="https://github.com/projectdiscovery/nuclei-templates" target="_blank" rel="noopener">projectdiscovery/nuclei-templates</a> corpus into the existing SARIF-emitting scan engine.</p>
+        </div>
+      </a>
+
       <a class="roadmap-card roadmap-card-link roadmap-card-shipped" href="{{ '/docs/protocols/grpc.html' | relative_url }}">
         <div class="roadmap-number roadmap-number-shipped" aria-label="Shipped">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="5 12 10 17 19 8"/></svg>
