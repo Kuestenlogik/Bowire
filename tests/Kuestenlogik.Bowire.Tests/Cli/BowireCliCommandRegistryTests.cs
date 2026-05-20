@@ -16,6 +16,15 @@ public sealed class BowireCliCommandRegistryTests
     [Fact]
     public void Discover_finds_scan_command_from_security_scanner_assembly()
     {
+        // Force the Scanner assembly to load. Discover() walks
+        // AppDomain.CurrentDomain.GetAssemblies() which only sees
+        // assemblies whose types running code has already touched
+        // — a ProjectReference puts the DLL in bin/ but does not
+        // by itself trigger CLR load. Without this poke, CI test
+        // ordering can leave the assembly cold and the assertion
+        // below fails (caught between v1.5.0 → v1.5.1).
+        _ = typeof(Kuestenlogik.Bowire.Security.Scanner.Cli.ScanCliCommand);
+
         var registry = BowireCliCommandRegistry.Discover();
         var scan = registry.Commands.SingleOrDefault(c => c.Id == "scan");
         Assert.NotNull(scan);
