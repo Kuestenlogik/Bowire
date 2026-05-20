@@ -48,11 +48,11 @@ public static class ScanCommand
 
         if (string.IsNullOrWhiteSpace(options.Target))
         {
-            await Console.Error.WriteLineAsync("  Usage: bowire scan --target <url> --corpus <dir> [--template <file>] [--out <sarif>]").ConfigureAwait(false);
+            await Console.Error.WriteLineAsync("  Usage: bowire scan --target <url> --templates <dir> [--template <file>] [--out <sarif>]").ConfigureAwait(false);
             return 2;
         }
 
-        // Collect templates from --corpus (directory) and/or --template (single file).
+        // Collect templates from --templates (directory) and/or --template (single file).
         var templates = new List<LoadedTemplate>();
         foreach (var path in EnumerateTemplatePaths(options))
         {
@@ -74,7 +74,7 @@ public static class ScanCommand
 
         if (templates.Count == 0 && !options.RunBuiltins)
         {
-            await Console.Error.WriteLineAsync("  No vulnerability templates found and built-ins disabled. Provide --corpus <dir> or --template <file>, OR drop --no-builtins.").ConfigureAwait(false);
+            await Console.Error.WriteLineAsync("  No vulnerability templates found and built-ins disabled. Provide --templates <dir> or --template <file>, OR drop --no-builtins.").ConfigureAwait(false);
             return 2;
         }
 
@@ -191,9 +191,9 @@ public static class ScanCommand
     {
         if (!string.IsNullOrEmpty(options.Template) && File.Exists(options.Template))
             yield return options.Template;
-        if (!string.IsNullOrEmpty(options.Corpus) && Directory.Exists(options.Corpus))
+        if (!string.IsNullOrEmpty(options.Templates) && Directory.Exists(options.Templates))
         {
-            foreach (var p in Directory.EnumerateFiles(options.Corpus, "*.json", SearchOption.AllDirectories))
+            foreach (var p in Directory.EnumerateFiles(options.Templates, "*.json", SearchOption.AllDirectories))
                 yield return p;
         }
     }
@@ -425,7 +425,7 @@ public static class ScanCommand
         }
         else
         {
-            Console.WriteLine("  No vulnerabilities matched. (Negative results don't prove security — just that this corpus didn't catch anything.)");
+            Console.WriteLine("  No vulnerabilities matched. (Negative results don't prove security — just that these templates didn't catch anything.)");
         }
     }
 
@@ -563,7 +563,7 @@ internal sealed record LoadedTemplate(string Path, BowireRecording Recording);
 public sealed class ScanOptions
 {
     public string Target { get; init; } = "";
-    public string? Corpus { get; init; }
+    public string? Templates { get; init; }
     public string? Template { get; init; }
     public string? OutSarif { get; init; }
     public string? MinSeverity { get; init; }

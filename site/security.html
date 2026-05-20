@@ -64,7 +64,7 @@ description: Multi-protocol API security testing, self-hosted. Burp Suite for th
           <span class="code-block-lang">bash</span>
           <span class="code-block-hint">copy &amp; run</span>
           <button class="copy-btn" data-copy="dotnet tool install -g Kuestenlogik.Bowire.Tool
-bowire scan --target https://api.example.com --corpus docs/security/examples --out findings.sarif
+bowire scan --target https://api.example.com --templates docs/security/examples --out findings.sarif
 bowire scan --target https://api.example.com --severity high" aria-label="Copy">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
           </button>
@@ -73,7 +73,7 @@ bowire scan --target https://api.example.com --severity high" aria-label="Copy">
 dotnet tool install -g Kuestenlogik.Bowire.Tool
 
 <span class="c"># 2. Run the built-in checks + the seed corpus against your target</span>
-bowire scan --target https://api.example.com --corpus docs/security/examples --out findings.sarif
+bowire scan --target https://api.example.com --templates docs/security/examples --out findings.sarif
 
 <span class="c"># 3. Filter to the findings you actually want to fail a build on</span>
 bowire scan --target https://api.example.com --severity high</code></pre>

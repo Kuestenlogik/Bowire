@@ -27,8 +27,8 @@ public sealed class ScanCliCommand : IBowireCliCommand
             "Run vulnerability templates against a target URL. The Tier-1 anchor of the security-testing lane (see docs/architecture/security-testing.md).");
 
         var targetOpt = new Option<string>("--target") { Description = "Target base URL (e.g. https://api.example.com).", Required = true };
-        var corpusOpt = new Option<string>("--corpus") { Description = "Directory of *.json vulnerability templates to run." };
-        var templateOpt = new Option<string>("--template") { Description = "Single template *.json file to run (combinable with --corpus)." };
+        var templatesOpt = new Option<string>("--templates") { Description = "Directory of *.json vulnerability templates to run." };
+        var templateOpt = new Option<string>("--template") { Description = "Single template *.json file to run (combinable with --templates)." };
         var outOpt = new Option<string>("--out") { Description = "Write findings as SARIF 2.1.0 JSON to this path (for CI dashboards: GitHub Code Scanning, GitLab, Azure DevOps)." };
         var severityOpt = new Option<string>("--severity") { Description = "Minimum severity to report: low / medium / high / critical. Lower-severity templates still load but are reported as skipped." };
         var timeoutOpt = new Option<int>("--timeout") { Description = "Per-probe HTTP timeout in seconds. Default 30." };
@@ -46,7 +46,7 @@ public sealed class ScanCliCommand : IBowireCliCommand
         };
 
         scan.Add(targetOpt);
-        scan.Add(corpusOpt);
+        scan.Add(templatesOpt);
         scan.Add(templateOpt);
         scan.Add(outOpt);
         scan.Add(severityOpt);
@@ -61,7 +61,7 @@ public sealed class ScanCliCommand : IBowireCliCommand
             var options = new ScanOptions
             {
                 Target = pr.GetValue(targetOpt) ?? "",
-                Corpus = pr.GetValue(corpusOpt),
+                Templates = pr.GetValue(templatesOpt),
                 Template = pr.GetValue(templateOpt),
                 OutSarif = pr.GetValue(outOpt),
                 MinSeverity = pr.GetValue(severityOpt),

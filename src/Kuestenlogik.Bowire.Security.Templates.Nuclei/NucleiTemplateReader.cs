@@ -82,6 +82,27 @@ public static class NucleiTemplateReader
                 req.Matchers.Add(ReadMatcher(matcherMapping));
             }
         }
+
+        // payloads: maps each variable name to a list of values.
+        // Nuclei templates use these as {{varName}} placeholders the
+        // converter expands into one recording per cross-product entry.
+        if (TryGetMapping(mapping, "payloads", out var payloadsNode))
+        {
+            foreach (var (varKeyNode, varValue) in payloadsNode!.Children)
+            {
+                if (varKeyNode is not YamlScalarNode varKey) continue;
+                if (varValue is not YamlSequenceNode valuesSeq) continue;
+                var values = new List<string>();
+                foreach (var v in valuesSeq.Children)
+                {
+                    if (v is YamlScalarNode scalar && scalar.Value is not null)
+                    {
+                        values.Add(scalar.Value);
+                    }
+                }
+                if (values.Count > 0) req.Payloads[varKey.Value ?? ""] = values;
+            }
+        }
         return req;
     }
 

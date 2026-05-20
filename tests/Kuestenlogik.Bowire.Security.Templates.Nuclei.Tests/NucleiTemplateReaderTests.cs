@@ -70,6 +70,31 @@ public sealed class NucleiTemplateReaderTests
     }
 
     [Fact]
+    public void ReadText_parses_payloads_block_into_variable_map()
+    {
+        var yaml = """
+            id: with-payloads
+            info:
+              name: Payloads
+              severity: low
+            http:
+              - method: GET
+                path:
+                  - '{{BaseURL}}/{{file}}'
+                payloads:
+                  file:
+                    - "robots.txt"
+                    - ".env"
+                    - ".git/config"
+            """;
+        var template = NucleiTemplateReader.ReadText(yaml);
+        var http = Assert.Single(template.Http);
+        Assert.True(http.Payloads.ContainsKey("file"));
+        Assert.Equal(3, http.Payloads["file"].Count);
+        Assert.Contains(".env", http.Payloads["file"]);
+    }
+
+    [Fact]
     public void ReadText_negative_matcher_flag_round_trips()
     {
         var yaml = """

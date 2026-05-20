@@ -61,6 +61,18 @@ public sealed class NucleiHttpRequest
     /// vulnerability fired in the response. Multiple matchers compose
     /// via <see cref="MatchersCondition"/>.</summary>
     public List<NucleiMatcher> Matchers { get; init; } = [];
+
+    /// <summary>
+    /// Per-variable payload value lists. Nuclei syntax:
+    /// <c>payloads: { file: [robots.txt, .env, .git/config] }</c>.
+    /// At probe time, every <c>{{file}}</c> placeholder gets the next
+    /// value; when multiple variables exist, the converter expands
+    /// the cross-product. Phase 2d covers single-variable + multi-
+    /// variable cross-product; sniper / pitchfork / cluster-bomb
+    /// attack-types arrive when corpus data demands them.
+    /// </summary>
+    public Dictionary<string, List<string>> Payloads { get; init; } =
+        new(StringComparer.OrdinalIgnoreCase);
 }
 
 /// <summary>A single matcher rule — one of Nuclei's ~14 matcher

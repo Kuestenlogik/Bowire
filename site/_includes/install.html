@@ -26,7 +26,7 @@
           <div class="code-block-header">
             <span class="code-block-lang">bash</span>
             <button class="copy-btn" data-copy="bowire scan --target https://api.example.com \
-            --corpus ~/.bowire/vulndb \
+            --templates ~/.bowire/vulndb \
             --out findings.sarif \
             --severity medium" aria-label="Copy">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
@@ -34,7 +34,7 @@
           </div>
           <pre><code><span class="c"># Scan a target against the community vuln-db corpus + built-in checks</span>
 bowire scan --target https://api.example.com \
-            --corpus ~/.bowire/vulndb \
+            --templates ~/.bowire/vulndb \
             --out findings.sarif \
             --severity medium</code></pre>
         </div>
