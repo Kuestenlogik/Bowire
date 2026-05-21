@@ -172,7 +172,7 @@
           <div class="features-block-text">
             <h3>Record &amp; replay</h3>
             <p class="features-block-lead">Click record, run a sequence of calls, click stop. Now you have a reproducible test case, a debug artifact, and a future mock server in one file.</p>
-            <p>Recordings capture request, response, status, timing, and metadata for every call across every protocol &mdash; gRPC streams, SignalR hub invocations, WebSocket frames, MQTT publishes, REST hits, all in one timeline. Replay against another environment to check drift, convert into test assertions for CI, export as HAR for teammates, or (coming soon) serve the recording back as a live mock.</p>
+            <p>Recordings capture request, response, status, timing, and metadata for every call across every protocol &mdash; gRPC streams, SignalR hub invocations, WebSocket frames, MQTT publishes, REST hits, all in one timeline. Replay against another environment to check drift, convert into test assertions for CI, export as HAR for teammates, or serve the recording back as a live mock server (see the next card).</p>
             <div class="features-block-docs-links">
               <a class="features-block-docs-link" href="{{ '/features.html#recording' | relative_url }}">See the full tour &rarr;</a>
               <a class="features-block-docs-link" href="{{ '/docs/features/recording.html' | relative_url }}">Straight to the docs &rarr;</a>
@@ -180,6 +180,93 @@
           </div>
           <div class="features-block-screenshot">
             {% include themed-img.html src="/assets/images/screenshots/recording.png" alt="Recording manager — timeline of captured calls with per-step pass/fail markers" %}
+          </div>
+        </div>
+      </template>
+    </div>
+
+    <div class="feature-card" data-feature-modal tabindex="0" role="button">
+      <div class="feature-icon">
+        <!-- Server-rack glyph with a return arrow — visual cue for
+             "your captured calls served back to you". -->
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="4" width="18" height="6" rx="1.5"/>
+          <rect x="3" y="14" width="18" height="6" rx="1.5"/>
+          <circle cx="7" cy="7" r="0.9" fill="var(--accent)"/>
+          <circle cx="7" cy="17" r="0.9" fill="var(--accent)"/>
+          <path d="M14 7h4"/>
+          <path d="M14 17h4"/>
+        </svg>
+      </div>
+      <h5>Mock server</h5>
+      <p><code>bowire mock</code> turns any captured recording into a live endpoint &mdash; REST, gRPC (unary + streaming + bidi), WebSocket, SSE, SignalR, Socket.IO, MQTT, GraphQL subscriptions. Hot-reload, chaos injection, capture-on-miss.</p>
+      <template class="feature-card-detail">
+        <div class="features-block features-block-text-only">
+          <div class="features-block-text">
+            <h3>Replay recordings as a mock server</h3>
+            <p class="features-block-lead"><code>bowire mock --recording session.bwr --port 5099</code> turns any captured recording into a live endpoint at the same shape as the original.</p>
+            <p>Every protocol your recording captured replays through the same listener &mdash; REST verbs hit the same paths, gRPC unary + server-streaming + bidi answer with the captured frames, WebSocket / SSE / SignalR / Socket.IO push the same sequence, MQTT publishes hit the same topics, GraphQL subscriptions stream the same events. The mock keeps protocol semantics intact (status codes, frame timing, headers) instead of collapsing everything to a JSON stub.</p>
+            <p>Optional layers on top: <strong>hot-reload</strong> &mdash; rewriting the recording file refreshes the mock without a restart; <strong>chaos injection</strong> &mdash; configurable latency / 5xx rate / dropped-frame ratio for resilience tests; <strong>schema-only mode</strong> &mdash; <code>--from-spec openapi.yaml</code> serves plausible responses from an OpenAPI / gRPC descriptor / GraphQL schema with no recording at all; <strong>stateful cursors</strong> &mdash; a recording with multiple captures of the same call replays them in order; <strong>capture-on-miss</strong> &mdash; an unrecorded request transparently forwards to the original target, captures the response, and serves it back next time.</p>
+            <div class="features-block-docs-links">
+              <a class="features-block-docs-link" href="{{ '/features.html#mock' | relative_url }}">See the full tour &rarr;</a>
+              <a class="features-block-docs-link" href="{{ '/docs/features/mock.html' | relative_url }}">Straight to the docs &rarr;</a>
+            </div>
+          </div>
+        </div>
+      </template>
+    </div>
+
+    <div class="feature-card" data-feature-modal tabindex="0" role="button">
+      <div class="feature-icon">
+        <!-- Shield + check — same shape the security-engineer use-
+             case card and the USP security card use, so the
+             security lane reads consistently across surfaces. -->
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 2l8 4v6c0 5-3.5 9.4-8 10-4.5-.6-8-5-8-10V6l8-4z"/>
+          <polyline points="9 12 11 14 15 10"/>
+        </svg>
+      </div>
+      <h5>Security scan</h5>
+      <p><code>bowire scan</code> against any HTTP-class target with Bowire's own templates plus the 8000+ <a href="https://github.com/projectdiscovery/nuclei-templates" target="_blank" rel="noopener">Nuclei templates</a> via <code>--nuclei</code>. Findings emit as SARIF 2.1.0 &mdash; straight into GitHub Code Scanning, GitLab, or Azure DevOps.</p>
+      <template class="feature-card-detail">
+        <div class="features-block features-block-text-only">
+          <div class="features-block-text">
+            <h3>Multi-protocol security scanner</h3>
+            <p class="features-block-lead"><code>bowire scan --target https://api.example.com --out findings.sarif</code> runs vulnerability templates against the API surface Bowire already discovered, and emits SARIF 2.1.0 that your CI ingests unchanged.</p>
+            <p>Two template sources at once: Bowire's own JSON templates (the curated baseline shipped in <a href="https://github.com/Kuestenlogik/Bowire.VulnDb" target="_blank" rel="noopener">Bowire.VulnDb</a>) plus the 8000+ Nuclei community templates via <code>--nuclei &lt;dir&gt;</code>. The Nuclei reader translates status / word / regex matchers + matchers-condition + payload matrices + the standard variable set (<code>{{BaseURL}}</code>, <code>{{Hostname}}</code>, <code>{{RandStr_N}}</code>, &hellip;) into Bowire's native AttackPredicate DSL &mdash; same engine, both template sets.</p>
+            <p>Built-in passive checks fire on every run regardless of templates: TLS-version enumeration, version-disclosing headers, verbose-error detection. SARIF output drops straight into GitHub Code Scanning, GitLab Security Dashboard, Azure DevOps, or any tool with a SARIF importer.</p>
+            <div class="features-block-docs-links">
+              <a class="features-block-docs-link" href="{{ '/security.html' | relative_url }}">See the security lane &rarr;</a>
+              <a class="features-block-docs-link" href="{{ '/docs/features/scan.html' | relative_url }}">Straight to the docs &rarr;</a>
+            </div>
+          </div>
+        </div>
+      </template>
+    </div>
+
+    <div class="feature-card" data-feature-modal tabindex="0" role="button">
+      <div class="feature-icon">
+        <!-- Two interleaved arrows = mutation/fuzz. -->
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="17 1 21 5 17 9"/>
+          <path d="M3 11V9a4 4 0 0 1 4-4h14"/>
+          <polyline points="7 23 3 19 7 15"/>
+          <path d="M21 13v2a4 4 0 0 1-4 4H3"/>
+        </svg>
+      </div>
+      <h5>Fuzz</h5>
+      <p>Schema-aware field-level fuzzer. <code>bowire fuzz</code> knows not to throw SQL-injection at a <code>lat</code> field; <code>image.bytes</code> gets magic-byte mutation, not XSS strings. Categories: <code>sqli</code> / <code>xss</code> / <code>pathtrav</code> / <code>cmdinj</code> with baseline-diff oracle.</p>
+      <template class="feature-card-detail">
+        <div class="features-block features-block-text-only">
+          <div class="features-block-text">
+            <h3>Schema-aware field-level fuzzer</h3>
+            <p class="features-block-lead"><code>bowire fuzz --target https://api.example.com --template recordings/order.bwf --field '$.customer.email' --payloads xss</code> runs targeted mutations against one field at a time using the schema Bowire already knows.</p>
+            <p>Schema-awareness is the differentiator: the fuzzer respects field types from the discovered schema (OpenAPI / proto / GraphQL / AsyncAPI), so SQL-injection payloads don't get fired at integer latitude fields and XSS strings don't get fired at <code>image.bytes</code>. Image-byte fields get magic-byte / truncation / over-length mutation instead, integer fields get boundary / overflow / negative mutation, dates get format / range mutation.</p>
+            <p>Four payload categories shipped (<code>sqli</code>, <code>xss</code>, <code>pathtrav</code>, <code>cmdinj</code>) with curated wordlists, plus a baseline-diff oracle: if the mutated response looks materially different from the baseline (status change, error-shape divergence, latency spike beyond N standard deviations) the finding gets flagged. Reuses the same SARIF emitter as <code>bowire scan</code>, so fuzz findings drop into the same CI surface.</p>
+            <div class="features-block-docs-links">
+              <a class="features-block-docs-link" href="{{ '/security.html#fuzz' | relative_url }}">See the security lane &rarr;</a>
+              <a class="features-block-docs-link" href="{{ '/docs/features/fuzz.html' | relative_url }}">Straight to the docs &rarr;</a>
+            </div>
           </div>
         </div>
       </template>
