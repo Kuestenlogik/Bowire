@@ -139,13 +139,13 @@
             <path d="M2 9h4M2 15h4M18 9h4M18 15h4"/>
           </svg>
         </div>
-        <h3>Embedded &mdash; in your process</h3>
+        <h3>Embedded in your process</h3>
         <p><code>AddBowire()</code> + <code>MapBowire()</code> in your <code>Program.cs</code> &mdash; the workbench ships <em>inside</em> your service, not next to it.</p>
         <p>Same process, same DI container, same authentication pipeline. No companion container, no shared database, no cross-process IPC. Standalone CLI still ships for everything else.</p>
         <template class="feature-card-detail">
           <div class="features-block">
             <div class="features-block-text">
-              <h3>Embedded &mdash; in your process</h3>
+              <h3>Embedded in your process</h3>
               <p class="features-block-lead"><code>AddBowire()</code> + <code>MapBowire()</code> in <code>Program.cs</code>, and the workbench is part of your service. Not a sidecar, not a companion container, not a cloud service that proxies your traffic.</p>
               <p>Bowire reads from the same <code>IServiceProvider</code> your app already builds. Discovery, invocation, and recording all run in-process against the live container &mdash; so the methods Bowire shows are exactly what your service exposes, with whatever DI scopes, options, and middleware the request would have hit anyway.</p>
               <p>Authentication, authorization, and feature gates flow through your existing pipeline. If a method is locked behind <code>[Authorize]</code> the workbench needs the same token; if a flag toggles a code path, Bowire sees the same path. Nothing is bypassed; nothing is parallel.</p>
@@ -211,24 +211,27 @@
 
       <div class="usp-card usp-card-link" data-feature-modal tabindex="0" role="button" aria-label="AI-agent ready: open detail">
         <div class="usp-icon">
-          <!-- Three connection nodes joined into a triangle — echoes the
-               MCP "tool graph" idiom without copying the official mark. -->
+          <!-- Robot-head glyph, same shape the AI-agent-builders use-case
+               card uses — keeps the two surfaces visually consistent so a
+               visitor recognises "this is the AI lane" across the page. -->
           <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="6" cy="6" r="2.4"/>
-            <circle cx="18" cy="6" r="2.4"/>
-            <circle cx="12" cy="18" r="2.4"/>
-            <path d="M8.4 6h7.2"/>
-            <path d="M7.4 8L10.8 15.8"/>
-            <path d="M16.6 8L13.2 15.8"/>
+            <rect x="4" y="7" width="16" height="13" rx="2"/>
+            <circle cx="9" cy="13" r="1" fill="var(--accent)"/>
+            <circle cx="15" cy="13" r="1" fill="var(--accent)"/>
+            <path d="M9 17h6"/>
+            <path d="M12 7V4"/>
+            <circle cx="12" cy="3" r="1" fill="var(--accent)"/>
+            <path d="M2 13h2"/>
+            <path d="M20 13h2"/>
           </svg>
         </div>
-        <h3>AI-agent ready &mdash; MCP built in</h3>
+        <h3>AI-agent ready with MCP support</h3>
         <p>Claude, Cursor, Copilot. <code>bowire mcp serve</code> exposes Bowire&rsquo;s discover / invoke / record / mock primitives as MCP tools &mdash; every protocol Bowire knows becomes a tool the agent can call directly.</p>
         <p>No other multi-protocol API workbench ships an MCP adapter.</p>
         <template class="feature-card-detail">
           <div class="features-block">
             <div class="features-block-text">
-              <h3>AI-agent ready &mdash; MCP built in</h3>
+              <h3>AI-agent ready with MCP support</h3>
               <p class="features-block-lead"><code>bowire mcp serve</code> turns every protocol Bowire knows into a tool an AI agent can call. Claude, Cursor, Copilot, custom MCP clients &mdash; same wire, same auth, same recordings.</p>
               <p>The adapter exposes Bowire&rsquo;s core primitives (<code>bowire.discover</code>, <code>bowire.invoke</code>, <code>bowire.record.start</code>, <code>bowire.mock.start</code>, &hellip;) as first-class MCP tools. An agent can chain <em>discover &rarr; invoke &rarr; assert &rarr; switch env &rarr; replay</em> the same way a human can in the workbench &mdash; just with more parallelism and less patience-cost.</p>
               <p>Two transport modes: stdio for local Claude-Desktop-style clients, HTTP for Cursor / Copilot / remote agents. Auth flows through whichever provider the workbench itself runs under, so the agent never sees a second credentials store.</p>
@@ -259,13 +262,13 @@
             <path d="M9 12l2 2 4-4"/>
           </svg>
         </div>
-        <h3>Security scanner built in</h3>
+        <h3>Security scanner with Nuclei support</h3>
         <p><code>bowire scan</code> runs templates against any HTTP-class target and emits SARIF 2.1.0. Built-in passive checks (TLS, version-disclosure headers) plus the 8000+ <a href="https://github.com/projectdiscovery/nuclei-templates" target="_blank" rel="noopener">projectdiscovery/nuclei-templates</a> corpus via <code>--nuclei</code>.</p>
         <p>Drops straight into GitHub Code Scanning, GitLab Security Dashboard, or Azure DevOps.</p>
         <template class="feature-card-detail">
           <div class="features-block features-block-reverse">
             <div class="features-block-text">
-              <h3>Security scanner built in</h3>
+              <h3>Security scanner with Nuclei support</h3>
               <p class="features-block-lead"><code>bowire scan --target https://your-api</code> runs vulnerability templates against the API surface Bowire already discovered, and emits SARIF 2.1.0 that your CI can ingest unchanged.</p>
               <p>Two template sources at once: Bowire&rsquo;s own JSON templates (the curated baseline shipped in <a href="https://github.com/Kuestenlogik/Bowire.VulnDb" target="_blank" rel="noopener">Bowire.VulnDb</a>) plus the 8000+ Nuclei community corpus via <code>--nuclei &lt;dir&gt;</code>. The Nuclei reader translates status / word / regex matchers + matchers-condition + payload matrices + the standard variable set (<code>{{BaseURL}}</code>, <code>{{Hostname}}</code>, <code>{{RandStr_N}}</code>, &hellip;) into Bowire&rsquo;s native AttackPredicate DSL &mdash; same engine, two corpora.</p>
               <p>Findings emit as SARIF 2.1.0 &mdash; the format GitHub Code Scanning, GitLab Security Dashboard, and Azure DevOps all ingest natively. Plus built-in passive checks for TLS-version enumeration, version-disclosing headers, and verbose-error detection, so the scanner is useful on day one without writing a template.</p>
