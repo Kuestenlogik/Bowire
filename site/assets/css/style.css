@@ -2547,9 +2547,15 @@ button.comparison-bestfor-card.active .comparison-bestfor-name {
     border-collapse: separate;
     border-spacing: 0;
     font-size: 0.875rem;
-    /* Let columns size by content and wrap long values instead of forcing
-       horizontal scroll. */
-    table-layout: auto;
+    /* Fixed layout so every comparison column (Bowire + the five
+       competitors) gets the same width regardless of the text
+       inside, instead of letting longer pill labels balloon a
+       column over its siblings. The feature column on the left
+       gets an explicit width via .comparison-feature-col below;
+       the remaining width splits evenly across the six tool
+       columns. Long values still wrap thanks to overflow-wrap:
+       anywhere on td. */
+    table-layout: fixed;
 }
 
 .comparison-table th,
@@ -2587,7 +2593,13 @@ button.comparison-bestfor-card.active .comparison-bestfor-name {
 }
 
 .comparison-feature-col {
-    width: 30%;
+    /* Feature column gets a fixed share so the six tool columns
+       can split the rest evenly under table-layout:fixed. 22 %
+       reads tighter than the old 30 % but leaves the six tool
+       columns ~13 % each — enough room for the longer pill
+       labels ("Enterprise (paid)", "Public API Network") without
+       wrapping mid-word. */
+    width: 22%;
 }
 
 .comparison-feature {
