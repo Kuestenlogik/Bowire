@@ -1131,7 +1131,7 @@ var BOWIRE_PROTOCOLS = [
         urlPlaceholder: 'https://api.example.com/asyncapi.yaml',
         category: 'first-party',
         kind: 'discovery',
-        setupNote: '<strong>Discovery source &mdash; not a wire.</strong> Bowire loads <code>asyncapi.yaml</code> / <code>.json</code> docs (2.x + 3.0), surfaces channels + operations in the sidebar, and routes invocations through the wire plugin the doc&rsquo;s <code>bindings:</code> declare. Install at least one matching wire plugin (MQTT, Kafka, or WebSocket today; AMQP / NATS as those wire plugins land).',
+        setupNote: '<strong>Discovery source &mdash; not a wire.</strong> Bowire loads <code>asyncapi.yaml</code> / <code>.json</code> docs (2.x + 3.0), surfaces channels + operations in the sidebar, and routes invocations through the wire plugin the doc&rsquo;s <code>bindings:</code> declare. Bindings supported today: <code>http</code> (no extra wire needed), <code>mqtt</code> / <code>mqtt5</code>, <code>kafka</code>, <code>ws</code> &mdash; AMQP / NATS land alongside the matching wire plugins.',
         docUrl: 'https://github.com/Kuestenlogik/Bowire#asyncapi'
     },
     // Third-party plugins — sibling repos, ship via NuGet on their own

@@ -99,16 +99,29 @@ public sealed class BowireAsyncApiProtocol : IBowireProtocol
         if (registry is null) return;
 
         // Resolvers are owned by this plugin and pinned to the registry the
-        // host wires up at startup. Phase A3 shipped MQTT; Phase B adds
+        // host wires up at startup. Phase A3 shipped MQTT; Phase B added
         // Kafka + WebSocket — both wire plugins exist in the Küstenlogik
         // family (Kafka as sibling repo, WebSocket as first-party). The
         // resolvers degrade gracefully when the matching wire plugin is
         // not loaded (they emit a clear error message pointing at the
         // NuGet package to add). Phase C will follow with AMQP / NATS
         // when those wire plugins land.
+        //
+        // `mqtt5` is the same resolver registered under a second key:
+        // the AsyncAPI spec carries an independent binding for MQTT 5.0
+        // (sessionExpiryInterval, receiveMaximum, …) but the publish
+        // contract on the Bowire side is identical — qos/retain stay
+        // the only mapped fields, the rest ride along the metadata bag.
+        //
+        // `http` doesn't need a wire plugin lookup at all — the resolver
+        // drives HttpClient directly, because AsyncAPI HTTP-bound
+        // documents don't carry an OpenAPI overlay the REST plugin
+        // would need to invoke against.
         _resolvers["mqtt"] = new MqttBindingResolver(registry);
+        _resolvers["mqtt5"] = new MqttBindingResolver(registry, bindingId: "mqtt5");
         _resolvers["kafka"] = new KafkaBindingResolver(registry);
         _resolvers["ws"] = new WebSocketBindingResolver(registry);
+        _resolvers["http"] = new HttpBindingResolver();
     }
 
     public async Task<List<BowireServiceInfo>> DiscoverAsync(
