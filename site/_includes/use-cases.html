@@ -78,6 +78,26 @@
         <p class="use-case-tools">→ <code>bowire scan</code> · SARIF 2.1.0 · CA-trusted proxy · JWT toolkit</p>
       </a>
 
+      <a class="use-case-card use-case-card-link" href="{{ '/workflows/devops.html' | relative_url }}">
+        <div class="use-case-icon">
+          <!-- Three pipeline stages (build → test → deploy) connected
+               by arrows — the standard CI/CD pipeline-as-symbol idiom. -->
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="2" y="9" width="4" height="6" rx="0.7"/>
+            <rect x="10" y="9" width="4" height="6" rx="0.7"/>
+            <rect x="18" y="9" width="4" height="6" rx="0.7"/>
+            <path d="M6 12h4"/>
+            <path d="M14 12h4"/>
+            <polyline points="9 10.5 10 12 9 13.5"/>
+            <polyline points="17 10.5 18 12 17 13.5"/>
+          </svg>
+        </div>
+        <h3>DevOps &amp; platform engineers</h3>
+        <p class="use-case-tag">CI/CD container · SARIF · mock fixtures</p>
+        <p>You're wiring the CI/CD pipeline. Bowire ships as a single binary + Docker image that drops into any runner — <code>bowire scan</code> as a SAST gate, <code>bowire mock</code> spun up as an integration-test fixture for ephemeral environments, <code>bowire fuzz</code> as a security-regression step. SARIF 2.1.0 output drops into GitHub Code Scanning, GitLab Security Dashboard, or Azure DevOps without translation.</p>
+        <p class="use-case-tools">→ <code>bowire scan</code> · <code>bowire mock</code> · <code>bowire fuzz</code> · SARIF 2.1.0 · GitHub Actions / GitLab CI / Azure DevOps</p>
+      </a>
+
     </div>
 
     <p class="use-cases-cta">
