@@ -27,7 +27,7 @@
       <h5>Auto-discovery with hot reload</h5>
       <p>Zero manual configuration. Drop in a protocol plugin and Bowire uses its native mechanism to enumerate services &mdash; then re-scans every few seconds so new endpoints show up without a refresh or restart.</p>
       <template class="feature-card-detail">
-        <div class="features-block features-block-text-only">
+        <div class="features-block">
           <div class="features-block-text">
             <h3>Auto-discovery with hot reload</h3>
             <p class="features-block-lead">Plug in a protocol, get a service tree &mdash; no hand-maintained proto / OpenAPI / hub-registration code.</p>
@@ -37,6 +37,9 @@
               <a class="features-block-docs-link" href="{{ '/features.html#auto-discovery' | relative_url }}">See the full tour &rarr;</a>
               <a class="features-block-docs-link" href="{{ '/docs/features/auto-discovery.html' | relative_url }}">Straight to the docs &rarr;</a>
             </div>
+          </div>
+          <div class="features-block-screenshot">
+            {% include themed-img.html src="/assets/images/screenshots/editable.png" alt="Sidebar with the auto-discovered service tree — 17 methods across REST, gRPC, GraphQL, and SignalR services, all listed in one panel" %}
           </div>
         </div>
       </template>
