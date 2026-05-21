@@ -6,6 +6,14 @@
     <div class="usp-grid">
 
       <a class="usp-card usp-hero-card usp-card-link" href="{{ '/#protocols' | relative_url }}">
+        <!-- Full-bleed fleet header — picks up the same "every Bowire
+             protocol is a different ship" metaphor the launch stepper
+             uses, with the B-marked vessels lined up. Acts as the
+             visual anchor for the "17+ protocols" claim immediately
+             below. -->
+        <div class="usp-hero-card-header" aria-hidden="true">
+          <img src="{{ '/assets/images/fleet.png' | relative_url }}" alt="" loading="lazy">
+        </div>
         <div class="usp-number">17+</div>
         <h3>Protocols in One UI</h3>
         <ul class="usp-protocol-badges" aria-label="Supported protocols">
