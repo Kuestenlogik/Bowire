@@ -7281,6 +7281,29 @@ html[data-theme="light"] {
     background: rgba(255, 255, 255, 0.32);
 }
 
+/* Fixed pre-chips — render the "this is bundled, you don't pick
+   it" first-party set on the standalone-CLI picker. Same shape as
+   the active chips so they read as part of the picker's chip row,
+   muted colour + no × button + default cursor so they're visibly
+   non-interactive. The leading ✓ doubles as a screen-reader hint
+   that these are already-included items. */
+.launch-combobox-tag-fixed {
+    background: var(--bg-elevated);
+    color: var(--text-secondary);
+    border: 1px solid var(--border);
+    padding: 3px 10px;
+    cursor: default;
+    opacity: 0.85;
+}
+
+.launch-combobox-tag-fixed::before {
+    content: '✓';
+    margin-right: 5px;
+    color: var(--success);
+    font-weight: 700;
+    font-size: 11px;
+}
+
 .launch-combobox-input {
     flex: 1 1 120px;
     min-width: 80px;

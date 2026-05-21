@@ -1178,7 +1178,19 @@ var BOWIRE_PROTOCOLS = [
 // small controller object the stepper uses to read selections + bind
 // change events. Single-instance per host; vanilla DOM, no
 // framework. Keyboard-friendly (arrow keys + enter).
-function createBowireCombobox(hostEl, allItems, defaultSelectedIds, placeholder) {
+/**
+ * Build a tag-input combobox with optional "fixed" pre-chips.
+ *
+ * `fixedItems` (5th arg) is an array of `{ id, label, hint? }`
+ * objects that render as non-removable chips at the front of the
+ * picker, with a tooltip explaining why they can't be unselected.
+ * They're decorative — they don't appear in the suggestion list,
+ * they aren't returned by getSelected(), and they don't react to
+ * Backspace / ×. Use them to show "this is included for free in
+ * the standalone tool" without misleading the user into thinking
+ * they could remove it.
+ */
+function createBowireCombobox(hostEl, allItems, defaultSelectedIds, placeholder, fixedItems) {
     var wrap = document.createElement('div');
     wrap.className = 'launch-combobox';
     var input = document.createElement('input');
@@ -1195,6 +1207,7 @@ function createBowireCombobox(hostEl, allItems, defaultSelectedIds, placeholder)
     hostEl.appendChild(suggestions);
 
     var selectedIds = (defaultSelectedIds || []).slice();
+    var fixed = (fixedItems || []).slice();
     var activeSuggestion = -1;
     var changeListeners = [];
 
@@ -1220,6 +1233,23 @@ function createBowireCombobox(hostEl, allItems, defaultSelectedIds, placeholder)
         }
         if (input.parentNode !== wrap) {
             wrap.appendChild(input);
+        }
+        // Fixed pre-chips first — visually dimmed, no × button, with
+        // a tooltip that explains why they're not removable. The
+        // standalone-CLI picker uses these to show "first-party
+        // protocols ship in the tool bundle" so the user doesn't
+        // wonder why gRPC / REST / … aren't in the dropdown.
+        for (var f = 0; f < fixed.length; f++) {
+            (function (item) {
+                var tag = document.createElement('span');
+                tag.className = 'launch-combobox-tag launch-combobox-tag-fixed';
+                tag.setAttribute(
+                    'title',
+                    item.hint ||
+                    'Bundled — installed automatically and cannot be removed.');
+                tag.appendChild(document.createTextNode(item.label));
+                wrap.insertBefore(tag, input);
+            })(fixed[f]);
         }
         for (var i = 0; i < selectedIds.length; i++) {
             (function (id) {
@@ -1583,14 +1613,27 @@ function createBowireCombobox(hostEl, allItems, defaultSelectedIds, placeholder)
     // Mode. The CLI picker only lists third-party extras because the
     // CLI bundle already includes every first-party protocol.
     var thirdParty = BOWIRE_PROTOCOLS.filter(function (p) { return p.category === 'third-party'; });
+    var firstParty = BOWIRE_PROTOCOLS.filter(function (p) { return p.category === 'first-party'; });
     var nugetDefaults = BOWIRE_PROTOCOLS.filter(function (p) { return p.defaultBackend; }).map(function (p) { return p.id; });
 
     var nugetCombo = createBowireCombobox(
         root.querySelector('[data-combobox-nuget]'), BOWIRE_PROTOCOLS, nugetDefaults,
         'Search protocols (gRPC, REST, Surgewave, Kafka, …)');
+    // Standalone-CLI picker: third-party plugins are addable via
+    // `bowire plugin install`. First-party protocols ship inside the
+    // standalone tool bundle — render them as non-removable "this is
+    // bundled, nothing to do" chips so the user sees the full surface
+    // and doesn't wonder why MQTT or AsyncAPI aren't in the dropdown.
     var cliCombo = createBowireCombobox(
         root.querySelector('[data-combobox-cli]'), thirdParty, [],
-        'Search third-party plugins (Surgewave, Kafka, DIS, UDP)');
+        'Search third-party plugins (Surgewave, Kafka, DIS, UDP)',
+        firstParty.map(function (p) {
+            return {
+                id: p.id,
+                label: p.label,
+                hint: 'Bundled in the standalone tool — no install needed.'
+            };
+        }));
 
     var currentStep = 1;
     var pickedBoat = null;
