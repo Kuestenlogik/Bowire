@@ -92,6 +92,30 @@ public sealed class McpProtocolCoverageTests
     }
 
     [Fact]
+    public async Task Adapter_Info_Endpoint_Returns_Enabled_State()
+    {
+        // The workbench's Settings → General tab consults
+        // GET /api/mcp-adapter to render the adapter-status row.
+        // When the adapter is wired (this test starts the host with
+        // WithMcpAdapter()), the route is mounted and returns the
+        // adapter's mount path. Without WithMcpAdapter(), the route
+        // wouldn't exist and the frontend would read a 404 — that
+        // negative case is covered indirectly by every other host
+        // that omits WithMcpAdapter().
+        await using var host = await PluginTestHost.StartAsync(app => app.WithMcpAdapter());
+
+        using var client = new HttpClient { BaseAddress = new Uri(host.BaseUrl) };
+        var response = await client.GetAsync(
+            new Uri("/bowire/api/mcp-adapter", UriKind.Relative),
+            TestContext.Current.CancellationToken);
+
+        response.EnsureSuccessStatusCode();
+        var body = await response.Content.ReadFromJsonAsync<JsonElement>(TestContext.Current.CancellationToken);
+        Assert.True(body.GetProperty("enabled").GetBoolean());
+        Assert.Equal("/bowire/mcp", body.GetProperty("path").GetString());
+    }
+
+    [Fact]
     public async Task BowireMcpProtocol_Reads_Resource_By_Uri()
     {
         // Hits BowireMcpProtocol.InvokeAsync on the "Resources" arm and
