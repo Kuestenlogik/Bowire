@@ -11,8 +11,18 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="5 12 10 17 19 8"/></svg>
         </div>
         <div class="roadmap-card-body">
-          <h3>AsyncAPI discovery source + Nuclei template runner <span class="roadmap-card-tag">v1.5.0</span></h3>
-          <p>Point Bowire at an <code>asyncapi.yaml</code> / <code>.json</code> document (2.x + 3.0) and channels + operations show up in the sidebar; invocations route through whichever wire plugin the doc&rsquo;s <code>bindings:</code> declare (MQTT today, Kafka / WebSocket follow). Plus <code>bowire scan --nuclei &lt;dir&gt;</code> reads the 8000+ <a href="https://github.com/projectdiscovery/nuclei-templates" target="_blank" rel="noopener">projectdiscovery/nuclei-templates</a> corpus into the existing SARIF-emitting scan engine.</p>
+          <h3>AsyncAPI discovery source <span class="roadmap-card-tag">v1.5.0</span></h3>
+          <p>Point Bowire at an AsyncAPI 2.x or 3.0 document and channels show up in the sidebar, routed through whichever wire plugin the doc&rsquo;s bindings declare.</p>
+        </div>
+      </a>
+
+      <a class="roadmap-card roadmap-card-link roadmap-card-shipped" href="{{ '/security.html' | relative_url }}">
+        <div class="roadmap-number roadmap-number-shipped" aria-label="Shipped">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="5 12 10 17 19 8"/></svg>
+        </div>
+        <div class="roadmap-card-body">
+          <h3>Nuclei template runner <span class="roadmap-card-tag">v1.5.0</span></h3>
+          <p>The 8000+ Nuclei community templates now feed the existing SARIF-emitting scan engine via <code>--nuclei</code>.</p>
         </div>
       </a>
 
@@ -21,8 +31,8 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="5 12 10 17 19 8"/></svg>
         </div>
         <div class="roadmap-card-body">
-          <h3>AMQP plugin &mdash; skeleton release <span class="roadmap-card-tag">v0.1.0</span></h3>
-          <p><code>Kuestenlogik.Bowire.Protocol.Amqp</code> sibling repo is live. Single plugin id covers both <strong>AMQP 0.9.1</strong> (RabbitMQ, ActiveMQ Classic) and <strong>AMQP 1.0</strong> (Azure Service Bus, ActiveMQ Artemis); URL scheme picks the wire (<code>amqp://</code> / <code>amqp1://</code>). <code>IBowireProtocol</code> surface pinned for embedded hosts and the upstream AsyncAPI binding resolver; discovery + invocation land in v0.2.x.</p>
+          <h3>AMQP plugin skeleton <span class="roadmap-card-tag">v0.1.0</span></h3>
+          <p>Sibling repo live; one plugin covers AMQP 0.9.1 and 1.0 via URL scheme. Discovery and invocation land in v0.2.x.</p>
         </div>
       </a>
 
@@ -31,8 +41,8 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="5 12 10 17 19 8"/></svg>
         </div>
         <div class="roadmap-card-body">
-          <h3>gRPC-Web transport + TacticalAPI plugin <span class="roadmap-card-tag">v1.2.0</span></h3>
-          <p>The gRPC plugin now speaks gRPC-Web as well as native HTTP/2 &mdash; opt in with <code>grpcweb@</code> or the <code>X-Bowire-Grpc-Transport</code> metadata header for browser-fronted services and HTTP/1.1-only ingresses. New <strong>TacticalAPI</strong> sibling plugin (preview) wraps Rheinmetall's situational-awareness gRPC schema with bundled descriptors.</p>
+          <h3>gRPC-Web transport <span class="roadmap-card-tag">v1.2.0</span></h3>
+          <p>The gRPC plugin now speaks gRPC-Web alongside native HTTP/2, so browser-fronted services and HTTP/1.1-only ingresses work without a separate stack.</p>
         </div>
       </a>
 
@@ -42,7 +52,7 @@
         </div>
         <div class="roadmap-card-body">
           <h3>Replay recordings as a mock server <span class="roadmap-card-tag">v0.9.x</span></h3>
-          <p><code>bowire mock</code> turns any captured recording into a live endpoint. REST, gRPC (unary + streaming + bidi), WebSocket, SSE, SignalR, Socket.IO, MQTT, GraphQL subscriptions. Hot-reload, chaos injection, schema-only mode (OpenAPI / gRPC / GraphQL), stateful cursors, capture-on-miss.</p>
+          <p><code>bowire mock</code> turns any captured recording into a live endpoint with the same protocol semantics as the original.</p>
         </div>
       </a>
 
@@ -51,8 +61,8 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="5 12 10 17 19 8"/></svg>
         </div>
         <div class="roadmap-card-body">
-          <h3>The plugin family grew up <span class="roadmap-card-tag">plugins + workbench</span></h3>
-          <p>The previous release waves shipped a whole shelf of capabilities at once. Wire plugins: <strong>MQTT</strong> (3.1.1 + 5.0 via MQTTnet, with broker scanning), <strong>Kafka</strong> (Confluent.Kafka + Schema Registry decode), <strong>Akka.NET</strong> (mailbox tap), <strong>OData</strong> ($metadata + system query options), <strong>Socket.IO</strong>, <strong>DIS</strong> (IEEE 1278), <strong>UDP</strong>. Workbench: the <strong>visual flow editor</strong> (Request / Condition / Loop / Delay / Variable nodes, <code>.bwf</code> import-export, recursive live-pulse runner).</p>
+          <h3>Plugin family grew up <span class="roadmap-card-tag">over several releases</span></h3>
+          <p>MQTT, Kafka, Akka.NET, OData, Socket.IO, DIS, UDP and the visual flow editor all landed in the run-up to v1.5.</p>
         </div>
       </a>
 
@@ -66,35 +76,35 @@
 
     <div class="roadmap-grid">
 
-      <a class="roadmap-card roadmap-card-link" href="https://github.com/Kuestenlogik/Bowire/blob/main/docs/architecture/frame-semantics-framework.md" target="_blank" rel="noopener">
+      <a class="roadmap-card roadmap-card-link" href="https://github.com/Kuestenlogik/Bowire.Protocol.Amqp" target="_blank" rel="noopener">
         <div class="roadmap-number" aria-hidden="true">1</div>
         <div class="roadmap-card-body">
-          <h3>Visual viewers and editors for message content</h3>
-          <p>Coordinates render on a live map, PNG bytes as an image, audio bytes as audio. The same annotation that picks the viewer on the response side pairs with a request-side editor &mdash; drag a pin to fill <code>lat</code> and <code>lon</code> before submit. Works across every transport (gRPC, REST, GraphQL, MQTT, WebSocket, &hellip;) by inspecting payload shapes, not by baking extractors into individual plugins. Right-click any field to refine an auto-detected interpretation, persist team-wide via <code>bowire.schema-hints.json</code>.</p>
+          <h3>AMQP plugin v0.2 + AsyncAPI Phase C bindings</h3>
+          <p>Discovery and invocation on top of the v0.1 skeleton. Once they land, AsyncAPI <code>bindings.amqp</code> / <code>bindings.amqp1</code> light up automatically.</p>
         </div>
       </a>
 
       <a class="roadmap-card roadmap-card-link" href="https://github.com/Kuestenlogik/Bowire/blob/main/ROADMAP.md" target="_blank" rel="noopener">
         <div class="roadmap-number" aria-hidden="true">2</div>
         <div class="roadmap-card-body">
-          <h3>Polyglot plugins via sidecar bridge</h3>
-          <p>Run plugins as sidecar processes &mdash; JSON-RPC over stdio, the same transport LSP / MCP / DAP settled on for exactly this polyglot problem. Per-language SDKs for Python, Node.js, Go, Rust so a Zenoh, paho-mqtt, NATS-Go, or Temporal plugin doesn&rsquo;t need to be ported to .NET to plug in.</p>
+          <h3>Connect (Buf) — third gRPC wire mode</h3>
+          <p>Connect alongside HTTP/2 and gRPC-Web in the existing gRPC plugin. Phased rollout: unary first, then server-streaming, then bidi.</p>
         </div>
       </a>
 
       <a class="roadmap-card roadmap-card-link" href="https://github.com/Kuestenlogik/Bowire/blob/main/ROADMAP.md" target="_blank" rel="noopener">
         <div class="roadmap-number" aria-hidden="true">3</div>
         <div class="roadmap-card-body">
-          <h3>Connect (Buf) — third gRPC wire mode</h3>
-          <p>Extends the gRPC plugin with Connect support alongside native HTTP/2 and gRPC-Web. URL-prefix <code>connect@</code> picks the wire; same schema, same discovery, same invoke pane. Phased rollout: <em>Phase 1</em> unary + JSON / proto bodies + Connect headers and error format, <em>Phase 2</em> server-streaming with the Connect 5-byte envelope, <em>Phase 3</em> bidi over HTTP/2. Tests against the <code>connectrpc/conformance</code> suite.</p>
+          <h3>Full MCP spec — resources + prompts</h3>
+          <p>The MCP adapter exposes Bowire&rsquo;s primitives as <em>tools</em> today. The next phase adds the other two halves of the spec: <em>resources</em> for read-only browsing, <em>prompts</em> for canned AI workflows.</p>
         </div>
       </a>
 
-      <a class="roadmap-card roadmap-card-link" href="https://github.com/Kuestenlogik/Bowire.Protocol.Amqp" target="_blank" rel="noopener">
+      <a class="roadmap-card roadmap-card-link" href="https://github.com/Kuestenlogik/Bowire/blob/main/ROADMAP.md" target="_blank" rel="noopener">
         <div class="roadmap-number" aria-hidden="true">4</div>
         <div class="roadmap-card-body">
-          <h3>AMQP plugin v0.2 + AsyncAPI Phase C bindings</h3>
-          <p>Build on the v0.1.0 skeleton: discovery via RabbitMQ Management HTTP API (0.9.1) and a synthetic Broker service (1.0); invocation via <code>basic.publish</code> (0.9.1) and <code>Session.Send</code> (1.0); streaming via consumer queue / <code>ReceiverLink</code>. Once invocation lands, the AsyncAPI loader's <strong>Phase C</strong> bindings unlock too: <code>bindings.amqp</code> and <code>bindings.amqp1</code> route through the new wire plugin without further loader changes.</p>
+          <h3>More protocols: SOAP, NATS, Pulsar, JSON-RPC</h3>
+          <p>WSDL discovery for enterprise legacy, cloud-native messaging via NATS, the Apache event-streaming alternative via Pulsar, and a generic JSON-RPC browser.</p>
         </div>
       </a>
 
@@ -102,23 +112,23 @@
         <div class="roadmap-number" aria-hidden="true">5</div>
         <div class="roadmap-card-body">
           <h3>Surgewave tap-stream browser</h3>
-          <p>Surgewave topics map to services, partitions / consumers map to methods, the tap envelope (<code>event</code>, <code>topic</code>, <code>partition</code>, <code>offset</code>, <code>principal</code>, <code>reason</code>) is already recognised by Bowire&rsquo;s frame pane. Sibling repo + plugin scaffolding ready &mdash; blocked on the <code>Kuestenlogik.Surgewave.Client</code> SDK going public.</p>
+          <p>Sibling repo and plugin scaffolding ready. Blocked on the <code>Kuestenlogik.Surgewave.Client</code> SDK going public.</p>
         </div>
       </a>
 
       <a class="roadmap-card roadmap-card-link" href="https://github.com/Kuestenlogik/Bowire/blob/main/ROADMAP.md" target="_blank" rel="noopener">
         <div class="roadmap-number" aria-hidden="true">6</div>
         <div class="roadmap-card-body">
-          <h3>More protocols: SOAP, NATS, Pulsar, JSON-RPC</h3>
-          <p><strong>SOAP</strong> 1.1 / 1.2 with WSDL discovery for the enterprise legacy that still runs your invoicing. <strong>NATS</strong> core + JetStream for cloud-native messaging (unlocks AsyncAPI <code>bindings.nats</code> too). <strong>Pulsar</strong> for the Apache event-streaming alternative. <strong>Generic JSON-RPC browser</strong> by generalising the existing MCP JSON-RPC client.</p>
+          <h3>Polyglot plugins via sidecar bridge</h3>
+          <p>Run plugins as sidecar processes over JSON-RPC stdio, so Python, Go, Rust, or Node.js plugins don&rsquo;t need to be ported to .NET to plug in.</p>
         </div>
       </a>
 
-      <a class="roadmap-card roadmap-card-link" href="https://github.com/Kuestenlogik/Bowire/blob/main/ROADMAP.md" target="_blank" rel="noopener">
+      <a class="roadmap-card roadmap-card-link" href="https://github.com/Kuestenlogik/Bowire/blob/main/docs/architecture/frame-semantics-framework.md" target="_blank" rel="noopener">
         <div class="roadmap-number" aria-hidden="true">7</div>
         <div class="roadmap-card-body">
-          <h3>Full MCP spec — resources + prompts</h3>
-          <p>The MCP-adapter today exposes Bowire's primitives as MCP <em>tools</em>. Phase 2 adds the other two halves of the spec: <code>resources</code> (read-only data — <code>bowire://recordings/&lt;id&gt;</code>, <code>bowire://environments/&lt;name&gt;</code>, <code>bowire://services/&lt;protocol&gt;</code>) and <code>prompts</code> (canned AI workflows — <code>bowire.smoke-test(url)</code>, <code>bowire.regression-hunt(urlA, urlB)</code>). SSE / HTTP transports for remote clients (Cursor, Copilot) without stdio.</p>
+          <h3>Visual viewers and editors for message content</h3>
+          <p>Coordinates on a live map, PNG bytes as an image, audio bytes as audio &mdash; the same annotation that picks the viewer pairs with a request-side editor.</p>
         </div>
       </a>
 
