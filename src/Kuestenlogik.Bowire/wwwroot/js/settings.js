@@ -182,7 +182,86 @@
             }
         ));
 
+        // MCP adapter status — read-only mirror of the server's
+        // --enable-mcp-adapter / Bowire:EnableMcpAdapter configuration.
+        // The adapter is wired at ASP.NET startup (MapBowireMcpAdapter
+        // adds routes); we can't toggle it from a running session.
+        // What we *can* do is tell the user clearly whether it's on
+        // right now and give them a copy-pasteable command to flip
+        // it on the next start. The status comes from
+        // GET {prefix}/api/mcp-adapter — a 200 means the adapter is
+        // mounted, a 404 means the route doesn't exist (adapter off).
+        section.appendChild(renderSettingsRow(
+            'MCP adapter',
+            'Expose Bowire’s discover / invoke / record primitives as MCP tools so AI agents (Claude, Cursor, Copilot) can drive the workbench.',
+            function () {
+                var statusBox = el('div', {
+                    id: 'bowire-settings-mcp-adapter-status',
+                    style: 'display:flex;flex-direction:column;align-items:flex-end;gap:4px;min-width:220px'
+                });
+
+                // Initial state — "checking…" until fetch resolves.
+                statusBox.appendChild(el('span', {
+                    style: 'font-size:12px;color:var(--bowire-text-tertiary)',
+                    textContent: 'Checking…'
+                }));
+
+                fetch(`${config.prefix}/api/mcp-adapter`)
+                    .then(function (resp) {
+                        statusBox.innerHTML = '';
+                        if (resp.ok) {
+                            return resp.json().then(function (data) {
+                                statusBox.appendChild(el('span', {
+                                    style: 'font-size:13px;color:var(--bowire-text);font-weight:500',
+                                    innerHTML: '<span style="color:var(--bowire-success,#10b981);margin-right:4px">✓</span>Active'
+                                }));
+                                statusBox.appendChild(el('code', {
+                                    style: 'font-size:11px;color:var(--bowire-text-secondary);background:var(--bowire-bg-elevated);padding:2px 6px;border-radius:3px',
+                                    textContent: data.path || '/mcp'
+                                }));
+                            });
+                        }
+                        renderMcpAdapterDisabled(statusBox);
+                    })
+                    .catch(function () { renderMcpAdapterDisabled(statusBox); });
+
+                return statusBox;
+            }
+        ));
+
         return section;
+    }
+
+    function renderMcpAdapterDisabled(statusBox) {
+        statusBox.appendChild(el('span', {
+            style: 'font-size:13px;color:var(--bowire-text);font-weight:500',
+            innerHTML: '<span style="color:var(--bowire-text-tertiary);margin-right:4px">✕</span>Disabled'
+        }));
+        var cmdRow = el('div', { style: 'display:flex;align-items:center;gap:4px' });
+        var cmdCode = el('code', {
+            style: 'font-size:11px;color:var(--bowire-text-secondary);background:var(--bowire-bg-elevated);padding:2px 6px;border-radius:3px',
+            textContent: 'bowire --enable-mcp-adapter'
+        });
+        var copyBtn = el('button', {
+            type: 'button',
+            className: 'bowire-settings-copy-mini',
+            style: 'background:none;border:none;cursor:pointer;color:var(--bowire-text-tertiary);padding:2px;font-size:11px',
+            title: 'Copy command',
+            textContent: '⧉',
+            onClick: function () {
+                navigator.clipboard.writeText('bowire --enable-mcp-adapter').then(function () {
+                    copyBtn.textContent = '✓';
+                    setTimeout(function () { copyBtn.textContent = '⧉'; }, 1200);
+                });
+            }
+        });
+        cmdRow.appendChild(cmdCode);
+        cmdRow.appendChild(copyBtn);
+        statusBox.appendChild(cmdRow);
+        statusBox.appendChild(el('span', {
+            style: 'font-size:11px;color:var(--bowire-text-tertiary)',
+            textContent: 'Restart Bowire with this flag, or set Bowire:EnableMcpAdapter=true in appsettings.'
+        }));
     }
 
     // ---- Shortcuts ----

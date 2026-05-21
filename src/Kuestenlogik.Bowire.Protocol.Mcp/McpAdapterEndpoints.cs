@@ -70,6 +70,17 @@ public static class McpAdapterEndpoints
 
         endpoints.MapPost($"{basePath}/mcp", HandleMessage).ExcludeFromDescription();
 
+        // Read-only info endpoint the workbench's Settings → General
+        // tab consults to render the MCP-adapter status row. Returns
+        // 200 + { enabled: true, path } whenever this method has been
+        // called (i.e. WithMcpAdapter is wired up at startup); the
+        // absence of the route — a plain 404 — is the "disabled"
+        // signal the frontend reads back.
+        var adapterPath = $"{basePath}/mcp";
+        endpoints.MapGet($"{basePath}/api/mcp-adapter", () =>
+            Results.Ok(new { enabled = true, path = adapterPath }))
+            .ExcludeFromDescription();
+
         return endpoints;
 
         async Task HandleMessage(HttpContext ctx)
