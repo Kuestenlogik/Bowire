@@ -327,15 +327,16 @@
 
       <div class="usp-card usp-card-link" data-feature-modal tabindex="0" role="button" aria-label="Record &amp; replay: open detail">
         <div class="usp-icon">
-          <!-- Arrow looping around in a circle — captures the point of
-               record-and-replay better than any deck-equipment glyph:
-               the value is repeatability. Shape is Lucide's rotate-cw:
-               a clean 270° arc with a separate arrowhead notch at the
-               start, so the line doesn't cross itself the way a
-               continuous arc-plus-tip would. -->
+          <!-- Replay glyph — Play-triangle wrapped in a loop arrow. The
+               combination removes the ambiguity the plain rotate-arrow
+               had (could be 'refresh', 'undo', 'sync'); with the play
+               triangle in the middle the icon reads as 'replay' the
+               same way the Shutterstock stock-icon and every media
+               player's Replay button do. -->
           <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
             <path d="M3 3v5h5"/>
+            <polygon points="10,9 10,15 15.5,12" fill="var(--accent)" stroke="none"/>
           </svg>
         </div>
         <h3>Record and Replay</h3>
