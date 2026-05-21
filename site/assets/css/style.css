@@ -1556,9 +1556,17 @@ pre > code {
     z-index: 1;
 }
 .usp-hero-card .usp-number {
-    margin-top: 80px;
-    margin-bottom: 120px;
-    text-shadow: 0 4px 16px rgba(0, 0, 0, 0.55);
+    margin-top: 120px;
+    margin-bottom: 8px;
+    /* On the protocols-hero card the number sits over the fleet
+       banner — white reads against the dark ship hulls / sky
+       better than the accent does, and a heavier text-shadow
+       lifts it off the photo without an extra overlay. The
+       feature-card .usp-number rule above still drives every
+       other accent-coloured usage. */
+    color: #fff;
+    font-size: 6rem;
+    text-shadow: 0 4px 24px rgba(0, 0, 0, 0.72), 0 1px 2px rgba(0, 0, 0, 0.5);
 }
 
 /* Protocol badges inside the hero card — neater than a comma-separated
