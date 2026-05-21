@@ -1486,8 +1486,14 @@ pre > code {
 
 .usp-grid {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 24px;
+    /* 2-col grid (was 3): the USP section sits directly above the
+       features grid, which is 3-col with smaller cards. Going to 2-
+       col here makes each USP card visibly larger and gives the
+       differentiator-row a different shape from the capability
+       index below it. Hero card + closer card both keep
+       grid-column:1/-1 so they still span the row. */
+    grid-template-columns: repeat(2, 1fr);
+    gap: 28px;
 }
 
 .usp-hero-card {
@@ -1595,7 +1601,11 @@ pre > code {
     background: var(--bg-elevated);
     border: 1.5px solid var(--border);
     border-radius: var(--radius-lg);
-    padding: 28px 24px;
+    /* Larger padding than the feature-card grid below (which uses
+       32px 28px) so the differentiator-row reads as the heavier,
+       statement-style block; features sit underneath as the
+       lighter capability index. */
+    padding: 36px 32px;
     /* Match the launch-stepper boat cards' hover treatment:
        1.5 px border + accent glow + translate. The 1 px border
        + transform-only the usp grid had before looked thinner /
@@ -1634,25 +1644,39 @@ pre > code {
 }
 
 .usp-icon {
-    margin-bottom: 14px;
-    width: 48px;
-    height: 48px;
+    margin-bottom: 18px;
+    /* 64 px slot (was 48): visibly bigger than the feature-grid
+       icons (48 px) so the USP row reads as a heavier tier.
+       Slight accent-tint border lifts the icon off the elevated
+       background instead of sitting flush against it. */
+    width: 64px;
+    height: 64px;
     display: flex;
     align-items: center;
     justify-content: center;
-    background: rgba(99, 102, 241, 0.08);
+    background: rgba(99, 102, 241, 0.12);
+    border: 1px solid rgba(99, 102, 241, 0.25);
     border-radius: var(--radius);
+}
+.usp-icon svg {
+    /* Scale the existing 32-px SVGs up to fill the bigger slot. */
+    width: 36px;
+    height: 36px;
 }
 
 .usp-card h3 {
-    font-size: 1.0625rem;
-    font-weight: 600;
-    margin-bottom: 8px;
+    /* 1.25 rem (was 1.0625): statement-tier typography vs. the
+       feature-grid's 1.0625 rem index-tier. Weight 700 (was 600)
+       carries the difference at the same font size for visitors
+       who skim with the eye instead of reading. */
+    font-size: 1.25rem;
+    font-weight: 700;
+    margin-bottom: 10px;
 }
 
 .usp-card p {
     color: var(--text-secondary);
-    font-size: 0.9375rem;
+    font-size: 1rem;
     line-height: 1.6;
     margin: 0 0 10px;
 }
