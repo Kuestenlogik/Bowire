@@ -6,14 +6,16 @@
     <div class="usp-grid">
 
       <a class="usp-card usp-hero-card usp-card-link" href="{{ '/#protocols' | relative_url }}">
-        <!-- Full-bleed fleet header — picks up the same "every Bowire
-             protocol is a different ship" metaphor the launch stepper
-             uses, with the B-marked vessels lined up. Acts as the
-             visual anchor for the "17+ protocols" claim immediately
-             below. -->
+        <!-- Fleet image fills the upper region of the card. CSS mask-
+             image gradient melts the photo into the card surface as it
+             travels downward, so the "17+" + chips + body sit on the
+             clean elevated card background without a hard banner edge.
+             Picks up the same "every Bowire protocol is a different
+             ship" metaphor the launch stepper uses. -->
         <div class="usp-hero-card-header" aria-hidden="true">
           <img src="{{ '/assets/images/fleet.png' | relative_url }}" alt="" loading="lazy">
         </div>
+        <div class="usp-hero-card-body">
         <div class="usp-number">17+</div>
         <h3>Protocols in One UI</h3>
         <ul class="usp-protocol-badges" aria-label="Supported protocols">
@@ -137,6 +139,7 @@
         <p>Built for every protocol you need plus your own via Bowire's plugin API.</p>
         <p>No schema files to maintain &mdash; each protocol auto-discovers through its native mechanism (reflection, OpenAPI, introspection, &hellip;).</p>
         <p>Bonus for Embedded Mode: Bowire wires the server-side prerequisites in for you.</p>
+        </div>
       </a>
 
       <div class="usp-card usp-card-link" data-feature-modal tabindex="0" role="button" aria-label="Embedded — Zero Config: open detail">

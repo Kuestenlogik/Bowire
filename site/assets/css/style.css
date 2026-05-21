@@ -1501,24 +1501,31 @@ pre > code {
     text-align: center;
     background: linear-gradient(135deg, rgba(99,102,241,0.08), rgba(99,102,241,0.02));
     border-color: var(--accent) !important;
-    /* Clip the full-bleed fleet header to the card's rounded corners. */
+    /* Anchors the absolute-positioned banner header + clips the
+       picture's rounded top corners. */
+    position: relative;
     overflow: hidden;
 }
 
-/* Fleet image at the top of the protocols-hero card. Stays inside
-   the card's 36×32 padding (a rounded tile, not a full-bleed
-   header) so the card frame visibly contains the picture instead
-   of having it leak past the rounded corners. aspect-ratio holds
-   the crop steady at the source 5:2-ish ratio so the ships stay
-   readable across viewport widths. Lazy-loaded so it doesn't
-   compete with above-the-fold assets (the file is ~2.5 MB
-   un-optimised — replace with a WebP variant when we do the next
-   asset-pass). */
+/* Fleet image at the top of the protocols-hero card. Lives as an
+   absolute layer on the card; a mask-image gradient melts the
+   picture into the card background as it travels downward, so
+   the "17+" + chips + body sit on the clean elevated card surface
+   without a hard banner edge. Same colour treatment the launch-
+   stepper boat photos use (grayscale + saturate + brightness +
+   lavender accent multiply overlay) so the image stays inside the
+   marketing palette instead of competing with the rest of the
+   page. Image is lazy-loaded — sits below the fold and doesn't
+   need to fight for first-paint bandwidth (the file is ~2.5 MB
+   un-optimised — replace with a WebP variant at the next asset
+   pass). */
 .usp-hero-card-header {
-    margin: 0 0 24px;
-    border-radius: var(--radius);
+    position: absolute;
+    inset: 0 0 auto 0;
+    z-index: 0;
+    pointer-events: none;
     overflow: hidden;
-    background: rgba(99, 102, 241, 0.04);
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
 }
 .usp-hero-card-header img {
     display: block;
@@ -1526,6 +1533,32 @@ pre > code {
     height: auto;
     aspect-ratio: 5 / 2;
     object-fit: cover;
+    filter: grayscale(0.55) saturate(0.85) brightness(0.92);
+    -webkit-mask-image: linear-gradient(180deg, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.85) 35%, rgba(0,0,0,0.30) 75%, rgba(0,0,0,0) 100%);
+            mask-image: linear-gradient(180deg, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.85) 35%, rgba(0,0,0,0.30) 75%, rgba(0,0,0,0) 100%);
+}
+.usp-hero-card-header::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.18), rgba(139, 125, 255, 0.10));
+    mix-blend-mode: multiply;
+    -webkit-mask-image: linear-gradient(180deg, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.85) 35%, rgba(0,0,0,0.30) 75%, rgba(0,0,0,0) 100%);
+            mask-image: linear-gradient(180deg, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.85) 35%, rgba(0,0,0,0.30) 75%, rgba(0,0,0,0) 100%);
+}
+
+/* Body wrapper sits above the banner image. The 17+ number is
+   pushed down so it overlays the still-visible upper band of the
+   banner; chips + body sit in the calm lower band where the card
+   background reads through clean. */
+.usp-hero-card-body {
+    position: relative;
+    z-index: 1;
+}
+.usp-hero-card .usp-number {
+    margin-top: 80px;
+    margin-bottom: 120px;
+    text-shadow: 0 4px 16px rgba(0, 0, 0, 0.55);
 }
 
 /* Protocol badges inside the hero card — neater than a comma-separated
