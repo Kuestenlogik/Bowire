@@ -18,21 +18,26 @@ namespace Kuestenlogik.Bowire.AsyncApi;
 /// (server-stream subscribe) land in Phase A4 alongside the channel-streaming
 /// shape — they need <see cref="IBowireProtocol.InvokeStreamAsync"/> instead.
 ///
-/// Binding-specific fields from the document's <c>bindings.mqtt</c> block
-/// (qos, retain) aren't parsed yet because the SDK reader chokes on them
-/// without the Bindings packages registered — that wiring is a Phase A4
-/// item. Defaults (qos=AtLeastOnce, retain=false) cover the demo flow.
+/// Same resolver type handles both the AsyncAPI <c>mqtt</c> and
+/// <c>mqtt5</c> binding keys (registered twice in
+/// <see cref="BowireAsyncApiProtocol.Initialize"/> with different
+/// <c>bindingId</c> ctor arguments). MQTT 5.0-specific fields
+/// (sessionExpiryInterval, receiveMaximum, subscriptionIdentifiers, …)
+/// arrive on the metadata bag via the generic extractor; MQTTnet 5 picks
+/// them up if its own option-mapping recognises the keys, otherwise they
+/// ride along for diagnostics + future plugin-side handling.
 /// </summary>
 internal sealed class MqttBindingResolver : IAsyncApiBindingResolver
 {
     private readonly BowireProtocolRegistry _registry;
 
-    public MqttBindingResolver(BowireProtocolRegistry registry)
+    public MqttBindingResolver(BowireProtocolRegistry registry, string bindingId = "mqtt")
     {
         _registry = registry;
+        BindingId = bindingId;
     }
 
-    public string BindingId => "mqtt";
+    public string BindingId { get; }
 
     public BowireMethodInfo BuildMethod(AsyncApiChannelContext channel)
     {
