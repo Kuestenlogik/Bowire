@@ -1691,11 +1691,14 @@ pre > code {
 .usp-card-link[data-feature-modal] {
     cursor: pointer;
 }
-.usp-card-link h3 {
+.usp-card-link h3,
+.usp-card-link .usp-number {
     transition: color 0.2s;
 }
 .usp-card-link:hover h3,
-.usp-card-link:focus-visible h3 {
+.usp-card-link:focus-visible h3,
+.usp-card-link:hover .usp-number,
+.usp-card-link:focus-visible .usp-number {
     color: var(--accent);
 }
 .usp-card-link[data-feature-modal]:focus-visible {
