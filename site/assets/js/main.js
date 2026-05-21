@@ -1349,9 +1349,41 @@ function createBowireCombobox(hostEl, allItems, defaultSelectedIds, placeholder)
             activeSuggestion = (activeSuggestion - 1 + visible.length) % visible.length;
             renderSuggestions();
         } else if (ev.key === 'Enter') {
+            // Three Enter-paths in priority order:
+            //   1. User cursored to a suggestion with ↑/↓ → pick that.
+            //   2. User typed a string that exactly matches an id or
+            //      label (case-insensitive) → pick that. Lets you
+            //      type `mqtt`, `MQTT`, or `Surgewave` + Enter as
+            //      a keyboard-only fast-path without ever opening
+            //      the dropdown with the arrow keys first.
+            //   3. The typed prefix has narrowed the visible list
+            //      to exactly one entry → that one's unambiguous;
+            //      pick it as a shortcut (`asyn` + Enter → AsyncAPI).
+            // No match → swallow the Enter so it doesn't submit a
+            // surrounding form, but otherwise no-op.
             if (activeSuggestion >= 0 && visible[activeSuggestion]) {
                 ev.preventDefault();
                 addSelection(visible[activeSuggestion].dataset.itemId);
+            } else {
+                var typed = input.value.trim().toLowerCase();
+                if (typed.length > 0) {
+                    var picked = null;
+                    for (var ix = 0; ix < allItems.length; ix++) {
+                        if (selectedIds.indexOf(allItems[ix].id) >= 0) continue;
+                        if (allItems[ix].id.toLowerCase() === typed ||
+                            allItems[ix].label.toLowerCase() === typed) {
+                            picked = allItems[ix].id;
+                            break;
+                        }
+                    }
+                    if (picked === null && visible.length === 1) {
+                        picked = visible[0].dataset.itemId;
+                    }
+                    if (picked !== null) {
+                        ev.preventDefault();
+                        addSelection(picked);
+                    }
+                }
             }
         } else if (ev.key === 'Backspace' && input.value === '' && selectedIds.length > 0) {
             removeSelection(selectedIds[selectedIds.length - 1]);
