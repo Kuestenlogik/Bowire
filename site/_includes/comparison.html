@@ -630,12 +630,22 @@
           </tr>
 
           <tr>
+            <td class="comparison-feature">Security scanning</td>
+            <td class="comparison-bowire c-yes" data-detail="bowire scan — built-in passive checks (TLS, version-disclosing headers, verbose errors) + Nuclei community templates (8000+) via --nuclei + Bowire.VulnDb baseline. Emits SARIF 2.1.0 for GitHub Code Scanning / GitLab Security Dashboard / Azure DevOps.">✓</td>
+            <td class="c-partial" data-detail="Secret Scanner + governance rules + automated compliance scanning. No vulnerability templates or SARIF output.">secrets + governance</td>
+            <td class="c-no">✗</td>
+            <td class="c-no">✗</td>
+            <td class="c-no">✗</td>
+            <td class="c-no">✗</td>
+          </tr>
+
+          <tr>
             <td class="comparison-feature">Local-first, no account</td>
             <td class="comparison-bowire c-yes">✓</td>
             <td class="c-partial" data-detail="Postman account required for free tier">account required</td>
             <td class="c-partial" data-detail="OSS client is local; hosted platform is cloud">cloud-hosted</td>
             <td class="c-yes">✓</td>
-            <td class="c-partial" data-detail="Kong account required for most features">account required</td>
+            <td class="c-yes" data-detail="No account required for local testing; cloud sync is optional and requires a Kong account">✓</td>
             <td class="c-yes">✓</td>
           </tr>
           <tr>
