@@ -273,13 +273,13 @@
             <path d="M9 12l2 2 4-4"/>
           </svg>
         </div>
-        <h3>Security scanner with Nuclei support</h3>
+        <h3>Security scanner with Nuclei templates</h3>
         <p><code>bowire scan</code> runs templates against any HTTP-class target and emits SARIF 2.1.0. Built-in passive checks (TLS, version-disclosure headers) plus the 8000+ <a href="https://github.com/projectdiscovery/nuclei-templates" target="_blank" rel="noopener">projectdiscovery/nuclei-templates</a> corpus via <code>--nuclei</code>.</p>
         <p>Drops straight into GitHub Code Scanning, GitLab Security Dashboard, or Azure DevOps.</p>
         <template class="feature-card-detail">
           <div class="features-block features-block-reverse">
             <div class="features-block-text">
-              <h3>Security scanner with Nuclei support</h3>
+              <h3>Security scanner with Nuclei templates</h3>
               <p class="features-block-lead"><code>bowire scan --target https://your-api</code> runs vulnerability templates against the API surface Bowire already discovered, and emits SARIF 2.1.0 that your CI can ingest unchanged.</p>
               <p>Two template sources at once: Bowire&rsquo;s own JSON templates (the curated baseline shipped in <a href="https://github.com/Kuestenlogik/Bowire.VulnDb" target="_blank" rel="noopener">Bowire.VulnDb</a>) plus the 8000+ Nuclei community corpus via <code>--nuclei &lt;dir&gt;</code>. The Nuclei reader translates status / word / regex matchers + matchers-condition + payload matrices + the standard variable set (<code>{{BaseURL}}</code>, <code>{{Hostname}}</code>, <code>{{RandStr_N}}</code>, &hellip;) into Bowire&rsquo;s native AttackPredicate DSL &mdash; same engine, two corpora.</p>
               <p>Findings emit as SARIF 2.1.0 &mdash; the format GitHub Code Scanning, GitLab Security Dashboard, and Azure DevOps all ingest natively. Plus built-in passive checks for TLS-version enumeration, version-disclosing headers, and verbose-error detection, so the scanner is useful on day one without writing a template.</p>
