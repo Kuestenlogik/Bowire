@@ -1593,10 +1593,14 @@ pre > code {
 
 .usp-card {
     background: var(--bg-elevated);
-    border: 1px solid var(--border);
+    border: 1.5px solid var(--border);
     border-radius: var(--radius-lg);
     padding: 28px 24px;
-    transition: border-color 0.2s, transform 0.2s;
+    /* Match the launch-stepper boat cards' hover treatment:
+       1.5 px border + accent glow + translate. The 1 px border
+       + transform-only the usp grid had before looked thinner /
+       flatter next to the boat cards on the same page. */
+    transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
 }
 
 /* `.usp-card-link` is the shared "this card is clickable" surface;
@@ -1626,6 +1630,7 @@ pre > code {
 .usp-card:hover {
     border-color: var(--accent);
     transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(99, 102, 241, 0.12);
 }
 
 .usp-icon {
