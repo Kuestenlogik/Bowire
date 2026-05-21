@@ -1501,6 +1501,27 @@ pre > code {
     text-align: center;
     background: linear-gradient(135deg, rgba(99,102,241,0.08), rgba(99,102,241,0.02));
     border-color: var(--accent) !important;
+    /* Clip the full-bleed fleet header to the card's rounded corners. */
+    overflow: hidden;
+}
+
+/* Full-bleed fleet image at the top of the protocols-hero card.
+   Negative margin breaks out of the card's 36×32 padding so the
+   image runs edge to edge; aspect-ratio holds the crop steady at
+   the source 5:2-ish ratio so the ships stay readable across
+   viewport widths. Lazy-loaded so it doesn't compete with above-
+   the-fold assets (the file is ~2.5 MB un-optimised — replace
+   with a WebP variant when we do the next asset-pass). */
+.usp-hero-card-header {
+    margin: -36px -32px 24px;
+    background: rgba(99, 102, 241, 0.04);
+}
+.usp-hero-card-header img {
+    display: block;
+    width: 100%;
+    height: auto;
+    aspect-ratio: 5 / 2;
+    object-fit: cover;
 }
 
 /* Protocol badges inside the hero card — neater than a comma-separated
