@@ -22,8 +22,18 @@ public sealed class BowireCliCommandRegistryTests
         // — a ProjectReference puts the DLL in bin/ but does not
         // by itself trigger CLR load. Without this poke, CI test
         // ordering can leave the assembly cold and the assertion
-        // below fails (caught between v1.5.0 → v1.5.1).
-        _ = typeof(Kuestenlogik.Bowire.Security.Scanner.Cli.ScanCliCommand);
+        // below fails (caught between v1.5.0 → v1.5.1, then again
+        // after the cli-tools section refactor).
+        //
+        // typeof() alone can be elided by the JIT in Release builds.
+        // Calling .Assembly forces the runtime to materialise the
+        // type's metadata, which guarantees the host assembly ends
+        // up on AppDomain.CurrentDomain.GetAssemblies(). The
+        // Assert.NotNull on the captured reference doubles as a
+        // belt-and-braces use site so the optimiser can't tear it
+        // down.
+        var scannerAssembly = typeof(Kuestenlogik.Bowire.Security.Scanner.Cli.ScanCliCommand).Assembly;
+        Assert.NotNull(scannerAssembly);
 
         var registry = BowireCliCommandRegistry.Discover();
         var scan = registry.Commands.SingleOrDefault(c => c.Id == "scan");
