@@ -2050,7 +2050,75 @@ pre > code {
     font-weight: 600;
 }
 
-/* ===== Install — Tabs ===== */
+/* ===== CLI tools — "Beyond the workbench" =====
+   Card grid for the six CLI subcommands (scan / mock / fuzz / jwt /
+   mcp serve / proxy). Previously a 5-tab switcher; switched to a
+   grid so all subcommands are scannable in one view without clicking
+   through. The .install-* classes below are kept because quickstart.html
+   still uses them for its install-flavour tabs. */
+.cli-tools {
+    padding: 100px 0;
+}
+.cli-tools-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+    margin-top: 8px;
+}
+@media (max-width: 1000px) { .cli-tools-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 640px)  { .cli-tools-grid { grid-template-columns: 1fr; } }
+
+.cli-tools-card {
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 22px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+.cli-tools-card h3 {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 600;
+}
+.cli-tools-card h3 code {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--accent);
+    background: rgba(99, 102, 241, 0.10);
+    border: 1px solid rgba(99, 102, 241, 0.22);
+    padding: 3px 8px;
+    border-radius: 6px;
+}
+.cli-tools-card-desc {
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+    line-height: 1.55;
+    margin: 0;
+}
+.cli-tools-card .code-block {
+    margin: 0;
+}
+.cli-tools-card .code-block pre {
+    font-size: 0.78rem;
+    line-height: 1.45;
+    padding: 12px 14px;
+}
+.cli-tools-card-link {
+    margin: auto 0 0;
+    font-size: 0.8125rem;
+    color: var(--text-secondary);
+}
+.cli-tools-card-link a {
+    color: var(--accent);
+    text-decoration: none;
+}
+.cli-tools-card-link a:hover {
+    text-decoration: underline;
+}
+
+/* ===== Install — Tabs (legacy, still used by quickstart.html) ===== */
 .install {
     padding: 100px 0;
 }
