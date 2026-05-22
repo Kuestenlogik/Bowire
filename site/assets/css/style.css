@@ -2058,12 +2058,56 @@ pre > code {
    still uses them for its install-flavour tabs. */
 .cli-tools {
     padding: 100px 0;
-    /* Elevated bg so 'Pick the right tool' (comparison, base bg)
-       below has a clean visual break. Use-cases above is also
-       elevated — the two sit on the same tier on purpose: they're
-       the two "shape of work" sections (workflows + CLI tools)
-       and group together. The flip restarts at .comparison. */
-    background: var(--bg-elevated);
+}
+
+/* DevOps detail page — Stripe-style capability list.
+   Three rows (mock / scan / fuzz), each one: short description left,
+   one prime code-snippet right. Lighter than a feature-block grid
+   (no card frame, no media gallery), tighter than the cards-grid
+   the cli-tools section used: this is the "what you can do" tier
+   right before the "how you integrate" YAML walkthrough below. */
+.devops-capability-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+.devops-capability {
+    display: grid;
+    grid-template-columns: 1fr 1.3fr;
+    gap: 32px;
+    align-items: center;
+    padding: 28px 0;
+    border-top: 1px solid var(--border);
+}
+.devops-capability:first-child { border-top: none; }
+@media (max-width: 820px) {
+    .devops-capability {
+        grid-template-columns: 1fr;
+        gap: 16px;
+    }
+}
+.devops-capability-text h3 {
+    margin: 0 0 8px;
+    font-size: 1rem;
+    font-weight: 600;
+}
+.devops-capability-text h3 code {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--accent);
+    background: rgba(99, 102, 241, 0.10);
+    border: 1px solid rgba(99, 102, 241, 0.22);
+    padding: 3px 8px;
+    border-radius: 6px;
+}
+.devops-capability-text p {
+    color: var(--text-secondary);
+    font-size: 0.9375rem;
+    line-height: 1.6;
+    margin: 0;
+}
+.devops-capability-code .code-block {
+    margin: 0;
 }
 .cli-tools-grid {
     display: grid;
@@ -2319,8 +2363,8 @@ pre > code {
 /* ===== Comparison ===== */
 .comparison {
     padding: 100px 0;
-    /* Base bg flips off the elevated .cli-tools section above; the
-       elevated .roadmap below picks the elevated tier back up. */
+    /* Base bg flips off elevated .use-cases above; elevated .roadmap
+       below picks the elevated tier back up. */
     background: var(--bg);
 }
 
