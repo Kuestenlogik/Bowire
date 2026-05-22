@@ -158,9 +158,8 @@
             <div class="features-block-text">
               <h3>Embedded in your process</h3>
               <p class="features-block-lead"><code>AddBowire()</code> + <code>MapBowire()</code> in <code>Program.cs</code>, and the workbench is part of your service. Not a sidecar, not a companion container, not a cloud service that proxies your traffic.</p>
-              <p>Bowire reads from the same <code>IServiceProvider</code> your app already builds. Discovery, invocation, and recording all run in-process against the live container &mdash; so the methods Bowire shows are exactly what your service exposes, with whatever DI scopes, options, and middleware the request would have hit anyway.</p>
-              <p>Authentication, authorization, and feature gates flow through your existing pipeline. If a method is locked behind <code>[Authorize]</code> the workbench needs the same token; if a flag toggles a code path, Bowire sees the same path. Nothing is bypassed; nothing is parallel.</p>
-              <p>For the cases where in-process isn&rsquo;t the right deployment shape &mdash; air-gapped scans, contracts-only browsing, MCP-driven CI agents &mdash; the standalone <code>bowire</code> CLI covers the same surface from outside.</p>
+              <p>Bowire reads from the same <code>IServiceProvider</code> your app builds. Discovery, invocation, and recording run in-process &mdash; so the methods you see are exactly what your service exposes, through the same DI scopes, <code>[Authorize]</code> gates, and feature flags the request would have hit anyway. Nothing parallel, nothing bypassed.</p>
+              <p>For the cases where in-process isn&rsquo;t the right shape &mdash; air-gapped scans, contracts-only browsing, MCP-driven CI agents &mdash; the standalone <code>bowire</code> CLI covers the same surface from outside.</p>
               <div class="features-block-docs-links">
                 <a class="features-block-docs-link" href="{{ '/why-bowire.html#embedded' | relative_url }}">See the full tour &rarr;</a>
                 <a class="features-block-docs-link" href="{{ '/docs/setup/embedded.html' | relative_url }}">Straight to the docs &rarr;</a>
