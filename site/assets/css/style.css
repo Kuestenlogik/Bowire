@@ -2129,37 +2129,62 @@ pre > code {
     background: var(--bg-elevated);
 }
 
-/* "Built for your workflow" — one card per row, image left, content
-   right. Single-column list (was 2-col grid) gives each persona room
-   to read as its own story instead of competing for thumbnail space
-   in a card-pair, and unlocks a meaningful persona-photo slot on the
-   left. Mobile collapses to image-on-top / content-below. */
+/* "Built for your workflow" — 3-col grid of compact persona cards
+   sitting under a section-wide crew banner (workflow.png). The banner
+   carries the visual identity for the section; individual cards focus
+   on the persona copy with just an icon, no per-card image. */
 .use-case-grid {
-    display: flex;
-    flex-direction: column;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
     gap: 20px;
     max-width: 1100px;
     margin: 0 auto;
 }
+@media (max-width: 900px) { .use-case-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 600px) { .use-case-grid { grid-template-columns: 1fr; } }
+
+/* Section banner — workflow.png with the same palette treatment + bottom-
+   fade mask as the protocols-hero card on the "Why Bowire?" section. Image
+   melts into the section background instead of clipping at a hard edge, so
+   the cards below feel continuous with the photo rather than stacked under
+   it. Top corners rounded; bottom feathers out via mask-image. */
+.workflow-banner {
+    position: relative;
+    overflow: hidden;
+    margin: 0 0 12px;
+    background: transparent;
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+}
+.workflow-banner img {
+    display: block;
+    width: 100%;
+    height: auto;
+    aspect-ratio: 5 / 2;
+    object-fit: cover;
+    filter: grayscale(0.50) saturate(0.88) brightness(0.94);
+    -webkit-mask-image: linear-gradient(180deg, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.85) 45%, rgba(0,0,0,0.30) 80%, rgba(0,0,0,0) 100%);
+            mask-image: linear-gradient(180deg, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.85) 45%, rgba(0,0,0,0.30) 80%, rgba(0,0,0,0) 100%);
+}
+.workflow-banner::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(139, 125, 255, 0.08));
+    mix-blend-mode: multiply;
+    pointer-events: none;
+    -webkit-mask-image: linear-gradient(180deg, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.85) 45%, rgba(0,0,0,0.30) 80%, rgba(0,0,0,0) 100%);
+            mask-image: linear-gradient(180deg, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.85) 45%, rgba(0,0,0,0.30) 80%, rgba(0,0,0,0) 100%);
+}
 
 .use-case-card {
-    display: grid;
-    grid-template-columns: 340px 1fr;
-    gap: 28px;
-    align-items: stretch;
+    display: block;
     background: var(--bg-elevated);
     border: 1px solid var(--border);
     border-radius: var(--radius-lg);
-    padding: 24px;
+    padding: 24px 22px;
     transition: border-color 0.2s, transform 0.2s;
     color: inherit;
     text-decoration: none;
-}
-@media (max-width: 720px) {
-    .use-case-card {
-        grid-template-columns: 1fr;
-        padding: 20px;
-    }
 }
 
 .use-case-card:hover {
@@ -2171,70 +2196,8 @@ pre > code {
     transition: color 0.2s;
 }
 
-/* Image cell — same palette treatment as the launch-stepper boats
-   (grayscale + saturate + brightness drop + lavender accent multiply)
-   so persona photos sit inside the marketing palette and don't burn
-   brighter than the rest of the section. 4:3 aspect ratio holds the
-   crop steady across viewport widths. */
-.use-case-image {
-    position: relative;
-    border-radius: var(--radius);
-    overflow: hidden;
-    background: rgba(99, 102, 241, 0.04);
-    aspect-ratio: 4 / 3;
-}
-.use-case-image img {
-    display: block;
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    filter: grayscale(0.50) saturate(0.88) brightness(0.94);
-}
-.use-case-image::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(139, 125, 255, 0.08));
-    mix-blend-mode: multiply;
-    pointer-events: none;
-}
-
-/* Placeholder image — same shape and size as the real image, with a
-   short motif description rendered inside. Removes the "broken image"
-   look while persona artwork is being generated, and documents the
-   intended motif right at the spot it'll eventually fill. */
-.use-case-image.use-case-image-placeholder {
-    background:
-      linear-gradient(135deg, rgba(99, 102, 241, 0.18), rgba(139, 125, 255, 0.10)),
-      repeating-linear-gradient(45deg, rgba(99, 102, 241, 0.04) 0 6px, transparent 6px 12px);
-    color: var(--text);
-    padding: 20px;
-    box-sizing: border-box;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    font-size: 13px;
-    line-height: 1.45;
-}
-.use-case-image.use-case-image-placeholder strong {
-    display: block;
-    margin-bottom: 6px;
-    color: var(--accent);
-    font-size: 11px;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    font-weight: 700;
-}
-.use-case-image.use-case-image-placeholder::after { display: none; }
-
-.use-case-content {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-}
-
 .use-case-icon {
-    margin-bottom: 4px;
+    margin-bottom: 12px;
     width: 40px;
     height: 40px;
     display: flex;
@@ -2246,35 +2209,36 @@ pre > code {
 }
 
 .use-case-card h3 {
-    font-size: 1.375rem;
-    font-weight: 700;
-    margin: 0;
+    font-size: 1.0625rem;
+    font-weight: 600;
+    margin: 0 0 4px;
+    transition: color 0.2s;
 }
 
 .use-case-tag {
     color: var(--accent);
-    font-size: 0.75rem;
+    font-size: 0.7rem;
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.06em;
-    margin: 0;
+    margin: 0 0 10px;
     font-family: var(--font-mono);
 }
 
 .use-case-card p {
     color: var(--text-secondary);
-    font-size: 0.9375rem;
-    line-height: 1.6;
-    margin: 6px 0 0;
+    font-size: 0.875rem;
+    line-height: 1.55;
+    margin: 0 0 10px;
 }
 
 .use-case-tools {
     color: var(--text-secondary);
-    font-size: 0.8125rem;
+    font-size: 0.75rem;
     font-style: italic;
     border-top: 1px solid var(--border);
-    padding-top: 12px;
-    margin-top: 12px;
+    padding-top: 10px;
+    margin-top: 4px;
     margin-bottom: 0;
 }
 

@@ -3,132 +3,103 @@
     <h2 class="section-title">Built for your workflow</h2>
     <p class="section-subtitle">Bowire isn't a Postman replacement — it's a workbench for the situations where Postman doesn't fit. Pick the workflow that sounds most like yours.</p>
 
+    <!-- Section banner — crew under sail at sunset, same palette
+         treatment + bottom-fade mask as the "Why Bowire?" hero card
+         so the photo melts into the section background and the cards
+         below sit on a clean surface. Carries the "different roles,
+         one crew" story for the six workflow cards underneath. -->
+    <div class="workflow-banner" aria-hidden="true">
+      <img src="{{ '/assets/images/use-cases/workflow.png' | relative_url }}" alt="" loading="lazy">
+    </div>
+
     <div class="use-case-grid">
 
       <a class="use-case-card use-case-card-link" href="{{ '/workflows/backend.html' | relative_url }}">
-        <div class="use-case-image use-case-image-placeholder" aria-hidden="true">
-          <strong>Motif &mdash; Backend developers</strong>
-          Shipyard engineer with welding gear or blueprints at the hull of a Bowire-branded ship under construction at the dock.
+        <div class="use-case-icon">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.5">
+            <polyline points="16 18 22 12 16 6"/>
+            <polyline points="8 6 2 12 8 18"/>
+          </svg>
         </div>
-        <div class="use-case-content">
-          <div class="use-case-icon">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.5">
-              <polyline points="16 18 22 12 16 6"/>
-              <polyline points="8 6 2 12 8 18"/>
-            </svg>
-          </div>
-          <h3>Backend developers</h3>
-          <p class="use-case-tag">embedded mode · zero account walls</p>
-          <p>You're building an ASP.NET service and you want a debug UI <strong>inside</strong> your app for your team and your users &mdash; not a separate Electron app behind a sign-up flow. Add <code>app.MapBowire()</code>, ship the binary, every endpoint is browsable at <code>/bowire</code>.</p>
-          <p class="use-case-tools">&rarr; gRPC reflection &middot; OpenAPI &middot; GraphQL introspection &middot; SignalR endpoint scan &middot; AsyncAPI discovery</p>
-        </div>
+        <h3>Backend developers</h3>
+        <p class="use-case-tag">embedded mode · zero account walls</p>
+        <p>You're building an ASP.NET service and you want a debug UI <strong>inside</strong> your app for your team and your users &mdash; not a separate Electron app behind a sign-up flow. Add <code>app.MapBowire()</code>, ship the binary, every endpoint is browsable at <code>/bowire</code>.</p>
+        <p class="use-case-tools">&rarr; gRPC reflection &middot; OpenAPI &middot; GraphQL introspection &middot; SignalR endpoint scan &middot; AsyncAPI discovery</p>
       </a>
 
       <a class="use-case-card use-case-card-link" href="{{ '/workflows/testers.html' | relative_url }}">
-        <div class="use-case-image use-case-image-placeholder" aria-hidden="true">
-          <strong>Motif &mdash; API integration testers</strong>
-          QC inspector with clipboard + tablet, checking container contents against a cargo manifest &mdash; Bowire-branded container in the background, dock atmosphere.
+        <div class="use-case-icon">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.5">
+            <path d="M9 11l3 3L22 4"/>
+            <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/>
+          </svg>
         </div>
-        <div class="use-case-content">
-          <div class="use-case-icon">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.5">
-              <path d="M9 11l3 3L22 4"/>
-              <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/>
-            </svg>
-          </div>
-          <h3>API integration testers</h3>
-          <p class="use-case-tag">recorder · environments · assertions</p>
-          <p>You're verifying that an external API behaves the way the docs claim. Click <strong>Record</strong>, run a sequence of calls, click stop. Replay against Dev / Staging / Prod with environment-variable substitution. Convert the captured responses into regression assertions with one click.</p>
-          <p class="use-case-tools">&rarr; Postman Collection-Runner parity &middot; HAR export &middot; Newman-style assertions</p>
-        </div>
+        <h3>API integration testers</h3>
+        <p class="use-case-tag">recorder · environments · assertions</p>
+        <p>You're verifying that an external API behaves the way the docs claim. Click <strong>Record</strong>, run a sequence of calls, click stop. Replay against Dev / Staging / Prod with environment-variable substitution. Convert the captured responses into regression assertions with one click.</p>
+        <p class="use-case-tools">&rarr; Postman Collection-Runner parity &middot; HAR export &middot; Newman-style assertions</p>
       </a>
 
       <a class="use-case-card use-case-card-link" href="{{ '/workflows/ai-agents.html' | relative_url }}">
-        <div class="use-case-image use-case-image-placeholder" aria-hidden="true">
-          <strong>Motif &mdash; AI agent builders</strong>
-          Ship's bridge / helm console &mdash; operator with headset, tablet showing an MCP tools list, ship's wheel + radar in the background. The AI agent is the pilot, Bowire is the wheel.
+        <div class="use-case-icon">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="4" y="7" width="16" height="13" rx="2"/>
+            <circle cx="9" cy="13" r="1" fill="var(--accent)"/>
+            <circle cx="15" cy="13" r="1" fill="var(--accent)"/>
+            <path d="M9 17h6"/>
+            <path d="M12 7V4"/>
+            <circle cx="12" cy="3" r="1" fill="var(--accent)"/>
+            <path d="M2 13h2"/>
+            <path d="M20 13h2"/>
+          </svg>
         </div>
-        <div class="use-case-content">
-          <div class="use-case-icon">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-              <rect x="4" y="7" width="16" height="13" rx="2"/>
-              <circle cx="9" cy="13" r="1" fill="var(--accent)"/>
-              <circle cx="15" cy="13" r="1" fill="var(--accent)"/>
-              <path d="M9 17h6"/>
-              <path d="M12 7V4"/>
-              <circle cx="12" cy="3" r="1" fill="var(--accent)"/>
-              <path d="M2 13h2"/>
-              <path d="M20 13h2"/>
-            </svg>
-          </div>
-          <h3>AI agent builders</h3>
-          <p class="use-case-tag">MCP adapter · Claude / Cursor / Copilot</p>
-          <p>You're wiring an AI agent up to internal services. Bowire's MCP adapter exposes every discovered method as an MCP tool with JSON Schema input &mdash; without writing the MCP server boilerplate yourself. Drop the URL into your agent config and your assistant has typed access to your service surface.</p>
-          <p class="use-case-tools">&rarr; <code>--enable-mcp-adapter</code> &middot; auto-tool generation &middot; streaming support</p>
-        </div>
+        <h3>AI agent builders</h3>
+        <p class="use-case-tag">MCP adapter · Claude / Cursor / Copilot</p>
+        <p>You're wiring an AI agent up to internal services. Bowire's MCP adapter exposes every discovered method as an MCP tool with JSON Schema input &mdash; without writing the MCP server boilerplate yourself. Drop the URL into your agent config and your assistant has typed access to your service surface.</p>
+        <p class="use-case-tools">&rarr; <code>--enable-mcp-adapter</code> &middot; auto-tool generation &middot; streaming support</p>
       </a>
 
       <a class="use-case-card use-case-card-link" href="{{ '/workflows/docs-teams.html' | relative_url }}">
-        <div class="use-case-image use-case-image-placeholder" aria-hidden="true">
-          <strong>Motif &mdash; Documentation teams</strong>
-          Harbour tour guide unfolding a port map for visitors &mdash; map shows Bowire ships as nodes, visitors gesture toward different vessels asking "what does this one do".
+        <div class="use-case-icon">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.5">
+            <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
+            <polyline points="14 2 14 8 20 8"/>
+            <line x1="16" y1="13" x2="8" y2="13"/>
+            <line x1="16" y1="17" x2="8" y2="17"/>
+          </svg>
         </div>
-        <div class="use-case-content">
-          <div class="use-case-icon">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.5">
-              <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
-              <polyline points="14 2 14 8 20 8"/>
-              <line x1="16" y1="13" x2="8" y2="13"/>
-              <line x1="16" y1="17" x2="8" y2="17"/>
-            </svg>
-          </div>
-          <h3>Documentation teams</h3>
-          <p class="use-case-tag">interactive docs · live examples · code export</p>
-          <p>You're writing API docs and you want every example to be runnable without a curl-paste-and-pray loop. Embed Bowire next to your written guides &mdash; readers click a method, edit the JSON, hit Send, see the actual response. Export the call as <code>curl</code>, <code>grpcurl</code>, or a typed C# / TypeScript snippet.</p>
-          <p class="use-case-tools">&rarr; Live examples &middot; per-language code export &middot; embedded in your own docs site</p>
-        </div>
+        <h3>Documentation teams</h3>
+        <p class="use-case-tag">interactive docs · live examples · code export</p>
+        <p>You're writing API docs and you want every example to be runnable without a curl-paste-and-pray loop. Embed Bowire next to your written guides &mdash; readers click a method, edit the JSON, hit Send, see the actual response. Export the call as <code>curl</code>, <code>grpcurl</code>, or a typed C# / TypeScript snippet.</p>
+        <p class="use-case-tools">&rarr; Live examples &middot; per-language code export &middot; embedded in your own docs site</p>
       </a>
 
       <a class="use-case-card use-case-card-link" href="{{ '/workflows/security-engineers.html' | relative_url }}">
-        <div class="use-case-image use-case-image-placeholder" aria-hidden="true">
-          <strong>Motif &mdash; Security engineers</strong>
-          Coast Guard / customs inspector with a hand scanner at a container &mdash; Bowire-branded Coast Guard boat moored behind, atmospheric blue-hour lighting, alert mood.
+        <div class="use-case-icon">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2l8 4v6c0 5-3.5 9.4-8 10-4.5-.6-8-5-8-10V6l8-4z"/>
+            <polyline points="9 12 11 14 15 10"/>
+          </svg>
         </div>
-        <div class="use-case-content">
-          <div class="use-case-icon">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M12 2l8 4v6c0 5-3.5 9.4-8 10-4.5-.6-8-5-8-10V6l8-4z"/>
-              <polyline points="9 12 11 14 15 10"/>
-            </svg>
-          </div>
-          <h3>Security engineers</h3>
-          <p class="use-case-tag">scan · SARIF · intercepting proxy · templates</p>
-          <p>You're auditing an API surface that spans gRPC, GraphQL, MQTT, SignalR &mdash; protocols where Burp Suite and ZAP stop being useful. Recordings double as vulnerability templates; <code>bowire scan</code> replays each one against the target, emits SARIF for GitHub Code Scanning / GitLab / Azure DevOps, and the intercepting proxy with HTTPS MITM captures live traffic the way you're used to.</p>
-          <p class="use-case-tools">&rarr; <code>bowire scan</code> &middot; SARIF 2.1.0 &middot; CA-trusted proxy &middot; JWT toolkit</p>
-        </div>
+        <h3>Security engineers</h3>
+        <p class="use-case-tag">scan · SARIF · intercepting proxy · templates</p>
+        <p>You're auditing an API surface that spans gRPC, GraphQL, MQTT, SignalR &mdash; protocols where Burp Suite and ZAP stop being useful. Recordings double as vulnerability templates; <code>bowire scan</code> replays each one against the target, emits SARIF for GitHub Code Scanning / GitLab / Azure DevOps, and the intercepting proxy with HTTPS MITM captures live traffic the way you're used to.</p>
+        <p class="use-case-tools">&rarr; <code>bowire scan</code> &middot; SARIF 2.1.0 &middot; CA-trusted proxy &middot; JWT toolkit</p>
       </a>
 
       <a class="use-case-card use-case-card-link" href="{{ '/workflows/devops.html' | relative_url }}">
-        <div class="use-case-image">
-          <img src="{{ '/assets/images/use-cases/devops.png' | relative_url }}" alt="DevOps engineer with a tablet in front of a Bowire-branded container, gantry crane loading containers in the background" loading="lazy">
+        <div class="use-case-icon">
+          <!-- Cloud + up-arrow — the universal "deploy to cloud" glyph. -->
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M17.5 19a4.5 4.5 0 1 0-.964-8.901A6 6 0 0 0 5.288 12.04 4 4 0 0 0 6 19h11.5z"/>
+            <polyline points="12 17 12 11"/>
+            <polyline points="9 14 12 11 15 14"/>
+          </svg>
         </div>
-        <div class="use-case-content">
-          <div class="use-case-icon">
-            <!-- Cloud + up-arrow — the universal "deploy to cloud" glyph.
-                 Earlier draft used three pipeline-stage rectangles with
-                 arrows between them; that read as a chain rather than as
-                 deployment, so swapped for the clearer cloud-upload mark. -->
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M17.5 19a4.5 4.5 0 1 0-.964-8.901A6 6 0 0 0 5.288 12.04 4 4 0 0 0 6 19h11.5z"/>
-              <polyline points="12 17 12 11"/>
-              <polyline points="9 14 12 11 15 14"/>
-            </svg>
-          </div>
-          <h3>DevOps &amp; platform engineers</h3>
-          <p class="use-case-tag">CI/CD container · scan · mock · fuzz</p>
-          <p>You're wiring the CI/CD pipeline. Bowire ships as a single binary + Docker image that drops into any runner &mdash; <code>bowire scan</code> as a SAST gate, <code>bowire mock</code> spun up as an integration-test fixture for ephemeral environments, <code>bowire fuzz</code> as a security-regression step. Real exit codes, native SARIF output, no translation layer between the runner and your Code-Scanning surface.</p>
-          <p class="use-case-tools">&rarr; <code>bowire scan</code> &middot; <code>bowire mock</code> &middot; <code>bowire fuzz</code> &middot; GitHub Actions / GitLab CI / Azure DevOps</p>
-        </div>
+        <h3>DevOps &amp; platform engineers</h3>
+        <p class="use-case-tag">CI/CD container · scan · mock · fuzz</p>
+        <p>You're wiring the CI/CD pipeline. Bowire ships as a single binary + Docker image that drops into any runner &mdash; <code>bowire scan</code> as a SAST gate, <code>bowire mock</code> spun up as an integration-test fixture for ephemeral environments, <code>bowire fuzz</code> as a security-regression step. Real exit codes, native SARIF output, no translation layer between the runner and your Code-Scanning surface.</p>
+        <p class="use-case-tools">&rarr; <code>bowire scan</code> &middot; <code>bowire mock</code> &middot; <code>bowire fuzz</code> &middot; GitHub Actions / GitLab CI / Azure DevOps</p>
       </a>
 
     </div>
