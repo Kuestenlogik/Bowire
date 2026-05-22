@@ -198,8 +198,8 @@
             <div class="features-block-text">
               <h3>100% Local &mdash; no cloud</h3>
               <p class="features-block-lead">No accounts. No telemetry. No data leaves your machine. Bowire persists every credential, recording, and environment to your disk.</p>
-              <p>Workspace state lives in browser <code>localStorage</code> (per-origin, so dev/staging/prod each have their own). Recordings, plugins, and shared environments persist under <code>~/.bowire/</code> &mdash; a plain JSON tree on the file system that you can grep, diff, and check into a private repository if your team wants shared environments without paying for a sync service.</p>
-              <p>Outbound connections only happen when you tell Bowire to make one: clicking <em>Execute</em> hits the target API, that's it. No background pings, no opt-out telemetry, no remote feature flags. Enterprise security teams sign off in minutes &mdash; there's nothing to put in a Data Processing Agreement because there's no third party in the chain.</p>
+              <p>Workspace state lives in browser <code>localStorage</code> (per-origin, dev/staging/prod each get their own). Recordings, plugins, and shared environments persist under <code>~/.bowire/</code> as a plain JSON tree &mdash; greppable, diffable, check it into a private repo if you want shared envs without a sync service.</p>
+              <p>Outbound connections happen only when you click <em>Execute</em>. No background pings, no telemetry, no remote feature flags. Enterprise security teams sign off in minutes &mdash; no third party in the chain, nothing to put in a DPA.</p>
               <div class="features-block-docs-links">
                 <a class="features-block-docs-link" href="{{ '/why-bowire.html#local' | relative_url }}">See the full tour &rarr;</a>
                 <a class="features-block-docs-link" href="{{ '/docs/setup/standalone.html' | relative_url }}">Straight to the docs &rarr;</a>
@@ -241,10 +241,10 @@
         <template class="feature-card-detail">
           <div class="features-block">
             <div class="features-block-text">
-              <h3>AI-agent ready with MCP support</h3>
+              <h3>Built for AI agents</h3>
               <p class="features-block-lead"><code>bowire mcp serve</code> turns every protocol Bowire knows into a tool an AI agent can call. Claude, Cursor, Copilot, custom MCP clients &mdash; same wire, same auth, same recordings.</p>
-              <p>The adapter exposes Bowire&rsquo;s core primitives (<code>bowire.discover</code>, <code>bowire.invoke</code>, <code>bowire.record.start</code>, <code>bowire.mock.start</code>, &hellip;) as first-class MCP tools. An agent can chain <em>discover &rarr; invoke &rarr; assert &rarr; switch env &rarr; replay</em> the same way a human can in the workbench &mdash; just with more parallelism and less patience-cost.</p>
-              <p>Two transport modes: stdio for local Claude-Desktop-style clients, HTTP for Cursor / Copilot / remote agents. Auth flows through whichever provider the workbench itself runs under, so the agent never sees a second credentials store.</p>
+              <p>Core primitives (<code>bowire.discover</code>, <code>bowire.invoke</code>, <code>bowire.record.start</code>, <code>bowire.mock.start</code>, &hellip;) ship as first-class MCP tools. Agents chain <em>discover &rarr; invoke &rarr; assert &rarr; switch env &rarr; replay</em> the same way a human does &mdash; just in parallel.</p>
+              <p>Stdio transport for local Claude-Desktop-style clients, HTTP for Cursor / Copilot / remote agents. Auth piggy-backs on whichever provider the workbench already runs under &mdash; no second credentials store.</p>
               <div class="features-block-docs-links">
                 <a class="features-block-docs-link" href="{{ '/why-bowire.html#ai-agent' | relative_url }}">See the full tour &rarr;</a>
                 <a class="features-block-docs-link" href="{{ '/docs/features/mcp-adapter.html' | relative_url }}">Straight to the docs &rarr;</a>
@@ -312,10 +312,9 @@
           <div class="features-block features-block-reverse">
             <div class="features-block-text">
               <h3>Build your own protocol</h3>
-              <p class="features-block-lead">Every protocol is a NuGet package implementing a single contract &mdash; <code>IBowireProtocol</code>. Discovery, invocation, streaming, duplex channels, per-plugin settings all flow through the same interface, so building a new protocol is one package, not a fork.</p>
-              <p>Bowire loads each plugin into its own <code>AssemblyLoadContext</code>, so transitive dependencies don&rsquo;t collide. You can install the gRPC plugin (which pins one Google.Protobuf version), the GraphQL plugin (which pins another), and a third-party protocol that pins a third &mdash; they all coexist without a version-conflict matrix to manage.</p>
-              <p>Distribution is plain NuGet &mdash; the same channel every .NET package already uses. <code>bowire plugin install &lt;package-id&gt;</code> for connected installs, <code>bowire plugin download</code> + <code>install --file</code> for air-gapped environments. The contract that powers the first-party set (gRPC, REST, GraphQL, SignalR, MQTT, OData, AsyncAPI, &hellip;) is the same contract every community plugin uses.</p>
-              <p>For polyglot teams whose protocol of choice has no .NET client, the sidecar plugin contract (planned, JSON-RPC over stdio) opens the same surface to Python, Go, Rust, and Node implementations &mdash; see the roadmap.</p>
+              <p class="features-block-lead">Every protocol is a NuGet package implementing one contract: <code>IBowireProtocol</code>. Discovery, invocation, streaming, duplex channels, per-plugin settings all flow through the same interface, so building a new protocol is one package, not a fork.</p>
+              <p>Each plugin loads into its own <code>AssemblyLoadContext</code>, so transitive dependencies don&rsquo;t collide. The gRPC plugin pinning one Protobuf version and a third-party plugin pinning another coexist without a version-conflict matrix to manage.</p>
+              <p>Distribution is plain NuGet. <code>bowire plugin install &lt;package-id&gt;</code> for connected installs, <code>bowire plugin download</code> + <code>install --file</code> for air-gapped. The contract powering the first-party set is the same one every community plugin uses; the sidecar contract (planned) opens it to Python / Go / Rust / Node implementations.</p>
               <div class="features-block-docs-links">
                 <a class="features-block-docs-link" href="{{ '/why-bowire.html#plugins' | relative_url }}">See the full tour &rarr;</a>
                 <a class="features-block-docs-link" href="{{ '/docs/features/plugin-system.html' | relative_url }}">Straight to the docs &rarr;</a>
@@ -357,8 +356,8 @@
             <div class="features-block-text">
               <h3>Record and replay</h3>
               <p class="features-block-lead">Capture a real session once. Serve the exact same responses back as a live mock endpoint &mdash; same protocols, same payloads, same timing.</p>
-              <p>Click <em>Record</em>, run a sequence of calls, click <em>Stop</em>: now you have a JSON file with every request, response, status, header, and inter-call timing across every protocol you touched &mdash; gRPC streams next to SignalR hub invocations next to MQTT publishes next to REST hits, all on one timeline.</p>
-              <p>Mocks aren't simulators, they're playback: every byte is what the real server actually sent. The mock server speaks every protocol the recording captured, so a test client sees exactly what production does &mdash; useful for unblocking frontend work before the backend ships, running offline contract tests, or sharing a realistic sandbox with a stakeholder without exposing the real environment.</p>
+              <p>Click <em>Record</em>, run a sequence, click <em>Stop</em>: you get a JSON file with every request, response, status, header, and inter-call timing &mdash; gRPC streams next to SignalR hub invocations next to MQTT publishes next to REST hits, all on one timeline.</p>
+              <p>Mocks aren&rsquo;t simulators &mdash; they&rsquo;re playback. Every byte is what the real server actually sent, so a test client sees exactly what production does. Unblocks frontend work before the backend ships, offline contract tests, realistic sandboxes for stakeholders without exposing prod.</p>
               <div class="features-block-docs-links">
                 <a class="features-block-docs-link" href="{{ '/why-bowire.html#recording' | relative_url }}">See the full tour &rarr;</a>
                 <a class="features-block-docs-link" href="{{ '/docs/features/recording.html' | relative_url }}">Straight to the docs &rarr;</a>
