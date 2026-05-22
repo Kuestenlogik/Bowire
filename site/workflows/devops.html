@@ -1,0 +1,146 @@
+---
+layout: page
+title: Bowire for DevOps & platform engineers
+description: Bowire as a CI/CD step — single binary, real exit codes, native SARIF. bowire scan as a SAST gate, bowire mock spun up as an integration-test fixture, bowire fuzz as a security-regression step. Drops into GitHub Actions, GitLab CI, Azure DevOps without translation.
+permalink: /workflows/devops.html
+---
+
+<section class="features-page-hero">
+  <p class="workflow-hero-eyebrow">Workflow &middot; DevOps &amp; platform engineers</p>
+  <h1>Bowire as a pipeline step</h1>
+  <p class="features-page-tagline">You're wiring the CI/CD pipeline. Bowire ships as a single binary + Docker image that drops into any runner.</p>
+  <p class="features-page-note">Three subcommands carry the load: <code>bowire mock</code> as an integration-test fixture, <code>bowire scan</code> as a SAST gate, <code>bowire fuzz</code> as a security-regression step. Real exit codes, no daemons, native SARIF output.</p>
+</section>
+
+<section class="features-group features-group-alt">
+  <header class="features-group-header">
+    <h2 class="features-group-title">What you can do in the pipeline</h2>
+    <p class="features-group-lede">Three Bowire steps cover the heavy lifting between &ldquo;tests pass&rdquo; and &ldquo;safe to ship&rdquo;. Each runs as a one-liner and exits with a real code.</p>
+  </header>
+
+  <div class="devops-capability-list">
+
+    <div class="devops-capability">
+      <div class="devops-capability-text">
+        <h3><code>bowire mock</code> &mdash; integration-test fixture</h3>
+        <p>Replay a recorded session as a live endpoint on the runner. Same protocol-shape as the real service (REST, gRPC, WebSocket, MQTT, &hellip;), hot-reload on file edits, capture-on-miss for new calls. Fixtures live in your repo as <code>.bwr</code> files &mdash; reviewable in PRs.</p>
+      </div>
+      <div class="devops-capability-code">
+        <div class="code-block">
+          <div class="code-block-header"><span class="code-block-lang">bash</span></div>
+          <pre><code><span class="c"># Background the mock for the rest of the job</span>
+$ bowire mock --recording fixtures/api.bwr \
+              --port 5099 --hot-reload &amp;</code></pre>
+        </div>
+      </div>
+    </div>
+
+    <div class="devops-capability">
+      <div class="devops-capability-text">
+        <h3><code>bowire scan</code> &mdash; SAST gate with native SARIF</h3>
+        <p>Built-in passive checks plus the 8000+ Nuclei community templates via <code>--nuclei</code>, fed through the same engine. Findings emit as SARIF 2.1.0 &mdash; GitHub Code Scanning, GitLab Security Dashboard, or Azure DevOps ingest it natively. Gating happens via Code-Scanning branch-protection rules.</p>
+      </div>
+      <div class="devops-capability-code">
+        <div class="code-block">
+          <div class="code-block-header"><span class="code-block-lang">bash</span></div>
+          <pre><code><span class="c"># Built-in + Nuclei templates, one SARIF report</span>
+$ bowire scan --target http://localhost:5099 \
+              --nuclei ~/nuclei-templates \
+              --out findings.sarif --severity medium</code></pre>
+        </div>
+      </div>
+    </div>
+
+    <div class="devops-capability">
+      <div class="devops-capability-text">
+        <h3><code>bowire fuzz</code> &mdash; security-regression step</h3>
+        <p>Schema-aware field-level mutation. Knows not to throw SQL-injection at a <code>lat</code> field; <code>image.bytes</code> gets magic-byte mutation, not XSS strings. Baseline-diff oracle flags responses that look materially different from clean runs. Same SARIF surface as scan.</p>
+      </div>
+      <div class="devops-capability-code">
+        <div class="code-block">
+          <div class="code-block-header"><span class="code-block-lang">bash</span></div>
+          <pre><code><span class="c"># Targeted mutation, baseline-diff oracle, SARIF out</span>
+$ bowire fuzz --target http://localhost:5099 \
+              --template fixtures/api.bwr \
+              --payloads sqli,xss --out fuzz.sarif</code></pre>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<section class="features-group">
+  <header class="features-group-header">
+    <h2 class="features-group-title">How you integrate it</h2>
+    <p class="features-group-lede">All three Bowire steps in one job. Same shape on GitLab CI and Azure DevOps &mdash; <code>dotnet tool install</code> + invoke the binary.</p>
+  </header>
+
+  <div class="features-block features-block-text-only">
+    <div class="features-block-text">
+      <div class="code-block">
+        <div class="code-block-header">
+          <span class="code-block-lang">yaml</span>
+          <span class="code-block-lang" style="margin-left:auto;opacity:0.7">.github/workflows/api-check.yml</span>
+        </div>
+        <pre><code><span class="k">name</span>: API check
+<span class="k">on</span>: [push, pull_request]
+
+<span class="k">jobs</span>:
+  <span class="k">api-check</span>:
+    <span class="k">runs-on</span>: ubuntu-latest
+    <span class="k">steps</span>:
+      - <span class="k">uses</span>: actions/checkout@v4
+
+      - <span class="k">name</span>: Install Bowire
+        <span class="k">run</span>: dotnet tool install -g Kuestenlogik.Bowire.Tool
+
+      <span class="c"># 1. Mock server for integration tests</span>
+      - <span class="k">name</span>: Start mock server
+        <span class="k">run</span>: bowire mock --recording fixtures/api.bwr --port 5099 &amp;
+
+      - <span class="k">name</span>: Run integration tests
+        <span class="k">run</span>: dotnet test --filter Category=Integration
+
+      <span class="c"># 2. Security scan against the mock</span>
+      - <span class="k">name</span>: Security scan
+        <span class="k">run</span>: |
+          bowire scan --target http://localhost:5099 \
+                      --nuclei ~/nuclei-templates \
+                      --out findings.sarif --severity medium
+
+      <span class="c"># 3. Field-level fuzz for regression</span>
+      - <span class="k">name</span>: Field-level fuzz
+        <span class="k">run</span>: |
+          bowire fuzz --target http://localhost:5099 \
+                      --template fixtures/api.bwr \
+                      --payloads sqli,xss --out fuzz.sarif
+
+      <span class="c"># 4. SARIF goes to GitHub Code Scanning</span>
+      - <span class="k">name</span>: Upload SARIF
+        <span class="k">uses</span>: github/codeql-action/upload-sarif@v3
+        <span class="k">with</span>:
+          <span class="k">sarif_file</span>: findings.sarif</code></pre>
+      </div>
+      <p style="margin-top:18px;">A <strong>reusable GitHub Action</strong> wraps the scan + SARIF-upload pair behind one <code>uses:</code> line for downstream repos &mdash; same pattern, less boilerplate.</p>
+      <a class="features-block-docs-link" href="https://github.com/Kuestenlogik/Bowire/blob/main/.github/workflows/scan-template.yml" target="_blank" rel="noopener">scan-template.yml on GitHub &rarr;</a>
+    </div>
+  </div>
+</section>
+
+<section class="features-page-cta features-page-cta-alt">
+  <div class="features-page-cta-inner">
+    <h2 class="features-page-cta-title">Wire it in</h2>
+    <p class="features-page-cta-lede">Pull the binary, drop the three steps into your workflow, let SARIF light up your Security tab.</p>
+    <div class="features-page-cta-buttons">
+      <a class="btn btn-secondary features-page-cta-btn" href="{{ '/downloads.html' | relative_url }}">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Get the binary
+      </a>
+      <a class="btn btn-tertiary features-page-cta-btn" href="https://github.com/Kuestenlogik/Bowire/blob/main/.github/workflows/scan-template.yml" target="_blank" rel="noopener">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .5C5.65.5.5 5.65.5 12c0 5.08 3.29 9.39 7.86 10.91.58.11.79-.25.79-.56 0-.27-.01-1.16-.02-2.11-3.2.7-3.87-1.37-3.87-1.37-.52-1.33-1.27-1.69-1.27-1.69-1.04-.71.08-.7.08-.7 1.15.08 1.76 1.18 1.76 1.18 1.02 1.76 2.69 1.25 3.34.96.1-.74.4-1.25.73-1.54-2.55-.29-5.24-1.28-5.24-5.7 0-1.26.45-2.29 1.18-3.1-.12-.29-.51-1.46.11-3.04 0 0 .96-.31 3.15 1.18.91-.25 1.89-.38 2.86-.39.97.01 1.95.14 2.86.39 2.18-1.49 3.14-1.18 3.14-1.18.62 1.58.23 2.75.11 3.04.74.81 1.18 1.84 1.18 3.1 0 4.43-2.69 5.4-5.26 5.69.41.36.78 1.06.78 2.13 0 1.54-.01 2.78-.01 3.16 0 .31.21.68.8.56C20.21 21.39 23.5 17.08 23.5 12 23.5 5.65 18.35.5 12 .5z"/></svg>
+        Reusable Action on GitHub
+      </a>
+    </div>
+  </div>
+</section>
