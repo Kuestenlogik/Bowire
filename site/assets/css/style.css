@@ -2058,6 +2058,12 @@ pre > code {
    still uses them for its install-flavour tabs. */
 .cli-tools {
     padding: 100px 0;
+    /* Elevated bg so 'Pick the right tool' (comparison, base bg)
+       below has a clean visual break. Use-cases above is also
+       elevated — the two sit on the same tier on purpose: they're
+       the two "shape of work" sections (workflows + CLI tools)
+       and group together. The flip restarts at .comparison. */
+    background: var(--bg-elevated);
 }
 .cli-tools-grid {
     display: grid;
@@ -2313,10 +2319,8 @@ pre > code {
 /* ===== Comparison ===== */
 .comparison {
     padding: 100px 0;
-    /* Base bg so the zigzag from .use-cases (elevated) above flips
-       here, then .roadmap (elevated) below picks the elevated tier
-       back up — every section heading breaks clearly from its
-       neighbours. */
+    /* Base bg flips off the elevated .cli-tools section above; the
+       elevated .roadmap below picks the elevated tier back up. */
     background: var(--bg);
 }
 
