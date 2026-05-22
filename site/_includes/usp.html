@@ -278,10 +278,10 @@
         <template class="feature-card-detail">
           <div class="features-block features-block-reverse">
             <div class="features-block-text">
-              <h3>Security scanner with Nuclei templates</h3>
+              <h3>Multi-protocol security scanner</h3>
               <p class="features-block-lead"><code>bowire scan --target https://your-api</code> runs vulnerability templates against the API surface Bowire already discovered, and emits SARIF 2.1.0 that your CI can ingest unchanged.</p>
-              <p>Two template sources at once: Bowire&rsquo;s own JSON templates (the curated baseline shipped in <a href="https://github.com/Kuestenlogik/Bowire.VulnDb" target="_blank" rel="noopener">Bowire.VulnDb</a>) plus the 8000+ Nuclei community templates via <code>--nuclei &lt;dir&gt;</code>. The Nuclei reader translates status / word / regex matchers + matchers-condition + payload matrices + the standard variable set (<code>{{BaseURL}}</code>, <code>{{Hostname}}</code>, <code>{{RandStr_N}}</code>, &hellip;) into Bowire&rsquo;s native AttackPredicate DSL &mdash; same engine, both template sets.</p>
-              <p>Findings emit as SARIF 2.1.0 &mdash; the format GitHub Code Scanning, GitLab Security Dashboard, and Azure DevOps all ingest natively. Plus built-in passive checks for TLS-version enumeration, version-disclosing headers, and verbose-error detection, so the scanner is useful on day one without writing a template.</p>
+              <p>Two template sources at once: Bowire&rsquo;s own JSON templates (curated baseline in <a href="https://github.com/Kuestenlogik/Bowire.VulnDb" target="_blank" rel="noopener">Bowire.VulnDb</a>) plus the 8000+ Nuclei community templates via <code>--nuclei &lt;dir&gt;</code>. Both feed Bowire&rsquo;s native AttackPredicate engine &mdash; same matchers, same payload variables, no separate runtime.</p>
+              <p>Findings emit as SARIF 2.1.0 &mdash; straight into GitHub Code Scanning, GitLab Security Dashboard, Azure DevOps. Built-in passive checks (TLS-version enumeration, version-disclosing headers, verbose-error detection) fire on day one without writing a template.</p>
               <div class="features-block-docs-links">
                 <a class="features-block-docs-link" href="{{ '/security.html' | relative_url }}">See the security lane &rarr;</a>
                 <a class="features-block-docs-link" href="{{ '/docs/features/security-scan.html' | relative_url }}">Straight to the docs &rarr;</a>
