@@ -4387,7 +4387,8 @@ h4.downloads-sub {
    inside `.page-content`, so we match on any descendant rather than
    the `>` direct child variant. */
 .page-content:has(.downloads-group-alt:last-of-type),
-.page-content:has(.features-page-cta-elevated:last-of-type) {
+.page-content:has(.features-page-cta-elevated:last-of-type),
+.page-content:has(.features-page-cta-alt:last-of-type) {
     padding-bottom: 0;
 }
 
