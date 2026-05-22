@@ -657,9 +657,14 @@
         </div>
         <div class="protocol-content">
           <h3>Your Protocol</h3>
-          <p>Implement <code>IBowireProtocol</code> to add support for any protocol. Bowire discovers plugins automatically via assembly scanning — drop a DLL into <code>~/.bowire/plugins/</code> and it's loaded at the next startup.</p>
-          <div class="protocol-install protocol-install-dim">
-            <code>// implement IBowireProtocol in your own package</code>
+          <p>Scaffold a new plugin with the <code>bowire-plugin</code> template &mdash; implements <code>IBowireProtocol</code>, ships as a NuGet package with <code>&lt;PackageType&gt;BowirePlugin&lt;/PackageType&gt;</code>, picked up by assembly scanning at startup.</p>
+          <div class="protocol-install">
+            <code><span class="protocol-install-prompt">$</span> dotnet new install Kuestenlogik.Bowire.Templates</code>
+            <button class="protocol-install-copy copy-btn" data-copy="dotnet new install Kuestenlogik.Bowire.Templates" aria-label="Copy template install command"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></button>
+          </div>
+          <div class="protocol-install">
+            <code><span class="protocol-install-prompt">$</span> dotnet new bowire-plugin --name MyProtocol</code>
+            <button class="protocol-install-copy copy-btn" data-copy="dotnet new bowire-plugin --name MyProtocol" aria-label="Copy bowire-plugin scaffold command"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></button>
           </div>
         </div>
       </a>
