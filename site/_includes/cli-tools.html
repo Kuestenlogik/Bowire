@@ -1,149 +1,113 @@
-<section class="install" id="cli-tools">
+<section class="cli-tools" id="cli-tools">
   <div class="container">
     <h2 class="section-title">Beyond the workbench</h2>
-    <p class="section-subtitle">A headless lane for the things the UI isn&rsquo;t the right answer for &mdash; CI gates, scripted regression, AI-agent integration. Same binary as the workbench, runs with no display, exits with a real exit code.</p>
+    <p class="section-subtitle">Six subcommands you&rsquo;d reach for outside the browser. Same binary as the workbench, real exit codes, fits in any pipeline.</p>
 
-    <!-- One <button> per subcommand. data-tab matches the panel's
-         data-panel attribute below; the tab-switching JS in main.js
-         (.install-tab / .install-panel handler) flips active state
-         per click. The four "how do I install Bowire" tabs that
-         lived here previously got absorbed into the "Straight into
-         the water" launch stepper — that's where the install + run
-         walkthrough now lives. -->
-    <div class="install-tabs" role="tablist" aria-label="CLI subcommand demos">
-      <button class="install-tab active" role="tab" aria-selected="true" aria-controls="install-panel-scan" data-tab="scan"><code>bowire scan</code></button>
-      <button class="install-tab" role="tab" aria-selected="false" aria-controls="install-panel-fuzz" data-tab="fuzz"><code>bowire fuzz</code></button>
-      <button class="install-tab" role="tab" aria-selected="false" aria-controls="install-panel-jwt" data-tab="jwt"><code>bowire jwt</code></button>
-      <button class="install-tab" role="tab" aria-selected="false" aria-controls="install-panel-mcp" data-tab="mcp"><code>bowire mcp serve</code></button>
-      <button class="install-tab" role="tab" aria-selected="false" aria-controls="install-panel-proxy" data-tab="proxy"><code>bowire proxy</code></button>
-    </div>
+    <div class="cli-tools-grid">
 
-    <div class="install-panels">
-
-      <div class="install-panel active" id="install-panel-scan" role="tabpanel" data-panel="scan">
-        <p class="install-desc">Multi-protocol security scanner. Bowire&rsquo;s own vulnerability templates + built-in passive checks (TLS, headers, version disclosure) <em>and</em> the <a href="https://github.com/projectdiscovery/nuclei-templates" target="_blank" rel="noopener">projectdiscovery/nuclei-templates</a> corpus (8000+ community templates) via <code>--nuclei</code>. Emits SARIF 2.1.0 so findings drop straight into GitHub Code Scanning, GitLab Security Dashboard, or Azure DevOps.</p>
+      <article class="cli-tools-card">
+        <h3><code>bowire scan</code></h3>
+        <p class="cli-tools-card-desc">Multi-protocol security scanner. Built-in passive checks plus the 8000+ <a href="https://github.com/projectdiscovery/nuclei-templates" target="_blank" rel="noopener">projectdiscovery/nuclei-templates</a> via <code>--nuclei</code>. Emits SARIF 2.1.0 for GitHub Code Scanning / GitLab / Azure DevOps.</p>
         <div class="code-block">
           <div class="code-block-header">
             <span class="code-block-lang">bash</span>
-            <button class="copy-btn" data-copy="# Bowire's own vulndb corpus + passive checks
-bowire scan --target https://api.example.com \
-            --templates ~/.bowire/vulndb \
-            --out findings.sarif --severity medium
-
-# Or the Nuclei community corpus (8000+ templates)
-bowire scan --target https://api.example.com \
+            <button class="copy-btn" data-copy="bowire scan --target https://api.example.com \
             --nuclei ~/nuclei-templates \
             --out findings.sarif --severity medium" aria-label="Copy">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
             </button>
           </div>
-          <pre><code><span class="c"># Bowire&rsquo;s own vulndb corpus + passive checks</span>
-bowire scan --target https://api.example.com \
-            --templates ~/.bowire/vulndb \
-            --out findings.sarif --severity medium
-
-<span class="c"># Or the Nuclei community corpus (8000+ templates)</span>
-bowire scan --target https://api.example.com \
+          <pre><code>bowire scan --target https://api.example.com \
             --nuclei ~/nuclei-templates \
             --out findings.sarif --severity medium</code></pre>
         </div>
-        <p class="install-desc" style="margin-top:14px;"><a href="{{ '/security.html' | relative_url }}">More on the security lane &rarr;</a></p>
-      </div>
+        <p class="cli-tools-card-link"><a href="{{ '/security.html' | relative_url }}">More on the security lane &rarr;</a></p>
+      </article>
 
-      <div class="install-panel" id="install-panel-fuzz" role="tabpanel" data-panel="fuzz" hidden>
-        <p class="install-desc">Schema-aware field-level fuzzer. Knows not to throw SQL-injection payloads at a latitude field; <code>image.bytes</code> fields get magic-byte mutation, not XSS strings. Right-click in the workbench, or one-shot from the CLI.</p>
+      <article class="cli-tools-card">
+        <h3><code>bowire mock</code></h3>
+        <p class="cli-tools-card-desc">Replay any captured recording as a live mock endpoint &mdash; REST, gRPC (unary + streaming + bidi), WebSocket, SSE, SignalR, Socket.IO, MQTT, GraphQL subscriptions. Hot-reload, chaos injection, capture-on-miss.</p>
+        <div class="code-block">
+          <div class="code-block-header">
+            <span class="code-block-lang">bash</span>
+            <button class="copy-btn" data-copy="bowire mock --recording session.bwr \
+            --port 5099 --hot-reload" aria-label="Copy">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+            </button>
+          </div>
+          <pre><code>bowire mock --recording session.bwr \
+            --port 5099 --hot-reload</code></pre>
+        </div>
+        <p class="cli-tools-card-link"><a href="{{ '/docs/features/mock.html' | relative_url }}">Mock server docs &rarr;</a></p>
+      </article>
+
+      <article class="cli-tools-card">
+        <h3><code>bowire fuzz</code></h3>
+        <p class="cli-tools-card-desc">Schema-aware field-level fuzzer. Knows not to throw SQL-injection at a <code>lat</code> field; <code>image.bytes</code> gets magic-byte mutation, not XSS strings. Categories: <code>sqli</code> / <code>xss</code> / <code>pathtrav</code> / <code>cmdinj</code> with a baseline-diff oracle.</p>
         <div class="code-block">
           <div class="code-block-header">
             <span class="code-block-lang">bash</span>
             <button class="copy-btn" data-copy="bowire fuzz --target https://api.example.com \
             --template recordings/order-create.bwf \
-            --field '$.customer.email' \
-            --payloads xss" aria-label="Copy">
+            --field '$.customer.email' --payloads xss" aria-label="Copy">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
             </button>
           </div>
-          <pre><code><span class="c"># Categories: sqli / xss / pathtrav / cmdinj — built-in wordlists,</span>
-<span class="c"># baseline-diff oracle, schema-aware skip for type-mismatched fields</span>
-bowire fuzz --target https://api.example.com \
+          <pre><code>bowire fuzz --target https://api.example.com \
             --template recordings/order-create.bwf \
-            --field '$.customer.email' \
-            --payloads xss</code></pre>
+            --field '$.customer.email' --payloads xss</code></pre>
         </div>
-      </div>
+        <p class="cli-tools-card-link"><a href="{{ '/security.html#fuzz' | relative_url }}">Fuzz docs &rarr;</a></p>
+      </article>
 
-      <div class="install-panel" id="install-panel-jwt" role="tabpanel" data-panel="jwt" hidden>
-        <p class="install-desc">Decode, tamper, re-sign JWT tokens from the terminal. The classic <code>alg:none</code> downgrade + claim-swap + weak-secret toolkit, scriptable enough for CI gates and security-regression suites.</p>
+      <article class="cli-tools-card">
+        <h3><code>bowire jwt</code></h3>
+        <p class="cli-tools-card-desc">Decode, tamper, re-sign JWT tokens from the terminal. The classic <code>alg:none</code> downgrade + claim-swap + weak-secret toolkit, scriptable enough for CI gates and security-regression suites.</p>
         <div class="code-block">
           <div class="code-block-header">
             <span class="code-block-lang">bash</span>
-            <button class="copy-btn" data-copy="# Decode the header + payload, flag well-known weaknesses
-bowire jwt decode &lt;token&gt;
-
-# alg:none downgrade (CVE-2015-9235 class)
-bowire jwt tamper &lt;token&gt; --alg-none
-
-# Inject a claim, re-sign with a weak secret to probe verification
-bowire jwt tamper &lt;token&gt; \
+            <button class="copy-btn" data-copy="bowire jwt tamper <token> \
                   --set isAdmin=true \
                   --secret weak123" aria-label="Copy">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
             </button>
           </div>
-          <pre><code><span class="c"># Decode the header + payload, flag well-known weaknesses</span>
-bowire jwt decode &lt;token&gt;
-
-<span class="c"># alg:none downgrade (CVE-2015-9235 class)</span>
-bowire jwt tamper &lt;token&gt; --alg-none
-
-<span class="c"># Inject a claim, re-sign with a weak secret to probe verification</span>
-bowire jwt tamper &lt;token&gt; \
+          <pre><code>bowire jwt tamper &lt;token&gt; \
                   --set isAdmin=true \
                   --secret weak123</code></pre>
         </div>
-      </div>
+        <p class="cli-tools-card-link"><a href="{{ '/security.html#jwt' | relative_url }}">JWT toolkit docs &rarr;</a></p>
+      </article>
 
-      <div class="install-panel" id="install-panel-mcp" role="tabpanel" data-panel="mcp" hidden>
-        <p class="install-desc">Expose Bowire itself as an MCP server. AI agents (Claude Desktop, Cursor, Copilot) drive discovery / invoke / record / mock through their conversation. Stdio transport for desktop wiring, HTTP for over-the-wire clients.</p>
+      <article class="cli-tools-card">
+        <h3><code>bowire mcp serve</code></h3>
+        <p class="cli-tools-card-desc">Expose Bowire itself as an MCP server. AI agents (Claude Desktop, Cursor, Copilot) drive discovery / invoke / record / mock through their conversation. Stdio for desktop wiring, HTTP for over-the-wire clients.</p>
         <div class="code-block">
           <div class="code-block-header">
             <span class="code-block-lang">bash</span>
-            <button class="copy-btn" data-copy="# Stdio — what Claude Desktop / Cursor / Copilot want
-bowire mcp serve --bind stdio
-
-# HTTP / Streamable-HTTP for over-the-wire MCP clients
-bowire mcp serve --bind http --port 5097" aria-label="Copy">
+            <button class="copy-btn" data-copy="bowire mcp serve --bind stdio" aria-label="Copy">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
             </button>
           </div>
-          <pre><code><span class="c"># Stdio — what Claude Desktop / Cursor / Copilot want</span>
-bowire mcp serve --bind stdio
-
-<span class="c"># HTTP / Streamable-HTTP for over-the-wire MCP clients</span>
-bowire mcp serve --bind http --port 5097</code></pre>
+          <pre><code>bowire mcp serve --bind stdio</code></pre>
         </div>
-        <p class="install-desc" style="margin-top:14px;">Note the difference from the <code>--enable-mcp-adapter</code> flag on the launch stepper&rsquo;s Container ship: that one wraps discovered <em>target</em> methods as MCP tools. <code>mcp serve</code> exposes Bowire&rsquo;s <em>own</em> operations.</p>
-      </div>
+        <p class="cli-tools-card-link"><a href="{{ '/docs/features/mcp-adapter.html' | relative_url }}">MCP adapter docs &rarr;</a></p>
+      </article>
 
-      <div class="install-panel" id="install-panel-proxy" role="tabpanel" data-panel="proxy" hidden>
-        <p class="install-desc">Intercepting forward proxy with HTTPS MITM (auto-generated CA, on-the-fly leaf-cert minting). Captured flows stream live into the workbench and convert with one click into Bowire recordings &mdash; ready to fuzz, mock, scan, or replay.</p>
+      <article class="cli-tools-card">
+        <h3><code>bowire proxy</code></h3>
+        <p class="cli-tools-card-desc">Intercepting forward proxy with HTTPS MITM (auto-generated CA, on-the-fly leaf-cert minting). Captured flows stream live into the workbench and convert with one click into Bowire recordings &mdash; ready to fuzz, mock, scan, or replay.</p>
         <div class="code-block">
           <div class="code-block-header">
             <span class="code-block-lang">bash</span>
-            <button class="copy-btn" data-copy="# Start the proxy + a sidecar API for the workbench Proxy tab
-bowire proxy --port 8888 --api-port 8889
-
-# Export the auto-generated CA so the client trusts the MITM leaf certs
-bowire proxy --export-ca ~/Downloads/bowire-ca.crt" aria-label="Copy">
+            <button class="copy-btn" data-copy="bowire proxy --port 8888 --api-port 8889" aria-label="Copy">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
             </button>
           </div>
-          <pre><code><span class="c"># Start the proxy + a sidecar API for the workbench Proxy tab</span>
-bowire proxy --port 8888 --api-port 8889
-
-<span class="c"># Export the auto-generated CA so the client trusts the MITM leaf certs</span>
-bowire proxy --export-ca ~/Downloads/bowire-ca.crt</code></pre>
+          <pre><code>bowire proxy --port 8888 --api-port 8889</code></pre>
         </div>
-      </div>
+        <p class="cli-tools-card-link"><a href="{{ '/security.html#proxy' | relative_url }}">Intercepting proxy docs &rarr;</a></p>
+      </article>
 
     </div>
 
