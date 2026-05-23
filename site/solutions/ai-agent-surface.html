@@ -15,11 +15,39 @@ description: Expose every discovered API method as an MCP tool an AI agent can c
     <h2 class="features-group-title">MCP adapter &mdash; the agent calls your methods</h2>
     <p class="features-group-lede">Pass <code>--enable-mcp-adapter</code> and every discovered method becomes an MCP tool with JSON Schema input. The agent sees one tool per method, types match the schema, streaming responses surface as MCP streams.</p>
   </header>
-  <div class="features-block features-block-text-only">
+  <div class="features-block">
     <div class="features-block-text">
       <p>The agent's view: an MCP server at the URL you point its config at, with one tool per discovered method (e.g. <code>UserApi.GetUser</code>, <code>Orders.Create</code>, <code>EventsHub.NotifyAll</code>). Each tool carries a JSON Schema derived from the method's discovered shape &mdash; the agent picks the right tool and supplies typed arguments without you authoring an MCP server.</p>
       <p>Auth flows through whichever provider the workbench itself runs under (Bearer / JWT / OAuth2 / mTLS); the agent never sees a second credentials store. Streaming methods (gRPC server-streams, SignalR hub events, MQTT subscriptions, GraphQL subscriptions) surface as MCP streaming tools so an agent can subscribe to a feed the same way a human would in the workbench.</p>
       <a class="features-block-docs-link" href="{{ '/docs/features/mcp-adapter.html' | relative_url }}">MCP adapter docs &rarr;</a>
+    </div>
+    <div class="features-block-screenshot">
+      <figure class="features-diagram">
+        <pre class="mermaid">
+flowchart LR
+    subgraph Boot["startup"]
+      direction TB
+      Disc["IBowireProtocol.<br/>DiscoverAsync()"]
+      Catalog["MCP tool catalogue<br/>(JSON Schema per method)"]
+      Disc --> Catalog
+    end
+
+    Agent["AI agent"]
+    MCP["MCP endpoint<br/>{prefix}/mcp"]
+    Plugins["Protocol plugins<br/>gRPC · REST · GraphQL · WS · MQTT"]
+    Target["Target API"]
+
+    Catalog -. registers .-> MCP
+    Agent -->|"initialize · tools/list"| MCP
+    Agent -->|"tools/call"| MCP
+    MCP -->|"typed args"| Plugins
+    Plugins -->|"InvokeAsync"| Target
+    Target -.->|"response"| Plugins
+    Plugins -.->|"typed result"| MCP
+    MCP -.->|"tool result · stream"| Agent
+        </pre>
+        <figcaption class="features-diagram-caption">Discovery builds the tool catalogue once on boot; <code>tools/call</code> takes the typed args and dispatches through the matching protocol plugin. Streaming methods stay streaming all the way back to the agent.</figcaption>
+      </figure>
     </div>
   </div>
 </section>
@@ -29,11 +57,32 @@ description: Expose every discovered API method as an MCP tool an AI agent can c
     <h2 class="features-group-title"><code>bowire mcp serve</code> &mdash; the agent drives Bowire</h2>
     <p class="features-group-lede">The flip side: an MCP server that exposes Bowire's own primitives. An agent can chain <em>discover &rarr; invoke &rarr; assert &rarr; switch env &rarr; replay</em> the same way a human would in the workbench.</p>
   </header>
-  <div class="features-block features-block-text-only">
+  <div class="features-block features-block-reverse">
     <div class="features-block-text">
       <p>Primitives exposed: <code>bowire.discover</code>, <code>bowire.invoke</code>, <code>bowire.subscribe</code>, <code>bowire.env.list</code>, <code>bowire.record.{list, start, stop, replay}</code>, <code>bowire.mock.{start, stop, list}</code>, <code>bowire.allowlist.show</code>. Two transport modes: stdio for desktop clients (Claude Desktop, Cursor) and HTTP for remote agents (Copilot in CI, custom MCP runners).</p>
       <p>Tools are gated by the same allow-list the workbench uses &mdash; an agent can't reach a method a human couldn't. Run the two adapters side by side if you want an agent that can both call <em>your</em> methods and orchestrate Bowire's record / mock / replay around them.</p>
       <a class="features-block-docs-link" href="{{ '/docs/features/mcp-serve.html' | relative_url }}">MCP serve docs &rarr;</a>
+    </div>
+    <div class="features-block-screenshot">
+      <figure class="features-diagram">
+        <pre class="mermaid">
+flowchart LR
+    Agent["AI agent<br/>(orchestrator)"]
+    Transport{{"stdio · HTTP"}}
+    Serve["bowire mcp serve"]
+    Allow["Allow-list gate<br/>(same as workbench)"]
+    Primitives["bowire.discover · invoke · subscribe<br/>bowire.record.{list,start,stop,replay}<br/>bowire.mock.{start,stop,list}<br/>bowire.env.{list,switch}"]
+    Workbench[("Workbench state<br/>~/.bowire/")]
+
+    Agent --> Transport
+    Transport --> Serve
+    Serve --> Allow
+    Allow -- "allowed" --> Primitives
+    Allow -- "denied" --> Reject["403-style refusal<br/>back to agent"]
+    Primitives <--> Workbench
+        </pre>
+        <figcaption class="features-diagram-caption">The agent calls Bowire's own ops as MCP tools; the allow-list is the same gate a human would face. State lives in <code>~/.bowire/</code> &mdash; recordings, envs, mocks stay reachable across calls.</figcaption>
+      </figure>
     </div>
   </div>
 </section>
@@ -75,3 +124,5 @@ description: Expose every discovered API method as an MCP tool an AI agent can c
     <p class="features-page-cta-finale">A different lane fits better? <a href="{{ '/solutions.html' | relative_url }}">All solution lanes &rarr;</a></p>
   </div>
 </section>
+
+{% include mermaid-loader.html %}
