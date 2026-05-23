@@ -265,7 +265,8 @@ bowire plugin install --file ./bundle/kl.bowire.protocol.kafka.0.9.4.nupkg \
         --url https://orders.example.com/openapi.json \
         --url https://chat.example.com/notifications</code></pre>
 
-      <p>Bowire tries every installed protocol plugin against each URL and picks the one that responds. gRPC reflects, REST reads OpenAPI, GraphQL introspects, SignalR enumerates hubs, MQTT subscribes &mdash; all without configuration.</p>
+      <p>Bowire tries every installed protocol plugin against each URL and picks the one that responds. gRPC reflects, REST reads OpenAPI, GraphQL introspects, SignalR enumerates hubs, MQTT subscribes &mdash; all without configuration. Each protocol uses the standard self-describing mechanism the wire already defines, so there's nothing for you to maintain on the side: no <code>.proto</code> drop-folder, no curated OpenAPI mirror, no GraphQL schema export.</p>
+      <p>The discovery pass repeats every few seconds against every configured URL &mdash; a method registered on a running server shows up in the sidebar within the next tick. If a URL can't be classified (no plugin claims it, the host isn't reachable, TLS cert isn't trusted), the sidebar surfaces a clear error inline instead of failing silently.</p>
     </div>
   </article>
 
@@ -275,7 +276,8 @@ bowire plugin install --file ./bundle/kl.bowire.protocol.kafka.0.9.4.nupkg \
     <div class="quickstart-page-step-body">
       <h2>Open the workbench</h2>
       <p class="features-block-lead">Bowire opens a browser tab at <code>http://localhost:5080</code> (or whichever port you passed via <code>--port</code>).</p>
-      <p>The sidebar shows every service the plugins discovered, grouped by URL when you connected to several. Click any method, drop in inputs (typed form or raw JSON, toggle with <kbd>f</kbd>), hit <kbd>Ctrl</kbd>+<kbd>Enter</kbd>, response renders in the right pane. Streaming responses show as a Wireshark-style frame list, duplex protocols open persistent channels, and every call lands on the request history for replay.</p>
+      <p>The sidebar shows every service the plugins discovered, grouped by URL when you connected to several. Click any method, drop in inputs (typed form or raw JSON, toggle with <kbd>f</kbd>), hit <kbd>Ctrl</kbd>+<kbd>Enter</kbd>, response renders in the right pane. Streaming responses show as a Wireshark-style frame list &mdash; each frame on its own row with status, size, and timing &mdash; so you can inspect a gRPC server-stream the same way you'd read a packet capture. Duplex protocols (WebSocket, SignalR hubs, gRPC bidi, MQTT subscriptions) open persistent channels with a send-composer on one side and incoming frames on the other.</p>
+      <p>Every call lands on the request history for one-click replay. Switch the environment dropdown in the header to point the same call at staging / prod &mdash; variables substitute automatically, no copy-paste. Click <em>Record</em> to capture a sequence as a <code>.bwr</code> file the mock server or the security scanner can replay later.</p>
       <a class="features-block-docs-link" href="{{ '/docs/ui-guide/index.html' | relative_url }}">Full UI guide &rarr;</a>
     </div>
   </article>
@@ -418,6 +420,7 @@ app.MapBowire();
 app.Run();</code></pre>
 
       <p>That's the entire wire-in. Plugin discovery, protocol detection, and the browser UI all run in-process against the live <code>IServiceProvider</code> &mdash; no schema files, no parallel proto / OpenAPI to maintain, no second process to keep in sync.</p>
+      <p>Because Bowire reads from the same DI container your app already builds, every behaviour that's already wired in is honoured: <code>[Authorize]</code> gates still apply when invoking a method from the workbench (you need the same token), feature flags toggle the same code paths, logging providers receive Bowire's diagnostics next to your own request logs, and any <code>IOptions&lt;T&gt;</code> Bowire's plugins consume picks up the same values <code>appsettings.json</code> + environment variables already supply. Nothing parallel, nothing bypassed.</p>
     </div>
   </article>
 
@@ -473,7 +476,8 @@ app.Run();</code></pre>
       </a>
     </div>
     <p class="features-page-cta-finale">
-      Running multi-user? <a href="{{ '/docs/setup/multi-user.html' | relative_url }}">Cruise-ship deployment &rarr;</a>
+      Wiring a CI pipeline? <a href="{{ '/workflows/devops.html' | relative_url }}">DevOps workflow &rarr;</a>
+      &middot; Running multi-user? <a href="{{ '/docs/setup/multi-user.html' | relative_url }}">Cruise-ship deployment &rarr;</a>
       &middot; Run aground? <a href="{{ '/community.html' | relative_url }}">Get helping hands &rarr;</a>
     </p>
   </div>
