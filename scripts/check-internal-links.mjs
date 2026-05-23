@@ -50,6 +50,26 @@ function extractHrefs(content) {
   return found;
 }
 
+// Markdown link extractor — matches [text](url). Skips reference-style
+// links and image syntax. URL ends at the first unescaped ')' that
+// isn't inside balanced parens (rare but does happen in URLs).
+function extractMarkdownLinks(content) {
+  const found = [];
+  // Strip code blocks / inline code first so links *inside* code samples
+  // don't get matched. The codebase's docs use ```fenced``` + `inline`.
+  const stripped = content
+    .replace(/```[\s\S]*?```/g, '')
+    .replace(/`[^`\n]*`/g, '');
+  // [text](url) — text can't contain unescaped ']', url is everything
+  // up to the next ')'.
+  const re = /(?<!!)\[([^\]]*)\]\(([^)\s]+)(?:\s+"[^"]*")?\)/g;
+  let m;
+  while ((m = re.exec(stripped)) !== null) {
+    found.push(m[2]);
+  }
+  return found;
+}
+
 function resolveJekyllPath(href) {
   // Jekyll's {{ '/path/to/page.html' | relative_url }} wrapper. We don't
   // know the site's baseurl in pure JS terms, but for marketing-site link
@@ -63,7 +83,7 @@ function resolveJekyllPath(href) {
 function classify(href) {
   if (!href || href.trim() === '') return { kind: 'empty' };
   const h = href.trim();
-  if (/^(https?:|mailto:|tel:|javascript:|data:)/i.test(h)) return { kind: 'external' };
+  if (/^(https?:|mailto:|tel:|javascript:|data:|xref:)/i.test(h)) return { kind: 'external' };
   if (h.startsWith('#')) return { kind: 'anchor', target: h };
   if (h.startsWith('//')) return { kind: 'external' };
   const resolved = resolveJekyllPath(h);
@@ -99,11 +119,20 @@ async function resolveTarget(target, sourceFile) {
     if (p === '' || p.endsWith('/')) p += 'index.html';
     return { kind: 'site', path: join(SITE_DIR, p) };
   }
-  // Relative path
+  // Relative path — resolve against the source file's directory.
+  // For Markdown sources in docs/, a relative ../foo.md is the common shape;
+  // for HTML sources, relative is less common but supported.
   const dir = dirname(sourceFile);
   let p = target;
-  if (p === '' || p.endsWith('/')) p += 'index.html';
-  return { kind: 'relative', path: resolve(dir, p) };
+  if (p === '' || p.endsWith('/')) {
+    p += sourceFile.endsWith('.md') ? 'index.md' : 'index.html';
+  }
+  // .html -> .md when the source is a .md file and the link probably
+  // points to another doc rendered to .html by DocFX. (Some docs use
+  // .html-suffixed links between .md files; resolve them by checking
+  // for the .md sibling.)
+  const candidate = resolve(dir, p);
+  return { kind: 'relative', path: candidate };
 }
 
 // Whether a source file is one we author. Skips DocFX-generated API doc
@@ -136,10 +165,48 @@ function isStaticHref(href) {
   return true;
 }
 
+async function checkOne(file, hrefs, issues) {
+  let checked = 0;
+  for (const raw of hrefs) {
+    if (!isStaticHref(raw)) continue;
+    const c = classify(raw);
+    if (c.kind !== 'internal') continue;
+    checked++;
+    const resolved = await resolveTarget(c.target, file);
+    let ok = await exists(resolved.path);
+    // Markdown sources often link to siblings with .html suffix (DocFX
+    // renders to .html). Let the .html link resolve if the sibling .md
+    // exists, and vice versa.
+    if (!ok && resolved.path.endsWith('.html')) {
+      ok = await exists(resolved.path.replace(/\.html$/, '.md'));
+    } else if (!ok && resolved.path.endsWith('.md')) {
+      ok = await exists(resolved.path.replace(/\.md$/, '.html'));
+    }
+    // Directory-style targets ('../setup/') — try index.{md,html}.
+    if (!ok) {
+      if (await exists(join(resolved.path, 'index.md'))) ok = true;
+      else if (await exists(join(resolved.path, 'index.html'))) ok = true;
+    }
+    if (!ok) {
+      issues.push({
+        file: toPosix(relative(ROOT, file)),
+        href: c.raw,
+        resolvedTo: toPosix(relative(ROOT, resolved.path)),
+        targetKind: resolved.kind,
+      });
+    }
+  }
+  return checked;
+}
+
 async function main() {
-  // Marketing-site HTML pages (top-level + solutions + workflows + includes
-  // + layouts). DocFX-built site/docs/** is filtered by isAuthoredPage().
+  // Source 1: Marketing-site HTML pages (top-level + solutions + workflows
+  // + includes + layouts). DocFX-built site/docs/** is filtered out below.
   const siteFiles = (await walk(SITE_DIR, ['.html'])).filter(isAuthoredPage);
+  // Source 2: DocFX Markdown sources under docs/**. These carry both
+  // [text](url) Markdown links and raw <a href="..."> HTML links, so the
+  // extractor combines both extractors.
+  const docsFiles = await walk(DOCS_DIR, ['.md']);
 
   const issues = [];
   let totalChecked = 0;
@@ -148,26 +215,18 @@ async function main() {
     let content;
     try { content = await readFile(file, 'utf8'); }
     catch { continue; }
-    const hrefs = extractHrefs(content);
-    for (const raw of hrefs) {
-      if (!isStaticHref(raw)) continue;
-      const c = classify(raw);
-      if (c.kind !== 'internal') continue;
-      totalChecked++;
-      const resolved = await resolveTarget(c.target, file);
-      const ok = await exists(resolved.path);
-      if (!ok) {
-        issues.push({
-          file: toPosix(relative(ROOT, file)),
-          href: c.raw,
-          resolvedTo: toPosix(relative(ROOT, resolved.path)),
-          targetKind: resolved.kind,
-        });
-      }
-    }
+    totalChecked += await checkOne(file, extractHrefs(content), issues);
   }
 
-  console.log(`[link-check] scanned ${siteFiles.length} HTML files, checked ${totalChecked} internal links`);
+  for (const file of docsFiles) {
+    let content;
+    try { content = await readFile(file, 'utf8'); }
+    catch { continue; }
+    const hrefs = [...extractHrefs(content), ...extractMarkdownLinks(content)];
+    totalChecked += await checkOne(file, hrefs, issues);
+  }
+
+  console.log(`[link-check] scanned ${siteFiles.length} site HTML + ${docsFiles.length} docs MD, checked ${totalChecked} internal links`);
   if (issues.length === 0) {
     console.log('[link-check] all internal links resolve.');
     return;
