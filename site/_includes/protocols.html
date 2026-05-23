@@ -394,7 +394,7 @@
         </div>
         <div class="protocol-content">
           <h3>AsyncAPI</h3>
-          <p><strong>Discovery source &mdash; not a wire.</strong> Drop in an <code>asyncapi.yaml</code> or <code>.json</code> document (2.x + 3.0); Bowire surfaces channels, operations, and per-message overloads in the sidebar, then routes invocations through whichever wire plugin the doc&rsquo;s <code>bindings:</code> declare. Bindings today: <code>http</code>, <code>mqtt</code> / <code>mqtt5</code>, <code>kafka</code>, <code>ws</code>, <code>amqp</code> / <code>amqp1</code>; NATS follows.</p>
+          <p><strong>Discovery source &mdash; not a wire.</strong> Drop in an <code>asyncapi.yaml</code> or <code>.json</code> document (2.x + 3.0); Bowire walks channels, operations, and per-message overloads, then dispatches each call through the wire plugin its <code>bindings:</code> block declares. Today that means <strong>MQTT, Kafka, AMQP, WebSocket, and HTTP</strong> &mdash; every binding resolves to a shipped first- or third-party plugin. NATS follows.</p>
           <div class="protocol-install">
             <code><span class="protocol-install-prompt">$</span> dotnet add package Kuestenlogik.Bowire.AsyncApi</code>
             <button class="protocol-install-copy copy-btn" data-copy="dotnet add package Kuestenlogik.Bowire.AsyncApi" aria-label="Copy install command for AsyncAPI"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></button>

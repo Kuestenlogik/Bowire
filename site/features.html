@@ -34,6 +34,43 @@ description: A closer look at the workflows Bowire is built for — visual flow 
     </div>
   </div>
 
+  <!-- ---- AsyncAPI binding model ---- -->
+  <div class="features-block features-block-reverse" id="asyncapi-bindings">
+    <div class="features-block-text">
+      <h3>AsyncAPI dispatches through every shipped wire</h3>
+      <p class="features-block-lead">One <code>asyncapi.yaml</code>, five wire plugins. Each <code>bindings:</code> key the doc declares has a resolver that hands the call to the matching shipped plugin.</p>
+      <p>The AsyncAPI plugin doesn&rsquo;t talk to brokers itself &mdash; it&rsquo;s a discovery source that reads the contract and dispatches. Today every active binding maps to a real, shipped plugin: <code>bindings.mqtt</code> / <code>mqtt5</code> to <code>Kuestenlogik.Bowire.Protocol.Mqtt</code>, <code>bindings.kafka</code> to <code>Kuestenlogik.Bowire.Protocol.Kafka</code>, <code>bindings.amqp</code> / <code>amqp1</code> to <code>Kuestenlogik.Bowire.Protocol.Amqp</code>, <code>bindings.ws</code> to <code>Kuestenlogik.Bowire.Protocol.WebSocket</code>, and <code>bindings.http</code> through Bowire&rsquo;s built-in HTTP client.</p>
+      <p>The benefit: an AsyncAPI doc travels as the contract surface (review it in PRs, version it in Git), but the runtime is whatever wire the broker speaks. Switch from Kafka to MQTT by editing the <code>bindings:</code> block; no Bowire side changes needed.</p>
+      <a class="features-block-docs-link" href="{{ '/docs/protocols/asyncapi.html' | relative_url }}">Read the AsyncAPI docs &rarr;</a>
+    </div>
+    <div class="features-block-screenshot">
+      <figure class="features-diagram">
+        <pre class="mermaid">
+flowchart LR
+    Doc[("asyncapi.yaml")]
+    AAPI(["AsyncAPI plugin"])
+    Res{"BindingResolver"}
+    MQTT(["Protocol.Mqtt"])
+    Kafka(["Protocol.Kafka"])
+    AMQP(["Protocol.Amqp"])
+    WS(["Protocol.WebSocket"])
+    HTTP(["HTTP (built-in)"])
+    NATS(["Protocol.Nats &mdash; follows"])
+
+    Doc --> AAPI
+    AAPI -->|"channels &middot; operations &middot; bindings"| Res
+    Res -->|"bindings.mqtt / mqtt5"| MQTT
+    Res -->|"bindings.kafka"| Kafka
+    Res -->|"bindings.amqp / amqp1"| AMQP
+    Res -->|"bindings.ws"| WS
+    Res -->|"bindings.http"| HTTP
+    Res -.->|"binding pending"| NATS
+        </pre>
+        <figcaption class="features-diagram-caption">Five resolvers shipped today, one per binding family. The AsyncAPI plugin reads the contract, the resolver routes the call &mdash; the wire plugin does the actual broker work.</figcaption>
+      </figure>
+    </div>
+  </div>
+
   <!-- ---- All call types ---- -->
   <div class="features-block features-block-reverse" id="all-call-types">
     <div class="features-block-text">
