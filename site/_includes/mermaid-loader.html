@@ -126,6 +126,91 @@ shared visual frame (border, drop-shadow, optional <figcaption>).
 
       // Re-render on theme cycle so the palette stays in sync with the rest of the page.
       document.addEventListener('themechange', () => { renderAll(); });
+
+      // Click-to-enlarge — Mermaid diagrams shrink to whatever column they
+      // sit in, which is often unreadable on a dense flow. Wire each
+      // figures.features-diagram up as a zoom trigger: click anywhere on
+      // the figure to open the SVG in a full-viewport overlay; backdrop
+      // click, close button, or Escape dismisses it. We attach to the
+      // figure (not the .mermaid <pre>) so click also works on the
+      // figcaption area, which feels natural.
+      let mermaidLightbox = null;
+      let mermaidLightboxStage = null;
+
+      function ensureMermaidLightbox() {
+        if (mermaidLightbox) return;
+        mermaidLightbox = document.createElement('div');
+        mermaidLightbox.className = 'lightbox lightbox-diagram';
+        mermaidLightbox.setAttribute('role', 'dialog');
+        mermaidLightbox.setAttribute('aria-modal', 'true');
+        mermaidLightbox.setAttribute('aria-label', 'Enlarged diagram');
+        mermaidLightbox.innerHTML = `
+            <button class="lightbox-close" type="button" aria-label="Close diagram">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+            <div class="lightbox-diagram-stage"></div>
+        `;
+        document.body.appendChild(mermaidLightbox);
+        mermaidLightboxStage = mermaidLightbox.querySelector('.lightbox-diagram-stage');
+
+        mermaidLightbox.addEventListener('click', (e) => {
+          if (e.target === mermaidLightbox || e.target.closest('.lightbox-close')) {
+            closeMermaidLightbox();
+          }
+        });
+        document.addEventListener('keydown', (e) => {
+          if (e.key === 'Escape' && mermaidLightbox.classList.contains('is-open')) {
+            closeMermaidLightbox();
+          }
+        });
+      }
+
+      function openMermaidLightbox(figure) {
+        const svg = figure.querySelector('.mermaid svg');
+        if (!svg) return;
+        ensureMermaidLightbox();
+        // Clone so the original stays embedded in the page; the clone is
+        // sized via CSS (max 92vw / 88vh) — the viewBox keeps it crisp.
+        const clone = svg.cloneNode(true);
+        // Strip the responsive max-width Mermaid stamps inline so the
+        // SVG can grow to fill the lightbox stage.
+        clone.removeAttribute('width');
+        clone.removeAttribute('height');
+        clone.style.width = '100%';
+        clone.style.height = '100%';
+        clone.style.maxWidth = '100%';
+        clone.style.maxHeight = '100%';
+        mermaidLightboxStage.innerHTML = '';
+        mermaidLightboxStage.appendChild(clone);
+        // Optionally clone the figcaption underneath for context.
+        const caption = figure.querySelector('.features-diagram-caption');
+        if (caption) {
+          const captionClone = caption.cloneNode(true);
+          captionClone.classList.add('lightbox-diagram-caption');
+          mermaidLightboxStage.appendChild(captionClone);
+        }
+        mermaidLightbox.classList.add('is-open');
+        document.body.style.overflow = 'hidden';
+      }
+
+      function closeMermaidLightbox() {
+        if (!mermaidLightbox) return;
+        mermaidLightbox.classList.remove('is-open');
+        document.body.style.overflow = '';
+      }
+
+      document.querySelectorAll('figure.features-diagram').forEach(fig => {
+        fig.setAttribute('role', 'button');
+        fig.setAttribute('tabindex', '0');
+        fig.setAttribute('aria-label', 'Click to enlarge diagram');
+        fig.addEventListener('click', () => openMermaidLightbox(fig));
+        fig.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            openMermaidLightbox(fig);
+          }
+        });
+      });
     }
   }
 </script>
