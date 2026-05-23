@@ -7,7 +7,16 @@ on:
       - 'docs/**'
       - 'site/**'
       - 'src/**'
+      - 'scripts/build-activity-snapshot.mjs'
       - '.github/workflows/docs.yml'
+  # Refresh on every published release so the community-page "Activity on deck"
+  # pane picks up new release names + cadence the moment they ship.
+  release:
+    types: [published]
+  # Daily refresh so the "last push X d ago" timer doesn't slowly age when no
+  # release has shipped recently but commits keep landing on main.
+  schedule:
+    - cron: '17 6 * * *'
   workflow_dispatch:
 
 env:
@@ -40,6 +49,14 @@ jobs:
         with:
           dotnet-version: '10.0.x'
 
+      # Node is needed for both the activity-snapshot generator (runs before
+      # Jekyll, populates site/_data/activity.json) and Pagefind (runs after
+      # the build, indexes the combined output). One setup serves both.
+      - name: Setup Node
+        uses: actions/setup-node@v5
+        with:
+          node-version: '20'
+
       - name: Build projects (for API docs)
         run: dotnet build Kuestenlogik.Bowire.slnx --configuration Release
 
@@ -49,6 +66,17 @@ jobs:
 
       - name: Build DocFX documentation
         run: docfx docs/docfx.json
+
+      # Refresh the activity snapshot (releases + last-push) that powers the
+      # community page's "Activity on deck" pane. Runs before Jekyll so the
+      # build picks up site/_data/activity.json from this step. Auth via the
+      # workflow's GITHUB_TOKEN keeps the call well under the 5000 req/h
+      # authenticated rate. Snapshot script writes a fallback JSON on failure
+      # so the page never renders broken values.
+      - name: Refresh activity snapshot
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: node scripts/build-activity-snapshot.mjs
 
       # Build Jekyll landing page
       - name: Setup Ruby
@@ -74,11 +102,6 @@ jobs:
       # Pagefind crawls the already-rendered HTML under _combined/ (both
       # marketing site and docs) and emits a single full-text index into
       # _combined/pagefind/. Client-side only, no runtime server.
-      - name: Setup Node for Pagefind
-        uses: actions/setup-node@v5
-        with:
-          node-version: '20'
-
       - name: Generate Pagefind search index
         run: npx -y pagefind --site _combined --output-path _combined/pagefind
 
