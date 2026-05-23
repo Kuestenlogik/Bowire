@@ -3455,11 +3455,11 @@ button.comparison-bestfor-card.active .comparison-bestfor-name {
 /* ===== CTA ===== */
 .cta {
     padding: 100px 0;
-    /* Elevated bg so "Join the crew" lifts off the .install block
-       above (which sits on base bg). Continues the landing-page
-       zigzag pattern (E-B-E-B…) all the way down to the closing
-       CTA — every section heading has a clear neighbour break. */
-    background: var(--bg-elevated);
+    /* Base bg flips off elevated .roadmap above — the final section
+       reads as its own block instead of bleeding into the roadmap.
+       Snippet cards still carry their own elevated card-frames so
+       "Join the crew" keeps its visual weight against the base bg. */
+    background: var(--bg);
 }
 
 .cta-inner {
