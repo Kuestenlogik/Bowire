@@ -265,15 +265,37 @@ bowire plugin install --file ./bundle/kl.bowire.protocol.kafka.0.9.4.nupkg \
     <div class="quickstart-page-step-num">4</div>
     <div class="quickstart-page-step-body">
       <h2>Run it against your service</h2>
-      <p class="features-block-lead">Point Bowire at any URL &mdash; your own ASP.NET app, a remote production service, an OpenAPI document on disk, anything.</p>
+      <p class="features-block-lead">Point Bowire at any URL &mdash; your own ASP.NET app, a remote production service, an OpenAPI document on disk, anything. Multi-target works too: pass <code>--url</code> repeatedly to connect to several services in parallel.</p>
 
-<pre><code class="lang-bash">bowire --url https://api.example.com</code></pre>
+      <!-- Live URL widget. Each row becomes one --url flag in the snippet
+           below; add / remove rows to grow or shrink the multi-target
+           command. JS init lives in main.js (search "qs-url-widget"). -->
+      <div class="qs-url-widget" data-qs-url-widget data-qs-url-template="bowire">
+        <label class="qs-url-label">Target URL(s)</label>
+        <div class="qs-url-list" data-qs-url-list>
+          <div class="qs-url-row">
+            <input type="text" class="qs-url-input" data-qs-url-input value="https://api.example.com" spellcheck="false" aria-label="Target URL">
+            <button type="button" class="qs-url-remove" data-qs-url-remove aria-label="Remove this URL">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg>
+            </button>
+          </div>
+        </div>
+        <button type="button" class="qs-url-add" data-qs-url-add>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Add URL
+        </button>
 
-      <p>Multi-target works too &mdash; pass <code>--url</code> repeatedly to connect to several services in parallel:</p>
-
-<pre><code class="lang-bash">bowire --url https://users.example.com:50051 \
-        --url https://orders.example.com/openapi.json \
-        --url https://chat.example.com/notifications</code></pre>
+        <div class="code-block qs-url-snippet">
+          <div class="code-block-header">
+            <span class="code-block-lang">bash</span>
+            <span class="code-block-hint">edits live above</span>
+            <button class="copy-btn" data-qs-url-copy aria-label="Copy">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+            </button>
+          </div>
+          <pre><code data-qs-url-out>bowire --url https://api.example.com</code></pre>
+        </div>
+      </div>
 
       <p>Bowire tries every installed protocol plugin against each URL and picks the one that responds. gRPC reflects, REST reads OpenAPI, GraphQL introspects, SignalR enumerates hubs, MQTT subscribes &mdash; all without configuration. Each protocol uses the standard self-describing mechanism the wire already defines, so there's nothing for you to maintain on the side: no <code>.proto</code> drop-folder, no curated OpenAPI mirror, no GraphQL schema export.</p>
       <p>The discovery pass repeats every few seconds against every configured URL &mdash; a method registered on a running server shows up in the sidebar within the next tick. If a URL can't be classified (no plugin claims it, the host isn't reachable, TLS cert isn't trusted), the sidebar surfaces a clear error inline instead of failing silently.</p>
@@ -403,44 +425,37 @@ bowire plugin install --file ./bundle/kl.bowire.protocol.kafka.0.9.4.nupkg \
     <div class="quickstart-page-step-body">
       <h2>Wire it into your stack</h2>
       <p class="features-block-lead">Drop a <code>bowire</code> service next to your existing ones in <code>docker-compose.yml</code>. Bowire's container reaches the other services via their compose-network hostnames; the workbench port (<code>5080</code>) is what you'll hit from outside.</p>
-      <div class="code-block">
-        <div class="code-block-header">
-          <span class="code-block-lang">yaml</span>
-          <span class="code-block-lang" style="margin-left:auto;opacity:0.7">docker-compose.yml</span>
-          <button class="copy-btn" data-copy="services:
-  api:
-    image: my-api:latest
-    ports: ['50051:50051']
 
-  bowire:
-    image: kuestenlogik/bowire:latest
-    command: ['--url', 'http://api:50051']
-    ports: ['5080:5080']
-    volumes:
-      - bowire-data:/home/app/.bowire
-    depends_on: [api]
-
-volumes:
-  bowire-data:" aria-label="Copy">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
-          </button>
+      <!-- Live URL widget. Same JS handler as the standalone path's
+           widget, but template is "compose" — wraps each URL in a
+           command:['--url', '…'] array entry inside the yaml. -->
+      <div class="qs-url-widget" data-qs-url-widget data-qs-url-template="compose">
+        <label class="qs-url-label">Target service URL(s) inside the compose network</label>
+        <div class="qs-url-list" data-qs-url-list>
+          <div class="qs-url-row">
+            <input type="text" class="qs-url-input" data-qs-url-input value="http://api:50051" spellcheck="false" aria-label="Target URL">
+            <button type="button" class="qs-url-remove" data-qs-url-remove aria-label="Remove this URL">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg>
+            </button>
+          </div>
         </div>
-        <pre><code><span class="c">services:</span>
-  <span class="c">api:</span>
-    image: my-api:latest
-    ports: ['50051:50051']
+        <button type="button" class="qs-url-add" data-qs-url-add>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Add URL
+        </button>
 
-  <span class="c">bowire:</span>
-    image: kuestenlogik/bowire:latest
-    command: ['--url', 'http://api:50051']
-    ports: ['5080:5080']
-    volumes:
-      - bowire-data:/home/app/.bowire
-    depends_on: [api]
-
-<span class="c">volumes:</span>
-  bowire-data:</code></pre>
+        <div class="code-block qs-url-snippet">
+          <div class="code-block-header">
+            <span class="code-block-lang">yaml</span>
+            <span class="code-block-lang" style="margin-left:auto;opacity:0.7">docker-compose.yml</span>
+            <button class="copy-btn" data-qs-url-copy aria-label="Copy">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+            </button>
+          </div>
+          <pre><code data-qs-url-out></code></pre>
+        </div>
       </div>
+
       <p>The volume keeps installed plugins, recordings, and environments persistent across container restarts. Same pattern translates to a Kubernetes <code>Deployment</code> with a Bowire sidecar container in the pod &mdash; see the <a href="{{ '/docs/setup/sidecar.html' | relative_url }}">sidecar setup docs</a>.</p>
     </div>
   </article>
