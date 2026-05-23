@@ -5271,6 +5271,42 @@ p a:not([class]):hover,
     background: rgba(99, 102, 241, 0.10);
     color: var(--accent);
 }
+
+/* Photo variant of the path-btn icon — used by the quickstart picker
+   to mirror the boat photos from the "Straight into the water" stepper
+   so the same deployment shape is recognisable across both surfaces.
+   Same palette treatment (grayscale + saturate + brightness drop +
+   lavender accent multiply) the launch-boat photos get, so the small
+   tiles sit inside the marketing palette. */
+.quickstart-path-btn-photo {
+    flex: 0 0 auto;
+    width: 64px;
+    height: 48px;
+    border-radius: 8px;
+    overflow: hidden;
+    position: relative;
+    background: rgba(99, 102, 241, 0.04);
+}
+.quickstart-path-btn-photo img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    filter: grayscale(0.55) saturate(0.85) brightness(0.92);
+    transition: filter 0.2s ease;
+}
+.quickstart-path-btn-photo::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.18), rgba(139, 125, 255, 0.10));
+    mix-blend-mode: multiply;
+    pointer-events: none;
+}
+.quickstart-path-btn[aria-selected="true"] .quickstart-path-btn-photo img,
+.quickstart-path-btn:hover .quickstart-path-btn-photo img {
+    filter: none;
+}
 .quickstart-path-btn-body {
     display: flex;
     flex-direction: column;

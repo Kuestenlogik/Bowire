@@ -79,25 +79,34 @@ any service URL without code changes.
     <div class="quickstart-page-step-num">1</div>
     <div class="quickstart-page-step-body">
       <h2>Pick your path</h2>
-      <p class="features-block-lead">Bowire runs two ways &mdash; the rest of the steps differ slightly depending on which one you pick.</p>
+      <p class="features-block-lead">Bowire runs three ways for the quickstart &mdash; the rest of the steps differ slightly depending on which one you pick. Boat photos mirror the <a href="{{ '/#launch' | relative_url }}">Straight-into-the-water</a> stepper above so the deployment shape is recognisable across both surfaces.</p>
 
       <div class="quickstart-path-picker" data-path-picker role="tablist" aria-label="Choose how Bowire runs against your services">
         <button class="quickstart-path-btn" type="button" role="tab" data-path="standalone" aria-selected="false">
-          <span class="quickstart-path-btn-icon" aria-hidden="true">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
+          <span class="quickstart-path-btn-photo" aria-hidden="true">
+            <img src="{{ '/assets/images/launch/speedboat.jpg' | relative_url }}" alt="" loading="lazy">
           </span>
           <span class="quickstart-path-btn-body">
-            <span class="quickstart-path-btn-title">Standalone CLI</span>
+            <span class="quickstart-path-btn-title">Speedboat &mdash; Standalone CLI</span>
             <span class="quickstart-path-btn-desc">Run <code>bowire</code> against any service URL. No code changes to the target.</span>
           </span>
         </button>
         <button class="quickstart-path-btn" type="button" role="tab" data-path="embedded" aria-selected="false">
-          <span class="quickstart-path-btn-icon" aria-hidden="true">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="6" width="12" height="12" rx="1"/><path d="M9 2v4M15 2v4M9 18v4M15 18v4"/><path d="M2 9h4M2 15h4M18 9h4M18 15h4"/></svg>
+          <span class="quickstart-path-btn-photo" aria-hidden="true">
+            <img src="{{ '/assets/images/launch/sailboat.jpg' | relative_url }}" alt="" loading="lazy">
           </span>
           <span class="quickstart-path-btn-body">
-            <span class="quickstart-path-btn-title">Embedded in ASP.NET</span>
+            <span class="quickstart-path-btn-title">Sailboat &mdash; Embedded in ASP.NET</span>
             <span class="quickstart-path-btn-desc">Mount Bowire inside your app. Auto-discovers services from the live <code>IServiceProvider</code>.</span>
+          </span>
+        </button>
+        <button class="quickstart-path-btn" type="button" role="tab" data-path="mock" aria-selected="false">
+          <span class="quickstart-path-btn-photo" aria-hidden="true">
+            <img src="{{ '/assets/images/launch/dazzleship.jpg' | relative_url }}" alt="" loading="lazy">
+          </span>
+          <span class="quickstart-path-btn-body">
+            <span class="quickstart-path-btn-title">Dazzle ship &mdash; Replay mock</span>
+            <span class="quickstart-path-btn-desc">Replay a captured recording as a live mock endpoint. Unblock frontend work, run CI without the real backend.</span>
           </span>
         </button>
       </div>
@@ -120,7 +129,7 @@ any service URL without code changes.
   <!-- ========================================================== -->
 
   <!-- Step 2 — Install -->
-  <article class="quickstart-page-step" id="install" data-path="standalone" hidden>
+  <article class="quickstart-page-step" id="install" data-path="standalone mock" hidden>
     <div class="quickstart-page-step-num">2</div>
     <div class="quickstart-page-step-body">
       <h2>Install Bowire</h2>
@@ -282,6 +291,75 @@ bowire plugin install --file ./bundle/kl.bowire.protocol.kafka.0.9.4.nupkg \
   </article>
 
   <!-- ========================================================== -->
+  <!--  Replay-mock path                                           -->
+  <!-- ========================================================== -->
+
+  <!-- Step 3 — Get a recording. Install (step 2) is shared with the
+       standalone path via data-path="standalone mock"; from here on
+       the mock path diverges. -->
+  <article class="quickstart-page-step" id="mock-recording" data-path="mock" hidden>
+    <div class="quickstart-page-step-num">3</div>
+    <div class="quickstart-page-step-body">
+      <h2>Grab a recording</h2>
+      <p class="features-block-lead">A recording is what the mock server plays back. You need a <code>.bwr</code> file before <code>bowire mock</code> has something to serve.</p>
+      <p>Three ways to get one:</p>
+      <ul class="features-block-bullets">
+        <li><strong>Record from the workbench</strong> &mdash; click <em>Record</em>, run a sequence of calls against the real backend, click <em>Stop</em>. The capture writes to <code>~/.bowire/recordings/</code>.</li>
+        <li><strong>Pull a sample</strong> &mdash; the Bowire.Samples repo carries seed recordings (REST, gRPC, SignalR, MQTT) you can use straight away: <a href="https://github.com/Kuestenlogik/Bowire.Samples/tree/main/recordings" target="_blank" rel="noopener">samples / recordings &rarr;</a></li>
+        <li><strong>Import from HAR</strong> &mdash; <code>bowire import har capture.har --out session.bwr</code> turns a browser DevTools dump into a Bowire recording.</li>
+      </ul>
+    </div>
+  </article>
+
+  <!-- Step 4 — Run the mock server -->
+  <article class="quickstart-page-step" id="mock-serve" data-path="mock" hidden>
+    <div class="quickstart-page-step-num">4</div>
+    <div class="quickstart-page-step-body">
+      <h2>Run the mock</h2>
+      <p class="features-block-lead"><code>bowire mock</code> spins up a listener that replays the recording. Same protocol-shape as the original &mdash; REST, gRPC streams, WebSocket frames, MQTT publishes &mdash; not a JSON stub.</p>
+      <div class="code-block">
+        <div class="code-block-header">
+          <span class="code-block-lang">bash</span>
+          <button class="copy-btn" data-copy="bowire mock --recording session.bwr --port 5099 --hot-reload" aria-label="Copy">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+          </button>
+        </div>
+        <pre><code>$ bowire mock --recording session.bwr \
+              --port 5099 --hot-reload</code></pre>
+      </div>
+      <p><code>--hot-reload</code> picks up edits to the recording without a restart. Add <code>--capture-on-miss &lt;target-url&gt;</code> to transparently forward unrecorded requests to a fallback target and capture them for next time.</p>
+    </div>
+  </article>
+
+  <!-- Step 5 — Hit the mock from your client -->
+  <article class="quickstart-page-step" id="mock-hit" data-path="mock" hidden>
+    <div class="quickstart-page-step-num">5</div>
+    <div class="quickstart-page-step-body">
+      <h2>Point your client at it</h2>
+      <p class="features-block-lead">Your test client (frontend, integration tests, contract tests, AI agent &hellip;) hits <code>http://localhost:5099</code> instead of the real backend. Bytes match what production sent &mdash; no JSON-stub drift.</p>
+      <p>Useful when you want to:</p>
+      <ul class="features-block-bullets">
+        <li>Unblock frontend work before the backend ships.</li>
+        <li>Run contract tests in CI without standing up a service dependency.</li>
+        <li>Share a realistic sandbox with stakeholders without exposing production.</li>
+        <li>Pin a known-good response for a flaky integration test.</li>
+      </ul>
+    </div>
+  </article>
+
+  <!-- Step 6 — Finish flag -->
+  <article class="quickstart-page-step quickstart-page-step-finish" id="mock-afloat" data-path="mock" hidden>
+    <div class="quickstart-page-step-num" aria-hidden="true">
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 22V4"/><path d="M4 4h13l-3 4 3 4H4"/></svg>
+    </div>
+    <div class="quickstart-page-step-body">
+      <h2>You're mocking</h2>
+      <p class="features-block-lead">A Dazzle ship in your harbour. Same wire as the real backend, no live host required.</p>
+      <p>For the full feature set &mdash; chaos injection, schema-only mode (OpenAPI / gRPC / GraphQL), stateful cursors, multi-protocol replay &mdash; see the <a href="{{ '/docs/features/mock.html' | relative_url }}">mock-server docs</a>.</p>
+    </div>
+  </article>
+
+  <!-- ========================================================== -->
   <!--  Embedded path                                              -->
   <!-- ========================================================== -->
 
@@ -390,6 +468,9 @@ app.Run();</code></pre>
         Browse all downloads
       </a>
     </div>
-    <p class="features-page-cta-finale">Run aground? <a href="{{ '/community.html' | relative_url }}">Get helping hands &rarr;</a></p>
+    <p class="features-page-cta-finale">
+      Running multi-user? <a href="{{ '/docs/setup/multi-user.html' | relative_url }}">Cruise-ship deployment &rarr;</a>
+      &middot; Run aground? <a href="{{ '/community.html' | relative_url }}">Get helping hands &rarr;</a>
+    </p>
   </div>
 </section>
