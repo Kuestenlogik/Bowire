@@ -1,7 +1,7 @@
 ---
 layout: page
 title: Why Bowire — the differentiators in detail
-description: A closer look at what makes Bowire different from Postman, Insomnia, and Scalar — embedded mode, 100% local, the open plugin architecture, duplex channel manager, visual flow editor, and record / replay.
+description: A closer look at what makes Bowire different from Postman, Insomnia, and Scalar — embedded mode, 100% local, AI-agent ready via MCP, multi-protocol security scanner with Nuclei templates, build-your-own-protocol plugin architecture, and record / replay.
 ---
 
 <section class="features-page-hero">
@@ -44,55 +44,70 @@ description: A closer look at what makes Bowire different from Postman, Insomnia
 </section>
 
 <!-- ================================================================ -->
-<!--  Open Plugin Architecture                                         -->
+<!--  AI-agent ready with MCP support                                  -->
+<!-- ================================================================ -->
+<section class="features-group features-group-alt">
+  <div class="features-block features-block-reverse" id="ai-agent">
+    <div class="features-block-text">
+      <h3>AI-agent ready with MCP support</h3>
+      <p class="features-block-lead"><code>bowire mcp serve</code> turns every protocol Bowire knows into a tool an AI agent can call. Claude, Cursor, Copilot, custom MCP clients &mdash; same wire, same auth, same recordings.</p>
+      <p>The adapter exposes Bowire's core primitives (<code>bowire.discover</code>, <code>bowire.invoke</code>, <code>bowire.record.start</code>, <code>bowire.mock.start</code>, &hellip;) as first-class MCP tools. An agent can chain <em>discover &rarr; invoke &rarr; assert &rarr; switch env &rarr; replay</em> the same way a human would in the workbench &mdash; just in parallel and without patience-cost.</p>
+      <p>Two transport modes: stdio for local Claude-Desktop-style clients, HTTP for Cursor / Copilot / remote agents. Auth piggy-backs on whichever provider the workbench itself runs under, so the agent never sees a second credentials store. Tools are gated by the same allow-list the workbench uses &mdash; the agent can't reach a method a human couldn't.</p>
+      <a class="features-block-docs-link" href="{{ '/docs/features/mcp-adapter.html' | relative_url }}">Read the technical docs &rarr;</a>
+    </div>
+    <div class="features-block-screenshot">
+      {% include themed-img.html src="/assets/images/screenshots/command-palette.png" alt="MCP adapter — AI agent calling Bowire's discover / invoke / record primitives as native MCP tools" %}
+    </div>
+  </div>
+</section>
+
+<!-- ================================================================ -->
+<!--  Security scanner with Nuclei templates                           -->
+<!-- ================================================================ -->
+<section class="features-group">
+  <div class="features-block" id="scan">
+    <div class="features-block-text">
+      <h3>Security scanner with Nuclei templates</h3>
+      <p class="features-block-lead"><code>bowire scan --target https://your-api</code> runs vulnerability templates against the API surface Bowire already discovered, and emits SARIF 2.1.0 that your CI ingests unchanged.</p>
+      <p>Two template sources at once: Bowire's own JSON templates (the curated baseline shipped in <a href="https://github.com/Kuestenlogik/Bowire.VulnDb" target="_blank" rel="noopener">Bowire.VulnDb</a>) plus the 8000+ <a href="https://github.com/projectdiscovery/nuclei-templates" target="_blank" rel="noopener">Nuclei community templates</a> via <code>--nuclei &lt;dir&gt;</code>. Both feed Bowire's native AttackPredicate engine &mdash; same matchers, same payload variables, no separate runtime.</p>
+      <p>Findings emit as SARIF 2.1.0 &mdash; straight into GitHub Code Scanning, GitLab Security Dashboard, Azure DevOps. Built-in passive checks (TLS-version enumeration, version-disclosing headers, verbose-error detection) fire on day one without writing a template, so the scanner is useful before anyone authors a single attack predicate.</p>
+      <a class="features-block-docs-link" href="{{ '/security.html' | relative_url }}">See the security solution overview &rarr;</a>
+    </div>
+    <div class="features-block-screenshot">
+      <div class="code-block">
+        <div class="code-block-header">
+          <span class="code-block-lang">bash</span>
+          <span class="code-block-hint">$ bowire scan</span>
+        </div>
+        <pre><code><span class="c">$ bowire scan --target https://api.example.com \</span>
+              --nuclei ~/nuclei-templates \
+              --out findings.sarif --severity medium
+
+  142 template(s) processed:
+  [ok]   built-in.tls-1.0          medium
+  [VULN] built-in.banner-disclose  low      Server: nginx/1.18.0
+  [VULN] CVE-2024-12345            high     /api/v1/admin (header bypass)
+
+  <span class="check-pass">SARIF report -&gt; findings.sarif</span></code></pre>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================================================================ -->
+<!--  Build your own protocol                                          -->
 <!-- ================================================================ -->
 <section class="features-group features-group-alt">
   <div class="features-block features-block-reverse" id="plugins">
     <div class="features-block-text">
-      <h3>Open plugin architecture</h3>
+      <h3>Build your own protocol</h3>
       <p class="features-block-lead">Every protocol is a NuGet package implementing <code>IBowireProtocol</code>. Discovery, Invoke, Stream, Channel, Settings &mdash; one interface, infinite protocols.</p>
       <p>Plugins ship as ordinary NuGet packages. Bowire loads them into per-package <code>AssemblyLoadContext</code>s so a plugin's transitive dependencies don't collide with the host or with each other &mdash; you can install the gRPC plugin (which pins one Google.Protobuf version), the GraphQL plugin (which pins another), and a third-party protocol (which pins a third), and they all coexist.</p>
-      <p>Authoring is six methods on one interface: <code>DiscoverAsync</code>, <code>InvokeAsync</code>, <code>InvokeStreamAsync</code>, <code>OpenChannelAsync</code>, the static plugin metadata, and the optional <code>IBowireMockEmitter</code> for mock replay. The same contract powers the official plugins (gRPC, REST, GraphQL, SignalR, &hellip;) and external ones (Surgewave, Kafka, DIS, UDP). End-users install via <code>bowire plugin install &lt;package-id&gt;</code>; air-gapped users via <code>bowire plugin download</code> + <code>install --file</code>.</p>
+      <p>Authoring is six methods on one interface: <code>DiscoverAsync</code>, <code>InvokeAsync</code>, <code>InvokeStreamAsync</code>, <code>OpenChannelAsync</code>, the static plugin metadata, and the optional <code>IBowireMockEmitter</code> for mock replay. The same contract powers the official plugins (gRPC, REST, GraphQL, SignalR, &hellip;) and external ones (Surgewave, Kafka, DIS, UDP, AMQP). End-users scaffold via <code>dotnet new bowire-plugin --name MyProtocol</code> and ship to NuGet; consumers install via <code>bowire plugin install &lt;package-id&gt;</code>; air-gapped users via <code>bowire plugin download</code> + <code>install --file</code>.</p>
       <a class="features-block-docs-link" href="{{ '/docs/features/plugin-system.html' | relative_url }}">Read the technical docs &rarr;</a>
     </div>
     <div class="features-block-screenshot">
       {% include themed-img.html src="/assets/images/screenshots/schema-upload.png" alt="Bowire's plugin and schema-upload surface — every protocol installs the same way" %}
-    </div>
-  </div>
-</section>
-
-<!-- ================================================================ -->
-<!--  Duplex Channel Manager                                           -->
-<!-- ================================================================ -->
-<section class="features-group">
-  <div class="features-block" id="duplex">
-    <div class="features-block-text">
-      <h3>Duplex channel manager</h3>
-      <p class="features-block-lead">WebSocket, SignalR, MQTT, Socket.IO &mdash; every bidirectional protocol gets a persistent channel. Switch between methods and Bowire stashes the live socket; come back and it's still connected.</p>
-      <p>Most API tools either drop the socket the moment you click off the method (Postman) or only support one connection per workspace at a time (Insomnia). Bowire tracks each open channel as its own object: connect to a SignalR hub on one tab, an MQTT broker on another, a raw WebSocket on a third, and all three keep streaming. The sidebar shows a green dot per live channel; closing the workbench closes them, switching methods doesn't.</p>
-      <p>Per-channel state means request history, sent messages, and received frames all stay grouped per connection &mdash; even if you re-open the workbench tomorrow. For long-running streams (a SignalR hub with 30 minutes of accumulated frames) the Wireshark-style append-only viewer shows every event with timestamps and lets you scroll back through the whole history.</p>
-      <a class="features-block-docs-link" href="{{ '/docs/features/duplex-channels.html' | relative_url }}">Read the technical docs &rarr;</a>
-    </div>
-    <div class="features-block-screenshot">
-      {% include themed-img.html src="/assets/images/screenshots/streaming.png" alt="Wireshark-style streaming pane showing live duplex traffic with per-frame detail" %}
-    </div>
-  </div>
-</section>
-
-<!-- ================================================================ -->
-<!--  Visual Flow Editor                                               -->
-<!-- ================================================================ -->
-<section class="features-group features-group-alt">
-  <div class="features-block features-block-reverse" id="flows">
-    <div class="features-block-text">
-      <h3>Visual flow editor</h3>
-      <p class="features-block-lead">Chain API calls into visual pipelines &mdash; branching conditions, loops, delays, variable forwarding. The kind of orchestration Postman locks behind a Teams subscription.</p>
-      <p>Each step is a node on a canvas: pick the service + method, set inputs (literal or <code>${response.path}</code> from a previous step), choose what to do with the result. Branching nodes split on response value, status code, or timing; loop nodes iterate over an array or repeat until a condition fires; delay nodes pause for a fixed interval or until an external trigger. The whole flow is just JSON, version-controllable in the same repo as the rest of your workbench config.</p>
-      <p>Run the flow once interactively and Bowire shows the response from every step inline. Pin it to an environment and run it from CI via <code>bowire test --flow</code> &mdash; same orchestration, same output, no GUI needed.</p>
-      <a class="features-block-docs-link" href="{{ '/docs/features/flows.html' | relative_url }}">Read the technical docs &rarr;</a>
-    </div>
-    <div class="features-block-screenshot">
-      {% include themed-img.html src="/assets/images/screenshots/flow-editor.png" alt="Flow editor canvas with branching, loop, and delay nodes between API calls" %}
     </div>
   </div>
 </section>
