@@ -2265,7 +2265,12 @@ function createBowireCombobox(hostEl, allItems, defaultSelectedIds, placeholder,
             b.setAttribute('tabindex', on ? '0' : '-1');
         });
         pathSteps.forEach(function (s) {
-            s.hidden = s.dataset.path !== name;
+            // data-path supports a single path ("standalone") or a
+            // space-separated list ("standalone mock") so an install
+            // step that's identical for two paths can be shared
+            // instead of duplicated.
+            var paths = (s.dataset.path || '').split(' ').filter(Boolean);
+            s.hidden = paths.indexOf(name) === -1;
         });
         // Decision step transitions to "done" only after the user
         // actually picks a path. Default state has no path selected
