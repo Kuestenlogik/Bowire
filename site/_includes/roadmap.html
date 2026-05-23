@@ -14,7 +14,10 @@
       <img src="{{ '/assets/images/course.png' | relative_url }}" alt="" loading="lazy">
     </div>
 
-    <p class="roadmap-section-label">Recently shipped</p>
+    <!-- No "Recently shipped" label above the first grid: the checkmark
+         badge on each shipped card already names the state, and the
+         "Up next" divider below provides the contrast. Dropping the
+         label keeps the section heading-to-content path shorter. -->
     <div class="roadmap-grid">
 
       <a class="roadmap-card roadmap-card-link roadmap-card-shipped" href="{{ '/#protocols' | relative_url }}">
