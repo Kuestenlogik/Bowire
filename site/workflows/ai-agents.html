@@ -18,7 +18,7 @@ permalink: /workflows/ai-agents.html
     <p class="features-group-lede">No manual tool definitions. Bowire enumerates your services, maps each method&rsquo;s input schema to JSON Schema, and exposes the lot via the MCP streamable-HTTP transport.</p>
   </header>
 
-  <div class="features-block features-block-text-only">
+  <div class="features-block">
     <div class="features-block-text">
       <h3>Enable the adapter</h3>
       <p class="features-block-lead"><code>--enable-mcp-adapter</code> on the CLI, or <code>.WithMcpAdapter()</code> chained onto <code>MapBowire()</code> in embedded mode. That&rsquo;s the whole opt-in.</p>
@@ -32,6 +32,22 @@ bowire --url https://api.example.com --enable-mcp-adapter
       <p>Bowire hosts the MCP endpoint at <code>{prefix}/mcp</code>, responds to <code>initialize</code>, <code>tools/list</code>, <code>tools/call</code>, and <code>ping</code>. Every unary method Bowire discovers &mdash; across gRPC, REST, SignalR, GraphQL, any protocol plugin &mdash; becomes a typed tool.</p>
       <a class="features-block-docs-link" href="{{ '/solutions/ai-agent-surface.html' | relative_url }}">Your API as an MCP tool surface &mdash; full writeup &rarr;</a>
       <a class="features-block-docs-link" href="{{ '/docs/protocols/mcp.html' | relative_url }}">MCP plugin docs &rarr;</a>
+    </div>
+    <div class="features-block-screenshot">
+      <figure class="features-diagram">
+        <pre class="mermaid">
+flowchart LR
+    Agent["AI agent<br/>Claude · Cursor · Copilot"]
+    Bowire["Bowire<br/>MCP adapter at /mcp"]
+    API["Target API<br/>gRPC · REST · GraphQL · &hellip;"]
+    Agent -->|"tools/list"| Bowire
+    Agent -->|"tools/call"| Bowire
+    Bowire -->|"InvokeAsync"| API
+    API -.->|"typed response"| Bowire
+    Bowire -.->|"tool result"| Agent
+        </pre>
+        <figcaption class="features-diagram-caption">The agent sees Bowire as one MCP server; Bowire dispatches each <code>tools/call</code> through its discovered protocol plugins.</figcaption>
+      </figure>
     </div>
   </div>
 </section>
@@ -91,3 +107,5 @@ bowire --url https://api.example.com --enable-mcp-adapter
     </div>
   </div>
 </section>
+
+{% include mermaid-loader.html %}
