@@ -122,6 +122,12 @@ public sealed class BowireAsyncApiProtocol : IBowireProtocol
         _resolvers["kafka"] = new KafkaBindingResolver(registry);
         _resolvers["ws"] = new WebSocketBindingResolver(registry);
         _resolvers["http"] = new HttpBindingResolver();
+        // Phase C — AMQP. One plugin, two binding keys: `amqp` for the
+        // 0.9.1 spec, `amqp1` for the 1.0 spec. The wire plugin's URL
+        // scheme decides which actual wire (RabbitMQ.Client vs
+        // AMQPNetLite) carries the publish.
+        _resolvers["amqp"] = new AmqpBindingResolver(registry);
+        _resolvers["amqp1"] = new AmqpBindingResolver(registry, bindingId: "amqp1");
     }
 
     public async Task<List<BowireServiceInfo>> DiscoverAsync(
