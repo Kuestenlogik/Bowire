@@ -239,7 +239,7 @@
             <p>Two template sources at once: Bowire's own JSON templates (the curated baseline shipped in <a href="https://github.com/Kuestenlogik/Bowire.VulnDb" target="_blank" rel="noopener">Bowire.VulnDb</a>) plus the 8000+ Nuclei community templates via <code>--nuclei &lt;dir&gt;</code>. The Nuclei reader translates status / word / regex matchers + matchers-condition + payload matrices + the standard variable set (<code>{{BaseURL}}</code>, <code>{{Hostname}}</code>, <code>{{RandStr_N}}</code>, &hellip;) into Bowire's native AttackPredicate DSL &mdash; same engine, both template sets.</p>
             <p>Built-in passive checks fire on every run regardless of templates: TLS-version enumeration, version-disclosing headers, verbose-error detection. SARIF output drops straight into GitHub Code Scanning, GitLab Security Dashboard, Azure DevOps, or any tool with a SARIF importer.</p>
             <div class="features-block-docs-links">
-              <a class="features-block-docs-link" href="{{ '/security.html' | relative_url }}">See the security lane &rarr;</a>
+              <a class="features-block-docs-link" href="{{ '/solutions/security.html' | relative_url }}">See the security lane &rarr;</a>
               <a class="features-block-docs-link" href="{{ '/docs/features/scan.html' | relative_url }}">Straight to the docs &rarr;</a>
             </div>
           </div>
@@ -267,7 +267,7 @@
             <p>Schema-awareness is the differentiator: the fuzzer respects field types from the discovered schema (OpenAPI / proto / GraphQL / AsyncAPI), so SQL-injection payloads don't get fired at integer latitude fields and XSS strings don't get fired at <code>image.bytes</code>. Image-byte fields get magic-byte / truncation / over-length mutation instead, integer fields get boundary / overflow / negative mutation, dates get format / range mutation.</p>
             <p>Four payload categories shipped (<code>sqli</code>, <code>xss</code>, <code>pathtrav</code>, <code>cmdinj</code>) with curated wordlists, plus a baseline-diff oracle: if the mutated response looks materially different from the baseline (status change, error-shape divergence, latency spike beyond N standard deviations) the finding gets flagged. Reuses the same SARIF emitter as <code>bowire scan</code>, so fuzz findings drop into the same CI surface.</p>
             <div class="features-block-docs-links">
-              <a class="features-block-docs-link" href="{{ '/security.html#fuzz' | relative_url }}">See the security lane &rarr;</a>
+              <a class="features-block-docs-link" href="{{ '/solutions/security.html#fuzz' | relative_url }}">See the security lane &rarr;</a>
               <a class="features-block-docs-link" href="{{ '/docs/features/fuzz.html' | relative_url }}">Straight to the docs &rarr;</a>
             </div>
           </div>

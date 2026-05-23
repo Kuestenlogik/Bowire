@@ -287,7 +287,7 @@ Esc           <span class="c">close modal</span>
       <p class="features-block-lead"><code>bowire scan --target https://your-api --out findings.sarif</code> runs vulnerability templates against the API surface Bowire already discovered, and emits SARIF 2.1.0 that your CI ingests unchanged.</p>
       <p>Two template sources at once: Bowire's own JSON templates (curated baseline shipped in <a href="https://github.com/Kuestenlogik/Bowire.VulnDb" target="_blank" rel="noopener">Bowire.VulnDb</a>) plus the 8000+ <a href="https://github.com/projectdiscovery/nuclei-templates" target="_blank" rel="noopener">projectdiscovery/nuclei-templates</a> via <code>--nuclei &lt;dir&gt;</code>. Both feed Bowire's native AttackPredicate engine &mdash; same matchers, same payload variables, no separate runtime.</p>
       <p>Findings emit as SARIF 2.1.0 &mdash; straight into GitHub Code Scanning, GitLab Security Dashboard, Azure DevOps. Built-in passive checks (TLS-version enumeration, version-disclosing headers, verbose-error detection) fire on day one without writing a template. Gating happens at the SARIF-consumer level (Code Scanning branch-protection rules) so the scan step itself stays linear.</p>
-      <a class="features-block-docs-link" href="{{ '/security.html' | relative_url }}">See the security solution overview &rarr;</a>
+      <a class="features-block-docs-link" href="{{ '/solutions/security.html' | relative_url }}">See the security solution overview &rarr;</a>
     </div>
     <div class="features-block-screenshot">
       <div class="code-block">
@@ -319,7 +319,7 @@ Esc           <span class="c">close modal</span>
       <p class="features-block-lead"><code>bowire fuzz</code> mutates one field at a time using the schema Bowire already knows. Knows not to throw SQL-injection at a <code>lat</code> field; <code>image.bytes</code> gets magic-byte mutation, not XSS strings.</p>
       <p>Schema-awareness is the differentiator: the fuzzer respects field types from the discovered schema (OpenAPI / proto / GraphQL / AsyncAPI). Image-byte fields get magic-byte / truncation / over-length mutation, integer fields get boundary / overflow / negative mutation, dates get format / range mutation, strings get the category-appropriate payloads.</p>
       <p>Four payload categories ship out of the box: <code>sqli</code>, <code>xss</code>, <code>pathtrav</code>, <code>cmdinj</code> with curated wordlists. A baseline-diff oracle flags responses that look materially different from the baseline &mdash; status change, error-shape divergence, latency spike beyond <em>N</em> standard deviations. Findings reuse the same SARIF emitter as <code>scan</code>, so they drop into the same Code-Scanning surface.</p>
-      <a class="features-block-docs-link" href="{{ '/security.html#fuzz' | relative_url }}">Read the technical docs &rarr;</a>
+      <a class="features-block-docs-link" href="{{ '/solutions/security.html#fuzz' | relative_url }}">Read the technical docs &rarr;</a>
     </div>
     <div class="features-block-screenshot">
       <div class="code-block">
