@@ -56,12 +56,7 @@ Complement the existing Recordings feature (auto-captured sessions) and the ship
 
 ### Protocol plugins — next wave
 
-**Tier 1 — high value, fits the model:**
-
-- [ ] **MQTT** (`Kuestenlogik.Bowire.Protocol.Mqtt`) — MQTT 3.1.1 / 5.0 via MQTTnet. Topics map to services, publish/subscribe map to unary/streaming. Discovery scans `$SYS/#` or a configured topic prefix. Strong IoT differentiator.
-
-**Tier 2 — useful, more niche:**
-
+- [x] **MQTT** (`Kuestenlogik.Bowire.Protocol.Mqtt`) — MQTT 3.1.1 / 5.0 via MQTTnet. Topics map to services, publish/subscribe map to unary/streaming. Discovery scans `$SYS/#` or a configured topic prefix. Strong IoT differentiator. **Shipped in core** — lives at `src/Kuestenlogik.Bowire.Protocol.Mqtt`, picked up automatically by `BowireProtocolRegistry`.
 - [ ] **Connect (Buf) support in gRPC plugin** — gRPC-compatible RPC over HTTP/1.1 with a different wire envelope than gRPC-Web. Extends `BowireGrpcProtocol` rather than spawning a new plugin (proto definitions, descriptors, reflection responses are all reused). _Scope is bigger than gRPC-Web was_: gRPC-Web is a one-line `GrpcWebHandler`-wrap because `Grpc.Net.Client.Web` ships an HTTP handler that translates inside `GrpcChannel`. Connect has no equivalent .NET library (`connect-net` is on the Buf roadmap but not shipped as of 2026-05); the wire envelope, error format, and streaming framing all have to be hand-written. Phased rollout:
   - **Phase 1 — Unary**. New `GrpcTransportMode.Connect` next to `Native` / `Web`. `connect@<url>` URL prefix + `X-Bowire-Grpc-Transport: connect` metadata header, parallel to the gRPC-Web hooks. Implementation: bypass `GrpcChannel` for Connect mode, drive an `HttpClient` directly — POST `/<package>.<service>/<method>` with `Content-Type: application/proto` (or `application/json` for the JSON wire), Connect headers (`Connect-Protocol-Version: 1`, `Connect-Timeout-Ms`), Connect error body parsing (errors are 200 + JSON body, not HTTP status codes). Discovery reuses gRPC reflection where the server exposes it; static-proto-upload path covers servers that don't.
   - **Phase 2 — Server-streaming**. Connect server-streaming uses `application/connect+proto` (or `+json`) with 5-byte envelope frames (1-byte flags + 4-byte length + payload, big-endian). Parse the response stream into the existing `IAsyncEnumerable<InvokeResult>` shape the streaming pipeline already feeds the UI.
@@ -73,9 +68,9 @@ Complement the existing Recordings feature (auto-captured sessions) and the ship
 - [ ] **SOAP** (`Kuestenlogik.Bowire.Protocol.Soap`) — SOAP 1.1/1.2 via WSDL. Operations ↔ methods, port types ↔ services. Response pane needs an XML highlighter.
 - [ ] **NATS** (`Kuestenlogik.Bowire.Protocol.Nats`) — NATS core + JetStream. Subjects ↔ methods.
 - [ ] **Generic JSON-RPC browser** — generalise the existing MCP JSON-RPC client into a standalone protocol that can browse any JSON-RPC 2.0 endpoint.
-- [ ] **DIS** (`Kuestenlogik.Bowire.Protocol.Dis`) — IEEE 1278 Distributed Interactive Simulation. UDP multicast listener for DIS PDUs. Standalone-mode plugin for simulation environments.
+- [ ] **DIS** (`Kuestenlogik.Bowire.Protocol.Dis`) — IEEE 1278 Distributed Interactive Simulation. UDP multicast listener for DIS PDUs. Standalone-mode plugin for simulation environments. _Already shipped: DIS PDU **rendering** via the frame-semantics framework in v1.3.0 (Bowire can plot DIS frames as soon as they hit the workbench). What's still open: the dedicated wire-listener that opens the UDP socket and feeds DIS PDUs in directly — today the rendering lives in the demo flow with PDUs fed from a sample recording._
 - [ ] **OTLP** (`Kuestenlogik.Bowire.Protocol.Otlp`) — OpenTelemetry Protocol listener. Bowire boots a receiver (gRPC `:4317` + HTTP `:4318`), instrumented apps push traces/metrics/logs at it. First passive-listener mode where Bowire is the server, not the client.
-- [ ] **Surgewave** (`Kuestenlogik.Bowire.Protocol.Surgewave`) — Surgewave tap stream browser. Sibling repo + plugin scaffolding ready; **blocked on the `Kuestenlogik.Surgewave.Client` SDK going public**.
+- [ ] **Surgewave** (`Kuestenlogik.Bowire.Protocol.Surgewave`) — Surgewave tap stream browser. Sibling repo + plugin scaffolding ready; **blocked on the `Kuestenlogik.Surgewave.Client` SDK going public**. _Already shipped: Surgewave tap-stream **rendering** via the frame-semantics framework in v0.9.x; what's gated is the wire plugin that subscribes to the live Surgewave SDK and feeds frames in directly._
 
 ### AsyncAPI as a discovery source
 
