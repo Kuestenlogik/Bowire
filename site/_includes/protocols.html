@@ -257,10 +257,12 @@
               <h3>MQTT</h3>
               <p class="features-block-lead">Both 3.1.1 and 5.0 brokers in one client, with retained-message inspection and QoS 0/1/2 publishes from the same UI as every other call.</p>
               <p>Connect over TCP or WebSocket, subscribe with wildcards (<code>+</code>, <code>#</code>), and watch live messages stream in the Wireshark-style frame pane. MQTT 5 request/response pairs (using correlation data + response topic) are correlated automatically and shown as a unified call.</p>
+              <p><strong>Pairs with AsyncAPI.</strong> An <code>asyncapi.yaml</code> declaring <code>bindings.mqtt</code> or <code>bindings.mqtt5</code> dispatches through this plugin &mdash; channel address &rarr; topic, qos / retain / will fields ride along on the metadata bag. Same workbench UI whether you point Bowire at a broker or at an AsyncAPI contract.</p>
               <ul class="features-block-capabilities">
                 <li>Pub / Sub</li>
                 <li>Request / Response</li>
                 <li>MQTT 3.1.1 + 5.0</li>
+                <li>AsyncAPI <code>bindings.mqtt</code> / <code>mqtt5</code> target</li>
               </ul>
               <a class="features-block-docs-link" href="{{ '/docs/protocols/mqtt.html' | relative_url }}">Read the full docs &rarr;</a>
             </div>
@@ -292,10 +294,12 @@
               <h3>AMQP</h3>
               <p class="features-block-lead">Two AMQP wires (0.9.1 and 1.0) in one plugin, picked by URL scheme. <code>v0.2.0</code> ships discovery + unary invocation + finite-stream consume against live brokers.</p>
               <p>Built on <code>RabbitMQ.Client</code> for AMQP 0.9.1 (<code>amqp://</code> / <code>amqps://</code>) and <code>AMQPNetLite</code> for AMQP 1.0 (<code>amqp1://</code> / <code>amqps1://</code>). On 0.9.1, discovery reads the broker topology via the RabbitMQ Management HTTP API; <code>basic.publish</code> drives invocations, <code>AsyncEventingBasicConsumer</code> drives consume. On 1.0, the plugin exposes a synthetic <code>Broker</code> service, with <code>Session.Send</code> for invocations and <code>ReceiverLink</code> for consume. Same workbench UI on either wire.</p>
+              <p><strong>Pairs with AsyncAPI.</strong> An <code>asyncapi.yaml</code> declaring <code>bindings.amqp</code> (0.9.1) or <code>bindings.amqp1</code> (1.0) dispatches through this plugin &mdash; channel address &rarr; exchange / address, routingKey / deliveryMode / expiration ride on the metadata bag.</p>
               <ul class="features-block-capabilities">
                 <li>Pub / Sub</li>
                 <li>Topic / Direct exchanges</li>
                 <li>AMQP 0.9.1 + 1.0</li>
+                <li>AsyncAPI <code>bindings.amqp</code> / <code>amqp1</code> target</li>
               </ul>
               <a class="features-block-docs-link" href="https://github.com/Kuestenlogik/Bowire.Protocol.Amqp" target="_blank" rel="noopener">Plugin repo &rarr;</a>
             </div>
@@ -472,10 +476,12 @@
               <h3>Kafka</h3>
               <p class="features-block-lead">Live Avro decode against Schema Registry &mdash; consumed records show up as JSON in the frame pane instead of opaque bytes.</p>
               <p>Bowire connects with <code>Confluent.Kafka</code>, discovers topics via the Admin API, and uses the standard envelope so produce / consume work the same as every other protocol. Append <code>?schema-registry=https://...</code> and Avro records are decoded inline; mTLS and SASL credentials live in the environment alongside every other auth scheme.</p>
+              <p><strong>Pairs with AsyncAPI.</strong> An <code>asyncapi.yaml</code> declaring <code>bindings.kafka</code> dispatches through this plugin &mdash; the AsyncAPI <code>KafkaBindingResolver</code> reads channel address &rarr; topic, schema-registry hints, key / partition fields from the doc and hands them off here, so the same workbench UI works whether you point Bowire at a live broker or at an AsyncAPI contract.</p>
               <ul class="features-block-capabilities">
                 <li>Produce (Unary)</li>
                 <li>Consume (Server-streaming)</li>
                 <li>Schema Registry decode (Avro)</li>
+                <li>AsyncAPI <code>bindings.kafka</code> target</li>
               </ul>
               <a class="features-block-docs-link" href="{{ '/docs/protocols/kafka.html' | relative_url }}">Read the full docs &rarr;</a>
             </div>
