@@ -23,6 +23,7 @@ permalink: /workflows/docs-teams.html
       <h3>One <code>&lt;iframe&gt;</code> per example</h3>
       <p class="features-block-lead">Point each embed at the specific method you&rsquo;re documenting. Bowire renders the request editor + response pane for just that method &mdash; no sidebar, no clutter.</p>
       <p>Works with any static-site generator. The embedded Bowire instance can hit a sandbox endpoint you already have (auth pre-filled via URL params) or a per-reader replay-mock if you don&rsquo;t want live traffic to touch the docs. The UI honours your docs site&rsquo;s theme via CSS variables &mdash; light / dark flip automatically.</p>
+      <a class="features-block-docs-link" href="{{ '/solutions/interactive-docs.html' | relative_url }}">Every example is runnable &mdash; full writeup &rarr;</a>
       <a class="features-block-docs-link" href="{{ '/docs/setup/embedded.html' | relative_url }}">Embedded setup docs &rarr;</a>
     </div>
     <div class="features-block-screenshot">
@@ -73,9 +74,15 @@ permalink: /workflows/docs-teams.html
   <div class="features-page-cta-inner">
     <h2 class="features-page-cta-title">Turn the reference into a playground</h2>
     <p class="features-page-cta-lede">Runnable examples, per-language exports, offline-from-schema authoring &mdash; no SaaS, no account, Apache-2.0-licensed.</p>
-    <a class="btn btn-secondary features-page-cta-btn" href="{{ '/docs/features/export-import.html' | relative_url }}">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
-      Go to the export &amp; import docs
-    </a>
+    <div class="features-page-cta-buttons">
+      <a class="btn btn-secondary features-page-cta-btn" href="{{ '/solutions/interactive-docs.html' | relative_url }}">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        Interactive-docs deep dive
+      </a>
+      <a class="btn btn-secondary features-page-cta-btn" href="{{ '/docs/features/export-import.html' | relative_url }}">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+        Export &amp; import docs
+      </a>
+    </div>
   </div>
 </section>

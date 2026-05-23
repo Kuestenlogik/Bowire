@@ -1,0 +1,77 @@
+---
+layout: page
+title: AI-agent tool surface — Bowire
+description: Expose every discovered API method as an MCP tool an AI agent can call. Auto-tool generation, JSON Schema input, streaming support. Plus bowire mcp serve exposes Bowire's own primitives (discover / invoke / record / mock) for agents that orchestrate the workbench.
+---
+
+<section class="features-page-hero">
+  <h1>Your API as an MCP tool surface</h1>
+  <p class="features-page-tagline">Two adapters, one mental model. <code>--enable-mcp-adapter</code> exposes the <em>target API's</em> methods as MCP tools. <code>bowire mcp serve</code> exposes <em>Bowire's own</em> primitives (discover / invoke / record / mock) as MCP tools.</p>
+  <p class="features-page-note">Claude Desktop, Cursor, Copilot, custom MCP clients &mdash; same wire, same auth, same recordings. The adapter generates tool definitions automatically from the discovery pass, so a new method on a running server is callable by the agent within the next discovery tick.</p>
+</section>
+
+<section class="features-group features-group-alt">
+  <header class="features-group-header">
+    <h2 class="features-group-title">MCP adapter &mdash; the agent calls your methods</h2>
+    <p class="features-group-lede">Pass <code>--enable-mcp-adapter</code> and every discovered method becomes an MCP tool with JSON Schema input. The agent sees one tool per method, types match the schema, streaming responses surface as MCP streams.</p>
+  </header>
+  <div class="features-block features-block-text-only">
+    <div class="features-block-text">
+      <p>The agent's view: an MCP server at the URL you point its config at, with one tool per discovered method (e.g. <code>UserApi.GetUser</code>, <code>Orders.Create</code>, <code>EventsHub.NotifyAll</code>). Each tool carries a JSON Schema derived from the method's discovered shape &mdash; the agent picks the right tool and supplies typed arguments without you authoring an MCP server.</p>
+      <p>Auth flows through whichever provider the workbench itself runs under (Bearer / JWT / OAuth2 / mTLS); the agent never sees a second credentials store. Streaming methods (gRPC server-streams, SignalR hub events, MQTT subscriptions, GraphQL subscriptions) surface as MCP streaming tools so an agent can subscribe to a feed the same way a human would in the workbench.</p>
+      <a class="features-block-docs-link" href="{{ '/docs/features/mcp-adapter.html' | relative_url }}">MCP adapter docs &rarr;</a>
+    </div>
+  </div>
+</section>
+
+<section class="features-group">
+  <header class="features-group-header">
+    <h2 class="features-group-title"><code>bowire mcp serve</code> &mdash; the agent drives Bowire</h2>
+    <p class="features-group-lede">The flip side: an MCP server that exposes Bowire's own primitives. An agent can chain <em>discover &rarr; invoke &rarr; assert &rarr; switch env &rarr; replay</em> the same way a human would in the workbench.</p>
+  </header>
+  <div class="features-block features-block-text-only">
+    <div class="features-block-text">
+      <p>Primitives exposed: <code>bowire.discover</code>, <code>bowire.invoke</code>, <code>bowire.subscribe</code>, <code>bowire.env.list</code>, <code>bowire.record.{list, start, stop, replay}</code>, <code>bowire.mock.{start, stop, list}</code>, <code>bowire.allowlist.show</code>. Two transport modes: stdio for desktop clients (Claude Desktop, Cursor) and HTTP for remote agents (Copilot in CI, custom MCP runners).</p>
+      <p>Tools are gated by the same allow-list the workbench uses &mdash; an agent can't reach a method a human couldn't. Run the two adapters side by side if you want an agent that can both call <em>your</em> methods and orchestrate Bowire's record / mock / replay around them.</p>
+      <a class="features-block-docs-link" href="{{ '/docs/features/mcp-serve.html' | relative_url }}">MCP serve docs &rarr;</a>
+    </div>
+  </div>
+</section>
+
+<section class="features-group features-group-alt">
+  <header class="features-group-header">
+    <h2 class="features-group-title">When this matters</h2>
+    <p class="features-group-lede">Three concrete patterns where an MCP-driven Bowire pays off the setup cost.</p>
+  </header>
+  <div class="features-block features-block-text-only">
+    <div class="features-block-text">
+      <ul class="features-block-bullets">
+        <li><strong>Agent as a teammate.</strong> &ldquo;Find every order in the last hour that has <code>status=failed</code>, attach the response payloads, draft a slack message.&rdquo; The agent calls <code>OrderApi.List</code> via the MCP adapter, parses the typed response, picks the failed ones &mdash; without anyone hand-wiring an MCP server for the order API.</li>
+        <li><strong>Agent as a regression runner.</strong> &ldquo;Replay yesterday's captured session against staging and tell me which 5 calls differ.&rdquo; The agent calls <code>bowire.record.list</code>, picks the most recent, runs <code>bowire.record.replay</code> against the staging env, parses the diff. Everything via <code>bowire mcp serve</code>; no shell-out, no log-parsing.</li>
+        <li><strong>Agent as a mock conductor.</strong> &ldquo;Spin up a mock for the order API, run my integration tests against it, then tear it down.&rdquo; <code>bowire.mock.start</code> &rarr; tests run &rarr; <code>bowire.mock.stop</code>. The mock fixture lives in version control as a recording; the agent never needs the real backend.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="features-page-cta features-page-cta-elevated">
+  <div class="features-page-cta-inner">
+    <h2 class="features-page-cta-title">Wire an agent in</h2>
+    <p class="features-page-cta-lede">Two adapters, both ship in the same CLI. Drop the URL into your agent's config, you're done.</p>
+    <div class="features-page-cta-buttons">
+      <a class="btn btn-secondary features-page-cta-btn" href="{{ '/workflows/ai-agents.html' | relative_url }}">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="7" width="16" height="13" rx="2"/><circle cx="9" cy="13" r="1" fill="currentColor"/><circle cx="15" cy="13" r="1" fill="currentColor"/><path d="M9 17h6"/><path d="M12 7V4"/></svg>
+        AI-agent workflow
+      </a>
+      <a class="btn btn-secondary features-page-cta-btn" href="{{ '/docs/features/mcp-adapter.html' | relative_url }}">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+        MCP adapter docs
+      </a>
+      <a class="btn btn-secondary features-page-cta-btn" href="{{ '/features.html#mcp-adapter' | relative_url }}">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+        Feature reference
+      </a>
+    </div>
+    <p class="features-page-cta-finale">A different lane fits better? <a href="{{ '/solutions.html' | relative_url }}">All solution lanes &rarr;</a></p>
+  </div>
+</section>

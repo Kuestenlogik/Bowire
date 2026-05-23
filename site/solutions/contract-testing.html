@@ -1,0 +1,75 @@
+---
+layout: page
+title: API contract & regression testing — Bowire
+description: Capture real traffic across every protocol, replay it against Dev / Staging / Prod, turn payloads into assertions that live next to the request. Cross-protocol recording timeline, environment diff, Newman-style assertions, CI via bowire call --recording.
+---
+
+<section class="features-page-hero">
+  <h1>From a session to a regression</h1>
+  <p class="features-page-tagline">Capture real traffic once. Replay it anywhere. Turn the responses into assertions that ship with the request.</p>
+  <p class="features-page-note">Same recording format every protocol Bowire knows produces. Same replay engine the mock server and the security scanner use. <code>bowire scan</code> with a recording = vulnerability template; <code>bowire mock</code> with a recording = live fixture; <code>bowire call --recording</code> in CI = regression test.</p>
+</section>
+
+<section class="features-group features-group-alt">
+  <header class="features-group-header">
+    <h2 class="features-group-title">Capture &mdash; one click, every protocol</h2>
+    <p class="features-group-lede">Click <em>Record</em>, run the sequence, click <em>Stop</em>. Every request, response, status, header, and inter-call timing ends up in one JSON file &mdash; gRPC streams next to SignalR hub invocations next to MQTT publishes next to REST hits.</p>
+  </header>
+  <div class="features-block features-block-text-only">
+    <div class="features-block-text">
+      <p>The recording format (<code>.bwr</code>) is plain JSON. Version it in Git, review it in a PR, diff it across releases. Bowire writes one file per session by default; <code>bowire call --recording &lt;file&gt;</code> + the <em>Replay</em> button + <code>bowire mock</code> all read the same shape.</p>
+      <p>Cross-protocol on purpose: one capture against a service that uses gRPC for internal calls + SignalR for live updates + REST for client APIs ends up as one timeline you can replay end-to-end, not three separate test fixtures glued together by a script.</p>
+      <a class="features-block-docs-link" href="{{ '/features.html#recording' | relative_url }}">Recording feature reference &rarr;</a>
+    </div>
+  </div>
+</section>
+
+<section class="features-group">
+  <header class="features-group-header">
+    <h2 class="features-group-title">Replay &mdash; spot drift across environments</h2>
+    <p class="features-group-lede">Switch the environment dropdown, hit <em>Replay</em>, get a side-by-side diff against the original capture. Same calls, different host, same expectations.</p>
+  </header>
+  <div class="features-block features-block-text-only">
+    <div class="features-block-text">
+      <p>Variables in the recording substitute against whatever environment you replay against (<code>${env.baseUrl}</code>, <code>${env.token}</code>, &hellip;). The diff highlights status changes, response-shape drift, missing fields, latency spikes &mdash; you see immediately whether Staging still behaves like Prod or where the rollout broke something.</p>
+      <p>For long-running comparisons (week-over-week regression suites): drop the recording in CI behind <code>bowire call --recording</code>, point at <code>--env staging</code>, fail the build on any diff that crosses a configured threshold.</p>
+      <a class="features-block-docs-link" href="{{ '/features.html#environments' | relative_url }}">Environments feature reference &rarr;</a>
+    </div>
+  </div>
+</section>
+
+<section class="features-group features-group-alt">
+  <header class="features-group-header">
+    <h2 class="features-group-title">Assert &mdash; next to the request, not in a separate file</h2>
+    <p class="features-group-lede">Eleven Newman-style operators (<code>eq</code>, <code>ne</code>, <code>gt</code>, <code>contains</code>, <code>matches</code>, <code>type</code>, &hellip;) target any value via <code>response.path.to.value</code> JSONPath. Stored per method, replay with every invocation, green/red badge inline.</p>
+  </header>
+  <div class="features-block features-block-text-only">
+    <div class="features-block-text">
+      <p>Streaming responses get assertions on the accumulated frames &mdash; &ldquo;expect at least 3 frames of type TICK within 2 s&rdquo; is one rule. No plugins, no pipeline, just a test that lives next to the request and ships in the same recording file.</p>
+      <p>Export the recording (including its assertions) into your repo, run it from CI, fail the build when an assertion flips. The same file drives the interactive workbench replay and the headless CI run &mdash; no second test fixture to maintain.</p>
+      <a class="features-block-docs-link" href="{{ '/features.html#test-assertions' | relative_url }}">Test-assertions feature reference &rarr;</a>
+    </div>
+  </div>
+</section>
+
+<section class="features-page-cta features-page-cta-elevated">
+  <div class="features-page-cta-inner">
+    <h2 class="features-page-cta-title">Try the regression flow</h2>
+    <p class="features-page-cta-lede">The shortest end-to-end story: capture a session against staging, replay it against prod, lock the responses with assertions, drop the file in your CI.</p>
+    <div class="features-page-cta-buttons">
+      <a class="btn btn-secondary features-page-cta-btn" href="{{ '/workflows/testers.html' | relative_url }}">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+        Tester workflow walkthrough
+      </a>
+      <a class="btn btn-secondary features-page-cta-btn" href="{{ '/quickstart.html' | relative_url }}">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+        Quickstart
+      </a>
+      <a class="btn btn-secondary features-page-cta-btn" href="{{ '/features.html#recording' | relative_url }}">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+        Feature reference
+      </a>
+    </div>
+    <p class="features-page-cta-finale">A different lane fits better? <a href="{{ '/solutions.html' | relative_url }}">All solution lanes &rarr;</a></p>
+  </div>
+</section>

@@ -256,9 +256,11 @@ Esc           <span class="c">close modal</span>
   <div class="features-block features-block-reverse" id="mock">
     <div class="features-block-text">
       <h3>Replay recordings as a live mock server</h3>
-      <p class="features-block-lead"><code>bowire mock --recording session.bwr --port 5099</code> turns any captured recording into a live endpoint at the same shape as the original.</p>
+      <p class="features-block-lead"><code>bowire mock --recording session.bwr --port 5099</code> turns any captured recording into a live endpoint at the same shape as the original &mdash; so dev / test runs don't have to stand up the real backend.</p>
+      <p><strong>The real backend is friction.</strong> The third-party API needs an OAuth flow + a paid subscription that burns credits on every test run. Your own service is a 12-container <code>docker-compose</code> with a 5-minute boot. The CI runner sits behind a corporate VPN that doesn't reach the upstream at all. A captured recording cuts all of that out of the loop &mdash; the fixture is the JSON file, drop it on a USB stick, drop it in a Git repo, hit replay.</p>
       <p>Every protocol your recording captured replays through the same listener &mdash; REST verbs on the same paths, gRPC unary + server-streaming + bidi with the captured frames, WebSocket / SSE / SignalR / Socket.IO pushing the same sequence, MQTT publishes hitting the same topics, GraphQL subscriptions streaming the same events. Protocol semantics stay intact (status codes, frame timing, headers) instead of collapsing everything to a JSON stub.</p>
       <p>Optional layers on top: <strong>hot-reload</strong> &mdash; rewriting the recording file refreshes the mock without restart; <strong>chaos injection</strong> &mdash; configurable latency / 5xx rate / dropped-frame ratio for resilience tests; <strong>schema-only mode</strong> (<code>--from-spec openapi.yaml</code>) &mdash; plausible responses from an OpenAPI / gRPC descriptor / GraphQL schema with no recording at all; <strong>capture-on-miss</strong> &mdash; unrecorded request transparently forwards to a fallback target, captures the response, serves it back next time.</p>
+      <a class="features-block-docs-link" href="{{ '/solutions/service-mocking.html' | relative_url }}">Develop without the real backend &mdash; full writeup &rarr;</a>
       <a class="features-block-docs-link" href="{{ '/docs/features/mock.html' | relative_url }}">Read the technical docs &rarr;</a>
     </div>
     <div class="features-block-screenshot">

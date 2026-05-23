@@ -24,6 +24,7 @@ permalink: /workflows/devops.html
       <div class="devops-capability-text">
         <h3><code>bowire mock</code> &mdash; integration-test fixture</h3>
         <p>Replay a recorded session as a live endpoint on the runner. Same protocol-shape as the real service (REST, gRPC, WebSocket, MQTT, &hellip;), hot-reload on file edits, capture-on-miss for new calls. Fixtures live in your repo as <code>.bwr</code> files &mdash; reviewable in PRs.</p>
+        <p style="margin-top:6px;"><a class="features-block-docs-link" href="{{ '/solutions/service-mocking.html' | relative_url }}">Service-mocking lane: develop without the real backend &rarr;</a></p>
       </div>
       <div class="devops-capability-code">
         <div class="code-block">
@@ -39,6 +40,7 @@ $ bowire mock --recording fixtures/api.bwr \
       <div class="devops-capability-text">
         <h3><code>bowire scan</code> &mdash; SAST gate with native SARIF</h3>
         <p>Built-in passive checks plus the 8000+ Nuclei community templates via <code>--nuclei</code>, fed through the same engine. Findings emit as SARIF 2.1.0 &mdash; GitHub Code Scanning, GitLab Security Dashboard, or Azure DevOps ingest it natively. Gating happens via Code-Scanning branch-protection rules.</p>
+        <p style="margin-top:6px;"><a class="features-block-docs-link" href="{{ '/solutions/security.html' | relative_url }}">Security solution overview &rarr;</a></p>
       </div>
       <div class="devops-capability-code">
         <div class="code-block">
@@ -133,6 +135,14 @@ $ bowire fuzz --target http://localhost:5099 \
     <h2 class="features-page-cta-title">Wire it in</h2>
     <p class="features-page-cta-lede">Pull the binary, drop the three steps into your workflow, let SARIF light up your Security tab.</p>
     <div class="features-page-cta-buttons">
+      <a class="btn btn-secondary features-page-cta-btn" href="{{ '/solutions/service-mocking.html' | relative_url }}">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/><circle cx="7" cy="7" r="0.6" fill="currentColor"/><circle cx="9.5" cy="7" r="0.6" fill="currentColor"/><path d="M8 14l3 3 5-5"/></svg>
+        Service-mocking deep dive
+      </a>
+      <a class="btn btn-secondary features-page-cta-btn" href="{{ '/solutions/security.html' | relative_url }}">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2l8 4v6c0 5-3.5 9.4-8 10-4.5-.6-8-5-8-10V6l8-4z"/><polyline points="9 12 11 14 15 10"/></svg>
+        Security deep dive
+      </a>
       <a class="btn btn-secondary features-page-cta-btn" href="{{ '/downloads.html' | relative_url }}">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
         Get the binary

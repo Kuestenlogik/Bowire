@@ -31,6 +31,7 @@ var app = builder.Build();
 
 app.MapBowire();</code></pre>
       <p>Hit <code>https://localhost:5001/bowire</code> and the sidebar already has your services in it. gRPC via Server Reflection, REST via your OpenAPI endpoint, SignalR hubs from the endpoint data source, GraphQL via introspection &mdash; all at once.</p>
+      <a class="features-block-docs-link" href="{{ '/solutions/embedded-debug-ui.html' | relative_url }}">Why embedded vs. a separate tool &rarr;</a>
       <a class="features-block-docs-link" href="{{ '/docs/setup/embedded.html' | relative_url }}">Read the embedded-mode docs &rarr;</a>
     </div>
     <div class="features-block-screenshot">
@@ -62,6 +63,7 @@ app.MapBowire();</code></pre>
       <h3>Hot reload &mdash; no restart after a route change</h3>
       <p class="features-block-lead">Add a new method to a service, save, re-run. The next discovery tick picks it up; you never hit refresh.</p>
       <p>Bowire polls discovery every few seconds against every configured URL. A new gRPC method, a new SignalR hub handler, a new REST route &mdash; shows up within a tick without anyone disconnecting or re-uploading a schema. Cuts the inner dev loop from &ldquo;change, rebuild, reconnect, click&rdquo; down to &ldquo;change, rebuild, click.&rdquo;</p>
+      <a class="features-block-docs-link" href="{{ '/solutions/service-discovery.html' | relative_url }}">No schema files to maintain &mdash; full writeup &rarr;</a>
       <a class="features-block-docs-link" href="{{ '/features.html#auto-discovery' | relative_url }}">Auto-discovery in detail &rarr;</a>
     </div>
     <div class="features-block-screenshot">
@@ -105,9 +107,19 @@ app.MapBowire();</code></pre>
   <div class="features-page-cta-inner">
     <h2 class="features-page-cta-title">Ready to embed it?</h2>
     <p class="features-page-cta-lede">Two-line setup, zero schema files, every protocol your service already speaks.</p>
-    <a class="btn btn-secondary features-page-cta-btn" href="{{ '/docs/setup/embedded.html' | relative_url }}">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
-      Go to the embedded-mode docs
-    </a>
+    <div class="features-page-cta-buttons">
+      <a class="btn btn-secondary features-page-cta-btn" href="{{ '/solutions/embedded-debug-ui.html' | relative_url }}">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><circle cx="6.5" cy="6.5" r="0.6" fill="currentColor"/><circle cx="9" cy="6.5" r="0.6" fill="currentColor"/></svg>
+        Embedded UI deep dive
+      </a>
+      <a class="btn btn-secondary features-page-cta-btn" href="{{ '/solutions/service-discovery.html' | relative_url }}">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg>
+        Service-discovery lane
+      </a>
+      <a class="btn btn-secondary features-page-cta-btn" href="{{ '/docs/setup/embedded.html' | relative_url }}">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+        Embedded-mode docs
+      </a>
+    </div>
   </div>
 </section>

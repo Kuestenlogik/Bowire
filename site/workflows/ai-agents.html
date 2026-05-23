@@ -30,6 +30,7 @@ bowire --url https://api.example.com --enable-mcp-adapter
 #   "url": "http://localhost:5000/bowire/mcp"
 # }</code></pre>
       <p>Bowire hosts the MCP endpoint at <code>{prefix}/mcp</code>, responds to <code>initialize</code>, <code>tools/list</code>, <code>tools/call</code>, and <code>ping</code>. Every unary method Bowire discovers &mdash; across gRPC, REST, SignalR, GraphQL, any protocol plugin &mdash; becomes a typed tool.</p>
+      <a class="features-block-docs-link" href="{{ '/solutions/ai-agent-surface.html' | relative_url }}">Your API as an MCP tool surface &mdash; full writeup &rarr;</a>
       <a class="features-block-docs-link" href="{{ '/docs/protocols/mcp.html' | relative_url }}">MCP plugin docs &rarr;</a>
     </div>
   </div>
@@ -78,9 +79,15 @@ bowire --url https://api.example.com --enable-mcp-adapter
   <div class="features-page-cta-inner">
     <h2 class="features-page-cta-title">Ship typed tools to your agent</h2>
     <p class="features-page-cta-lede">Flip one flag, get a full MCP tool catalogue. Debug with the same UI you use to invoke the services by hand.</p>
-    <a class="btn btn-secondary features-page-cta-btn" href="{{ '/docs/protocols/mcp.html' | relative_url }}">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
-      Go to the MCP docs
-    </a>
+    <div class="features-page-cta-buttons">
+      <a class="btn btn-secondary features-page-cta-btn" href="{{ '/solutions/ai-agent-surface.html' | relative_url }}">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="7" width="16" height="13" rx="2"/><circle cx="9" cy="13" r="1" fill="currentColor"/><circle cx="15" cy="13" r="1" fill="currentColor"/><path d="M9 17h6"/><path d="M12 7V4"/></svg>
+        AI-agent surface deep dive
+      </a>
+      <a class="btn btn-secondary features-page-cta-btn" href="{{ '/docs/protocols/mcp.html' | relative_url }}">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+        MCP docs
+      </a>
+    </div>
   </div>
 </section>
