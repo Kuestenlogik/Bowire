@@ -91,6 +91,9 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Kuestenlogik.Bowire\Kuestenlogik.Bowire.csproj" />
+    <!-- Tool drives the CLI surface — needs the CLI contract package
+         (carries System.CommandLine, IBowireCliCommand, the registry). -->
+    <ProjectReference Include="..\Kuestenlogik.Bowire.Cli\Kuestenlogik.Bowire.Cli.csproj" />
     <ProjectReference Include="..\Kuestenlogik.Bowire.Protocol.Grpc\Kuestenlogik.Bowire.Protocol.Grpc.csproj" />
     <ProjectReference Include="..\Kuestenlogik.Bowire.Protocol.SignalR\Kuestenlogik.Bowire.Protocol.SignalR.csproj" />
     <ProjectReference Include="..\Kuestenlogik.Bowire.Protocol.Mcp\Kuestenlogik.Bowire.Protocol.Mcp.csproj" />

@@ -19,6 +19,10 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Kuestenlogik.Bowire\Kuestenlogik.Bowire.csproj" />
+    <!-- ScanCliCommand implements IBowireCliCommand → needs the CLI
+         contract package, which carries the System.CommandLine
+         dependency. Core Kuestenlogik.Bowire is CL-free since v1.6.0. -->
+    <ProjectReference Include="..\Kuestenlogik.Bowire.Cli\Kuestenlogik.Bowire.Cli.csproj" />
     <!-- Templates.Nuclei lets the `nuclei` flag read the
          projectdiscovery/nuclei-templates corpus alongside the
          scanner's native JSON-template shape. Scanner depends on

@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Description>Bowire CLI plugin contract — IBowireCliCommand interface + the assembly-scan registry that materialises subcommands at startup. Reference this package when authoring a Bowire subcommand (e.g. for the bowire CLI tool or a sibling plugin). Embedded Bowire hosts that don't ship a CLI surface don't need this — Kuestenlogik.Bowire core is now System.CommandLine-free.</Description>
+    <PackageId>Kuestenlogik.Bowire.Cli</PackageId>
+    <PackageTags>bowire;cli;subcommand;plugin-authoring;system-commandline;developer-tools</PackageTags>
+    <IsPackable>true</IsPackable>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- ASP.NET shared framework brings Microsoft.Extensions.Logging.Abstractions
+         transitively, the only Microsoft.Extensions API this package
+         consumes (ILogger in BowireCliCommandRegistry.Discover). -->
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- Bowire core lives in the same solution; in-tree project reference.
+         When this assembly is consumed as a NuGet package, the published
+         metadata will resolve Kuestenlogik.Bowire as a normal package
+         dependency. -->
+    <ProjectReference Include="..\Kuestenlogik.Bowire\Kuestenlogik.Bowire.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- System.CommandLine is the contract surface for CLI subcommands —
+         IBowireCliCommand.Build() returns a Command. Pulled in here so
+         the core Bowire package stays CL-free for embedded hosts. -->
+    <PackageReference Include="System.CommandLine" />
+  </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="Kuestenlogik.Bowire.Cli.Tests" />
+    <InternalsVisibleTo Include="Kuestenlogik.Bowire.Tests" />
+  </ItemGroup>
+</Project>
