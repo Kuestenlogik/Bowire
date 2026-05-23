@@ -67,7 +67,28 @@ app.MapBowire();</code></pre>
       <a class="features-block-docs-link" href="{{ '/features.html#auto-discovery' | relative_url }}">Auto-discovery in detail &rarr;</a>
     </div>
     <div class="features-block-screenshot">
-      {% include themed-img.html src="/assets/images/screenshots/ready.png" alt="Bowire sidebar showing services discovered across multiple protocols" %}
+      <figure class="features-diagram">
+        <pre class="mermaid">
+sequenceDiagram
+    autonumber
+    participant Bowire
+    participant gRPC as gRPC Reflection
+    participant REST as OpenAPI doc
+    participant Hub as EndpointDataSource
+    participant UI as Workbench UI
+
+    loop every few seconds
+        Bowire->>gRPC: ListServices
+        gRPC-->>Bowire: methods + descriptors
+        Bowire->>REST: GET /swagger/v1/swagger.json
+        REST-->>Bowire: paths + schemas
+        Bowire->>Hub: enumerate hubs
+        Hub-->>Bowire: hub + method list
+        Bowire-->>UI: sidebar diff (+added &middot; -removed &middot; ~changed)
+    end
+        </pre>
+        <figcaption class="features-diagram-caption">Bowire polls every configured URL on a tick. A new gRPC method, a new REST route, a new SignalR hub handler appears in the sidebar without disconnecting the workbench or re-uploading a schema.</figcaption>
+      </figure>
     </div>
   </div>
 </section>
@@ -123,3 +144,5 @@ app.MapBowire();</code></pre>
     </div>
   </div>
 </section>
+
+{% include mermaid-loader.html %}

@@ -195,7 +195,7 @@ $ bowire proxy --port 8888 --api-port 8889
     <p class="features-group-lede">Three template sources, one engine, one SARIF report. The scanner doesn't care which source a template came from &mdash; matchers, payload variables, and severity work the same way regardless.</p>
   </header>
 
-  <div class="features-block features-block-text-only">
+  <div class="features-block">
     <div class="features-block-text">
       <ul class="security-checks-list">
         <li>
@@ -217,6 +217,32 @@ $ bowire proxy --port 8888 --api-port 8889
       </ul>
 
       <a class="features-block-docs-link" href="https://github.com/Kuestenlogik/Bowire/blob/main/docs/security/examples/README.md">Template format reference &rarr;</a>
+    </div>
+    <div class="features-block-screenshot">
+      <figure class="features-diagram">
+        <pre class="mermaid">
+flowchart LR
+    Passive(["Built-in<br/>passive checks"])
+    VulnDb(["Bowire.VulnDb"])
+    Nuclei(["nuclei-templates<br/>(8000+)"])
+    Own(["Your recordings"])
+    Engine(["AttackPredicate<br/>engine"])
+    SARIF[("findings.sarif")]
+    GH(["GitHub<br/>Code Scanning"])
+    GL(["GitLab<br/>Security Dashboard"])
+    AzDO(["Azure DevOps"])
+
+    Passive --> Engine
+    VulnDb --> Engine
+    Nuclei --> Engine
+    Own --> Engine
+    Engine --> SARIF
+    SARIF --> GH
+    SARIF --> GL
+    SARIF --> AzDO
+        </pre>
+        <figcaption class="features-diagram-caption">Templates from any source feed the same <code>AttackPredicate</code> engine. SARIF 2.1.0 is the universal output &mdash; every SARIF-aware consumer reads it directly, no translation step.</figcaption>
+      </figure>
     </div>
   </div>
 </section>
@@ -428,3 +454,5 @@ jobs:
     line-height: 1.55;
   }
 </style>
+
+{% include mermaid-loader.html %}

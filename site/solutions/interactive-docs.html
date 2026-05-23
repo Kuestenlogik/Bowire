@@ -29,11 +29,32 @@ description: Every example in your docs is runnable. Reader edits the JSON, hits
     <h2 class="features-group-title">Code-export so readers don't stay in the UI</h2>
     <p class="features-group-lede">A doc reader's goal isn't to keep clicking Send in the browser &mdash; it's to copy the working snippet into their own code. Every Bowire call exports as <code>curl</code>, <code>grpcurl</code>, or a typed C# / TypeScript snippet.</p>
   </header>
-  <div class="features-block features-block-text-only">
+  <div class="features-block">
     <div class="features-block-text">
       <p>The exported snippet uses the exact values the reader just entered in the form &mdash; not a hand-curated example that drifts away from the live shape. Copy the snippet, paste into a script, run it. The auth picker (Basic / Bearer / JWT / OAuth2) becomes the appropriate header in the export; the gRPC metadata becomes a <code>grpcurl --header</code>; the GraphQL variables become a JSON body.</p>
       <p>Typed exports (C# / TypeScript) include the strongly-typed message classes so the snippet drops into a real codebase as-is. No string-template gymnastics, no &ldquo;adapt this example to your types&rdquo; footnote.</p>
       <a class="features-block-docs-link" href="{{ '/docs/features/code-export.html' | relative_url }}">Code-export docs &rarr;</a>
+    </div>
+    <div class="features-block-screenshot">
+      <figure class="features-diagram">
+        <pre class="mermaid">
+sequenceDiagram
+    autonumber
+    participant Reader
+    participant Bowire as Bowire (embedded)
+    participant API
+    participant Snippet as Code panel
+
+    Reader->>Bowire: pick method &middot; edit form
+    Reader->>Bowire: Send (Ctrl+Enter)
+    Bowire->>API: invoke
+    API-->>Bowire: real response
+    Bowire-->>Reader: render in response pane
+    Bowire->>Snippet: regenerate curl &middot; grpcurl &middot; C# &middot; TS
+    Snippet-->>Reader: copy-to-clipboard
+        </pre>
+        <figcaption class="features-diagram-caption">Every edit in the form regenerates every snippet. The exported <code>curl</code> / <code>grpcurl</code> / typed-client code carries the exact values the reader just typed &mdash; no hand-curated example to drift away from the live shape.</figcaption>
+      </figure>
     </div>
   </div>
 </section>
@@ -73,3 +94,5 @@ description: Every example in your docs is runnable. Reader edits the JSON, hits
     <p class="features-page-cta-finale">A different lane fits better? <a href="{{ '/solutions.html' | relative_url }}">All solution lanes &rarr;</a></p>
   </div>
 </section>
+
+{% include mermaid-loader.html %}

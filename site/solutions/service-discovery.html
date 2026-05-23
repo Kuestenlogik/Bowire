@@ -37,11 +37,39 @@ description: Plug a protocol in, get a live service tree — no hand-maintained 
     <h2 class="features-group-title">Hot-reload, error-visible, multi-URL</h2>
     <p class="features-group-lede">A method registered on a running server shows up in the sidebar within the next discovery tick. A URL that can't be classified surfaces an inline error rather than failing silently. Multiple <code>--url</code> flags? All of them.</p>
   </header>
-  <div class="features-block features-block-text-only">
+  <div class="features-block">
     <div class="features-block-text">
       <p>The discovery pass repeats every few seconds against every configured URL. No page refresh, no &ldquo;reconnect&rdquo; dance, no manual schema re-upload. If your gRPC server adds a method while Bowire is running, the next tick adds it to the sidebar; if the GraphQL schema gets a new query field, the same.</p>
       <p>When a URL can't be classified (no plugin claims it, the host isn't reachable, TLS cert isn't trusted), the workbench surfaces the failure inline with a clear error message and a retry button. Same path the discovery-failed screenshot in the gallery shows. No silent fall-through.</p>
       <p>Multi-target works for the realistic case: a single Bowire instance pointed at <code>--url grpc://users:50051 --url https://orders.example.com/openapi.json --url mqtt://broker:1883</code> shows all three sets of services in one sidebar, each tagged with its origin URL.</p>
+    </div>
+    <div class="features-block-screenshot">
+      <figure class="features-diagram">
+        <pre class="mermaid">
+flowchart LR
+    URL1(["grpc://users:50051"])
+    URL2(["orders/openapi.json"])
+    URL3(["mqtt://broker:1883"])
+    Plugin{"Plugin<br/>claims?"}
+    Reflect(["gRPC Reflection"])
+    Parse(["OpenAPI parse"])
+    Subscribe(["$SYS/# subscribe"])
+    Sidebar[("Unified<br/>sidebar")]
+    Err(["Inline error<br/>+ retry"])
+
+    URL1 --> Plugin
+    URL2 --> Plugin
+    URL3 --> Plugin
+    Plugin -->|"gRPC"| Reflect
+    Plugin -->|"REST"| Parse
+    Plugin -->|"MQTT"| Subscribe
+    Plugin -->|"unclaimed"| Err
+    Reflect --> Sidebar
+    Parse --> Sidebar
+    Subscribe --> Sidebar
+        </pre>
+        <figcaption class="features-diagram-caption">Each <code>--url</code> is classified by the matching protocol plugin and dispatched to that plugin&rsquo;s native introspection mechanism. Results merge into one sidebar. Unclaimed URLs surface an inline error rather than failing silently. The same shape extends to GraphQL <code>__schema</code>, SignalR <code>EndpointDataSource</code>, OData CSDL, AsyncAPI bindings, and any third-party plugin that implements <code>DiscoverAsync</code>.</figcaption>
+      </figure>
     </div>
   </div>
 </section>
@@ -67,3 +95,5 @@ description: Plug a protocol in, get a live service tree — no hand-maintained 
     <p class="features-page-cta-finale">A different lane fits better? <a href="{{ '/solutions.html' | relative_url }}">All solution lanes &rarr;</a></p>
   </div>
 </section>
+
+{% include mermaid-loader.html %}
