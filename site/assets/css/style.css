@@ -5937,7 +5937,14 @@ p a:not([class]):hover,
 }
 /* Subtle hint glyph in the top-right corner — only visible on the rendered
    state (so it doesn't sit on the empty pre-render placeholder), and
-   readable in either theme. */
+   readable in either theme.
+
+   Implementation note: data-URI SVGs with stroke='currentColor' do NOT
+   inherit the surrounding CSS `color` property — the URI is loaded as a
+   standalone resource. To get a theme-aware glyph we use mask-image
+   instead: the pseudo-element fills with `background-color: currentColor`
+   and the SVG is used as an alpha mask. That way changing `color` (e.g.
+   on hover to --accent) actually re-colours the glyph. */
 .features-diagram::after {
     content: "";
     position: absolute;
@@ -5945,12 +5952,15 @@ p a:not([class]):hover,
     right: 10px;
     width: 22px;
     height: 22px;
-    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><circle cx='11' cy='11' r='7'/><line x1='21' y1='21' x2='16.5' y2='16.5'/><line x1='11' y1='8' x2='11' y2='14'/><line x1='8' y1='11' x2='14' y2='11'/></svg>");
-    background-size: contain;
-    background-repeat: no-repeat;
-    color: var(--text-secondary);
+    background-color: var(--text-secondary);
+    -webkit-mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><circle cx='11' cy='11' r='7'/><line x1='21' y1='21' x2='16.5' y2='16.5'/><line x1='11' y1='8' x2='11' y2='14'/><line x1='8' y1='11' x2='14' y2='11'/></svg>");
+            mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><circle cx='11' cy='11' r='7'/><line x1='21' y1='21' x2='16.5' y2='16.5'/><line x1='11' y1='8' x2='11' y2='14'/><line x1='8' y1='11' x2='14' y2='11'/></svg>");
+    -webkit-mask-size: contain;
+            mask-size: contain;
+    -webkit-mask-repeat: no-repeat;
+            mask-repeat: no-repeat;
     opacity: 0;
-    transition: opacity 0.18s;
+    transition: opacity 0.18s, background-color 0.18s;
     pointer-events: none;
 }
 .features-diagram:has(.mermaid[data-mermaid-rendered])::after {
@@ -5958,7 +5968,7 @@ p a:not([class]):hover,
 }
 .features-diagram:hover::after {
     opacity: 0.9;
-    color: var(--accent);
+    background-color: var(--accent);
 }
 /* Centre the rendered SVG inside the frame and give it room to breathe. */
 .features-diagram .mermaid {
