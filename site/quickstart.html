@@ -82,22 +82,24 @@ any service URL without code changes.
       <p class="features-block-lead">Bowire runs three ways for the quickstart &mdash; the rest of the steps differ slightly depending on which one you pick. Boat photos mirror the <a href="{{ '/#launch' | relative_url }}">Straight-into-the-water</a> stepper above so the deployment shape is recognisable across both surfaces.</p>
 
       <div class="quickstart-path-picker" data-path-picker role="tablist" aria-label="Choose how Bowire runs against your services">
-        <button class="quickstart-path-btn" type="button" role="tab" data-path="standalone" aria-selected="false">
-          <span class="quickstart-path-btn-photo" aria-hidden="true">
-            <img src="{{ '/assets/images/launch/speedboat.jpg' | relative_url }}" alt="" loading="lazy">
-          </span>
-          <span class="quickstart-path-btn-body">
-            <span class="quickstart-path-btn-title">Speedboat &mdash; Standalone CLI</span>
-            <span class="quickstart-path-btn-desc">Run <code>bowire</code> against any service URL. No code changes to the target.</span>
-          </span>
-        </button>
         <button class="quickstart-path-btn" type="button" role="tab" data-path="embedded" aria-selected="false">
           <span class="quickstart-path-btn-photo" aria-hidden="true">
             <img src="{{ '/assets/images/launch/sailboat.jpg' | relative_url }}" alt="" loading="lazy">
           </span>
           <span class="quickstart-path-btn-body">
-            <span class="quickstart-path-btn-title">Sailboat &mdash; Embedded in ASP.NET</span>
+            <span class="quickstart-path-btn-title">Sailboat</span>
+            <span class="quickstart-path-btn-mode">Embedded in ASP.NET</span>
             <span class="quickstart-path-btn-desc">Mount Bowire inside your app. Auto-discovers services from the live <code>IServiceProvider</code>.</span>
+          </span>
+        </button>
+        <button class="quickstart-path-btn" type="button" role="tab" data-path="standalone" aria-selected="false">
+          <span class="quickstart-path-btn-photo" aria-hidden="true">
+            <img src="{{ '/assets/images/launch/speedboat.jpg' | relative_url }}" alt="" loading="lazy">
+          </span>
+          <span class="quickstart-path-btn-body">
+            <span class="quickstart-path-btn-title">Speedboat</span>
+            <span class="quickstart-path-btn-mode">Standalone CLI</span>
+            <span class="quickstart-path-btn-desc">Run <code>bowire</code> against any service URL. No code changes to the target.</span>
           </span>
         </button>
         <button class="quickstart-path-btn" type="button" role="tab" data-path="mock" aria-selected="false">
@@ -105,7 +107,8 @@ any service URL without code changes.
             <img src="{{ '/assets/images/launch/dazzleship.jpg' | relative_url }}" alt="" loading="lazy">
           </span>
           <span class="quickstart-path-btn-body">
-            <span class="quickstart-path-btn-title">Dazzle ship &mdash; Replay mock</span>
+            <span class="quickstart-path-btn-title">Dazzle ship</span>
+            <span class="quickstart-path-btn-mode">Replay mock</span>
             <span class="quickstart-path-btn-desc">Replay a captured recording as a live mock endpoint. Unblock frontend work, run CI without the real backend.</span>
           </span>
         </button>
