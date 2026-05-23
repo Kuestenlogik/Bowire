@@ -29,11 +29,43 @@ description: Capture real traffic across every protocol, replay it against Dev /
     <h2 class="features-group-title">Replay &mdash; spot drift across environments</h2>
     <p class="features-group-lede">Switch the environment dropdown, hit <em>Replay</em>, get a side-by-side diff against the original capture. Same calls, different host, same expectations.</p>
   </header>
-  <div class="features-block features-block-text-only">
+  <div class="features-block">
     <div class="features-block-text">
       <p>Variables in the recording substitute against whatever environment you replay against (<code>${env.baseUrl}</code>, <code>${env.token}</code>, &hellip;). The diff highlights status changes, response-shape drift, missing fields, latency spikes &mdash; you see immediately whether Staging still behaves like Prod or where the rollout broke something.</p>
       <p>For long-running comparisons (week-over-week regression suites): drop the recording in CI behind <code>bowire call --recording</code>, point at <code>--env staging</code>, fail the build on any diff that crosses a configured threshold.</p>
       <a class="features-block-docs-link" href="{{ '/features.html#environments' | relative_url }}">Environments feature reference &rarr;</a>
+    </div>
+    <div class="features-block-screenshot">
+      <figure class="features-diagram">
+        <pre class="mermaid">
+flowchart LR
+    subgraph cap["1 &middot; Capture"]
+        direction TB
+        Live(["Live session"])
+        BWR[("session.bwr")]
+        Live --> BWR
+    end
+    subgraph rep["2 &middot; Replay"]
+        direction TB
+        Dev(["Dev"])
+        Stag(["Staging"])
+        Prod(["Prod"])
+    end
+    subgraph ass["3 &middot; Assert"]
+        direction TB
+        Ops(["eq &middot; gt<br/>contains &middot; matches"])
+    end
+    BWR --> Dev
+    BWR --> Stag
+    BWR --> Prod
+    Dev --> Ops
+    Stag --> Ops
+    Prod --> Ops
+    Ops -->|"all match"| Pass(["pass"])
+    Ops -->|"any miss"| Fail(["fail CI"])
+        </pre>
+        <figcaption class="features-diagram-caption">One <code>.bwr</code> file drives three replays across environments; the same Newman-style assertion set runs against each. <code>bowire call --recording</code> wires the same loop into CI &mdash; <code>fail</code> exit code on any miss.</figcaption>
+      </figure>
     </div>
   </div>
 </section>
@@ -73,3 +105,5 @@ description: Capture real traffic across every protocol, replay it against Dev /
     <p class="features-page-cta-finale">A different lane fits better? <a href="{{ '/solutions.html' | relative_url }}">All solution lanes &rarr;</a></p>
   </div>
 </section>
+
+{% include mermaid-loader.html %}
