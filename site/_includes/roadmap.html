@@ -80,11 +80,11 @@
 
     <div class="roadmap-grid">
 
-      <a class="roadmap-card roadmap-card-link" href="https://github.com/Kuestenlogik/Bowire/blob/main/ROADMAP.md" target="_blank" rel="noopener">
+      <a class="roadmap-card roadmap-card-link" href="https://github.com/Kuestenlogik/Bowire/blob/main/ROADMAP.md#auth-provider-extension-spi-phase-a--core-seam" target="_blank" rel="noopener">
         <div class="roadmap-number" aria-hidden="true">1</div>
         <div class="roadmap-card-body">
-          <h3>Kafka plugin (<code>Kuestenlogik.Bowire.Protocol.Kafka</code>)</h3>
-          <p>Sibling plugin on top of <code>Confluent.Kafka</code> with Schema Registry decode. Topic &harr; method, produce &harr; unary, consume &harr; server-streaming. Lights up AsyncAPI&rsquo;s <code>kafka</code> binding for real broker dispatch.</p>
+          <h3>Auth-provider extension SPI</h3>
+          <p>A third extension type next to <code>IBowireProtocol</code> and <code>IBowireUiExtension</code> &mdash; <code>IBowireAuthProvider</code>. Plus the first concrete impl: <code>Kuestenlogik.Bowire.Auth.Oidc</code> as a separate NuGet, so the Microsoft.Identity.Web weight only lands in installs that need OIDC.</p>
         </div>
       </a>
 
