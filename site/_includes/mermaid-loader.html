@@ -97,7 +97,12 @@ shared visual frame (border, drop-shadow, optional <figcaption>).
           theme: 'base',
           themeVariables,
           flowchart: { useMaxWidth: true, htmlLabels: true, curve: 'basis' },
-          securityLevel: 'strict',
+          // 'loose' so the <br/> + <i> tags in our own diagram sources
+          // actually render. Source is repo-controlled — never user input —
+          // so the looser sanitiser is the right level. 'strict' (Mermaid's
+          // default) strips every inline tag including <br/>, which makes
+          // multi-line node labels collapse into one unreadable run.
+          securityLevel: 'loose',
         });
         return resolved;
       };
