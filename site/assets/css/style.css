@@ -5314,11 +5314,27 @@ p a:not([class]):hover,
     min-width: 0;
 }
 .quickstart-path-btn-title {
+    display: block;
     font-weight: 700;
     font-size: 1.0625rem;
     color: var(--text);
+    line-height: 1.2;
+}
+/* Mode line under the boat name — same treatment as the launch-
+   stepper's .launch-boat-mode so the two surfaces speak the same
+   typography. Accent colour + uppercase + tracked letters reads
+   as a sub-label, not body text. */
+.quickstart-path-btn-mode {
+    display: block;
+    margin: 2px 0 6px;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--accent-light);
+    font-weight: 600;
 }
 .quickstart-path-btn-desc {
+    display: block;
     color: var(--text-secondary);
     font-size: 0.9375rem;
     line-height: 1.45;
