@@ -5323,6 +5323,93 @@ p a:not([class]):hover,
        while the text content keeps a comfortable 18 px inset. */
     padding: 16px 18px 18px;
 }
+
+/* Quickstart URL widget — live multi-URL input that drives a code
+   snippet directly below. Used by the Standalone "Run it" step
+   (bowire --url … template) and the Container "Wire it into your
+   stack" step (compose template). JS handler in main.js. */
+.qs-url-widget {
+    margin: 18px 0 14px;
+    padding: 16px 18px;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+}
+.qs-url-label {
+    display: block;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-secondary);
+    margin-bottom: 8px;
+}
+.qs-url-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 10px;
+}
+.qs-url-row {
+    display: flex;
+    gap: 6px;
+    align-items: stretch;
+}
+.qs-url-input {
+    flex: 1 1 auto;
+    min-width: 0;
+    padding: 8px 10px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    color: var(--text);
+    font-family: var(--font-mono);
+    font-size: 0.875rem;
+}
+.qs-url-input:focus {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+    border-color: var(--accent);
+}
+.qs-url-remove {
+    flex: 0 0 auto;
+    width: 32px;
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    color: var(--text-tertiary);
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+.qs-url-remove:hover {
+    color: var(--danger, #ef4444);
+    border-color: var(--danger, #ef4444);
+}
+/* Hide remove on the last remaining row — JS toggles a class
+   `qs-url-list--single` when there's only one row. */
+.qs-url-list--single .qs-url-remove { display: none; }
+.qs-url-add {
+    background: transparent;
+    border: 1px dashed var(--border);
+    border-radius: var(--radius);
+    color: var(--text-secondary);
+    font-size: 0.8125rem;
+    padding: 6px 12px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 12px;
+}
+.qs-url-add:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+}
+.qs-url-snippet {
+    margin: 0;
+}
 .quickstart-path-btn-title {
     display: block;
     font-weight: 700;

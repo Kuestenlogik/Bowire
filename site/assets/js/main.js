@@ -2362,6 +2362,123 @@ function createBowireCombobox(hostEl, allItems, defaultSelectedIds, placeholder,
 })();
 
 // ====================================================================
+// Quickstart URL widget — live multi-URL input that drives a code
+// snippet directly below. Used by the Standalone "Run it" step
+// (bowire --url … template) and the Container "Wire it into your
+// stack" step (compose template).
+//
+// Each widget carries data-qs-url-template = "bowire" | "compose".
+// Templates render the same list of URLs in two different shapes —
+// bash-style continuation lines for `bowire`, yaml-array-entry lines
+// for `compose`. Adding / removing rows + typing in any row updates
+// the <code> body and the copy button's data-copy attribute live.
+// ====================================================================
+(function () {
+    var widgets = document.querySelectorAll('[data-qs-url-widget]');
+    if (widgets.length === 0) return;
+
+    function renderBowireTemplate(urls) {
+        if (urls.length <= 1) {
+            return 'bowire --url ' + (urls[0] || 'https://api.example.com');
+        }
+        var lines = urls.map(function (u, i) {
+            var prefix = i === 0 ? 'bowire --url ' : '        --url ';
+            return prefix + u + (i < urls.length - 1 ? ' \\' : '');
+        });
+        return lines.join('\n');
+    }
+
+    function renderComposeTemplate(urls) {
+        // Always render a fixed compose file shape; the URLs become
+        // the command:[] array inside the bowire service. Single URL
+        // gets the compact ['--url', '…'] form; multi-URL switches
+        // to a list form so each entry stays readable.
+        var commandLine;
+        if (urls.length <= 1) {
+            commandLine = "    command: ['--url', '" + (urls[0] || 'http://api:50051') + "']";
+        } else {
+            var entries = ["'--url'"];
+            urls.forEach(function (u) {
+                entries.push("'" + u + "'");
+                entries.push("'--url'");
+            });
+            entries.pop();  // remove trailing '--url' from the back-pair.
+            commandLine = '    command: [' + entries.join(', ') + ']';
+        }
+        return 'services:\n' +
+            '  api:\n' +
+            '    image: my-api:latest\n' +
+            "    ports: ['50051:50051']\n" +
+            '\n' +
+            '  bowire:\n' +
+            '    image: kuestenlogik/bowire:latest\n' +
+            commandLine + '\n' +
+            "    ports: ['5080:5080']\n" +
+            '    volumes:\n' +
+            '      - bowire-data:/home/app/.bowire\n' +
+            '    depends_on: [api]\n' +
+            '\n' +
+            'volumes:\n' +
+            '  bowire-data:';
+    }
+
+    widgets.forEach(function (widget) {
+        var template = widget.dataset.qsUrlTemplate || 'bowire';
+        var list = widget.querySelector('[data-qs-url-list]');
+        var addBtn = widget.querySelector('[data-qs-url-add]');
+        var out = widget.querySelector('[data-qs-url-out]');
+        var copyBtn = widget.querySelector('[data-qs-url-copy]');
+        if (!list || !out) return;
+
+        function renderSnippet() {
+            var inputs = list.querySelectorAll('[data-qs-url-input]');
+            var urls = Array.prototype.map.call(inputs, function (i) {
+                return i.value.trim() || i.placeholder || '';
+            }).filter(function (u) { return u.length > 0; });
+
+            var snippet;
+            if (template === 'compose') snippet = renderComposeTemplate(urls);
+            else snippet = renderBowireTemplate(urls);
+
+            out.textContent = snippet;
+            if (copyBtn) copyBtn.dataset.copy = snippet;
+
+            list.classList.toggle('qs-url-list--single', inputs.length <= 1);
+        }
+
+        function wireRow(row) {
+            var input = row.querySelector('[data-qs-url-input]');
+            var remove = row.querySelector('[data-qs-url-remove]');
+            if (input) input.addEventListener('input', renderSnippet);
+            if (remove) remove.addEventListener('click', function () {
+                if (list.querySelectorAll('.qs-url-row').length <= 1) return;
+                row.remove();
+                renderSnippet();
+            });
+        }
+
+        // Wire the initial row(s) already in the markup.
+        Array.prototype.forEach.call(list.querySelectorAll('.qs-url-row'), wireRow);
+
+        if (addBtn) {
+            addBtn.addEventListener('click', function () {
+                var template = list.querySelector('.qs-url-row');
+                if (!template) return;
+                var clone = template.cloneNode(true);
+                var input = clone.querySelector('[data-qs-url-input]');
+                if (input) input.value = '';   // fresh row starts empty.
+                list.appendChild(clone);
+                wireRow(clone);
+                renderSnippet();
+                if (input) input.focus();
+            });
+        }
+
+        renderSnippet();   // initial paint.
+    });
+})();
+
+// ====================================================================
 // Quickstart code-copy buttons — wrap every <pre> on
 // /quickstart.html in the same `.code-block` chrome the landing-page
 // install snippets use: a header row with a language label on the
