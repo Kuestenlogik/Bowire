@@ -49,7 +49,7 @@ app.Run();</code></pre>
     <h2 class="features-group-title">Inherits the host's DI, auth, logging, config</h2>
     <p class="features-group-lede">Bowire reads from the same <code>IServiceProvider</code> your app already builds. Every behaviour that's wired in elsewhere is honoured automatically.</p>
   </header>
-  <div class="features-block features-block-text-only">
+  <div class="features-block">
     <div class="features-block-text">
       <ul class="features-block-bullets">
         <li><strong><code>[Authorize]</code> gates still apply.</strong> A method locked behind a policy needs the same token when invoked from the workbench. The workbench's auth-helper panel picks up the token the user already authenticated with; no parallel credentials store.</li>
@@ -58,6 +58,29 @@ app.Run();</code></pre>
         <li><strong><code>IOptions&lt;T&gt;</code> picks up the same values.</strong> Plugins that consume <code>IOptions&lt;T&gt;</code> read the same <code>appsettings.json</code> + environment variables your service does. One config tree, one source of truth.</li>
       </ul>
       <p>Nothing parallel, nothing bypassed. The workbench surface is the surface your service exposes; the difference is just which client is calling.</p>
+    </div>
+    <div class="features-block-screenshot">
+      <figure class="features-diagram">
+        <pre class="mermaid">
+sequenceDiagram
+    autonumber
+    participant Host as Program.cs
+    participant DI as IServiceProvider
+    participant Bowire
+
+    Note over Host,DI: Boot
+    Host->>DI: AddAuthentication &middot; AddLogging &middot; ...
+    Host->>DI: AddBowire()
+    Host->>Bowire: MapBowire()
+
+    Note over Bowire,DI: Request time
+    Bowire->>DI: resolve [Authorize] policy
+    DI-->>Bowire: same policy as the host's
+    Bowire->>DI: resolve ILogger / IOptions
+    DI-->>Bowire: same providers &middot; same config
+        </pre>
+        <figcaption class="features-diagram-caption">Bowire reads from the same <code>IServiceProvider</code> the host already built. <code>[Authorize]</code> gates, logging providers, <code>IOptions&lt;T&gt;</code> all resolve to the host&rsquo;s values &mdash; no parallel pipeline, no second credentials store, no separate log file. The workbench surface <em>is</em> the service surface.</figcaption>
+      </figure>
     </div>
   </div>
 </section>
@@ -100,3 +123,5 @@ app.Run();</code></pre>
     <p class="features-page-cta-finale">A different lane fits better? <a href="{{ '/solutions.html' | relative_url }}">All solution lanes &rarr;</a></p>
   </div>
 </section>
+
+{% include mermaid-loader.html %}
