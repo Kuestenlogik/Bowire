@@ -3633,16 +3633,91 @@ button.comparison-bestfor-card.active .comparison-bestfor-name {
 /* Plain-text sign-off under the closer link — matches the visual weight
    of the old .cta-setsail element but is not a link. Second half
    ("Discover APIs.") picks up --accent to echo the old CTA colouring. */
-.cta-finale {
-    margin: 36px auto 40px;
-    font-size: 1.25rem;
-    font-weight: 700;
-    letter-spacing: -0.01em;
-    text-align: center;
+/* "Set sail. Discover APIs." — the page's last clickable beat.
+   Stand-alone action strip with its own surface so it reads as a
+   distinct call, not a slogan tail-fading into the trust line above
+   it. Gradient backdrop tilts toward --accent, then hover lifts the
+   whole strip + slides the arrow forward. Routes to /quickstart.html
+   (the natural "I want to start" target). Inside the cta <section>
+   on purpose so the dot-nav doesn't pick it up as its own entry. */
+.cta-setsail {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+    margin: 36px auto 32px;
+    padding: 22px 28px;
+    max-width: 560px;
+    border-radius: var(--radius-lg, 14px);
+    border: 1px solid var(--border);
+    background:
+        linear-gradient(135deg, rgba(99, 102, 241, 0.16) 0%, rgba(99, 102, 241, 0.04) 60%, transparent 100%),
+        var(--surface);
+    color: var(--text);
+    text-decoration: none;
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.18);
+    transition: transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease;
+}
+.cta-setsail:hover,
+.cta-setsail:focus-visible {
+    transform: translateY(-3px);
+    border-color: var(--accent);
+    box-shadow: 0 18px 44px rgba(0, 0, 0, 0.28), 0 0 0 1px var(--accent);
+    text-decoration: none;
+    outline: none;
+}
+.cta-setsail-text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    text-align: left;
+    line-height: 1.15;
+}
+.cta-setsail-lead {
+    font-size: 1.6rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
     color: var(--text);
 }
-.cta-finale span {
+.cta-setsail-promise {
+    font-size: 1.6rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
     color: var(--accent);
+}
+.cta-setsail-arrow {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: rgba(99, 102, 241, 0.16);
+    color: var(--accent);
+    flex-shrink: 0;
+    transition: transform 0.22s ease, background-color 0.22s ease;
+}
+.cta-setsail:hover .cta-setsail-arrow,
+.cta-setsail:focus-visible .cta-setsail-arrow {
+    transform: translateX(4px);
+    background: var(--accent);
+    color: var(--surface);
+}
+@media (max-width: 520px) {
+    .cta-setsail {
+        flex-direction: column;
+        gap: 16px;
+        text-align: center;
+        padding: 20px 22px;
+    }
+    .cta-setsail-text {
+        text-align: center;
+        align-items: center;
+    }
+    .cta-setsail-lead,
+    .cta-setsail-promise {
+        font-size: 1.35rem;
+    }
 }
 
 .cta-trust strong {
