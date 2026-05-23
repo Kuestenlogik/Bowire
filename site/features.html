@@ -86,6 +86,61 @@ description: A closer look at the workflows Bowire is built for — visual flow 
       </div>
     </div>
   </div>
+
+  <!-- ---- MCP adapter (expose discovered methods as MCP tools) ---- -->
+  <div class="features-block" id="mcp-adapter">
+    <div class="features-block-text">
+      <h3>AI agents drive the workbench via MCP</h3>
+      <p class="features-block-lead">Pass <code>--enable-mcp-adapter</code> and every method Bowire discovered becomes an MCP tool an AI agent can call directly. JSON Schema input, typed responses, no MCP-server boilerplate to write.</p>
+      <p>Claude Desktop, Cursor, Copilot, custom MCP clients &mdash; same wire, same auth, same recordings as the human-driven workbench. The adapter generates tool definitions automatically from the discovered service tree, so a new method on a running server is callable by the agent within the next discovery tick. Streaming responses surface as MCP streams; auth flows through whichever provider the workbench itself runs under.</p>
+      <p>Same idea as <code>bowire mcp serve</code> below, but flipped: that one exposes Bowire's own primitives as MCP tools. This one exposes the <em>target API's</em> methods. Run both side by side if you want an agent that can both drive your service surface and orchestrate Bowire's record / mock / replay primitives.</p>
+      <a class="features-block-docs-link" href="{{ '/docs/features/mcp-adapter.html' | relative_url }}">Read the technical docs &rarr;</a>
+    </div>
+    <div class="features-block-screenshot">
+      <div class="code-block">
+        <div class="code-block-header">
+          <span class="code-block-lang">bash</span>
+          <span class="code-block-hint">$ bowire ... --enable-mcp-adapter</span>
+          <button class="copy-btn" data-copy="bowire --url https://api.example.com --enable-mcp-adapter" aria-label="Copy">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+          </button>
+        </div>
+        <pre><code><span class="c">$ bowire --url https://api.example.com \</span>
+          --enable-mcp-adapter
+
+   <span class="c"># workbench    http://localhost:5080</span>
+   <span class="c"># MCP adapter  http://localhost:5080/mcp</span>
+   <span class="c"># 12 discovered methods exposed as MCP tools</span></code></pre>
+      </div>
+    </div>
+  </div>
+
+  <!-- ---- bowire mcp serve (expose Bowire's own ops as MCP tools) ---- -->
+  <div class="features-block features-block-reverse" id="mcp-serve">
+    <div class="features-block-text">
+      <h3>Bowire's own ops as MCP tools</h3>
+      <p class="features-block-lead"><code>bowire mcp serve</code> exposes Bowire itself as an MCP server. The agent can chain <em>discover &rarr; invoke &rarr; assert &rarr; switch env &rarr; replay</em> the same way a human would in the workbench, just with more parallelism.</p>
+      <p>Primitives exposed: <code>bowire.discover</code>, <code>bowire.invoke</code>, <code>bowire.subscribe</code>, <code>bowire.env.list</code>, <code>bowire.record.{list, start, stop, replay}</code>, <code>bowire.mock.{start, stop, list}</code>, <code>bowire.allowlist.show</code>. Two transport modes: stdio for desktop clients (Claude Desktop, Cursor) and HTTP for remote agents (Copilot in CI, custom MCP runners).</p>
+      <p>Auth piggy-backs on whichever provider the workbench runs under, so the agent never sees a second credentials store. Tools are gated by the same allow-list the workbench uses &mdash; an agent can't reach a method a human couldn't.</p>
+      <a class="features-block-docs-link" href="{{ '/docs/features/mcp-serve.html' | relative_url }}">Read the technical docs &rarr;</a>
+    </div>
+    <div class="features-block-screenshot">
+      <div class="code-block">
+        <div class="code-block-header">
+          <span class="code-block-lang">bash</span>
+          <span class="code-block-hint">$ bowire mcp serve</span>
+          <button class="copy-btn" data-copy="bowire mcp serve --bind stdio" aria-label="Copy">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+          </button>
+        </div>
+        <pre><code><span class="c"># Stdio — what Claude Desktop / Cursor want</span>
+$ bowire mcp serve --bind stdio
+
+<span class="c"># HTTP for over-the-wire clients (Copilot, CI runners)</span>
+$ bowire mcp serve --bind http --port 5097</code></pre>
+      </div>
+    </div>
+  </div>
 </section>
 
 <!-- ================================================================ -->
@@ -189,11 +244,102 @@ Esc           <span class="c">close modal</span>
     <div class="features-block-text">
       <h3>Record &amp; replay</h3>
       <p class="features-block-lead">Click record, run a sequence of calls, click stop. Now you have a reproducible test case, a debug artifact, and a future mock server in one file.</p>
-      <p>Recordings capture request, response, status, timing, and metadata for every call across every protocol &mdash; gRPC streams, SignalR hub invocations, WebSocket frames, MQTT publishes, REST hits, all in one timeline. Replay against another environment to check drift, convert into test assertions for CI, export as HAR for teammates, or (coming soon) serve the recording back as a live mock.</p>
+      <p>Recordings capture request, response, status, timing, and metadata for every call across every protocol &mdash; gRPC streams, SignalR hub invocations, WebSocket frames, MQTT publishes, REST hits, all in one timeline. Replay against another environment to check drift, convert into test assertions for CI, export as HAR for teammates, or serve the recording back as a live mock (see the next block).</p>
       <a class="features-block-docs-link" href="{{ '/docs/features/recording.html' | relative_url }}">Read the technical docs &rarr;</a>
     </div>
     <div class="features-block-screenshot">
       {% include themed-img.html src="/assets/images/screenshots/recording.png" alt="Recording manager — timeline of captured calls with per-step pass/fail markers" %}
+    </div>
+  </div>
+
+  <!-- ---- Mock server (replay recordings as a live endpoint) ---- -->
+  <div class="features-block features-block-reverse" id="mock">
+    <div class="features-block-text">
+      <h3>Replay recordings as a live mock server</h3>
+      <p class="features-block-lead"><code>bowire mock --recording session.bwr --port 5099</code> turns any captured recording into a live endpoint at the same shape as the original.</p>
+      <p>Every protocol your recording captured replays through the same listener &mdash; REST verbs on the same paths, gRPC unary + server-streaming + bidi with the captured frames, WebSocket / SSE / SignalR / Socket.IO pushing the same sequence, MQTT publishes hitting the same topics, GraphQL subscriptions streaming the same events. Protocol semantics stay intact (status codes, frame timing, headers) instead of collapsing everything to a JSON stub.</p>
+      <p>Optional layers on top: <strong>hot-reload</strong> &mdash; rewriting the recording file refreshes the mock without restart; <strong>chaos injection</strong> &mdash; configurable latency / 5xx rate / dropped-frame ratio for resilience tests; <strong>schema-only mode</strong> (<code>--from-spec openapi.yaml</code>) &mdash; plausible responses from an OpenAPI / gRPC descriptor / GraphQL schema with no recording at all; <strong>capture-on-miss</strong> &mdash; unrecorded request transparently forwards to a fallback target, captures the response, serves it back next time.</p>
+      <a class="features-block-docs-link" href="{{ '/docs/features/mock.html' | relative_url }}">Read the technical docs &rarr;</a>
+    </div>
+    <div class="features-block-screenshot">
+      <div class="code-block">
+        <div class="code-block-header">
+          <span class="code-block-lang">bash</span>
+          <span class="code-block-hint">$ bowire mock</span>
+          <button class="copy-btn" data-copy="bowire mock --recording session.bwr --port 5099 --hot-reload" aria-label="Copy">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+          </button>
+        </div>
+        <pre><code><span class="c">$ bowire mock \</span>
+    --recording session.bwr \
+    --port 5099 --hot-reload
+
+   <span class="c"># mock listening on 0.0.0.0:5099</span>
+   <span class="c"># 42 calls loaded across gRPC, REST, WebSocket</span></code></pre>
+      </div>
+    </div>
+  </div>
+
+  <!-- ---- Security scanner ---- -->
+  <div class="features-block" id="scan">
+    <div class="features-block-text">
+      <h3>Multi-protocol security scanner</h3>
+      <p class="features-block-lead"><code>bowire scan --target https://your-api --out findings.sarif</code> runs vulnerability templates against the API surface Bowire already discovered, and emits SARIF 2.1.0 that your CI ingests unchanged.</p>
+      <p>Two template sources at once: Bowire's own JSON templates (curated baseline shipped in <a href="https://github.com/Kuestenlogik/Bowire.VulnDb" target="_blank" rel="noopener">Bowire.VulnDb</a>) plus the 8000+ <a href="https://github.com/projectdiscovery/nuclei-templates" target="_blank" rel="noopener">projectdiscovery/nuclei-templates</a> via <code>--nuclei &lt;dir&gt;</code>. Both feed Bowire's native AttackPredicate engine &mdash; same matchers, same payload variables, no separate runtime.</p>
+      <p>Findings emit as SARIF 2.1.0 &mdash; straight into GitHub Code Scanning, GitLab Security Dashboard, Azure DevOps. Built-in passive checks (TLS-version enumeration, version-disclosing headers, verbose-error detection) fire on day one without writing a template. Gating happens at the SARIF-consumer level (Code Scanning branch-protection rules) so the scan step itself stays linear.</p>
+      <a class="features-block-docs-link" href="{{ '/security.html' | relative_url }}">See the security solution overview &rarr;</a>
+    </div>
+    <div class="features-block-screenshot">
+      <div class="code-block">
+        <div class="code-block-header">
+          <span class="code-block-lang">bash</span>
+          <span class="code-block-hint">$ bowire scan</span>
+          <button class="copy-btn" data-copy="bowire scan --target https://api.example.com --nuclei ~/nuclei-templates --out findings.sarif --severity medium" aria-label="Copy">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+          </button>
+        </div>
+        <pre><code><span class="c">$ bowire scan --target https://api.example.com \</span>
+              --nuclei ~/nuclei-templates \
+              --out findings.sarif --severity medium
+
+  142 template(s) processed:
+  [ok]   built-in.tls-1.0          medium
+  [VULN] built-in.banner-disclose  low      Server: nginx/1.18.0
+  [VULN] CVE-2024-12345            high     /api/v1/admin (header bypass)
+
+  <span class="check-pass">SARIF report -&gt; findings.sarif</span></code></pre>
+      </div>
+    </div>
+  </div>
+
+  <!-- ---- Schema-aware fuzzer ---- -->
+  <div class="features-block features-block-reverse" id="fuzz">
+    <div class="features-block-text">
+      <h3>Schema-aware field-level fuzzer</h3>
+      <p class="features-block-lead"><code>bowire fuzz</code> mutates one field at a time using the schema Bowire already knows. Knows not to throw SQL-injection at a <code>lat</code> field; <code>image.bytes</code> gets magic-byte mutation, not XSS strings.</p>
+      <p>Schema-awareness is the differentiator: the fuzzer respects field types from the discovered schema (OpenAPI / proto / GraphQL / AsyncAPI). Image-byte fields get magic-byte / truncation / over-length mutation, integer fields get boundary / overflow / negative mutation, dates get format / range mutation, strings get the category-appropriate payloads.</p>
+      <p>Four payload categories ship out of the box: <code>sqli</code>, <code>xss</code>, <code>pathtrav</code>, <code>cmdinj</code> with curated wordlists. A baseline-diff oracle flags responses that look materially different from the baseline &mdash; status change, error-shape divergence, latency spike beyond <em>N</em> standard deviations. Findings reuse the same SARIF emitter as <code>scan</code>, so they drop into the same Code-Scanning surface.</p>
+      <a class="features-block-docs-link" href="{{ '/security.html#fuzz' | relative_url }}">Read the technical docs &rarr;</a>
+    </div>
+    <div class="features-block-screenshot">
+      <div class="code-block">
+        <div class="code-block-header">
+          <span class="code-block-lang">bash</span>
+          <span class="code-block-hint">$ bowire fuzz</span>
+          <button class="copy-btn" data-copy="bowire fuzz --target https://api.example.com --template recordings/order-create.bwf --field '$.customer.email' --payloads xss" aria-label="Copy">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+          </button>
+        </div>
+        <pre><code><span class="c">$ bowire fuzz \</span>
+    --target https://api.example.com \
+    --template recordings/order.bwf \
+    --field '$.customer.email' \
+    --payloads sqli,xss --out fuzz.sarif
+
+  payloads tried:  42
+  baseline runs:    5
+  divergent:        3   (status 500, latency &gt;3<span class="check-pass">&sigma;</span>)</code></pre>
+      </div>
     </div>
   </div>
 
@@ -453,6 +599,69 @@ EventsHub        SignalR
 { "id": 42, "name": "Ada" }
 
 <span class="c">$ bowire --url https://api.example.com  # opens UI</span></code></pre>
+      </div>
+    </div>
+  </div>
+
+  <!-- ---- Intercepting proxy (HTTPS MITM) ---- -->
+  <div class="features-block" id="proxy">
+    <div class="features-block-text">
+      <h3>Intercepting proxy with HTTPS MITM</h3>
+      <p class="features-block-lead"><code>bowire proxy</code> is a CA-trusted forward proxy that decrypts TLS on the fly, streams captured flows into the workbench, and converts any flow into a Bowire recording with one click.</p>
+      <p>Auto-generated CA on first run, leaf-cert minting per hostname, cache that survives restarts. Point your client (browser, mobile app under test, scripted runner) at <code>localhost:8888</code>, install the printed CA, every request flows through the proxy &mdash; HTTPS included, fully decrypted. The workbench Proxy view subscribes to the flow stream over SSE and renders each captured request/response live.</p>
+      <p>One-click "send to recording" converts a captured flow into a template that <code>bowire scan</code>, <code>fuzz</code>, or <code>mock</code> can replay. The CA lives at <code>~/.bowire/proxy-ca.{pfx,crt}</code> &mdash; same place across restarts, importable into the trust store of any client you're driving.</p>
+      <a class="features-block-docs-link" href="{{ '/docs/features/proxy.html' | relative_url }}">Read the technical docs &rarr;</a>
+    </div>
+    <div class="features-block-screenshot">
+      <div class="code-block">
+        <div class="code-block-header">
+          <span class="code-block-lang">bash</span>
+          <span class="code-block-hint">$ bowire proxy</span>
+          <button class="copy-btn" data-copy="bowire proxy --port 8888 --api-port 8889" aria-label="Copy">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+          </button>
+        </div>
+        <pre><code><span class="c">$ bowire proxy --port 8888 --api-port 8889</span>
+
+   <span class="c"># proxy        listening on 0.0.0.0:8888</span>
+   <span class="c"># workbench    http://localhost:8889/proxy</span>
+   <span class="c"># CA exported  ~/.bowire/proxy-ca.crt</span>
+
+<span class="c">$ bowire proxy --export-ca ~/Downloads/bowire-ca.crt</span></code></pre>
+      </div>
+    </div>
+  </div>
+
+  <!-- ---- JWT toolkit ---- -->
+  <div class="features-block features-block-reverse" id="jwt">
+    <div class="features-block-text">
+      <h3>JWT decode, tamper, re-sign</h3>
+      <p class="features-block-lead"><code>bowire jwt decode</code> splits the header / payload / signature, validates <code>exp</code> / <code>nbf</code> / <code>iat</code>, lists the present claims. <code>bowire jwt tamper</code> probes the classic <code>alg: none</code> acceptance, signs with a chosen secret, lets you override individual claims for the smoke-test sequence.</p>
+      <p>Scriptable enough for CI gates and security-regression suites &mdash; same exit codes / SARIF output as the rest of the security CLI surface so a failed <code>alg:none</code> downgrade attempt or a successful claim-injection lands in the Code-Scanning dashboard next to a regular <code>scan</code> finding.</p>
+      <p>Pairs naturally with the workbench's auth helpers above: capture a JWT from a real session via <code>bowire proxy</code>, run <code>bowire jwt tamper</code> against it to probe the verification surface, then re-inject the tampered token into the next request with the auth-helper's override flag.</p>
+      <a class="features-block-docs-link" href="{{ '/docs/features/jwt.html' | relative_url }}">Read the technical docs &rarr;</a>
+    </div>
+    <div class="features-block-screenshot">
+      <div class="code-block">
+        <div class="code-block-header">
+          <span class="code-block-lang">bash</span>
+          <span class="code-block-hint">$ bowire jwt ...</span>
+          <button class="copy-btn" data-copy="bowire jwt decode <token>
+bowire jwt tamper <token> --alg-none
+bowire jwt tamper <token> --set isAdmin=true --secret weak123" aria-label="Copy">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+          </button>
+        </div>
+        <pre><code><span class="c"># Decode header + payload, flag well-known weaknesses</span>
+$ bowire jwt decode &lt;token&gt;
+
+<span class="c"># alg:none downgrade (CVE-2015-9235 class)</span>
+$ bowire jwt tamper &lt;token&gt; --alg-none
+
+<span class="c"># Inject a claim, re-sign with a weak secret</span>
+$ bowire jwt tamper &lt;token&gt; \
+                   --set isAdmin=true \
+                   --secret weak123</code></pre>
       </div>
     </div>
   </div>
