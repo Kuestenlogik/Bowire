@@ -2264,13 +2264,16 @@ function createBowireCombobox(hostEl, allItems, defaultSelectedIds, placeholder,
             b.setAttribute('aria-selected', on ? 'true' : 'false');
             b.setAttribute('tabindex', on ? '0' : '-1');
         });
+        var firstRevealedStep = null;
         pathSteps.forEach(function (s) {
             // data-path supports a single path ("standalone") or a
             // space-separated list ("standalone mock") so an install
             // step that's identical for two paths can be shared
             // instead of duplicated.
             var paths = (s.dataset.path || '').split(' ').filter(Boolean);
-            s.hidden = paths.indexOf(name) === -1;
+            var match = paths.indexOf(name) !== -1;
+            s.hidden = !match;
+            if (match && firstRevealedStep === null) firstRevealedStep = s;
         });
         // Decision step transitions to "done" only after the user
         // actually picks a path. Default state has no path selected
@@ -2280,6 +2283,20 @@ function createBowireCombobox(hostEl, allItems, defaultSelectedIds, placeholder,
         // disappears here — its job was done at first paint.
         if (decision) decision.classList.add('is-done');
         if (pending) pending.hidden = true;
+
+        // Auto-scroll to the first revealed step so the user lands on
+        // the content their choice just produced, rather than having
+        // to find the next bubble themselves. Smooth scroll keeps the
+        // transition feeling continuous with the page flow; block:
+        // "start" puts the step's number bubble at the top of the
+        // viewport. Guard against the first scroll happening before
+        // layout settles (rAF) — without it Safari occasionally
+        // scrolls to a pre-layout position.
+        if (firstRevealedStep) {
+            requestAnimationFrame(function () {
+                firstRevealedStep.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            });
+        }
     }
 
     buttons.forEach(function (b, i) {
