@@ -36,14 +36,18 @@ bowire --url https://api.example.com --enable-mcp-adapter
     <div class="features-block-screenshot">
       <figure class="features-diagram">
         <pre class="mermaid">
-flowchart LR
-    Agent(["AI agent"])
-    Bowire(["Bowire"])
-    API(["Target API"])
-    Agent -->|"tools/list · tools/call<br/><i>at /mcp</i>"| Bowire
-    Bowire -->|"InvokeAsync"| API
-    API -.->|"typed response"| Bowire
-    Bowire -.->|"tool result"| Agent
+sequenceDiagram
+    autonumber
+    participant Agent as AI agent
+    participant Bowire
+    participant API as Target API
+
+    Agent->>Bowire: tools/list (at /mcp)
+    Bowire-->>Agent: typed tool catalogue
+    Agent->>Bowire: tools/call (typed args)
+    Bowire->>API: InvokeAsync
+    API-->>Bowire: response
+    Bowire-->>Agent: tool result
         </pre>
         <figcaption class="features-diagram-caption">Claude / Cursor / Copilot point at Bowire&rsquo;s MCP endpoint; Bowire dispatches each <code>tools/call</code> through its protocol plugins (gRPC, REST, GraphQL, &hellip;) to the target API.</figcaption>
       </figure>
