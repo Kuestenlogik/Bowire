@@ -2235,8 +2235,17 @@ function createBowireCombobox(hostEl, allItems, defaultSelectedIds, placeholder,
             });
         });
 
-        var detected = detectPlatform();
-        if (detected) activate(detected);
+        // Platform detection is intentionally NOT used to override
+        // the HTML default. The .NET-tool tab carries `aria-selected
+        // ="true"` in markup, and we keep it that way — it's the
+        // cross-platform, plugin-bundled, recommended path. Visitors
+        // on macOS / Windows / Linux can flip to their native
+        // package manager if they prefer, but the page leads with
+        // the answer that works for everyone.
+        //
+        // The detectPlatform helper above stays defined so a future
+        // surface (e.g. downloads.html) can reuse it without
+        // re-implementing the UA-parse.
     });
 })();
 
