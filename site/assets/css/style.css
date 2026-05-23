@@ -5205,6 +5205,26 @@ p a:not([class]):hover,
     color: var(--text-secondary);
     text-align: center;
 }
+/* Variant for finales that carry several "question? answer →" pairs in
+   one line. Each pair lives in its own inline-block .item span so the
+   browser can only break BETWEEN items, never mid-sentence. The middot
+   separator is rendered via ::after on each non-last item so it stays
+   anchored to the end of the previous line on a wrap (rather than
+   floating to the start of the new one). */
+.features-page-cta-finale-grouped {
+    /* Mirror inline whitespace as a gap so removing the inter-tag
+       spaces doesn't change vertical rhythm on a wrap. */
+    line-height: 1.7;
+}
+.features-page-cta-finale-item {
+    display: inline-block;
+}
+.features-page-cta-finale-item:not(:last-child)::after {
+    content: " \00B7";
+    margin: 0 0.35em 0 0.45em;
+    color: var(--text-secondary);
+    opacity: 0.7;
+}
 
 /* ============================================================
    Quickstart page — top-of-page path fork. SVG draws a "Y" rail:
