@@ -71,7 +71,7 @@ description: A closer look at what makes Bowire different from Postman, Insomnia
       <p class="features-block-lead"><code>bowire scan --target https://your-api</code> runs vulnerability templates against the API surface Bowire already discovered, and emits SARIF 2.1.0 that your CI ingests unchanged.</p>
       <p>Two template sources at once: Bowire's own JSON templates (the curated baseline shipped in <a href="https://github.com/Kuestenlogik/Bowire.VulnDb" target="_blank" rel="noopener">Bowire.VulnDb</a>) plus the 8000+ <a href="https://github.com/projectdiscovery/nuclei-templates" target="_blank" rel="noopener">Nuclei community templates</a> via <code>--nuclei &lt;dir&gt;</code>. Both feed Bowire's native AttackPredicate engine &mdash; same matchers, same payload variables, no separate runtime.</p>
       <p>Findings emit as SARIF 2.1.0 &mdash; straight into GitHub Code Scanning, GitLab Security Dashboard, Azure DevOps. Built-in passive checks (TLS-version enumeration, version-disclosing headers, verbose-error detection) fire on day one without writing a template, so the scanner is useful before anyone authors a single attack predicate.</p>
-      <a class="features-block-docs-link" href="{{ '/security.html' | relative_url }}">See the security solution overview &rarr;</a>
+      <a class="features-block-docs-link" href="{{ '/solutions/security.html' | relative_url }}">See the security solution overview &rarr;</a>
     </div>
     <div class="features-block-screenshot">
       <div class="code-block">

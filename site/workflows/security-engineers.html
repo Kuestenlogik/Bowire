@@ -23,7 +23,7 @@ permalink: /workflows/security-engineers.html
       <h3><code>bowire scan</code> &mdash; replay each template, emit SARIF</h3>
       <p class="features-block-lead">Three seed templates cover the obvious wins today: gRPC Server-Reflection in production, GraphQL <code>__schema</code> introspection in production, REST endpoints missing baseline security headers. The corpus is plain JSON, copy-paste-friendly, version-controlled.</p>
       <p>Each scan call returns a SARIF 2.1.0 report you can hand to GitHub Code Scanning (alerts land in your Security tab), GitLab (the Security Dashboard reads SARIF), Azure DevOps, or any tool with a SARIF importer. Built-in passive checks add TLS-version enumeration, version-disclosing headers, and verbose-error fingerprinting on top of the template corpus.</p>
-      <a class="features-block-docs-link" href="{{ '/security.html' | relative_url }}">The security solution overview &rarr;</a>
+      <a class="features-block-docs-link" href="{{ '/solutions/security.html' | relative_url }}">The security solution overview &rarr;</a>
     </div>
     <div class="features-block-screenshot">
       <div class="code-block">
@@ -78,7 +78,7 @@ $ bowire scan \
       <h3><code>bowire jwt decode</code> + <code>bowire jwt tamper</code></h3>
       <p class="features-block-lead"><code>decode</code> splits the header / payload / signature, validates exp / nbf / iat, lists the present claims. <code>tamper</code> probes <code>alg: none</code> acceptance, signs with a chosen secret, and lets you override individual claims &mdash; the standard JWT smoke-test sequence in one shell pass.</p>
       <p>The toolkit is shipped alongside the scan engine, not separately &mdash; it lives in the same CLI binary your CI is already calling. Same goes for the seed corpus: the per-protocol attack templates (gRPC Server-Reflection, GraphQL introspection, REST baseline headers) get loaded out of <code>docs/security/examples/</code> in the source tree, no separate distribution.</p>
-      <a class="features-block-docs-link" href="{{ '/security.html#corpus' | relative_url }}">Browse the seed corpus &rarr;</a>
+      <a class="features-block-docs-link" href="{{ '/solutions/security.html#corpus' | relative_url }}">Browse the seed corpus &rarr;</a>
     </div>
   </div>
 </section>
@@ -104,7 +104,7 @@ $ bowire scan \
     <h2 class="features-page-cta-title">Audit what's actually on the wire</h2>
     <p class="features-page-cta-lede">Read the ADR, pull the seed templates, point <code>bowire scan</code> at staging.</p>
     <div class="features-page-cta-buttons">
-      <a class="btn btn-secondary features-page-cta-btn" href="{{ '/security.html' | relative_url }}">
+      <a class="btn btn-secondary features-page-cta-btn" href="{{ '/solutions/security.html' | relative_url }}">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2l8 4v6c0 5-3.5 9.4-8 10-4.5-.6-8-5-8-10V6l8-4z"/><polyline points="9 12 11 14 15 10"/></svg>
         Security solution overview
       </a>
