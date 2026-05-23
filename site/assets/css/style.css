@@ -5826,6 +5826,71 @@ p a:not([class]):hover,
     }
 }
 
+/* ===== Mermaid diagram frame =====
+   Used in features-block-screenshot slots whenever the visual is a flow
+   chart, not a screenshot or code snippet. The pre.mermaid is replaced
+   with rendered SVG by site/_includes/mermaid-loader.html at runtime;
+   the styles below cover (1) the surrounding frame, (2) the visible
+   pre-render state so the raw mermaid source doesn't flash in monospace
+   before the SVG lands, (3) the caption underneath. */
+.features-diagram {
+    margin: 0;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg, 12px);
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.10);
+    padding: 24px 18px 18px;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+}
+/* Centre the rendered SVG inside the frame and give it room to breathe. */
+.features-diagram .mermaid {
+    margin: 0;
+    padding: 0;
+    text-align: center;
+    color: var(--text-secondary);
+    /* Pre-render state — visible only for the moment between page-load
+       and mermaid.render(). Looks like a placeholder, not raw monospace
+       code, so the flash is acceptable on first paint. */
+    font-family: var(--font-sans, system-ui, sans-serif);
+    font-size: 0.82rem;
+    line-height: 1.5;
+    opacity: 0.55;
+    min-height: 120px;
+}
+/* Once rendered, drop the placeholder styling — the SVG carries its own
+   colour + sizing from the themeVariables we pass into mermaid.initialize. */
+.features-diagram .mermaid[data-mermaid-rendered] {
+    opacity: 1;
+    min-height: 0;
+}
+.features-diagram .mermaid svg {
+    max-width: 100%;
+    height: auto;
+    display: block;
+    margin: 0 auto;
+}
+.features-diagram-caption {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    line-height: 1.5;
+    text-align: center;
+    margin: 0;
+    padding-top: 8px;
+    border-top: 1px dashed var(--border);
+}
+.features-diagram-caption code {
+    font-size: 0.82rem;
+    background: rgba(0, 0, 0, 0.18);
+    padding: 1px 5px;
+    border-radius: 4px;
+}
+[data-theme="light"] .features-diagram-caption code {
+    background: rgba(0, 0, 0, 0.06);
+}
+
 /* ===== Screenshot lightbox overlay =====
    Shared by the features-page screenshots. Full-viewport dimmer with
    the image centred, click-to-close on the backdrop, Esc to dismiss. */
