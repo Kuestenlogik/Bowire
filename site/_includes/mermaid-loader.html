@@ -1,0 +1,131 @@
+{%- comment -%}
+Mermaid loader — drop this include at the end of any page that carries
+<pre class="mermaid">…</pre> blocks. The loader is a no-op when no diagram
+is present, so it is cheap to include site-wide.
+
+Why client-side and not build-time SVG: build-time pre-rendering needs a
+headless Chromium in CI (mermaid-cli pulls it in) which doubles the docs
+workflow runtime. Lazy-loading the runtime keeps the CI cost zero and
+the page weight zero on pages without diagrams.
+
+Theming: we don't pick one of Mermaid's bundled themes — they fight our
+own palette tokens. Instead, theme: 'base' + themeVariables read from
+computed --accent / --surface / --text-primary on <html>, so the diagram
+always matches the active theme exactly. main.js dispatches a
+'themechange' CustomEvent on cycle; we listen and re-render.
+
+Adding a diagram:
+
+  <pre class="mermaid">
+flowchart TD
+    A --> B
+    B --> C
+  </pre>
+
+Wrap it in <figure class="features-diagram">…</figure> if you want the
+shared visual frame (border, drop-shadow, optional <figcaption>).
+{%- endcomment -%}
+<script type="module">
+  // No diagrams on this page? Don't fetch ~600 KB of Mermaid runtime.
+  if (document.querySelector('.mermaid')) {
+    const mermaidUrl = 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+
+    function readThemeVars() {
+      const root = document.documentElement;
+      const s = getComputedStyle(root);
+      const resolved = (() => {
+        const t = root.getAttribute('data-theme');
+        if (t === 'light' || t === 'dark') return t;
+        return window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+      })();
+      // Pull the palette directly from the active CSS variables so the
+      // diagram never drifts from the rest of the page.
+      const accent = s.getPropertyValue('--accent').trim() || '#6366f1';
+      const surface = s.getPropertyValue('--surface').trim() || '#1a1a2e';
+      const border = s.getPropertyValue('--border').trim() || '#2a2a3d';
+      const text = s.getPropertyValue('--text-primary').trim() || (resolved === 'light' ? '#1a1a2e' : '#ffffff');
+      const muted = s.getPropertyValue('--text-secondary').trim() || (resolved === 'light' ? '#5a5a72' : '#9898b0');
+      return {
+        resolved,
+        themeVariables: {
+          background: 'transparent',
+          primaryColor: surface,
+          primaryTextColor: text,
+          primaryBorderColor: accent,
+          secondaryColor: surface,
+          secondaryTextColor: text,
+          secondaryBorderColor: border,
+          tertiaryColor: surface,
+          tertiaryTextColor: text,
+          tertiaryBorderColor: border,
+          lineColor: muted,
+          textColor: text,
+          mainBkg: surface,
+          nodeBorder: accent,
+          clusterBkg: surface,
+          clusterBorder: border,
+          edgeLabelBackground: surface,
+          fontFamily: s.getPropertyValue('--font-sans').trim() || 'system-ui, sans-serif',
+        }
+      };
+    }
+
+    // Stash the original source on each block before the first render so
+    // we can re-render against new theme variables on a theme switch
+    // (Mermaid mutates the DOM, replacing the source with SVG).
+    document.querySelectorAll('.mermaid').forEach(el => {
+      el.dataset.mermaidSource = el.textContent;
+    });
+
+    let mermaid;
+    try {
+      mermaid = (await import(mermaidUrl)).default;
+    } catch (err) {
+      console.warn('[mermaid] runtime failed to load:', err);
+      // Make the source readable instead of leaving a blank box.
+      document.querySelectorAll('.mermaid').forEach(el => {
+        el.style.whiteSpace = 'pre';
+        el.style.fontFamily = 'var(--font-mono, monospace)';
+      });
+    }
+
+    if (mermaid) {
+      const initFor = () => {
+        const { resolved, themeVariables } = readThemeVars();
+        mermaid.initialize({
+          startOnLoad: false,
+          theme: 'base',
+          themeVariables,
+          flowchart: { useMaxWidth: true, htmlLabels: true, curve: 'basis' },
+          securityLevel: 'strict',
+        });
+        return resolved;
+      };
+
+      async function renderAll() {
+        initFor();
+        const blocks = Array.from(document.querySelectorAll('.mermaid'));
+        for (let i = 0; i < blocks.length; i++) {
+          const el = blocks[i];
+          const source = el.dataset.mermaidSource || el.textContent;
+          const id = 'mermaid-svg-' + i + '-' + Math.random().toString(36).slice(2, 8);
+          try {
+            const { svg } = await mermaid.render(id, source);
+            el.innerHTML = svg;
+            el.setAttribute('data-mermaid-rendered', 'true');
+          } catch (err) {
+            console.warn('[mermaid] render failed for block', i, err);
+            el.textContent = source; // surface the source so the page is still readable
+            el.style.whiteSpace = 'pre';
+            el.style.fontFamily = 'var(--font-mono, monospace)';
+          }
+        }
+      }
+
+      await renderAll();
+
+      // Re-render on theme cycle so the palette stays in sync with the rest of the page.
+      document.addEventListener('themechange', () => { renderAll(); });
+    }
+  }
+</script>

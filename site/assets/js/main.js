@@ -962,6 +962,11 @@ document.querySelectorAll('.copy-btn').forEach(btn => {
                 document.querySelectorAll('.theme-video-' + resolved).forEach(v => {
                     if (v.tagName === 'VIDEO' && v.paused) v.play().catch(() => {});
                 });
+                // Broadcast the resolved (auto -> light/dark) theme so
+                // other components — Mermaid diagrams, charts, embeds —
+                // can re-render against the new palette. Listeners read
+                // ev.detail.theme.
+                document.dispatchEvent(new CustomEvent('themechange', { detail: { theme, resolved } }));
             });
         } catch { /* best-effort, no-throw */ }
     }

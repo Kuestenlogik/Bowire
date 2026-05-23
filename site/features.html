@@ -491,28 +491,17 @@ body.items[0]     type "object"   <span class="check-pass">&#10003;</span></code
       <a class="features-block-docs-link" href="{{ '/docs/architecture/index.html' | relative_url }}">Read the architecture docs &rarr;</a>
     </div>
     <div class="features-block-screenshot">
-      <div class="code-block">
-        <div class="code-block-header">
-          <span class="code-block-lang">request flow</span>
-          <span class="code-block-hint">same-origin on the browser side</span>
-          <button class="copy-btn" data-copy="browser  ──▶  localhost:5080   (same-origin, no CORS)
-                   │
-                   ▼
-             bowire host      (server-to-server, no SOP)
-                   │
-                   ▼
-      target API (gRPC | REST | WS | MQTT | …)" aria-label="Copy">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
-          </button>
-        </div>
-        <pre><code>browser  <span class="c">──▶</span>  localhost:5080   <span class="c">(same-origin, no CORS)</span>
-                   │
-                   ▼
-             <span class="check-pass">bowire host</span>      <span class="c">(server-to-server, no SOP)</span>
-                   │
-                   ▼
-      target API <span class="c">(gRPC | REST | WS | MQTT | …)</span></code></pre>
-      </div>
+      <figure class="features-diagram">
+        <pre class="mermaid">
+flowchart TD
+    Browser["Browser<br/>localhost:5080<br/><i>same-origin, no CORS</i>"]
+    Host["Bowire host<br/><i>server-to-server, no SOP</i>"]
+    API["Target API<br/>gRPC · REST · WS · MQTT · &hellip;"]
+    Browser --> Host
+    Host --> API
+        </pre>
+        <figcaption class="features-diagram-caption">Request flow &mdash; the browser only ever talks to <code>localhost:5080</code>; Bowire makes the upstream call server-to-server.</figcaption>
+      </figure>
     </div>
   </div>
 
@@ -691,3 +680,5 @@ $ bowire jwt tamper &lt;token&gt; \
     <p class="features-page-cta-finale">The engine room runs on hands. <a href="{{ '/community.html' | relative_url }}">Join the crew &rarr;</a></p>
   </div>
 </section>
+
+{% include mermaid-loader.html %}
