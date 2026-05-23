@@ -15,7 +15,7 @@ description: Replay a captured recording as a live mock endpoint — same protoc
     <h2 class="features-group-title">When the real thing is too expensive to spin up</h2>
     <p class="features-group-lede">Three concrete cases where the real backend is more friction than the development is worth.</p>
   </header>
-  <div class="features-block features-block-text-only">
+  <div class="features-block">
     <div class="features-block-text">
       <ul class="features-block-bullets">
         <li><strong>The real API costs money to hit.</strong> Stripe / Twilio / Salesforce / OpenAI / Mapbox &mdash; every call against a paid SaaS burns API credits or trips a per-call billing line. Local dev shouldn't have to choose between &ldquo;run tests against staging and worry about the bill&rdquo; or &ldquo;skip the test, hope it works&rdquo;. A recording-driven mock replays the API's responses for free against your dev runs, while the real call is reserved for the actual production traffic.</li>
@@ -23,6 +23,28 @@ description: Replay a captured recording as a live mock endpoint — same protoc
         <li><strong>The real backend isn't reachable.</strong> Air-gapped CI runners, offline development on a flight, a third-party API behind a corporate VPN you don't have today &mdash; the recording is a portable artefact. Drop it on a USB stick, drop it in a Git repo, hit replay.</li>
       </ul>
       <p>Same idea regardless: <em>your dev / test loop shouldn't be gated on the production-grade backend being available</em>. The recording is the testable surface.</p>
+    </div>
+    <div class="features-block-screenshot">
+      <figure class="features-diagram">
+        <pre class="mermaid">
+flowchart LR
+    Test(["Dev / test loop"])
+    Real(["Real backend"])
+    Mock(["bowire mock"])
+    BWR[("session.bwr")]
+    Local(["localhost:5099"])
+
+    Test -.->|"without mock"| Real
+    Real -.-> Bill(["per-call<br/>billing"])
+    Real -.-> Compose(["docker-compose<br/>10-min boot"])
+    Real -.-> VPN(["VPN-only<br/>access"])
+
+    Test ==>|"with mock"| Mock
+    Mock --> BWR
+    BWR --> Local
+        </pre>
+        <figcaption class="features-diagram-caption">Same dev loop, two paths. The real backend brings per-call billing, slow boot, network constraints. <code>bowire mock</code> turns the captured <code>.bwr</code> into a local endpoint at the same protocol shape &mdash; instant, free, fully offline.</figcaption>
+      </figure>
     </div>
   </div>
 </section>
@@ -83,3 +105,5 @@ description: Replay a captured recording as a live mock endpoint — same protoc
     <p class="features-page-cta-finale">A different lane fits better? <a href="{{ '/solutions.html' | relative_url }}">All solution lanes &rarr;</a></p>
   </div>
 </section>
+
+{% include mermaid-loader.html %}

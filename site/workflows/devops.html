@@ -80,6 +80,27 @@ $ bowire fuzz --target http://localhost:5099 \
 
   <div class="features-block features-block-text-only">
     <div class="features-block-text">
+      <figure class="features-diagram">
+        <pre class="mermaid">
+flowchart LR
+    Install(["Install bowire"])
+    Mock(["bowire mock<br/><i>fixtures/api.bwr</i>"])
+    Tests(["Integration tests"])
+    Scan(["bowire scan"])
+    Fuzz(["bowire fuzz"])
+    SARIF[("SARIF<br/>reports")]
+    CS(["GitHub<br/>Code Scanning"])
+
+    Install --> Mock
+    Mock -->|"port 5099"| Tests
+    Mock -->|"--target"| Scan
+    Mock -->|"--target"| Fuzz
+    Scan -->|"--out findings.sarif"| SARIF
+    Fuzz -->|"--out fuzz.sarif"| SARIF
+    SARIF -->|"upload-sarif"| CS
+        </pre>
+        <figcaption class="features-diagram-caption">One <code>bowire mock</code> instance becomes the shared fixture for integration tests, <code>bowire scan</code>, and <code>bowire fuzz</code> in the same job. SARIF outputs flow straight into Code Scanning &mdash; alerts land in the calling repo&rsquo;s Security tab without an intermediate format conversion.</figcaption>
+      </figure>
       <div class="code-block">
         <div class="code-block-header">
           <span class="code-block-lang">yaml</span>
@@ -154,3 +175,5 @@ $ bowire fuzz --target http://localhost:5099 \
     </div>
   </div>
 </section>
+
+{% include mermaid-loader.html %}
