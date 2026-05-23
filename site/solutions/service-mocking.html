@@ -35,9 +35,9 @@ flowchart LR
     Local(["localhost:5099"])
 
     Test -.->|"without mock"| Real
-    Real -.-> Bill(["per-call<br/>billing"])
-    Real -.-> Compose(["docker-compose<br/>10-min boot"])
-    Real -.-> VPN(["VPN-only<br/>access"])
+    Real -.-> Bill(["per-call billing"])
+    Real -.-> Compose(["10-min docker-compose boot"])
+    Real -.-> VPN(["VPN-only access"])
 
     Test ==>|"with mock"| Mock
     Mock --> BWR
