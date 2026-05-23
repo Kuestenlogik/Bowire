@@ -6849,17 +6849,29 @@ html[data-theme="light"] {
     background: var(--bg);
 }
 
-/* Live Discord widget — centred iframe with shadow + rounded corners
-   so it reads as a UI surface, not an embedded frame. Two iframes
-   share the slot (dark + light theme variants); the theme-img-*
-   classes from the screenshot system hide whichever doesn't match
-   the active page theme, so the widget follows the theme switcher
-   without JS. */
+/* Live on the bridge — two-pane layout: Discord presence (left) +
+   GitHub releases feed (right). Discord's widget intentionally can't
+   surface channel content (TOS), so release notes are the "what's
+   new" signal next to it. On narrow viewports the panes stack and
+   the widget loses its hard 350×500 sizing in favour of full-width. */
+.community-discord-live .community-bridge {
+    display: grid;
+    grid-template-columns: 350px minmax(0, 1fr);
+    gap: 32px;
+    align-items: start;
+    max-width: 880px;
+    margin: 0 auto;
+}
+@media (max-width: 760px) {
+    .community-discord-live .community-bridge {
+        grid-template-columns: 1fr;
+        max-width: 480px;
+    }
+}
 .community-discord-live .community-discord-widget {
     display: flex;
     justify-content: center;
-    margin: 0 auto;
-    max-width: 380px;
+    margin: 0;
 }
 .community-discord-widget-iframe {
     border-radius: var(--radius-lg);
@@ -6871,6 +6883,148 @@ html[data-theme="light"] {
         width: 100%;
         height: 460px;
     }
+}
+.community-releases {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 20px 22px;
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.10);
+    /* Match the Discord widget's visual height roughly; scroll if the
+       release bodies push beyond it so the two columns stay aligned. */
+    max-height: 500px;
+    overflow: auto;
+}
+.community-releases-header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    margin: 0 0 14px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border);
+}
+.community-releases-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    font-family: var(--font-sans);
+}
+.community-releases-icon {
+    width: 16px;
+    height: 16px;
+    color: var(--accent);
+}
+.community-releases-all {
+    font-size: 0.8rem;
+    color: var(--accent);
+    text-decoration: none;
+    white-space: nowrap;
+}
+.community-releases-all:hover {
+    text-decoration: underline;
+}
+/* Activity-stats strip — three small "cadence" tiles above the release
+   list. Frames the release feed as "actively shipping" instead of just
+   "a list of past releases". Falls back to "—" placeholders when the
+   GitHub fetch is offline / rate-limited. */
+.community-activity-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin: 0 0 16px;
+    padding: 0;
+}
+.community-activity-stat {
+    background: var(--surface-alt, var(--surface));
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md, 8px);
+    padding: 8px 10px;
+    text-align: center;
+    min-width: 0;
+}
+.community-activity-stat-label {
+    display: block;
+    font-size: 0.68rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin: 0 0 2px;
+    font-family: var(--font-sans);
+}
+.community-activity-stat-value {
+    display: block;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0;
+    font-variant-numeric: tabular-nums;
+    overflow-wrap: anywhere;
+}
+@media (max-width: 480px) {
+    .community-activity-stat-value {
+        font-size: 0.85rem;
+    }
+}
+
+.community-releases-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+.community-releases-item {
+    padding-bottom: 14px;
+    border-bottom: 1px solid var(--border);
+}
+.community-releases-item:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+}
+.community-releases-meta {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 4px;
+}
+.community-releases-name {
+    font-weight: 600;
+    color: var(--text-primary);
+    text-decoration: none;
+    font-size: 0.95rem;
+}
+.community-releases-name:hover {
+    color: var(--accent);
+}
+.community-releases-date {
+    font-size: 0.78rem;
+    color: var(--text-secondary);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+.community-releases-lede {
+    margin: 0;
+    font-size: 0.88rem;
+    line-height: 1.5;
+    color: var(--text-secondary);
+}
+.community-releases-lede strong {
+    color: var(--text-primary);
+    font-weight: 600;
+}
+.community-releases-placeholder {
+    margin: 0;
+    font-size: 0.88rem;
+    color: var(--text-secondary);
+    font-style: italic;
 }
 .community-channel-label {
     font-size: 0.75rem;

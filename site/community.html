@@ -106,34 +106,95 @@ description: Join the Bowire community — contribute code, file issues, follow 
 </section>
 
 <!-- ================================================================ -->
-<!-- Live Discord widget — pulse of the server, one-click join         -->
+<!-- Activity on deck — Discord presence + GitHub release cadence     -->
 <!-- ================================================================ -->
 <section class="community-section community-section-alt community-discord-live">
   <header class="community-section-header">
-    <h2>Live on Discord right now</h2>
-    <p class="community-section-lede">A peek into the K&uuml;stenlogik server &mdash; who&rsquo;s online, the most recent channels, and a one-click way in.</p>
+    <h2>Activity on deck</h2>
+    <p class="community-section-lede">Who&rsquo;s aboard right now, and what the crew has been shipping. The cadence is small but real &mdash; the &ldquo;last release&rdquo; line below is the honest signal.</p>
   </header>
 
-  <div class="community-discord-widget">
-    <!--
-      Two iframes — dark + light theme variants. The same theme-img-*
-      classes that handle the screenshot pairs hide whichever doesn't
-      match the current `[data-theme]`, so the widget follows the page
-      theme without JS.
-      Server ID: 1503856548097822921 (Küstenlogik).
-    -->
-    <iframe class="community-discord-widget-iframe theme-img-dark"
-            src="https://discord.com/widget?id=1503856548097822921&theme=dark"
-            width="350" height="500"
-            allowtransparency="true" frameborder="0"
-            sandbox="allow-popups allow-popups-to-escape-sandbox allow-same-origin allow-scripts"
-            title="K&uuml;stenlogik Discord widget"></iframe>
-    <iframe class="community-discord-widget-iframe theme-img-light"
-            src="https://discord.com/widget?id=1503856548097822921&theme=light"
-            width="350" height="500"
-            allowtransparency="true" frameborder="0"
-            sandbox="allow-popups allow-popups-to-escape-sandbox allow-same-origin allow-scripts"
-            title="K&uuml;stenlogik Discord widget"></iframe>
+  <div class="community-bridge">
+
+    <div class="community-bridge-pane community-discord-widget">
+      <!--
+        Two iframes — dark + light theme variants. The same theme-img-*
+        classes that handle the screenshot pairs hide whichever doesn't
+        match the current `[data-theme]`, so the widget follows the page
+        theme without JS.
+        Discord's widget shows server name + online presence + voice
+        activity + a join button. Channel content is intentionally not
+        readable through this widget (Discord TOS); release announcements
+        live in the GitHub-releases pane next to it.
+        Server ID: 1503856548097822921 (Küstenlogik).
+      -->
+      <iframe class="community-discord-widget-iframe theme-img-dark"
+              src="https://discord.com/widget?id=1503856548097822921&theme=dark"
+              width="350" height="500"
+              allowtransparency="true" frameborder="0"
+              sandbox="allow-popups allow-popups-to-escape-sandbox allow-same-origin allow-scripts"
+              title="K&uuml;stenlogik Discord widget"></iframe>
+      <iframe class="community-discord-widget-iframe theme-img-light"
+              src="https://discord.com/widget?id=1503856548097822921&theme=light"
+              width="350" height="500"
+              allowtransparency="true" frameborder="0"
+              sandbox="allow-popups allow-popups-to-escape-sandbox allow-same-origin allow-scripts"
+              title="K&uuml;stenlogik Discord widget"></iframe>
+    </div>
+
+    <div class="community-bridge-pane community-releases">
+      <header class="community-releases-header">
+        <h3 class="community-releases-title">
+          <svg class="community-releases-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+          What&rsquo;s shipped
+        </h3>
+        <a class="community-releases-all" href="https://github.com/Kuestenlogik/Bowire/releases" target="_blank" rel="noopener">All releases &rarr;</a>
+      </header>
+
+      {%- assign activity = site.data.activity -%}
+
+      <!-- Activity-stats bar: quantifies the cadence so the section reads
+           as "actively shipping" at a glance, not just "here are some
+           releases". Values come from site/_data/activity.json, refreshed
+           in CI by scripts/build-activity-snapshot.mjs (runs on every push,
+           every published release, and daily at 06:17 UTC). When the
+           snapshot is unavailable (offline build or rate-limited GitHub
+           API), the script writes available:false and the stats fall back
+           to em-dashes — same as today's static placeholder. -->
+      <dl class="community-activity-stats">
+        <div class="community-activity-stat">
+          <dt class="community-activity-stat-label">Releases (30d)</dt>
+          <dd class="community-activity-stat-value">{% if activity.available and activity.releases30d != nil %}{{ activity.releases30d }}{% else %}&mdash;{% endif %}</dd>
+        </div>
+        <div class="community-activity-stat">
+          <dt class="community-activity-stat-label">Last release</dt>
+          <dd class="community-activity-stat-value">{% if activity.last_release_relative %}{{ activity.last_release_relative }}{% else %}&mdash;{% endif %}</dd>
+        </div>
+        <div class="community-activity-stat">
+          <dt class="community-activity-stat-label">Last push</dt>
+          <dd class="community-activity-stat-value">{% if activity.last_push_relative %}{{ activity.last_push_relative }}{% else %}&mdash;{% endif %}</dd>
+        </div>
+      </dl>
+
+      {% if activity.releases and activity.releases.size > 0 %}
+      <ol class="community-releases-list">
+        {% for rel in activity.releases %}
+        <li class="community-releases-item">
+          <div class="community-releases-meta">
+            <a class="community-releases-name" href="{{ rel.url }}" target="_blank" rel="noopener">{{ rel.name }}</a>
+            {% if rel.published_date %}<time class="community-releases-date" datetime="{{ rel.published_at }}">{{ rel.published_date }}</time>{% endif %}
+          </div>
+          {% if rel.body_header or rel.body_lede != "" %}
+          <p class="community-releases-lede">{% if rel.body_header %}<strong>{{ rel.body_header }}</strong>{% if rel.body_lede != "" %} &mdash; {% endif %}{% endif %}{{ rel.body_lede }}</p>
+          {% endif %}
+        </li>
+        {% endfor %}
+      </ol>
+      {% else %}
+      <p class="community-releases-placeholder">Release feed unavailable right now &mdash; browse them on <a href="https://github.com/Kuestenlogik/Bowire/releases" target="_blank" rel="noopener">GitHub</a> directly.</p>
+      {% endif %}
+    </div>
+
   </div>
 </section>
 

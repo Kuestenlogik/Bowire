@@ -1,0 +1,47 @@
+{
+  "available": true,
+  "generated_at": "2026-05-23T20:13:45.700Z",
+  "releases30d": 10,
+  "last_release_relative": "4 d ago",
+  "last_release_at": "2026-05-20T02:16:32Z",
+  "last_push_relative": "13 min ago",
+  "last_push_at": "2026-05-23T20:00:39Z",
+  "releases": [
+    {
+      "name": "v1.5.0 — AsyncAPI discovery source + Nuclei template runner",
+      "tag": "v1.5.0",
+      "url": "https://github.com/Kuestenlogik/Bowire/releases/tag/v1.5.0",
+      "published_at": "2026-05-20T02:16:32Z",
+      "published_date": "2026-05-20",
+      "body_header": null,
+      "body_lede": ""
+    },
+    {
+      "name": "v1.4.4",
+      "tag": "v1.4.4",
+      "url": "https://github.com/Kuestenlogik/Bowire/releases/tag/v1.4.4",
+      "published_at": "2026-05-17T23:47:10Z",
+      "published_date": "2026-05-17",
+      "body_header": null,
+      "body_lede": "chore(actions): Bump github/codeql-action from 3 to 4 by @dependabot[bot] in https://github.com/Kuestenlogik/Bowire/pull/6 * chore(actions): Bump actions/setup-dotnet from 4 to 5 by @dependabot[bot] in…"
+    },
+    {
+      "name": "v1.4.3",
+      "tag": "v1.4.3",
+      "url": "https://github.com/Kuestenlogik/Bowire/releases/tag/v1.4.3",
+      "published_at": "2026-05-17T22:34:27Z",
+      "published_date": "2026-05-17",
+      "body_header": null,
+      "body_lede": ""
+    },
+    {
+      "name": "v1.4.2",
+      "tag": "v1.4.2",
+      "url": "https://github.com/Kuestenlogik/Bowire/releases/tag/v1.4.2",
+      "published_at": "2026-05-17T22:09:35Z",
+      "published_date": "2026-05-17",
+      "body_header": null,
+      "body_lede": "chore(deps): Bump Microsoft.SourceLink.GitHub from 10.0.203 to 10.0.300 by @dependabot[bot] in https://github.com/Kuestenlogik/Bowire/pull/8 * chore(deps): Bump NuGet.Protocol from 7.3.1 to 7.6.0 by @dependabot[bot]…"
+    }
+  ]
+}
