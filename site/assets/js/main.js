@@ -2295,17 +2295,51 @@ function createBowireCombobox(hostEl, allItems, defaultSelectedIds, placeholder,
 
         // Auto-scroll to the first revealed step so the user lands on
         // the content their choice just produced, rather than having
-        // to find the next bubble themselves. Smooth scroll keeps the
-        // transition feeling continuous with the page flow; block:
-        // "start" puts the step's number bubble at the top of the
-        // viewport. Guard against the first scroll happening before
-        // layout settles (rAF) — without it Safari occasionally
-        // scrolls to a pre-layout position.
+        // to find the next bubble themselves.
+        //
+        // Two reasons we don't use scrollIntoView({behavior:'smooth'}):
+        //   1. Native smooth-scroll has no duration / easing knob,
+        //      and browsers (Chromium especially) animate it too
+        //      fast for the eye to follow as a deliberate transition.
+        //   2. block:'start' puts the step's number bubble at the
+        //      top of the viewport — which scrolls the path-picker
+        //      (Step 1, where the user just clicked) out of view.
+        //      The user loses sight of the boat they just selected.
+        //
+        // Custom tween: ease-in-out cubic over 750 ms, landing the
+        // revealed step at ~30 % viewport height so Step 1's picker
+        // stays visible above. rAF guards against pre-layout scroll
+        // on Safari.
         if (firstRevealedStep) {
             requestAnimationFrame(function () {
-                firstRevealedStep.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                var rect = firstRevealedStep.getBoundingClientRect();
+                var targetY = window.pageYOffset + rect.top - Math.round(window.innerHeight * 0.30);
+                smoothScrollTo(targetY, 750);
             });
         }
+    }
+
+    // Eased scrollTo helper — no native equivalent with a duration
+    // knob. ease-in-out cubic accelerates from rest, peaks at half-
+    // way, decelerates to rest; reads as a deliberate transition
+    // rather than a "jump with a tween" the way short native smooth
+    // scrolls do. Cancels in-flight tweens implicitly because each
+    // call captures its own start time.
+    function smoothScrollTo(targetY, duration) {
+        var startY = window.pageYOffset;
+        var distance = targetY - startY;
+        if (Math.abs(distance) < 4) return;        // already there.
+        var startTime = performance.now();
+        function easeInOutCubic(t) {
+            return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+        }
+        function tick(now) {
+            var elapsed = now - startTime;
+            var t = Math.min(elapsed / duration, 1);
+            window.scrollTo(0, startY + distance * easeInOutCubic(t));
+            if (t < 1) requestAnimationFrame(tick);
+        }
+        requestAnimationFrame(tick);
     }
 
     buttons.forEach(function (b, i) {
