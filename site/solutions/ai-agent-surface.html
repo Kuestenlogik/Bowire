@@ -24,26 +24,27 @@ description: Expose every discovered API method as an MCP tool an AI agent can c
     <div class="features-block-screenshot">
       <figure class="features-diagram">
         <pre class="mermaid">
-flowchart LR
-    subgraph Boot["startup"]
-      direction TB
-      Disc(["Discovery"])
-      Catalog[["Tool catalogue"]]
-      Disc -->|"per method"| Catalog
-    end
+sequenceDiagram
+    autonumber
+    participant Plugins as Protocol plugins
+    participant MCP as MCP endpoint
+    participant Agent as AI agent
+    participant API as Target API
 
-    Agent(["AI agent"])
-    MCP(["MCP endpoint"])
-    Plugins(["Protocol plugins"])
-    Target(["Target API"])
+    Note over Plugins,MCP: Startup
+    Plugins->>MCP: DiscoverAsync() &middot; per method
+    MCP->>MCP: build tool catalogue<br/>(JSON Schema per method)
 
-    Catalog -. "registers" .-> MCP
-    Agent -->|"initialize · tools/list · tools/call"| MCP
-    MCP -->|"typed args"| Plugins
-    Plugins -->|"invoke"| Target
-    Target -.->|"response"| Plugins
-    Plugins -.->|"typed result · stream"| MCP
-    MCP -.->|"tool result"| Agent
+    Note over Agent,API: Runtime
+    Agent->>MCP: initialize
+    Agent->>MCP: tools/list
+    MCP-->>Agent: tool catalogue
+    Agent->>MCP: tools/call (typed args)
+    MCP->>Plugins: dispatch
+    Plugins->>API: invoke
+    API-->>Plugins: response / stream
+    Plugins-->>MCP: typed result
+    MCP-->>Agent: tool result / stream
         </pre>
         <figcaption class="features-diagram-caption">On boot, <code>IBowireProtocol.DiscoverAsync()</code> builds a tool catalogue (one JSON-Schema-typed tool per discovered method) and registers it with the MCP endpoint. At call time, <code>tools/call</code> hands typed args to the matching protocol plugin &mdash; gRPC, REST, GraphQL, WebSocket, MQTT &mdash; and the response (or stream) flows back to the agent.</figcaption>
       </figure>
@@ -65,19 +66,27 @@ flowchart LR
     <div class="features-block-screenshot">
       <figure class="features-diagram">
         <pre class="mermaid">
-flowchart LR
-    Agent(["AI agent"])
-    Transport{{"stdio · HTTP"}}
-    Serve(["bowire mcp serve"])
-    Allow{"Allow-list"}
-    Primitives(["bowire.* ops"])
-    Workbench[("~/.bowire/")]
-    Reject(["Refuse"])
+sequenceDiagram
+    autonumber
+    participant Agent as AI agent
+    participant Serve as bowire mcp serve
+    participant Allow as Allow-list
+    participant Ops as bowire.* ops
+    participant State as ~/.bowire/
 
-    Agent --> Transport --> Serve --> Allow
-    Allow -- "allowed" --> Primitives
-    Allow -- "denied" --> Reject
-    Primitives <-->|"read · write"| Workbench
+    Agent->>Serve: tool call (stdio &middot; HTTP)
+    Serve->>Allow: check method
+    alt allowed
+        Allow-->>Serve: ✓
+        Serve->>Ops: execute
+        Ops->>State: read / write
+        State-->>Ops: snapshot
+        Ops-->>Serve: result
+        Serve-->>Agent: tool result
+    else denied
+        Allow-->>Serve: ✗
+        Serve-->>Agent: refuse
+    end
         </pre>
         <figcaption class="features-diagram-caption">The agent orchestrates Bowire&rsquo;s own primitives (<code>bowire.discover</code>, <code>invoke</code>, <code>record.{list,start,stop,replay}</code>, <code>mock.{start,stop,list}</code>, <code>env.{list,switch}</code>) over stdio or HTTP. The allow-list is the same gate a human would face; recordings, envs, mocks live in <code>~/.bowire/</code> so state stays reachable across calls.</figcaption>
       </figure>
