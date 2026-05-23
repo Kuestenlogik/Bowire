@@ -1,0 +1,102 @@
+---
+layout: page
+title: Embedded debug UI in your service — Bowire
+description: A workbench inside your binary. AddBowire() + MapBowire(), every endpoint browsable at /bowire, ships with your service, no separate distribution, no account walls, no companion process.
+---
+
+<section class="features-page-hero">
+  <h1>A workbench inside your binary</h1>
+  <p class="features-page-tagline"><code>AddBowire()</code> + <code>MapBowire()</code> in <code>Program.cs</code>, and the workbench is part of your service. Not a sidecar, not a companion container, not a cloud service that proxies your traffic.</p>
+  <p class="features-page-note">Every endpoint browsable at <code>/bowire</code> next to your normal API routes. Zero account walls. Ships with your binary, no separate distribution. Same DI container, same <code>[Authorize]</code> gates, same logging providers as the rest of your app.</p>
+</section>
+
+<section class="features-group features-group-alt">
+  <header class="features-group-header">
+    <h2 class="features-group-title">Two lines &mdash; the entire wire-in</h2>
+    <p class="features-group-lede"><code>AddBowire()</code> registers the plugin host into DI. <code>MapBowire()</code> mounts the workbench at <code>/bowire</code>. No further configuration required.</p>
+  </header>
+  <div class="features-block">
+    <div class="features-block-text">
+      <p>Plugin discovery, protocol detection, the browser UI &mdash; all run in-process against the live <code>IServiceProvider</code>. No schema files, no parallel proto / OpenAPI to maintain, no second process to keep in sync. Protocol prerequisites that you'd normally wire by hand are added automatically: gRPC plugins call <code>AddGrpcReflection()</code> and <code>MapGrpcReflectionService()</code>, REST plugins read the existing <code>IApiDescriptionGroupCollectionProvider</code>, SignalR plugins enumerate mapped hubs via <code>EndpointDataSource</code>.</p>
+      <p>Side effects are scoped to dev / staging environments only &mdash; the production path stays untouched. Strip <code>MapBowire()</code> with a feature flag for prod, or leave it on behind an authorization policy if you want the workbench available against the prod surface for the on-call team.</p>
+      <a class="features-block-docs-link" href="{{ '/docs/setup/embedded.html' | relative_url }}">Embedded setup docs &rarr;</a>
+    </div>
+    <div class="features-block-screenshot">
+      <div class="code-block">
+        <div class="code-block-header">
+          <span class="code-block-lang">csharp</span>
+          <span class="code-block-hint">Program.cs</span>
+        </div>
+<pre><code>var builder = WebApplication.CreateBuilder(args);
+
+<span class="c">// ... your existing service registrations ...</span>
+
+builder.Services.AddBowire();
+
+var app = builder.Build();
+
+<span class="c">// ... your existing middleware + routing ...</span>
+
+app.MapBowire();
+app.Run();</code></pre>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="features-group">
+  <header class="features-group-header">
+    <h2 class="features-group-title">Inherits the host's DI, auth, logging, config</h2>
+    <p class="features-group-lede">Bowire reads from the same <code>IServiceProvider</code> your app already builds. Every behaviour that's wired in elsewhere is honoured automatically.</p>
+  </header>
+  <div class="features-block features-block-text-only">
+    <div class="features-block-text">
+      <ul class="features-block-bullets">
+        <li><strong><code>[Authorize]</code> gates still apply.</strong> A method locked behind a policy needs the same token when invoked from the workbench. The workbench's auth-helper panel picks up the token the user already authenticated with; no parallel credentials store.</li>
+        <li><strong>Feature flags still toggle.</strong> If a flag flips a code path off in your service, the workbench sees it off too. No phantom &ldquo;available in the docs, not available at runtime&rdquo; drift.</li>
+        <li><strong>Logging providers receive Bowire diagnostics.</strong> Workbench-side discovery, invocation, and error traces flow into whatever Serilog / OpenTelemetry / built-in logging your service already has &mdash; next to your normal request logs, not in a separate file.</li>
+        <li><strong><code>IOptions&lt;T&gt;</code> picks up the same values.</strong> Plugins that consume <code>IOptions&lt;T&gt;</code> read the same <code>appsettings.json</code> + environment variables your service does. One config tree, one source of truth.</li>
+      </ul>
+      <p>Nothing parallel, nothing bypassed. The workbench surface is the surface your service exposes; the difference is just which client is calling.</p>
+    </div>
+  </div>
+</section>
+
+<section class="features-group features-group-alt">
+  <header class="features-group-header">
+    <h2 class="features-group-title">When embedded is the right deployment shape</h2>
+    <p class="features-group-lede">Three concrete cases where the embedded path beats the standalone CLI.</p>
+  </header>
+  <div class="features-block features-block-text-only">
+    <div class="features-block-text">
+      <ul class="features-block-bullets">
+        <li><strong>You ship a binary; users need a debug UI.</strong> Postman-class workflow inside <em>your</em> distribution, behind <em>your</em> auth, no extra Electron install for the user.</li>
+        <li><strong>Internal-tools teams want the workbench scoped to the service it tests.</strong> No company-wide Postman license, no shared workspace to keep in sync &mdash; the workbench is the service.</li>
+        <li><strong>Discovery needs in-process metadata.</strong> Embedded mode reads endpoint sources (gRPC reflection, OpenAPI document provider, SignalR hub registry) directly via DI &mdash; faster, no network round-trip, no schema-version drift between the workbench and the live service.</li>
+      </ul>
+      <p>For the cases where in-process isn't the right shape &mdash; air-gapped scans, contracts-only browsing, MCP-driven CI agents &mdash; the standalone <code>bowire</code> CLI covers the same surface from outside.</p>
+    </div>
+  </div>
+</section>
+
+<section class="features-page-cta features-page-cta-elevated">
+  <div class="features-page-cta-inner">
+    <h2 class="features-page-cta-title">Mount it in your app</h2>
+    <p class="features-page-cta-lede">Two lines in <code>Program.cs</code>. The workbench is part of your binary, runs with your auth, ships with your release.</p>
+    <div class="features-page-cta-buttons">
+      <a class="btn btn-secondary features-page-cta-btn" href="{{ '/workflows/backend.html' | relative_url }}">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+        Backend-dev workflow
+      </a>
+      <a class="btn btn-secondary features-page-cta-btn" href="{{ '/quickstart.html' | relative_url }}">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+        Quickstart (embedded path)
+      </a>
+      <a class="btn btn-secondary features-page-cta-btn" href="{{ '/docs/setup/embedded.html' | relative_url }}">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+        Embedded setup docs
+      </a>
+    </div>
+    <p class="features-page-cta-finale">A different lane fits better? <a href="{{ '/solutions.html' | relative_url }}">All solution lanes &rarr;</a></p>
+  </div>
+</section>

@@ -61,6 +61,7 @@ permalink: /workflows/testers.html
       <h3>Newman-style assertions &mdash; next to the request, not in a separate file</h3>
       <p class="features-block-lead">Eleven comparison operators, JSONPath-style targeting, pass / fail badges inline.</p>
       <p>Pick a value in a recorded response, add an <code>eq</code> / <code>gt</code> / <code>contains</code> / <code>matches</code> / <code>type</code> check. Run the recording, every assertion lights up green or red inline. Export to HAR for the bug tracker, or drive the whole set from <code>bowire call --recording</code> in CI.</p>
+      <a class="features-block-docs-link" href="{{ '/solutions/contract-testing.html' | relative_url }}">From a session to a regression &mdash; full writeup &rarr;</a>
       <a class="features-block-docs-link" href="{{ '/features.html#test-assertions' | relative_url }}">Test assertions in detail &rarr;</a>
     </div>
   </div>
@@ -70,9 +71,15 @@ permalink: /workflows/testers.html
   <div class="features-page-cta-inner">
     <h2 class="features-page-cta-title">Test what&rsquo;s actually shipped</h2>
     <p class="features-page-cta-lede">Record once, replay everywhere, assert with the operators you already know.</p>
-    <a class="btn btn-secondary features-page-cta-btn" href="{{ '/docs/features/recording.html' | relative_url }}">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
-      Go to the recording docs
-    </a>
+    <div class="features-page-cta-buttons">
+      <a class="btn btn-secondary features-page-cta-btn" href="{{ '/solutions/contract-testing.html' | relative_url }}">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><polyline points="9 12 11 14 15 10"/></svg>
+        Contract-testing deep dive
+      </a>
+      <a class="btn btn-secondary features-page-cta-btn" href="{{ '/docs/features/recording.html' | relative_url }}">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+        Recording docs
+      </a>
+    </div>
   </div>
 </section>

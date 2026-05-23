@@ -54,8 +54,8 @@ description: Where Bowire fits — API security testing, contract / regression t
         </header>
         <p class="solutions-card-lede">Record real traffic across every protocol, replay it against Dev / Staging / Prod, turn payloads into assertions that live next to the request.</p>
         <p>Cross-protocol recording timeline (gRPC streams, SignalR hubs, WebSocket frames, MQTT publishes, REST hits — same shape) · environment diff · 11-operator Newman-style assertions · CI via <code>bowire call --recording</code>.</p>
-        <a class="solutions-card-cta" href="{{ '/workflows/testers.html' | relative_url }}">
-          From a session to a regression
+        <a class="solutions-card-cta" href="{{ '/solutions/contract-testing.html' | relative_url }}">
+          Contract testing deep dive
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 6 15 12 9 18"/></svg>
         </a>
       </div>
@@ -77,8 +77,8 @@ description: Where Bowire fits — API security testing, contract / regression t
         </header>
         <p class="solutions-card-lede">Plug a protocol in, get a live service tree &mdash; without hand-maintained proto / OpenAPI / hub-registration code.</p>
         <p>gRPC Server-Reflection · OpenAPI parse · GraphQL <code>__schema</code> introspection · SignalR <code>EndpointDataSource</code> · MQTT <code>$SYS/#</code> · plus every third-party plugin. Hot-reload re-scans every few seconds, new endpoints show up without a page refresh.</p>
-        <a class="solutions-card-cta" href="{{ '/features.html#auto-discovery' | relative_url }}">
-          Auto-discovery in detail
+        <a class="solutions-card-cta" href="{{ '/solutions/service-discovery.html' | relative_url }}">
+          Service discovery deep dive
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 6 15 12 9 18"/></svg>
         </a>
       </div>
@@ -99,8 +99,8 @@ description: Where Bowire fits — API security testing, contract / regression t
         </header>
         <p class="solutions-card-lede">Every example in your docs is runnable. Reader edits the JSON, hits Send, sees the real response &mdash; no curl-paste-and-pray loop.</p>
         <p>Embeddable workbench next to your written guides · per-language code export (<code>curl</code>, <code>grpcurl</code>, typed C# / TypeScript) · offline-from-schema authoring · same UI your engineers already use.</p>
-        <a class="solutions-card-cta" href="{{ '/workflows/docs-teams.html' | relative_url }}">
-          Doc-teams workflow
+        <a class="solutions-card-cta" href="{{ '/solutions/interactive-docs.html' | relative_url }}">
+          Interactive-docs deep dive
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 6 15 12 9 18"/></svg>
         </a>
       </div>
@@ -124,8 +124,8 @@ description: Where Bowire fits — API security testing, contract / regression t
         </header>
         <p class="solutions-card-lede">Every discovered method becomes a typed MCP tool with JSON-Schema input &mdash; no MCP server boilerplate to write yourself.</p>
         <p><code>--enable-mcp-adapter</code> flag · auto-tool generation from the discovery pass · streaming-call support · drop the URL into Claude / Cursor / Copilot configs and the assistant has typed access to your service surface.</p>
-        <a class="solutions-card-cta" href="{{ '/workflows/ai-agents.html' | relative_url }}">
-          AI-agent workflow
+        <a class="solutions-card-cta" href="{{ '/solutions/ai-agent-surface.html' | relative_url }}">
+          AI-agent surface deep dive
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 6 15 12 9 18"/></svg>
         </a>
       </div>
@@ -148,26 +148,15 @@ description: Where Bowire fits — API security testing, contract / regression t
         </header>
         <p class="solutions-card-lede">One line in your ASP.NET app. Debug UI for your team and your users <strong>inside</strong> the binary you're already shipping &mdash; no separate Electron app behind a sign-up flow.</p>
         <p><code>app.MapBowire()</code> · every endpoint browsable at <code>/bowire</code> · zero account walls · ships with your binary, no separate distribution.</p>
-        <a class="solutions-card-cta" href="{{ '/workflows/backend.html' | relative_url }}">
-          Backend-dev workflow
+        <a class="solutions-card-cta" href="{{ '/solutions/embedded-debug-ui.html' | relative_url }}">
+          Embedded UI deep dive
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 6 15 12 9 18"/></svg>
         </a>
       </div>
     </li>
 
-  </ul>
-</section>
-
-<section class="features-group features-group-alt">
-  <header class="features-group-header">
-    <h2 class="features-group-title">On the roadmap</h2>
-    <p class="features-group-lede">Each one already rides on a core primitive that's shipped &mdash; the remaining work is the productised lane on top.</p>
-  </header>
-
-  <ul class="solutions-card-list solutions-card-list-grid">
-
-    <li class="solutions-card solutions-card-roadmap">
-      <div class="solutions-card-icon solutions-card-icon-roadmap" aria-hidden="true">
+    <li class="solutions-card solutions-card-live">
+      <div class="solutions-card-icon" aria-hidden="true">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <rect x="3" y="4" width="18" height="16" rx="2"/>
           <line x1="3" y1="10" x2="21" y2="10"/>
@@ -179,12 +168,27 @@ description: Where Bowire fits — API security testing, contract / regression t
       <div class="solutions-card-body">
         <header class="solutions-card-header">
           <h3>Service mocking &amp; virtualization</h3>
-          <span class="solutions-card-tag solutions-card-tag-partial">partial</span>
+          <span class="solutions-card-tag solutions-card-tag-live">live</span>
         </header>
-        <p class="solutions-card-lede">Turn a recording into a deterministic stand-in for the live service it captured &mdash; same wire shape, same streaming cadence, no upstream needed.</p>
-        <p>Already shipped: the recording-replay core (one client at a time, offline determinism). Still on the list: long-running mock server, latency / error-rate dials, multi-tenant control plane, contract-test integration.</p>
+        <p class="solutions-card-lede">Develop without the real backend. <code>bowire mock</code> turns a captured recording into a live endpoint &mdash; same protocols, same payloads, same timing &mdash; no paid API credits, no 10-minute <code>docker-compose</code> boot, no shared staging.</p>
+        <p>Multi-protocol replay · hot-reload · chaos injection · capture-on-miss · schema-only mode for early-stage APIs.</p>
+        <a class="solutions-card-cta" href="{{ '/solutions/service-mocking.html' | relative_url }}">
+          Service-mocking deep dive
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 6 15 12 9 18"/></svg>
+        </a>
       </div>
     </li>
+
+  </ul>
+</section>
+
+<section class="features-group features-group-alt">
+  <header class="features-group-header">
+    <h2 class="features-group-title">On the roadmap</h2>
+    <p class="features-group-lede">The primitives are shipped; the productised lane on top is what's still in flight.</p>
+  </header>
+
+  <ul class="solutions-card-list solutions-card-list-grid">
 
     <li class="solutions-card solutions-card-roadmap">
       <div class="solutions-card-icon solutions-card-icon-roadmap" aria-hidden="true">

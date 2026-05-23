@@ -1,0 +1,85 @@
+---
+layout: page
+title: Service mocking & virtualization — Bowire
+description: Replay a captured recording as a live mock endpoint — same protocols, same payloads, same timing. Develop and test without standing up the real backend; no complex docker-compose, no paid API license burning credits, no shared staging.
+---
+
+<section class="features-page-hero">
+  <h1>Develop without the real backend</h1>
+  <p class="features-page-tagline"><code>bowire mock</code> turns any captured recording into a live endpoint at the same shape as the original. Same protocols, same payloads, same timing &mdash; just a JSON file driving it.</p>
+  <p class="features-page-note">The third-party API needs an OAuth flow + a paid subscription? Your own backend is a 12-container <code>docker-compose</code> with a 5-minute boot time? The mainframe replicates a real-DB-only-on-Tuesdays integration test? A captured recording cuts all of that out of the dev / test loop &mdash; the fixture is the JSON file.</p>
+</section>
+
+<section class="features-group features-group-alt">
+  <header class="features-group-header">
+    <h2 class="features-group-title">When the real thing is too expensive to spin up</h2>
+    <p class="features-group-lede">Three concrete cases where the real backend is more friction than the development is worth.</p>
+  </header>
+  <div class="features-block features-block-text-only">
+    <div class="features-block-text">
+      <ul class="features-block-bullets">
+        <li><strong>The real API costs money to hit.</strong> Stripe / Twilio / Salesforce / OpenAI / Mapbox &mdash; every call against a paid SaaS burns API credits or trips a per-call billing line. Local dev shouldn't have to choose between &ldquo;run tests against staging and worry about the bill&rdquo; or &ldquo;skip the test, hope it works&rdquo;. A recording-driven mock replays the API's responses for free against your dev runs, while the real call is reserved for the actual production traffic.</li>
+        <li><strong>The real backend takes 10 minutes to boot.</strong> Some service stacks need a database migration, a message broker, a primary + replica, an identity provider, three queue workers, and a debug agent before the first request goes through. <code>docker-compose up</code> works, but it's not a dev-loop primitive. <code>bowire mock --recording session.bwr --port 5099</code> boots in milliseconds against the same response shape.</li>
+        <li><strong>The real backend isn't reachable.</strong> Air-gapped CI runners, offline development on a flight, a third-party API behind a corporate VPN you don't have today &mdash; the recording is a portable artefact. Drop it on a USB stick, drop it in a Git repo, hit replay.</li>
+      </ul>
+      <p>Same idea regardless: <em>your dev / test loop shouldn't be gated on the production-grade backend being available</em>. The recording is the testable surface.</p>
+    </div>
+  </div>
+</section>
+
+<section class="features-group">
+  <header class="features-group-header">
+    <h2 class="features-group-title">What the mock actually does</h2>
+    <p class="features-group-lede">Not a JSON-stub generator. Every byte the mock serves is what the real server sent during the capture &mdash; gRPC frames, WebSocket messages, MQTT publishes, REST bodies, all preserved at the protocol level.</p>
+  </header>
+  <div class="features-block features-block-text-only">
+    <div class="features-block-text">
+      <p>Every protocol your recording captured replays through the same listener &mdash; REST verbs on the same paths, gRPC unary + server-streaming + bidi with the captured frames, WebSocket / SSE / SignalR / Socket.IO pushing the same sequence, MQTT publishes on the same topics, GraphQL subscriptions streaming the same events. Status codes, frame timing, headers all stay intact; nothing collapses to a JSON stub.</p>
+      <p>Optional layers on top:</p>
+      <ul class="features-block-bullets">
+        <li><strong>Hot-reload</strong> &mdash; rewriting the recording file refreshes the mock without restart.</li>
+        <li><strong>Chaos injection</strong> &mdash; configurable latency / 5xx rate / dropped-frame ratio for resilience tests.</li>
+        <li><strong>Schema-only mode</strong> &mdash; <code>--from-spec openapi.yaml</code> serves plausible responses from an OpenAPI / gRPC descriptor / GraphQL schema with no recording at all.</li>
+        <li><strong>Stateful cursors</strong> &mdash; a recording with multiple captures of the same call replays them in order, so the fifth call sees the fifth response.</li>
+        <li><strong>Capture-on-miss</strong> &mdash; unrecorded request transparently forwards to a fallback target, captures the response, serves it back next time. Useful for incrementally growing a mock as your test suite grows.</li>
+      </ul>
+      <a class="features-block-docs-link" href="{{ '/docs/features/mock.html' | relative_url }}">Mock-server docs &rarr;</a>
+    </div>
+  </div>
+</section>
+
+<section class="features-group features-group-alt">
+  <header class="features-group-header">
+    <h2 class="features-group-title">From recording to mock to CI</h2>
+    <p class="features-group-lede">One artefact (the <code>.bwr</code> recording) drives interactive replay in the workbench, headless replay via <code>bowire mock</code>, and the security scanner via <code>bowire scan</code>. Same file, three consumers.</p>
+  </header>
+  <div class="features-block features-block-text-only">
+    <div class="features-block-text">
+      <p>Workflow that lights up: capture a real session against staging (or against the third-party API once, with their key) &rarr; commit the <code>.bwr</code> file to your repo next to the test fixtures &rarr; CI brings up <code>bowire mock --recording fixtures/api.bwr --port 5099</code> alongside the integration tests &rarr; tests run against the mock, deterministic and offline. The real backend stays untouched.</p>
+      <p>For dev: same recording, run <code>bowire mock</code> on your laptop, point your frontend / scripted client at <code>http://localhost:5099</code>. No staging-account creation, no credentials in <code>.env</code> files committed by accident, no waiting for the integration team to provision a sandbox.</p>
+      <p>The <a href="{{ '/workflows/devops.html' | relative_url }}">DevOps workflow page</a> walks the full pipeline: mock-as-fixture &rarr; integration tests &rarr; security scan &rarr; SARIF upload &mdash; all from the same captured recording.</p>
+    </div>
+  </div>
+</section>
+
+<section class="features-page-cta features-page-cta-elevated">
+  <div class="features-page-cta-inner">
+    <h2 class="features-page-cta-title">Cut the backend out of the dev loop</h2>
+    <p class="features-page-cta-lede">Capture once, replay anywhere. No real-backend account, no real-backend credits, no real-backend boot time.</p>
+    <div class="features-page-cta-buttons">
+      <a class="btn btn-secondary features-page-cta-btn" href="{{ '/workflows/devops.html' | relative_url }}">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="9" width="4" height="6" rx="0.7"/><rect x="10" y="9" width="4" height="6" rx="0.7"/><rect x="18" y="9" width="4" height="6" rx="0.7"/></svg>
+        DevOps workflow
+      </a>
+      <a class="btn btn-secondary features-page-cta-btn" href="{{ '/quickstart.html' | relative_url }}">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+        Quickstart (mock path)
+      </a>
+      <a class="btn btn-secondary features-page-cta-btn" href="{{ '/features.html#mock' | relative_url }}">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+        Mock feature reference
+      </a>
+    </div>
+    <p class="features-page-cta-finale">A different lane fits better? <a href="{{ '/solutions.html' | relative_url }}">All solution lanes &rarr;</a></p>
+  </div>
+</section>

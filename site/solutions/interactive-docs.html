@@ -1,0 +1,75 @@
+---
+layout: page
+title: Interactive API documentation — Bowire
+description: Every example in your docs is runnable. Reader edits the JSON, hits Send, sees the real response — no curl-paste-and-pray loop. Embeddable workbench, per-language code export, offline-from-schema authoring.
+---
+
+<section class="features-page-hero">
+  <h1>Every example is runnable</h1>
+  <p class="features-page-tagline">Drop Bowire next to your written guides. Readers click a method, edit the JSON, hit Send, see the real response &mdash; no curl-paste-and-pray loop.</p>
+  <p class="features-page-note">The same workbench your engineers use as a debug tool, embedded into your docs site as a Try-It-Out widget. Auto-discovery means every example stays in sync with the running service; no separately-curated Swagger UI mirror to keep up to date.</p>
+</section>
+
+<section class="features-group features-group-alt">
+  <header class="features-group-header">
+    <h2 class="features-group-title">Embed it next to the prose</h2>
+    <p class="features-group-lede">Bowire mounts at a URL path; your docs reference it next to the relevant guide. Two lines in <code>Program.cs</code>, then iframe / link / direct mount &mdash; whatever fits your docs site.</p>
+  </header>
+  <div class="features-block features-block-text-only">
+    <div class="features-block-text">
+      <p>Embedded mode is the natural fit: <code>app.MapBowire()</code> in your docs-host (or in the API service itself), and the workbench is reachable at <code>/bowire</code> next to the written guides. Readers click the method, fill the typed form (or hit <kbd>f</kbd> for raw JSON), <kbd>Ctrl</kbd>+<kbd>Enter</kbd> sends, response renders &mdash; no separate service to keep alive.</p>
+      <p>Standalone works too: ship a static docs site, link the relevant section at <code>https://docs.example.com/bowire/?service=Orders&amp;method=Create</code> &mdash; deep-link state restores the picked method, the picked environment, and any inputs from the URL.</p>
+      <a class="features-block-docs-link" href="{{ '/docs/setup/embedded.html' | relative_url }}">Embedded setup docs &rarr;</a>
+    </div>
+  </div>
+</section>
+
+<section class="features-group">
+  <header class="features-group-header">
+    <h2 class="features-group-title">Code-export so readers don't stay in the UI</h2>
+    <p class="features-group-lede">A doc reader's goal isn't to keep clicking Send in the browser &mdash; it's to copy the working snippet into their own code. Every Bowire call exports as <code>curl</code>, <code>grpcurl</code>, or a typed C# / TypeScript snippet.</p>
+  </header>
+  <div class="features-block features-block-text-only">
+    <div class="features-block-text">
+      <p>The exported snippet uses the exact values the reader just entered in the form &mdash; not a hand-curated example that drifts away from the live shape. Copy the snippet, paste into a script, run it. The auth picker (Basic / Bearer / JWT / OAuth2) becomes the appropriate header in the export; the gRPC metadata becomes a <code>grpcurl --header</code>; the GraphQL variables become a JSON body.</p>
+      <p>Typed exports (C# / TypeScript) include the strongly-typed message classes so the snippet drops into a real codebase as-is. No string-template gymnastics, no &ldquo;adapt this example to your types&rdquo; footnote.</p>
+      <a class="features-block-docs-link" href="{{ '/docs/features/code-export.html' | relative_url }}">Code-export docs &rarr;</a>
+    </div>
+  </div>
+</section>
+
+<section class="features-group features-group-alt">
+  <header class="features-group-header">
+    <h2 class="features-group-title">Authoring offline from a schema file</h2>
+    <p class="features-group-lede">Docs writers don't need a running service to author an example. Point Bowire at a <code>.proto</code> / OpenAPI document / GraphQL SDL &mdash; the workbench loads the schema and lets the writer compose a request even before the implementation is live.</p>
+  </header>
+  <div class="features-block features-block-text-only">
+    <div class="features-block-text">
+      <p>The schema-upload path serves two cases: 1) the API is still being built and the docs need to ship before the service does; 2) the API is third-party / external and you can't always run it locally. Either way, Bowire builds the same method tree, generates the same typed inputs, exports the same code snippets &mdash; only the &ldquo;send and see the response&rdquo; step requires a real target.</p>
+      <p>When the service does come up, switch the environment dropdown to point at it &mdash; the inputs the writer already authored carry over.</p>
+      <a class="features-block-docs-link" href="{{ '/features.html#offline' | relative_url }}">Offline-from-schema feature reference &rarr;</a>
+    </div>
+  </div>
+</section>
+
+<section class="features-page-cta features-page-cta-elevated">
+  <div class="features-page-cta-inner">
+    <h2 class="features-page-cta-title">Make the docs runnable</h2>
+    <p class="features-page-cta-lede">Embed the workbench, export real code, author offline against a schema file &mdash; one tool covers all three.</p>
+    <div class="features-page-cta-buttons">
+      <a class="btn btn-secondary features-page-cta-btn" href="{{ '/workflows/docs-teams.html' | relative_url }}">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        Docs-team workflow
+      </a>
+      <a class="btn btn-secondary features-page-cta-btn" href="{{ '/quickstart.html' | relative_url }}">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+        Quickstart (embedded path)
+      </a>
+      <a class="btn btn-secondary features-page-cta-btn" href="{{ '/features.html#offline' | relative_url }}">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+        Feature reference
+      </a>
+    </div>
+    <p class="features-page-cta-finale">A different lane fits better? <a href="{{ '/solutions.html' | relative_url }}">All solution lanes &rarr;</a></p>
+  </div>
+</section>
