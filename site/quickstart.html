@@ -79,7 +79,7 @@ any service URL without code changes.
     <div class="quickstart-page-step-num">1</div>
     <div class="quickstart-page-step-body">
       <h2>Pick your path</h2>
-      <p class="features-block-lead">Bowire runs three ways for the quickstart &mdash; the rest of the steps differ slightly depending on which one you pick.</p>
+      <p class="features-block-lead">Bowire runs four ways for the quickstart &mdash; the rest of the steps differ slightly depending on which one you pick.</p>
 
       <div class="quickstart-path-picker" data-path-picker role="tablist" aria-label="Choose how Bowire runs against your services">
         <button class="quickstart-path-btn" type="button" role="tab" data-path="embedded" aria-selected="false">
@@ -110,6 +110,16 @@ any service URL without code changes.
             <span class="quickstart-path-btn-title">Dazzle ship</span>
             <span class="quickstart-path-btn-mode">Replay mock</span>
             <span class="quickstart-path-btn-desc">Replay a captured recording as a live mock endpoint. Unblock frontend work, run CI without the real backend.</span>
+          </span>
+        </button>
+        <button class="quickstart-path-btn" type="button" role="tab" data-path="container" aria-selected="false">
+          <span class="quickstart-path-btn-photo" aria-hidden="true">
+            <img src="{{ '/assets/images/launch/containership.jpg' | relative_url }}" alt="" loading="lazy">
+          </span>
+          <span class="quickstart-path-btn-body">
+            <span class="quickstart-path-btn-title">Container ship</span>
+            <span class="quickstart-path-btn-mode">Docker sidecar</span>
+            <span class="quickstart-path-btn-desc">Bowire runs as its own service in a compose stack or Kubernetes pod. Reachable from inside the cluster, browsable from outside.</span>
           </span>
         </button>
       </div>
@@ -362,6 +372,110 @@ bowire plugin install --file ./bundle/kl.bowire.protocol.kafka.0.9.4.nupkg \
       <p class="features-block-lead">A Dazzle ship in your harbour. Same wire as the real backend, no live host required.</p>
       <p>For the full feature set &mdash; chaos injection, schema-only mode (OpenAPI / gRPC / GraphQL), stateful cursors, multi-protocol replay &mdash; see the <a href="{{ '/docs/features/mock.html' | relative_url }}">mock-server docs</a>.</p>
       {% include themed-img.html src="/assets/images/screenshots/recording.png" alt="Recording manager — timeline of captured calls that the mock now replays back at the same protocol shape" class="quickstart-page-step-screenshot" %}
+    </div>
+  </article>
+
+  <!-- ========================================================== -->
+  <!--  Container-ship path (Docker sidecar in a service stack)    -->
+  <!-- ========================================================== -->
+
+  <!-- Step 2 — Pull image -->
+  <article class="quickstart-page-step" id="container-pull" data-path="container" hidden>
+    <div class="quickstart-page-step-num">2</div>
+    <div class="quickstart-page-step-body">
+      <h2>Pull the image</h2>
+      <p class="features-block-lead">Multi-arch image (<code>linux/amd64</code> + <code>linux/arm64</code>), every first-party protocol plugin pre-bundled. Same image regardless of how you'll wire it in next &mdash; <code>compose</code>, <code>kubectl apply</code>, or a one-off <code>docker run</code>.</p>
+      <div class="code-block">
+        <div class="code-block-header">
+          <span class="code-block-lang">bash</span>
+          <button class="copy-btn" data-copy="docker pull kuestenlogik/bowire:latest" aria-label="Copy">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+          </button>
+        </div>
+        <pre><code>$ docker pull kuestenlogik/bowire:latest</code></pre>
+      </div>
+    </div>
+  </article>
+
+  <!-- Step 3 — Add to compose -->
+  <article class="quickstart-page-step" id="container-compose" data-path="container" hidden>
+    <div class="quickstart-page-step-num">3</div>
+    <div class="quickstart-page-step-body">
+      <h2>Wire it into your stack</h2>
+      <p class="features-block-lead">Drop a <code>bowire</code> service next to your existing ones in <code>docker-compose.yml</code>. Bowire's container reaches the other services via their compose-network hostnames; the workbench port (<code>5080</code>) is what you'll hit from outside.</p>
+      <div class="code-block">
+        <div class="code-block-header">
+          <span class="code-block-lang">yaml</span>
+          <span class="code-block-lang" style="margin-left:auto;opacity:0.7">docker-compose.yml</span>
+          <button class="copy-btn" data-copy="services:
+  api:
+    image: my-api:latest
+    ports: ['50051:50051']
+
+  bowire:
+    image: kuestenlogik/bowire:latest
+    command: ['--url', 'http://api:50051']
+    ports: ['5080:5080']
+    volumes:
+      - bowire-data:/home/app/.bowire
+    depends_on: [api]
+
+volumes:
+  bowire-data:" aria-label="Copy">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+          </button>
+        </div>
+        <pre><code><span class="c">services:</span>
+  <span class="c">api:</span>
+    image: my-api:latest
+    ports: ['50051:50051']
+
+  <span class="c">bowire:</span>
+    image: kuestenlogik/bowire:latest
+    command: ['--url', 'http://api:50051']
+    ports: ['5080:5080']
+    volumes:
+      - bowire-data:/home/app/.bowire
+    depends_on: [api]
+
+<span class="c">volumes:</span>
+  bowire-data:</code></pre>
+      </div>
+      <p>The volume keeps installed plugins, recordings, and environments persistent across container restarts. Same pattern translates to a Kubernetes <code>Deployment</code> with a Bowire sidecar container in the pod &mdash; see the <a href="{{ '/docs/setup/sidecar.html' | relative_url }}">sidecar setup docs</a>.</p>
+    </div>
+  </article>
+
+  <!-- Step 4 — Bring the stack up -->
+  <article class="quickstart-page-step" id="container-up" data-path="container" hidden>
+    <div class="quickstart-page-step-num">4</div>
+    <div class="quickstart-page-step-body">
+      <h2>Bring the stack up</h2>
+      <p class="features-block-lead">One command starts your service plus the workbench together. Bowire picks up <code>api:50051</code> on the compose network without any host-side port-forwarding or DNS games.</p>
+      <div class="code-block">
+        <div class="code-block-header">
+          <span class="code-block-lang">bash</span>
+          <button class="copy-btn" data-copy="docker compose up -d" aria-label="Copy">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+          </button>
+        </div>
+        <pre><code>$ docker compose up -d
+
+   <span class="c"># bowire    listening on 0.0.0.0:5080</span>
+   <span class="c"># api       listening on 0.0.0.0:50051</span></code></pre>
+      </div>
+    </div>
+  </article>
+
+  <!-- Step 5 — Finish flag -->
+  <article class="quickstart-page-step quickstart-page-step-finish" id="container-afloat" data-path="container" hidden>
+    <div class="quickstart-page-step-num" aria-hidden="true">
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 22V4"/><path d="M4 4h13l-3 4 3 4H4"/></svg>
+    </div>
+    <div class="quickstart-page-step-body">
+      <h2>You're sidecared</h2>
+      <p class="features-block-lead">Open <code>http://localhost:5080</code> on the host and the workbench is running inside your compose stack. From inside the network it talks to your other services on their service hostnames; from outside the host you reach it on the published port.</p>
+      <p>Bowire's container is replaceable &mdash; tear it down with <code>docker compose down bowire</code> without touching the rest of the stack. Same workbench UI as the standalone CLI, same shortcuts, same recordings (they live in the volume), just running alongside your services instead of on your laptop.</p>
+      {% include themed-img.html src="/assets/images/screenshots/ready.png" alt="Bowire ready landing — connected to services through the compose network, recent history visible" class="quickstart-page-step-screenshot" %}
     </div>
   </article>
 
