@@ -1,13 +1,13 @@
 ---
 layout: page
 title: Security testing — Bowire
-description: Multi-protocol API security testing, self-hosted. Burp Suite for the non-HTTP protocols — schema-aware, Apache-2.0-licensed, with recordings as the vulnerability-template format. Built into the bowire scan subcommand.
+description: Multi-protocol API security testing, self-hosted. Burp for the non-HTTP protocols — schema-aware, Apache-2.0, Nuclei-compatible. Four CLI subcommands (scan / fuzz / jwt / proxy), built-in passive checks, Bowire.VulnDb baseline, and the 8000+ projectdiscovery/nuclei-templates corpus through one engine.
 ---
 
 <section class="features-page-hero">
   <h1>Security</h1>
-  <p class="features-page-tagline">Multi-protocol API security testing, self-hosted.<br>Burp for the non-HTTP protocols &mdash; schema-aware, Apache-2.0-licensed.</p>
-  <p class="features-page-note">Bowire's discovery, recording, and replay primitives extend into vulnerability scanning &mdash; one workbench, one CLI, one CI job for every protocol on the wire.</p>
+  <p class="features-page-tagline">Multi-protocol API security testing, self-hosted.<br>Burp for the non-HTTP protocols &mdash; schema-aware, Apache-2.0, Nuclei-compatible.</p>
+  <p class="features-page-note">Bowire's discovery, recording, and replay primitives extend into vulnerability scanning. Four CLI subcommands (<code>scan</code> / <code>fuzz</code> / <code>jwt</code> / <code>proxy</code>), three template sources fed through one engine, SARIF 2.1.0 out to GitHub Code Scanning / GitLab / Azure DevOps.</p>
 </section>
 
 <!-- ================================================================ -->
@@ -16,7 +16,7 @@ description: Multi-protocol API security testing, self-hosted. Burp Suite for th
 <section class="features-group features-group-alt">
   <header class="features-group-header">
     <h2 class="features-group-title">Why a new lane</h2>
-    <p class="features-group-lede">Every incumbent owns <em>one</em> transport. Bowire's sweet-spot is the intersection three other tools leave open &mdash; multi-protocol-native, schema-aware via the frame-semantics layer, with recordings as the template format.</p>
+    <p class="features-group-lede">Every incumbent owns <em>one</em> transport. Bowire's sweet-spot is the intersection three other tools leave open &mdash; multi-protocol-native, schema-aware via the frame-semantics layer, recording-as-template, with the existing Nuclei corpus straight on the same engine.</p>
   </header>
 
   <div class="features-block features-block-text-only">
@@ -25,17 +25,22 @@ description: Multi-protocol API security testing, self-hosted. Burp Suite for th
 
         <div class="usp-card">
           <h3>Multi-protocol-native</h3>
-          <p>Burp Suite Pro and OWASP ZAP are HTTP-zentric &mdash; gRPC needs plugins plus manual <code>.proto</code> wiring; SignalR, WebSocket, MQTT have at best community-contributed half-solutions. Bowire hits a gRPC service via reflection, a SignalR hub via its typed methods, an OData endpoint via <code>$metadata</code>, an MQTT broker via topic enumeration &mdash; each in the protocol's own dialect, not as a polyfill over HTTP.</p>
+          <p>Burp Suite Pro and OWASP ZAP are HTTP-centric &mdash; gRPC needs plugins plus manual <code>.proto</code> wiring; SignalR, WebSocket, MQTT have at best community-contributed half-solutions. Bowire hits a gRPC service via reflection, a SignalR hub via its typed methods, an OData endpoint via <code>$metadata</code>, an MQTT broker via topic enumeration &mdash; each in the protocol's own dialect, not as a polyfill over HTTP.</p>
         </div>
 
         <div class="usp-card">
           <h3>Schema-aware</h3>
-          <p>The Phase-3 frame-semantics framework already classifies fields by kind (<code>coordinate.latitude</code>, <code>image.bytes</code>, <code>audio.bytes</code>, <code>timestamp</code>, &hellip;). A schema-aware fuzzer knows not to throw SQL injection at a latitude field, knows that <code>image.bytes</code> deserves magic-byte mutation instead of XSS payloads, knows that <code>audio.sample-rate</code> is a numeric integer and not a string. No incumbent has this for non-HTTP protocols.</p>
+          <p>The frame-semantics framework classifies fields by kind (<code>coordinate.latitude</code>, <code>image.bytes</code>, <code>audio.bytes</code>, <code>timestamp</code>, &hellip;). The fuzzer knows not to throw SQL injection at a latitude field, knows that <code>image.bytes</code> deserves magic-byte mutation instead of XSS payloads, knows that <code>audio.sample-rate</code> is a numeric integer and not a string. No incumbent has this for non-HTTP protocols.</p>
         </div>
 
         <div class="usp-card">
           <h3>Recording &equiv; template</h3>
           <p>Every Bowire recording carries the same shape <code>bowire scan</code> consumes. Add <code>attack: true</code>, a <code>vulnerability</code> metadata block, and a <code>vulnerableWhen</code> predicate &mdash; that is the vulnerability template format. Same replay engine the mock server uses, just with the direction flipped. Version it, review it in a PR, replay it deterministically across detector drift.</p>
+        </div>
+
+        <div class="usp-card">
+          <h3>Nuclei-compatible</h3>
+          <p>The 8000+ <a href="https://github.com/projectdiscovery/nuclei-templates" target="_blank" rel="noopener">projectdiscovery/nuclei-templates</a> corpus runs through the same engine. <code>--nuclei &lt;dir&gt;</code> reads the YAML templates, translates the matchers / matchers-condition / payload matrices / standard variables (<code>{{BaseURL}}</code>, <code>{{Hostname}}</code>, <code>{{RandStr_N}}</code>, &hellip;) into Bowire's native AttackPredicate DSL, then runs them alongside the built-in checks and the VulnDb baseline. One engine, three template sources.</p>
         </div>
 
         <div class="usp-card">
@@ -49,68 +54,169 @@ description: Multi-protocol API security testing, self-hosted. Burp Suite for th
 </section>
 
 <!-- ================================================================ -->
-<!--  Quickstart                                                       -->
+<!--  The four CLI subcommands                                          -->
 <!-- ================================================================ -->
 <section class="features-group">
   <header class="features-group-header">
-    <h2 class="features-group-title">Three lines, one scan</h2>
-    <p class="features-group-lede">Install the CLI, point it at a target, read the findings. Same binary as the rest of Bowire &mdash; <code>scan</code> is just another subcommand alongside <code>list</code>, <code>call</code>, and <code>mock</code>.</p>
+    <h2 class="features-group-title">The four security subcommands</h2>
+    <p class="features-group-lede">All four ship in the same <code>bowire</code> binary that drives the workbench. Pipe them into CI, run them ad-hoc from a developer laptop, or call them through MCP from an AI agent &mdash; same exit-code semantics, same SARIF output.</p>
   </header>
 
-  <div class="features-block features-block-text-only">
+  <!-- ---- bowire scan ---- -->
+  <div class="features-block" id="scan">
     <div class="features-block-text">
+      <h3><code>bowire scan</code> &mdash; vulnerability templates against a target</h3>
+      <p class="features-block-lead">Runs templates against an HTTP-class target and emits SARIF 2.1.0. Three template sources feed the same engine: the built-in passive checks (always on), the Bowire.VulnDb baseline (curated, ships with the tool), and the projectdiscovery/nuclei-templates corpus (opt in via <code>--nuclei</code>).</p>
+      <p>Built-in passive checks fire on every run regardless of template flags: TLS version enumeration (raw <code>SslStream</code> handshakes against 1.0 / 1.1 / 1.2 / 1.3), banner / version disclosure (Server / X-Powered-By / X-AspNet-Version), verbose-error detection (default error pages with stack traces). Each disclosed marker becomes its own SARIF rule so the Code-Scanning dashboard groups correctly.</p>
+      <a class="features-block-docs-link" href="https://github.com/Kuestenlogik/Bowire/blob/main/docs/architecture/security-testing.md">Read the security-testing ADR &rarr;</a>
+    </div>
+    <div class="features-block-screenshot">
       <div class="code-block">
         <div class="code-block-header">
           <span class="code-block-lang">bash</span>
-          <span class="code-block-hint">copy &amp; run</span>
-          <button class="copy-btn" data-copy="dotnet tool install -g Kuestenlogik.Bowire.Tool
-bowire scan --target https://api.example.com --templates docs/security/examples --out findings.sarif
-bowire scan --target https://api.example.com --severity high" aria-label="Copy">
+          <span class="code-block-hint">$ bowire scan</span>
+          <button class="copy-btn" data-copy="bowire scan --target https://api.example.com --templates ~/.bowire/vulndb --nuclei ~/nuclei-templates --out findings.sarif --severity medium" aria-label="Copy">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
           </button>
         </div>
-<pre><code><span class="c"># 1. Install the Bowire CLI (any platform with .NET 10)</span>
-dotnet tool install -g Kuestenlogik.Bowire.Tool
+<pre><code><span class="c"># VulnDb baseline + Nuclei corpus, one report</span>
+$ bowire scan --target https://api.example.com \
+              --templates ~/.bowire/vulndb \
+              --nuclei ~/nuclei-templates \
+              --out findings.sarif --severity medium
 
-<span class="c"># 2. Run the built-in checks + the seed corpus against your target</span>
-bowire scan --target https://api.example.com --templates docs/security/examples --out findings.sarif
+  142 template(s) processed:
+  [ok]   built-in.tls-1.0          medium
+  [VULN] built-in.banner-disclose  low      Server: nginx/1.18.0
+  [VULN] CVE-2024-12345            high     /api/v1/admin (header bypass)
 
-<span class="c"># 3. Filter to the findings you actually want to fail a build on</span>
-bowire scan --target https://api.example.com --severity high</code></pre>
+  <span class="check-pass">SARIF report -&gt; findings.sarif</span></code></pre>
       </div>
-      <p>Findings stream to the console as a table; <code>--out findings.sarif</code> emits SARIF 2.1.0 ready for GitHub Code Scanning, GitLab Security Dashboard, or Azure DevOps. <code>--no-builtins</code> turns off the built-in TLS / banner / verbose-error checks if you only want corpus templates to fire.</p>
-      <a class="features-block-docs-link" href="https://github.com/Kuestenlogik/Bowire/blob/main/docs/architecture/security-testing.md">Read the security-testing ADR &rarr;</a>
+    </div>
+  </div>
+
+  <!-- ---- bowire fuzz ---- -->
+  <div class="features-block features-block-reverse" id="fuzz">
+    <div class="features-block-text">
+      <h3><code>bowire fuzz</code> &mdash; schema-aware field-level mutation</h3>
+      <p class="features-block-lead">The field-level fuzzer uses the schema Bowire already knows (OpenAPI / proto / GraphQL / AsyncAPI) to pick payloads that fit the field type. SQL-injection strings don't get thrown at a <code>lat</code> field; <code>image.bytes</code> gets magic-byte mutation, not XSS.</p>
+      <p>Four payload categories ship with curated wordlists (<code>sqli</code>, <code>xss</code>, <code>pathtrav</code>, <code>cmdinj</code>). The baseline-diff oracle compares each mutated response against the unmutated baseline: status change, error-shape divergence, latency spike beyond <em>N</em> standard deviations flags a finding. Findings reuse the same SARIF emitter as <code>scan</code>, so they drop into the same Code-Scanning surface.</p>
+      <a class="features-block-docs-link" href="{{ '/docs/features/fuzz.html' | relative_url }}">Read the technical docs &rarr;</a>
+    </div>
+    <div class="features-block-screenshot">
+      <div class="code-block">
+        <div class="code-block-header">
+          <span class="code-block-lang">bash</span>
+          <span class="code-block-hint">$ bowire fuzz</span>
+          <button class="copy-btn" data-copy="bowire fuzz --target https://api.example.com --template recordings/order.bwf --field '$.customer.email' --payloads sqli,xss --out fuzz.sarif" aria-label="Copy">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+          </button>
+        </div>
+<pre><code><span class="c"># Targeted mutation, baseline-diff oracle</span>
+$ bowire fuzz --target https://api.example.com \
+              --template recordings/order.bwf \
+              --field '$.customer.email' \
+              --payloads sqli,xss --out fuzz.sarif
+
+  payloads tried:  42
+  baseline runs:    5
+  divergent:        3   (status 500, latency &gt;3<span class="check-pass">&sigma;</span>)</code></pre>
+      </div>
+    </div>
+  </div>
+
+  <!-- ---- bowire jwt ---- -->
+  <div class="features-block" id="jwt">
+    <div class="features-block-text">
+      <h3><code>bowire jwt</code> &mdash; decode, tamper, re-sign</h3>
+      <p class="features-block-lead"><code>decode</code> splits the header / payload / signature, validates <code>exp</code> / <code>nbf</code> / <code>iat</code>, lists the present claims. <code>tamper</code> probes the classic <code>alg: none</code> acceptance (CVE-2015-9235 class), signs with a chosen secret, lets you override individual claims for the smoke-test sequence.</p>
+      <p>Pairs naturally with the proxy below: capture a JWT from a real session via <code>bowire proxy</code>, run <code>bowire jwt tamper</code> against it to probe the verification surface, then re-inject the tampered token through the auth-helper's override flag in a follow-up workbench call or scripted assertion.</p>
+      <a class="features-block-docs-link" href="{{ '/docs/features/jwt.html' | relative_url }}">Read the technical docs &rarr;</a>
+    </div>
+    <div class="features-block-screenshot">
+      <div class="code-block">
+        <div class="code-block-header">
+          <span class="code-block-lang">bash</span>
+          <span class="code-block-hint">$ bowire jwt ...</span>
+          <button class="copy-btn" data-copy="bowire jwt decode <token>
+bowire jwt tamper <token> --alg-none
+bowire jwt tamper <token> --set isAdmin=true --secret weak123" aria-label="Copy">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+          </button>
+        </div>
+<pre><code><span class="c"># Decode header + payload, flag well-known weaknesses</span>
+$ bowire jwt decode &lt;token&gt;
+
+<span class="c"># alg:none downgrade (CVE-2015-9235 class)</span>
+$ bowire jwt tamper &lt;token&gt; --alg-none
+
+<span class="c"># Inject a claim, re-sign with a weak secret</span>
+$ bowire jwt tamper &lt;token&gt; \
+                   --set isAdmin=true \
+                   --secret weak123</code></pre>
+      </div>
+    </div>
+  </div>
+
+  <!-- ---- bowire proxy ---- -->
+  <div class="features-block features-block-reverse" id="proxy">
+    <div class="features-block-text">
+      <h3><code>bowire proxy</code> &mdash; intercepting forward proxy, HTTPS MITM</h3>
+      <p class="features-block-lead">CA-trusted forward proxy with HTTPS MITM (CONNECT hijack, raw <code>TcpListener</code> + <code>SslStream</code>, leaf-cert minting per host, cache that survives restarts). Captured flows stream live into the workbench Proxy view via SSE.</p>
+      <p>One-click <em>send to recording</em> converts a captured flow into a template that <code>bowire scan</code>, <code>fuzz</code>, or <code>mock</code> can then replay. The auto-generated CA lives at <code>~/.bowire/proxy-ca.{pfx,crt}</code>; install it once into the trust store of the client you're driving (browser, mobile app under test, scripted runner) and every subsequent run reuses it.</p>
+      <a class="features-block-docs-link" href="{{ '/docs/features/proxy.html' | relative_url }}">Read the technical docs &rarr;</a>
+    </div>
+    <div class="features-block-screenshot">
+      <div class="code-block">
+        <div class="code-block-header">
+          <span class="code-block-lang">bash</span>
+          <span class="code-block-hint">$ bowire proxy</span>
+          <button class="copy-btn" data-copy="bowire proxy --port 8888 --api-port 8889" aria-label="Copy">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+          </button>
+        </div>
+<pre><code><span class="c"># Forward proxy + live workbench Proxy view</span>
+$ bowire proxy --port 8888 --api-port 8889
+
+   <span class="c"># proxy        listening on 0.0.0.0:8888</span>
+   <span class="c"># workbench    http://localhost:8889/proxy</span>
+   <span class="c"># CA exported  ~/.bowire/proxy-ca.crt</span></code></pre>
+      </div>
     </div>
   </div>
 </section>
 
 <!-- ================================================================ -->
-<!--  What it checks                                                   -->
+<!--  Template sources                                                  -->
 <!-- ================================================================ -->
 <section class="features-group features-group-alt">
   <header class="features-group-header">
-    <h2 class="features-group-title">What it checks today</h2>
-    <p class="features-group-lede">Three built-in passive checks fire on every run; three seed templates demonstrate the recording-as-attack-replay format. Everything below is shipped &mdash; the corpus grows from here.</p>
+    <h2 class="features-group-title">Where the templates come from</h2>
+    <p class="features-group-lede">Three template sources, one engine, one SARIF report. The scanner doesn't care which source a template came from &mdash; matchers, payload variables, and severity work the same way regardless.</p>
   </header>
 
   <div class="features-block features-block-text-only">
     <div class="features-block-text">
-
-      <h3>Built-in passive checks</h3>
       <ul class="security-checks-list">
-        <li><strong>TLS version enumeration</strong> &mdash; drives raw <code>SslStream</code> handshakes against TLS 1.0 / 1.1 / 1.2 / 1.3 in sequence. Accepted handshakes on deprecated versions surface as high-severity findings (CWE-326, downgrade-attack vector). Plain <code>http://</code> targets short-circuit to a single high-severity finding.</li>
-        <li><strong>Banner / version disclosure</strong> &mdash; single GET on the target root, scans for <code>Server</code> / <code>X-Powered-By</code> / <code>X-AspNet-Version</code> / <code>X-AspNetMvc-Version</code> / <code>Via</code> headers. Each disclosed header becomes its own SARIF rule so dashboards group correctly.</li>
-        <li><strong>Verbose error detection</strong> &mdash; three probes that trip default error pages (random path &rarr; 404, null-byte URL &rarr; 500, malformed query &rarr; 4xx). Bodies are regex-scanned for the canonical stack-trace and framework-banner markers (CWE-209, medium severity).</li>
+        <li>
+          <strong>Built-in passive checks.</strong>
+          Always on; no template file required. <em>TLS version enumeration</em> drives raw <code>SslStream</code> handshakes against TLS 1.0 / 1.1 / 1.2 / 1.3 in sequence (accepted handshakes on deprecated versions surface as high-severity findings, CWE-326). <em>Banner / version disclosure</em> scans for <code>Server</code> / <code>X-Powered-By</code> / <code>X-AspNet-Version</code> / <code>X-AspNetMvc-Version</code> / <code>Via</code> headers. <em>Verbose-error detection</em> trips default error pages (random path &rarr; 404, null-byte URL &rarr; 500, malformed query &rarr; 4xx) and regex-scans for stack-trace markers (CWE-209).
+        </li>
+        <li>
+          <strong>Bowire.VulnDb &mdash; curated baseline corpus.</strong>
+          Ships as a sibling NuGet package (<a href="https://github.com/Kuestenlogik/Bowire.VulnDb" target="_blank" rel="noopener">Kuestenlogik.Bowire.VulnDb</a>). Each template is a regular <code>BowireRecording</code> JSON file with three extra fields the scanner consumes: <code>attack: true</code>, a <code>vulnerability</code> metadata block, and a <code>vulnerableWhen</code> predicate. Anchor templates today: gRPC Server-Reflection in production (<code>high</code>), GraphQL <code>__schema</code> introspection in production (<code>medium</code>), REST missing baseline security headers (<code>low</code>). Versioned per release, additions land via PR + CI validation.
+        </li>
+        <li>
+          <strong>projectdiscovery/nuclei-templates.</strong>
+          8000+ community-maintained YAML templates. <code>--nuclei &lt;dir&gt;</code> reads them at scan time and translates status / word / regex matchers + matchers-condition + payload matrices + the standard variable set (<code>{{BaseURL}}</code>, <code>{{Hostname}}</code>, <code>{{RandStr_N}}</code>, &hellip;) into Bowire's native AttackPredicate DSL. Same engine, two corpora, one report.
+        </li>
+        <li>
+          <strong>Your own recordings.</strong>
+          A captured probe with <code>attack: true</code> + a <code>vulnerableWhen</code> predicate <em>is</em> a vulnerability template. Capture a real session via <code>bowire proxy</code>, mark the response shape that indicates a vuln, drop the file into your own template directory. Version-control it like any other test fixture.
+        </li>
       </ul>
 
-      <h3>Seed corpus templates</h3>
-      <ul class="security-checks-list">
-        <li><strong>gRPC Server Reflection in production</strong> (high) &mdash; leaks the entire service catalogue and method signatures to anyone who can reach the port. <a href="https://github.com/Kuestenlogik/Bowire/blob/main/docs/security/examples/grpc-server-reflection.json"><code>grpc-server-reflection.json</code> &rarr;</a></li>
-        <li><strong>GraphQL <code>__schema</code> introspection</strong> (medium) &mdash; every public schema field becomes an attack-surface map for the caller. Most frameworks ship it on. <a href="https://github.com/Kuestenlogik/Bowire/blob/main/docs/security/examples/graphql-introspection.json"><code>graphql-introspection.json</code> &rarr;</a></li>
-        <li><strong>REST missing baseline security headers</strong> (low) &mdash; the "do you have security-headers middleware wired?" check. Misses on <code>X-Frame-Options</code>, <code>X-Content-Type-Options</code>, <code>Strict-Transport-Security</code>, <code>Content-Security-Policy</code>. <a href="https://github.com/Kuestenlogik/Bowire/blob/main/docs/security/examples/rest-missing-security-headers.json"><code>rest-missing-security-headers.json</code> &rarr;</a></li>
-      </ul>
-
-      <p>Every template is a regular <code>BowireRecording</code> JSON file with three additional fields the scanner consumes &mdash; <code>attack: true</code>, a <code>vulnerability</code> metadata block, and a <code>vulnerableWhen</code> predicate. <a href="https://github.com/Kuestenlogik/Bowire/blob/main/docs/security/examples/README.md">Template format reference &rarr;</a></p>
+      <a class="features-block-docs-link" href="https://github.com/Kuestenlogik/Bowire/blob/main/docs/security/examples/README.md">Template format reference &rarr;</a>
     </div>
   </div>
 </section>
@@ -135,7 +241,7 @@ bowire scan --target https://api.example.com --severity high</code></pre>
     uses: Kuestenlogik/Bowire/.github/workflows/scan-template.yml@main
     with:
       target: https://staging.api.example.com
-      corpus: docs/security/examples
+      templates: ~/.bowire/vulndb
       severity: medium" aria-label="Copy">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
           </button>
@@ -146,10 +252,14 @@ jobs:
     uses: Kuestenlogik/Bowire/.github/workflows/scan-template.yml@main
     with:
       target: https://staging.api.example.com
-      corpus: docs/security/examples
+      templates: ~/.bowire/vulndb
       severity: medium</code></pre>
       </div>
-      <p>The workflow installs the CLI, runs the scan, uploads <code>findings.sarif</code> both as a build artifact and via <code>github/codeql-action/upload-sarif@v3</code> so each finding becomes a Code Scanning alert with stable rule IDs, severity, and remediation copy. <a href="https://github.com/Kuestenlogik/Bowire/blob/main/.github/workflows/scan-template.yml">View the workflow file &rarr;</a></p>
+      <p>The workflow installs the CLI, runs the scan, uploads <code>findings.sarif</code> both as a build artifact and via <code>github/codeql-action/upload-sarif@v3</code> so each finding becomes a Code Scanning alert with stable rule IDs, severity, and remediation copy. GitLab Security Dashboard and Azure DevOps ingest the same SARIF without translation. The DevOps workflow page has the full multi-step pipeline (mock fixture &rarr; integration tests &rarr; scan &rarr; fuzz &rarr; SARIF upload).</p>
+      <p>
+        <a class="features-block-docs-link" href="https://github.com/Kuestenlogik/Bowire/blob/main/.github/workflows/scan-template.yml">View the workflow file &rarr;</a>
+        <a class="features-block-docs-link" href="{{ '/workflows/devops.html' | relative_url }}" style="margin-left:24px">Full DevOps workflow &rarr;</a>
+      </p>
     </div>
   </div>
 </section>
@@ -160,7 +270,7 @@ jobs:
 <section class="features-group features-group-alt">
   <header class="features-group-header">
     <h2 class="features-group-title">Roadmap</h2>
-    <p class="features-group-lede">Four capability tiers from the ADR. Each tier is sellable on its own; the upper tiers compound on the lower ones. Tier 1 anchors the lane today.</p>
+    <p class="features-group-lede">Four capability tiers from the ADR. Each tier is sellable on its own; the upper tiers compound on the lower ones. Tiers 1 + 2 are shipped; Tier 3 is mostly shipped; Tier 4 is the differentiator pipeline.</p>
   </header>
 
   <div class="features-block features-block-text-only">
@@ -173,7 +283,17 @@ jobs:
           </span>
           <div class="security-roadmap-body">
             <h3>Tier 1 &mdash; Foundation <span class="roadmap-card-tag">shipped</span></h3>
-            <p>The minimum that makes Bowire a credible security tool: <code>bowire scan</code> subcommand, predicate engine, three seed templates, SARIF output, built-in TLS / banner / verbose-error checks. Authentication profile and scope-awareness still on the list.</p>
+            <p>The minimum that makes Bowire a credible security tool: <code>bowire scan</code> subcommand, AttackPredicate engine, three seed templates, SARIF 2.1.0 output, built-in TLS / banner / verbose-error passive checks.</p>
+          </div>
+        </li>
+
+        <li class="security-roadmap-item">
+          <span class="security-roadmap-indicator security-roadmap-indicator-done" aria-label="Shipped">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="5 12 10 17 19 8"/></svg>
+          </span>
+          <div class="security-roadmap-body">
+            <h3>Tier 2 &mdash; Specialty <span class="roadmap-card-tag">shipped</span></h3>
+            <p>Schema-aware field-level fuzzer (<code>bowire fuzz</code>) driven by the frame-semantics layer; JWT toolkit (<code>bowire jwt decode</code> + <code>tamper</code>); the Bowire.VulnDb baseline-corpus repo with per-PR CI validation; Nuclei-template compatibility (<code>--nuclei</code> reads the 8000+ <code>projectdiscovery/nuclei-templates</code> corpus through the same engine). All four ship in the v1.5+ CLI.</p>
           </div>
         </li>
 
@@ -182,8 +302,8 @@ jobs:
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15.5 14"/></svg>
           </span>
           <div class="security-roadmap-body">
-            <h3>Tier 2 &mdash; Specialty <span class="roadmap-card-tag">partial &mdash; toolkit + seed corpus shipped</span></h3>
-            <p>Shipped: JWT toolkit (<code>bowire jwt decode</code>, <code>bowire jwt tamper</code>) and the first multi-protocol attack templates (gRPC Server-Reflection, GraphQL <code>__schema</code> introspection, REST missing-security-headers) plus the built-in TLS / banner / verbose-error passive checks. Still on the list: schema-aware fuzzing driven by the frame-semantics layer, SignalR brute-force and MQTT topic-enumeration templates, and the <code>kuestenlogik/bowire-vulndb</code> community-corpus repo with per-PR CI validation.</p>
+            <h3>Tier 3 &mdash; Pro-grade catch-up <span class="roadmap-card-tag">partial &mdash; proxy + Action shipped</span></h3>
+            <p>Shipped: intercepting proxy with HTTPS MITM via a self-minted root CA (CONNECT-tunnel hijack, raw <code>TcpListener</code> + <code>SslStream</code>, leaf-cert cache), workbench Proxy view with live SSE flow stream + one-click "send to recording", and the reusable <code>scan-template.yml</code> GitHub Action. Still on the list: sensitive-data scanner (PII / API keys / JWTs in responses), proxy-level breakpoints with conditional pass-through, BOLA / BFLA two-token tests, and broader protocol-specific templates (SignalR brute-force, MQTT topic-enumeration).</p>
           </div>
         </li>
 
@@ -192,18 +312,8 @@ jobs:
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15.5 14"/></svg>
           </span>
           <div class="security-roadmap-body">
-            <h3>Tier 3 &mdash; Pro-grade catch-up <span class="roadmap-card-tag">partial &mdash; intercepting proxy + GitHub Action shipped</span></h3>
-            <p>Shipped: the intercepting proxy with HTTPS MITM via a self-minted root CA (CONNECT-tunnel hijack, raw <code>TcpListener</code> + <code>SslStream</code>, leaf-cert cache), workbench-side Proxy view with live SSE flow stream and one-click "send to recording", and the reusable <code>scan-template.yml</code> GitHub Action that consuming repos pull in via <code>uses:</code>. Still on the list: active fuzzer with curated wordlists, sensitive-data scanner (PII / API keys / JWTs), proxy-level breakpoints with conditional pass-through, BOLA / BFLA two-token tests.</p>
-          </div>
-        </li>
-
-        <li class="security-roadmap-item">
-          <span class="security-roadmap-indicator" aria-label="Planned">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/></svg>
-          </span>
-          <div class="security-roadmap-body">
-            <h3>Tier 4 &mdash; Differentiation <span class="roadmap-card-tag">distinct from DAST</span></h3>
-            <p>AI-assisted threat modeling via the existing MCP surface, recording-driven security regression tests, multi-protocol attack chains as recordings, automatic OWASP API Top 10 / CWE / CVSS scoring in the SARIF and HTML reports.</p>
+            <h3>Tier 4 &mdash; Differentiation <span class="roadmap-card-tag">partial &mdash; MCP surface shipped</span></h3>
+            <p>Shipped: MCP adapter + <code>bowire mcp serve</code>, so an AI agent can chain <em>discover &rarr; record &rarr; mark vulnerable &rarr; scan</em> through the same primitives a human uses. Still on the list: AI-assisted threat modeling on top of the MCP surface, recording-driven security regression tests as a first-class workflow, multi-protocol attack chains as recordings, automatic OWASP API Top 10 / CWE / CVSS scoring in the SARIF and HTML reports.</p>
           </div>
         </li>
 
@@ -222,15 +332,15 @@ jobs:
 <section class="features-page-cta features-page-cta-elevated">
   <div class="features-page-cta-inner">
     <h2 class="features-page-cta-title">Run a scan</h2>
-    <p class="features-page-cta-lede">The Tier-1 anchor is in your hands today. Read the ADR, pull the templates, point <code>bowire scan</code> at staging.</p>
+    <p class="features-page-cta-lede">Three template sources, four CLI subcommands, one SARIF report. Read the ADR, point <code>bowire scan</code> at staging.</p>
     <div class="features-page-cta-buttons">
       <a class="btn btn-secondary features-page-cta-btn" href="https://github.com/Kuestenlogik/Bowire/blob/main/docs/architecture/security-testing.md">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
         Read the ADR
       </a>
-      <a class="btn btn-secondary features-page-cta-btn" href="https://github.com/Kuestenlogik/Bowire/tree/main/docs/security/examples">
+      <a class="btn btn-secondary features-page-cta-btn" href="https://github.com/Kuestenlogik/Bowire.VulnDb">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg>
-        Browse the seed corpus
+        Browse Bowire.VulnDb
       </a>
       <a class="btn btn-secondary features-page-cta-btn" href="https://github.com/Kuestenlogik/Bowire">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .5C5.65.5.5 5.65.5 12c0 5.08 3.29 9.39 7.86 10.91.58.11.79-.25.79-.56 0-.27-.01-1.16-.02-2.11-3.2.7-3.87-1.37-3.87-1.37-.52-1.33-1.27-1.69-1.27-1.69-1.04-.71.08-.7.08-.7 1.15.08 1.76 1.18 1.76 1.18 1.02 1.76 2.69 1.25 3.34.96.1-.74.4-1.25.73-1.54-2.55-.29-5.24-1.28-5.24-5.7 0-1.26.45-2.29 1.18-3.1-.12-.29-.51-1.46.11-3.04 0 0 .96-.31 3.15 1.18.91-.25 1.89-.38 2.86-.39.97.01 1.95.14 2.86.39 2.18-1.49 3.14-1.18 3.14-1.18.62 1.58.23 2.75.11 3.04.74.81 1.18 1.84 1.18 3.1 0 4.43-2.69 5.4-5.26 5.69.41.36.78 1.06.78 2.13 0 1.54-.01 2.78-.01 3.16 0 .31.21.68.8.56C20.21 21.39 23.5 17.08 23.5 12 23.5 5.65 18.35.5 12 .5z"/></svg>
@@ -257,7 +367,7 @@ jobs:
     background: var(--surface-elevated, var(--bg-secondary));
     border: 1px solid var(--border);
     border-radius: 8px;
-    line-height: 1.5;
+    line-height: 1.55;
   }
   .security-checks-list li strong {
     color: var(--text);
