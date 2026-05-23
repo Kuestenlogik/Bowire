@@ -5228,17 +5228,24 @@ p a:not([class]):hover,
    visible. */
 .quickstart-path-picker {
     display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 24px;
-    max-width: 880px;
+    /* Four paths now (Embedded / Standalone / Mock / Container).
+       Auto-fit so the grid collapses 4 → 2 → 1 cleanly across
+       viewports; min-width 260 px gives each card enough room
+       for the photo on top + the boat name + mode + desc below. */
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 20px;
+    max-width: 1120px;
     margin: 0 auto 48px;
     padding: 0 16px;
 }
 .quickstart-path-btn {
     display: flex;
-    gap: 16px;
-    align-items: flex-start;
-    padding: 18px 20px;
+    flex-direction: column;
+    gap: 0;
+    align-items: stretch;
+    padding: 0;
+    overflow: hidden;
+    text-align: left;
     background: var(--bg-elevated);
     border: 1.5px solid var(--border);
     border-radius: 12px;
@@ -5276,16 +5283,15 @@ p a:not([class]):hover,
    to mirror the boat photos from the "Straight into the water" stepper
    so the same deployment shape is recognisable across both surfaces.
    Same palette treatment (grayscale + saturate + brightness drop +
-   lavender accent multiply) the launch-boat photos get, so the small
-   tiles sit inside the marketing palette. */
+   lavender accent multiply) the launch-boat photos get, so the
+   thumbnails sit inside the marketing palette. Stacked layout: photo
+   on top, content below (was: tiny 64×48 thumb beside the title;
+   user feedback: zu klein). */
 .quickstart-path-btn-photo {
-    flex: 0 0 auto;
-    width: 64px;
-    height: 48px;
-    border-radius: 8px;
-    overflow: hidden;
     position: relative;
+    overflow: hidden;
     background: rgba(99, 102, 241, 0.04);
+    aspect-ratio: 5 / 3;
 }
 .quickstart-path-btn-photo img {
     display: block;
@@ -5312,6 +5318,10 @@ p a:not([class]):hover,
     flex-direction: column;
     gap: 4px;
     min-width: 0;
+    /* Padding lives on the body wrapper, not the outer button —
+       the photo above runs edge-to-edge inside the card border
+       while the text content keeps a comfortable 18 px inset. */
+    padding: 16px 18px 18px;
 }
 .quickstart-path-btn-title {
     display: block;
