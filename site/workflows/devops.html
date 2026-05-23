@@ -84,15 +84,17 @@ $ bowire fuzz --target http://localhost:5099 \
         <pre class="mermaid">
 flowchart LR
     Install(["Install bowire"])
-    Mock(["bowire mock<br/><i>fixtures/api.bwr</i>"])
+    BWR[("fixtures/api.bwr")]
+    Mock(["bowire mock"])
     Tests(["Integration tests"])
     Scan(["bowire scan"])
     Fuzz(["bowire fuzz"])
-    SARIF[("SARIF<br/>reports")]
-    CS(["GitHub<br/>Code Scanning"])
+    SARIF[("SARIF reports")]
+    CS(["GitHub Code Scanning"])
 
     Install --> Mock
-    Mock -->|"port 5099"| Tests
+    BWR -->|"--recording"| Mock
+    Mock -->|"localhost:5099"| Tests
     Mock -->|"--target"| Scan
     Mock -->|"--target"| Fuzz
     Scan -->|"--out findings.sarif"| SARIF

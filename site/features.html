@@ -497,8 +497,8 @@ flowchart TD
     Browser(["Browser"])
     Host(["Bowire host"])
     API(["Target API"])
-    Browser -->|"localhost:5080<br/><i>same-origin · no CORS</i>"| Host
-    Host -->|"upstream<br/><i>server-to-server · no SOP</i>"| API
+    Browser -->|"localhost:5080 (same-origin, no CORS)"| Host
+    Host -->|"upstream (server-to-server, no SOP)"| API
         </pre>
         <figcaption class="features-diagram-caption">The browser only ever hits <code>localhost:5080</code> &mdash; same-origin, so CORS never enters the picture. Bowire makes the upstream call (gRPC, REST, WebSocket, MQTT, &hellip;) server-to-server, where same-origin policy doesn&rsquo;t apply.</figcaption>
       </figure>
