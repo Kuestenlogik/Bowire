@@ -1160,6 +1160,15 @@ var BOWIRE_PROTOCOLS = [
         docUrl: 'https://github.com/Kuestenlogik/Bowire.Protocol.Kafka'
     },
     {
+        id: 'amqp', label: 'AMQP',
+        hint: 'RabbitMQ / ActiveMQ &mdash; 0.9.1 + 1.0 in one plugin',
+        packageId: 'Kuestenlogik.Bowire.Protocol.Amqp',
+        urlPlaceholder: 'amqp://broker:5672',
+        category: 'third-party',
+        setupNote: 'One plugin, two wires picked by URL scheme: <code>amqp://</code> / <code>amqps://</code> for AMQP 0.9.1 (RabbitMQ.Client), <code>amqp1://</code> / <code>amqps1://</code> for AMQP 1.0 (AMQPNetLite). Discovery uses the RabbitMQ Management HTTP API on 0.9.1; 1.0 exposes a synthetic <code>Broker</code> service.',
+        docUrl: 'https://github.com/Kuestenlogik/Bowire.Protocol.Amqp'
+    },
+    {
         id: 'dis', label: 'DIS',
         hint: 'IEEE 1278 simulation',
         packageId: 'Kuestenlogik.Bowire.Protocol.Dis',

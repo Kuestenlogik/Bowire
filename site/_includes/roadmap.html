@@ -40,13 +40,13 @@
         </div>
       </a>
 
-      <a class="roadmap-card roadmap-card-link roadmap-card-shipped" href="https://github.com/Kuestenlogik/Bowire.Protocol.Amqp/releases/tag/v0.1.0" target="_blank" rel="noopener">
+      <a class="roadmap-card roadmap-card-link roadmap-card-shipped" href="https://github.com/Kuestenlogik/Bowire.Protocol.Amqp/releases/tag/v0.2.0" target="_blank" rel="noopener">
         <div class="roadmap-number roadmap-number-shipped" aria-label="Shipped">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="5 12 10 17 19 8"/></svg>
         </div>
         <div class="roadmap-card-body">
-          <h3>AMQP plugin skeleton <span class="roadmap-card-tag">v0.1.0</span></h3>
-          <p>Sibling repo live; one plugin covers AMQP 0.9.1 and 1.0 via URL scheme. Discovery and invocation land in v0.2.x.</p>
+          <h3>AMQP plugin + AsyncAPI Phase C <span class="roadmap-card-tag">v0.2.0</span></h3>
+          <p>One plugin covers AMQP 0.9.1 + 1.0 via URL scheme; discovery, unary invocation, finite-stream consume all wired through. AsyncAPI <code>bindings.amqp</code> / <code>bindings.amqp1</code> dispatch through it.</p>
         </div>
       </a>
 
@@ -80,11 +80,11 @@
 
     <div class="roadmap-grid">
 
-      <a class="roadmap-card roadmap-card-link" href="https://github.com/Kuestenlogik/Bowire.Protocol.Amqp" target="_blank" rel="noopener">
+      <a class="roadmap-card roadmap-card-link" href="https://github.com/Kuestenlogik/Bowire/blob/main/ROADMAP.md" target="_blank" rel="noopener">
         <div class="roadmap-number" aria-hidden="true">1</div>
         <div class="roadmap-card-body">
-          <h3>AMQP plugin v0.2 + AsyncAPI Phase C bindings</h3>
-          <p>Discovery and invocation on top of the v0.1 skeleton. Once they land, AsyncAPI <code>bindings.amqp</code> / <code>bindings.amqp1</code> light up automatically.</p>
+          <h3>Kafka plugin (<code>Kuestenlogik.Bowire.Protocol.Kafka</code>)</h3>
+          <p>Sibling plugin on top of <code>Confluent.Kafka</code> with Schema Registry decode. Topic &harr; method, produce &harr; unary, consume &harr; server-streaming. Lights up AsyncAPI&rsquo;s <code>kafka</code> binding for real broker dispatch.</p>
         </div>
       </a>
 

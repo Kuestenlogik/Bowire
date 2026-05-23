@@ -271,6 +271,38 @@
         </template>
       </a>
 
+      <a class="protocol-card" href="https://github.com/Kuestenlogik/Bowire.Protocol.Amqp" target="_blank" rel="noopener" data-feature-modal tabindex="0">
+        <div class="protocol-icon">
+          <!-- AMQP queue glyph — producer / queue / consumer, neutral
+               (AMQP isn't RabbitMQ-only; ActiveMQ, Solace, Azure
+               Service Bus all speak it). currentColor follows the theme. -->
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="7" width="6" height="10" rx="1"/><rect x="16" y="7" width="6" height="10" rx="1"/><path d="M8 10h8M8 14h8"/><circle cx="11" cy="10" r="0.7" fill="currentColor" stroke="none"/><circle cx="13" cy="14" r="0.7" fill="currentColor" stroke="none"/></svg>
+        </div>
+        <div class="protocol-content">
+          <h3>AMQP <span class="protocol-card-tag">sibling repo</span></h3>
+          <p>RabbitMQ, ActiveMQ, Solace, Azure Service Bus &mdash; one plugin covers both AMQP 0.9.1 and AMQP 1.0. URL scheme picks the wire: <code>amqp://</code> for 0.9.1, <code>amqp1://</code> for 1.0. Discovery uses the RabbitMQ Management HTTP API; consume streams render in the same Wireshark-style pane.</p>
+          <div class="protocol-install">
+            <code><span class="protocol-install-prompt">$</span> dotnet add package Kuestenlogik.Bowire.Protocol.Amqp</code>
+            <button class="protocol-install-copy copy-btn" data-copy="dotnet add package Kuestenlogik.Bowire.Protocol.Amqp" aria-label="Copy install command for AMQP"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></button>
+          </div>
+        </div>
+        <template class="feature-card-detail">
+          <div class="features-block">
+            <div class="features-block-text">
+              <h3>AMQP</h3>
+              <p class="features-block-lead">Two AMQP wires (0.9.1 and 1.0) in one plugin, picked by URL scheme. <code>v0.2.0</code> ships discovery + unary invocation + finite-stream consume against live brokers.</p>
+              <p>Built on <code>RabbitMQ.Client</code> for AMQP 0.9.1 (<code>amqp://</code> / <code>amqps://</code>) and <code>AMQPNetLite</code> for AMQP 1.0 (<code>amqp1://</code> / <code>amqps1://</code>). On 0.9.1, discovery reads the broker topology via the RabbitMQ Management HTTP API; <code>basic.publish</code> drives invocations, <code>AsyncEventingBasicConsumer</code> drives consume. On 1.0, the plugin exposes a synthetic <code>Broker</code> service, with <code>Session.Send</code> for invocations and <code>ReceiverLink</code> for consume. Same workbench UI on either wire.</p>
+              <ul class="features-block-capabilities">
+                <li>Pub / Sub</li>
+                <li>Topic / Direct exchanges</li>
+                <li>AMQP 0.9.1 + 1.0</li>
+              </ul>
+              <a class="features-block-docs-link" href="https://github.com/Kuestenlogik/Bowire.Protocol.Amqp" target="_blank" rel="noopener">Plugin repo &rarr;</a>
+            </div>
+          </div>
+        </template>
+      </a>
+
       <a class="protocol-card" href="{{ '/docs/protocols/socketio.html' | relative_url }}" data-feature-modal tabindex="0">
         <div class="protocol-icon">
           <!-- Socket.IO — official logo (simpleicons). -->
@@ -358,7 +390,7 @@
         </div>
         <div class="protocol-content">
           <h3>AsyncAPI</h3>
-          <p><strong>Discovery source &mdash; not a wire.</strong> Drop in an <code>asyncapi.yaml</code> or <code>.json</code> document (2.x + 3.0); Bowire surfaces channels, operations, and per-message overloads in the sidebar, then routes invocations through whichever wire plugin the doc&rsquo;s <code>bindings:</code> declare. Bindings today: <code>http</code>, <code>mqtt</code> / <code>mqtt5</code>, <code>kafka</code>, <code>ws</code>; AMQP / NATS follow.</p>
+          <p><strong>Discovery source &mdash; not a wire.</strong> Drop in an <code>asyncapi.yaml</code> or <code>.json</code> document (2.x + 3.0); Bowire surfaces channels, operations, and per-message overloads in the sidebar, then routes invocations through whichever wire plugin the doc&rsquo;s <code>bindings:</code> declare. Bindings today: <code>http</code>, <code>mqtt</code> / <code>mqtt5</code>, <code>kafka</code>, <code>ws</code>, <code>amqp</code> / <code>amqp1</code>; NATS follows.</p>
           <div class="protocol-install">
             <code><span class="protocol-install-prompt">$</span> dotnet add package Kuestenlogik.Bowire.AsyncApi</code>
             <button class="protocol-install-copy copy-btn" data-copy="dotnet add package Kuestenlogik.Bowire.AsyncApi" aria-label="Copy install command for AsyncAPI"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></button>
@@ -369,11 +401,11 @@
             <div class="features-block-text">
               <h3>AsyncAPI</h3>
               <p class="features-block-lead">Discovery source for event-driven APIs &mdash; parse the contract, route invocations through whichever wire the doc&rsquo;s <code>bindings:</code> declare.</p>
-              <p>Bowire loads AsyncAPI 2.x and 3.0 documents (YAML or JSON), walks channels + operations + messages + per-message overloads, and registers them as first-class entries in the sidebar. Each operation knows which wire it speaks (from the <code>bindings:</code> block), so the invoke pane composes the right frame and hands it to the matching wire plugin &mdash; today <code>http</code> (built into the AsyncAPI plugin itself, no extra wire needed), <code>mqtt</code> + <code>mqtt5</code> via <code>Kuestenlogik.Bowire.Protocol.Mqtt</code>, <code>kafka</code> via <code>Kuestenlogik.Bowire.Protocol.Kafka</code>, and <code>ws</code> via <code>Kuestenlogik.Bowire.Protocol.WebSocket</code>; AMQP / NATS as those wires ship.</p>
+              <p>Bowire loads AsyncAPI 2.x and 3.0 documents (YAML or JSON), walks channels + operations + messages + per-message overloads, and registers them as first-class entries in the sidebar. Each operation knows which wire it speaks (from the <code>bindings:</code> block), so the invoke pane composes the right frame and hands it to the matching wire plugin &mdash; today <code>http</code> (built into the AsyncAPI plugin itself, no extra wire needed), <code>mqtt</code> + <code>mqtt5</code> via <code>Kuestenlogik.Bowire.Protocol.Mqtt</code>, <code>kafka</code> via <code>Kuestenlogik.Bowire.Protocol.Kafka</code>, <code>ws</code> via <code>Kuestenlogik.Bowire.Protocol.WebSocket</code>, and <code>amqp</code> / <code>amqp1</code> via <code>Kuestenlogik.Bowire.Protocol.Amqp</code>; NATS follows as that wire ships.</p>
               <ul class="features-block-capabilities">
                 <li>AsyncAPI 2.x + 3.0 (YAML / JSON)</li>
                 <li>Channels, operations, per-message overloads</li>
-                <li>http + mqtt + mqtt5 + kafka + ws bindings</li>
+                <li>http + mqtt + mqtt5 + kafka + ws + amqp / amqp1 bindings</li>
               </ul>
               <a class="features-block-docs-link" href="{{ '/docs/protocols/asyncapi.html' | relative_url }}">Read the full docs &rarr;</a>
             </div>
@@ -644,7 +676,7 @@
         </div>
         <div class="protocol-content">
           <h3>Coming soon</h3>
-          <p>SOAP for enterprise legacy, NATS for cloud-native messaging, AMQP for RabbitMQ / ActiveMQ, Connect (Buf) over HTTP/1.1+JSON. More on the <span class="protocol-coming-link">roadmap &rarr;</span></p>
+          <p>SOAP for enterprise legacy, NATS for cloud-native messaging, Connect (Buf) over HTTP/1.1+JSON. More on the <span class="protocol-coming-link">roadmap &rarr;</span></p>
           <span class="protocol-tag protocol-tag-dim">Planned plugins</span>
         </div>
       </a>
