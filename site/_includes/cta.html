@@ -50,7 +50,24 @@
         No paid tier, no account wall, no telemetry. Fork it, audit it, embed it.
       </p>
 
-      <p class="cta-finale">Set sail. <span>Discover APIs.</span></p>
+      <!-- Closing flourish — the "Set sail. Discover APIs." finale.
+           Visually elevated to a stand-alone action strip (own surface,
+           gradient backdrop, big lift on hover) so it doesn't read as a
+           trailing slogan after the trust line; instead it's the page's
+           last clickable call to the quickstart. Lives inside the cta
+           <section> on purpose — the dot-nav scans top-level <section>
+           elements, so wrapping this in its own section would add a
+           "Set sail" entry to the page outline. Inside the existing
+           cta block it inherits the section's identity. -->
+      <a class="cta-setsail" href="{{ '/quickstart.html' | relative_url }}" aria-label="Set sail — open the quickstart">
+        <span class="cta-setsail-text">
+          <span class="cta-setsail-lead">Set sail.</span>
+          <span class="cta-setsail-promise">Discover APIs.</span>
+        </span>
+        <span class="cta-setsail-arrow" aria-hidden="true">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+        </span>
+      </a>
     </div>
   </div>
 </section>
