@@ -296,6 +296,7 @@
               <p class="features-block-lead">Two AMQP wires (0.9.1 and 1.0) in one plugin, picked by URL scheme. <code>v0.2.0</code> ships discovery + unary invocation + finite-stream consume against live brokers.</p>
               <p>Built on <code>RabbitMQ.Client</code> for AMQP 0.9.1 (<code>amqp://</code> / <code>amqps://</code>) and <code>AMQPNetLite</code> for AMQP 1.0 (<code>amqp1://</code> / <code>amqps1://</code>). On 0.9.1, discovery reads the broker topology via the RabbitMQ Management HTTP API; <code>basic.publish</code> drives invocations, <code>AsyncEventingBasicConsumer</code> drives consume. On 1.0, the plugin exposes a synthetic <code>Broker</code> service, with <code>Session.Send</code> for invocations and <code>ReceiverLink</code> for consume. Same workbench UI on either wire.</p>
               <p><strong>Pairs with AsyncAPI.</strong> An <code>asyncapi.yaml</code> declaring <code>bindings.amqp</code> (0.9.1) or <code>bindings.amqp1</code> (1.0) dispatches through this plugin &mdash; channel address &rarr; exchange / address, routingKey / deliveryMode / expiration ride on the metadata bag.</p>
+              <p><strong>Try it.</strong> <a href="https://github.com/Kuestenlogik/Bowire.Samples/tree/main/src/Kuestenlogik.Bowire.Samples.Amqp" target="_blank" rel="noopener">Bowire.Samples.Amqp</a> spins up a RabbitMQ broker via <code>docker compose</code> and a publisher loop emitting crane telemetry to the <code>harbor</code> topic exchange &mdash; runnable in two commands.</p>
               <ul class="features-block-capabilities">
                 <li>Pub / Sub</li>
                 <li>Topic / Direct exchanges</li>
@@ -303,6 +304,39 @@
                 <li>AsyncAPI <code>bindings.amqp</code> / <code>amqp1</code> target</li>
               </ul>
               <a class="features-block-docs-link" href="https://github.com/Kuestenlogik/Bowire.Protocol.Amqp" target="_blank" rel="noopener">Plugin repo &rarr;</a>
+            </div>
+            <div class="features-block-screenshot">
+              <!-- Placeholder visual until a real workbench screenshot
+                   lands. Once Bowire.Samples.Amqp has been run end-to-end
+                   (docker compose up rabbitmq + dotnet run + the workbench
+                   subscribed to crane.*.status), capture a paired
+                   streaming-amqp-dark.png / -light.png and swap this in
+                   for {% include themed-img.html src="/assets/images/
+                   screenshots/streaming-amqp.png" alt="..." %}. -->
+              <figure class="protocol-mockup" aria-label="AMQP streaming pane preview">
+                <div class="protocol-mockup-header">
+                  <span class="protocol-mockup-dot"></span>
+                  <span class="protocol-mockup-dot"></span>
+                  <span class="protocol-mockup-dot"></span>
+                  <span class="protocol-mockup-title">amqp://localhost:5672 &middot; harbor &middot; <code>crane.*.status</code></span>
+                </div>
+                <pre class="protocol-mockup-body"><code><span class="protocol-mockup-meta">frame 1 &middot; routingKey=<span class="protocol-mockup-accent">crane.7.status</span> &middot; +0 ms</span>
+{
+  "craneId": <span class="protocol-mockup-accent">7</span>,
+  "status": "Operating",
+  "boomAngle": 42.3,
+  "loadTonnes": 18.6,
+  "timestamp": 1735776000000
+}
+<span class="protocol-mockup-meta">frame 2 &middot; routingKey=<span class="protocol-mockup-accent">crane.12.status</span> &middot; +14 ms</span>
+{
+  "craneId": <span class="protocol-mockup-accent">12</span>,
+  "status": "Idle",
+  "boomAngle": 0.0,
+  "loadTonnes": 0.0,
+  "timestamp": 1735776000014
+}</code></pre>
+              </figure>
             </div>
           </div>
         </template>
