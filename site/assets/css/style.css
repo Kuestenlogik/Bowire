@@ -2497,6 +2497,24 @@ button.comparison-bestfor-card:focus-visible {
 .comparison-bestfor-card-bowire .comparison-bestfor-name {
     color: var(--accent);
 }
+/* Bowire wordmark in the positioning strip — replaces the text 'Bowire'
+   span the other cards use. Sized to roughly match the cap-height of
+   the competitor name labels so the row reads as 'Bowire vs Postman vs
+   Scalar' rather than 'big logo + small text'. fill is currentColor,
+   inherited from .comparison-bestfor-card-bowire which already sets
+   color: var(--accent). */
+.comparison-bestfor-logo {
+    display: block;
+    height: 28px;
+    width: auto;
+    color: var(--accent);
+    margin: 2px 0 0;
+}
+@media (max-width: 720px) {
+    .comparison-bestfor-logo {
+        height: 24px;
+    }
+}
 button.comparison-bestfor-card.active .comparison-bestfor-name {
     /* Name in warning colour when selected — mirrors how Bowire's name
        renders in accent colour, but in the opposite palette. */
