@@ -2,6 +2,8 @@
   href: index.md
 - name: Plugin Architecture
   href: plugin-architecture.md
+- name: Plugin Compatibility
+  href: compatibility.md
 - name: Packages
   href: packages.md
 - name: File Formats
