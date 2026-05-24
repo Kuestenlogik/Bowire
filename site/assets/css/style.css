@@ -5997,6 +5997,26 @@ p a:not([class]):hover,
     display: block;
     margin: 0 auto;
 }
+/* Visual hierarchy in the diagrams: node labels are the primary text
+   (component name, role); edge labels are the qualifier (transport,
+   semantics, "without mock", ...). Mermaid renders both at the same
+   font-size by default, which makes the diagram read as flat — every
+   token has the same weight. Drop the edge labels to ~80% so the eye
+   lands on the nodes first.
+
+   Selectors cover both Mermaid 11 render shapes: <span class="edgeLabel">
+   inside a <foreignObject>, and the <text> fallback when foreignObject
+   isn't usable. !important is needed because Mermaid stamps inline
+   styles. Same trick for sequenceDiagram message text (.messageText). */
+.features-diagram .mermaid .edgeLabel,
+.features-diagram .mermaid .edgeLabel span,
+.features-diagram .mermaid .edgeLabel p,
+.features-diagram .mermaid foreignObject .edgeLabel,
+.features-diagram .mermaid text.edgeLabel,
+.features-diagram .mermaid .messageText,
+.features-diagram .mermaid text.messageText {
+    font-size: 0.8em !important;
+}
 .features-diagram-caption {
     font-size: 0.85rem;
     color: var(--text-secondary);
