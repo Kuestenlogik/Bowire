@@ -1,5 +1,5 @@
 ---
-summary: 'Strategy + architecture for evolving Bowire into a multi-protocol, schema-aware cyber-security testing tool. Frames the capability tiers, the vulnerability-corpus format, the replay-as-attack primitive, and the differentiation lane against Burp Suite / OWASP ZAP / Nuclei.'
+summary: 'Strategy + architecture for evolving Bowire into a multi-protocol, schema-aware cyber-security testing tool. Frames the capability tiers, the vulnerability-template format, the replay-as-attack primitive, and the differentiation lane against Burp Suite / OWASP ZAP / Nuclei.'
 ---
 
 # Bowire as a cyber-security testing tool
@@ -19,7 +19,7 @@ Bowire's sweet-spot — and the case for evolving it into a cyber-security tool 
 
 1. **Multi-protocol-native, including the non-HTTP ones.** A single tool that can hit a gRPC service via reflection, a SignalR hub via its typed methods, an OData endpoint via `$metadata` introspection, and an MQTT broker via topic enumeration — all in the protocol's own dialect, not as a polyfill over HTTP.
 2. **Schema-aware.** The frame-semantics framework (v1.3.0) already classifies fields by kind (`coordinate.latitude`, `image.bytes`, `audio.bytes`, `timestamp`, …). A schema-aware fuzzer knows not to throw SQL injection payloads at a latitude field, knows that `image.bytes` deserves magic-byte mutation instead of XSS payloads, knows that an `audio.sample-rate` field is a numeric integer and not a string. None of the incumbents have this for non-HTTP protocols.
-3. **Recording → Replay as a first-class workflow.** Already shipped. Recordings carry interpretations + schema-snapshots (Phase 5) so replay is deterministic across detector drift. This is the natural primitive for "vulnerability corpus" — each known vulnerability becomes a captured-flow + an expected-vulnerable-response predicate.
+3. **Recording → Replay as a first-class workflow.** Already shipped. Recordings carry interpretations + schema-snapshots (Phase 5) so replay is deterministic across detector drift. This is the natural primitive for "vulnerability templates" — each known vulnerability becomes a captured-flow + an expected-vulnerable-response predicate.
 
 The product positioning: **"Burp Suite for the non-HTTP protocols, with schema-awareness, self-hosted, with AI-assisted threat modeling via MCP."**
 
@@ -131,11 +131,11 @@ YAML is human-friendly (multi-line strings, comments, indented hierarchy) — co
 
 ## Pflegemodell — three concentric corpora
 
-1. **Core community corpus** — [`kuestenlogik/Bowire.VulnDb`](https://github.com/Kuestenlogik/Bowire.VulnDb) on GitHub, MIT-licensed. PR-driven contributions, CI validates each template against a per-template vulnerable-by-design container. Two CI passes per PR: positive (template fires against vulnerable container) and negative (template stays quiet against patched container).
-2. **Curated set** — the Top-20 per protocol, reviewed by named maintainers, surfaced on the marketing site as a Trust-Signal page. Subset of the community corpus.
-3. **Private add-ons** — a future commercial differentiator. Proprietary 0-day templates a Bowire customer subscribes to; ships as encrypted bundles unlocked by license-key, separate from the public corpus.
+1. **Core community template set** — [`kuestenlogik/Bowire.VulnDb`](https://github.com/Kuestenlogik/Bowire.VulnDb) on GitHub, MIT-licensed. PR-driven contributions, CI validates each template against a per-template vulnerable-by-design container. Two CI passes per PR: positive (template fires against vulnerable container) and negative (template stays quiet against patched container).
+2. **Curated set** — the Top-20 per protocol, reviewed by named maintainers, surfaced on the marketing site as a Trust-Signal page. Subset of the community template set.
+3. **Private add-ons** — a future commercial differentiator. Proprietary 0-day templates a Bowire customer subscribes to; ships as encrypted bundles unlocked by license-key, separate from the public template set.
 
-`bowire vulndb update` (planned) is the CLI plumbing — `git pull` against the public corpus, `~/.bowire/vulndb-local/` for handwritten templates, license-gate against the private bundle when a subscription is active.
+`bowire vulndb update` (planned) is the CLI plumbing — `git pull` against the public template set, `~/.bowire/vulndb-local/` for handwritten templates, license-gate against the private bundle when a subscription is active.
 
 ## Differentiation vs incumbents
 

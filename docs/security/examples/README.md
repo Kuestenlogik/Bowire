@@ -120,7 +120,7 @@ The `bodyJsonPath.path` field accepts the same JSONPath subset the workbench's `
 
 ## Contributing templates
 
-The seed templates here are a starting point. The intent (per the [security-testing ADR](../../architecture/security-testing.md)) is to land a separate `kuestenlogik/bowire-vulndb` community repo that holds the bulk of the corpus with per-template CI validation against vulnerable-by-design containers. Until that repo exists, dropping a new template here and opening a PR against the main Bowire repo is fine.
+The seed templates here are a starting point. The intent (per the [security-testing ADR](../../architecture/security-testing.md)) is to land a separate `kuestenlogik/bowire-vulndb` community repo that holds the bulk of the templates with per-template CI validation against vulnerable-by-design containers. Until that repo exists, dropping a new template here and opening a PR against the main Bowire repo is fine.
 
 Template authoring conventions:
 

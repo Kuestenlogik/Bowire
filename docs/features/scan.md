@@ -7,7 +7,7 @@ summary: 'Run vulnerability templates against any HTTP-class target with `bowire
 `bowire scan` runs vulnerability templates against a target URL and emits SARIF 2.1.0. Three template sources feed the same `AttackPredicate` engine:
 
 1. **Built-in passive checks** — always on; no template file required.
-2. **`Bowire.VulnDb`** — curated baseline corpus, ships as a sibling NuGet ([`Kuestenlogik.Bowire.VulnDb`](https://github.com/Kuestenlogik/Bowire.VulnDb)).
+2. **`Bowire.VulnDb`** — curated baseline template set, ships as a sibling NuGet ([`Kuestenlogik.Bowire.VulnDb`](https://github.com/Kuestenlogik/Bowire.VulnDb)).
 3. **`projectdiscovery/nuclei-templates`** — 8000+ community-maintained YAML templates, opt-in via `--nuclei <dir>`.
 
 Same engine, three corpora, one report. SARIF lands as the canonical output; every SARIF-aware consumer (GitHub Code Scanning, GitLab Security Dashboard, Azure DevOps) reads it without a translation step.
@@ -19,7 +19,7 @@ dotnet tool install -g Kuestenlogik.Bowire.Tool
 bowire scan --target https://api.example.com --out findings.sarif
 ```
 
-Combined with the Nuclei corpus:
+Combined with the Nuclei templates:
 
 ```bash
 bowire scan --target https://api.example.com \
