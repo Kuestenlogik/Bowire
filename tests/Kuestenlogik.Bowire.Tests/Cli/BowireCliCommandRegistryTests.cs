@@ -46,7 +46,7 @@ public sealed class BowireCliCommandRegistryTests
     [Fact]
     public void Discover_honours_disabled_command_ids()
     {
-        // Even though ScanCliCommand exists in the loaded SecurityScanner
+        // Even though ScanCliCommand exists in the loaded Security.Scanner
         // assembly, passing "scan" to disabledCommandIds should suppress
         // it. Mirrors --disable-cli-command on the CLI.
         var registry = BowireCliCommandRegistry.Discover(
