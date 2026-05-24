@@ -3267,6 +3267,40 @@ button.comparison-bestfor-card.active .comparison-bestfor-name {
             mask-image: linear-gradient(180deg, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.85) 45%, rgba(0,0,0,0.30) 80%, rgba(0,0,0,0) 100%);
 }
 
+/* Comparison-section banner — bridge officer choosing his navigation
+   tool (paper chart vs MFD displays vs tablet). Same recipe the other
+   four banners use: 5:2 aspect, accent-tinted multiply overlay, mask-
+   image bottom-fade so the banner blends into the section below
+   instead of leaving a hard photo-edge. */
+.comparison-banner {
+    position: relative;
+    overflow: hidden;
+    max-width: 800px;
+    margin: 0 auto 28px;
+    background: transparent;
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+}
+.comparison-banner img {
+    display: block;
+    width: 100%;
+    height: auto;
+    aspect-ratio: 5 / 2;
+    object-fit: cover;
+    filter: grayscale(0.50) saturate(0.88) brightness(0.94);
+    -webkit-mask-image: linear-gradient(180deg, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.85) 45%, rgba(0,0,0,0.30) 80%, rgba(0,0,0,0) 100%);
+            mask-image: linear-gradient(180deg, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.85) 45%, rgba(0,0,0,0.30) 80%, rgba(0,0,0,0) 100%);
+}
+.comparison-banner::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(139, 125, 255, 0.08));
+    mix-blend-mode: multiply;
+    pointer-events: none;
+    -webkit-mask-image: linear-gradient(180deg, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.85) 45%, rgba(0,0,0,0.30) 80%, rgba(0,0,0,0) 100%);
+            mask-image: linear-gradient(180deg, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.85) 45%, rgba(0,0,0,0.30) 80%, rgba(0,0,0,0) 100%);
+}
+
 .roadmap-grid {
     display: grid;
     grid-template-columns: 1fr;
