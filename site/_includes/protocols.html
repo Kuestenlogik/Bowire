@@ -306,37 +306,7 @@
               <a class="features-block-docs-link" href="https://github.com/Kuestenlogik/Bowire.Protocol.Amqp" target="_blank" rel="noopener">Plugin repo &rarr;</a>
             </div>
             <div class="features-block-screenshot">
-              <!-- Placeholder visual until a real workbench screenshot
-                   lands. Once Bowire.Samples.Amqp has been run end-to-end
-                   (docker compose up rabbitmq + dotnet run + the workbench
-                   subscribed to crane.*.status), capture a paired
-                   streaming-amqp-dark.png / -light.png and swap this in
-                   for {% include themed-img.html src="/assets/images/
-                   screenshots/streaming-amqp.png" alt="..." %}. -->
-              <figure class="protocol-mockup" aria-label="AMQP streaming pane preview">
-                <div class="protocol-mockup-header">
-                  <span class="protocol-mockup-dot"></span>
-                  <span class="protocol-mockup-dot"></span>
-                  <span class="protocol-mockup-dot"></span>
-                  <span class="protocol-mockup-title">amqp://localhost:5672 &middot; harbor &middot; <code>crane.*.status</code></span>
-                </div>
-                <pre class="protocol-mockup-body"><code><span class="protocol-mockup-meta">frame 1 &middot; routingKey=<span class="protocol-mockup-accent">crane.7.status</span> &middot; +0 ms</span>
-{
-  "craneId": <span class="protocol-mockup-accent">7</span>,
-  "status": "Operating",
-  "boomAngle": 42.3,
-  "loadTonnes": 18.6,
-  "timestamp": 1735776000000
-}
-<span class="protocol-mockup-meta">frame 2 &middot; routingKey=<span class="protocol-mockup-accent">crane.12.status</span> &middot; +14 ms</span>
-{
-  "craneId": <span class="protocol-mockup-accent">12</span>,
-  "status": "Idle",
-  "boomAngle": 0.0,
-  "loadTonnes": 0.0,
-  "timestamp": 1735776000014
-}</code></pre>
-              </figure>
+              {% include themed-img.html src="/assets/images/screenshots/streaming-amqp.png" alt="Bowire workbench connected via amqp://localhost:5672 — harbor exchange with send + send:crane.*.status methods, cranes queue with the receive server-stream method active. Streaming pane on the right shows crane-telemetry JSON frames arriving from the bound queue, ~2300 messages in." %}
             </div>
           </div>
         </template>
