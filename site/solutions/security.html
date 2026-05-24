@@ -1,7 +1,7 @@
 ---
 layout: page
 title: Security testing — Bowire
-description: Multi-protocol API security testing, self-hosted. Burp for the non-HTTP protocols — schema-aware, Apache-2.0, Nuclei-compatible. Four CLI subcommands (scan / fuzz / jwt / proxy), built-in passive checks, Bowire.VulnDb baseline, and the 8000+ projectdiscovery/nuclei-templates corpus through one engine.
+description: Multi-protocol API security testing, self-hosted. Burp for the non-HTTP protocols — schema-aware, Apache-2.0, Nuclei-compatible. Four CLI subcommands (scan / fuzz / jwt / proxy), built-in passive checks, Bowire.VulnDb baseline, and the 8000+ projectdiscovery/nuclei-templates set through one engine.
 ---
 
 <section class="features-page-hero">
@@ -16,7 +16,7 @@ description: Multi-protocol API security testing, self-hosted. Burp for the non-
 <section class="features-group features-group-alt">
   <header class="features-group-header">
     <h2 class="features-group-title">Why a new lane</h2>
-    <p class="features-group-lede">Every incumbent owns <em>one</em> transport. Bowire's sweet-spot is the intersection three other tools leave open &mdash; multi-protocol-native, schema-aware via the frame-semantics layer, recording-as-template, with the existing Nuclei corpus straight on the same engine.</p>
+    <p class="features-group-lede">Every incumbent owns <em>one</em> transport. Bowire's sweet-spot is the intersection three other tools leave open &mdash; multi-protocol-native, schema-aware via the frame-semantics layer, recording-as-template, with the existing Nuclei templates straight on the same engine.</p>
   </header>
 
   <div class="features-block features-block-text-only">
@@ -40,7 +40,7 @@ description: Multi-protocol API security testing, self-hosted. Burp for the non-
 
         <div class="usp-card">
           <h3>Nuclei-compatible</h3>
-          <p>The 8000+ <a href="https://github.com/projectdiscovery/nuclei-templates" target="_blank" rel="noopener">projectdiscovery/nuclei-templates</a> corpus runs through the same engine. <code>--nuclei &lt;dir&gt;</code> reads the YAML templates, translates the matchers / matchers-condition / payload matrices / standard variables (<code>{{BaseURL}}</code>, <code>{{Hostname}}</code>, <code>{{RandStr_N}}</code>, &hellip;) into Bowire's native AttackPredicate DSL, then runs them alongside the built-in checks and the VulnDb baseline. One engine, three template sources.</p>
+          <p>The 8000+ <a href="https://github.com/projectdiscovery/nuclei-templates" target="_blank" rel="noopener">projectdiscovery/nuclei-templates</a> set runs through the same engine. <code>--nuclei &lt;dir&gt;</code> reads the YAML templates, translates the matchers / matchers-condition / payload matrices / standard variables (<code>{{BaseURL}}</code>, <code>{{Hostname}}</code>, <code>{{RandStr_N}}</code>, &hellip;) into Bowire's native AttackPredicate DSL, then runs them alongside the built-in checks and the VulnDb baseline. One engine, three template sources.</p>
         </div>
 
         <div class="usp-card">
@@ -66,7 +66,7 @@ description: Multi-protocol API security testing, self-hosted. Burp for the non-
   <div class="features-block" id="scan">
     <div class="features-block-text">
       <h3><code>bowire scan</code> &mdash; vulnerability templates against a target</h3>
-      <p class="features-block-lead">Runs templates against an HTTP-class target and emits SARIF 2.1.0. Three template sources feed the same engine: the built-in passive checks (always on), the Bowire.VulnDb baseline (curated, ships with the tool), and the projectdiscovery/nuclei-templates corpus (opt in via <code>--nuclei</code>).</p>
+      <p class="features-block-lead">Runs templates against an HTTP-class target and emits SARIF 2.1.0. Three template sources feed the same engine: the built-in passive checks (always on), the Bowire.VulnDb baseline (curated, ships with the tool), and the projectdiscovery/nuclei-templates set (opt in via <code>--nuclei</code>).</p>
       <p>Built-in passive checks fire on every run regardless of template flags: TLS version enumeration (raw <code>SslStream</code> handshakes against 1.0 / 1.1 / 1.2 / 1.3), banner / version disclosure (Server / X-Powered-By / X-AspNet-Version), verbose-error detection (default error pages with stack traces). Each disclosed marker becomes its own SARIF rule so the Code-Scanning dashboard groups correctly.</p>
       <a class="features-block-docs-link" href="https://github.com/Kuestenlogik/Bowire/blob/main/docs/architecture/security-testing.md">Read the security-testing ADR &rarr;</a>
     </div>
@@ -79,7 +79,7 @@ description: Multi-protocol API security testing, self-hosted. Burp for the non-
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
           </button>
         </div>
-<pre><code><span class="c"># VulnDb baseline + Nuclei corpus, one report</span>
+<pre><code><span class="c"># VulnDb baseline + Nuclei templates, one report</span>
 $ bowire scan --target https://api.example.com \
               --templates ~/.bowire/vulndb \
               --nuclei ~/nuclei-templates \
@@ -189,7 +189,7 @@ $ bowire proxy --port 8888 --api-port 8889
 <!-- ================================================================ -->
 <!--  Template sources                                                  -->
 <!-- ================================================================ -->
-<section class="features-group features-group-alt">
+<section class="features-group features-group-alt" id="templates">
   <header class="features-group-header">
     <h2 class="features-group-title">Where the templates come from</h2>
     <p class="features-group-lede">Three template sources, one engine, one SARIF report. The scanner doesn't care which source a template came from &mdash; matchers, payload variables, and severity work the same way regardless.</p>
@@ -203,7 +203,7 @@ $ bowire proxy --port 8888 --api-port 8889
           Always on; no template file required. <em>TLS version enumeration</em> drives raw <code>SslStream</code> handshakes against TLS 1.0 / 1.1 / 1.2 / 1.3 in sequence (accepted handshakes on deprecated versions surface as high-severity findings, CWE-326). <em>Banner / version disclosure</em> scans for <code>Server</code> / <code>X-Powered-By</code> / <code>X-AspNet-Version</code> / <code>X-AspNetMvc-Version</code> / <code>Via</code> headers. <em>Verbose-error detection</em> trips default error pages (random path &rarr; 404, null-byte URL &rarr; 500, malformed query &rarr; 4xx) and regex-scans for stack-trace markers (CWE-209).
         </li>
         <li>
-          <strong>Bowire.VulnDb &mdash; curated baseline corpus.</strong>
+          <strong>Bowire.VulnDb &mdash; curated baseline template set.</strong>
           Ships as a sibling NuGet package (<a href="https://github.com/Kuestenlogik/Bowire.VulnDb" target="_blank" rel="noopener">Kuestenlogik.Bowire.VulnDb</a>). Each template is a regular <code>BowireRecording</code> JSON file with three extra fields the scanner consumes: <code>attack: true</code>, a <code>vulnerability</code> metadata block, and a <code>vulnerableWhen</code> predicate. Anchor templates today: gRPC Server-Reflection in production (<code>high</code>), GraphQL <code>__schema</code> introspection in production (<code>medium</code>), REST missing baseline security headers (<code>low</code>). Versioned per release, additions land via PR + CI validation.
         </li>
         <li>
@@ -319,7 +319,7 @@ jobs:
           </span>
           <div class="security-roadmap-body">
             <h3>Tier 2 &mdash; Specialty <span class="roadmap-card-tag">shipped</span></h3>
-            <p>Schema-aware field-level fuzzer (<code>bowire fuzz</code>) driven by the frame-semantics layer; JWT toolkit (<code>bowire jwt decode</code> + <code>tamper</code>); the Bowire.VulnDb baseline-corpus repo with per-PR CI validation; Nuclei-template compatibility (<code>--nuclei</code> reads the 8000+ <code>projectdiscovery/nuclei-templates</code> corpus through the same engine). All four ship in the v1.5+ CLI.</p>
+            <p>Schema-aware field-level fuzzer (<code>bowire fuzz</code>) driven by the frame-semantics layer; JWT toolkit (<code>bowire jwt decode</code> + <code>tamper</code>); the Bowire.VulnDb baseline-template-set repo with per-PR CI validation; Nuclei-template compatibility (<code>--nuclei</code> reads the 8000+ <code>projectdiscovery/nuclei-templates</code> set through the same engine). All four ship in the v1.5+ CLI.</p>
           </div>
         </li>
 

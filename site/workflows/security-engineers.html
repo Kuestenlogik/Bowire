@@ -15,14 +15,14 @@ permalink: /workflows/security-engineers.html
 <section class="features-group features-group-alt">
   <header class="features-group-header">
     <h2 class="features-group-title">Recordings as vulnerability templates</h2>
-    <p class="features-group-lede">A captured probe + a predicate that says "this is what bad looks like" is a template. Drop it into a corpus, ship it with the service.</p>
+    <p class="features-group-lede">A captured probe + a predicate that says "this is what bad looks like" is a template. Drop it into a template set, ship it with the service.</p>
   </header>
 
   <div class="features-block">
     <div class="features-block-text">
       <h3><code>bowire scan</code> &mdash; replay each template, emit SARIF</h3>
-      <p class="features-block-lead">Three seed templates cover the obvious wins today: gRPC Server-Reflection in production, GraphQL <code>__schema</code> introspection in production, REST endpoints missing baseline security headers. The corpus is plain JSON, copy-paste-friendly, version-controlled.</p>
-      <p>Each scan call returns a SARIF 2.1.0 report you can hand to GitHub Code Scanning (alerts land in your Security tab), GitLab (the Security Dashboard reads SARIF), Azure DevOps, or any tool with a SARIF importer. Built-in passive checks add TLS-version enumeration, version-disclosing headers, and verbose-error fingerprinting on top of the template corpus.</p>
+      <p class="features-block-lead">Three seed templates cover the obvious wins today: gRPC Server-Reflection in production, GraphQL <code>__schema</code> introspection in production, REST endpoints missing baseline security headers. The set is plain JSON, copy-paste-friendly, version-controlled.</p>
+      <p>Each scan call returns a SARIF 2.1.0 report you can hand to GitHub Code Scanning (alerts land in your Security tab), GitLab (the Security Dashboard reads SARIF), Azure DevOps, or any tool with a SARIF importer. Built-in passive checks add TLS-version enumeration, version-disclosing headers, and verbose-error fingerprinting on top of the template set.</p>
       <a class="features-block-docs-link" href="{{ '/solutions/security.html' | relative_url }}">The security solution overview &rarr;</a>
     </div>
     <div class="features-block-screenshot">
@@ -77,8 +77,8 @@ $ bowire scan \
     <div class="features-block-text">
       <h3><code>bowire jwt decode</code> + <code>bowire jwt tamper</code></h3>
       <p class="features-block-lead"><code>decode</code> splits the header / payload / signature, validates exp / nbf / iat, lists the present claims. <code>tamper</code> probes <code>alg: none</code> acceptance, signs with a chosen secret, and lets you override individual claims &mdash; the standard JWT smoke-test sequence in one shell pass.</p>
-      <p>The toolkit is shipped alongside the scan engine, not separately &mdash; it lives in the same CLI binary your CI is already calling. Same goes for the seed corpus: the per-protocol attack templates (gRPC Server-Reflection, GraphQL introspection, REST baseline headers) get loaded out of <code>docs/security/examples/</code> in the source tree, no separate distribution.</p>
-      <a class="features-block-docs-link" href="{{ '/solutions/security.html#corpus' | relative_url }}">Browse the seed corpus &rarr;</a>
+      <p>The toolkit is shipped alongside the scan engine, not separately &mdash; it lives in the same CLI binary your CI is already calling. Same goes for the seed templates: the per-protocol attack templates (gRPC Server-Reflection, GraphQL introspection, REST baseline headers) get loaded out of <code>docs/security/examples/</code> in the source tree, no separate distribution.</p>
+      <a class="features-block-docs-link" href="{{ '/solutions/security.html#templates' | relative_url }}">Browse the seed templates &rarr;</a>
     </div>
   </div>
 </section>
@@ -93,7 +93,7 @@ $ bowire scan \
     <div class="features-block-text">
       <h3><code>uses: Kuestenlogik/Bowire/.github/workflows/scan-template.yml@main</code></h3>
       <p class="features-block-lead">The reusable workflow installs the bowire CLI, runs the scan against a target you pass in, uploads the SARIF as both a build artefact (for GitLab mirrors / Azure DevOps re-imports / manual review) and to GitHub Code Scanning (so each finding becomes a stable-rule-ID alert).</p>
-      <p>Inputs: <code>target</code>, <code>corpus</code> (defaults to the seed corpus in this repo), <code>severity</code>, <code>dotnet-version</code>, <code>tool-version</code>. Findings are the scan's <em>product</em>, not its failure mode &mdash; the workflow exits 0 even with vulnerabilities so the SARIF upload pipeline stays linear; gating happens via Code Scanning branch-protection rules, not the scan step itself.</p>
+      <p>Inputs: <code>target</code>, <code>corpus</code> (defaults to the seed templates in this repo), <code>severity</code>, <code>dotnet-version</code>, <code>tool-version</code>. Findings are the scan's <em>product</em>, not its failure mode &mdash; the workflow exits 0 even with vulnerabilities so the SARIF upload pipeline stays linear; gating happens via Code Scanning branch-protection rules, not the scan step itself.</p>
       <a class="features-block-docs-link" href="https://github.com/Kuestenlogik/Bowire/blob/main/.github/workflows/scan-template.yml">scan-template.yml on GitHub &rarr;</a>
     </div>
   </div>
