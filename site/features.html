@@ -131,7 +131,7 @@ flowchart LR
       <p class="features-block-lead">Pass <code>--enable-mcp-adapter</code> and every method Bowire discovered becomes an MCP tool an AI agent can call directly. JSON Schema input, typed responses, no MCP-server boilerplate to write.</p>
       <p>Claude Desktop, Cursor, Copilot, custom MCP clients &mdash; same wire, same auth, same recordings as the human-driven workbench. The adapter generates tool definitions automatically from the discovered service tree, so a new method on a running server is callable by the agent within the next discovery tick. Streaming responses surface as MCP streams; auth flows through whichever provider the workbench itself runs under.</p>
       <p>Same idea as <code>bowire mcp serve</code> below, but flipped: that one exposes Bowire's own primitives as MCP tools. This one exposes the <em>target API's</em> methods. Run both side by side if you want an agent that can both drive your service surface and orchestrate Bowire's record / mock / replay primitives.</p>
-      <a class="features-block-docs-link" href="{{ '/docs/features/mcp-adapter.html' | relative_url }}">Read the technical docs &rarr;</a>
+      <a class="features-block-docs-link" href="{{ '/docs/protocols/mcp.html' | relative_url }}">Read the technical docs &rarr;</a>
     </div>
     <div class="features-block-screenshot">
       <div class="code-block">
@@ -159,7 +159,7 @@ flowchart LR
       <p class="features-block-lead"><code>bowire mcp serve</code> exposes Bowire itself as an MCP server. The agent can chain <em>discover &rarr; invoke &rarr; assert &rarr; switch env &rarr; replay</em> the same way a human would in the workbench, just with more parallelism.</p>
       <p>Primitives exposed: <code>bowire.discover</code>, <code>bowire.invoke</code>, <code>bowire.subscribe</code>, <code>bowire.env.list</code>, <code>bowire.record.{list, start, stop, replay}</code>, <code>bowire.mock.{start, stop, list}</code>, <code>bowire.allowlist.show</code>. Two transport modes: stdio for desktop clients (Claude Desktop, Cursor) and HTTP for remote agents (Copilot in CI, custom MCP runners).</p>
       <p>Auth piggy-backs on whichever provider the workbench runs under, so the agent never sees a second credentials store. Tools are gated by the same allow-list the workbench uses &mdash; an agent can't reach a method a human couldn't.</p>
-      <a class="features-block-docs-link" href="{{ '/docs/features/mcp-serve.html' | relative_url }}">Read the technical docs &rarr;</a>
+      <a class="features-block-docs-link" href="{{ '/docs/protocols/mcp.html' | relative_url }}">Read the technical docs &rarr;</a>
     </div>
     <div class="features-block-screenshot">
       <div class="code-block">
@@ -298,7 +298,7 @@ Esc           <span class="c">close modal</span>
       <p>Every protocol your recording captured replays through the same listener &mdash; REST verbs on the same paths, gRPC unary + server-streaming + bidi with the captured frames, WebSocket / SSE / SignalR / Socket.IO pushing the same sequence, MQTT publishes hitting the same topics, GraphQL subscriptions streaming the same events. Protocol semantics stay intact (status codes, frame timing, headers) instead of collapsing everything to a JSON stub.</p>
       <p>Optional layers on top: <strong>hot-reload</strong> &mdash; rewriting the recording file refreshes the mock without restart; <strong>chaos injection</strong> &mdash; configurable latency / 5xx rate / dropped-frame ratio for resilience tests; <strong>schema-only mode</strong> (<code>--from-spec openapi.yaml</code>) &mdash; plausible responses from an OpenAPI / gRPC descriptor / GraphQL schema with no recording at all; <strong>capture-on-miss</strong> &mdash; unrecorded request transparently forwards to a fallback target, captures the response, serves it back next time.</p>
       <a class="features-block-docs-link" href="{{ '/solutions/service-mocking.html' | relative_url }}">Develop without the real backend &mdash; full writeup &rarr;</a>
-      <a class="features-block-docs-link" href="{{ '/docs/features/mock.html' | relative_url }}">Read the technical docs &rarr;</a>
+      <a class="features-block-docs-link" href="{{ '/docs/features/mock-server.html' | relative_url }}">Read the technical docs &rarr;</a>
     </div>
     <div class="features-block-screenshot">
       <div class="code-block">

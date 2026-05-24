@@ -19,7 +19,7 @@ description: Expose every discovered API method as an MCP tool an AI agent can c
     <div class="features-block-text">
       <p>The agent's view: an MCP server at the URL you point its config at, with one tool per discovered method (e.g. <code>UserApi.GetUser</code>, <code>Orders.Create</code>, <code>EventsHub.NotifyAll</code>). Each tool carries a JSON Schema derived from the method's discovered shape &mdash; the agent picks the right tool and supplies typed arguments without you authoring an MCP server.</p>
       <p>Auth flows through whichever provider the workbench itself runs under (Bearer / JWT / OAuth2 / mTLS); the agent never sees a second credentials store. Streaming methods (gRPC server-streams, SignalR hub events, MQTT subscriptions, GraphQL subscriptions) surface as MCP streaming tools so an agent can subscribe to a feed the same way a human would in the workbench.</p>
-      <a class="features-block-docs-link" href="{{ '/docs/features/mcp-adapter.html' | relative_url }}">MCP adapter docs &rarr;</a>
+      <a class="features-block-docs-link" href="{{ '/docs/protocols/mcp.html' | relative_url }}">MCP adapter docs &rarr;</a>
     </div>
     <div class="features-block-screenshot">
       <figure class="features-diagram">
@@ -61,7 +61,7 @@ sequenceDiagram
     <div class="features-block-text">
       <p>Primitives exposed: <code>bowire.discover</code>, <code>bowire.invoke</code>, <code>bowire.subscribe</code>, <code>bowire.env.list</code>, <code>bowire.record.{list, start, stop, replay}</code>, <code>bowire.mock.{start, stop, list}</code>, <code>bowire.allowlist.show</code>. Two transport modes: stdio for desktop clients (Claude Desktop, Cursor) and HTTP for remote agents (Copilot in CI, custom MCP runners).</p>
       <p>Tools are gated by the same allow-list the workbench uses &mdash; an agent can't reach a method a human couldn't. Run the two adapters side by side if you want an agent that can both call <em>your</em> methods and orchestrate Bowire's record / mock / replay around them.</p>
-      <a class="features-block-docs-link" href="{{ '/docs/features/mcp-serve.html' | relative_url }}">MCP serve docs &rarr;</a>
+      <a class="features-block-docs-link" href="{{ '/docs/protocols/mcp.html' | relative_url }}">MCP serve docs &rarr;</a>
     </div>
     <div class="features-block-screenshot">
       <figure class="features-diagram">
@@ -119,7 +119,7 @@ sequenceDiagram
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="7" width="16" height="13" rx="2"/><circle cx="9" cy="13" r="1" fill="currentColor"/><circle cx="15" cy="13" r="1" fill="currentColor"/><path d="M9 17h6"/><path d="M12 7V4"/></svg>
         AI-agent workflow
       </a>
-      <a class="btn btn-secondary features-page-cta-btn" href="{{ '/docs/features/mcp-adapter.html' | relative_url }}">
+      <a class="btn btn-secondary features-page-cta-btn" href="{{ '/docs/protocols/mcp.html' | relative_url }}">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
         MCP adapter docs
       </a>
