@@ -53,7 +53,7 @@ jobs:
       # Jekyll, populates site/_data/activity.json) and Pagefind (runs after
       # the build, indexes the combined output). One setup serves both.
       - name: Setup Node
-        uses: actions/setup-node@v5
+        uses: actions/setup-node@v6
         with:
           node-version: '20'
 
