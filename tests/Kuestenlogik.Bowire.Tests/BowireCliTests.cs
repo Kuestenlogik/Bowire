@@ -40,6 +40,13 @@ public sealed class BowireCliTests
             Assert.Contains("mcp", output, StringComparison.Ordinal);
             Assert.Contains("plugin", output, StringComparison.Ordinal);
             Assert.Contains("test", output, StringComparison.Ordinal);
+            // scan ships as an IBowireCliCommand contribution from
+            // Kuestenlogik.Bowire.Security.Scanner — assert it lands
+            // in the root help blob so the auto-discovery + Scanner-
+            // assembly force-load stay wired. The 1.5.1 release went
+            // out specifically to repair this path after a previous
+            // refactor lost the eager assembly reference.
+            Assert.Contains("scan", output, StringComparison.Ordinal);
         }
         finally
         {
@@ -54,6 +61,7 @@ public sealed class BowireCliTests
     [InlineData("mock")]
     [InlineData("plugin")]
     [InlineData("test")]
+    [InlineData("scan")]
     public async Task RunAsync_SubcommandHelp_PrintsAndReturnsZero(string subcommand)
     {
         var prev = Console.Out;
