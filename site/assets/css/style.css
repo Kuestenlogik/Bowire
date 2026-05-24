@@ -2510,20 +2510,32 @@ button.comparison-bestfor-card:focus-visible {
     letter-spacing: -0.01em;
 }
 .comparison-bestfor-card-bowire .comparison-bestfor-name {
+    color: #fff;
+}
+/* Light theme — white doesn't sit on the light accent-tinted card.
+   Mirror the same fall-back the wordmark uses so logo + name stay
+   matched. */
+[data-theme="light"] .comparison-bestfor-card-bowire .comparison-bestfor-name {
     color: var(--accent);
 }
 /* Bowire wordmark in the positioning strip — replaces the text 'Bowire'
    span the other cards use. Sized to roughly match the cap-height of
    the competitor name labels so the row reads as 'Bowire vs Postman vs
-   Scalar' rather than 'big logo + small text'. fill is currentColor,
-   inherited from .comparison-bestfor-card-bowire which already sets
-   color: var(--accent). */
+   Scalar' rather than 'big logo + small text'. Rendered in white so it
+   reads as the foreground against the accent-tinted card background;
+   fill is currentColor on the inline SVG, driven by color: #fff here. */
 .comparison-bestfor-logo {
     display: block;
     height: 28px;
     width: auto;
-    color: var(--accent);
+    color: #fff;
     margin: 2px 0 0;
+}
+/* In light theme, white doesn't sit well on the light accent-tinted
+   card background — the card stops carrying the brand. Fall back to
+   the accent colour so the wordmark stays the visual anchor. */
+[data-theme="light"] .comparison-bestfor-logo {
+    color: var(--accent);
 }
 @media (max-width: 720px) {
     .comparison-bestfor-logo {
