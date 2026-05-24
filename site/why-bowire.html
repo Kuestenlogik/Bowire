@@ -53,7 +53,7 @@ description: A closer look at what makes Bowire different from Postman, Insomnia
       <p class="features-block-lead"><code>bowire mcp serve</code> turns every protocol Bowire knows into a tool an AI agent can call. Claude, Cursor, Copilot, custom MCP clients &mdash; same wire, same auth, same recordings.</p>
       <p>The adapter exposes Bowire's core primitives (<code>bowire.discover</code>, <code>bowire.invoke</code>, <code>bowire.record.start</code>, <code>bowire.mock.start</code>, &hellip;) as first-class MCP tools. An agent can chain <em>discover &rarr; invoke &rarr; assert &rarr; switch env &rarr; replay</em> the same way a human would in the workbench &mdash; just in parallel and without patience-cost.</p>
       <p>Two transport modes: stdio for local Claude-Desktop-style clients, HTTP for Cursor / Copilot / remote agents. Auth piggy-backs on whichever provider the workbench itself runs under, so the agent never sees a second credentials store. Tools are gated by the same allow-list the workbench uses &mdash; the agent can't reach a method a human couldn't.</p>
-      <a class="features-block-docs-link" href="{{ '/docs/features/mcp-adapter.html' | relative_url }}">Read the technical docs &rarr;</a>
+      <a class="features-block-docs-link" href="{{ '/docs/protocols/mcp.html' | relative_url }}">Read the technical docs &rarr;</a>
     </div>
     <div class="features-block-screenshot">
       {% include themed-img.html src="/assets/images/screenshots/command-palette.png" alt="MCP adapter — AI agent calling Bowire's discover / invoke / record primitives as native MCP tools" %}
