@@ -17,7 +17,7 @@
          integration fixture host the GreeterService behind UseGrpcWeb()
          on HTTP/1.1. Not pulled in by the plugin itself. -->
     <PackageVersion Include="Grpc.AspNetCore.Web" Version="2.80.0" />
-    <PackageVersion Include="Google.Protobuf" Version="3.34.1" />
+    <PackageVersion Include="Google.Protobuf" Version="3.35.0" />
     <PackageVersion Include="Microsoft.AspNetCore.Mvc.Testing" Version="10.0.8" />
     <PackageVersion Include="Microsoft.AspNetCore.TestHost" Version="10.0.8" />
     <PackageVersion Include="Grpc.AspNetCore" Version="2.80.0" />
