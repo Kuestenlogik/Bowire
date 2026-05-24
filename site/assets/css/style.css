@@ -4670,6 +4670,69 @@ h4.downloads-sub {
     margin-right: 4px;
 }
 
+/* Protocol-card mockup — stand-in 'screenshot' for cards whose
+   real workbench screenshot isn't ready yet. Looks like a tiny
+   terminal window with a streaming-frame body so the slot reads
+   as 'this is what the real capture will look like' rather than
+   leaving a hole or shipping a broken <img>. Drop in / swap out
+   per card; not used anywhere else on the site. */
+.protocol-mockup {
+    margin: 0;
+    background: var(--surface, #1a1a2e);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md, 8px);
+    overflow: hidden;
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.18);
+}
+.protocol-mockup-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 12px;
+    background: rgba(99, 102, 241, 0.08);
+    border-bottom: 1px solid var(--border);
+}
+.protocol-mockup-dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: var(--text-secondary);
+    opacity: 0.45;
+}
+.protocol-mockup-title {
+    margin-left: 6px;
+    font-size: 0.72rem;
+    color: var(--text-secondary);
+    font-family: var(--font-sans);
+}
+.protocol-mockup-title code {
+    font-size: 0.85em;
+    color: var(--accent);
+    background: transparent;
+    padding: 0;
+}
+.protocol-mockup-body {
+    margin: 0;
+    padding: 14px 16px;
+    font-family: var(--font-mono, ui-monospace, SFMono-Regular, monospace);
+    font-size: 0.72rem;
+    line-height: 1.55;
+    color: var(--text);
+    overflow-x: auto;
+}
+.protocol-mockup-meta {
+    display: block;
+    color: var(--text-secondary);
+    font-size: 0.85em;
+    margin-top: 6px;
+}
+.protocol-mockup-meta:first-child {
+    margin-top: 0;
+}
+.protocol-mockup-accent {
+    color: var(--accent);
+}
+
 /* Terminal-style install command (same look as protocol-install). */
 .downloads-command {
     display: flex;
