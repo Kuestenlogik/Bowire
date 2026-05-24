@@ -4608,9 +4608,66 @@ h4.downloads-sub {
     font-size: 0.8125rem;
     color: var(--text-secondary);
     line-height: 1.5;
+    /* When .downloads-pkg-desc lives as a <p>, kill the default
+       16px top + bottom margin browsers add — the body's flex gap
+       handles the rhythm. */
+    margin: 0;
 }
 .downloads-pkg-desc code {
     font-size: 0.85em;
+}
+
+/* New 'protocol-card-style' tile layout — short label on top
+   (.downloads-pkg-name), full package-id moves into the install row
+   at the bottom of the card (.downloads-pkg-install). Keeps the
+   tile heading on a single line for every package, no matter how
+   long Kuestenlogik.Bowire.Protocol.* gets. */
+.downloads-pkg-name {
+    font-size: 0.95rem;
+    font-weight: 700;
+    margin: 0;
+    line-height: 1.25;
+    letter-spacing: -0.005em;
+}
+.downloads-pkg-name a {
+    color: var(--text);
+    text-decoration: none;
+}
+.downloads-pkg-name a:hover,
+.downloads-pkg-name a:focus-visible {
+    color: var(--accent);
+}
+.downloads-pkg-install {
+    /* Terminal-style row with the install command + copy button.
+       Same shape the protocol-card uses on the homepage. Sits at
+       the BOTTOM of the body so the heading + description stay
+       readable and the long Kuestenlogik.Bowire.Protocol.* lives
+       on its own line where width pressure is least. */
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-top: 4px;
+    padding: 6px 10px;
+    background: rgba(99, 102, 241, 0.08);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm, 6px);
+    min-width: 0;
+    flex-wrap: wrap;
+}
+.downloads-pkg-install > code {
+    font-size: 0.78rem;
+    color: var(--accent);
+    background: transparent;
+    padding: 0;
+    word-break: break-word;
+    min-width: 0;
+    flex: 1 1 auto;
+}
+.downloads-pkg-prompt {
+    color: var(--text-secondary);
+    user-select: none;
+    margin-right: 4px;
 }
 
 /* Terminal-style install command (same look as protocol-install). */
