@@ -42,12 +42,12 @@ The SemVer contract on the Bowire side that makes this work: inside any 1.x rele
 
 | Plugin | Latest release | Built against Bowire | Works with Bowire |
 |---|---|---|---|
-| [`Bowire.Protocol.Kafka`](https://github.com/Kuestenlogik/Bowire.Protocol.Kafka)         | v1.0.3 | 1.5.1 | 1.5.1 ≤ x < 2.0 |
-| [`Bowire.Protocol.Amqp`](https://github.com/Kuestenlogik/Bowire.Protocol.Amqp)           | v0.2.1 | 1.5.1 | 1.5.1 ≤ x < 2.0 |
+| [`Bowire.Protocol.Kafka`](https://github.com/Kuestenlogik/Bowire.Protocol.Kafka)         | v1.0.3 | 1.5.0 | 1.5.0 ≤ x < 2.0 |
+| [`Bowire.Protocol.Amqp`](https://github.com/Kuestenlogik/Bowire.Protocol.Amqp)           | v0.2.1 | 1.5.0 | 1.5.0 ≤ x < 2.0 |
 | [`Bowire.Protocol.TacticalApi`](https://github.com/Kuestenlogik/Bowire.Protocol.TacticalApi) | v0.2.0 | 1.5.0 | 1.5.0 ≤ x < 2.0 |
-| [`Bowire.Protocol.Akka`](https://github.com/Kuestenlogik/Bowire.Protocol.Akka)           | v1.0.3 | 1.5.1 | 1.5.1 ≤ x < 2.0 |
-| [`Bowire.Protocol.Dis`](https://github.com/Kuestenlogik/Bowire.Protocol.Dis)             | v1.0.3 | 1.5.1 | 1.5.1 ≤ x < 2.0 |
-| [`Bowire.Protocol.Udp`](https://github.com/Kuestenlogik/Bowire.Protocol.Udp)             | v1.0.3 | 1.5.1 | 1.5.1 ≤ x < 2.0 |
+| [`Bowire.Protocol.Akka`](https://github.com/Kuestenlogik/Bowire.Protocol.Akka)           | v1.0.3 | 1.5.0 | 1.5.0 ≤ x < 2.0 |
+| [`Bowire.Protocol.Dis`](https://github.com/Kuestenlogik/Bowire.Protocol.Dis)             | v1.0.3 | 1.5.0 | 1.5.0 ≤ x < 2.0 |
+| [`Bowire.Protocol.Udp`](https://github.com/Kuestenlogik/Bowire.Protocol.Udp)             | v1.0.3 | 1.5.0 | 1.5.0 ≤ x < 2.0 |
 | [`Bowire.Protocol.Surgewave`](https://github.com/Kuestenlogik/Bowire.Protocol.Surgewave) | (no release yet — gated on the `Kuestenlogik.Surgewave.Client` SDK going public) | — | — |
 
 "Built against" is the `Kuestenlogik.Bowire` `PackageReference` the plugin was compiled with — the floor of what the consuming host must carry. "Works with" applies the SemVer contract: floor is the build-against version; ceiling is the next major.
