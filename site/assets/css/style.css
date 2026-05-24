@@ -1855,6 +1855,21 @@ pre > code {
     height: 22px;
 }
 
+/* AMQP wordmark exception — amqp-logo.png is a 330x68 wordmark
+   (symbol + 'AMQP' text), not a square 32x32 mark. Drop the fixed-
+   square sizing for this slot so the wordmark renders at its
+   natural aspect-ratio, fits at the icon-row's 22px height, and
+   spans as much width as the wordmark needs (~110px). */
+.protocol-icon-amqp {
+    width: auto;
+    min-width: 40px;
+}
+.protocol-icon-amqp img {
+    width: auto;
+    height: 22px;
+    max-width: 120px;
+}
+
 /* `display: contents` so the children (h3, p, .protocol-install)
    become direct grid items of .protocol-card, not nested in their
    own block. The icon next to h3, description + install row span
