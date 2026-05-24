@@ -99,7 +99,7 @@ $ bowire scan --target https://api.example.com \
   <div class="features-block features-block-reverse" id="fuzz">
     <div class="features-block-text">
       <h3><code>bowire fuzz</code> &mdash; schema-aware field-level mutation</h3>
-      <p class="features-block-lead">The field-level fuzzer uses the schema Bowire already knows (OpenAPI / proto / GraphQL / AsyncAPI) to pick payloads that fit the field type. SQL-injection strings don't get thrown at a <code>lat</code> field; <code>image.bytes</code> gets magic-byte mutation, not XSS.</p>
+      <p class="features-block-lead">The field-level fuzzer uses the schema Bowire already knows (OpenAPI / proto / GraphQL / AsyncAPI) to pick payloads that fit the field type. SQL-injection strings don't get thrown at a latitude (<code>lat</code>) field; <code>image.bytes</code> gets magic-byte mutation, not XSS.</p>
       <p>Four payload categories ship with curated wordlists (<code>sqli</code>, <code>xss</code>, <code>pathtrav</code>, <code>cmdinj</code>). The baseline-diff oracle compares each mutated response against the unmutated baseline: status change, error-shape divergence, latency spike beyond <em>N</em> standard deviations flags a finding. Findings reuse the same SARIF emitter as <code>scan</code>, so they drop into the same Code-Scanning surface.</p>
       <a class="features-block-docs-link" href="{{ '/docs/features/fuzz.html' | relative_url }}">Read the technical docs &rarr;</a>
     </div>

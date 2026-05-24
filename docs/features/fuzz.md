@@ -1,10 +1,10 @@
 ---
-summary: 'Schema-aware field-level fuzzing with `bowire fuzz`. Knows what each field expects, so a `lat` doesn''t see SQL-injection and an `image.bytes` gets magic-byte mutation instead of XSS strings. Baseline-diff oracle flags responses that look materially different from clean runs.'
+summary: 'Schema-aware field-level fuzzing with `bowire fuzz`. Knows what each field expects, so a `lat` (latitude) doesn''t see SQL-injection and an `image.bytes` gets magic-byte mutation instead of XSS strings. Baseline-diff oracle flags responses that look materially different from clean runs.'
 ---
 
 # Field-level Fuzz — `bowire fuzz`
 
-`bowire fuzz` runs schema-aware mutation against a target endpoint and emits SARIF 2.1.0. The fuzzer knows what each field expects — a numeric `lat` doesn't see SQL-injection payloads, a binary `image.bytes` field gets magic-byte mutation instead of XSS strings, an `email` field gets RFC 5322 edge cases.
+`bowire fuzz` runs schema-aware mutation against a target endpoint and emits SARIF 2.1.0. The fuzzer knows what each field expects — a numeric `lat` (latitude) doesn't see SQL-injection payloads, a binary `image.bytes` field gets magic-byte mutation instead of XSS strings, an `email` field gets RFC 5322 edge cases.
 
 The baseline-diff oracle decides what counts as a finding: each mutated response is compared against the unmutated baseline. Status change, error-shape divergence, latency spike beyond *N* standard deviations — any of those flags the input.
 
