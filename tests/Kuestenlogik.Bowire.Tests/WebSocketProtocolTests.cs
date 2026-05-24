@@ -43,6 +43,27 @@ public sealed class WebSocketProtocolTests : IDisposable
     }
 
     [Fact]
+    public void WebSocketEndpointAttribute_DefaultsAreNull_AndPropertiesRoundTrip()
+    {
+        // Zero-arg ctor — both display name and description default to null.
+        var empty = new WebSocketEndpointAttribute();
+        Assert.Null(empty.DisplayName);
+        Assert.Null(empty.Description);
+
+        // Positional args — values land on the corresponding properties.
+        var attr = new WebSocketEndpointAttribute("Echo", "Echoes every message back.");
+        Assert.Equal("Echo", attr.DisplayName);
+        Assert.Equal("Echoes every message back.", attr.Description);
+    }
+
+    [Fact]
+    public void WebSocketGroupAttribute_NamePropertyRoundTrips()
+    {
+        var attr = new WebSocketGroupAttribute("Chat");
+        Assert.Equal("Chat", attr.Name);
+    }
+
+    [Fact]
     public async Task DiscoverAsync_NonWebSocketUrl_ReturnsEmpty()
     {
         var protocol = new BowireWebSocketProtocol();
