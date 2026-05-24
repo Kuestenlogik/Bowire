@@ -1,10 +1,10 @@
 ---
-summary: 'TacticalAPI is a Bowire sibling plugin that wraps Rheinmetall''s situational-awareness gRPC interface with a bundled schema so the Situation service tree renders even without Server Reflection. Preview release (v0.1.0): descriptor discovery only; typed CRUD + server-streaming pump land in v0.2.0.'
+summary: 'TacticalAPI is a Bowire sibling plugin that wraps Rheinmetall''s situational-awareness gRPC interface with a bundled schema so the Situation service tree renders even without Server Reflection. v0.2.x preview: discovery + typed unary CRUD + server-streaming pump all wired through, mTLS client-cert via metadata for the field-default deployment shape.'
 ---
 
 # TacticalAPI
 
-> **Status: preview (v0.1.0)** &mdash; descriptor discovery and plugin registration only. Typed CRUD invoke for `GetSituationObjects` / `AddOrUpdateSituationObjects` / `DeleteSituationObjects` and the server-streaming pump for `SubscribeSituationObjectEvents` land in **v0.2.0**.
+> **Status: preview (v0.2.x)** &mdash; discovery, typed unary invoke for `GetSituationObjects` / `AddOrUpdateSituationObjects` / `DeleteSituationObjects`, and the server-streaming pump for `SubscribeSituationObjectEvents` all wired through. URL-scheme normalisation (`tacticalapi@host:port`, `grpc(s)://`, bare `host:port`) and mTLS client-cert via metadata ship in the same release. Integration tests against the upstream `TestClient` are the next milestone before the v1.0.0 stable cut.
 
 The TacticalAPI plugin connects Bowire to [Rheinmetall's **TacticalAPI**](https://github.com/Rheinmetall/tacticalapi) &mdash; a gRPC interface for situational-awareness systems. The plugin ships the upstream service schema bundled with the package, so Bowire can render the `Situation` service tree against any TacticalAPI server **even when the server does not expose gRPC Server Reflection**.
 
@@ -24,7 +24,30 @@ Bowire discovers the plugin automatically via assembly scanning &mdash; no extra
 bowire --url tacticalapi@my-situation-server:50051
 ```
 
-Open the workbench, pick the **TacticalAPI** tab, and the four methods of the `Situation` service (`SubscribeSituationObjectEvents`, `GetSituationObjects`, `AddOrUpdateSituationObjects`, `DeleteSituationObjects`) appear in the sidebar. In v0.1.0 the methods are visible and the descriptors are projected into the standard Bowire `BowireServiceInfo` / `BowireMethodInfo` shape; clicking **Execute** is a no-op until v0.2.0 wires up the generated client stubs.
+Open the workbench, pick the **TacticalAPI** tab, and the four methods of the `Situation` service (`SubscribeSituationObjectEvents`, `GetSituationObjects`, `AddOrUpdateSituationObjects`, `DeleteSituationObjects`) appear in the sidebar. Click **Execute** on any unary method and the call goes out to the server; pick the streaming method and the workbench's Wireshark-style frame pane starts filling with `SituationObject` events as they're emitted.
+
+### URL forms
+
+The plugin normalises the URL Bowire passes through:
+
+| You type | What the plugin connects to |
+|---|---|
+| `tacticalapi@host:4267` | `https://host:4267` (default — TacticalAPI in the field is mTLS) |
+| `grpc://host:50051` | `http://host:50051` (plaintext gRPC) |
+| `grpcs://host:50051` | `https://host:50051` |
+| `host:4267` | `https://host:4267` |
+
+### mTLS / TLS settings via metadata
+
+TacticalAPI servers in production almost always run behind mTLS. The plugin reads two configuration keys from the workbench metadata bag — these never reach the wire (they're filtered out before the gRPC `Metadata` is built):
+
+| Metadata key | Purpose |
+|---|---|
+| `_bowire:tls-skip-validation=true` | Accept any server certificate. For staging / self-signed only — same opt-in semantics as the core gRPC plugin's `--allow-self-signed-certs`. |
+| `_bowire:client-cert-pfx=<path>` | Path to a PFX file with the client certificate + private key. |
+| `_bowire:client-cert-password=<pw>` | Password for the PFX (omit for unprotected PFX). |
+
+Set both via the workbench's metadata panel before clicking **Execute**, or via `--metadata _bowire:client-cert-pfx=...` from the CLI.
 
 ### Pairing with the gRPC plugin's gRPC-Web transport
 
@@ -99,9 +122,9 @@ A companion walkthrough in **[the mock-server docs](../features/mock-server.md#e
 
 ## Roadmap
 
-- **v0.1.0 (this release)** &mdash; bundled-schema discovery, plugin registration, identity API, generated client stubs available to consumers.
-- **v0.2.0** &mdash; typed unary invoke for `GetSituationObjects` / `AddOrUpdateSituationObjects` / `DeleteSituationObjects` and the server-streaming pump for `SubscribeSituationObjectEvents` via the generated client, with JSON request/response envelopes matching the Bowire schema.
-- **v0.3.0** &mdash; sample server + walkthrough, position-extractor adapter for the upcoming Bowire map widget so `SituationObjectLocation` updates land on the map automatically, authentication helpers (TLS + bearer-token metadata).
+- **v0.1.0** &mdash; bundled-schema discovery, plugin registration, identity API, generated client stubs available to consumers.
+- **v0.2.x (current)** &mdash; typed unary invoke for `GetSituationObjects` / `AddOrUpdateSituationObjects` / `DeleteSituationObjects` and the server-streaming pump for `SubscribeSituationObjectEvents` are live. URL-scheme normalisation (`tacticalapi@`, `grpc(s)://`, bare `host:port`) and mTLS client-cert + TLS-skip-validation via metadata land in the same release.
+- **v0.3.0** &mdash; integration tests against the upstream TestClient + a sample server walkthrough. Position-extractor adapter so `SituationObjectLocation` updates land on the Bowire map automatically. MIL-STD-2525 / APP-6 symbol renderer (the schema's `SymbolIdentifier` field is already wired through; the map widget side needs a [milsymbol.js](https://github.com/spatialillusions/milsymbol)-style renderer to turn the SIDC into the correct tactical-affiliation glyph).
 
 ## Links
 

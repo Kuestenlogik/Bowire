@@ -1178,6 +1178,15 @@ var BOWIRE_PROTOCOLS = [
         docUrl: 'https://github.com/Kuestenlogik/Bowire.Protocol.Dis'
     },
     {
+        id: 'tacticalapi', label: 'TacticalAPI',
+        hint: 'Rheinmetall situational-awareness gRPC',
+        packageId: 'Kuestenlogik.Bowire.Protocol.TacticalApi',
+        urlPlaceholder: 'tacticalapi@situation.example.com:4267',
+        category: 'third-party',
+        setupNote: 'Rheinmetall&rsquo;s TacticalAPI &mdash; gRPC interface for situational-awareness systems. The plugin bundles the upstream <code>.proto</code> schema so the <code>Situation</code> service tree shows up without Server Reflection. URL prefix <code>tacticalapi@</code> routes to this plugin. For mTLS-protected servers (the field default), pass a client cert via the <code>_bowire:client-cert-pfx</code> metadata key.',
+        docUrl: 'https://github.com/Kuestenlogik/Bowire.Protocol.TacticalApi'
+    },
+    {
         id: 'udp', label: 'UDP',
         hint: 'Raw datagrams',
         packageId: 'Kuestenlogik.Bowire.Protocol.Udp',
