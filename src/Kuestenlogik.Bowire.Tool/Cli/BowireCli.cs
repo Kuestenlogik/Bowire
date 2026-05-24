@@ -96,6 +96,15 @@ internal static class BowireCli
         // Disabled-ids parsed straight off the args because System.CommandLine
         // doesn't surface option values before Parse(args), and we need the
         // list at command-build time.
+        //
+        // Force-load the Scanner assembly so its IBowireCliCommand types
+        // are visible to the assembly scan below. A bare typeof() ref
+        // can be optimised away by the JIT/Linker, so we instantiate the
+        // type — keeps the reference live, and the assembly lands in
+        // AppDomain.GetAssemblies() before Discover() walks it.
+        try { _ = Activator.CreateInstance<Kuestenlogik.Bowire.Security.Scanner.Cli.ScanCliCommand>(); }
+        catch { /* discovery loop below surfaces the real error */ }
+
         var disabledCli = PreparseRepeatableArg(originalArgs, "--disable-cli-command");
         foreach (var cmd in BowireCliCommandRegistry.Discover(disabledCli).Commands)
         {
@@ -266,7 +275,7 @@ internal static class BowireCli
     }
 
     // scan: contributed via IBowireCliCommand from
-    // Kuestenlogik.Bowire.SecurityScanner — picked up by the auto-
+    // Kuestenlogik.Bowire.Security.Scanner — picked up by the auto-
     // discovery loop above. See ScanCliCommand.Build().
 
     // -------------------- import --------------------
