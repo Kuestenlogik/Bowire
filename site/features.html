@@ -355,7 +355,7 @@ Esc           <span class="c">close modal</span>
   <div class="features-block features-block-reverse" id="fuzz">
     <div class="features-block-text">
       <h3>Schema-aware field-level fuzzer</h3>
-      <p class="features-block-lead"><code>bowire fuzz</code> mutates one field at a time using the schema Bowire already knows. Knows not to throw SQL-injection at a <code>lat</code> field; <code>image.bytes</code> gets magic-byte mutation, not XSS strings.</p>
+      <p class="features-block-lead"><code>bowire fuzz</code> mutates one field at a time using the schema Bowire already knows. Knows not to throw SQL-injection at a latitude (<code>lat</code>) field; <code>image.bytes</code> gets magic-byte mutation, not XSS strings.</p>
       <p>Schema-awareness is the differentiator: the fuzzer respects field types from the discovered schema (OpenAPI / proto / GraphQL / AsyncAPI). Image-byte fields get magic-byte / truncation / over-length mutation, integer fields get boundary / overflow / negative mutation, dates get format / range mutation, strings get the category-appropriate payloads.</p>
       <p>Four payload categories ship out of the box: <code>sqli</code>, <code>xss</code>, <code>pathtrav</code>, <code>cmdinj</code> with curated wordlists. A baseline-diff oracle flags responses that look materially different from the baseline &mdash; status change, error-shape divergence, latency spike beyond <em>N</em> standard deviations. Findings reuse the same SARIF emitter as <code>scan</code>, so they drop into the same Code-Scanning surface.</p>
       <a class="features-block-docs-link" href="{{ '/solutions/security.html#fuzz' | relative_url }}">Read the technical docs &rarr;</a>
