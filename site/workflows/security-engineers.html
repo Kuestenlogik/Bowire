@@ -93,7 +93,7 @@ $ bowire scan \
     <div class="features-block-text">
       <h3><code>uses: Kuestenlogik/Bowire/.github/workflows/scan-template.yml@main</code></h3>
       <p class="features-block-lead">The reusable workflow installs the bowire CLI, runs the scan against a target you pass in, uploads the SARIF as both a build artefact (for GitLab mirrors / Azure DevOps re-imports / manual review) and to GitHub Code Scanning (so each finding becomes a stable-rule-ID alert).</p>
-      <p>Inputs: <code>target</code>, <code>corpus</code> (defaults to the seed templates in this repo), <code>severity</code>, <code>dotnet-version</code>, <code>tool-version</code>. Findings are the scan's <em>product</em>, not its failure mode &mdash; the workflow exits 0 even with vulnerabilities so the SARIF upload pipeline stays linear; gating happens via Code Scanning branch-protection rules, not the scan step itself.</p>
+      <p>Inputs: <code>target</code>, <code>templates</code> (defaults to the seed templates in this repo), <code>severity</code>, <code>dotnet-version</code>, <code>tool-version</code>. Findings are the scan's <em>product</em>, not its failure mode &mdash; the workflow exits 0 even with vulnerabilities so the SARIF upload pipeline stays linear; gating happens via Code Scanning branch-protection rules, not the scan step itself.</p>
       <a class="features-block-docs-link" href="https://github.com/Kuestenlogik/Bowire/blob/main/.github/workflows/scan-template.yml">scan-template.yml on GitHub &rarr;</a>
     </div>
   </div>

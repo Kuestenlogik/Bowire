@@ -35,8 +35,8 @@ on:
         description: 'Target URL to scan (https://... or grpc://...). Required.'
         required: true
         type: string
-      corpus:
-        description: 'Directory of vulnerability-template files (relative to the calling repo''s checkout). Defaults to the seed corpus shipped in this repo.'
+      templates:
+        description: 'Directory of vulnerability-template files (relative to the calling repo''s checkout). Defaults to the seed templates shipped in this repo.'
         required: false
         type: string
         default: 'docs/security/examples'
@@ -112,10 +112,10 @@ jobs:
             --out findings.sarif
             --severity "${{ inputs.severity }}"
           )
-          if [ -d "${{ inputs.corpus }}" ]; then
-            ARGS+=(--corpus "${{ inputs.corpus }}")
+          if [ -d "${{ inputs.templates }}" ]; then
+            ARGS+=(--templates "${{ inputs.templates }}")
           else
-            echo "::notice::Corpus directory '${{ inputs.corpus }}' not found in the calling repo — running built-in checks only."
+            echo "::notice::Templates directory '${{ inputs.templates }}' not found in the calling repo — running built-in checks only."
           fi
           bowire "${ARGS[@]}"
 
