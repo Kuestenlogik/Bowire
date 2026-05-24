@@ -274,14 +274,12 @@
       </a>
 
       <a class="protocol-card" href="https://github.com/Kuestenlogik/Bowire.Protocol.Amqp" target="_blank" rel="noopener" data-feature-modal tabindex="0">
-        <div class="protocol-icon protocol-icon-amqp">
-          <!-- Official AMQP wordmark from amqp.org (geometric symbol
-               + 'AMQP' text). Saved at /assets/images/protocols/
-               amqp-logo.png. Note: this is a wide wordmark (330x68),
-               not a 32x32 mark — .protocol-icon-amqp drops the fixed
-               square sizing on this slot so the wordmark renders at
-               its natural aspect at icon-row height. -->
-          <img src="{{ '/assets/images/protocols/amqp-logo.png' | relative_url }}" alt="" height="32">
+        <div class="protocol-icon">
+          <!-- Official AMQP brand mark — symbol only (no wordmark).
+               Square SVG so it drops straight into the standard
+               32x32 / 22x22 icon slot, same shape as the other
+               protocol marks. -->
+          <img src="{{ '/assets/images/protocols/amqp-mark.svg' | relative_url }}" alt="" width="22" height="22">
         </div>
         <div class="protocol-content">
           <h3>AMQP</h3>

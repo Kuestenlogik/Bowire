@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!--
+  AMQP brand mark (symbol-only, no wordmark) — sourced from
+  C:\Projekte\Kuestenlogik\amqp.svg.
+
+  Source SVG used an A4 page (210x297 mm) with the mark tucked into
+  the top-left ~24x24 mm and the rest empty. Cropped here to a tight
+  24x24 viewBox so the symbol fills the icon slot at any size; the
+  inner <g transform="translate(-38.00395,-184.20569)"> from the
+  original already shifted the path coordinates to 0..24 / 0..24, so
+  the viewBox just needs to match.
+-->
+<svg
+   xmlns="http://www.w3.org/2000/svg"
+   viewBox="0 0 24 24"
+   width="24"
+   height="24"
+   role="img"
+   aria-label="AMQP">
+  <g transform="translate(-38.00395,-184.20569)">
+    <rect style="fill:#a2b0d9;fill-opacity:1;stroke-width:4.99999"
+          width="6.4565849" height="14.974796"
+          x="46.661499" y="184.20569"/>
+    <path style="fill:#002585;stroke-width:5.01697"
+          d="m 46.669743,192.73682 6.410884,6.45658 H 38.00395 v -6.45658 z"/>
+    <rect style="fill:#000000;fill-opacity:1;stroke-width:3.05097"
+          width="6" height="6"
+          x="38.048462" y="184.20569"/>
+    <rect style="fill:#caccce;fill-opacity:1;stroke-width:6.29386"
+          width="6.4565849" height="23.727749"
+          x="55.318237" y="184.20569"/>
+    <path style="fill:#caccce;fill-opacity:1;stroke-width:0.641771"
+          d="m 38.069535,184.23482 h 2.988509 2.988511 v 2.97153 2.97153 z"/>
+    <path style="stroke-width:6.29896"
+          d="m 55.370997,201.4825 6.40669,6.45658 h -23.76618 v -6.45658 z"/>
+  </g>
+</svg>
