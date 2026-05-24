@@ -3268,15 +3268,16 @@ button.comparison-bestfor-card.active .comparison-bestfor-name {
 }
 
 /* Comparison-section banner — bridge officer choosing his navigation
-   tool (paper chart vs MFD displays vs tablet). Same recipe the other
-   four banners use: 5:2 aspect, accent-tinted multiply overlay, mask-
-   image bottom-fade so the banner blends into the section below
-   instead of leaving a hard photo-edge. */
+   tool (paper chart vs MFD displays vs tablet). Same accent-overlay +
+   mask-image-bottom-fade recipe the other banners use, but the source
+   image is a 21:9 wide pano, so the banner spans the full container
+   width (no 800px cap like the roadmap one) and the aspect-ratio drops
+   from 5:2 to 21:9 to match the source crop. Reads as the cockpit
+   panorama the metaphor needs. */
 .comparison-banner {
     position: relative;
     overflow: hidden;
-    max-width: 800px;
-    margin: 0 auto 28px;
+    margin: 0 0 28px;
     background: transparent;
     border-radius: var(--radius-lg) var(--radius-lg) 0 0;
 }
@@ -3284,7 +3285,7 @@ button.comparison-bestfor-card.active .comparison-bestfor-name {
     display: block;
     width: 100%;
     height: auto;
-    aspect-ratio: 5 / 2;
+    aspect-ratio: 21 / 9;
     object-fit: cover;
     filter: grayscale(0.50) saturate(0.88) brightness(0.94);
     -webkit-mask-image: linear-gradient(180deg, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.85) 45%, rgba(0,0,0,0.30) 80%, rgba(0,0,0,0) 100%);
