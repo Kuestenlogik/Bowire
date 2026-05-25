@@ -9657,3 +9657,29 @@ details[open] > .bowire-json-tree-summary::before {
     max-height: 120px;
     overflow-y: auto;
 }
+
+.bowire-settings-plugin-manage-row.is-bundled {
+    opacity: 0.7;
+    background: var(--bowire-bg-elevated, rgba(255, 255, 255, 0.015));
+}
+
+.bowire-settings-plugin-manage-id-line {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    min-width: 0;
+}
+
+.bowire-settings-plugin-manage-badge {
+    flex-shrink: 0;
+    padding: 1px 6px;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--bowire-text-tertiary);
+    background: var(--bowire-bg-elevated, rgba(255, 255, 255, 0.05));
+    border: 1px solid var(--bowire-border);
+    border-radius: 999px;
+    cursor: help;
+}

@@ -754,7 +754,7 @@
         }));
         section.appendChild(el('div', {
             className: 'bowire-settings-section-desc',
-            textContent: 'Plugins installed under ~/.bowire/plugins/. Bundled protocols (gRPC, REST, MQTT, …) ship with the Bowire tool itself and are updated by running dotnet tool update.'
+            textContent: 'Sibling plugins under ~/.bowire/plugins/ get Update / Uninstall buttons; bundled plugins (gRPC, REST, MQTT, …) ship inside the Bowire tool and update with dotnet tool update.'
         }));
 
         // Pre-release toggle row
@@ -796,20 +796,34 @@
     }
 
     function renderManagedPluginRow(p) {
-        var row = el('div', { className: 'bowire-settings-plugin-manage-row' });
+        var bundled = p.source === 'bundled';
+        var row = el('div', {
+            className: 'bowire-settings-plugin-manage-row'
+                + (bundled ? ' is-bundled' : '')
+        });
 
         var pkgId = p.packageId || p.PackageId || '';
         var version = p.version || p.Version || 'unknown';
         var latest = latestVersions[pkgId];
 
         var textBox = el('div', { className: 'bowire-settings-plugin-manage-text' });
-        textBox.appendChild(el('div', {
+        var idLine = el('div', { className: 'bowire-settings-plugin-manage-id-line' });
+        idLine.appendChild(el('span', {
             className: 'bowire-settings-plugin-manage-id',
             textContent: pkgId
         }));
+        if (bundled) {
+            idLine.appendChild(el('span', {
+                className: 'bowire-settings-plugin-manage-badge',
+                textContent: 'bundled',
+                title: 'Ships with the bowire tool — updated via `dotnet tool update -g Kuestenlogik.Bowire.Tool`'
+            }));
+        }
+        textBox.appendChild(idLine);
+
         var versionLine = el('div', { className: 'bowire-settings-plugin-manage-version' });
         versionLine.appendChild(el('span', { textContent: version }));
-        if (latest && latest !== version) {
+        if (!bundled && latest && latest !== version) {
             versionLine.appendChild(el('span', {
                 className: 'bowire-settings-plugin-manage-update',
                 textContent: '→ ' + latest + ' available'
@@ -819,25 +833,30 @@
         row.appendChild(textBox);
 
         var actions = el('div', { className: 'bowire-settings-plugin-manage-actions' });
-        var hasUpdate = latest && latest !== version;
+        var hasUpdate = !bundled && latest && latest !== version;
         var busy = pluginActionInFlight === pkgId;
 
         var updateBtn = el('button', {
             type: 'button',
             className: 'bowire-settings-plugin-btn'
                 + (hasUpdate ? ' bowire-settings-plugin-btn-accent' : ''),
-            disabled: busy,
+            disabled: bundled || busy,
+            title: bundled
+                ? 'Bundled plugin — run `dotnet tool update -g Kuestenlogik.Bowire.Tool` to update'
+                : '',
             textContent: busy ? 'Working…' : 'Update',
-            onClick: function () { runPluginAction(pkgId, 'update'); }
+            onClick: function () { if (!bundled) runPluginAction(pkgId, 'update'); }
         });
         actions.appendChild(updateBtn);
 
         var uninstallBtn = el('button', {
             type: 'button',
             className: 'bowire-settings-plugin-btn bowire-settings-plugin-btn-danger',
-            disabled: busy,
+            disabled: bundled || busy,
+            title: bundled ? 'Bundled plugins cannot be uninstalled separately' : '',
             textContent: 'Uninstall',
             onClick: function () {
+                if (bundled) return;
                 if (window.confirm('Uninstall ' + pkgId + '?')) {
                     runPluginAction(pkgId, 'uninstall');
                 }
@@ -885,11 +904,14 @@
     }
 
     function fetchLatestVersions() {
-        // One fetch per installed plugin. nuget.org's v3-flatcontainer
-        // is a CDN endpoint, so 5–10 parallel requests for a typical
-        // sibling-plugin set finish in <1 s.
+        // One fetch per *sibling* plugin. Bundled ones don't need a
+        // latest-lookup — they're updated en bloc via `dotnet tool
+        // update` and the manage panel shows them as a read-only
+        // inventory. nuget.org's v3-flatcontainer is a CDN endpoint
+        // so 5–10 parallel sibling lookups finish in <1 s.
         for (var i = 0; i < installedPlugins.length; i++) {
             (function (p) {
+                if (p.source === 'bundled') return;
                 var id = p.packageId || p.PackageId;
                 if (!id) return;
                 var qs = pluginPrereleaseToggle ? '?prerelease=true' : '';

@@ -26,36 +26,98 @@ internal static class BowirePluginEndpoints
     public static IEndpointRouteBuilder MapBowirePluginEndpoints(
         this IEndpointRouteBuilder endpoints, string basePath)
     {
-        // List installed plugins
+        // List every plugin Bowire knows about — sibling-installed
+        // (writable under ~/.bowire/plugins/) and bundled (shipped
+        // inside the bowire tool itself, read-only). Each entry
+        // carries `source: "sibling" | "bundled"` so the UI can
+        // surface both in one list but disable the lifecycle buttons
+        // on the bundled half — they're only updated by re-running
+        // `dotnet tool update -g Kuestenlogik.Bowire.Tool` (or the
+        // package-manager equivalent).
         endpoints.MapGet($"{basePath}/api/plugins", () =>
         {
             var plugins = new List<object>();
-            if (!Directory.Exists(PluginDir))
-                return Results.Ok(new { plugins });
 
-            foreach (var dir in Directory.GetDirectories(PluginDir))
+            // ---- Sibling plugins (writable, lifecycle-acted-on) ----
+            // Same plugin-dir walk the original endpoint did, but each
+            // entry gets source="sibling" so the merged view can
+            // distinguish them.
+            if (Directory.Exists(PluginDir))
             {
-                var metaPath = Path.Combine(dir, "plugin.json");
-                if (File.Exists(metaPath))
+                foreach (var dir in Directory.GetDirectories(PluginDir))
                 {
-                    try
+                    var metaPath = Path.Combine(dir, "plugin.json");
+                    if (File.Exists(metaPath))
                     {
-                        var json = File.ReadAllText(metaPath);
-                        var meta = JsonSerializer.Deserialize<JsonElement>(json);
-                        plugins.Add(meta);
+                        try
+                        {
+                            var json = File.ReadAllText(metaPath);
+                            var meta = JsonSerializer.Deserialize<JsonElement>(json);
+                            // Re-emit with the source flag merged in.
+                            var dict = meta.EnumerateObject()
+                                .ToDictionary(p => p.Name, p => (object?)p.Value);
+                            dict["source"] = "sibling";
+                            plugins.Add(dict);
+                        }
+                        catch { /* skip broken */ }
                     }
-                    catch { /* skip broken */ }
-                }
-                else
-                {
-                    plugins.Add(new
+                    else
                     {
-                        packageId = Path.GetFileName(dir),
-                        version = "unknown",
-                        files = Directory.GetFiles(dir, "*.dll").Length
-                    });
+                        plugins.Add(new
+                        {
+                            packageId = Path.GetFileName(dir),
+                            version = "unknown",
+                            files = Directory.GetFiles(dir, "*.dll").Length,
+                            source = "sibling",
+                        });
+                    }
                 }
             }
+
+            // ---- Bundled plugins (read-only, shipped in the tool) ----
+            // Walk the loaded AppDomain assemblies for anything named
+            // Kuestenlogik.Bowire.Protocol.* / Extension.* — those are
+            // the in-process plugins the host carries. Version comes
+            // from AssemblyInformationalVersion (set by the tool's
+            // release pipeline); falls back to AssemblyVersion.
+            var siblingIds = new HashSet<string>(
+                plugins.Select(p =>
+                {
+                    if (p is IDictionary<string, object?> d &&
+                        d.TryGetValue("packageId", out var v))
+                    {
+                        return v?.ToString() ?? "";
+                    }
+                    return "";
+                }).Where(s => !string.IsNullOrEmpty(s)),
+                StringComparer.OrdinalIgnoreCase);
+
+            foreach (var asm in AppDomain.CurrentDomain.GetAssemblies())
+            {
+                var name = asm.GetName().Name;
+                if (string.IsNullOrEmpty(name)) continue;
+                if (!IsBowirePluginAssemblyName(name)) continue;
+                if (siblingIds.Contains(name)) continue; // sibling overrides bundled if both present
+
+                var infoVersion = asm
+                    .GetCustomAttributes(typeof(System.Reflection.AssemblyInformationalVersionAttribute), false)
+                    .OfType<System.Reflection.AssemblyInformationalVersionAttribute>()
+                    .FirstOrDefault()
+                    ?.InformationalVersion;
+                var version = infoVersion ?? asm.GetName().Version?.ToString() ?? "unknown";
+                // AssemblyInformationalVersion sometimes carries SourceLink build
+                // metadata (e.g. "1.5.1+abc1234"); strip after '+' for display.
+                var plus = version.IndexOf('+', StringComparison.Ordinal);
+                if (plus > 0) version = version[..plus];
+
+                plugins.Add(new
+                {
+                    packageId = name,
+                    version,
+                    source = "bundled",
+                });
+            }
+
             return Results.Ok(new { plugins });
         }).ExcludeFromDescription();
 
@@ -275,4 +337,19 @@ internal static class BowirePluginEndpoints
             return Results.Json(new { ok = false, verb, error = ex.Message }, statusCode: 500);
         }
     }
+
+    /// <summary>
+    /// True for assembly names that correspond to first-party Bowire
+    /// plugins (protocols + UI extensions + asyncapi). Walks the
+    /// dotted-name prefix only — the IsHostProvided runtime check in
+    /// NuGetPackageInstaller does the deeper work; here we just need
+    /// a fast filter to populate the bundled half of /api/plugins.
+    /// </summary>
+    private static bool IsBowirePluginAssemblyName(string assemblyName) =>
+        assemblyName.StartsWith("Kuestenlogik.Bowire.Protocol.", StringComparison.OrdinalIgnoreCase) ||
+        assemblyName.StartsWith("Kuestenlogik.Bowire.Extension.", StringComparison.OrdinalIgnoreCase) ||
+        string.Equals(assemblyName, "Kuestenlogik.Bowire.AsyncApi", StringComparison.OrdinalIgnoreCase) ||
+        string.Equals(assemblyName, "Kuestenlogik.Bowire.Mcp", StringComparison.OrdinalIgnoreCase) ||
+        string.Equals(assemblyName, "Kuestenlogik.Bowire.Mock", StringComparison.OrdinalIgnoreCase) ||
+        string.Equals(assemblyName, "Kuestenlogik.Bowire.Security.Scanner", StringComparison.OrdinalIgnoreCase);
 }
