@@ -30,6 +30,119 @@ const SRC = path.join(ROOT, 'artifacts', 'docs-standalone');
 const OUT_DIR = path.join(ROOT, 'publish', 'archives');
 const OUT_PATH = path.join(OUT_DIR, 'bowire-docs.pdf');
 
+// Bowire version + build-date the cover badge embeds. Pulled from
+// Directory.Build.props — same source the release pipeline reads,
+// so the badge always reflects the floor of the build that
+// rendered the PDF. Both fall through to placeholders when the
+// build runs from a stale checkout.
+function readBuildVersion() {
+    try {
+        const propsPath = path.join(ROOT, 'Directory.Build.props');
+        const xml = fs.readFileSync(propsPath, 'utf-8');
+        const match = /<Version>([^<]+)<\/Version>/.exec(xml);
+        if (match && match[1]) {
+            // Strip a "-dev" floor suffix — the published PDF carries
+            // the released version, not the in-progress dev floor.
+            return match[1].replace(/-dev$/, '');
+        }
+    } catch (err) {
+        log(`could not read Directory.Build.props (${err.message}) — falling back to placeholder version`);
+    }
+    return 'unreleased';
+}
+const BUILD_VERSION = readBuildVersion();
+const BUILD_DATE = new Date().toISOString().slice(0, 10);
+
+// Top-level table of contents, hand-curated to mirror the section
+// ordering below. Rendered as a standalone page after the cover so
+// the PDF opens like a real book — cover, TOC, content. Sub-sections
+// stay implicit; for a paginated TOC with page numbers we'd need a
+// two-pass render (collect → renumber → emit) — the curated list is
+// the cheaper 80%-good option.
+const TOC_ENTRIES = [
+    { title: 'Quickstart', file: 'quickstart.html' },
+    { title: 'Use cases', file: 'use-cases.html' },
+    { title: 'Setup', file: 'setup/index.html' },
+    { title: 'User Guide', file: 'ui-guide/index.html' },
+    { title: 'Features', file: 'features/index.html' },
+    { title: 'Protocol guides', file: 'protocols/index.html' },
+    { title: 'Architecture', file: 'architecture/index.html' },
+    { title: 'API Reference', file: 'api/index.html' },
+];
+
+function buildTocHtml() {
+    const rows = TOC_ENTRIES.map(e =>
+        `<li><a href="${e.file}">${escapeHtml(e.title)}</a></li>`
+    ).join('\n        ');
+    return `<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Bowire Documentation — Table of Contents</title>
+<style>
+    body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        color: #0a0a0a;
+        padding: 24mm 18mm;
+        margin: 0;
+    }
+    h1 {
+        font-size: 28pt;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+        margin: 0 0 0.5em;
+    }
+    .subtitle {
+        color: #6b6b6b;
+        font-size: 12pt;
+        margin: 0 0 2em;
+    }
+    ol {
+        list-style: none;
+        counter-reset: toc;
+        padding: 0;
+        margin: 0;
+    }
+    ol li {
+        counter-increment: toc;
+        font-size: 14pt;
+        padding: 10px 0;
+        border-bottom: 1px solid #e3e3e3;
+        display: flex;
+        align-items: baseline;
+        gap: 12px;
+    }
+    ol li::before {
+        content: counter(toc, decimal-leading-zero);
+        font-family: ui-monospace, "SF Mono", Menlo, monospace;
+        font-size: 11pt;
+        color: #999;
+        min-width: 28px;
+    }
+    ol li a {
+        color: #0a0a0a;
+        text-decoration: none;
+    }
+</style>
+</head>
+<body>
+    <h1>Table of Contents</h1>
+    <p class="subtitle">Bowire ${escapeHtml(BUILD_VERSION)} · ${BUILD_DATE}</p>
+    <ol>
+        ${rows}
+    </ol>
+</body>
+</html>`;
+}
+
+function escapeHtml(s) {
+    return String(s)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+}
+
 // Logical reading order. Pages outside this prefix list are appended at
 // the end in alphabetical order so nothing gets dropped silently when a
 // new section lands.
@@ -108,6 +221,7 @@ async function main() {
         const ctx = await browser.newContext({ viewport: { width: 1200, height: 900 } });
 
         let count = 0;
+        let tocInserted = false;
         for (const rel of pages) {
             const url = 'file://' + path.join(SRC, rel).split(path.sep).join('/');
             const page = await ctx.newPage();
@@ -120,6 +234,24 @@ async function main() {
                     document.documentElement.setAttribute('data-theme', 'light');
                 });
                 await page.reload({ waitUntil: 'networkidle', timeout: 30000 });
+                // Fill the cover-badge placeholder with the actual
+                // version + build date. The badge in docs/index.md
+                // ships with `data-bowire-version-value` set to '—'
+                // so the online HTML doesn't pretend to know its
+                // version; the PDF pass overwrites it.
+                await page.evaluate(({ version, date, isCover }) => {
+                    const el = document.querySelector('[data-bowire-version-value]');
+                    if (el) el.textContent = `${version} · ${date}`;
+                    // On the cover page the small standalone header
+                    // ("Bowire Documentation" pill) duplicates the
+                    // huge hero title right below it. Hide the
+                    // top-bar so the cover reads as one composition
+                    // instead of as a logo + title repeated.
+                    if (isCover) {
+                        const hdr = document.getElementById('bowire-docs-header');
+                        if (hdr) hdr.style.display = 'none';
+                    }
+                }, { version: BUILD_VERSION, date: BUILD_DATE, isCover: rel === 'index.html' });
                 const buf = await page.pdf({
                     format: 'A4',
                     printBackground: true,
@@ -132,6 +264,30 @@ async function main() {
                 if (count % 10 === 0) log(`  ${count}/${pages.length} merged`);
             } finally {
                 await page.close();
+            }
+
+            // Right after the cover (index.html) is in the merged
+            // PDF, inject the curated TOC page so the document opens
+            // like a real book — cover, table of contents, content.
+            // The TOC is rendered through Playwright with setContent
+            // so it shares the same A4 / margin / font setup.
+            if (!tocInserted && rel === 'index.html') {
+                const tocPage = await ctx.newPage();
+                try {
+                    await tocPage.setContent(buildTocHtml(), { waitUntil: 'load' });
+                    const tocBuf = await tocPage.pdf({
+                        format: 'A4',
+                        printBackground: true,
+                        margin: { top: '18mm', bottom: '18mm', left: '14mm', right: '14mm' },
+                    });
+                    const tocDoc = await PDFDocument.load(tocBuf);
+                    const tocCopied = await merged.copyPages(tocDoc, tocDoc.getPageIndices());
+                    tocCopied.forEach(p => merged.addPage(p));
+                    tocInserted = true;
+                    log('  TOC page rendered + inserted after cover');
+                } finally {
+                    await tocPage.close();
+                }
             }
         }
         await ctx.close();

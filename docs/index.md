@@ -4,7 +4,7 @@ summary: 'The reference manual for the multi-protocol API workbench: how to inst
 ---
 
 <div class="bowire-docs-hero">
-  <div class="bowire-docs-standalone-badge standalone-only" aria-hidden="true">Offline documentation snapshot &middot; PDF &amp; standalone HTML</div>
+  <div class="bowire-docs-standalone-badge standalone-only" aria-hidden="true" data-bowire-version-badge>Bowire <span data-bowire-version-value>—</span></div>
   <svg class="bowire-docs-hero-logo standalone-only" viewBox="0 0 261.48001 154.57416" fill="currentColor" xmlns="http://www.w3.org/2000/svg" aria-label="Bowire">
     <g transform="translate(-17.759995,-27.712919)">
       <g transform="translate(34.743257,-42.028188)">
