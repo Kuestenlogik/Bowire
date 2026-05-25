@@ -574,6 +574,16 @@
     // chips, its landing-page switcher button, and drops its
     // discovered services from the sidebar; the plugin stays loaded
     // server-side so a re-enable is instant (no round trip).
+    // Cache of installed plugins from /api/plugins and the latest
+    // version each one resolves to on the configured feed. Both refresh
+    // when the Plugins tab opens; renderManagePluginsSection() reads
+    // from the cached snapshot so re-renders are instant.
+    var installedPlugins = [];
+    var latestVersions = {};
+    var pluginPrereleaseToggle = false;
+    var pluginActionInFlight = null;
+    var pluginActionResult = null;
+
     function renderSettingsPlugins() {
         var section = el('div', { className: 'bowire-settings-section' });
 
@@ -589,6 +599,15 @@
         // full page reload. Cached snapshot is shown until the new
         // response lands.
         fetchPluginHealth();
+
+        // "Manage installed plugins" — list every sibling-installed
+        // plugin under ~/.bowire/plugins/ with its version and per-row
+        // Update / Uninstall buttons. The protocol-toggle list below
+        // covers the bundled + sibling protocols indiscriminately and
+        // stays focused on enable/disable; this section is the
+        // lifecycle counterpart.
+        section.appendChild(renderManagePluginsSection());
+        fetchInstalledPlugins();
 
         section.appendChild(el('h3', {
             className: 'bowire-settings-section-title',
@@ -718,6 +737,230 @@
             })(unhealthy[i]);
         }
         return banner;
+    }
+
+    /**
+     * Manage-installed-plugins section. Lists every entry returned by
+     * /api/plugins with installed version + 'update available' hint
+     * (compared to the latest from /api/plugins/{id}/latest) + per-row
+     * Update / Uninstall buttons. Pre-release toggle at the top
+     * controls whether the latest-version lookup considers RC builds.
+     */
+    function renderManagePluginsSection() {
+        var section = el('div', { className: 'bowire-settings-plugin-manage' });
+        section.appendChild(el('h3', {
+            className: 'bowire-settings-section-title',
+            textContent: 'Installed (sibling) plugins'
+        }));
+        section.appendChild(el('div', {
+            className: 'bowire-settings-section-desc',
+            textContent: 'Plugins installed under ~/.bowire/plugins/. Bundled protocols (gRPC, REST, MQTT, …) ship with the Bowire tool itself and are updated by running dotnet tool update.'
+        }));
+
+        // Pre-release toggle row
+        var prereleaseRow = el('label', { className: 'bowire-settings-plugin-prerelease' });
+        var cb = el('input', {
+            type: 'checkbox',
+            checked: pluginPrereleaseToggle,
+            onChange: function (e) {
+                pluginPrereleaseToggle = e.target.checked;
+                latestVersions = {}; // force re-fetch with the new filter
+                renderSettingsDialog();
+                fetchLatestVersions();
+            }
+        });
+        prereleaseRow.appendChild(cb);
+        prereleaseRow.appendChild(el('span', {
+            textContent: 'Include pre-release versions when checking for updates'
+        }));
+        section.appendChild(prereleaseRow);
+
+        if (pluginActionResult) {
+            section.appendChild(renderPluginActionBanner(pluginActionResult));
+        }
+
+        if (!installedPlugins.length) {
+            section.appendChild(el('p', {
+                className: 'bowire-settings-empty',
+                textContent: 'No sibling plugins installed.'
+            }));
+            return section;
+        }
+
+        var list = el('div', { className: 'bowire-settings-plugin-manage-list' });
+        for (var i = 0; i < installedPlugins.length; i++) {
+            list.appendChild(renderManagedPluginRow(installedPlugins[i]));
+        }
+        section.appendChild(list);
+        return section;
+    }
+
+    function renderManagedPluginRow(p) {
+        var row = el('div', { className: 'bowire-settings-plugin-manage-row' });
+
+        var pkgId = p.packageId || p.PackageId || '';
+        var version = p.version || p.Version || 'unknown';
+        var latest = latestVersions[pkgId];
+
+        var textBox = el('div', { className: 'bowire-settings-plugin-manage-text' });
+        textBox.appendChild(el('div', {
+            className: 'bowire-settings-plugin-manage-id',
+            textContent: pkgId
+        }));
+        var versionLine = el('div', { className: 'bowire-settings-plugin-manage-version' });
+        versionLine.appendChild(el('span', { textContent: version }));
+        if (latest && latest !== version) {
+            versionLine.appendChild(el('span', {
+                className: 'bowire-settings-plugin-manage-update',
+                textContent: '→ ' + latest + ' available'
+            }));
+        }
+        textBox.appendChild(versionLine);
+        row.appendChild(textBox);
+
+        var actions = el('div', { className: 'bowire-settings-plugin-manage-actions' });
+        var hasUpdate = latest && latest !== version;
+        var busy = pluginActionInFlight === pkgId;
+
+        var updateBtn = el('button', {
+            type: 'button',
+            className: 'bowire-settings-plugin-btn'
+                + (hasUpdate ? ' bowire-settings-plugin-btn-accent' : ''),
+            disabled: busy,
+            textContent: busy ? 'Working…' : 'Update',
+            onClick: function () { runPluginAction(pkgId, 'update'); }
+        });
+        actions.appendChild(updateBtn);
+
+        var uninstallBtn = el('button', {
+            type: 'button',
+            className: 'bowire-settings-plugin-btn bowire-settings-plugin-btn-danger',
+            disabled: busy,
+            textContent: 'Uninstall',
+            onClick: function () {
+                if (window.confirm('Uninstall ' + pkgId + '?')) {
+                    runPluginAction(pkgId, 'uninstall');
+                }
+            }
+        });
+        actions.appendChild(uninstallBtn);
+
+        row.appendChild(actions);
+        return row;
+    }
+
+    function renderPluginActionBanner(result) {
+        var ok = result.ok;
+        var banner = el('div', {
+            className: 'bowire-settings-plugin-action-banner '
+                + (ok ? 'is-ok' : 'is-error'),
+        });
+        banner.appendChild(el('div', {
+            className: 'bowire-settings-plugin-action-summary',
+            textContent: (ok ? '✓ ' : '✗ ') + result.summary
+        }));
+        if (result.detail) {
+            banner.appendChild(el('pre', {
+                className: 'bowire-settings-plugin-action-detail',
+                textContent: result.detail
+            }));
+        }
+        return banner;
+    }
+
+    function fetchInstalledPlugins() {
+        try {
+            fetch(config.prefix + '/api/plugins')
+                .then(function (resp) { return resp.ok ? resp.json() : null; })
+                .then(function (body) {
+                    if (!body || !Array.isArray(body.plugins)) return;
+                    installedPlugins = body.plugins;
+                    if (settingsOpen && settingsTab === 'plugins') {
+                        renderSettingsDialog();
+                    }
+                    fetchLatestVersions();
+                })
+                .catch(function () { /* leave cache as-is */ });
+        } catch { /* fetch threw synchronously */ }
+    }
+
+    function fetchLatestVersions() {
+        // One fetch per installed plugin. nuget.org's v3-flatcontainer
+        // is a CDN endpoint, so 5–10 parallel requests for a typical
+        // sibling-plugin set finish in <1 s.
+        for (var i = 0; i < installedPlugins.length; i++) {
+            (function (p) {
+                var id = p.packageId || p.PackageId;
+                if (!id) return;
+                var qs = pluginPrereleaseToggle ? '?prerelease=true' : '';
+                fetch(config.prefix + '/api/plugins/' + encodeURIComponent(id) + '/latest' + qs)
+                    .then(function (r) { return r.ok ? r.json() : null; })
+                    .then(function (body) {
+                        if (!body || !body.latest) return;
+                        latestVersions[id] = body.latest;
+                        if (settingsOpen && settingsTab === 'plugins') {
+                            renderSettingsDialog();
+                        }
+                    })
+                    .catch(function () { /* offline / NuGet down */ });
+            })(installedPlugins[i]);
+        }
+    }
+
+    function runPluginAction(packageId, verb) {
+        pluginActionInFlight = packageId;
+        pluginActionResult = null;
+        renderSettingsDialog();
+
+        var url, method, body;
+        if (verb === 'update') {
+            url = config.prefix + '/api/plugins/' + encodeURIComponent(packageId) + '/update';
+            method = 'POST';
+            body = JSON.stringify({ prerelease: pluginPrereleaseToggle });
+        } else if (verb === 'uninstall') {
+            url = config.prefix + '/api/plugins/' + encodeURIComponent(packageId);
+            method = 'DELETE';
+            body = null;
+        } else {
+            return;
+        }
+
+        fetch(url, {
+            method: method,
+            headers: { 'Content-Type': 'application/json' },
+            body: body,
+        })
+            .then(function (resp) {
+                return resp.json().then(function (data) {
+                    return { ok: resp.ok, data: data };
+                });
+            })
+            .then(function (result) {
+                pluginActionInFlight = null;
+                pluginActionResult = result.ok
+                    ? {
+                        ok: true,
+                        summary: verb === 'update'
+                            ? 'Updated ' + packageId
+                            : 'Uninstalled ' + packageId,
+                        detail: (result.data && result.data.output) || ''
+                    }
+                    : {
+                        ok: false,
+                        summary: 'Failed to ' + verb + ' ' + packageId,
+                        detail: (result.data && (result.data.error || result.data.output)) || ''
+                    };
+                fetchInstalledPlugins();
+            })
+            .catch(function (err) {
+                pluginActionInFlight = null;
+                pluginActionResult = {
+                    ok: false,
+                    summary: 'Failed to ' + verb + ' ' + packageId,
+                    detail: String(err)
+                };
+                renderSettingsDialog();
+            });
     }
 
     function renderPluginSettings(plugin) {

@@ -9532,3 +9532,128 @@ details[open] > .bowire-json-tree-summary::before {
     color: var(--bowire-bg);
     border-color: var(--bowire-accent);
 }
+
+/* ---- Plugin lifecycle panel (Settings → Plugins) ---- */
+
+.bowire-settings-plugin-manage {
+    margin: 12px 0 24px;
+    padding: 12px 14px;
+    background: var(--bowire-bg-elevated, rgba(255, 255, 255, 0.02));
+    border: 1px solid var(--bowire-border);
+    border-radius: var(--bowire-radius);
+}
+
+.bowire-settings-plugin-prerelease {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 8px 0 12px;
+    font-size: 12px;
+    color: var(--bowire-text-secondary);
+    cursor: pointer;
+}
+
+.bowire-settings-plugin-manage-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.bowire-settings-plugin-manage-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 10px;
+    background: var(--bowire-bg);
+    border: 1px solid var(--bowire-border);
+    border-radius: var(--bowire-radius-sm, 6px);
+}
+
+.bowire-settings-plugin-manage-text {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.bowire-settings-plugin-manage-id {
+    font-family: var(--bowire-font-mono, monospace);
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--bowire-text);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.bowire-settings-plugin-manage-version {
+    display: flex;
+    gap: 8px;
+    align-items: baseline;
+    margin-top: 2px;
+    font-size: 11px;
+    color: var(--bowire-text-tertiary);
+}
+
+.bowire-settings-plugin-manage-update {
+    color: var(--bowire-accent);
+    font-weight: 600;
+}
+
+.bowire-settings-plugin-manage-actions {
+    display: flex;
+    gap: 6px;
+    flex-shrink: 0;
+}
+
+.bowire-settings-plugin-btn {
+    padding: 4px 10px;
+    font-size: 11px;
+    border: 1px solid var(--bowire-border);
+    border-radius: var(--bowire-radius-sm, 6px);
+    background: var(--bowire-bg);
+    color: var(--bowire-text);
+    cursor: pointer;
+}
+.bowire-settings-plugin-btn:hover:not(:disabled) {
+    border-color: var(--bowire-accent);
+}
+.bowire-settings-plugin-btn:disabled {
+    opacity: 0.5;
+    cursor: progress;
+}
+.bowire-settings-plugin-btn-accent {
+    background: var(--bowire-accent);
+    color: var(--bowire-bg);
+    border-color: var(--bowire-accent);
+}
+.bowire-settings-plugin-btn-danger:hover:not(:disabled) {
+    border-color: var(--bowire-danger, #dc2626);
+    color: var(--bowire-danger, #dc2626);
+}
+
+.bowire-settings-plugin-action-banner {
+    margin: 8px 0;
+    padding: 8px 10px;
+    border-radius: var(--bowire-radius-sm, 6px);
+    border: 1px solid var(--bowire-border);
+    font-size: 12px;
+}
+.bowire-settings-plugin-action-banner.is-ok {
+    border-color: var(--bowire-success, #10b981);
+    color: var(--bowire-success, #10b981);
+}
+.bowire-settings-plugin-action-banner.is-error {
+    border-color: var(--bowire-danger, #dc2626);
+    color: var(--bowire-danger, #dc2626);
+}
+.bowire-settings-plugin-action-detail {
+    margin: 4px 0 0;
+    padding: 6px 8px;
+    background: var(--bowire-bg-elevated, rgba(0, 0, 0, 0.2));
+    border-radius: var(--bowire-radius-sm, 6px);
+    color: var(--bowire-text-secondary);
+    font-family: var(--bowire-font-mono, monospace);
+    font-size: 11px;
+    white-space: pre-wrap;
+    max-height: 120px;
+    overflow-y: auto;
+}
