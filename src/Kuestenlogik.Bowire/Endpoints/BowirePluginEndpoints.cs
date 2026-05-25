@@ -299,26 +299,62 @@ internal static class BowirePluginEndpoints
     /// PluginManager flow over HTTP. Returns the CLI's exit code +
     /// stdout for the caller to surface to the user.
     /// </summary>
+    /// <summary>
+    /// Whitelist for plugin / version identifiers — alphanumerics
+    /// plus dots, dashes, underscores, plus '+' for SemVer build
+    /// metadata. Anything else (shell metacharacters, slashes,
+    /// spaces) trips the input-validation guard. Matches the
+    /// character set NuGet itself accepts in package ids and SemVer.
+    /// </summary>
+    private static readonly System.Text.RegularExpressions.Regex SafeIdentifier =
+        new(@"^[A-Za-z0-9][A-Za-z0-9._+\-]*$",
+            System.Text.RegularExpressions.RegexOptions.Compiled | System.Text.RegularExpressions.RegexOptions.CultureInvariant);
+
     private static async Task<IResult> RunBowirePluginCommandAsync(
         string verb, string packageIdOrEmpty, string? version, bool prerelease)
     {
+        // Input validation — packageId / version come straight off the
+        // HTTP request body. Refuse anything that isn't NuGet-shape so
+        // shell metacharacters, path separators, --flags etc. can't
+        // sneak into the child process's argument list. The
+        // ArgumentList approach below already prevents shell parsing,
+        // but the whitelist is a defence-in-depth against the case
+        // where the input would otherwise reach the bowire CLI's own
+        // argument parser as a malformed value.
+        if (!string.IsNullOrEmpty(packageIdOrEmpty) && !SafeIdentifier.IsMatch(packageIdOrEmpty))
+        {
+            return Results.BadRequest(new { error = "invalid packageId" });
+        }
+        if (!string.IsNullOrEmpty(version) && !SafeIdentifier.IsMatch(version))
+        {
+            return Results.BadRequest(new { error = "invalid version" });
+        }
+
         try
         {
-            var args = $"plugin {verb}";
-            if (!string.IsNullOrEmpty(packageIdOrEmpty))
-                args += $" {packageIdOrEmpty}";
-            if (!string.IsNullOrEmpty(version))
-                args += $" --version {version}";
-            if (prerelease && (verb == "install" || verb == "update"))
-                args += " --prerelease";
-
-            var psi = new ProcessStartInfo("bowire", args)
+            var psi = new ProcessStartInfo("bowire")
             {
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
                 UseShellExecute = false,
                 CreateNoWindow = true,
             };
+            // ArgumentList builds the child-process argv directly —
+            // each element becomes one argv slot, no shell parsing,
+            // no interpolation of metacharacters from the operator
+            // input into a single command string.
+            psi.ArgumentList.Add("plugin");
+            psi.ArgumentList.Add(verb);
+            if (!string.IsNullOrEmpty(packageIdOrEmpty))
+                psi.ArgumentList.Add(packageIdOrEmpty);
+            if (!string.IsNullOrEmpty(version))
+            {
+                psi.ArgumentList.Add("--version");
+                psi.ArgumentList.Add(version);
+            }
+            if (prerelease && (verb == "install" || verb == "update"))
+                psi.ArgumentList.Add("--prerelease");
+
             using var proc = Process.Start(psi);
             if (proc is null) return Results.StatusCode(500);
 
