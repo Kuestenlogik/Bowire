@@ -61,7 +61,8 @@ internal static class NuGetPackageInstaller
         string pluginDir,
         IReadOnlyList<string> sources,
         NuGet.Common.ILogger logger,
-        CancellationToken ct)
+        CancellationToken ct,
+        bool includePrerelease = false)
     {
         ArgumentException.ThrowIfNullOrEmpty(packageId);
         ArgumentException.ThrowIfNullOrEmpty(pluginDir);
@@ -90,7 +91,8 @@ internal static class NuGetPackageInstaller
             targetDir, visited, logger,
             onFileWritten: () => filesWritten++,
             onRootResolved: v => rootResolved = v,
-            ct);
+            ct,
+            includePrerelease);
 
         return new InstallResult(
             packageId,
@@ -111,7 +113,8 @@ internal static class NuGetPackageInstaller
         string? requestedVersion,
         IReadOnlyList<string> sources,
         NuGet.Common.ILogger logger,
-        CancellationToken ct)
+        CancellationToken ct,
+        bool includePrerelease = false)
     {
         ArgumentException.ThrowIfNullOrEmpty(packageId);
         ArgumentNullException.ThrowIfNull(sources);
@@ -124,7 +127,8 @@ internal static class NuGetPackageInstaller
 
         using var cache = new SourceCacheContext();
         var (repo, version) = await ResolveVersionAsync(
-            packageId, ParseVersion(requestedVersion), repositories, cache, logger, ct);
+            packageId, ParseVersion(requestedVersion), repositories, cache, logger, ct,
+            includePrerelease);
 
         return repo is null || version is null
             ? null
@@ -319,7 +323,8 @@ internal static class NuGetPackageInstaller
         NuGet.Common.ILogger logger,
         Action onFileWritten,
         Action<NuGetVersion>? onRootResolved,
-        CancellationToken ct)
+        CancellationToken ct,
+        bool includePrerelease = false)
     {
         if (!visited.Add(packageId))
         {
@@ -336,9 +341,13 @@ internal static class NuGetPackageInstaller
             return;
         }
 
-        // Find the first source that has the package.
+        // Find the first source that has the package. Pre-release
+        // filter only applies at the *root* — transitive deps still
+        // resolve to whatever range the package manifest pinned,
+        // which is normally stable anyway.
         var (repo, resolvedVersion) = await ResolveVersionAsync(
-            packageId, requestedVersion, repositories, cache, logger, ct);
+            packageId, requestedVersion, repositories, cache, logger, ct,
+            includePrerelease);
 
         if (repo is null || resolvedVersion is null)
         {
@@ -574,7 +583,8 @@ internal static class NuGetPackageInstaller
         List<SourceRepository> repositories,
         SourceCacheContext cache,
         NuGet.Common.ILogger logger,
-        CancellationToken ct)
+        CancellationToken ct,
+        bool includePrerelease = false)
     {
         foreach (var repo in repositories)
         {
@@ -596,8 +606,15 @@ internal static class NuGetPackageInstaller
                     continue;
                 }
 
-                // No pin → pick the latest *stable* when available,
-                // otherwise the highest prerelease.
+                // No pin → pick the latest version. Pre-releases are
+                // filtered out by default (stable consumers get stable
+                // restores); the caller flips includePrerelease=true
+                // when the user opts in (--prerelease flag on the CLI,
+                // prerelease=true on the API).
+                if (includePrerelease)
+                {
+                    return (repo, versions.Max());
+                }
                 var stable = versions.Where(v => !v.IsPrerelease).DefaultIfEmpty().Max();
                 return (repo, stable ?? versions.Max());
             }

@@ -26,7 +26,7 @@ internal static class MockCommand
     // call did.
     internal static Func<string, string?, IReadOnlyList<string>?, CancellationToken, Task<int>> AutoInstallInvoker { get; set; }
         = (packageId, pluginDir, sources, ct) =>
-            PluginManager.InstallAsync(packageId, version: null, pluginDir, sources, ct);
+            PluginManager.InstallAsync(packageId, version: null, pluginDir, sources, ct: ct);
 
     public static async Task<int> RunAsync(MockCliOptions cli, CancellationToken ct)
     {
