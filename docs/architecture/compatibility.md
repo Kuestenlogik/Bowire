@@ -42,7 +42,7 @@ The SemVer contract on the Bowire side that makes this work: inside any 1.x rele
 
 | Plugin | Latest release | Built against Bowire | Works with Bowire |
 |---|---|---|---|
-| [`Bowire.Protocol.Amqp`](https://github.com/Kuestenlogik/Bowire.Protocol.Amqp)           | v1.0.0-rc.2 | 1.6.0 | 1.6.0 ≤ x < 2.0 |
+| [`Bowire.Protocol.Amqp`](https://github.com/Kuestenlogik/Bowire.Protocol.Amqp)           | v1.0.0 | 1.6.0 | 1.6.0 ≤ x < 2.0 |
 | [`Bowire.Protocol.TacticalApi`](https://github.com/Kuestenlogik/Bowire.Protocol.TacticalApi) | v1.0.0-rc.1 | 1.5.1 | 1.5.1 ≤ x < 2.0 |
 | [`Bowire.Protocol.Kafka`](https://github.com/Kuestenlogik/Bowire.Protocol.Kafka)         | v1.0.3 | 1.5.0 | 1.5.0 ≤ x < 2.0 |
 | [`Bowire.Protocol.Akka`](https://github.com/Kuestenlogik/Bowire.Protocol.Akka)           | v1.0.3 | 1.5.0 | 1.5.0 ≤ x < 2.0 |
