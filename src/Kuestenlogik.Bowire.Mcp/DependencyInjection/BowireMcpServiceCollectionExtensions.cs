@@ -18,12 +18,16 @@ namespace Kuestenlogik.Bowire.Mcp;
 /// // stdio (CLI)
 /// services.AddBowireMcp(o => o.AllowArbitraryUrls = false)
 ///         .WithStdioServerTransport()
-///         .WithTools&lt;BowireMcpTools&gt;();
+///         .WithTools&lt;BowireMcpTools&gt;()
+///         .WithResources&lt;BowireMcpResources&gt;()
+///         .WithPrompts&lt;BowireMcpPrompts&gt;();
 ///
 /// // HTTP/SSE (embedded)
 /// services.AddBowireMcp()
 ///         .WithHttpTransport(o => o.Stateless = true)
-///         .WithTools&lt;BowireMcpTools&gt;();
+///         .WithTools&lt;BowireMcpTools&gt;()
+///         .WithResources&lt;BowireMcpResources&gt;()
+///         .WithPrompts&lt;BowireMcpPrompts&gt;();
 /// // …then `app.MapMcp("/bowire/mcp");`
 /// </code>
 /// </summary>
