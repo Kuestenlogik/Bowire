@@ -1,36 +1,73 @@
 ---
-summary: 'Bowire uses a plugin architecture based on the IBowireProtocol interface.'
+summary: 'Bowire uses a plugin architecture with four extension points — protocol plugins, CLI subcommands, mock-replay emitters, and UI widgets — all discovered via assembly scanning at startup.'
 ---
 
 # Plugin System
 
-Bowire uses a plugin architecture based on the `IBowireProtocol` interface. Protocol plugins are auto-discovered via assembly scanning at startup -- no manual registration is needed.
+Bowire is plugin-shaped at four extension points. Each is auto-discovered via assembly scanning at startup; embedded hosts just `PackageReference` the plugin they need, standalone-CLI installs land under `~/.bowire/plugins/`. Full contract details are in [Plugin Architecture](../architecture/plugin-architecture.md):
 
-## Built-in Plugins
+| Extension point | What it adds | Discovered by |
+|---|---|---|
+| `IBowireProtocol` | A wire plugin — discover + invoke against a protocol | `BowireProtocolRegistry` |
+| `IBowireCliCommand` | A `bowire <verb>` subcommand (e.g. `bowire scan`) | `BowireCliCommandRegistry` (in `Kuestenlogik.Bowire.Cli`) |
+| `IBowireMockEmitter` | A replay backend for `bowire mock` recordings | The mock-server host |
+| `IBowireUiExtension` | A workbench UI widget (e.g. the MapLibre map view) | `BowireExtensionRegistry` |
+
+## Built-in Protocol Plugins
+
+The first-party `IBowireProtocol` implementations bundled with the `bowire` tool:
 
 | Plugin | Package | Protocol |
 |--------|---------|----------|
-| `BowireGrpcProtocol` | `Kuestenlogik.Bowire.Protocol.Grpc` | gRPC via Server Reflection |
+| `BowireGrpcProtocol` | `Kuestenlogik.Bowire.Protocol.Grpc` | gRPC + gRPC-Web via Server Reflection |
+| `BowireRestProtocol` | `Kuestenlogik.Bowire.Protocol.Rest` | HTTP/REST + OpenAPI / Swagger import |
+| `BowireGraphQLProtocol` | `Kuestenlogik.Bowire.Protocol.GraphQL` | GraphQL queries / mutations / subscriptions |
 | `BowireSignalRProtocol` | `Kuestenlogik.Bowire.Protocol.SignalR` | SignalR hub discovery |
+| `BowireWebSocketProtocol` | `Kuestenlogik.Bowire.Protocol.WebSocket` | WebSocket endpoint discovery |
 | `BowireSseProtocol` | `Kuestenlogik.Bowire.Protocol.Sse` | Server-Sent Events |
+| `BowireMqttProtocol` | `Kuestenlogik.Bowire.Protocol.Mqtt` | MQTT 3.1.1 / 5.0 |
+| `BowireSocketIoProtocol` | `Kuestenlogik.Bowire.Protocol.SocketIo` | Socket.IO namespaces + events |
 | `BowireMcpProtocol` | `Kuestenlogik.Bowire.Protocol.Mcp` | Model Context Protocol for AI agents |
+| `BowireODataProtocol` | `Kuestenlogik.Bowire.Protocol.OData` | OData v4 entity sets |
 
-## Installing Plugins
+Sibling-repo plugins (Akka, AMQP, DIS, Kafka, Surgewave, TacticalAPI, UDP) install separately — see [Protocols overview](../protocols/index.md).
 
-Third-party protocol plugins can be installed via the CLI:
+## Installing Plugins via the CLI
 
 ```bash
 bowire plugin install <package-id>
 bowire plugin install <package-id> --version 1.0.0
+bowire plugin install <package-id> --prerelease          # 1.6.0+ — pull RC builds
 bowire plugin install <package-id> --source https://nuget.internal/v3/index.json
 bowire plugin list
 bowire plugin list --verbose                # resolved version, sources, DLL list
-bowire plugin update <package-id>           # bump one plugin to latest
+bowire plugin update <package-id>           # bump one plugin to latest stable
+bowire plugin update <package-id> --prerelease    # accept pre-release versions
 bowire plugin update                         # bump every installed plugin
 bowire plugin update <package-id> --version 2.0.0
 bowire plugin inspect <package-id>          # load + print ALC + discovered IBowireProtocol types
 bowire plugin uninstall <package-id>
 ```
+
+The `--prerelease` flag (added in Bowire 1.6.0) opts into NuGet pre-release versions (e.g. `1.0.0-rc.2`); without it `install` / `update` resolve the latest stable. Matches `dotnet add package --prerelease` semantics.
+
+## Plugin management via the workbench UI (1.6.0+)
+
+The Settings → Plugins panel surfaces every installed plugin in one place. Each row shows the package id, installed version, and an "update available" hint when the configured NuGet feed has a newer one. Per-row buttons: **Update** (writes the new version into `~/.bowire/plugins/<package-id>/`) and **Uninstall** (removes the directory). A pre-release toggle at the top controls whether the latest-lookup considers RC builds.
+
+Bundled plugins (gRPC, REST, &c — shipped inside the `bowire` tool itself) appear in the same panel with a `bundled` badge and disabled lifecycle buttons: they're updated en bloc via `dotnet tool update -g Kuestenlogik.Bowire.Tool`.
+
+REST contract behind the panel:
+
+| Method | Path | Purpose |
+|---|---|---|
+| `GET` | `/api/plugins` | List installed (sibling + bundled) plugins |
+| `GET` | `/api/plugins/{id}/latest?prerelease=true` | Latest version on the configured feed |
+| `POST` | `/api/plugins/install` | Install (body: `packageId`, optional `version`, `prerelease`) |
+| `POST` | `/api/plugins/{id}/update` | Update one plugin (body: optional `version`, `prerelease`); `id="all"` updates everything |
+| `DELETE` | `/api/plugins/{id}` | Uninstall |
+
+The endpoints shell out to the in-PATH `bowire` CLI through `ProcessStartInfo.ArgumentList` so shell-metacharacters from operator input can't reach the child process. A NuGet-shape regex whitelist (`^[A-Za-z0-9][A-Za-z0-9._+-]*$`) gates `packageId` + `version` before the shell-out as defence-in-depth.
 
 `plugin list` is a pure disk read; `plugin inspect` actually loads the plugin into a dedicated `BowirePluginLoadContext` and reflects over it — use it to confirm that a freshly-installed NuGet package exposes an `IBowireProtocol` implementation and that its private deps landed in the expected context.
 
