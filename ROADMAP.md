@@ -44,6 +44,16 @@ Once Bowire knows who's calling, the next ceiling is "everyone shares one `~/.bo
 - [ ] **Per-user plugin installs** — split `~/.bowire/plugins/` into a system-wide tier (admin-managed) plus a per-user overlay so users can install workflow-specific plugins without admin help.
 - [ ] **Migration path** — single-user installs upgrading into multi-tenant need a one-shot migration that promotes the existing flat `~/.bowire/` into the calling user's slot.
 
+### Self-telemetry + Grafana dashboards (Phase B sibling)
+
+Bowire today reports nothing about its own operation — fine for a single-user laptop install, but the moment Multi-Tenant Phase B ships, operators of a shared instance need observability the same way they have it for every other service in the stack. The natural backend is whatever the org already runs (Prometheus / Loki / Tempo → Grafana); the natural protocol is OpenTelemetry. Optional, opt-in, off by default.
+
+- [ ] **OpenTelemetry integration** — `AddOpenTelemetry().WithMetrics().WithTracing()` in the standalone host, opt-in via a `--telemetry` CLI flag and the standard `OTEL_*` env vars. ASP.NET Core's built-in instrumentation covers HTTP-server-side latency / status codes for free; this item is about wiring the registration and gating it on the flag.
+- [ ] **Bowire-domain metric set** — counters and histograms with stable names so dashboards survive plugin churn: `bowire.invoke.duration` (histogram, tagged by protocol + service + method), `bowire.discover.count` (counter per plugin), `bowire.recording.replay.frames`, `bowire.scan.findings` (counter, tagged by severity + rule-id), `bowire.plugin.load`. Recording bodies / request headers / auth tokens stay off the wire by default; an allow-list of safe metric labels lives in code, not in user config.
+- [ ] **Shared `ActivitySource` for embedded mode** — when Bowire is mounted into a host app via `AddBowire()`, Bowire's spans should land in the host's existing OTel pipeline, not start a separate one. Use a named `ActivitySource` ("Kuestenlogik.Bowire") that the host can pick up via standard OTel resource attribution.
+- [ ] **Reference Grafana dashboard** — ship a `dashboards/bowire-overview.json` (Grafana 11+) under `Bowire.Samples` so operators can import a working baseline. Panels: invokes per protocol / hour, p50/p95/p99 invoke latency per plugin, scan-findings trend, plugin-load failure rate, MCP-adapter request rate. Stays positioned as "telemetry about Bowire" — Bowire still isn't a dashboarding tool, it's just observable like every other ASP.NET service.
+- [ ] **Privacy switch** — for shared-host deployments with regulated data, a `--telemetry-strip-method-labels` flag drops the high-cardinality `service.method` dimensions so the metric stream can't be reverse-engineered into "user X called endpoint Y at time T". Standard tradeoff, made explicit.
+
 ### Collections (Postman-style test suites)
 
 Complement the existing Recordings feature (auto-captured sessions) and the shipped Flows (visual sequence builder) with manually curated request collections.
