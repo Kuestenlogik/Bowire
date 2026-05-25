@@ -4623,41 +4623,46 @@ h4.downloads-sub {
    tile heading on a single line for every package, no matter how
    long Kuestenlogik.Bowire.Protocol.* gets. */
 .downloads-pkg-name {
-    font-size: 0.95rem;
+    /* Tile title row — short name only (gRPC / Bowire CLI / Docker
+       Hub). Inherits the section-heading look (sans-serif, 700) at
+       a tile-appropriate size. Identifier + copy-button moved to
+       .downloads-pkg-subtitle below so the visual hierarchy is
+       title → identifier → description across every tile. */
+    font-size: 1rem;
     font-weight: 700;
     margin: 0;
     line-height: 1.25;
-    letter-spacing: -0.005em;
-    /* NuGet-package tiles now lift the copy-button up next to the
-       title (the install-row that used to live below the
-       description is gone). Title + button share the heading row so
-       the body collapses to two lines: full package-id (clickable
-       link to nuget.org, copy-shortcut button) + description. */
+    letter-spacing: -0.01em;
+    color: var(--text);
+}
+.downloads-pkg-subtitle {
+    /* Second line under the tile title — package-id (NuGet) or
+       image reference (Docker) as a monospace link to the source
+       registry, plus a one-click copy button for the install
+       command. Consistent across NuGet / Tool / Docker tiles so the
+       'where does this come from' answer reads the same everywhere. */
     display: flex;
     align-items: center;
     gap: 8px;
     min-width: 0;
 }
-.downloads-pkg-name a {
-    color: var(--text);
+.downloads-pkg-subtitle a {
+    color: var(--text-secondary);
     text-decoration: none;
-    /* Long Kuestenlogik.Bowire.Protocol.* names get an ellipsis on
-       narrow viewports instead of forcing the button onto a new
-       line. */
     flex: 1 1 auto;
     min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
     font-family: var(--font-mono, ui-monospace, monospace);
-    font-weight: 600;
-    font-size: 0.85rem;
+    font-size: 0.8rem;
+    font-weight: 500;
 }
-.downloads-pkg-name a:hover,
-.downloads-pkg-name a:focus-visible {
+.downloads-pkg-subtitle a:hover,
+.downloads-pkg-subtitle a:focus-visible {
     color: var(--accent);
 }
-.downloads-pkg-name .downloads-pkg-copy {
+.downloads-pkg-subtitle .downloads-pkg-copy {
     flex: 0 0 auto;
 }
 .downloads-pkg-install {
