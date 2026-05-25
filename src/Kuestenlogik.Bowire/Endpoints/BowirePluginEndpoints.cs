@@ -136,43 +136,143 @@ internal static class BowirePluginEndpoints
             var req = JsonSerializer.Deserialize<JsonElement>(body);
             var packageId = req.TryGetProperty("packageId", out var pid) ? pid.GetString() : null;
             var version = req.TryGetProperty("version", out var ver) ? ver.GetString() : null;
+            var prerelease = req.TryGetProperty("prerelease", out var pre) && pre.ValueKind == JsonValueKind.True;
 
             if (string.IsNullOrWhiteSpace(packageId))
                 return Results.BadRequest(new { error = "packageId required" });
 
-            // Shell out to 'bowire plugin install' for safety — reuses
-            // the existing NuGet download + extract logic. In a future
-            // iteration this could call PluginManager directly.
+            return await RunBowirePluginCommandAsync("install", packageId, version, prerelease);
+        }).ExcludeFromDescription();
+
+        // Update a single installed plugin (or all when packageId == "all")
+        endpoints.MapPost($"{basePath}/api/plugins/{{packageId}}/update", async (string packageId, HttpContext ctx) =>
+        {
+            string? version = null;
+            var prerelease = false;
+            if (ctx.Request.ContentLength is > 0)
+            {
+                var body = await new StreamReader(ctx.Request.Body).ReadToEndAsync();
+                if (!string.IsNullOrWhiteSpace(body))
+                {
+                    var req = JsonSerializer.Deserialize<JsonElement>(body);
+                    if (req.TryGetProperty("version", out var ver)) version = ver.GetString();
+                    if (req.TryGetProperty("prerelease", out var pre) && pre.ValueKind == JsonValueKind.True)
+                        prerelease = true;
+                }
+            }
+
+            // packageId "all" → bowire plugin update (no id, updates everything).
+            // The CLI's update command treats omitted id as 'update all'.
+            var idForCli = string.Equals(packageId, "all", StringComparison.OrdinalIgnoreCase)
+                ? string.Empty
+                : packageId;
+            return await RunBowirePluginCommandAsync("update", idForCli, version, prerelease);
+        }).ExcludeFromDescription();
+
+        // Uninstall an installed plugin
+        endpoints.MapDelete($"{basePath}/api/plugins/{{packageId}}", async (string packageId) =>
+        {
+            if (string.IsNullOrWhiteSpace(packageId))
+                return Results.BadRequest(new { error = "packageId required" });
+            return await RunBowirePluginCommandAsync("uninstall", packageId, version: null, prerelease: false);
+        }).ExcludeFromDescription();
+
+        // Look up the latest version of a plugin on the configured feed.
+        // Used by the UI's "update available" hint — compared client-side
+        // against the installed version returned by GET /api/plugins.
+        endpoints.MapGet($"{basePath}/api/plugins/{{packageId}}/latest", async (string packageId, HttpContext ctx) =>
+        {
+            if (string.IsNullOrWhiteSpace(packageId))
+                return Results.BadRequest(new { error = "packageId required" });
+
+            var prerelease = ctx.Request.Query["prerelease"].ToString() == "true";
+            // NuGet v3 registration index — same source the package
+            // manager uses. Stable resolution: pick the latest version
+            // (or the latest prerelease when the flag is on). Stays
+            // dependency-free — no NuGet.Protocol pull into the host.
+            using var http = new HttpClient();
+            http.Timeout = TimeSpan.FromSeconds(10);
             try
             {
-                var args = $"plugin install {packageId}";
-                if (!string.IsNullOrEmpty(version)) args += $" --version {version}";
-
-                var psi = new ProcessStartInfo("bowire", args)
+                // NuGet's v3-flatcontainer requires lowercase package
+                // ids — the CA1308 'use ToUpperInvariant' guidance
+                // doesn't apply to URL path segments.
+#pragma warning disable CA1308
+                var idLower = packageId.ToLowerInvariant();
+#pragma warning restore CA1308
+                var indexUrl = $"https://api.nuget.org/v3-flatcontainer/{idLower}/index.json";
+                var resp = await http.GetStringAsync(new Uri(indexUrl));
+                using var doc = JsonDocument.Parse(resp);
+                var versions = doc.RootElement.GetProperty("versions").EnumerateArray()
+                    .Select(v => v.GetString())
+                    .Where(v => !string.IsNullOrEmpty(v))
+                    .ToList();
+                string? latest;
+                if (prerelease)
                 {
-                    RedirectStandardOutput = true,
-                    RedirectStandardError = true,
-                    UseShellExecute = false,
-                    CreateNoWindow = true
-                };
-
-                using var proc = Process.Start(psi);
-                if (proc is null)
-                    return Results.StatusCode(500);
-
-                var output = await proc.StandardOutput.ReadToEndAsync();
-                await proc.WaitForExitAsync();
-
-                return proc.ExitCode == 0
-                    ? Results.Ok(new { installed = true, packageId, output })
-                    : Results.StatusCode(500);
+                    latest = versions.LastOrDefault();
+                }
+                else
+                {
+                    latest = versions.LastOrDefault(v =>
+                        v is not null && !v.Contains('-', StringComparison.Ordinal));
+                }
+                return latest is null
+                    ? Results.NotFound(new { packageId, error = "no versions found" })
+                    : Results.Ok(new { packageId, latest, prerelease });
             }
-            catch
+            catch (Exception ex)
             {
-                return Results.StatusCode(500);
+                return Results.Json(new { packageId, error = ex.Message }, statusCode: 502);
             }
         }).ExcludeFromDescription();
 
         return endpoints;
+    }
+
+    /// <summary>
+    /// Shared shell-out wrapper for the plugin-mutation endpoints
+    /// (install / update / uninstall). All three call the in-PATH
+    /// 'bowire' CLI so the host doesn't have to re-implement the
+    /// PluginManager flow over HTTP. Returns the CLI's exit code +
+    /// stdout for the caller to surface to the user.
+    /// </summary>
+    private static async Task<IResult> RunBowirePluginCommandAsync(
+        string verb, string packageIdOrEmpty, string? version, bool prerelease)
+    {
+        try
+        {
+            var args = $"plugin {verb}";
+            if (!string.IsNullOrEmpty(packageIdOrEmpty))
+                args += $" {packageIdOrEmpty}";
+            if (!string.IsNullOrEmpty(version))
+                args += $" --version {version}";
+            if (prerelease && (verb == "install" || verb == "update"))
+                args += " --prerelease";
+
+            var psi = new ProcessStartInfo("bowire", args)
+            {
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false,
+                CreateNoWindow = true,
+            };
+            using var proc = Process.Start(psi);
+            if (proc is null) return Results.StatusCode(500);
+
+            var output = await proc.StandardOutput.ReadToEndAsync();
+            var err = await proc.StandardError.ReadToEndAsync();
+            await proc.WaitForExitAsync();
+
+            return proc.ExitCode == 0
+                ? Results.Ok(new { ok = true, verb, packageId = packageIdOrEmpty, output })
+                : Results.Json(
+                    new { ok = false, verb, packageId = packageIdOrEmpty, exitCode = proc.ExitCode, output, error = err },
+                    statusCode: 500);
+        }
+        catch (Exception ex)
+        {
+            return Results.Json(new { ok = false, verb, error = ex.Message }, statusCode: 500);
+        }
     }
 }
