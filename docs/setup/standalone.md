@@ -6,9 +6,10 @@ summary: 'Run Bowire as a standalone .NET global tool to browse and invoke'
 
 Run Bowire as a standalone .NET global tool to browse and invoke
 **any remote API server** — no code changes required on the target
-service. The tool ships with **every Bowire protocol plugin built
-in** (gRPC, REST, GraphQL, SignalR, MCP, SSE, WebSocket), so a single
-install gives you the full multi-protocol workbench.
+service. The tool ships with **every first-party Bowire protocol
+plugin built in** (gRPC, REST, GraphQL, SignalR, WebSocket, SSE,
+MQTT, Socket.IO, MCP, OData), so a single install gives you the
+full multi-protocol workbench.
 
 ![Bowire standalone tool against SimpleGrpc](../images/bowire-method-detail.png)
 
@@ -157,9 +158,12 @@ See [CLI Mode](../features/cli-mode.md) for the full command reference.
 
 ## Plugin management
 
-The standalone tool ships with the seven first-party protocol plugins
-built in. To install **community plugins** (third-party protocols
-published as `Kuestenlogik.Bowire.Protocol.*` packages on NuGet):
+The standalone tool ships with the ten first-party protocol plugins
+built in (gRPC, REST, GraphQL, SignalR, WebSocket, SSE, MQTT,
+Socket.IO, MCP, OData). To install **sibling-repo plugins** (Akka,
+AMQP, DIS, Kafka, Surgewave, TacticalAPI, UDP — published as
+`Kuestenlogik.Bowire.Protocol.*` packages on NuGet) or community
+plugins:
 
 ```bash
 # Install a community plugin

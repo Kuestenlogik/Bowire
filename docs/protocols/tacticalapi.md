@@ -51,7 +51,7 @@ Set both via the workbench's metadata panel before clicking **Execute**, or via 
 
 ### Pairing with the gRPC plugin's gRPC-Web transport
 
-TacticalAPI servers commonly expose **two ports**: a native HTTP/2 gRPC endpoint (typically `:4267`) and a gRPC-Web endpoint (typically `:4268`) for browser-fronted clients. Bowire's [gRPC plugin](grpc.md#grpc-web-transport) speaks both &mdash; once v0.2.0 lands, point at the native port for full bidirectional access, or at the gRPC-Web port behind an L7 proxy. Discovery (this release) works against either transport because the proto schema is bundled, not fetched at connect time.
+TacticalAPI servers commonly expose **two ports**: a native HTTP/2 gRPC endpoint (typically `:4267`) and a gRPC-Web endpoint (typically `:4268`) for browser-fronted clients. Bowire's [gRPC plugin](grpc.md#grpc-web-transport) speaks both — point at the native port for full bidirectional access, or at the gRPC-Web port behind an L7 proxy. Discovery works against either transport because the proto schema is bundled, not fetched at connect time.
 
 ## Licensing &mdash; please read
 
@@ -122,9 +122,9 @@ A companion walkthrough in **[the mock-server docs](../features/mock-server.md#e
 
 ## Roadmap
 
-- **v0.1.0** &mdash; bundled-schema discovery, plugin registration, identity API, generated client stubs available to consumers.
-- **v0.2.x (current)** &mdash; typed unary invoke for `GetSituationObjects` / `AddOrUpdateSituationObjects` / `DeleteSituationObjects` and the server-streaming pump for `SubscribeSituationObjectEvents` are live. URL-scheme normalisation (`tacticalapi@`, `grpc(s)://`, bare `host:port`) and mTLS client-cert + TLS-skip-validation via metadata land in the same release.
-- **v0.3.0** &mdash; integration tests against the upstream TestClient + a sample server walkthrough. Position-extractor adapter so `SituationObjectLocation` updates land on the Bowire map automatically. MIL-STD-2525 / APP-6 symbol renderer (the schema's `SymbolIdentifier` field is already wired through; the map widget side needs a [milsymbol.js](https://github.com/spatialillusions/milsymbol)-style renderer to turn the SIDC into the correct tactical-affiliation glyph).
+- **v1.0.0-rc.1 (current)** &mdash; bundled-schema discovery, typed unary CRUD (`GetSituationObjects` / `AddOrUpdateSituationObjects` / `DeleteSituationObjects`), the server-streaming pump for `SubscribeSituationObjectEvents`, URL-scheme normalisation (`tacticalapi@`, `grpc(s)://`, bare `host:port`), mTLS via the shared `__bowireMtls__` marker (legacy `_bowire:client-cert-pfx` keys still honoured for back-compat), `IBowireMockEmitter` for recording replay, in-process Kestrel-hosted integration suite.
+- **v1.0.0 stable** &mdash; cuts after the 1.0-rc.1 observation window closes. No new wire features expected.
+- **post-1.0** &mdash; MIL-STD-2525 / APP-6 symbol renderer (the schema's `SymbolIdentifier` field is already wired through; the map widget side needs a [milsymbol.js](https://github.com/spatialillusions/milsymbol)-style renderer to turn the SIDC into the correct tactical-affiliation glyph). Service-Bus / Artemis-flavoured AMQP 1.0 discovery (parallel item on the AMQP plugin's side) could similarly land as a vendor-specific follow-on.
 
 ## Links
 
