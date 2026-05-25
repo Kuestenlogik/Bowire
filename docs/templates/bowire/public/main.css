@@ -1672,6 +1672,20 @@ body.bowire-docs-mode-standalone .bowire-docs-hero {
         rgba(var(--bowire-accent-rgb), 0.06) 0%,
         rgba(var(--bowire-accent-rgb), 0.02) 100%);
 }
+/* Standalone / PDF: the cover hero is its own page. Force a page
+   break after the hero so "Where to start" + the rest of the
+   landing index begin on a fresh page in the printed PDF. Without
+   this rule the hero and the first section share the title page
+   and the visual hierarchy ('this is the cover, the manual starts
+   overleaf') is lost. Doesn't affect the online HTML — only kicks
+   in for @media print, which is what Playwright's page.pdf() runs
+   under. */
+@media print {
+    body.bowire-docs-mode-standalone .bowire-docs-hero {
+        break-after: page;
+        page-break-after: always;
+    }
+}
 body.bowire-docs-mode-standalone .bowire-docs-hero::before {
     content: '';
     position: absolute;
