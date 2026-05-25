@@ -6,3 +6,5 @@
   href: standalone.md
 - name: Docker
   href: docker.md
+- name: Updating Bowire and its plugins
+  href: updating.md
