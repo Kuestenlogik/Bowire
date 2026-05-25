@@ -5072,6 +5072,70 @@ details[open] > .bowire-json-tree-summary::before {
 .bowire-settings-about-madeby-lockup { height: 22px; width: auto; opacity: 0.85; transition: opacity 0.15s ease; }
 .bowire-settings-about-madeby a:hover .bowire-settings-about-madeby-lockup { opacity: 1; }
 
+/* Settings-gear wrapper — only used when the plugin-update-check
+   badge is showing. Stays sized like the bare button so the topbar
+   row stays balanced; the badge positions itself absolute in the
+   top-right corner. */
+.bowire-settings-btn-wrapper {
+    position: relative;
+    display: inline-flex;
+}
+.bowire-plugin-update-badge {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    min-width: 16px;
+    height: 16px;
+    padding: 0 4px;
+    border-radius: 9999px;
+    background: var(--bowire-accent, #006B9F);
+    color: #fff;
+    font-size: 10px;
+    font-weight: 700;
+    line-height: 16px;
+    text-align: center;
+    pointer-events: none;
+}
+
+/* Plugin-update-check banner — sits at the top of Settings → Plugins.
+   Shows opt-in state, last-run timestamp, and a manual "Check now"
+   button that is always available (the opt-in only gates the daily
+   background sweep). */
+.bowire-settings-update-check {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 10px 12px;
+    margin: 12px 0;
+    border: 1px solid var(--bowire-border);
+    border-radius: 6px;
+    background: var(--bowire-bg-elevated);
+}
+.bowire-settings-update-check-text {
+    font-size: 12px;
+    color: var(--bowire-text-secondary);
+    flex: 1;
+    line-height: 1.4;
+}
+.bowire-settings-update-check-btn {
+    padding: 6px 12px;
+    border: 1px solid var(--bowire-border);
+    border-radius: 4px;
+    background: var(--bowire-bg);
+    color: var(--bowire-text);
+    font-size: 12px;
+    cursor: pointer;
+    white-space: nowrap;
+}
+.bowire-settings-update-check-btn:hover:not(:disabled) {
+    background: var(--bowire-bg-hover, var(--bowire-bg-elevated));
+}
+.bowire-settings-update-check-btn:disabled {
+    opacity: 0.6;
+    cursor: progress;
+}
+
 /* About topbar button — renders a literal "?" glyph, sized to match
    the 16px-icon footprint of the neighbouring theme / settings buttons
    so the row stays visually balanced. */

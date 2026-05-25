@@ -4,10 +4,12 @@
 using System.Reflection;
 using Kuestenlogik.Bowire.Net;
 using Kuestenlogik.Bowire.PluginLoading;
+using Kuestenlogik.Bowire.Plugins;
 using Kuestenlogik.Bowire.Semantics;
 using Kuestenlogik.Bowire.Semantics.Detectors;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
 
 namespace Kuestenlogik.Bowire;
@@ -104,6 +106,19 @@ public static class BowireServiceCollectionExtensions
 
         RegisterSemanticsStore(services, bootstrapOptions);
         RegisterFrameDetectors(services, bootstrapOptions);
+
+        // PluginUpdateCheckService is always registered so the manual
+        // GET /api/plugins/check-updates endpoint can resolve it; the
+        // hosted background loop short-circuits when
+        // PluginUpdateCheck.Enabled is false (opt-in). The options
+        // bind via the standard config pipeline so operators can flip
+        // it through appsettings.json / env vars without touching
+        // code, and the standalone tool's --update-check flag injects
+        // an in-memory override into the same chain.
+        services.TryAddSingleton<PluginUpdateCheckService>();
+        services.AddOptions<BowirePluginUpdateCheckOptions>()
+                .BindConfiguration("Bowire:PluginUpdateCheck");
+        services.AddHostedService<PluginUpdateCheckHostedService>();
 
         // Named HttpClient for the OAuth proxy endpoints in
         // BowireAuthEndpoints. IHttpClientFactory pools the underlying

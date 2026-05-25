@@ -103,6 +103,40 @@ bowire plugin update                              # every sibling plugin under ~
 
 The split exists because the bundled-plugin set is the part the Bowire repo can guarantee API-compatible at every commit (they're all tested together in CI). Sibling plugins ship from their own repos on their own cadence; pinning every plugin to the tool's version would mean either lying about API maturity (e.g. AMQP 0.2-era was still settling) or forcing a release on every Bowire patch even when the plugin had nothing to ship. The compatibility matrix in [Plugin Compatibility](../architecture/compatibility.md) documents how the SemVer contract between Bowire and each sibling plugin holds.
 
+## Automatic update check (opt-in)
+
+By default Bowire makes no outbound calls on startup — air-gapped and privacy-sensitive installs see no traffic to nuget.org. Operators who *do* want a daily nudge when a newer plugin version ships can opt in:
+
+```bash
+# Standalone tool — one-shot opt-in for this run
+bowire --update-check
+```
+
+```jsonc
+// appsettings.json — persistent opt-in for embedded hosts
+{
+  "Bowire": {
+    "PluginUpdateCheck": {
+      "Enabled": true,
+      "IntervalHours": 24,        // optional, default 24
+      "IncludePrerelease": false  // optional, default false
+    }
+  }
+}
+```
+
+When enabled, a hosted service runs once on startup and then every `IntervalHours` (default 24) — for every installed *sibling* plugin under `~/.bowire/plugins/`, it asks nuget.org for the latest stable version and writes the result to `~/.bowire/state/update-check.json`. The Bowire UI reads that file and surfaces a count badge over the Settings gear when one or more plugins have an upgrade waiting. Bundled plugins (gRPC, REST, MQTT, …) are not checked — they move with `dotnet tool update`.
+
+A **manual** check is always available regardless of the opt-in: open Settings → Plugins and click "Check now". The opt-in flag only gates the *background* sweep — a direct user click is always a direct user action.
+
+To check from a script without enabling the daily sweep:
+
+```bash
+curl http://localhost:5080/bowire/api/plugins/check-updates
+```
+
+Returns the same shape that lands in `update-check.json` — `{ checkedAt, includePrerelease, results: [{ packageId, installed, latest, updateAvailable, error? }] }`.
+
 ## Air-gapped / offline updates
 
 For installs without outbound NuGet access:

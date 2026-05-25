@@ -757,6 +757,12 @@
             textContent: 'Sibling plugins under ~/.bowire/plugins/ get Update / Uninstall buttons; bundled plugins (gRPC, REST, MQTT, …) ship inside the Bowire tool and update with dotnet tool update.'
         }));
 
+        // Update-check status banner — shows whether the daily
+        // background check is opted-in + when it last ran. The
+        // "Check now" button forces an immediate /api/plugins/check-updates
+        // round-trip without flipping the opt-in.
+        section.appendChild(renderUpdateCheckBanner());
+
         // Pre-release toggle row
         var prereleaseRow = el('label', { className: 'bowire-settings-plugin-prerelease' });
         var cb = el('input', {
@@ -793,6 +799,62 @@
         }
         section.appendChild(list);
         return section;
+    }
+
+    // Banner above the installed-plugins list: shows daily-check
+    // opt-in status, last run timestamp, count of pending updates.
+    // "Check now" runs an on-demand sweep regardless of opt-in (a
+    // user click is always a direct action — only the *background*
+    // call is gated).
+    function renderUpdateCheckBanner() {
+        var box = el('div', { className: 'bowire-settings-update-check' });
+        var s = (typeof pluginUpdateCheckStatus !== 'undefined')
+            ? pluginUpdateCheckStatus : { enabled: false, cached: null };
+
+        var lines = [];
+        if (s.enabled) {
+            lines.push('Daily plugin-update check is enabled (every '
+                + (s.intervalHours || 24) + ' h).');
+        } else {
+            lines.push('Daily plugin-update check is OFF — opt in via --update-check or Bowire:PluginUpdateCheck:Enabled=true. Manual checks via the button below always work.');
+        }
+        if (s.cached && s.cached.CheckedAt) {
+            var n = pluginUpdateBadgeCount();
+            lines.push('Last run: ' + new Date(s.cached.CheckedAt).toLocaleString()
+                + ' — ' + (n === 0 ? 'all plugins up to date.'
+                    : n + ' update(s) available.'));
+        }
+        box.appendChild(el('div', {
+            className: 'bowire-settings-update-check-text',
+            textContent: lines.join(' '),
+        }));
+
+        var checkBtn = el('button', {
+            className: 'bowire-settings-update-check-btn',
+            textContent: 'Check now',
+            onClick: function () {
+                checkBtn.disabled = true;
+                checkBtn.textContent = 'Checking…';
+                var qs = pluginPrereleaseToggle ? '?prerelease=true' : '';
+                fetch(config.prefix + '/api/plugins/check-updates' + qs)
+                    .then(function (r) { return r.ok ? r.json() : null; })
+                    .then(function (snapshot) {
+                        if (snapshot) {
+                            pluginUpdateCheckStatus = Object.assign(
+                                {}, pluginUpdateCheckStatus, { cached: snapshot });
+                        }
+                        renderSettingsDialog();
+                        if (typeof render === 'function') render();
+                    })
+                    .catch(function () { /* offline / NuGet down */ })
+                    .finally(function () {
+                        checkBtn.disabled = false;
+                        checkBtn.textContent = 'Check now';
+                    });
+            },
+        });
+        box.appendChild(checkBtn);
+        return box;
     }
 
     function renderManagedPluginRow(p) {

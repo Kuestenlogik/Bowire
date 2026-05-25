@@ -424,7 +424,10 @@
             textContent: '?'
         }));
 
-        // Settings button
+        // Settings button — wrapped so the plugin-update badge (when
+        // opted-in + the cached snapshot reports pending updates) can
+        // position itself relative to the gear without needing a
+        // dedicated topbar slot of its own.
         var settingsBtn = el('button', {
             id: 'bowire-settings-btn',
             className: 'bowire-theme-toggle-btn',
@@ -435,6 +438,13 @@
             innerHTML: svgIcon('settings'),
             style: 'width:16px;height:16px;display:flex'
         }));
+        var updateBadge = typeof renderPluginUpdateBadge === 'function'
+            ? renderPluginUpdateBadge() : null;
+        if (updateBadge) {
+            settingsBtn = el('div', {
+                className: 'bowire-settings-btn-wrapper',
+            }, settingsBtn, updateBadge);
+        }
 
         var right = el('div', { id: 'bowire-topbar-right', className: 'bowire-topbar-right' },
             renderEnvSelector(),
