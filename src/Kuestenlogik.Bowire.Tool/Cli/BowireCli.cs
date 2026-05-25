@@ -57,6 +57,7 @@ internal static class BowireCli
         root.Add(new Option<string>("--description") { Description = "Subtitle shown below the title." });
         root.Add(new Option<bool>("--no-browser") { Description = "Don't auto-open a browser window." });
         root.Add(new Option<bool>("--enable-mcp-adapter") { Description = "Expose discovered services as MCP tools." });
+        root.Add(new Option<bool>("--update-check") { Description = "Opt in to the daily plugin-update check (off by default). Bowire queries nuget.org once per day for newer versions of every installed sibling plugin and surfaces a count badge in the sidebar. Equivalent to Bowire:PluginUpdateCheck:Enabled=true." });
         root.Add(new Option<bool>("--lock-server-url") { Description = "Disable URL editing in the UI." });
         root.Add(new Option<string>("--plugin-dir") { Description = "Override the plugin directory." });
         root.Add(new Option<string>("--map-basemap")

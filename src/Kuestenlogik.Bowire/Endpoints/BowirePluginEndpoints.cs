@@ -3,9 +3,12 @@
 
 using System.Diagnostics;
 using System.Text.Json;
+using Kuestenlogik.Bowire.Plugins;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 
 namespace Kuestenlogik.Bowire.Endpoints;
 
@@ -287,6 +290,45 @@ internal static class BowirePluginEndpoints
             {
                 return Results.Json(new { packageId, error = ex.Message }, statusCode: 502);
             }
+        }).ExcludeFromDescription();
+
+        // Manual update check: hit nuget.org for every installed
+        // sibling plugin's latest version. Powers the "Check now"
+        // button in the plugin manage panel. Always available (it's
+        // a direct user action) — the opt-in flag only gates the
+        // *background* check, not on-demand requests.
+        endpoints.MapGet($"{basePath}/api/plugins/check-updates", async (HttpContext ctx) =>
+        {
+            var prerelease = ctx.Request.Query["prerelease"].ToString() == "true";
+            var svc = ctx.RequestServices.GetRequiredService<PluginUpdateCheckService>();
+            try
+            {
+                var snapshot = await svc.CheckAsync(prerelease, ctx.RequestAborted)
+                    .ConfigureAwait(false);
+                return Results.Ok(snapshot);
+            }
+            catch (Exception ex)
+            {
+                return Results.Json(new { error = ex.Message }, statusCode: 502);
+            }
+        }).ExcludeFromDescription();
+
+        // Read the last persisted snapshot + whether the background
+        // checker is enabled. Used by the sidebar badge to render
+        // "N updates available" without hitting the network on every
+        // page load. Returns 200 with `cached=null` when no check has
+        // run yet (background disabled + manual button never pressed).
+        endpoints.MapGet($"{basePath}/api/plugins/check-updates/status", (HttpContext ctx) =>
+        {
+            var opts = ctx.RequestServices.GetRequiredService<IOptions<BowirePluginUpdateCheckOptions>>();
+            var cfg = opts.Value;
+            return Results.Ok(new
+            {
+                enabled = cfg.Enabled,
+                intervalHours = cfg.IntervalHours,
+                includePrerelease = cfg.IncludePrerelease,
+                cached = PluginUpdateCheckService.ReadCached(),
+            });
         }).ExcludeFromDescription();
 
         return endpoints;

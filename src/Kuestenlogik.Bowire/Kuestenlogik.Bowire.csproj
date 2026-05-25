@@ -102,6 +102,7 @@
     <BowireJsFragment Include="wwwroot\js\perf-diff.js" />
     <BowireJsFragment Include="wwwroot\js\response-diff.js" />
     <BowireJsFragment Include="wwwroot\js\settings.js" />
+    <BowireJsFragment Include="wwwroot\js\plugin-update-badge.js" />
     <!--
       Frame-semantics framework + built-in widgets. extensions.js MUST
       come before any widget bundle so window.BowireExtensions.register
