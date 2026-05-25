@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 using Kuestenlogik.Bowire.App.Configuration;
+using Kuestenlogik.Bowire.Auth;
 using Kuestenlogik.Bowire.PluginLoading;
 using Kuestenlogik.Bowire.Protocol.Mcp;
 using Microsoft.Extensions.Configuration;
@@ -108,8 +109,22 @@ internal static class BrowserUiHost
         // fine.
         builder.Services.AddBowire();
 
+        // Opt-in auth gate. When --auth-provider <id> is set, the
+        // matching IBowireAuthProvider plugin gets to wire its scheme
+        // + the BowireAuthPolicies.Default policy; otherwise this is
+        // a no-op and the workbench stays open (today's default).
+        builder.Services.AddBowireAuth(builder.Configuration);
+
         var app = builder.Build();
         app.UseResponseCompression();
+
+        // UseAuthentication/UseAuthorization are only meaningful when an
+        // IBowireAuthProvider registered a scheme above. Calling them
+        // unconditionally is harmless (they're no-ops when nothing is
+        // registered) and keeps the pipeline shape predictable across
+        // both modes.
+        app.UseAuthentication();
+        app.UseAuthorization();
 
         // Standalone CLI mounts the workbench at the site root ("/") —
         // there's no host app sharing the route table, so a `/bowire`

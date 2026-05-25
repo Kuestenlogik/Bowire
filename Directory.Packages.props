@@ -23,6 +23,7 @@
     <PackageVersion Include="Grpc.AspNetCore" Version="2.80.0" />
     <PackageVersion Include="Grpc.Tools" Version="2.80.0" />
     <PackageVersion Include="Microsoft.AspNetCore.SignalR.Client" Version="10.0.8" />
+    <PackageVersion Include="Microsoft.Identity.Web" Version="3.13.1" />
     <PackageVersion Include="Microsoft.OpenApi" Version="3.5.3" />
     <PackageVersion Include="Microsoft.OpenApi.YamlReader" Version="3.5.3" />
     <!-- Neuroglia.AsyncApi is the official AsyncAPI .NET SDK

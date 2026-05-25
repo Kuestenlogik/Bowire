@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 using System.Reflection;
+using Kuestenlogik.Bowire.Auth;
 using Kuestenlogik.Bowire.Net;
 using Kuestenlogik.Bowire.PluginLoading;
 using Kuestenlogik.Bowire.Plugins;
@@ -119,6 +120,12 @@ public static class BowireServiceCollectionExtensions
         services.AddOptions<BowirePluginUpdateCheckOptions>()
                 .BindConfiguration("Bowire:PluginUpdateCheck");
         services.AddHostedService<PluginUpdateCheckHostedService>();
+
+        // Auth provider seam is *separate* — embedded hosts call
+        // services.AddBowireAuth(builder.Configuration) explicitly when
+        // they want Bowire to gate its own endpoints; otherwise the
+        // host's existing auth pipeline (if any) keeps full control.
+        // Standalone uses BrowserUiHost.RunAsync which wires the call.
 
         // Named HttpClient for the OAuth proxy endpoints in
         // BowireAuthEndpoints. IHttpClientFactory pools the underlying

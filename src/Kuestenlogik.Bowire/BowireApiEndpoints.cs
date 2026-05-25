@@ -1,6 +1,7 @@
 // Copyright 2026 Küstenlogik
 // SPDX-License-Identifier: Apache-2.0
 
+using Kuestenlogik.Bowire.Auth;
 using Kuestenlogik.Bowire.Endpoints;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
@@ -88,7 +89,14 @@ internal static class BowireApiEndpoints
             return Results.Content(html, "text/html");
         }).ExcludeFromDescription();
 
-        endpoints
+        // All Bowire feature endpoints land inside one anonymous-named
+        // route group ("") so the auth-provider gate below can apply
+        // .RequireAuthorization(...) once and have it propagate to every
+        // child route. The HTML UI route (mapped above) is *outside*
+        // the group on purpose: the bootstrap HTML has to load before
+        // the user can sign in.
+        var bowireGroup = endpoints.MapGroup(string.Empty);
+        bowireGroup
             .MapBowireDiscoveryEndpoints(options, basePath)
             .MapBowireInvokeEndpoints(options, basePath)
             .MapBowireChannelEndpoints(options, basePath)
@@ -100,5 +108,27 @@ internal static class BowireApiEndpoints
             .MapBowirePluginEndpoints(basePath)
             .MapBowireSemanticsEndpoints(basePath)
             .MapBowireSecurityEndpoints(basePath);
+
+        // Apply the auth gate exactly once when an IBowireAuthProvider
+        // is registered (AddBowireAuth resolved it from the
+        // --auth-provider flag / Bowire:Auth:ProviderId config). Without
+        // a registered provider Bowire stays open — same as today's
+        // laptop default.
+        var authProvider = endpoints.ServiceProvider.GetService<IBowireAuthProvider>();
+        if (authProvider is not null)
+        {
+            bowireGroup.RequireAuthorization(BowireAuthPolicies.Default);
+            AuthGateLog.GateActive(startupLogger, authProvider.Name, authProvider.Id);
+        }
     }
+}
+
+/// <summary>Source-generated logger for the auth-gate startup message.</summary>
+internal static partial class AuthGateLog
+{
+    [LoggerMessage(
+        EventId = 100,
+        Level = LogLevel.Information,
+        Message = "Bowire auth provider active: {Provider} ({Id}). Workbench API requires authentication.")]
+    public static partial void GateActive(ILogger logger, string provider, string id);
 }
