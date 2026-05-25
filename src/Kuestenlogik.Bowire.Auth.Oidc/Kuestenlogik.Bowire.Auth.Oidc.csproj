@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Description>OpenID Connect auth provider for Bowire — concrete IBowireAuthProvider implementation built on Microsoft.Identity.Web so Azure AD, Okta, Keycloak, Auth0, and any OIDC-compliant IdP gate workbench access without provider-specific code paths. Ships as a standalone NuGet so installs that don't need OIDC don't pull Microsoft.Identity.Web's transitive weight.</Description>
+    <PackageId>Kuestenlogik.Bowire.Auth.Oidc</PackageId>
+    <PackageTags>bowire;auth;oidc;openid-connect;identity;microsoft-identity-web</PackageTags>
+    <IsPackable>true</IsPackable>
+  </PropertyGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="Kuestenlogik.Bowire.Tests" />
+  </ItemGroup>
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Kuestenlogik.Bowire\Kuestenlogik.Bowire.csproj" />
+    <PackageReference Include="Microsoft.Identity.Web" />
+  </ItemGroup>
+</Project>

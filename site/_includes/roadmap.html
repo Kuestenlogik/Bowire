@@ -80,6 +80,16 @@
         </div>
       </a>
 
+      <a class="roadmap-card roadmap-card-link roadmap-card-shipped" href="https://github.com/Kuestenlogik/Bowire/blob/main/ROADMAP.md#auth-provider-extension-spi-phase-a--core-seam" target="_blank" rel="noopener">
+        <div class="roadmap-number roadmap-number-shipped" aria-label="Shipped">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="5 12 10 17 19 8"/></svg>
+        </div>
+        <div class="roadmap-card-body">
+          <h3>Auth-provider extension SPI <span class="roadmap-card-tag">v1.6.x</span></h3>
+          <p>Third extension type next to <code>IBowireProtocol</code> and <code>IBowireUiExtension</code> &mdash; <code>IBowireAuthProvider</code>, registered via assembly scan; <code>--auth-provider &lt;id&gt;</code> gates every workbench endpoint. First concrete impl: <code>Kuestenlogik.Bowire.Auth.Oidc</code> on Microsoft.Identity.Web, separate NuGet so the OIDC weight only lands when needed.</p>
+        </div>
+      </a>
+
     </div>
 
     <div class="roadmap-divider" aria-hidden="true">
@@ -90,16 +100,8 @@
 
     <div class="roadmap-grid">
 
-      <a class="roadmap-card roadmap-card-link" href="https://github.com/Kuestenlogik/Bowire/blob/main/ROADMAP.md#auth-provider-extension-spi-phase-a--core-seam" target="_blank" rel="noopener">
-        <div class="roadmap-number" aria-hidden="true">1</div>
-        <div class="roadmap-card-body">
-          <h3>Auth-provider extension SPI</h3>
-          <p>A third extension type next to <code>IBowireProtocol</code> and <code>IBowireUiExtension</code> &mdash; <code>IBowireAuthProvider</code>. Plus the first concrete impl: <code>Kuestenlogik.Bowire.Auth.Oidc</code> as a separate NuGet, so the Microsoft.Identity.Web weight only lands in installs that need OIDC.</p>
-        </div>
-      </a>
-
       <a class="roadmap-card roadmap-card-link" href="https://github.com/Kuestenlogik/Bowire/blob/main/ROADMAP.md" target="_blank" rel="noopener">
-        <div class="roadmap-number" aria-hidden="true">2</div>
+        <div class="roadmap-number" aria-hidden="true">1</div>
         <div class="roadmap-card-body">
           <h3>Connect (Buf) — third gRPC wire mode</h3>
           <p>Connect alongside HTTP/2 and gRPC-Web in the existing gRPC plugin. Phased rollout: unary first, then server-streaming, then bidi.</p>
@@ -107,7 +109,7 @@
       </a>
 
       <a class="roadmap-card roadmap-card-link" href="https://github.com/Kuestenlogik/Bowire/blob/main/ROADMAP.md" target="_blank" rel="noopener">
-        <div class="roadmap-number" aria-hidden="true">3</div>
+        <div class="roadmap-number" aria-hidden="true">2</div>
         <div class="roadmap-card-body">
           <h3>More protocols: SOAP, NATS, Pulsar, JSON-RPC</h3>
           <p>WSDL discovery for enterprise legacy, cloud-native messaging via NATS, the Apache event-streaming alternative via Pulsar, and a generic JSON-RPC browser.</p>
@@ -115,7 +117,7 @@
       </a>
 
       <a class="roadmap-card roadmap-card-link" href="https://github.com/Kuestenlogik/Bowire/blob/main/ROADMAP.md" target="_blank" rel="noopener">
-        <div class="roadmap-number" aria-hidden="true">4</div>
+        <div class="roadmap-number" aria-hidden="true">3</div>
         <div class="roadmap-card-body">
           <h3>Surgewave tap-stream browser</h3>
           <p>Sibling repo and plugin scaffolding ready. Blocked on the <code>Kuestenlogik.Surgewave.Client</code> SDK going public.</p>
@@ -123,7 +125,7 @@
       </a>
 
       <a class="roadmap-card roadmap-card-link" href="https://github.com/Kuestenlogik/Bowire/blob/main/ROADMAP.md" target="_blank" rel="noopener">
-        <div class="roadmap-number" aria-hidden="true">5</div>
+        <div class="roadmap-number" aria-hidden="true">4</div>
         <div class="roadmap-card-body">
           <h3>Polyglot plugins via sidecar bridge</h3>
           <p>Run plugins as sidecar processes over JSON-RPC stdio, so Python, Go, Rust, or Node.js plugins don&rsquo;t need to be ported to .NET to plug in.</p>
@@ -131,7 +133,7 @@
       </a>
 
       <a class="roadmap-card roadmap-card-link" href="https://github.com/Kuestenlogik/Bowire/blob/main/docs/architecture/frame-semantics-framework.md" target="_blank" rel="noopener">
-        <div class="roadmap-number" aria-hidden="true">6</div>
+        <div class="roadmap-number" aria-hidden="true">5</div>
         <div class="roadmap-card-body">
           <h3>Editor side of the visual viewers</h3>
           <p>Viewers ship for coordinates on a live map (MapLibre), DIS PDUs, Surgewave tap streams, and image / audio payloads. The next step is the request-side <em>editor</em> that pairs with each viewer &mdash; pin a marker, draw a polygon, drop an audio clip &mdash; through the same annotation seam.</p>
