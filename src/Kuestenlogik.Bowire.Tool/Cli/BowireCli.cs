@@ -582,17 +582,23 @@ internal static class BowireCli
             DefaultValueFactory = _ => cfg.GetValue<bool>("Bowire:Plugin:Verbose")
         };
         var packageIdArg = new Argument<string>("packageId") { Description = "NuGet package id." };
+        var prereleaseOpt = new Option<bool>("--prerelease")
+        {
+            Description = "Allow pre-release versions (1.0.0-rc.1, &c) when resolving the latest. Matches `dotnet add package --prerelease`. Ignored when --version pins an exact version.",
+        };
 
         var install = new Command("install", "Install a protocol plugin from NuGet (or --file).");
-        install.Add(packageIdArg); install.Add(versionOpt); install.Add(sourcesOpt); install.Add(fileOpt);
+        install.Add(packageIdArg); install.Add(versionOpt); install.Add(sourcesOpt); install.Add(fileOpt); install.Add(prereleaseOpt);
         install.SetAction(async (pr, _) =>
         {
             var file = pr.GetValue(fileOpt);
             var sources = pr.GetValue(sourcesOpt) ?? [];
+            var prerelease = pr.GetValue(prereleaseOpt);
             return !string.IsNullOrEmpty(file)
                 ? await PluginManager.InstallFromFileAsync(file, pluginDir, sources).ConfigureAwait(false)
                 : await PluginManager.InstallAsync(
-                    pr.GetValue(packageIdArg) ?? "", pr.GetValue(versionOpt), pluginDir, sources).ConfigureAwait(false);
+                    pr.GetValue(packageIdArg) ?? "", pr.GetValue(versionOpt), pluginDir, sources,
+                    includePrerelease: prerelease).ConfigureAwait(false);
         });
 
         var download = new Command("download", "Download a plugin + its transitive deps as offline .nupkg files.");
@@ -615,14 +621,16 @@ internal static class BowireCli
         var updateIdArg = new Argument<string>("packageId")
         { Description = "Plugin id; omit to update all.", DefaultValueFactory = _ => "" };
         var update = new Command("update", "Update one plugin (or all if no id given).");
-        update.Add(updateIdArg); update.Add(versionOpt); update.Add(sourcesOpt);
+        update.Add(updateIdArg); update.Add(versionOpt); update.Add(sourcesOpt); update.Add(prereleaseOpt);
         update.SetAction(async (pr, _) =>
         {
             var id = pr.GetValue(updateIdArg) ?? "";
             var sources = pr.GetValue(sourcesOpt) ?? [];
+            var prerelease = pr.GetValue(prereleaseOpt);
             return string.IsNullOrEmpty(id)
-                ? await PluginManager.UpdateAllAsync(pluginDir, sources).ConfigureAwait(false)
-                : await PluginManager.UpdateAsync(id, pr.GetValue(versionOpt), pluginDir, sources).ConfigureAwait(false);
+                ? await PluginManager.UpdateAllAsync(pluginDir, sources, includePrerelease: prerelease).ConfigureAwait(false)
+                : await PluginManager.UpdateAsync(id, pr.GetValue(versionOpt), pluginDir, sources,
+                    includePrerelease: prerelease).ConfigureAwait(false);
         });
 
         var inspect = new Command("inspect", "Inspect a plugin's metadata + protocol contributions.");

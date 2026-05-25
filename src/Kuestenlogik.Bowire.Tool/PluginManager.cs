@@ -55,6 +55,7 @@ internal static class PluginManager
         string? version,
         string? pluginDir = null,
         IReadOnlyList<string>? sources = null,
+        bool includePrerelease = false,
         CancellationToken ct = default)
     {
         if (string.IsNullOrWhiteSpace(packageId))
@@ -84,7 +85,8 @@ internal static class PluginManager
                 dir,
                 sources ?? [],
                 NuGetNull.Instance,
-                ct);
+                ct,
+                includePrerelease);
 
             await File.WriteAllTextAsync(Path.Combine(result.TargetDir, "plugin.json"),
                 JsonSerializer.Serialize(new
@@ -425,6 +427,7 @@ internal static class PluginManager
         string? targetVersion,
         string? pluginDir = null,
         IReadOnlyList<string>? sources = null,
+        bool includePrerelease = false,
         CancellationToken ct = default)
     {
         if (string.IsNullOrWhiteSpace(packageId))
@@ -446,7 +449,8 @@ internal static class PluginManager
         var installedVersion = ReadResolvedVersion(pluginSubDir);
 
         var resolved = await NuGetPackageInstaller.ResolveAsync(
-            packageId, targetVersion, sources ?? [], NuGetNull.Instance, ct);
+            packageId, targetVersion, sources ?? [], NuGetNull.Instance, ct,
+            includePrerelease);
         if (resolved is null)
         {
             Console.WriteLine(
@@ -476,7 +480,7 @@ internal static class PluginManager
             return 1;
         }
 
-        return await InstallAsync(packageId, resolved.Version, pluginDir, sources, ct);
+        return await InstallAsync(packageId, resolved.Version, pluginDir, sources, includePrerelease, ct);
     }
 
     /// <summary>
@@ -488,7 +492,15 @@ internal static class PluginManager
     public static async Task<int> UpdateAllAsync(
         string? pluginDir = null,
         IReadOnlyList<string>? sources = null,
+        bool includePrerelease = false,
         CancellationToken ct = default)
+        => await UpdateAllAsyncInternal(pluginDir, sources, includePrerelease, ct).ConfigureAwait(false);
+
+    private static async Task<int> UpdateAllAsyncInternal(
+        string? pluginDir,
+        IReadOnlyList<string>? sources,
+        bool includePrerelease,
+        CancellationToken ct)
     {
         var dir = ResolvePluginDir(pluginDir);
         if (!Directory.Exists(dir))
@@ -515,7 +527,7 @@ internal static class PluginManager
         var worstExit = 0;
         foreach (var pkg in packages)
         {
-            var exit = await UpdateAsync(pkg!, targetVersion: null, pluginDir, sources, ct);
+            var exit = await UpdateAsync(pkg!, targetVersion: null, pluginDir, sources, includePrerelease, ct);
             if (exit != 0 && worstExit == 0) worstExit = exit;
         }
         return worstExit;
