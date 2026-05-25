@@ -1,10 +1,10 @@
 ---
-summary: 'TacticalAPI is a Bowire sibling plugin that wraps Rheinmetall''s situational-awareness gRPC interface with a bundled schema so the Situation service tree renders even without Server Reflection. v0.2.x preview: discovery + typed unary CRUD + server-streaming pump all wired through, mTLS client-cert via metadata for the field-default deployment shape.'
+summary: 'TacticalAPI is a Bowire sibling plugin that wraps Rheinmetall''s situational-awareness gRPC interface with a bundled schema so the Situation service tree renders even without Server Reflection. Discovery, typed unary CRUD, server-streaming pump, mTLS via the shared __bowireMtls__ marker, IBowireMockEmitter for recording replay.'
 ---
 
 # TacticalAPI
 
-> **Status: preview (v0.2.x)** &mdash; discovery, typed unary invoke for `GetSituationObjects` / `AddOrUpdateSituationObjects` / `DeleteSituationObjects`, and the server-streaming pump for `SubscribeSituationObjectEvents` all wired through. URL-scheme normalisation (`tacticalapi@host:port`, `grpc(s)://`, bare `host:port`) and mTLS client-cert via metadata ship in the same release. Integration tests against the upstream `TestClient` are the next milestone before the v1.0.0 stable cut.
+The TacticalAPI plugin connects Bowire to Rheinmetall's situational-awareness gRPC interface: bundled-schema discovery (no Server Reflection on the target needed), typed unary invoke for `GetSituationObjects` / `AddOrUpdateSituationObjects` / `DeleteSituationObjects`, the server-streaming pump for `SubscribeSituationObjectEvents`, URL-scheme normalisation (`tacticalapi@host:port`, `grpc(s)://`, bare `host:port`), and mTLS via the shared `__bowireMtls__` marker alongside the legacy `_bowire:client-cert-pfx` keys.
 
 The TacticalAPI plugin connects Bowire to [Rheinmetall's **TacticalAPI**](https://github.com/Rheinmetall/tacticalapi) &mdash; a gRPC interface for situational-awareness systems. The plugin ships the upstream service schema bundled with the package, so Bowire can render the `Situation` service tree against any TacticalAPI server **even when the server does not expose gRPC Server Reflection**.
 
