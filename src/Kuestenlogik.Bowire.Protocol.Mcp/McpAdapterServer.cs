@@ -40,6 +40,10 @@ internal sealed class McpAdapterServer
             "notifications/initialized" => null,
             "tools/list" => await HandleToolsListAsync(ct),
             "tools/call" => await HandleToolsCallAsync(message.GetProperty("params"), ct),
+            "resources/list" => await HandleResourcesListAsync(ct),
+            "resources/read" => await HandleResourcesReadAsync(message.GetProperty("params"), ct),
+            "prompts/list" => HandlePromptsList(),
+            "prompts/get" => HandlePromptsGet(message.GetProperty("params")),
             "ping" => HandlePing(),
             _ => CreateError(id, -32601, $"Method not found: {method}")
         };
@@ -56,7 +60,9 @@ internal sealed class McpAdapterServer
             protocolVersion = "2024-11-05",
             capabilities = new
             {
-                tools = new { listChanged = false }
+                tools = new { listChanged = false },
+                resources = new { listChanged = false, subscribe = false },
+                prompts = new { listChanged = false },
             },
             serverInfo = new
             {
@@ -199,6 +205,197 @@ internal sealed class McpAdapterServer
         }
 
         return CreateError(default, -32602, $"Tool not found: {toolName}");
+    }
+
+    // ----------------------------------------------------------------
+    // resources/* — per-service schema dumps. Each discovered service
+    // becomes one resource at `bowire-service://{plugin}/{service}` so
+    // an agent can read the full method+field tree (proto / OpenAPI /
+    // hub schema, depending on the plugin) before deciding which
+    // method to call. Cheaper than spamming tools/list, and a natural
+    // pendant to the tools/call -> service.method flow.
+    // ----------------------------------------------------------------
+
+    private async Task<JsonElement> HandleResourcesListAsync(CancellationToken ct)
+    {
+        var resources = new List<object>();
+        foreach (var protocol in _registry.Protocols)
+        {
+            if (protocol.Id == "mcp") continue;
+            List<BowireServiceInfo> services;
+            try { services = await protocol.DiscoverAsync(_serverUrl, showInternalServices: false, ct); }
+            catch { continue; }
+
+            foreach (var service in services)
+            {
+                var uri = $"bowire-service://{protocol.Id}/{service.Name}";
+                resources.Add(new
+                {
+                    uri,
+                    name = service.Name,
+                    description = $"{protocol.Name} service schema — {service.Methods.Count} method(s).",
+                    mimeType = "application/json",
+                });
+            }
+        }
+        return JsonSerializer.SerializeToElement(new { resources }, _jsonOptions);
+    }
+
+    private async Task<JsonElement> HandleResourcesReadAsync(JsonElement parameters, CancellationToken ct)
+    {
+        var uri = parameters.GetProperty("uri").GetString() ?? string.Empty;
+        // bowire-service://<plugin>/<service>
+        const string scheme = "bowire-service://";
+        if (!uri.StartsWith(scheme, StringComparison.OrdinalIgnoreCase))
+            return CreateError(default, -32602, $"Unsupported resource URI: {uri}");
+
+        var rest = uri.Substring(scheme.Length);
+        var slash = rest.IndexOf('/', StringComparison.Ordinal);
+        if (slash <= 0)
+            return CreateError(default, -32602, $"Malformed resource URI (expected bowire-service://<plugin>/<service>): {uri}");
+
+        var pluginId = rest.Substring(0, slash);
+        var serviceName = rest.Substring(slash + 1);
+
+        var protocol = _registry.Protocols.FirstOrDefault(
+            p => string.Equals(p.Id, pluginId, StringComparison.OrdinalIgnoreCase));
+        if (protocol is null)
+            return CreateError(default, -32602, $"Unknown plugin id: {pluginId}");
+
+        List<BowireServiceInfo> services;
+        try { services = await protocol.DiscoverAsync(_serverUrl, showInternalServices: false, ct); }
+        catch (Exception ex)
+        {
+            return CreateError(default, -32603, $"Discovery failed for {pluginId}: {ex.Message}");
+        }
+
+        var service = services.FirstOrDefault(
+            s => string.Equals(s.Name, serviceName, StringComparison.Ordinal));
+        if (service is null)
+            return CreateError(default, -32602, $"Unknown service: {serviceName}");
+
+        var payload = JsonSerializer.Serialize(new
+        {
+            plugin = pluginId,
+            service = service.Name,
+            description = service.Description,
+            methods = service.Methods.Select(m => new
+            {
+                name = m.Name,
+                methodType = m.MethodType,
+                inputType = m.InputType?.Name,
+                inputFields = m.InputType?.Fields?.Select(f => new
+                {
+                    f.Name, f.Type, f.Number, f.Label, f.IsRepeated, f.IsMap,
+                }),
+                outputType = m.OutputType?.Name,
+                outputFields = m.OutputType?.Fields?.Select(f => new
+                {
+                    f.Name, f.Type, f.Number, f.Label, f.IsRepeated, f.IsMap,
+                }),
+            }),
+        }, _jsonOptions);
+
+        return JsonSerializer.SerializeToElement(new
+        {
+            contents = new[]
+            {
+                new
+                {
+                    uri,
+                    mimeType = "application/json",
+                    text = payload,
+                }
+            }
+        }, _jsonOptions);
+    }
+
+    // ----------------------------------------------------------------
+    // prompts/* — generic "describe-service" + "generate-sample-request"
+    // templates that work against any discovered service. The agent
+    // picks the prompt, fills in the service/method arguments, and
+    // the rendered message tells it which tool to call to gather the
+    // facts.
+    // ----------------------------------------------------------------
+
+    private JsonElement HandlePromptsList()
+    {
+        return JsonSerializer.SerializeToElement(new
+        {
+            prompts = new object[]
+            {
+                new
+                {
+                    name = "describe-service",
+                    description = "Summarise what a discovered service does — method list, request/response shape, likely intent. Reads the service schema via the bowire-service:// resource.",
+                    arguments = new[]
+                    {
+                        new { name = "service", description = "Fully-qualified service name (e.g. weather.WeatherService).", required = true },
+                    }
+                },
+                new
+                {
+                    name = "generate-sample-request",
+                    description = "Generate a valid JSON request body for a service method, ready to feed into a tools/call. Uses the field types from the service schema and picks plausible sample values.",
+                    arguments = new[]
+                    {
+                        new { name = "service", description = "Fully-qualified service name.", required = true },
+                        new { name = "method", description = "Method name on that service.", required = true },
+                    }
+                },
+            }
+        }, _jsonOptions);
+    }
+
+    private JsonElement HandlePromptsGet(JsonElement parameters)
+    {
+        var name = parameters.GetProperty("name").GetString() ?? string.Empty;
+        var args = parameters.TryGetProperty("arguments", out var a) ? a : default;
+
+        string Arg(string key)
+            => args.ValueKind == JsonValueKind.Object && args.TryGetProperty(key, out var v)
+                ? v.GetString() ?? "" : "";
+
+        string text = name switch
+        {
+            "describe-service" => string.Join("\n", new[]
+            {
+                $"Summarise the service `{Arg("service")}` in three short paragraphs.",
+                "",
+                $"1. Read the resource `bowire-service://<plugin>/{Arg("service")}` to get the method list and field types. If you don't know the plugin id, list resources first.",
+                "2. Identify the dominant pattern: CRUD? Query/Command? Streaming? Mention the top three methods by name.",
+                "3. Suggest one likely use case the operator might want to test next, and the matching tools/call you would issue.",
+            }),
+
+            "generate-sample-request" => string.Join("\n", new[]
+            {
+                $"Generate a valid JSON request body for `{Arg("service")}/{Arg("method")}`, ready to feed into `tools/call`.",
+                "",
+                $"1. Read `bowire-service://<plugin>/{Arg("service")}` for the field schema (types, repeated/map flags, required fields).",
+                "2. Produce values that are realistic, not just defaults — a `userId` should look like an id, a `timestamp` should be ISO-8601, a `lat`/`lon` pair should be a real place.",
+                "3. Return exactly one JSON object — no prose, no markdown fences. Ready to paste into the tool's arguments field.",
+            }),
+
+            _ => $"Unknown prompt: {name}",
+        };
+
+        return JsonSerializer.SerializeToElement(new
+        {
+            description = name switch
+            {
+                "describe-service" => "Three-paragraph summary of a discovered service.",
+                "generate-sample-request" => "JSON request body ready for tools/call.",
+                _ => "Unknown prompt",
+            },
+            messages = new[]
+            {
+                new
+                {
+                    role = "user",
+                    content = new { type = "text", text },
+                }
+            }
+        }, _jsonOptions);
     }
 
     private static string MapToJsonSchemaType(string protoType) => protoType switch

@@ -78,7 +78,9 @@ internal static class McpServeCommand
         builder.Services
             .AddBowireMcp(cfg.ConfigureOptions)
             .WithStdioServerTransport()
-            .WithTools<BowireMcpTools>();
+            .WithTools<BowireMcpTools>()
+            .WithResources<BowireMcpResources>()
+            .WithPrompts<BowireMcpPrompts>();
 
         if (cfg.AllowArbitraryUrls)
             await Console.Error.WriteLineAsync("[bowire-mcp] WARNING: --allow-arbitrary-urls set; bowire.invoke / bowire.subscribe accept any URL the agent supplies.").ConfigureAwait(false);
@@ -99,7 +101,9 @@ internal static class McpServeCommand
         builder.Services
             .AddBowireMcp(cfg.ConfigureOptions)
             .WithHttpTransport(o => o.Stateless = true)
-            .WithTools<BowireMcpTools>();
+            .WithTools<BowireMcpTools>()
+            .WithResources<BowireMcpResources>()
+            .WithPrompts<BowireMcpPrompts>();
 
         var app = builder.Build();
         app.MapMcp("/bowire/mcp");
