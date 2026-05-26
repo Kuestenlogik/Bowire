@@ -35,21 +35,29 @@ internal static class NatsDiscovery
     public static async Task<HashSet<string>> ScanSubjectsAsync(
         string normalisedUrl, CancellationToken ct, TimeSpan? scanDuration = null)
     {
-        var duration = scanDuration ?? TimeSpan.FromSeconds(3);
-        var subjects = new HashSet<string>(StringComparer.Ordinal);
-
         await using var conn = new NatsConnection(NatsConnectionHelper.BuildOptions(normalisedUrl));
         await conn.ConnectAsync().AsTask().WaitAsync(ct).ConfigureAwait(false);
+        return await ScanSubjectsOnConnectionAsync(conn, ct, scanDuration).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Same scan as <see cref="ScanSubjectsAsync"/> but reuses an
+    /// already-connected <see cref="INatsConnection"/>. Phase-2
+    /// discovery runs subject sampling, JetStream listing, and
+    /// Services pinging against a single connection — opening three
+    /// separate ones would triple the handshake cost.
+    /// </summary>
+    public static async Task<HashSet<string>> ScanSubjectsOnConnectionAsync(
+        INatsConnection conn, CancellationToken ct, TimeSpan? scanDuration = null)
+    {
+        var duration = scanDuration ?? TimeSpan.FromSeconds(3);
+        var subjects = new HashSet<string>(StringComparer.Ordinal);
 
         using var scanCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
         scanCts.CancelAfter(duration);
 
         try
         {
-            // NatsConnection.SubscribeAsync yields NatsMsg<T> objects;
-            // we only care about the Subject string here, the payload
-            // bytes get dropped because BuildServices doesn't need
-            // sample data — just the namespace shape.
             await foreach (var msg in conn.SubscribeAsync<byte[]>(">", cancellationToken: scanCts.Token)
                                 .ConfigureAwait(false))
             {
@@ -59,8 +67,7 @@ internal static class NatsDiscovery
         }
         catch (OperationCanceledException)
         {
-            // Expected: scan window elapsed or the outer caller
-            // cancelled. Return whatever we've gathered.
+            // Expected: scan window elapsed.
         }
 
         return subjects;

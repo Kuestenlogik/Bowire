@@ -25,6 +25,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- NATS.Net is the meta-package that pulls in Core + JetStream +
+         Services + KV + ObjectStore + Serializers.Json. Phase 1 only
+         needed Core; Phase 2 uses JetStream + Services for the
+         discovery extensions, so we keep the single meta dep. -->
     <PackageReference Include="NATS.Net" />
   </ItemGroup>
 
