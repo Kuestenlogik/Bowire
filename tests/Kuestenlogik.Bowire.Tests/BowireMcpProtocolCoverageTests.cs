@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 using System.Globalization;
-using System.Reflection;
 using System.Text;
 using System.Text.Json;
 using Kuestenlogik.Bowire.Models;
@@ -11,245 +10,15 @@ using Kuestenlogik.Bowire.Protocol.Mcp;
 namespace Kuestenlogik.Bowire.Tests;
 
 /// <summary>
-/// Coverage-targeted tests for the MCP protocol plugin: drives the JSON-RPC
-/// envelope edge cases (error / missing-result), the SSE reader's line
-/// parsing, the input-schema mapper's non-object and array/items branches,
-/// and the adapter-server's tools/list + tools/call dispatch with a fake
-/// in-process protocol so we don't need the network.
+/// Coverage-targeted tests for the MCP adapter-server (tools/list +
+/// tools/call dispatch through a fake in-process protocol). The
+/// previous hand-rolled McpDiscoveryClient tests (ExtractResult /
+/// ReadSseResponseAsync / MapInputSchema) are dropped: that class was
+/// replaced by the official ModelContextProtocol.Client.McpClient, so
+/// the corresponding implementation-detail tests no longer apply.
 /// </summary>
 public sealed class BowireMcpProtocolCoverageTests
 {
-    private static readonly string[] s_requiredId = ["id"];
-
-    [Fact]
-    public void ExtractResult_Error_Envelope_Throws_With_Code_And_Message()
-    {
-        var envelope = JsonSerializer.SerializeToElement(new
-        {
-            jsonrpc = "2.0",
-            id = 1,
-            error = new { code = -32601, message = "boom" }
-        });
-
-        var ex = Assert.Throws<TargetInvocationException>(() => InvokeExtractResult(envelope, 1));
-        var inner = Assert.IsType<InvalidOperationException>(ex.InnerException);
-        Assert.Contains("-32601", inner.Message, StringComparison.Ordinal);
-        Assert.Contains("boom", inner.Message, StringComparison.Ordinal);
-    }
-
-    [Fact]
-    public void ExtractResult_Error_With_Missing_Code_And_Message_Uses_Defaults()
-    {
-        // Both code and message missing -> -1 / "Unknown MCP error" defaults.
-        var envelope = JsonSerializer.SerializeToElement(new
-        {
-            jsonrpc = "2.0",
-            id = 1,
-            error = new { }
-        });
-
-        var ex = Assert.Throws<TargetInvocationException>(() => InvokeExtractResult(envelope, 1));
-        var inner = Assert.IsType<InvalidOperationException>(ex.InnerException);
-        Assert.Contains("-1", inner.Message, StringComparison.Ordinal);
-        Assert.Contains("Unknown MCP error", inner.Message, StringComparison.Ordinal);
-    }
-
-    [Fact]
-    public void ExtractResult_Returns_Result_When_Present()
-    {
-        var envelope = JsonSerializer.SerializeToElement(new
-        {
-            jsonrpc = "2.0",
-            id = 5,
-            result = new { ok = true }
-        });
-
-        var result = InvokeExtractResult(envelope, 5);
-
-        Assert.Equal(JsonValueKind.Object, result.ValueKind);
-        Assert.True(result.GetProperty("ok").GetBoolean());
-    }
-
-    [Fact]
-    public void ExtractResult_No_Result_No_Error_Throws()
-    {
-        var envelope = JsonSerializer.SerializeToElement(new { jsonrpc = "2.0", id = 9 });
-
-        var ex = Assert.Throws<TargetInvocationException>(() => InvokeExtractResult(envelope, 9));
-        var inner = Assert.IsType<InvalidOperationException>(ex.InnerException);
-        Assert.Contains("9", inner.Message, StringComparison.Ordinal);
-    }
-
-    [Fact]
-    public async Task ReadSseResponseAsync_Returns_Result_When_Id_Matches()
-    {
-        var sse = string.Join('\n', [
-            "event: message",
-            "data: {\"jsonrpc\":\"2.0\",\"id\":1,\"result\":{\"answer\":42}}",
-            "",
-            ""
-        ]);
-
-        var result = await InvokeReadSseAsync(sse, expectedId: 1);
-
-        Assert.Equal(42, result.GetProperty("answer").GetInt32());
-    }
-
-    [Fact]
-    public async Task ReadSseResponseAsync_Skips_Mismatched_Id_Then_Returns_Match()
-    {
-        // First event is a different id -> skipped; second event matches.
-        var sse = string.Join('\n', [
-            "data: {\"jsonrpc\":\"2.0\",\"id\":99,\"result\":{\"x\":1}}",
-            "",
-            "data: {\"jsonrpc\":\"2.0\",\"id\":7,\"result\":{\"x\":2}}",
-            "",
-            ""
-        ]);
-
-        var result = await InvokeReadSseAsync(sse, expectedId: 7);
-
-        Assert.Equal(2, result.GetProperty("x").GetInt32());
-    }
-
-    [Fact]
-    public async Task ReadSseResponseAsync_Stream_Closed_Without_Match_Throws()
-    {
-        var sse = "data: {\"jsonrpc\":\"2.0\",\"id\":99,\"result\":{}}\n\n";
-
-        var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => InvokeReadSseAsync(sse, expectedId: 1));
-        Assert.Contains("SSE", ex.Message, StringComparison.OrdinalIgnoreCase);
-    }
-
-    [Fact]
-    public async Task ReadSseResponseAsync_Ignores_Non_Message_Events()
-    {
-        // The "ping" event must be skipped; only the "message" frame is consumed.
-        var sse = string.Join('\n', [
-            "event: ping",
-            "data: {\"jsonrpc\":\"2.0\",\"id\":1,\"result\":{\"x\":1}}",
-            "",
-            "event: message",
-            "data: {\"jsonrpc\":\"2.0\",\"id\":1,\"result\":{\"x\":2}}",
-            "",
-            ""
-        ]);
-
-        var result = await InvokeReadSseAsync(sse, expectedId: 1);
-
-        Assert.Equal(2, result.GetProperty("x").GetInt32());
-    }
-
-    [Fact]
-    public async Task ReadSseResponseAsync_Handles_Bare_Data_Line_Without_Space()
-    {
-        // "data:{...}" (no space after colon) is valid SSE and the reader
-        // must handle the colon-only prefix branch (line.Length > 5 false).
-        var sse = "data:\ndata: {\"jsonrpc\":\"2.0\",\"id\":1,\"result\":{}}\n\n";
-
-        var result = await InvokeReadSseAsync(sse, expectedId: 1);
-
-        Assert.Equal(JsonValueKind.Object, result.ValueKind);
-    }
-
-    [Fact]
-    public void MapInputSchema_Non_Object_Schema_Returns_Empty()
-    {
-        var notObject = JsonSerializer.SerializeToElement("scalar");
-
-        var info = McpDiscoveryClient.MapInputSchema("toolName", notObject);
-
-        Assert.Equal("toolNameInput", info.Name);
-        Assert.Empty(info.Fields);
-    }
-
-    [Fact]
-    public void MapInputSchema_Maps_All_Json_Schema_Types()
-    {
-        var schema = JsonSerializer.SerializeToElement(new
-        {
-            type = "object",
-            required = s_requiredId,
-            properties = new Dictionary<string, object>
-            {
-                ["id"] = new { type = "integer", description = "row id" },
-                ["score"] = new { type = "number" },
-                ["enabled"] = new { type = "boolean" },
-                ["name"] = new { type = "string" },
-                ["weird"] = new { type = "null" },
-                ["nested"] = new
-                {
-                    type = "object",
-                    properties = new Dictionary<string, object>
-                    {
-                        ["inner"] = new { type = "string" }
-                    }
-                },
-                ["tags"] = new
-                {
-                    type = "array",
-                    items = new { type = "string" }
-                },
-                ["nakedArray"] = new { type = "array" }
-            }
-        });
-
-        var info = McpDiscoveryClient.MapInputSchema("ToolX", schema);
-
-        var byName = info.Fields.ToDictionary(f => f.Name);
-
-        Assert.Equal("int64", byName["id"].Type);
-        Assert.True(byName["id"].Required);
-        Assert.Equal("required", byName["id"].Label);
-        Assert.Equal("row id", byName["id"].Description);
-
-        Assert.Equal("double", byName["score"].Type);
-        Assert.False(byName["score"].Required);
-        Assert.Equal("optional", byName["score"].Label);
-
-        Assert.Equal("bool", byName["enabled"].Type);
-        Assert.Equal("string", byName["name"].Type);
-
-        // Unknown/missing type -> "string"
-        Assert.Equal("string", byName["weird"].Type);
-
-        Assert.Equal("message", byName["nested"].Type);
-        Assert.NotNull(byName["nested"].MessageType);
-        Assert.Single(byName["nested"].MessageType!.Fields);
-
-        Assert.Equal("string", byName["tags"].Type);
-        Assert.True(byName["tags"].IsRepeated);
-
-        // Array without "items" still flagged repeated, falls back to string
-        Assert.Equal("string", byName["nakedArray"].Type);
-        Assert.True(byName["nakedArray"].IsRepeated);
-    }
-
-    [Fact]
-    public void MapInputSchema_Array_Items_Non_Object_Falls_Back_To_String()
-    {
-        // Reaches ResolvePropertyType's non-object early-return through the
-        // recursive array/items branch.
-        var schema = JsonSerializer.SerializeToElement(new
-        {
-            type = "object",
-            properties = new Dictionary<string, object>
-            {
-                ["weird"] = new
-                {
-                    type = "array",
-                    items = "scalar"
-                }
-            }
-        });
-
-        var info = McpDiscoveryClient.MapInputSchema("ToolY", schema);
-        var field = Assert.Single(info.Fields);
-
-        Assert.Equal("string", field.Type);
-        Assert.True(field.IsRepeated);
-    }
-
     [Fact]
     public async Task AdapterServer_ToolsList_Includes_Fake_Protocol_Tool_With_InputSchema()
     {
@@ -514,26 +283,6 @@ public sealed class BowireMcpProtocolCoverageTests
             InputType: input,
             OutputType: new BowireMessageInfo(name + "Result", "demo." + name + "Result", []),
             MethodType: "Unary");
-
-    private static JsonElement InvokeExtractResult(JsonElement envelope, int expectedId)
-    {
-        var method = typeof(McpDiscoveryClient).GetMethod(
-            "ExtractResult", BindingFlags.NonPublic | BindingFlags.Static);
-        Assert.NotNull(method);
-        return (JsonElement)method!.Invoke(null, [envelope, expectedId])!;
-    }
-
-    private static async Task<JsonElement> InvokeReadSseAsync(string body, int expectedId)
-    {
-        var method = typeof(McpDiscoveryClient).GetMethod(
-            "ReadSseResponseAsync", BindingFlags.NonPublic | BindingFlags.Static);
-        Assert.NotNull(method);
-
-        using var ms = new MemoryStream(Encoding.UTF8.GetBytes(body));
-        using var reader = new StreamReader(ms);
-        var task = (Task<JsonElement>)method!.Invoke(null, [reader, expectedId, CancellationToken.None])!;
-        return await task;
-    }
 
     private sealed class FakeProtocol(string id, string name, BowireServiceInfo service) : IBowireProtocol
     {
