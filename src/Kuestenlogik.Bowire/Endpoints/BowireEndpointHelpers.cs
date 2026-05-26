@@ -87,6 +87,16 @@ internal static class BowireEndpointHelpers
                 new KeyValuePair<string, string>(
                     "X-Bowire-Grpc-Transport", "web"));
         }
+        if (string.Equals(hint, "connect", StringComparison.OrdinalIgnoreCase))
+        {
+            // connect@ pins the gRPC plugin and asks it to send the call
+            // as a Connect (Buf) unary POST — different wire envelope
+            // than gRPC / gRPC-Web, but the same .proto schema. Phase 1
+            // covers unary only; streaming will land in a follow-up.
+            return ("grpc",
+                new KeyValuePair<string, string>(
+                    "X-Bowire-Grpc-Transport", "connect"));
+        }
         return (hint, null);
     }
 
