@@ -115,6 +115,19 @@ internal static class BrowserUiHost
         // a no-op and the workbench stays open (today's default).
         builder.Services.AddBowireAuth(builder.Configuration);
 
+        // Opt-in MCP adapter. Registering it pre-Build is the new
+        // DI-driven shape (the previous WithMcpAdapter() called at
+        // map-time predates the official SDK Migration). The adapter
+        // exposes Bowire's discovered API surface as MCP tools /
+        // resources / prompts so AI agents can drive the workbench.
+        if (ui.EnableMcpAdapter)
+        {
+            var mcpServerUrl = !string.IsNullOrEmpty(ui.PrimaryUrl)
+                ? ui.PrimaryUrl
+                : $"http://localhost:{ui.Port}";
+            builder.Services.AddBowireMcpAdapter(mcpServerUrl);
+        }
+
         var app = builder.Build();
         app.UseResponseCompression();
 
@@ -152,12 +165,10 @@ internal static class BrowserUiHost
 
         if (ui.EnableMcpAdapter)
         {
-            var mcpServerUrl = !string.IsNullOrEmpty(ui.PrimaryUrl)
-                ? ui.PrimaryUrl
-                : $"http://localhost:{ui.Port}";
-            // Standalone mounts at "/" — pass "" so the MCP adapter lands at `/mcp`,
-            // not `/bowire/mcp`.
-            bowire.WithMcpAdapter(mcpServerUrl, prefix: string.Empty);
+            // Standalone mounts at "/" — pass "" so the MCP adapter
+            // lands at `/mcp`, not `/bowire/mcp`. The matching DI
+            // registration happened pre-Build above.
+            app.MapBowireMcpAdapter(prefix: string.Empty);
         }
 
         await app.RunAsync(ct).ConfigureAwait(false);

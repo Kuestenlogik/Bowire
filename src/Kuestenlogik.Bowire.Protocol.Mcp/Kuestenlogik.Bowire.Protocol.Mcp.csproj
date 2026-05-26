@@ -20,5 +20,11 @@
          JSON-RPC pipeline. The adapter-server side (McpAdapterServer)
          is still self-contained and doesn't take a runtime dep. -->
     <PackageReference Include="ModelContextProtocol" />
+    <!-- AspNetCore package brings app.MapMcp(pattern) for mounting
+         the streamable-HTTP transport on the host's route table.
+         The adapter (Bowire-as-MCP-server) leans on that for the
+         transport plumbing; tools / resources / prompts are still
+         injected dynamically via the With*Handler builder API. -->
+    <PackageReference Include="ModelContextProtocol.AspNetCore" />
   </ItemGroup>
 </Project>
