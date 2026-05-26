@@ -15,5 +15,10 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Kuestenlogik.Bowire\Kuestenlogik.Bowire.csproj" />
+    <!-- Official MCP C# SDK — discovery + invoke path uses
+         ModelContextProtocol.Client.McpClient instead of a hand-rolled
+         JSON-RPC pipeline. The adapter-server side (McpAdapterServer)
+         is still self-contained and doesn't take a runtime dep. -->
+    <PackageReference Include="ModelContextProtocol" />
   </ItemGroup>
 </Project>
