@@ -200,12 +200,29 @@
     </div>
   </div>
   <script>
-    window.addEventListener('load', function () {
-      var pre = document.getElementById('bowire-loading');
-      if (!pre) return;
-      pre.classList.add('is-hidden');
-      setTimeout(function () { pre.remove(); }, 300);
-    });
+    // Hide the preloader as soon as the parser is done with the
+    // initial DOM — waiting on `window.load` deadlocks the loader
+    // when images use `loading="lazy"` (the browser defers load
+    // events for off-viewport lazy images indefinitely, surfaced as
+    // the "Intervention: load events are deferred" console hint).
+    (function () {
+      function hide() {
+        var pre = document.getElementById('bowire-loading');
+        if (!pre || pre.classList.contains('is-hidden')) return;
+        pre.classList.add('is-hidden');
+        setTimeout(function () { pre.remove(); }, 300);
+      }
+      if (document.readyState === 'complete' || document.readyState === 'interactive') {
+        hide();
+      } else {
+        document.addEventListener('DOMContentLoaded', hide, { once: true });
+      }
+      // Belt-and-braces: `load` still fires for completion, just
+      // later than DOMContentLoaded. Run hide() again so a tab that
+      // somehow misses DOMContentLoaded (back/forward cache, &c)
+      // still recovers.
+      window.addEventListener('load', hide, { once: true });
+    })();
   </script>
 
   {% include header.html %}
