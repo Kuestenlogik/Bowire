@@ -16,6 +16,13 @@
          fixture behind app.UseGrpcWeb() over HTTP/1.1. -->
     <PackageReference Include="Grpc.AspNetCore.Web" />
     <PackageReference Include="Grpc.Tools" PrivateAssets="All" />
+    <!-- Testcontainers.Nats: spins up nats-server in Docker with
+         -js so the NATS plugin's Phase 2 JetStream + Services
+         round-trip tests can run against a real broker. Carries
+         [Trait("Category","Docker")] so the rest of the suite
+         still runs on hosts without a Docker daemon. -->
+    <PackageReference Include="Testcontainers" />
+    <PackageReference Include="Testcontainers.Nats" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\Kuestenlogik.Bowire\Kuestenlogik.Bowire.csproj" />
@@ -33,6 +40,7 @@
     <ProjectReference Include="..\..\src\Kuestenlogik.Bowire.Protocol.Mcp\Kuestenlogik.Bowire.Protocol.Mcp.csproj" />
     <ProjectReference Include="..\..\src\Kuestenlogik.Bowire.Protocol.JsonRpc\Kuestenlogik.Bowire.Protocol.JsonRpc.csproj" />
     <ProjectReference Include="..\..\src\Kuestenlogik.Bowire.Protocol.Mqtt\Kuestenlogik.Bowire.Protocol.Mqtt.csproj" />
+    <ProjectReference Include="..\..\src\Kuestenlogik.Bowire.Protocol.Nats\Kuestenlogik.Bowire.Protocol.Nats.csproj" />
     <ProjectReference Include="..\..\src\Kuestenlogik.Bowire.Protocol.SocketIo\Kuestenlogik.Bowire.Protocol.SocketIo.csproj" />
     <ProjectReference Include="..\..\src\Kuestenlogik.Bowire.Protocol.OData\Kuestenlogik.Bowire.Protocol.OData.csproj" />
     <ProjectReference Include="..\..\src\Kuestenlogik.Bowire.Protocol.Rest\Kuestenlogik.Bowire.Protocol.Rest.csproj" />
