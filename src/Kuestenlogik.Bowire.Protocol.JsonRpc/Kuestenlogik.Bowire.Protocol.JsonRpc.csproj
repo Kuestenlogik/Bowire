@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Description>Bowire JSON-RPC 2.0 protocol plugin — browse and invoke any JSON-RPC 2.0 endpoint. Discovery via OpenRPC (rpc.discover or /openrpc.json) when supported; otherwise a freeform invoke mode lets you call any method by name.</Description>
+    <PackageId>Kuestenlogik.Bowire.Protocol.JsonRpc</PackageId>
+    <PackageTags>bowire;bowire-plugin;jsonrpc;json-rpc;openrpc;developer-tools</PackageTags>
+    <IsPackable>true</IsPackable>
+  </PropertyGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="bowire" />
+    <InternalsVisibleTo Include="Kuestenlogik.Bowire.Tests" />
+    <InternalsVisibleTo Include="Kuestenlogik.Bowire.IntegrationTests" />
+  </ItemGroup>
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Kuestenlogik.Bowire\Kuestenlogik.Bowire.csproj" />
+  </ItemGroup>
+</Project>

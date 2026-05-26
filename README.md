@@ -5,7 +5,7 @@
 [![NuGet](https://img.shields.io/nuget/v/Kuestenlogik.Bowire)](https://www.nuget.org/packages/Kuestenlogik.Bowire)
 [![License](https://img.shields.io/github/license/Kuestenlogik/Bowire)](https://github.com/Kuestenlogik/Bowire/blob/main/LICENSE)
 
-**The multi-protocol API workbench — gRPC (native + gRPC-Web + Connect), REST, GraphQL, SignalR, WebSocket, SSE, MQTT, Socket.IO, MCP, OData, AsyncAPI (discovery source), AMQP, Kafka, Akka.NET, DIS, UDP, TacticalAPI, Surgewave — runs against any service URL with zero code changes.**
+**The multi-protocol API workbench — gRPC (native + gRPC-Web + Connect), REST, GraphQL, JSON-RPC, SignalR, WebSocket, SSE, MQTT, Socket.IO, MCP, OData, AsyncAPI (discovery source), AMQP, Kafka, Akka.NET, DIS, UDP, TacticalAPI, Surgewave — runs against any service URL with zero code changes.**
 
 [Quickstart](https://bowire.io/quickstart.html) · [Features](https://bowire.io/features.html) · [Why Bowire](https://bowire.io/why-bowire.html) · [Docs](https://bowire.io/docs/) · [Downloads](https://bowire.io/downloads.html)
 

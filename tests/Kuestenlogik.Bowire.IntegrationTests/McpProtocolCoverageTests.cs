@@ -13,8 +13,8 @@ namespace Kuestenlogik.Bowire.IntegrationTests;
 
 /// <summary>
 /// Coverage-targeted end-to-end tests for the MCP plugin: drives the
-/// adapter HTTP endpoint, the SSE response transport in
-/// <see cref="McpDiscoveryClient"/>, the resources/prompts read paths in
+/// adapter HTTP endpoint, the SSE response transport the SDK client
+/// uses, the resources/prompts read paths in
 /// <see cref="BowireMcpProtocol"/>, and the per-list catch blocks that
 /// keep partial discovery alive when a server only supports some MCP
 /// list verbs.
