@@ -630,8 +630,7 @@
         </template>
       </a>
 
-      <a class="protocol-card protocol-card-preview" href="{{ '/docs/protocols/tacticalapi.html' | relative_url }}" data-feature-modal tabindex="0">
-        <span class="protocol-card-ribbon" aria-hidden="true">preview</span>
+      <a class="protocol-card" href="{{ '/docs/protocols/tacticalapi.html' | relative_url }}" data-feature-modal tabindex="0">
         <div class="protocol-icon">
           <!-- TacticalAPI — generic radar-sweep / situational-awareness
                glyph (we deliberately don't reuse Rheinmetall brand
@@ -654,7 +653,7 @@
         </div>
         <div class="protocol-content">
           <h3>TacticalAPI</h3>
-          <p>Rheinmetall's TacticalAPI &mdash; gRPC interface for situational-awareness systems. Bundled schema means the <code>Situation</code> service tree shows up in the sidebar even without Server Reflection. v0.2.x: discovery + typed unary CRUD + server-streaming pump all wired through, mTLS client-cert via metadata for the field-default deployment shape.</p>
+          <p>Rheinmetall's TacticalAPI &mdash; gRPC interface for situational-awareness systems. Bundled schema means the <code>Situation</code> service tree shows up in the sidebar even without Server Reflection. v1.0: discovery + typed unary CRUD + server-streaming pump all wired through, mTLS client-cert via metadata for the field-default deployment shape, recording-replay via <code>TacticalApiMockEmitter</code>.</p>
           <div class="protocol-install">
             <code><span class="protocol-install-prompt">$</span> dotnet add package Kuestenlogik.Bowire.Protocol.TacticalApi</code>
             <button class="protocol-install-copy copy-btn" data-copy="dotnet add package Kuestenlogik.Bowire.Protocol.TacticalApi" aria-label="Copy install command for TacticalAPI"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></button>
@@ -663,7 +662,7 @@
         <template class="feature-card-detail">
           <div class="features-block">
             <div class="features-block-text">
-              <h3>TacticalAPI <span class="protocol-tag protocol-tag-preview">preview &middot; v0.2.0</span></h3>
+              <h3>TacticalAPI <span class="protocol-tag">v1.0.0</span></h3>
               <p class="features-block-lead">A typed discovery sidebar for Rheinmetall's situational-awareness gRPC interface &mdash; even when the target server doesn't expose Server Reflection.</p>
               <p>The plugin downloads the upstream <code>.proto</code> set at build time (pinned commit, EPL-2.0 upstream, never redistributed), compiles it with <code>Grpc.Tools</code>, and ships only the generated bindings &mdash; so installing the package gives Bowire enough schema to render the <code>Situation</code> service tree out of the box. Connect with <code>bowire --url tacticalapi@host:50051</code>. Pairs naturally with the gRPC plugin's gRPC-Web transport for TacticalAPI's HTTP/1.1 port (<code>:4268</code>) alongside the native HTTP/2 port (<code>:4267</code>).</p>
               <ul class="features-block-capabilities">
