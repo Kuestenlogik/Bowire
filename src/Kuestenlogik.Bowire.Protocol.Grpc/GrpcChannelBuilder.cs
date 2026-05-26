@@ -22,7 +22,15 @@ namespace Kuestenlogik.Bowire.Protocol.Grpc;
 public enum GrpcTransportMode
 {
     Native = 0,
-    Web    = 1
+    Web    = 1,
+
+    /// <summary>
+    /// Connect (Buf) protocol — POST <c>/&lt;service&gt;/&lt;method&gt;</c>
+    /// with a JSON or protobuf body, status carried by standard HTTP
+    /// response codes, error shape <c>{ "code", "message" }</c>. Phase 1
+    /// covers unary only; streaming follows in a later phase.
+    /// </summary>
+    Connect = 2,
 }
 
 /// <summary>
@@ -106,9 +114,11 @@ internal static class GrpcChannelBuilder
         {
             if (string.Equals(k, BowireGrpcProtocol.TransportMetadataKey, StringComparison.OrdinalIgnoreCase))
             {
-                return string.Equals(v, "web", StringComparison.OrdinalIgnoreCase)
-                    ? GrpcTransportMode.Web
-                    : GrpcTransportMode.Native;
+                if (string.Equals(v, "web", StringComparison.OrdinalIgnoreCase))
+                    return GrpcTransportMode.Web;
+                if (string.Equals(v, "connect", StringComparison.OrdinalIgnoreCase))
+                    return GrpcTransportMode.Connect;
+                return GrpcTransportMode.Native;
             }
         }
         return GrpcTransportMode.Native;
@@ -142,6 +152,8 @@ internal static class GrpcChannelBuilder
                 var value = eqIdx < 0 ? "" : Uri.UnescapeDataString(pair[(eqIdx + 1)..]);
                 if (string.Equals(value, "web", StringComparison.OrdinalIgnoreCase))
                     mode = GrpcTransportMode.Web;
+                else if (string.Equals(value, "connect", StringComparison.OrdinalIgnoreCase))
+                    mode = GrpcTransportMode.Connect;
                 // The marker itself is dropped from the rebuilt query.
                 continue;
             }

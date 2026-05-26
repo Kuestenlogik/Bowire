@@ -103,8 +103,8 @@
       <a class="roadmap-card roadmap-card-link" href="https://github.com/Kuestenlogik/Bowire/blob/main/ROADMAP.md" target="_blank" rel="noopener">
         <div class="roadmap-number" aria-hidden="true">1</div>
         <div class="roadmap-card-body">
-          <h3>Connect (Buf) — third gRPC wire mode</h3>
-          <p>Connect alongside HTTP/2 and gRPC-Web in the existing gRPC plugin. Phased rollout: unary first, then server-streaming, then bidi.</p>
+          <h3>Connect (Buf) — server-streaming + bidi</h3>
+          <p>Phase 1 (unary) shipped &mdash; <code>connect@</code> URL hint routes the gRPC plugin's invoke path through a hand-rolled Connect POST. Phase 2 adds server-streaming via the <code>application/connect+proto</code> length-prefixed envelope; phase 3 the bidi handshake.</p>
         </div>
       </a>
 

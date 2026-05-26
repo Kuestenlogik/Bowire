@@ -25,6 +25,11 @@ internal sealed class GrpcInvoker : IDisposable
     private readonly GrpcChannel _channel;
     private readonly GrpcReflectionClient _reflectionClient;
     private readonly MtlsHandlerOwner? _mtlsOwner;
+    private readonly GrpcTransportMode _transportMode;
+    private readonly string _serverUrl;
+    private readonly MtlsConfig? _mtlsConfig;
+    private readonly IConfiguration? _configuration;
+    private ConnectInvoker? _connectInvoker;
 
     public GrpcInvoker(
         string serverUrl,
@@ -33,6 +38,10 @@ internal sealed class GrpcInvoker : IDisposable
         IConfiguration? configuration = null,
         GrpcTransportMode transportMode = GrpcTransportMode.Native)
     {
+        _transportMode = transportMode;
+        _serverUrl = serverUrl;
+        _mtlsConfig = mtlsConfig;
+        _configuration = configuration;
         // When a client cert is supplied via the mTLS auth helper, build a
         // SocketsHttpHandler with the cert attached to SslOptions and route
         // gRPC traffic through it. The handler-owner holds the X509 resources
@@ -68,6 +77,26 @@ internal sealed class GrpcInvoker : IDisposable
         Dictionary<string, string>? metadata = null, CancellationToken ct = default)
     {
         var resolved = await ResolveMethodAsync(serviceName, methodName, ct);
+
+        // Connect transport bypasses GrpcChannel entirely — it speaks
+        // plain HTTP POST with the Connect envelope. Streaming and
+        // bidi aren't supported in Connect Phase 1.
+        if (_transportMode == GrpcTransportMode.Connect)
+        {
+            if (resolved.ClientStreaming || resolved.ServerStreaming)
+            {
+                return new InvokeResult(null, 0,
+                    "Connect (Buf) Phase 1 covers unary RPCs only. Use grpcweb@ or the native HTTP/2 transport for streaming.",
+                    []);
+            }
+            _connectInvoker ??= new ConnectInvoker(_serverUrl, _mtlsConfig, _configuration);
+            return await _connectInvoker.InvokeUnaryAsync(
+                serviceName, methodName,
+                resolved.InputType, resolved.OutputType,
+                jsonMessages.FirstOrDefault() ?? "{}",
+                metadata, ct).ConfigureAwait(false);
+        }
+
         var callOptions = BuildCallOptions(metadata, ct);
         var sw = Stopwatch.StartNew();
 
@@ -723,6 +752,7 @@ internal sealed class GrpcInvoker : IDisposable
     public void Dispose()
     {
         _channel.Dispose();
+        _connectInvoker?.Dispose();
         _mtlsOwner?.Dispose();
     }
 
