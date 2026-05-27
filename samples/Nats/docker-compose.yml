@@ -1,0 +1,12 @@
+# NATS server with JetStream enabled for the Bowire NATS plugin demo.
+# Run: docker compose up
+# Tear down: docker compose down -v
+services:
+  nats:
+    image: nats:2-alpine
+    container_name: bowire-nats
+    command: ["-js", "-m", "8222"]
+    ports:
+      - "4222:4222"   # client
+      - "6222:6222"   # cluster
+      - "8222:8222"   # monitoring
