@@ -23,6 +23,10 @@ Auto-generated from XML doc-comments across the published assemblies. Use the si
 - <xref:Kuestenlogik.Bowire.Protocol.WebSocket>
 - <xref:Kuestenlogik.Bowire.Protocol.Sse>
 - <xref:Kuestenlogik.Bowire.Protocol.Mqtt>
+- <xref:Kuestenlogik.Bowire.Protocol.Nats>
+- <xref:Kuestenlogik.Bowire.Protocol.Soap>
+- <xref:Kuestenlogik.Bowire.Protocol.JsonRpc>
+- <xref:Kuestenlogik.Bowire.Protocol.Pulsar>
 - <xref:Kuestenlogik.Bowire.Protocol.SocketIo>
 - <xref:Kuestenlogik.Bowire.Protocol.OData>
 - <xref:Kuestenlogik.Bowire.Protocol.Mcp>
@@ -33,6 +37,7 @@ These ship from their own NuGet packages with independent release cadences — s
 
 - `Kuestenlogik.Bowire.Protocol.Surgewave`
 - `Kuestenlogik.Bowire.Protocol.Kafka`
+- `Kuestenlogik.Bowire.Protocol.Amqp`
 - `Kuestenlogik.Bowire.Protocol.Dis`
 - `Kuestenlogik.Bowire.Protocol.Udp`
 - `Kuestenlogik.Bowire.Protocol.Akka`

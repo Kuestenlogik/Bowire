@@ -1104,6 +1104,42 @@ var BOWIRE_PROTOCOLS = [
         docUrl: 'https://github.com/Kuestenlogik/Bowire#mqtt'
     },
     {
+        id: 'nats', label: 'NATS',
+        hint: 'Subjects · JetStream · Services API',
+        packageId: 'Kuestenlogik.Bowire.Protocol.Nats',
+        urlPlaceholder: 'nats://broker.example:4222',
+        category: 'first-party',
+        setupNote: 'Bowire runs three discovery sources from one connection: subject sampling on <code>&gt;</code>, JetStream stream enumeration (when <code>-js</code> is on), and the Services API via <code>$SRV.PING</code>.',
+        docUrl: 'https://github.com/Kuestenlogik/Bowire#nats'
+    },
+    {
+        id: 'soap', label: 'SOAP',
+        hint: 'WSDL 1.1 discovery, SOAP 1.1 / 1.2 invoke',
+        packageId: 'Kuestenlogik.Bowire.Protocol.Soap',
+        urlPlaceholder: 'https://api.example.com/service.asmx',
+        category: 'first-party',
+        setupNote: 'Bowire fetches the WSDL via <code>?wsdl</code> (or the URL verbatim when it already points at the WSDL) and POSTs SOAP envelopes against the discovered endpoint. SOAP 1.1 default; 1.2 opt-in via <code>soap_version=1.2</code> metadata.',
+        docUrl: 'https://github.com/Kuestenlogik/Bowire#soap'
+    },
+    {
+        id: 'jsonrpc', label: 'JSON-RPC',
+        hint: 'OpenRPC discovery, freeform fallback',
+        packageId: 'Kuestenlogik.Bowire.Protocol.JsonRpc',
+        urlPlaceholder: 'https://api.example.com/rpc',
+        category: 'first-party',
+        setupNote: 'Bowire calls <code>rpc.discover</code> (OpenRPC convention) on the endpoint. Servers that don&rsquo;t advertise OpenRPC still work &mdash; the plugin claims the URL and shows a placeholder so freeform invocation works.',
+        docUrl: 'https://github.com/Kuestenlogik/Bowire#jsonrpc'
+    },
+    {
+        id: 'pulsar', label: 'Apache Pulsar',
+        hint: 'Topic discovery via HTTP admin',
+        packageId: 'Kuestenlogik.Bowire.Protocol.Pulsar',
+        urlPlaceholder: 'pulsar://broker.example:6650',
+        category: 'first-party',
+        setupNote: 'Bowire enumerates topics via Pulsar&rsquo;s HTTP admin API (<code>/admin/v2/persistent</code>) and produces / subscribes over the binary protocol using the Apache-maintained DotPulsar client.',
+        docUrl: 'https://github.com/Kuestenlogik/Bowire#pulsar'
+    },
+    {
         id: 'socketio', label: 'Socket.IO',
         hint: 'Engine.io + Socket.IO 4.x',
         packageId: 'Kuestenlogik.Bowire.Protocol.SocketIo',
