@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Description>Bowire Apache Pulsar protocol plugin — browse and invoke Pulsar topics. Discovery walks the broker's HTTP admin API (/admin/v2/persistent/&lt;tenant&gt;/&lt;namespace&gt;) to enumerate topics; invocation produces messages over the binary protocol, and the streaming surface tails a subscription so the workbench can show live consume output. Built on the official DotPulsar client.</Description>
+    <PackageId>Kuestenlogik.Bowire.Protocol.Pulsar</PackageId>
+    <PackageTags>bowire;bowire-plugin;pulsar;apache-pulsar;messaging;developer-tools</PackageTags>
+    <IsPackable>true</IsPackable>
+  </PropertyGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="bowire" />
+    <InternalsVisibleTo Include="Kuestenlogik.Bowire.Tests" />
+    <InternalsVisibleTo Include="Kuestenlogik.Bowire.IntegrationTests" />
+  </ItemGroup>
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="DotPulsar" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Kuestenlogik.Bowire\Kuestenlogik.Bowire.csproj" />
+  </ItemGroup>
+</Project>

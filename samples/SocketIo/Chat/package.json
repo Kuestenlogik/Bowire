@@ -1,0 +1,12 @@
+{
+  "name": "bowire-samples-socketio-chat",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Socket.IO chat sample server for the Bowire Socket.IO plugin demo",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "socket.io": "^4.7.5"
+  }
+}
