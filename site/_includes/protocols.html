@@ -273,6 +273,131 @@
         </template>
       </a>
 
+      <a class="protocol-card" href="{{ '/docs/protocols/nats.html' | relative_url }}" data-feature-modal tabindex="0">
+        <div class="protocol-icon">
+          <!-- NATS — official nats.io brand mark (rounded N glyph). -->
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="#27AAE1" aria-hidden="true"><path d="M2.5 4.5h4.2l9.6 12V4.5h4.7v15h-4.2l-9.6-12v12H2.5z"/></svg>
+        </div>
+        <div class="protocol-content">
+          <h3>NATS</h3>
+          <p>In-tree plugin on the official NATS.Net 2.x client. Three discovery sources fan out from one shared connection: subject sampling on the <code>&gt;</code> wildcard, JetStream stream enumeration, and the Services API via <code>$SRV.PING</code> broadcast. Pub / sub / request reuse the same Wireshark-style stream pane.</p>
+          <div class="protocol-install">
+            <code><span class="protocol-install-prompt">$</span> dotnet add package Kuestenlogik.Bowire.Protocol.Nats</code>
+            <button class="protocol-install-copy copy-btn" data-copy="dotnet add package Kuestenlogik.Bowire.Protocol.Nats" aria-label="Copy install command for NATS"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></button>
+          </div>
+        </div>
+        <template class="feature-card-detail">
+          <div class="features-block">
+            <div class="features-block-text">
+              <h3>NATS</h3>
+              <p class="features-block-lead">One connection, three discovery sources: subject sampling, JetStream streams, Services API. Every subject becomes publish / subscribe / request without per-subject configuration.</p>
+              <p>The plugin sits on the official <code>NATS.Net</code> 2.x client. Subjects observed during the <code>&gt;</code> scan window get grouped by first-token prefix; each surfaces three methods. JetStream streams (when <code>-js</code> is on) become services with <code>info</code>, <code>consume</code> via ordered consumer, and JS-acked <code>publish</code> per filtered subject. <code>$SRV.PING</code> broadcast + <code>$SRV.INFO.&lt;name&gt;</code> follow-up parses the Services-API endpoint list. Queue-group hint on subscribe via metadata <code>queue_group</code> for NATS-side load balancing.</p>
+              <p><strong>Try it.</strong> <code>samples/Nats</code> in the main repo brings up a <code>nats:2-alpine -js</code> broker via docker-compose; point Bowire at <code>nats://localhost:4222</code> to see all three discovery surfaces light up at once.</p>
+              <ul class="features-block-capabilities">
+                <li>Subject pub / sub / request</li>
+                <li>JetStream streams</li>
+                <li>Services API</li>
+                <li>Queue groups</li>
+              </ul>
+              <a class="features-block-docs-link" href="{{ '/docs/protocols/nats.html' | relative_url }}">Read the full docs &rarr;</a>
+            </div>
+          </div>
+        </template>
+      </a>
+
+      <a class="protocol-card" href="{{ '/docs/protocols/soap.html' | relative_url }}" data-feature-modal tabindex="0">
+        <div class="protocol-icon">
+          <!-- Generic SOAP envelope mark — no vendor branding. -->
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--text)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6l9 5 9-5"/><rect x="3" y="6" width="18" height="13" rx="1"/><path d="M8 13h8"/><path d="M8 16h5"/></svg>
+        </div>
+        <div class="protocol-content">
+          <h3>SOAP</h3>
+          <p>WSDL 1.1 discovery (operations &rarr; methods, port types &rarr; services), SOAP 1.1 + 1.2 envelopes, automatic Fault detection. No WCF or SoapCore dependency &mdash; the wire is hand-rolled XML over HTTP, so the plugin works on every .NET LTS.</p>
+          <div class="protocol-install">
+            <code><span class="protocol-install-prompt">$</span> dotnet add package Kuestenlogik.Bowire.Protocol.Soap</code>
+            <button class="protocol-install-copy copy-btn" data-copy="dotnet add package Kuestenlogik.Bowire.Protocol.Soap" aria-label="Copy install command for SOAP"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></button>
+          </div>
+        </div>
+        <template class="feature-card-detail">
+          <div class="features-block features-block-reverse">
+            <div class="features-block-text">
+              <h3>SOAP</h3>
+              <p class="features-block-lead">Paste a WSDL URL, get a typed service tree. Fault bodies surface with their own <code>Status="Fault"</code> so they're distinct from transport-level errors.</p>
+              <p>The parser walks every <code>&lt;portType&gt;</code> and matches it to its <code>&lt;binding&gt;</code> + <code>&lt;service&gt;/&lt;port&gt;</code> so each operation knows its SOAPAction header. SOAP 1.1 is the default; <code>soap_version=1.2</code> metadata flips both the envelope namespace and the Content-Type per WS-I BP 1.1. Endpoint URL override via <code>endpoint_url</code> metadata covers the "WSDL on host A, service on host B" deployments.</p>
+              <p><strong>Try it.</strong> <code>samples/Soap/CalculatorService</code> in the main repo is a hand-rolled Calculator service (no WCF dependency) with <code>Add</code> / <code>Subtract</code> / <code>Multiply</code> / <code>Divide</code> and a <code>Fault</code> on divide-by-zero so the fault-handling path lights up.</p>
+              <ul class="features-block-capabilities">
+                <li>WSDL discovery</li>
+                <li>SOAP 1.1 + 1.2</li>
+                <li>Fault detection</li>
+              </ul>
+              <a class="features-block-docs-link" href="{{ '/docs/protocols/soap.html' | relative_url }}">Read the full docs &rarr;</a>
+            </div>
+          </div>
+        </template>
+      </a>
+
+      <a class="protocol-card" href="{{ '/docs/protocols/jsonrpc.html' | relative_url }}" data-feature-modal tabindex="0">
+        <div class="protocol-icon">
+          <!-- Generic JSON-RPC mark — three call-and-response arrows. -->
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--text)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M7 10h6"/><path d="M11 10l-2-2"/><path d="M11 10l-2 2"/><path d="M17 14h-6"/><path d="M13 14l2 2"/><path d="M13 14l2-2"/></svg>
+        </div>
+        <div class="protocol-content">
+          <h3>JSON-RPC</h3>
+          <p>Generic JSON-RPC 2.0 client over HTTP. Discovery via OpenRPC's <code>rpc.discover</code> reflection method; servers that don't advertise OpenRPC still work with a freeform fallback so you can invoke any method by name.</p>
+          <div class="protocol-install">
+            <code><span class="protocol-install-prompt">$</span> dotnet add package Kuestenlogik.Bowire.Protocol.JsonRpc</code>
+            <button class="protocol-install-copy copy-btn" data-copy="dotnet add package Kuestenlogik.Bowire.Protocol.JsonRpc" aria-label="Copy install command for JSON-RPC"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></button>
+          </div>
+        </div>
+        <template class="feature-card-detail">
+          <div class="features-block">
+            <div class="features-block-text">
+              <h3>JSON-RPC</h3>
+              <p class="features-block-lead">Spec-conformant JSON-RPC 2.0 with OpenRPC discovery, positional or named <code>params</code>, and structured error codes on the response status.</p>
+              <p>The plugin calls <code>rpc.discover</code> and pulls every method definition out of the OpenRPC document into Bowire's form UI. Servers that return Method-Not-Found (<code>-32601</code>) still get a placeholder service so users can invoke any method by name. Application errors surface with <code>Status="jsonrpc:&lt;code&gt;"</code> so the UI can tell a JSON-RPC error apart from a transport / parse failure without a second round-trip.</p>
+              <p><strong>Try it.</strong> <code>samples/JsonRpc/Math</code> in the main repo is a full <code>rpc.discover</code>-aware <code>add</code> / <code>subtract</code> / <code>divide</code> service.</p>
+              <ul class="features-block-capabilities">
+                <li>OpenRPC discovery</li>
+                <li>Positional + named params</li>
+                <li>Spec error codes on Status</li>
+              </ul>
+              <a class="features-block-docs-link" href="{{ '/docs/protocols/jsonrpc.html' | relative_url }}">Read the full docs &rarr;</a>
+            </div>
+          </div>
+        </template>
+      </a>
+
+      <a class="protocol-card" href="{{ '/docs/protocols/pulsar.html' | relative_url }}" data-feature-modal tabindex="0">
+        <div class="protocol-icon">
+          <!-- Apache Pulsar — stylised lighthouse beam (generic). -->
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--text)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v6"/><circle cx="12" cy="11" r="2.2"/><path d="M5 19l4-6"/><path d="M19 19l-4-6"/><path d="M3 21h18"/></svg>
+        </div>
+        <div class="protocol-content">
+          <h3>Apache Pulsar</h3>
+          <p>In-tree plugin on the Apache-maintained DotPulsar 3.5.x client. Topic discovery via Pulsar's HTTP admin API; produce (Unary) and subscribe (ServerStreaming) over the binary protocol with an exclusive subscription that auto-acks so the cursor advances.</p>
+          <div class="protocol-install">
+            <code><span class="protocol-install-prompt">$</span> dotnet add package Kuestenlogik.Bowire.Protocol.Pulsar</code>
+            <button class="protocol-install-copy copy-btn" data-copy="dotnet add package Kuestenlogik.Bowire.Protocol.Pulsar" aria-label="Copy install command for Pulsar"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></button>
+          </div>
+        </div>
+        <template class="feature-card-detail">
+          <div class="features-block features-block-reverse">
+            <div class="features-block-text">
+              <h3>Apache Pulsar</h3>
+              <p class="features-block-lead">Topic enumeration via the Pulsar HTTP admin, produce / subscribe over the binary protocol. URL plumbing accepts any of five common shapes and derives broker + admin automatically.</p>
+              <p>The plugin enumerates topics in <code>public/default</code> plus any extra namespaces wired via the <code>namespaces</code> setting. Each topic surfaces as a service with <code>produce</code> (Unary) and <code>subscribe</code> (ServerStreaming). Short topic names get expanded into Pulsar's fully-qualified form (<code>my-topic</code> &rarr; <code>persistent://public/default/my-topic</code>). Subscription type is Exclusive so workbench tails don't fight production consumers, and <code>from_latest</code> metadata flips the initial position to Earliest for backlog replay.</p>
+              <p><strong>Try it.</strong> <code>samples/Pulsar</code> in the main repo brings up <code>apachepulsar/pulsar:3.3.0 standalone</code> via docker-compose plus a .NET producer that publishes one message per second to a demo topic.</p>
+              <ul class="features-block-capabilities">
+                <li>HTTP-admin topic discovery</li>
+                <li>Produce + Subscribe</li>
+                <li>Multi-namespace scan</li>
+              </ul>
+              <a class="features-block-docs-link" href="{{ '/docs/protocols/pulsar.html' | relative_url }}">Read the full docs &rarr;</a>
+            </div>
+          </div>
+        </template>
+      </a>
+
       <a class="protocol-card" href="https://github.com/Kuestenlogik/Bowire.Protocol.Amqp" target="_blank" rel="noopener" data-feature-modal tabindex="0">
         <div class="protocol-icon">
           <!-- Official AMQP brand mark — symbol only (no wordmark).

@@ -16,6 +16,14 @@
   href: mcp.md
 - name: MQTT
   href: mqtt.md
+- name: NATS
+  href: nats.md
+- name: SOAP
+  href: soap.md
+- name: JSON-RPC
+  href: jsonrpc.md
+- name: Pulsar
+  href: pulsar.md
 - name: Socket.IO
   href: socketio.md
 - name: OData
@@ -24,6 +32,8 @@
   href: surgewave.md
 - name: Kafka
   href: kafka.md
+- name: AMQP
+  href: amqp.md
 - name: DIS
   href: dis.md
 - name: UDP

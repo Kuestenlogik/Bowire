@@ -1,10 +1,10 @@
 ---
-summary: 'Bowire ships with ten first-party protocol plugins plus seven sibling plugins (AMQP, Kafka, TacticalAPI, Akka.NET, DIS, UDP, Surgewave) that install via the CLI.'
+summary: 'Bowire ships with fourteen first-party protocol plugins plus seven sibling plugins (AMQP, Kafka, TacticalAPI, Akka.NET, DIS, UDP, Surgewave) that install via the CLI.'
 ---
 
 # Protocol Guides
 
-Bowire ships with **ten first-party protocol plugins** plus **seven sibling plugins** (AMQP, Kafka, TacticalAPI, Akka.NET, DIS, UDP, Surgewave) that live in their own NuGet packages and install via `bowire plugin install`. Each implements `IBowireProtocol` and auto-registers at startup. Install only the ones you need.
+Bowire ships with **fourteen first-party protocol plugins** plus **seven sibling plugins** (AMQP, Kafka, TacticalAPI, Akka.NET, DIS, UDP, Surgewave) that live in their own NuGet packages and install via `bowire plugin install`. Each implements `IBowireProtocol` and auto-registers at startup. Install only the ones you need.
 
 ## First-party protocols
 
@@ -17,6 +17,10 @@ Bowire ships with **ten first-party protocol plugins** plus **seven sibling plug
 | [WebSocket](websocket.md) | `Kuestenlogik.Bowire.Protocol.WebSocket` | Manual (no inherent discovery) | Duplex with text / binary frames |
 | [SSE](sse.md) | `Kuestenlogik.Bowire.Protocol.Sse` | Attribute · manual registration | Server streaming |
 | [MQTT](mqtt.md) | `Kuestenlogik.Bowire.Protocol.Mqtt` | Topic subscribe / publish (MQTT 3.1.1, 5.0 via MQTTnet) | Pub / Sub, Request / Response |
+| [NATS](nats.md) | `Kuestenlogik.Bowire.Protocol.Nats` | Subject sampling · JetStream streams · Services API (`$SRV.PING`) | Pub / Sub / Request, Stream consume |
+| [SOAP](soap.md) | `Kuestenlogik.Bowire.Protocol.Soap` | WSDL 1.1 `<portType>` + `<binding>` walk | Unary (SOAP 1.1 / 1.2) |
+| [JSON-RPC](jsonrpc.md) | `Kuestenlogik.Bowire.Protocol.JsonRpc` | OpenRPC `rpc.discover` · freeform fallback | Unary |
+| [Pulsar](pulsar.md) | `Kuestenlogik.Bowire.Protocol.Pulsar` | Pulsar HTTP admin (`/admin/v2/persistent`) | Produce (Unary), Subscribe (ServerStreaming) |
 | [Socket.IO](socketio.md) | `Kuestenlogik.Bowire.Protocol.SocketIo` | Manual (namespace / event) | Duplex with ack |
 | [OData](odata.md) | `Kuestenlogik.Bowire.Protocol.OData` | CSDL metadata endpoint | Request / response |
 | [MCP](mcp.md) | `Kuestenlogik.Bowire.Protocol.Mcp` | Wraps other protocols as MCP tools | Unary (tool invocation) |
@@ -31,7 +35,7 @@ These ship from their own repos / NuGet packages on independent release cadences
 | [Kafka](kafka.md) | `Kuestenlogik.Bowire.Protocol.Kafka` | `IAdminClient.GetMetadata` | Consume (ServerStreaming), Produce (Unary) |
 | [TacticalAPI](tacticalapi.md) | `Kuestenlogik.Bowire.Protocol.TacticalApi` | Bundled `.proto` set (no Server Reflection required) | Typed CRUD (Unary) + server-streaming subscribe |
 | [Akka.NET](akka.md) | `Kuestenlogik.Bowire.Protocol.Akka` | DI-resolved `ActorSystem` (embedded only) | Mailbox tap (server-streaming `Tap/MonitorMessages`) |
-| [DIS](dis.md) | `Kuestenlogik.Bowire.Protocol.Dis` | Mock-emit only (replay path) | UDP-multicast PDU bytes |
+| [DIS](dis.md) | `Kuestenlogik.Bowire.Protocol.Dis` | Live UDP-multicast probe · entity-scoped streams · mock replay | Per-entity PDU stream, exercise-wide stream |
 | [UDP](udp.md) | `Kuestenlogik.Bowire.Protocol.Udp` | URL-bind any UDP endpoint | Datagram listener (multicast / broadcast / unicast) |
 | [Surgewave](surgewave.md) (pre-release) | `Kuestenlogik.Bowire.Protocol.Surgewave` | Cluster service · pending native admin API | Consume (ServerStreaming), Produce (Unary) |
 
@@ -48,6 +52,10 @@ graph LR
     A --> F[WebSocket]
     A --> G[SSE]
     A --> H[MQTT]
+    A --> NATS[NATS]
+    A --> SOAP[SOAP]
+    A --> JRPC[JSON-RPC]
+    A --> PULSAR[Pulsar]
     A --> I[Socket.IO]
     A --> J[OData]
     A --> K[MCP]
