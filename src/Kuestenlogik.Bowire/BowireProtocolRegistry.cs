@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 using System.Reflection;
+using Kuestenlogik.Bowire.Plugins.Sidecar;
 using Microsoft.Extensions.Logging;
 
 namespace Kuestenlogik.Bowire;
@@ -134,6 +135,18 @@ public sealed class BowireProtocolRegistry
                     "Skipped Bowire assembly during protocol scan: {Assembly}",
                     assembly.FullName);
             }
+        }
+
+        // Sidecar plugins — any-language executables in
+        // ~/.bowire/plugins/<id>/ marked by a plugin.json manifest.
+        // Registered alongside the .NET plugins; same disable list
+        // applies on the manifest's protocol.id.
+        foreach (var sidecar in SidecarPluginDiscovery.Discover(
+            pluginRoot: null,
+            disabledPluginIds: disabled,
+            logger: logger))
+        {
+            registry.Register(sidecar);
         }
 
         return registry;

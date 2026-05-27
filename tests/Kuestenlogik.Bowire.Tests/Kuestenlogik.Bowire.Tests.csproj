@@ -34,5 +34,14 @@
          because the alternative — a standalone Kuestenlogik.Bowire.Tool.Tests
          project — is too much ceremony for two units' worth of logic. -->
     <ProjectReference Include="..\..\src\Kuestenlogik.Bowire.Tool\Kuestenlogik.Bowire.Tool.csproj" />
+    <!-- Tiny fake sidecar executable used by the sidecar plugin
+         integration tests. ReferenceOutputAssembly=false because the
+         tests only need its built EXE on disk (located via
+         AppContext.BaseDirectory navigation), not its types. -->
+    <ProjectReference Include="..\Kuestenlogik.Bowire.SidecarFake\Kuestenlogik.Bowire.SidecarFake.csproj">
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+      <SkipGetTargetFrameworkProperties>true</SkipGetTargetFrameworkProperties>
+      <Private>false</Private>
+    </ProjectReference>
   </ItemGroup>
 </Project>
