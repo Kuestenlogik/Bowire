@@ -32,5 +32,6 @@
     <Project Path="tests/Kuestenlogik.Bowire.AsyncApi.Tests/Kuestenlogik.Bowire.AsyncApi.Tests.csproj" />
     <Project Path="tests/Kuestenlogik.Bowire.Security.Templates.Nuclei.Tests/Kuestenlogik.Bowire.Security.Templates.Nuclei.Tests.csproj" />
     <Project Path="tests/Kuestenlogik.Bowire.Extension.MapLibre.Tests/Kuestenlogik.Bowire.Extension.MapLibre.Tests.csproj" />
+    <Project Path="tests/Kuestenlogik.Bowire.SidecarFake/Kuestenlogik.Bowire.SidecarFake.csproj" />
   </Folder>
 </Solution>

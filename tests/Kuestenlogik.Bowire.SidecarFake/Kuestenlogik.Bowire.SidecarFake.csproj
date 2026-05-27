@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <IsPackable>false</IsPackable>
+    <AssemblyName>bowire-sidecar-fake</AssemblyName>
+    <RootNamespace>Kuestenlogik.Bowire.SidecarFake</RootNamespace>
+    <!-- Test fixture only — relax analyzers like the samples
+         Directory.Build.props does. Lets the Program.cs stay
+         readable (top-level statements, no CA1303 resource tables). -->
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <EnforceCodeStyleInBuild>false</EnforceCodeStyleInBuild>
+    <AnalysisLevel>none</AnalysisLevel>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+  </PropertyGroup>
+</Project>
