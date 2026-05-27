@@ -144,8 +144,12 @@ public sealed class BowirePulsarProtocol : IBowireProtocol
         var topic = ResolveTopic(route.Topic, metadata);
         var subscriptionName = metadata?.GetValueOrDefault("subscription_name")
             ?? "bowire-" + Guid.NewGuid().ToString("N")[..8];
-        var fromLatest = string.Equals(
-            GetSetting("subscribeFromLatest", "true"), "true", StringComparison.OrdinalIgnoreCase);
+        // Per-invoke override wins over the plugin-level default —
+        // workbench users can subscribe from Earliest on a specific
+        // tail without flipping the global setting.
+        var fromLatestRaw = metadata?.GetValueOrDefault("from_latest")
+            ?? GetSetting("subscribeFromLatest", "true");
+        var fromLatest = string.Equals(fromLatestRaw, "true", StringComparison.OrdinalIgnoreCase);
 
         await using var client = PulsarClient.Builder()
             .ServiceUrl(new Uri(endpoints.BrokerUrl))
