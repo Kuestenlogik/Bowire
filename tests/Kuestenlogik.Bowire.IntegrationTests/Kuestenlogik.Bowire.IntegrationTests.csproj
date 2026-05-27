@@ -23,6 +23,7 @@
          still runs on hosts without a Docker daemon. -->
     <PackageReference Include="Testcontainers" />
     <PackageReference Include="Testcontainers.Nats" />
+    <PackageReference Include="Testcontainers.Pulsar" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\Kuestenlogik.Bowire\Kuestenlogik.Bowire.csproj" />
