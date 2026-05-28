@@ -9,6 +9,10 @@
 //   discover    -> one service with one method called "echo"
 //   invoke      -> echoes the first jsonMessage back as response
 //   invokeStream-> emits 3 $/stream/data notifications then $/stream/end
+//                  (uses the host-provided streamId from params)
+//   openChannel -> ack with the host-provided channelId
+//   channel.send-> ack + echoes "ack: <msg>" as a $/channel/data frame
+//   channel.close-> ack + $/channel/closed notification
 //   ping        -> "pong"
 //   shutdown    -> Environment.Exit(0)
 //
@@ -89,13 +93,34 @@ while ((line = await reader.ReadLineAsync().ConfigureAwait(false)) is not null)
             break;
 
         case "invokeStream":
-            var streamId = Guid.NewGuid().ToString("N")[..8];
+            // Host generates the streamId now; echo it on every frame.
+            var streamId = p?["streamId"]?.GetValue<string>() ?? "s";
             await Reply(id, new { streamId });
             for (var i = 1; i <= 3; i++)
             {
                 await Notify("$/stream/data", new { streamId, message = "tick-" + i });
             }
             await Notify("$/stream/end", new { streamId, error = (object?)null });
+            break;
+
+        case "openChannel":
+            var channelId = p?["channelId"]?.GetValue<string>() ?? "c";
+            await Reply(id, new { channelId });
+            break;
+
+        case "channel.send":
+            var cid = p?["channelId"]?.GetValue<string>() ?? "c";
+            var sent = p?["message"]?.GetValue<string>() ?? "";
+            await Reply(id, true);
+            // Echo the message straight back as an inbound frame so the
+            // duplex round-trip is observable from the test.
+            await Notify("$/channel/data", new { channelId = cid, message = "ack: " + sent });
+            break;
+
+        case "channel.close":
+            var ccid = p?["channelId"]?.GetValue<string>() ?? "c";
+            await Reply(id, true);
+            await Notify("$/channel/closed", new { channelId = ccid });
             break;
 
         default:

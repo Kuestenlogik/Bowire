@@ -134,9 +134,13 @@ method, jsonMessages, showInternalServices, metadata}`. Reply: the
 
 ### `invokeStream` (host → sidecar, request + notifications)
 
-Maps to `IBowireProtocol.InvokeStreamAsync`. The initial request gets
-an immediate ack reply `{"streamId":"..."}`. The sidecar then emits
-zero or more notifications:
+Maps to `IBowireProtocol.InvokeStreamAsync`. **The host generates the
+`streamId`** and passes it in the request params, then subscribes
+before the request goes out — so a sidecar that starts pushing data
+immediately can't beat the host to the subscription. (Earlier drafts
+had the sidecar mint the id and return it in the ack; host-generated
+ids removed the subscribe-after-ack race.) The sidecar acks the
+request, then emits zero or more notifications:
 
 ```json
 {"jsonrpc":"2.0","method":"$/stream/data",
@@ -156,10 +160,41 @@ failure.
 ### `openChannel` / `channel.send` / `channel.close` / `$/channel/data` notifications
 
 Map to `IBowireProtocol.OpenChannelAsync` + the `IBowireChannel`
-surface. `openChannel` reply carries a `channelId` the host uses for
-`channel.send` / `channel.close`. The sidecar streams incoming
-messages as `$/channel/data` notifications until it sends
-`$/channel/closed`.
+surface — full duplex, both sides sending over a long-lived pipe.
+Same host-generated-id convention as `invokeStream`: **the host mints
+the `channelId`**, subscribes, then sends `openChannel` with it in the
+params.
+
+```json
+// host → sidecar: open
+{"jsonrpc":"2.0","id":7,"method":"openChannel",
+ "params":{"channelId":"ab12","serverUrl":"...","service":"...","method":"...",
+           "showInternalServices":false,"metadata":{}}}
+
+// host → sidecar: send a frame (repeatable)
+{"jsonrpc":"2.0","id":8,"method":"channel.send",
+ "params":{"channelId":"ab12","message":"..."}}
+
+// sidecar → host: inbound frame (zero or more, any time)
+{"jsonrpc":"2.0","method":"$/channel/data",
+ "params":{"channelId":"ab12","message":"..."}}
+
+// host → sidecar: close the send side
+{"jsonrpc":"2.0","id":9,"method":"channel.close",
+ "params":{"channelId":"ab12"}}
+
+// sidecar → host: channel fully closed (ends the read stream)
+{"jsonrpc":"2.0","method":"$/channel/closed",
+ "params":{"channelId":"ab12"}}
+```
+
+`channel.send` returns a JSON-RPC result (any value) on accept or an
+error object when the channel is gone — the host maps that onto
+`IBowireChannel.SendAsync` returning `true` / `false`. The host's
+`SidecarChannel` treats every sidecar channel as full duplex
+(`IsClientStreaming` = `IsServerStreaming` = true), since the
+protocols that need a channel at all — WebSocket, chat-style pub/sub —
+are duplex by nature.
 
 ## Lifecycle
 

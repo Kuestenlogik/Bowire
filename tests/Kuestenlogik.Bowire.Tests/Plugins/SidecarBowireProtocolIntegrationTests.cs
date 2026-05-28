@@ -151,6 +151,55 @@ public class SidecarBowireProtocolIntegrationTests
     }
 
     [Fact]
+    public async Task OpenChannel_Round_Trips_Send_And_Receive()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var plugin = BuildPlugin();
+        try
+        {
+            var channel = await plugin.OpenChannelAsync(
+                serverUrl: "fake://demo",
+                service: "Echo",
+                method: "Echo/echo",
+                showInternalServices: false,
+                metadata: null,
+                ct: ct);
+
+            Assert.NotNull(channel);
+            await using var ch = channel!;
+            Assert.True(ch.IsClientStreaming);
+            Assert.True(ch.IsServerStreaming);
+
+            // Read the echoed inbound frames in the background; the fake
+            // sidecar replies to each channel.send with a $/channel/data
+            // "ack: ..." notification.
+            var received = new List<string>();
+            var readTask = Task.Run(async () =>
+            {
+                await foreach (var msg in ch.ReadResponsesAsync(ct))
+                {
+                    received.Add(msg);
+                    if (received.Count >= 2) break;
+                }
+            }, ct);
+
+            Assert.True(await ch.SendAsync("hello", ct));
+            Assert.True(await ch.SendAsync("world", ct));
+
+            await readTask.WaitAsync(TimeSpan.FromSeconds(10), ct);
+
+            Assert.Equal(2, ch.SentCount);
+            Assert.Equal(2, received.Count);
+            Assert.Equal("ack: hello", received[0]);
+            Assert.Equal("ack: world", received[1]);
+        }
+        finally
+        {
+            await ShutdownAsync(plugin);
+        }
+    }
+
+    [Fact]
     public async Task First_Call_Initializes_And_Reflects_Sidecar_Metadata()
     {
         var plugin = BuildPlugin();
