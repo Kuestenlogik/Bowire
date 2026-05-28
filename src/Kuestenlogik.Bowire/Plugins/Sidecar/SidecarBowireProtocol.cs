@@ -145,66 +145,91 @@ public sealed class SidecarBowireProtocol : IBowireProtocol
     {
         var transport = await EnsureStartedAsync(ct).ConfigureAwait(false);
 
-        // Kick the stream open; reply carries the streamId we filter
-        // notifications by.
-        var ack = await transport.RequestAsync("invokeStream", new
+        // Host generates the streamId and subscribes *before* sending
+        // the request, so a sidecar that starts pushing $/stream/data
+        // immediately can't beat us to the subscription.
+        var streamId = Guid.NewGuid().ToString("N");
+        var reader = transport.Subscribe(streamId);
+        try
         {
-            serverUrl,
-            service,
-            method,
-            jsonMessages,
-            showInternalServices,
-            metadata,
-        }, ct).ConfigureAwait(false);
-
-        string? streamId = null;
-        if (ack.ValueKind == JsonValueKind.Object
-            && ack.TryGetProperty("streamId", out var sid)
-            && sid.ValueKind == JsonValueKind.String)
-        {
-            streamId = sid.GetString();
-        }
-        if (string.IsNullOrEmpty(streamId)) yield break;
-
-        while (await transport.Notifications.WaitToReadAsync(ct).ConfigureAwait(false))
-        {
-            while (transport.Notifications.TryRead(out var note))
+            await transport.RequestAsync("invokeStream", new
             {
-                var noteMethod = note["method"]?.GetValue<string>();
-                var nparams = note["params"] as JsonObject;
-                var nsid = nparams?["streamId"]?.GetValue<string>();
-                if (nsid != streamId) continue;
+                streamId,
+                serverUrl,
+                service,
+                method,
+                jsonMessages,
+                showInternalServices,
+                metadata,
+            }, ct).ConfigureAwait(false);
 
-                if (noteMethod == "$/stream/data")
+            while (await reader.WaitToReadAsync(ct).ConfigureAwait(false))
+            {
+                while (reader.TryRead(out var note))
                 {
-                    // Native plugins yield raw strings (the JSON
-                    // payload). When the sidecar sends a JSON-string
-                    // value, unwrap it so consumers don't see double
-                    // quotes; for objects / arrays / numbers, emit the
-                    // raw JSON so consumers can parse it themselves.
-                    var msgNode = nparams?["message"];
-                    if (msgNode is JsonValue v && v.TryGetValue<string>(out var s))
-                        yield return s;
-                    else if (msgNode is null)
-                        yield return "";
-                    else
-                        yield return msgNode.ToJsonString();
-                }
-                else if (noteMethod == "$/stream/end")
-                {
-                    yield break;
+                    var noteMethod = note["method"]?.GetValue<string>();
+                    var nparams = note["params"] as JsonObject;
+
+                    if (noteMethod == "$/stream/data")
+                    {
+                        yield return ExtractMessage(nparams?["message"]);
+                    }
+                    else if (noteMethod == "$/stream/end")
+                    {
+                        yield break;
+                    }
                 }
             }
         }
+        finally
+        {
+            transport.Unsubscribe(streamId);
+        }
     }
 
-    public Task<IBowireChannel?> OpenChannelAsync(
+    public async Task<IBowireChannel?> OpenChannelAsync(
         string serverUrl, string service, string method,
         bool showInternalServices, Dictionary<string, string>? metadata = null,
         CancellationToken ct = default)
     {
-        // Phase 1: channels deferred. See class XML docs + sidecar spec.
-        return Task.FromResult<IBowireChannel?>(null);
+        var transport = await EnsureStartedAsync(ct).ConfigureAwait(false);
+
+        // Host generates the channelId + subscribes before the request
+        // (same race-avoidance as invokeStream).
+        var channelId = Guid.NewGuid().ToString("N");
+        var reader = transport.Subscribe(channelId);
+        try
+        {
+            await transport.RequestAsync("openChannel", new
+            {
+                channelId,
+                serverUrl,
+                service,
+                method,
+                showInternalServices,
+                metadata,
+            }, ct).ConfigureAwait(false);
+        }
+        catch
+        {
+            transport.Unsubscribe(channelId);
+            return null;
+        }
+
+        return new SidecarChannel(transport, channelId, reader);
+    }
+
+    /// <summary>
+    /// Native plugins yield raw strings (the JSON payload). When the
+    /// sidecar sends a JSON-string value, unwrap it so consumers don't
+    /// see double quotes; for objects / arrays / numbers, emit the raw
+    /// JSON so consumers can parse it themselves.
+    /// </summary>
+    internal static string ExtractMessage(JsonNode? messageNode)
+    {
+        if (messageNode is null) return "";
+        if (messageNode is JsonValue v && v.TryGetValue<string>(out var s)) return s;
+        return messageNode.ToJsonString();
     }
 
     /// <summary>

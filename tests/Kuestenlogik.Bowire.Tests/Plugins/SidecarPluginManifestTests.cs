@@ -190,17 +190,4 @@ public class SidecarPluginManifestTests
         var plugin = new SidecarBowireProtocol(manifest, Path.GetTempPath());
         Assert.Contains("<svg", plugin.IconSvg);
     }
-
-    [Fact]
-    public async Task SidecarBowireProtocol_OpenChannel_Returns_Null_In_Phase_1()
-    {
-        var manifest = new SidecarPluginManifest(
-            PackageId: "X",
-            Protocol: new SidecarProtocolMetadata("x", "X"),
-            Executable: "x");
-        var plugin = new SidecarBowireProtocol(manifest, Path.GetTempPath());
-        var ch = await plugin.OpenChannelAsync("u", "s", "m", false, null,
-            TestContext.Current.CancellationToken);
-        Assert.Null(ch);
-    }
 }

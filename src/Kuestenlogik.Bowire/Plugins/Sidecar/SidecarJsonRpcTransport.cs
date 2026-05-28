@@ -36,8 +36,14 @@ internal sealed class SidecarJsonRpcTransport : IAsyncDisposable
     private readonly Process _process;
     private readonly int _shutdownTimeoutMs;
     private readonly ConcurrentDictionary<long, TaskCompletionSource<JsonElement>> _pending = new();
-    private readonly Channel<JsonObject> _notifications =
-        Channel.CreateUnbounded<JsonObject>(new UnboundedChannelOptions { SingleReader = true });
+    // One notification channel per active stream / channel id. The read
+    // loop routes each notification to the subscription matching its
+    // params.streamId / params.channelId. Per-id subscriptions (rather
+    // than one global notification channel everybody filters) let
+    // multiple streams / duplex channels run concurrently without
+    // stealing each other's frames.
+    private readonly ConcurrentDictionary<string, Channel<JsonObject>> _subscriptions =
+        new(StringComparer.Ordinal);
     private long _nextId;
     private Task? _readLoop;
     private bool _shutdownRequested;
@@ -54,8 +60,25 @@ internal sealed class SidecarJsonRpcTransport : IAsyncDisposable
         _shutdownTimeoutMs = shutdownTimeoutMs;
     }
 
-    /// <summary>Notifications fan-out for stream / channel data.</summary>
-    public ChannelReader<JsonObject> Notifications => _notifications.Reader;
+    /// <summary>
+    /// Register interest in notifications tagged with
+    /// <paramref name="id"/> (a host-generated streamId / channelId).
+    /// The caller must <see cref="Unsubscribe"/> when done. Subscribe
+    /// <em>before</em> sending the request that starts the stream /
+    /// channel so no early notification is dropped.
+    /// </summary>
+    public ChannelReader<JsonObject> Subscribe(string id)
+    {
+        var ch = Channel.CreateUnbounded<JsonObject>(new UnboundedChannelOptions { SingleReader = true });
+        _subscriptions[id] = ch;
+        return ch.Reader;
+    }
+
+    /// <summary>Drop the subscription for <paramref name="id"/> and complete its reader.</summary>
+    public void Unsubscribe(string id)
+    {
+        if (_subscriptions.TryRemove(id, out var ch)) ch.Writer.TryComplete();
+    }
 
     /// <summary>True once the underlying process has exited (cleanly or otherwise).</summary>
     public bool HasExited => _process.HasExited;
@@ -207,13 +230,26 @@ internal sealed class SidecarJsonRpcTransport : IAsyncDisposable
                     continue;
                 }
 
-                // No id → notification; fan out to the channel.
-                _notifications.Writer.TryWrite(obj);
+                // No id → notification. Route to the subscription
+                // whose id matches the notification's streamId /
+                // channelId. Notifications for an id nobody subscribed
+                // to are dropped (late frame after Unsubscribe, or a
+                // sidecar bug) rather than buffered forever.
+                var np = obj["params"] as JsonObject;
+                var subId = np?["streamId"]?.GetValue<string>()
+                    ?? np?["channelId"]?.GetValue<string>();
+                if (subId is not null && _subscriptions.TryGetValue(subId, out var sub))
+                {
+                    sub.Writer.TryWrite(obj);
+                }
             }
         }
         finally
         {
-            _notifications.Writer.TryComplete();
+            // Complete every live subscription so readers blocked on
+            // WaitToReadAsync wake up and exit their loops.
+            foreach (var kv in _subscriptions) kv.Value.Writer.TryComplete();
+            _subscriptions.Clear();
             // Any still-pending requests get failed so callers don't
             // hang forever waiting for a reply that won't come.
             foreach (var kv in _pending)
