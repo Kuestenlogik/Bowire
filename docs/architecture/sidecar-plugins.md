@@ -33,7 +33,7 @@ use:
 
 ```
 ~/.bowire/plugins/<package-id>/
-  plugin.json                    # manifest (this file is the marker)
+  sidecar.json                   # manifest (this file is the marker)
   bin/                           # vendor's choice — could be anything:
     my-sidecar                   # a native binary
     my-sidecar.exe               # …or a Windows binary
@@ -41,11 +41,31 @@ use:
     package.json                 # …or a Node.js entry point
 ```
 
-The `plugin.json` file at the directory root is what marks the
-directory as a sidecar plugin. The Bowire host scans every
-`plugin.json` in the plugin tree at startup, registers one
+The `sidecar.json` file at the directory root is what marks the
+directory as a sidecar plugin. (It's deliberately **not** named
+`plugin.json` — that filename is taken by the NuGet-install metadata
+file the .NET plugin path writes, and the two plugin kinds share the
+same `~/.bowire/plugins/` tree.) The Bowire host scans every
+`sidecar.json` in the plugin tree at startup, registers one
 [`SidecarBowireProtocol`](../../src/Kuestenlogik.Bowire/Plugins/Sidecar/SidecarBowireProtocol.cs)
 per manifest, and proxies every call through to the process.
+
+## Installing
+
+Ship the sidecar as a `.zip` containing `sidecar.json` at its root
+plus the executable and any runtime files. Install it with the same
+command the .NET plugins use — the `.zip` extension routes to the
+sidecar path:
+
+```bash
+bowire plugin install --file ./my-sidecar.zip          # local
+bowire plugin install --file https://example.com/x.zip # http(s) URL
+```
+
+The archive unpacks into `~/.bowire/plugins/<packageId>/` (packageId
+read from the manifest). On Unix the executable bit is restored after
+extraction. `bowire plugin list` tags the result `[sidecar: <id>]` to
+distinguish it from `[nuget: N files]` .NET plugins.
 
 ## Manifest schema
 

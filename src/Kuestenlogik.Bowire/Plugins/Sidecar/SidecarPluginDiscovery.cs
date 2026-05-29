@@ -14,7 +14,7 @@ namespace Kuestenlogik.Bowire.Plugins.Sidecar;
 public static class SidecarPluginDiscovery
 {
     /// <summary>The conventional filename that marks a directory as a sidecar plugin.</summary>
-    public const string ManifestFileName = "plugin.json";
+    public const string ManifestFileName = SidecarPluginManifest.FileName;
 
     /// <summary>
     /// Default plugin root — <c>~/.bowire/plugins/</c>. Matches the
