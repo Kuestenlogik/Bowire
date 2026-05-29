@@ -23,13 +23,16 @@ public class SidecarBowireProtocolIntegrationTests
     /// </summary>
     private static string LocateFakeExecutable()
     {
-        // typical baseDir:
-        //   .../artifacts/bin/Kuestenlogik.Bowire.Tests/Debug/net10.0/
+        // The fake exe's output layout under artifacts/bin varies with
+        // how it was built — flat (`SidecarFake/bowire-sidecar-fake`)
+        // when pulled in as a P2P dependency, or nested under a
+        // Debug/Release[/tfm] folder for a standalone build. Rather than
+        // reconstruct the exact path (which differs between local Debug
+        // and CI Release), walk up to artifacts/bin and recursively
+        // search the fake's tree for the apphost binary.
         var baseDir = AppContext.BaseDirectory.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
-        var dir = new DirectoryInfo(baseDir);
 
-        // Walk up to artifacts/bin/
-        DirectoryInfo? binRoot = dir;
+        DirectoryInfo? binRoot = new(baseDir);
         while (binRoot is not null && binRoot.Name != "bin")
             binRoot = binRoot.Parent;
         if (binRoot is null)
@@ -39,20 +42,29 @@ public class SidecarBowireProtocolIntegrationTests
         if (!Directory.Exists(fakeRoot))
             throw new InvalidOperationException("Fake sidecar bin dir missing: " + fakeRoot);
 
-        // Pick the same Debug/Release + TFM the test was built with —
-        // navigate the analogous tail of the test's own path.
-        var relativeTail = Path.GetRelativePath(
-            Path.Combine(binRoot.FullName, "Kuestenlogik.Bowire.Tests"),
-            baseDir);
-        var fakeBuildDir = Path.Combine(fakeRoot, relativeTail);
-        if (!Directory.Exists(fakeBuildDir))
-            throw new InvalidOperationException("Fake sidecar build dir missing: " + fakeBuildDir);
-
         var exeName = OperatingSystem.IsWindows() ? "bowire-sidecar-fake.exe" : "bowire-sidecar-fake";
-        var exePath = Path.Combine(fakeBuildDir, exeName);
-        if (!File.Exists(exePath))
-            throw new InvalidOperationException("Fake sidecar exe missing: " + exePath);
-        return exePath;
+        var matches = Directory.GetFiles(fakeRoot, exeName, SearchOption.AllDirectories);
+        if (matches.Length == 0)
+            throw new InvalidOperationException(
+                $"Fake sidecar exe '{exeName}' not found anywhere under {fakeRoot}");
+
+        // When several configs were built, prefer the one matching the
+        // current build configuration so a Release test run doesn't pick
+        // up a stale Debug binary (and vice-versa).
+        var config = GetBuildConfiguration();
+        var configSegment = Path.DirectorySeparatorChar + config + Path.DirectorySeparatorChar;
+        var preferred = matches.FirstOrDefault(m =>
+            m.Contains(configSegment, StringComparison.OrdinalIgnoreCase));
+        return preferred ?? matches[0];
+    }
+
+    private static string GetBuildConfiguration()
+    {
+#if DEBUG
+        return "Debug";
+#else
+        return "Release";
+#endif
     }
 
     private static SidecarBowireProtocol BuildPlugin()

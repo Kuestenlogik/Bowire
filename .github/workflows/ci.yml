@@ -46,8 +46,18 @@ jobs:
         # de-duplicates by file but doesn't union per-line hits across
         # sessions, which under-counts lines that one project covers
         # while another one doesn't (~6 pp gap measured on this repo).
+        #
+        # --filter "Category!=Docker" skips the Testcontainers-backed
+        # integration suites (NATS / Pulsar live-broker round-trips).
+        # They're tagged [Trait("Category","Docker")] precisely so they
+        # opt out here: the hosted runner's Docker Hub pulls are
+        # rate-limited / flaky (manifest fetch for nats:2-alpine fails
+        # intermittently), and these tests are meant for local / dev
+        # runs with a working Docker daemon. The pure-unit + in-process
+        # integration tests still run and gate the build.
         run: >
           dotnet test Kuestenlogik.Bowire.slnx -c Release --no-build -v normal
+          --filter "Category!=Docker"
           --collect:"XPlat Code Coverage"
           --results-directory artifacts/coverage/raw
 
