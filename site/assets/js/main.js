@@ -146,16 +146,26 @@ if (toggle && nav) {
         .then(data => { if (data) setValue('gh-stars', formatCount(data.stargazers_count)); })
         .catch(() => {});
 
-    // NuGet — azuresearch returns totalDownloads + version in one call.
-    // CORS-enabled, no auth required.
-    fetch('https://azuresearch-usnc.nuget.org/query?q=packageid:Kuestenlogik.Bowire&prerelease=false&take=1')
+    // NuGet azuresearch (CORS-enabled, no auth). The Downloads badge
+    // aggregates the whole Kuestenlogik.Bowire.* family — core, CLI
+    // tool, every protocol plugin, the MapLibre extension, … — not just
+    // the core package, so it reflects the ecosystem rather than one
+    // library. The Version badge stays pinned to Kuestenlogik.Bowire
+    // (the canonical host package). take=1000 covers the full family;
+    // the client-side filter drops fuzzy full-text matches that share
+    // the "Bowire" token but not the Kuestenlogik.Bowire(.) prefix.
+    fetch('https://azuresearch-usnc.nuget.org/query?q=Kuestenlogik.Bowire&prerelease=false&take=1000')
         .then(r => r.ok ? r.json() : null)
         .then(data => {
-            if (data && data.data && data.data[0]) {
-                const pkg = data.data[0];
-                setValue('nuget-downloads', formatCount(pkg.totalDownloads));
-                setValue('nuget-version', 'v' + pkg.version);
-            }
+            if (!data || !Array.isArray(data.data)) return;
+            const family = data.data.filter(p =>
+                p.id === 'Kuestenlogik.Bowire' ||
+                p.id.startsWith('Kuestenlogik.Bowire.'));
+            if (family.length === 0) return;
+            const total = family.reduce((sum, p) => sum + (p.totalDownloads || 0), 0);
+            setValue('nuget-downloads', formatCount(total));
+            const core = family.find(p => p.id === 'Kuestenlogik.Bowire');
+            if (core) setValue('nuget-version', 'v' + core.version);
         })
         .catch(() => {});
 })();
