@@ -51,6 +51,30 @@ bowire plugin uninstall <package-id>
 
 The `--prerelease` flag (added in Bowire 1.6.0) opts into NuGet pre-release versions (e.g. `1.0.0-rc.2`); without it `install` / `update` resolve the latest stable. Matches `dotnet add package --prerelease` semantics.
 
+## Sidecar (polyglot) plugins
+
+`IBowireProtocol` is a .NET interface, but a plugin doesn't have to be a .NET assembly. Anything that speaks JSON-RPC 2.0 over **stdio** (NDJSON framing, like MCP / LSP) **or** over **HTTP + SSE** (POST request + long-lived SSE GET, like MCP's streamable-HTTP) can register as a Bowire protocol — Python, Rust, Go, Node, C++, all welcome. The host treats the sidecar like any other protocol plugin; the [Sidecar Plugins](../architecture/sidecar-plugins.md) reference has the full wire spec, manifest schema, and worked Python example.
+
+Ship the sidecar as a `.zip` carrying a `sidecar.json` at its root. `bowire plugin install --file` accepts any of three sources for it:
+
+```bash
+bowire plugin install --file ./my-sidecar.zip                        # local path
+bowire plugin install --file https://example.com/my-sidecar.zip      # http(s) URL
+bowire plugin install --file oci://ghcr.io/acme/zenoh-sidecar:1.0.0  # OCI registry
+```
+
+The `oci://` form pulls straight from any OCI Distribution v2 registry (GHCR, Docker Hub, Harbor, a local `localhost:5000`, …) — anonymous pulls and the standard bearer-token dance are handled automatically. Publish a sidecar zip as a single-layer OCI artifact with [`oras`](https://oras.land):
+
+```bash
+oras push ghcr.io/acme/zenoh-sidecar:1.0.0 ./zenoh-sidecar.zip:application/zip
+```
+
+`bowire plugin list` tags sidecar entries `[sidecar: <protocol-id>]` to distinguish them from `[nuget: N files]` .NET plugins. `bowire plugin uninstall <packageId>` removes both kinds the same way.
+
+### Writing a sidecar in Python
+
+The official Python SDK lives at [`Kuestenlogik/Bowire.Sdk.Python`](https://github.com/Kuestenlogik/Bowire.Sdk.Python) (`pip install bowire-plugin`). Subclass `BowirePlugin`, implement `discover` / `invoke` (and optionally `invoke_stream` / `settings` / `shutdown`), then pick the transport: `run(plugin)` for stdio, `run_http(plugin, host, port)` for HTTP/SSE. Zero runtime deps, runs on Python 3.10+. Node / Go / Rust SDKs are on the roadmap.
+
 ## Plugin management via the workbench UI (1.6.0+)
 
 The Settings → Plugins panel surfaces every installed plugin in one place. Each row shows the package id, installed version, and an "update available" hint when the configured NuGet feed has a newer one. Per-row buttons: **Update** (writes the new version into `~/.bowire/plugins/<package-id>/`) and **Uninstall** (removes the directory). A pre-release toggle at the top controls whether the latest-lookup considers RC builds.

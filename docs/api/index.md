@@ -31,6 +31,10 @@ Auto-generated from XML doc-comments across the published assemblies. Use the si
 - <xref:Kuestenlogik.Bowire.Protocol.OData>
 - <xref:Kuestenlogik.Bowire.Protocol.Mcp>
 
+## Polyglot sidecar plugins
+
+Bowire also accepts non-.NET plugins via a JSON-RPC 2.0 sidecar bridge (stdio or HTTP/SSE) — no .NET assembly, no `IBowireProtocol` implementation needed. The wire contract, manifest schema, and packaging / install flow (zip, `http(s)://`, `oci://`) are documented in [Sidecar Plugins](../architecture/sidecar-plugins.md). The Python SDK lives in its own repo: [`Kuestenlogik/Bowire.Sdk.Python`](https://github.com/Kuestenlogik/Bowire.Sdk.Python) (`pip install bowire-plugin`).
+
 ## Sibling plugins
 
 These ship from their own NuGet packages with independent release cadences — see the [Protocol Guides](../protocols/index.md) for install snippets.
