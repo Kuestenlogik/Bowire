@@ -257,10 +257,22 @@ are duplex by nature.
   serialization cost; if you need >10k msgs/sec sustained throughput,
   use a native .NET plugin.
 
+## Per-language SDKs
+
+Hand-rolling the JSON-RPC loop is ~50 LOC, but an SDK turns a plugin
+into a five-method subclass. Available today:
+
+- **Python** — [`Kuestenlogik/Bowire.Sdk.Python`](https://github.com/Kuestenlogik/Bowire.Sdk.Python)
+  (`pip install bowire-plugin`): subclass `BowirePlugin`, implement
+  `discover` / `invoke` / `invoke_stream`, call `run()`. Ships a
+  runnable `examples/echo` plugin + `sidecar.json`.
+
+Node.js / Go / Rust SDKs mirror the same surface — see the
+[ROADMAP](../../ROADMAP.md).
+
 ## See also
 
 - [`docs/protocols/custom.md`](../protocols/custom.md) — writing a
   custom .NET plugin (when you can stay in-ecosystem)
 - The Phase 2+ roadmap entry in [`ROADMAP.md`](../../ROADMAP.md):
-  per-language SDKs, `bowire plugin install` zip-artifact path,
-  templates repo.
+  remaining per-language SDKs + templates repo.
