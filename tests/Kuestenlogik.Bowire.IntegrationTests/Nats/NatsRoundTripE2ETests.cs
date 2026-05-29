@@ -330,8 +330,34 @@ public sealed class NatsRoundTripE2ETests : IClassFixture<NatsContainerFixture>
         var subA = Task.Run(() => RunSubscriberAsync(0), stopCts.Token);
         var subB = Task.Run(() => RunSubscriberAsync(1), stopCts.Token);
 
-        // Give the SUB frames time to register.
+        // Readiness probe — a fixed Task.Delay is racy: core NATS has no
+        // persistence, so any message published before both SUB frames
+        // are registered server-side is silently dropped (that's how a
+        // slow runner ends up with "Actual: 1"). Instead, publish probe
+        // messages until one is observed, which proves the subscriptions
+        // are live; then reset the counters for the measured batch.
+        var warmupDeadline = DateTime.UtcNow + TimeSpan.FromSeconds(15);
+        while (Volatile.Read(ref counterA) + Volatile.Read(ref counterB) == 0
+            && DateTime.UtcNow < warmupDeadline)
+        {
+            await plugin.InvokeAsync(
+                _broker.ServerUrl,
+                service: "(root)",
+                method: $"nats/{subject}/publish",
+                jsonMessages: ["""{"probe":true}"""],
+                showInternalServices: false,
+                metadata: null,
+                ct: ct);
+            await Task.Delay(100, ct);
+        }
+        Assert.True(Volatile.Read(ref counterA) + Volatile.Read(ref counterB) > 0,
+            "queue-group subscriptions never went live within the warm-up window");
+
+        // Let any in-flight probe deliveries settle, then zero the
+        // counters so the measured batch is clean.
         await Task.Delay(300, ct);
+        Interlocked.Exchange(ref counterA, 0);
+        Interlocked.Exchange(ref counterB, 0);
 
         const int publishCount = 20;
         for (var i = 0; i < publishCount; i++)
