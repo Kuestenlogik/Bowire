@@ -2,6 +2,8 @@
   href: index.md
 - name: Plugin Architecture
   href: plugin-architecture.md
+- name: Sidecar Plugins (polyglot)
+  href: sidecar-plugins.md
 - name: Plugin Compatibility
   href: compatibility.md
 - name: Packages
