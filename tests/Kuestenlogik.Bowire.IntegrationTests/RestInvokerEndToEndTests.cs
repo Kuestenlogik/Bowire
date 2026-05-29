@@ -21,7 +21,15 @@ namespace Kuestenlogik.Bowire.IntegrationTests;
 /// Forcing the collection to run sequentially trades a few seconds of
 /// wallclock for deterministic CI runs.
 /// </summary>
-[CollectionDefinition(nameof(RestInvokerEndToEndFixture))]
+// DisableParallelization: classes in this collection inject a fake
+// protocol registry into the process-wide BowireEndpointHelpers static
+// (via SetRegistry). Without isolation that races readers in other
+// collections — e.g. BowireEndpointTests.ProtocolsEndpoint, which then
+// sees the fake "rest"-only registry and fails to find grpc/signalr.
+// Running this collection on its own (not concurrent with any other)
+// closes that window; the adapter hosts also reset the registry on
+// teardown so later readers rediscover the real plugin set.
+[CollectionDefinition(nameof(RestInvokerEndToEndFixture), DisableParallelization = true)]
 [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1515:Consider making public types internal", Justification = "xUnit collection definition must be public.")]
 public sealed class RestInvokerEndToEndFixture { }
 

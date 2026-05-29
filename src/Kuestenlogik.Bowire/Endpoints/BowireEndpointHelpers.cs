@@ -116,6 +116,16 @@ internal static class BowireEndpointHelpers
     public static void SetRegistry(BowireProtocolRegistry registry) => _registry = registry;
 
     /// <summary>
+    /// Test seam — clear the cached registry so the next
+    /// <see cref="GetRegistry"/> re-runs discovery. The cache is a
+    /// process-wide static: fine in production (one app per process)
+    /// but a cross-test contaminant when a suite injects a fake
+    /// registry via <see cref="SetRegistry"/>. Those tests reset it
+    /// here on teardown so later readers rediscover the real plugin set.
+    /// </summary>
+    internal static void ResetRegistry() => _registry = null;
+
+    /// <summary>
     /// Resolve a logger from the request's <see cref="IServiceProvider"/>.
     /// Per-request resolution (not a static field) is required because the
     /// integration tests run multiple <c>WebApplicationBuilder</c> hosts in

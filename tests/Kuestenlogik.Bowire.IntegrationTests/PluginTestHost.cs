@@ -1,10 +1,11 @@
 // Copyright 2026 Küstenlogik
 // SPDX-License-Identifier: Apache-2.0
 
-using System.Net;
-using System.Net.Sockets;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Hosting.Server;
+using Microsoft.AspNetCore.Hosting.Server.Features;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 
 namespace Kuestenlogik.Bowire.IntegrationTests;
@@ -30,11 +31,15 @@ internal sealed class PluginTestHost : IAsyncDisposable
 
     public static async Task<PluginTestHost> StartAsync(Action<WebApplication> configure)
     {
-        var port = GetFreeTcpPort();
-        var url = $"http://127.0.0.1:{port}";
-
         var builder = WebApplication.CreateBuilder();
-        builder.WebHost.UseUrls(url);
+        // Bind to port 0 and let Kestrel pick a free port atomically.
+        // The old "open a TcpListener on :0, read the port, close it,
+        // then hand the number to UseUrls" dance had a TOCTOU race:
+        // under xUnit's parallel execution a second host could grab the
+        // same "free" port in the gap before Kestrel bound it, which
+        // surfaced on CI as "address already in use". Reading the bound
+        // address back after StartAsync removes the gap entirely.
+        builder.WebHost.UseUrls("http://127.0.0.1:0");
         // Quiet ASP.NET startup logging in tests
         builder.Logging.ClearProviders();
 
@@ -44,21 +49,16 @@ internal sealed class PluginTestHost : IAsyncDisposable
 
         await app.StartAsync(TestContext.Current.CancellationToken);
 
-        return new PluginTestHost(app, url);
+        var address = app.Services.GetRequiredService<IServer>()
+            .Features.Get<IServerAddressesFeature>()?.Addresses.FirstOrDefault()
+            ?? throw new InvalidOperationException("Kestrel did not report a bound address.");
+
+        return new PluginTestHost(app, address);
     }
 
     public async ValueTask DisposeAsync()
     {
         await _app.StopAsync(TestContext.Current.CancellationToken);
         await _app.DisposeAsync();
-    }
-
-    private static int GetFreeTcpPort()
-    {
-        using var listener = new TcpListener(IPAddress.Loopback, 0);
-        listener.Start();
-        var port = ((IPEndPoint)listener.LocalEndpoint).Port;
-        listener.Stop();
-        return port;
     }
 }
