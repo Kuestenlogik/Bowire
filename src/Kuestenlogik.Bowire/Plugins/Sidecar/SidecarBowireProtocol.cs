@@ -42,7 +42,7 @@ public sealed class SidecarBowireProtocol : IBowireProtocol
     private readonly SidecarPluginManifest _manifest;
     private readonly string _pluginDir;
     private readonly SemaphoreSlim _initLock = new(1, 1);
-    private SidecarJsonRpcTransport? _transport;
+    private ISidecarTransport? _transport;
     private InitializeResult? _initResult;
 
     private static readonly JsonSerializerOptions s_jsonOpts = new()
@@ -99,7 +99,7 @@ public sealed class SidecarBowireProtocol : IBowireProtocol
         Dictionary<string, string>? metadata = null, CancellationToken ct = default)
     {
         var sw = System.Diagnostics.Stopwatch.StartNew();
-        SidecarJsonRpcTransport transport;
+        ISidecarTransport transport;
         try
         {
             transport = await EnsureStartedAsync(ct).ConfigureAwait(false);
@@ -237,7 +237,7 @@ public sealed class SidecarBowireProtocol : IBowireProtocol
     /// in a semaphore so concurrent first-callers don't race two
     /// spawns.
     /// </summary>
-    internal async Task<SidecarJsonRpcTransport> EnsureStartedAsync(CancellationToken ct)
+    internal async Task<ISidecarTransport> EnsureStartedAsync(CancellationToken ct)
     {
         if (_transport is { } existing && !existing.HasExited) return existing;
 
@@ -254,7 +254,15 @@ public sealed class SidecarBowireProtocol : IBowireProtocol
                 _initResult = null;
             }
 
-            var t = SidecarJsonRpcTransport.Start(_manifest, _pluginDir);
+            // Pick the transport the manifest declares: a (possibly
+            // remote) HTTP/SSE service, or a local stdio subprocess.
+            // CA2000: ownership transfers to _transport on success; the
+            // catch disposes it on any init failure.
+#pragma warning disable CA2000
+            ISidecarTransport t = _manifest.IsHttp
+                ? await SidecarHttpTransport.StartAsync(_manifest, ct).ConfigureAwait(false)
+                : SidecarJsonRpcTransport.Start(_manifest, _pluginDir);
+#pragma warning restore CA2000
             try
             {
                 var initJson = await t.RequestAsync("initialize", new

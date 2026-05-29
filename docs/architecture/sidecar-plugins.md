@@ -91,10 +91,39 @@ distinguish it from `[nuget: N files]` .NET plugins.
 | `protocol.id` | yes | The id the workbench tabs against (e.g. `zenoh`); must match what `initialize` returns. |
 | `protocol.name` | yes | Display name (e.g. `Zenoh`). |
 | `protocol.iconSvg` | no | Inline SVG. Initial-handshake `initialize` response can override. |
-| `executable` | yes | Path to the executable, relative to the plugin directory. |
-| `args` | no | Args appended to the executable command line. |
-| `envPrefix` | no | Env-var prefix forwarded to the subprocess. Default: `BOWIRE_`. |
-| `shutdownTimeoutMs` | no | Grace period after `shutdown` before SIGKILL. Default: `3000`. |
+| `transport` | no | `"stdio"` (default) or `"http"`. Picks the wire — see below. |
+| `executable` | stdio | Path to the executable, relative to the plugin directory. Required for `stdio`. |
+| `args` | no | Args appended to the executable command line (stdio). |
+| `envPrefix` | no | Env-var prefix forwarded to the subprocess (stdio). Default: `BOWIRE_`. |
+| `shutdownTimeoutMs` | no | Grace period after `shutdown` before SIGKILL (stdio). Default: `3000`. |
+| `url` | http | The JSON-RPC endpoint (e.g. `http://localhost:7000/rpc`). Required for `http`. |
+| `version` | no | Version string for `bowire plugin list` (sidecars have no NuGet version). |
+
+## Transports
+
+The same contract rides over two wires (like MCP's stdio + streamable-HTTP):
+
+- **`stdio`** (default) — Bowire spawns `executable` as a local child
+  process and speaks NDJSON JSON-RPC over its stdin/stdout. Zero-config,
+  host-owned lifecycle, no network surface. Best for a plugin shipped as
+  a zip and run on the same machine as the workbench.
+- **`http`** — the sidecar is a (possibly remote) HTTP service at `url`.
+  Requests are JSON-RPC envelopes **POST**ed to the endpoint (the HTTP
+  response body carries the JSON-RPC reply); server-initiated
+  notifications (`$/stream/data`, `$/channel/data`, …) stream back over
+  one long-lived **SSE** `GET` on the same endpoint. Bowire does *not*
+  own the process — disposing just closes the SSE stream and sends a
+  best-effort `shutdown` the service may ignore. Suits hosted /
+  multi-tenant deployments where one sidecar serves many hosts.
+
+```json
+{ "packageId": "Acme.Bowire.Protocol.Remote",
+  "protocol": { "id": "remote", "name": "Remote" },
+  "transport": "http",
+  "url": "http://localhost:7000/rpc" }
+```
+
+The method surface below is identical on both transports.
 
 ## JSON-RPC method surface
 
