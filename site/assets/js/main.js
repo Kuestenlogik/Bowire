@@ -147,12 +147,16 @@ if (toggle && nav) {
         .catch(() => {});
 
     // NuGet azuresearch (CORS-enabled, no auth). The Downloads badge
-    // aggregates the whole Kuestenlogik.Bowire.* family — core, CLI
-    // tool, every protocol plugin, the MapLibre extension, … — not just
-    // the core package, so it reflects the ecosystem rather than one
-    // library. The Version badge stays pinned to Kuestenlogik.Bowire
-    // (the canonical host package). take=1000 covers the full family;
-    // the client-side filter drops fuzzy full-text matches that share
+    // shows the *max* download count across the Kuestenlogik.Bowire.*
+    // family rather than the sum. Summing double-counts: a single
+    // `dotnet tool install` pulls the CLI plus its transitively
+    // referenced core + bundled protocol plugins, bumping ~10 package
+    // counters for one logical install (~6-7× inflation measured). The
+    // max — today the core Kuestenlogik.Bowire, on which everything
+    // depends — is an honest lower bound on distinct pulls and auto-
+    // tracks whichever package leads. The Version badge stays pinned to
+    // the canonical Kuestenlogik.Bowire host package. take=1000 covers
+    // the family; the filter drops fuzzy full-text matches that share
     // the "Bowire" token but not the Kuestenlogik.Bowire(.) prefix.
     fetch('https://azuresearch-usnc.nuget.org/query?q=Kuestenlogik.Bowire&prerelease=false&take=1000')
         .then(r => r.ok ? r.json() : null)
@@ -162,8 +166,8 @@ if (toggle && nav) {
                 p.id === 'Kuestenlogik.Bowire' ||
                 p.id.startsWith('Kuestenlogik.Bowire.'));
             if (family.length === 0) return;
-            const total = family.reduce((sum, p) => sum + (p.totalDownloads || 0), 0);
-            setValue('nuget-downloads', formatCount(total));
+            const max = family.reduce((m, p) => Math.max(m, p.totalDownloads || 0), 0);
+            setValue('nuget-downloads', formatCount(max));
             const core = family.find(p => p.id === 'Kuestenlogik.Bowire');
             if (core) setValue('nuget-version', 'v' + core.version);
         })
