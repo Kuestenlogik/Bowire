@@ -13,26 +13,27 @@ namespace Kuestenlogik.Bowire.IntegrationTests.Nats;
 
 /// <summary>
 /// End-to-end round-trip checks for the NATS plugin against a real
-/// <c>nats-server -js</c> container. Phase-1 unit tests cover the
-/// helpers; this file covers the wire — actual publish/subscribe,
-/// request/reply, JetStream stream listing + publish + ordered-
-/// consumer streaming, NATS Services API discovery, and the
-/// queue-group subscription hint.
+/// <c>nats-server -js</c>. Phase-1 unit tests cover the helpers; this
+/// file covers the wire — actual publish/subscribe, request/reply,
+/// JetStream stream listing + publish + ordered-consumer streaming,
+/// NATS Services API discovery, and the queue-group subscription hint.
 /// </summary>
 /// <remarks>
 /// <para>
-/// Marked <c>[Trait("Category", "Docker")]</c> so CI / dev runs
-/// without a Docker daemon opt out via
-/// <c>dotnet test --filter "Category!=Docker"</c>. The Bowire CI
-/// matrix runs both passes.
+/// Uses <see cref="NatsServerFixture"/>, which downloads the official
+/// nats-server release binary from GitHub and runs it as a subprocess
+/// — <b>no Docker required</b>, so this suite runs on every CI pass
+/// (unlike the Pulsar round-trip suite, which still needs a Docker
+/// broker and stays <c>[Trait("Category","Docker")]</c>). The only
+/// external dependency is GitHub-releases reachability, which the
+/// fixture retries.
 /// </para>
 /// </remarks>
-[Trait("Category", "Docker")]
-public sealed class NatsRoundTripE2ETests : IClassFixture<NatsContainerFixture>
+public sealed class NatsRoundTripE2ETests : IClassFixture<NatsServerFixture>
 {
-    private readonly NatsContainerFixture _broker;
+    private readonly NatsServerFixture _broker;
 
-    public NatsRoundTripE2ETests(NatsContainerFixture broker)
+    public NatsRoundTripE2ETests(NatsServerFixture broker)
     {
         _broker = broker;
     }

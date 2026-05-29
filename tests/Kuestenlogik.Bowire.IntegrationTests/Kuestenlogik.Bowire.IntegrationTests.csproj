@@ -16,13 +16,13 @@
          fixture behind app.UseGrpcWeb() over HTTP/1.1. -->
     <PackageReference Include="Grpc.AspNetCore.Web" />
     <PackageReference Include="Grpc.Tools" PrivateAssets="All" />
-    <!-- Testcontainers.Nats: spins up nats-server in Docker with
-         -js so the NATS plugin's Phase 2 JetStream + Services
-         round-trip tests can run against a real broker. Carries
-         [Trait("Category","Docker")] so the rest of the suite
-         still runs on hosts without a Docker daemon. -->
+    <!-- Testcontainers (+ .Pulsar): the Pulsar round-trip suite still
+         needs a Docker broker (no in-process / standalone-binary
+         alternative for Pulsar's JVM broker), so it stays
+         [Trait("Category","Docker")]. NATS no longer uses Testcontainers
+         — NatsServerFixture downloads the nats-server release binary and
+         runs it as a subprocess, so that suite runs Docker-free on CI. -->
     <PackageReference Include="Testcontainers" />
-    <PackageReference Include="Testcontainers.Nats" />
     <PackageReference Include="Testcontainers.Pulsar" />
   </ItemGroup>
   <ItemGroup>
