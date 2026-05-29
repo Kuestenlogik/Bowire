@@ -1,11 +1,13 @@
 // Copyright 2026 Küstenlogik
 // SPDX-License-Identifier: Apache-2.0
 
+using System.IO.Compression;
 using System.Reflection;
 using System.Text.Json;
 using Kuestenlogik.Bowire;
 using Kuestenlogik.Bowire.App.Plugins;
 using Kuestenlogik.Bowire.PluginLoading;
+using Kuestenlogik.Bowire.Plugins.Sidecar;
 using NuGetNull = NuGet.Common.NullLogger;
 
 namespace Kuestenlogik.Bowire.App;
@@ -245,6 +247,162 @@ internal static class PluginManager
     }
 
     /// <summary>
+    /// Install a sidecar plugin from a <c>.zip</c> archive. The zip must
+    /// contain a <c>sidecar.json</c> manifest at its root plus the
+    /// executable + any runtime files the sidecar needs. Everything is
+    /// unpacked into <c>~/.bowire/plugins/{packageId}/</c> where the
+    /// startup scan picks it up like any other plugin.
+    /// </summary>
+    /// <param name="zipSource">Local path or <c>http(s)://</c> URL of the zip.</param>
+    /// <param name="pluginDir">Plugin root override; <c>null</c> = default.</param>
+    /// <param name="ct">Cancellation.</param>
+    public static async Task<int> InstallSidecarFromZipAsync(
+        string zipSource,
+        string? pluginDir = null,
+        CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(zipSource))
+        {
+            Console.WriteLine("  Usage: bowire plugin install --file <path-or-url-to-sidecar.zip> [--plugin-dir <path>]");
+            return 2;
+        }
+
+        var dir = ResolvePluginDir(pluginDir);
+        Directory.CreateDirectory(dir);
+
+        // Resolve the zip to a local path — download first when it's a URL.
+        string localZip;
+        string? tempDownload = null;
+        var isUrl = Uri.TryCreate(zipSource, UriKind.Absolute, out var uri)
+            && uri.Scheme is "http" or "https";
+        if (isUrl)
+        {
+            tempDownload = Path.Combine(Path.GetTempPath(), "bowire-sidecar-" + Guid.NewGuid().ToString("N") + ".zip");
+            try
+            {
+                Console.WriteLine($"  Downloading {zipSource}...");
+                using var http = new HttpClient { Timeout = TimeSpan.FromMinutes(5) };
+                await using var src = await http.GetStreamAsync(uri!, ct).ConfigureAwait(false);
+                await using var dst = File.Create(tempDownload);
+                await src.CopyToAsync(dst, ct).ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                TryDelete(tempDownload);
+                Console.WriteLine($"  Failed to download {zipSource}: {ex.Message}");
+                return 1;
+            }
+            localZip = tempDownload;
+        }
+        else
+        {
+            if (!File.Exists(zipSource))
+            {
+                Console.WriteLine($"  File not found: {zipSource}");
+                return 1;
+            }
+            localZip = zipSource;
+        }
+
+        try
+        {
+            // Peek the manifest before extracting so we can run the
+            // already-installed guard + reject malformed archives early.
+            SidecarPluginManifest? manifest;
+            try
+            {
+                var peek = await ZipFile.OpenReadAsync(localZip, ct).ConfigureAwait(false);
+                await using (peek.ConfigureAwait(false))
+                {
+                    var entry = peek.GetEntry(SidecarPluginManifest.FileName)
+                        ?? peek.Entries.FirstOrDefault(e =>
+                            string.Equals(e.Name, SidecarPluginManifest.FileName, StringComparison.Ordinal));
+                    if (entry is null)
+                    {
+                        Console.WriteLine(
+                            $"  Archive has no {SidecarPluginManifest.FileName} at its root — not a sidecar plugin zip.");
+                        return 1;
+                    }
+                    var entryStream = await entry.OpenAsync(ct).ConfigureAwait(false);
+                    await using (entryStream.ConfigureAwait(false))
+                    {
+                        using var reader = new StreamReader(entryStream);
+                        manifest = SidecarPluginManifest.TryParse(
+                            await reader.ReadToEndAsync(ct).ConfigureAwait(false));
+                    }
+                }
+            }
+            catch (InvalidDataException)
+            {
+                Console.WriteLine($"  {localZip} is not a valid zip archive.");
+                return 1;
+            }
+
+            if (manifest is null || !manifest.IsValid || string.IsNullOrEmpty(manifest.PackageId))
+            {
+                Console.WriteLine(
+                    $"  {SidecarPluginManifest.FileName} is missing packageId / protocol.id / executable.");
+                return 1;
+            }
+
+            var pluginSubDir = Path.Combine(dir, manifest.PackageId);
+            if (Directory.Exists(pluginSubDir))
+            {
+                Console.WriteLine(
+                    $"  Plugin '{manifest.PackageId}' is already installed. Use 'bowire plugin uninstall {manifest.PackageId}' first.");
+                return 1;
+            }
+
+            Console.WriteLine($"  Installing sidecar {manifest.PackageId} from {zipSource}...");
+            Directory.CreateDirectory(pluginSubDir);
+            await ZipFile.ExtractToDirectoryAsync(localZip, pluginSubDir, overwriteFiles: true, ct)
+                .ConfigureAwait(false);
+
+            // On Unix the executable bit doesn't survive the zip; set it
+            // so the host can spawn the sidecar without a chmod dance.
+            if (!OperatingSystem.IsWindows())
+            {
+                var exePath = Path.Combine(pluginSubDir, manifest.Executable);
+                if (File.Exists(exePath))
+                {
+                    try
+                    {
+                        var mode = File.GetUnixFileMode(exePath);
+                        File.SetUnixFileMode(exePath,
+                            mode | UnixFileMode.UserExecute | UnixFileMode.GroupExecute | UnixFileMode.OtherExecute);
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"  warning: couldn't set +x on {manifest.Executable}: {ex.Message}");
+                    }
+                }
+            }
+
+            var fileCount = Directory.GetFiles(pluginSubDir, "*", SearchOption.AllDirectories).Length;
+            Console.WriteLine(
+                $"  Installed sidecar {manifest.PackageId}" +
+                (manifest.Version is { Length: > 0 } v ? $" {v}" : "") +
+                $" (protocol '{manifest.Protocol.Id}', {fileCount} file(s)) -> {pluginSubDir}");
+            return 0;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"  Failed to install sidecar from {zipSource}: {ex.Message}");
+            return 1;
+        }
+        finally
+        {
+            TryDelete(tempDownload);
+        }
+    }
+
+    private static void TryDelete(string? path)
+    {
+        if (string.IsNullOrEmpty(path)) return;
+        try { if (File.Exists(path)) File.Delete(path); } catch { /* best-effort temp cleanup */ }
+    }
+
+    /// <summary>
     /// Download a plugin and every transitive dependency as <c>.nupkg</c>
     /// files into <paramref name="outputDir"/>. The resulting folder is
     /// a complete offline bundle: transfer it to an air-gapped host
@@ -330,16 +488,40 @@ internal static class PluginManager
         foreach (var pluginPath in dirs)
         {
             var name = Path.GetFileName(pluginPath);
+            var sidecar = ReadSidecarManifest(pluginPath);
+
+            if (sidecar is not null)
+            {
+                // Sidecar plugin — version (if any) comes from the
+                // manifest; there's no NuGet metadata to read.
+                var sver = string.IsNullOrEmpty(sidecar.Version) ? "—" : "v" + sidecar.Version;
+                if (!verbose)
+                {
+                    Console.WriteLine($"    {name}  {sver}  [sidecar: {sidecar.Protocol.Id}]");
+                    continue;
+                }
+                Console.WriteLine($"    {name}  {sver}  [sidecar]");
+                Console.WriteLine($"      protocol:   {sidecar.Protocol.Id} ({sidecar.Protocol.Name})");
+                Console.WriteLine($"      executable: {sidecar.Executable}");
+                var sfiles = Directory.GetFiles(pluginPath, "*", SearchOption.AllDirectories)
+                    .Select(f => Path.GetRelativePath(pluginPath, f))
+                    .OrderBy(n => n, StringComparer.Ordinal)
+                    .ToList();
+                if (sfiles.Count > 0)
+                    Console.WriteLine($"      files:      {string.Join(", ", sfiles)}");
+                continue;
+            }
+
             var meta = ReadPluginMetadata(pluginPath);
             var dllCount = Directory.GetFiles(pluginPath, "*.dll").Length;
 
             if (!verbose)
             {
-                Console.WriteLine($"    {name}  v{meta.DisplayVersion}  ({dllCount} files)");
+                Console.WriteLine($"    {name}  v{meta.DisplayVersion}  [nuget: {dllCount} files]");
                 continue;
             }
 
-            Console.WriteLine($"    {name}  v{meta.DisplayVersion}");
+            Console.WriteLine($"    {name}  v{meta.DisplayVersion}  [nuget]");
             if (!string.IsNullOrEmpty(meta.ResolvedVersion) &&
                 !string.Equals(meta.ResolvedVersion, meta.RequestedVersion, StringComparison.Ordinal))
             {
@@ -362,6 +544,20 @@ internal static class PluginManager
         Console.WriteLine();
         Console.WriteLine($"  Plugin directory: {dir}");
         return 0;
+    }
+
+    /// <summary>
+    /// Read a directory's <c>sidecar.json</c> manifest, or <c>null</c>
+    /// when it isn't a sidecar plugin (no manifest, or one that doesn't
+    /// have the minimum protocol.id + executable). Lets <c>list</c> tell
+    /// sidecar dirs apart from NuGet dirs (which carry a <c>plugin.json</c>
+    /// install-metadata file, not a sidecar manifest).
+    /// </summary>
+    private static SidecarPluginManifest? ReadSidecarManifest(string pluginPath)
+    {
+        var manifest = SidecarPluginManifest.TryLoadFromFile(
+            Path.Combine(pluginPath, SidecarPluginManifest.FileName));
+        return manifest is { IsValid: true } ? manifest : null;
     }
 
     // Canonical view of the plugin.json fields that List --verbose needs.

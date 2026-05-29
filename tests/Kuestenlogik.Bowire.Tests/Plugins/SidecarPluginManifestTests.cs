@@ -120,7 +120,7 @@ public class SidecarPluginManifestTests
         Directory.CreateDirectory(sub);
         try
         {
-            File.WriteAllText(Path.Combine(sub, "plugin.json"),
+            File.WriteAllText(Path.Combine(sub, "sidecar.json"),
                 """{ "packageId":"X", "protocol":{"id":"x","name":"X"}, "executable":"" }""");
             Assert.Empty(SidecarPluginDiscovery.Discover(root));
         }
@@ -135,7 +135,7 @@ public class SidecarPluginManifestTests
         Directory.CreateDirectory(sub);
         try
         {
-            File.WriteAllText(Path.Combine(sub, "plugin.json"),
+            File.WriteAllText(Path.Combine(sub, "sidecar.json"),
                 """{ "packageId":"X", "protocol":{"id":"zenoh","name":"Zenoh"}, "executable":"x" }""");
 
             var disabled = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "zenoh" };
@@ -154,9 +154,9 @@ public class SidecarPluginManifestTests
         Directory.CreateDirectory(subB);
         try
         {
-            File.WriteAllText(Path.Combine(subA, "plugin.json"),
+            File.WriteAllText(Path.Combine(subA, "sidecar.json"),
                 """{ "packageId":"A", "protocol":{"id":"a","name":"A"}, "executable":"a.exe" }""");
-            File.WriteAllText(Path.Combine(subB, "plugin.json"),
+            File.WriteAllText(Path.Combine(subB, "sidecar.json"),
                 """{ "packageId":"B", "protocol":{"id":"b","name":"B"}, "executable":"b.exe" }""");
 
             var sidecars = SidecarPluginDiscovery.Discover(root);

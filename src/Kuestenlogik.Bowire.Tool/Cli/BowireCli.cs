@@ -570,7 +570,7 @@ internal static class BowireCli
         { Description = "Custom NuGet feed URL. Repeatable." };
         var fileOpt = new Option<string?>("--file")
         {
-            Description = "Install from a local .nupkg instead of a feed.",
+            Description = "Install from a local .nupkg, or a sidecar .zip (local path or http(s):// URL), instead of a feed.",
             DefaultValueFactory = _ => cfg["Bowire:Plugin:File"]
         };
         var outputOpt = new Option<string?>("--output", "-o")
@@ -589,18 +589,25 @@ internal static class BowireCli
             Description = "Allow pre-release versions (1.0.0-rc.1, &c) when resolving the latest. Matches `dotnet add package --prerelease`. Ignored when --version pins an exact version.",
         };
 
-        var install = new Command("install", "Install a protocol plugin from NuGet (or --file).");
+        var install = new Command("install", "Install a protocol plugin from NuGet, a local .nupkg, or a sidecar .zip.");
         install.Add(packageIdArg); install.Add(versionOpt); install.Add(sourcesOpt); install.Add(fileOpt); install.Add(prereleaseOpt);
         install.SetAction(async (pr, _) =>
         {
             var file = pr.GetValue(fileOpt);
             var sources = pr.GetValue(sourcesOpt) ?? [];
             var prerelease = pr.GetValue(prereleaseOpt);
-            return !string.IsNullOrEmpty(file)
-                ? await PluginManager.InstallFromFileAsync(file, pluginDir, sources).ConfigureAwait(false)
-                : await PluginManager.InstallAsync(
-                    pr.GetValue(packageIdArg) ?? "", pr.GetValue(versionOpt), pluginDir, sources,
-                    includePrerelease: prerelease).ConfigureAwait(false);
+            if (!string.IsNullOrEmpty(file))
+            {
+                // A .zip is a sidecar (any-language) plugin; a .nupkg is
+                // a .NET plugin. Route on the extension so one flag
+                // covers both install kinds.
+                return file.EndsWith(".zip", StringComparison.OrdinalIgnoreCase)
+                    ? await PluginManager.InstallSidecarFromZipAsync(file, pluginDir).ConfigureAwait(false)
+                    : await PluginManager.InstallFromFileAsync(file, pluginDir, sources).ConfigureAwait(false);
+            }
+            return await PluginManager.InstallAsync(
+                pr.GetValue(packageIdArg) ?? "", pr.GetValue(versionOpt), pluginDir, sources,
+                includePrerelease: prerelease).ConfigureAwait(false);
         });
 
         var download = new Command("download", "Download a plugin + its transitive deps as offline .nupkg files.");
