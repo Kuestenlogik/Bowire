@@ -528,6 +528,9 @@ public sealed class McpPluginEdgeCaseTests
         {
             await _app.StopAsync(TimeSpan.FromSeconds(5)).ConfigureAwait(false);
             await _app.DisposeAsync().ConfigureAwait(false);
+            // Drop the fake registry we injected so later readers (e.g.
+            // BowireEndpointTests' /protocols) rediscover the real set.
+            Endpoints.BowireEndpointHelpers.ResetRegistry();
         }
     }
 
