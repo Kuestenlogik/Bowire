@@ -23,14 +23,14 @@ namespace Kuestenlogik.Bowire.Plugins.Sidecar;
 /// </summary>
 internal sealed class SidecarChannel : IBowireChannel
 {
-    private readonly SidecarJsonRpcTransport _transport;
+    private readonly ISidecarTransport _transport;
     private readonly ChannelReader<JsonObject> _reader;
     private readonly System.Diagnostics.Stopwatch _sw = System.Diagnostics.Stopwatch.StartNew();
     private int _sentCount;
     private bool _closed;
     private bool _disposed;
 
-    public SidecarChannel(SidecarJsonRpcTransport transport, string channelId, ChannelReader<JsonObject> reader)
+    public SidecarChannel(ISidecarTransport transport, string channelId, ChannelReader<JsonObject> reader)
     {
         _transport = transport;
         Id = channelId;
