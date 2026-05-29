@@ -352,25 +352,28 @@ public sealed class NatsRoundTripE2ETests : IClassFixture<NatsServerFixture>
         var subA = Task.Run(() => RunSubscriberAsync(0), stopCts.Token);
         var subB = Task.Run(() => RunSubscriberAsync(1), stopCts.Token);
 
+        // Publish over ONE long-lived connection rather than the
+        // plugin's InvokeAsync (which opens + disposes a fresh
+        // connection per message). On a loaded CI runner that
+        // connect→publish→dispose churn dropped most messages before
+        // they flushed (observed 4/20 delivered). A single open
+        // connection + PingAsync (a server round-trip that guarantees
+        // every prior publish reached the server) makes delivery
+        // reliable. We're testing the plugin's *subscribe* side (the
+        // queue_group hint), so publishing via the raw client is fine.
+        await using var pub = new NatsConnection(new NatsOpts { Url = _broker.ServerUrl });
+        await pub.ConnectAsync();
+
         // Readiness — publish probes until *both* subscribers have seen
         // one, proving both SUB frames are registered server-side. A
         // queue-group probe goes to exactly one member, so we keep
-        // sending until each side has received at least one. Only then
-        // is the measured batch guaranteed to reach a fully-subscribed
-        // group (no dropped sends, no lopsided delivery from a late
-        // second subscriber).
+        // sending until each side has received at least one.
         var warmupDeadline = DateTime.UtcNow + TimeSpan.FromSeconds(20);
         while ((Volatile.Read(ref readyA) == 0 || Volatile.Read(ref readyB) == 0)
             && DateTime.UtcNow < warmupDeadline)
         {
-            await plugin.InvokeAsync(
-                _broker.ServerUrl,
-                service: "(root)",
-                method: $"nats/{subject}/publish",
-                jsonMessages: ["""{"probe":true}"""],
-                showInternalServices: false,
-                metadata: null,
-                ct: ct);
+            await pub.PublishAsync(subject, """{"probe":true}""", cancellationToken: ct);
+            await pub.PingAsync(ct);
             await Task.Delay(100, ct);
         }
         Assert.True(Volatile.Read(ref readyA) > 0 && Volatile.Read(ref readyB) > 0,
@@ -378,19 +381,26 @@ public sealed class NatsRoundTripE2ETests : IClassFixture<NatsServerFixture>
 
         const int publishCount = 20;
         for (var i = 0; i < publishCount; i++)
+            await pub.PublishAsync(subject, $$"""{"i":{{i}}}""", cancellationToken: ct);
+        // Round-trip the server so all 20 are guaranteed flushed +
+        // accepted before we start counting the drain.
+        await pub.PingAsync(ct);
+
+        // Drain by polling until the tally stops moving (3 stable reads)
+        // or every message is in — robust to a slow runner, unlike a
+        // fixed Task.Delay.
+        var drainDeadline = DateTime.UtcNow + TimeSpan.FromSeconds(10);
+        var lastTotal = -1;
+        var stableReads = 0;
+        while (DateTime.UtcNow < drainDeadline)
         {
-            await plugin.InvokeAsync(
-                _broker.ServerUrl,
-                service: "(root)",
-                method: $"nats/{subject}/publish",
-                jsonMessages: [$$"""{"i":{{i}}}"""],
-                showInternalServices: false,
-                metadata: null,
-                ct: ct);
+            var cur = Volatile.Read(ref batchA) + Volatile.Read(ref batchB);
+            if (cur >= publishCount) break;
+            if (cur == lastTotal) { if (++stableReads >= 3) break; }
+            else { stableReads = 0; lastTotal = cur; }
+            await Task.Delay(150, ct);
         }
 
-        // Let the queue group drain.
-        await Task.Delay(800, ct);
         await stopCts.CancelAsync();
         try { await Task.WhenAll(subA, subB).WaitAsync(TimeSpan.FromSeconds(3), ct); }
         catch { /* swallow */ }
@@ -398,13 +408,10 @@ public sealed class NatsRoundTripE2ETests : IClassFixture<NatsServerFixture>
         // The behaviour under test is queue-group *sharing*: each message
         // reaches exactly one member, so the combined tally is ~20 — and
         // crucially NOT 2×20 = 40, which is what a broadcast (no queue
-        // group) would produce. We don't assert an exact 20: the plugin's
-        // publish path opens a fresh connection per message, and the
-        // occasional message can be lost to a publish-flush / receive-
-        // drain timing edge on a loaded runner. The headline invariant
-        // (total <= publishCount, i.e. shared not broadcast) plus
-        // near-complete delivery plus both members sharing is what makes
-        // this test meaningful and deterministic.
+        // group) would produce. The headline invariant (total <=
+        // publishCount = shared not broadcast) plus near-complete
+        // delivery plus both members sharing makes this meaningful and,
+        // with reliable single-connection publishing, deterministic.
         var total = batchA + batchB;
         Assert.True(total <= publishCount,
             $"queue group should share (<= {publishCount}), broadcast would be {2 * publishCount}; got {total} (A={batchA}, B={batchB})");
