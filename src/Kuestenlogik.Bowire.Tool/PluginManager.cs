@@ -270,12 +270,32 @@ internal static class PluginManager
         var dir = ResolvePluginDir(pluginDir);
         Directory.CreateDirectory(dir);
 
-        // Resolve the zip to a local path — download first when it's a URL.
+        // Resolve the zip to a local path. Three source shapes:
+        //   oci://registry/repo:tag  → pull the artifact layer from an OCI registry
+        //   http(s)://…/sidecar.zip   → plain download
+        //   /local/path/sidecar.zip   → use in place
         string localZip;
         string? tempDownload = null;
+        var isOci = zipSource.StartsWith("oci://", StringComparison.OrdinalIgnoreCase);
         var isUrl = Uri.TryCreate(zipSource, UriKind.Absolute, out var uri)
             && uri.Scheme is "http" or "https";
-        if (isUrl)
+        if (isOci)
+        {
+            tempDownload = Path.Combine(Path.GetTempPath(), "bowire-sidecar-" + Guid.NewGuid().ToString("N") + ".zip");
+            try
+            {
+                Console.WriteLine($"  Pulling {zipSource} from OCI registry...");
+                await OciArtifactFetcher.FetchToFileAsync(zipSource, tempDownload, ct).ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                TryDelete(tempDownload);
+                Console.WriteLine($"  Failed to pull {zipSource}: {ex.Message}");
+                return 1;
+            }
+            localZip = tempDownload;
+        }
+        else if (isUrl)
         {
             tempDownload = Path.Combine(Path.GetTempPath(), "bowire-sidecar-" + Guid.NewGuid().ToString("N") + ".zip");
             try
@@ -1144,8 +1164,10 @@ internal static class PluginManager
               --verbose, -v          Expand `plugin list` output with the resolved
                                      version, install timestamp, sources, and DLL
                                      list per plugin. No effect on other commands.
-              --file <path>          Install from a local .nupkg file instead of
-                                     resolving the package over the network.
+              --file <path|ref>      Install without resolving from a NuGet feed:
+                                     a local .nupkg (.NET plugin), or a sidecar zip
+                                     given as a local path, an http(s):// URL, or an
+                                     oci://registry/repo:tag registry reference.
               --output, -o <dir>     Output directory for `plugin download`. Holds
                                      the root .nupkg + every transitive dep so the
                                      folder can be transferred and used as a local
@@ -1175,6 +1197,8 @@ internal static class PluginManager
               bowire plugin install MyCompany.Internal.Plugin --source https://nuget.mycorp.internal/v3/index.json
               bowire plugin install --file ./MyCompany.Bowire.Protocol.Mqtt.1.2.0.nupkg
               bowire plugin install --file ./Plugin.nupkg --source ./offline-feed/
+              bowire plugin install --file ./my-sidecar.zip
+              bowire plugin install --file oci://ghcr.io/acme/zenoh-sidecar:1.0.0
               bowire plugin install MyCompany.Internal.Plugin --source ./local-feed/
 
               # Air-gapped flow — download on a connected machine, transfer the

@@ -54,18 +54,40 @@ per manifest, and proxies every call through to the process.
 
 Ship the sidecar as a `.zip` containing `sidecar.json` at its root
 plus the executable and any runtime files. Install it with the same
-command the .NET plugins use — the `.zip` extension routes to the
-sidecar path:
+command the .NET plugins use — a `.zip` extension (or an `oci://`
+reference) routes to the sidecar path:
 
 ```bash
-bowire plugin install --file ./my-sidecar.zip          # local
-bowire plugin install --file https://example.com/x.zip # http(s) URL
+bowire plugin install --file ./my-sidecar.zip                       # local
+bowire plugin install --file https://example.com/x.zip              # http(s) URL
+bowire plugin install --file oci://ghcr.io/acme/zenoh-sidecar:1.0.0 # OCI registry
 ```
 
 The archive unpacks into `~/.bowire/plugins/<packageId>/` (packageId
 read from the manifest). On Unix the executable bit is restored after
 extraction. `bowire plugin list` tags the result `[sidecar: <id>]` to
 distinguish it from `[nuget: N files]` .NET plugins.
+
+### Pulling from an OCI registry
+
+An `oci://registry/repo:tag` (or `@sha256:<digest>`) reference pulls the
+sidecar zip straight from any OCI Distribution v2 registry — GHCR,
+Docker Hub, Harbor, a local `localhost:5000` registry, and so on. The
+tool resolves the manifest, follows a multi-arch index to its first
+entry if needed, picks the zip layer, and downloads the blob to a temp
+file that flows through the same extract path as a `.zip`. Anonymous
+pulls and the standard bearer-token dance (a `401` with a
+`WWW-Authenticate: Bearer realm=…,service=…` challenge → token endpoint
+→ retry) are handled automatically; pushing artifacts, credential
+helpers, and signature verification are out of scope.
+
+Publish a sidecar zip as a single-layer OCI artifact with
+[`oras`](https://oras.land):
+
+```bash
+oras push ghcr.io/acme/zenoh-sidecar:1.0.0 \
+  ./zenoh-sidecar.zip:application/zip
+```
 
 ## Manifest schema
 

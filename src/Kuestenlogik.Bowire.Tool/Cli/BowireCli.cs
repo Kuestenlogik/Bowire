@@ -570,7 +570,7 @@ internal static class BowireCli
         { Description = "Custom NuGet feed URL. Repeatable." };
         var fileOpt = new Option<string?>("--file")
         {
-            Description = "Install from a local .nupkg, or a sidecar .zip (local path or http(s):// URL), instead of a feed.",
+            Description = "Install from a local .nupkg, or a sidecar .zip (local path, http(s):// URL, or oci:// registry ref), instead of a feed.",
             DefaultValueFactory = _ => cfg["Bowire:Plugin:File"]
         };
         var outputOpt = new Option<string?>("--output", "-o")
@@ -598,10 +598,12 @@ internal static class BowireCli
             var prerelease = pr.GetValue(prereleaseOpt);
             if (!string.IsNullOrEmpty(file))
             {
-                // A .zip is a sidecar (any-language) plugin; a .nupkg is
-                // a .NET plugin. Route on the extension so one flag
-                // covers both install kinds.
-                return file.EndsWith(".zip", StringComparison.OrdinalIgnoreCase)
+                // A .zip (local/http) or an oci:// ref is a sidecar
+                // (any-language) plugin; a .nupkg is a .NET plugin. Route
+                // on the shape so one flag covers every install kind.
+                var isSidecar = file.EndsWith(".zip", StringComparison.OrdinalIgnoreCase)
+                    || file.StartsWith("oci://", StringComparison.OrdinalIgnoreCase);
+                return isSidecar
                     ? await PluginManager.InstallSidecarFromZipAsync(file, pluginDir).ConfigureAwait(false)
                     : await PluginManager.InstallFromFileAsync(file, pluginDir, sources).ConfigureAwait(false);
             }
