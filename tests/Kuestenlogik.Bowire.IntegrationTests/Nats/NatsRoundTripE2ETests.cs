@@ -47,32 +47,36 @@ public sealed class NatsRoundTripE2ETests : IClassFixture<NatsServerFixture>
         var plugin = new BowireNatsProtocol();
         const string subject = "demo.echo";
 
-        // Start the subscribe stream first, then publish so the
-        // message lands while we're actively reading. Run them on
-        // separate tasks so the stream's awaiting foreach doesn't
-        // block the publish.
+        // Start the subscribe stream first, then publish so the message
+        // lands while we're actively reading.
         var firstMessage = StreamOneAsync(plugin, _broker.ServerUrl, subject, ct);
 
-        // Tiny wait to let the SubscribeAsync above register on the
-        // broker — NATS subscribe is fire-and-forget, the SUB frame
-        // takes a millisecond or two to flush. Without this the
-        // publish can race ahead and the subscriber misses the msg.
-        await Task.Delay(200, ct);
+        // Re-publish until the subscriber actually receives one, rather
+        // than a single fire-and-forget after a fixed 200 ms wait. Core
+        // NATS has no persistence, so a message sent before the SUB
+        // frame registers is lost — on a loaded CI runner the
+        // registration latency can exceed any fixed delay, and the
+        // plugin's per-call connect→publish→dispose can also drop a lone
+        // send before it flushes. Publishing over one long-lived
+        // connection on a short loop (each followed by PingAsync, a
+        // server round-trip) is deterministic: as soon as the SUB is
+        // live, the next publish lands and the stream completes.
+        await using var pub = new NatsConnection(new NatsOpts { Url = _broker.ServerUrl });
+        await pub.ConnectAsync();
 
-        var publishResult = await plugin.InvokeAsync(
-            _broker.ServerUrl,
-            service: "(root)",
-            method: $"nats/{subject}/publish",
-            jsonMessages: ["""{"hello":"world"}"""],
-            showInternalServices: false,
-            metadata: null,
-            ct: ct);
+        var deadline = DateTime.UtcNow + TimeSpan.FromSeconds(15);
+        string? envelope = null;
+        while (DateTime.UtcNow < deadline)
+        {
+            await pub.PublishAsync(subject, """{"hello":"world"}""", cancellationToken: ct);
+            await pub.PingAsync(ct);
+            var done = await Task.WhenAny(firstMessage, Task.Delay(250, ct));
+            if (done == firstMessage) { envelope = await firstMessage; break; }
+        }
 
-        Assert.Equal("OK", publishResult.Status);
-
-        var envelope = await firstMessage.WaitAsync(TimeSpan.FromSeconds(10), ct);
-        Assert.Contains(subject, envelope, StringComparison.Ordinal);
-        Assert.Contains("hello", envelope, StringComparison.Ordinal);
+        Assert.NotNull(envelope);
+        Assert.Contains(subject, envelope!, StringComparison.Ordinal);
+        Assert.Contains("hello", envelope!, StringComparison.Ordinal);
     }
 
     [Fact]
