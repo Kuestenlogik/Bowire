@@ -5,7 +5,7 @@ using System.Net;
 using System.Text;
 using Kuestenlogik.Bowire.Protocol.OData;
 
-namespace Kuestenlogik.Bowire.Tests;
+namespace Kuestenlogik.Bowire.Protocol.OData.Tests;
 
 /// <summary>
 /// Tests for the OData protocol plugin's identity, $metadata-driven

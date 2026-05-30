@@ -12,7 +12,7 @@ using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Primitives;
 
-namespace Kuestenlogik.Bowire.Tests;
+namespace Kuestenlogik.Bowire.Protocol.SignalR.Tests;
 
 // CA1822: Fixture hub members can't be static — Hub<T> requires instance methods
 // for the reflection walk. CA1859: BuildHubEndpoint returns Endpoint to satisfy
