@@ -4,7 +4,7 @@
 using System.Text.Json;
 using Kuestenlogik.Bowire.Mcp;
 
-namespace Kuestenlogik.Bowire.Tests;
+namespace Kuestenlogik.Bowire.Mcp.Tests;
 
 /// <summary>
 /// Coverage for <see cref="BowireMcpResources"/>. Each test points

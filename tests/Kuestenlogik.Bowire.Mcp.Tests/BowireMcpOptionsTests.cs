@@ -3,7 +3,7 @@
 
 using Kuestenlogik.Bowire.Mcp;
 
-namespace Kuestenlogik.Bowire.Tests;
+namespace Kuestenlogik.Bowire.Mcp.Tests;
 
 public class BowireMcpOptionsTests
 {

@@ -4,7 +4,7 @@
 using Kuestenlogik.Bowire.Mcp;
 using Microsoft.Extensions.AI;
 
-namespace Kuestenlogik.Bowire.Tests;
+namespace Kuestenlogik.Bowire.Mcp.Tests;
 
 /// <summary>
 /// Coverage for <see cref="BowireMcpPrompts"/>. Each prompt renders
