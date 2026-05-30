@@ -5,7 +5,7 @@ using System.Reflection;
 using Kuestenlogik.Bowire.Models;
 using Kuestenlogik.Bowire.Protocol.SocketIo;
 
-namespace Kuestenlogik.Bowire.Tests;
+namespace Kuestenlogik.Bowire.Protocol.SocketIo.Tests;
 
 /// <summary>
 /// Tests for the Socket.IO protocol plugin's identity, defensive guards on

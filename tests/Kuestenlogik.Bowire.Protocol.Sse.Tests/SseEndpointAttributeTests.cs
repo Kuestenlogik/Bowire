@@ -4,7 +4,7 @@
 using System.Reflection;
 using Kuestenlogik.Bowire.Protocol.Sse;
 
-namespace Kuestenlogik.Bowire.Tests;
+namespace Kuestenlogik.Bowire.Protocol.Sse.Tests;
 
 public class SseEndpointAttributeTests
 {
