@@ -91,6 +91,7 @@ internal static class BowireCli
         root.Add(BuildJwtCommand());
         root.Add(BuildFuzzCommand());
         root.Add(BuildProxyCommand());
+        root.Add(ExportCommand.Build());
 
         // Auto-discovered CLI commands — scanner today, fuzz / proxy /
         // jwt will follow as they extract out of Tool into their own
