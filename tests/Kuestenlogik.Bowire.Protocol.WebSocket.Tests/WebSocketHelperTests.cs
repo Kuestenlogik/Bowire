@@ -5,7 +5,7 @@ using System.Reflection;
 using Kuestenlogik.Bowire.Models;
 using Kuestenlogik.Bowire.Protocol.WebSocket;
 
-namespace Kuestenlogik.Bowire.Tests;
+namespace Kuestenlogik.Bowire.Protocol.WebSocket.Tests;
 
 /// <summary>
 /// Direct coverage for the synchronous helpers inside the WebSocket

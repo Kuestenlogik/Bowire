@@ -6,7 +6,7 @@ using Kuestenlogik.Bowire.Models;
 using Kuestenlogik.Bowire.Protocol.Mqtt;
 using Kuestenlogik.Bowire.Protocol.Mqtt.Mock;
 
-namespace Kuestenlogik.Bowire.Tests;
+namespace Kuestenlogik.Bowire.Protocol.Mqtt.Tests;
 
 /// <summary>
 /// Tests for the MQTT protocol plugin. Identity, options surface, the broker-

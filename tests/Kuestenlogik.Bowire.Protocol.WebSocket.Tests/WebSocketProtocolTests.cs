@@ -3,7 +3,7 @@
 
 using Kuestenlogik.Bowire.Protocol.WebSocket;
 
-namespace Kuestenlogik.Bowire.Tests;
+namespace Kuestenlogik.Bowire.Protocol.WebSocket.Tests;
 
 /// <summary>
 /// Tests for the WebSocket protocol plugin's discovery surface — specifically

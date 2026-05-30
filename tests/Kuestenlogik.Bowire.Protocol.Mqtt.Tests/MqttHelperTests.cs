@@ -5,7 +5,7 @@ using System.Reflection;
 using Kuestenlogik.Bowire.Models;
 using Kuestenlogik.Bowire.Protocol.Mqtt;
 
-namespace Kuestenlogik.Bowire.Tests;
+namespace Kuestenlogik.Bowire.Protocol.Mqtt.Tests;
 
 /// <summary>
 /// Unit tests for the synchronous helpers that the existing MQTT
