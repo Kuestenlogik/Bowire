@@ -90,6 +90,26 @@
         </div>
       </a>
 
+      <a class="roadmap-card roadmap-card-link roadmap-card-shipped" href="{{ '/#protocols' | relative_url }}">
+        <div class="roadmap-number roadmap-number-shipped" aria-label="Shipped">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="5 12 10 17 19 8"/></svg>
+        </div>
+        <div class="roadmap-card-body">
+          <h3>SOAP, NATS, JSON-RPC, Pulsar plugins</h3>
+          <p>Four new in-tree wires shipped together. <strong>SOAP</strong> — WSDL 1.1 discovery + SOAP 1.1/1.2 envelopes, no WCF dependency. <strong>NATS</strong> — pub/sub, JetStream streams, Services API + queue groups on the official NATS.Net 2.x client. <strong>JSON-RPC</strong> — OpenRPC <code>rpc.discover</code> with named/positional params. <strong>Pulsar</strong> — topic discovery + produce/subscribe on DotPulsar 3.5.x.</p>
+        </div>
+      </a>
+
+      <a class="roadmap-card roadmap-card-link roadmap-card-shipped" href="https://github.com/Kuestenlogik/Bowire/blob/main/docs/architecture/sidecar-plugins.md" target="_blank" rel="noopener">
+        <div class="roadmap-number roadmap-number-shipped" aria-label="Shipped">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="5 12 10 17 19 8"/></svg>
+        </div>
+        <div class="roadmap-card-body">
+          <h3>Polyglot plugins via sidecar bridge</h3>
+          <p>Plugins no longer have to be .NET assemblies. Run them as sidecar processes speaking JSON-RPC 2.0 over <strong>stdio (NDJSON)</strong> or <strong>HTTP + SSE</strong> &mdash; same dual-transport story as MCP. Install from a local zip, an <code>http(s)://</code> URL, or straight from an OCI registry (<code>oci://ghcr.io/&hellip;</code>). Python SDK out now (<code>pip install bowire-plugin</code>); Node / Go / Rust SDKs queued.</p>
+        </div>
+      </a>
+
     </div>
 
     <div class="roadmap-divider" aria-hidden="true">
@@ -111,29 +131,21 @@
       <a class="roadmap-card roadmap-card-link" href="https://github.com/Kuestenlogik/Bowire/blob/main/ROADMAP.md" target="_blank" rel="noopener">
         <div class="roadmap-number" aria-hidden="true">2</div>
         <div class="roadmap-card-body">
-          <h3>More protocols: SOAP, NATS, Pulsar</h3>
-          <p>JSON-RPC shipped (generic OpenRPC-aware browser, in-tree alongside the gRPC / REST / MCP wires). Still in the queue: WSDL discovery for enterprise legacy, cloud-native messaging via NATS, the Apache event-streaming alternative via Pulsar.</p>
-        </div>
-      </a>
-
-      <a class="roadmap-card roadmap-card-link" href="https://github.com/Kuestenlogik/Bowire/blob/main/ROADMAP.md" target="_blank" rel="noopener">
-        <div class="roadmap-number" aria-hidden="true">3</div>
-        <div class="roadmap-card-body">
           <h3>Surgewave tap-stream browser</h3>
           <p>Sibling repo and plugin scaffolding ready. Blocked on the <code>Kuestenlogik.Surgewave.Client</code> SDK going public.</p>
         </div>
       </a>
 
       <a class="roadmap-card roadmap-card-link" href="https://github.com/Kuestenlogik/Bowire/blob/main/ROADMAP.md" target="_blank" rel="noopener">
-        <div class="roadmap-number" aria-hidden="true">4</div>
+        <div class="roadmap-number" aria-hidden="true">3</div>
         <div class="roadmap-card-body">
-          <h3>Polyglot plugins via sidecar bridge</h3>
-          <p>Run plugins as sidecar processes over JSON-RPC stdio, so Python, Go, Rust, or Node.js plugins don&rsquo;t need to be ported to .NET to plug in.</p>
+          <h3>Sidecar SDKs for Node / Go / Rust</h3>
+          <p>The Python SDK (<code>pip install bowire-plugin</code>) is out; the same surface in <code>@bowire/plugin</code> (Node), <code>bowire/go/plugin</code> (Go), and the <code>bowire-plugin</code> crate (Rust) is queued so any of those ecosystems can ship a sidecar protocol without writing the JSON-RPC wire by hand.</p>
         </div>
       </a>
 
       <a class="roadmap-card roadmap-card-link" href="https://github.com/Kuestenlogik/Bowire/blob/main/docs/architecture/frame-semantics-framework.md" target="_blank" rel="noopener">
-        <div class="roadmap-number" aria-hidden="true">5</div>
+        <div class="roadmap-number" aria-hidden="true">4</div>
         <div class="roadmap-card-body">
           <h3>Editor side of the visual viewers</h3>
           <p>Viewers ship for coordinates on a live map (MapLibre), DIS PDUs, Surgewave tap streams, and image / audio payloads. The next step is the request-side <em>editor</em> that pairs with each viewer &mdash; pin a marker, draw a polygon, drop an audio clip &mdash; through the same annotation seam.</p>
