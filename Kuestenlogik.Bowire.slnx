@@ -34,6 +34,9 @@
     <Project Path="tests/Kuestenlogik.Bowire.Security.Templates.Nuclei.Tests/Kuestenlogik.Bowire.Security.Templates.Nuclei.Tests.csproj" />
     <Project Path="tests/Kuestenlogik.Bowire.Extension.MapLibre.Tests/Kuestenlogik.Bowire.Extension.MapLibre.Tests.csproj" />
     <Project Path="tests/Kuestenlogik.Bowire.Protocol.Nats.Tests/Kuestenlogik.Bowire.Protocol.Nats.Tests.csproj" />
+    <Project Path="tests/Kuestenlogik.Bowire.Protocol.Soap.Tests/Kuestenlogik.Bowire.Protocol.Soap.Tests.csproj" />
+    <Project Path="tests/Kuestenlogik.Bowire.Protocol.JsonRpc.Tests/Kuestenlogik.Bowire.Protocol.JsonRpc.Tests.csproj" />
+    <Project Path="tests/Kuestenlogik.Bowire.Protocol.Pulsar.Tests/Kuestenlogik.Bowire.Protocol.Pulsar.Tests.csproj" />
     <!-- Kuestenlogik.Bowire.SidecarFake (a fixture exe for the sidecar
          integration tests) is deliberately NOT a solution member: it
          has no test framework, so `dotnet test Kuestenlogik.Bowire.slnx`

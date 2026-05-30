@@ -4,7 +4,7 @@
 using Kuestenlogik.Bowire.Protocol.Pulsar;
 using Xunit;
 
-namespace Kuestenlogik.Bowire.Tests;
+namespace Kuestenlogik.Bowire.Protocol.Pulsar.Tests;
 
 /// <summary>
 /// Unit-level coverage for the Pulsar plugin's pure helpers: URL
