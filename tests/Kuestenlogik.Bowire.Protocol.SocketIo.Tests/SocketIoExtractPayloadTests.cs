@@ -6,7 +6,7 @@ using System.Text.Json;
 using Kuestenlogik.Bowire.Protocol.SocketIo;
 using SocketIOClient;
 
-namespace Kuestenlogik.Bowire.Tests;
+namespace Kuestenlogik.Bowire.Protocol.SocketIo.Tests;
 
 /// <summary>
 /// Direct coverage for the private <c>ExtractPayload</c> helper. The

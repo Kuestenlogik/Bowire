@@ -3,7 +3,7 @@
 
 using Kuestenlogik.Bowire.Protocol.Sse;
 
-namespace Kuestenlogik.Bowire.Tests;
+namespace Kuestenlogik.Bowire.Protocol.Sse.Tests;
 
 /// <summary>
 /// Tests for the SSE protocol plugin's identity, discovery surface, and

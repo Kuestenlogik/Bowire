@@ -6,7 +6,7 @@ using System.Net.Sockets;
 using System.Text;
 using Kuestenlogik.Bowire.Protocol.SocketIo;
 
-namespace Kuestenlogik.Bowire.Tests;
+namespace Kuestenlogik.Bowire.Protocol.SocketIo.Tests;
 
 /// <summary>
 /// Tries a fast-path through the Socket.IO protocol-plugin's discover

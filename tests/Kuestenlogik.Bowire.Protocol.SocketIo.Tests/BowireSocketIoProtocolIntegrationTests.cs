@@ -8,7 +8,7 @@ using System.Text;
 using System.Text.Json;
 using Kuestenlogik.Bowire.Protocol.SocketIo;
 
-namespace Kuestenlogik.Bowire.Tests;
+namespace Kuestenlogik.Bowire.Protocol.SocketIo.Tests;
 
 /// <summary>
 /// Drives <see cref="BowireSocketIoProtocol"/>'s DiscoverAsync / InvokeAsync /
