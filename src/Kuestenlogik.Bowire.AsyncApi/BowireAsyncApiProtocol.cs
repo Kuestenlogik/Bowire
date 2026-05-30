@@ -128,6 +128,11 @@ public sealed class BowireAsyncApiProtocol : IBowireProtocol
         // AMQPNetLite) carries the publish.
         _resolvers["amqp"] = new AmqpBindingResolver(registry);
         _resolvers["amqp1"] = new AmqpBindingResolver(registry, bindingId: "amqp1");
+        // Phase C — NATS. Dispatches `send` operations to the NATS
+        // wire plugin's publish method; `queue` / `replyTo` from
+        // bindings.nats land on the plugin's `queue_group` /
+        // `reply_to` metadata.
+        _resolvers["nats"] = new NatsBindingResolver(registry);
     }
 
     public async Task<List<BowireServiceInfo>> DiscoverAsync(
@@ -475,8 +480,9 @@ public sealed class BowireAsyncApiProtocol : IBowireProtocol
         {
             return Error(
                 $"No AsyncAPI binding resolver registered for protocol '{server.Protocol}'. " +
-                "Phase A ships the MQTT resolver only; Kafka / WebSocket / AMQP / NATS " +
-                "join as their wire plugins land (see ROADMAP: AsyncAPI as a discovery source).");
+                "Shipped resolvers: MQTT (mqtt / mqtt5), Kafka, WebSocket (ws), HTTP, " +
+                "AMQP (amqp / amqp1), NATS. SNS / SQS still gated on their wire plugins " +
+                "(see ROADMAP: AsyncAPI as a discovery source).");
         }
 
         var channelKey = ResolveChannelRef(operation.Channel?.Reference);
