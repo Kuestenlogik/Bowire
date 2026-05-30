@@ -70,23 +70,46 @@ Built-ins ship in the Bowire core repo:
 - `Kuestenlogik.Bowire.Protocol.SocketIo` — Socket.IO 4.x event discovery
 - `Kuestenlogik.Bowire.Protocol.OData` — `$metadata` discovery, entity sets
 - `Kuestenlogik.Bowire.Protocol.Mcp` — Model Context Protocol both directions
+- `Kuestenlogik.Bowire.Protocol.Nats` — pub/sub, JetStream streams, Services API + queue groups (NATS.Net 2.x)
+- `Kuestenlogik.Bowire.Protocol.Soap` — WSDL 1.1 discovery, SOAP 1.1 + 1.2 envelopes, automatic Fault detection (no WCF)
+- `Kuestenlogik.Bowire.Protocol.JsonRpc` — JSON-RPC 2.0 over HTTP with OpenRPC `rpc.discover`
+- `Kuestenlogik.Bowire.Protocol.Pulsar` — Apache Pulsar topic discovery + produce/subscribe via DotPulsar 3.5.x
 
 Sister-repo plugins:
 
 - `Kuestenlogik.Bowire.Protocol.Udp` — generic UDP listener (multicast / broadcast / unicast)
 - `Kuestenlogik.Bowire.Protocol.Dis` — IEEE 1278.1 DIS with typed PDU decode
 - `Kuestenlogik.Bowire.Protocol.Kafka` — Apache Kafka via Confluent.Kafka, schema registry
+- `Kuestenlogik.Bowire.Protocol.Amqp` — AMQP 0.9.1 + 1.0 via URL scheme (RabbitMQ-tested)
+- `Kuestenlogik.Bowire.Protocol.TacticalApi` — Rheinmetall situational-awareness gRPC
+- `Kuestenlogik.Bowire.Protocol.Akka` — Akka.NET remote actors
 - `Kuestenlogik.Bowire.Protocol.Surgewave` — Küstenlogik Surgewave distribution-fabric tap (private)
 
 ## Writing your own plugin
+
+Two paths — pick by language:
+
+**1. .NET plugin (one NuGet package):**
 
 ```bash
 dotnet new bowire-plugin -n Contoso.Bowire.Protocol.Foo --Preset rest
 ```
 
-Implement `IBowireProtocol` (Name / Id / IconSvg / DiscoverAsync / InvokeAsync / InvokeStreamAsync / OpenChannelAsync) and `IBowireChannel` for duplex protocols. The full interface contract is documented at https://bowire.io/docs/protocols/custom.html and is what the existing 13 protocol plugins all implement.
+Implement `IBowireProtocol` (Name / Id / IconSvg / DiscoverAsync / InvokeAsync / InvokeStreamAsync / OpenChannelAsync) and `IBowireChannel` for duplex protocols. Tag your published nupkg with `<PackageTags>bowire bowire-plugin</PackageTags>` so it surfaces on https://github.com/topics/bowire-plugin.
 
-Tag your published nupkg with `<PackageTags>bowire bowire-plugin</PackageTags>` so it surfaces in Bowire's in-app marketplace and on https://github.com/topics/bowire-plugin.
+**2. Polyglot sidecar (any language):**
+
+Plugins that don't run on .NET ship as a sidecar process speaking JSON-RPC 2.0 over **stdio (NDJSON)** or **HTTP + SSE** — same dual-transport story as MCP. Bundle the executable + a `sidecar.json` manifest into a zip and install with `bowire plugin install --file`, accepting a local path, an `http(s)://` URL, or an OCI registry ref:
+
+```bash
+bowire plugin install --file ./my-sidecar.zip
+bowire plugin install --file oci://ghcr.io/acme/zenoh-sidecar:1.0.0
+```
+
+The Python SDK is out — `pip install bowire-plugin`, subclass `BowirePlugin`, call `run()` (stdio) or `run_http(plugin, host, port)` (HTTP/SSE). Node, Go, and Rust SDKs are on the roadmap.
+
+Wire contract + manifest schema: https://bowire.io/docs/architecture/sidecar-plugins.html
+Python SDK repo: https://github.com/Kuestenlogik/Bowire.Sdk.Python
 
 ## Mock server, recording, replay
 
