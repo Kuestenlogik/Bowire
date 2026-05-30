@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 using System.Collections.Concurrent;
+using Kuestenlogik.Bowire.Mocking;
 using Kuestenlogik.Bowire.Models;
 using Neuroglia.AsyncApi;
 using Neuroglia.AsyncApi.v2;
@@ -157,6 +158,15 @@ public sealed class BowireAsyncApiProtocol : IBowireProtocol
         catch (FileNotFoundException) { return []; }
         catch (DirectoryNotFoundException) { return []; }
         catch (HttpRequestException) { return []; }
+
+        // Workbench-Schema-Capture: stash the verbatim AsyncAPI YAML so
+        // a recording made against this URL can be auto-stamped with
+        // SourceSchema by the recording-save endpoint. Keyed by both
+        // the source URL (./asyncapi.yaml or http://…) AND by each
+        // resolved server URL from the doc — the recording's
+        // step.serverUrl is one of the latter (mqtt://broker:1883 etc),
+        // not the AsyncAPI doc URL itself.
+        StashSourceSchema(serverUrl, load);
 
         switch (load.Document)
         {
@@ -646,5 +656,73 @@ public sealed class BowireAsyncApiProtocol : IBowireProtocol
         // bindings). Phase A only covers MQTT publish/subscribe, which
         // goes through InvokeAsync / InvokeStreamAsync.
         return Task.FromResult<IBowireChannel?>(null);
+    }
+
+    /// <summary>
+    /// Push the loaded AsyncAPI YAML into the cross-plugin
+    /// <see cref="SourceSchemaCache"/> under every key a downstream
+    /// recording might look it up by:
+    /// <list type="bullet">
+    ///   <item>The <paramref name="sourceUrl"/> itself (the
+    ///     <c>./asyncapi.yaml</c> / <c>http://…/asyncapi.yaml</c>
+    ///     the user pointed Bowire at).</item>
+    ///   <item>Each resolved server URL from <c>servers[]</c> in the
+    ///     document — that's what recording-step.ServerUrl carries on
+    ///     the wire plugins (mqtt://…, nats://…, kafka://…), so a
+    ///     recording made through this discovery hits one of these
+    ///     keys at save time.</item>
+    /// </list>
+    /// </summary>
+    private static void StashSourceSchema(string sourceUrl, AsyncApiDocumentLoader.LoadResult load)
+    {
+        if (string.IsNullOrEmpty(load.NormalisedYaml)) return;
+        var schema = new RecordingSourceSchema(
+            Format: "asyncapi-3.0",
+            Content: load.NormalisedYaml,
+            SourceUrl: sourceUrl);
+
+        SourceSchemaCache.Set(sourceUrl, schema);
+
+        foreach (var resolved in EnumerateResolvedServerUrls(load.Document))
+        {
+            SourceSchemaCache.Set(resolved, schema);
+        }
+    }
+
+    private static IEnumerable<string> EnumerateResolvedServerUrls(IAsyncApiDocument doc)
+    {
+        switch (doc)
+        {
+            case V3AsyncApiDocument v3 when v3.Servers is not null:
+                foreach (var (_, server) in v3.Servers)
+                {
+                    if (server is null) continue;
+                    var url = ResolvedV3ServerUrl(server);
+                    if (!string.IsNullOrEmpty(url)) yield return url;
+                }
+                break;
+            case V2AsyncApiDocument v2 when v2.Servers is not null:
+                foreach (var (_, server) in v2.Servers)
+                {
+                    if (server is null) continue;
+                    var url = ResolvedV2ServerUrl(server);
+                    if (!string.IsNullOrEmpty(url)) yield return url;
+                }
+                break;
+        }
+    }
+
+    private static string ResolvedV3ServerUrl(V3ServerDefinition server)
+    {
+        if (string.IsNullOrEmpty(server.Protocol) || string.IsNullOrEmpty(server.Host))
+            return string.Empty;
+        return $"{server.Protocol}://{server.Host}{server.PathName ?? string.Empty}";
+    }
+
+    private static string ResolvedV2ServerUrl(V2ServerDefinition server)
+    {
+        if (string.IsNullOrEmpty(server.Protocol) || string.IsNullOrEmpty(server.Url?.ToString()))
+            return string.Empty;
+        return server.Url.ToString();
     }
 }
