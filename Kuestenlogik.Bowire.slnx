@@ -26,6 +26,7 @@
     <Project Path="src/Kuestenlogik.Bowire.Tool/Kuestenlogik.Bowire.Tool.csproj" />
   </Folder>
   <Folder Name="/tests/">
+    <Project Path="tests/Kuestenlogik.Bowire.Testing/Kuestenlogik.Bowire.Testing.csproj" />
     <Project Path="tests/Kuestenlogik.Bowire.Tests/Kuestenlogik.Bowire.Tests.csproj" />
     <Project Path="tests/Kuestenlogik.Bowire.IntegrationTests/Kuestenlogik.Bowire.IntegrationTests.csproj" />
     <Project Path="tests/Kuestenlogik.Bowire.Mock.Tests/Kuestenlogik.Bowire.Mock.Tests.csproj" />
