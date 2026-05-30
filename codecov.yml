@@ -43,3 +43,112 @@ parsers:
   # as `dotnet test --collect:"XPlat Code Coverage"` does locally.
   cobertura:
     partials_as_hits: true
+
+# Per-plugin UI breakout. Codecov "components" slice the same single
+# merged Cobertura report by source-path, so each protocol plugin gets
+# its own coverage % in the Codecov UI ("Nats 84 %, Soap 79 %, …")
+# without needing N separate uploads. Pure config — the CI workflow
+# still emits one merged Cobertura.xml. Each component also gets its
+# own project-status check on PRs, so a coverage regression in (say)
+# the NATS plugin shows up as a NATS-flagged status rather than
+# vanishing into the repo-wide average.
+component_management:
+  default_rules:
+    statuses:
+      - type: project
+        target: auto
+        threshold: 1%
+  individual_components:
+    - component_id: core
+      name: Bowire (core)
+      paths:
+        - src/Kuestenlogik.Bowire/**
+    - component_id: cli
+      name: CLI
+      paths:
+        - src/Kuestenlogik.Bowire.Cli/**
+        - src/Kuestenlogik.Bowire.Tool/**
+    - component_id: asyncapi
+      name: AsyncAPI
+      paths:
+        - src/Kuestenlogik.Bowire.AsyncApi/**
+    - component_id: mock
+      name: Mock / Replay
+      paths:
+        - src/Kuestenlogik.Bowire.Mock/**
+    - component_id: mcp-adapter
+      name: MCP adapter
+      paths:
+        - src/Kuestenlogik.Bowire.Mcp/**
+    - component_id: auth-oidc
+      name: Auth (OIDC)
+      paths:
+        - src/Kuestenlogik.Bowire.Auth.Oidc/**
+    - component_id: security-scanner
+      name: Security scanner
+      paths:
+        - src/Kuestenlogik.Bowire.Security.Scanner/**
+        - src/Kuestenlogik.Bowire.Security.Templates.Nuclei/**
+    - component_id: extension-maplibre
+      name: Extension (MapLibre)
+      paths:
+        - src/Kuestenlogik.Bowire.Extension.MapLibre/**
+    # ----- one entry per protocol plugin (mirrors the per-plugin
+    # ----- test-project split so each plugin's coverage shows up
+    # ----- alongside the matching .Tests assembly):
+    - component_id: protocol-grpc
+      name: Protocol — gRPC
+      paths:
+        - src/Kuestenlogik.Bowire.Protocol.Grpc/**
+    - component_id: protocol-rest
+      name: Protocol — REST
+      paths:
+        - src/Kuestenlogik.Bowire.Protocol.Rest/**
+    - component_id: protocol-graphql
+      name: Protocol — GraphQL
+      paths:
+        - src/Kuestenlogik.Bowire.Protocol.GraphQL/**
+    - component_id: protocol-signalr
+      name: Protocol — SignalR
+      paths:
+        - src/Kuestenlogik.Bowire.Protocol.SignalR/**
+    - component_id: protocol-websocket
+      name: Protocol — WebSocket
+      paths:
+        - src/Kuestenlogik.Bowire.Protocol.WebSocket/**
+    - component_id: protocol-sse
+      name: Protocol — SSE
+      paths:
+        - src/Kuestenlogik.Bowire.Protocol.Sse/**
+    - component_id: protocol-mqtt
+      name: Protocol — MQTT
+      paths:
+        - src/Kuestenlogik.Bowire.Protocol.Mqtt/**
+    - component_id: protocol-socketio
+      name: Protocol — Socket.IO
+      paths:
+        - src/Kuestenlogik.Bowire.Protocol.SocketIo/**
+    - component_id: protocol-odata
+      name: Protocol — OData
+      paths:
+        - src/Kuestenlogik.Bowire.Protocol.OData/**
+    - component_id: protocol-mcp
+      name: Protocol — MCP (wire plugin)
+      paths:
+        - src/Kuestenlogik.Bowire.Protocol.Mcp/**
+    - component_id: protocol-nats
+      name: Protocol — NATS
+      paths:
+        - src/Kuestenlogik.Bowire.Protocol.Nats/**
+    - component_id: protocol-soap
+      name: Protocol — SOAP
+      paths:
+        - src/Kuestenlogik.Bowire.Protocol.Soap/**
+    - component_id: protocol-jsonrpc
+      name: Protocol — JSON-RPC
+      paths:
+        - src/Kuestenlogik.Bowire.Protocol.JsonRpc/**
+    - component_id: protocol-pulsar
+      name: Protocol — Apache Pulsar
+      paths:
+        - src/Kuestenlogik.Bowire.Protocol.Pulsar/**
