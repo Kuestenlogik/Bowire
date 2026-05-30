@@ -4,7 +4,7 @@
 using Kuestenlogik.Bowire.Models;
 using Kuestenlogik.Bowire.Protocol.Rest;
 
-namespace Kuestenlogik.Bowire.Tests;
+namespace Kuestenlogik.Bowire.Protocol.Rest.Tests;
 
 /// <summary>
 /// Pure-in-process coverage extensions for OpenAPI discovery edge cases:

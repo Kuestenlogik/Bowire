@@ -6,7 +6,7 @@ using System.Text.Json;
 using Kuestenlogik.Bowire.Models;
 using Kuestenlogik.Bowire.Protocol.GraphQL;
 
-namespace Kuestenlogik.Bowire.Tests;
+namespace Kuestenlogik.Bowire.Protocol.GraphQL.Tests;
 
 /// <summary>
 /// Unit tests for the synchronous private helpers inside

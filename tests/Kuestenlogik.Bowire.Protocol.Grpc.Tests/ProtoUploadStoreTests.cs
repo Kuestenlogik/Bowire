@@ -1,7 +1,7 @@
 // Copyright 2026 Küstenlogik
 // SPDX-License-Identifier: Apache-2.0
 
-namespace Kuestenlogik.Bowire.Tests;
+namespace Kuestenlogik.Bowire.Protocol.Grpc.Tests;
 
 /// <summary>
 /// Unit tests for the <see cref="ProtoUploadStore"/> — the in-memory

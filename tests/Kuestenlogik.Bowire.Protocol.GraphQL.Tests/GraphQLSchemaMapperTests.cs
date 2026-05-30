@@ -4,7 +4,7 @@
 using System.Text.Json;
 using Kuestenlogik.Bowire.Protocol.GraphQL;
 
-namespace Kuestenlogik.Bowire.Tests;
+namespace Kuestenlogik.Bowire.Protocol.GraphQL.Tests;
 
 /// <summary>
 /// Tests for the GraphQL introspection → BowireServiceInfo mapper. The

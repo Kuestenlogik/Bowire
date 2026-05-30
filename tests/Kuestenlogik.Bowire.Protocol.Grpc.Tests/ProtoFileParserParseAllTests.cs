@@ -1,7 +1,7 @@
 // Copyright 2026 Küstenlogik
 // SPDX-License-Identifier: Apache-2.0
 
-namespace Kuestenlogik.Bowire.Tests;
+namespace Kuestenlogik.Bowire.Protocol.Grpc.Tests;
 
 /// <summary>
 /// Integration-style tests for the <see cref="ProtoFileParser.ParseAll"/>

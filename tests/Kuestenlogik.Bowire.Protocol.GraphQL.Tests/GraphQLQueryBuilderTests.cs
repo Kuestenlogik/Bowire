@@ -4,7 +4,7 @@
 using Kuestenlogik.Bowire.Models;
 using Kuestenlogik.Bowire.Protocol.GraphQL;
 
-namespace Kuestenlogik.Bowire.Tests;
+namespace Kuestenlogik.Bowire.Protocol.GraphQL.Tests;
 
 /// <summary>
 /// Tests that the GraphQL query builder produces operation strings whose

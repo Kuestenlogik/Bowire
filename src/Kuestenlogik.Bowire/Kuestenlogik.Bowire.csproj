@@ -13,6 +13,7 @@
     <InternalsVisibleTo Include="Kuestenlogik.Bowire.Protocol.Sse" />
     <InternalsVisibleTo Include="bowire" />
     <InternalsVisibleTo Include="Kuestenlogik.Bowire.Tests" />
+    <InternalsVisibleTo Include="Kuestenlogik.Bowire.Protocol.Grpc.Tests" />
     <InternalsVisibleTo Include="Kuestenlogik.Bowire.IntegrationTests" />
   </ItemGroup>
   <ItemGroup>

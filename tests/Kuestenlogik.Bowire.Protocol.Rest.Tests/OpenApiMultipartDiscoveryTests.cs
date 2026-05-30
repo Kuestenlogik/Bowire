@@ -3,7 +3,7 @@
 
 using Kuestenlogik.Bowire.Protocol.Rest;
 
-namespace Kuestenlogik.Bowire.Tests;
+namespace Kuestenlogik.Bowire.Protocol.Rest.Tests;
 
 /// <summary>
 /// Unit tests for the OpenAPI → BowireMethodInfo conversion path that

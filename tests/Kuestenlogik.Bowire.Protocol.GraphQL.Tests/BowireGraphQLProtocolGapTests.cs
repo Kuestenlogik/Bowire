@@ -8,7 +8,7 @@ using System.Text;
 using Kuestenlogik.Bowire.Models;
 using Kuestenlogik.Bowire.Protocol.GraphQL;
 
-namespace Kuestenlogik.Bowire.Tests;
+namespace Kuestenlogik.Bowire.Protocol.GraphQL.Tests;
 
 /// <summary>
 /// Closes the last few uncovered branches in
