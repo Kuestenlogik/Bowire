@@ -9,7 +9,7 @@ using Kuestenlogik.Bowire.Models;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 
-namespace Kuestenlogik.Bowire.Tests;
+namespace Kuestenlogik.Bowire.Mcp.Tests;
 
 /// <summary>
 /// Serialises tests that flip <see cref="BowireMcpTools.HomeDirOverride"/>

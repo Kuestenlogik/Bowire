@@ -13,7 +13,6 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\Kuestenlogik.Bowire\Kuestenlogik.Bowire.csproj" />
     <ProjectReference Include="..\..\src\Kuestenlogik.Bowire.Cli\Kuestenlogik.Bowire.Cli.csproj" />
-    <ProjectReference Include="..\..\src\Kuestenlogik.Bowire.Protocol.Mcp\Kuestenlogik.Bowire.Protocol.Mcp.csproj" />
     <ProjectReference Include="..\..\src\Kuestenlogik.Bowire.Mcp\Kuestenlogik.Bowire.Mcp.csproj" />
     <ProjectReference Include="..\..\src\Kuestenlogik.Bowire.Security.Scanner\Kuestenlogik.Bowire.Security.Scanner.csproj" />
     <!-- Tool brings in BowireConfiguration (bootstrap IConfiguration +

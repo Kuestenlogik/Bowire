@@ -6,7 +6,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using ModelContextProtocol.Server;
 
-namespace Kuestenlogik.Bowire.Tests;
+namespace Kuestenlogik.Bowire.Mcp.Tests;
 
 public class BowireMcpServiceCollectionExtensionsTests
 {

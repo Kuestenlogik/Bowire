@@ -6,7 +6,7 @@ using System.Text.Json;
 using Kuestenlogik.Bowire.Models;
 using Kuestenlogik.Bowire.Protocol.Mcp;
 
-namespace Kuestenlogik.Bowire.Tests;
+namespace Kuestenlogik.Bowire.Protocol.Mcp.Tests;
 
 /// <summary>
 /// Tests for the MCP protocol plugin. Identity, defensive guards on
