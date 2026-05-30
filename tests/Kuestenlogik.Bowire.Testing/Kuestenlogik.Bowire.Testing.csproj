@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <!-- Shared test-support library: not packed, not run as a test
+         project itself. Per-test-project ProjectReference pulls in the
+         reusable fakes (CapturingBowireProtocol, …) and any common
+         xunit infrastructure that doesn't belong in the production
+         tree. Same shape as Kuestenlogik.Surgewave.Testing. -->
+    <IsPackable>false</IsPackable>
+    <IsTestProject>false</IsTestProject>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Kuestenlogik.Bowire\Kuestenlogik.Bowire.csproj" />
+  </ItemGroup>
+</Project>

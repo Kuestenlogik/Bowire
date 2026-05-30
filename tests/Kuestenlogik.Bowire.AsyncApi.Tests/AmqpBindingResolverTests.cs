@@ -1,8 +1,7 @@
 // Copyright 2026 Küstenlogik
 // SPDX-License-Identifier: Apache-2.0
 
-using System.Runtime.CompilerServices;
-using Kuestenlogik.Bowire.Models;
+using Kuestenlogik.Bowire.Testing;
 
 namespace Kuestenlogik.Bowire.AsyncApi.Tests;
 
@@ -23,7 +22,7 @@ public sealed class AmqpBindingResolverTests
     [Fact]
     public async Task InvokeAsync_DispatchesToAmqpPlugin_WithMergedBindingFields()
     {
-        var captured = new CapturingProtocol("amqp");
+        var captured = new CapturingBowireProtocol("amqp");
         var registry = new BowireProtocolRegistry();
         registry.Register(captured);
 
@@ -57,7 +56,7 @@ public sealed class AmqpBindingResolverTests
     [Fact]
     public async Task InvokeAsync_CallerMetadataOverridesBindingFields()
     {
-        var captured = new CapturingProtocol("amqp");
+        var captured = new CapturingBowireProtocol("amqp");
         var registry = new BowireProtocolRegistry();
         registry.Register(captured);
 
@@ -110,7 +109,7 @@ public sealed class AmqpBindingResolverTests
         // "amqp" — the plugin's URL scheme decides which actual wire
         // (RabbitMQ.Client vs AMQPNetLite) carries the publish. The
         // resolver's BindingId is the only thing that changes.
-        var captured = new CapturingProtocol("amqp");
+        var captured = new CapturingBowireProtocol("amqp");
         var registry = new BowireProtocolRegistry();
         registry.Register(captured);
 
@@ -138,52 +137,4 @@ public sealed class AmqpBindingResolverTests
         Assert.Equal("/queue.invoices", captured.LastMetadata?["address"]);
     }
 
-    /// <summary>Captures the InvokeAsync arguments — see Kafka resolver
-    /// tests for the same shape.</summary>
-    internal sealed class CapturingProtocol(string id) : IBowireProtocol
-    {
-        public string Id { get; } = id;
-        public string Name => "Capturing " + Id;
-        public string IconSvg => "<svg/>";
-
-        public string? LastServerUrl { get; private set; }
-        public string? LastService { get; private set; }
-        public string? LastMethod { get; private set; }
-        public Dictionary<string, string>? LastMetadata { get; private set; }
-
-        public Task<List<BowireServiceInfo>> DiscoverAsync(
-            string serverUrl, bool showInternalServices, CancellationToken ct = default)
-            => Task.FromResult(new List<BowireServiceInfo>());
-
-        public Task<InvokeResult> InvokeAsync(
-            string serverUrl, string service, string method,
-            List<string> jsonMessages, bool showInternalServices,
-            Dictionary<string, string>? metadata = null, CancellationToken ct = default)
-        {
-            LastServerUrl = serverUrl;
-            LastService = service;
-            LastMethod = method;
-            LastMetadata = metadata is null ? null : new Dictionary<string, string>(metadata);
-            return Task.FromResult(new InvokeResult(
-                Response: "{}", DurationMs: 1, Status: "OK",
-                Metadata: new Dictionary<string, string>()));
-        }
-
-#pragma warning disable CS1998
-        public async IAsyncEnumerable<string> InvokeStreamAsync(
-            string serverUrl, string service, string method,
-            List<string> jsonMessages, bool showInternalServices,
-            Dictionary<string, string>? metadata = null,
-            [EnumeratorCancellation] CancellationToken ct = default)
-        {
-            yield break;
-        }
-#pragma warning restore CS1998
-
-        public Task<IBowireChannel?> OpenChannelAsync(
-            string serverUrl, string service, string method,
-            bool showInternalServices, Dictionary<string, string>? metadata = null,
-            CancellationToken ct = default)
-            => Task.FromResult<IBowireChannel?>(null);
-    }
 }

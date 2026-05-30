@@ -13,6 +13,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\Kuestenlogik.Bowire\Kuestenlogik.Bowire.csproj" />
     <ProjectReference Include="..\..\src\Kuestenlogik.Bowire.AsyncApi\Kuestenlogik.Bowire.AsyncApi.csproj" />
+    <ProjectReference Include="..\Kuestenlogik.Bowire.Testing\Kuestenlogik.Bowire.Testing.csproj" />
     <!-- The MQTT plugin only needs to be on the test classpath for
          the integration test (real broker → real plugin invocation).
          Unit tests don't touch it; we just need it discoverable by
