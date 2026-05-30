@@ -44,8 +44,13 @@ internal static class OpenApiDiscovery
             var contentType = resp.Content?.Headers?.ContentType?.MediaType ?? string.Empty;
             if (contentType.Contains("html", StringComparison.OrdinalIgnoreCase)) return null;
 
-            // OpenApiDocument.LoadAsync handles content-type sniffing for us.
-            await using var stream = await resp.Content!.ReadAsStreamAsync(ct).ConfigureAwait(false);
+            // Read as text first so we can preserve the verbatim source
+            // alongside the parsed model — the recording-save endpoint
+            // stamps it on BowireRecording.SourceSchema so a peer
+            // workbench against a mock built from this recording sees
+            // the original contract, not just the recorded slice.
+            var rawText = await resp.Content!.ReadAsStringAsync(ct).ConfigureAwait(false);
+            using var stream = new MemoryStream(System.Text.Encoding.UTF8.GetBytes(rawText));
             var readResult = await OpenApiDocument.LoadAsync(stream, format: null, settings: null, ct).ConfigureAwait(false);
 
             if (readResult?.Document is null) return null;
@@ -53,6 +58,14 @@ internal static class OpenApiDiscovery
             // the cheapest way to tell apart "valid OpenAPI" from "random JSON".
             if (readResult.Document.Paths is null || readResult.Document.Paths.Count == 0)
                 return null;
+
+            // Stash the raw schema for the workbench's recording-save
+            // path. Keyed by the source URL — the recording's first
+            // step.serverUrl typically equals docUrl for REST.
+            Mocking.SourceSchemaCache.Set(docUrl, new Mocking.RecordingSourceSchema(
+                Format: "openapi-3.0",
+                Content: rawText,
+                SourceUrl: docUrl));
 
             return new DiscoveredApi(docUrl, readResult.Document, readResult.Diagnostic);
         }

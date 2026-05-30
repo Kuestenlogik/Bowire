@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 using System.Text.Json;
+using Kuestenlogik.Bowire.Mocking;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
@@ -32,7 +33,15 @@ internal static class BowireRecordingEndpoints
             var json = await new StreamReader(ctx.Request.Body).ReadToEndAsync(ctx.RequestAborted);
             try
             {
-                RecordingStore.Save(json);
+                // Auto-enrich each recording with its source schema
+                // from the discovery cache before persisting — closes
+                // the mock-as-stand-in loop end-to-end (peer Bowire
+                // pointing at a mock built from this recording sees
+                // the original contract, not just the recorded slice).
+                // Falls back to the raw JSON when enrichment fails so
+                // a parse hiccup never blocks a save.
+                var enriched = TryEnrichWithSourceSchema(json) ?? json;
+                RecordingStore.Save(enriched);
                 return Results.Json(new { saved = true }, BowireEndpointHelpers.JsonOptions);
             }
             catch (JsonException ex)
@@ -50,5 +59,101 @@ internal static class BowireRecordingEndpoints
         }).ExcludeFromDescription();
 
         return endpoints;
+    }
+
+    /// <summary>
+    /// For every recording in the wrapper that doesn't already carry a
+    /// <c>sourceSchema</c>, look one up in <see cref="SourceSchemaCache"/>
+    /// by the first step's <c>serverUrl</c> and stamp it on the
+    /// recording. Returns the enriched JSON when at least one stamp
+    /// happened (or when shape is recognised but nothing matched —
+    /// idempotent), or <c>null</c> on parse failure so the caller can
+    /// fall back to persisting the raw bytes.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Operates on the wire shape directly via <c>JsonNode</c>
+    /// rather than round-tripping through the typed
+    /// <see cref="BowireRecording"/> model, because the model trims a
+    /// few unknown-field-tolerated paths (frame-semantics
+    /// interpretations, future fields) that we'd silently lose on
+    /// re-serialisation. The JsonNode walk preserves every byte the
+    /// workbench sent and only adds the new <c>sourceSchema</c> key.
+    /// </para>
+    /// <para>
+    /// Lookup strategy: take the recording's first
+    /// <c>steps[].serverUrl</c> and consult the cache. We tried two
+    /// keys at <c>SourceSchemaCache.Set</c> time (the discovery URL
+    /// itself, and each resolved server URL for AsyncAPI sources),
+    /// so a single exact-match lookup catches both REST and
+    /// AsyncAPI-driven recordings.
+    /// </para>
+    /// </remarks>
+    internal static string? TryEnrichWithSourceSchema(string json)
+    {
+        System.Text.Json.Nodes.JsonNode? root;
+        try { root = System.Text.Json.Nodes.JsonNode.Parse(json); }
+        catch (JsonException) { return null; }
+        if (root is not System.Text.Json.Nodes.JsonObject obj) return null;
+
+        // Two shapes accepted: a single bare recording, or the
+        // recordings-store wrapper { "recordings": [...] }.
+        var changed = false;
+        if (obj["recordings"] is System.Text.Json.Nodes.JsonArray arr)
+        {
+            foreach (var entry in arr)
+            {
+                if (entry is System.Text.Json.Nodes.JsonObject rec && StampSourceSchema(rec))
+                    changed = true;
+            }
+        }
+        else if (StampSourceSchema(obj))
+        {
+            changed = true;
+        }
+        return changed ? root.ToJsonString(EnrichedJsonOptions) : json;
+    }
+
+    private static readonly JsonSerializerOptions EnrichedJsonOptions = new()
+    {
+        WriteIndented = true,
+    };
+
+    private static bool StampSourceSchema(System.Text.Json.Nodes.JsonObject recording)
+    {
+        // Don't overwrite a sourceSchema the workbench (or an older
+        // capture pass) already wrote — most recent wins, but a
+        // freshly-written entry from the JS side trumps the discovery
+        // cache.
+        if (recording["sourceSchema"] is not null) return false;
+
+        if (recording["steps"] is not System.Text.Json.Nodes.JsonArray steps || steps.Count == 0)
+            return false;
+
+        // Walk the steps until we find the first non-empty serverUrl.
+        // Most recordings carry one serverUrl across all steps; the
+        // walk just guards against an early step missing the field.
+        string? serverUrl = null;
+        foreach (var step in steps)
+        {
+            if (step is System.Text.Json.Nodes.JsonObject so
+                && so["serverUrl"]?.GetValue<string>() is { Length: > 0 } url)
+            {
+                serverUrl = url;
+                break;
+            }
+        }
+        if (string.IsNullOrEmpty(serverUrl)) return false;
+
+        var schema = SourceSchemaCache.Get(serverUrl);
+        if (schema is null) return false;
+
+        recording["sourceSchema"] = new System.Text.Json.Nodes.JsonObject
+        {
+            ["format"] = schema.Format,
+            ["content"] = schema.Content,
+            ["sourceUrl"] = schema.SourceUrl,
+        };
+        return true;
     }
 }
