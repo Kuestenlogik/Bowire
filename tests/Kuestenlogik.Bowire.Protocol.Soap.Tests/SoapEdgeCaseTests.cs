@@ -5,7 +5,7 @@ using System.Xml.Linq;
 using Kuestenlogik.Bowire.Protocol.Soap;
 using Xunit;
 
-namespace Kuestenlogik.Bowire.Tests;
+namespace Kuestenlogik.Bowire.Protocol.Soap.Tests;
 
 /// <summary>
 /// Edge-case branches in <see cref="WsdlParser"/> and

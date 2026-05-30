@@ -5,7 +5,7 @@ using System.Xml.Linq;
 using Kuestenlogik.Bowire.Protocol.Soap;
 using Xunit;
 
-namespace Kuestenlogik.Bowire.Tests;
+namespace Kuestenlogik.Bowire.Protocol.Soap.Tests;
 
 /// <summary>
 /// Unit-level coverage for the SOAP plugin's pure helpers: URL plumbing,

@@ -4,7 +4,7 @@
 using System.Text.Json;
 using Kuestenlogik.Bowire.Protocol.JsonRpc;
 
-namespace Kuestenlogik.Bowire.Tests;
+namespace Kuestenlogik.Bowire.Protocol.JsonRpc.Tests;
 
 /// <summary>
 /// Coverage for <see cref="BowireJsonRpcProtocol"/> — the parts that
