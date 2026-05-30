@@ -4,7 +4,7 @@
 using Kuestenlogik.Bowire.Endpoints;
 using Kuestenlogik.Bowire.Protocol.Grpc;
 
-namespace Kuestenlogik.Bowire.Tests;
+namespace Kuestenlogik.Bowire.Protocol.Grpc.Tests;
 
 /// <summary>
 /// Unit tests for the Connect (Buf) transport hint plumbing. Mirrors

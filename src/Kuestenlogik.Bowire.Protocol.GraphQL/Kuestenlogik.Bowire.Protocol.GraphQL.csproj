@@ -10,6 +10,7 @@
   <ItemGroup>
     <InternalsVisibleTo Include="bowire" />
     <InternalsVisibleTo Include="Kuestenlogik.Bowire.Tests" />
+    <InternalsVisibleTo Include="Kuestenlogik.Bowire.Protocol.GraphQL.Tests" />
     <InternalsVisibleTo Include="Kuestenlogik.Bowire.IntegrationTests" />
     <InternalsVisibleTo Include="Kuestenlogik.Bowire.Mock.Tests" />
   </ItemGroup>

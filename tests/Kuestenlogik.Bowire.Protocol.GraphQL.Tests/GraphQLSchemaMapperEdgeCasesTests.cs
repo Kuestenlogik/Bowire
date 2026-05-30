@@ -4,7 +4,7 @@
 using System.Text.Json;
 using Kuestenlogik.Bowire.Protocol.GraphQL;
 
-namespace Kuestenlogik.Bowire.Tests;
+namespace Kuestenlogik.Bowire.Protocol.GraphQL.Tests;
 
 /// <summary>
 /// Edge-case + defensive-fallback coverage for

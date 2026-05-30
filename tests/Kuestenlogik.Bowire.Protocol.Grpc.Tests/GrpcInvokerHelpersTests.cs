@@ -6,7 +6,7 @@ using Google.Protobuf;
 using Google.Protobuf.Reflection;
 using Kuestenlogik.Bowire;
 
-namespace Kuestenlogik.Bowire.Tests;
+namespace Kuestenlogik.Bowire.Protocol.Grpc.Tests;
 
 /// <summary>
 /// Unit tests for the static helpers <c>GrpcInvoker</c> exposes through
