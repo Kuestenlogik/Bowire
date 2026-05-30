@@ -1,6 +1,7 @@
 // Copyright 2026 Küstenlogik
 // SPDX-License-Identifier: Apache-2.0
 
+using Kuestenlogik.Bowire.Mocking;
 using Kuestenlogik.Bowire.Models;
 
 namespace Kuestenlogik.Bowire.AsyncApi.Tests;
@@ -222,7 +223,7 @@ public sealed class AsyncApiDocumentBuilderTests
         var svc = MakeMqttService("mqtt://b:1883", "sensors/temp");
         var json = AsyncApiDocumentBuilder.Build("mqtt://b:1883",
             new[] { svc },
-            new AsyncApiExportOptions { Format = AsyncApiExportFormat.Json });
+            options: new AsyncApiExportOptions { Format = AsyncApiExportFormat.Json });
 
         // Quick contract: it parses and the top-level keys are there.
         using var doc = System.Text.Json.JsonDocument.Parse(json);
@@ -240,9 +241,79 @@ public sealed class AsyncApiDocumentBuilderTests
         var yaml = AsyncApiDocumentBuilder.Build(
             "mqtt://b:1883",
             new[] { svc },
-            new AsyncApiExportOptions { Title = "Sensor Bus", Version = "2.4.1" });
+            options: new AsyncApiExportOptions { Title = "Sensor Bus", Version = "2.4.1" });
         Assert.Contains("title: Sensor Bus", yaml);
         Assert.Contains("version: 2.4.1", yaml);
+    }
+
+    // ---- coverage --------------------------------------------------
+
+    [Fact]
+    public void Build_with_recording_emits_x_bowire_coverage_for_recorded_channels()
+    {
+        // Two topics in the schema; recording carries 3 steps for one
+        // topic and 0 for the other → recorded operations get
+        // stepCount:3, the un-recorded ones report recorded:false.
+        var svc1 = MakeMqttService("mqtt://b:1883", "sensors/temperature");
+        var svc2 = MakeMqttService("mqtt://b:1883", "sensors/humidity");
+
+        var recording = new BowireRecording
+        {
+            Id = "rec",
+            Name = "Sensor flow",
+            Steps =
+            {
+                new BowireRecordingStep { Method = "sensors/temperature", Protocol = "mqtt" },
+                new BowireRecordingStep { Method = "sensors/temperature", Protocol = "mqtt" },
+                new BowireRecordingStep { Method = "sensors/temperature", Protocol = "mqtt" },
+            }
+        };
+
+        var yaml = AsyncApiDocumentBuilder.Build(
+            "mqtt://b:1883", new[] { svc1, svc2 }, recording);
+
+        Assert.Contains("x-bowire-coverage:", yaml);
+        Assert.Contains("recorded: true", yaml);
+        Assert.Contains("stepCount: 3", yaml);
+        // The humidity topic has no recorded steps in this recording
+        // — explicit recorded:false so consumers see the gap.
+        Assert.Contains("recorded: false", yaml);
+        Assert.Contains("stepCount: 0", yaml);
+    }
+
+    [Fact]
+    public void Build_without_recording_omits_coverage_block()
+    {
+        var svc = MakeMqttService("mqtt://b:1883", "topic");
+        var yaml = AsyncApiDocumentBuilder.Build("mqtt://b:1883", new[] { svc });
+        Assert.DoesNotContain("x-bowire-coverage", yaml);
+    }
+
+    [Fact]
+    public void BuildCoverageIndex_aggregates_step_counts_per_channel()
+    {
+        var rec = new BowireRecording
+        {
+            Steps =
+            {
+                new BowireRecordingStep { Method = "a" },
+                new BowireRecordingStep { Method = "a" },
+                new BowireRecordingStep { Method = "b" },
+                new BowireRecordingStep { Method = "" },     // skipped
+                new BowireRecordingStep { Method = null! },  // skipped
+            }
+        };
+        var idx = AsyncApiDocumentBuilder.BuildCoverageIndex(rec);
+        Assert.Equal(2, idx["a"]);
+        Assert.Equal(1, idx["b"]);
+        Assert.Equal(2, idx.Count);
+    }
+
+    [Fact]
+    public void BuildCoverageIndex_returns_empty_for_null_or_no_steps()
+    {
+        Assert.Empty(AsyncApiDocumentBuilder.BuildCoverageIndex(null));
+        Assert.Empty(AsyncApiDocumentBuilder.BuildCoverageIndex(new BowireRecording()));
     }
 
     [Fact]

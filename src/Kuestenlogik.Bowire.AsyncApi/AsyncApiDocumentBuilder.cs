@@ -1,6 +1,7 @@
 // Copyright 2026 Küstenlogik
 // SPDX-License-Identifier: Apache-2.0
 
+using Kuestenlogik.Bowire.Mocking;
 using Kuestenlogik.Bowire.Models;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
@@ -59,6 +60,14 @@ public static class AsyncApiDocumentBuilder
     /// </summary>
     /// <param name="serverUrl">The URL the discovery was performed against.</param>
     /// <param name="services">Services returned by the wire plugin's <c>DiscoverAsync</c>.</param>
+    /// <param name="recording">
+    /// Optional recording — when supplied, every operation gets an
+    /// <c>x-bowire-coverage</c> extension reporting how many steps
+    /// the recording carries for that channel address. Sibling of the
+    /// REST exporter's coverage path (matched there by
+    /// <c>(HttpVerb, HttpPath)</c>; here by channel address because
+    /// messaging steps don't carry HTTP identifiers).
+    /// </param>
     /// <param name="options">
     /// Optional output knobs (format, info-title, info-version). When
     /// <c>null</c>, defaults to YAML output, title = host name, version
@@ -67,16 +76,40 @@ public static class AsyncApiDocumentBuilder
     public static string Build(
         string serverUrl,
         IReadOnlyList<BowireServiceInfo> services,
+        BowireRecording? recording = null,
         AsyncApiExportOptions? options = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(serverUrl);
         ArgumentNullException.ThrowIfNull(services);
         options ??= new AsyncApiExportOptions();
 
-        var doc = BuildDocumentModel(serverUrl, services, options);
+        var coverage = BuildCoverageIndex(recording);
+        var doc = BuildDocumentModel(serverUrl, services, options, coverage);
         return options.Format == AsyncApiExportFormat.Json
             ? SerializeJson(doc)
             : SerializeYaml(doc);
+    }
+
+    /// <summary>
+    /// Aggregate recording steps into a <c>channelAddress → stepCount</c>
+    /// map. Messaging recordings don't carry an HTTP verb / path pair,
+    /// so the only stable address-side identifier is <c>step.Method</c>
+    /// — which is the topic / subject / endpoint for every messaging
+    /// plugin (MQTT/NATS/Kafka/AMQP/WebSocket all set it to the
+    /// channel address). Steps whose method is empty or that came from
+    /// a non-messaging recording are skipped silently.
+    /// </summary>
+    internal static Dictionary<string, int> BuildCoverageIndex(BowireRecording? recording)
+    {
+        var dict = new Dictionary<string, int>(StringComparer.Ordinal);
+        if (recording?.Steps is null) return dict;
+        foreach (var step in recording.Steps)
+        {
+            var addr = step.Method;
+            if (string.IsNullOrEmpty(addr)) continue;
+            dict[addr] = dict.TryGetValue(addr, out var n) ? n + 1 : 1;
+        }
+        return dict;
     }
 
     // ---- model assembly --------------------------------------------
@@ -84,7 +117,8 @@ public static class AsyncApiDocumentBuilder
     private static Dictionary<string, object?> BuildDocumentModel(
         string serverUrl,
         IReadOnlyList<BowireServiceInfo> services,
-        AsyncApiExportOptions options)
+        AsyncApiExportOptions options,
+        Dictionary<string, int> coverage)
     {
         var (host, protocol, scheme) = ParseServer(serverUrl);
         var title = options.Title ?? (string.IsNullOrEmpty(host) ? "Exported from Bowire" : host);
@@ -143,6 +177,20 @@ public static class AsyncApiDocumentBuilder
                 };
                 if (!string.IsNullOrEmpty(method.Summary))
                     operationEntry["summary"] = method.Summary;
+                // x-bowire-coverage: only emitted when a recording was
+                // supplied (coverage dict is empty otherwise). Channels
+                // with no captured steps but a non-empty recording get
+                // an explicit `recorded: false, stepCount: 0` so peer
+                // consumers see the gap rather than ambiguity.
+                if (coverage.Count > 0)
+                {
+                    var stepCount = coverage.TryGetValue(address, out var n) ? n : 0;
+                    operationEntry["x-bowire-coverage"] = new Dictionary<string, object?>
+                    {
+                        ["recorded"] = stepCount > 0,
+                        ["stepCount"] = stepCount,
+                    };
+                }
                 operations[opId] = operationEntry;
             }
         }
