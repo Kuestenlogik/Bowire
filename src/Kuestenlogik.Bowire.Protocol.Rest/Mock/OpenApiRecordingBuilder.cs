@@ -30,7 +30,15 @@ public static class OpenApiRecordingBuilder
         if (!File.Exists(path))
             throw new FileNotFoundException($"Schema file not found: {path}", path);
 
-        await using var stream = File.OpenRead(path);
+        // Read the file once as text first so we can keep the verbatim
+        // source on the recording (sourceSchema sidecar — the mock host
+        // serves this back unmodified under `/openapi.{json,yaml}` so
+        // peer discovery sees the full contract, not just our replay
+        // slice). Re-stream the same bytes into the OpenAPI reader so
+        // we don't open the file twice or risk content drift between
+        // the read-for-preservation and the read-for-parsing.
+        var rawText = await File.ReadAllTextAsync(path, ct).ConfigureAwait(false);
+        using var stream = new MemoryStream(System.Text.Encoding.UTF8.GetBytes(rawText));
 
         // Microsoft.OpenApi.Readers ships a JSON reader by default; YAML
         // requires an explicit registration. Add it unconditionally —
@@ -49,7 +57,16 @@ public static class OpenApiRecordingBuilder
         if (doc.Paths is null || doc.Paths.Count == 0)
             throw new InvalidDataException($"Schema file '{path}' has no paths.");
 
-        return Build(doc, path);
+        var recording = Build(doc, path);
+        // Stamp the original text + format on the recording so the
+        // mock host (RestMockHostingExtension) can serve it back
+        // verbatim. Pick the format tag from the OpenAPI doc itself,
+        // falling back to the major version of the spec.
+        recording.SourceSchema = new Kuestenlogik.Bowire.Mocking.RecordingSourceSchema(
+            Format: "openapi-3.0",
+            Content: rawText,
+            SourceUrl: null);
+        return recording;
     }
 
     /// <summary>

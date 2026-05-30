@@ -55,6 +55,28 @@ public sealed class BowireRecording
     [JsonPropertyName("schemaSnapshot")]
     public BowireRecordingSchemaSnapshot? SchemaSnapshot { get; set; }
 
+    /// <summary>
+    /// Original-schema sidecar — when set, the recording carries the source
+    /// schema (OpenAPI YAML for REST, AsyncAPI YAML for messaging, &amp;c)
+    /// that the live target advertised at capture time, plus the format tag
+    /// the mock host needs to expose it under the right MIME type. Lets
+    /// <see cref="IBowireMockHostingExtension"/>s serve the original
+    /// contract back from the mock — so a peer Bowire discovery against
+    /// the mock returns the <em>full</em> declared surface, not just the
+    /// (smaller) set of methods this recording happens to replay. Use the
+    /// step list to compute coverage; the recording reports the contract,
+    /// the steps report the realised slice.
+    /// </summary>
+    /// <remarks>
+    /// gRPC keeps its descriptor-set on each <see cref="BowireRecordingStep.SchemaDescriptor"/>
+    /// because reflection wraps a binary <c>FileDescriptorSet</c> per
+    /// service; this field carries a recording-wide text document for
+    /// the protocols whose source schema is a single file (OpenAPI,
+    /// AsyncAPI, GraphQL SDL, WSDL).
+    /// </remarks>
+    [JsonPropertyName("sourceSchema")]
+    public RecordingSourceSchema? SourceSchema { get; set; }
+
     [JsonPropertyName("steps")]
     public IList<BowireRecordingStep> Steps { get; init; } = new List<BowireRecordingStep>();
 
@@ -147,6 +169,36 @@ public sealed class BowireRecordingSchemaAnnotation
     [JsonPropertyName("semantic")]
     public string Semantic { get; set; } = "";
 }
+
+/// <summary>
+/// The source-schema document a recording was captured from — carried
+/// on <see cref="BowireRecording.SourceSchema"/> when the live target
+/// advertised one. Lets the mock server serve the original contract back
+/// (REST: <c>GET /openapi.json</c>, AsyncAPI: <c>GET /asyncapi.yaml</c>)
+/// so peer discovery against the mock returns the full declared surface
+/// rather than the slice the recording happens to cover.
+/// </summary>
+/// <param name="Format">
+/// Schema format tag — <c>"openapi-3.0"</c>, <c>"openapi-2.0"</c>,
+/// <c>"asyncapi-3.0"</c>, <c>"asyncapi-2.6"</c>, <c>"graphql-sdl"</c>,
+/// <c>"wsdl-1.1"</c>, &amp;c. Mock-host extensions inspect this to decide
+/// whether they're the right handler for this recording's schema.
+/// </param>
+/// <param name="Content">
+/// Verbatim source-schema text (YAML or JSON, depending on
+/// <paramref name="Format"/>). The mock host serves this byte-for-byte
+/// under the matching endpoint.
+/// </param>
+/// <param name="SourceUrl">
+/// Optional capture-time URL the schema came from (e.g.
+/// <c>https://api.example.com/openapi.json</c>). Diagnostic only; not
+/// used by the mock host. Lets a user pop a recording open and see
+/// "this is the contract that lived at &lt;url&gt; when we captured."
+/// </param>
+public sealed record RecordingSourceSchema(
+    [property: JsonPropertyName("format")] string Format,
+    [property: JsonPropertyName("content")] string Content,
+    [property: JsonPropertyName("sourceUrl")] string? SourceUrl = null);
 
 /// <summary>
 /// One captured invocation inside a <see cref="BowireRecording"/>.

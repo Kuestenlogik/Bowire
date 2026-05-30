@@ -17,6 +17,10 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.OpenApi" />
     <PackageReference Include="Microsoft.OpenApi.YamlReader" />
+    <!-- YAML serialisation for the OpenAPI exporter + the mock-host
+         JSON↔YAML format converter behind /openapi.{json,yaml}. Same
+         dependency the AsyncApi project already ships. -->
+    <PackageReference Include="YamlDotNet" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Kuestenlogik.Bowire\Kuestenlogik.Bowire.csproj" />
