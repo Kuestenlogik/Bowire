@@ -4,7 +4,7 @@
 using System.Reflection;
 using Kuestenlogik.Bowire.Protocol.Nats;
 
-namespace Kuestenlogik.Bowire.Tests;
+namespace Kuestenlogik.Bowire.Protocol.Nats.Tests;
 
 /// <summary>
 /// Phase-2-specific helper tests. The live JetStream + Services

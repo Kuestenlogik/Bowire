@@ -6,7 +6,7 @@ using System.Text;
 using Kuestenlogik.Bowire.Models;
 using Kuestenlogik.Bowire.Protocol.Nats;
 
-namespace Kuestenlogik.Bowire.Tests;
+namespace Kuestenlogik.Bowire.Protocol.Nats.Tests;
 
 /// <summary>
 /// Unit tests for the synchronous helpers behind the NATS protocol
