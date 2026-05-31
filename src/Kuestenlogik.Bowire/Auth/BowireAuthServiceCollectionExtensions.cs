@@ -38,12 +38,21 @@ public static class BowireAuthServiceCollectionExtensions
 
         services.TryAddSingleton(opts);
 
-        // Register the authorization services unconditionally so the
-        // pipeline's app.UseAuthorization() always finds what it needs,
-        // even when no provider is active. The Default policy below is
-        // a no-op (no requirements) until a provider takes over —
+        // Register the authentication + authorization scheme services
+        // unconditionally so the pipeline's app.UseAuthentication() /
+        // UseAuthorization() always find what they need, even when no
+        // provider is active. The Default policy below is a no-op (no
+        // requirements) until a provider takes over —
         // BowireApiEndpoints.Map only calls .RequireAuthorization when
         // a provider was actually registered.
+        //
+        // The AddAuthentication() call is load-bearing: without it,
+        // app.UseAuthentication() fails to build the middleware with
+        // 'Unable to resolve service for type
+        // IAuthenticationSchemeProvider'. ASP.NET's
+        // no-op-when-no-schemes claim only holds once the scheme
+        // provider itself is registered.
+        services.AddAuthentication();
         services.AddAuthorization(o =>
         {
             o.AddPolicy(BowireAuthPolicies.Default, p => p.RequireAssertion(_ => true));
