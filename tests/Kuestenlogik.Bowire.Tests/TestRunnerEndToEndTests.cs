@@ -20,6 +20,7 @@ namespace Kuestenlogik.Bowire.Tests;
 /// can't collide; the stub returns canned responses so we don't need
 /// any real wire transport.
 /// </summary>
+[Collection("ConsoleOutSerialised")]
 public sealed class TestRunnerEndToEndTests : IDisposable
 {
     private readonly string _tempDir =
