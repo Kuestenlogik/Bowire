@@ -131,11 +131,13 @@ internal static class BrowserUiHost
         var app = builder.Build();
         app.UseResponseCompression();
 
-        // UseAuthentication/UseAuthorization are only meaningful when an
-        // IBowireAuthProvider registered a scheme above. Calling them
-        // unconditionally is harmless (they're no-ops when nothing is
-        // registered) and keeps the pipeline shape predictable across
-        // both modes.
+        // UseAuthentication/UseAuthorization are only meaningful when
+        // an IBowireAuthProvider registered a scheme above. Calling
+        // them unconditionally is safe because AddBowireAuth registers
+        // the AuthenticationSchemeProvider + Authorization services
+        // even when no provider is active — the middleware then runs
+        // as a no-op. Keeps the pipeline shape predictable across both
+        // modes.
         app.UseAuthentication();
         app.UseAuthorization();
 
