@@ -15,16 +15,8 @@ namespace Kuestenlogik.Bowire.Protocol.WebSocket.Tests;
 /// pieces the channel-based connect path can't exercise without a live
 /// WebSocket peer.
 /// </summary>
-[Collection("RegisteredEndpointsSerialised")]
-public sealed class WebSocketHelperTests : IDisposable
+public sealed class WebSocketHelperTests
 {
-    public WebSocketHelperTests() => BowireWebSocketProtocol.ClearRegisteredEndpoints();
-    public void Dispose()
-    {
-        BowireWebSocketProtocol.ClearRegisteredEndpoints();
-        GC.SuppressFinalize(this);
-    }
-
     // ---- Identity / metadata surface ----
 
     [Fact]
@@ -67,33 +59,47 @@ public sealed class WebSocketHelperTests : IDisposable
         protocol.Initialize(null);
     }
 
-    // ---- Static registration ----
+    // ---- WebSocketEndpointRegistry — DI replacement for the
+    //      pre-v1.7 static RegisterEndpoint / RegisteredEndpoints
+    //      surface. Each test holds its own registry instance, so
+    //      cross-test races are impossible.
 
     [Fact]
-    public void RegisterEndpoint_Throws_On_Null()
+    public void Registry_Add_Throws_On_Null()
     {
-        Assert.Throws<ArgumentNullException>(() => BowireWebSocketProtocol.RegisterEndpoint(null!));
+        var registry = new WebSocketEndpointRegistry();
+
+        Assert.Throws<ArgumentNullException>(() => registry.Add(null!));
     }
 
     [Fact]
-    public void RegisterEndpoint_Adds_To_Internal_List()
+    public void Registry_Add_Appends_To_Snapshot_In_Order()
     {
-        BowireWebSocketProtocol.RegisterEndpoint(new WebSocketEndpointInfo("/ws/a", "A", "First"));
-        BowireWebSocketProtocol.RegisterEndpoint(new WebSocketEndpointInfo("/ws/b", "B", "Second"));
+        var registry = new WebSocketEndpointRegistry();
 
-        Assert.Equal(2, BowireWebSocketProtocol.RegisteredEndpoints.Count);
-        Assert.Equal("/ws/a", BowireWebSocketProtocol.RegisteredEndpoints[0].Path);
-        Assert.Equal("/ws/b", BowireWebSocketProtocol.RegisteredEndpoints[1].Path);
+        registry.Add(new WebSocketEndpointInfo("/ws/a", "A", "First"));
+        registry.Add(new WebSocketEndpointInfo("/ws/b", "B", "Second"));
+
+        var snapshot = registry.Snapshot();
+        Assert.Equal(2, snapshot.Count);
+        Assert.Equal("/ws/a", snapshot[0].Path);
+        Assert.Equal("/ws/b", snapshot[1].Path);
     }
 
     [Fact]
-    public void ClearRegisteredEndpoints_Empties_The_List()
+    public void Registry_Snapshot_Detaches_From_Live_List()
     {
-        BowireWebSocketProtocol.RegisterEndpoint(new WebSocketEndpointInfo("/ws/x", null, null));
+        // Adds after the snapshot must not mutate the previously
+        // returned view — proves Snapshot returns a copy rather than
+        // a live reference.
+        var registry = new WebSocketEndpointRegistry();
+        registry.Add(new WebSocketEndpointInfo("/ws/x", null, null));
 
-        BowireWebSocketProtocol.ClearRegisteredEndpoints();
+        var snapshot = registry.Snapshot();
+        registry.Add(new WebSocketEndpointInfo("/ws/y", null, null));
 
-        Assert.Empty(BowireWebSocketProtocol.RegisteredEndpoints);
+        Assert.Single(snapshot);
+        Assert.Equal("/ws/x", snapshot[0].Path);
     }
 
     // ---- InvokeAsync / InvokeStreamAsync — both intentionally inert ----

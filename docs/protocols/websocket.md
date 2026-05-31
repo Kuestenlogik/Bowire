@@ -33,14 +33,18 @@ Two ways to register an endpoint so it shows up in the sidebar of an embedded Bo
    .WithMetadata(new WebSocketEndpointAttribute("Chat", "Group chat WebSocket."));
    ```
 
-2. Or register the endpoint manually before `MapBowire()`:
+2. Or register the endpoint declaratively in your DI setup before `MapBowire()`:
 
    ```csharp
-   BowireWebSocketProtocol.RegisterEndpoint(
-       new WebSocketEndpointInfo("/ws/chat", "Chat", "Group chat WebSocket."));
+   services.AddBowireWebSocketEndpoints(registry =>
+   {
+       registry.Add(new WebSocketEndpointInfo("/ws/chat", "Chat", "Group chat WebSocket."));
+   });
    ```
 
-The embedded discovery scans `EndpointDataSource` for `WebSocketEndpointAttribute`-tagged routes and merges them with anything registered manually. `http://` and `https://` base URLs are auto-rewritten to `ws://` / `wss://` so the discovered methods open against the right scheme without any extra config.
+   (Pre-v1.7 callers used the static `BowireWebSocketProtocol.RegisterEndpoint(...)`; v1.7 swaps it for the DI-resolved `IWebSocketEndpointRegistry` so each ASP.NET host carries its own list and the registration survives an in-process restart without leaking endpoints across hosts.)
+
+The embedded discovery scans `EndpointDataSource` for `WebSocketEndpointAttribute`-tagged routes and merges them with anything in the registered list. `http://` and `https://` base URLs are auto-rewritten to `ws://` / `wss://` so the discovered methods open against the right scheme without any extra config.
 
 ## Channel model
 
