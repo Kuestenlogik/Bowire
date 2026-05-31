@@ -1,9 +1,11 @@
 // Copyright 2026 Küstenlogik
 // SPDX-License-Identifier: Apache-2.0
 
+using System.Buffers.Binary;
 using System.Diagnostics;
 using System.Net;
 using System.Net.Http.Headers;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.Json;
 using Google.Protobuf;
@@ -37,11 +39,13 @@ namespace Kuestenlogik.Bowire.Protocol.Grpc;
 ///   Connect spec.</item>
 /// </list>
 /// <para>
-/// Streaming is out of scope for Phase 1 — Connect streaming uses a
-/// different envelope (<c>application/connect+json</c> /
-/// <c>application/connect+proto</c> with length-prefixed frames).
-/// The unary path here is what 90% of agents and CLI workflows
-/// reach for, so it lands first.
+/// Server-streaming (Phase 2) uses a different envelope —
+/// <c>application/connect+proto</c> with one length-prefixed frame
+/// for the request and a stream of length-prefixed frames for the
+/// response, each frame's first byte carrying flag bits (bit 0x02 =
+/// end-of-stream marker, payload then is a JSON envelope with
+/// <c>error</c> + <c>metadata</c>). Client-streaming + bidi (Phase 3)
+/// still surface the not-supported error.
 /// </para>
 /// </remarks>
 internal sealed class ConnectInvoker : IDisposable
@@ -54,6 +58,16 @@ internal sealed class ConnectInvoker : IDisposable
     private const string ProtocolVersionHeader = "Connect-Protocol-Version";
     private const string ProtocolVersionValue = "1";
     private const string ProtobufContentType = "application/proto";
+    private const string StreamingProtobufContentType = "application/connect+proto";
+
+    /// <summary>
+    /// Bit set on the leading flag byte of a Connect end-of-stream
+    /// envelope. When read on the server-streaming path, the frame's
+    /// payload is JSON (not protobuf) and carries optional
+    /// <c>error</c> / <c>metadata</c> blocks instead of a typed
+    /// response message.
+    /// </summary>
+    internal const byte EndStreamFlag = 0x02;
 
     public ConnectInvoker(
         string serverUrl,
@@ -227,10 +241,196 @@ internal sealed class ConnectInvoker : IDisposable
         return dict;
     }
 
+    /// <summary>
+    /// Connect server-streaming. POST one length-prefixed input
+    /// envelope to the same URL as unary, switch the content type to
+    /// <c>application/connect+proto</c>, read the response stream
+    /// frame-by-frame and yield each non-end frame as a JSON-formatted
+    /// response message. The terminating end-of-stream frame's JSON
+    /// payload (with optional <c>error</c> / <c>metadata</c>) ends the
+    /// enumeration; if it carries an <c>error</c> the last yielded
+    /// item is a synthesized JSON object describing it, prefixed so
+    /// callers can distinguish stream errors from real messages.
+    /// </summary>
+    public async IAsyncEnumerable<ConnectStreamFrame> InvokeServerStreamAsync(
+        string serviceName, string methodName,
+        MessageDescriptor inputType,
+        MessageDescriptor outputType,
+        string requestJson,
+        Dictionary<string, string>? metadata,
+        [EnumeratorCancellation] CancellationToken ct)
+    {
+        var path = $"{serviceName.TrimStart('/')}/{methodName.TrimStart('/')}";
+        var target = new Uri(_baseUri, path);
+
+        // Encode the single request message as one length-prefixed
+        // frame: 1 byte flags + 4 byte big-endian length + payload.
+        var payload = JsonToProtobufBytes(requestJson, inputType);
+        var requestFrame = EncodeFrame(flags: 0x00, payload: payload);
+
+        using var content = new ByteArrayContent(requestFrame);
+        content.Headers.ContentType = new MediaTypeHeaderValue(StreamingProtobufContentType);
+
+        using var req = new HttpRequestMessage(HttpMethod.Post, target) { Content = content };
+        req.Headers.TryAddWithoutValidation(ProtocolVersionHeader, ProtocolVersionValue);
+        if (metadata is not null)
+        {
+            foreach (var (k, v) in metadata)
+                req.Headers.TryAddWithoutValidation(k, v);
+        }
+
+        using var resp = await _http.SendAsync(req, HttpCompletionOption.ResponseHeadersRead, ct)
+            .ConfigureAwait(false);
+
+        if (!resp.IsSuccessStatusCode)
+        {
+            // Non-2xx before any frames flows through the unary error
+            // path — Connect uses the same JSON error shape there.
+            var bodyBytes = await resp.Content.ReadAsByteArrayAsync(ct).ConfigureAwait(false);
+            var (code, message) = ParseConnectError(bodyBytes, resp);
+            yield return ConnectStreamFrame.Error(code, message);
+            yield break;
+        }
+
+        var stream = await resp.Content.ReadAsStreamAsync(ct).ConfigureAwait(false);
+        await using var _ = stream.ConfigureAwait(false);
+
+        await foreach (var frame in ReadFramesAsync(stream, ct).ConfigureAwait(false))
+        {
+            if ((frame.Flags & EndStreamFlag) == EndStreamFlag)
+            {
+                // End-of-stream: payload is JSON. If it carries an
+                // `error` object, surface it; otherwise terminate
+                // silently — Connect's normal OK exit.
+                var (errCode, errMessage) = ParseEndOfStreamError(frame.Payload);
+                if (errCode is not null)
+                    yield return ConnectStreamFrame.Error(errCode, errMessage ?? string.Empty);
+                yield break;
+            }
+            // Normal frame: protobuf-encoded response message.
+            var json = ProtobufBytesToJson(frame.Payload, outputType);
+            yield return ConnectStreamFrame.Message(json, frame.Payload);
+        }
+    }
+
+    // ---- envelope framing -----------------------------------------
+
+    /// <summary>
+    /// Build one Connect envelope frame: <c>[flags(1)] [length(4 BE)] [payload]</c>.
+    /// </summary>
+    internal static byte[] EncodeFrame(byte flags, byte[] payload)
+    {
+        ArgumentNullException.ThrowIfNull(payload);
+        var frame = new byte[5 + payload.Length];
+        frame[0] = flags;
+        BinaryPrimitives.WriteUInt32BigEndian(frame.AsSpan(1, 4), (uint)payload.Length);
+        Buffer.BlockCopy(payload, 0, frame, 5, payload.Length);
+        return frame;
+    }
+
+    /// <summary>
+    /// Read the next Connect frame off <paramref name="stream"/> —
+    /// 5-byte header (flags + BE length) followed by <c>length</c>
+    /// payload bytes. Returns <c>null</c> when the stream ends cleanly
+    /// at a frame boundary; throws on truncated header or short
+    /// payload (malformed wire).
+    /// </summary>
+    internal static async Task<ConnectEnvelopeFrame?> ReadOneFrameAsync(Stream stream, CancellationToken ct)
+    {
+        var header = new byte[5];
+        var headerRead = await ReadFullyAsync(stream, header, ct).ConfigureAwait(false);
+        if (headerRead == 0) return null;
+        if (headerRead < 5)
+            throw new InvalidDataException(
+                $"Connect stream frame header truncated: expected 5 bytes, got {headerRead}.");
+
+        var flags = header[0];
+        var length = BinaryPrimitives.ReadUInt32BigEndian(header.AsSpan(1, 4));
+
+        var payload = length == 0 ? Array.Empty<byte>() : new byte[length];
+        if (length > 0)
+        {
+            var bodyRead = await ReadFullyAsync(stream, payload, ct).ConfigureAwait(false);
+            if (bodyRead != (int)length)
+                throw new InvalidDataException(
+                    $"Connect stream frame payload truncated: expected {length} bytes, got {bodyRead}.");
+        }
+        return new ConnectEnvelopeFrame(flags, payload);
+    }
+
+    private static async IAsyncEnumerable<ConnectEnvelopeFrame> ReadFramesAsync(
+        Stream stream, [EnumeratorCancellation] CancellationToken ct)
+    {
+        while (true)
+        {
+            var frame = await ReadOneFrameAsync(stream, ct).ConfigureAwait(false);
+            if (frame is null) yield break;
+            yield return frame;
+        }
+    }
+
+    private static async Task<int> ReadFullyAsync(Stream stream, byte[] buffer, CancellationToken ct)
+    {
+        var total = 0;
+        while (total < buffer.Length)
+        {
+            var n = await stream.ReadAsync(buffer.AsMemory(total), ct).ConfigureAwait(false);
+            if (n == 0) break;
+            total += n;
+        }
+        return total;
+    }
+
+    /// <summary>
+    /// Parse a Connect end-of-stream JSON payload — shape is
+    /// <c>{ "error"?: { "code", "message" }, "metadata"?: {...} }</c>.
+    /// Returns the error tuple when present, <c>(null, null)</c>
+    /// otherwise (normal stream completion).
+    /// </summary>
+    internal static (string? Code, string? Message) ParseEndOfStreamError(byte[] payload)
+    {
+        if (payload.Length == 0) return (null, null);
+        try
+        {
+            using var doc = JsonDocument.Parse(payload);
+            var root = doc.RootElement;
+            if (root.ValueKind != JsonValueKind.Object) return (null, null);
+            if (!root.TryGetProperty("error", out var err) || err.ValueKind != JsonValueKind.Object)
+                return (null, null);
+            var code = err.TryGetProperty("code", out var c) && c.ValueKind == JsonValueKind.String
+                ? c.GetString() : null;
+            var message = err.TryGetProperty("message", out var m) && m.ValueKind == JsonValueKind.String
+                ? m.GetString() : null;
+            return (code is null ? null : "connect:" + code, message);
+        }
+        catch (JsonException)
+        {
+            return (null, null);
+        }
+    }
+
     public void Dispose()
     {
         _http.Dispose();
         _ownedHandler?.Dispose();
         _mtlsOwner?.Dispose();
     }
+}
+
+/// <summary>
+/// One parsed Connect envelope frame as it comes off the wire — the
+/// raw flag byte + payload bytes. Read by
+/// <see cref="ConnectInvoker.ReadOneFrameAsync"/>.
+/// </summary>
+internal sealed record ConnectEnvelopeFrame(byte Flags, byte[] Payload);
+
+/// <summary>
+/// One server-streaming Connect result the invoker emits to its
+/// caller: either a decoded response message (<see cref="Message"/>)
+/// or a terminating stream error (<see cref="Error"/>).
+/// </summary>
+internal sealed record ConnectStreamFrame(string Json, byte[]? Binary, string? ErrorCode)
+{
+    public static ConnectStreamFrame Message(string json, byte[] binary) => new(json, binary, null);
+    public static ConnectStreamFrame Error(string code, string message) => new(message, null, code);
 }
