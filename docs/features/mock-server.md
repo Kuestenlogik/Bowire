@@ -523,6 +523,67 @@ Scope:
 - **First success response wins.** When an operation declares several 2xx responses, the mock picks the first JSON-typed one. Branching by `Accept` header is a later enhancement.
 - **Mutually exclusive with `--recording`.** Pick one. To mix real and synthesised responses, capture the missing ones via `--capture-miss` and merge into your recording.
 
+## Mock as stand-in (recording carries the original contract)
+
+A mock is most useful when consumers can see two things at once: the **full contract** the original service advertises, and the **slice** the recording can actually replay. Without that, code-against-the-mock teams accidentally narrow their integration to whatever happened to be captured.
+
+Every recording made from v1.7 onwards carries the source schema verbatim &mdash; the OpenAPI doc the REST plugin fetched (or the AsyncAPI YAML the AsyncAPI loader parsed) lands on `recording.sourceSchema` automatically when the workbench saves through `PUT /api/recordings`. No user action needed. The mock server then serves the schema back at conventional URLs:
+
+| URL | Returned content |
+|---|---|
+| `GET /openapi.json` | The original REST contract as JSON (YAML→JSON converted on the fly when the source was YAML) |
+| `GET /openapi.yaml` / `.yml` | Same contract as YAML |
+| `GET /swagger.json` | Legacy alias of `/openapi.json` |
+| `GET /asyncapi.yaml` / `.yml` | The original AsyncAPI contract as YAML |
+| `GET /asyncapi.json` | Same as JSON |
+
+So a peer Bowire (or Swagger UI, or any AsyncAPI-aware tool) pointed at the mock's URL **discovers the full surface**, not just what's recorded. The endpoints sit on the mock's HTTP port even when the wire is non-HTTP (MQTT/NATS/Kafka) &mdash; the mock binds an HTTP listener anyway for replay side-channels, so the schema URLs are essentially free.
+
+### Where the schema comes from
+
+- **REST**: `OpenApiDiscovery.FetchAndParseAsync` reads the OpenAPI doc as text first (in addition to parsing it), caches the verbatim source in `SourceSchemaCache` under the discovery URL.
+- **AsyncAPI**: `BowireAsyncApiProtocol.DiscoverAsync` stashes the loader's normalised YAML under **both** the AsyncAPI source URL **and** every resolved `servers[].url` (`mqtt://broker:1883`, `nats://nats:4222`, &c) so a recording's `step.serverUrl` &mdash; which carries the resolved wire URL, not the AsyncAPI doc URL &mdash; hits a key either way.
+- **gRPC**: same intent, different storage &mdash; the per-step `schemaDescriptor` already carries the `FileDescriptorSet`, and the gRPC mock-host extension mounts a real `ReflectionServiceImpl` on the mock so peer discovery via gRPC Reflection works unchanged.
+
+### Coverage annotation
+
+Both exporters (`OpenApiDocumentBuilder` for REST, `AsyncApiDocumentBuilder` for messaging) accept an optional `BowireRecording` argument and, when supplied, stamp every operation with an `x-bowire-coverage` extension reporting which slice of the contract is actually replay-faithful vs. which slice would fall back to schema-generated samples:
+
+```yaml
+paths:
+  /users/{id}:
+    get:
+      operationId: getUser
+      x-bowire-coverage:
+        recorded: true
+        stepCount: 3
+    post:
+      operationId: createUser
+      x-bowire-coverage:
+        recorded: false
+        stepCount: 0
+```
+
+Match keys: REST aggregates by `(HttpVerb, HttpPath)`; AsyncAPI aggregates by channel address (= `step.Method`, which is the topic / subject / endpoint on every messaging plugin).
+
+### Exporting from the CLI
+
+The CLI exposes both exporters as `bowire export` subcommands &mdash; same builder API, just wired to a terminal:
+
+```bash
+# Export REST contract from a live target, write to file
+bowire export openapi http://api.example.com --output api.yaml
+
+# Same, but annotate with coverage from a captured recording
+bowire export openapi http://api.example.com --recording session.bwr --output api.yaml
+
+# AsyncAPI works the same way; URL scheme picks the wire plugin (mqtt/nats/kafka/ws/amqp/pulsar/http)
+bowire export asyncapi mqtt://broker:1883 --output sensors.yaml
+bowire export asyncapi nats://broker:4222 --recording flow.bwr --format json
+```
+
+Exit codes: `0` ok, `1` "plugin not loaded" or discovery failure, `2` usage error (empty URL, unrecognised scheme).
+
 ## Hot-reload
 
 By default the mock watches the recording file. Save a change in your editor and the in-memory routes rebuild without a restart; parse failures are logged and the previously loaded recording keeps serving. Disable with `--no-watch` (CLI) or `opts.Watch = false` (embedded).

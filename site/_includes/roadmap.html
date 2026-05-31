@@ -100,6 +100,16 @@
         </div>
       </a>
 
+      <a class="roadmap-card roadmap-card-link roadmap-card-shipped" href="{{ '/docs/features/mock-server.html' | relative_url }}#mock-as-stand-in-recording-carries-the-original-contract">
+        <div class="roadmap-number roadmap-number-shipped" aria-label="Shipped">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="5 12 10 17 19 8"/></svg>
+        </div>
+        <div class="roadmap-card-body">
+          <h3>Mock as stand-in for the real service</h3>
+          <p>Recordings now carry the <strong>original</strong> source schema (OpenAPI for REST, AsyncAPI for messaging, proto descriptors for gRPC). The mock serves the full contract back at <code>/openapi.json</code>, <code>/asyncapi.yaml</code>, or gRPC reflection &mdash; so peer Bowire (or any spec-aware tool) discovers the whole declared surface, not just the recorded slice. <code>bowire export openapi|asyncapi</code> turns it the other way: a live target back to a portable schema, with <code>x-bowire-coverage</code> showing which operations the recording replays deterministically vs. schema-generated.</p>
+        </div>
+      </a>
+
     </div>
 
     <div class="roadmap-divider" aria-hidden="true">
