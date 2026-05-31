@@ -585,13 +585,24 @@ internal static class BowireCli
             DefaultValueFactory = _ => cfg.GetValue<bool>("Bowire:Plugin:Verbose")
         };
         var packageIdArg = new Argument<string>("packageId") { Description = "NuGet package id." };
+        // Install accepts a packageId OR a --file path (sidecar zip /
+        // oci ref / .nupkg). The shared packageIdArg above is required
+        // for the download / uninstall / inspect commands; install gets
+        // its own optional variant so users can write
+        // `bowire plugin install --file my-sidecar.zip` without
+        // inventing a dummy package id the action would just ignore.
+        var installPackageIdArg = new Argument<string>("packageId")
+        {
+            Description = "NuGet package id. Optional when --file points to a sidecar .zip or an oci:// reference; required when resolving from a feed.",
+            DefaultValueFactory = _ => string.Empty,
+        };
         var prereleaseOpt = new Option<bool>("--prerelease")
         {
             Description = "Allow pre-release versions (1.0.0-rc.1, &c) when resolving the latest. Matches `dotnet add package --prerelease`. Ignored when --version pins an exact version.",
         };
 
         var install = new Command("install", "Install a protocol plugin from NuGet, a local .nupkg, or a sidecar .zip.");
-        install.Add(packageIdArg); install.Add(versionOpt); install.Add(sourcesOpt); install.Add(fileOpt); install.Add(prereleaseOpt);
+        install.Add(installPackageIdArg); install.Add(versionOpt); install.Add(sourcesOpt); install.Add(fileOpt); install.Add(prereleaseOpt);
         install.SetAction(async (pr, _) =>
         {
             var file = pr.GetValue(fileOpt);
@@ -608,8 +619,15 @@ internal static class BowireCli
                     ? await PluginManager.InstallSidecarFromZipAsync(file, pluginDir).ConfigureAwait(false)
                     : await PluginManager.InstallFromFileAsync(file, pluginDir, sources).ConfigureAwait(false);
             }
+            var pkgId = pr.GetValue(installPackageIdArg) ?? "";
+            if (string.IsNullOrWhiteSpace(pkgId))
+            {
+                Console.WriteLine("  Usage: bowire plugin install <packageId> [--version <ver>] [--source <url>...]");
+                Console.WriteLine("         bowire plugin install --file <sidecar.zip|oci://...|local.nupkg>");
+                return 2;
+            }
             return await PluginManager.InstallAsync(
-                pr.GetValue(packageIdArg) ?? "", pr.GetValue(versionOpt), pluginDir, sources,
+                pkgId, pr.GetValue(versionOpt), pluginDir, sources,
                 includePrerelease: prerelease).ConfigureAwait(false);
         });
 
