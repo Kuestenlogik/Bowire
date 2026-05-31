@@ -10,7 +10,11 @@ namespace Kuestenlogik.Bowire.Protocol.WebSocket;
 /// <summary>
 /// Discovers WebSocket endpoints in two modes:
 /// <list type="bullet">
-/// <item>Statically registered via <see cref="BowireWebSocketProtocol.RegisterEndpoint"/></item>
+/// <item>Registered via the <see cref="IWebSocketEndpointRegistry"/>
+/// singleton — wired up by
+/// <see cref="BowireWebSocketServiceCollectionExtensions.AddBowireWebSocketEndpoints"/>
+/// at host startup. (Pre-v1.7 callers used a process-wide static on
+/// <c>BowireWebSocketProtocol</c>; the registry replaced it.)</item>
 /// <item>Embedded discovery from <see cref="EndpointDataSource"/> entries that carry a <see cref="WebSocketEndpointAttribute"/> in their metadata</item>
 /// </list>
 /// Returns a single Bowire service named "WebSocket" that aggregates all

@@ -13,10 +13,12 @@ namespace Kuestenlogik.Bowire.Protocol.WebSocket;
 /// <summary>
 /// Bowire protocol plugin for raw WebSocket connections. Discovers
 /// endpoints either from <c>EndpointDataSource</c> entries that carry a
-/// <see cref="WebSocketEndpointAttribute"/> (embedded mode) or from manual
-/// registration via <see cref="RegisterEndpoint"/>. Invocation goes
-/// exclusively through the channel API: there are no unary or
-/// server-streaming WebSocket methods.
+/// <see cref="WebSocketEndpointAttribute"/> (embedded mode) or from the
+/// <see cref="IWebSocketEndpointRegistry"/> singleton the host wired up
+/// via
+/// <see cref="BowireWebSocketServiceCollectionExtensions.AddBowireWebSocketEndpoints"/>.
+/// Invocation goes exclusively through the channel API: there are no
+/// unary or server-streaming WebSocket methods.
 /// Also implements <see cref="IInlineWebSocketChannel"/> so other plugins
 /// (the GraphQL plugin's graphql-transport-ws subscription support) can
 /// open WebSocket channels — with sub-protocols + auth headers — without
@@ -32,9 +34,9 @@ public sealed class BowireWebSocketProtocol : IBowireProtocol, IInlineWebSocketC
     /// </summary>
     public const string SubProtocolMetadataKey = "X-Bowire-WebSocket-Subprotocol";
 
-    private static readonly List<WebSocketEndpointInfo> s_registeredEndpoints = [];
     private IServiceProvider? _serviceProvider;
     private IConfiguration? _configuration;
+    private IWebSocketEndpointRegistry? _registry;
 
     public string Name => "WebSocket";
     public string Id => "websocket";
@@ -52,34 +54,23 @@ public sealed class BowireWebSocketProtocol : IBowireProtocol, IInlineWebSocketC
             "bool", true)
     ];
 
-    /// <summary>
-    /// Endpoints registered statically via <see cref="RegisterEndpoint"/>.
-    /// </summary>
-    internal static IReadOnlyList<WebSocketEndpointInfo> RegisteredEndpoints => s_registeredEndpoints;
-
-    /// <summary>
-    /// Register a WebSocket endpoint for Bowire discovery. Call before
-    /// <c>MapBowire()</c> or during startup.
-    /// </summary>
-    public static void RegisterEndpoint(WebSocketEndpointInfo endpoint)
-    {
-        ArgumentNullException.ThrowIfNull(endpoint);
-        s_registeredEndpoints.Add(endpoint);
-    }
-
-    /// <summary>Clears all statically registered endpoints. Primarily for testing.</summary>
-    internal static void ClearRegisteredEndpoints() => s_registeredEndpoints.Clear();
-
     public void Initialize(IServiceProvider? serviceProvider)
     {
         _serviceProvider = serviceProvider;
         _configuration = serviceProvider?.GetService<IConfiguration>();
+        // Pull the per-container registry if the host registered one
+        // via AddBowireWebSocketEndpoints(...). Standalone mode and
+        // hosts that opt out leave this null — Discover falls back to
+        // an empty manual-registration list and relies on the
+        // EndpointDataSource + ad-hoc paths instead.
+        _registry = serviceProvider?.GetService<IWebSocketEndpointRegistry>();
     }
 
     public Task<List<BowireServiceInfo>> DiscoverAsync(
         string serverUrl, bool showInternalServices, CancellationToken ct = default)
     {
-        var services = WebSocketEndpointDiscovery.Discover(s_registeredEndpoints, _serviceProvider);
+        var registered = _registry?.Snapshot() ?? [];
+        var services = WebSocketEndpointDiscovery.Discover(registered, _serviceProvider);
 
         // Standalone mode: when the user supplied a ws:// or wss:// URL, also
         // expose a synthetic "connect" method so they can open a channel against

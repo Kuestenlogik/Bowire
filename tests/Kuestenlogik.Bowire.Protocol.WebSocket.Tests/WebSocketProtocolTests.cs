@@ -1,6 +1,7 @@
 // Copyright 2026 Küstenlogik
 // SPDX-License-Identifier: Apache-2.0
 
+using Microsoft.Extensions.DependencyInjection;
 using Kuestenlogik.Bowire.Protocol.WebSocket;
 
 namespace Kuestenlogik.Bowire.Protocol.WebSocket.Tests;
@@ -9,22 +10,12 @@ namespace Kuestenlogik.Bowire.Protocol.WebSocket.Tests;
 /// Tests for the WebSocket protocol plugin's discovery surface — specifically
 /// the standalone "ad-hoc" path that synthesises a single-method service when
 /// the user passes <c>bowire --url ws://...</c> against an arbitrary remote
-/// endpoint without any prior registration.
+/// endpoint without any prior registration, plus the DI-registered list the
+/// embedded path resolves via
+/// <see cref="BowireWebSocketServiceCollectionExtensions.AddBowireWebSocketEndpoints"/>.
 /// </summary>
-[Collection("RegisteredEndpointsSerialised")]
-public sealed class WebSocketProtocolTests : IDisposable
+public sealed class WebSocketProtocolTests
 {
-    public WebSocketProtocolTests()
-    {
-        BowireWebSocketProtocol.ClearRegisteredEndpoints();
-    }
-
-    public void Dispose()
-    {
-        BowireWebSocketProtocol.ClearRegisteredEndpoints();
-        GC.SuppressFinalize(this);
-    }
-
     [Fact]
     public async Task DiscoverAsync_AdHocWebSocketUrl_ReturnsSingleDuplexMethod()
     {
@@ -76,9 +67,14 @@ public sealed class WebSocketProtocolTests : IDisposable
     [Fact]
     public async Task DiscoverAsync_RegisteredEndpoints_ProduceWebSocketService()
     {
-        BowireWebSocketProtocol.RegisterEndpoint(new WebSocketEndpointInfo("/ws/chat", "Chat", "Group chat"));
+        var sc = new ServiceCollection();
+        sc.AddBowireWebSocketEndpoints(r =>
+            r.Add(new WebSocketEndpointInfo("/ws/chat", "Chat", "Group chat")));
+        using var sp = sc.BuildServiceProvider();
 
         var protocol = new BowireWebSocketProtocol();
+        protocol.Initialize(sp);
+
         var services = await protocol.DiscoverAsync("http://localhost:5000", showInternalServices: false, TestContext.Current.CancellationToken);
 
         var svc = Assert.Single(services);
