@@ -11,6 +11,7 @@ namespace Kuestenlogik.Bowire.Protocol.WebSocket.Tests;
 /// the user passes <c>bowire --url ws://...</c> against an arbitrary remote
 /// endpoint without any prior registration.
 /// </summary>
+[Collection("RegisteredEndpointsSerialised")]
 public sealed class WebSocketProtocolTests : IDisposable
 {
     public WebSocketProtocolTests()
