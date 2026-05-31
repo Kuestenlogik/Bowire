@@ -121,6 +121,23 @@ Every Bowire session can be recorded — pure UI button — into a HAR-like JSON
 
 Mocks support chaos injection (latency, error injection), stateful cursors (CRUD-style), and capture-on-miss (when a request comes in that isn't in the recording, capture it from the live backend and add it).
 
+**Mock as stand-in for the real service (v1.7+).** Recordings now carry the **original** source schema the discovery fetched (REST: the verbatim OpenAPI doc, AsyncAPI: the loader's normalised YAML, gRPC: the proto `FileDescriptorSet` per step). The mock serves the schema back at conventional URLs:
+
+- `GET /openapi.json` / `/openapi.yaml` / `/swagger.json` — REST mocks
+- `GET /asyncapi.yaml` / `/asyncapi.json` — messaging mocks
+- gRPC ServerReflection — built-in for gRPC mocks
+
+So a peer Bowire (or Swagger UI, AsyncAPI Studio, codegen tooling) pointed at the mock discovers the *full* declared surface, not just the recorded slice. Population is automatic — the workbench's recording-save path (`PUT /api/recordings`) auto-stamps `recording.sourceSchema` from a process-wide `SourceSchemaCache` the wire plugins populate at `DiscoverAsync` time. No user action needed.
+
+## Schema export — `bowire export`
+
+Inverse of the mock's schema-serve: turn a live discovery result back into a portable schema artefact. Two subcommands:
+
+- `bowire export openapi <http-url> [--output api.yaml] [--recording session.bwr]` — REST → OpenAPI 3.0
+- `bowire export asyncapi <wire-url> [--output api.yaml] [--recording session.bwr]` — messaging → AsyncAPI 3.0. URL scheme picks the wire plugin (`mqtt://`, `nats://`, `kafka://`, `ws://`, `amqp://`, `pulsar://`, `http://`).
+
+When `--recording` is supplied, every operation in the emitted document gets an `x-bowire-coverage: { recorded, stepCount }` extension so consumers can see which slice of the contract this recording can replay deterministically vs. which slice would fall back to schema-generated samples. Default output is YAML on stdout; `--format json` switches to JSON.
+
 ## MCP integration (AI agents)
 
 Two complementary modes via `Kuestenlogik.Bowire.Protocol.Mcp`:
