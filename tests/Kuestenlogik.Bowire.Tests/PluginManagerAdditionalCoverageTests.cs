@@ -13,6 +13,7 @@ namespace Kuestenlogik.Bowire.Tests;
 /// from a local feed. Everything stays offline by relying on the
 /// <see cref="NuGetPackageInstallerTests_NupkgFactory"/> helper.
 /// </summary>
+[Collection("ConsoleOutSerialised")]
 public sealed class PluginManagerAdditionalCoverageTests : IDisposable
 {
     private readonly string _tempDir;
