@@ -14,6 +14,7 @@ namespace Kuestenlogik.Bowire.Tests;
 /// here we just keep the diagnostic exit codes (2 for usage, …)
 /// honest so CI scripts can rely on them.
 /// </summary>
+[Collection("ConsoleOutSerialised")]
 public sealed class TestRunnerTests : IDisposable
 {
     private readonly string _tempDir;
