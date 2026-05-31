@@ -48,7 +48,7 @@
          Used by Kuestenlogik.Bowire.Protocol.Nats: pub/sub on subjects
          mirror MQTT's topic-based discovery, plus NATS-specific
          request/reply lives on top of the same plumbing. -->
-    <PackageVersion Include="NATS.Net" Version="2.8.0" />
+    <PackageVersion Include="NATS.Net" Version="2.8.1" />
     <!-- DotPulsar is the Apache-maintained .NET client for Apache Pulsar
          (apache/pulsar-dotpulsar). Same Apache-2.0 license as Bowire,
          supports the binary protocol on pulsar:// and pulsar+ssl://.
