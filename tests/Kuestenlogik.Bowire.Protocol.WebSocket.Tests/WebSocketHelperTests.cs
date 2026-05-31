@@ -15,6 +15,7 @@ namespace Kuestenlogik.Bowire.Protocol.WebSocket.Tests;
 /// pieces the channel-based connect path can't exercise without a live
 /// WebSocket peer.
 /// </summary>
+[Collection("RegisteredEndpointsSerialised")]
 public sealed class WebSocketHelperTests : IDisposable
 {
     public WebSocketHelperTests() => BowireWebSocketProtocol.ClearRegisteredEndpoints();
