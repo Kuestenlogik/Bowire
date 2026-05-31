@@ -12,6 +12,7 @@ namespace Kuestenlogik.Bowire.Mcp.Tests;
 /// the resource methods read fixture files instead of the user's
 /// real <c>~/.bowire/</c>.
 /// </summary>
+[Collection(nameof(BowireConfigFixture))]
 public sealed class BowireMcpResourcesTests : IDisposable
 {
     private readonly string _homeDir;

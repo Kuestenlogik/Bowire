@@ -14,9 +14,16 @@ namespace Kuestenlogik.Bowire.Mcp.Tests;
 /// <summary>
 /// Serialises tests that flip <see cref="BowireMcpTools.HomeDirOverride"/>
 /// — the override is process-global, so concurrent xUnit workers would
-/// race. xUnit requires the collection-definition class to be public.
+/// race. Adding <c>DisableParallelization = true</c> is what actually
+/// stops cross-class methods from running at the same time — without
+/// it the <c>[Collection]</c> attribute only groups for fixtures, not
+/// for serialisation. (Caught after a flaky CI failure on
+/// <c>BowireMcpResourcesTests.Plugins_ListsValidEntries_SkipsBrokenManifests</c>
+/// where another test class's <c>Dispose</c> cleared the override
+/// mid-flight.) xUnit requires the collection-definition class to be
+/// public.
 /// </summary>
-[CollectionDefinition(nameof(BowireConfigFixture))]
+[CollectionDefinition(nameof(BowireConfigFixture), DisableParallelization = true)]
 [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1515:Consider making public types internal", Justification = "xUnit collection definition must be public.")]
 public sealed class BowireConfigFixture { }
 
