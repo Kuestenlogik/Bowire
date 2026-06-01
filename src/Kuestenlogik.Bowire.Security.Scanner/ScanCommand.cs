@@ -42,14 +42,31 @@ public static class ScanCommand
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
     };
 
-    /// <summary>One scan-subcommand invocation. Returns the process exit code: 0 = the scanner ran end-to-end (with or without findings; findings are the product, not a failure), 1 = reserved for unhandled tool crashes / unexpected scanner aborts, 2 = usage / configuration error before the scan starts.</summary>
-    public static async Task<int> RunAsync(ScanOptions options, CancellationToken ct)
+    /// <summary>One scan-subcommand invocation. Returns the process exit code: 0 = the scanner ran end-to-end (with or without findings; findings are the product, not a failure), 1 = reserved for unhandled tool crashes / unexpected scanner aborts, 2 = usage / configuration error before the scan starts.
+    /// <para>
+    /// <paramref name="output"/> and <paramref name="error"/> let the
+    /// caller redirect stdout / stderr without touching process-global
+    /// <see cref="Console.Out"/>. Defaults wire to the real console for
+    /// the production CLI path; the System.CommandLine handler hands
+    /// the framework's <c>ParseResult.InvocationConfiguration.Output/.Error</c>
+    /// through, and tests pass their own <see cref="StringWriter"/> to
+    /// capture the run without serialising on a global lock.
+    /// </para>
+    /// </summary>
+    public static async Task<int> RunAsync(
+        ScanOptions options,
+        CancellationToken ct,
+        TextWriter? output = null,
+        TextWriter? error = null)
     {
         ArgumentNullException.ThrowIfNull(options);
 
+        var stdout = output ?? Console.Out;
+        var stderr = error ?? Console.Error;
+
         if (string.IsNullOrWhiteSpace(options.Target))
         {
-            await Console.Error.WriteLineAsync("  Usage: bowire scan --target <url> --templates <dir> [--template <file>] [--out <sarif>]").ConfigureAwait(false);
+            await stderr.WriteLineAsync("  Usage: bowire scan --target <url> --templates <dir> [--template <file>] [--out <sarif>]").ConfigureAwait(false);
             return 2;
         }
 
@@ -69,7 +86,7 @@ public static class ScanCommand
             }
             catch (Exception ex)
             {
-                await Console.Error.WriteLineAsync($"  Skipping {Path.GetFileName(path)}: {ex.Message}").ConfigureAwait(false);
+                await stderr.WriteLineAsync($"  Skipping {Path.GetFileName(path)}: {ex.Message}").ConfigureAwait(false);
             }
         }
 
@@ -101,18 +118,18 @@ public static class ScanCommand
                 }
                 catch (Exception ex)
                 {
-                    await Console.Error.WriteLineAsync($"  Skipping nuclei {Path.GetFileName(path)}: {ex.Message}").ConfigureAwait(false);
+                    await stderr.WriteLineAsync($"  Skipping nuclei {Path.GetFileName(path)}: {ex.Message}").ConfigureAwait(false);
                 }
             }
             if (nucleiCount > 0)
             {
-                await Console.Out.WriteLineAsync($"  Loaded {nucleiCount} nuclei template(s) from {options.Nuclei}").ConfigureAwait(false);
+                await stdout.WriteLineAsync($"  Loaded {nucleiCount} nuclei template(s) from {options.Nuclei}").ConfigureAwait(false);
             }
         }
 
         if (templates.Count == 0 && !options.RunBuiltins)
         {
-            await Console.Error.WriteLineAsync("  No vulnerability templates found and built-ins disabled. Provide --templates <dir> or --template <file>, OR drop --no-builtins.").ConfigureAwait(false);
+            await stderr.WriteLineAsync("  No vulnerability templates found and built-ins disabled. Provide --templates <dir> or --template <file>, OR drop --no-builtins.").ConfigureAwait(false);
             return 2;
         }
 
@@ -127,25 +144,25 @@ public static class ScanCommand
         try { targetHost = new Uri(options.Target).Host; }
         catch (UriFormatException)
         {
-            await Console.Error.WriteLineAsync($"  Could not parse --target '{options.Target}' as a URL.").ConfigureAwait(false);
+            await stderr.WriteLineAsync($"  Could not parse --target '{options.Target}' as a URL.").ConfigureAwait(false);
             return 2;
         }
         if (!inScope(targetHost))
         {
-            await Console.Error.WriteLineAsync($"  Refusing to scan: target host '{targetHost}' is outside the configured --scope set. Widen the scope (`--scope {targetHost}`) or change the target.").ConfigureAwait(false);
+            await stderr.WriteLineAsync($"  Refusing to scan: target host '{targetHost}' is outside the configured --scope set. Widen the scope (`--scope {targetHost}`) or change the target.").ConfigureAwait(false);
             return 2;
         }
 
-        Console.WriteLine();
-        Console.WriteLine($"  Scanning {options.Target}");
+        await stdout.WriteLineAsync().ConfigureAwait(false);
+        await stdout.WriteLineAsync($"  Scanning {options.Target}").ConfigureAwait(false);
         var pieces = $"{templates.Count} template(s) loaded";
         if (options.RunBuiltins) pieces += " + built-in checks (TLS / banner / verbose-errors)";
-        Console.WriteLine($"  {pieces}; min severity = {options.MinSeverity ?? "any"}");
+        await stdout.WriteLineAsync($"  {pieces}; min severity = {options.MinSeverity ?? "any"}").ConfigureAwait(false);
         var scopeDesc = options.Scope is { Count: > 0 }
             ? string.Join(", ", options.Scope)
             : $"{targetHost} (implicit; widen with --scope)";
-        Console.WriteLine($"  Scope: {scopeDesc}");
-        Console.WriteLine();
+        await stdout.WriteLineAsync($"  Scope: {scopeDesc}").ConfigureAwait(false);
+        await stdout.WriteLineAsync().ConfigureAwait(false);
 
         var minRank = SeverityRank(options.MinSeverity ?? "");
         var findings = new List<ScanFinding>();
@@ -204,13 +221,13 @@ public static class ScanCommand
             }
         }
 
-        WriteConsoleReport(findings);
+        await WriteConsoleReportAsync(findings, stdout).ConfigureAwait(false);
 
         if (!string.IsNullOrEmpty(options.OutSarif))
         {
             await WriteSarifAsync(options.OutSarif, options.Target, findings, ct).ConfigureAwait(false);
-            Console.WriteLine();
-            Console.WriteLine($"  SARIF report → {options.OutSarif}");
+            await stdout.WriteLineAsync().ConfigureAwait(false);
+            await stdout.WriteLineAsync($"  SARIF report → {options.OutSarif}").ConfigureAwait(false);
         }
 
         // A successful scan is "the tool ran end-to-end and produced a
@@ -434,9 +451,9 @@ public static class ScanCommand
         }
     }
 
-    private static void WriteConsoleReport(List<ScanFinding> findings)
+    private static async Task WriteConsoleReportAsync(List<ScanFinding> findings, TextWriter stdout)
     {
-        Console.WriteLine($"  {findings.Count} template(s) processed:");
+        await stdout.WriteLineAsync($"  {findings.Count} template(s) processed:").ConfigureAwait(false);
         foreach (var f in findings)
         {
             var marker = f.Status switch
@@ -452,18 +469,18 @@ public static class ScanCommand
             var title = f.Template.Recording.Vulnerability is { } v && !string.IsNullOrEmpty(v.Id)
                 ? f.Template.Recording.Name
                 : Path.GetFileNameWithoutExtension(f.Template.Path);
-            Console.WriteLine($"  {marker} {id,-22} {sev,-8} {title}");
-            if (!string.IsNullOrEmpty(f.Detail)) Console.WriteLine($"          {f.Detail}");
+            await stdout.WriteLineAsync($"  {marker} {id,-22} {sev,-8} {title}").ConfigureAwait(false);
+            if (!string.IsNullOrEmpty(f.Detail)) await stdout.WriteLineAsync($"          {f.Detail}").ConfigureAwait(false);
         }
-        Console.WriteLine();
+        await stdout.WriteLineAsync().ConfigureAwait(false);
         var vulnCount = findings.FindAll(f => f.Status == ScanFindingStatus.Vulnerable).Count;
         if (vulnCount > 0)
         {
-            Console.WriteLine($"  {vulnCount} vulnerability finding(s).");
+            await stdout.WriteLineAsync($"  {vulnCount} vulnerability finding(s).").ConfigureAwait(false);
         }
         else
         {
-            Console.WriteLine("  No vulnerabilities matched. (Negative results don't prove security — just that these templates didn't catch anything.)");
+            await stdout.WriteLineAsync("  No vulnerabilities matched. (Negative results don't prove security — just that these templates didn't catch anything.)").ConfigureAwait(false);
         }
     }
 
