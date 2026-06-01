@@ -1,0 +1,51 @@
+{%- comment -%}
+  picture.html — emit a responsive <picture> tree.
+
+  Per source image, scripts/optimize-images.mjs writes:
+    foo-400w.{avif,webp}   thumbnail (mobile / card)
+    foo-1200w.{avif,webp}  normal display (article body)
+    foo.{avif,webp}        original-resolution (lightbox / fullscreen)
+    foo.png|jpg            legacy fallback (original)
+
+  The <picture> element below offers AVIF first, then WebP, then the
+  legacy file. Each modern <source> uses srcset w-descriptors + sizes
+  so the browser picks the smallest variant that fits the rendered
+  display size — no JS, no manual breakpoint logic.
+
+  Usage:
+    {% include picture.html src="/assets/images/foo.png" alt="..." %}
+
+  Parameters:
+    src   (required) — absolute site path to the source image
+    alt   (required) — alt text; "" for purely decorative
+    class (optional) — class attribute on the inner <img>
+    loading (optional) — "lazy" (default) or "eager" (above-fold heroes)
+    decoding (optional) — "async" (default) / "sync" / "auto"
+    sizes (optional) — sizes attribute. Default tuned for the typical
+                       bowire.io section image: full viewport width on
+                       mobile, capped at 1200 px on desktop.
+
+  Lightbox / fullscreen note: a click-to-zoom layer should load the
+  original-resolution file ({{ stem }}.avif or the .png fallback) on
+  demand. The picture include below only emits up-to-1200 w in the
+  default srcset, so the on-page render stays small.
+{%- endcomment -%}
+{%- assign src = include.src -%}
+{%- assign ext = src | split: '.' | last | downcase -%}
+{%- assign stem = src | replace: '.png', '' | replace: '.jpg', '' | replace: '.jpeg', '' -%}
+{%- assign loading = include.loading | default: 'lazy' -%}
+{%- assign decoding = include.decoding | default: 'async' -%}
+{%- assign sizes = include.sizes | default: '(min-width: 800px) 1200px, 100vw' -%}
+<picture>
+  <source type="image/avif"
+          srcset="{{ stem | append: '-400w.avif' | relative_url }} 400w,
+                  {{ stem | append: '-1200w.avif' | relative_url }} 1200w"
+          sizes="{{ sizes }}">
+  <source type="image/webp"
+          srcset="{{ stem | append: '-400w.webp' | relative_url }} 400w,
+                  {{ stem | append: '-1200w.webp' | relative_url }} 1200w"
+          sizes="{{ sizes }}">
+  <img src="{{ src | relative_url }}" alt="{{ include.alt | escape }}"
+       loading="{{ loading }}" decoding="{{ decoding }}"
+       {%- if include.class %} class="{{ include.class }}"{% endif -%}>
+</picture>

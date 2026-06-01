@@ -1,0 +1,55 @@
+name: Lighthouse + Image Optimization
+
+on:
+  pull_request:
+    paths:
+      - 'site/**'
+      - 'scripts/optimize-images.mjs'
+      - 'package.json'
+      - '.lighthouserc.json'
+      - '.github/workflows/lighthouse.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  image-check:
+    name: image-optimize --check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: npm install (sharp)
+        run: npm install --no-audit --no-fund
+      - name: Verify image transcodes are fresh
+        run: node scripts/optimize-images.mjs --check
+
+  lighthouse:
+    name: Lighthouse PR audit
+    runs-on: ubuntu-latest
+    needs: image-check
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.3'
+          bundler-cache: false
+      - name: Bundle install (Jekyll)
+        working-directory: site
+        run: bundle install
+      - name: Build site
+        working-directory: site
+        run: bundle exec jekyll build
+      - name: Lighthouse CI
+        run: |
+          npm install -g @lhci/cli@0.14.x
+          lhci autorun
+        env:
+          LHCI_GITHUB_APP_TOKEN: ${{ secrets.LHCI_GITHUB_APP_TOKEN }}

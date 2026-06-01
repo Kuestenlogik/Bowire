@@ -78,6 +78,14 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: node scripts/build-activity-snapshot.mjs
 
+      # Image transcodes (AVIF + WebP responsive variants). Idempotent —
+      # skips files already up to date by mtime. Run before Jekyll so
+      # the generated outputs are picked up into site/_site/.
+      - name: Install sharp
+        run: npm install --no-audit --no-fund
+      - name: Optimize images (AVIF + WebP, 3 sizes)
+        run: node scripts/optimize-images.mjs
+
       # Build Jekyll landing page
       - name: Setup Ruby
         uses: ruby/setup-ruby@v1
