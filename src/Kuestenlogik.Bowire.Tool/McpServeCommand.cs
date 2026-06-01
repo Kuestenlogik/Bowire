@@ -1,6 +1,7 @@
 // Copyright 2026 Küstenlogik
 // SPDX-License-Identifier: Apache-2.0
 
+using Kuestenlogik.Bowire.App.Cli;
 using Kuestenlogik.Bowire.Mcp;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
@@ -40,16 +41,18 @@ internal static class McpServeCommand
         Action<BowireMcpOptions> ConfigureOptions,
         int Port,
         bool AllowArbitraryUrls,
-        bool NoEnvAllowlist);
+        bool NoEnvAllowlist,
+        CommandIo Io);
 
     public static Task<int> RunAsync(string bind, int port, bool allowArbitraryUrls, bool noEnvAllowlist)
-        => RunAsync(bind, port, allowArbitraryUrls, noEnvAllowlist, CancellationToken.None);
+        => RunAsync(bind, port, allowArbitraryUrls, noEnvAllowlist, stdout: null, stderr: null, ct: CancellationToken.None);
 
     // internal: tests pass a pre-cancelled token so DefaultServeStdio /
     // DefaultServeHttp exit promptly without blocking on stdin/stdout
     // or a Kestrel socket. Public surface is the CT-less overload above
     // — production callers keep that.
-    internal static Task<int> RunAsync(string bind, int port, bool allowArbitraryUrls, bool noEnvAllowlist, CancellationToken ct)
+    internal static Task<int> RunAsync(string bind, int port, bool allowArbitraryUrls, bool noEnvAllowlist,
+        TextWriter? stdout = null, TextWriter? stderr = null, CancellationToken ct = default)
     {
         Action<BowireMcpOptions> configureOpts = o =>
         {
@@ -57,13 +60,18 @@ internal static class McpServeCommand
             o.LoadAllowlistFromEnvironments = !noEnvAllowlist;
         };
 
-        var cfg = new McpServeConfig(configureOpts, port, allowArbitraryUrls, noEnvAllowlist);
+        // Stdio-mode caveat: the JSON-RPC framing the SDK does owns
+        // process Console.Out. The CommandIo here is the *diagnostic*
+        // sink (the WARNING blob that lands on stderr), not the
+        // protocol stream — so it's safe to redirect even in --bind stdio.
+        var io = CommandIo.Resolve(stdout, stderr);
+        var cfg = new McpServeConfig(configureOpts, port, allowArbitraryUrls, noEnvAllowlist, io);
 
         return bind switch
         {
             "stdio" => StdioRunner(cfg, ct),
             "http" => HttpRunner(cfg, ct),
-            _ => Fail($"Unknown --bind value: {bind} (expected 'stdio' or 'http').")
+            _ => Fail($"Unknown --bind value: {bind} (expected 'stdio' or 'http').", io)
         };
     }
 
@@ -83,7 +91,7 @@ internal static class McpServeCommand
             .WithPrompts<BowireMcpPrompts>();
 
         if (cfg.AllowArbitraryUrls)
-            await Console.Error.WriteLineAsync("[bowire-mcp] WARNING: --allow-arbitrary-urls set; bowire.invoke / bowire.subscribe accept any URL the agent supplies.").ConfigureAwait(false);
+            await cfg.Io.Err.WriteLineAsync("[bowire-mcp] WARNING: --allow-arbitrary-urls set; bowire.invoke / bowire.subscribe accept any URL the agent supplies.").ConfigureAwait(false);
 
         try
         {
@@ -108,10 +116,10 @@ internal static class McpServeCommand
         var app = builder.Build();
         app.MapMcp("/bowire/mcp");
 
-        Console.WriteLine($"  Bowire MCP - listening on http://localhost:{cfg.Port}/bowire/mcp");
+        cfg.Io.OutLine($"  Bowire MCP - listening on http://localhost:{cfg.Port}/bowire/mcp");
         if (cfg.AllowArbitraryUrls)
-            Console.WriteLine("  WARNING: --allow-arbitrary-urls is set; URL allowlist is disabled.");
-        Console.WriteLine("  Connect Claude Desktop / Cursor with the URL above; or POST JSON-RPC directly.");
+            cfg.Io.OutLine("  WARNING: --allow-arbitrary-urls is set; URL allowlist is disabled.");
+        cfg.Io.OutLine("  Connect Claude Desktop / Cursor with the URL above; or POST JSON-RPC directly.");
 
         try
         {
@@ -124,9 +132,9 @@ internal static class McpServeCommand
         return 0;
     }
 
-    private static async Task<int> Fail(string message)
+    private static async Task<int> Fail(string message, CommandIo io)
     {
-        await Console.Error.WriteLineAsync(message).ConfigureAwait(false);
+        await io.Err.WriteLineAsync(message).ConfigureAwait(false);
         return 2;
     }
 }

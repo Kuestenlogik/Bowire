@@ -3,6 +3,7 @@
 
 using System.Reflection;
 using Kuestenlogik.Bowire.App;
+using Kuestenlogik.Bowire.App.Cli;
 using Kuestenlogik.Bowire.Models;
 
 namespace Kuestenlogik.Bowire.Tests;
@@ -24,6 +25,13 @@ public sealed class CliHandlerHelpersTests
         typeof(CliHandler).GetMethod(name,
             BindingFlags.NonPublic | BindingFlags.Static,
             binder: null, types: paramTypes, modifiers: null)!;
+
+    // CliHandler's private formatter helpers now thread a CommandIo
+    // through instead of touching Console directly. The test invocations
+    // below use TextWriter.Null so coverage runs without producing test
+    // output. Reflection signatures gain the leading CommandIo
+    // parameter accordingly.
+    private static readonly CommandIo NullIo = new(TextWriter.Null, TextWriter.Null);
 
     private static BowireMessageInfo EmptyMessage() =>
         new("Empty", "demo.Empty", []);
@@ -66,8 +74,8 @@ public sealed class CliHandlerHelpersTests
     public void WriteJsonResponse_NonCompact_DoesNotThrow()
     {
         var ex = Record.Exception(() =>
-            Method("WriteJsonResponse", typeof(string), typeof(bool))
-                .Invoke(null, ["{ \"a\" : 1 }", false]));
+            Method("WriteJsonResponse", typeof(CommandIo), typeof(string), typeof(bool))
+                .Invoke(null, [NullIo, "{ \"a\" : 1 }", false]));
         Assert.Null(ex);
     }
 
@@ -75,8 +83,8 @@ public sealed class CliHandlerHelpersTests
     public void WriteJsonResponse_Compact_DoesNotThrow()
     {
         var ex = Record.Exception(() =>
-            Method("WriteJsonResponse", typeof(string), typeof(bool))
-                .Invoke(null, ["{ \"a\" : 1, \"b\" : [1, 2] }", true]));
+            Method("WriteJsonResponse", typeof(CommandIo), typeof(string), typeof(bool))
+                .Invoke(null, [NullIo, "{ \"a\" : 1, \"b\" : [1, 2] }", true]));
         Assert.Null(ex);
     }
 
@@ -84,8 +92,8 @@ public sealed class CliHandlerHelpersTests
     public void WriteJsonResponse_Compact_InvalidJsonFallsBackToRawAndDoesNotThrow()
     {
         var ex = Record.Exception(() =>
-            Method("WriteJsonResponse", typeof(string), typeof(bool))
-                .Invoke(null, ["not json", true]));
+            Method("WriteJsonResponse", typeof(CommandIo), typeof(string), typeof(bool))
+                .Invoke(null, [NullIo, "not json", true]));
         Assert.Null(ex);
     }
 
@@ -94,7 +102,7 @@ public sealed class CliHandlerHelpersTests
     {
         var svc = MakeService(EmptyMessage(), EmptyMessage(), package: "");
         var ex = Record.Exception(() =>
-            Method("DescribeService", typeof(BowireServiceInfo)).Invoke(null, [svc]));
+            Method("DescribeService", typeof(CommandIo), typeof(BowireServiceInfo)).Invoke(null, [NullIo, svc]));
         Assert.Null(ex);
     }
 
@@ -103,7 +111,7 @@ public sealed class CliHandlerHelpersTests
     {
         var svc = MakeService(EmptyMessage(), EmptyMessage());
         var ex = Record.Exception(() =>
-            Method("DescribeService", typeof(BowireServiceInfo)).Invoke(null, [svc]));
+            Method("DescribeService", typeof(CommandIo), typeof(BowireServiceInfo)).Invoke(null, [NullIo, svc]));
         Assert.Null(ex);
     }
 
@@ -112,7 +120,7 @@ public sealed class CliHandlerHelpersTests
     {
         var method = MakeMethod(SimpleMessage(), SimpleMessage());
         var ex = Record.Exception(() =>
-            Method("DescribeMethod", typeof(BowireMethodInfo), typeof(bool)).Invoke(null, [method, false]));
+            Method("DescribeMethod", typeof(CommandIo), typeof(BowireMethodInfo), typeof(bool)).Invoke(null, [NullIo, method, false]));
         Assert.Null(ex);
     }
 
@@ -121,7 +129,7 @@ public sealed class CliHandlerHelpersTests
     {
         var method = MakeMethod(SimpleMessage(), SimpleMessage());
         var ex = Record.Exception(() =>
-            Method("DescribeMethod", typeof(BowireMethodInfo), typeof(bool)).Invoke(null, [method, true]));
+            Method("DescribeMethod", typeof(CommandIo), typeof(BowireMethodInfo), typeof(bool)).Invoke(null, [NullIo, method, true]));
         Assert.Null(ex);
     }
 
@@ -137,7 +145,7 @@ public sealed class CliHandlerHelpersTests
         // fallthrough branch (Dim(method.MethodType)).
         var method = MakeMethod(EmptyMessage(), EmptyMessage(), methodType);
         var ex = Record.Exception(() =>
-            Method("DescribeMethod", typeof(BowireMethodInfo), typeof(bool)).Invoke(null, [method, false]));
+            Method("DescribeMethod", typeof(CommandIo), typeof(BowireMethodInfo), typeof(bool)).Invoke(null, [NullIo, method, false]));
         Assert.Null(ex);
     }
 
@@ -148,7 +156,7 @@ public sealed class CliHandlerHelpersTests
         // inside DescribeMessage (foreach over EnumValues).
         var method = MakeMethod(MessageWithEnum(), EmptyMessage());
         var ex = Record.Exception(() =>
-            Method("DescribeMethod", typeof(BowireMethodInfo), typeof(bool)).Invoke(null, [method, true]));
+            Method("DescribeMethod", typeof(CommandIo), typeof(BowireMethodInfo), typeof(bool)).Invoke(null, [NullIo, method, true]));
         Assert.Null(ex);
     }
 
@@ -175,8 +183,8 @@ public sealed class CliHandlerHelpersTests
         };
 
         var ex = Record.Exception(() =>
-            Method("DescribeMessage", typeof(BowireMessageInfo), typeof(int), typeof(HashSet<string>))
-                .Invoke(null, [cycle, 0, new HashSet<string>()]));
+            Method("DescribeMessage", typeof(CommandIo), typeof(BowireMessageInfo), typeof(int), typeof(HashSet<string>))
+                .Invoke(null, [NullIo, cycle, 0, new HashSet<string>()]));
         Assert.Null(ex);
     }
 
@@ -186,8 +194,8 @@ public sealed class CliHandlerHelpersTests
         var msg = SimpleMessage();
         var visited = new HashSet<string> { msg.FullName };
         var ex = Record.Exception(() =>
-            Method("DescribeMessage", typeof(BowireMessageInfo), typeof(int), typeof(HashSet<string>))
-                .Invoke(null, [msg, 4, visited]));
+            Method("DescribeMessage", typeof(CommandIo), typeof(BowireMessageInfo), typeof(int), typeof(HashSet<string>))
+                .Invoke(null, [NullIo, msg, 4, visited]));
         Assert.Null(ex);
     }
 
@@ -195,8 +203,8 @@ public sealed class CliHandlerHelpersTests
     public void DescribeMessage_EmptyFields_NoOp()
     {
         var ex = Record.Exception(() =>
-            Method("DescribeMessage", typeof(BowireMessageInfo), typeof(int), typeof(HashSet<string>))
-                .Invoke(null, [EmptyMessage(), 4, new HashSet<string>()]));
+            Method("DescribeMessage", typeof(CommandIo), typeof(BowireMessageInfo), typeof(int), typeof(HashSet<string>))
+                .Invoke(null, [NullIo, EmptyMessage(), 4, new HashSet<string>()]));
         Assert.Null(ex);
     }
 
@@ -211,8 +219,8 @@ public sealed class CliHandlerHelpersTests
             [new BowireFieldInfo("inner", 1, "Inner", "OPTIONAL", false, false, child, null)]);
 
         var ex = Record.Exception(() =>
-            Method("DescribeMessage", typeof(BowireMessageInfo), typeof(int), typeof(HashSet<string>))
-                .Invoke(null, [parent, 4, new HashSet<string>()]));
+            Method("DescribeMessage", typeof(CommandIo), typeof(BowireMessageInfo), typeof(int), typeof(HashSet<string>))
+                .Invoke(null, [NullIo, parent, 4, new HashSet<string>()]));
         Assert.Null(ex);
     }
 }

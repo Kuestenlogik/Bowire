@@ -93,15 +93,17 @@ internal static class HarImporter
     /// </summary>
     /// <returns>0 on success, non-zero on failure (CLI exit-code shape).</returns>
     public static async Task<int> ImportAsync(
-        string harPath, string outPath, string? recordingName, TextWriter? stderr = null)
+        string harPath, string outPath, string? recordingName,
+        TextWriter? stdout = null, TextWriter? stderr = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(harPath);
         ArgumentException.ThrowIfNullOrWhiteSpace(outPath);
-        stderr ??= Console.Error;
+        var outW = stdout ?? Console.Out;
+        var errW = stderr ?? Console.Error;
 
         if (!File.Exists(harPath))
         {
-            await stderr.WriteLineAsync($"HAR file not found: {harPath}").ConfigureAwait(false);
+            await errW.WriteLineAsync($"HAR file not found: {harPath}").ConfigureAwait(false);
             return 1;
         }
 
@@ -113,7 +115,7 @@ internal static class HarImporter
         }
         catch (HarImportException ex)
         {
-            await stderr.WriteLineAsync($"HAR import failed: {ex.Message}").ConfigureAwait(false);
+            await errW.WriteLineAsync($"HAR import failed: {ex.Message}").ConfigureAwait(false);
             return 1;
         }
 
@@ -121,14 +123,14 @@ internal static class HarImporter
 
         if (outPath == "-")
         {
-            await Console.Out.WriteLineAsync(json).ConfigureAwait(false);
+            await outW.WriteLineAsync(json).ConfigureAwait(false);
         }
         else
         {
             var dir = Path.GetDirectoryName(Path.GetFullPath(outPath));
             if (!string.IsNullOrEmpty(dir) && !Directory.Exists(dir)) Directory.CreateDirectory(dir);
             await File.WriteAllTextAsync(outPath, json).ConfigureAwait(false);
-            await Console.Out.WriteLineAsync(
+            await outW.WriteLineAsync(
                 $"Imported {recording.Steps.Count} {(recording.Steps.Count == 1 ? "step" : "steps")} → {outPath}")
                 .ConfigureAwait(false);
         }

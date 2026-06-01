@@ -3,6 +3,7 @@
 
 using System.Text.Json;
 using Kuestenlogik.Bowire;
+using Kuestenlogik.Bowire.App.Cli;
 using Kuestenlogik.Bowire.App.Configuration;
 using Kuestenlogik.Bowire.Models;
 
@@ -16,43 +17,53 @@ internal static class CliHandler
 {
     private static readonly JsonSerializerOptions CompactJson = new() { WriteIndented = false };
 
-    private static bool UseColor => !Console.IsOutputRedirected;
+    // Color heuristic: same source as the pre-refactor static property —
+    // "no colour when stdout looks redirected" — but evaluated per writer
+    // so a test-supplied StringWriter (which isn't a TTY) gets plain
+    // text while the production Console.Out keeps its ANSI sequences.
+    private static bool UseColor(TextWriter writer) =>
+        ReferenceEquals(writer, Console.Out) && !Console.IsOutputRedirected;
 
-    public static async Task<int> ListAsync(CliCommandOptions cli) => await RunWithErrorHandling(cli, ListImplAsync).ConfigureAwait(false);
-    public static async Task<int> DescribeAsync(CliCommandOptions cli) => await RunWithErrorHandling(cli, DescribeImplAsync).ConfigureAwait(false);
-    public static async Task<int> CallAsync(CliCommandOptions cli) => await RunWithErrorHandling(cli, CallImplAsync).ConfigureAwait(false);
+    public static async Task<int> ListAsync(CliCommandOptions cli, TextWriter? stdout = null, TextWriter? stderr = null)
+        => await RunWithErrorHandling(cli, CommandIo.Resolve(stdout, stderr), ListImplAsync).ConfigureAwait(false);
+    public static async Task<int> DescribeAsync(CliCommandOptions cli, TextWriter? stdout = null, TextWriter? stderr = null)
+        => await RunWithErrorHandling(cli, CommandIo.Resolve(stdout, stderr), DescribeImplAsync).ConfigureAwait(false);
+    public static async Task<int> CallAsync(CliCommandOptions cli, TextWriter? stdout = null, TextWriter? stderr = null)
+        => await RunWithErrorHandling(cli, CommandIo.Resolve(stdout, stderr), CallImplAsync).ConfigureAwait(false);
 
-    private static async Task<int> RunWithErrorHandling(CliCommandOptions cli, Func<CliCommandOptions, Task<int>> impl)
+    private static async Task<int> RunWithErrorHandling(CliCommandOptions cli, CommandIo io,
+        Func<CliCommandOptions, CommandIo, Task<int>> impl)
     {
         ArgumentNullException.ThrowIfNull(cli);
         try
         {
-            return await impl(cli).ConfigureAwait(false);
+            return await impl(cli, io).ConfigureAwait(false);
         }
         catch (Exception ex)
         {
-            WriteError(ex.Message);
+            WriteError(io, ex.Message);
             if (ex.InnerException is not null)
-                WriteError($"  {ex.InnerException.Message}");
+                WriteError(io, $"  {ex.InnerException.Message}");
             return 1;
         }
     }
 
-    private static async Task<int> ListImplAsync(CliCommandOptions cli)
+    private static async Task<int> ListImplAsync(CliCommandOptions cli, CommandIo io)
     {
         using var client = new GrpcReflectionClient(cli.Url, showInternalServices: false);
         var services = await client.ListServicesAsync();
 
         if (services.Count == 0)
         {
-            WriteWarning("No gRPC services found. Is server reflection enabled?");
+            WriteWarning(io, "No gRPC services found. Is server reflection enabled?");
             return 0;
         }
 
+        var color = UseColor(io.Out);
         foreach (var svc in services)
         {
             var methodCount = svc.Methods.Count;
-            Write($"{Cyan(svc.Name)}{Dim($"  ({methodCount} method{(methodCount != 1 ? "s" : "")})")}");
+            Write(io, $"{Cyan(color, svc.Name)}{Dim(color, $"  ({methodCount} method{(methodCount != 1 ? "s" : "")})")}");
 
             if (cli.Verbose)
             {
@@ -61,12 +72,12 @@ internal static class CliHandler
                     var tag = method.MethodType switch
                     {
                         "Unary" => "",
-                        "ServerStreaming" => Dim(" [server-streaming]"),
-                        "ClientStreaming" => Dim(" [client-streaming]"),
-                        "Duplex" => Dim(" [duplex]"),
+                        "ServerStreaming" => Dim(color, " [server-streaming]"),
+                        "ClientStreaming" => Dim(color, " [client-streaming]"),
+                        "Duplex" => Dim(color, " [duplex]"),
                         _ => ""
                     };
-                    Write($"  {method.Name}{tag}");
+                    Write(io, $"  {method.Name}{tag}");
                 }
             }
         }
@@ -74,11 +85,11 @@ internal static class CliHandler
         return 0;
     }
 
-    private static async Task<int> DescribeImplAsync(CliCommandOptions cli)
+    private static async Task<int> DescribeImplAsync(CliCommandOptions cli, CommandIo io)
     {
         if (cli.Target is null)
         {
-            WriteError("Usage: bowire describe --url <url> <service>[/<method>]");
+            WriteError(io, "Usage: bowire describe --url <url> <service>[/<method>]");
             return 2;
         }
 
@@ -95,18 +106,18 @@ internal static class CliHandler
             var svc = services.FirstOrDefault(s => s.Name == serviceName);
             if (svc is null)
             {
-                WriteError($"Service '{serviceName}' not found.");
+                WriteError(io, $"Service '{serviceName}' not found.");
                 return 2;
             }
 
             var method = svc.Methods.FirstOrDefault(m => m.Name == methodName);
             if (method is null)
             {
-                WriteError($"Method '{methodName}' not found in service '{serviceName}'.");
+                WriteError(io, $"Method '{methodName}' not found in service '{serviceName}'.");
                 return 2;
             }
 
-            DescribeMethod(method, detailed: true);
+            DescribeMethod(io, method, detailed: true);
         }
         else
         {
@@ -114,21 +125,21 @@ internal static class CliHandler
             var svc = services.FirstOrDefault(s => s.Name == cli.Target);
             if (svc is null)
             {
-                WriteError($"Service '{cli.Target}' not found.");
+                WriteError(io, $"Service '{cli.Target}' not found.");
                 return 2;
             }
 
-            DescribeService(svc);
+            DescribeService(io, svc);
         }
 
         return 0;
     }
 
-    private static async Task<int> CallImplAsync(CliCommandOptions cli)
+    private static async Task<int> CallImplAsync(CliCommandOptions cli, CommandIo io)
     {
         if (cli.Target is null || !cli.Target.Contains('/'))
         {
-            WriteError("Usage: bowire call --url <url> <service>/<method> -d '<json>'");
+            WriteError(io, "Usage: bowire call --url <url> <service>/<method> -d '<json>'");
             return 2;
         }
 
@@ -149,7 +160,7 @@ internal static class CliHandler
             var filePath = messages[i][1..];
             if (!File.Exists(filePath))
             {
-                WriteError($"File not found: {filePath}");
+                WriteError(io, $"File not found: {filePath}");
                 return 1;
             }
             messages[i] = await File.ReadAllTextAsync(filePath);
@@ -186,22 +197,22 @@ internal static class CliHandler
             await foreach (var frame in invoker.InvokeStreamingWithFramesAsync(
                 serviceName, methodName, messages, metadata))
             {
-                WriteJsonResponse(frame.Json, cli.Compact);
+                WriteJsonResponse(io, frame.Json, cli.Compact);
             }
             return 0;
         }
 
         if (result.Status != "OK")
         {
-            WriteError($"gRPC error: {result.Status}");
+            WriteError(io, $"gRPC error: {result.Status}");
             if (result.Response is not null)
-                WriteError($"  {result.Response}");
+                WriteError(io, $"  {result.Response}");
 
             if (result.Metadata.Count > 0)
             {
-                WriteError("  Trailers:");
+                WriteError(io, "  Trailers:");
                 foreach (var entry in result.Metadata)
-                    WriteError($"    {entry.Key}: {entry.Value}");
+                    WriteError(io, $"    {entry.Key}: {entry.Value}");
             }
 
             return 2;
@@ -209,81 +220,87 @@ internal static class CliHandler
 
         // Print response
         if (result.Response is not null)
-            WriteJsonResponse(result.Response, cli.Compact);
+            WriteJsonResponse(io, result.Response, cli.Compact);
 
-        // Print timing to stderr (so it doesn't interfere with piped output)
-        if (!Console.IsErrorRedirected)
-            await Console.Error.WriteLineAsync(Dim($"  {result.DurationMs}ms"));
+        // Print timing to stderr (so it doesn't interfere with piped output).
+        // Only suppress for production-Console stderr when the OS reports
+        // a redirect; the test-supplied StringWriter falls through and
+        // always receives the timing line.
+        if (!ReferenceEquals(io.Err, Console.Error) || !Console.IsErrorRedirected)
+            await io.Err.WriteLineAsync(Dim(UseColor(io.Err), $"  {result.DurationMs}ms")).ConfigureAwait(false);
 
         return 0;
     }
 
-    private static void WriteJsonResponse(string json, bool compact)
+    private static void WriteJsonResponse(CommandIo io, string json, bool compact)
     {
         if (compact)
         {
             try
             {
                 using var doc = JsonDocument.Parse(json);
-                Console.WriteLine(JsonSerializer.Serialize(doc.RootElement, CompactJson));
+                io.OutLine(JsonSerializer.Serialize(doc.RootElement, CompactJson));
             }
             catch
             {
-                Console.WriteLine(json);
+                io.OutLine(json);
             }
         }
         else
         {
-            Console.WriteLine(json);
+            io.OutLine(json);
         }
     }
 
-    private static void DescribeService(BowireServiceInfo svc)
+    private static void DescribeService(CommandIo io, BowireServiceInfo svc)
     {
-        Write($"{Bold(Cyan(svc.Name))}");
+        var color = UseColor(io.Out);
+        Write(io, $"{Bold(color, Cyan(color, svc.Name))}");
         if (!string.IsNullOrEmpty(svc.Package))
-            Write($"{Dim($"  package: {svc.Package}")}");
-        Write("");
+            Write(io, $"{Dim(color, $"  package: {svc.Package}")}");
+        Write(io, "");
 
         foreach (var method in svc.Methods)
-            DescribeMethod(method, detailed: false);
+            DescribeMethod(io, method, detailed: false);
     }
 
-    private static void DescribeMethod(BowireMethodInfo method, bool detailed)
+    private static void DescribeMethod(CommandIo io, BowireMethodInfo method, bool detailed)
     {
+        var color = UseColor(io.Out);
         var streamTag = method.MethodType switch
         {
-            "Unary" => Dim("unary"),
-            "ServerStreaming" => Dim("server-streaming"),
-            "ClientStreaming" => Dim("client-streaming"),
-            "Duplex" => Dim("duplex"),
-            _ => Dim(method.MethodType)
+            "Unary" => Dim(color, "unary"),
+            "ServerStreaming" => Dim(color, "server-streaming"),
+            "ClientStreaming" => Dim(color, "client-streaming"),
+            "Duplex" => Dim(color, "duplex"),
+            _ => Dim(color, method.MethodType)
         };
 
-        Write($"  {Bold(method.Name)} {streamTag}");
-        Write($"    {Dim("rpc")} {method.Name}({Cyan(method.InputType.Name)}) {Dim("returns")} ({Cyan(method.OutputType.Name)})");
+        Write(io, $"  {Bold(color, method.Name)} {streamTag}");
+        Write(io, $"    {Dim(color, "rpc")} {method.Name}({Cyan(color, method.InputType.Name)}) {Dim(color, "returns")} ({Cyan(color, method.OutputType.Name)})");
 
         if (detailed)
         {
-            Write("");
-            Write($"  {Bold("Request:")} {Cyan(method.InputType.FullName)}");
-            DescribeMessage(method.InputType, indent: 4, visited: []);
-            Write("");
-            Write($"  {Bold("Response:")} {Cyan(method.OutputType.FullName)}");
-            DescribeMessage(method.OutputType, indent: 4, visited: []);
+            Write(io, "");
+            Write(io, $"  {Bold(color, "Request:")} {Cyan(color, method.InputType.FullName)}");
+            DescribeMessage(io, method.InputType, indent: 4, visited: []);
+            Write(io, "");
+            Write(io, $"  {Bold(color, "Response:")} {Cyan(color, method.OutputType.FullName)}");
+            DescribeMessage(io, method.OutputType, indent: 4, visited: []);
         }
 
-        Write("");
+        Write(io, "");
     }
 
-    private static void DescribeMessage(BowireMessageInfo msg, int indent, HashSet<string> visited)
+    private static void DescribeMessage(CommandIo io, BowireMessageInfo msg, int indent, HashSet<string> visited)
     {
         if (msg.Fields.Count == 0)
             return;
 
+        var color = UseColor(io.Out);
         if (!visited.Add(msg.FullName))
         {
-            Write($"{new string(' ', indent)}{Dim($"(recursive: {msg.Name})")}");
+            Write(io, $"{new string(' ', indent)}{Dim(color, $"(recursive: {msg.Name})")}");
             return;
         }
 
@@ -294,50 +311,50 @@ internal static class CliHandler
             var typeName = field.Type;
 
             if (field.MessageType is not null)
-                typeName = Cyan(field.MessageType.Name);
+                typeName = Cyan(color, field.MessageType.Name);
             else if (field.EnumValues is not null)
-                typeName = Cyan(field.Type);
+                typeName = Cyan(color, field.Type);
 
-            Write($"{prefix}{Dim(label)}{typeName} {field.Name}{Dim($" = {field.Number}")}");
+            Write(io, $"{prefix}{Dim(color, label)}{typeName} {field.Name}{Dim(color, $" = {field.Number}")}");
 
             if (field.EnumValues is not null)
             {
                 foreach (var ev in field.EnumValues)
-                    Write($"{prefix}  {Dim($"{ev.Name} = {ev.Number}")}");
+                    Write(io, $"{prefix}  {Dim(color, $"{ev.Name} = {ev.Number}")}");
             }
 
             if (field.MessageType is not null && field.MessageType.Fields.Count > 0)
-                DescribeMessage(field.MessageType, indent + 2, visited);
+                DescribeMessage(io, field.MessageType, indent + 2, visited);
         }
     }
 
 
     // ---- Console formatting helpers ----
 
-    private static void Write(string text) => Console.WriteLine(text);
+    private static void Write(CommandIo io, string text) => io.OutLine(text);
 
-    private static void WriteError(string text)
+    private static void WriteError(CommandIo io, string text)
     {
-        if (UseColor)
-            Console.Error.WriteLine($"\x1b[31m{text}\x1b[0m");
+        if (UseColor(io.Err))
+            io.ErrLine($"\x1b[31m{text}\x1b[0m");
         else
-            Console.Error.WriteLine(text);
+            io.ErrLine(text);
     }
 
-    private static void WriteWarning(string text)
+    private static void WriteWarning(CommandIo io, string text)
     {
-        if (UseColor)
-            Console.Error.WriteLine($"\x1b[33m{text}\x1b[0m");
+        if (UseColor(io.Err))
+            io.ErrLine($"\x1b[33m{text}\x1b[0m");
         else
-            Console.Error.WriteLine(text);
+            io.ErrLine(text);
     }
 
-    private static string Cyan(string text) =>
-        UseColor ? $"\x1b[36m{text}\x1b[0m" : text;
+    private static string Cyan(bool useColor, string text) =>
+        useColor ? $"\x1b[36m{text}\x1b[0m" : text;
 
-    private static string Bold(string text) =>
-        UseColor ? $"\x1b[1m{text}\x1b[0m" : text;
+    private static string Bold(bool useColor, string text) =>
+        useColor ? $"\x1b[1m{text}\x1b[0m" : text;
 
-    private static string Dim(string text) =>
-        UseColor ? $"\x1b[2m{text}\x1b[0m" : text;
+    private static string Dim(bool useColor, string text) =>
+        useColor ? $"\x1b[2m{text}\x1b[0m" : text;
 }

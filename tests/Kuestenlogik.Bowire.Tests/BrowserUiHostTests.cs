@@ -33,14 +33,14 @@ public sealed class BrowserUiHostTests
     public async Task RunAsync_NullArgs_Throws()
     {
         await Assert.ThrowsAsync<ArgumentNullException>(() =>
-            BrowserUiHost.RunAsync(null!, BuildConfig(), pluginDir: "", CancellationToken.None));
+            BrowserUiHost.RunAsync(null!, BuildConfig(), pluginDir: "", ct: CancellationToken.None));
     }
 
     [Fact]
     public async Task RunAsync_NullConfig_Throws()
     {
         await Assert.ThrowsAsync<ArgumentNullException>(() =>
-            BrowserUiHost.RunAsync([], null!, pluginDir: "", CancellationToken.None));
+            BrowserUiHost.RunAsync([], null!, pluginDir: "", ct: CancellationToken.None));
     }
 
     [Fact]
@@ -63,7 +63,7 @@ public sealed class BrowserUiHostTests
                     ["Bowire:NoBrowser"] = "true"
                 }),
                 pluginDir: "",
-                CancellationToken.None);
+                ct: CancellationToken.None);
 
             Assert.Equal(42, rc);
             Assert.Equal(0, openCount);
@@ -116,7 +116,7 @@ public sealed class BrowserUiHostTests
                         [],
                         BuildConfig(new() { ["Bowire:Port"] = "5180" }),
                         pluginDir: "",
-                        CancellationToken.None);
+                        ct: CancellationToken.None);
 
                     Assert.Equal(0, rc);
                     Assert.True(captured.Task.IsCompletedSuccessfully);
@@ -135,7 +135,7 @@ public sealed class BrowserUiHostTests
                         [],
                         BuildConfig(new() { ["Bowire:Port"] = "5180" }),
                         pluginDir: "",
-                        CancellationToken.None);
+                        ct: CancellationToken.None);
                     Assert.Equal(0, rc);
                 }
             }
@@ -179,7 +179,7 @@ public sealed class BrowserUiHostTests
                     [],
                     BuildConfig(),
                     pluginDir: "",
-                    CancellationToken.None);
+                    ct: CancellationToken.None);
                 Assert.Equal(0, rc);
                 Assert.True(hostStarted.Task.IsCompletedSuccessfully);
             }
@@ -214,7 +214,7 @@ public sealed class BrowserUiHostTests
                     ["Bowire:EnableMcpAdapter"] = "true",
                 }),
                 pluginDir: "",
-                CancellationToken.None);
+                ct: CancellationToken.None);
 
             Assert.Equal(0, rc);
             Assert.NotNull(seen);
@@ -245,7 +245,7 @@ public sealed class BrowserUiHostTests
                 ["--url", "http://a", "--url", "http://b"],
                 BuildConfig(new() { ["Bowire:NoBrowser"] = "true" }),
                 pluginDir: "",
-                CancellationToken.None);
+                ct: CancellationToken.None);
 
             Assert.Equal(0, rc);
             Assert.NotNull(seen);
@@ -288,7 +288,7 @@ public sealed class BrowserUiHostTests
                         ["Bowire:ServerUrl"] = "http://api.local",
                     }),
                     pluginDir: "",
-                    cts.Token);
+                    ct: cts.Token);
                 Assert.Contains(rc, s_acceptedExitCodes);
             }
             catch (OperationCanceledException)
@@ -331,7 +331,7 @@ public sealed class BrowserUiHostTests
                     ["Bowire:ServerUrl"] = "http://only.local",
                 }),
                 pluginDir: "",
-                CancellationToken.None);
+                ct: CancellationToken.None);
 
             Assert.Equal(0, rc);
             Assert.NotNull(seen);

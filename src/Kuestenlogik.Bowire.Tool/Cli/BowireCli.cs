@@ -83,8 +83,9 @@ internal static class BowireCli
         };
         root.Add(disableCliCommandOpt);
 
-        root.SetAction(async (_, ct) =>
-            await BrowserUiHost.RunAsync(originalArgs, cfg, pluginDir, ct).ConfigureAwait(false));
+        root.SetAction(async (pr, ct) =>
+            await BrowserUiHost.RunAsync(originalArgs, cfg, pluginDir,
+                pr.InvocationConfiguration.Output, pr.InvocationConfiguration.Error, ct).ConfigureAwait(false));
 
         root.Add(BuildListCommand(cfg));
         root.Add(BuildDescribeCommand(cfg));
@@ -318,7 +319,8 @@ internal static class BowireCli
                 var dir = Path.GetDirectoryName(Path.GetFullPath(input)) ?? "";
                 output = Path.Combine(dir, basename + ".bwr");
             }
-            return await HarImporter.ImportAsync(input, output, name).ConfigureAwait(false);
+            return await HarImporter.ImportAsync(input, output, name,
+                pr.InvocationConfiguration.Output, pr.InvocationConfiguration.Error).ConfigureAwait(false);
         });
 
         var import = new Command("import", "Convert external trace formats into Bowire recordings.");
@@ -392,7 +394,8 @@ internal static class BowireCli
         var cmd = new Command("list", "List discovered gRPC services.");
         cmd.Add(url); cmd.Add(plaintext); cmd.Add(verbose);
         cmd.SetAction(async (pr, _) =>
-            await CliHandler.ListAsync(BuildCliOptions(pr, url, plaintext, verbose, new Option<bool>("--compact"), null, null, null)).ConfigureAwait(false));
+            await CliHandler.ListAsync(BuildCliOptions(pr, url, plaintext, verbose, new Option<bool>("--compact"), null, null, null),
+                pr.InvocationConfiguration.Output, pr.InvocationConfiguration.Error).ConfigureAwait(false));
         return cmd;
     }
 
@@ -405,7 +408,8 @@ internal static class BowireCli
         cmd.Add(target); cmd.Add(url); cmd.Add(plaintext); cmd.Add(verbose);
         cmd.SetAction(async (pr, _) =>
             await CliHandler.DescribeAsync(BuildCliOptions(
-                pr, url, plaintext, verbose, new Option<bool>("--compact"), null, null, pr.GetValue(target))).ConfigureAwait(false));
+                pr, url, plaintext, verbose, new Option<bool>("--compact"), null, null, pr.GetValue(target)),
+                pr.InvocationConfiguration.Output, pr.InvocationConfiguration.Error).ConfigureAwait(false));
         return cmd;
     }
 
@@ -419,7 +423,8 @@ internal static class BowireCli
         cmd.Add(compact); cmd.Add(data); cmd.Add(headers);
         cmd.SetAction(async (pr, _) =>
             await CliHandler.CallAsync(BuildCliOptions(
-                pr, url, plaintext, verbose, compact, data, headers, pr.GetValue(target))).ConfigureAwait(false));
+                pr, url, plaintext, verbose, compact, data, headers, pr.GetValue(target)),
+                pr.InvocationConfiguration.Output, pr.InvocationConfiguration.Error).ConfigureAwait(false));
         return cmd;
     }
 
@@ -557,11 +562,14 @@ internal static class BowireCli
 
         var serve = new Command("serve", "Run Bowire as an MCP server (AI-agent bridge).");
         serve.Add(bind); serve.Add(port); serve.Add(allowArbitrary); serve.Add(noEnvAllowlist);
-        serve.SetAction(async (pr, _) => await McpServeCommand.RunAsync(
+        serve.SetAction(async (pr, ct) => await McpServeCommand.RunAsync(
             bind: pr.GetValue(bind) ?? "stdio",
             port: pr.GetValue(port),
             allowArbitraryUrls: pr.GetValue(allowArbitrary),
-            noEnvAllowlist: pr.GetValue(noEnvAllowlist)).ConfigureAwait(false));
+            noEnvAllowlist: pr.GetValue(noEnvAllowlist),
+            stdout: pr.InvocationConfiguration.Output,
+            stderr: pr.InvocationConfiguration.Error,
+            ct: ct).ConfigureAwait(false));
 
         var mcp = new Command("mcp", "Expose Bowire as an MCP server for AI agents.");
         mcp.Add(serve);
