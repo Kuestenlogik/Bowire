@@ -46,4 +46,4 @@ These ship from their own NuGet packages with independent release cadences — s
 - `Kuestenlogik.Bowire.Protocol.Udp`
 - `Kuestenlogik.Bowire.Protocol.Akka`
 
-> **TacticalAPI (preview)** — `Kuestenlogik.Bowire.Protocol.TacticalApi` ships from <https://github.com/Kuestenlogik/Bowire.Protocol.TacticalApi> with its own release cadence; its API surface is not part of this DocFX scope. See the [TacticalAPI protocol guide](../protocols/tacticalapi.md) for install + usage, and the sibling repo's README for the proto-fetch licensing rationale.
+> **TacticalAPI** — `Kuestenlogik.Bowire.Protocol.TacticalApi` ships from <https://github.com/Kuestenlogik/Bowire.Protocol.TacticalApi> on its own release cadence (currently v1.0.0 stable); its API surface is not part of this DocFX scope. See the [TacticalAPI protocol guide](../protocols/tacticalapi.md) for install + usage, and the sibling repo's README for the proto-fetch licensing rationale.

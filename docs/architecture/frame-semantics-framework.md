@@ -1056,8 +1056,9 @@ discriminator path with protobuf-native semantics.
 
 - gRPC-Web (v1.2.0) — orthogonal; the framework operates on decoded
   frames and doesn't know which transport delivered them.
-- `Kuestenlogik.Bowire.Protocol.TacticalApi` v0.2.0 will ship the
-  position-extractor schema hint (alongside its typed CRUD work).
+- `Kuestenlogik.Bowire.Protocol.TacticalApi` v1.0.0 ships the
+  position-extractor schema hint alongside typed CRUD + the
+  server-streaming track pump.
 - `Kuestenlogik.Bowire.Protocol.Dis` v1.x will ship the
   PDU-type-discriminator declaration and ECEF coordinate
   annotations.
