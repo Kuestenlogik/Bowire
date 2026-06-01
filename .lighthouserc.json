@@ -1,0 +1,38 @@
+{
+  "ci": {
+    "collect": {
+      "staticDistDir": "site/_site",
+      "url": [
+        "http://localhost/index.html",
+        "http://localhost/quickstart.html",
+        "http://localhost/comparison.html",
+        "http://localhost/docs/index.html"
+      ],
+      "numberOfRuns": 1,
+      "settings": {
+        "preset": "desktop",
+        "onlyCategories": ["performance"],
+        "throttling": {
+          "rttMs": 40,
+          "throughputKbps": 10240,
+          "cpuSlowdownMultiplier": 1
+        }
+      }
+    },
+    "assert": {
+      "assertions": {
+        "uses-responsive-images": "warn",
+        "uses-optimized-images": "error",
+        "modern-image-formats": "error",
+        "efficient-animated-content": "warn",
+        "offscreen-images": "warn",
+        "total-byte-weight": ["warn", { "maxNumericValue": 2000000 }],
+        "largest-contentful-paint": ["warn", { "maxNumericValue": 3000 }],
+        "cumulative-layout-shift": ["error", { "maxNumericValue": 0.1 }]
+      }
+    },
+    "upload": {
+      "target": "temporary-public-storage"
+    }
+  }
+}
