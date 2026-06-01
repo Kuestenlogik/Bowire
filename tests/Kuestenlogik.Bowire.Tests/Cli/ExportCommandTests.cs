@@ -227,10 +227,12 @@ public sealed class ExportCommandTests
 // RunOpenApiAsync end-to-end against an in-process OpenAPI server, so
 // the discovery → builder → output path is covered as one slice.
 //
-// Lives outside ExportCommandTests because [Collection("ConsoleOutSerialised")]
-// + Console.SetOut would force every helper test to serialise — for
-// no benefit (those tests don't touch stdout). Splitting keeps the
-// helper suite parallel-fast and only this small slice serialised.
+// Originally split from ExportCommandTests because the stdout-capture
+// test had to serialise on Console.SetOut. Since Phase 2 of the
+// InvocationConfiguration.Output refactor that test passes an explicit
+// StringWriter and no longer touches the process-global Console.Out —
+// the split survives for readability (live-host vs. pure helpers) but
+// no [Collection] is needed any more.
 
 /// <summary>
 /// End-to-end coverage for <see cref="ExportCommand.RunOpenApiAsync"/> —
@@ -239,7 +241,6 @@ public sealed class ExportCommandTests
 /// (stdout vs. file × YAML vs. JSON), the recording-coverage stamp,
 /// and one error branch.
 /// </summary>
-[Collection(nameof(Kuestenlogik.Bowire.Tests.ConsoleOutSerialisedCollectionDefinition))]
 public sealed class ExportCommandOpenApiLiveTests
 {
     private const string SampleOpenApiJson = """
@@ -324,18 +325,13 @@ public sealed class ExportCommandOpenApiLiveTests
     {
         await using var host = await OpenApiTestHost.StartAsync(SampleOpenApiJson);
         using var sw = new StringWriter();
-        var prev = Console.Out;
-        Console.SetOut(sw);
-        try
-        {
-            var rc = await ExportCommand.RunOpenApiAsync(
-                host.BaseUrl + "openapi.json",
-                output: null, format: null, recordingPath: null,
-                title: null, versionOverride: null,
-                ct: TestContext.Current.CancellationToken);
-            Assert.Equal(0, rc);
-        }
-        finally { Console.SetOut(prev); }
+        var rc = await ExportCommand.RunOpenApiAsync(
+            host.BaseUrl + "openapi.json",
+            output: null, format: null, recordingPath: null,
+            title: null, versionOverride: null,
+            ct: TestContext.Current.CancellationToken,
+            stdout: sw, stderr: TextWriter.Null);
+        Assert.Equal(0, rc);
         var captured = sw.ToString();
         Assert.Contains("openapi: 3.0.0", captured);
         Assert.Contains("info:", captured);

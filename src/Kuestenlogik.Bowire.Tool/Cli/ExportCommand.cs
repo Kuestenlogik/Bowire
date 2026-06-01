@@ -85,7 +85,9 @@ internal static class ExportCommand
                 pr.GetValue(recordingOpt),
                 pr.GetValue(titleOpt),
                 pr.GetValue(versionOpt),
-                ct).ConfigureAwait(false));
+                ct,
+                pr.InvocationConfiguration.Output,
+                pr.InvocationConfiguration.Error).ConfigureAwait(false));
 
         // ----- asyncapi subcommand --------------------------------
         var asyncapi = new Command("asyncapi",
@@ -101,7 +103,9 @@ internal static class ExportCommand
                 pr.GetValue(recordingOpt),
                 pr.GetValue(titleOpt),
                 pr.GetValue(versionOpt),
-                ct).ConfigureAwait(false));
+                ct,
+                pr.InvocationConfiguration.Output,
+                pr.InvocationConfiguration.Error).ConfigureAwait(false));
 
         export.Add(openapi);
         export.Add(asyncapi);
@@ -113,11 +117,16 @@ internal static class ExportCommand
     internal static async Task<int> RunOpenApiAsync(
         string url, string? output, string? format,
         string? recordingPath, string? title, string? versionOverride,
-        CancellationToken ct)
+        CancellationToken ct,
+        TextWriter? stdout = null,
+        TextWriter? stderr = null)
     {
+        var outW = stdout ?? Console.Out;
+        var errW = stderr ?? Console.Error;
+
         if (string.IsNullOrWhiteSpace(url))
         {
-            await Console.Error.WriteLineAsync("Usage: bowire export openapi <url> [--output <file>] [--recording <file>]").ConfigureAwait(false);
+            await errW.WriteLineAsync("Usage: bowire export openapi <url> [--output <file>] [--recording <file>]").ConfigureAwait(false);
             return 2;
         }
 
@@ -127,7 +136,7 @@ internal static class ExportCommand
         var protocol = ResolveProtocol("rest");
         if (protocol is null)
         {
-            await Console.Error.WriteLineAsync(
+            await errW.WriteLineAsync(
                 "REST plugin not loaded. Install Kuestenlogik.Bowire.Protocol.Rest or use the bundled `bowire` tool.").ConfigureAwait(false);
             return 1;
         }
@@ -139,25 +148,30 @@ internal static class ExportCommand
         }
         catch (Exception ex)
         {
-            await Console.Error.WriteLineAsync($"Discovery failed for {url}: {ex.Message}").ConfigureAwait(false);
+            await errW.WriteLineAsync($"Discovery failed for {url}: {ex.Message}").ConfigureAwait(false);
             return 1;
         }
 
         var recording = LoadRecording(recordingPath);
         var options = BuildOpenApiOptions(format, title, versionOverride);
         var doc = OpenApiDocumentBuilder.Build(url, services, recording, options);
-        await WriteResultAsync(doc, output, ct).ConfigureAwait(false);
+        await WriteResultAsync(doc, output, outW, ct).ConfigureAwait(false);
         return 0;
     }
 
     internal static async Task<int> RunAsyncApiAsync(
         string url, string? output, string? format,
         string? recordingPath, string? title, string? versionOverride,
-        CancellationToken ct)
+        CancellationToken ct,
+        TextWriter? stdout = null,
+        TextWriter? stderr = null)
     {
+        var outW = stdout ?? Console.Out;
+        var errW = stderr ?? Console.Error;
+
         if (string.IsNullOrWhiteSpace(url))
         {
-            await Console.Error.WriteLineAsync("Usage: bowire export asyncapi <url> [--output <file>] [--recording <file>]").ConfigureAwait(false);
+            await errW.WriteLineAsync("Usage: bowire export asyncapi <url> [--output <file>] [--recording <file>]").ConfigureAwait(false);
             return 2;
         }
 
@@ -168,14 +182,14 @@ internal static class ExportCommand
         var protocolId = PickAsyncApiProtocolId(url);
         if (protocolId is null)
         {
-            await Console.Error.WriteLineAsync(
+            await errW.WriteLineAsync(
                 $"Can't tell which wire plugin to use for '{url}'. Expected scheme: mqtt, nats, kafka, ws, wss, amqp, amqp1, pulsar, http, https.").ConfigureAwait(false);
             return 2;
         }
         var protocol = ResolveProtocol(protocolId);
         if (protocol is null)
         {
-            await Console.Error.WriteLineAsync(
+            await errW.WriteLineAsync(
                 $"Wire plugin '{protocolId}' is not loaded. Install Kuestenlogik.Bowire.Protocol.{Capitalise(protocolId)} (or the matching package).").ConfigureAwait(false);
             return 1;
         }
@@ -187,14 +201,14 @@ internal static class ExportCommand
         }
         catch (Exception ex)
         {
-            await Console.Error.WriteLineAsync($"Discovery failed for {url}: {ex.Message}").ConfigureAwait(false);
+            await errW.WriteLineAsync($"Discovery failed for {url}: {ex.Message}").ConfigureAwait(false);
             return 1;
         }
 
         var recording = LoadRecording(recordingPath);
         var options = BuildAsyncApiOptions(format, title, versionOverride);
         var doc = AsyncApiDocumentBuilder.Build(url, services, recording, options);
-        await WriteResultAsync(doc, output, ct).ConfigureAwait(false);
+        await WriteResultAsync(doc, output, outW, ct).ConfigureAwait(false);
         return 0;
     }
 
@@ -287,16 +301,16 @@ internal static class ExportCommand
             ? AsyncApiExportFormat.Json
             : AsyncApiExportFormat.Yaml;
 
-    private static async Task WriteResultAsync(string doc, string? output, CancellationToken ct)
+    private static async Task WriteResultAsync(string doc, string? output, TextWriter stdout, CancellationToken ct)
     {
         if (string.IsNullOrEmpty(output))
         {
-            await Console.Out.WriteAsync(doc).ConfigureAwait(false);
+            await stdout.WriteAsync(doc).ConfigureAwait(false);
         }
         else
         {
             await File.WriteAllTextAsync(output, doc, ct).ConfigureAwait(false);
-            Console.WriteLine($"  Wrote {output} ({doc.Length:N0} chars).");
+            await stdout.WriteLineAsync($"  Wrote {output} ({doc.Length:N0} chars).").ConfigureAwait(false);
         }
     }
 
