@@ -1,0 +1,83 @@
+name: Roadmap sync
+
+# Regenerate ROADMAP.md from the Bowire GitHub Project (org-level
+# project #2) so the Markdown stays in sync with the canonical
+# Project board. The Project is the source of truth; this file just
+# materialises it for offline / non-API consumers.
+#
+# Triggers:
+#   * issues / project_v2 / milestones — re-render on any item or
+#     field change that could affect the rendered file.
+#   * pull_request — verify ROADMAP.md isn't manually edited drifting
+#     from the Project.
+#   * workflow_dispatch — manual kick.
+#   * schedule (daily) — safety net so an org-level Project edit that
+#     somehow bypasses the project_v2 event still gets picked up.
+#
+# Auth: workflow_token can read public org-level Projects via the
+# default GITHUB_TOKEN. For private projects, swap in a PAT secret
+# scoped `read:project` + `repo`.
+
+on:
+  issues:
+    types: [opened, edited, deleted, transferred, milestoned, demilestoned, labeled, unlabeled, closed, reopened]
+  pull_request:
+    paths:
+      - 'ROADMAP.md'
+      - 'scripts/generate-roadmap.mjs'
+      - '.github/workflows/roadmap-sync.yml'
+  schedule:
+    - cron: '23 5 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  issues: read
+
+concurrency:
+  group: roadmap-sync
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    name: Regenerate ROADMAP.md
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          # Need write-token + full history so a follow-up commit lands cleanly.
+          fetch-depth: 0
+          token: ${{ secrets.ROADMAP_SYNC_TOKEN || secrets.GITHUB_TOKEN }}
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '20'
+      - name: Regenerate ROADMAP.md
+        env:
+          GH_TOKEN: ${{ secrets.ROADMAP_SYNC_TOKEN || secrets.GITHUB_TOKEN }}
+        run: node scripts/generate-roadmap.mjs
+      - name: Commit if changed
+        run: |
+          if git diff --quiet ROADMAP.md; then
+            echo "ROADMAP.md is already up to date."
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add ROADMAP.md
+          git commit -m "chore(roadmap): sync from Project board"
+          git push
+
+  check:
+    name: PR check — ROADMAP.md matches Project
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '20'
+      - name: Verify ROADMAP.md is up to date
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: node scripts/generate-roadmap.mjs --check
