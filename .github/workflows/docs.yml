@@ -8,6 +8,7 @@ on:
       - 'site/**'
       - 'src/**'
       - 'scripts/build-activity-snapshot.mjs'
+      - 'scripts/optimize-images.mjs'
       - '.github/workflows/docs.yml'
   # Refresh on every published release so the community-page "Activity on deck"
   # pane picks up new release names + cadence the moment they ship.
@@ -17,6 +18,12 @@ on:
   # release has shipped recently but commits keep landing on main.
   schedule:
     - cron: '17 6 * * *'
+  # Bowire.Bootcamp pushes to its own main → it dispatches `bootcamp-updated`
+  # at us so the next bowire.io deploy carries the new Bootcamp content
+  # under /bootcamp/. No daily polling — only fires when the Bootcamp repo
+  # actually changed.
+  repository_dispatch:
+    types: [bootcamp-updated]
   workflow_dispatch:
 
 env:
@@ -67,6 +74,23 @@ jobs:
       - name: Build DocFX documentation
         run: docfx docs/docfx.json
 
+      # Bowire.Bootcamp lives in its own repo so the lesson catalogue can
+      # version independently. We clone the latest main, build its DocFX
+      # alongside ours, and mount the output under /bootcamp/ in the
+      # combined Pages bundle. The repository_dispatch trigger above means
+      # a Bootcamp push triggers this build; a Bowire-side push picks up
+      # whatever HEAD of Bowire.Bootcamp/main looks like at build time.
+      - name: Checkout Bowire.Bootcamp
+        uses: actions/checkout@v6
+        with:
+          repository: Kuestenlogik/Bowire.Bootcamp
+          path: bootcamp-source
+          fetch-depth: 1
+
+      - name: Build Bootcamp DocFX
+        working-directory: bootcamp-source
+        run: docfx .docfx/docfx.json
+
       # Refresh the activity snapshot (releases + last-push) that powers the
       # community page's "Activity on deck" pane. Runs before Jekyll so the
       # build picks up site/_data/activity.json from this step. Auth via the
@@ -100,12 +124,13 @@ jobs:
           bundle install
           bundle exec jekyll build
 
-      # Combine: Jekyll output + DocFX output
+      # Combine: Jekyll output + DocFX output + Bootcamp DocFX output
       - name: Combine outputs
         run: |
           mkdir -p _combined
           cp -r site/_site/* _combined/
           cp -r artifacts/docs _combined/docs/
+          cp -r bootcamp-source/artifacts/docs-learn _combined/bootcamp/
 
       # Pagefind crawls the already-rendered HTML under _combined/ (both
       # marketing site and docs) and emits a single full-text index into
