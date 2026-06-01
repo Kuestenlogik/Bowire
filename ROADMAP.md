@@ -2,6 +2,8 @@
 
 A living list of what's *next*. For what's already shipped, see [GitHub Releases](https://github.com/Kuestenlogik/Bowire/releases) (the authoritative changelog) and the per-feature ADRs under [`docs/architecture/`](docs/architecture/). Older entries are pruned from this file once the corresponding release lands — history lives in git log + the release notes.
 
+> **🚧 Migration to GitHub Project board in progress.** Track the same items live on the [Bowire Project board](https://github.com/orgs/Kuestenlogik/projects/2) — version-targeted (v1.5 / v1.6 / v2.0), filterable by area / track / kind, sortable by priority. The narrative below stays the canonical source for now; once the board has the full backlog, this file will shrink to a curated index. See [`docs/contributing/project-board.md`](docs/contributing/project-board.md) for fields + view conventions.
+
 ## In progress
 
 ### Security testing tool — remaining tiers
