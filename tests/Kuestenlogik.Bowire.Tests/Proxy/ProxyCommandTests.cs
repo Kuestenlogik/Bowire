@@ -22,7 +22,7 @@ public sealed class ProxyCommandTests
         cts.CancelAfter(TimeSpan.FromSeconds(2));
 
         var options = new ProxyCommand.ProxyOptions { Port = 0, ApiPort = 0, Capacity = 50 };
-        var code = await ProxyCommand.RunAsync(options, cts.Token);
+        var code = await ProxyCommand.RunAsync(options, cancellationToken: cts.Token);
 
         // Graceful shutdown via cancellation returns 0.
         Assert.Equal(0, code);
@@ -33,7 +33,7 @@ public sealed class ProxyCommandTests
     {
         var ct = TestContext.Current.CancellationToken;
         await Assert.ThrowsAsync<ArgumentNullException>(async () =>
-            await ProxyCommand.RunAsync(null!, ct));
+            await ProxyCommand.RunAsync(null!, cancellationToken: ct));
     }
 
     [Fact]
@@ -47,7 +47,7 @@ public sealed class ProxyCommandTests
         var occupied = ((System.Net.IPEndPoint)blocker.LocalEndpoint).Port;
 
         var options = new ProxyCommand.ProxyOptions { Port = occupied, ApiPort = 0, Capacity = 10 };
-        var code = await ProxyCommand.RunAsync(options, ct);
+        var code = await ProxyCommand.RunAsync(options, cancellationToken: ct);
         Assert.Equal(1, code);
     }
 
@@ -67,7 +67,7 @@ public sealed class ProxyCommandTests
                 CaDir = caDir,
                 ExportCa = exportPath,
             };
-            var code = await ProxyCommand.RunAsync(options, ct);
+            var code = await ProxyCommand.RunAsync(options, cancellationToken: ct);
             Assert.Equal(0, code);
             Assert.True(File.Exists(exportPath));
         }
@@ -90,7 +90,7 @@ public sealed class ProxyCommandTests
             Capacity = 10,
             MitmHttps = false,    // hits the no-CA branch
         };
-        var code = await ProxyCommand.RunAsync(options, cts.Token);
+        var code = await ProxyCommand.RunAsync(options, cancellationToken: cts.Token);
         Assert.Equal(0, code);
     }
 
@@ -114,7 +114,7 @@ public sealed class ProxyCommandTests
                 Capacity = 10,
                 CaDir = caDir,
             };
-            var code = await ProxyCommand.RunAsync(options, ct);
+            var code = await ProxyCommand.RunAsync(options, cancellationToken: ct);
             Assert.Equal(1, code);
         }
         finally

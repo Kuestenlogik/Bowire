@@ -3,6 +3,7 @@
 
 using System.Globalization;
 using System.Net;
+using Kuestenlogik.Bowire.App.Cli;
 using Kuestenlogik.Bowire.Endpoints;
 using Kuestenlogik.Bowire.Proxy;
 using Microsoft.AspNetCore.Builder;
@@ -33,9 +34,10 @@ internal static class ProxyCommand
         public string? ExportCa { get; init; }
     }
 
-    public static async Task<int> RunAsync(ProxyOptions options, CancellationToken cancellationToken)
+    public static async Task<int> RunAsync(ProxyOptions options, TextWriter? stdout = null, TextWriter? stderr = null, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(options);
+        var io = CommandIo.Resolve(stdout, stderr);
 
         // --export-ca short-circuit: load (or create) the CA, copy the
         // public cert to the operator-chosen path, exit.
@@ -43,9 +45,9 @@ internal static class ProxyCommand
         {
             using var caForExport = BowireProxyCertificateAuthority.LoadOrCreate(options.CaDir);
             caForExport.ExportPublicCertificate(options.ExportCa);
-            await Console.Out.WriteLineAsync(string.Create(CultureInfo.InvariantCulture,
+            await io.Out.WriteLineAsync(string.Create(CultureInfo.InvariantCulture,
                 $"bowire proxy: CA certificate exported to {options.ExportCa}")).ConfigureAwait(false);
-            await Console.Out.WriteLineAsync("Install this file into your OS / browser trust store to let bowire intercept HTTPS traffic without warnings.").ConfigureAwait(false);
+            await io.Out.WriteLineAsync("Install this file into your OS / browser trust store to let bowire intercept HTTPS traffic without warnings.").ConfigureAwait(false);
             return 0;
         }
 
@@ -59,7 +61,7 @@ internal static class ProxyCommand
             }
             catch (Exception ex)
             {
-                await Console.Error.WriteLineAsync($"bowire proxy: could not initialise CA: {ex.Message}").ConfigureAwait(false);
+                await io.Err.WriteLineAsync($"bowire proxy: could not initialise CA: {ex.Message}").ConfigureAwait(false);
                 return 1;
             }
         }
@@ -72,7 +74,7 @@ internal static class ProxyCommand
         }
         catch (Exception ex)
         {
-            await Console.Error.WriteLineAsync($"bowire proxy: could not bind proxy port {options.Port}: {ex.Message}").ConfigureAwait(false);
+            await io.Err.WriteLineAsync($"bowire proxy: could not bind proxy port {options.Port}: {ex.Message}").ConfigureAwait(false);
             ca?.Dispose();
             return 1;
         }
@@ -93,26 +95,26 @@ internal static class ProxyCommand
         }
         catch (Exception ex)
         {
-            await Console.Error.WriteLineAsync($"bowire proxy: could not bind workbench-API port {options.ApiPort}: {ex.Message}").ConfigureAwait(false);
+            await io.Err.WriteLineAsync($"bowire proxy: could not bind workbench-API port {options.ApiPort}: {ex.Message}").ConfigureAwait(false);
             await proxy.StopAsync(CancellationToken.None).ConfigureAwait(false);
             ca?.Dispose();
             return 1;
         }
 
-        await Console.Out.WriteLineAsync(string.Create(CultureInfo.InvariantCulture,
+        await io.Out.WriteLineAsync(string.Create(CultureInfo.InvariantCulture,
             $"bowire proxy: intercepting on http://127.0.0.1:{proxy.Port}")).ConfigureAwait(false);
-        await Console.Out.WriteLineAsync(string.Create(CultureInfo.InvariantCulture,
+        await io.Out.WriteLineAsync(string.Create(CultureInfo.InvariantCulture,
             $"bowire proxy: workbench API on http://127.0.0.1:{options.ApiPort}/api/proxy/flows  (capacity {options.Capacity})")).ConfigureAwait(false);
         if (ca is not null)
         {
-            await Console.Out.WriteLineAsync(string.Create(CultureInfo.InvariantCulture,
+            await io.Out.WriteLineAsync(string.Create(CultureInfo.InvariantCulture,
                 $"bowire proxy: HTTPS interception ENABLED (CA at {ca.CaCertPath}; install into trust store to avoid client warnings).")).ConfigureAwait(false);
         }
         else
         {
-            await Console.Out.WriteLineAsync("bowire proxy: HTTPS interception DISABLED (--no-mitm). CONNECT requests are rejected with 501.").ConfigureAwait(false);
+            await io.Out.WriteLineAsync("bowire proxy: HTTPS interception DISABLED (--no-mitm). CONNECT requests are rejected with 501.").ConfigureAwait(false);
         }
-        await Console.Out.WriteLineAsync("bowire proxy: press Ctrl-C to stop.").ConfigureAwait(false);
+        await io.Out.WriteLineAsync("bowire proxy: press Ctrl-C to stop.").ConfigureAwait(false);
 
         try
         {

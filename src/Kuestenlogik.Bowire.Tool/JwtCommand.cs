@@ -5,6 +5,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using Kuestenlogik.Bowire.App.Cli;
 
 namespace Kuestenlogik.Bowire.App;
 
@@ -45,36 +46,37 @@ internal static class JwtCommand
     /// pretty-printed JSON. Returns exit code 0 on success, 2 on
     /// argument error, 1 on parse failure.
     /// </summary>
-    public static async Task<int> RunDecodeAsync(string token, CancellationToken ct)
+    public static async Task<int> RunDecodeAsync(string token, TextWriter? stdout = null, TextWriter? stderr = null, CancellationToken ct = default)
     {
+        var io = CommandIo.Resolve(stdout, stderr);
         if (string.IsNullOrWhiteSpace(token))
         {
-            await Console.Error.WriteLineAsync("  Usage: bowire jwt decode <token>").ConfigureAwait(false);
+            await io.Err.WriteLineAsync("  Usage: bowire jwt decode <token>").ConfigureAwait(false);
             return 2;
         }
 
         if (!TrySplitJwt(token, out var headerSeg, out var payloadSeg, out var signatureSeg, out var err))
         {
-            await Console.Error.WriteLineAsync($"  Could not parse token: {err}").ConfigureAwait(false);
+            await io.Err.WriteLineAsync($"  Could not parse token: {err}").ConfigureAwait(false);
             return 1;
         }
 
-        Console.WriteLine();
-        Console.WriteLine("  Header:");
-        Console.WriteLine(IndentJson(DecodeJsonSegment(headerSeg)));
-        Console.WriteLine();
-        Console.WriteLine("  Payload:");
-        Console.WriteLine(IndentJson(DecodeJsonSegment(payloadSeg)));
-        Console.WriteLine();
-        Console.WriteLine($"  Signature: {(string.IsNullOrEmpty(signatureSeg) ? "(empty — alg:none)" : signatureSeg.Length + " base64url chars")}");
-        Console.WriteLine();
+        io.OutLine();
+        io.OutLine("  Header:");
+        io.OutLine(IndentJson(DecodeJsonSegment(headerSeg)));
+        io.OutLine();
+        io.OutLine("  Payload:");
+        io.OutLine(IndentJson(DecodeJsonSegment(payloadSeg)));
+        io.OutLine();
+        io.OutLine($"  Signature: {(string.IsNullOrEmpty(signatureSeg) ? "(empty — alg:none)" : signatureSeg.Length + " base64url chars")}");
+        io.OutLine();
 
         if (TryReadAlg(headerSeg, out var alg))
         {
-            Console.WriteLine($"  Declared alg: {alg}");
+            io.OutLine($"  Declared alg: {alg}");
             if (string.Equals(alg, "none", StringComparison.OrdinalIgnoreCase))
             {
-                Console.WriteLine("  Warning: alg:none — token claims to be unsigned. If the server accepts this without rejecting, the JWT layer is bypassable (CVE-2015-9235 class).");
+                io.OutLine("  Warning: alg:none — token claims to be unsigned. If the server accepts this without rejecting, the JWT layer is bypassable (CVE-2015-9235 class).");
             }
         }
 
@@ -89,17 +91,18 @@ internal static class JwtCommand
     /// if both are set).
     /// </summary>
     public static async Task<int> RunTamperAsync(string token, bool algNone, IReadOnlyList<string> setClaims,
-        string? hmacSecret, CancellationToken _ct)
+        string? hmacSecret, TextWriter? stdout = null, TextWriter? stderr = null, CancellationToken _ct = default)
     {
+        var io = CommandIo.Resolve(stdout, stderr);
         if (string.IsNullOrWhiteSpace(token))
         {
-            await Console.Error.WriteLineAsync("  Usage: bowire jwt tamper <token> [--alg=none] [--set claim=value] [--secret <hmac>]").ConfigureAwait(false);
+            await io.Err.WriteLineAsync("  Usage: bowire jwt tamper <token> [--alg=none] [--set claim=value] [--secret <hmac>]").ConfigureAwait(false);
             return 2;
         }
 
         if (!TrySplitJwt(token, out var headerSeg, out var payloadSeg, out _, out var err))
         {
-            await Console.Error.WriteLineAsync($"  Could not parse token: {err}").ConfigureAwait(false);
+            await io.Err.WriteLineAsync($"  Could not parse token: {err}").ConfigureAwait(false);
             return 1;
         }
 
@@ -116,7 +119,7 @@ internal static class JwtCommand
         }
         catch (JsonException ex)
         {
-            await Console.Error.WriteLineAsync($"  Token segments are not valid JSON: {ex.Message}").ConfigureAwait(false);
+            await io.Err.WriteLineAsync($"  Token segments are not valid JSON: {ex.Message}").ConfigureAwait(false);
             return 1;
         }
 
@@ -130,7 +133,7 @@ internal static class JwtCommand
             var eq = pair.IndexOf('=');
             if (eq <= 0)
             {
-                await Console.Error.WriteLineAsync($"  --set must be in `claim=value` form (got '{pair}').").ConfigureAwait(false);
+                await io.Err.WriteLineAsync($"  --set must be in `claim=value` form (got '{pair}').").ConfigureAwait(false);
                 return 2;
             }
             var claim = pair[..eq];
@@ -149,10 +152,10 @@ internal static class JwtCommand
             var newHeaderSeg = Base64Url(SerializeObject(headerObj));
             var newPayloadSeg = Base64Url(SerializeObject(payloadObj));
             signatureSegOut = HmacSign(newHeaderSeg + "." + newPayloadSeg, hmacSecret);
-            Console.WriteLine();
-            Console.WriteLine(newHeaderSeg + "." + newPayloadSeg + "." + signatureSegOut);
-            Console.WriteLine();
-            Console.WriteLine($"  Tampered with HS256 (key: {hmacSecret.Length} chars). Claims: {setClaims.Count} mutation(s).");
+            io.OutLine();
+            io.OutLine(newHeaderSeg + "." + newPayloadSeg + "." + signatureSegOut);
+            io.OutLine();
+            io.OutLine($"  Tampered with HS256 (key: {hmacSecret.Length} chars). Claims: {setClaims.Count} mutation(s).");
         }
         else if (algNone)
         {
@@ -162,15 +165,15 @@ internal static class JwtCommand
             var newHeaderSeg = Base64Url(SerializeObject(headerObj));
             var newPayloadSeg = Base64Url(SerializeObject(payloadObj));
             signatureSegOut = ""; // alg:none ⇒ empty signature
-            Console.WriteLine();
-            Console.WriteLine(newHeaderSeg + "." + newPayloadSeg + ".");
-            Console.WriteLine();
-            Console.WriteLine($"  Tampered with alg:none. Claims: {setClaims.Count} mutation(s).");
-            Console.WriteLine("  Send this token instead of the original. If the server still validates the response, the JWT layer is bypassable.");
+            io.OutLine();
+            io.OutLine(newHeaderSeg + "." + newPayloadSeg + ".");
+            io.OutLine();
+            io.OutLine($"  Tampered with alg:none. Claims: {setClaims.Count} mutation(s).");
+            io.OutLine("  Send this token instead of the original. If the server still validates the response, the JWT layer is bypassable.");
         }
         else
         {
-            await Console.Error.WriteLineAsync("  No tamper mode selected. Use --alg=none OR --secret <key>.").ConfigureAwait(false);
+            await io.Err.WriteLineAsync("  No tamper mode selected. Use --alg=none OR --secret <key>.").ConfigureAwait(false);
             return 2;
         }
         return 0;

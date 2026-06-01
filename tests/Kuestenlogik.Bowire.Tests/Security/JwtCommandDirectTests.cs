@@ -16,7 +16,10 @@ namespace Kuestenlogik.Bowire.Tests.Security;
 /// of every token shape) shows up in the coverage report instead of
 /// the spawned-subprocess shadow we get from CLI tests.
 /// </summary>
-[Collection("ConsoleOutSerialised")]
+// No [Collection] needed any more — JwtCommand.* take explicit
+// stdout/stderr TextWriter parameters, so the capture helper below
+// writes into its own StringWriter pair without touching the
+// process-global Console.Out.
 public sealed class JwtCommandDirectTests
 {
     private static readonly string[] s_threeClaims = { "role=admin", "exp=9999999999", "isAdmin=true" };
@@ -29,24 +32,14 @@ public sealed class JwtCommandDirectTests
         "." +
         "SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c";
 
-    private static (int code, string stdout, string stderr) Capture(Func<Task<int>> action)
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Reliability", "CA2025:Ensure tasks are joined before IDisposables are disposed",
+        Justification = "The action is sync-joined via GetAwaiter().GetResult() before the writers leave scope; no race on disposal.")]
+    private static (int code, string stdout, string stderr) Capture(Func<StringWriter, StringWriter, Task<int>> action)
     {
-        var origOut = Console.Out;
-        var origErr = Console.Error;
         using var sbOut = new StringWriter();
         using var sbErr = new StringWriter();
-        Console.SetOut(sbOut);
-        Console.SetError(sbErr);
-        try
-        {
-            var code = action().GetAwaiter().GetResult();
-            return (code, sbOut.ToString(), sbErr.ToString());
-        }
-        finally
-        {
-            Console.SetOut(origOut);
-            Console.SetError(origErr);
-        }
+        var code = action(sbOut, sbErr).GetAwaiter().GetResult();
+        return (code, sbOut.ToString(), sbErr.ToString());
     }
 
     // ---------------- decode ----------------
@@ -55,7 +48,7 @@ public sealed class JwtCommandDirectTests
     public void Decode_PrintsHeaderPayloadAndSignatureSummary()
     {
         var ct = TestContext.Current.CancellationToken;
-        var (code, stdout, _) = Capture(() => JwtCommand.RunDecodeAsync(Hs256Token, ct));
+        var (code, stdout, _) = Capture((o, e) => JwtCommand.RunDecodeAsync(Hs256Token, o, e, ct));
         Assert.Equal(0, code);
         Assert.Contains("Header:", stdout, StringComparison.Ordinal);
         Assert.Contains("Payload:", stdout, StringComparison.Ordinal);
@@ -70,7 +63,7 @@ public sealed class JwtCommandDirectTests
         var ct = TestContext.Current.CancellationToken;
         // header: {"alg":"none","typ":"JWT"}  payload: {"role":"admin"}
         var token = "eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0.eyJyb2xlIjoiYWRtaW4ifQ.";
-        var (code, stdout, _) = Capture(() => JwtCommand.RunDecodeAsync(token, ct));
+        var (code, stdout, _) = Capture((o, e) => JwtCommand.RunDecodeAsync(token, o, e, ct));
         Assert.Equal(0, code);
         Assert.Contains("alg:none", stdout, StringComparison.Ordinal);
         Assert.Contains("Warning", stdout, StringComparison.Ordinal);
@@ -81,7 +74,7 @@ public sealed class JwtCommandDirectTests
     public void Decode_EmptyToken_ReturnsUsageError()
     {
         var ct = TestContext.Current.CancellationToken;
-        var (code, _, stderr) = Capture(() => JwtCommand.RunDecodeAsync("", ct));
+        var (code, _, stderr) = Capture((o, e) => JwtCommand.RunDecodeAsync("", o, e, ct));
         Assert.Equal(2, code);
         Assert.Contains("Usage", stderr, StringComparison.Ordinal);
     }
@@ -90,7 +83,7 @@ public sealed class JwtCommandDirectTests
     public void Decode_MalformedToken_ReturnsParseError()
     {
         var ct = TestContext.Current.CancellationToken;
-        var (code, _, stderr) = Capture(() => JwtCommand.RunDecodeAsync("onlyone", ct));
+        var (code, _, stderr) = Capture((o, e) => JwtCommand.RunDecodeAsync("onlyone", o, e, ct));
         Assert.Equal(1, code);
         Assert.Contains("Could not parse", stderr, StringComparison.Ordinal);
     }
@@ -101,8 +94,8 @@ public sealed class JwtCommandDirectTests
     public void Tamper_AlgNone_DropsSignatureAndFlipsAlgHeader()
     {
         var ct = TestContext.Current.CancellationToken;
-        var (code, stdout, _) = Capture(() =>
-            JwtCommand.RunTamperAsync(Hs256Token, algNone: true, setClaims: Array.Empty<string>(), hmacSecret: null, ct));
+        var (code, stdout, _) = Capture((o, e) =>
+            JwtCommand.RunTamperAsync(Hs256Token, algNone: true, setClaims: Array.Empty<string>(), hmacSecret: null, o, e, ct));
         Assert.Equal(0, code);
         Assert.Contains("alg:none", stdout, StringComparison.Ordinal);
         // Find the tampered token line (3 dot-separated segments, last empty).
@@ -122,8 +115,8 @@ public sealed class JwtCommandDirectTests
     {
         var ct = TestContext.Current.CancellationToken;
         const string secret = "test-secret-for-coverage";
-        var (code, stdout, _) = Capture(() =>
-            JwtCommand.RunTamperAsync(Hs256Token, algNone: false, setClaims: Array.Empty<string>(), hmacSecret: secret, ct));
+        var (code, stdout, _) = Capture((o, e) =>
+            JwtCommand.RunTamperAsync(Hs256Token, algNone: false, setClaims: Array.Empty<string>(), hmacSecret: secret, o, e, ct));
         Assert.Equal(0, code);
 
         // Pluck the tampered token from stdout (the only 3-segment dot-token line).
@@ -145,13 +138,13 @@ public sealed class JwtCommandDirectTests
     public void Tamper_SetClaim_AcceptsJsonLiteralsAndStrings()
     {
         var ct = TestContext.Current.CancellationToken;
-        var (code, stdout, _) = Capture(() =>
+        var (code, stdout, _) = Capture((o, e) =>
             JwtCommand.RunTamperAsync(
                 Hs256Token,
                 algNone: true,
                 setClaims: s_threeClaims,
                 hmacSecret: null,
-                ct));
+                o, e, ct));
         Assert.Equal(0, code);
         var tampered = stdout.Split('\n')
             .Select(l => l.Trim())
@@ -166,8 +159,8 @@ public sealed class JwtCommandDirectTests
     public void Tamper_SetClaim_BadFormat_ReturnsArgumentError()
     {
         var ct = TestContext.Current.CancellationToken;
-        var (code, _, stderr) = Capture(() =>
-            JwtCommand.RunTamperAsync(Hs256Token, algNone: true, setClaims: s_badClaim, hmacSecret: null, ct));
+        var (code, _, stderr) = Capture((o, e) =>
+            JwtCommand.RunTamperAsync(Hs256Token, algNone: true, setClaims: s_badClaim, hmacSecret: null, o, e, ct));
         Assert.Equal(2, code);
         Assert.Contains("claim=value", stderr, StringComparison.Ordinal);
     }
@@ -176,8 +169,8 @@ public sealed class JwtCommandDirectTests
     public void Tamper_NoModeSelected_ReturnsArgumentError()
     {
         var ct = TestContext.Current.CancellationToken;
-        var (code, _, stderr) = Capture(() =>
-            JwtCommand.RunTamperAsync(Hs256Token, algNone: false, setClaims: Array.Empty<string>(), hmacSecret: null, ct));
+        var (code, _, stderr) = Capture((o, e) =>
+            JwtCommand.RunTamperAsync(Hs256Token, algNone: false, setClaims: Array.Empty<string>(), hmacSecret: null, o, e, ct));
         Assert.Equal(2, code);
         Assert.Contains("No tamper mode", stderr, StringComparison.Ordinal);
     }
@@ -186,8 +179,8 @@ public sealed class JwtCommandDirectTests
     public void Tamper_EmptyToken_ReturnsUsageError()
     {
         var ct = TestContext.Current.CancellationToken;
-        var (code, _, stderr) = Capture(() =>
-            JwtCommand.RunTamperAsync("", algNone: true, setClaims: Array.Empty<string>(), hmacSecret: null, ct));
+        var (code, _, stderr) = Capture((o, e) =>
+            JwtCommand.RunTamperAsync("", algNone: true, setClaims: Array.Empty<string>(), hmacSecret: null, o, e, ct));
         Assert.Equal(2, code);
         Assert.Contains("Usage", stderr, StringComparison.Ordinal);
     }
@@ -196,8 +189,8 @@ public sealed class JwtCommandDirectTests
     public void Tamper_MalformedToken_ReturnsParseError()
     {
         var ct = TestContext.Current.CancellationToken;
-        var (code, _, stderr) = Capture(() =>
-            JwtCommand.RunTamperAsync("nodot", algNone: true, setClaims: Array.Empty<string>(), hmacSecret: null, ct));
+        var (code, _, stderr) = Capture((o, e) =>
+            JwtCommand.RunTamperAsync("nodot", algNone: true, setClaims: Array.Empty<string>(), hmacSecret: null, o, e, ct));
         Assert.Equal(1, code);
         Assert.Contains("Could not parse", stderr, StringComparison.Ordinal);
     }
@@ -206,8 +199,8 @@ public sealed class JwtCommandDirectTests
     public void Tamper_SecretOverridesAlgNone_WhenBothSet()
     {
         var ct = TestContext.Current.CancellationToken;
-        var (code, stdout, _) = Capture(() =>
-            JwtCommand.RunTamperAsync(Hs256Token, algNone: true, setClaims: Array.Empty<string>(), hmacSecret: "k", ct));
+        var (code, stdout, _) = Capture((o, e) =>
+            JwtCommand.RunTamperAsync(Hs256Token, algNone: true, setClaims: Array.Empty<string>(), hmacSecret: "k", o, e, ct));
         Assert.Equal(0, code);
         Assert.Contains("HS256", stdout, StringComparison.Ordinal);
         Assert.DoesNotContain("alg:none", stdout, StringComparison.Ordinal);

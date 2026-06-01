@@ -101,10 +101,15 @@ for await (const file of walk(ROOT)) {
     const srcWidth = meta.width ?? 0;
 
     for (const { width, target, format } of targetsFor(file)) {
-        // Only emit a downscale variant when the source is at least
-        // 1.5× wider than the variant — otherwise the variant is
-        // basically the original anyway, no point.
-        if (width !== null && srcWidth < width * 1.5) continue;
+        // Emit every variant unconditionally. sharp's
+        // `withoutEnlargement: true` clamps the output width to
+        // min(target, srcWidth), so for a 1684 w source the 1200 w
+        // variant becomes 1200 w but the 400 w variant stays 400 w.
+        // Generating all three variants every time means the
+        // <picture> srcset in _includes/picture.html never references
+        // a 404'd URL — a previous "skip if source < 1.5× target"
+        // heuristic looked clever but caused a broken hero banner
+        // when the source image landed below the threshold.
 
         if (await isStale(file, target)) {
             if (CHECK_MODE) {

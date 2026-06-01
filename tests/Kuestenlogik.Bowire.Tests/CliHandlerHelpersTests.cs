@@ -16,7 +16,8 @@ namespace Kuestenlogik.Bowire.Tests;
 /// self-referential message types and the field-source fallbacks don't
 /// require a live gRPC server to exercise.
 /// </summary>
-[Collection("ConsoleOutSerialised")]
+// No [Collection] needed any more — these tests drive private static
+// formatter helpers via reflection, none of them write to Console.Out.
 public sealed class CliHandlerHelpersTests
 {
     private static MethodInfo Method(string name, params Type[] paramTypes) =>

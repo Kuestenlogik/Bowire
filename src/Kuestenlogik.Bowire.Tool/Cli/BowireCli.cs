@@ -29,10 +29,16 @@ namespace Kuestenlogik.Bowire.App.Cli;
 /// </summary>
 internal static class BowireCli
 {
-    public static async Task<int> RunAsync(string[] args, IConfiguration cfg, string pluginDir)
+    public static async Task<int> RunAsync(string[] args, IConfiguration cfg, string pluginDir,
+        TextWriter? stdout = null, TextWriter? stderr = null)
     {
         var root = BuildRoot(args, cfg, pluginDir);
-        return await root.Parse(args).InvokeAsync().ConfigureAwait(false);
+        var invocationConfig = new InvocationConfiguration
+        {
+            Output = stdout ?? Console.Out,
+            Error = stderr ?? Console.Error,
+        };
+        return await root.Parse(args).InvokeAsync(invocationConfig).ConfigureAwait(false);
     }
 
     private static RootCommand BuildRoot(string[] originalArgs, IConfiguration cfg, string pluginDir)
@@ -184,7 +190,8 @@ internal static class BowireCli
                 CaDir = pr.GetValue(caDirOpt),
                 ExportCa = pr.GetValue(exportCaOpt),
             };
-            return await ProxyCommand.RunAsync(options, ct).ConfigureAwait(false);
+            return await ProxyCommand.RunAsync(options,
+                pr.InvocationConfiguration.Output, pr.InvocationConfiguration.Error, ct).ConfigureAwait(false);
         });
 
         return proxy;
@@ -232,7 +239,8 @@ internal static class BowireCli
                 AllowSelfSignedCerts = pr.GetValue(allowSelfSignedOpt),
                 AuthHeaders = pr.GetValue(authHeaderOpt) ?? Array.Empty<string>(),
             };
-            return await FuzzCommand.RunAsync(options, ct).ConfigureAwait(false);
+            return await FuzzCommand.RunAsync(options,
+                pr.InvocationConfiguration.Output, pr.InvocationConfiguration.Error, ct).ConfigureAwait(false);
         });
 
         return fuzz;
@@ -250,7 +258,8 @@ internal static class BowireCli
         var decode = new Command("decode", "Decode a JWT and pretty-print the header + payload.");
         decode.Add(tokenArg);
         decode.SetAction(async (pr, ct) =>
-            await JwtCommand.RunDecodeAsync(pr.GetValue(tokenArg) ?? "", ct).ConfigureAwait(false));
+            await JwtCommand.RunDecodeAsync(pr.GetValue(tokenArg) ?? "",
+                pr.InvocationConfiguration.Output, pr.InvocationConfiguration.Error, ct).ConfigureAwait(false));
 
         var tamper = new Command("tamper", "Produce a tampered JWT (alg:none downgrade, claim mutation, optional HS256 re-signing).");
         var algNoneOpt = new Option<bool>("--alg-none") { Description = "Downgrade the token to alg:none (drops the signature; the classic JWT bypass)." };
@@ -270,7 +279,7 @@ internal static class BowireCli
                 pr.GetValue(algNoneOpt),
                 pr.GetValue(setOpt) ?? Array.Empty<string>(),
                 pr.GetValue(secretOpt),
-                ct).ConfigureAwait(false));
+                pr.InvocationConfiguration.Output, pr.InvocationConfiguration.Error, ct).ConfigureAwait(false));
 
         jwt.Add(decode);
         jwt.Add(tamper);
@@ -519,7 +528,8 @@ internal static class BowireCli
                 CaptureMissPath = pr.GetValue(captureMiss),
                 ControlToken = pr.GetValue(controlToken)
             };
-            return await MockCommand.RunAsync(options, ct).ConfigureAwait(false);
+            return await MockCommand.RunAsync(options,
+                pr.InvocationConfiguration.Output, pr.InvocationConfiguration.Error, ct).ConfigureAwait(false);
         });
         return cmd;
     }
