@@ -705,7 +705,10 @@ internal static class BowireCli
                 ReportPath = pr.GetValue(report),
                 JUnitPath = pr.GetValue(junit)
             };
-            return await TestRunner.RunAsync(options).ConfigureAwait(false);
+            return await TestRunner.RunAsync(
+                options,
+                pr.InvocationConfiguration.Output,
+                pr.InvocationConfiguration.Error).ConfigureAwait(false);
         });
         return cmd;
     }

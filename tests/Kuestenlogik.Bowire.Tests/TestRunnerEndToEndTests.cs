@@ -20,7 +20,9 @@ namespace Kuestenlogik.Bowire.Tests;
 /// can't collide; the stub returns canned responses so we don't need
 /// any real wire transport.
 /// </summary>
-[Collection("ConsoleOutSerialised")]
+// No [Collection] needed any more — TestRunner.RunAsync now takes an
+// explicit TextWriter pair, the tests pass TextWriter.Null for both,
+// so this class no longer touches process-global Console.Out.
 public sealed class TestRunnerEndToEndTests : IDisposable
 {
     private readonly string _tempDir =
@@ -56,7 +58,7 @@ public sealed class TestRunnerEndToEndTests : IDisposable
             }
             """, TestContext.Current.CancellationToken);
 
-        var rc = await TestRunner.RunAsync(new TestCliOptions { CollectionPath = path });
+        var rc = await TestRunner.RunAsync(new TestCliOptions { CollectionPath = path }, TextWriter.Null, TextWriter.Null);
         Assert.Equal(0, rc);
     }
 
@@ -86,7 +88,7 @@ public sealed class TestRunnerEndToEndTests : IDisposable
             }
             """, TestContext.Current.CancellationToken);
 
-        var rc = await TestRunner.RunAsync(new TestCliOptions { CollectionPath = path });
+        var rc = await TestRunner.RunAsync(new TestCliOptions { CollectionPath = path }, TextWriter.Null, TextWriter.Null);
         Assert.Equal(1, rc);
     }
 
@@ -108,7 +110,7 @@ public sealed class TestRunnerEndToEndTests : IDisposable
             }
             """, TestContext.Current.CancellationToken);
 
-        var rc = await TestRunner.RunAsync(new TestCliOptions { CollectionPath = path });
+        var rc = await TestRunner.RunAsync(new TestCliOptions { CollectionPath = path }, TextWriter.Null, TextWriter.Null);
         Assert.Equal(1, rc);
     }
 
@@ -129,7 +131,7 @@ public sealed class TestRunnerEndToEndTests : IDisposable
             }
             """, TestContext.Current.CancellationToken);
 
-        var rc = await TestRunner.RunAsync(new TestCliOptions { CollectionPath = path });
+        var rc = await TestRunner.RunAsync(new TestCliOptions { CollectionPath = path }, TextWriter.Null, TextWriter.Null);
         Assert.Equal(1, rc);
     }
 
@@ -152,7 +154,7 @@ public sealed class TestRunnerEndToEndTests : IDisposable
             }
             """, TestContext.Current.CancellationToken);
 
-        var rc = await TestRunner.RunAsync(new TestCliOptions { CollectionPath = path });
+        var rc = await TestRunner.RunAsync(new TestCliOptions { CollectionPath = path }, TextWriter.Null, TextWriter.Null);
         // Either 0 (stub picked) or 1 (different first protocol returned
         // an error response) — the line we care about (`registry.Protocols[0]`)
         // is reached either way.
@@ -192,7 +194,7 @@ public sealed class TestRunnerEndToEndTests : IDisposable
             }
             """, TestContext.Current.CancellationToken);
 
-        var rc = await TestRunner.RunAsync(new TestCliOptions { CollectionPath = path });
+        var rc = await TestRunner.RunAsync(new TestCliOptions { CollectionPath = path }, TextWriter.Null, TextWriter.Null);
         Assert.Equal(0, rc);
     }
 
@@ -224,7 +226,7 @@ public sealed class TestRunnerEndToEndTests : IDisposable
             }
             """, TestContext.Current.CancellationToken);
 
-        var rc = await TestRunner.RunAsync(new TestCliOptions { CollectionPath = path });
+        var rc = await TestRunner.RunAsync(new TestCliOptions { CollectionPath = path }, TextWriter.Null, TextWriter.Null);
         Assert.Equal(0, rc);
     }
 
@@ -255,7 +257,7 @@ public sealed class TestRunnerEndToEndTests : IDisposable
             }
             """, TestContext.Current.CancellationToken);
 
-        var rc = await TestRunner.RunAsync(new TestCliOptions { CollectionPath = path });
+        var rc = await TestRunner.RunAsync(new TestCliOptions { CollectionPath = path }, TextWriter.Null, TextWriter.Null);
         // Assertion failed → exit 1; the per-assertion Error message
         // was rendered so the line we care about ran.
         Assert.Equal(1, rc);
