@@ -309,7 +309,7 @@ public sealed class HarImporterTests
             await File.WriteAllTextAsync(harPath, har, TestContext.Current.CancellationToken);
 
             using var stderr = new StringWriter();
-            var exit = await HarImporter.ImportAsync(harPath, outPath, recordingName: "Health", stderr);
+            var exit = await HarImporter.ImportAsync(harPath, outPath, recordingName: "Health", stderr: stderr);
 
             Assert.Equal(0, exit);
             var written = await File.ReadAllTextAsync(outPath, TestContext.Current.CancellationToken);
@@ -333,7 +333,7 @@ public sealed class HarImporterTests
         {
             using var stderr = new StringWriter();
 
-            var exit = await HarImporter.ImportAsync(missing, outPath, recordingName: null, stderr);
+            var exit = await HarImporter.ImportAsync(missing, outPath, recordingName: null, stderr: stderr);
 
             Assert.Equal(1, exit);
             Assert.Contains("not found", stderr.ToString(), StringComparison.OrdinalIgnoreCase);
@@ -354,7 +354,7 @@ public sealed class HarImporterTests
             await File.WriteAllTextAsync(harPath, "{ broken", TestContext.Current.CancellationToken);
 
             using var stderr = new StringWriter();
-            var exit = await HarImporter.ImportAsync(harPath, outPath, recordingName: null, stderr);
+            var exit = await HarImporter.ImportAsync(harPath, outPath, recordingName: null, stderr: stderr);
 
             Assert.Equal(1, exit);
             Assert.Contains("HAR import failed", stderr.ToString(), StringComparison.Ordinal);

@@ -29,11 +29,13 @@ internal static class BrowserUiHost
     // original inline code did.
     internal static Func<string[], BrowserUiOptions, CancellationToken, Task<int>> HostRunner { get; set; } = DefaultHostRunner;
 
-    public static async Task<int> RunAsync(string[] args, IConfiguration bootstrapConfig, string pluginDir, CancellationToken ct)
+    public static async Task<int> RunAsync(string[] args, IConfiguration bootstrapConfig, string pluginDir,
+        TextWriter? stdout = null, TextWriter? stderr = null, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(args);
         ArgumentNullException.ThrowIfNull(bootstrapConfig);
         _ = pluginDir; // resolved via the configuration stack by BuildBrowserUiOptions
+        var io = CommandIo.Resolve(stdout, stderr);
 
         var ui = BowireConfiguration.BuildBrowserUiOptions(bootstrapConfig, args);
 
@@ -49,7 +51,7 @@ internal static class BrowserUiHost
             if (r.Status == Kuestenlogik.Bowire.PluginLoading.PluginLoadStatus.Loaded
                 || r.Status == Kuestenlogik.Bowire.PluginLoading.PluginLoadStatus.AlreadyLoaded)
                 continue;
-            await Console.Error.WriteLineAsync($"  Plugin '{r.PackageId}' failed to load ({r.Status}): {r.ErrorMessage}").ConfigureAwait(false);
+            await io.Err.WriteLineAsync($"  Plugin '{r.PackageId}' failed to load ({r.Status}): {r.ErrorMessage}").ConfigureAwait(false);
         }
 
         var noBrowser = ui.NoBrowser
@@ -57,15 +59,15 @@ internal static class BrowserUiHost
             || Environment.GetEnvironmentVariable("CI") is not null
             || !Environment.UserInteractive;
 
-        Console.WriteLine();
-        Console.WriteLine($"  Bowire is running at:  http://localhost:{ui.Port}/");
+        io.OutLine();
+        io.OutLine($"  Bowire is running at:  http://localhost:{ui.Port}/");
         if (ui.EnableMcpAdapter)
-            Console.WriteLine($"  MCP adapter (opt-in):   http://localhost:{ui.Port}/mcp");
+            io.OutLine($"  MCP adapter (opt-in):   http://localhost:{ui.Port}/mcp");
         foreach (var u in ui.ServerUrls)
-            Console.WriteLine($"  Connected to:           {u}");
-        Console.WriteLine();
-        Console.WriteLine("  Press Ctrl+C to stop.");
-        Console.WriteLine();
+            io.OutLine($"  Connected to:           {u}");
+        io.OutLine();
+        io.OutLine("  Press Ctrl+C to stop.");
+        io.OutLine();
 
         if (!noBrowser)
         {

@@ -129,7 +129,7 @@ public sealed class McpServeCommandTests
         try
         {
             McpServeCommand.StdioRunner = (_, _) => Task.FromResult(42);
-            var rc = await McpServeCommand.RunAsync("stdio", 0, false, false, TestContext.Current.CancellationToken);
+            var rc = await McpServeCommand.RunAsync("stdio", 0, false, false, ct: TestContext.Current.CancellationToken);
             Assert.Equal(42, rc);
         }
         finally
