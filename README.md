@@ -69,7 +69,7 @@ features, license, price — lives on the site under
 ## Documentation
 
 - [Quickstart](https://bowire.io/quickstart.html) — zero to first call in five minutes
-- [Bootcamp](https://bowire.io/bootcamp/) — hands-on walkthrough from first call to authoring your own protocol plugin, capstone included ([source on GitHub](https://github.com/Kuestenlogik/Bowire.Bootcamp))
+- [Bootcamp](https://bowire.io/bootcamp/) — hands-on walkthrough from first call to authoring your own protocol plugin, capstone included
 - [Features](https://bowire.io/features.html) — guided tour of every workbench surface
 - [Setup](https://bowire.io/docs/setup/) — embedded, standalone, Docker, sidecar
 - [Protocols](https://bowire.io/docs/protocols/) — per-protocol setup, conventions, gotchas
