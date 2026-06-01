@@ -14,7 +14,9 @@ namespace Kuestenlogik.Bowire.Tests;
 /// (<c>InstallAsync</c> happy-path) needs network and is left for the
 /// integration harness.
 /// </summary>
-[Collection("ConsoleOutSerialised")]
+// No [Collection] needed any more — PluginManager.* take an explicit
+// TextWriter pair and the stdout-capture tests pass their own
+// StringWriter, so the process-global Console.Out is not touched.
 public sealed class PluginManagerTests : IDisposable
 {
     private readonly string _tempDir;
@@ -515,23 +517,13 @@ public sealed class PluginManagerTests : IDisposable
     [Fact]
     public void ShowHelp_PrintsAndReturnsZero()
     {
-        // Capture stdout to confirm a non-trivial help blob is emitted.
-        var prev = Console.Out;
         using var sw = new StringWriter();
-        Console.SetOut(sw);
-        try
-        {
-            var rc = PluginManager.ShowHelp();
-            Assert.Equal(0, rc);
-            var output = sw.ToString();
-            Assert.Contains("bowire plugin", output, StringComparison.Ordinal);
-            Assert.Contains("install", output, StringComparison.Ordinal);
-            Assert.Contains(PluginManager.PluginDirEnvVar, output, StringComparison.Ordinal);
-        }
-        finally
-        {
-            Console.SetOut(prev);
-        }
+        var rc = PluginManager.ShowHelp(stdout: sw, stderr: TextWriter.Null);
+        Assert.Equal(0, rc);
+        var output = sw.ToString();
+        Assert.Contains("bowire plugin", output, StringComparison.Ordinal);
+        Assert.Contains("install", output, StringComparison.Ordinal);
+        Assert.Contains(PluginManager.PluginDirEnvVar, output, StringComparison.Ordinal);
     }
 
     [Fact]
