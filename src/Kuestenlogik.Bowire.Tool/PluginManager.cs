@@ -29,6 +29,29 @@ internal static class PluginManager
     private static readonly JsonSerializerOptions IndentedJson = new() { WriteIndented = true };
 
     /// <summary>
+    /// IO sink for plugin-management output. Resolved at each public entry
+    /// point: the CLI passes <c>pr.InvocationConfiguration.Output/.Error</c>
+    /// (System.CommandLine v2), tests pass their own <see cref="StringWriter"/>
+    /// pair, and direct programmatic callers fall back to <see cref="Console.Out"/>
+    /// / <see cref="Console.Error"/>. Replaces ad-hoc <c>Console.WriteLine</c>
+    /// calls so the unit-test suite no longer needs to serialise on
+    /// <c>Console.SetOut(...)</c>.
+    /// </summary>
+    private readonly record struct PluginIo(TextWriter Out, TextWriter Err)
+    {
+        public static PluginIo Resolve(TextWriter? stdout, TextWriter? stderr)
+            => new(stdout ?? Console.Out, stderr ?? Console.Error);
+
+        // Sync write helpers — these wrap TextWriter.WriteLine but, because
+        // they have no async overload of their own, CA1849 does not fire
+        // when callers use them inside an async method. Equivalent to the
+        // pre-refactor Console.WriteLine sites (which also dodged CA1849).
+        public void OutLine(string s) => Out.WriteLine(s);
+        public void OutLine() => Out.WriteLine();
+        public void ErrLine(string s) => Err.WriteLine(s);
+    }
+
+    /// <summary>
     /// Pick the active plugin directory. Priority order:
     /// <list type="number">
     ///   <item>Explicit path passed via <c>--plugin-dir</c> on the CLI.</item>
@@ -58,11 +81,14 @@ internal static class PluginManager
         string? pluginDir = null,
         IReadOnlyList<string>? sources = null,
         bool includePrerelease = false,
+        TextWriter? stdout = null,
+        TextWriter? stderr = null,
         CancellationToken ct = default)
     {
+        var io = PluginIo.Resolve(stdout, stderr);
         if (string.IsNullOrWhiteSpace(packageId))
         {
-            Console.WriteLine("  Usage: bowire plugin install <package-id> [--version <version>] [--source <url>] [--plugin-dir <path>]");
+            io.OutLine("  Usage: bowire plugin install <package-id> [--version <version>] [--source <url>] [--plugin-dir <path>]");
             return 2;
         }
 
@@ -72,11 +98,11 @@ internal static class PluginManager
 
         if (Directory.Exists(pluginSubDir))
         {
-            Console.WriteLine($"  Plugin '{packageId}' is already installed. Use 'bowire plugin uninstall {packageId}' first.");
+            io.OutLine($"  Plugin '{packageId}' is already installed. Use 'bowire plugin uninstall {packageId}' first.");
             return 1;
         }
 
-        Console.WriteLine($"  Installing {packageId}" +
+        io.OutLine($"  Installing {packageId}" +
             (version is null ? "" : $" @ {version}") + "...");
 
         try
@@ -114,7 +140,7 @@ internal static class PluginManager
                         .ToArray()
                 }, IndentedJson), ct);
 
-            Console.WriteLine(
+            io.OutLine(
                 $"  Installed {packageId} {result.ResolvedVersion} " +
                 $"({result.FilesWritten} file(s), {result.PackagesResolved} package(s)) -> {result.TargetDir}");
             return 0;
@@ -125,7 +151,7 @@ internal static class PluginManager
             // so the next attempt isn't blocked by the "already
             // installed" check.
             try { Directory.Delete(pluginSubDir, recursive: true); } catch { /* best-effort */ }
-            Console.WriteLine($"  Failed to install {packageId}: {ex.Message}");
+            io.OutLine($"  Failed to install {packageId}: {ex.Message}");
             return 1;
         }
     }
@@ -144,17 +170,20 @@ internal static class PluginManager
         string nupkgPath,
         string? pluginDir = null,
         IReadOnlyList<string>? sources = null,
+        TextWriter? stdout = null,
+        TextWriter? stderr = null,
         CancellationToken ct = default)
     {
+        var io = PluginIo.Resolve(stdout, stderr);
         if (string.IsNullOrWhiteSpace(nupkgPath))
         {
-            Console.WriteLine("  Usage: bowire plugin install --file <path-to-package.nupkg> [--source <url>] [--plugin-dir <path>]");
+            io.OutLine("  Usage: bowire plugin install --file <path-to-package.nupkg> [--source <url>] [--plugin-dir <path>]");
             return 2;
         }
 
         if (!File.Exists(nupkgPath))
         {
-            Console.WriteLine($"  File not found: {nupkgPath}");
+            io.OutLine($"  File not found: {nupkgPath}");
             return 1;
         }
 
@@ -174,18 +203,18 @@ internal static class PluginManager
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"  Failed to read {nupkgPath}: {ex.Message}");
+            io.OutLine($"  Failed to read {nupkgPath}: {ex.Message}");
             return 1;
         }
 
         var pluginSubDir = Path.Combine(dir, peekedId);
         if (Directory.Exists(pluginSubDir))
         {
-            Console.WriteLine($"  Plugin '{peekedId}' is already installed. Use 'bowire plugin uninstall {peekedId}' first.");
+            io.OutLine($"  Plugin '{peekedId}' is already installed. Use 'bowire plugin uninstall {peekedId}' first.");
             return 1;
         }
 
-        Console.WriteLine($"  Installing {peekedId} from {nupkgPath}...");
+        io.OutLine($"  Installing {peekedId} from {nupkgPath}...");
 
         try
         {
@@ -216,21 +245,21 @@ internal static class PluginManager
                         .ToArray()
                 }, IndentedJson), ct);
 
-            Console.WriteLine(
+            io.OutLine(
                 $"  Installed {result.PackageId} {result.ResolvedVersion} " +
                 $"({result.FilesWritten} file(s), {result.PackagesResolved} package(s)) -> {result.TargetDir}");
 
             if (result.UnmetDependencies.Count > 0)
             {
-                Console.WriteLine();
-                Console.WriteLine("  warning: the package has runtime dependencies that weren't installed:");
+                io.OutLine();
+                io.OutLine("  warning: the package has runtime dependencies that weren't installed:");
                 foreach (var dep in result.UnmetDependencies)
                 {
-                    Console.WriteLine($"    - {dep}");
+                    io.OutLine($"    - {dep}");
                 }
-                Console.WriteLine();
-                Console.WriteLine("  Re-run with --source pointing at a feed that has them, or install");
-                Console.WriteLine("  each dep separately via 'bowire plugin install --file <dep.nupkg>'.");
+                io.OutLine();
+                io.OutLine("  Re-run with --source pointing at a feed that has them, or install");
+                io.OutLine("  each dep separately via 'bowire plugin install --file <dep.nupkg>'.");
             }
 
             return 0;
@@ -241,7 +270,7 @@ internal static class PluginManager
             // so the next attempt isn't blocked by the "already
             // installed" check.
             try { Directory.Delete(pluginSubDir, recursive: true); } catch { /* best-effort */ }
-            Console.WriteLine($"  Failed to install from {nupkgPath}: {ex.Message}");
+            io.OutLine($"  Failed to install from {nupkgPath}: {ex.Message}");
             return 1;
         }
     }
@@ -255,15 +284,20 @@ internal static class PluginManager
     /// </summary>
     /// <param name="zipSource">Local path or <c>http(s)://</c> URL of the zip.</param>
     /// <param name="pluginDir">Plugin root override; <c>null</c> = default.</param>
+    /// <param name="stdout">Optional stdout sink; defaults to <see cref="Console.Out"/>.</param>
+    /// <param name="stderr">Optional stderr sink; defaults to <see cref="Console.Error"/>.</param>
     /// <param name="ct">Cancellation.</param>
     public static async Task<int> InstallSidecarFromZipAsync(
         string zipSource,
         string? pluginDir = null,
+        TextWriter? stdout = null,
+        TextWriter? stderr = null,
         CancellationToken ct = default)
     {
+        var io = PluginIo.Resolve(stdout, stderr);
         if (string.IsNullOrWhiteSpace(zipSource))
         {
-            Console.WriteLine("  Usage: bowire plugin install --file <path-or-url-to-sidecar.zip> [--plugin-dir <path>]");
+            io.OutLine("  Usage: bowire plugin install --file <path-or-url-to-sidecar.zip> [--plugin-dir <path>]");
             return 2;
         }
 
@@ -284,13 +318,13 @@ internal static class PluginManager
             tempDownload = Path.Combine(Path.GetTempPath(), "bowire-sidecar-" + Guid.NewGuid().ToString("N") + ".zip");
             try
             {
-                Console.WriteLine($"  Pulling {zipSource} from OCI registry...");
+                io.OutLine($"  Pulling {zipSource} from OCI registry...");
                 await OciArtifactFetcher.FetchToFileAsync(zipSource, tempDownload, ct).ConfigureAwait(false);
             }
             catch (Exception ex)
             {
                 TryDelete(tempDownload);
-                Console.WriteLine($"  Failed to pull {zipSource}: {ex.Message}");
+                io.OutLine($"  Failed to pull {zipSource}: {ex.Message}");
                 return 1;
             }
             localZip = tempDownload;
@@ -300,7 +334,7 @@ internal static class PluginManager
             tempDownload = Path.Combine(Path.GetTempPath(), "bowire-sidecar-" + Guid.NewGuid().ToString("N") + ".zip");
             try
             {
-                Console.WriteLine($"  Downloading {zipSource}...");
+                io.OutLine($"  Downloading {zipSource}...");
                 using var http = new HttpClient { Timeout = TimeSpan.FromMinutes(5) };
                 await using var src = await http.GetStreamAsync(uri!, ct).ConfigureAwait(false);
                 await using var dst = File.Create(tempDownload);
@@ -309,7 +343,7 @@ internal static class PluginManager
             catch (Exception ex)
             {
                 TryDelete(tempDownload);
-                Console.WriteLine($"  Failed to download {zipSource}: {ex.Message}");
+                io.OutLine($"  Failed to download {zipSource}: {ex.Message}");
                 return 1;
             }
             localZip = tempDownload;
@@ -318,7 +352,7 @@ internal static class PluginManager
         {
             if (!File.Exists(zipSource))
             {
-                Console.WriteLine($"  File not found: {zipSource}");
+                io.OutLine($"  File not found: {zipSource}");
                 return 1;
             }
             localZip = zipSource;
@@ -339,7 +373,7 @@ internal static class PluginManager
                             string.Equals(e.Name, SidecarPluginManifest.FileName, StringComparison.Ordinal));
                     if (entry is null)
                     {
-                        Console.WriteLine(
+                        io.OutLine(
                             $"  Archive has no {SidecarPluginManifest.FileName} at its root — not a sidecar plugin zip.");
                         return 1;
                     }
@@ -354,13 +388,13 @@ internal static class PluginManager
             }
             catch (InvalidDataException)
             {
-                Console.WriteLine($"  {localZip} is not a valid zip archive.");
+                io.OutLine($"  {localZip} is not a valid zip archive.");
                 return 1;
             }
 
             if (manifest is null || !manifest.IsValid || string.IsNullOrEmpty(manifest.PackageId))
             {
-                Console.WriteLine(
+                io.OutLine(
                     $"  {SidecarPluginManifest.FileName} is missing packageId / protocol.id / executable.");
                 return 1;
             }
@@ -368,12 +402,12 @@ internal static class PluginManager
             var pluginSubDir = Path.Combine(dir, manifest.PackageId);
             if (Directory.Exists(pluginSubDir))
             {
-                Console.WriteLine(
+                io.OutLine(
                     $"  Plugin '{manifest.PackageId}' is already installed. Use 'bowire plugin uninstall {manifest.PackageId}' first.");
                 return 1;
             }
 
-            Console.WriteLine($"  Installing sidecar {manifest.PackageId} from {zipSource}...");
+            io.OutLine($"  Installing sidecar {manifest.PackageId} from {zipSource}...");
             Directory.CreateDirectory(pluginSubDir);
             await ZipFile.ExtractToDirectoryAsync(localZip, pluginSubDir, overwriteFiles: true, ct)
                 .ConfigureAwait(false);
@@ -393,13 +427,13 @@ internal static class PluginManager
                     }
                     catch (Exception ex)
                     {
-                        Console.WriteLine($"  warning: couldn't set +x on {manifest.Executable}: {ex.Message}");
+                        io.OutLine($"  warning: couldn't set +x on {manifest.Executable}: {ex.Message}");
                     }
                 }
             }
 
             var fileCount = Directory.GetFiles(pluginSubDir, "*", SearchOption.AllDirectories).Length;
-            Console.WriteLine(
+            io.OutLine(
                 $"  Installed sidecar {manifest.PackageId}" +
                 (manifest.Version is { Length: > 0 } v ? $" {v}" : "") +
                 $" (protocol '{manifest.Protocol.Id}', {fileCount} file(s)) -> {pluginSubDir}");
@@ -407,7 +441,7 @@ internal static class PluginManager
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"  Failed to install sidecar from {zipSource}: {ex.Message}");
+            io.OutLine($"  Failed to install sidecar from {zipSource}: {ex.Message}");
             return 1;
         }
         finally
@@ -434,22 +468,25 @@ internal static class PluginManager
         string? version,
         string? outputDir,
         IReadOnlyList<string>? sources = null,
+        TextWriter? stdout = null,
+        TextWriter? stderr = null,
         CancellationToken ct = default)
     {
+        var io = PluginIo.Resolve(stdout, stderr);
         if (string.IsNullOrWhiteSpace(packageId))
         {
-            Console.WriteLine("  Usage: bowire plugin download <package-id> [--version <version>] [--source <url>] --output <dir>");
+            io.OutLine("  Usage: bowire plugin download <package-id> [--version <version>] [--source <url>] --output <dir>");
             return 2;
         }
         if (string.IsNullOrWhiteSpace(outputDir))
         {
-            Console.WriteLine("  Missing --output. Pass a directory where the .nupkg files should land.");
-            Console.WriteLine("  Example: bowire plugin download MyCompany.Plugin --output ./offline-bundle/");
+            io.OutLine("  Missing --output. Pass a directory where the .nupkg files should land.");
+            io.OutLine("  Example: bowire plugin download MyCompany.Plugin --output ./offline-bundle/");
             return 2;
         }
 
         var fullOut = Path.GetFullPath(outputDir);
-        Console.WriteLine($"  Downloading {packageId}" +
+        io.OutLine($"  Downloading {packageId}" +
             (version is null ? "" : $" @ {version}") +
             $" + dependencies into {fullOut}...");
 
@@ -463,48 +500,49 @@ internal static class PluginManager
                 NuGetNull.Instance,
                 ct);
 
-            Console.WriteLine();
-            Console.WriteLine($"  Bundled {result.Packages.Count} package(s) ({result.RootPackageId} {result.RootVersion} + transitive deps):");
+            io.OutLine();
+            io.OutLine($"  Bundled {result.Packages.Count} package(s) ({result.RootPackageId} {result.RootVersion} + transitive deps):");
             foreach (var pkg in result.Packages)
             {
                 var sizeKb = pkg.Bytes / 1024.0;
-                Console.WriteLine($"    {pkg.PackageId} {pkg.Version}  ({sizeKb:N1} KB)");
+                io.OutLine($"    {pkg.PackageId} {pkg.Version}  ({sizeKb:N1} KB)");
             }
-            Console.WriteLine();
-            Console.WriteLine($"  Output: {result.OutputDir}");
-            Console.WriteLine();
-            Console.WriteLine("  To install on the offline host:");
-            Console.WriteLine($"    bowire plugin install --file <root>.nupkg --source <outputDir>");
+            io.OutLine();
+            io.OutLine($"  Output: {result.OutputDir}");
+            io.OutLine();
+            io.OutLine("  To install on the offline host:");
+            io.OutLine($"    bowire plugin install --file <root>.nupkg --source <outputDir>");
             return 0;
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"  Failed to download {packageId}: {ex.Message}");
+            io.OutLine($"  Failed to download {packageId}: {ex.Message}");
             return 1;
         }
     }
 
     /// <summary>List installed plugins.</summary>
-    public static int List(string? pluginDir = null, bool verbose = false)
+    public static int List(string? pluginDir = null, bool verbose = false, TextWriter? stdout = null, TextWriter? stderr = null)
     {
+        var io = PluginIo.Resolve(stdout, stderr);
         var dir = ResolvePluginDir(pluginDir);
         if (!Directory.Exists(dir))
         {
-            Console.WriteLine("  No plugins installed.");
-            Console.WriteLine($"  Plugin directory: {dir}");
+            io.OutLine("  No plugins installed.");
+            io.OutLine($"  Plugin directory: {dir}");
             return 0;
         }
 
         var dirs = Directory.GetDirectories(dir);
         if (dirs.Length == 0)
         {
-            Console.WriteLine("  No plugins installed.");
-            Console.WriteLine($"  Plugin directory: {dir}");
+            io.OutLine("  No plugins installed.");
+            io.OutLine($"  Plugin directory: {dir}");
             return 0;
         }
 
-        Console.WriteLine($"  Installed plugins ({dirs.Length}):");
-        Console.WriteLine();
+        io.OutLine($"  Installed plugins ({dirs.Length}):");
+        io.OutLine();
         foreach (var pluginPath in dirs)
         {
             var name = Path.GetFileName(pluginPath);
@@ -517,18 +555,18 @@ internal static class PluginManager
                 var sver = string.IsNullOrEmpty(sidecar.Version) ? "—" : "v" + sidecar.Version;
                 if (!verbose)
                 {
-                    Console.WriteLine($"    {name}  {sver}  [sidecar: {sidecar.Protocol.Id}]");
+                    io.OutLine($"    {name}  {sver}  [sidecar: {sidecar.Protocol.Id}]");
                     continue;
                 }
-                Console.WriteLine($"    {name}  {sver}  [sidecar]");
-                Console.WriteLine($"      protocol:   {sidecar.Protocol.Id} ({sidecar.Protocol.Name})");
-                Console.WriteLine($"      executable: {sidecar.Executable}");
+                io.OutLine($"    {name}  {sver}  [sidecar]");
+                io.OutLine($"      protocol:   {sidecar.Protocol.Id} ({sidecar.Protocol.Name})");
+                io.OutLine($"      executable: {sidecar.Executable}");
                 var sfiles = Directory.GetFiles(pluginPath, "*", SearchOption.AllDirectories)
                     .Select(f => Path.GetRelativePath(pluginPath, f))
                     .OrderBy(n => n, StringComparer.Ordinal)
                     .ToList();
                 if (sfiles.Count > 0)
-                    Console.WriteLine($"      files:      {string.Join(", ", sfiles)}");
+                    io.OutLine($"      files:      {string.Join(", ", sfiles)}");
                 continue;
             }
 
@@ -537,32 +575,32 @@ internal static class PluginManager
 
             if (!verbose)
             {
-                Console.WriteLine($"    {name}  v{meta.DisplayVersion}  [nuget: {dllCount} files]");
+                io.OutLine($"    {name}  v{meta.DisplayVersion}  [nuget: {dllCount} files]");
                 continue;
             }
 
-            Console.WriteLine($"    {name}  v{meta.DisplayVersion}  [nuget]");
+            io.OutLine($"    {name}  v{meta.DisplayVersion}  [nuget]");
             if (!string.IsNullOrEmpty(meta.ResolvedVersion) &&
                 !string.Equals(meta.ResolvedVersion, meta.RequestedVersion, StringComparison.Ordinal))
             {
-                Console.WriteLine($"      requested:  {meta.RequestedVersion ?? "<unset>"}");
-                Console.WriteLine($"      resolved:   {meta.ResolvedVersion}");
+                io.OutLine($"      requested:  {meta.RequestedVersion ?? "<unset>"}");
+                io.OutLine($"      resolved:   {meta.ResolvedVersion}");
             }
             if (!string.IsNullOrEmpty(meta.InstalledAt))
-                Console.WriteLine($"      installed:  {meta.InstalledAt}");
+                io.OutLine($"      installed:  {meta.InstalledAt}");
             if (meta.Sources.Count > 0)
-                Console.WriteLine($"      sources:    {string.Join(", ", meta.Sources)}");
+                io.OutLine($"      sources:    {string.Join(", ", meta.Sources)}");
             var files = Directory.GetFiles(pluginPath, "*.dll")
                 .Select(Path.GetFileName)
                 .OrderBy(n => n, StringComparer.Ordinal)
                 .ToList();
             if (files.Count > 0)
             {
-                Console.WriteLine($"      files:      {string.Join(", ", files)}");
+                io.OutLine($"      files:      {string.Join(", ", files)}");
             }
         }
-        Console.WriteLine();
-        Console.WriteLine($"  Plugin directory: {dir}");
+        io.OutLine();
+        io.OutLine($"  Plugin directory: {dir}");
         return 0;
     }
 
@@ -644,11 +682,14 @@ internal static class PluginManager
         string? pluginDir = null,
         IReadOnlyList<string>? sources = null,
         bool includePrerelease = false,
+        TextWriter? stdout = null,
+        TextWriter? stderr = null,
         CancellationToken ct = default)
     {
+        var io = PluginIo.Resolve(stdout, stderr);
         if (string.IsNullOrWhiteSpace(packageId))
         {
-            Console.WriteLine(
+            io.OutLine(
                 "  Usage: bowire plugin update <package-id> [--version <version>] [--source <url>] [--plugin-dir <path>]");
             return 2;
         }
@@ -657,7 +698,7 @@ internal static class PluginManager
         var pluginSubDir = Path.Combine(dir, packageId);
         if (!Directory.Exists(pluginSubDir))
         {
-            Console.WriteLine(
+            io.OutLine(
                 $"  Plugin '{packageId}' is not installed. Run 'bowire plugin install {packageId}' first.");
             return 1;
         }
@@ -669,7 +710,7 @@ internal static class PluginManager
             includePrerelease);
         if (resolved is null)
         {
-            Console.WriteLine(
+            io.OutLine(
                 $"  Failed to resolve {packageId}" +
                 (targetVersion is null ? "" : $" @ {targetVersion}") +
                 " on the configured source(s).");
@@ -679,11 +720,11 @@ internal static class PluginManager
         if (!string.IsNullOrEmpty(installedVersion) &&
             string.Equals(installedVersion, resolved.Version, StringComparison.Ordinal))
         {
-            Console.WriteLine($"  {packageId} is already at {resolved.Version}.");
+            io.OutLine($"  {packageId} is already at {resolved.Version}.");
             return 0;
         }
 
-        Console.WriteLine(
+        io.OutLine(
             $"  Updating {packageId} {installedVersion ?? "<unknown>"} -> {resolved.Version}...");
 
         // Drop the old install so the regular install path can land
@@ -692,11 +733,11 @@ internal static class PluginManager
         try { Directory.Delete(pluginSubDir, recursive: true); }
         catch (Exception ex)
         {
-            Console.WriteLine($"  Failed to remove {pluginSubDir}: {ex.Message}");
+            io.OutLine($"  Failed to remove {pluginSubDir}: {ex.Message}");
             return 1;
         }
 
-        return await InstallAsync(packageId, resolved.Version, pluginDir, sources, includePrerelease, ct);
+        return await InstallAsync(packageId, resolved.Version, pluginDir, sources, includePrerelease, io.Out, io.Err, ct).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -709,20 +750,23 @@ internal static class PluginManager
         string? pluginDir = null,
         IReadOnlyList<string>? sources = null,
         bool includePrerelease = false,
+        TextWriter? stdout = null,
+        TextWriter? stderr = null,
         CancellationToken ct = default)
-        => await UpdateAllAsyncInternal(pluginDir, sources, includePrerelease, ct).ConfigureAwait(false);
+        => await UpdateAllAsyncInternal(pluginDir, sources, includePrerelease, PluginIo.Resolve(stdout, stderr), ct).ConfigureAwait(false);
 
     private static async Task<int> UpdateAllAsyncInternal(
         string? pluginDir,
         IReadOnlyList<string>? sources,
         bool includePrerelease,
+        PluginIo io,
         CancellationToken ct)
     {
         var dir = ResolvePluginDir(pluginDir);
         if (!Directory.Exists(dir))
         {
-            Console.WriteLine("  No plugins installed.");
-            Console.WriteLine($"  Plugin directory: {dir}");
+            io.OutLine("  No plugins installed.");
+            io.OutLine($"  Plugin directory: {dir}");
             return 0;
         }
 
@@ -732,18 +776,18 @@ internal static class PluginManager
             .ToList();
         if (packages.Count == 0)
         {
-            Console.WriteLine("  No plugins installed.");
-            Console.WriteLine($"  Plugin directory: {dir}");
+            io.OutLine("  No plugins installed.");
+            io.OutLine($"  Plugin directory: {dir}");
             return 0;
         }
 
-        Console.WriteLine($"  Updating {packages.Count} plugin(s)...");
-        Console.WriteLine();
+        io.OutLine($"  Updating {packages.Count} plugin(s)...");
+        io.OutLine();
 
         var worstExit = 0;
         foreach (var pkg in packages)
         {
-            var exit = await UpdateAsync(pkg!, targetVersion: null, pluginDir, sources, includePrerelease, ct);
+            var exit = await UpdateAsync(pkg!, targetVersion: null, pluginDir, sources, includePrerelease, io.Out, io.Err, ct).ConfigureAwait(false);
             if (exit != 0 && worstExit == 0) worstExit = exit;
         }
         return worstExit;
@@ -794,11 +838,12 @@ internal static class PluginManager
     /// initializers — so it's separate from the pure-metadata
     /// <see cref="List"/> command.
     /// </summary>
-    public static int Inspect(string packageId, string? pluginDir = null)
+    public static int Inspect(string packageId, string? pluginDir = null, TextWriter? stdout = null, TextWriter? stderr = null)
     {
+        var io = PluginIo.Resolve(stdout, stderr);
         if (string.IsNullOrWhiteSpace(packageId))
         {
-            Console.WriteLine("  Usage: bowire plugin inspect <package-id> [--plugin-dir <path>]");
+            io.OutLine("  Usage: bowire plugin inspect <package-id> [--plugin-dir <path>]");
             return 2;
         }
 
@@ -806,7 +851,7 @@ internal static class PluginManager
         var pluginSubDir = Path.Combine(dir, packageId);
         if (!Directory.Exists(pluginSubDir))
         {
-            Console.WriteLine(
+            io.OutLine(
                 $"  Plugin '{packageId}' is not installed. Run 'bowire plugin install {packageId}' first.");
             return 1;
         }
@@ -824,38 +869,38 @@ internal static class PluginManager
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"  Failed to load plugin '{packageId}': {ex.Message}");
+            io.OutLine($"  Failed to load plugin '{packageId}': {ex.Message}");
             return 1;
         }
 
-        Console.WriteLine();
-        Console.WriteLine($"  {packageId}  v{meta.DisplayVersion}");
+        io.OutLine();
+        io.OutLine($"  {packageId}  v{meta.DisplayVersion}");
         // Plain ASCII rule — Unicode dashes render as garbage on
         // Windows consoles that aren't in UTF-8 output-encoding mode.
-        Console.WriteLine($"  {new string('-', packageId.Length + meta.DisplayVersion.Length + 4)}");
-        Console.WriteLine();
+        io.OutLine($"  {new string('-', packageId.Length + meta.DisplayVersion.Length + 4)}");
+        io.OutLine();
 
-        Console.WriteLine($"  Directory:       {pluginSubDir}");
+        io.OutLine($"  Directory:       {pluginSubDir}");
         if (!string.IsNullOrEmpty(meta.InstalledAt))
-            Console.WriteLine($"  Installed:       {meta.InstalledAt}");
+            io.OutLine($"  Installed:       {meta.InstalledAt}");
         if (meta.Sources.Count > 0)
-            Console.WriteLine($"  Sources:         {string.Join(", ", meta.Sources)}");
+            io.OutLine($"  Sources:         {string.Join(", ", meta.Sources)}");
 
-        Console.WriteLine();
-        Console.WriteLine("  Load context");
-        Console.WriteLine($"    name:          {ctx.Name}");
-        Console.WriteLine($"    collectible:   {ctx.IsCollectible}");
+        io.OutLine();
+        io.OutLine("  Load context");
+        io.OutLine($"    name:          {ctx.Name}");
+        io.OutLine($"    collectible:   {ctx.IsCollectible}");
 
         var loadedAssemblies = ctx.Assemblies.ToList();
-        Console.WriteLine($"    assemblies:    {loadedAssemblies.Count}");
+        io.OutLine($"    assemblies:    {loadedAssemblies.Count}");
         foreach (var asm in loadedAssemblies.OrderBy(a => a.GetName().Name, StringComparer.Ordinal))
         {
             var name = asm.GetName();
-            Console.WriteLine($"      {name.Name} {name.Version}");
+            io.OutLine($"      {name.Name} {name.Version}");
         }
 
-        Console.WriteLine();
-        Console.WriteLine("  Bowire contract implementations");
+        io.OutLine();
+        io.OutLine("  Bowire contract implementations");
         var protocols = FindImplementationsOf<IBowireProtocol>(loadedAssemblies);
         var configs = FindImplementationsOf<IBowireProtocolServices>(loadedAssemblies);
         // Mock-emitter contribution is what bowire mock picks up via
@@ -867,18 +912,18 @@ internal static class PluginManager
 
         if (protocols.Count == 0 && configs.Count == 0 && emitters.Count == 0)
         {
-            Console.WriteLine("    (none found — is this actually a Bowire protocol plugin?)");
+            io.OutLine("    (none found — is this actually a Bowire protocol plugin?)");
         }
         else
         {
             foreach (var t in protocols)
-                Console.WriteLine($"    IBowireProtocol          {t.FullName}");
+                io.OutLine($"    IBowireProtocol          {t.FullName}");
             foreach (var t in configs)
-                Console.WriteLine($"    IBowireProtocolServices  {t.FullName}");
+                io.OutLine($"    IBowireProtocolServices  {t.FullName}");
             foreach (var t in emitters)
-                Console.WriteLine($"    IBowireMockEmitter       {t.FullName}");
+                io.OutLine($"    IBowireMockEmitter       {t.FullName}");
         }
-        Console.WriteLine();
+        io.OutLine();
         return 0;
     }
 
@@ -910,11 +955,12 @@ internal static class PluginManager
     }
 
     /// <summary>Uninstall a plugin.</summary>
-    public static int Uninstall(string packageId, string? pluginDir = null)
+    public static int Uninstall(string packageId, string? pluginDir = null, TextWriter? stdout = null, TextWriter? stderr = null)
     {
+        var io = PluginIo.Resolve(stdout, stderr);
         if (string.IsNullOrWhiteSpace(packageId))
         {
-            Console.WriteLine("  Usage: bowire plugin uninstall <package-id> [--plugin-dir <path>]");
+            io.OutLine("  Usage: bowire plugin uninstall <package-id> [--plugin-dir <path>]");
             return 2;
         }
 
@@ -922,12 +968,12 @@ internal static class PluginManager
         var pluginSubDir = Path.Combine(dir, packageId);
         if (!Directory.Exists(pluginSubDir))
         {
-            Console.WriteLine($"  Plugin '{packageId}' is not installed.");
+            io.OutLine($"  Plugin '{packageId}' is not installed.");
             return 1;
         }
 
         Directory.Delete(pluginSubDir, recursive: true);
-        Console.WriteLine($"  Uninstalled {packageId}.");
+        io.OutLine($"  Uninstalled {packageId}.");
         return 0;
     }
 
@@ -1123,6 +1169,10 @@ internal static class PluginManager
                     }
                     catch (Exception ex)
                     {
+                        // Runtime plugin-discovery diagnostic — no CLI IO
+                        // context to thread through, so stays on the
+                        // process-global stderr. Not part of the
+                        // PluginIo-routed CLI surface.
                         Console.Error.WriteLine(
                             $"  warning: failed to instantiate plugin type '{type.FullName}': {ex.Message}");
                     }
@@ -1133,9 +1183,10 @@ internal static class PluginManager
     }
 
     /// <summary>Show plugin subcommand help.</summary>
-    public static int ShowHelp()
+    public static int ShowHelp(TextWriter? stdout = null, TextWriter? stderr = null)
     {
-        Console.WriteLine($"""
+        var io = PluginIo.Resolve(stdout, stderr);
+        io.OutLine($"""
             bowire plugin -- Manage protocol plugins
 
             Usage: bowire plugin <command> [options]

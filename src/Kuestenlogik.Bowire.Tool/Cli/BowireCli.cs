@@ -615,20 +615,23 @@ internal static class BowireCli
                 // on the shape so one flag covers every install kind.
                 var isSidecar = file.EndsWith(".zip", StringComparison.OrdinalIgnoreCase)
                     || file.StartsWith("oci://", StringComparison.OrdinalIgnoreCase);
+                var io = pr.InvocationConfiguration;
                 return isSidecar
-                    ? await PluginManager.InstallSidecarFromZipAsync(file, pluginDir).ConfigureAwait(false)
-                    : await PluginManager.InstallFromFileAsync(file, pluginDir, sources).ConfigureAwait(false);
+                    ? await PluginManager.InstallSidecarFromZipAsync(file, pluginDir, io.Output, io.Error).ConfigureAwait(false)
+                    : await PluginManager.InstallFromFileAsync(file, pluginDir, sources, io.Output, io.Error).ConfigureAwait(false);
             }
             var pkgId = pr.GetValue(installPackageIdArg) ?? "";
+            var ioCfg = pr.InvocationConfiguration;
             if (string.IsNullOrWhiteSpace(pkgId))
             {
-                Console.WriteLine("  Usage: bowire plugin install <packageId> [--version <ver>] [--source <url>...]");
-                Console.WriteLine("         bowire plugin install --file <sidecar.zip|oci://...|local.nupkg>");
+                await ioCfg.Output.WriteLineAsync("  Usage: bowire plugin install <packageId> [--version <ver>] [--source <url>...]").ConfigureAwait(false);
+                await ioCfg.Output.WriteLineAsync("         bowire plugin install --file <sidecar.zip|oci://...|local.nupkg>").ConfigureAwait(false);
                 return 2;
             }
             return await PluginManager.InstallAsync(
                 pkgId, pr.GetValue(versionOpt), pluginDir, sources,
-                includePrerelease: prerelease).ConfigureAwait(false);
+                includePrerelease: prerelease,
+                stdout: ioCfg.Output, stderr: ioCfg.Error).ConfigureAwait(false);
         });
 
         var download = new Command("download", "Download a plugin + its transitive deps as offline .nupkg files.");
@@ -638,15 +641,20 @@ internal static class BowireCli
                 pr.GetValue(packageIdArg) ?? "",
                 pr.GetValue(versionOpt),
                 pr.GetValue(outputOpt) ?? Directory.GetCurrentDirectory(),
-                pr.GetValue(sourcesOpt) ?? []).ConfigureAwait(false));
+                pr.GetValue(sourcesOpt) ?? [],
+                pr.InvocationConfiguration.Output, pr.InvocationConfiguration.Error).ConfigureAwait(false));
 
         var list = new Command("list", "List installed plugins.");
         list.Add(verboseOpt);
-        list.SetAction((pr, _) => Task.FromResult(PluginManager.List(pluginDir, pr.GetValue(verboseOpt))));
+        list.SetAction((pr, _) => Task.FromResult(PluginManager.List(
+            pluginDir, pr.GetValue(verboseOpt),
+            pr.InvocationConfiguration.Output, pr.InvocationConfiguration.Error)));
 
         var uninstall = new Command("uninstall", "Remove an installed plugin.");
         uninstall.Add(packageIdArg);
-        uninstall.SetAction((pr, _) => Task.FromResult(PluginManager.Uninstall(pr.GetValue(packageIdArg) ?? "", pluginDir)));
+        uninstall.SetAction((pr, _) => Task.FromResult(PluginManager.Uninstall(
+            pr.GetValue(packageIdArg) ?? "", pluginDir,
+            pr.InvocationConfiguration.Output, pr.InvocationConfiguration.Error)));
 
         var updateIdArg = new Argument<string>("packageId")
         { Description = "Plugin id; omit to update all.", DefaultValueFactory = _ => "" };
@@ -657,15 +665,20 @@ internal static class BowireCli
             var id = pr.GetValue(updateIdArg) ?? "";
             var sources = pr.GetValue(sourcesOpt) ?? [];
             var prerelease = pr.GetValue(prereleaseOpt);
+            var ioCfg = pr.InvocationConfiguration;
             return string.IsNullOrEmpty(id)
-                ? await PluginManager.UpdateAllAsync(pluginDir, sources, includePrerelease: prerelease).ConfigureAwait(false)
+                ? await PluginManager.UpdateAllAsync(pluginDir, sources, includePrerelease: prerelease,
+                    stdout: ioCfg.Output, stderr: ioCfg.Error).ConfigureAwait(false)
                 : await PluginManager.UpdateAsync(id, pr.GetValue(versionOpt), pluginDir, sources,
-                    includePrerelease: prerelease).ConfigureAwait(false);
+                    includePrerelease: prerelease,
+                    stdout: ioCfg.Output, stderr: ioCfg.Error).ConfigureAwait(false);
         });
 
         var inspect = new Command("inspect", "Inspect a plugin's metadata + protocol contributions.");
         inspect.Add(packageIdArg);
-        inspect.SetAction((pr, _) => Task.FromResult(PluginManager.Inspect(pr.GetValue(packageIdArg) ?? "", pluginDir)));
+        inspect.SetAction((pr, _) => Task.FromResult(PluginManager.Inspect(
+            pr.GetValue(packageIdArg) ?? "", pluginDir,
+            pr.InvocationConfiguration.Output, pr.InvocationConfiguration.Error)));
 
         var plugin = new Command("plugin", "Manage protocol plugins.");
         plugin.Add(install); plugin.Add(download); plugin.Add(list);

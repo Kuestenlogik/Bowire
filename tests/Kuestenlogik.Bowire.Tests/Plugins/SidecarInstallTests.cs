@@ -13,7 +13,9 @@ namespace Kuestenlogik.Bowire.Tests.Plugins;
 /// local — no network, no real subprocess (the installed files are
 /// inert stubs; spawning is exercised by the integration suite).
 /// </summary>
-[Collection("ConsoleOutSerialised")]
+// No [Collection] needed any more — PluginManager.* take an explicit
+// TextWriter pair and the stdout-capture test passes its own StringWriter,
+// so the process-global Console.Out is no longer touched here.
 public sealed class SidecarInstallTests : IDisposable
 {
     private readonly string _pluginDir;
@@ -55,7 +57,7 @@ public sealed class SidecarInstallTests : IDisposable
         try
         {
             var code = await PluginManager.InstallSidecarFromZipAsync(zip, _pluginDir,
-                TestContext.Current.CancellationToken);
+                ct: TestContext.Current.CancellationToken);
             Assert.Equal(0, code);
 
             var installed = Path.Combine(_pluginDir, "Acme.Bowire.Protocol.Zenoh");
@@ -75,10 +77,10 @@ public sealed class SidecarInstallTests : IDisposable
         try
         {
             var first = await PluginManager.InstallSidecarFromZipAsync(zip, _pluginDir,
-                TestContext.Current.CancellationToken);
+                ct: TestContext.Current.CancellationToken);
             Assert.Equal(0, first);
             var second = await PluginManager.InstallSidecarFromZipAsync(zip, _pluginDir,
-                TestContext.Current.CancellationToken);
+                ct: TestContext.Current.CancellationToken);
             Assert.Equal(1, second);
         }
         finally { File.Delete(zip); }
@@ -101,7 +103,7 @@ public sealed class SidecarInstallTests : IDisposable
         try
         {
             var code = await PluginManager.InstallSidecarFromZipAsync(zipPath, _pluginDir,
-                TestContext.Current.CancellationToken);
+                ct: TestContext.Current.CancellationToken);
             Assert.Equal(1, code);
         }
         finally { File.Delete(zipPath); }
@@ -116,7 +118,7 @@ public sealed class SidecarInstallTests : IDisposable
         try
         {
             var code = await PluginManager.InstallSidecarFromZipAsync(zip, _pluginDir,
-                TestContext.Current.CancellationToken);
+                ct: TestContext.Current.CancellationToken);
             Assert.Equal(1, code);
         }
         finally { File.Delete(zip); }
@@ -126,7 +128,7 @@ public sealed class SidecarInstallTests : IDisposable
     public async Task InstallSidecarFromZip_Rejects_Missing_File()
     {
         var code = await PluginManager.InstallSidecarFromZipAsync(
-            Path.Combine(_pluginDir, "nope.zip"), _pluginDir, TestContext.Current.CancellationToken);
+            Path.Combine(_pluginDir, "nope.zip"), _pluginDir, ct: TestContext.Current.CancellationToken);
         Assert.Equal(1, code);
     }
 
@@ -150,13 +152,10 @@ public sealed class SidecarInstallTests : IDisposable
         try
         {
             await PluginManager.InstallSidecarFromZipAsync(zip, _pluginDir,
-                TestContext.Current.CancellationToken);
+                ct: TestContext.Current.CancellationToken);
 
-            var original = Console.Out;
             using var sw = new StringWriter();
-            Console.SetOut(sw);
-            try { PluginManager.List(_pluginDir, verbose: false); }
-            finally { Console.SetOut(original); }
+            PluginManager.List(_pluginDir, verbose: false, stdout: sw, stderr: TextWriter.Null);
 
             var output = sw.ToString();
             Assert.Contains("Acme.Sidecar", output);
