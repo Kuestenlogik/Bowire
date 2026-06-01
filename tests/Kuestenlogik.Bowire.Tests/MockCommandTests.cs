@@ -19,7 +19,7 @@ public sealed class MockCommandTests
     public async Task RunAsync_NullCli_Throws()
     {
         await Assert.ThrowsAsync<ArgumentNullException>(
-            () => MockCommand.RunAsync(null!, TestContext.Current.CancellationToken));
+            () => MockCommand.RunAsync(null!, ct: TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -27,7 +27,7 @@ public sealed class MockCommandTests
     {
         // No --recording / --schema / --grpc-schema / --graphql-schema
         // specified → exit code 2 with a usage hint on stderr.
-        var rc = await MockCommand.RunAsync(new MockCliOptions(), TestContext.Current.CancellationToken);
+        var rc = await MockCommand.RunAsync(new MockCliOptions(), ct: TestContext.Current.CancellationToken);
         Assert.Equal(2, rc);
     }
 
@@ -39,7 +39,7 @@ public sealed class MockCommandTests
             RecordingPath = "rec.json",
             SchemaPath = "openapi.yml",
         };
-        var rc = await MockCommand.RunAsync(cli, TestContext.Current.CancellationToken);
+        var rc = await MockCommand.RunAsync(cli, ct: TestContext.Current.CancellationToken);
         Assert.Equal(2, rc);
     }
 
@@ -53,7 +53,7 @@ public sealed class MockCommandTests
             GrpcSchemaPath = "fds.pb",
             GraphQlSchemaPath = "schema.graphql",
         };
-        var rc = await MockCommand.RunAsync(cli, TestContext.Current.CancellationToken);
+        var rc = await MockCommand.RunAsync(cli, ct: TestContext.Current.CancellationToken);
         Assert.Equal(2, rc);
     }
 
@@ -69,7 +69,7 @@ public sealed class MockCommandTests
             SchemaPath = "openapi.yml",
             Chaos = "this-is-not-valid-syntax-!@#$",
         };
-        var rc = await MockCommand.RunAsync(cli, TestContext.Current.CancellationToken);
+        var rc = await MockCommand.RunAsync(cli, ct: TestContext.Current.CancellationToken);
         Assert.Equal(2, rc);
     }
 
@@ -90,7 +90,7 @@ public sealed class MockCommandTests
                 TestContext.Current.CancellationToken);
 
             var cli = new MockCliOptions { RecordingPath = rec };
-            var rc = await MockCommand.RunAsync(cli, TestContext.Current.CancellationToken);
+            var rc = await MockCommand.RunAsync(cli, ct: TestContext.Current.CancellationToken);
 
             Assert.Equal(1, rc);
         }
@@ -115,7 +115,7 @@ public sealed class MockCommandTests
                 TestContext.Current.CancellationToken);
 
             var cli = new MockCliOptions { RecordingPath = rec };
-            var rc = await MockCommand.RunAsync(cli, TestContext.Current.CancellationToken);
+            var rc = await MockCommand.RunAsync(cli, ct: TestContext.Current.CancellationToken);
 
             Assert.Equal(1, rc);
         }
@@ -139,7 +139,7 @@ public sealed class MockCommandTests
                 TestContext.Current.CancellationToken);
 
             var cli = new MockCliOptions { RecordingPath = rec, AutoInstall = true };
-            var rc = await MockCommand.RunAsync(cli, TestContext.Current.CancellationToken);
+            var rc = await MockCommand.RunAsync(cli, ct: TestContext.Current.CancellationToken);
 
             Assert.Equal(1, rc);
         }
@@ -161,7 +161,7 @@ public sealed class MockCommandTests
             {
                 RecordingPath = Path.Combine(dir, "absent.bwr"),
             };
-            var rc = await MockCommand.RunAsync(cli, TestContext.Current.CancellationToken);
+            var rc = await MockCommand.RunAsync(cli, ct: TestContext.Current.CancellationToken);
             Assert.Equal(1, rc);
         }
         finally
@@ -181,7 +181,7 @@ public sealed class MockCommandTests
         {
             await File.WriteAllTextAsync(rec, "{ not json", TestContext.Current.CancellationToken);
             var cli = new MockCliOptions { RecordingPath = rec };
-            var rc = await MockCommand.RunAsync(cli, TestContext.Current.CancellationToken);
+            var rc = await MockCommand.RunAsync(cli, ct: TestContext.Current.CancellationToken);
             Assert.Equal(1, rc);
         }
         finally
@@ -202,7 +202,7 @@ public sealed class MockCommandTests
             {
                 SchemaPath = Path.Combine(dir, "missing-openapi.yml"),
             };
-            var rc = await MockCommand.RunAsync(cli, TestContext.Current.CancellationToken);
+            var rc = await MockCommand.RunAsync(cli, ct: TestContext.Current.CancellationToken);
             Assert.Equal(1, rc);
         }
         finally
@@ -230,7 +230,7 @@ public sealed class MockCommandTests
             };
             using var cts = new CancellationTokenSource();
             await cts.CancelAsync();
-            var rc = await MockCommand.RunAsync(cli, cts.Token);
+            var rc = await MockCommand.RunAsync(cli, ct: cts.Token);
             Assert.Contains(rc, s_acceptedExitCodes);
         }
         finally

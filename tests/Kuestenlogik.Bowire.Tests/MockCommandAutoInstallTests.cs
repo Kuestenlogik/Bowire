@@ -64,7 +64,7 @@ public sealed class MockCommandAutoInstallTests : IDisposable
                 Port = 0,
             };
             using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(15));
-            var rc = await MockCommand.RunAsync(cli, cts.Token);
+            var rc = await MockCommand.RunAsync(cli, ct: cts.Token);
 
             Assert.Contains(rc, s_acceptedExitCodes);
             Assert.Single(seenPackageIds);
@@ -91,7 +91,7 @@ public sealed class MockCommandAutoInstallTests : IDisposable
                 TestContext.Current.CancellationToken);
 
             var cli = new MockCliOptions { RecordingPath = rec, AutoInstall = true };
-            var rc = await MockCommand.RunAsync(cli, TestContext.Current.CancellationToken);
+            var rc = await MockCommand.RunAsync(cli, ct: TestContext.Current.CancellationToken);
 
             Assert.Equal(1, rc);
         }
@@ -129,7 +129,7 @@ public sealed class MockCommandAutoInstallTests : IDisposable
                 Port = 0,
             };
             using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(15));
-            await MockCommand.RunAsync(cli, cts.Token);
+            await MockCommand.RunAsync(cli, ct: cts.Token);
 
             Assert.Equal(2, seen.Count);
             Assert.Contains("Kuestenlogik.Bowire.Protocol.Kafka", seen);

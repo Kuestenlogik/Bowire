@@ -15,7 +15,10 @@ namespace Kuestenlogik.Bowire.Tests;
 /// handler. The result confirms BuildRoot wires every documented
 /// subcommand at the correct nesting level.
 /// </summary>
-[Collection("ConsoleOutSerialised")]
+// No [Collection] needed any more — BowireCli.RunAsync takes
+// stdout/stderr TextWriter parameters that flow into
+// InvocationConfiguration, so System.CommandLine's help output goes
+// straight into the test's StringWriter without touching Console.Out.
 public sealed class BowireCliTests
 {
     private static IConfiguration EmptyConfig() =>
@@ -24,34 +27,26 @@ public sealed class BowireCliTests
     [Fact]
     public async Task RunAsync_RootHelp_PrintsAndReturnsZero()
     {
-        var prev = Console.Out;
         using var sw = new StringWriter();
-        Console.SetOut(sw);
-        try
-        {
-            var rc = await BowireCli.RunAsync(["--help"], EmptyConfig(), pluginDir: "");
-            Assert.Equal(0, rc);
-            var output = sw.ToString();
-            // Every subcommand should appear in the help blob.
-            Assert.Contains("list", output, StringComparison.Ordinal);
-            Assert.Contains("describe", output, StringComparison.Ordinal);
-            Assert.Contains("call", output, StringComparison.Ordinal);
-            Assert.Contains("mock", output, StringComparison.Ordinal);
-            Assert.Contains("mcp", output, StringComparison.Ordinal);
-            Assert.Contains("plugin", output, StringComparison.Ordinal);
-            Assert.Contains("test", output, StringComparison.Ordinal);
-            // scan ships as an IBowireCliCommand contribution from
-            // Kuestenlogik.Bowire.Security.Scanner — assert it lands
-            // in the root help blob so the auto-discovery + Scanner-
-            // assembly force-load stay wired. The 1.5.1 release went
-            // out specifically to repair this path after a previous
-            // refactor lost the eager assembly reference.
-            Assert.Contains("scan", output, StringComparison.Ordinal);
-        }
-        finally
-        {
-            Console.SetOut(prev);
-        }
+        var rc = await BowireCli.RunAsync(["--help"], EmptyConfig(), pluginDir: "",
+            stdout: sw, stderr: TextWriter.Null);
+        Assert.Equal(0, rc);
+        var output = sw.ToString();
+        // Every subcommand should appear in the help blob.
+        Assert.Contains("list", output, StringComparison.Ordinal);
+        Assert.Contains("describe", output, StringComparison.Ordinal);
+        Assert.Contains("call", output, StringComparison.Ordinal);
+        Assert.Contains("mock", output, StringComparison.Ordinal);
+        Assert.Contains("mcp", output, StringComparison.Ordinal);
+        Assert.Contains("plugin", output, StringComparison.Ordinal);
+        Assert.Contains("test", output, StringComparison.Ordinal);
+        // scan ships as an IBowireCliCommand contribution from
+        // Kuestenlogik.Bowire.Security.Scanner — assert it lands
+        // in the root help blob so the auto-discovery + Scanner-
+        // assembly force-load stay wired. The 1.5.1 release went
+        // out specifically to repair this path after a previous
+        // refactor lost the eager assembly reference.
+        Assert.Contains("scan", output, StringComparison.Ordinal);
     }
 
     [Theory]
@@ -64,19 +59,11 @@ public sealed class BowireCliTests
     [InlineData("scan")]
     public async Task RunAsync_SubcommandHelp_PrintsAndReturnsZero(string subcommand)
     {
-        var prev = Console.Out;
         using var sw = new StringWriter();
-        Console.SetOut(sw);
-        try
-        {
-            var rc = await BowireCli.RunAsync([subcommand, "--help"], EmptyConfig(), pluginDir: "");
-            Assert.Equal(0, rc);
-            Assert.NotEmpty(sw.ToString());
-        }
-        finally
-        {
-            Console.SetOut(prev);
-        }
+        var rc = await BowireCli.RunAsync([subcommand, "--help"], EmptyConfig(), pluginDir: "",
+            stdout: sw, stderr: TextWriter.Null);
+        Assert.Equal(0, rc);
+        Assert.NotEmpty(sw.ToString());
     }
 
     [Fact]
@@ -84,20 +71,12 @@ public sealed class BowireCliTests
     {
         // mcp is a parent command — its concrete handler lives on the
         // serve subcommand. Help on either should be a no-op exit.
-        var prev = Console.Out;
         using var sw = new StringWriter();
-        Console.SetOut(sw);
-        try
-        {
-            var rc = await BowireCli.RunAsync(
-                ["mcp", "serve", "--help"], EmptyConfig(), pluginDir: "");
-            Assert.Equal(0, rc);
-            Assert.Contains("--bind", sw.ToString(), StringComparison.Ordinal);
-        }
-        finally
-        {
-            Console.SetOut(prev);
-        }
+        var rc = await BowireCli.RunAsync(
+            ["mcp", "serve", "--help"], EmptyConfig(), pluginDir: "",
+            stdout: sw, stderr: TextWriter.Null);
+        Assert.Equal(0, rc);
+        Assert.Contains("--bind", sw.ToString(), StringComparison.Ordinal);
     }
 
     [Theory]
@@ -109,19 +88,11 @@ public sealed class BowireCliTests
     [InlineData("inspect")]
     public async Task RunAsync_PluginSubcommand_Help_PrintsAndReturnsZero(string sub)
     {
-        var prev = Console.Out;
         using var sw = new StringWriter();
-        Console.SetOut(sw);
-        try
-        {
-            var rc = await BowireCli.RunAsync(
-                ["plugin", sub, "--help"], EmptyConfig(), pluginDir: "");
-            Assert.Equal(0, rc);
-            Assert.NotEmpty(sw.ToString());
-        }
-        finally
-        {
-            Console.SetOut(prev);
-        }
+        var rc = await BowireCli.RunAsync(
+            ["plugin", sub, "--help"], EmptyConfig(), pluginDir: "",
+            stdout: sw, stderr: TextWriter.Null);
+        Assert.Equal(0, rc);
+        Assert.NotEmpty(sw.ToString());
     }
 }

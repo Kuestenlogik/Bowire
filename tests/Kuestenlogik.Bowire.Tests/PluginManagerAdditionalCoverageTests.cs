@@ -13,7 +13,9 @@ namespace Kuestenlogik.Bowire.Tests;
 /// from a local feed. Everything stays offline by relying on the
 /// <see cref="NuGetPackageInstallerTests_NupkgFactory"/> helper.
 /// </summary>
-[Collection("ConsoleOutSerialised")]
+// No [Collection] needed any more — PluginManager.* take a TextWriter
+// pair now, and the tests below either default to Console (acceptable
+// without SetOut) or pass explicit writers.
 public sealed class PluginManagerAdditionalCoverageTests : IDisposable
 {
     private readonly string _tempDir;

@@ -4,6 +4,7 @@
 using System.Diagnostics;
 using System.Text;
 using System.Text.Json;
+using Kuestenlogik.Bowire.App.Cli;
 using Kuestenlogik.Bowire.Mocking;
 using Kuestenlogik.Bowire.Security;
 using Kuestenlogik.Bowire.Security.Scanner;
@@ -84,28 +85,29 @@ internal static class FuzzCommand
     };
 
     /// <summary>Run the fuzz subcommand. Returns process exit code.</summary>
-    public static async Task<int> RunAsync(FuzzOptions options, CancellationToken ct)
+    public static async Task<int> RunAsync(FuzzOptions options, TextWriter? stdout = null, TextWriter? stderr = null, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(options);
+        var io = CommandIo.Resolve(stdout, stderr);
 
         if (string.IsNullOrWhiteSpace(options.Target))
         {
-            await Console.Error.WriteLineAsync("  Usage: bowire fuzz --target <url> --template <recording.json> --field <jsonpath> --payloads <category>").ConfigureAwait(false);
+            await io.Err.WriteLineAsync("  Usage: bowire fuzz --target <url> --template <recording.json> --field <jsonpath> --payloads <category>").ConfigureAwait(false);
             return 2;
         }
         if (string.IsNullOrWhiteSpace(options.Template) || !File.Exists(options.Template))
         {
-            await Console.Error.WriteLineAsync($"  --template file not found: {options.Template}").ConfigureAwait(false);
+            await io.Err.WriteLineAsync($"  --template file not found: {options.Template}").ConfigureAwait(false);
             return 2;
         }
         if (string.IsNullOrWhiteSpace(options.Field))
         {
-            await Console.Error.WriteLineAsync("  --field <jsonpath> required (e.g. --field $.username).").ConfigureAwait(false);
+            await io.Err.WriteLineAsync("  --field <jsonpath> required (e.g. --field $.username).").ConfigureAwait(false);
             return 2;
         }
         if (!s_payloads.TryGetValue(options.Category ?? "", out var payloads))
         {
-            await Console.Error.WriteLineAsync($"  Unknown payload category '{options.Category}'. Available: {string.Join(", ", s_payloads.Keys)}.").ConfigureAwait(false);
+            await io.Err.WriteLineAsync($"  Unknown payload category '{options.Category}'. Available: {string.Join(", ", s_payloads.Keys)}.").ConfigureAwait(false);
             return 2;
         }
 
@@ -117,19 +119,19 @@ internal static class FuzzCommand
         }
         catch (Exception ex)
         {
-            await Console.Error.WriteLineAsync($"  Failed to parse {options.Template}: {ex.Message}").ConfigureAwait(false);
+            await io.Err.WriteLineAsync($"  Failed to parse {options.Template}: {ex.Message}").ConfigureAwait(false);
             return 1;
         }
         if (recording is null || recording.Steps.Count == 0)
         {
-            await Console.Error.WriteLineAsync("  Recording has no steps to fuzz.").ConfigureAwait(false);
+            await io.Err.WriteLineAsync("  Recording has no steps to fuzz.").ConfigureAwait(false);
             return 1;
         }
 
         var probe = recording.Steps[0];
         if (string.IsNullOrEmpty(probe.Body))
         {
-            await Console.Error.WriteLineAsync("  Probe step has no body to mutate. Fuzz needs a JSON request body.").ConfigureAwait(false);
+            await io.Err.WriteLineAsync("  Probe step has no body to mutate. Fuzz needs a JSON request body.").ConfigureAwait(false);
             return 1;
         }
 
@@ -143,13 +145,13 @@ internal static class FuzzCommand
         }
         catch (JsonException ex)
         {
-            await Console.Error.WriteLineAsync($"  Probe body is not valid JSON: {ex.Message}").ConfigureAwait(false);
+            await io.Err.WriteLineAsync($"  Probe body is not valid JSON: {ex.Message}").ConfigureAwait(false);
             return 1;
         }
 
         if (!TryNavigatePath(bodyRoot, options.Field, out var existingValue))
         {
-            await Console.Error.WriteLineAsync($"  --field path '{options.Field}' not found in probe body.").ConfigureAwait(false);
+            await io.Err.WriteLineAsync($"  --field path '{options.Field}' not found in probe body.").ConfigureAwait(false);
             return 1;
         }
 
@@ -161,16 +163,16 @@ internal static class FuzzCommand
         // check that's available without it.
         if (existingValue.ValueKind is JsonValueKind.Number or JsonValueKind.True or JsonValueKind.False)
         {
-            await Console.Error.WriteLineAsync($"  Skipping: --field is {existingValue.ValueKind}; the {options.Category} category sends string payloads. Use --force to override.").ConfigureAwait(false);
+            await io.Err.WriteLineAsync($"  Skipping: --field is {existingValue.ValueKind}; the {options.Category} category sends string payloads. Use --force to override.").ConfigureAwait(false);
             if (!options.Force) return 0;
         }
 
-        Console.WriteLine();
-        Console.WriteLine($"  Fuzzing {options.Target}");
-        Console.WriteLine($"    template:  {options.Template}");
-        Console.WriteLine($"    field:     {options.Field} ({existingValue.ValueKind})");
-        Console.WriteLine($"    category:  {options.Category} ({payloads.Length} payload(s))");
-        Console.WriteLine();
+        io.OutLine();
+        io.OutLine($"  Fuzzing {options.Target}");
+        io.OutLine($"    template:  {options.Template}");
+        io.OutLine($"    field:     {options.Field} ({existingValue.ValueKind})");
+        io.OutLine($"    category:  {options.Category} ({payloads.Length} payload(s))");
+        io.OutLine();
 
         using var http = BuildHttpClient(options);
         var findings = new List<FuzzFinding>();
@@ -182,13 +184,13 @@ internal static class FuzzCommand
         try
         {
             baseline = await SendProbeAsync(http, options.Target, probe, probe.Body, options.AuthHeaders, ct).ConfigureAwait(false);
-            Console.WriteLine($"  baseline: status={baseline.Status} body={baseline.Body.Length}B latency={baseline.LatencyMs}ms");
+            io.OutLine($"  baseline: status={baseline.Status} body={baseline.Body.Length}B latency={baseline.LatencyMs}ms");
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"  baseline FAILED: {ex.Message}");
+            io.OutLine($"  baseline FAILED: {ex.Message}");
         }
-        Console.WriteLine();
+        io.OutLine();
 
         for (var i = 0; i < payloads.Length; i++)
         {
@@ -196,7 +198,7 @@ internal static class FuzzCommand
             var mutated = ReplaceField(probe.Body, options.Field, payload);
             if (mutated is null)
             {
-                Console.WriteLine($"  [{i + 1}/{payloads.Length}] could not substitute payload (path mismatch)");
+                io.OutLine($"  [{i + 1}/{payloads.Length}] could not substitute payload (path mismatch)");
                 continue;
             }
             try
@@ -206,26 +208,26 @@ internal static class FuzzCommand
                 if (marker is not null)
                 {
                     findings.Add(new FuzzFinding(payload, marker, resp));
-                    Console.WriteLine($"  [{i + 1}/{payloads.Length}] [VULN] {Snip(payload)} → {marker}");
+                    io.OutLine($"  [{i + 1}/{payloads.Length}] [VULN] {Snip(payload)} → {marker}");
                 }
                 else
                 {
-                    Console.WriteLine($"  [{i + 1}/{payloads.Length}] [ok]  {Snip(payload)} → status={resp.Status} body={resp.Body.Length}B");
+                    io.OutLine($"  [{i + 1}/{payloads.Length}] [ok]  {Snip(payload)} → status={resp.Status} body={resp.Body.Length}B");
                 }
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"  [{i + 1}/{payloads.Length}] [err] {Snip(payload)} → {ex.Message}");
+                io.OutLine($"  [{i + 1}/{payloads.Length}] [err] {Snip(payload)} → {ex.Message}");
             }
         }
-        Console.WriteLine();
+        io.OutLine();
         if (findings.Count > 0)
         {
-            Console.WriteLine($"  {findings.Count} suspicious response(s). Review the matches — fuzz heuristics fire on shape, not confirmation; verify each by hand before reporting.");
+            io.OutLine($"  {findings.Count} suspicious response(s). Review the matches — fuzz heuristics fire on shape, not confirmation; verify each by hand before reporting.");
         }
         else
         {
-            Console.WriteLine($"  No heuristics fired across {payloads.Length} payloads. This is not proof of safety — just that this corpus didn't catch anything.");
+            io.OutLine($"  No heuristics fired across {payloads.Length} payloads. This is not proof of safety — just that this corpus didn't catch anything.");
         }
         return findings.Count > 0 ? 1 : 0;
     }

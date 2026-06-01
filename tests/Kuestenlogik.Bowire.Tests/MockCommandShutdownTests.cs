@@ -70,7 +70,7 @@ public sealed class MockCommandShutdownTests : IDisposable
             Host = "127.0.0.1",
             Port = 0,
             NoWatch = true,
-        }, cts.Token);
+        }, ct: cts.Token);
 
         await Task.Delay(500, TestContext.Current.CancellationToken);
         await cts.CancelAsync();

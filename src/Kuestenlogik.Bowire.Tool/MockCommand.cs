@@ -1,6 +1,7 @@
 // Copyright 2026 Küstenlogik
 // SPDX-License-Identifier: Apache-2.0
 
+using Kuestenlogik.Bowire.App.Cli;
 using Kuestenlogik.Bowire.App.Configuration;
 using Kuestenlogik.Bowire.Mock;
 using Kuestenlogik.Bowire.Mock.Chaos;
@@ -28,9 +29,10 @@ internal static class MockCommand
         = (packageId, pluginDir, sources, ct) =>
             PluginManager.InstallAsync(packageId, version: null, pluginDir, sources, ct: ct);
 
-    public static async Task<int> RunAsync(MockCliOptions cli, CancellationToken ct)
+    public static async Task<int> RunAsync(MockCliOptions cli, TextWriter? stdout = null, TextWriter? stderr = null, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(cli);
+        var io = CommandIo.Resolve(stdout, stderr);
 
         var hasRecording = !string.IsNullOrEmpty(cli.RecordingPath);
         var hasSchema = !string.IsNullOrEmpty(cli.SchemaPath);
@@ -40,11 +42,11 @@ internal static class MockCommand
             + (hasGrpcSchema ? 1 : 0) + (hasGraphQlSchema ? 1 : 0);
         if (sourceCount != 1)
         {
-            await Console.Error.WriteLineAsync(
+            await io.Err.WriteLineAsync(
                 sourceCount == 0
                     ? "bowire mock: one of --recording <path>, --schema <path>, --grpc-schema <path>, or --graphql-schema <path> is required."
-                    : "bowire mock: --recording, --schema, --grpc-schema, and --graphql-schema are mutually exclusive — pick one.");
-            await Console.Error.WriteLineAsync("Run `bowire mock --help` for usage.").ConfigureAwait(false);
+                    : "bowire mock: --recording, --schema, --grpc-schema, and --graphql-schema are mutually exclusive — pick one.").ConfigureAwait(false);
+            await io.Err.WriteLineAsync("Run `bowire mock --help` for usage.").ConfigureAwait(false);
             return 2;
         }
 
@@ -55,7 +57,7 @@ internal static class MockCommand
         }
         catch (FormatException ex)
         {
-            await Console.Error.WriteLineAsync("bowire mock: " + ex.Message);
+            await io.Err.WriteLineAsync("bowire mock: " + ex.Message).ConfigureAwait(false);
             return 2;
         }
 
@@ -88,7 +90,7 @@ internal static class MockCommand
                 {
                     if (cli.AutoInstall)
                     {
-                        var ok = await TryAutoInstallAsync(detection.Missing, pluginDir, ct);
+                        var ok = await TryAutoInstallAsync(detection.Missing, pluginDir, io, ct);
                         if (!ok) return 1;
                         // Reload plugins so the freshly-installed
                         // protocols show up in subsequent registry walks
@@ -103,7 +105,7 @@ internal static class MockCommand
                     }
                     else
                     {
-                        PrintMissingPlugins(detection.Missing);
+                        PrintMissingPlugins(detection.Missing, io);
                         return 1;
                     }
                 }
@@ -160,7 +162,7 @@ internal static class MockCommand
         }
         catch (Exception ex)
         {
-            await Console.Error.WriteLineAsync("bowire mock: " + ex.Message);
+            await io.Err.WriteLineAsync("bowire mock: " + ex.Message).ConfigureAwait(false);
             return 1;
         }
     }
@@ -191,34 +193,34 @@ internal static class MockCommand
     /// suggested first; the corresponding NuGet package id is shown
     /// as a fallback for embedded-host users.
     /// </summary>
-    private static void PrintMissingPlugins(IReadOnlyList<MissingPlugin> missing)
+    private static void PrintMissingPlugins(IReadOnlyList<MissingPlugin> missing, CommandIo io)
     {
         var word = missing.Count == 1 ? "protocol" : "protocols";
-        Console.Error.WriteLine();
-        Console.Error.WriteLine($"✗ Recording references {missing.Count} {word} whose plugin{(missing.Count == 1 ? " is" : "s are")} not installed:");
+        io.ErrLine();
+        io.ErrLine($"✗ Recording references {missing.Count} {word} whose plugin{(missing.Count == 1 ? " is" : "s are")} not installed:");
         foreach (var m in missing)
         {
             var pkg = m.SuggestedPackageId ?? "(unknown — third-party plugin?)";
-            Console.Error.WriteLine($"    • {m.ProtocolId,-12} → {pkg}");
+            io.ErrLine($"    • {m.ProtocolId,-12} → {pkg}");
         }
-        Console.Error.WriteLine();
+        io.ErrLine();
         var resolvable = missing.Where(m => m.SuggestedPackageId is not null).ToList();
         if (resolvable.Count > 0)
         {
-            Console.Error.WriteLine("  Install with:");
+            io.ErrLine("  Install with:");
             foreach (var m in resolvable)
             {
-                Console.Error.WriteLine($"    bowire plugin install {m.SuggestedPackageId}");
+                io.ErrLine($"    bowire plugin install {m.SuggestedPackageId}");
             }
-            Console.Error.WriteLine();
-            Console.Error.WriteLine("  Or re-run with --auto-install to fetch them now.");
+            io.ErrLine();
+            io.ErrLine("  Or re-run with --auto-install to fetch them now.");
         }
         else
         {
-            Console.Error.WriteLine("  These protocol ids are not in Bowire's catalogue. If they're third-party");
-            Console.Error.WriteLine("  plugins, install the matching NuGet package via `bowire plugin install`.");
+            io.ErrLine("  These protocol ids are not in Bowire's catalogue. If they're third-party");
+            io.ErrLine("  plugins, install the matching NuGet package via `bowire plugin install`.");
         }
-        Console.Error.WriteLine();
+        io.ErrLine();
     }
 
     private sealed record DetectionResult(IReadOnlyList<MissingPlugin> Missing);
@@ -234,23 +236,24 @@ internal static class MockCommand
     private static async Task<bool> TryAutoInstallAsync(
         IReadOnlyList<MissingPlugin> missing,
         string? pluginDir,
+        CommandIo io,
         CancellationToken ct)
     {
         var unknown = missing.Where(m => m.SuggestedPackageId is null).ToList();
         if (unknown.Count > 0)
         {
-            await Console.Error.WriteLineAsync();
-            await Console.Error.WriteLineAsync("✗ --auto-install can't help with these — they're not in Bowire's catalogue:");
-            foreach (var m in unknown) await Console.Error.WriteLineAsync($"    • {m.ProtocolId}");
-            await Console.Error.WriteLineAsync();
-            await Console.Error.WriteLineAsync("  Install the matching NuGet package manually with:");
-            await Console.Error.WriteLineAsync("    bowire plugin install <package-id>");
-            await Console.Error.WriteLineAsync();
+            await io.Err.WriteLineAsync().ConfigureAwait(false);
+            await io.Err.WriteLineAsync("✗ --auto-install can't help with these — they're not in Bowire's catalogue:").ConfigureAwait(false);
+            foreach (var m in unknown) await io.Err.WriteLineAsync($"    • {m.ProtocolId}").ConfigureAwait(false);
+            await io.Err.WriteLineAsync().ConfigureAwait(false);
+            await io.Err.WriteLineAsync("  Install the matching NuGet package manually with:").ConfigureAwait(false);
+            await io.Err.WriteLineAsync("    bowire plugin install <package-id>").ConfigureAwait(false);
+            await io.Err.WriteLineAsync().ConfigureAwait(false);
             return false;
         }
 
-        await Console.Out.WriteLineAsync();
-        await Console.Out.WriteLineAsync($"→ Installing {missing.Count} missing protocol plugin{(missing.Count == 1 ? "" : "s")}…");
+        await io.Out.WriteLineAsync().ConfigureAwait(false);
+        await io.Out.WriteLineAsync($"→ Installing {missing.Count} missing protocol plugin{(missing.Count == 1 ? "" : "s")}…").ConfigureAwait(false);
         var failures = 0;
         foreach (var m in missing)
         {
@@ -265,15 +268,15 @@ internal static class MockCommand
                 ct);
             if (exit != 0) failures++;
         }
-        await Console.Out.WriteLineAsync();
+        await io.Out.WriteLineAsync().ConfigureAwait(false);
         if (failures > 0)
         {
-            await Console.Error.WriteLineAsync($"✗ {failures} of {missing.Count} install{(missing.Count == 1 ? "" : "s")} failed. See output above.");
-            await Console.Error.WriteLineAsync();
+            await io.Err.WriteLineAsync($"✗ {failures} of {missing.Count} install{(missing.Count == 1 ? "" : "s")} failed. See output above.").ConfigureAwait(false);
+            await io.Err.WriteLineAsync().ConfigureAwait(false);
             return false;
         }
-        await Console.Out.WriteLineAsync($"✓ All {missing.Count} plugin{(missing.Count == 1 ? "" : "s")} installed. Continuing with mock startup…");
-        await Console.Out.WriteLineAsync();
+        await io.Out.WriteLineAsync($"✓ All {missing.Count} plugin{(missing.Count == 1 ? "" : "s")} installed. Continuing with mock startup…").ConfigureAwait(false);
+        await io.Out.WriteLineAsync().ConfigureAwait(false);
         return true;
     }
 

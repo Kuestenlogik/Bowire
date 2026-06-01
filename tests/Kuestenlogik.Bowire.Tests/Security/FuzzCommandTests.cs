@@ -18,28 +18,20 @@ namespace Kuestenlogik.Bowire.Tests.Security;
 /// argument-validation branches without network traffic, then a few
 /// happy-path runs against an in-process Kestrel upstream.
 /// </summary>
-[Collection("ConsoleOutSerialised")]
+// No [Collection] needed any more — FuzzCommand.RunAsync takes
+// explicit stdout/stderr TextWriter parameters, so the capture
+// helper writes into its own StringWriter pair.
 [System.Diagnostics.CodeAnalysis.SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "Test scope")]
 public sealed class FuzzCommandTests
 {
-    private static (int code, string stdout, string stderr) Capture(Func<Task<int>> action)
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Reliability", "CA2025:Ensure tasks are joined before IDisposables are disposed",
+        Justification = "The action is sync-joined via GetAwaiter().GetResult() before the writers leave scope; no race on disposal.")]
+    private static (int code, string stdout, string stderr) Capture(Func<StringWriter, StringWriter, Task<int>> action)
     {
-        var origOut = Console.Out;
-        var origErr = Console.Error;
         using var sbOut = new StringWriter();
         using var sbErr = new StringWriter();
-        Console.SetOut(sbOut);
-        Console.SetError(sbErr);
-        try
-        {
-            var code = action().GetAwaiter().GetResult();
-            return (code, sbOut.ToString(), sbErr.ToString());
-        }
-        finally
-        {
-            Console.SetOut(origOut);
-            Console.SetError(origErr);
-        }
+        var code = action(sbOut, sbErr).GetAwaiter().GetResult();
+        return (code, sbOut.ToString(), sbErr.ToString());
     }
 
     private static string WriteTemplate(BowireRecording rec)
@@ -69,10 +61,10 @@ public sealed class FuzzCommandTests
     public async Task RunAsync_EmptyTarget_ReturnsUsageError()
     {
         var ct = TestContext.Current.CancellationToken;
-        var (code, _, stderr) = Capture(() => FuzzCommand.RunAsync(new FuzzOptions
+        var (code, _, stderr) = Capture((o, e) => FuzzCommand.RunAsync(new FuzzOptions
         {
             Target = "", Template = "x.json", Field = "$.u", Category = "sqli",
-        }, ct));
+        }, o, e, ct));
         Assert.Equal(2, code);
         Assert.Contains("Usage", stderr, StringComparison.Ordinal);
     }
@@ -81,10 +73,10 @@ public sealed class FuzzCommandTests
     public async Task RunAsync_TemplateFileMissing_ReturnsUsageError()
     {
         var ct = TestContext.Current.CancellationToken;
-        var (code, _, stderr) = Capture(() => FuzzCommand.RunAsync(new FuzzOptions
+        var (code, _, stderr) = Capture((o, e) => FuzzCommand.RunAsync(new FuzzOptions
         {
             Target = "http://example.invalid", Template = "/no/such/path.json", Field = "$.u", Category = "sqli",
-        }, ct));
+        }, o, e, ct));
         Assert.Equal(2, code);
         Assert.Contains("template", stderr, StringComparison.OrdinalIgnoreCase);
     }
@@ -96,10 +88,10 @@ public sealed class FuzzCommandTests
         var path = WriteTemplate(MakeRecording());
         try
         {
-            var (code, _, stderr) = Capture(() => FuzzCommand.RunAsync(new FuzzOptions
+            var (code, _, stderr) = Capture((o, e) => FuzzCommand.RunAsync(new FuzzOptions
             {
                 Target = "http://example.invalid", Template = path, Field = "", Category = "sqli",
-            }, ct));
+            }, o, e, ct));
             Assert.Equal(2, code);
             Assert.Contains("--field", stderr, StringComparison.Ordinal);
         }
@@ -113,10 +105,10 @@ public sealed class FuzzCommandTests
         var path = WriteTemplate(MakeRecording());
         try
         {
-            var (code, _, stderr) = Capture(() => FuzzCommand.RunAsync(new FuzzOptions
+            var (code, _, stderr) = Capture((o, e) => FuzzCommand.RunAsync(new FuzzOptions
             {
                 Target = "http://example.invalid", Template = path, Field = "$.username", Category = "bogus",
-            }, ct));
+            }, o, e, ct));
             Assert.Equal(2, code);
             Assert.Contains("Unknown payload category", stderr, StringComparison.Ordinal);
         }
@@ -131,10 +123,10 @@ public sealed class FuzzCommandTests
         await File.WriteAllTextAsync(path, "{this is not json", ct);
         try
         {
-            var (code, _, stderr) = Capture(() => FuzzCommand.RunAsync(new FuzzOptions
+            var (code, _, stderr) = Capture((o, e) => FuzzCommand.RunAsync(new FuzzOptions
             {
                 Target = "http://example.invalid", Template = path, Field = "$.u", Category = "sqli",
-            }, ct));
+            }, o, e, ct));
             Assert.Equal(1, code);
             Assert.Contains("parse", stderr, StringComparison.OrdinalIgnoreCase);
         }
@@ -149,10 +141,10 @@ public sealed class FuzzCommandTests
         var path = WriteTemplate(rec);
         try
         {
-            var (code, _, stderr) = Capture(() => FuzzCommand.RunAsync(new FuzzOptions
+            var (code, _, stderr) = Capture((o, e) => FuzzCommand.RunAsync(new FuzzOptions
             {
                 Target = "http://example.invalid", Template = path, Field = "$.u", Category = "sqli",
-            }, ct));
+            }, o, e, ct));
             Assert.Equal(1, code);
             Assert.Contains("no steps", stderr, StringComparison.OrdinalIgnoreCase);
         }
@@ -167,10 +159,10 @@ public sealed class FuzzCommandTests
         var path = WriteTemplate(rec);
         try
         {
-            var (code, _, stderr) = Capture(() => FuzzCommand.RunAsync(new FuzzOptions
+            var (code, _, stderr) = Capture((o, e) => FuzzCommand.RunAsync(new FuzzOptions
             {
                 Target = "http://example.invalid", Template = path, Field = "$.u", Category = "sqli",
-            }, ct));
+            }, o, e, ct));
             Assert.Equal(1, code);
             Assert.Contains("no body", stderr, StringComparison.OrdinalIgnoreCase);
         }
@@ -185,10 +177,10 @@ public sealed class FuzzCommandTests
         var path = WriteTemplate(rec);
         try
         {
-            var (code, _, stderr) = Capture(() => FuzzCommand.RunAsync(new FuzzOptions
+            var (code, _, stderr) = Capture((o, e) => FuzzCommand.RunAsync(new FuzzOptions
             {
                 Target = "http://example.invalid", Template = path, Field = "$.nonexistent", Category = "sqli",
-            }, ct));
+            }, o, e, ct));
             Assert.Equal(1, code);
             Assert.Contains("not found", stderr, StringComparison.OrdinalIgnoreCase);
         }
@@ -203,10 +195,10 @@ public sealed class FuzzCommandTests
         var path = WriteTemplate(rec);
         try
         {
-            var (code, _, stderr) = Capture(() => FuzzCommand.RunAsync(new FuzzOptions
+            var (code, _, stderr) = Capture((o, e) => FuzzCommand.RunAsync(new FuzzOptions
             {
                 Target = "http://example.invalid", Template = path, Field = "$.limit", Category = "sqli",
-            }, ct));
+            }, o, e, ct));
             Assert.Equal(0, code);
             Assert.Contains("Skipping", stderr, StringComparison.Ordinal);
         }
@@ -235,10 +227,10 @@ public sealed class FuzzCommandTests
         var path = WriteTemplate(rec);
         try
         {
-            var (code, stdout, _) = Capture(() => FuzzCommand.RunAsync(new FuzzOptions
+            var (code, stdout, _) = Capture((o, e) => FuzzCommand.RunAsync(new FuzzOptions
             {
                 Target = upstreamUrl, Template = path, Field = "$.username", Category = "xss", TimeoutSeconds = 10,
-            }, ct));
+            }, o, e, ct));
             Assert.Equal(0, code);
             Assert.Contains("Fuzzing", stdout, StringComparison.Ordinal);
             Assert.Contains("baseline:", stdout, StringComparison.Ordinal);
@@ -268,10 +260,10 @@ public sealed class FuzzCommandTests
         var path = WriteTemplate(rec);
         try
         {
-            var (code, stdout, _) = Capture(() => FuzzCommand.RunAsync(new FuzzOptions
+            var (code, stdout, _) = Capture((o, e) => FuzzCommand.RunAsync(new FuzzOptions
             {
                 Target = upstream.Urls.First(), Template = path, Field = "$.username", Category = "sqli", TimeoutSeconds = 10,
-            }, ct));
+            }, o, e, ct));
             Assert.Equal(1, code);
             Assert.Contains("[VULN]", stdout, StringComparison.Ordinal);
             Assert.Contains("suspicious", stdout, StringComparison.Ordinal);
@@ -283,7 +275,7 @@ public sealed class FuzzCommandTests
     public async Task RunAsync_NullOptions_Throws()
     {
         var ct = TestContext.Current.CancellationToken;
-        await Assert.ThrowsAsync<ArgumentNullException>(async () => await FuzzCommand.RunAsync(null!, ct));
+        await Assert.ThrowsAsync<ArgumentNullException>(async () => await FuzzCommand.RunAsync(null!, ct: ct));
     }
 
     [Fact]
@@ -294,10 +286,10 @@ public sealed class FuzzCommandTests
         var path = WriteTemplate(rec);
         try
         {
-            var (code, _, stderr) = Capture(() => FuzzCommand.RunAsync(new FuzzOptions
+            var (code, _, stderr) = Capture((o, e) => FuzzCommand.RunAsync(new FuzzOptions
             {
                 Target = "http://example.invalid", Template = path, Field = "$.u", Category = "sqli",
-            }, ct));
+            }, o, e, ct));
             Assert.Equal(1, code);
             Assert.Contains("not valid JSON", stderr, StringComparison.Ordinal);
         }
@@ -324,7 +316,7 @@ public sealed class FuzzCommandTests
         var path = WriteTemplate(rec);
         try
         {
-            var (code, stdout, _) = Capture(() => FuzzCommand.RunAsync(new FuzzOptions
+            var (code, stdout, _) = Capture((o, e) => FuzzCommand.RunAsync(new FuzzOptions
             {
                 Target = upstream.Urls.First(),
                 Template = path,
@@ -332,7 +324,7 @@ public sealed class FuzzCommandTests
                 Category = "sqli",
                 Force = true,    // overrides the numeric-skip guard
                 TimeoutSeconds = 10,
-            }, ct));
+            }, o, e, ct));
             Assert.Equal(0, code);
             Assert.Contains("Fuzzing", stdout, StringComparison.Ordinal);
             Assert.Contains("(Number)", stdout, StringComparison.Ordinal);
@@ -350,14 +342,14 @@ public sealed class FuzzCommandTests
         var path = WriteTemplate(rec);
         try
         {
-            var (code, stdout, _) = Capture(() => FuzzCommand.RunAsync(new FuzzOptions
+            var (code, stdout, _) = Capture((o, e) => FuzzCommand.RunAsync(new FuzzOptions
             {
                 Target = "http://127.0.0.1:1",   // unbindable port → connection refused
                 Template = path,
                 Field = "$.username",
                 Category = "sqli",
                 TimeoutSeconds = 2,
-            }, ct));
+            }, o, e, ct));
             Assert.True(code == 0);
             Assert.Contains("baseline FAILED", stdout, StringComparison.Ordinal);
             Assert.Contains("[err]", stdout, StringComparison.Ordinal);
@@ -401,14 +393,14 @@ public sealed class FuzzCommandTests
         try
         {
             // TryNavigatePath fails on a string root with $.foo path → "field not found".
-            var (code, _, stderr) = Capture(() => FuzzCommand.RunAsync(new FuzzOptions
+            var (code, _, stderr) = Capture((o, e) => FuzzCommand.RunAsync(new FuzzOptions
             {
                 Target = upstream.Urls.First(),
                 Template = path,
                 Field = "$.foo",
                 Category = "sqli",
                 TimeoutSeconds = 10,
-            }, ct));
+            }, o, e, ct));
             Assert.Equal(1, code);
             Assert.Contains("not found", stderr, StringComparison.OrdinalIgnoreCase);
         }
@@ -435,14 +427,14 @@ public sealed class FuzzCommandTests
         var path = WriteTemplate(rec);
         try
         {
-            var (code, _, _) = Capture(() => FuzzCommand.RunAsync(new FuzzOptions
+            var (code, _, _) = Capture((o, e) => FuzzCommand.RunAsync(new FuzzOptions
             {
                 Target = upstream.Urls.First(),
                 Template = path,
                 Field = "$.filter.id",
                 Category = "xss",
                 TimeoutSeconds = 10,
-            }, ct));
+            }, o, e, ct));
             Assert.Equal(0, code);
         }
         finally { File.Delete(path); }
