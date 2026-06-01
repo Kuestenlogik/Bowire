@@ -74,7 +74,17 @@ public sealed class ScanCliCommand : IBowireCliCommand
                 Scope = pr.GetValue(scopeOpt) ?? Array.Empty<string>(),
                 AuthHeaders = pr.GetValue(authHeaderOpt) ?? Array.Empty<string>(),
             };
-            return await ScanCommand.RunAsync(options, ct).ConfigureAwait(false);
+            // Thread the InvocationConfiguration's Output / Error
+            // writers through so production keeps writing to the real
+            // Console (the framework defaults wire them up to
+            // Console.Out / Console.Error) while tests + embedded
+            // callers can pin their own TextWriter for capture without
+            // touching process-global Console state.
+            return await ScanCommand.RunAsync(
+                options,
+                ct,
+                pr.InvocationConfiguration.Output,
+                pr.InvocationConfiguration.Error).ConfigureAwait(false);
         });
 
         return scan;
