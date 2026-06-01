@@ -22,17 +22,22 @@
  * runs are instant.
  *
  * Consumer locations written:
- *   src/Kuestenlogik.Bowire/wwwroot/favicon.svg    ← images/bowire_logo_small.svg
- *   docs/favicon.ico                      ← images/favicon.ico
- *   site/assets/images/favicon.ico        ← images/favicon.ico
- *   site/assets/images/bowire-logo.svg   ← images/bowire_logo.svg
- *   site/assets/images/apple-touch-icon.png  ← 180×180 PNG of small SVG
+ *   src/Kuestenlogik.Bowire/wwwroot/favicon.svg          ← images/bowire_logo_small.svg
+ *   docs/favicon.ico                                     ← images/favicon.ico
+ *   docs/templates/bowire/public/favicon.svg             ← images/bowire_logo_small.svg
+ *   site/assets/images/favicon.ico                       ← images/favicon.ico
+ *   site/assets/images/favicon.svg                       ← images/bowire_logo_small.svg
+ *   site/assets/images/bowire-logo.svg                   ← images/bowire_logo.svg
+ *   site/assets/images/apple-touch-icon.png              ← 180×180 PNG of small SVG
  *
- * NOT distributed: site/assets/images/favicon.svg + the equivalent
- * docs DocFX favicon at docs/templates/bowire/public/favicon.svg.
- * Those two share a "branded tile" design (indigo background + white
- * Circle-B) that's independent of the bare B-glyph in images/. They
- * stay manually edited together when the brand changes.
+ * As of June 2026 the docfx + marketing-site favicons use the same
+ * bare Circle-B glyph as the embedded UI's favicon — the older
+ * "branded tile" design (indigo background + white Circle-B) was
+ * dropped in favour of a transparent glyph that flips its fill via
+ * @media (prefers-color-scheme) in the SVG itself, so the favicon
+ * stays legible against both light and dark browser-tab chrome.
+ * Out-of-tree consumers (Bowire.Bootcamp's docfx site) keep a
+ * byte-identical copy of the same SVG; their sync stays manual.
  */
 
 const fs = require('fs');
@@ -50,16 +55,16 @@ const COPIES = [
     // the HTML (browser tab + topbar brand logo via config.logoIcon).
     { src: 'bowire_logo_small.svg', dest: 'src/Kuestenlogik.Bowire/wwwroot/favicon.svg' },
 
-    // docfx documentation — browser tab icon.
+    // docfx documentation — ICO fallback + the theme-aware SVG primary.
     { src: 'favicon.ico', dest: 'docs/favicon.ico' },
+    { src: 'bowire_logo_small.svg', dest: 'docs/templates/bowire/public/favicon.svg' },
 
-    // Marketing site (Jekyll). favicon.svg is intentionally NOT
-    // distributed — the site shares the branded-tile design with the
-    // DocFX docs site (rounded indigo background + white Circle-B).
-    // Source of truth for that variant lives at
-    // docs/templates/bowire/public/favicon.svg; site/assets/images/
-    // favicon.svg is kept byte-identical via manual sync.
+    // Marketing site (Jekyll). Shares the same bare Circle-B glyph
+    // as the embedded UI + docfx — the older "branded tile" design
+    // was dropped in favour of the theme-adaptive transparent glyph
+    // (June 2026).
     { src: 'favicon.ico', dest: 'site/assets/images/favicon.ico' },
+    { src: 'bowire_logo_small.svg', dest: 'site/assets/images/favicon.svg' },
     { src: 'bowire_logo.svg', dest: 'site/assets/images/bowire-logo.svg' },
 ];
 
