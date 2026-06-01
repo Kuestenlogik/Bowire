@@ -21,7 +21,7 @@ namespace Kuestenlogik.Bowire.Tests.Security;
 /// network, then a few happy-path runs against an in-process Kestrel
 /// upstream + temporary template JSON files.
 /// </summary>
-[Collection("ConsoleRedirect")]
+[Collection("ConsoleOutSerialised")]
 [System.Diagnostics.CodeAnalysis.SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "Test scope")]
 [System.Diagnostics.CodeAnalysis.SuppressMessage("Performance", "CA1861:Prefer static readonly fields over constant array arguments", Justification = "Test scope — array allocations are negligible")]
 public sealed class ScanCommandTests
