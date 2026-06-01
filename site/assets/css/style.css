@@ -3970,7 +3970,16 @@ button.comparison-bestfor-card.active .comparison-bestfor-name {
     .header-nav {
         display: none;
         position: absolute;
-        top: var(--header-height);
+        /* Sits flush against the header's bottom edge. A pure
+           top:var(--header-height) used to leave a 1–2 px gap on some
+           browsers because the header's 1 px transparent border-bottom
+           pushes the visual lower edge to header-height + 1 px while
+           the dropdown anchored at header-height itself. The -1 px
+           overlap pulls the dropdown UP one pixel so the two panels
+           are continuous — the border-bottom-color goes transparent
+           anyway via the :has(.open) rule below, so no visible double
+           line. */
+        top: calc(var(--header-height) - 1px);
         left: 0;
         right: 0;
         /* Background must match .site-header.scrolled so there's no
@@ -4001,26 +4010,16 @@ button.comparison-bestfor-card.active .comparison-bestfor-name {
     }
 
     /* Mobile right-hand action row: keep all five icons (search,
-       home, theme, github, burger) — there's enough space once the
-       row is tightened up. The burger has a 3 px stroke padding
-       inside its 24×24 SVG box (lines run x1=3..x2=21), while the
-       logo's circle hits the SVG edge flush, so without correction
-       the burger's visual stroke sat 3 px further from the viewport
-       edge than the logo's circle did. Pull the burger out by
-       margin-right:-3 px so the right-edge breathing room matches
-       the logo's left-edge breathing room exactly. */
+       home, theme, github, burger). Now that the burger renders at
+       the same 16×16 size as the other icons (was 24×24 — sat visually
+       higher than its neighbours because its bounding box was bigger
+       even though the flex-center aligned the midpoints), the manual
+       padding / negative-margin compensation drops out. */
     .header-actions {
         gap: 6px;
     }
-    /* Burger sits flush against the right viewport edge so its visual
-       stroke aligns with the logo's circle on the left. The button has
-       padding:4 from base + the SVG itself has 3 px of internal stroke
-       padding (lines run x1=3..x2=21 inside a 24×24 box) — so we zero
-       the button's right-padding and add a small negative margin to
-       compensate for the SVG-internal padding that doesn't move. */
     .mobile-menu-toggle {
-        padding: 4px 0 4px 4px;
-        margin-right: -7px;
+        padding: 4px;
     }
     /* With box-sizing:border-box globally and the nav background now
        matching the scrolled-header alpha, top:var(--header-height)
