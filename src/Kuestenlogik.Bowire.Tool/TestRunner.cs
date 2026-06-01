@@ -25,21 +25,41 @@ internal static class TestRunner
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase
     };
 
-    private static bool UseColor => !Console.IsOutputRedirected;
+    // ANSI colour escapes only when (a) the writer IS the real Console.Out
+    // and (b) the real Console isn't redirected. A StringWriter handed in
+    // by a test or by an embedded caller gets plain text — no escapes
+    // pollute the captured output, no escape-sequence mismatch breaks
+    // string-Contains assertions.
+    private static bool UseColor(TextWriter writer)
+        => ReferenceEquals(writer, Console.Out) && !Console.IsOutputRedirected;
 
-    public static async Task<int> RunAsync(TestCliOptions cli)
+    /// <summary>
+    /// Run a Bowire test collection. <paramref name="output"/> and
+    /// <paramref name="error"/> redirect stdout / stderr without touching
+    /// <see cref="Console.Out"/>; defaults wire to the real console. The
+    /// CLI handler hands the framework's
+    /// <c>ParseResult.InvocationConfiguration.Output/.Error</c> through,
+    /// tests pass their own <see cref="StringWriter"/> for capture.
+    /// </summary>
+    public static async Task<int> RunAsync(
+        TestCliOptions cli,
+        TextWriter? output = null,
+        TextWriter? error = null)
     {
         ArgumentNullException.ThrowIfNull(cli);
 
+        var stdout = output ?? Console.Out;
+        var stderr = error ?? Console.Error;
+
         if (string.IsNullOrEmpty(cli.CollectionPath))
         {
-            WriteError("Usage: bowire test <collection.json> [--report path.html] [--junit path.xml]");
+            await WriteErrorAsync(stderr, "Usage: bowire test <collection.json> [--report path.html] [--junit path.xml]").ConfigureAwait(false);
             return 2;
         }
 
         if (!File.Exists(cli.CollectionPath))
         {
-            WriteError($"Collection file not found: {cli.CollectionPath}");
+            await WriteErrorAsync(stderr, $"Collection file not found: {cli.CollectionPath}").ConfigureAwait(false);
             return 2;
         }
 
@@ -51,13 +71,13 @@ internal static class TestRunner
         }
         catch (Exception ex)
         {
-            WriteError($"Failed to parse collection: {ex.Message}");
+            await WriteErrorAsync(stderr, $"Failed to parse collection: {ex.Message}").ConfigureAwait(false);
             return 2;
         }
 
         if (collection is null || collection.Tests is null || collection.Tests.Count == 0)
         {
-            WriteError("Collection has no tests.");
+            await WriteErrorAsync(stderr, "Collection has no tests.").ConfigureAwait(false);
             return 2;
         }
 
@@ -65,9 +85,9 @@ internal static class TestRunner
         var registry = BowireProtocolRegistry.Discover();
         // Don't initialize protocols with a service provider — standalone mode
 
-        Console.WriteLine();
-        WriteHeader($"Bowire Test Runner   collection: {Path.GetFileName(cli.CollectionPath)}");
-        Console.WriteLine();
+        await stdout.WriteLineAsync().ConfigureAwait(false);
+        await WriteHeaderAsync(stdout, $"Bowire Test Runner   collection: {Path.GetFileName(cli.CollectionPath)}").ConfigureAwait(false);
+        await stdout.WriteLineAsync().ConfigureAwait(false);
 
         var sw = Stopwatch.StartNew();
         var report = new RunReport
@@ -97,7 +117,7 @@ internal static class TestRunner
             passedAssertions += passed;
             if (anyFailed || !string.IsNullOrEmpty(result.Error)) failedTests++;
 
-            PrintTestResult(result);
+            await PrintTestResultAsync(stdout, result).ConfigureAwait(false);
         }
 
         sw.Stop();
@@ -106,24 +126,25 @@ internal static class TestRunner
         report.TotalAssertions = totalAssertions;
         report.FailedTests = failedTests;
 
-        Console.WriteLine();
+        await stdout.WriteLineAsync().ConfigureAwait(false);
         var summaryText = $"  {report.Tests.Count - failedTests}/{report.Tests.Count} tests passed   "
             + $"{passedAssertions}/{totalAssertions} assertions   "
             + $"in {sw.ElapsedMilliseconds} ms";
-        Console.WriteLine(failedTests > 0 ? Red(summaryText) : Green(summaryText));
-        Console.WriteLine();
+        var useColor = UseColor(stdout);
+        await stdout.WriteLineAsync(failedTests > 0 ? Red(summaryText, useColor) : Green(summaryText, useColor)).ConfigureAwait(false);
+        await stdout.WriteLineAsync().ConfigureAwait(false);
 
         if (!string.IsNullOrEmpty(cli.ReportPath))
         {
             try
             {
                 await File.WriteAllTextAsync(cli.ReportPath, HtmlReport.Render(report));
-                Console.WriteLine($"  HTML report written to {cli.ReportPath}");
-                Console.WriteLine();
+                await stdout.WriteLineAsync($"  HTML report written to {cli.ReportPath}").ConfigureAwait(false);
+                await stdout.WriteLineAsync().ConfigureAwait(false);
             }
             catch (Exception ex)
             {
-                WriteError($"Failed to write report: {ex.Message}");
+                await WriteErrorAsync(stderr, $"Failed to write report: {ex.Message}").ConfigureAwait(false);
             }
         }
 
@@ -132,12 +153,12 @@ internal static class TestRunner
             try
             {
                 await File.WriteAllTextAsync(cli.JUnitPath, JUnitReport.Render(report));
-                Console.WriteLine($"  JUnit XML written to {cli.JUnitPath}");
-                Console.WriteLine();
+                await stdout.WriteLineAsync($"  JUnit XML written to {cli.JUnitPath}").ConfigureAwait(false);
+                await stdout.WriteLineAsync().ConfigureAwait(false);
             }
             catch (Exception ex)
             {
-                WriteError($"Failed to write JUnit report: {ex.Message}");
+                await WriteErrorAsync(stderr, $"Failed to write JUnit report: {ex.Message}").ConfigureAwait(false);
             }
         }
 
@@ -436,29 +457,30 @@ internal static class TestRunner
 
     // ---- Console output ----
 
-    private static void PrintTestResult(TestResult result)
+    private static async Task PrintTestResultAsync(TextWriter stdout, TestResult result)
     {
-        var status = result.Error is null && result.Assertions.All(a => a.Passed) ? Green("PASS") : Red("FAIL");
-        Console.WriteLine($"  {status}  {Bold(result.Name)}   {Dim(result.Status + " · " + result.DurationMs + "ms")}");
+        var useColor = UseColor(stdout);
+        var status = result.Error is null && result.Assertions.All(a => a.Passed) ? Green("PASS", useColor) : Red("FAIL", useColor);
+        await stdout.WriteLineAsync($"  {status}  {Bold(result.Name, useColor)}   {Dim(result.Status + " · " + result.DurationMs + "ms", useColor)}").ConfigureAwait(false);
 
         if (result.Error is not null)
         {
-            Console.WriteLine($"        {Red("error: " + result.Error)}");
+            await stdout.WriteLineAsync($"        {Red("error: " + result.Error, useColor)}").ConfigureAwait(false);
             return;
         }
 
         foreach (var a in result.Assertions)
         {
-            var icon = a.Passed ? Green("✓") : Red("✗");
-            Console.Write($"        {icon} {Dim(a.Path + " " + a.Op + " " + Quote(a.Expected))}");
+            var icon = a.Passed ? Green("✓", useColor) : Red("✗", useColor);
+            await stdout.WriteAsync($"        {icon} {Dim(a.Path + " " + a.Op + " " + Quote(a.Expected), useColor)}").ConfigureAwait(false);
             if (!a.Passed)
             {
                 if (a.Error is not null)
-                    Console.Write($"   {Red(a.Error)}");
+                    await stdout.WriteAsync($"   {Red(a.Error, useColor)}").ConfigureAwait(false);
                 else
-                    Console.Write($"   {Red("actual: " + Quote(a.ActualText))}");
+                    await stdout.WriteAsync($"   {Red("actual: " + Quote(a.ActualText), useColor)}").ConfigureAwait(false);
             }
-            Console.WriteLine();
+            await stdout.WriteLineAsync().ConfigureAwait(false);
         }
     }
 
@@ -468,21 +490,22 @@ internal static class TestRunner
         return s;
     }
 
-    private static void WriteHeader(string text)
+    private static Task WriteHeaderAsync(TextWriter stdout, string text)
     {
-        Console.WriteLine("  " + Bold(Cyan(text)));
+        var useColor = UseColor(stdout);
+        return stdout.WriteLineAsync("  " + Bold(Cyan(text, useColor), useColor));
     }
 
-    private static void WriteError(string text)
+    private static Task WriteErrorAsync(TextWriter stderr, string text)
     {
-        Console.Error.WriteLine(Red("error: " + text));
+        return stderr.WriteLineAsync(Red("error: " + text, UseColor(stderr)));
     }
 
-    private static string Cyan(string text)  => UseColor ? $"\x1b[36m{text}\x1b[0m" : text;
-    private static string Bold(string text)  => UseColor ? $"\x1b[1m{text}\x1b[0m"  : text;
-    private static string Dim(string text)   => UseColor ? $"\x1b[2m{text}\x1b[0m"  : text;
-    private static string Green(string text) => UseColor ? $"\x1b[32m{text}\x1b[0m" : text;
-    private static string Red(string text)   => UseColor ? $"\x1b[31m{text}\x1b[0m" : text;
+    private static string Cyan(string text, bool useColor)  => useColor ? $"\x1b[36m{text}\x1b[0m" : text;
+    private static string Bold(string text, bool useColor)  => useColor ? $"\x1b[1m{text}\x1b[0m"  : text;
+    private static string Dim(string text, bool useColor)   => useColor ? $"\x1b[2m{text}\x1b[0m"  : text;
+    private static string Green(string text, bool useColor) => useColor ? $"\x1b[32m{text}\x1b[0m" : text;
+    private static string Red(string text, bool useColor)   => useColor ? $"\x1b[31m{text}\x1b[0m" : text;
 }
 
 // ---- Test collection JSON shape ----
