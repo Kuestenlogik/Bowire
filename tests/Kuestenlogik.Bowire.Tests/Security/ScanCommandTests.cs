@@ -21,29 +21,28 @@ namespace Kuestenlogik.Bowire.Tests.Security;
 /// network, then a few happy-path runs against an in-process Kestrel
 /// upstream + temporary template JSON files.
 /// </summary>
-[Collection("ConsoleOutSerialised")]
+// No [Collection] needed — ScanCommand.RunAsync now accepts a TextWriter
+// pair directly (System.CommandLine's InvocationConfiguration.Output /
+// Error in production, the StringWriter pair Capture builds for tests),
+// so this class never touches process-global Console.Out.
 [System.Diagnostics.CodeAnalysis.SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "Test scope")]
 [System.Diagnostics.CodeAnalysis.SuppressMessage("Performance", "CA1861:Prefer static readonly fields over constant array arguments", Justification = "Test scope — array allocations are negligible")]
 public sealed class ScanCommandTests
 {
-    private static (int code, string stdout, string stderr) Capture(Func<Task<int>> action)
+    // Hands a fresh StringWriter pair to the test body and harvests
+    // whatever it wrote — no Console.SetOut / Console.SetError, no
+    // process-global state touched. Each test gets its own writer pair,
+    // so this class is safely parallelisable with everything else.
+    [System.Diagnostics.CodeAnalysis.SuppressMessage(
+        "Reliability",
+        "CA2025:Ensure tasks using IDisposable instances complete before the instances are disposed",
+        Justification = "The Task<int> is synchronously joined via GetAwaiter().GetResult() before the writers leave scope, so the writers are guaranteed live for the entire task lifetime.")]
+    private static (int code, string stdout, string stderr) Capture(Func<StringWriter, StringWriter, Task<int>> action)
     {
-        var origOut = Console.Out;
-        var origErr = Console.Error;
         using var sbOut = new StringWriter();
         using var sbErr = new StringWriter();
-        Console.SetOut(sbOut);
-        Console.SetError(sbErr);
-        try
-        {
-            var code = action().GetAwaiter().GetResult();
-            return (code, sbOut.ToString(), sbErr.ToString());
-        }
-        finally
-        {
-            Console.SetOut(origOut);
-            Console.SetError(origErr);
-        }
+        var code = action(sbOut, sbErr).GetAwaiter().GetResult();
+        return (code, sbOut.ToString(), sbErr.ToString());
     }
 
     private static BowireRecording AttackRecording(int expectedStatus = 200, string? bodyContains = null) => new()
@@ -76,7 +75,7 @@ public sealed class ScanCommandTests
     public async Task RunAsync_EmptyTarget_ReturnsUsageError()
     {
         var ct = TestContext.Current.CancellationToken;
-        var (code, _, stderr) = Capture(() => ScanCommand.RunAsync(new ScanOptions(), ct));
+        var (code, _, stderr) = Capture((@out, err) => ScanCommand.RunAsync(new ScanOptions(), ct, @out, err));
         Assert.Equal(2, code);
         Assert.Contains("Usage", stderr, StringComparison.Ordinal);
     }
@@ -85,11 +84,11 @@ public sealed class ScanCommandTests
     public async Task RunAsync_NoTemplatesAndNoBuiltins_ReturnsUsageError()
     {
         var ct = TestContext.Current.CancellationToken;
-        var (code, _, stderr) = Capture(() => ScanCommand.RunAsync(new ScanOptions
+        var (code, _, stderr) = Capture((@out, err) => ScanCommand.RunAsync(new ScanOptions
         {
             Target = "https://example.invalid",
             RunBuiltins = false,
-        }, ct));
+        }, ct, @out, err));
         Assert.Equal(2, code);
         Assert.Contains("No vulnerability templates", stderr, StringComparison.Ordinal);
     }
@@ -101,12 +100,12 @@ public sealed class ScanCommandTests
         var path = await WriteAsync(AttackRecording(), ct);
         try
         {
-            var (code, _, stderr) = Capture(() => ScanCommand.RunAsync(new ScanOptions
+            var (code, _, stderr) = Capture((@out, err) => ScanCommand.RunAsync(new ScanOptions
             {
                 Target = "not a url",
                 Template = path,
                 RunBuiltins = false,
-            }, ct));
+            }, ct, @out, err));
             Assert.Equal(2, code);
             Assert.Contains("Could not parse --target", stderr, StringComparison.Ordinal);
         }
@@ -120,13 +119,13 @@ public sealed class ScanCommandTests
         var path = await WriteAsync(AttackRecording(), ct);
         try
         {
-            var (code, _, stderr) = Capture(() => ScanCommand.RunAsync(new ScanOptions
+            var (code, _, stderr) = Capture((@out, err) => ScanCommand.RunAsync(new ScanOptions
             {
                 Target = "https://other.example.com",
                 Template = path,
                 Scope = new[] { "api.example.com" },
                 RunBuiltins = false,
-            }, ct));
+            }, ct, @out, err));
             Assert.Equal(2, code);
             Assert.Contains("outside the configured --scope", stderr, StringComparison.Ordinal);
         }
@@ -228,13 +227,13 @@ public sealed class ScanCommandTests
         var path = await WriteAsync(AttackRecording(expectedStatus: 200), ct);
         try
         {
-            var (code, stdout, _) = Capture(() => ScanCommand.RunAsync(new ScanOptions
+            var (code, stdout, _) = Capture((@out, err) => ScanCommand.RunAsync(new ScanOptions
             {
                 Target = upstream.Urls.First(),
                 Template = path,
                 RunBuiltins = false,
                 TimeoutSeconds = 10,
-            }, ct));
+            }, ct, @out, err));
             Assert.Equal(0, code);
             Assert.Contains("[VULN]", stdout, StringComparison.Ordinal);
             Assert.Contains("BWR-T-001", stdout, StringComparison.Ordinal);
@@ -252,13 +251,13 @@ public sealed class ScanCommandTests
         var path = await WriteAsync(AttackRecording(expectedStatus: 418), ct);
         try
         {
-            var (code, stdout, _) = Capture(() => ScanCommand.RunAsync(new ScanOptions
+            var (code, stdout, _) = Capture((@out, err) => ScanCommand.RunAsync(new ScanOptions
             {
                 Target = upstream.Urls.First(),
                 Template = path,
                 RunBuiltins = false,
                 TimeoutSeconds = 10,
-            }, ct));
+            }, ct, @out, err));
             Assert.Equal(0, code);
             Assert.Contains("[ok]", stdout, StringComparison.Ordinal);
             Assert.Contains("No vulnerabilities matched", stdout, StringComparison.Ordinal);
@@ -277,13 +276,13 @@ public sealed class ScanCommandTests
         var path = await WriteAsync(rec, ct);
         try
         {
-            var (code, stdout, _) = Capture(() => ScanCommand.RunAsync(new ScanOptions
+            var (code, stdout, _) = Capture((@out, err) => ScanCommand.RunAsync(new ScanOptions
             {
                 Target = upstream.Urls.First(),
                 Template = path,
                 RunBuiltins = false,
                 MinSeverity = "high",
-            }, ct));
+            }, ct, @out, err));
             Assert.Equal(0, code);
             Assert.Contains("[skip]", stdout, StringComparison.Ordinal);
             Assert.Contains("below severity threshold", stdout, StringComparison.Ordinal);
@@ -302,12 +301,12 @@ public sealed class ScanCommandTests
         var path = await WriteAsync(rec, ct);
         try
         {
-            var (code, stdout, _) = Capture(() => ScanCommand.RunAsync(new ScanOptions
+            var (code, stdout, _) = Capture((@out, err) => ScanCommand.RunAsync(new ScanOptions
             {
                 Target = upstream.Urls.First(),
                 Template = path,
                 RunBuiltins = false,
-            }, ct));
+            }, ct, @out, err));
             Assert.Equal(0, code);
             Assert.Contains("not yet supported by scanner", stdout, StringComparison.Ordinal);
         }
@@ -322,13 +321,13 @@ public sealed class ScanCommandTests
         var path = await WriteAsync(AttackRecording(), ct);
         try
         {
-            var (code, stdout, _) = Capture(() => ScanCommand.RunAsync(new ScanOptions
+            var (code, stdout, _) = Capture((@out, err) => ScanCommand.RunAsync(new ScanOptions
             {
                 Target = "http://127.0.0.1:1",
                 Template = path,
                 RunBuiltins = false,
                 TimeoutSeconds = 2,
-            }, ct));
+            }, ct, @out, err));
             // Either error or 0 depending on platform — the value we
             // really care about is the stdout error marker.
             Assert.True(code is 0 or 1);
@@ -352,13 +351,13 @@ public sealed class ScanCommandTests
             await File.WriteAllTextAsync(Path.Combine(corpusDir, "a.json"), JsonSerializer.Serialize(rec1), ct);
             await File.WriteAllTextAsync(Path.Combine(corpusDir, "b.json"), JsonSerializer.Serialize(rec2), ct);
 
-            var (code, stdout, _) = Capture(() => ScanCommand.RunAsync(new ScanOptions
+            var (code, stdout, _) = Capture((@out, err) => ScanCommand.RunAsync(new ScanOptions
             {
                 Target = upstream.Urls.First(),
                 Templates = corpusDir,
                 RunBuiltins = false,
                 TimeoutSeconds = 10,
-            }, ct));
+            }, ct, @out, err));
             Assert.Equal(0, code);
             Assert.Contains("[VULN]", stdout, StringComparison.Ordinal);
             Assert.Contains("[ok]", stdout, StringComparison.Ordinal);
@@ -375,14 +374,14 @@ public sealed class ScanCommandTests
         var sarifPath = Path.Combine(Path.GetTempPath(), $"bowire-scan-{Guid.NewGuid():N}.sarif");
         try
         {
-            var (code, _, _) = Capture(() => ScanCommand.RunAsync(new ScanOptions
+            var (code, _, _) = Capture((@out, err) => ScanCommand.RunAsync(new ScanOptions
             {
                 Target = upstream.Urls.First(),
                 Template = template,
                 OutSarif = sarifPath,
                 RunBuiltins = false,
                 TimeoutSeconds = 10,
-            }, ct));
+            }, ct, @out, err));
             Assert.Equal(0, code);
             Assert.True(File.Exists(sarifPath));
             var sarif = await File.ReadAllTextAsync(sarifPath, ct);
@@ -410,13 +409,13 @@ public sealed class ScanCommandTests
             await File.WriteAllTextAsync(Path.Combine(corpusDir, "good.json"), JsonSerializer.Serialize(AttackRecording()), ct);
             await File.WriteAllTextAsync(Path.Combine(corpusDir, "bad.json"), "{not json", ct);
 
-            var (code, _, stderr) = Capture(() => ScanCommand.RunAsync(new ScanOptions
+            var (code, _, stderr) = Capture((@out, err) => ScanCommand.RunAsync(new ScanOptions
             {
                 Target = upstream.Urls.First(),
                 Templates = corpusDir,
                 RunBuiltins = false,
                 TimeoutSeconds = 10,
-            }, ct));
+            }, ct, @out, err));
             Assert.Equal(0, code);
             Assert.Contains("Skipping bad.json", stderr, StringComparison.Ordinal);
         }
@@ -429,12 +428,12 @@ public sealed class ScanCommandTests
         var ct = TestContext.Current.CancellationToken;
         await using var upstream = await StartUpstreamAsync(ct);
 
-        var (code, stdout, _) = Capture(() => ScanCommand.RunAsync(new ScanOptions
+        var (code, stdout, _) = Capture((@out, err) => ScanCommand.RunAsync(new ScanOptions
         {
             Target = upstream.Urls.First(),
             RunBuiltins = true,  // hits the builtin-merge branch
             TimeoutSeconds = 5,
-        }, ct));
+        }, ct, @out, err));
         Assert.Equal(0, code);
         Assert.Contains("[VULN]", stdout, StringComparison.Ordinal);
         Assert.Contains("BWR-BUILTIN-TLS-001", stdout, StringComparison.Ordinal);  // plaintext-http finding
@@ -446,13 +445,13 @@ public sealed class ScanCommandTests
         var ct = TestContext.Current.CancellationToken;
         await using var upstream = await StartUpstreamAsync(ct);
 
-        var (code, stdout, _) = Capture(() => ScanCommand.RunAsync(new ScanOptions
+        var (code, stdout, _) = Capture((@out, err) => ScanCommand.RunAsync(new ScanOptions
         {
             Target = upstream.Urls.First(),
             RunBuiltins = true,
             MinSeverity = "critical",   // every finding is below this, including the high-sev plaintext-http
             TimeoutSeconds = 5,
-        }, ct));
+        }, ct, @out, err));
         Assert.Equal(0, code);
         Assert.Contains("below severity threshold", stdout, StringComparison.Ordinal);
     }
@@ -492,13 +491,13 @@ public sealed class ScanCommandTests
                         part: body
                 """, ct);
 
-            var (code, stdout, _) = Capture(() => ScanCommand.RunAsync(new ScanOptions
+            var (code, stdout, _) = Capture((@out, err) => ScanCommand.RunAsync(new ScanOptions
             {
                 Target = upstream.Urls.First(),
                 Nuclei = nucleiDir,
                 RunBuiltins = false,
                 TimeoutSeconds = 10,
-            }, ct));
+            }, ct, @out, err));
 
             Assert.Equal(0, code);
             Assert.Contains("Loaded 1 nuclei template(s)", stdout, StringComparison.Ordinal);
@@ -535,13 +534,13 @@ public sealed class ScanCommandTests
                           - 200
                 """, ct);
 
-            var (code, stdout, _) = Capture(() => ScanCommand.RunAsync(new ScanOptions
+            var (code, stdout, _) = Capture((@out, err) => ScanCommand.RunAsync(new ScanOptions
             {
                 Target = upstream.Urls.First(),
                 Nuclei = nucleiDir,
                 RunBuiltins = false,
                 TimeoutSeconds = 10,
-            }, ct));
+            }, ct, @out, err));
 
             Assert.Equal(0, code);
             // Unfolded to 3 recordings — output shows the loaded count.
