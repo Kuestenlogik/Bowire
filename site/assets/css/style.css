@@ -2045,6 +2045,18 @@ pre > code {
     justify-self: start;
     text-align: left;
 }
+/* "Planned plugins" tag sits in row 3 of the card grid. Without an
+   explicit row, it auto-flows into the first available cell on
+   .protocol-content's grid — which under `display: contents` meant
+   the tag could leak into row 1 (column 1, under the icon) on some
+   browsers, pushing the h3 over and producing the visible extra gap
+   between icon + headline the user reported. Pinning row + columns
+   keeps the same shape as the install-row in every other card. */
+.protocol-card-coming .protocol-tag-dim {
+    grid-column: 1 / -1;
+    grid-row: 3;
+    justify-self: start;
+}
 .protocol-coming-link {
     color: var(--accent);
     font-weight: 600;

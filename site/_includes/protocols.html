@@ -280,7 +280,7 @@
         </div>
         <div class="protocol-content">
           <h3>NATS</h3>
-          <p>In-tree plugin on the official NATS.Net 2.x client. Three discovery sources fan out from one shared connection: subject sampling on the <code>&gt;</code> wildcard, JetStream stream enumeration, and the Services API via <code>$SRV.PING</code> broadcast. Pub / sub / request reuse the same Wireshark-style stream pane.</p>
+          <p>Built on the official NATS.Net 2.x client. Three discovery sources fan out from one shared connection: subject sampling on the <code>&gt;</code> wildcard, JetStream stream enumeration, and the Services API via <code>$SRV.PING</code> broadcast. Pub / sub / request reuse the same Wireshark-style stream pane.</p>
           <div class="protocol-install">
             <code><span class="protocol-install-prompt">$</span> dotnet add package Kuestenlogik.Bowire.Protocol.Nats</code>
             <button class="protocol-install-copy copy-btn" data-copy="dotnet add package Kuestenlogik.Bowire.Protocol.Nats" aria-label="Copy install command for NATS"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></button>
@@ -377,7 +377,7 @@
         </div>
         <div class="protocol-content">
           <h3>Apache Pulsar</h3>
-          <p>In-tree plugin on the Apache-maintained DotPulsar 3.5.x client. Topic discovery via Pulsar's HTTP admin API; produce (Unary) and subscribe (ServerStreaming) over the binary protocol with an exclusive subscription that auto-acks so the cursor advances.</p>
+          <p>Built on the Apache-maintained DotPulsar 3.5.x client. Topic discovery via Pulsar's HTTP admin API; produce (Unary) and subscribe (ServerStreaming) over the binary protocol with an exclusive subscription that auto-acks so the cursor advances.</p>
           <div class="protocol-install">
             <code><span class="protocol-install-prompt">$</span> dotnet add package Kuestenlogik.Bowire.Protocol.Pulsar</code>
             <button class="protocol-install-copy copy-btn" data-copy="dotnet add package Kuestenlogik.Bowire.Protocol.Pulsar" aria-label="Copy install command for Pulsar"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></button>
@@ -814,7 +814,7 @@
         </div>
         <div class="protocol-content">
           <h3>Coming soon</h3>
-          <p>SOAP for enterprise legacy, NATS for cloud-native messaging, Connect (Buf) over HTTP/1.1+JSON. More on the <span class="protocol-coming-link">roadmap &rarr;</span></p>
+          <p>OTLP for OpenTelemetry receive-side, Surgewave tap-stream subscription, Connect (Buf) phases 1 + 3 (unary + bidi-streaming over HTTP/2). More on the <span class="protocol-coming-link">roadmap &rarr;</span></p>
           <span class="protocol-tag protocol-tag-dim">Planned plugins</span>
         </div>
       </a>
