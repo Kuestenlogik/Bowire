@@ -1,0 +1,68 @@
+name: Roadmap item
+description: Track a roadmap-scoped piece of work (lands on the Project board, version-targeted)
+labels: ["roadmap"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        For roadmap-scoped work. This template lands on the [Bowire Project board](https://github.com/orgs/Kuestenlogik/projects/2) automatically (via Auto-add-to-project). For bug reports use the *Bug Report* template; for one-off feature ideas use *Feature Request*.
+  - type: textarea
+    attributes:
+      label: Summary
+      description: One short paragraph. What is this, why does it matter?
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Checklist
+      description: Bullet list of concrete work items. Tick them off as PRs land.
+      placeholder: |
+        - [ ] First sub-task
+        - [ ] Second sub-task
+        - [ ] Documentation
+    validations:
+      required: true
+  - type: dropdown
+    attributes:
+      label: Area
+      description: Component axis on the board
+      options:
+        - workbench (UI)
+        - cli
+        - security
+        - mcp
+        - plugin-sdk
+        - mock
+        - docs
+        - site
+        - bootcamp
+        - multi (cross-cutting)
+    validations:
+      required: true
+  - type: dropdown
+    attributes:
+      label: Kind
+      description: Type of work
+      options:
+        - feature
+        - debt (refactor / cleanup)
+        - docs
+        - rfc (pre-implementation design discussion)
+        - concept (design doc / ADR / spec)
+    validations:
+      required: true
+  - type: dropdown
+    attributes:
+      label: Target milestone
+      description: When should this ship?
+      options:
+        - v1.5
+        - v1.6
+        - v2.0
+        - Later
+    validations:
+      required: false
+  - type: markdown
+    attributes:
+      value: |
+        > **Triage will set** Status (Backlog / Next up / In progress / In review / Done), Priority (P0–P3), and Track on the Project board.

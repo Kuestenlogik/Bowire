@@ -1,6 +1,6 @@
 name: Feature Request
 description: Suggest a new feature
-labels: ["enhancement"]
+labels: ["kind:feature", "community-vote"]
 body:
   - type: textarea
     attributes:
@@ -12,3 +12,25 @@ body:
     attributes:
       label: Use Case
       description: Why is this useful?
+  - type: dropdown
+    attributes:
+      label: Area
+      description: Which component does this affect? (Project board uses the same axis)
+      options:
+        - workbench (UI)
+        - cli
+        - security (scan / fuzz / jwt / proxy)
+        - mcp (server / adapter)
+        - plugin-sdk
+        - mock
+        - docs
+        - site (bowire.io)
+        - bootcamp
+        - multi (cross-cutting)
+        - unsure
+    validations:
+      required: false
+  - type: markdown
+    attributes:
+      value: |
+        > **Reactions count as priority signal.** If you want this feature, give the issue a 👍 instead of commenting "+1".

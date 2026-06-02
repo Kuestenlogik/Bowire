@@ -65,6 +65,40 @@ The board ships with the default *All items* view. The four views below mirror h
 - Status transitions: `Backlog` → `Next up` → `In progress` → `In review` → `Done`. The last two are driven by PR state where possible.
 - Milestones are managed in [Settings → Issues → Milestones](https://github.com/Kuestenlogik/Bowire/milestones). When a milestone closes, its issues move out of the `Roadmap` view automatically.
 
+## Automation
+
+The roadmap is wired to maintain itself once an issue lands with `label:roadmap`:
+
+| Event | What happens |
+|---|---|
+| New issue with `roadmap` label | `.github/workflows/add-to-project.yml` attaches it to the Project (Status defaults to `Backlog`) |
+| Issue closed | `roadmap-sync.yml` regenerates `ROADMAP.md` from the Project + commits |
+| Issue title / label / milestone change | same — `roadmap-sync.yml` re-renders |
+| PR merged that uses `Closes #N` | Status flips to `Done` via Project workflow (UI-side, see below) |
+| Daily 05:23 UTC | Safety-net `roadmap-sync.yml` cron |
+
+### One-time setup (PAT secret)
+
+`add-to-project.yml` needs a PAT to write to the org-level Project. The default `GITHUB_TOKEN` can't.
+
+1. Create a fine-grained PAT — Settings → Developer settings → Personal access tokens → Fine-grained.
+   - Resource owner: `Kuestenlogik`
+   - Repository access: `Kuestenlogik/Bowire` (+ any sibling repos using the same wire)
+   - Permissions: `Issues: Read`, `Pull requests: Read`, `Organization projects: Read and write`
+2. Save as **organization secret** `PROJECT_ADD_TOKEN` in `Kuestenlogik` org settings — pick "Selected repositories" and tick the Bowire repos that should auto-attach.
+3. Re-run any open PR to test — the next issue/PR with `label:roadmap` should land on the board automatically.
+
+### Project-side workflows (UI-only)
+
+Configure once in the Project UI — these aren't exposed via API yet, so they live alongside the GitHub Action workflow files.
+
+1. Open https://github.com/orgs/Kuestenlogik/projects/2 → **⚙ Settings** → **Workflows**
+2. **Item closed** → enable → Set status to `Done`.
+3. **Pull request merged** → enable → Set status to `Done`.
+4. **Auto-add to project** → leave **disabled** for `Kuestenlogik/Bowire` (the GitHub Action above handles that with the label filter). For sibling Bowire.* repos that don't carry the workflow file, enable Auto-add with filter `repo:Kuestenlogik/<RepoName> label:roadmap is:issue,pr`.
+
+Sibling-repo wiring options (Project-side vs Action-side vs back-fill) are documented separately in [`multi-repo-project-add.md`](multi-repo-project-add.md).
+
 ## Migration from `ROADMAP.md`
 
 The pilot batch lives on the board now (6 items from *In progress* + *Next up*). `ROADMAP.md` is unchanged for the moment. Once the board's daily feel is validated, the plan is:
