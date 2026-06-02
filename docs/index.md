@@ -36,6 +36,10 @@ Reference material is split further:
 - **[Protocol Guides](protocols/index.md)** &mdash; behaviour and setup for each protocol plugin (gRPC, REST, GraphQL, SignalR, WebSocket, SSE, MQTT, Socket.IO, OData, MCP) plus how to write your own.
 - **[Architecture](architecture/index.md)** &mdash; internals, the plugin pipeline, discovery, and data locations &mdash; for anyone extending or embedding Bowire deeply.
 
+Runnable examples next to the references:
+
+- **[Samples](https://bowire.io/samples.html)** &mdash; one self-contained reference app per protocol (REST / gRPC / GraphQL / MQTT / SignalR / SocketIO / SSE / WebSocket / OData / MCP) plus a Combined showcase, all built around the same Harbor Control Center domain. Source at [Kuestenlogik/Bowire.Samples](https://github.com/Kuestenlogik/Bowire.Samples). Useful when you want to see a wire end-to-end before wiring it into your own service.
+
 </section>
 
 <section class="bowire-docs-section" markdown="1">
