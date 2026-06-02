@@ -65,7 +65,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 - [#48](https://github.com/Kuestenlogik/Bowire/issues/48) **Schema watch mode** `kind:feature` `area:workbench` `P3`
 - [#50](https://github.com/Kuestenlogik/Bowire/issues/50) **Marketing site — gallery / lightbox layer on solutions/*** `kind:feature` `area:site` `track:marketing-ia` `P3`
 - [#53](https://github.com/Kuestenlogik/Bowire/issues/53) **Marketing site — second row of specialist comparisons** `kind:feature` `area:site` `track:marketing-ia` `P3`
-- [#54](https://github.com/Kuestenlogik/Bowire/issues/54) **Bootcamp: capstone project still missing** `kind:feature` `area:bootcamp` `track:bootcamp-content` `P2`
 
 ---
 
