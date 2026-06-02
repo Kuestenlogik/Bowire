@@ -77,16 +77,17 @@ The roadmap is wired to maintain itself once an issue lands with `label:roadmap`
 | PR merged that uses `Closes #N` | Status flips to `Done` via Project workflow (UI-side, see below) |
 | Daily 05:23 UTC | Safety-net `roadmap-sync.yml` cron |
 
-### One-time setup (PAT secret)
+### One-time setup (single PAT, org-secret)
 
-`add-to-project.yml` needs a PAT to write to the org-level Project. The default `GITHUB_TOKEN` can't.
+`add-to-project.yml` and `Bowire.Bootcamp/notify-bowire.yml` share **one** organization secret `BOWIRE_DISPATCH_TOKEN`. The default `GITHUB_TOKEN` can't write to org-level Projects nor dispatch into sibling repos, so a PAT is required either way — but only one.
 
 1. Create a fine-grained PAT — Settings → Developer settings → Personal access tokens → Fine-grained.
    - Resource owner: `Kuestenlogik`
-   - Repository access: `Kuestenlogik/Bowire` (+ any sibling repos using the same wire)
-   - Permissions: `Issues: Read`, `Pull requests: Read`, `Organization projects: Read and write`
-2. Save as **organization secret** `PROJECT_ADD_TOKEN` in `Kuestenlogik` org settings — pick "Selected repositories" and tick the Bowire repos that should auto-attach.
-3. Re-run any open PR to test — the next issue/PR with `label:roadmap` should land on the board automatically.
+   - Repository access: `Kuestenlogik/Bowire` + all sibling Bowire.* repos (Bootcamp, Templates, VulnDb, Protocol.*, Sdk.*)
+   - **Repository permissions**: `Contents: R/W`, `Issues: Read`, `Pull requests: Read`
+   - **Organization permissions**: `Projects: Read and write`
+2. Save as organization secret **`BOWIRE_DISPATCH_TOKEN`** in `Kuestenlogik` org settings → Secrets → Actions → New organization secret. Repository access: "Selected repositories" → tick every Bowire.* repo.
+3. Both workflows pick it up automatically; nothing per-repo to configure.
 
 ### Project-side workflows (UI-only)
 

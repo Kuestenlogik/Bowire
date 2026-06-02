@@ -11,9 +11,16 @@ name: Add to Bowire Project
 # project" workflow in the Project Settings UI). See
 # docs/contributing/multi-repo-project-add.md for the wiring options.
 #
-# Auth: needs a PAT secret PROJECT_ADD_TOKEN with `project` + `repo`
-# scope on Kuestenlogik. Either at repo level or as an organization
-# secret. The default GITHUB_TOKEN can't write to org-level Projects.
+# Auth: reuses BOWIRE_DISPATCH_TOKEN — the same org-secret PAT that
+# Bowire.Bootcamp's notify-bowire.yml uses to dispatch deploys.
+# Permissions needed on top of Contents:R/W:
+#   - Organization projects: Read and write
+#   - Issues: Read
+#   - Pull requests: Read
+# Saving as an organization secret in Kuestenlogik lets every Bowire.*
+# sibling repo wire the same workflow without re-issuing PATs. The
+# default GITHUB_TOKEN can't write to org-level Projects, so a PAT
+# (classic or fine-grained) is required either way.
 
 on:
   issues:
@@ -44,4 +51,4 @@ jobs:
       - uses: actions/add-to-project@v1
         with:
           project-url: https://github.com/orgs/Kuestenlogik/projects/2
-          github-token: ${{ secrets.PROJECT_ADD_TOKEN }}
+          github-token: ${{ secrets.BOWIRE_DISPATCH_TOKEN }}
