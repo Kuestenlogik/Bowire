@@ -37,7 +37,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 - [#41](https://github.com/Kuestenlogik/Bowire/issues/41) **First RC of the new versioning discipline** `kind:debt` `area:multi` `P3`
 - [#42](https://github.com/Kuestenlogik/Bowire/issues/42) **Plugin project template — `dotnet new bowire-plugin`** `kind:feature` `area:plugin-sdk` `P3`
 - [#51](https://github.com/Kuestenlogik/Bowire/issues/51) **Marketing site — migrate <img> tags to picture.html partial** `kind:debt` `area:site` `track:marketing-ia` `P2`
-- [#52](https://github.com/Kuestenlogik/Bowire/issues/52) **Marketing — "why not just Console.WriteLine or Serilog/Loki/Grafana?"** `kind:docs` `area:site` `track:marketing-ia` `P2`
 
 ### v1.6
 
