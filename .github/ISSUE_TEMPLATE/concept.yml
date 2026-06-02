@@ -1,0 +1,52 @@
+name: Concept / Design doc
+description: ADR, design discussion, spec — discussable via issue comments + reactions
+labels: ["roadmap", "kind:concept"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Replaces the old "drop a markdown into `docs/architecture/` and review via PR" workflow. Concept issues live on the Project board with `kind:concept`, get discussed with comments + reactions, and the canonical text can either stay inline here or move to `docs/architecture/` once the shape stabilises.
+  - type: textarea
+    attributes:
+      label: Problem
+      description: What's the design challenge / question?
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Constraints
+      description: Pinned constraints that bound the design space (compat, performance, scope, deps).
+    validations:
+      required: false
+  - type: textarea
+    attributes:
+      label: Options considered
+      description: Bullet list of options + brief trade-offs.
+    validations:
+      required: false
+  - type: textarea
+    attributes:
+      label: Proposal
+      description: Current best-guess answer + reasoning.
+    validations:
+      required: true
+  - type: dropdown
+    attributes:
+      label: Area
+      options:
+        - workbench (UI)
+        - cli
+        - security
+        - mcp
+        - plugin-sdk
+        - mock
+        - docs
+        - site
+        - bootcamp
+        - multi (cross-cutting)
+    validations:
+      required: true
+  - type: markdown
+    attributes:
+      value: |
+        > **React 👍 / 👎** for the listed options + the proposal. Comments for nuance.

@@ -1,0 +1,47 @@
+name: Add to Bowire Project
+
+# Whenever an issue (or PR) lands in this repo with the `roadmap`
+# label, attach it to the org-level Bowire Project board so triage
+# happens in one place. The roadmap-sync workflow already regenerates
+# ROADMAP.md from the board on every issue event, so this is the
+# missing first step.
+#
+# Multi-repo: each sibling Bowire.* repo with roadmap items should
+# carry the same workflow (or use the Project-side "Auto-add to
+# project" workflow in the Project Settings UI). See
+# docs/contributing/multi-repo-project-add.md for the wiring options.
+#
+# Auth: needs a PAT secret PROJECT_ADD_TOKEN with `project` + `repo`
+# scope on Kuestenlogik. Either at repo level or as an organization
+# secret. The default GITHUB_TOKEN can't write to org-level Projects.
+
+on:
+  issues:
+    types: [opened, labeled]
+  pull_request:
+    types: [opened, labeled]
+
+permissions:
+  contents: read
+
+jobs:
+  add-to-project:
+    name: Attach to Project board
+    runs-on: ubuntu-latest
+    # Run on items carrying any of our typed labels — roadmap items,
+    # bugs, and feature requests all land on the board so the Bugs
+    # view + Roadmap view see them. Items without any kind:* / roadmap
+    # label stay off the board until someone explicitly promotes them.
+    if: |
+      (github.event.issue && (
+        contains(github.event.issue.labels.*.name, 'roadmap') ||
+        contains(github.event.issue.labels.*.name, 'kind:bug') ||
+        contains(github.event.issue.labels.*.name, 'kind:feature') ||
+        contains(github.event.issue.labels.*.name, 'kind:concept')
+      )) ||
+      (github.event.pull_request && contains(github.event.pull_request.labels.*.name, 'roadmap'))
+    steps:
+      - uses: actions/add-to-project@v1
+        with:
+          project-url: https://github.com/orgs/Kuestenlogik/projects/2
+          github-token: ${{ secrets.PROJECT_ADD_TOKEN }}
