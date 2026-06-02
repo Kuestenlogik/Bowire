@@ -1,0 +1,167 @@
+---
+layout: page
+title: Dev-loop debugging — Bowire
+description: Bowire is the interactive call & inspect tier of the modern API stack — sibling, not substitute, to Console.WriteLine, Serilog, Loki, and Grafana. Different jobs, same engineering team.
+---
+
+<section class="features-page-hero">
+  <h1>Bowire vs. <code>Console.WriteLine</code>, Serilog, Loki, Grafana</h1>
+  <p class="features-page-tagline">Different jobs in the same stack. <code>Console.WriteLine</code> prints at the points you remembered to instrument. Serilog turns those prints into structured events. Loki collects them. Grafana plots them. None of those four answer the actual dev-time question — <em>what does my API return when I call it right now?</em></p>
+  <p class="features-page-note">Bowire is the <strong>interactive call &amp; inspect</strong> tier. The contract is executable, the response shape is visible the moment the request leaves the workbench, and the next iteration of the request is one click away. Logs and dashboards are still where they are: observability of the running system, not control over what the system gets asked.</p>
+</section>
+
+<section class="features-group features-group-alt">
+  <header class="features-group-header">
+    <h2 class="features-group-title">Five tools, five different jobs</h2>
+    <p class="features-group-lede">Each layer answers a question the layer below can't. The mistake is treating any one of them as a replacement for the others.</p>
+  </header>
+  <div class="features-block features-block-text-only">
+    <div class="features-block-text">
+      <table class="dev-loop-matrix">
+        <thead>
+          <tr>
+            <th>Tool</th>
+            <th>What it answers</th>
+            <th>When you reach for it</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <th><code>Console.WriteLine</code></th>
+            <td>"Did this line run?" / "What was this variable at this exact spot?"</td>
+            <td>Five-minute debug session at your own desk. No persistence, no aggregation, no replay.</td>
+          </tr>
+          <tr>
+            <th>Serilog (+ <code>Microsoft.Extensions.Logging</code>)</th>
+            <td>"What was the structured event our app emitted during this request?"</td>
+            <td>Post-incident archaeology, audit trails, correlation across requests via <code>traceId</code>.</td>
+          </tr>
+          <tr>
+            <th>Loki</th>
+            <td>"Show me every event matching <code>{service=&quot;orders&quot;, level=&quot;error&quot;}</code> from the last hour."</td>
+            <td>Multi-service log aggregation at ops scale. Search, retention, label-driven filtering.</td>
+          </tr>
+          <tr>
+            <th>Grafana</th>
+            <td>"Is the p95 latency drifting? Has the error rate crossed the alert threshold?"</td>
+            <td>Continuous observation, dashboards, on-call alerting. Eyes on the steady state.</td>
+          </tr>
+          <tr class="dev-loop-matrix-bowire">
+            <th>Bowire</th>
+            <td>"What does <code>POST /orders</code> return when I send it <em>this</em> body, with <em>this</em> auth, against <em>this</em> environment, right now?"</td>
+            <td>Active dev-loop debugging. Call → inspect → tweak → repeat. Discovery-driven so you don't have to know the URL, schema, or wire format up front.</td>
+          </tr>
+        </tbody>
+      </table>
+      <p>The first four are <strong>passive</strong> — they observe what the system already does. Bowire is <strong>active</strong> — it makes the system do the next thing, on demand, with the parameters you're testing right now.</p>
+    </div>
+  </div>
+</section>
+
+<section class="features-group">
+  <header class="features-group-header">
+    <h2 class="features-group-title">Dev-time loop vs. ops-time loop</h2>
+    <p class="features-group-lede">Same engineering team, different feedback loops. Both matter. They run on different time scales and ask different questions.</p>
+  </header>
+  <div class="features-block">
+    <div class="features-block-text">
+      <p><strong>Ops loop (minutes &mdash; days).</strong> A request enters production, the server emits a structured log, Loki picks it up, Grafana shows it on a dashboard, an alert fires if a threshold is crossed. The engineer reacts to <em>signal</em>. The interesting question is <em>"what is happening?"</em></p>
+      <p><strong>Dev loop (seconds &mdash; minutes).</strong> The engineer wants to know what the API does when called a specific way. They formulate a request, send it, look at the response, change one field, send it again. The interesting question is <em>"what does this do?"</em></p>
+      <p>Trying to debug a new endpoint with a Grafana dashboard means inferring the response from a count-per-status chart. Trying to add a Prometheus counter to your code so you can run an interactive test is paying ops-pipeline cost for a question the dev loop should answer in two seconds. The tools don't substitute &mdash; they cover different timescales.</p>
+      <p><strong>Bowire occupies the dev loop end.</strong> One workbench across 20+ protocols, discovery-driven (no schema files to maintain), record-replay built in, scriptable via CLI and MCP for AI agents. The Serilog/Loki/Grafana stack stays exactly where it is &mdash; observing the system once it's running for real users.</p>
+    </div>
+    <div class="features-block-screenshot">
+      <figure class="features-diagram">
+        <pre class="mermaid">
+flowchart LR
+    subgraph dev["Dev loop &mdash; seconds"]
+        direction TB
+        D1[Engineer formulates request] --> D2[Bowire sends + shows response]
+        D2 --> D3[Engineer changes one field]
+        D3 --> D1
+    end
+    subgraph ops["Ops loop &mdash; minutes to days"]
+        direction TB
+        O1[User traffic hits service] --> O2[Serilog emits structured event]
+        O2 --> O3[Loki aggregates]
+        O3 --> O4[Grafana dashboard / alert]
+        O4 --> O5[Engineer investigates]
+        O5 --> O1
+    end
+    dev -. "feeds the contract" .-> ops
+        </pre>
+        <figcaption class="features-diagram-caption">Two loops at different time-scales. The dev loop iterates on what the API <em>does</em>. The ops loop watches what users <em>cause</em> it to do. Bowire shapes the contract in the first; Serilog/Loki/Grafana observe behaviour against it in the second.</figcaption>
+      </figure>
+    </div>
+  </div>
+</section>
+
+<section class="features-group features-group-alt">
+  <header class="features-group-header">
+    <h2 class="features-group-title">Three concrete moments where logs and dashboards don't help</h2>
+    <p class="features-group-lede">Not because they're bad &mdash; because the question isn't a log question.</p>
+  </header>
+  <div class="features-block features-block-text-only">
+    <div class="features-block-text">
+      <ul class="features-block-bullets">
+        <li><strong>New endpoint, never called.</strong> No traffic means no logs means nothing for Loki to index. With Bowire, discovery picks the endpoint up from gRPC reflection / OpenAPI / GraphQL introspection / SignalR hub-registry &mdash; you can call it before the first user does, on the first commit, against a local-process or a staging URL.</li>
+        <li><strong>Auth or input variation.</strong> "Does this return 403 with a viewer token but 200 with an editor token?" is two HTTP calls. Wiring that into a dashboard means provisioning two test users + a synthetic-monitoring agent. Bowire's auth-helper panel + one-click duplicate cover it in seconds.</li>
+        <li><strong>Streaming + duplex protocols.</strong> A SignalR hub method, an MQTT publish, a gRPC server-streaming call &mdash; the relevant trace isn't a single log line, it's the sequence of frames. Bowire's Wireshark-style stream pane shows the frames as they arrive; logs would need ad-hoc correlation IDs to reconstruct them after the fact.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="features-group">
+  <header class="features-group-header">
+    <h2 class="features-group-title">How they compose</h2>
+    <p class="features-group-lede">Bowire and the observability stack are designed to share the same OpenTelemetry pipeline.</p>
+  </header>
+  <div class="features-block">
+    <div class="features-block-text">
+      <p>When Bowire runs <a href="{{ '/docs/setup/embedded.html' | relative_url }}">embedded inside your service</a>, its requests flow through the same DI container, the same <code>ILogger</code> providers, the same <code>[Authorize]</code> gates as production traffic. A call from the workbench shows up in your Serilog sink with the same shape as a call from a real client &mdash; tagged so you can filter Bowire-originated requests out of your error dashboards if you want.</p>
+      <p>Standalone, Bowire's <a href="{{ '/ROADMAP.md' | relative_url }}">planned self-telemetry</a> emits its own OpenTelemetry traces (<code>bowire.invoke.duration</code>, <code>bowire.discover.count</code>, <code>bowire.scan.findings</code> &mdash; opt-in via <code>--telemetry</code>). The ops team gets one dashboard that covers production traffic <em>and</em> the workbench-driven traffic that engineers and AI agents are sending. One observability backbone, two consumers.</p>
+      <p>The takeaway: Bowire isn't a logging tool that grew too big. It's the dev-loop layer that should sit <em>next to</em> Serilog and Grafana &mdash; making the contract executable while they keep the running system observable.</p>
+    </div>
+    <div class="features-block-screenshot">
+      <div class="code-block">
+        <div class="code-block-header">
+          <span class="code-block-lang">csharp</span>
+          <span class="code-block-hint">Embedded — Bowire reuses your existing logging</span>
+        </div>
+<pre><code>builder.Logging.AddSerilog();
+builder.Services.AddOpenTelemetry()
+       .WithMetrics(m =&gt; m.AddPrometheusExporter())
+       .WithTracing(t =&gt; t.AddOtlpExporter());
+
+<span class="c">// Workbench requests run through the same DI container,</span>
+<span class="c">// land in the same Serilog sink, emit the same OTel traces.</span>
+builder.Services.AddBowire();</code></pre>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="features-page-cta features-page-cta-elevated">
+  <div class="features-page-cta-inner">
+    <h2 class="features-page-cta-title">Test the contract, then watch it run</h2>
+    <p class="features-page-cta-lede">Bowire shapes what the API does. Serilog / Loki / Grafana watch what users do with it. Both layers, neither one substituting the other.</p>
+    <div class="features-page-cta-buttons">
+      <a class="btn btn-secondary features-page-cta-btn" href="{{ '/quickstart.html' | relative_url }}">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+        Quickstart
+      </a>
+      <a class="btn btn-secondary features-page-cta-btn" href="{{ '/solutions/embedded-debug-ui.html' | relative_url }}">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="14" rx="2"/><line x1="8" y1="20" x2="16" y2="20"/><line x1="12" y1="18" x2="12" y2="20"/></svg>
+        Embedded debug UI
+      </a>
+      <a class="btn btn-secondary features-page-cta-btn" href="{{ '/comparison.html' | relative_url }}">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="3" y1="9" x2="21" y2="9"/></svg>
+        Compare with API tools
+      </a>
+    </div>
+    <p class="features-page-cta-finale">A different lane fits better? <a href="{{ '/solutions.html' | relative_url }}">All solution lanes &rarr;</a></p>
+  </div>
+</section>
+
+{% include mermaid-loader.html %}
