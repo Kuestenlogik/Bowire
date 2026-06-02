@@ -48,6 +48,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 - [#44](https://github.com/Kuestenlogik/Bowire/issues/44) **Sidecar packaging — Docker / Compose / Kubernetes** `kind:docs` `area:docs` `P3`
 - [#49](https://github.com/Kuestenlogik/Bowire/issues/49) **Programmatic environment provisioning in embedded mode** `kind:feature` `area:workbench` `P2`
 - [#56](https://github.com/Kuestenlogik/Bowire/issues/56) **Workbench UI: start / stop / monitor mocks (today only via `bowire mock` CLI)** `kind:feature` `area:workbench` `P1`
+- [#57](https://github.com/Kuestenlogik/Bowire/issues/57) **Workbench UI: mock request log — live trace of which call hit which step** `kind:feature` `area:workbench` `P1`
 
 ### v2.0
 
