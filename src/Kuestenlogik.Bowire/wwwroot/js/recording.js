@@ -1027,6 +1027,25 @@
             el('span', { textContent: 'Export JSON' })
         ));
 
+        // #56 Phase 2 — start a mock from this recording. POST hits
+        // /api/mocks; on success the workbench switches to the Mocks
+        // overlay so the user sees the running mock immediately.
+        toolbar.appendChild(el('button', {
+            className: 'bowire-recording-action-btn',
+            disabled: rec.steps.length === 0 || !window.__bowireMocks,
+            title: 'Boot a mock server from this recording on a fresh port. View it in the Mocks panel.',
+            onClick: function () {
+                if (!window.__bowireMocks) return;
+                window.__bowireMocks.startFromRecording(rec, 0).then(function () {
+                    recordingManagerOpen = false;
+                    renderRecordingManager();
+                    window.__bowireMocks.open();
+                }).catch(function () { /* toast already shown */ });
+            }
+        },
+            el('span', { textContent: 'Run as mock' })
+        ));
+
         toolbar.appendChild(el('button', {
             className: 'bowire-recording-action-btn bowire-recording-action-danger',
             title: 'Delete this recording (cannot be undone)',

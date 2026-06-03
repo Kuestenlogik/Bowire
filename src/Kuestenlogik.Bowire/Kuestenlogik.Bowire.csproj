@@ -87,6 +87,7 @@
     <BowireJsFragment Include="wwwroot\js\auth.js" />
     <BowireJsFragment Include="wwwroot\js\schema-form.js" />
     <BowireJsFragment Include="wwwroot\js\recording.js" />
+    <BowireJsFragment Include="wwwroot\js\mocks.js" />
     <BowireJsFragment Include="wwwroot\js\collections.js" />
     <BowireJsFragment Include="wwwroot\js\flows.js" />
     <BowireJsFragment Include="wwwroot\js\proxy-view.js" />
