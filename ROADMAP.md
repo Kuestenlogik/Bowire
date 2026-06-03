@@ -29,15 +29,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ## Backlog
 
-### v1.5
-
-- [#51](https://github.com/Kuestenlogik/Bowire/issues/51) **Marketing site — migrate <img> tags to picture.html partial** `kind:debt` `area:site` `track:marketing-ia` `P2`
-
-### v1.6
-
-- [#44](https://github.com/Kuestenlogik/Bowire/issues/44) **Sidecar packaging — Docker / Compose / Kubernetes** `kind:docs` `area:docs` `P3`
-- [#49](https://github.com/Kuestenlogik/Bowire/issues/49) **Programmatic environment provisioning in embedded mode** `kind:feature` `area:workbench` `P2`
-
 ### v2.0
 
 - [#33](https://github.com/Kuestenlogik/Bowire/issues/33) **Protocol plugins — Connect Phase 1+3 + OTLP + Surgewave** `kind:feature` `area:plugin-sdk` `track:protocols` `P2`
@@ -54,11 +45,14 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 - [#41](https://github.com/Kuestenlogik/Bowire/issues/41) **First RC of the new versioning discipline** `kind:debt` `area:multi` `P3`
 - [#42](https://github.com/Kuestenlogik/Bowire/issues/42) **Plugin project template — `dotnet new bowire-plugin`** `kind:feature` `area:plugin-sdk` `P3`
 - [#43](https://github.com/Kuestenlogik/Bowire/issues/43) **MCP SSE-transport support** `kind:feature` `area:mcp` `P3`
+- [#44](https://github.com/Kuestenlogik/Bowire/issues/44) **Sidecar packaging — Docker / Compose / Kubernetes** `kind:docs` `area:docs` `P3`
 - [#45](https://github.com/Kuestenlogik/Bowire/issues/45) **SimpleGraphQLSubscriptions sample** `kind:feature` `area:plugin-sdk` `P3`
 - [#46](https://github.com/Kuestenlogik/Bowire/issues/46) **MCP server-side notifications via IInlineSseSubscriber** `kind:feature` `area:mcp` `P3`
 - [#47](https://github.com/Kuestenlogik/Bowire/issues/47) **Sidebar display: method name vs path toggle** `kind:feature` `area:workbench` `P3`
 - [#48](https://github.com/Kuestenlogik/Bowire/issues/48) **Schema watch mode** `kind:feature` `area:workbench` `P3`
+- [#49](https://github.com/Kuestenlogik/Bowire/issues/49) **Programmatic environment provisioning in embedded mode** `kind:feature` `area:workbench` `P2`
 - [#50](https://github.com/Kuestenlogik/Bowire/issues/50) **Marketing site — gallery / lightbox layer on solutions/*** `kind:feature` `area:site` `track:marketing-ia` `P3`
+- [#51](https://github.com/Kuestenlogik/Bowire/issues/51) **Marketing site — migrate <img> tags to picture.html partial** `kind:debt` `area:site` `track:marketing-ia` `P2`
 - [#53](https://github.com/Kuestenlogik/Bowire/issues/53) **Marketing site — second row of specialist comparisons** `kind:feature` `area:site` `track:marketing-ia` `P3`
 
 ### No milestone
