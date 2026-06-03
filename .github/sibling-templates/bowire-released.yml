@@ -71,7 +71,23 @@ jobs:
           echo "Touched $before Kuestenlogik.Bowire* lines."
           echo "$after_diff"
 
-      - name: Open PR
+      - name: Ensure labels exist
+        env:
+          GH_TOKEN: ${{ secrets.BOWIRE_DISPATCH_TOKEN }}
+        run: |
+          # gh pr create --label fails hard if the label doesn't exist
+          # on the repo. Create the two we use; ignore-failure to make
+          # this step idempotent.
+          gh api "repos/${{ github.repository }}/labels" \
+            -f name=dependencies -f color=0366d6 \
+            -f description='Pull requests that update a dependency' \
+            >/dev/null 2>&1 || true
+          gh api "repos/${{ github.repository }}/labels" \
+            -f name=bowire-cascade -f color=5319e7 \
+            -f description='Automated PR from Bowire main release cascade' \
+            >/dev/null 2>&1 || true
+
+      - name: Open PR + queue auto-merge
         env:
           GH_TOKEN: ${{ secrets.BOWIRE_DISPATCH_TOKEN }}
           NEW_V: ${{ steps.ver.outputs.version }}
@@ -87,11 +103,22 @@ jobs:
           git add Directory.Packages.props
           git commit -m "chore(deps): bump Kuestenlogik.Bowire to ${NEW_V}"
           git push --force-with-lease origin "$BRANCH"
-          gh pr create \
-            --title "chore(deps): bump Kuestenlogik.Bowire to ${NEW_V}" \
-            --body "Automated bump triggered by [Bowire v${NEW_V}](https://github.com/Kuestenlogik/Bowire/releases/tag/v${NEW_V})." \
-            --label "dependencies" \
-            --label "bowire-cascade" \
-            --base main \
-            --head "$BRANCH" \
-            || gh pr edit "$BRANCH" --title "chore(deps): bump Kuestenlogik.Bowire to ${NEW_V}"
+          # Existing PR for this branch? Reuse it; otherwise create.
+          PR_NUMBER=$(gh pr list --head "$BRANCH" --state open --json number --jq '.[0].number')
+          if [ -z "$PR_NUMBER" ]; then
+            PR_URL=$(gh pr create \
+              --title "chore(deps): bump Kuestenlogik.Bowire to ${NEW_V}" \
+              --body "Automated bump triggered by [Bowire v${NEW_V}](https://github.com/Kuestenlogik/Bowire/releases/tag/v${NEW_V})." \
+              --label "dependencies" \
+              --label "bowire-cascade" \
+              --base main \
+              --head "$BRANCH")
+            PR_NUMBER=$(basename "$PR_URL")
+            echo "Opened #$PR_NUMBER"
+          else
+            echo "Reusing existing PR #$PR_NUMBER"
+          fi
+          # Queue auto-merge -- GitHub holds the merge until required
+          # checks pass. Squash for clean history.
+          gh pr merge "$PR_NUMBER" --auto --squash --delete-branch || \
+            echo "::warning::auto-merge could not be queued (branch protection? merge-queue?)"
