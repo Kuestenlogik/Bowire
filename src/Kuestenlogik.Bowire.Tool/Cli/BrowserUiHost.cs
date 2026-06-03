@@ -3,6 +3,7 @@
 
 using Kuestenlogik.Bowire.App.Configuration;
 using Kuestenlogik.Bowire.Auth;
+using Kuestenlogik.Bowire.Mock.Management;
 using Kuestenlogik.Bowire.PluginLoading;
 using Kuestenlogik.Bowire.Protocol.Mcp;
 using Microsoft.Extensions.Configuration;
@@ -111,6 +112,12 @@ internal static class BrowserUiHost
         // fine.
         builder.Services.AddBowire();
 
+        // Mock-management surface (#56). Registers MockRegistry +
+        // mounts /api/mocks endpoints so the workbench's Mocks panel
+        // can start / stop / list UI-driven mocks without shelling
+        // out to `bowire mock --recording`.
+        builder.Services.AddBowireMockManagement();
+
         // Opt-in auth gate. When --auth-provider <id> is set, the
         // matching IBowireAuthProvider plugin gets to wire its scheme
         // + the BowireAuthPolicies.Default policy; otherwise this is
@@ -174,6 +181,11 @@ internal static class BrowserUiHost
             // registration happened pre-Build above.
             app.MapBowireMcpAdapter(prefix: string.Empty);
         }
+
+        // Mock-management endpoints — same base-path discipline as the
+        // bowire HTML mount (standalone => "" so endpoints land at
+        // `/api/mocks`, not `/bowire/api/mocks`).
+        app.MapBowireMockManagement(basePath: string.Empty);
 
         await app.RunAsync(ct).ConfigureAwait(false);
         return 0;
