@@ -1,0 +1,63 @@
+# Auto-tags this repo's next patch version when a `bowire-cascade`-
+# labelled PR merges. That PR was opened by bowire-released.yml in
+# response to a Bowire main-repo release; passing CI gates the merge,
+# this workflow does the version bump on the sibling side.
+#
+# Drop verbatim into .github/workflows/auto-tag-on-bowire-merge.yml
+# on every sibling that participates in the cascade.
+#
+# Versioning model: patch-bump from the most recent semver tag.
+# v1.0.4 -> v1.0.5 on every passing bowire-cascade merge. If this
+# sibling needs a minor or major bump for unrelated reasons, do that
+# tag by hand -- this workflow only handles the auto-cascade case.
+#
+# Requires BOWIRE_DISPATCH_TOKEN (Contents R/W) so the tag push goes
+# through and triggers downstream release.yml workflows.
+
+name: Auto-tag on Bowire cascade merge
+
+on:
+  pull_request:
+    types: [closed]
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  tag:
+    if: |
+      github.event.pull_request.merged == true &&
+      contains(github.event.pull_request.labels.*.name, 'bowire-cascade')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          token: ${{ secrets.BOWIRE_DISPATCH_TOKEN }}
+          fetch-depth: 0
+
+      - name: Compute next patch version
+        id: ver
+        run: |
+          # Latest semver tag. Strip leading v, bump patch.
+          LATEST=$(git tag --sort=-version:refname --list 'v*' | head -1)
+          if [ -z "$LATEST" ]; then
+            NEW="v0.1.0"
+          else
+            stripped="${LATEST#v}"
+            major=$(echo "$stripped" | cut -d. -f1)
+            minor=$(echo "$stripped" | cut -d. -f2)
+            patch=$(echo "$stripped" | cut -d. -f3)
+            NEW="v${major}.${minor}.$((patch + 1))"
+          fi
+          echo "Latest: $LATEST -> New: $NEW"
+          echo "tag=$NEW" >> "$GITHUB_OUTPUT"
+
+      - name: Tag and push
+        env:
+          GH_TOKEN: ${{ secrets.BOWIRE_DISPATCH_TOKEN }}
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git tag -a "${{ steps.ver.outputs.tag }}" -m "Auto-tag after Bowire cascade merge (#${{ github.event.pull_request.number }})"
+          git push origin "${{ steps.ver.outputs.tag }}"

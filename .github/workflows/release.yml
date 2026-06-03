@@ -326,6 +326,36 @@ jobs:
         if: ${{ github.ref_type == 'tag' && env.NUGET_API_KEY != '' }}
         run: dotnet nuget push "artifacts/packages/*.nupkg" --source https://api.nuget.org/v3/index.json --api-key "${{ env.NUGET_API_KEY }}" --skip-duplicate
 
+      # Fan a `bowire-released` repository_dispatch out to every sibling
+      # repo that consumes Kuestenlogik.Bowire. Each sibling has a
+      # workflow listening for this event that bumps its Package
+      # reference + opens a PR; the PR's CI then gates the auto-merge
+      # and the auto-tag of the sibling's own next version. Versioning
+      # is intentionally async -- siblings tag whatever's next for them.
+      - name: Dispatch to sibling repos
+        if: ${{ github.ref_type == 'tag' && env.NUGET_API_KEY != '' }}
+        env:
+          GH_TOKEN: ${{ secrets.BOWIRE_DISPATCH_TOKEN }}
+          NEW_V: ${{ steps.version.outputs.VERSION }}
+        run: |
+          siblings=(
+            Bowire.Protocol.Akka
+            Bowire.Protocol.Kafka
+            Bowire.Protocol.Dis
+            Bowire.Protocol.Udp
+            Bowire.Protocol.Surgewave
+            Bowire.Templates
+            Bowire.Samples
+          )
+          for repo in "${siblings[@]}"; do
+            echo "→ Dispatching bowire-released v$NEW_V to Kuestenlogik/$repo"
+            gh api "repos/Kuestenlogik/$repo/dispatches" \
+              --method POST \
+              -f event_type=bowire-released \
+              -f "client_payload[version]=$NEW_V" \
+              || echo "  (dispatch failed for $repo -- skipping, not fatal)"
+          done
+
       # ----------------------------------------------------------
       # Hand artefacts off to the release job
       # ----------------------------------------------------------
