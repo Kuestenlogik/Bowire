@@ -63,6 +63,15 @@ async function* walk(dir) {
 }
 
 async function isStale(src, target) {
+    // In --check mode we only verify existence. mtime-based staleness
+    // is unreliable on CI: `git checkout` writes files in whatever
+    // order it picks, so a variant can land with an mtime older than
+    // its source even though both were committed in lock-step. Local
+    // regen still uses mtime so the script stays cheap to re-run.
+    if (CHECK_MODE) {
+        try { await fs.stat(target); return false; }
+        catch { return true; }
+    }
     try {
         const [s, t] = await Promise.all([fs.stat(src), fs.stat(target)]);
         return t.mtimeMs < s.mtimeMs;
