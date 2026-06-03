@@ -852,16 +852,23 @@
 
     <form class="protocols-search" role="search"
           action="https://www.nuget.org/packages" method="get" target="_blank" rel="noopener"
-          onsubmit="this.q.value = 'tags:bowire-plugin ' + this.q.value.trim();">
-      <!-- nuget.org search supports `tags:"foo"` query syntax. We prepend
-           it on submit so the user-typed keyword stays a normal token
-           (the filter is invisible to them). Our plugin packages tag
-           themselves with `bowire-plugin` (lowercase, hyphenated --
-           NuGet convention) so this filter surfaces every Küstenlogik
-           plugin AND any third-party that follows the convention.
-           Using a tag rather than packageType means published packages
-           don't need to opt into a custom <PackageType>; the tag is
-           already present on every plugin csproj in this repo. -->
+          onsubmit="window.open('https://www.nuget.org/packages?q=' + encodeURIComponent('tags:bowire-plugin ' + this.q.value.trim()), '_blank', 'noopener'); return false;">
+      <!-- nuget.org search supports `tags:"foo"` query syntax. The
+           onsubmit handler builds the URL with the tag prefix and
+           opens it in a new tab, then returns false so the form
+           itself doesn't submit -- otherwise the prefix would land
+           in the visible input and stack on each subsequent search
+           ("tags:bowire-plugin tags:bowire-plugin nats" after two
+           clicks). With JS off, the form's plain action falls back
+           to a tag-less nuget.org search; correctness without the
+           filter beats a stacked-prefix loop.
+           Our plugin packages tag themselves with `bowire-plugin`
+           (lowercase, hyphenated -- NuGet convention) so this filter
+           surfaces every Küstenlogik plugin AND any third-party that
+           follows the convention. Using a tag rather than packageType
+           means published packages don't need to opt into a custom
+           <PackageType>; the tag is already present on every plugin
+           csproj in this repo. -->
       <label for="protocols-search-input" class="protocols-search-label">Looking for another protocol?</label>
       <div class="protocols-search-row">
         <input id="protocols-search-input"
