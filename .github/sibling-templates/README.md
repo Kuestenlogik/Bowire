@@ -9,10 +9,17 @@ These two workflow files together implement the **Bowire release cascade**: when
 
 ## Wiring
 
-1. **Bowire main repo** — already wired: `release.yml` fans `repository_dispatch` out to every sibling after a successful `nuget.org` push.
-2. **Each sibling** — drop the two files above into `.github/workflows/`. No per-repo configuration needed; both are sibling-agnostic.
+1. **Bowire main repo** — already wired: `release.yml` discovers cascade siblings dynamically by querying the `Kuestenlogik` org for repos carrying the `bowire-cascade` GitHub topic, then fans `repository_dispatch` to each after a successful `nuget.org` push.
+2. **Each sibling** — three things, all in the sibling repo:
+   - Drop the two workflow files above into `.github/workflows/`. No per-repo edits needed; both are sibling-agnostic.
+   - Add the GitHub topic `bowire-cascade` via the repo's **About → ⚙ → Topics**. This is the opt-in marker — without it, Bowire's release.yml won't dispatch to this repo.
+   - Make sure `Directory.Packages.props` exists at the repo root with the `Kuestenlogik.Bowire*` `<PackageVersion>` entries — the bump step's `sed` operates on that file.
 3. **Secrets** — both files use the org-secret `BOWIRE_DISPATCH_TOKEN` (Contents R/W + Pull requests R/W). Already in place from the consolidation step.
 4. **Auto-merge** — handled by the sibling's existing `dependabot-auto-merge.yml`; the cascade PRs are labelled `dependencies` (matching that workflow's filter) and `bowire-cascade` (so the auto-tag step can identify them).
+
+### Adding a new sibling later
+
+Open the new repo on GitHub → **About** (right column on the repo's main page) → ⚙ → **Topics** → add `bowire-cascade` → save. Drop in the two workflow files. Done — no PR against Bowire main needed.
 
 ## Versioning model
 
