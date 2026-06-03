@@ -1,0 +1,97 @@
+# Listens for a `bowire-released` repository_dispatch fired by
+# Kuestenlogik/Bowire's release.yml after a successful nuget.org push.
+# Bumps every Kuestenlogik.Bowire* PackageVersion in this repo to the
+# new version and opens a PR. The PR's CI gates the auto-merge; an
+# auto-tag workflow then bumps this repo's own version on merge.
+#
+# Drop verbatim into .github/workflows/bowire-released.yml on every
+# sibling repo that consumes the Kuestenlogik.Bowire NuGets.
+#
+# Requires BOWIRE_DISPATCH_TOKEN as an org-secret with:
+#   - Contents: Read and write
+#   - Pull requests: Read and write
+#
+# Versioning is async by design: this workflow only changes the
+# upstream dependency. Sibling's own version is bumped by the
+# auto-tag workflow that fires on the merge of the PR this opens.
+
+name: Bowire upstream release
+
+on:
+  repository_dispatch:
+    types: [bowire-released]
+  # Manual dispatch for testing / rerun:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Kuestenlogik.Bowire version to bump to'
+        required: true
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: bowire-released-${{ github.event.client_payload.version || github.event.inputs.version }}
+  cancel-in-progress: false
+
+jobs:
+  bump:
+    name: Bump Kuestenlogik.Bowire dependency
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          token: ${{ secrets.BOWIRE_DISPATCH_TOKEN }}
+
+      - name: Resolve version
+        id: ver
+        run: |
+          V="${{ github.event.client_payload.version || github.event.inputs.version }}"
+          if [ -z "$V" ]; then
+            echo "::error::no version provided"
+            exit 1
+          fi
+          echo "version=$V" >> "$GITHUB_OUTPUT"
+          echo "Target version: $V"
+
+      - name: Bump PackageVersion entries
+        env:
+          NEW_V: ${{ steps.ver.outputs.version }}
+        run: |
+          # Update every Kuestenlogik.Bowire(.X)? PackageVersion line in
+          # Directory.Packages.props. Skips repo entirely if no file.
+          if [ ! -f Directory.Packages.props ]; then
+            echo "No Directory.Packages.props -- nothing to bump."
+            exit 0
+          fi
+          before=$(grep -c 'Include="Kuestenlogik\.Bowire' Directory.Packages.props || true)
+          sed -i -E 's|(<PackageVersion[^>]*Include="Kuestenlogik\.Bowire(\.[A-Za-z]+)?"[^>]*Version=")[^"]+|\1'"${NEW_V}"'|g' Directory.Packages.props
+          after_diff=$(git diff --shortstat Directory.Packages.props)
+          echo "Touched $before Kuestenlogik.Bowire* lines."
+          echo "$after_diff"
+
+      - name: Open PR
+        env:
+          GH_TOKEN: ${{ secrets.BOWIRE_DISPATCH_TOKEN }}
+          NEW_V: ${{ steps.ver.outputs.version }}
+        run: |
+          if git diff --quiet; then
+            echo "No changes -- already on $NEW_V or no matching lines."
+            exit 0
+          fi
+          BRANCH="chore/bump-bowire-${NEW_V}"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git checkout -b "$BRANCH"
+          git add Directory.Packages.props
+          git commit -m "chore(deps): bump Kuestenlogik.Bowire to ${NEW_V}"
+          git push --force-with-lease origin "$BRANCH"
+          gh pr create \
+            --title "chore(deps): bump Kuestenlogik.Bowire to ${NEW_V}" \
+            --body "Automated bump triggered by [Bowire v${NEW_V}](https://github.com/Kuestenlogik/Bowire/releases/tag/v${NEW_V})." \
+            --label "dependencies" \
+            --label "bowire-cascade" \
+            --base main \
+            --head "$BRANCH" \
+            || gh pr edit "$BRANCH" --title "chore(deps): bump Kuestenlogik.Bowire to ${NEW_V}"
