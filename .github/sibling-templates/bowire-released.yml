@@ -119,6 +119,9 @@ jobs:
             echo "Reusing existing PR #$PR_NUMBER"
           fi
           # Queue auto-merge -- GitHub holds the merge until required
-          # checks pass. Squash for clean history.
-          gh pr merge "$PR_NUMBER" --auto --squash --delete-branch || \
+          # checks pass. Rebase keeps the cascade PR's single bump
+          # commit 1:1 on main (matches the org-wide rebase-merge
+          # convention; squash would be identical for single-commit
+          # PRs but breaks consistency with the rest of the repo).
+          gh pr merge "$PR_NUMBER" --auto --rebase --delete-branch || \
             echo "::warning::auto-merge could not be queued (branch protection? merge-queue?)"
