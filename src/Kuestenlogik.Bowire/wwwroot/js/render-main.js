@@ -3323,7 +3323,31 @@
                 onClick: function () { activeResponseTab = 'tests'; render(); }
             }));
         }
+        // AI panel tab (#25 Phase 1) — always available, no method requirement.
+        // The hint engine evaluates lazily from live state; the badge count
+        // shows how many hints would fire so the user has a reason to click.
+        var aiHintCount = 0;
+        try { aiHintCount = window.__bowireAi ? window.__bowireAi.hintCount() : 0; } catch { /* ignore */ }
+        tabs.appendChild(el('div', {
+            id: 'bowire-response-tab-ai',
+            className: `bowire-tab bowire-tab-ai ${activeResponseTab === 'ai' ? 'active' : ''}`,
+            textContent: aiHintCount > 0 ? 'AI (' + aiHintCount + ')' : 'AI',
+            title: 'Context-aware hints + future AI-assisted features (see docs/architecture/ai-integration.md)',
+            onClick: function () { activeResponseTab = 'ai'; render(); }
+        }));
         pane.appendChild(tabs);
+
+        // AI tab content — rendered by ai.js
+        if (activeResponseTab === 'ai') {
+            var aiContent = el('div', { className: 'bowire-tab-content active bowire-ai-tab-content' });
+            if (window.__bowireAi) {
+                aiContent.appendChild(window.__bowireAi.renderPanel());
+            } else {
+                aiContent.appendChild(el('p', { textContent: 'AI module not loaded.' }));
+            }
+            pane.appendChild(aiContent);
+            return pane;
+        }
 
         // Response tab
         const respContent = el('div', { className: `bowire-tab-content ${activeResponseTab === 'response' ? 'active' : ''}` });
