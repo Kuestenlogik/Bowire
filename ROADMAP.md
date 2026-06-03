@@ -21,11 +21,11 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 ### No milestone
 
 - [#27](https://github.com/Kuestenlogik/Bowire/issues/27) **Plugin lifecycle in the workbench UI + pre-release support** `kind:feature` `area:plugin-sdk` `P1`
-- [#28](https://github.com/Kuestenlogik/Bowire/issues/28) **Multi-tenant data model + SCIM (Phase B)** `kind:feature` `area:workbench` `track:auth` `P2`
-- [#29](https://github.com/Kuestenlogik/Bowire/issues/29) **Self-telemetry + Grafana dashboards** `kind:feature` `area:workbench` `track:observability` `P2`
-- [#30](https://github.com/Kuestenlogik/Bowire/issues/30) **Collections (Postman-style test suites)** `kind:feature` `area:workbench` `P2`
 - [#31](https://github.com/Kuestenlogik/Bowire/issues/31) **Auth-provider SPI — plugin-load privilege** `kind:debt` `area:plugin-sdk` `track:auth` `P2`
 - [#32](https://github.com/Kuestenlogik/Bowire/issues/32) **OIDC plugin — required-claim filter + token forwarding** `kind:feature` `area:workbench` `track:auth` `P2`
+- [#30](https://github.com/Kuestenlogik/Bowire/issues/30) **Collections (Postman-style test suites)** `kind:feature` `area:workbench` `P2`
+- [#29](https://github.com/Kuestenlogik/Bowire/issues/29) **Self-telemetry + Grafana dashboards** `kind:feature` `area:workbench` `track:observability` `P2`
+- [#28](https://github.com/Kuestenlogik/Bowire/issues/28) **Multi-tenant data model + SCIM (Phase B)** `kind:feature` `area:workbench` `track:auth` `P2`
 
 ## Backlog
 
