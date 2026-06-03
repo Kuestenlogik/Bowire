@@ -14,9 +14,15 @@ name: Roadmap sync
 #   * schedule (daily) — safety net so an org-level Project edit that
 #     somehow bypasses the project_v2 event still gets picked up.
 #
-# Auth: workflow_token can read public org-level Projects via the
-# default GITHUB_TOKEN. For private projects, swap in a PAT secret
-# scoped `read:project` + `repo`.
+# Auth: reuses the org-secret BOWIRE_DISPATCH_TOKEN — the same PAT
+# that powers add-to-project.yml and Bowire.Bootcamp's notify
+# workflow. Required scopes on top of repo (Contents R/W):
+#   - Organization projects: Read and write
+#   - Issues: Read
+#   - Pull requests: Read
+# Falls back to ROADMAP_SYNC_TOKEN (the previous, now deprecated
+# per-workflow PAT) so an in-progress migration keeps working;
+# remove that secret once everything's been re-pointed.
 
 on:
   issues:
@@ -48,13 +54,13 @@ jobs:
         with:
           # Need write-token + full history so a follow-up commit lands cleanly.
           fetch-depth: 0
-          token: ${{ secrets.ROADMAP_SYNC_TOKEN || secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.BOWIRE_DISPATCH_TOKEN || secrets.ROADMAP_SYNC_TOKEN || secrets.GITHUB_TOKEN }}
       - uses: actions/setup-node@v6
         with:
           node-version: '20'
       - name: Regenerate ROADMAP.md
         env:
-          GH_TOKEN: ${{ secrets.ROADMAP_SYNC_TOKEN || secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.BOWIRE_DISPATCH_TOKEN || secrets.ROADMAP_SYNC_TOKEN || secrets.GITHUB_TOKEN }}
         run: node scripts/generate-roadmap.mjs
       - name: Commit if changed
         run: |
