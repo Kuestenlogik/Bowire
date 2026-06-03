@@ -37,14 +37,9 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v1.6
 
-- [#37](https://github.com/Kuestenlogik/Bowire/issues/37) **Bowire.Mcp — remaining tools + adapter modes** `kind:feature` `area:mcp` `P2`
-- [#38](https://github.com/Kuestenlogik/Bowire/issues/38) **CLI — Phase 3 polish (completion + validators + error rendering)** `kind:debt` `area:cli` `P2`
-- [#39](https://github.com/Kuestenlogik/Bowire/issues/39) **HAR Import polish** `kind:feature` `area:workbench` `P2`
-- [#40](https://github.com/Kuestenlogik/Bowire/issues/40) **Freeform Request Builder** `kind:feature` `area:workbench` `P2`
 - [#43](https://github.com/Kuestenlogik/Bowire/issues/43) **MCP SSE-transport support** `kind:feature` `area:mcp` `P3`
 - [#44](https://github.com/Kuestenlogik/Bowire/issues/44) **Sidecar packaging — Docker / Compose / Kubernetes** `kind:docs` `area:docs` `P3`
 - [#49](https://github.com/Kuestenlogik/Bowire/issues/49) **Programmatic environment provisioning in embedded mode** `kind:feature` `area:workbench` `P2`
-- [#57](https://github.com/Kuestenlogik/Bowire/issues/57) **Workbench UI: mock request log — live trace of which call hit which step** `kind:feature` `area:workbench` `P1`
 
 ### v2.0
 
@@ -55,6 +50,10 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 - [#35](https://github.com/Kuestenlogik/Bowire/issues/35) **Nuclei template compat — OAST + non-HTTP transports (Phase 2f + 2g)** `kind:feature` `area:security` `track:security-tiers` `P3`
 - [#36](https://github.com/Kuestenlogik/Bowire/issues/36) **Replay-Mock — HTTPS MITM / record mode** `kind:feature` `area:mock` `P3`
+- [#37](https://github.com/Kuestenlogik/Bowire/issues/37) **Bowire.Mcp — remaining tools + adapter modes** `kind:feature` `area:mcp` `P2`
+- [#38](https://github.com/Kuestenlogik/Bowire/issues/38) **CLI — Phase 3 polish (completion + validators + error rendering)** `kind:debt` `area:cli` `P2`
+- [#39](https://github.com/Kuestenlogik/Bowire/issues/39) **HAR Import polish** `kind:feature` `area:workbench` `P2`
+- [#40](https://github.com/Kuestenlogik/Bowire/issues/40) **Freeform Request Builder** `kind:feature` `area:workbench` `P2`
 - [#45](https://github.com/Kuestenlogik/Bowire/issues/45) **SimpleGraphQLSubscriptions sample** `kind:feature` `area:plugin-sdk` `P3`
 - [#46](https://github.com/Kuestenlogik/Bowire/issues/46) **MCP server-side notifications via IInlineSseSubscriber** `kind:feature` `area:mcp` `P3`
 - [#47](https://github.com/Kuestenlogik/Bowire/issues/47) **Sidebar display: method name vs path toggle** `kind:feature` `area:workbench` `P3`
@@ -65,6 +64,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 ### No milestone
 
 - [#56](https://github.com/Kuestenlogik/Bowire/issues/56) **Workbench UI: start / stop / monitor mocks (today only via `bowire mock` CLI)** `kind:feature` `area:workbench` `P1`
+- [#57](https://github.com/Kuestenlogik/Bowire/issues/57) **Workbench UI: mock request log — live trace of which call hit which step** `kind:feature` `area:workbench` `P1`
 
 ---
 
