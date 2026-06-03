@@ -112,6 +112,28 @@ public static class BowireMockManagementEndpoints
                 : Results.NotFound(new { error = $"Mock {mockId} not running." });
         }).ExcludeFromDescription();
 
+        // #57: per-mock request log. Query params:
+        //   limit         -> max entries (default 100, capped at log capacity)
+        //   since         -> minimum sequence number (>0 means "give me only
+        //                    entries newer than the cursor I last saw")
+        endpoints.MapGet($"{basePath}/api/mocks/{{mockId}}/requests",
+            (string mockId, int? limit, long? since, MockRegistry registry) =>
+        {
+            var inst = registry.Get(mockId);
+            if (inst is null)
+            {
+                return Results.NotFound(new { error = $"Mock {mockId} not running." });
+            }
+            var entries = inst.RequestLog.Snapshot(limit ?? 100, since ?? 0);
+            return Results.Json(new
+            {
+                mockId,
+                total = inst.RequestLog.TotalRequests,
+                capacity = inst.RequestLog.Capacity,
+                entries
+            }, JsonOptions);
+        }).ExcludeFromDescription();
+
         return endpoints;
     }
 

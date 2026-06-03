@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 using Kuestenlogik.Bowire.Mock.Chaos;
+using Kuestenlogik.Bowire.Mock.Management;
 using Kuestenlogik.Bowire.Mock.Matchers;
 using Kuestenlogik.Bowire.Mocking;
 using Microsoft.Extensions.Logging;
@@ -111,6 +112,18 @@ public sealed class MockOptions
     /// Has no effect on request-driven replay paths.
     /// </summary>
     public bool Loop { get; set; }
+
+    /// <summary>
+    /// Optional sink that receives one <see cref="MockRequestEntry"/>
+    /// per request after the response is written (#57). The workbench-
+    /// driven mock registry wires a bounded <see cref="MockRequestLog"/>
+    /// here; embedded hosts that don't care leave it <c>null</c>. The
+    /// observer's <see cref="IMockRequestObserver.OnRequest"/> is
+    /// invoked from a <see cref="Microsoft.AspNetCore.Http.HttpResponse.OnCompleted(System.Func{System.Threading.Tasks.Task})"/>
+    /// callback, so it runs out of the request hot path and exceptions
+    /// it throws never bubble back to the client.
+    /// </summary>
+    public IMockRequestObserver? RequestObserver { get; set; }
 
     /// <summary>
     /// Project this full options bag down to the slim
