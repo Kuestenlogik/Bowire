@@ -132,6 +132,17 @@ jobs:
           cp -r artifacts/docs _combined/docs/
           cp -r bootcamp-source/artifacts/docs-learn _combined/bootcamp/
 
+      # DocFX renders README.md as README.html, so bare directory URLs
+      # (.../unit-1-cli/) 404 on GitHub Pages because there's no
+      # index.html. Materialise the README as the directory index for
+      # both DocFX outputs. Idempotent; safe to re-run.
+      - name: Alias README.html as directory index.html
+        run: |
+          find _combined/docs _combined/bootcamp -name README.html -type f -print0 |
+            while IFS= read -r -d '' f; do
+              cp -f "$f" "$(dirname "$f")/index.html"
+            done
+
       # Pagefind crawls the already-rendered HTML under _combined/ (both
       # marketing site and docs) and emits a single full-text index into
       # _combined/pagefind/. Client-side only, no runtime server.
