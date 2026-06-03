@@ -18,20 +18,14 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ## Next up
 
-### v1.5
-
-- [#31](https://github.com/Kuestenlogik/Bowire/issues/31) **Auth-provider SPI — plugin-load privilege** `kind:debt` `area:plugin-sdk` `track:auth` `P2`
-- [#32](https://github.com/Kuestenlogik/Bowire/issues/32) **OIDC plugin — required-claim filter + token forwarding** `kind:feature` `area:workbench` `track:auth` `P2`
-
-### v1.6
-
-- [#28](https://github.com/Kuestenlogik/Bowire/issues/28) **Multi-tenant data model + SCIM (Phase B)** `kind:feature` `area:workbench` `track:auth` `P2`
-- [#29](https://github.com/Kuestenlogik/Bowire/issues/29) **Self-telemetry + Grafana dashboards** `kind:feature` `area:workbench` `track:observability` `P2`
-- [#30](https://github.com/Kuestenlogik/Bowire/issues/30) **Collections (Postman-style test suites)** `kind:feature` `area:workbench` `P2`
-
 ### No milestone
 
 - [#27](https://github.com/Kuestenlogik/Bowire/issues/27) **Plugin lifecycle in the workbench UI + pre-release support** `kind:feature` `area:plugin-sdk` `P1`
+- [#28](https://github.com/Kuestenlogik/Bowire/issues/28) **Multi-tenant data model + SCIM (Phase B)** `kind:feature` `area:workbench` `track:auth` `P2`
+- [#29](https://github.com/Kuestenlogik/Bowire/issues/29) **Self-telemetry + Grafana dashboards** `kind:feature` `area:workbench` `track:observability` `P2`
+- [#30](https://github.com/Kuestenlogik/Bowire/issues/30) **Collections (Postman-style test suites)** `kind:feature` `area:workbench` `P2`
+- [#31](https://github.com/Kuestenlogik/Bowire/issues/31) **Auth-provider SPI — plugin-load privilege** `kind:debt` `area:plugin-sdk` `track:auth` `P2`
+- [#32](https://github.com/Kuestenlogik/Bowire/issues/32) **OIDC plugin — required-claim filter + token forwarding** `kind:feature` `area:workbench` `track:auth` `P2`
 
 ## Backlog
 
@@ -50,7 +44,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 - [#43](https://github.com/Kuestenlogik/Bowire/issues/43) **MCP SSE-transport support** `kind:feature` `area:mcp` `P3`
 - [#44](https://github.com/Kuestenlogik/Bowire/issues/44) **Sidecar packaging — Docker / Compose / Kubernetes** `kind:docs` `area:docs` `P3`
 - [#49](https://github.com/Kuestenlogik/Bowire/issues/49) **Programmatic environment provisioning in embedded mode** `kind:feature` `area:workbench` `P2`
-- [#56](https://github.com/Kuestenlogik/Bowire/issues/56) **Workbench UI: start / stop / monitor mocks (today only via `bowire mock` CLI)** `kind:feature` `area:workbench` `P1`
 - [#57](https://github.com/Kuestenlogik/Bowire/issues/57) **Workbench UI: mock request log — live trace of which call hit which step** `kind:feature` `area:workbench` `P1`
 
 ### v2.0
@@ -68,6 +61,10 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 - [#48](https://github.com/Kuestenlogik/Bowire/issues/48) **Schema watch mode** `kind:feature` `area:workbench` `P3`
 - [#50](https://github.com/Kuestenlogik/Bowire/issues/50) **Marketing site — gallery / lightbox layer on solutions/*** `kind:feature` `area:site` `track:marketing-ia` `P3`
 - [#53](https://github.com/Kuestenlogik/Bowire/issues/53) **Marketing site — second row of specialist comparisons** `kind:feature` `area:site` `track:marketing-ia` `P3`
+
+### No milestone
+
+- [#56](https://github.com/Kuestenlogik/Bowire/issues/56) **Workbench UI: start / stop / monitor mocks (today only via `bowire mock` CLI)** `kind:feature` `area:workbench` `P1`
 
 ---
 
