@@ -9747,3 +9747,90 @@ details[open] > .bowire-json-tree-summary::before {
     border-radius: 999px;
     cursor: help;
 }
+
+/* ===== AI side-panel (#25 Phase 1) ===== */
+.bowire-tab-ai {
+    margin-left: auto;
+}
+.bowire-ai-tab-content {
+    padding: 16px 18px;
+    overflow-y: auto;
+}
+.bowire-ai-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    max-width: 720px;
+}
+.bowire-ai-header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    border-bottom: 1px solid var(--bowire-border);
+    padding-bottom: 10px;
+}
+.bowire-ai-header h3 {
+    margin: 0;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--bowire-text);
+}
+.bowire-ai-mode {
+    font-size: 11px;
+    color: var(--bowire-text-tertiary);
+    font-weight: 500;
+}
+.bowire-ai-empty {
+    font-size: 13px;
+    color: var(--bowire-text-secondary);
+    line-height: 1.55;
+    margin: 0;
+}
+.bowire-ai-hint-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+.bowire-ai-hint {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    padding: 10px 12px;
+    border-radius: 6px;
+    background: var(--bowire-bg-elevated, rgba(255, 255, 255, 0.04));
+    border: 1px solid var(--bowire-border);
+    font-size: 13px;
+    line-height: 1.55;
+}
+.bowire-ai-hint-warn {
+    border-color: rgba(255, 173, 51, 0.4);
+    background: rgba(255, 173, 51, 0.06);
+}
+.bowire-ai-hint-tip {
+    border-color: rgba(95, 178, 255, 0.35);
+    background: rgba(95, 178, 255, 0.05);
+}
+.bowire-ai-hint-icon {
+    flex-shrink: 0;
+    font-size: 14px;
+    margin-top: 1px;
+}
+.bowire-ai-hint-text {
+    color: var(--bowire-text);
+}
+.bowire-ai-footer {
+    border-top: 1px solid var(--bowire-border);
+    padding-top: 10px;
+}
+.bowire-ai-model-link {
+    font-size: 12px;
+    color: var(--bowire-text-tertiary);
+    text-decoration: none;
+}
+.bowire-ai-model-link:hover {
+    color: var(--bowire-accent, #5fb2ff);
+}
