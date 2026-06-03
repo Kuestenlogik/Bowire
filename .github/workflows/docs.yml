@@ -102,13 +102,15 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: node scripts/build-activity-snapshot.mjs
 
-      # Image transcodes (AVIF + WebP responsive variants). Idempotent —
-      # skips files already up to date by mtime. Run before Jekyll so
-      # the generated outputs are picked up into site/_site/.
+      # Image transcodes (AVIF + WebP responsive variants) are committed
+      # alongside their .png/.jpg sources. CI runs --check to fail the
+      # build if any source has a stale or missing variant -- forcing
+      # contributors to regenerate locally before committing. Saves
+      # 25-40 min/build vs. the prior "regenerate from scratch" approach.
       - name: Install sharp
         run: npm install --no-audit --no-fund
-      - name: Optimize images (AVIF + WebP, 3 sizes)
-        run: node scripts/optimize-images.mjs
+      - name: Check image transcodes are up to date
+        run: node scripts/optimize-images.mjs --check
 
       # Build Jekyll landing page
       - name: Setup Ruby
