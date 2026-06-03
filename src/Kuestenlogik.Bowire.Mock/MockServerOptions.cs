@@ -216,4 +216,15 @@ public sealed class MockServerOptions
     /// </summary>
     public IReadOnlyList<IBowireMockEmitter> Emitters { get; init; }
         = Array.Empty<IBowireMockEmitter>();
+
+    /// <summary>
+    /// Optional sink that receives one entry per inbound request once
+    /// the response has been written (#57). Forwarded into the inner
+    /// <see cref="MockOptions.RequestObserver"/>. The workbench's
+    /// <c>MockRegistry</c> wires a bounded <c>MockRequestLog</c> per
+    /// running mock so the Mocks panel can render a live trace; CLI
+    /// usage leaves it <c>null</c> and the observer call becomes a
+    /// no-op branch.
+    /// </summary>
+    public Management.IMockRequestObserver? RequestObserver { get; init; }
 }

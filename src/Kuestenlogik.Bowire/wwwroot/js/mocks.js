@@ -19,6 +19,9 @@
     var mocksList = [];                  // [{ mockId, recordingName, port, startedAt }]
     var mocksManagerOpen = false;
     var mocksLoadInFlight = false;
+    // #57 per-mock log state: mockId -> { total, capacity, entries, pollTimer }
+    var mockLogState = {};
+    var mockLogOpenFor = null;       // mockId currently expanded in the manager
 
     function loadMocks() {
         if (mocksLoadInFlight) return Promise.resolve(mocksList);
@@ -65,11 +68,52 @@
         });
     }
 
+    // #57: pull a window of the per-mock request log. Poll loop keeps
+    // the open drawer fresh; backend supports `since=<lastSeq>` for
+    // tail behaviour, used here to merge new entries onto the front.
+    function loadMockLog(mockId) {
+        var st = mockLogState[mockId] || (mockLogState[mockId] = { entries: [], total: 0, capacity: 0, lastSeq: 0 });
+        var qs = 'limit=200' + (st.lastSeq ? '&since=' + st.lastSeq : '');
+        return fetch(config.prefix + '/api/mocks/' + encodeURIComponent(mockId) + '/requests?' + qs)
+            .then(function (r) { return r.ok ? r.json() : null; })
+            .then(function (data) {
+                if (!data || !Array.isArray(data.entries)) return st;
+                st.total = data.total;
+                st.capacity = data.capacity;
+                if (data.entries.length) {
+                    // Newest first from backend. Prepend, cap at capacity.
+                    st.entries = data.entries.concat(st.entries).slice(0, st.capacity || 200);
+                    st.lastSeq = Math.max(st.lastSeq, data.entries[0].sequence || 0);
+                }
+                return st;
+            }).catch(function () { return st; });
+    }
+
+    function startMockLogPolling(mockId) {
+        var st = mockLogState[mockId] || (mockLogState[mockId] = { entries: [], total: 0, capacity: 0, lastSeq: 0 });
+        if (st.pollTimer) return;
+        var tick = function () {
+            loadMockLog(mockId).then(function () {
+                if (mockLogOpenFor === mockId) renderMocksManager();
+            });
+            st.pollTimer = setTimeout(tick, 2000);
+        };
+        tick();
+    }
+
+    function stopMockLogPolling(mockId) {
+        var st = mockLogState[mockId];
+        if (st && st.pollTimer) { clearTimeout(st.pollTimer); st.pollTimer = null; }
+    }
+
     function stopMock(mockId) {
         return fetch(config.prefix + '/api/mocks/' + encodeURIComponent(mockId), { method: 'DELETE' })
             .then(function (r) {
                 if (r.ok || r.status === 404) {
                     mocksList = mocksList.filter(function (m) { return m.mockId !== mockId; });
+                    stopMockLogPolling(mockId);
+                    delete mockLogState[mockId];
+                    if (mockLogOpenFor === mockId) mockLogOpenFor = null;
                     if (mocksManagerOpen) renderMocksManager();
                     return true;
                 }
@@ -143,6 +187,8 @@
                     if (mins < 60) return mins + 'm ago';
                     return Math.round(mins / 60) + 'h ago';
                 })();
+                var isLogOpen = mockLogOpenFor === m.mockId;
+                var st = mockLogState[m.mockId] || { total: 0, entries: [] };
                 tbody.appendChild(el('tr', {},
                     el('td', { textContent: m.recordingName }),
                     el('td', { textContent: String(m.port) }),
@@ -150,7 +196,22 @@
                     el('td', {},
                         el('a', { href: url, target: '_blank', rel: 'noopener', textContent: url })
                     ),
-                    el('td', {},
+                    el('td', { className: 'bowire-mocks-actions' },
+                        el('button', {
+                            className: 'bowire-recording-action-btn',
+                            title: 'Toggle the live request log for this mock',
+                            textContent: isLogOpen ? 'Hide log' : 'Log (' + st.total + ')',
+                            onClick: function () {
+                                if (mockLogOpenFor === m.mockId) {
+                                    mockLogOpenFor = null;
+                                    stopMockLogPolling(m.mockId);
+                                } else {
+                                    mockLogOpenFor = m.mockId;
+                                    startMockLogPolling(m.mockId);
+                                }
+                                renderMocksManager();
+                            }
+                        }),
                         el('button', {
                             className: 'bowire-recording-action-btn bowire-recording-action-danger',
                             textContent: 'Stop',
@@ -158,6 +219,47 @@
                         })
                     )
                 ));
+                if (isLogOpen) {
+                    var logCell = el('td', { colSpan: 5, className: 'bowire-mocks-log-cell' });
+                    if (!st.entries.length) {
+                        logCell.appendChild(el('p', {
+                            className: 'bowire-recording-manager-empty',
+                            textContent: 'No requests yet. Fire one against ' + url + ' and it shows up here.'
+                        }));
+                    } else {
+                        var logTbl = el('table', { className: 'bowire-mocks-log-table' });
+                        var logHead = el('thead');
+                        logHead.appendChild(el('tr', {},
+                            el('th', { textContent: '#' }),
+                            el('th', { textContent: 'When' }),
+                            el('th', { textContent: 'Method' }),
+                            el('th', { textContent: 'Path' }),
+                            el('th', { textContent: 'Status' }),
+                            el('th', { textContent: 'Step' }),
+                            el('th', { textContent: 'Outcome' }),
+                            el('th', { textContent: 'ms' })
+                        ));
+                        logTbl.appendChild(logHead);
+                        var logBody = el('tbody');
+                        st.entries.forEach(function (e) {
+                            logBody.appendChild(el('tr', {
+                                className: 'bowire-mocks-log-row bowire-mocks-log-' + e.outcome
+                            },
+                                el('td', { textContent: '#' + e.sequence }),
+                                el('td', { textContent: (new Date(e.timestamp)).toLocaleTimeString(), title: e.timestamp }),
+                                el('td', { textContent: e.method }),
+                                el('td', { textContent: e.path }),
+                                el('td', { textContent: String(e.statusCode) }),
+                                el('td', { textContent: e.matchedStepId || '—' }),
+                                el('td', { textContent: e.outcome }),
+                                el('td', { textContent: e.durationMs ? e.durationMs.toFixed(1) : '—' })
+                            ));
+                        });
+                        logTbl.appendChild(logBody);
+                        logCell.appendChild(logTbl);
+                    }
+                    tbody.appendChild(el('tr', { className: 'bowire-mocks-log-detail-row' }, logCell));
+                }
             });
             table.appendChild(tbody);
             body.appendChild(table);

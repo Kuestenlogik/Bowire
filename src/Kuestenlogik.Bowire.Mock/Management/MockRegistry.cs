@@ -66,6 +66,7 @@ internal sealed class MockRegistry : IAsyncDisposable
         await File.WriteAllTextAsync(bwrPath, recordingJson, ct);
 
         MockServer? server = null;
+        var requestLog = new MockRequestLog();
         try
         {
             var opts = new MockServerOptions
@@ -74,6 +75,7 @@ internal sealed class MockRegistry : IAsyncDisposable
                 Host = "127.0.0.1",
                 Port = port,
                 Watch = false, // watching makes no sense for UI-started mocks
+                RequestObserver = requestLog,
             };
             // CA2000 fires here because the analyzer can't see that the
             // returned MockServer's lifetime moves into _mocks (and from
@@ -90,7 +92,8 @@ internal sealed class MockRegistry : IAsyncDisposable
                 server,
                 server.Port, // resolves OS-assigned port when port=0
                 DateTimeOffset.UtcNow,
-                bwrPath);
+                bwrPath,
+                requestLog);
             if (!_mocks.TryAdd(mockId, instance))
             {
                 // GUID collision is functionally impossible but be defensive.
@@ -148,4 +151,5 @@ internal sealed record MockInstance(
     MockServer Server,
     int Port,
     DateTimeOffset StartedAt,
-    string BwrPath);
+    string BwrPath,
+    MockRequestLog RequestLog);

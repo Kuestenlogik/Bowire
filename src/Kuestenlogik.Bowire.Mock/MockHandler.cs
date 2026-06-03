@@ -1,6 +1,8 @@
 // Copyright 2026 Küstenlogik
 // SPDX-License-Identifier: Apache-2.0
 
+using System.Diagnostics;
+using Kuestenlogik.Bowire.Mock.Management;
 using Kuestenlogik.Bowire.Mock.Matchers;
 using Kuestenlogik.Bowire.Mocking;
 using Kuestenlogik.Bowire.Mock.Replay;
@@ -63,8 +65,49 @@ public sealed class MockHandler
         lock (_cursorLock) { _cursor = 0; }
     }
 
+    private const string MatchedStepIdItemKey = "__bowireMockMatchedStepId";
+
     public async Task HandleAsync(HttpContext ctx, Func<Task> next)
     {
+        // #57 request-log instrumentation. Hook OnCompleted at the top so
+        // every return path below feeds the observer exactly once after
+        // the response is written. The matched-step id (when there is
+        // one) is stashed via HttpContext.Items by DispatchMatchedAsync
+        // so we don't have to thread it back here through multiple early
+        // returns. Cheap branch when no observer is registered.
+        var observer = _options.RequestObserver;
+        if (observer is not null)
+        {
+            var startTicks = Stopwatch.GetTimestamp();
+            ctx.Response.OnCompleted(() =>
+            {
+                try
+                {
+                    var elapsedMs = (Stopwatch.GetTimestamp() - startTicks)
+                        / (double)Stopwatch.Frequency * 1000.0;
+                    var matchedStepId = ctx.Items.TryGetValue(MatchedStepIdItemKey, out var sid)
+                        ? sid as string : null;
+                    var outcome = matchedStepId is not null
+                        ? "matched"
+                        : ctx.Response.StatusCode == 404 ? "404" : "miss";
+                    observer.OnRequest(new MockRequestEntry(
+                        Sequence: 0, // overwritten by the sink
+                        Timestamp: DateTimeOffset.UtcNow,
+                        Method: ctx.Request.Method,
+                        Path: ctx.Request.Path.Value ?? "/",
+                        StatusCode: ctx.Response.StatusCode,
+                        MatchedStepId: matchedStepId,
+                        Outcome: outcome,
+                        DurationMs: elapsedMs));
+                }
+                catch
+                {
+                    // Observers must not break replay -- swallow.
+                }
+                return Task.CompletedTask;
+            });
+        }
+
         // Runtime scenario-switch control endpoint. Lives on a
         // distinctive prefix so it never collides with a recorded path.
         // Short-circuits ahead of step matching, chaos, and everything
@@ -383,6 +426,10 @@ public sealed class MockHandler
 
     private async Task DispatchMatchedAsync(HttpContext ctx, BowireRecordingStep step, bool isGrpc)
     {
+        // Stash the step id so the OnCompleted observer in HandleAsync can
+        // tag the request-log entry with which recorded step replied.
+        ctx.Items[MatchedStepIdItemKey] = step.Id;
+
         // Chaos injection (Phase 3a): apply latency jitter and fail-rate
         // *after* we've matched a step (so unmatched traffic still
         // surfaces the miss cleanly) but *before* dispatch (so streaming

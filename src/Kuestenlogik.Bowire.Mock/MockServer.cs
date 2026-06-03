@@ -251,6 +251,7 @@ public sealed class MockServer : IAsyncDisposable
                 opts.CaptureMissPath = _options.CaptureMissPath;
                 opts.ControlToken = _options.ControlToken;
                 opts.PassThroughOnMiss = false; // standalone host has nothing behind it
+                opts.RequestObserver = _options.RequestObserver;
             };
 
             // Live-schema handlers (GraphQL today) sit in front of the
