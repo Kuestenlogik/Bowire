@@ -55,11 +55,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 - [#51](https://github.com/Kuestenlogik/Bowire/issues/51) **Marketing site — migrate <img> tags to picture.html partial** `kind:debt` `area:site` `track:marketing-ia` `P2`
 - [#53](https://github.com/Kuestenlogik/Bowire/issues/53) **Marketing site — second row of specialist comparisons** `kind:feature` `area:site` `track:marketing-ia` `P3`
 
-### No milestone
-
-- [#56](https://github.com/Kuestenlogik/Bowire/issues/56) **Workbench UI: start / stop / monitor mocks (today only via `bowire mock` CLI)** `kind:feature` `area:workbench` `P1`
-- [#57](https://github.com/Kuestenlogik/Bowire/issues/57) **Workbench UI: mock request log — live trace of which call hit which step** `kind:feature` `area:workbench` `P1`
-
 ---
 
 *Generated 2026-06-03 from [Project #2](https://github.com/orgs/Kuestenlogik/projects/2).*
