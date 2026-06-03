@@ -851,15 +851,17 @@
     </div>
 
     <form class="protocols-search" role="search"
-          action="https://www.nuget.org/packages" method="get" target="_blank" rel="noopener">
-      <!-- packagetype=BowirePlugin filters nuget.org to packages declaring
-           <PackageType>BowirePlugin</PackageType> in their nuspec — catches
-           every Küstenlogik plugin AND any third-party that follows the
-           convention, regardless of package-id prefix. Name-prefix search
-           (q=Bowire.Protocol) would miss differently-named third-party
-           packages. The action submits as a normal GET so the browser
-           navigates to the constructed URL in a new tab; no JS required. -->
-      <input type="hidden" name="packagetype" value="BowirePlugin">
+          action="https://www.nuget.org/packages" method="get" target="_blank" rel="noopener"
+          onsubmit="this.q.value = 'tags:bowire-plugin ' + this.q.value.trim();">
+      <!-- nuget.org search supports `tags:"foo"` query syntax. We prepend
+           it on submit so the user-typed keyword stays a normal token
+           (the filter is invisible to them). Our plugin packages tag
+           themselves with `bowire-plugin` (lowercase, hyphenated --
+           NuGet convention) so this filter surfaces every Küstenlogik
+           plugin AND any third-party that follows the convention.
+           Using a tag rather than packageType means published packages
+           don't need to opt into a custom <PackageType>; the tag is
+           already present on every plugin csproj in this repo. -->
       <label for="protocols-search-input" class="protocols-search-label">Looking for another protocol?</label>
       <div class="protocols-search-row">
         <input id="protocols-search-input"
@@ -874,7 +876,7 @@
           Search nuget.org
         </button>
       </div>
-      <p class="protocols-search-hint">Filtered to <code>BowirePlugin</code> packages &mdash; third-party plugins surface automatically.</p>
+      <p class="protocols-search-hint">Filtered to <code>bowire-plugin</code>-tagged packages on nuget.org &mdash; third-party plugins surface automatically.</p>
     </form>
 
     <p class="protocols-cta">
