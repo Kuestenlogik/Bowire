@@ -1,6 +1,7 @@
 // Copyright 2026 Küstenlogik
 // SPDX-License-Identifier: Apache-2.0
 
+using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -70,5 +71,30 @@ public static class BowireAuthServiceCollectionExtensions
 
         BowireAuthProviderRegistry.ApplyAuthentication(services, configuration, opts, logger);
         return services;
+    }
+
+    /// <summary>
+    /// Invoke the active <see cref="IBowireAuthProvider"/>'s
+    /// <see cref="IBowireAuthProvider.Configure"/> hook so the provider
+    /// can insert middleware into the host pipeline. Wire between
+    /// <c>app.UseAuthentication()</c> and <c>app.MapBowire()</c> in the
+    /// host's startup. No-op when no provider is registered, so calling
+    /// it unconditionally is safe and the standard pattern.
+    /// </summary>
+    /// <remarks>
+    /// Most providers don't need this hook -- OIDC, SAML, and API-key
+    /// schemes all set themselves up through pure DI registration in
+    /// <see cref="IBowireAuthProvider.AddAuthentication"/> and ride
+    /// ASP.NET's stock <c>UseAuthentication</c> pipeline. Override
+    /// <see cref="IBowireAuthProvider.Configure"/> only when the
+    /// provider's scheme can't be expressed as pure DI (e.g. it owns
+    /// a callback URL outside the Bowire endpoint group).
+    /// </remarks>
+    public static IApplicationBuilder UseBowireAuth(this IApplicationBuilder app)
+    {
+        ArgumentNullException.ThrowIfNull(app);
+        var provider = app.ApplicationServices.GetService<IBowireAuthProvider>();
+        provider?.Configure(app);
+        return app;
     }
 }
