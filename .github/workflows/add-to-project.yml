@@ -48,7 +48,7 @@ jobs:
       )) ||
       (github.event.pull_request && contains(github.event.pull_request.labels.*.name, 'roadmap'))
     steps:
-      - uses: actions/add-to-project@v1
+      - uses: actions/add-to-project@v2
         with:
           project-url: https://github.com/orgs/Kuestenlogik/projects/2
           github-token: ${{ secrets.BOWIRE_DISPATCH_TOKEN }}
