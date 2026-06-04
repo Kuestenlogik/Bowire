@@ -2,24 +2,35 @@
 // SPDX-License-Identifier: Apache-2.0
 
 using System.Text.Json;
+using Kuestenlogik.Bowire.Auth;
 
 namespace Kuestenlogik.Bowire;
 
 /// <summary>
 /// Disk-backed store for Bowire environments and global variables.
-/// Persists to <c>~/.bowire/environments.json</c> so configurations survive
-/// browser changes, machine restarts, and CLI/standalone usage.
+/// Resolves its on-disk path through <see cref="BowireUserContext"/> so
+/// single-user installs land at <c>~/.bowire/environments.json</c>
+/// (legacy behaviour, unchanged) and multi-tenant installs route to a
+/// per-identity slot under <c>~/.bowire-server/users/&lt;sub&gt;/</c>
+/// once the SCIM phase ships (#28 Phase C).
 /// </summary>
 internal static class EnvironmentStore
 {
+    private static string? _testStorePathOverride;
+
     /// <summary>
-    /// On-disk store location. Settable so tests can redirect into a temp
-    /// directory without clobbering the developer's real <c>~/.bowire/</c>.
-    /// Production callers leave it at the default.
+    /// On-disk store location. Resolves through
+    /// <see cref="BowireUserContext.GetUserPath"/> by default so the
+    /// per-user-scoping seam (#28) can swap in a multi-tenant resolver
+    /// without touching this class. Tests can pin a specific path via
+    /// the setter to redirect into a temp directory without clobbering
+    /// the developer's real <c>~/.bowire/</c>.
     /// </summary>
-    internal static string StorePath { get; set; } = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
-        ".bowire", "environments.json");
+    internal static string StorePath
+    {
+        get => _testStorePathOverride ?? BowireUserContext.GetUserPath("environments.json");
+        set => _testStorePathOverride = value;
+    }
 
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
