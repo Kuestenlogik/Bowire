@@ -26,7 +26,10 @@ namespace Kuestenlogik.Bowire.Auth.Oidc;
 ///         "Authority": "https://login.example.com/",
 ///         "ClientId": "&lt;app-client-id&gt;",
 ///         "Audience": "&lt;optional audience override&gt;",
-///         "RequiredClaim": { "groups": "bowire-users" }
+///         "RequiredClaim": {
+///           "groups": "bowire-users",
+///           "tenant_id": "acme"
+///         }
 ///       }
 ///     }
 ///   }
@@ -53,6 +56,19 @@ public sealed class OidcAuthProvider : IBowireAuthProvider
     public string Id => "oidc";
     public string Name => "OpenID Connect";
 
+    /// <summary>
+    /// Parsed <c>Bowire:Auth:Oidc:RequiredClaim</c> dictionary — every
+    /// entry becomes a <c>policy.RequireClaim(claimType, claimValue)</c>
+    /// on the default policy. <c>null</c> when the section is absent or
+    /// empty (no extra gating beyond the authenticated-user check).
+    /// Populated by <see cref="AddAuthentication"/> and read by
+    /// <see cref="BuildDefaultPolicy"/>; both run at startup against
+    /// the same provider instance (registered as a singleton via
+    /// <c>BowireAuthProviderRegistry.ApplyAuthentication</c>), so the
+    /// field doesn't need synchronisation.
+    /// </summary>
+    private IReadOnlyDictionary<string, string>? _requiredClaims;
+
     public void AddAuthentication(IServiceCollection services, IConfiguration configuration)
     {
         ArgumentNullException.ThrowIfNull(services);
@@ -64,20 +80,61 @@ public sealed class OidcAuthProvider : IBowireAuthProvider
         // only have to learn one set of keys.
         var oidcSection = configuration.GetSection("Bowire:Auth:Oidc");
 
+        // Pull RequiredClaim entries up-front so BuildDefaultPolicy
+        // can apply them without re-reading the config. Empty section
+        // -> _requiredClaims stays null and BuildDefaultPolicy skips
+        // the layering step.
+        var claimChildren = oidcSection.GetSection("RequiredClaim").GetChildren().ToList();
+        if (claimChildren.Count > 0)
+        {
+            var dict = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var child in claimChildren)
+            {
+                if (!string.IsNullOrEmpty(child.Key) && !string.IsNullOrEmpty(child.Value))
+                {
+                    dict[child.Key] = child.Value;
+                }
+            }
+            if (dict.Count > 0)
+            {
+                _requiredClaims = dict;
+            }
+        }
+
         services
             .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             .AddMicrosoftIdentityWebApi(oidcSection);
+
+        // Stash the access token on the authentication ticket so the
+        // workbench's `/api/auth/session` endpoint can hand it back to
+        // the user's request-pane Auth tab ("Use my session token"
+        // forwarding mode). SaveToken=false is the JwtBearer default
+        // for size reasons -- our use case keeps the token in process
+        // memory only, off the wire, so the size hit is acceptable in
+        // exchange for the token-forwarding feature.
+        services.Configure<JwtBearerOptions>(
+            JwtBearerDefaults.AuthenticationScheme,
+            o => o.SaveToken = true);
     }
 
     public void BuildDefaultPolicy(AuthorizationPolicyBuilder policy)
     {
         ArgumentNullException.ThrowIfNull(policy);
-        // Minimum bar: authenticated. The required-claim filter below
-        // is layered on at the host level via
-        // services.Configure<AuthorizationOptions> if the operator set
-        // Bowire:Auth:Oidc:RequiredClaim — keeping it out of this
-        // method means the policy stays purely about "authenticated"
-        // and host policy keeps the gating knob.
+        // Minimum bar: authenticated.
         policy.RequireAuthenticatedUser();
+
+        // Layer the operator-configured required claims on top. Each
+        // entry adds a separate RequireClaim requirement -- the policy
+        // requires ALL of them to match (AND semantics). For "user must
+        // be in group X OR group Y" semantics, set a single key to a
+        // value the upstream IdP issues for both groups, or compose a
+        // more complex policy via a Phase-B custom IAuthorizationHandler.
+        if (_requiredClaims is not null)
+        {
+            foreach (var (claimType, claimValue) in _requiredClaims)
+            {
+                policy.RequireClaim(claimType, claimValue);
+            }
+        }
     }
 }

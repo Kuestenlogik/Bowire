@@ -39,6 +39,33 @@
             if (token && !metadataHasKey(out, 'Authorization')) {
                 out['Authorization'] = 'Bearer ' + token;
             }
+        } else if (auth.type === 'session') {
+            // #32: forward the workbench's own session token to the
+            // target service. /api/auth/session returns the token the
+            // browser used to call us (when an OIDC-style auth provider
+            // is active and SaveToken=true) -- relay it as the request's
+            // Bearer. Anonymous calls or providers without SaveToken
+            // surface a toast; we don't fabricate a header in that case.
+            try {
+                var sessionResp = await fetch(config.prefix + '/api/auth/session');
+                if (!sessionResp.ok) {
+                    toast('Session-token forwarding requires an active auth provider', 'error');
+                } else {
+                    var sessionData = await sessionResp.json();
+                    if (sessionData && sessionData.hasToken && sessionData.token
+                        && !metadataHasKey(out, 'Authorization')) {
+                        out['Authorization'] = (sessionData.scheme || 'Bearer') + ' ' + sessionData.token;
+                    } else if (sessionData && !sessionData.hasToken) {
+                        if (sessionData.reason === 'anonymous') {
+                            toast('Session-token forwarding needs an authenticated workbench (sign in first)', 'error');
+                        } else {
+                            toast('Active auth provider does not expose its access token (SaveToken=false)', 'error');
+                        }
+                    }
+                }
+            } catch (e) {
+                toast('Session-token fetch failed: ' + (e && e.message || e), 'error');
+            }
         } else if (auth.type === 'basic') {
             var user = substituteVars(auth.username || '');
             var pass = substituteVars(auth.password || '');

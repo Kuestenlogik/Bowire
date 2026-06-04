@@ -312,6 +312,39 @@ internal static class BowireAuthEndpoints
             return Results.Json(new { env = envId, cleared }, BowireEndpointHelpers.JsonOptions);
         }).ExcludeFromDescription();
 
+        // #32: hand the workbench's own bearer/JWT-bearer access token
+        // back to the request-pane Auth tab. The token is the one the
+        // browser used to call /api/auth/session itself — the bearer
+        // authentication scheme stashed it on the authentication ticket
+        // (provider sets SaveToken=true on JwtBearerOptions). We don't
+        // synthesise tokens, we don't introspect them; we just relay
+        // whatever's already been verified, gated by the standard
+        // RequireAuthorization on bowireGroup (anonymous callers get
+        // 401 / 403 before this handler runs).
+        endpoints.MapGet($"{basePath}/api/auth/session", async (HttpContext ctx) =>
+        {
+            if (ctx.User?.Identity?.IsAuthenticated != true)
+            {
+                return Results.Json(new { hasToken = false, reason = "anonymous" },
+                    BowireEndpointHelpers.JsonOptions);
+            }
+            // GetTokenAsync resolves to the access_token saved on the
+            // ticket. The bearer/JWT scheme's name is the standard one
+            // ASP.NET registers under. Null result means SaveToken
+            // wasn't enabled by the active provider -- surface the
+            // null so the UI can show "your provider doesn't support
+            // session-token forwarding" instead of just blanking out.
+            var token = await Microsoft.AspNetCore.Authentication.AuthenticationHttpContextExtensions
+                .GetTokenAsync(ctx, "access_token");
+            if (string.IsNullOrEmpty(token))
+            {
+                return Results.Json(new { hasToken = false, reason = "no-token-on-ticket" },
+                    BowireEndpointHelpers.JsonOptions);
+            }
+            return Results.Json(new { hasToken = true, token, scheme = "Bearer" },
+                BowireEndpointHelpers.JsonOptions);
+        }).ExcludeFromDescription();
+
         return endpoints;
     }
 
