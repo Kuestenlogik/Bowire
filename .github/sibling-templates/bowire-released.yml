@@ -55,21 +55,37 @@ jobs:
           echo "version=$V" >> "$GITHUB_OUTPUT"
           echo "Target version: $V"
 
-      - name: Bump PackageVersion entries
+      - name: Bump Kuestenlogik.Bowire* references
         env:
           NEW_V: ${{ steps.ver.outputs.version }}
         run: |
-          # Update every Kuestenlogik.Bowire(.X)? PackageVersion line in
-          # Directory.Packages.props. Skips repo entirely if no file.
-          if [ ! -f Directory.Packages.props ]; then
-            echo "No Directory.Packages.props -- nothing to bump."
-            exit 0
+          # Two reference shapes can carry Kuestenlogik.Bowire* versions:
+          #   1. <PackageVersion> in Directory.Packages.props (CPM repos --
+          #      every Bowire.Protocol.* plugin, Bowire main, &c).
+          #   2. <PackageReference Version="..."> in individual .csproj
+          #      files (sample repos and templates keep these per-project
+          #      so a learner can copy one csproj and have it build
+          #      standalone without also taking Directory.Packages.props).
+          # Walk both. Idempotent / no-op when nothing matches.
+          touched=0
+          if [ -f Directory.Packages.props ]; then
+            n=$(grep -c 'Include="Kuestenlogik\.Bowire' Directory.Packages.props || true)
+            sed -i -E 's|(<PackageVersion[^>]*Include="Kuestenlogik\.Bowire(\.[A-Za-z]+)?"[^>]*Version=")[^"]+|\1'"${NEW_V}"'|g' Directory.Packages.props
+            touched=$((touched + n))
+            echo "Directory.Packages.props: touched $n PackageVersion line(s)."
           fi
-          before=$(grep -c 'Include="Kuestenlogik\.Bowire' Directory.Packages.props || true)
-          sed -i -E 's|(<PackageVersion[^>]*Include="Kuestenlogik\.Bowire(\.[A-Za-z]+)?"[^>]*Version=")[^"]+|\1'"${NEW_V}"'|g' Directory.Packages.props
-          after_diff=$(git diff --shortstat Directory.Packages.props)
-          echo "Touched $before Kuestenlogik.Bowire* lines."
-          echo "$after_diff"
+          # Per-csproj PackageReference Version="..." -- skip ones that
+          # already point at the target version so the diff stays clean.
+          while IFS= read -r -d '' csproj; do
+            n=$(grep -cE 'PackageReference[^/]*Include="Kuestenlogik\.Bowire[^"]*"[^>]*Version="[^"]+' "$csproj" 2>/dev/null || echo 0)
+            if [ "$n" -gt 0 ]; then
+              sed -i -E 's|(<PackageReference[^>]*Include="Kuestenlogik\.Bowire(\.[A-Za-z]+)?"[^>]*Version=")[^"]+|\1'"${NEW_V}"'|g' "$csproj"
+              touched=$((touched + n))
+              echo "$csproj: touched $n PackageReference line(s)."
+            fi
+          done < <(find . -name '*.csproj' -not -path './bin/*' -not -path './obj/*' -print0)
+          echo "Total Kuestenlogik.Bowire* lines bumped: $touched"
+          git diff --shortstat
 
       - name: Ensure labels exist
         env:
