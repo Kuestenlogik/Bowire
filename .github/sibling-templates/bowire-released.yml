@@ -116,7 +116,10 @@ jobs:
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git checkout -b "$BRANCH"
-          git add Directory.Packages.props
+          # -A picks up whichever shape the bump touched -- Directory.Packages.props
+          # for CPM repos, the modified .csprojs for sample / template repos that
+          # use per-project PackageReference, or both.
+          git add -A
           git commit -m "chore(deps): bump Kuestenlogik.Bowire to ${NEW_V}"
           git push --force-with-lease origin "$BRANCH"
           # Existing PR for this branch? Reuse it; otherwise create.
