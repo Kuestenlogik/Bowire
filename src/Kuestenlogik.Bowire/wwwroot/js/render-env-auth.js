@@ -976,6 +976,7 @@
         var types = [
             { value: 'none', label: 'No Auth' },
             { value: 'bearer', label: 'Bearer Token' },
+            { value: 'session', label: 'Use my session token (forwards workbench login)' },
             { value: 'basic', label: 'Basic Auth' },
             { value: 'apikey', label: 'API Key' },
             { value: 'jwt', label: 'JWT (HMAC / RSA / ECDSA)' },
@@ -998,6 +999,15 @@
             section.appendChild(renderAuthField('Token', 'bowire-auth-token', auth.token || '',
                 'Bearer token (supports ${var})', 'password',
                 function (v) { setAuth(Object.assign({}, getAuth(), { type: 'bearer', token: v })); }));
+        } else if (auth.type === 'session') {
+            // #32 — zero-config mode. The workbench's own login token
+            // (when an OIDC / SSO provider is active and exposes its
+            // access token) flows through to the target as a Bearer
+            // header on every invoke. No fields to fill in.
+            section.appendChild(el('p', {
+                className: 'bowire-auth-session-note',
+                textContent: 'Forwards your workbench login (OIDC / SSO) to the target service as a Bearer header. Only useful when the same identity provider gates both Bowire and the target.'
+            }));
         } else if (auth.type === 'basic') {
             section.appendChild(renderAuthField('Username', 'bowire-auth-username', auth.username || '',
                 'Username (supports ${var})', 'text',
