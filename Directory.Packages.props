@@ -115,5 +115,18 @@
          get auto-generated help, validation, and tab-completion in one
          place instead of hand-rolled args.Contains() across files. -->
     <PackageVersion Include="System.CommandLine" Version="2.0.8" />
+    <!-- OpenTelemetry stack for the self-telemetry seam (#29). The
+         core SDK + hosting bits stay light; the OTLP exporter ships
+         the wire format the OTEL_EXPORTER_OTLP_* env vars consume,
+         which is the de-facto default and what Grafana Agent /
+         OpenTelemetry Collector / Jaeger / Tempo expect out of the
+         box. ASP.NET instrumentation gives us the request-side spans
+         for free; the Bowire-domain Meter + ActivitySource add the
+         invoke / discover / mock / scan counters on top. -->
+    <PackageVersion Include="OpenTelemetry" Version="1.10.0" />
+    <PackageVersion Include="OpenTelemetry.Extensions.Hosting" Version="1.10.0" />
+    <PackageVersion Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.10.0" />
+    <PackageVersion Include="OpenTelemetry.Instrumentation.AspNetCore" Version="1.10.1" />
+    <PackageVersion Include="OpenTelemetry.Instrumentation.Http" Version="1.10.0" />
   </ItemGroup>
 </Project>

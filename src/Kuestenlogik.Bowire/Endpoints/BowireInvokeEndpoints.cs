@@ -1,11 +1,13 @@
 // Copyright 2026 Küstenlogik
 // SPDX-License-Identifier: Apache-2.0
 
+using System.Diagnostics;
 using System.Text.Json;
 using Kuestenlogik.Bowire.Mocking;
 using Kuestenlogik.Bowire.Models;
 using Kuestenlogik.Bowire.Semantics;
 using Kuestenlogik.Bowire.Semantics.Detectors;
+using Kuestenlogik.Bowire.Telemetry;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
@@ -129,6 +131,20 @@ internal static class BowireInvokeEndpoints
             if (protocol is null)
                 return Results.Json(new { error = "No protocol plugin available." }, BowireEndpointHelpers.JsonOptions, statusCode: 502);
 
+            // #29 self-telemetry. Bracket the invoke with the
+            // bowire.invoke.* instruments. Cheap when no OTel listener
+            // is attached (the SDK's no-op fast path keeps the cost
+            // negligible). Tags carry protocol + service + method so
+            // dashboards can break down by any of them -- the operator
+            // can drop the high-cardinality dims via the privacy
+            // switch (--telemetry-strip-method-labels).
+            using var activity = BowireTelemetry.ActivitySource.StartActivity(
+                "bowire.invoke", ActivityKind.Client);
+            activity?.SetTag("protocol", body.Protocol);
+            activity?.SetTag("service", body.Service);
+            activity?.SetTag("method", body.Method);
+            var invokeStart = Stopwatch.GetTimestamp();
+            string outcome = "ok";
             try
             {
                 var result = await protocol.InvokeAsync(
@@ -174,6 +190,8 @@ internal static class BowireInvokeEndpoints
             }
             catch (Exception ex)
             {
+                outcome = ex is OperationCanceledException ? "canceled" : "error";
+                activity?.SetStatus(ActivityStatusCode.Error, ex.Message);
                 BowireEndpointHelpers.GetLogger(ctx).LogWarning(ex,
                     "Invoke failed for {Protocol} {Service}/{Method} at {ServerUrl}",
                     protocol.Id, BowireEndpointHelpers.SafeLog(body.Service), BowireEndpointHelpers.SafeLog(body.Method), BowireEndpointHelpers.SafeLog(serverUrl));
@@ -184,6 +202,20 @@ internal static class BowireInvokeEndpoints
                     type = ex.GetType().Name,
                     stack = ex.StackTrace
                 }, BowireEndpointHelpers.JsonOptions, statusCode: 502);
+            }
+            finally
+            {
+                var elapsedMs = (Stopwatch.GetTimestamp() - invokeStart)
+                    / (double)Stopwatch.Frequency * 1000.0;
+                var tags = new TagList
+                {
+                    { "protocol", body.Protocol },
+                    { "service", body.Service },
+                    { "method", body.Method },
+                    { "outcome", outcome },
+                };
+                BowireTelemetry.InvokeCount.Add(1, tags);
+                BowireTelemetry.InvokeDuration.Record(elapsedMs, tags);
             }
         }).ExcludeFromDescription();
 
