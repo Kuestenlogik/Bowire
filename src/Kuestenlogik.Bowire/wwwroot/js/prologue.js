@@ -913,6 +913,26 @@
         } catch { return []; }
     }
 
+    // Pull collections from disk on init so the list survives browser
+    // changes and CLI usage. Mirrors loadRecordingsFromDisk: disk wins
+    // over the localStorage cache when both are present (the cache
+    // only matters for instant updates between roundtrips).
+    function loadCollectionsFromDisk() {
+        return fetch(config.prefix + '/api/collections')
+            .then(function (r) { return r.ok ? r.json() : null; })
+            .then(function (data) {
+                if (data && Array.isArray(data.collections)) {
+                    collectionsList = data.collections;
+                    try { localStorage.setItem(COLLECTIONS_KEY, JSON.stringify(collectionsList)); } catch { /* ignore */ }
+                } else {
+                    collectionsList = loadCollections();
+                }
+            })
+            .catch(function () {
+                collectionsList = loadCollections();
+            });
+    }
+
     function persistCollections() {
         try {
             localStorage.setItem(COLLECTIONS_KEY, JSON.stringify(collectionsList));

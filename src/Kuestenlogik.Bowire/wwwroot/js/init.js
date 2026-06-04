@@ -201,8 +201,11 @@
         // selector and recordings list both reflect ~/.bowire/* on first
         // render. Both have an in-memory fall-back from localStorage if the
         // disk fetch fails.
-        // Load collections from localStorage on boot
+        // Load collections from disk too (#30) -- localStorage stays the
+        // in-flight cache, the GET below promotes the canonical disk
+        // state into it when present.
         collectionsList = loadCollections();
+        loadCollectionsFromDisk().then(function () { render(); });
 
         // Load flows from localStorage
         flowsList = loadFlows();

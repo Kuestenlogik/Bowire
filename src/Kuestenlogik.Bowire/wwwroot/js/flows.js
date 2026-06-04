@@ -542,6 +542,62 @@
         return str.length <= 60 ? str : str.slice(0, 57) + '…';
     }
 
+    /*
+     * #30 — flatten a flow into a linear Collection so it can run via
+     * the Collection Runner (and through that, ship as a CI smoke
+     * suite). Walks the flow's nodes in declaration order and lifts
+     * every `request` node into a collection item carrying the same
+     * service/method/body/metadata + the node's existing assertions
+     * remapped onto an `expectedStatus`-style value.
+     *
+     * Non-request nodes (condition / loop / delay / variable) don't
+     * map cleanly onto Postman-style items, so they're skipped --
+     * the resulting collection runs the request sequence with
+     * variable substitution but loses the conditional/loop control
+     * flow. Documented in the Flows -> Collection button's title.
+     *
+     * Returns the new collection's id, or null when the flow has no
+     * request nodes to lift.
+     */
+    function convertFlowToCollection(flowId) {
+        if (typeof createCollection !== 'function' || typeof addToCollection !== 'function') {
+            // collections.js / prologue helpers absent -- defensive guard.
+            return null;
+        }
+        var flow = flowsList.find(function (f) { return f.id === flowId; });
+        if (!flow || !Array.isArray(flow.nodes) || flow.nodes.length === 0) return null;
+
+        var requestNodes = flow.nodes.filter(function (n) { return n && n.type === 'request'; });
+        if (requestNodes.length === 0) return null;
+
+        var col = createCollection(flow.name + ' (collection)');
+        for (var i = 0; i < requestNodes.length; i++) {
+            var n = requestNodes[i];
+            // Lift the recorded status assertion (if any) onto the
+            // simpler `expectedStatus` shape the Collection Runner
+            // already understands. Other assertion kinds are
+            // preserved through `assertions`.
+            var statusAssert = (n.assertions || []).find(function (a) {
+                return a && a.path === 'status' && a.op === 'eq';
+            });
+            var item = {
+                protocol: n.protocol,
+                service: n.service || '',
+                method: n.method || '',
+                methodType: n.methodType || 'Unary',
+                serverUrl: n.serverUrl || '',
+                body: n.body || '{}',
+                metadata: n.metadata || {},
+                expectedStatus: statusAssert ? statusAssert.value : null,
+                assertions: (n.assertions || []).filter(function (a) {
+                    return a && !(a.path === 'status' && a.op === 'eq');
+                })
+            };
+            addToCollection(col.id, item);
+        }
+        return col.id;
+    }
+
     function evaluateCondition(node) {
         if (!lastResponseJson) return false;
         if (node.conditionPath) {
@@ -662,6 +718,31 @@
             'aria-label': 'Export as .bwf',
             onClick: function () { exportFlow(flow.id); }
         }, el('span', { innerHTML: svgIcon('download') })));
+
+        // #30 -- Export as collection (Postman-style test suite).
+        // Flattens the flow's request nodes into a Collection so it
+        // can run via the Collection Runner or ship as a CI smoke
+        // suite. Non-request nodes (condition / loop / delay /
+        // variable) are skipped -- the title spells that out.
+        header.appendChild(el('button', {
+            id: 'bowire-flow-export-collection-btn',
+            className: 'bowire-flow-canvas-action-btn',
+            title: 'Export as collection (lifts request nodes only; condition / loop / delay / variable nodes are skipped)',
+            'aria-label': 'Export as collection',
+            onClick: function () {
+                var colId = convertFlowToCollection(flow.id);
+                if (!colId) {
+                    toast('Flow has no request nodes to export', 'error');
+                    return;
+                }
+                toast('Collection created from flow', 'success');
+                // Switch to the Collections sidebar view if available
+                // so the user lands on the new collection immediately.
+                if (typeof setSidebarView === 'function') setSidebarView('collections');
+                collectionManagerSelectedId = colId;
+                render();
+            }
+        }, el('span', { textContent: '→ col' })));
 
         // Duplicate flow
         header.appendChild(el('button', {
