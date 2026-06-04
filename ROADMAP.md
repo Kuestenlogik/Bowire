@@ -20,7 +20,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### No milestone
 
-- [#27](https://github.com/Kuestenlogik/Bowire/issues/27) **Plugin lifecycle in the workbench UI + pre-release support** `kind:feature` `area:plugin-sdk` `P1`
 - [#31](https://github.com/Kuestenlogik/Bowire/issues/31) **Auth-provider SPI — plugin-load privilege** `kind:debt` `area:plugin-sdk` `track:auth` `P2`
 - [#32](https://github.com/Kuestenlogik/Bowire/issues/32) **OIDC plugin — required-claim filter + token forwarding** `kind:feature` `area:workbench` `track:auth` `P2`
 - [#30](https://github.com/Kuestenlogik/Bowire/issues/30) **Collections (Postman-style test suites)** `kind:feature` `area:workbench` `P2`
