@@ -28,7 +28,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.0
 
-- [#33](https://github.com/Kuestenlogik/Bowire/issues/33) **Protocol plugins — Connect Phase 1+3 + OTLP + Surgewave** `kind:feature` `area:plugin-sdk` `track:protocols` `P2`
+- [#33](https://github.com/Kuestenlogik/Bowire/issues/33) **Protocol plugins — Connect Phase 1+3 + OTLP** `kind:feature` `area:plugin-sdk` `track:protocols` `P2`
 - [#34](https://github.com/Kuestenlogik/Bowire/issues/34) **AsyncAPI discovery source — remaining bindings + V2 overloads + YAML pre-normaliser** `kind:feature` `area:plugin-sdk` `track:protocols` `P2`
 
 ### Later
@@ -55,6 +55,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 - [Kuestenlogik/Bowire.Templates#3](https://github.com/Kuestenlogik/Bowire.Templates/issues/3) **Plugin project template — `dotnet new bowire-plugin`** `kind:feature` `area:plugin-sdk` `P3`
 - [Kuestenlogik/Bowire.Samples#13](https://github.com/Kuestenlogik/Bowire.Samples/issues/13) **SimpleGraphQLSubscriptions sample** `kind:feature` `area:plugin-sdk` `P3`
+- [Kuestenlogik/Bowire.Protocol.Surgewave#11](https://github.com/Kuestenlogik/Bowire.Protocol.Surgewave/issues/11) **Light up Surgewave protocol plugin** 
 
 ---
 
