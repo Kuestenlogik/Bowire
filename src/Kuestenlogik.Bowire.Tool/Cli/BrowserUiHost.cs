@@ -4,6 +4,7 @@
 using Kuestenlogik.Bowire.App.Configuration;
 using Kuestenlogik.Bowire.Auth;
 using Kuestenlogik.Bowire.Mock.Management;
+using Kuestenlogik.Bowire.Telemetry;
 // UseBowireAuth lives in Kuestenlogik.Bowire.Auth; already covered.
 using Kuestenlogik.Bowire.PluginLoading;
 using Kuestenlogik.Bowire.Protocol.Mcp;
@@ -118,6 +119,13 @@ internal static class BrowserUiHost
         // can start / stop / list UI-driven mocks without shelling
         // out to `bowire mock --recording`.
         builder.Services.AddBowireMockManagement();
+
+        // Self-telemetry seam (#29). Off by default -- opted in via
+        // --telemetry / Bowire:Telemetry:Enabled=true. When on, wires
+        // the OTLP exporter against the canonical Kuestenlogik.Bowire
+        // Meter + ActivitySource and lets standard OTEL_* env vars
+        // drive the wire details.
+        builder.Services.AddBowireTelemetry(builder.Configuration);
 
         // Opt-in auth gate. When --auth-provider <id> is set, the
         // matching IBowireAuthProvider plugin gets to wire its scheme
