@@ -926,8 +926,123 @@
         });
         actions.appendChild(uninstallBtn);
 
+        // Inspect — pulls /api/plugins/protocols on demand to cross-
+        // reference which protocols this plugin contributes, then
+        // pops a modal with the consolidated metadata. UI analogue
+        // of `bowire plugin inspect <packageId>`.
+        var inspectBtn = el('button', {
+            type: 'button',
+            className: 'bowire-settings-plugin-btn',
+            disabled: busy,
+            title: 'Show package metadata + protocol contributions',
+            textContent: 'Inspect',
+            onClick: function () { openPluginInspectModal(p); }
+        });
+        actions.appendChild(inspectBtn);
+
         row.appendChild(actions);
         return row;
+    }
+
+    function openPluginInspectModal(plugin) {
+        var pkgId = plugin.packageId || plugin.PackageId || '';
+        var overlay = el('div', {
+            id: 'bowire-plugin-inspect-overlay',
+            className: 'bowire-modal-overlay',
+            onClick: function (e) { if (e.target === overlay) overlay.remove(); }
+        });
+        var panel = el('div', { className: 'bowire-modal-panel bowire-plugin-inspect-panel' });
+
+        var header = el('div', { className: 'bowire-modal-header' });
+        header.appendChild(el('h2', { textContent: pkgId }));
+        header.appendChild(el('button', {
+            className: 'bowire-modal-close',
+            innerHTML: svgIcon('x'),
+            title: 'Close',
+            onClick: function () { overlay.remove(); }
+        }));
+        panel.appendChild(header);
+
+        var body = el('div', { className: 'bowire-modal-body' });
+
+        // Static fields the list endpoint already gave us.
+        var dl = el('dl', { className: 'bowire-plugin-inspect-meta' });
+        function row(label, value) {
+            if (value === null || value === undefined || value === '') return;
+            dl.appendChild(el('dt', { textContent: label }));
+            dl.appendChild(el('dd', { textContent: String(value) }));
+        }
+        row('Version', plugin.version || plugin.Version);
+        row('Source', plugin.source === 'bundled'
+            ? 'bundled (ships with the bowire tool)'
+            : 'sibling (~/.bowire/plugins/' + pkgId + ')');
+        if (plugin.installedAt || plugin.InstalledAt) {
+            row('Installed', plugin.installedAt || plugin.InstalledAt);
+        }
+        if (plugin.sources || plugin.Sources) {
+            var s = plugin.sources || plugin.Sources;
+            row('Feed sources', Array.isArray(s) ? s.join(', ') : String(s));
+        }
+        body.appendChild(dl);
+
+        // Protocol contributions — fetch /api/plugins/protocols and
+        // filter the catalog to entries whose packageId matches.
+        var contribTitle = el('h3', {
+            className: 'bowire-plugin-inspect-section',
+            textContent: 'Protocol contributions'
+        });
+        body.appendChild(contribTitle);
+
+        var contribBox = el('div', { className: 'bowire-plugin-inspect-contrib' });
+        contribBox.appendChild(el('span', { textContent: 'Loading…' }));
+        body.appendChild(contribBox);
+
+        fetch(config.prefix + '/api/plugins/protocols')
+            .then(function (r) { return r.ok ? r.json() : null; })
+            .then(function (data) {
+                contribBox.innerHTML = '';
+                if (!data || !data.catalog) {
+                    contribBox.appendChild(el('span', { textContent: 'Catalog unavailable.' }));
+                    return;
+                }
+                var hits = Object.keys(data.catalog).filter(function (proto) {
+                    return data.catalog[proto] && data.catalog[proto].toLowerCase() === pkgId.toLowerCase();
+                });
+                if (hits.length === 0) {
+                    contribBox.appendChild(el('span', {
+                        className: 'bowire-plugin-inspect-empty',
+                        textContent: 'No protocol contributions resolved from this package. (Either a non-protocol plugin, or the package id does not match the catalog mapping — try the CLI: `bowire plugin inspect ' + pkgId + '`.)'
+                    }));
+                } else {
+                    var ul = el('ul', { className: 'bowire-plugin-inspect-contrib-list' });
+                    hits.forEach(function (proto) {
+                        var loaded = (data.loaded || []).indexOf(proto) >= 0;
+                        ul.appendChild(el('li', {},
+                            el('code', { textContent: proto }),
+                            el('span', {
+                                className: 'bowire-plugin-inspect-loaded'
+                                    + (loaded ? ' is-loaded' : ' is-unloaded'),
+                                textContent: loaded ? 'loaded' : 'declared (not loaded)'
+                            })
+                        ));
+                    });
+                    contribBox.appendChild(ul);
+                }
+            })
+            .catch(function () {
+                contribBox.innerHTML = '';
+                contribBox.appendChild(el('span', { textContent: 'Catalog fetch failed.' }));
+            });
+
+        // Footer hint for the deeper CLI surface
+        body.appendChild(el('p', {
+            className: 'bowire-plugin-inspect-cli-hint',
+            textContent: 'For deeper introspection (load context, assemblies, IBowireMockEmitter contributions), run: bowire plugin inspect ' + pkgId
+        }));
+
+        panel.appendChild(body);
+        overlay.appendChild(panel);
+        document.body.appendChild(overlay);
     }
 
     function renderPluginActionBanner(result) {

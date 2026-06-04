@@ -9834,3 +9834,120 @@ details[open] > .bowire-json-tree-summary::before {
 .bowire-ai-model-link:hover {
     color: var(--bowire-accent, #5fb2ff);
 }
+
+/* ===== Plugin Inspect modal (#27) ===== */
+.bowire-modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+}
+.bowire-modal-panel {
+    background: var(--bowire-bg, #1a1d23);
+    border: 1px solid var(--bowire-border);
+    border-radius: 8px;
+    width: min(720px, 92vw);
+    max-height: 84vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+.bowire-modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--bowire-border);
+}
+.bowire-modal-header h2 {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--bowire-text);
+}
+.bowire-modal-close {
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    color: var(--bowire-text-tertiary);
+    padding: 4px;
+    line-height: 0;
+}
+.bowire-modal-close:hover {
+    color: var(--bowire-text);
+}
+.bowire-modal-body {
+    padding: 16px 20px;
+    overflow-y: auto;
+}
+.bowire-plugin-inspect-meta {
+    display: grid;
+    grid-template-columns: 140px 1fr;
+    gap: 6px 14px;
+    font-size: 13px;
+    margin: 0 0 18px;
+}
+.bowire-plugin-inspect-meta dt {
+    color: var(--bowire-text-tertiary);
+    font-weight: 500;
+}
+.bowire-plugin-inspect-meta dd {
+    margin: 0;
+    color: var(--bowire-text);
+}
+.bowire-plugin-inspect-section {
+    margin: 8px 0 8px;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--bowire-text-tertiary);
+}
+.bowire-plugin-inspect-contrib {
+    font-size: 13px;
+    color: var(--bowire-text-secondary);
+}
+.bowire-plugin-inspect-contrib-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+.bowire-plugin-inspect-contrib-list li {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.bowire-plugin-inspect-contrib-list code {
+    background: var(--bowire-bg-elevated, rgba(255, 255, 255, 0.05));
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+}
+.bowire-plugin-inspect-loaded {
+    font-size: 11px;
+    color: var(--bowire-text-tertiary);
+}
+.bowire-plugin-inspect-loaded.is-loaded {
+    color: rgba(95, 200, 130, 0.9);
+}
+.bowire-plugin-inspect-loaded.is-unloaded {
+    color: rgba(255, 173, 51, 0.9);
+}
+.bowire-plugin-inspect-empty {
+    color: var(--bowire-text-tertiary);
+    font-style: italic;
+}
+.bowire-plugin-inspect-cli-hint {
+    margin: 18px 0 0;
+    padding-top: 12px;
+    border-top: 1px solid var(--bowire-border);
+    font-size: 11px;
+    color: var(--bowire-text-tertiary);
+    font-family: var(--bowire-mono, monospace);
+}
