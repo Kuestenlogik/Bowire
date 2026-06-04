@@ -31,6 +31,17 @@ internal sealed class MockRegistry : IAsyncDisposable
     private readonly ILogger<MockRegistry> _logger;
     private readonly string _mocksDir;
 
+    // Strip CR/LF from any user-influenced value before formatting it
+    // into a log message. Same pattern MockHandler.SafeLog uses --
+    // stops an attacker from smuggling fake log lines via crafted
+    // mock ids or recording display names, even though both surfaces
+    // already go through internal-only paths (mockId is a server-
+    // generated GUID; display name is bounded by the POST body).
+    // Defensive scrub keeps CodeQL's cs/log-forging rule happy.
+    private static string SafeLog(string? s) =>
+        string.IsNullOrEmpty(s) ? string.Empty
+            : s.Replace('\r', '_').Replace('\n', '_');
+
     public MockRegistry(ILogger<MockRegistry> logger)
     {
         _logger = logger;
@@ -101,7 +112,7 @@ internal sealed class MockRegistry : IAsyncDisposable
             }
             _logger.LogInformation(
                 "Mock {MockId} started for {Recording} on port {Port}",
-                mockId, recordingDisplayName, instance.Port);
+                SafeLog(mockId), SafeLog(recordingDisplayName), instance.Port);
             server = null; // ownership transferred to _mocks
             return instance;
         }
@@ -131,7 +142,7 @@ internal sealed class MockRegistry : IAsyncDisposable
 
         await instance.Server.DisposeAsync();
         try { File.Delete(instance.BwrPath); } catch { /* ignored */ }
-        _logger.LogInformation("Mock {MockId} stopped", mockId);
+        _logger.LogInformation("Mock {MockId} stopped", SafeLog(mockId));
         return true;
     }
 
