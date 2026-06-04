@@ -4,6 +4,7 @@
 using Kuestenlogik.Bowire.App.Configuration;
 using Kuestenlogik.Bowire.Auth;
 using Kuestenlogik.Bowire.Mock.Management;
+// UseBowireAuth lives in Kuestenlogik.Bowire.Auth; already covered.
 using Kuestenlogik.Bowire.PluginLoading;
 using Kuestenlogik.Bowire.Protocol.Mcp;
 using Microsoft.Extensions.Configuration;
@@ -149,6 +150,10 @@ internal static class BrowserUiHost
         // modes.
         app.UseAuthentication();
         app.UseAuthorization();
+        // #31 — give the active IBowireAuthProvider a chance to insert
+        // middleware (callback paths, claims transformation, &c). No-op
+        // when no provider is registered.
+        app.UseBowireAuth();
 
         // Standalone CLI mounts the workbench at the site root ("/") —
         // there's no host app sharing the route table, so a `/bowire`

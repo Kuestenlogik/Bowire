@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -90,5 +91,44 @@ public interface IBowireAuthProvider
         // Default: require authenticated. Provider can replace via
         // policy.Requirements.Clear() + own requirements.
         policy.RequireAuthenticatedUser();
+    }
+
+    /// <summary>
+    /// Optional hook for providers that need to insert middleware into
+    /// the host pipeline — e.g. an OIDC callback path that lives on a
+    /// stable URL outside the Bowire endpoint group, a claims-
+    /// transformation step, or a redirect-on-401 handler. Called from
+    /// <c>BowireApiEndpoints.Map</c> after the standard
+    /// <c>UseAuthentication</c> / <c>UseAuthorization</c> calls but
+    /// before the Bowire endpoint group is materialised, so anything
+    /// the provider mounts here runs before Bowire's own routes.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Default implementation is a no-op — most providers configure
+    /// everything they need through <see cref="AddAuthentication"/>
+    /// because ASP.NET's authentication middleware handles the
+    /// challenge / sign-in / sign-out handshake without any extra
+    /// host wiring. Only override when the provider's scheme can't
+    /// be expressed as pure DI registration.
+    /// </para>
+    /// <para>
+    /// <b>Privilege boundary.</b> Auth providers loaded as sibling
+    /// plugins (under <c>~/.bowire/plugins/</c>) still load through
+    /// the standard <see cref="PluginLoading.BowirePluginLoadContext"/>;
+    /// they share the host's copy of every <c>Microsoft.*</c> assembly,
+    /// so the <see cref="IApplicationBuilder"/> they receive here is
+    /// the real host pipeline -- not a sandbox. Treat this hook like
+    /// any other middleware-registration point: anything mounted here
+    /// runs with full host trust. Embedded hosts that want a tighter
+    /// boundary can wrap the auth plugin in a separate load context
+    /// before passing it to <c>AddBowireAuth</c>.
+    /// </para>
+    /// </remarks>
+    void Configure(IApplicationBuilder app)
+    {
+        // No-op default. OIDC, SAML, and API-key providers can all
+        // operate purely through AddAuthentication; only providers
+        // that need custom middleware override this.
     }
 }
