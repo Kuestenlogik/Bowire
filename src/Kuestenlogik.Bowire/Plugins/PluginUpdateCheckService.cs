@@ -22,7 +22,7 @@ namespace Kuestenlogik.Bowire.Plugins;
 /// the last-known state without re-hitting nuget.org on every page
 /// load.
 /// </remarks>
-public sealed class PluginUpdateCheckService
+public class PluginUpdateCheckService
 {
     // Plugin dir stays on the legacy flat path -- the per-user-vs-
     // system-wide split is #28 Phase D ("Per-user plugin installs --
@@ -78,7 +78,12 @@ public sealed class PluginUpdateCheckService
     /// plugin. Result is persisted to <see cref="CachePath"/> on
     /// success so the next status read returns immediately.
     /// </summary>
-    public async Task<PluginUpdateCheckSnapshot> CheckAsync(
+    /// <remarks>
+    /// Virtual so tests can derive + override to drive the
+    /// <see cref="PluginUpdateCheckHostedService"/>'s exception-handling
+    /// path without spinning a fake HTTP stack that throws mid-response.
+    /// </remarks>
+    public virtual async Task<PluginUpdateCheckSnapshot> CheckAsync(
         bool includePrerelease, CancellationToken ct)
     {
         var installed = ListInstalledSiblings();
