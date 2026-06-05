@@ -34,8 +34,19 @@ internal static class OciArtifactFetcher
     /// <summary>Fetch the artifact's zip layer to <paramref name="destPath"/>.</summary>
     public static async Task FetchToFileAsync(string ociRef, string destPath, CancellationToken ct)
     {
-        var (registry, repo, reference) = ParseReference(ociRef);
         using var http = new HttpClient { Timeout = TimeSpan.FromMinutes(5) };
+        await FetchToFileAsync(http, ociRef, destPath, ct).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Test-pinnable overload: takes the <see cref="HttpClient"/> instead
+    /// of constructing one. Lets unit tests inject a fake
+    /// <see cref="HttpMessageHandler"/> to drive the manifest / token /
+    /// blob flow without standing up a real registry.
+    /// </summary>
+    internal static async Task FetchToFileAsync(HttpClient http, string ociRef, string destPath, CancellationToken ct)
+    {
+        var (registry, repo, reference) = ParseReference(ociRef);
         // Bearer token is cached across the manifest + blob requests so a
         // single 401 dance covers the whole pull. Held in a one-field box
         // the auth helper can read and refresh.
