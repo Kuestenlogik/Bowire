@@ -5021,7 +5021,25 @@ details[open] > .bowire-json-tree-summary::before {
     transition: all var(--bowire-transition);
 }
 .bowire-settings-action-btn:hover { border-color: var(--bowire-accent); color: var(--bowire-accent); }
+.bowire-settings-action-btn[disabled] { opacity: 0.5; cursor: progress; }
 .bowire-settings-action-btn.danger:hover { border-color: var(--bowire-error); color: var(--bowire-error); }
+/* AI tab (#63) — status badge, save row, model picker wrap */
+.bowire-ai-settings-status {
+    font-size: 12px;
+    padding: 8px 10px;
+    border-radius: var(--bowire-radius-sm);
+    margin-bottom: 12px;
+    border: 1px solid var(--bowire-border);
+    background: var(--bowire-bg-subtle, rgba(255, 255, 255, 0.02));
+}
+.bowire-ai-settings-status.live { border-color: var(--bowire-success, #6ad27a); color: var(--bowire-success, #6ad27a); }
+.bowire-ai-settings-status.idle { color: var(--bowire-text-tertiary); }
+.bowire-ai-settings-status.host-managed { border-color: var(--bowire-text-tertiary); color: var(--bowire-text-tertiary); }
+.bowire-settings-ai-save-row { justify-content: flex-start; gap: 12px; }
+.bowire-settings-ai-result { font-size: 12px; color: var(--bowire-text-tertiary); align-self: center; }
+.bowire-settings-ai-result.ok { color: var(--bowire-success, #6ad27a); }
+.bowire-settings-ai-result.err { color: var(--bowire-error, #d27a6a); }
+.bowire-settings-model-wrap { display: flex; align-items: center; }
 /* Shortcuts table */
 .bowire-settings-shortcuts { display: flex; flex-direction: column; gap: 4px; }
 .bowire-settings-shortcut-row { display: flex; align-items: center; gap: 12px; padding: 4px 0; font-size: 13px; color: var(--bowire-text); }

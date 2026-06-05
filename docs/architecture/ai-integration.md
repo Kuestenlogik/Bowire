@@ -198,6 +198,18 @@ Defaults: provider `ollama`, endpoint `http://localhost:11434`, model `llama3.2:
 network calls stay opt-in: the probe only touches loopback, and the chat path goes wherever the user pointed
 `--ai-endpoint` — same opt-in discipline as the plugin update check and telemetry exporter.
 
+**Settings UI (#63).** Provider / endpoint / model land on a new "AI" tab in the workbench Settings dialog so the
+user no longer needs to restart with new CLI flags to switch model or pick an endpoint. The form reads
+`GET /api/ai/status` for the current binding, `GET /api/ai/probe-local` for detected local models (dropdown
+source), and writes via `POST /api/ai/config`. Persistence goes through `IBowireUserStore` (#28 Phase 2) so
+the choice survives restart; a `BowireAiRuntime` singleton holds the live options + the active `IChatClient`,
+and a `MutableChatClient` proxy delegates every call to the runtime's current client so saves apply
+without restarting the host. Embedded hosts that registered their own `IChatClient` before `AddBowireAi()`
+still win — the save path persists the user's pick to disk for the next start but doesn't swap the host's
+client; the tab signals this clearly with a "host-managed" status badge so the user understands what's
+happening. Overlay precedence: defaults → `IConfiguration` → `configure` callback → user-config file
+(disk wins because it represents an explicit user choice).
+
 Phase 3 (BYOK cloud) reuses the same `IChatClient` seam — register `Microsoft.Extensions.AI.OpenAI` (or the
 equivalent) instead of OllamaSharp and the endpoints carry over unchanged. Phase 4 (MCP-client reversal) layers
 Microsoft Agent Framework on top of the same `IChatClient`.
