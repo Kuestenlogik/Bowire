@@ -17,8 +17,13 @@
             Exclude code marked with [GeneratedCodeAttribute] — same
             rationale as above for the inline-emit path used by
             System.Text.Json source-gen + minimal-api source-gen.
+            GeneratedRegex is the partial-method marker for the
+            System.Text.RegularExpressions source generator; the
+            declarations live in user code but the implementations
+            are emitted into a .g.cs file, so the partial-method
+            stubs are uncoverable by design and should be skipped.
           -->
-          <ExcludeByAttribute>GeneratedCode,CompilerGenerated</ExcludeByAttribute>
+          <ExcludeByAttribute>GeneratedCode,CompilerGenerated,GeneratedRegex</ExcludeByAttribute>
           <!--
             DTOs whose only public surface is auto-properties are
             structural classes — including them inflates the line
