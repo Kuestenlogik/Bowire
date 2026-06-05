@@ -20,7 +20,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### No milestone
 
-- [#29](https://github.com/Kuestenlogik/Bowire/issues/29) **Self-telemetry + Grafana dashboards** `kind:feature` `area:workbench` `track:observability` `P2`
 - [#28](https://github.com/Kuestenlogik/Bowire/issues/28) **Multi-tenant data model + SCIM (Phase B)** `kind:feature` `area:workbench` `track:auth` `P2`
 
 ## Backlog
