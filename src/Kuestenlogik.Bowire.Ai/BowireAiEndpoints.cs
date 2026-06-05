@@ -161,8 +161,83 @@ public static class BowireAiEndpoints
             }, JsonOpts);
         }).ExcludeFromDescription();
 
+        // #61 — findings triage. Takes a scan / fuzz finding plus the
+        // matched evidence and returns the model's "is this real" verdict
+        // + a fix suggestion. The shape is finding-agnostic so both the
+        // existing fuzz panel (semantics-menu.js) and a future Nuclei
+        // findings panel can call the same endpoint.
+        endpoints.MapPost($"{basePath}/api/ai/triage",
+            async (HttpContext ctx, [Microsoft.AspNetCore.Mvc.FromServices] IChatClient? client) =>
+        {
+            if (client is null)
+            {
+                return Results.Json(
+                    new { error = "No IChatClient registered. Connect a model via Settings → AI first." },
+                    JsonOpts, statusCode: 503);
+            }
+
+            TriageRequest? req;
+            try
+            {
+                req = await JsonSerializer.DeserializeAsync<TriageRequest>(
+                    ctx.Request.Body, JsonOpts, ctx.RequestAborted);
+            }
+            catch (JsonException ex)
+            {
+                return Results.Json(new { error = "Invalid JSON: " + ex.Message },
+                    JsonOpts, statusCode: 400);
+            }
+
+            if (req is null || string.IsNullOrWhiteSpace(req.Title))
+            {
+                return Results.Json(new { error = "title required" }, JsonOpts, statusCode: 400);
+            }
+
+            var system = """
+                You are a senior application-security engineer triaging a vulnerability finding.
+                Given the finding metadata + matched evidence, respond ONLY with a single JSON object:
+                {
+                  "realScore": <integer 0-100>,    // 0 = clearly false positive, 100 = clearly real
+                  "reasoning": "<one sentence>",   // why you scored it that way
+                  "fix": "<one or two sentences>"  // minimal code or config change that would close the gap
+                }
+                Be conservative. When the evidence is thin, score below 50 and say what would confirm it.
+                Never invent CVEs or product names that aren't in the finding.
+                """;
+
+            var user = BuildTriagePrompt(req);
+
+            try
+            {
+                var response = await client.GetResponseAsync(
+                    [
+                        new ChatMessage(ChatRole.System, system),
+                        new ChatMessage(ChatRole.User, user),
+                    ],
+                    cancellationToken: ctx.RequestAborted);
+                var verdict = TryParseVerdict(response.Text);
+                return Results.Json(new
+                {
+                    verdict.RealScore,
+                    verdict.Reasoning,
+                    verdict.Fix,
+                    raw = response.Text,
+                    modelId = response.ModelId,
+                }, JsonOpts);
+            }
+            catch (OperationCanceledException)
+            {
+                return Results.Json(new { error = "canceled" }, JsonOpts, statusCode: 499);
+            }
+            catch (Exception ex)
+            {
+                return Results.Json(new { error = ex.Message, type = ex.GetType().Name },
+                    JsonOpts, statusCode: 502);
+            }
+        }).ExcludeFromDescription();
+
         endpoints.MapPost($"{basePath}/api/ai/chat",
-            async (HttpContext ctx, IChatClient? client) =>
+            async (HttpContext ctx, [Microsoft.AspNetCore.Mvc.FromServices] IChatClient? client) =>
         {
             if (client is null)
             {
@@ -301,4 +376,81 @@ public static class BowireAiEndpoints
         string? Endpoint,
         string? Model,
         bool? AutoDetectLocal);
+
+    /// <summary>
+    /// Request shape for <c>POST /api/ai/triage</c>. All fields except
+    /// <see cref="Title"/> are optional so the same endpoint serves
+    /// scan findings, fuzz panel rows, and manual triage from the UI.
+    /// </summary>
+    private sealed record TriageRequest(
+        string Title,
+        string? Category,        // e.g. "auth-bypass", "idor", "injection-sqli"
+        string? Evidence,        // the raw matched text the scanner / fuzzer pulled
+        string? Method,          // HTTP verb / gRPC method etc.
+        string? Endpoint,        // URL / service.method
+        string? StatusCode,
+        string? Protocol,        // "rest", "grpc", "graphql", &c.
+        string? Notes);          // freeform context the UI wants to pass through
+
+    private sealed record TriageVerdict(int RealScore, string Reasoning, string Fix);
+
+    private static string BuildTriagePrompt(TriageRequest req)
+    {
+        var sb = new System.Text.StringBuilder();
+        sb.Append("Finding title: ").AppendLine(req.Title);
+        if (!string.IsNullOrWhiteSpace(req.Category)) sb.Append("Category: ").AppendLine(req.Category);
+        if (!string.IsNullOrWhiteSpace(req.Protocol)) sb.Append("Protocol: ").AppendLine(req.Protocol);
+        if (!string.IsNullOrWhiteSpace(req.Method)) sb.Append("Method: ").AppendLine(req.Method);
+        if (!string.IsNullOrWhiteSpace(req.Endpoint)) sb.Append("Endpoint: ").AppendLine(req.Endpoint);
+        if (!string.IsNullOrWhiteSpace(req.StatusCode)) sb.Append("Status code: ").AppendLine(req.StatusCode);
+        if (!string.IsNullOrWhiteSpace(req.Notes)) sb.Append("Notes: ").AppendLine(req.Notes);
+        if (!string.IsNullOrWhiteSpace(req.Evidence))
+        {
+            sb.AppendLine("Matched evidence:");
+            sb.AppendLine("---");
+            // Cap evidence at 4k so a 100k-line response body can't blow
+            // the local model's context window in one prompt.
+            var ev = req.Evidence!.Length > 4000 ? req.Evidence[..4000] + "\n…[truncated]" : req.Evidence;
+            sb.AppendLine(ev);
+            sb.AppendLine("---");
+        }
+        sb.AppendLine("Respond with the JSON verdict only.");
+        return sb.ToString();
+    }
+
+    /// <summary>
+    /// Best-effort parse of the model's JSON verdict. Local models
+    /// sometimes wrap the JSON in prose / markdown fences; we
+    /// extract the first <c>{...}</c> block and parse that. Falls
+    /// back to a 50-score "couldn't parse" verdict so the UI always
+    /// renders something useful instead of an empty row.
+    /// </summary>
+    private static TriageVerdict TryParseVerdict(string? rawText)
+    {
+        if (string.IsNullOrWhiteSpace(rawText))
+            return new TriageVerdict(50, "Model returned no output — manual review required.", "");
+
+        var text = rawText.Trim();
+        var firstBrace = text.IndexOf('{', StringComparison.Ordinal);
+        var lastBrace = text.LastIndexOf('}');
+        if (firstBrace < 0 || lastBrace <= firstBrace)
+            return new TriageVerdict(50, rawText.Length > 240 ? rawText[..240] + "…" : rawText, "");
+
+        var slice = text[firstBrace..(lastBrace + 1)];
+        try
+        {
+            using var doc = JsonDocument.Parse(slice);
+            var root = doc.RootElement;
+            var score = root.TryGetProperty("realScore", out var s) && s.ValueKind == JsonValueKind.Number
+                ? Math.Clamp(s.GetInt32(), 0, 100)
+                : 50;
+            var reasoning = root.TryGetProperty("reasoning", out var r) ? r.GetString() ?? "" : "";
+            var fix = root.TryGetProperty("fix", out var f) ? f.GetString() ?? "" : "";
+            return new TriageVerdict(score, reasoning, fix);
+        }
+        catch (JsonException)
+        {
+            return new TriageVerdict(50, rawText.Length > 240 ? rawText[..240] + "…" : rawText, "");
+        }
+    }
 }

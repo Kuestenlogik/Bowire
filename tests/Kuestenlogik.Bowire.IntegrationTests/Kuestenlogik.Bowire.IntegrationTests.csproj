@@ -47,6 +47,10 @@
     <ProjectReference Include="..\..\src\Kuestenlogik.Bowire.Protocol.SocketIo\Kuestenlogik.Bowire.Protocol.SocketIo.csproj" />
     <ProjectReference Include="..\..\src\Kuestenlogik.Bowire.Protocol.OData\Kuestenlogik.Bowire.Protocol.OData.csproj" />
     <ProjectReference Include="..\..\src\Kuestenlogik.Bowire.Protocol.Rest\Kuestenlogik.Bowire.Protocol.Rest.csproj" />
+    <!-- Optional Ai package — referenced for the #61 triage endpoint
+         in-process tests. The endpoint itself ships in the package;
+         the integration suite exercises it via TestServer. -->
+    <ProjectReference Include="..\..\src\Kuestenlogik.Bowire.Ai\Kuestenlogik.Bowire.Ai.csproj" />
   </ItemGroup>
   <ItemGroup>
     <Protobuf Include="Protos/*.proto" GrpcServices="Both" />

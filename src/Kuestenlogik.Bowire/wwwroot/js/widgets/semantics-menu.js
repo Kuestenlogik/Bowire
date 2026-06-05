@@ -1057,6 +1057,14 @@
             detail.className = 'bowire-fuzz-panel-row-detail';
             detail.textContent = r.detail || '';
             row.appendChild(detail);
+            // #61 AI triage affordance — only attached for Vulnerable
+            // rows (Safe rows don't need a "is this real" verdict).
+            // Click loads /api/ai/triage; result renders in an
+            // expandable inner div under the row. Cached per
+            // (target, payload) so reopening doesn't re-bill the model.
+            if (r.outcome === 'Vulnerable') {
+                bowireAttachTriageButton(row, target, category, r);
+            }
             body.appendChild(row);
         }
 
@@ -1064,6 +1072,128 @@
         note.className = 'bowire-fuzz-panel-note';
         note.textContent = 'Heuristics fire on response shape, not confirmation. Verify each finding by hand before reporting.';
         body.appendChild(note);
+    }
+
+    // ---------------------------------------------------------------
+    // #61 AI triage button for fuzz panel rows
+    // ---------------------------------------------------------------
+    // In-memory triage cache keyed by `${target}::${payload}` so the
+    // user reopening a previously-triaged finding gets the cached
+    // verdict without re-billing the model. Cleared on page reload.
+    var bowireTriageCache = {};
+
+    function bowireTriagePrefix() {
+        return (typeof config !== 'undefined' && config && config.prefix) ? config.prefix : '';
+    }
+
+    function bowireAttachTriageButton(row, target, category, r) {
+        var btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'bowire-fuzz-triage-btn';
+        btn.setAttribute('aria-label', 'Ask AI: is this finding real?');
+        btn.title = 'Ask AI: is this finding real, and how do I fix it?';
+        btn.textContent = '?';
+        row.appendChild(btn);
+
+        var verdictBox = document.createElement('div');
+        verdictBox.className = 'bowire-fuzz-triage-verdict';
+        row.appendChild(verdictBox);
+
+        var cacheKey = target + '::' + (r.payload || '');
+        var inflight = false;
+
+        btn.addEventListener('click', function () {
+            if (verdictBox.style.display === 'block') {
+                verdictBox.style.display = 'none';
+                btn.classList.remove('expanded');
+                return;
+            }
+            btn.classList.add('expanded');
+            verdictBox.style.display = 'block';
+
+            var cached = bowireTriageCache[cacheKey];
+            if (cached) {
+                bowireRenderTriageVerdict(verdictBox, cached);
+                return;
+            }
+            if (inflight) return;
+            inflight = true;
+            verdictBox.textContent = 'Asking the model…';
+
+            var payload = {
+                title: (category || 'fuzz finding') + ' on ' + (target || 'target'),
+                category: category || null,
+                evidence: r.detail || null,
+                method: null,
+                endpoint: target || null,
+                statusCode: null,
+                protocol: null,
+                notes: 'Bowire fuzz panel — payload: ' + (r.payload || '(none)')
+            };
+
+            fetch(bowireTriagePrefix() + '/api/ai/triage', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            })
+                .then(function (resp) {
+                    return resp.json().then(function (body) {
+                        return { ok: resp.ok, status: resp.status, body: body };
+                    });
+                })
+                .then(function (resp) {
+                    inflight = false;
+                    if (!resp.ok) {
+                        var msg = resp.body && resp.body.error ? resp.body.error : ('HTTP ' + resp.status);
+                        verdictBox.textContent = '⚠ ' + msg;
+                        verdictBox.classList.add('error');
+                        return;
+                    }
+                    bowireTriageCache[cacheKey] = resp.body;
+                    bowireRenderTriageVerdict(verdictBox, resp.body);
+                })
+                .catch(function (err) {
+                    inflight = false;
+                    verdictBox.textContent = '⚠ Network error: ' + (err && err.message ? err.message : err);
+                    verdictBox.classList.add('error');
+                });
+        });
+    }
+
+    function bowireRenderTriageVerdict(box, v) {
+        box.replaceChildren();
+        box.classList.remove('error');
+
+        var score = typeof v.realScore === 'number' ? v.realScore : 50;
+        var scoreClass = score >= 70 ? 'high' : score >= 30 ? 'medium' : 'low';
+
+        var scoreEl = document.createElement('div');
+        scoreEl.className = 'bowire-fuzz-triage-score score-' + scoreClass;
+        scoreEl.textContent = 'AI confidence this is real: ' + score + '/100';
+        box.appendChild(scoreEl);
+
+        if (v.reasoning) {
+            var reasoning = document.createElement('div');
+            reasoning.className = 'bowire-fuzz-triage-reasoning';
+            reasoning.textContent = v.reasoning;
+            box.appendChild(reasoning);
+        }
+        if (v.fix) {
+            var fixLabel = document.createElement('div');
+            fixLabel.className = 'bowire-fuzz-triage-fix-label';
+            fixLabel.textContent = 'Suggested fix';
+            box.appendChild(fixLabel);
+            var fix = document.createElement('div');
+            fix.className = 'bowire-fuzz-triage-fix';
+            fix.textContent = v.fix;
+            box.appendChild(fix);
+        }
+        if (v.modelId) {
+            var meta = document.createElement('div');
+            meta.className = 'bowire-fuzz-triage-meta';
+            meta.textContent = 'via ' + v.modelId;
+            box.appendChild(meta);
+        }
     }
 
     // ---------------------------------------------------------------

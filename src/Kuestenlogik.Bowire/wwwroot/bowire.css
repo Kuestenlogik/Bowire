@@ -9238,6 +9238,57 @@ details[open] > .bowire-json-tree-summary::before {
     color: var(--bowire-text-tertiary);
     font-style: italic;
 }
+/* #61 — AI triage button + verdict expansion under each Vulnerable row. */
+.bowire-fuzz-triage-btn {
+    margin-left: 6px;
+    padding: 0 6px;
+    height: 18px;
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 16px;
+    border: 1px solid var(--bowire-border);
+    background: var(--bowire-bg-subtle, transparent);
+    color: var(--bowire-text-secondary);
+    border-radius: 9px;
+    cursor: pointer;
+}
+.bowire-fuzz-triage-btn:hover { border-color: var(--bowire-accent, #5fb2ff); color: var(--bowire-accent, #5fb2ff); }
+.bowire-fuzz-triage-btn.expanded { background: var(--bowire-accent, #5fb2ff); color: #fff; border-color: transparent; }
+.bowire-fuzz-triage-verdict {
+    display: none;
+    flex-basis: 100%;
+    margin-top: 6px;
+    margin-left: 32px;
+    padding: 8px 10px;
+    border-left: 2px solid var(--bowire-border);
+    font-size: 12px;
+    color: var(--bowire-text-secondary);
+    background: var(--bowire-bg-subtle, rgba(255, 255, 255, 0.02));
+}
+.bowire-fuzz-triage-verdict.error { color: var(--bowire-error, #ef4444); }
+.bowire-fuzz-triage-score { font-weight: 600; margin-bottom: 4px; }
+.bowire-fuzz-triage-score.score-high { color: #ef4444; }
+.bowire-fuzz-triage-score.score-medium { color: #eab308; }
+.bowire-fuzz-triage-score.score-low { color: #6ad27a; }
+.bowire-fuzz-triage-reasoning { margin-bottom: 6px; white-space: pre-wrap; }
+.bowire-fuzz-triage-fix-label {
+    margin-top: 6px;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--bowire-text-tertiary);
+}
+.bowire-fuzz-triage-fix {
+    font-family: var(--bowire-mono);
+    font-size: 11px;
+    white-space: pre-wrap;
+    color: var(--bowire-text);
+}
+.bowire-fuzz-triage-meta {
+    margin-top: 6px;
+    font-size: 10px;
+    color: var(--bowire-text-tertiary);
+}
 
 /* Inline semantic badge next to a response-tree leaf label. The colour
    tier reflects the annotation source — neutral grey for auto-detected,
