@@ -31,6 +31,12 @@
             { id: 'general', label: 'General', icon: 'settings' },
             { id: 'shortcuts', label: 'Shortcuts', icon: 'list' },
             { id: 'data', label: 'Data', icon: 'trash' },
+            // "AI" — provider / endpoint / model for the optional
+            // Kuestenlogik.Bowire.Ai package (#63). Always present; when
+            // the package isn't installed the section shows an install
+            // hint instead of the form, so the user discovers the
+            // capability without having to read the docs.
+            { id: 'ai', label: 'AI', icon: 'spark' },
             // "Plugins" — per-plugin enable toggles. Always present, even
             // when no plugin contributes its own settings, because the
             // enable toggle itself doesn't need a plugin to opt in.
@@ -79,6 +85,8 @@
             rightPanel.appendChild(renderSettingsShortcuts());
         } else if (settingsTab === 'data') {
             rightPanel.appendChild(renderSettingsData());
+        } else if (settingsTab === 'ai') {
+            rightPanel.appendChild(renderSettingsAi());
         } else if (settingsTab === 'plugins') {
             rightPanel.appendChild(renderSettingsPlugins());
         } else if (settingsTab.indexOf('plugin-') === 0) {
@@ -289,6 +297,285 @@
             ));
         }
         section.appendChild(table);
+        return section;
+    }
+
+    // ---- AI (#63) ----
+    // Per-user AI provider / endpoint / model. Reads /api/ai/status +
+    // /api/ai/probe-local on first paint, writes via POST /api/ai/config.
+    // Persisted via IBowireUserStore so the choice survives restart;
+    // the runtime hot-swaps the active IChatClient so changes apply
+    // without restarting the host. When the optional
+    // Kuestenlogik.Bowire.Ai package isn't installed, /api/ai/status
+    // returns 404 and the section renders an install hint instead.
+    var aiSettingsState = {
+        loaded: false,
+        loading: false,
+        status: null,         // last /api/ai/status body, or null when 404
+        probe: null,          // last /api/ai/probe-local body
+        draft: null,          // { providerId, endpoint, model, autoDetectLocal }
+        saving: false,
+        result: null          // { kind: 'ok'|'err', text }
+    };
+
+    function aiSettingsPrefix() {
+        return (typeof config !== 'undefined' && config && config.prefix) ? config.prefix : '';
+    }
+
+    function loadAiSettings(force) {
+        if (aiSettingsState.loading) return;
+        if (aiSettingsState.loaded && !force) return;
+        aiSettingsState.loading = true;
+        var p = aiSettingsPrefix();
+        Promise.all([
+            fetch(p + '/api/ai/status').then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; }),
+            fetch(p + '/api/ai/probe-local').then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; })
+        ]).then(function (results) {
+            aiSettingsState.status = results[0];
+            aiSettingsState.probe = results[1];
+            aiSettingsState.loaded = true;
+            aiSettingsState.loading = false;
+            // Seed the draft from current server state so a Save without
+            // edits is a true no-op rather than rewriting fields to JS
+            // defaults.
+            if (aiSettingsState.status) {
+                aiSettingsState.draft = {
+                    providerId: aiSettingsState.status.providerId || 'ollama',
+                    endpoint: aiSettingsState.status.endpoint || 'http://localhost:11434',
+                    model: aiSettingsState.status.model || '',
+                    autoDetectLocal: !!aiSettingsState.status.autoDetectLocal
+                };
+            }
+            if (settingsOpen && settingsTab === 'ai') renderSettingsDialog();
+        });
+    }
+
+    function saveAiSettings() {
+        if (aiSettingsState.saving || !aiSettingsState.draft) return;
+        aiSettingsState.saving = true;
+        aiSettingsState.result = null;
+        renderSettingsDialog();
+        var p = aiSettingsPrefix();
+        fetch(p + '/api/ai/config', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(aiSettingsState.draft)
+        })
+            .then(function (r) { return r.json().then(function (b) { return { ok: r.ok, status: r.status, body: b }; }); })
+            .then(function (resp) {
+                aiSettingsState.saving = false;
+                if (resp.ok) {
+                    // Refresh status from the canonical post-save shape
+                    // so the form mirrors what the server actually
+                    // accepted (trimmed strings, applied defaults, &c.).
+                    aiSettingsState.status = {
+                        hasClient: !resp.body.hostManaged ? true : (aiSettingsState.status && aiSettingsState.status.hasClient),
+                        hostManaged: !!resp.body.hostManaged,
+                        providerId: resp.body.providerId,
+                        endpoint: resp.body.endpoint,
+                        model: resp.body.model,
+                        autoDetectLocal: !!resp.body.autoDetectLocal
+                    };
+                    aiSettingsState.draft = {
+                        providerId: resp.body.providerId,
+                        endpoint: resp.body.endpoint,
+                        model: resp.body.model,
+                        autoDetectLocal: !!resp.body.autoDetectLocal
+                    };
+                    aiSettingsState.result = {
+                        kind: 'ok',
+                        text: resp.body.hostManaged
+                            ? 'Saved to disk. Host-managed runtime — applies on next host start.'
+                            : 'Saved. Next AI request uses the new provider / model.'
+                    };
+                    // Nudge the AI side-panel so its footer + composer
+                    // reflect the new binding without waiting for the
+                    // user to re-open the panel.
+                    if (window.__bowireAi && window.__bowireAi.refreshStatus) {
+                        window.__bowireAi.refreshStatus();
+                    }
+                } else {
+                    aiSettingsState.result = {
+                        kind: 'err',
+                        text: (resp.body && resp.body.error) || ('Save failed (HTTP ' + resp.status + ').')
+                    };
+                }
+                renderSettingsDialog();
+            })
+            .catch(function (err) {
+                aiSettingsState.saving = false;
+                aiSettingsState.result = { kind: 'err', text: 'Network error: ' + (err && err.message ? err.message : err) };
+                renderSettingsDialog();
+            });
+    }
+
+    function renderSettingsAi() {
+        var section = el('div', { className: 'bowire-settings-section' });
+        section.appendChild(el('h3', { className: 'bowire-settings-section-title', textContent: 'AI' }));
+
+        if (!aiSettingsState.loaded) {
+            section.appendChild(el('p', {
+                className: 'bowire-settings-help',
+                textContent: 'Loading AI configuration…'
+            }));
+            loadAiSettings(false);
+            return section;
+        }
+
+        // Package missing — render install hint, no form. The Phase-1
+        // hint engine still works without the package; we point users
+        // at the optional NuGet so they understand what they're opting
+        // into rather than seeing a broken-looking config screen.
+        if (!aiSettingsState.status) {
+            section.appendChild(el('p', {
+                className: 'bowire-settings-help',
+                textContent: 'The optional Kuestenlogik.Bowire.Ai package isn’t installed. The Phase‑1 hint engine in the AI side‑panel keeps working without it; install the package to add Ollama / LM Studio / cloud chat to the workbench.'
+            }));
+            section.appendChild(el('div', {
+                className: 'bowire-settings-help',
+                style: 'font-family: var(--bowire-font-mono, monospace); margin-top: 8px;',
+                textContent: 'dotnet add package Kuestenlogik.Bowire.Ai'
+            }));
+            section.appendChild(el('p', {
+                className: 'bowire-settings-help',
+                style: 'margin-top: 8px;',
+                textContent: 'Standalone bowire installs already ship the package — restart the workbench if you upgraded and the tab still says this.'
+            }));
+            return section;
+        }
+
+        var st = aiSettingsState.status;
+        var draft = aiSettingsState.draft;
+        var hostManaged = !!st.hostManaged;
+        var probe = aiSettingsState.probe || {};
+
+        // Live status header — green dot when connected, yellow when
+        // package installed but no client (e.g. unsupported provider id),
+        // gray when host-managed.
+        var statusClass = hostManaged
+            ? 'bowire-ai-settings-status host-managed'
+            : (st.hasClient ? 'bowire-ai-settings-status live' : 'bowire-ai-settings-status idle');
+        var statusText = hostManaged
+            ? 'Host-managed: the embedding host registered its own IChatClient. Saved values apply on next host start.'
+            : (st.hasClient
+                ? 'Connected: ' + (st.providerId || '(unknown)') + ' · ' + (st.model || '(default model)')
+                : 'No live client. The next save reconfigures the runtime.');
+        section.appendChild(el('div', { className: statusClass, textContent: statusText }));
+
+        // Provider dropdown (Phase 2 set; cloud providers join the list
+        // once #25 Phase 3 ships).
+        section.appendChild(renderSettingsRow('Provider',
+            'Backend that serves chat completions. Local providers (Ollama / LM Studio) require nothing leaves the machine. Cloud providers land with #25 Phase 3.',
+            function () {
+                var sel = el('select', { className: 'bowire-settings-select' });
+                var options = [
+                    { v: 'ollama', l: 'Ollama (local)' },
+                    { v: 'lmstudio', l: 'LM Studio (local, Ollama-compatible)' }
+                ];
+                options.forEach(function (o) {
+                    sel.appendChild(el('option', { value: o.v, textContent: o.l, selected: draft.providerId === o.v }));
+                });
+                sel.onchange = function () { draft.providerId = sel.value; };
+                if (hostManaged) sel.setAttribute('disabled', 'disabled');
+                return sel;
+            }));
+
+        // Endpoint text input. Defaults populated from current state so
+        // editing only what you need is the path of least resistance.
+        section.appendChild(renderSettingsRow('Endpoint',
+            'Base URL of the provider. Ollama default: http://localhost:11434 · LM Studio default: http://localhost:1234. Use a remote host for shared GPU servers.',
+            function () {
+                var input = el('input', {
+                    type: 'text',
+                    className: 'bowire-settings-input',
+                    value: draft.endpoint || '',
+                    placeholder: 'http://localhost:11434'
+                });
+                input.oninput = function () { draft.endpoint = input.value; };
+                if (hostManaged) input.setAttribute('disabled', 'disabled');
+                return input;
+            }));
+
+        // Model: dropdown sourced from probe results when available,
+        // free-text otherwise. Probe response shapes for the two
+        // providers expose their loaded-model lists.
+        section.appendChild(renderSettingsRow('Model',
+            'Model id served by the provider. Use \'ollama pull <name>\' first; LM Studio uses the currently-loaded model. Empty falls back to the provider’s own default.',
+            function () {
+                var key = draft.providerId === 'lmstudio' ? 'lmstudio' : 'ollama';
+                var hit = probe[key];
+                var models = (hit && Array.isArray(hit.models)) ? hit.models.filter(function (m) { return !!m; }) : [];
+                if (models.length === 0) {
+                    var input = el('input', {
+                        type: 'text',
+                        className: 'bowire-settings-input',
+                        value: draft.model || '',
+                        placeholder: 'llama3.2:3b'
+                    });
+                    input.oninput = function () { draft.model = input.value; };
+                    if (hostManaged) input.setAttribute('disabled', 'disabled');
+                    return input;
+                }
+                var wrap = el('div', { className: 'bowire-settings-model-wrap' });
+                var sel = el('select', { className: 'bowire-settings-select' });
+                // Always include the current draft value as the first
+                // option even when it isn't in the detected list — the
+                // user may have a model the probe missed (different
+                // host, not yet pulled, &c.).
+                var seen = {};
+                if (draft.model && models.indexOf(draft.model) === -1) {
+                    sel.appendChild(el('option', { value: draft.model, textContent: draft.model + ' (current)', selected: true }));
+                    seen[draft.model] = true;
+                }
+                models.forEach(function (m) {
+                    if (seen[m]) return;
+                    sel.appendChild(el('option', { value: m, textContent: m, selected: draft.model === m }));
+                    seen[m] = true;
+                });
+                sel.onchange = function () { draft.model = sel.value; };
+                if (hostManaged) sel.setAttribute('disabled', 'disabled');
+                wrap.appendChild(sel);
+                wrap.appendChild(el('span', {
+                    className: 'bowire-settings-help',
+                    style: 'margin-left: 8px;',
+                    textContent: models.length + ' detected on ' + (hit.endpoint || 'local provider')
+                }));
+                return wrap;
+            }));
+
+        section.appendChild(renderSettingsToggle('Auto-detect local providers',
+            'Probe 127.0.0.1:11434 (Ollama) and 127.0.0.1:1234 (LM Studio) on AI panel paint. Each probe times out at 300 ms. Off = fully offline, no local network calls.',
+            draft.autoDetectLocal,
+            function (v) { draft.autoDetectLocal = v; }));
+
+        // Save row — keeps the action visually grouped with the form
+        // and shows the last save result inline.
+        var saveRow = el('div', { className: 'bowire-settings-row bowire-settings-ai-save-row' });
+        var saveBtn = el('button', {
+            className: 'bowire-settings-action-btn',
+            textContent: aiSettingsState.saving ? 'Saving…' : (hostManaged ? 'Save (host-managed)' : 'Save'),
+            onClick: function () { saveAiSettings(); }
+        });
+        if (aiSettingsState.saving) saveBtn.setAttribute('disabled', 'disabled');
+        var resultBox = el('span', { className: 'bowire-settings-ai-result' });
+        if (aiSettingsState.result) {
+            resultBox.classList.add(aiSettingsState.result.kind === 'ok' ? 'ok' : 'err');
+            resultBox.textContent = aiSettingsState.result.text;
+        }
+        saveRow.appendChild(saveBtn);
+        saveRow.appendChild(resultBox);
+        section.appendChild(saveRow);
+
+        // Refresh button — re-runs status + probe so a user who just
+        // started Ollama can see the detected models without closing
+        // and reopening the dialog.
+        section.appendChild(renderSettingsAction(
+            'Refresh detection',
+            'Re-probe local providers and pull the current server-side configuration. Use this after starting Ollama / LM Studio.',
+            'Refresh',
+            function () { loadAiSettings(true); }
+        ));
+
         return section;
     }
 

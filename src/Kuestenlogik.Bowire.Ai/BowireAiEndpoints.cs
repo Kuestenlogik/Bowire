@@ -59,16 +59,105 @@ public static class BowireAiEndpoints
         }).ExcludeFromDescription();
 
         endpoints.MapGet($"{basePath}/api/ai/status",
-            (BowireAiOptions opts, IServiceProvider sp) =>
+            (BowireAiRuntime runtime, IServiceProvider sp) =>
         {
-            var hasClient = sp.GetService<IChatClient>() is not null;
+            // hasClient reflects the live runtime state so Settings-UI
+            // edits show up immediately. hostManaged tells the UI that
+            // an embedded host registered its own IChatClient before
+            // AddBowireAi — in that case the save endpoint persists the
+            // user's pick but doesn't swap the active client.
+            var registered = sp.GetService<IChatClient>();
+            var hostManaged = registered is not null and not MutableChatClient;
+            var opts = runtime.Options;
             return Results.Json(new
             {
-                hasClient,
+                hasClient = hostManaged || runtime.Current is not null,
+                hostManaged,
                 opts.ProviderId,
                 opts.Endpoint,
                 opts.Model,
                 opts.AutoDetectLocal,
+            }, JsonOpts);
+        }).ExcludeFromDescription();
+
+        endpoints.MapPost($"{basePath}/api/ai/config",
+            async (HttpContext ctx, BowireAiRuntime runtime, IServiceProvider sp) =>
+        {
+            // Host-managed mode: save the pick to disk for the next
+            // start so the workbench stays a UI surface for AI config,
+            // but don't swap the live IChatClient out from under the
+            // host that owns the lifetime.
+            var registered = sp.GetService<IChatClient>();
+            var hostManaged = registered is not null and not MutableChatClient;
+
+            BowireAiConfigUpdate? body;
+            try
+            {
+                body = await JsonSerializer.DeserializeAsync<BowireAiConfigUpdate>(
+                    ctx.Request.Body, JsonOpts, ctx.RequestAborted);
+            }
+            catch (JsonException ex)
+            {
+                return Results.Json(new { error = "Invalid JSON: " + ex.Message },
+                    JsonOpts, statusCode: 400);
+            }
+
+            if (body is null)
+            {
+                return Results.Json(new { error = "Request body required." },
+                    JsonOpts, statusCode: 400);
+            }
+
+            var current = runtime.Options;
+            var next = new BowireAiOptions
+            {
+                ProviderId = string.IsNullOrWhiteSpace(body.ProviderId) ? current.ProviderId : body.ProviderId!.Trim(),
+                Endpoint = string.IsNullOrWhiteSpace(body.Endpoint) ? current.Endpoint : body.Endpoint!.Trim(),
+                Model = string.IsNullOrWhiteSpace(body.Model) ? current.Model : body.Model!.Trim(),
+                AutoDetectLocal = body.AutoDetectLocal ?? current.AutoDetectLocal,
+            };
+
+            // Endpoint sanity check — anything outside http/https is a
+            // configuration mistake (file://, javascript:, &c.). We
+            // catch it here so the user gets a clear 400 instead of a
+            // confusing OllamaApiClient construction failure.
+            if (!Uri.TryCreate(next.Endpoint, UriKind.Absolute, out var u)
+                || (u.Scheme != Uri.UriSchemeHttp && u.Scheme != Uri.UriSchemeHttps))
+            {
+                return Results.Json(new { error = "Endpoint must be an absolute http(s) URL." },
+                    JsonOpts, statusCode: 400);
+            }
+
+            try
+            {
+                BowireAiUserConfigStore.Save(next);
+            }
+            catch (Exception ex)
+            {
+                return Results.Json(
+                    new { error = "Failed to persist ai-config.json: " + ex.Message },
+                    JsonOpts, statusCode: 500);
+            }
+
+            BowireAiOptions applied;
+            if (hostManaged)
+            {
+                // Persisted for next start; live client owned by the host.
+                applied = next;
+            }
+            else
+            {
+                applied = runtime.Update(next);
+            }
+
+            return Results.Json(new
+            {
+                saved = true,
+                hostManaged,
+                applied.ProviderId,
+                applied.Endpoint,
+                applied.Model,
+                applied.AutoDetectLocal,
             }, JsonOpts);
         }).ExcludeFromDescription();
 
@@ -201,4 +290,15 @@ public static class BowireAiEndpoints
     private sealed record ChatRequest(ChatRequestMessage[] Messages, string? Model);
 
     private sealed record ChatRequestMessage(string Role, string Content);
+
+    /// <summary>
+    /// Patch shape for <c>POST /api/ai/config</c>. All fields nullable so
+    /// the Settings UI can submit partial updates (e.g. swap the model
+    /// without re-stating the endpoint).
+    /// </summary>
+    private sealed record BowireAiConfigUpdate(
+        string? ProviderId,
+        string? Endpoint,
+        string? Model,
+        bool? AutoDetectLocal);
 }

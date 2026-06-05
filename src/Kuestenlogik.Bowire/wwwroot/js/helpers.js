@@ -588,6 +588,10 @@
             chevronDown: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>',
             // Half-filled circle = "follows system" — left half dark, right half light.
             themeAuto: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 3v18" stroke="none"/><path d="M12 3a9 9 0 010 18z" fill="currentColor" stroke="none"/></svg>',
+            // Four-point sparkle — used for AI / inference surfaces. Mirrors
+            // the universal "sparkle" affordance from Copilot / ChatGPT /
+            // Gemini, so users recognize the AI tab without reading the label.
+            spark: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.8 5.7L19 10l-5.2 1.3L12 17l-1.8-5.7L5 10l5.2-1.3L12 3z"/></svg>',
             // Bowire brand mark — full horizontal knot + Circle-B
             // derived from images/bowire_logo.svg. Uses currentColor
             // so the surrounding CSS `color:` rule drives the fill
