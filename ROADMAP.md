@@ -30,6 +30,8 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 - [#34](https://github.com/Kuestenlogik/Bowire/issues/34) **AsyncAPI discovery source — remaining bindings + V2 overloads + YAML pre-normaliser** `kind:feature` `area:plugin-sdk` `track:protocols` `P2`
 - [#59](https://github.com/Kuestenlogik/Bowire/issues/59) **AI threat-model: rank discovered endpoints by attack-surface risk** 
 - [#60](https://github.com/Kuestenlogik/Bowire/issues/60) **AI Nuclei-template suggestion: generate scan templates per endpoint** 
+- [#61](https://github.com/Kuestenlogik/Bowire/issues/61) **AI findings triage: real-vs-false-positive + fix suggestion per Nuclei hit** 
+- [#62](https://github.com/Kuestenlogik/Bowire/issues/62) **AI schema-aware fuzz values: boundary inputs per field via Mock-Replay** 
 
 ### Later
 
