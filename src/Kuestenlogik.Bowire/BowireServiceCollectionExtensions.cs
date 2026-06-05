@@ -413,11 +413,18 @@ public static class BowireServiceCollectionExtensions
     /// </summary>
     internal static string DefaultUserSchemaHintsPath()
     {
+        // Routes through the IBowireUserStore seam (#28) so single-user
+        // installs land at ~/.bowire/schema-hints.json (unchanged) and
+        // multi-tenant installs get the per-identity slot once SCIM
+        // (Phase C) wires an AsyncLocal resolver. Defensive early return
+        // on missing home dir kept -- BowireUserContext's default impl
+        // uses the same SpecialFolder.UserProfile path, and a non-string
+        // empty here would propagate a tricky Path.Combine arg anyway.
         var home = Environment.GetFolderPath(
             Environment.SpecialFolder.UserProfile,
             Environment.SpecialFolderOption.None);
         if (string.IsNullOrEmpty(home)) return string.Empty;
-        return Path.Combine(home, ".bowire", "schema-hints.json");
+        return BowireUserContext.GetUserPath("schema-hints.json");
     }
 
     /// <summary>
