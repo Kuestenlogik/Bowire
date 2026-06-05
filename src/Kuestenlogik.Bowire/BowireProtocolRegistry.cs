@@ -1,8 +1,10 @@
 // Copyright 2026 Küstenlogik
 // SPDX-License-Identifier: Apache-2.0
 
+using System.Diagnostics;
 using System.Reflection;
 using Kuestenlogik.Bowire.Plugins.Sidecar;
+using Kuestenlogik.Bowire.Telemetry;
 using Microsoft.Extensions.Logging;
 
 namespace Kuestenlogik.Bowire;
@@ -123,9 +125,24 @@ public sealed class BowireProtocolRegistry
                                 "Skipping disabled protocol plugin '{PluginId}' (Bowire:DisabledPlugins).",
                                 protocol.Id);
 #pragma warning restore CA1873
+                            // #29 -- still record the load attempt so the
+                            // 'skipped because disabled' branch shows up
+                            // in the Grafana panel separately from
+                            // 'failed because instance construction
+                            // threw'.
+                            BowireTelemetry.PluginLoad.Add(1, new TagList
+                            {
+                                { "plugin", protocol.Id },
+                                { "outcome", "disabled" },
+                            });
                             continue;
                         }
                         registry.Register(protocol);
+                        BowireTelemetry.PluginLoad.Add(1, new TagList
+                        {
+                            { "plugin", protocol.Id },
+                            { "outcome", "loaded" },
+                        });
                     }
                 }
             }

@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 using System.Collections.Concurrent;
+using System.Diagnostics;
+using Kuestenlogik.Bowire.Telemetry;
 
 namespace Kuestenlogik.Bowire.Mock.Management;
 
@@ -66,6 +68,18 @@ public sealed class MockRequestLog : IMockRequestObserver
         {
             // Drop oldest until we're back at capacity.
         }
+
+        // #29 self-telemetry. One increment per request hitting a
+        // UI-started mock; outcome separates matched / miss / 404 for
+        // the Grafana mock-traffic panel. Cheap when no listener is
+        // attached -- the SDK's no-op fast path keeps the cost at a
+        // single virtual call plus a tag-list build.
+        BowireTelemetry.MockRequests.Add(1, new TagList
+        {
+            { "method", entry.Method },
+            { "outcome", entry.Outcome },
+            { "status_code", entry.StatusCode },
+        });
     }
 
     /// <summary>

@@ -1,7 +1,9 @@
 // Copyright 2026 Küstenlogik
 // SPDX-License-Identifier: Apache-2.0
 
+using System.Diagnostics;
 using Kuestenlogik.Bowire.Models;
+using Kuestenlogik.Bowire.Telemetry;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
@@ -117,6 +119,12 @@ internal static class BowireDiscoveryEndpoints
 
             foreach (var protocol in protocolsToProbe)
             {
+                // #29 self-telemetry. One increment per (protocol, target)
+                // probe attempt; outcome dimension separates ok / error
+                // for dashboards. Cheap when no listener is attached.
+                var probeStart = Stopwatch.GetTimestamp();
+                string discoverOutcome = "ok";
+                int discoveredCount = 0;
                 try
                 {
                     var services = await protocol.DiscoverAsync(serverUrl, options.ShowInternalServices, ctx.RequestAborted);
@@ -128,15 +136,29 @@ internal static class BowireDiscoveryEndpoints
                         // have already set this (e.g. REST does); we only fill it in
                         // when missing.
                         svc.OriginUrl ??= serverUrl;
+                        discoveredCount++;
                     }
                     allProtocolServices.AddRange(services);
                 }
                 catch (Exception ex)
                 {
+                    discoverOutcome = ex is OperationCanceledException ? "canceled" : "error";
                     BowireEndpointHelpers.GetLogger(ctx).LogWarning(ex,
                         "Discovery failed for protocol {Protocol} at {ServerUrl}",
                         protocol.Name, BowireEndpointHelpers.SafeLog(serverUrl));
                     discoveryErrors.Add($"{protocol.Name}: {ex.Message}");
+                }
+                finally
+                {
+                    var elapsedMs = (Stopwatch.GetTimestamp() - probeStart)
+                        / (double)Stopwatch.Frequency * 1000.0;
+                    BowireTelemetry.DiscoverCount.Add(1, new TagList
+                    {
+                        { "protocol", protocol.Id },
+                        { "outcome", discoverOutcome },
+                        { "services_found", discoveredCount },
+                    });
+                    _ = elapsedMs; // wired up if/when we add a discover-duration histogram
                 }
             }
 
