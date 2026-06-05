@@ -64,6 +64,9 @@ internal static class BowireConfiguration
         ["--update-check"] = "Bowire:PluginUpdateCheck:Enabled",
         ["--telemetry"] = "Bowire:Telemetry:Enabled",
         ["--telemetry-strip-method-labels"] = "Bowire:Telemetry:StripMethodLabels",
+        ["--ai-provider"] = "Bowire:Ai:ProviderId",
+        ["--ai-endpoint"] = "Bowire:Ai:Endpoint",
+        ["--ai-model"] = "Bowire:Ai:Model",
         ["--auth-provider"] = "Bowire:Auth:ProviderId",
         ["--map-basemap"] = "Bowire:MapBasemap",
         // Subcommand-specific flags that also appear in the top-level

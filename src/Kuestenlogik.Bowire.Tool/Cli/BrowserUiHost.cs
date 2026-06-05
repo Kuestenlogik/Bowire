@@ -1,6 +1,7 @@
 // Copyright 2026 Küstenlogik
 // SPDX-License-Identifier: Apache-2.0
 
+using Kuestenlogik.Bowire.Ai;
 using Kuestenlogik.Bowire.App.Configuration;
 using Kuestenlogik.Bowire.Auth;
 using Kuestenlogik.Bowire.Mock.Management;
@@ -127,6 +128,14 @@ internal static class BrowserUiHost
         // drive the wire details.
         builder.Services.AddBowireTelemetry(builder.Configuration);
 
+        // AI integration (#25 Phase 2). Registers IChatClient + the
+        // /api/ai/* endpoints. Default provider is Ollama at
+        // http://localhost:11434; the workbench's AI tab probes for
+        // a local instance on first paint and offers a one-click
+        // connect. Cloud providers slot in via the same seam in
+        // Phase 3.
+        builder.Services.AddBowireAi(builder.Configuration);
+
         // Opt-in auth gate. When --auth-provider <id> is set, the
         // matching IBowireAuthProvider plugin gets to wire its scheme
         // + the BowireAuthPolicies.Default policy; otherwise this is
@@ -199,6 +208,9 @@ internal static class BrowserUiHost
         // bowire HTML mount (standalone => "" so endpoints land at
         // `/api/mocks`, not `/bowire/api/mocks`).
         app.MapBowireMockManagement(basePath: string.Empty);
+
+        // AI endpoints (#25 Phase 2). Same base-path discipline.
+        app.MapBowireAiEndpoints(basePath: string.Empty);
 
         await app.RunAsync(ct).ConfigureAwait(false);
         return 0;
