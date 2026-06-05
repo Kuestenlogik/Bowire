@@ -3,6 +3,7 @@
 
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using Kuestenlogik.Bowire.Auth;
 
 namespace Kuestenlogik.Bowire.Plugins;
 
@@ -23,13 +24,26 @@ namespace Kuestenlogik.Bowire.Plugins;
 /// </remarks>
 public sealed class PluginUpdateCheckService
 {
+    // Plugin dir stays on the legacy flat path -- the per-user-vs-
+    // system-wide split is #28 Phase C ("Per-user plugin installs --
+    // split ~/.bowire/plugins/ into a system-wide tier plus a per-user
+    // overlay"), out of scope for this phase.
     private static readonly string PluginDir = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
         ".bowire", "plugins");
 
-    private static readonly string CachePath = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
-        ".bowire", "state", "update-check.json");
+    // Cache for the daily update-check snapshot routes through the
+    // IBowireUserStore seam (#28 Phase 2). Single-user installs land at
+    // ~/.bowire/state/update-check.json (unchanged); multi-tenant
+    // installs slot per-identity once Phase C wires the AsyncLocal
+    // resolver. The path is computed lazily via the static accessor so
+    // BowireUserContext can be swapped at startup before the first hit.
+    // Re-using GetUserPath for the "state" sub-directory is a small
+    // stretch of the seam's "filename" contract -- Path.Combine doesn't
+    // care, and the alternative is a contract extension that's not
+    // pulling its weight yet (one Phase-2 caller).
+    private static string CachePath =>
+        Path.Combine(BowireUserContext.GetUserPath("state"), "update-check.json");
 
     private static readonly JsonSerializerOptions JsonOpts = new()
     {
