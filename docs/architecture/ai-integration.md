@@ -198,6 +198,18 @@ Defaults: provider `ollama`, endpoint `http://localhost:11434`, model `llama3.2:
 network calls stay opt-in: the probe only touches loopback, and the chat path goes wherever the user pointed
 `--ai-endpoint` — same opt-in discipline as the plugin update check and telemetry exporter.
 
+**Findings triage (#61).** New endpoint `POST /api/ai/triage` takes a finding + matched evidence + protocol /
+endpoint context and returns a JSON verdict `{realScore: 0-100, reasoning, fix}`. The fuzz panel
+(`semantics-menu.js`) renders a `?` button next to every `Vulnerable` row; click expands the row into an
+AI-generated verdict with a colour-coded confidence score (green <30 / amber 30-69 / red ≥70) and a suggested
+fix. Verdicts are cached in-memory per `(target, payload)` so reopening doesn't re-bill the model. The same
+endpoint will serve the future Nuclei findings panel + the AI Settings UI's "explain finding" affordance —
+the request shape is finding-agnostic on purpose. Prompt is engineered to keep the model conservative: when
+evidence is thin, score below 50 and say what would confirm it; never invent CVEs or product names. Local
+models often wrap JSON in prose; the parser extracts the first `{...}` block and falls back to a
+"couldn't parse" verdict at score 50 so the UI never blanks. Evidence is capped at 4 k characters in the
+prompt so a 100 k-line response can't blow the local model's context.
+
 **Settings UI (#63).** Provider / endpoint / model land on a new "AI" tab in the workbench Settings dialog so the
 user no longer needs to restart with new CLI flags to switch model or pick an endpoint. The form reads
 `GET /api/ai/status` for the current binding, `GET /api/ai/probe-local` for detected local models (dropdown
