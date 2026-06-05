@@ -32,7 +32,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 - [#60](https://github.com/Kuestenlogik/Bowire/issues/60) **AI Nuclei-template suggestion: generate scan templates per endpoint** 
 - [#61](https://github.com/Kuestenlogik/Bowire/issues/61) **AI findings triage: real-vs-false-positive + fix suggestion per Nuclei hit** 
 - [#62](https://github.com/Kuestenlogik/Bowire/issues/62) **AI schema-aware fuzz values: boundary inputs per field via Mock-Replay** 
-- [#63](https://github.com/Kuestenlogik/Bowire/issues/63) **AI Settings UI: pick provider + model from the workbench (#25 follow-up)** 
 
 ### Later
 
