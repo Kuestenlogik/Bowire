@@ -8,17 +8,17 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ## In progress
 
+### v2.0
+
+- [#25](https://github.com/Kuestenlogik/Bowire/issues/25) **AI side-panel integration** `kind:feature` `area:workbench` `P1`
+
 ### Later
 
 - [#26](https://github.com/Kuestenlogik/Bowire/issues/26) **Security testing tool — remaining tiers** `kind:feature` `area:security` `track:security-tiers` `P2`
 
-### No milestone
-
-- [#25](https://github.com/Kuestenlogik/Bowire/issues/25) **AI side-panel integration** `kind:feature` `area:workbench` `P1`
-
 ## Next up
 
-### No milestone
+### v2.0
 
 - [#28](https://github.com/Kuestenlogik/Bowire/issues/28) **Multi-tenant data model + SCIM (Phase B)** `kind:feature` `area:workbench` `track:auth` `P2`
 
