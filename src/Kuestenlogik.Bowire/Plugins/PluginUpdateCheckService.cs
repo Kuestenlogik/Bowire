@@ -25,12 +25,27 @@ namespace Kuestenlogik.Bowire.Plugins;
 public sealed class PluginUpdateCheckService
 {
     // Plugin dir stays on the legacy flat path -- the per-user-vs-
-    // system-wide split is #28 Phase C ("Per-user plugin installs --
+    // system-wide split is #28 Phase D ("Per-user plugin installs --
     // split ~/.bowire/plugins/ into a system-wide tier plus a per-user
     // overlay"), out of scope for this phase.
-    private static readonly string PluginDir = Path.Combine(
+    private static readonly string DefaultPluginDir = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
         ".bowire", "plugins");
+
+    private static string? s_pluginDirOverride;
+
+    /// <summary>
+    /// On-disk plugin directory the scan walks. Defaults to the legacy
+    /// <c>~/.bowire/plugins/</c> layout; tests pin a temp dir via the
+    /// setter to redirect the scan without depending on whatever the
+    /// developer happens to have installed locally. Same pattern as
+    /// <c>RecordingStore.StorePath</c> / <c>CollectionStore.StorePath</c>.
+    /// </summary>
+    internal static string PluginDir
+    {
+        get => s_pluginDirOverride ?? DefaultPluginDir;
+        set => s_pluginDirOverride = value;
+    }
 
     // Cache for the daily update-check snapshot routes through the
     // IBowireUserStore seam (#28 Phase 2). Single-user installs land at
