@@ -178,6 +178,30 @@ Adds the Mode-2 path: detect Ollama / LM Studio on startup, offer one-click conn
 them. Flagship features (generate body, mock response, semantic search) land here. Marketing line: *"AI features with
 zero accounts, zero cloud."*
 
+**Shipped scope.** The seam ships as the optional `Kuestenlogik.Bowire.Ai` NuGet — same opt-in shape as the protocol
+plugins. Adding it gives the host an `IChatClient` (Microsoft.Extensions.AI) backed by OllamaSharp, which speaks both
+Ollama's wire shape on `127.0.0.1:11434` and LM Studio's drop-in equivalent on `127.0.0.1:1234`. The standalone
+`bowire` CLI bundles the package so laptop users get the chat surface out of the box; embedded hosts opt in by adding
+the package + registering their own `IChatClient` *before* `AddBowireAi()` to reuse whatever AI infrastructure they
+already run (`TryAddSingleton` respects the host's choice).
+
+Server surface: three endpoints under the workbench base path —
+`GET /api/ai/probe-local` (300 ms detect against both local providers), `GET /api/ai/status` (is an `IChatClient`
+registered? which provider / model?), `POST /api/ai/chat` (proxy a chat completion through `IChatClient`). Frontend:
+`ai.js` Phase 2 — paints a status footer + chat composer when `hasClient=true`, and surfaces detected providers as a
+"Detected ollama at … — llama3.2:3b" affordance when the package is installed but no provider is connected yet. When
+the package isn't installed every call returns 404 and the panel falls back to the Phase-1 hint engine — the host
+stays usable.
+
+CLI knobs: `--ai-provider` / `--ai-endpoint` / `--ai-model` map to `Bowire:Ai:ProviderId` / `Endpoint` / `Model`.
+Defaults: provider `ollama`, endpoint `http://localhost:11434`, model `llama3.2:3b`, auto-detect on. Outbound
+network calls stay opt-in: the probe only touches loopback, and the chat path goes wherever the user pointed
+`--ai-endpoint` — same opt-in discipline as the plugin update check and telemetry exporter.
+
+Phase 3 (BYOK cloud) reuses the same `IChatClient` seam — register `Microsoft.Extensions.AI.OpenAI` (or the
+equivalent) instead of OllamaSharp and the endpoints carry over unchanged. Phase 4 (MCP-client reversal) layers
+Microsoft Agent Framework on top of the same `IChatClient`.
+
 ### Phase 3 — BYOK cloud providers
 
 Adds Anthropic / OpenAI / OpenRouter / Azure OpenAI in the Settings panel. Same UI surface, different routing. The

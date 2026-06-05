@@ -109,6 +109,11 @@
     <ProjectReference Include="..\Kuestenlogik.Bowire.Security.Scanner\Kuestenlogik.Bowire.Security.Scanner.csproj" />
     <ProjectReference Include="..\Kuestenlogik.Bowire.Mock\Kuestenlogik.Bowire.Mock.csproj" />
     <ProjectReference Include="..\Kuestenlogik.Bowire.Mcp\Kuestenlogik.Bowire.Mcp.csproj" />
+    <!-- AI integration ships preloaded in the standalone CLI so
+         `bowire` users get the Phase-2 Ollama / LM-Studio probe plus
+         IChatClient registration out of the box. Embedded hosts opt
+         in by adding Kuestenlogik.Bowire.Ai themselves. -->
+    <ProjectReference Include="..\Kuestenlogik.Bowire.Ai\Kuestenlogik.Bowire.Ai.csproj" />
     <PackageReference Include="System.CommandLine" />
   </ItemGroup>
 </Project>

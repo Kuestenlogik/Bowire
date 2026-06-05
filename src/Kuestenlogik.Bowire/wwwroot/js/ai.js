@@ -1,4 +1,5 @@
-// ai.js — AI side-panel slot + deterministic hint engine (#25 Phase 1).
+// ai.js — AI side-panel: deterministic hint engine (Phase 1) +
+// IChatClient-backed local chat (Phase 2).
 //
 // The ADR (docs/architecture/ai-integration.md) lays out four phases:
 //
@@ -7,12 +8,18 @@
 //   3. BYOK cloud         — Anthropic / OpenAI / OpenRouter / Azure OpenAI.
 //   4. MCP-client mode    — Bowire as MCP client, routes through user's host.
 //
-// This file is Phase 1: a deterministic rule engine that runs against the
-// workbench's live state (selected method, last response, recordings list,
-// protocol) and surfaces actionable hints in the AI panel. No network call,
-// no model dependency, always available. The panel slot also exposes a
-// discreet "Connect a model →" affordance pointing at Settings → AI, which
-// is the entry point Phases 2-4 will fill out without changing this layer.
+// Phase 1 stays untouched: rule-based hints that need no network. Phase 2
+// adds three endpoint calls fronted by the optional Kuestenlogik.Bowire.Ai
+// package:
+//
+//   GET  /api/ai/probe-local    — 300ms probe of Ollama / LM Studio
+//   GET  /api/ai/status         — does the host have an IChatClient?
+//   POST /api/ai/chat           — proxy a chat completion
+//
+// When the package isn't installed every call returns 404 / 503 and the
+// panel falls back to the Phase-1 hint engine + a docs link — the host
+// stays usable. When it is installed, the footer flips to a live status
+// line and a tiny chat composer renders under the hints.
 
     // ---------- hint catalogue ----------
     // Each hint:
@@ -178,6 +185,65 @@
         return fired;
     }
 
+    // ---------- Phase 2 status + chat plumbing ----------
+    // Cached so a repaint doesn't re-fetch on every keystroke. Refreshed
+    // on demand via window.__bowireAi.refreshStatus().
+    var aiStatus = null;        // { hasClient, providerId, endpoint, model, autoDetectLocal } | null
+    var aiProbe = null;         // { ollama: { endpoint, provider, models[] }|null, lmstudio: {...}|null } | null
+    var aiInflightStatus = null;
+    var aiInflightProbe = null;
+    var chatHistory = [];       // [{ role: 'user'|'assistant', content: '...' }]
+    var chatBusy = false;
+
+    function aiPrefix() {
+        // Match mocks.js / api.js: every endpoint lives under the same
+        // base path as the workbench HTML mount.
+        return (typeof config !== 'undefined' && config && config.prefix) ? config.prefix : '';
+    }
+
+    function refreshAiStatus() {
+        if (aiInflightStatus) return aiInflightStatus;
+        aiInflightStatus = fetch(aiPrefix() + '/api/ai/status')
+            .then(function (r) { return r.ok ? r.json() : null; })
+            .then(function (data) { aiStatus = data; return data; })
+            .catch(function () { aiStatus = null; return null; })
+            .finally(function () { aiInflightStatus = null; });
+        return aiInflightStatus;
+    }
+
+    function refreshAiProbe() {
+        if (aiInflightProbe) return aiInflightProbe;
+        aiInflightProbe = fetch(aiPrefix() + '/api/ai/probe-local')
+            .then(function (r) { return r.ok ? r.json() : null; })
+            .then(function (data) { aiProbe = data; return data; })
+            .catch(function () { aiProbe = null; return null; })
+            .finally(function () { aiInflightProbe = null; });
+        return aiInflightProbe;
+    }
+
+    function sendChat(text) {
+        if (!text || chatBusy) return Promise.resolve(null);
+        chatBusy = true;
+        chatHistory.push({ role: 'user', content: text });
+        return fetch(aiPrefix() + '/api/ai/chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ messages: chatHistory })
+        })
+            .then(function (r) { return r.json().then(function (b) { return { ok: r.ok, status: r.status, body: b }; }); })
+            .then(function (resp) {
+                if (resp.ok && resp.body && typeof resp.body.content === 'string') {
+                    chatHistory.push({ role: 'assistant', content: resp.body.content });
+                } else {
+                    chatHistory.push({ role: 'assistant', content: '⚠ ' + ((resp.body && resp.body.error) || 'AI request failed (HTTP ' + resp.status + ').') });
+                }
+            })
+            .catch(function (err) {
+                chatHistory.push({ role: 'assistant', content: '⚠ Network error: ' + (err && err.message ? err.message : err) });
+            })
+            .finally(function () { chatBusy = false; });
+    }
+
     // ---------- panel ----------
     function renderAiPanel() {
         var panel = el('div', { className: 'bowire-ai-panel' });
@@ -211,19 +277,105 @@
             panel.appendChild(list);
         }
 
-        // Connect-a-model footer — placeholder for Phases 2-4 hookup
-        var footer = el('div', { className: 'bowire-ai-footer' });
-        footer.appendChild(el('a', {
-            href: '#',
-            className: 'bowire-ai-model-link',
-            textContent: 'Connect a model → (coming in Phase 2)',
-            title: 'Once Phase 2 ships, this opens Settings → AI to connect Ollama / LM Studio / a cloud provider.',
-            onClick: function (e) {
+        // Phase 2 chat surface. Renders only when /api/ai/status reports
+        // hasClient=true; otherwise the footer becomes a probe-driven
+        // "Detected: <provider>" affordance plus a link to install the
+        // Kuestenlogik.Bowire.Ai package.
+        var chatHost = el('div', { className: 'bowire-ai-chat-host' });
+        panel.appendChild(chatHost);
+
+        function rerenderChat() {
+            chatHost.replaceChildren();
+            if (!aiStatus || !aiStatus.hasClient) return;
+
+            var transcript = el('div', { className: 'bowire-ai-chat-transcript' });
+            chatHistory.forEach(function (m) {
+                transcript.appendChild(el('div', {
+                    className: 'bowire-ai-chat-msg bowire-ai-chat-msg-' + m.role,
+                    textContent: (m.role === 'user' ? 'You: ' : 'AI: ') + m.content
+                }));
+            });
+            chatHost.appendChild(transcript);
+
+            var form = el('form', { className: 'bowire-ai-chat-form' });
+            var input = el('textarea', {
+                className: 'bowire-ai-chat-input',
+                placeholder: 'Ask the model — Bowire ships the workbench context as a system prompt.',
+                rows: 2
+            });
+            var send = el('button', {
+                type: 'submit',
+                className: 'bowire-ai-chat-send',
+                textContent: chatBusy ? 'Sending…' : 'Send'
+            });
+            if (chatBusy) send.setAttribute('disabled', 'disabled');
+            form.appendChild(input);
+            form.appendChild(send);
+            form.onsubmit = function (e) {
                 e.preventDefault();
-                toast('AI model connection lands in Phase 2 (#25) — local Ollama / LM Studio auto-detect plus BYOK cloud.', 'info');
+                var text = (input.value || '').trim();
+                if (!text || chatBusy) return;
+                input.value = '';
+                sendChat(text).then(rerenderChat);
+                rerenderChat();
+            };
+            chatHost.appendChild(form);
+        }
+        rerenderChat();
+
+        var footer = el('div', { className: 'bowire-ai-footer' });
+        function rerenderFooter() {
+            footer.replaceChildren();
+            if (aiStatus && aiStatus.hasClient) {
+                footer.appendChild(el('span', {
+                    className: 'bowire-ai-status bowire-ai-status-live',
+                    textContent: 'Connected: ' + (aiStatus.providerId || 'unknown') + ' · ' + (aiStatus.model || '(default model)')
+                }));
+                return;
             }
-        }));
+            // No IChatClient registered. Two sub-cases:
+            //   (a) The Kuestenlogik.Bowire.Ai package isn't installed
+            //       (status endpoint 404'd → aiStatus === null).
+            //   (b) Package is installed but no provider connected yet
+            //       (status 200 with hasClient=false).
+            var pkgMissing = aiStatus === null;
+            footer.appendChild(el('span', {
+                className: 'bowire-ai-status bowire-ai-status-idle',
+                textContent: pkgMissing
+                    ? 'No AI provider — install Kuestenlogik.Bowire.Ai to enable chat (Ollama / LM Studio / BYOK cloud).'
+                    : 'AI package installed, no model connected.'
+            }));
+            // Probe-driven detection: surfaces the running Ollama /
+            // LM-Studio instance on the same host so the user gets a
+            // one-line "detected llama3.2:3b" affordance.
+            if (aiProbe) {
+                ['ollama', 'lmstudio'].forEach(function (key) {
+                    var hit = aiProbe[key];
+                    if (!hit || !hit.endpoint) return;
+                    var models = Array.isArray(hit.models) ? hit.models.filter(function (m) { return !!m; }) : [];
+                    var preview = models.length > 0 ? models.slice(0, 3).join(', ') + (models.length > 3 ? ', …' : '') : '(no models loaded)';
+                    footer.appendChild(el('div', {
+                        className: 'bowire-ai-detected',
+                        textContent: 'Detected ' + hit.provider + ' at ' + hit.endpoint + ' — ' + preview
+                    }));
+                });
+            }
+        }
+        rerenderFooter();
         panel.appendChild(footer);
+
+        // Kick the status + probe fetches on first paint; once they land
+        // the panel re-renders its footer + chat host so the user sees the
+        // live state without manual refresh. Both calls are idempotent +
+        // cheap so re-running on every panel paint is fine.
+        refreshAiStatus().then(function () {
+            rerenderFooter();
+            rerenderChat();
+        });
+        // Probe is opt-in via the AutoDetectLocal flag; the endpoint
+        // short-circuits and returns { skipped } when disabled, so the
+        // fetch stays cheap even then.
+        refreshAiProbe().then(rerenderFooter);
 
         return panel;
     }
@@ -232,5 +384,12 @@
     window.__bowireAi = {
         renderPanel: renderAiPanel,
         evaluateHints: evaluateHints,
-        hintCount: function () { return evaluateHints().length; }
+        hintCount: function () { return evaluateHints().length; },
+        // Phase 2 surface. Lets render layers (and tests) read or reset
+        // the status / probe / chat cache without touching internals.
+        getStatus: function () { return aiStatus; },
+        getProbe: function () { return aiProbe; },
+        refreshStatus: refreshAiStatus,
+        refreshProbe: refreshAiProbe,
+        resetChat: function () { chatHistory.length = 0; }
     };

@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Description>AI integration for Bowire — registers a Microsoft.Extensions.AI IChatClient and exposes the workbench's chat / probe endpoints. Default connector is Ollama via OllamaSharp (auto-detect on 127.0.0.1:11434 + LM Studio on :1234); embedded hosts override with their own IChatClient registration so Bowire reuses whatever AI infrastructure the host already runs. Ships as a standalone NuGet so installs that don't want AI don't pull Microsoft.Extensions.AI's transitive weight. Same opt-in shape as the protocol plugins.</Description>
+    <PackageId>Kuestenlogik.Bowire.Ai</PackageId>
+    <PackageTags>bowire;ai;chat;ollama;lm-studio;openai;ichatclient;microsoft-extensions-ai;developer-tools</PackageTags>
+    <IsPackable>true</IsPackable>
+  </PropertyGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="Kuestenlogik.Bowire.Tests" />
+  </ItemGroup>
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Kuestenlogik.Bowire\Kuestenlogik.Bowire.csproj" />
+    <PackageReference Include="Microsoft.Extensions.AI" />
+    <PackageReference Include="OllamaSharp" />
+  </ItemGroup>
+</Project>
