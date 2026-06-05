@@ -1,0 +1,136 @@
+# Post-release floor bump. After a successful `v*` release, raise the
+# Directory.Build.props `<Version>` / `<AssemblyVersion>` / `<FileVersion>`
+# floor to the just-released version + `-dev` and open a PR.
+#
+# Why a workflow? The floor is used by every non-tag build (local + CI
+# without a tag) as the "this is not a released version" marker. If it
+# stays at the version BEFORE the last release, dev builds between
+# releases carry the OLD version + `-dev`, which makes a crash report
+# from a main-branch build look like it came from a stale era. Bumping
+# the floor to the *just-released* version + `-dev` keeps the dev
+# marker in lockstep with the latest tag, without hand-editing the
+# file every release.
+#
+# Triggers ONLY on a tag push that the release pipeline already
+# accepted (so a Release-Pipeline failure doesn't bump the floor).
+# Opens a PR rather than pushing to main directly so the bump can be
+# reviewed and, if the just-released version was a major / pre-release
+# that warrants a different floor, hand-edited before merge.
+
+name: Post-release floor bump
+
+on:
+  workflow_run:
+    workflows: [Release]
+    types: [completed]
+  # Manual rerun handle for cases where the release succeeded but the
+  # auto-PR step had a transient failure.
+  workflow_dispatch:
+    inputs:
+      released_version:
+        description: 'Released version that just shipped (e.g. 1.8.0). Floor will bump to that version + -dev.'
+        required: true
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: post-release-floor-bump
+  cancel-in-progress: false
+
+jobs:
+  bump:
+    name: Bump Directory.Build.props floor
+    # Only run when the Release workflow that triggered us completed
+    # successfully. workflow_run fires regardless of conclusion, so a
+    # failed Release shouldn't cascade into a floor bump.
+    if: |
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.event == 'push' &&
+       github.event.workflow_run.conclusion == 'success' &&
+       startsWith(github.event.workflow_run.head_branch, 'v'))
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          token: ${{ secrets.BOWIRE_DISPATCH_TOKEN }}
+          fetch-depth: 0
+
+      - name: Resolve released version
+        id: ver
+        run: |
+          # Pull the released version from the trigger context. For
+          # workflow_run, the head_branch carries the tag name (e.g.
+          # `v1.8.0`); for workflow_dispatch we take the input verbatim.
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            RELEASED="${{ github.event.inputs.released_version }}"
+          else
+            RELEASED="${{ github.event.workflow_run.head_branch }}"
+            RELEASED="${RELEASED#v}"
+          fi
+          if [ -z "$RELEASED" ]; then
+            echo "::error::could not resolve released version"
+            exit 1
+          fi
+          # Sanity: must look like a semver triple, otherwise refuse.
+          if ! echo "$RELEASED" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+(-[A-Za-z0-9.-]+)?$'; then
+            echo "::error::malformed released version: $RELEASED"
+            exit 1
+          fi
+          # Strip any pre-release suffix (rc/beta) so the floor stays clean.
+          BASE=$(echo "$RELEASED" | sed -E 's/-.*$//')
+          echo "Released: $RELEASED → new floor: ${BASE}-dev"
+          echo "released=$RELEASED" >> "$GITHUB_OUTPUT"
+          echo "next=$BASE" >> "$GITHUB_OUTPUT"
+
+      - name: Update Directory.Build.props
+        env:
+          NEXT: ${{ steps.ver.outputs.next }}
+        run: |
+          # Idempotent: only writes if the file actually changes. The
+          # sed patterns mirror the three lines we ship today; if a
+          # future refactor splits Version off into a separate file,
+          # add the new path here.
+          sed -i -E "s|<Version>[^<]+</Version>|<Version>${NEXT}-dev</Version>|" Directory.Build.props
+          sed -i -E "s|<AssemblyVersion>[^<]+</AssemblyVersion>|<AssemblyVersion>${NEXT}</AssemblyVersion>|" Directory.Build.props
+          sed -i -E "s|<FileVersion>[^<]+</FileVersion>|<FileVersion>${NEXT}</FileVersion>|" Directory.Build.props
+          if git diff --quiet Directory.Build.props; then
+            echo "::warning::no diff — floor already at ${NEXT}, skipping PR"
+            echo "SKIP=true" >> "$GITHUB_ENV"
+          fi
+
+      - name: Open PR
+        if: env.SKIP != 'true'
+        env:
+          GH_TOKEN: ${{ secrets.BOWIRE_DISPATCH_TOKEN }}
+          RELEASED: ${{ steps.ver.outputs.released }}
+          NEXT: ${{ steps.ver.outputs.next }}
+        run: |
+          BRANCH="chore/floor-bump-v${NEXT}"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          # If the branch already exists from a prior failed run, reuse it.
+          if git ls-remote --exit-code --heads origin "$BRANCH" > /dev/null 2>&1; then
+            git fetch origin "$BRANCH"
+            git checkout -B "$BRANCH" "origin/$BRANCH"
+            sed -i -E "s|<Version>[^<]+</Version>|<Version>${NEXT}-dev</Version>|" Directory.Build.props
+            sed -i -E "s|<AssemblyVersion>[^<]+</AssemblyVersion>|<AssemblyVersion>${NEXT}</AssemblyVersion>|" Directory.Build.props
+            sed -i -E "s|<FileVersion>[^<]+</FileVersion>|<FileVersion>${NEXT}</FileVersion>|" Directory.Build.props
+          else
+            git checkout -b "$BRANCH"
+          fi
+          git add Directory.Build.props
+          git commit -m "chore: bump floor to ${NEXT}-dev after v${RELEASED}"
+          git push -u origin "$BRANCH"
+          # Only open the PR if one doesn't already exist for this branch.
+          if ! gh pr list --head "$BRANCH" --state open --json number -q '.[0].number' | grep -q .; then
+            gh pr create \
+              --title "chore: bump floor to ${NEXT}-dev (after v${RELEASED})" \
+              --body "Routine post-release floor bump. The release pipeline derives the real version from the git tag; this PR raises the local + CI-without-tag floor to the just-released version so dev builds between releases carry an honest \`<released>-dev\` marker instead of a stale era marker." \
+              --label 'roadmap' \
+              --base main \
+              --head "$BRANCH"
+          else
+            echo "PR already open for $BRANCH — push-only, no new PR."
+          fi
