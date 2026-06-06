@@ -190,10 +190,19 @@
                     try { localStorage.setItem(SOURCE_MODE_KEY, 'proto'); } catch { /* ignore */ }
                 }
                 render();
-                // Bring the upload panel into view if it exists
+                // Bring the upload panel (sidebar drop-zone) into view +
+                // visually flash the Schema Files tab so the user sees
+                // where the click landed. Class names match the actual
+                // sidebar markup in render-sidebar.js: `.bowire-proto-panel`
+                // for the panel, `.bowire-source-tab` for the tab buttons.
                 requestAnimationFrame(function () {
-                    var panel = document.querySelector('.bowire-proto-upload-panel');
+                    var panel = document.querySelector('.bowire-proto-panel, #bowire-proto-dropzone');
                     if (panel) panel.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    var protoTab = document.getElementById('bowire-source-tab-proto');
+                    if (protoTab) {
+                        protoTab.classList.add('bowire-source-tab-flash');
+                        setTimeout(function () { protoTab.classList.remove('bowire-source-tab-flash'); }, 800);
+                    }
                 });
             }
         ));
