@@ -15,16 +15,22 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ## Next up
 
-### Later
+### v1.9 — AI for security
 
 - [#28](https://github.com/Kuestenlogik/Bowire/issues/28) **Multi-tenant data model + SCIM (Phase B)** `kind:feature` `area:workbench` `track:auth` `P2`
 
 ## Backlog
 
+### v1.9 — AI for security
+
+- [#34](https://github.com/Kuestenlogik/Bowire/issues/34) **AsyncAPI discovery source — remaining bindings + V2 overloads + YAML pre-normaliser** `kind:feature` `area:plugin-sdk` `track:protocols` `P2`
+- [#59](https://github.com/Kuestenlogik/Bowire/issues/59) **AI threat-model: rank discovered endpoints by attack-surface risk** 
+- [#60](https://github.com/Kuestenlogik/Bowire/issues/60) **AI Nuclei-template suggestion: generate scan templates per endpoint** 
+- [#62](https://github.com/Kuestenlogik/Bowire/issues/62) **AI schema-aware fuzz values: boundary inputs per field via Mock-Replay** 
+
 ### Later
 
 - [#33](https://github.com/Kuestenlogik/Bowire/issues/33) **Protocol plugins — Connect Phase 1+3 + OTLP** `kind:feature` `area:plugin-sdk` `track:protocols` `P2`
-- [#34](https://github.com/Kuestenlogik/Bowire/issues/34) **AsyncAPI discovery source — remaining bindings + V2 overloads + YAML pre-normaliser** `kind:feature` `area:plugin-sdk` `track:protocols` `P2`
 - [#35](https://github.com/Kuestenlogik/Bowire/issues/35) **Nuclei template compat — OAST + non-HTTP transports (Phase 2f + 2g)** `kind:feature` `area:security` `track:security-tiers` `P3`
 - [#36](https://github.com/Kuestenlogik/Bowire/issues/36) **Replay-Mock — HTTPS MITM / record mode** `kind:feature` `area:mock` `P3`
 - [#37](https://github.com/Kuestenlogik/Bowire/issues/37) **Bowire.Mcp — remaining tools + adapter modes** `kind:feature` `area:mcp` `P2`
@@ -45,9 +51,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 - [#53](https://github.com/Kuestenlogik/Bowire/issues/53) **Marketing site — second row of specialist comparisons** `kind:feature` `area:site` `track:marketing-ia` `P3`
 - [#58](https://github.com/Kuestenlogik/Bowire/issues/58) **Workspace: complete the Git-native story (.blw file)** 
 - [Kuestenlogik/Bowire.Protocol.Surgewave#11](https://github.com/Kuestenlogik/Bowire.Protocol.Surgewave/issues/11) **Light up Surgewave protocol plugin** 
-- [#59](https://github.com/Kuestenlogik/Bowire/issues/59) **AI threat-model: rank discovered endpoints by attack-surface risk** 
-- [#60](https://github.com/Kuestenlogik/Bowire/issues/60) **AI Nuclei-template suggestion: generate scan templates per endpoint** 
-- [#62](https://github.com/Kuestenlogik/Bowire/issues/62) **AI schema-aware fuzz values: boundary inputs per field via Mock-Replay** 
 
 ---
 
