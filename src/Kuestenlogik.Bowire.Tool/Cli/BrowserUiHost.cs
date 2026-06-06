@@ -181,9 +181,15 @@ internal static class BrowserUiHost
         {
             options.Mode = Kuestenlogik.Bowire.BowireMode.Standalone;
             options.Title = ui.Title;
+            // Description carries operator-relevant status (which server
+            // we're connected to in locked mode); the empty-state hint
+            // ('please type a server URL') is UX copy and belongs in the
+            // landing page, not the header. So in unlocked / first-run
+            // mode we leave the description empty and the header collapses
+            // to the small-logo + wordmark pattern from bowire.io.
             options.Description = ui.LockServerUrl
                 ? (ui.ServerUrls.Count == 1 ? $"Connected to {ui.PrimaryUrl}" : $"Connected to {ui.ServerUrls.Count} URLs")
-                : "Enter a server URL to connect — gRPC / REST / GraphQL / MQTT / WebSocket / SignalR / OData / Socket.IO / SSE / MCP";
+                : string.Empty;
             options.ServerUrl = ui.PrimaryUrl;
             foreach (var u in ui.ServerUrls) options.ServerUrls.Add(u);
             options.LockServerUrl = ui.LockServerUrl;

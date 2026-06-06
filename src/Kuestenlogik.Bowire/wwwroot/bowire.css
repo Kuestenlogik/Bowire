@@ -6534,6 +6534,17 @@ details[open] > .bowire-json-tree-summary::before {
     background: var(--bowire-bg-elevated);
     border-color: var(--bowire-accent);
 }
+/* Flashed for ~800 ms when the landing page's Upload Schema button
+   switches sidebar mode programmatically, so the user sees where the
+   click landed even when the page-main keeps showing the welcome
+   cards (services / urls still empty). */
+.bowire-source-tab-flash {
+    animation: bowire-source-tab-flash 800ms ease-out;
+}
+@keyframes bowire-source-tab-flash {
+    0%, 100% { box-shadow: none; }
+    40% { box-shadow: 0 0 0 3px var(--bowire-accent); }
+}
 
 .bowire-source-tab.active::after {
     content: "";
