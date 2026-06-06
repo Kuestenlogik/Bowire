@@ -14,6 +14,10 @@
 
     function closeSettings() {
         settingsOpen = false;
+        // Reset the per-open one-shot guard so reopening the dialog
+        // re-fetches plugin data. See pluginsTabFetchedThisOpen in
+        // renderSettingsPlugins() for the loop-prevention story.
+        pluginsTabFetchedThisOpen = false;
         renderSettingsDialog();
     }
 
@@ -66,7 +70,17 @@
                 leftPanel.appendChild(el('div', {
                     id: 'bowire-settings-cat-' + cat.id,
                     className: 'bowire-settings-cat' + (settingsTab === cat.id ? ' active' : ''),
-                    onClick: function () { settingsTab = cat.id; renderSettingsDialog(); }
+                    onClick: function () {
+                        // Reset the Plugins-tab fetch guard whenever the
+                        // user leaves the Plugins tab so re-entry triggers
+                        // a fresh fetch (matches the prior "refresh on
+                        // open" intent).
+                        if (settingsTab === 'plugins' && cat.id !== 'plugins') {
+                            pluginsTabFetchedThisOpen = false;
+                        }
+                        settingsTab = cat.id;
+                        renderSettingsDialog();
+                    }
                 },
                     el('span', { className: 'bowire-settings-cat-icon', innerHTML: cat.pluginIcon || svgIcon(cat.icon) }),
                     el('span', { textContent: cat.label })
@@ -870,6 +884,14 @@
     var pluginPrereleaseToggle = false;
     var pluginActionInFlight = null;
     var pluginActionResult = null;
+    // Tracks whether the Plugins tab has already kicked off its data
+    // fetches in the current "session" of being open. Reset to false
+    // when the dialog closes or the user switches tabs and comes back,
+    // so the tab refreshes on re-entry without firing once per render.
+    // Without this guard fetch{PluginHealth,InstalledPlugins}() re-trigger
+    // renderSettingsDialog() on response → re-fires both fetches →
+    // infinite render loop (#66).
+    var pluginsTabFetchedThisOpen = false;
 
     function renderSettingsPlugins() {
         var section = el('div', { className: 'bowire-settings-section' });
@@ -881,11 +903,6 @@
         // when every install is healthy so the section stays quiet
         // for the common case.
         section.appendChild(renderPluginHealthBanner());
-        // Trigger a refresh every time the user opens this tab so a
-        // newly-installed (or newly-broken) plugin shows up without a
-        // full page reload. Cached snapshot is shown until the new
-        // response lands.
-        fetchPluginHealth();
 
         // "Manage installed plugins" — list every sibling-installed
         // plugin under ~/.bowire/plugins/ with its version and per-row
@@ -894,7 +911,16 @@
         // stays focused on enable/disable; this section is the
         // lifecycle counterpart.
         section.appendChild(renderManagePluginsSection());
-        fetchInstalledPlugins();
+
+        // Fire the refresh fetches exactly once per "tab opened" event,
+        // not on every render. Each fetch's success handler calls
+        // renderSettingsDialog() again to surface the new data — if we
+        // fetched on every render, we'd be in a loop.
+        if (!pluginsTabFetchedThisOpen) {
+            pluginsTabFetchedThisOpen = true;
+            fetchPluginHealth();
+            fetchInstalledPlugins();
+        }
 
         section.appendChild(el('h3', {
             className: 'bowire-settings-section-title',
