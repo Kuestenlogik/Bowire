@@ -48,6 +48,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 - [#53](https://github.com/Kuestenlogik/Bowire/issues/53) **Marketing site — second row of specialist comparisons** `kind:feature` `area:site` `track:marketing-ia` `P3`
 - [#58](https://github.com/Kuestenlogik/Bowire/issues/58) **Workspace: complete the Git-native story (.blw file)** 
 - [Kuestenlogik/Bowire.Protocol.Surgewave#11](https://github.com/Kuestenlogik/Bowire.Protocol.Surgewave/issues/11) **Light up Surgewave protocol plugin** 
+- [#65](https://github.com/Kuestenlogik/Bowire/issues/65) **Workbench URL input is read-only when --lock-server-url is not set** 
 
 ---
 
