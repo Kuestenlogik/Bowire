@@ -220,19 +220,33 @@ jobs:
           git push -u origin "$BRANCH" --force-with-lease
 
           if ! gh pr list --head "$BRANCH" --state open --json number -q '.[0].number' | grep -q .; then
+            # Body via heredoc → file → --body-file. Inlining a
+            # multi-line markdown string into --body "..." breaks YAML's
+            # literal-block-scalar parsing (unindented lines like
+            # **Header** end the block prematurely). Single-quoted
+            # heredoc ('PRBODY') keeps backticks + $VAR literal so the
+            # markdown survives intact.
+            cat > .pr-body.md <<PRBODY
+            Auto-drafted release-notes block for v${VERSION} via the \`Draft release notes\` workflow.
+
+            **Before merging:**
+            1. Polish the Highlights wording — the bullets just dump closed-issue titles; group + paraphrase per theme.
+            2. Trim or expand the Maintenance bullets — the workflow captures up to 30 \`fix\` / \`refactor\` / \`perf\` / \`test\` / \`ci\` / \`build\` / \`chore\` / \`docs\` lines. Roadmap-sync + floor-bump noise is already filtered out.
+            3. If the theme line at the top doesn't match what shipped, edit the milestone title (the source of truth) — don't just patch the block here.
+
+            After merge, push the \`v${VERSION}\` tag — \`release.yml\` will use this block as the GitHub Release body and the milestone-derived headline as the title.
+            PRBODY
+            # The heredoc above respects the YAML indentation so each
+            # line starts with 12 spaces in the .md; strip them so the
+            # PR body is clean markdown.
+            sed -i 's/^            //' .pr-body.md
             gh pr create \
               --title "chore: draft release notes for v${VERSION}" \
-              --body "Auto-drafted release-notes block for v${VERSION} via the \`Draft release notes\` workflow.
-
-**Before merging:**
-1. Polish the Highlights wording — the bullets just dump closed-issue titles; group + paraphrase per theme.
-2. Trim or expand the Maintenance bullets — the workflow captures up to 30 \`fix\` / \`refactor\` / \`perf\` / \`test\` / \`ci\` / \`build\` / \`chore\` / \`docs\` lines. Roadmap-sync + floor-bump noise is already filtered out.
-3. If the theme line at the top doesn't match what shipped, edit the milestone title (the source of truth) — don't just patch the block here.
-
-After merge, push the \`v${VERSION}\` tag — \`release.yml\` will use this block as the GitHub Release body and the milestone-derived headline as the title." \
+              --body-file .pr-body.md \
               --label 'roadmap' \
               --base main \
               --head "$BRANCH"
+            rm -f .pr-body.md
           else
             echo "PR already open for $BRANCH — pushed update, no new PR."
           fi
