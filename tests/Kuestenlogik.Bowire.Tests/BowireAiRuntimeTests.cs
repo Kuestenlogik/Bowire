@@ -15,6 +15,7 @@ namespace Kuestenlogik.Bowire.Tests;
 /// and the AddBowireAi overlay precedence (defaults → IConfiguration →
 /// configure callback → user-config file).
 /// </summary>
+[Collection("BowireUserContext")]
 public sealed class BowireAiRuntimeTests : IDisposable
 {
     private readonly IBowireUserStore _originalStore;

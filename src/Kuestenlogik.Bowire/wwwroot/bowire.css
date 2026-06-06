@@ -9973,6 +9973,59 @@ details[open] > .bowire-json-tree-summary::before {
     margin-top: 4px;
 }
 
+/* #59 — threat-model surface in the AI side-panel */
+.bowire-ai-threat-host { display: flex; flex-direction: column; margin-top: 10px; }
+.bowire-ai-threat-section { display: flex; flex-direction: column; gap: 6px; }
+.bowire-ai-threat-title { margin: 0; font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--bowire-text-tertiary); }
+.bowire-ai-threat-help { font-size: 11px; margin: 0; color: var(--bowire-text-secondary); line-height: 1.4; }
+.bowire-ai-threat-runrow { display: flex; align-items: center; gap: 10px; }
+.bowire-ai-threat-run {
+    padding: 4px 12px;
+    border: 1px solid var(--bowire-border);
+    background: var(--bowire-accent, #5fb2ff);
+    color: #fff;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+}
+.bowire-ai-threat-run[disabled] { opacity: 0.5; cursor: progress; }
+.bowire-ai-threat-meta { font-size: 11px; color: var(--bowire-text-tertiary); }
+.bowire-ai-threat-meta.err { color: var(--bowire-error, #ef4444); }
+.bowire-ai-threat-list { list-style: none; padding: 0; margin: 4px 0 0; display: flex; flex-direction: column; gap: 6px; }
+.bowire-ai-threat-row {
+    padding: 6px 8px;
+    border-left: 2px solid var(--bowire-border);
+    background: var(--bowire-bg-subtle, rgba(255, 255, 255, 0.02));
+    font-size: 12px;
+}
+.bowire-ai-threat-row-head { display: flex; align-items: baseline; gap: 8px; }
+.bowire-ai-threat-score { font-weight: 700; font-family: var(--bowire-mono); }
+.bowire-ai-threat-score.score-high { color: #ef4444; }
+.bowire-ai-threat-score.score-medium { color: #eab308; }
+.bowire-ai-threat-score.score-low { color: #6ad27a; }
+.bowire-ai-threat-endpoint { font-family: var(--bowire-mono); font-size: 11px; word-break: break-all; }
+.bowire-ai-threat-why { margin-top: 4px; color: var(--bowire-text-secondary); }
+.bowire-ai-threat-templates { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; align-items: center; }
+.bowire-ai-threat-templates-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--bowire-text-tertiary); }
+.bowire-ai-threat-template-chip {
+    font-size: 10px;
+    padding: 1px 6px;
+    border-radius: 9px;
+    border: 1px solid var(--bowire-border);
+    color: var(--bowire-text-secondary);
+}
+.bowire-ai-threat-scan { margin-top: 6px; }
+.bowire-ai-threat-scan-btn {
+    font-size: 11px;
+    padding: 2px 8px;
+    border: 1px solid var(--bowire-border);
+    background: transparent;
+    color: var(--bowire-text-secondary);
+    border-radius: 4px;
+    cursor: pointer;
+}
+.bowire-ai-threat-scan-btn:hover { border-color: var(--bowire-accent, #5fb2ff); color: var(--bowire-accent, #5fb2ff); }
+
 /* ===== Plugin Inspect modal (#27) ===== */
 .bowire-modal-overlay {
     position: fixed;
