@@ -72,7 +72,7 @@ Every milestone's **title** carries the release headline directly: `vX.Y[.Z] —
 Format examples that worked well in past cycles:
 - `v1.7 — new protocols + mock-as-stand-in`
 - `v1.8 — AI side-panel + workbench mocks UI`
-- `v2.0 — AI for security + protocol-plugin next wave`
+- `v1.9 — AI for security + protocol-plugin next wave`
 
 Two themes joined with `+` reads cleanly and matches the established release-title style. Keep the theme tail to roughly 2-5 words per side.
 
