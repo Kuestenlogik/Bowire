@@ -34,6 +34,12 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### Later
 
+- [Kuestenlogik/Bowire.Templates#3](https://github.com/Kuestenlogik/Bowire.Templates/issues/3) **Plugin project template — `dotnet new bowire-plugin`** `kind:feature` `area:plugin-sdk` `P3`
+- [Kuestenlogik/Bowire.Samples#13](https://github.com/Kuestenlogik/Bowire.Samples/issues/13) **SimpleGraphQLSubscriptions sample** `kind:feature` `area:plugin-sdk` `P3`
+- [Kuestenlogik/Bowire.Protocol.Surgewave#11](https://github.com/Kuestenlogik/Bowire.Protocol.Surgewave/issues/11) **Light up Surgewave protocol plugin** 
+
+### No milestone
+
 - [#35](https://github.com/Kuestenlogik/Bowire/issues/35) **Nuclei template compat — OAST + non-HTTP transports (Phase 2f + 2g)** `kind:feature` `area:security` `track:security-tiers` `P3`
 - [#36](https://github.com/Kuestenlogik/Bowire/issues/36) **Replay-Mock — HTTPS MITM / record mode** `kind:feature` `area:mock` `P3`
 - [#37](https://github.com/Kuestenlogik/Bowire/issues/37) **Bowire.Mcp — remaining tools + adapter modes** `kind:feature` `area:mcp` `P2`
@@ -41,20 +47,14 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 - [#39](https://github.com/Kuestenlogik/Bowire/issues/39) **HAR Import polish** `kind:feature` `area:workbench` `P2`
 - [#40](https://github.com/Kuestenlogik/Bowire/issues/40) **Freeform Request Builder** `kind:feature` `area:workbench` `P2`
 - [#41](https://github.com/Kuestenlogik/Bowire/issues/41) **First RC of the new versioning discipline** `kind:debt` `area:multi` `P3`
-- [Kuestenlogik/Bowire.Templates#3](https://github.com/Kuestenlogik/Bowire.Templates/issues/3) **Plugin project template — `dotnet new bowire-plugin`** `kind:feature` `area:plugin-sdk` `P3`
 - [#43](https://github.com/Kuestenlogik/Bowire/issues/43) **MCP SSE-transport support** `kind:feature` `area:mcp` `P3`
 - [#44](https://github.com/Kuestenlogik/Bowire/issues/44) **Sidecar packaging — Docker / Compose / Kubernetes** `kind:docs` `area:docs` `P3`
-- [Kuestenlogik/Bowire.Samples#13](https://github.com/Kuestenlogik/Bowire.Samples/issues/13) **SimpleGraphQLSubscriptions sample** `kind:feature` `area:plugin-sdk` `P3`
 - [#46](https://github.com/Kuestenlogik/Bowire/issues/46) **MCP server-side notifications via IInlineSseSubscriber** `kind:feature` `area:mcp` `P3`
 - [#47](https://github.com/Kuestenlogik/Bowire/issues/47) **Sidebar display: method name vs path toggle** `kind:feature` `area:workbench` `P3`
 - [#48](https://github.com/Kuestenlogik/Bowire/issues/48) **Schema watch mode** `kind:feature` `area:workbench` `P3`
 - [#49](https://github.com/Kuestenlogik/Bowire/issues/49) **Programmatic environment provisioning in embedded mode** `kind:feature` `area:workbench` `P2`
 - [#50](https://github.com/Kuestenlogik/Bowire/issues/50) **Marketing site — gallery / lightbox layer on solutions/*** `kind:feature` `area:site` `track:marketing-ia` `P3`
 - [#51](https://github.com/Kuestenlogik/Bowire/issues/51) **Marketing site — migrate <img> tags to picture.html partial** `kind:debt` `area:site` `track:marketing-ia` `P2`
-- [Kuestenlogik/Bowire.Protocol.Surgewave#11](https://github.com/Kuestenlogik/Bowire.Protocol.Surgewave/issues/11) **Light up Surgewave protocol plugin** 
-
-### No milestone
-
 - [#53](https://github.com/Kuestenlogik/Bowire/issues/53) **Marketing site — second row of specialist comparisons** `kind:feature` `area:site` `track:marketing-ia` `P3`
 - [#58](https://github.com/Kuestenlogik/Bowire/issues/58) **Workspace: complete the Git-native story (.blw file)** 
 
