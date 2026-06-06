@@ -292,6 +292,16 @@
         }
         menu.appendChild(fuzz.element);
 
+        // #62 — AI fuzz values. Sibling to the deterministic Fuzz
+        // submenu above. Only renders when an IChatClient is
+        // registered (the menu callback checks at click-time so we
+        // don't gate on a status refresh during menu paint).
+        var aiFuzz = bowireMenuItem('AI: suggest fuzz values', function () {
+            bowireCloseSemanticsMenu();
+            bowireRunAiFuzzAgainstField(opts);
+        });
+        menu.appendChild(aiFuzz);
+
         menu.appendChild(bowireDivider());
 
         // Persist for ▸ submenu. The label echoes the current sticky
@@ -952,6 +962,293 @@
         }).catch(function (err) {
             bowireRenderFuzzPanelError(panel, err.message || String(err));
         });
+    }
+
+    // #62 — AI fuzz values. Asks the model for 20 schema-aware
+    // boundary values for the right-clicked field, renders a picker
+    // (default 5 selected, cap 5 on the Run button so a stray model
+    // can't DOS the target), then replays the picked values through
+    // /api/security/fuzz with customPayloads.
+    function bowireRunAiFuzzAgainstField(opts) {
+        var notify = (typeof toast === 'function') ? toast : function (msg, _kind) { console.warn(msg); };
+        var prefix = (window.__BOWIRE_CONFIG__ && window.__BOWIRE_CONFIG__.prefix) || '';
+
+        // Pull the same fieldType the deterministic fuzz already
+        // computes from the JSONPath against the live body — gives
+        // the model a starting point for type-aware boundary picks.
+        var fieldName = opts.jsonPath || '$';
+        var leafName = (opts.jsonPath || '').split('.').filter(Boolean).pop() || fieldName;
+        var fieldType = 'string';
+        var fieldExample = null;
+        try {
+            var body = (typeof requestMessages !== 'undefined' && requestMessages && requestMessages.length > 0)
+                ? requestMessages[0]
+                : (document.querySelector('.bowire-editor, .bowire-message-editor') || {}).value;
+            if (body) {
+                var parsed = JSON.parse(body);
+                var fragment = bowireFuzzResolvePath(parsed, opts.jsonPath);
+                if (fragment !== undefined) {
+                    if (typeof fragment === 'number') fieldType = Number.isInteger(fragment) ? 'int32' : 'double';
+                    else if (typeof fragment === 'boolean') fieldType = 'bool';
+                    else if (fragment === null) fieldType = 'null';
+                    else if (Array.isArray(fragment)) fieldType = 'array';
+                    else if (typeof fragment === 'object') fieldType = 'object';
+                    fieldExample = (typeof fragment === 'object') ? JSON.stringify(fragment) : String(fragment);
+                }
+            }
+        } catch { /* keep defaults */ }
+
+        var panel = bowireOpenAiFuzzPanel(opts, leafName);
+        bowireRenderAiFuzzPanelStatus(panel, 'Asking the model for boundary values…');
+
+        fetch(prefix + '/api/ai/fuzz-values', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                fieldName: leafName,
+                fieldType: fieldType,
+                fieldExample: fieldExample,
+                methodName: (typeof selectedMethod !== 'undefined' && selectedMethod) ? selectedMethod.name : null,
+                service: (typeof selectedService !== 'undefined' && selectedService) ? selectedService.name : null,
+                protocol: (typeof selectedMethod !== 'undefined' && selectedMethod) ? (selectedMethod.protocol || null) : null
+            })
+        }).then(function (resp) {
+            return resp.json().then(function (b) { return { ok: resp.ok, status: resp.status, body: b }; });
+        }).then(function (resp) {
+            if (!resp.ok) {
+                bowireRenderAiFuzzPanelStatus(panel, '⚠ ' + ((resp.body && resp.body.error) || ('HTTP ' + resp.status)));
+                return;
+            }
+            var values = (resp.body && resp.body.values) || [];
+            if (values.length === 0) {
+                bowireRenderAiFuzzPanelStatus(panel, 'Model returned no usable values — try again or fall back to the deterministic Fuzz submenu.');
+                return;
+            }
+            bowireRenderAiFuzzPicker(panel, opts, values, leafName);
+        }).catch(function (err) {
+            bowireRenderAiFuzzPanelStatus(panel, '⚠ Network error: ' + (err && err.message ? err.message : err));
+        });
+    }
+
+    function bowireFuzzResolvePath(root, path) {
+        if (!path || path === '$') return root;
+        var trimmed = path;
+        if (trimmed.indexOf('$.') === 0) trimmed = trimmed.substring(2);
+        else if (trimmed.charAt(0) === '$') trimmed = trimmed.substring(1);
+        var segments = trimmed.split('.').filter(Boolean);
+        var cur = root;
+        for (var i = 0; i < segments.length; i++) {
+            if (cur === null || typeof cur !== 'object') return undefined;
+            if (!Object.prototype.hasOwnProperty.call(cur, segments[i])) return undefined;
+            cur = cur[segments[i]];
+        }
+        return cur;
+    }
+
+    function bowireOpenAiFuzzPanel(_opts, fieldName) {
+        var existing = document.getElementById('bowire-ai-fuzz-panel');
+        if (existing) existing.remove();
+        var panel = document.createElement('div');
+        panel.id = 'bowire-ai-fuzz-panel';
+        panel.className = 'bowire-ai-fuzz-panel';
+        panel.setAttribute('role', 'dialog');
+        panel.setAttribute('aria-label', 'AI fuzz values');
+        document.body.appendChild(panel);
+
+        var header = document.createElement('div');
+        header.className = 'bowire-ai-fuzz-header';
+        var title = document.createElement('span');
+        title.className = 'bowire-ai-fuzz-title';
+        title.textContent = 'AI fuzz values · ' + fieldName;
+        header.appendChild(title);
+        var close = document.createElement('button');
+        close.type = 'button';
+        close.className = 'bowire-ai-fuzz-close';
+        close.setAttribute('aria-label', 'Close');
+        close.textContent = '×';
+        close.addEventListener('click', function () { panel.remove(); });
+        header.appendChild(close);
+        panel.appendChild(header);
+        return panel;
+    }
+
+    function bowireRenderAiFuzzPanelStatus(panel, message) {
+        var body = panel.querySelector('.bowire-ai-fuzz-body') || document.createElement('div');
+        body.className = 'bowire-ai-fuzz-body';
+        body.replaceChildren();
+        if (!body.parentNode) panel.appendChild(body);
+        var status = document.createElement('div');
+        status.className = 'bowire-ai-fuzz-status';
+        status.textContent = message;
+        body.appendChild(status);
+    }
+
+    function bowireRenderAiFuzzPicker(panel, opts, values, leafName) {
+        var body = panel.querySelector('.bowire-ai-fuzz-body') || document.createElement('div');
+        body.className = 'bowire-ai-fuzz-body';
+        body.replaceChildren();
+        if (!body.parentNode) panel.appendChild(body);
+
+        var note = document.createElement('div');
+        note.className = 'bowire-ai-fuzz-note';
+        note.textContent = 'Pick up to 5 values to replay. Severity is advisory — you classify findings, the model doesn’t.';
+        body.appendChild(note);
+
+        var list = document.createElement('div');
+        list.className = 'bowire-ai-fuzz-picker';
+        var defaultCap = 5;
+        var picked = {};
+        for (var i = 0; i < values.length && i < defaultCap; i++) picked[i] = true;
+
+        function refreshRunBtn() {
+            var pickedCount = Object.keys(picked).filter(function (k) { return picked[k]; }).length;
+            runBtn.textContent = 'Replay ' + pickedCount + ' value' + (pickedCount === 1 ? '' : 's');
+            runBtn[pickedCount === 0 || pickedCount > defaultCap ? 'setAttribute' : 'removeAttribute']('disabled', 'disabled');
+        }
+
+        values.forEach(function (v, idx) {
+            var row = document.createElement('label');
+            row.className = 'bowire-ai-fuzz-row';
+            var cb = document.createElement('input');
+            cb.type = 'checkbox';
+            cb.checked = idx < defaultCap;
+            cb.addEventListener('change', function () {
+                if (cb.checked) picked[idx] = true; else delete picked[idx];
+                if (Object.keys(picked).filter(function (k) { return picked[k]; }).length > defaultCap) {
+                    cb.checked = false;
+                    delete picked[idx];
+                    if (typeof toast === 'function') toast('Max ' + defaultCap + ' values per batch.', 'info');
+                }
+                refreshRunBtn();
+            });
+            row.appendChild(cb);
+
+            var meta = document.createElement('span');
+            meta.className = 'bowire-ai-fuzz-row-meta';
+            var sevClass = (v.severity === 'medium') ? 'medium' : (v.severity === 'low') ? 'low' : 'info';
+            var sev = document.createElement('span');
+            sev.className = 'bowire-ai-fuzz-row-sev sev-' + sevClass;
+            sev.textContent = v.severity || 'info';
+            meta.appendChild(sev);
+            var val = document.createElement('code');
+            val.className = 'bowire-ai-fuzz-row-value';
+            // Display string + non-string values uniformly. Non-strings
+            // (numbers, bools, nulls) get JSON.stringify so the user
+            // sees `null` not "".
+            val.textContent = (typeof v.value === 'string') ? v.value : JSON.stringify(v.value);
+            meta.appendChild(val);
+            row.appendChild(meta);
+
+            var why = document.createElement('span');
+            why.className = 'bowire-ai-fuzz-row-why';
+            why.textContent = v.why || '';
+            row.appendChild(why);
+
+            list.appendChild(row);
+        });
+        body.appendChild(list);
+
+        var actions = document.createElement('div');
+        actions.className = 'bowire-ai-fuzz-actions';
+        var runBtn = document.createElement('button');
+        runBtn.type = 'button';
+        runBtn.className = 'bowire-ai-fuzz-run';
+        actions.appendChild(runBtn);
+        body.appendChild(actions);
+        refreshRunBtn();
+
+        runBtn.addEventListener('click', function () {
+            var pickedValues = values
+                .filter(function (_, idx) { return picked[idx]; })
+                .map(function (v) {
+                    return (typeof v.value === 'string') ? v.value : JSON.stringify(v.value);
+                });
+            if (pickedValues.length === 0) return;
+            bowireReplayAiFuzz(panel, opts, leafName, pickedValues);
+        });
+    }
+
+    function bowireReplayAiFuzz(panel, opts, leafName, pickedValues) {
+        var body = panel.querySelector('.bowire-ai-fuzz-body');
+        if (!body) return;
+        body.replaceChildren();
+        var status = document.createElement('div');
+        status.className = 'bowire-ai-fuzz-status';
+        status.textContent = 'Replaying ' + pickedValues.length + ' value(s)…';
+        body.appendChild(status);
+
+        // Reuse the same target / verb / path resolution from the
+        // deterministic fuzz path so the replay rides the same wire.
+        var liveBody = '{}';
+        try {
+            if (typeof requestMessages !== 'undefined' && requestMessages && requestMessages.length > 0) {
+                liveBody = requestMessages[0] || '{}';
+            } else {
+                var ed = document.querySelector('.bowire-editor, .bowire-message-editor');
+                if (ed && ed.value) liveBody = ed.value;
+            }
+        } catch { /* keep liveBody = '{}' */ }
+
+        var target = '';
+        try {
+            if (typeof serverUrls !== 'undefined' && serverUrls && serverUrls.length > 0) target = serverUrls[0];
+            else if (typeof getPrimaryServerUrl === 'function') target = getPrimaryServerUrl();
+        } catch { /* fall through */ }
+        if (!target) target = window.location.origin;
+
+        var httpVerb = (typeof selectedMethod !== 'undefined' && selectedMethod && selectedMethod.httpMethod) ? selectedMethod.httpMethod : 'POST';
+        var httpPath = (typeof selectedMethod !== 'undefined' && selectedMethod && selectedMethod.httpPath) ? selectedMethod.httpPath : '/';
+
+        var prefix = (window.__BOWIRE_CONFIG__ && window.__BOWIRE_CONFIG__.prefix) || '';
+        fetch(prefix + '/api/security/fuzz', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                target: target,
+                httpVerb: httpVerb,
+                httpPath: httpPath,
+                body: liveBody,
+                field: opts.jsonPath,
+                category: 'ai-custom',     // category placeholder — the executor's CustomPayloads path bypasses the category catalogue
+                customPayloads: pickedValues,
+                force: true,                // user picked the values; bypass shape skip-guard
+                timeoutSeconds: 30
+            })
+        }).then(function (r) { return r.json().then(function (b) { return { ok: r.ok, status: r.status, body: b }; }); })
+          .then(function (resp) {
+              if (!resp.ok) {
+                  status.textContent = '⚠ ' + ((resp.body && resp.body.error) || ('HTTP ' + resp.status));
+                  return;
+              }
+              status.remove();
+              var resultList = document.createElement('div');
+              resultList.className = 'bowire-ai-fuzz-results';
+              (resp.body.rows || []).forEach(function (r) {
+                  var row = document.createElement('div');
+                  row.className = 'bowire-ai-fuzz-result-row ' + (r.outcome === 'Vulnerable' ? 'vuln' : r.outcome === 'Error' ? 'err' : 'safe');
+                  var marker = document.createElement('span');
+                  marker.className = 'bowire-ai-fuzz-result-marker';
+                  marker.textContent = r.outcome === 'Vulnerable' ? '[VULN]' : r.outcome === 'Error' ? '[err]' : '[ok]';
+                  row.appendChild(marker);
+                  var pay = document.createElement('code');
+                  pay.className = 'bowire-ai-fuzz-result-payload';
+                  pay.textContent = r.payload;
+                  row.appendChild(pay);
+                  var detail = document.createElement('span');
+                  detail.className = 'bowire-ai-fuzz-result-detail';
+                  detail.textContent = r.detail || (r.status ? 'status=' + r.status : '');
+                  row.appendChild(detail);
+                  resultList.appendChild(row);
+              });
+              body.appendChild(resultList);
+              var foot = document.createElement('div');
+              foot.className = 'bowire-ai-fuzz-foot';
+              foot.textContent = leafName + ' · severity is advisory; verify suspicious rows by hand before reporting.';
+              body.appendChild(foot);
+          })
+          .catch(function (err) {
+              status.textContent = '⚠ Network error: ' + (err && err.message ? err.message : err);
+          });
     }
 
     /** Verify the JSONPath resolves in the given parsed body. */

@@ -55,8 +55,14 @@ internal static class BowireSecurityEndpoints
                 return Results.BadRequest(new { error = "target is required." });
             if (string.IsNullOrWhiteSpace(req.Field))
                 return Results.BadRequest(new { error = "field is required." });
-            if (string.IsNullOrWhiteSpace(req.Category))
-                return Results.BadRequest(new { error = "category is required." });
+            var hasCustomPayloads = req.CustomPayloads is { Count: > 0 };
+            if (!hasCustomPayloads && string.IsNullOrWhiteSpace(req.Category))
+                return Results.BadRequest(new { error = "category or customPayloads is required." });
+            // Cap server-side at 50 custom payloads — the workbench
+            // already caps at 5 by default but a misbehaving client
+            // shouldn't be able to fire a DOS-shaped volley either.
+            if (hasCustomPayloads && req.CustomPayloads!.Count > 50)
+                return Results.BadRequest(new { error = "customPayloads must be ≤ 50 entries." });
 
             // Lightweight HttpClient per call — AllowAutoRedirect off
             // for the same scope-safety reason ScanCommand uses; the
@@ -83,6 +89,7 @@ internal static class BowireSecurityEndpoints
                     Headers = req.Headers,
                     Field = req.Field,
                     Category = req.Category,
+                    CustomPayloads = req.CustomPayloads,
                     Force = req.Force,
                     Http = http,
                 }, ctx.RequestAborted).ConfigureAwait(false);
@@ -137,6 +144,16 @@ internal static class BowireSecurityEndpoints
         public Dictionary<string, string>? Headers { get; init; }
         public string Field { get; init; } = "";
         public string Category { get; init; } = "";
+
+        /// <summary>
+        /// Caller-supplied payloads (#62). When set + non-empty, takes
+        /// priority over <see cref="Category"/>; the value-shape skip
+        /// guard is bypassed since the user picked them deliberately.
+        /// Set by the AI fuzz-values frontend after the user picks
+        /// ≤ 5 from the model's suggested 20.
+        /// </summary>
+        public List<string>? CustomPayloads { get; init; }
+
         public bool Force { get; init; }
         public bool AllowSelfSignedCerts { get; init; }
         public int TimeoutSeconds { get; init; } = 30;
