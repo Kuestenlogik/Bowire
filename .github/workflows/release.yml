@@ -72,6 +72,32 @@ jobs:
         with:
           fetch-depth: 0
 
+      # Gate: refuse to ship a release that has no curated body in
+      # RELEASE_NOTES.md. The `Draft release notes` workflow drafts
+      # the block + opens a PR; pushing a tag without that block in
+      # `main` is a sign the PR wasn't merged yet. Failing here saves
+      # ~20 min of build time + prevents the "shipped with placeholder
+      # body, edit in post" pattern that bit v1.8.0. Skipped on
+      # workflow_dispatch dry-runs.
+      - name: Verify curated release notes
+        if: ${{ github.ref_type == 'tag' }}
+        run: |
+          TAG="${GITHUB_REF_NAME}"
+          # Accept either `## vX.Y.Z` (alone), `## vX.Y.Z — <date>`,
+          # or `## vX.Y.Z — <theme>` as the block heading. The 'Draft
+          # release notes' workflow emits the dated form by default.
+          if ! grep -qE "^## ${TAG}([[:space:]]|$|—|-)" RELEASE_NOTES.md; then
+            echo "::error::RELEASE_NOTES.md has no '## ${TAG}' block."
+            echo ""
+            echo "Run the 'Draft release notes' workflow first:"
+            echo "  gh workflow run draft-release-notes.yml -f version=${TAG#v}"
+            echo "  # or via GitHub UI: Actions → Draft release notes → Run"
+            echo ""
+            echo "Review + merge the PR it opens, then re-push this tag."
+            exit 1
+          fi
+          echo "✓ Found curated block for ${TAG}"
+
       - uses: actions/setup-dotnet@v5
         with:
           dotnet-version: '10.0.x'
