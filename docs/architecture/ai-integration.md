@@ -209,6 +209,26 @@ guard against sloppy model output. Same prompt-engineering discipline as triage:
 envelope, score below 5 when the endpoint looks read-only / well-scoped, never invent CVEs. Markdown-fenced
 output recovered by the parser; garbage falls back to an empty ranking.
 
+**Schema-aware fuzz values (#62).** New endpoint `POST /api/ai/fuzz-values` takes
+`{fieldName, fieldType, fieldSchema?, fieldExample?, methodName?, service?, protocol?, notes?}` and returns
+up to 20 boundary values per request as `{value, why, severity}` rows where `value` is a `JsonElement`
+(so `null` / `true` / `42` / `"<script>"` all round-trip with the right kind), `why` is a short reason,
+and `severity` is clamped to `info / low / medium` server-side so a "critical"-claiming model can never
+bypass the workbench's "user classifies findings, not the model" guarantee. The output cap of 20 is
+enforced server-side too so a hallucinating model can't blow the picker. The system prompt asks for
+boundary / format-coercion / encoding / injection-adjacent values and explicitly forbids real PII or
+secrets. Frontend: new "AI: suggest fuzz values" entry in the right-click semantics menu, sibling to
+the deterministic "Fuzz this field ▸" submenu. Click → picker panel with 20 rows (severity badge,
+value as a code chip, why caption), default-5 selected with a hard cap of 5 per batch (so a stray
+model can't DOS the target). Picked values flow back through `POST /api/security/fuzz` with the new
+`customPayloads` field that bypasses the category catalogue + the value-shape skip guard inside
+`FuzzExecutor.RunAsync`. Server side: `/api/security/fuzz` accepts `customPayloads` (≤ 50 entries,
+hard cap) instead of `category` when provided; `FuzzExecutor` runs the same probe machinery so each
+replayed value lands in the recording log as a normal probe row, and `EvaluateHeuristic` returns
+`null` for unknown categories so the AI-driven rows render as `Safe` instead of being mis-flagged.
+The replay-as-recording-fixture follow-up is enabled by this — every probe shows up in the existing
+recording infrastructure already.
+
 **Nuclei template suggestion (#60).** Two new endpoints. `POST /api/ai/template-suggest` takes
 `{path, class, verb?, protocol?, service?, inputShape?, authState?, notes?}` and returns
 `{yaml, suggestedFilename, modelId, raw}`. The class is one of `auth-bypass / idor / mass-assignment /

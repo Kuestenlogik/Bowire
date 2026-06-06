@@ -110,8 +110,24 @@ public static class FuzzExecutor
     {
         ArgumentNullException.ThrowIfNull(request);
 
-        if (!Payloads.TryGetValue(request.Category, out var payloads))
+        // CustomPayloads (set by the AI fuzz-values flow #62) wins
+        // over the category catalogue. When supplied, the user has
+        // hand-picked the values and the value-shape skip guard is
+        // bypassed (the user owns that decision).
+        IReadOnlyList<string> payloads;
+        var hasCustom = request.CustomPayloads is { Count: > 0 };
+        if (hasCustom)
+        {
+            payloads = request.CustomPayloads!;
+        }
+        else if (!Payloads.TryGetValue(request.Category, out var byCategory))
+        {
             return FuzzRunResult.Error($"Unknown payload category '{request.Category}'. Available: {string.Join(", ", Payloads.Keys)}.");
+        }
+        else
+        {
+            payloads = byCategory;
+        }
 
         if (string.IsNullOrEmpty(request.Body))
             return FuzzRunResult.Error("Request body is empty — fuzz needs a JSON body to mutate.");
@@ -130,7 +146,7 @@ public static class FuzzExecutor
         if (!TryNavigatePath(bodyRoot, request.Field, out var existingValue))
             return FuzzRunResult.Error($"Field path '{request.Field}' not found in request body.");
 
-        if (!request.Force && ShouldSkipForValueShape(existingValue.ValueKind, request.Category))
+        if (!hasCustom && !request.Force && ShouldSkipForValueShape(existingValue.ValueKind, request.Category))
             return FuzzRunResult.Error(
                 $"Field is {existingValue.ValueKind}; the {request.Category} category sends string payloads. Use Force / --force to override.");
 
@@ -340,6 +356,18 @@ public sealed class FuzzExecutorRequest
     public IDictionary<string, string>? Headers { get; init; }
     public string Field { get; init; } = "";
     public string Category { get; init; } = "";
+
+    /// <summary>
+    /// Caller-supplied payloads. When set + non-empty, takes priority
+    /// over <see cref="Category"/>'s built-in payload list — used by
+    /// the AI fuzz-values flow (#62) to replay model-suggested
+    /// boundary values through the same probe machinery. The
+    /// value-shape skip-guard (<c>ShouldSkipForValueShape</c>) is
+    /// bypassed when custom payloads are present because the user
+    /// already picked them with the field's shape in mind.
+    /// </summary>
+    public IReadOnlyList<string>? CustomPayloads { get; init; }
+
     public bool Force { get; init; }
     public HttpClient? Http { get; init; }
 }
