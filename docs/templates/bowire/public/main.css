@@ -1620,6 +1620,30 @@ nav#affix .nav-link:hover {
     font-size: 0.8125rem;
     color: var(--bs-tertiary-color);
 }
+/* Inline legal nav — sits on the same line as the © label and uses
+   a middle-dot · between items so the eye groups them as a single
+   compact "legal strip" rather than three disconnected anchors. */
+.bowire-docs-footer-legal {
+    display: inline;
+}
+.bowire-docs-footer-legal::before {
+    content: " · ";
+    margin: 0 4px;
+    color: var(--bs-tertiary-color);
+}
+.bowire-docs-footer-legal a {
+    /* Same colour weight as the © label so the line reads as a single
+       'legal strip' rather than highlighted links. Hover still hints
+       interactivity. */
+    color: inherit;
+    text-decoration: none;
+}
+.bowire-docs-footer-legal a + a::before {
+    content: " · ";
+    margin: 0 4px;
+    color: var(--bs-tertiary-color);
+}
+.bowire-docs-footer-legal a:hover { color: var(--bowire-accent); }
 
 @media (max-width: 768px) {
     .bowire-docs-footer-top {

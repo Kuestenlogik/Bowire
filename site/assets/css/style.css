@@ -3885,6 +3885,26 @@ button.comparison-bestfor-card.active .comparison-bestfor-name {
     border-top: 1px solid var(--border);
     text-align: center;
 }
+/* Legal links inline with the © label, separated by middle dots so
+   the line reads as a single legal strip rather than three discrete
+   anchors. Same colour weight as the © text (color: inherit) so the
+   visual rhythm stays uniform. */
+.footer-legal {
+    display: inline;
+}
+.footer-legal::before {
+    content: " · ";
+    margin: 0 4px;
+}
+.footer-legal a {
+    color: inherit;
+    text-decoration: none;
+}
+.footer-legal a + a::before {
+    content: " · ";
+    margin: 0 4px;
+}
+.footer-legal a:hover { color: var(--accent); }
 
 @media (max-width: 768px) {
     .footer-top {
