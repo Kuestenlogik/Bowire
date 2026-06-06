@@ -23,7 +23,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v1.9 — AI for security
 
-- [#60](https://github.com/Kuestenlogik/Bowire/issues/60) **AI Nuclei-template suggestion: generate scan templates per endpoint** 
 - [#62](https://github.com/Kuestenlogik/Bowire/issues/62) **AI schema-aware fuzz values: boundary inputs per field via Mock-Replay** 
 
 ### v1.10 — gRPC Connect
