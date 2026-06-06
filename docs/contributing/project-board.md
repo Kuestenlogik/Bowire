@@ -69,12 +69,13 @@ The board ships with the default *All items* view. The four views below mirror h
 
 Every milestone's **title** carries the release headline directly: `vX.Y[.Z] — <theme>`. The theme is the same one that lands on the GitHub Release once the milestone tags, and it shows in the Project board's Roadmap view as the group heading (since Projects v2 reads the milestone title verbatim).
 
-Format examples that worked well in past cycles:
-- `v1.7 — new protocols + mock-as-stand-in`
-- `v1.8 — AI side-panel + workbench mocks UI`
-- `v1.9 — AI for security + protocol-plugin next wave`
+Format examples that work well:
+- `v1.7 — new protocol plugins`
+- `v1.8 — AI workbench`
+- `v1.9 — AI for security`
+- `v1.10 — gRPC Connect`
 
-Two themes joined with `+` reads cleanly and matches the established release-title style. Keep the theme tail to roughly 2-5 words per side.
+**One concept per release.** Themes are 2-5 words, concrete enough that a reader knows what the cycle is about (`gRPC Connect` beats `protocol expansion`). Avoid `+`-joined dual themes — if a cycle is gathering two big buckets, split them into two milestones instead of bundling. Splitting forces a decision about which bucket is the actual focus; bundling defers it.
 
 **Why pre-commit a theme at planning time:** the headline defines what the cycle is *about* — what we'd be embarrassed to ship without. It anchors the milestone discussion ("does this issue serve the theme?"), avoids the retrospective scramble of summarising whatever happened to land, and gives the team a one-line elevator pitch through the cycle. Mid-cycle pivots are fine — rename the milestone (GitHub keeps the audit trail).
 
