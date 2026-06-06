@@ -21,10 +21,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ## Backlog
 
-### v1.9 — AI for security
-
-- [#62](https://github.com/Kuestenlogik/Bowire/issues/62) **AI schema-aware fuzz values: boundary inputs per field via Mock-Replay** 
-
 ### v1.10 — gRPC Connect
 
 - [#33](https://github.com/Kuestenlogik/Bowire/issues/33) **Protocol plugins — Connect Phase 1+3 + OTLP** `kind:feature` `area:plugin-sdk` `track:protocols` `P2`
