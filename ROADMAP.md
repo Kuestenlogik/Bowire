@@ -49,6 +49,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 - [#58](https://github.com/Kuestenlogik/Bowire/issues/58) **Workspace: complete the Git-native story (.blw file)** 
 - [Kuestenlogik/Bowire.Protocol.Surgewave#11](https://github.com/Kuestenlogik/Bowire.Protocol.Surgewave/issues/11) **Light up Surgewave protocol plugin** 
 - [#65](https://github.com/Kuestenlogik/Bowire/issues/65) **Workbench URL input is read-only when --lock-server-url is not set** 
+- [#66](https://github.com/Kuestenlogik/Bowire/issues/66) **Settings → Plugins tab flickers in a fetch/render infinite loop** 
 
 ---
 
