@@ -198,6 +198,17 @@ Defaults: provider `ollama`, endpoint `http://localhost:11434`, model `llama3.2:
 network calls stay opt-in: the probe only touches loopback, and the chat path goes wherever the user pointed
 `--ai-endpoint` — same opt-in discipline as the plugin update check and telemetry exporter.
 
+**Threat model (#59).** New endpoint `POST /api/ai/threat-model` takes the discovered service surface (a flat list of
+`{endpointId, path, verb, protocol, service, inputShape, authState}`) and returns a ranked top-N with `{risk: 0-10,
+why, suggestedTemplates[]}` per row. Driven from the AI side-panel: a "Run threat model" button collects the
+workbench's current `services` list and renders the ranked rows with a colour-coded risk score (green <5 / amber
+5-7 / red ≥8), a one-sentence rationale, suggested Nuclei template families as chips, and a "Copy bowire scan
+command" shortcut per row. Server-side input cap is 200 endpoints (truncated + flagged in the response) so a
+5 k-service host doesn't blow the local model's context. Rows without `endpointId` are dropped server-side to
+guard against sloppy model output. Same prompt-engineering discipline as triage: respond only with the JSON
+envelope, score below 5 when the endpoint looks read-only / well-scoped, never invent CVEs. Markdown-fenced
+output recovered by the parser; garbage falls back to an empty ranking.
+
 **Findings triage (#61).** New endpoint `POST /api/ai/triage` takes a finding + matched evidence + protocol /
 endpoint context and returns a JSON verdict `{realScore: 0-100, reasoning, fix}`. The fuzz panel
 (`semantics-menu.js`) renders a `?` button next to every `Vulnerable` row; click expands the row into an

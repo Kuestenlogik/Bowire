@@ -236,6 +236,98 @@ public static class BowireAiEndpoints
             }
         }).ExcludeFromDescription();
 
+        // #59 — threat-model. Takes the discovered service surface and
+        // returns a ranked list of "where to scan first" entries. The
+        // model rates each endpoint 0-10 on likely attack-surface risk
+        // and suggests Nuclei template families for the top entries.
+        // Driven from the AI side-panel: one-click "rank these N
+        // endpoints" → ranked list with per-row "scan with Nuclei"
+        // shortcut into the existing bowire-scan flow.
+        endpoints.MapPost($"{basePath}/api/ai/threat-model",
+            async (HttpContext ctx, [Microsoft.AspNetCore.Mvc.FromServices] IChatClient? client) =>
+        {
+            if (client is null)
+            {
+                return Results.Json(
+                    new { error = "No IChatClient registered. Connect a model via Settings → AI first." },
+                    JsonOpts, statusCode: 503);
+            }
+
+            ThreatModelRequest? req;
+            try
+            {
+                req = await JsonSerializer.DeserializeAsync<ThreatModelRequest>(
+                    ctx.Request.Body, JsonOpts, ctx.RequestAborted);
+            }
+            catch (JsonException ex)
+            {
+                return Results.Json(new { error = "Invalid JSON: " + ex.Message },
+                    JsonOpts, statusCode: 400);
+            }
+
+            if (req is null || req.Endpoints is null || req.Endpoints.Length == 0)
+            {
+                return Results.Json(new { error = "endpoints[] required" },
+                    JsonOpts, statusCode: 400);
+            }
+
+            // Cap at 200 endpoints so a 5 k-service host doesn't blow
+            // the model's context. The "ranked top N" framing means the
+            // model would discard the long tail anyway.
+            var endpointSlice = req.Endpoints.Length > 200
+                ? req.Endpoints[..200]
+                : req.Endpoints;
+            var topN = req.TopN is int n && n is > 0 and <= 50 ? n : 10;
+
+            var system = """
+                You are a senior application-security engineer doing a threat-model pass.
+                Given a list of API endpoints, rank the TOP candidates by attack-surface risk.
+                Consider: IDOR / mass-assignment for resource-id paths, SSRF for url-receiving params, auth-bypass for protected resources, injection (SQL / command / template) for string-in / string-out shapes, parameter tampering for state-changing verbs, sensitive data exposure for response shapes.
+                Respond ONLY with a single JSON object of the shape:
+                {
+                  "ranked": [
+                    {
+                      "endpointId": "<id from input>",
+                      "risk": <integer 0-10>,
+                      "why": "<one sentence>",
+                      "suggestedTemplates": ["<nuclei-template-family>", ...]
+                    },
+                    ...
+                  ]
+                }
+                Be conservative — score below 5 when the endpoint is read-only / well-scoped / lacks identifiable risk. Suggested templates use family names like "auth-bypass", "idor", "mass-assignment", "injection-sqli", "injection-cmdi", "ssrf", "path-traversal", "open-redirect".
+                """;
+            var user = BuildThreatModelPrompt(endpointSlice, topN);
+
+            try
+            {
+                var response = await client.GetResponseAsync(
+                    [
+                        new ChatMessage(ChatRole.System, system),
+                        new ChatMessage(ChatRole.User, user),
+                    ],
+                    cancellationToken: ctx.RequestAborted);
+                var ranking = TryParseThreatModel(response.Text, topN);
+                return Results.Json(new
+                {
+                    ranking.Ranked,
+                    raw = response.Text,
+                    modelId = response.ModelId,
+                    inputCount = endpointSlice.Length,
+                    truncated = req.Endpoints.Length > endpointSlice.Length,
+                }, JsonOpts);
+            }
+            catch (OperationCanceledException)
+            {
+                return Results.Json(new { error = "canceled" }, JsonOpts, statusCode: 499);
+            }
+            catch (Exception ex)
+            {
+                return Results.Json(new { error = ex.Message, type = ex.GetType().Name },
+                    JsonOpts, statusCode: 502);
+            }
+        }).ExcludeFromDescription();
+
         endpoints.MapPost($"{basePath}/api/ai/chat",
             async (HttpContext ctx, [Microsoft.AspNetCore.Mvc.FromServices] IChatClient? client) =>
         {
@@ -393,6 +485,118 @@ public static class BowireAiEndpoints
         string? Notes);          // freeform context the UI wants to pass through
 
     private sealed record TriageVerdict(int RealScore, string Reasoning, string Fix);
+
+    /// <summary>
+    /// Request shape for <c>POST /api/ai/threat-model</c>. <see cref="Endpoints"/>
+    /// is the discovered service surface flattened into a per-endpoint
+    /// list; <see cref="TopN"/> caps the ranked output (default 10).
+    /// </summary>
+    private sealed record ThreatModelRequest(
+        ThreatModelEndpoint[] Endpoints,
+        int? TopN);
+
+    private sealed record ThreatModelEndpoint(
+        string EndpointId,    // stable id the frontend uses to look the row back up
+        string Path,          // URL path / gRPC method / topic / &c.
+        string? Verb,         // HTTP verb, "publish", "subscribe", "rpc", null
+        string? Protocol,     // "rest", "grpc", "graphql", "mqtt", &c.
+        string? Service,      // for protocols with service grouping (gRPC, GraphQL)
+        string? InputShape,   // optional JSON or proto shape summary
+        string? AuthState);   // optional: "anonymous" / "authenticated" / "unknown"
+
+    private sealed record ThreatModelRanking(ThreatModelRow[] Ranked);
+
+    private sealed record ThreatModelRow(
+        string EndpointId,
+        int Risk,
+        string Why,
+        string[] SuggestedTemplates);
+
+    private static string BuildThreatModelPrompt(ThreatModelEndpoint[] endpoints, int topN)
+    {
+        var sb = new System.Text.StringBuilder();
+        sb.Append("Endpoints (").Append(endpoints.Length).AppendLine("):");
+        foreach (var e in endpoints)
+        {
+            sb.Append("- id=").Append(e.EndpointId);
+            sb.Append(" path=").Append(e.Path);
+            if (!string.IsNullOrEmpty(e.Verb)) sb.Append(" verb=").Append(e.Verb);
+            if (!string.IsNullOrEmpty(e.Protocol)) sb.Append(" protocol=").Append(e.Protocol);
+            if (!string.IsNullOrEmpty(e.Service)) sb.Append(" service=").Append(e.Service);
+            if (!string.IsNullOrEmpty(e.AuthState)) sb.Append(" auth=").Append(e.AuthState);
+            if (!string.IsNullOrEmpty(e.InputShape))
+            {
+                var shape = e.InputShape!.Length > 200 ? e.InputShape[..200] + "…" : e.InputShape;
+                sb.Append(" input=").Append(shape);
+            }
+            sb.AppendLine();
+        }
+        sb.AppendLine();
+        sb.Append("Return the top ").Append(topN).AppendLine(" by risk. JSON only.");
+        return sb.ToString();
+    }
+
+    /// <summary>
+    /// Best-effort parse of the model's ranked-list response. Same
+    /// resilience strategy as <see cref="TryParseVerdict"/> — extract
+    /// the outermost <c>{...}</c> block so a markdown-fenced response
+    /// still works; return an empty ranking on garbage so the UI
+    /// renders a "no ranking" affordance instead of crashing. Per-row
+    /// invariants enforced: <c>risk</c> clamped to [0, 10],
+    /// <c>endpointId</c> stays the model's verbatim string so the
+    /// frontend can correlate without trust.
+    /// </summary>
+    private static ThreatModelRanking TryParseThreatModel(string? rawText, int topN)
+    {
+        if (string.IsNullOrWhiteSpace(rawText))
+            return new ThreatModelRanking([]);
+
+        var text = rawText.Trim();
+        var firstBrace = text.IndexOf('{', StringComparison.Ordinal);
+        var lastBrace = text.LastIndexOf('}');
+        if (firstBrace < 0 || lastBrace <= firstBrace)
+            return new ThreatModelRanking([]);
+
+        var slice = text[firstBrace..(lastBrace + 1)];
+        try
+        {
+            using var doc = JsonDocument.Parse(slice);
+            if (!doc.RootElement.TryGetProperty("ranked", out var rankedEl)
+                || rankedEl.ValueKind != JsonValueKind.Array)
+                return new ThreatModelRanking([]);
+
+            var rows = new List<ThreatModelRow>(Math.Min(rankedEl.GetArrayLength(), topN));
+            foreach (var rowEl in rankedEl.EnumerateArray())
+            {
+                if (rowEl.ValueKind != JsonValueKind.Object) continue;
+                var id = rowEl.TryGetProperty("endpointId", out var idEl) ? idEl.GetString() : null;
+                if (string.IsNullOrEmpty(id)) continue;
+                var risk = rowEl.TryGetProperty("risk", out var riskEl) && riskEl.ValueKind == JsonValueKind.Number
+                    ? Math.Clamp(riskEl.GetInt32(), 0, 10)
+                    : 0;
+                var why = rowEl.TryGetProperty("why", out var whyEl) ? whyEl.GetString() ?? "" : "";
+                var templates = Array.Empty<string>();
+                if (rowEl.TryGetProperty("suggestedTemplates", out var tplEl)
+                    && tplEl.ValueKind == JsonValueKind.Array)
+                {
+                    var list = new List<string>(tplEl.GetArrayLength());
+                    foreach (var t in tplEl.EnumerateArray())
+                    {
+                        if (t.ValueKind == JsonValueKind.String && t.GetString() is { Length: > 0 } s)
+                            list.Add(s);
+                    }
+                    templates = list.ToArray();
+                }
+                rows.Add(new ThreatModelRow(id, risk, why, templates));
+                if (rows.Count >= topN) break;
+            }
+            return new ThreatModelRanking([.. rows]);
+        }
+        catch (JsonException)
+        {
+            return new ThreatModelRanking([]);
+        }
+    }
 
     private static string BuildTriagePrompt(TriageRequest req)
     {

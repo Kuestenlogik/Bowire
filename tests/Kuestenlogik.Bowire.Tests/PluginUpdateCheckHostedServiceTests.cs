@@ -16,6 +16,7 @@ namespace Kuestenlogik.Bowire.Tests;
 /// path through both the work and the interval delay, and the
 /// IntervalHours clamp.
 /// </summary>
+[Collection("BowireUserContext")]
 public sealed class PluginUpdateCheckHostedServiceTests : IDisposable
 {
     private readonly string _originalPluginDir;

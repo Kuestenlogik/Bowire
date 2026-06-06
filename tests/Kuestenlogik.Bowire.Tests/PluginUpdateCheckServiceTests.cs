@@ -15,6 +15,7 @@ namespace Kuestenlogik.Bowire.Tests;
 /// and <see cref="BowireUserContext.Current"/> to temp paths so the
 /// scan + cache write don't touch the developer's real <c>~/.bowire/</c>.
 /// </summary>
+[Collection("BowireUserContext")]
 public sealed class PluginUpdateCheckServiceTests : IDisposable
 {
     private readonly string _originalPluginDir;

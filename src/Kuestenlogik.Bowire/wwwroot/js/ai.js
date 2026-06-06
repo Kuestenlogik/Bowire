@@ -195,6 +195,97 @@
     var chatHistory = [];       // [{ role: 'user'|'assistant', content: '...' }]
     var chatBusy = false;
 
+    // #59 Threat-model state. Populated by runThreatModel(); rendered
+    // by rerenderThreatModel(). Endpoint index lets per-row buttons
+    // look up the original endpoint payload by its id so we don't
+    // have to round-trip through the model's verbatim string.
+    var threatState = {
+        running: false,
+        lastRun: 0,
+        lastInputCount: 0,
+        truncated: false,
+        modelId: null,
+        ranked: null,        // [{ endpointId, risk, why, suggestedTemplates }]
+        endpointIndex: {},   // { endpointId: { path, verb, protocol, serverUrl, ... } }
+        error: null
+    };
+
+    function collectThreatEndpoints() {
+        // Walks the workbench's discovered service surface and emits a
+        // flat list of endpoints with enough context for the model to
+        // rank by risk. Source of truth is `services` (set by api.js
+        // after /api/services), each service carries `methods`.
+        var endpoints = [];
+        var index = {};
+        var src = (typeof services !== 'undefined') ? services : [];
+        for (var i = 0; i < src.length; i++) {
+            var svc = src[i];
+            if (!svc || !Array.isArray(svc.methods)) continue;
+            for (var j = 0; j < svc.methods.length; j++) {
+                var m = svc.methods[j];
+                if (!m) continue;
+                var id = 's' + i + 'm' + j;
+                var path = m.httpPath || m.name || (svc.name + '/' + (m.name || j));
+                var verb = m.httpVerb || (m.methodType || null);
+                var protocol = svc.source || svc.protocol || null;
+                var endpoint = {
+                    endpointId: id,
+                    path: path,
+                    verb: verb,
+                    protocol: protocol,
+                    service: svc.name || null,
+                    serverUrl: m.serverUrl || svc.originUrl || null,
+                    inputShape: m.inputType && m.inputType.name ? m.inputType.name : null,
+                    authState: null
+                };
+                endpoints.push(endpoint);
+                index[id] = endpoint;
+            }
+        }
+        return { endpoints: endpoints, index: index };
+    }
+
+    function runThreatModel() {
+        if (threatState.running) return Promise.resolve(threatState);
+        var collected = collectThreatEndpoints();
+        if (collected.endpoints.length === 0) {
+            threatState.error = 'No discovered endpoints to rank yet. Connect to a server first.';
+            return Promise.resolve(threatState);
+        }
+        threatState.running = true;
+        threatState.error = null;
+        threatState.endpointIndex = collected.index;
+        return fetch(aiPrefix() + '/api/ai/threat-model', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                endpoints: collected.endpoints,
+                topN: 10
+            })
+        })
+            .then(function (resp) { return resp.json().then(function (b) { return { ok: resp.ok, status: resp.status, body: b }; }); })
+            .then(function (resp) {
+                threatState.running = false;
+                if (!resp.ok) {
+                    threatState.error = (resp.body && resp.body.error) || ('Request failed (HTTP ' + resp.status + ').');
+                    threatState.ranked = null;
+                    return threatState;
+                }
+                threatState.lastRun = Date.now();
+                threatState.lastInputCount = resp.body.inputCount || collected.endpoints.length;
+                threatState.truncated = !!resp.body.truncated;
+                threatState.modelId = resp.body.modelId || null;
+                threatState.ranked = Array.isArray(resp.body.ranked) ? resp.body.ranked : [];
+                return threatState;
+            })
+            .catch(function (err) {
+                threatState.running = false;
+                threatState.error = 'Network error: ' + (err && err.message ? err.message : err);
+                threatState.ranked = null;
+                return threatState;
+            });
+    }
+
     function aiPrefix() {
         // Match mocks.js / api.js: every endpoint lives under the same
         // base path as the workbench HTML mount.
@@ -276,6 +367,119 @@
             });
             panel.appendChild(list);
         }
+
+        // #59 Threat-model surface. Sits between the hint list and the
+        // chat composer so the "rank my whole service surface" button
+        // is the first AI action a user sees after the hints. Only
+        // renders when hasClient=true.
+        var threatHost = el('div', { className: 'bowire-ai-threat-host' });
+        panel.appendChild(threatHost);
+
+        function rerenderThreatModel() {
+            threatHost.replaceChildren();
+            if (!aiStatus || !aiStatus.hasClient) return;
+
+            var section = el('div', { className: 'bowire-ai-threat-section' });
+            section.appendChild(el('h4', { className: 'bowire-ai-threat-title', textContent: 'Threat model' }));
+            section.appendChild(el('p', {
+                className: 'bowire-ai-threat-help',
+                textContent: 'Rank discovered endpoints by attack-surface risk. The model proposes — you confirm before scanning.'
+            }));
+
+            var runRow = el('div', { className: 'bowire-ai-threat-runrow' });
+            var runBtn = el('button', {
+                type: 'button',
+                className: 'bowire-ai-threat-run',
+                textContent: threatState.running ? 'Ranking…' : 'Run threat model',
+                onClick: function () { runThreatModel().then(rerenderThreatModel); }
+            });
+            if (threatState.running) runBtn.setAttribute('disabled', 'disabled');
+            runRow.appendChild(runBtn);
+            var statusLine = el('span', { className: 'bowire-ai-threat-meta' });
+            if (threatState.error) {
+                statusLine.textContent = '⚠ ' + threatState.error;
+                statusLine.classList.add('err');
+            } else if (threatState.lastRun) {
+                statusLine.textContent = threatState.lastInputCount + ' endpoint(s) considered'
+                    + (threatState.truncated ? ' (truncated to first 200)' : '')
+                    + (threatState.modelId ? ' · ' + threatState.modelId : '');
+            }
+            runRow.appendChild(statusLine);
+            section.appendChild(runRow);
+
+            if (threatState.ranked && threatState.ranked.length > 0) {
+                var list = el('ol', { className: 'bowire-ai-threat-list' });
+                threatState.ranked.forEach(function (row) {
+                    var endpoint = threatState.endpointIndex[row.endpointId];
+                    var li = el('li', { className: 'bowire-ai-threat-row' });
+                    var header = el('div', { className: 'bowire-ai-threat-row-head' });
+                    var scoreClass = row.risk >= 8 ? 'high' : row.risk >= 5 ? 'medium' : 'low';
+                    header.appendChild(el('span', {
+                        className: 'bowire-ai-threat-score score-' + scoreClass,
+                        textContent: row.risk + '/10'
+                    }));
+                    header.appendChild(el('code', {
+                        className: 'bowire-ai-threat-endpoint',
+                        textContent: endpoint
+                            ? ((endpoint.verb ? endpoint.verb + ' ' : '') + (endpoint.path || row.endpointId))
+                            : row.endpointId
+                    }));
+                    li.appendChild(header);
+                    if (row.why) {
+                        li.appendChild(el('div', { className: 'bowire-ai-threat-why', textContent: row.why }));
+                    }
+                    if (row.suggestedTemplates && row.suggestedTemplates.length > 0) {
+                        var tplWrap = el('div', { className: 'bowire-ai-threat-templates' });
+                        tplWrap.appendChild(el('span', {
+                            className: 'bowire-ai-threat-templates-label',
+                            textContent: 'Suggested:'
+                        }));
+                        row.suggestedTemplates.forEach(function (t) {
+                            tplWrap.appendChild(el('span', {
+                                className: 'bowire-ai-threat-template-chip',
+                                textContent: t
+                            }));
+                        });
+                        li.appendChild(tplWrap);
+                    }
+                    // Scan-shortcut: routes to the existing CLI flow.
+                    // Workbench-side scan integration is a follow-up (#60
+                    // covers the in-workbench Nuclei template authoring);
+                    // for now we copy a ready-to-paste CLI command so the
+                    // ranked row is actionable today.
+                    if (endpoint && endpoint.path) {
+                        var scanRow = el('div', { className: 'bowire-ai-threat-scan' });
+                        var scanBtn = el('button', {
+                            type: 'button',
+                            className: 'bowire-ai-threat-scan-btn',
+                            textContent: 'Copy bowire scan command',
+                            onClick: (function (ep, templates) {
+                                return function () {
+                                    var cmd = 'bowire scan --url ' + (ep.serverUrl || '<server>')
+                                        + ' --path ' + ep.path
+                                        + (templates.length > 0 ? ' --templates ' + templates.join(',') : '');
+                                    if (navigator.clipboard) {
+                                        navigator.clipboard.writeText(cmd).then(function () {
+                                            scanBtn.textContent = 'Copied';
+                                            setTimeout(function () {
+                                                scanBtn.textContent = 'Copy bowire scan command';
+                                            }, 1500);
+                                        });
+                                    }
+                                };
+                            })(endpoint, row.suggestedTemplates || [])
+                        });
+                        scanRow.appendChild(scanBtn);
+                        li.appendChild(scanRow);
+                    }
+                    list.appendChild(li);
+                });
+                section.appendChild(list);
+            }
+
+            threatHost.appendChild(section);
+        }
+        rerenderThreatModel();
 
         // Phase 2 chat surface. Renders only when /api/ai/status reports
         // hasClient=true; otherwise the footer becomes a probe-driven
