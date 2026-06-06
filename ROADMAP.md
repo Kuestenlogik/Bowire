@@ -8,7 +8,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ## In progress
 
-### v2.0
+### v2.0 — AI for security + protocol-plugin next wave
 
 - [#25](https://github.com/Kuestenlogik/Bowire/issues/25) **AI side-panel integration** `kind:feature` `area:workbench` `P1`
 
@@ -18,13 +18,13 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ## Next up
 
-### v2.0
+### v2.0 — AI for security + protocol-plugin next wave
 
 - [#28](https://github.com/Kuestenlogik/Bowire/issues/28) **Multi-tenant data model + SCIM (Phase B)** `kind:feature` `area:workbench` `track:auth` `P2`
 
 ## Backlog
 
-### v2.0
+### v2.0 — AI for security + protocol-plugin next wave
 
 - [#33](https://github.com/Kuestenlogik/Bowire/issues/33) **Protocol plugins — Connect Phase 1+3 + OTLP** `kind:feature` `area:plugin-sdk` `track:protocols` `P2`
 - [#34](https://github.com/Kuestenlogik/Bowire/issues/34) **AsyncAPI discovery source — remaining bindings + V2 overloads + YAML pre-normaliser** `kind:feature` `area:plugin-sdk` `track:protocols` `P2`
