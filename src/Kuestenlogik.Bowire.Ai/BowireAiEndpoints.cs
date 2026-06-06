@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 using System.Text.Json;
+using Kuestenlogik.Bowire.Auth;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
@@ -328,6 +329,157 @@ public static class BowireAiEndpoints
             }
         }).ExcludeFromDescription();
 
+        // #60 — Nuclei template suggestion. Takes an endpoint's shape
+        // + a target vulnerability class and asks the model to emit a
+        // Nuclei v3 YAML template. Drives the "generate me a scan
+        // probe for this endpoint" flow from the threat-model ranked
+        // list (per-row) plus a standalone per-method path later.
+        endpoints.MapPost($"{basePath}/api/ai/template-suggest",
+            async (HttpContext ctx, [Microsoft.AspNetCore.Mvc.FromServices] IChatClient? client) =>
+        {
+            if (client is null)
+            {
+                return Results.Json(
+                    new { error = "No IChatClient registered. Connect a model via Settings → AI first." },
+                    JsonOpts, statusCode: 503);
+            }
+
+            TemplateSuggestRequest? req;
+            try
+            {
+                req = await JsonSerializer.DeserializeAsync<TemplateSuggestRequest>(
+                    ctx.Request.Body, JsonOpts, ctx.RequestAborted);
+            }
+            catch (JsonException ex)
+            {
+                return Results.Json(new { error = "Invalid JSON: " + ex.Message },
+                    JsonOpts, statusCode: 400);
+            }
+
+            if (req is null || string.IsNullOrWhiteSpace(req.Path) || string.IsNullOrWhiteSpace(req.Class))
+            {
+                return Results.Json(new { error = "path + class required" }, JsonOpts, statusCode: 400);
+            }
+            if (!IsKnownTemplateClass(req.Class))
+            {
+                return Results.Json(new { error = "unknown class — supported: " + string.Join(", ", KnownTemplateClasses) },
+                    JsonOpts, statusCode: 400);
+            }
+
+            var system = """
+                You are a security engineer writing a Nuclei v3 YAML template that probes a single endpoint for a specific vulnerability class.
+                Output ONLY the YAML — no fences, no preamble, no commentary.
+                Required structure:
+                  id: <kebab-case-id>
+                  info:
+                    name: <short title>
+                    author: bowire-ai
+                    severity: <info|low|medium|high|critical>
+                    description: <one sentence>
+                    tags: [<class>, ai-suggested, bowire]
+                  http:
+                    - method: <verb>
+                      path:
+                        - "{{BaseURL}}<path>"
+                      headers: { ... }     # only when meaningful
+                      body: '...'          # only for POST/PUT/PATCH
+                      matchers-condition: and
+                      matchers:
+                        - type: status
+                          status: [<expected-status-int>]
+                        - type: word
+                          part: body
+                          words: [<distinctive-substring>]
+                Constraints: keep paths exactly as given (do not invent new endpoints), use {{BaseURL}} as the host placeholder, use {{rand_text_alphanumeric(8)}} when you need a random token, never inject real secrets. Match conservatively — false positives are worse than false negatives here.
+                """;
+            var user = BuildTemplateSuggestPrompt(req);
+
+            try
+            {
+                var response = await client.GetResponseAsync(
+                    [
+                        new ChatMessage(ChatRole.System, system),
+                        new ChatMessage(ChatRole.User, user),
+                    ],
+                    cancellationToken: ctx.RequestAborted);
+                var yaml = ExtractYaml(response.Text);
+                return Results.Json(new
+                {
+                    yaml,
+                    raw = response.Text,
+                    modelId = response.ModelId,
+                    suggestedFilename = BuildFilename(req),
+                }, JsonOpts);
+            }
+            catch (OperationCanceledException)
+            {
+                return Results.Json(new { error = "canceled" }, JsonOpts, statusCode: 499);
+            }
+            catch (Exception ex)
+            {
+                return Results.Json(new { error = ex.Message, type = ex.GetType().Name },
+                    JsonOpts, statusCode: 502);
+            }
+        }).ExcludeFromDescription();
+
+        // #60 — save a generated template to the user-scoped template
+        // store. Path resolves through IBowireUserStore so single-user
+        // installs land at ~/.bowire/templates/, multi-tenant slot
+        // per-identity. The scanner reads --nuclei <dir>; documenting
+        // that ~/.bowire/templates is the default Bowire-AI templates
+        // home means `bowire scan --nuclei ~/.bowire/templates ...`
+        // just works.
+        endpoints.MapPost($"{basePath}/api/ai/template-save",
+            async (HttpContext ctx) =>
+        {
+            TemplateSaveRequest? req;
+            try
+            {
+                req = await JsonSerializer.DeserializeAsync<TemplateSaveRequest>(
+                    ctx.Request.Body, JsonOpts, ctx.RequestAborted);
+            }
+            catch (JsonException ex)
+            {
+                return Results.Json(new { error = "Invalid JSON: " + ex.Message },
+                    JsonOpts, statusCode: 400);
+            }
+
+            if (req is null || string.IsNullOrWhiteSpace(req.Filename) || string.IsNullOrWhiteSpace(req.Yaml))
+            {
+                return Results.Json(new { error = "filename + yaml required" },
+                    JsonOpts, statusCode: 400);
+            }
+
+            // Guard against path traversal and non-YAML extensions. The
+            // filename must be a single segment ending in .yaml/.yml so
+            // a malicious payload can't write to /etc/passwd or similar.
+            var safe = Path.GetFileName(req.Filename.Trim());
+            if (string.IsNullOrEmpty(safe)
+                || safe != req.Filename.Trim()
+                || (!safe.EndsWith(".yaml", StringComparison.OrdinalIgnoreCase)
+                    && !safe.EndsWith(".yml", StringComparison.OrdinalIgnoreCase)))
+            {
+                return Results.Json(
+                    new { error = "filename must be a single segment ending in .yaml or .yml" },
+                    JsonOpts, statusCode: 400);
+            }
+
+            try
+            {
+                var dir = BowireUserContext.GetUserPath("templates");
+                Directory.CreateDirectory(dir);
+                var path = Path.Combine(dir, safe);
+                await File.WriteAllTextAsync(path, req.Yaml, ctx.RequestAborted);
+                return Results.Json(new { saved = true, path }, JsonOpts);
+            }
+            catch (Exception ex)
+            {
+                return Results.Json(
+                    new { error = "Failed to save template: " + ex.Message },
+                    JsonOpts, statusCode: 500);
+            }
+        }).ExcludeFromDescription();
+
         endpoints.MapPost($"{basePath}/api/ai/chat",
             async (HttpContext ctx, [Microsoft.AspNetCore.Mvc.FromServices] IChatClient? client) =>
         {
@@ -596,6 +748,127 @@ public static class BowireAiEndpoints
         {
             return new ThreatModelRanking([]);
         }
+    }
+
+    // #60 — Nuclei template suggestion records + helpers ------------
+
+    /// <summary>
+    /// Request shape for <c>POST /api/ai/template-suggest</c>. Path /
+    /// class are required; the rest narrows the prompt so the model
+    /// can specialise the template (e.g. emit a body block for POST).
+    /// </summary>
+    private sealed record TemplateSuggestRequest(
+        string Path,          // URL path / gRPC method-fqn
+        string Class,         // vulnerability class — see KnownTemplateClasses
+        string? Verb,
+        string? Protocol,
+        string? Service,
+        string? InputShape,
+        string? AuthState,
+        string? Notes);       // optional human hint to nudge the model
+
+    private sealed record TemplateSaveRequest(string Filename, string Yaml);
+
+    /// <summary>
+    /// Vulnerability classes the model is asked to specialise on. Acts
+    /// as both the input enum and the documentation of what the
+    /// frontend dropdown should offer.
+    /// </summary>
+    private static readonly string[] KnownTemplateClasses =
+    [
+        "auth-bypass",
+        "idor",
+        "mass-assignment",
+        "parameter-tampering",
+        "injection-sqli",
+        "injection-cmdi",
+        "injection-template",
+        "ssrf",
+        "path-traversal",
+        "open-redirect",
+    ];
+
+    private static bool IsKnownTemplateClass(string cls) =>
+        Array.Exists(KnownTemplateClasses, c =>
+            string.Equals(c, cls.Trim(), StringComparison.OrdinalIgnoreCase));
+
+    private static string BuildTemplateSuggestPrompt(TemplateSuggestRequest req)
+    {
+        var sb = new System.Text.StringBuilder();
+        sb.Append("Vulnerability class: ").AppendLine(req.Class);
+        sb.Append("Path: ").AppendLine(req.Path);
+        if (!string.IsNullOrWhiteSpace(req.Verb)) sb.Append("Verb: ").AppendLine(req.Verb);
+        if (!string.IsNullOrWhiteSpace(req.Protocol)) sb.Append("Protocol: ").AppendLine(req.Protocol);
+        if (!string.IsNullOrWhiteSpace(req.Service)) sb.Append("Service: ").AppendLine(req.Service);
+        if (!string.IsNullOrWhiteSpace(req.AuthState)) sb.Append("Auth state: ").AppendLine(req.AuthState);
+        if (!string.IsNullOrWhiteSpace(req.InputShape))
+        {
+            var shape = req.InputShape!.Length > 1500 ? req.InputShape[..1500] + "…" : req.InputShape;
+            sb.AppendLine("Input shape:");
+            sb.AppendLine(shape);
+        }
+        if (!string.IsNullOrWhiteSpace(req.Notes))
+        {
+            sb.Append("Notes: ").AppendLine(req.Notes);
+        }
+        sb.AppendLine();
+        sb.AppendLine("Output the YAML template only.");
+        return sb.ToString();
+    }
+
+    /// <summary>
+    /// Pull the YAML out of the model's response. Local models often
+    /// wrap output in ```yaml fences or add a leading "Sure, here:"
+    /// line; we strip both. Returns the original text unchanged when
+    /// no fences are present so a well-behaved model isn't penalised.
+    /// </summary>
+    private static string ExtractYaml(string? rawText)
+    {
+        if (string.IsNullOrWhiteSpace(rawText)) return string.Empty;
+        var text = rawText.Trim();
+        // Try ```yaml / ``` blocks first.
+        var fenceStart = text.IndexOf("```", StringComparison.Ordinal);
+        if (fenceStart >= 0)
+        {
+            var afterOpen = text.IndexOf('\n', fenceStart);
+            if (afterOpen > 0)
+            {
+                var fenceEnd = text.IndexOf("```", afterOpen + 1, StringComparison.Ordinal);
+                if (fenceEnd > afterOpen)
+                {
+                    return text[(afterOpen + 1)..fenceEnd].Trim();
+                }
+            }
+        }
+        return text;
+    }
+
+    /// <summary>
+    /// Compose a filename from the path + class so two suggestions for
+    /// the same endpoint-class pair land at the same file (overwrite
+    /// rather than accumulate). Strips path-traversal characters so the
+    /// suggestedFilename can't escape the templates directory even if
+    /// the save endpoint's own guard is somehow bypassed.
+    /// </summary>
+    private static string BuildFilename(TemplateSuggestRequest req)
+    {
+        var pathSlug = new string([.. req.Path
+            .Select(c => char.IsLetterOrDigit(c) ? char.ToLowerInvariant(c) : '-')]);
+        pathSlug = pathSlug.Trim('-');
+        while (pathSlug.Contains("--", StringComparison.Ordinal))
+        {
+            pathSlug = pathSlug.Replace("--", "-", StringComparison.Ordinal);
+        }
+        if (string.IsNullOrEmpty(pathSlug)) pathSlug = "endpoint";
+        // Cap so a deep path doesn't blow Windows' MAX_PATH.
+        if (pathSlug.Length > 60) pathSlug = pathSlug[..60];
+        // CA1308: file paths use lowercase by Bowire convention; the
+        // ToUpperInvariant alternative isn't relevant for filename
+        // slugs that go straight to disk.
+#pragma warning disable CA1308
+        var classSlug = req.Class.Trim().ToLowerInvariant();
+#pragma warning restore CA1308
+        return $"bowire-ai-{pathSlug}-{classSlug}.yaml";
     }
 
     private static string BuildTriagePrompt(TriageRequest req)

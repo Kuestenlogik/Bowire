@@ -22,6 +22,7 @@ namespace Kuestenlogik.Bowire.IntegrationTests;
 /// no-client-503 path + cap-on-evidence prompt without standing up a
 /// real model.
 /// </summary>
+[Collection("BowireUserContext")]
 public sealed class BowireAiTriageEndpointTests : IDisposable
 {
     private readonly IBowireUserStore _originalStore;

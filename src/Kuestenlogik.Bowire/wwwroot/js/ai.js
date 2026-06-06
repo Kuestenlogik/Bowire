@@ -245,6 +245,142 @@
         return { endpoints: endpoints, index: index };
     }
 
+    // #60 — Nuclei template suggestion plumbing. Same class enum as
+    // the server endpoint's KnownTemplateClasses; mirror by hand so
+    // the frontend doesn't need a separate /api/ai/template-classes
+    // round-trip.
+    var BOWIRE_AI_TEMPLATE_CLASSES = [
+        'auth-bypass', 'idor', 'mass-assignment', 'parameter-tampering',
+        'injection-sqli', 'injection-cmdi', 'injection-template',
+        'ssrf', 'path-traversal', 'open-redirect'
+    ];
+
+    function bowireBuildTemplateGenerator(endpoint, defaultClass) {
+        var wrap = el('div', { className: 'bowire-ai-template-trigger' });
+        var classSelect = el('select', { className: 'bowire-ai-template-class' });
+        BOWIRE_AI_TEMPLATE_CLASSES.forEach(function (c) {
+            var opt = el('option', { value: c, textContent: c });
+            if (c === defaultClass) opt.selected = true;
+            classSelect.appendChild(opt);
+        });
+        var genBtn = el('button', {
+            type: 'button',
+            className: 'bowire-ai-template-gen-btn',
+            textContent: 'Generate template',
+            onClick: function () {
+                var cls = classSelect.value;
+                var outputId = 'bowire-ai-template-out-' + endpoint.endpointId;
+                var output = document.getElementById(outputId);
+                if (!output) return;
+                output.style.display = 'block';
+                output.replaceChildren();
+                output.appendChild(el('div', {
+                    className: 'bowire-ai-template-status',
+                    textContent: 'Generating ' + cls + ' template…'
+                }));
+                genBtn.setAttribute('disabled', 'disabled');
+                bowireGenerateTemplate(endpoint, cls)
+                    .then(function (result) { bowireRenderTemplateOutput(output, result); })
+                    .finally(function () { genBtn.removeAttribute('disabled'); });
+            }
+        });
+        wrap.appendChild(classSelect);
+        wrap.appendChild(genBtn);
+        return wrap;
+    }
+
+    function bowireGenerateTemplate(endpoint, cls) {
+        var payload = {
+            path: endpoint.path,
+            'class': cls,
+            verb: endpoint.verb || null,
+            protocol: endpoint.protocol || null,
+            service: endpoint.service || null,
+            inputShape: endpoint.inputShape || null,
+            authState: endpoint.authState || null
+        };
+        return fetch(aiPrefix() + '/api/ai/template-suggest', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        })
+            .then(function (r) { return r.json().then(function (b) { return { ok: r.ok, status: r.status, body: b }; }); })
+            .catch(function (err) {
+                return { ok: false, status: 0, body: { error: 'Network error: ' + (err && err.message ? err.message : err) } };
+            });
+    }
+
+    function bowireRenderTemplateOutput(host, result) {
+        host.replaceChildren();
+        if (!result.ok) {
+            host.appendChild(el('div', {
+                className: 'bowire-ai-template-error',
+                textContent: '⚠ ' + ((result.body && result.body.error) || 'request failed')
+            }));
+            return;
+        }
+        var pre = el('pre', { className: 'bowire-ai-template-yaml' });
+        pre.appendChild(el('code', { textContent: result.body.yaml || '(empty)' }));
+        host.appendChild(pre);
+
+        var actions = el('div', { className: 'bowire-ai-template-actions' });
+        var copyBtn = el('button', {
+            type: 'button',
+            className: 'bowire-ai-template-copy',
+            textContent: 'Copy YAML',
+            onClick: function () {
+                if (!navigator.clipboard) return;
+                navigator.clipboard.writeText(result.body.yaml).then(function () {
+                    copyBtn.textContent = 'Copied';
+                    setTimeout(function () { copyBtn.textContent = 'Copy YAML'; }, 1500);
+                });
+            }
+        });
+        var saveBtn = el('button', {
+            type: 'button',
+            className: 'bowire-ai-template-save',
+            textContent: 'Save to ~/.bowire/templates',
+            onClick: function () {
+                saveBtn.setAttribute('disabled', 'disabled');
+                saveBtn.textContent = 'Saving…';
+                fetch(aiPrefix() + '/api/ai/template-save', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        filename: result.body.suggestedFilename,
+                        yaml: result.body.yaml
+                    })
+                })
+                    .then(function (r) { return r.json().then(function (b) { return { ok: r.ok, body: b }; }); })
+                    .then(function (resp) {
+                        saveBtn.removeAttribute('disabled');
+                        if (resp.ok) {
+                            saveBtn.textContent = 'Saved ' + (resp.body.path || '');
+                            setTimeout(function () {
+                                saveBtn.textContent = 'Save to ~/.bowire/templates';
+                            }, 3000);
+                        } else {
+                            saveBtn.textContent = '⚠ ' + (resp.body.error || 'save failed');
+                        }
+                    })
+                    .catch(function (err) {
+                        saveBtn.removeAttribute('disabled');
+                        saveBtn.textContent = '⚠ ' + (err && err.message ? err.message : 'save failed');
+                    });
+            }
+        });
+        actions.appendChild(copyBtn);
+        actions.appendChild(saveBtn);
+        host.appendChild(actions);
+
+        if (result.body.modelId) {
+            host.appendChild(el('div', {
+                className: 'bowire-ai-template-meta',
+                textContent: 'via ' + result.body.modelId + ' · suggested filename: ' + (result.body.suggestedFilename || '(none)')
+            }));
+        }
+    }
+
     function runThreatModel() {
         if (threatState.running) return Promise.resolve(threatState);
         var collected = collectThreatEndpoints();
@@ -442,13 +578,10 @@
                         });
                         li.appendChild(tplWrap);
                     }
-                    // Scan-shortcut: routes to the existing CLI flow.
-                    // Workbench-side scan integration is a follow-up (#60
-                    // covers the in-workbench Nuclei template authoring);
-                    // for now we copy a ready-to-paste CLI command so the
-                    // ranked row is actionable today.
+                    // Action row: copy the CLI command (Tier-1
+                    // shortcut) + generate a Nuclei template via #60.
                     if (endpoint && endpoint.path) {
-                        var scanRow = el('div', { className: 'bowire-ai-threat-scan' });
+                        var actionRow = el('div', { className: 'bowire-ai-threat-scan' });
                         var scanBtn = el('button', {
                             type: 'button',
                             className: 'bowire-ai-threat-scan-btn',
@@ -469,8 +602,18 @@
                                 };
                             })(endpoint, row.suggestedTemplates || [])
                         });
-                        scanRow.appendChild(scanBtn);
-                        li.appendChild(scanRow);
+                        actionRow.appendChild(scanBtn);
+                        // #60 per-row template-generator. Class picker
+                        // is pre-populated with the model's first
+                        // suggestedTemplate, falls back to 'idor'.
+                        var defaultClass = (row.suggestedTemplates && row.suggestedTemplates[0]) || 'idor';
+                        actionRow.appendChild(bowireBuildTemplateGenerator(endpoint, defaultClass));
+                        li.appendChild(actionRow);
+                        // Output box that the generator targets.
+                        var outputBox = el('div', { className: 'bowire-ai-template-output' });
+                        outputBox.id = 'bowire-ai-template-out-' + endpoint.endpointId;
+                        outputBox.style.display = 'none';
+                        li.appendChild(outputBox);
                     }
                     list.appendChild(li);
                 });

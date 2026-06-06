@@ -22,6 +22,7 @@ namespace Kuestenlogik.Bowire.IntegrationTests;
 /// markdown-fence recovery + garbage fallback + topN cap + endpoint
 /// cap + 503 / 400 error paths without standing up a real model.
 /// </summary>
+[Collection("BowireUserContext")]
 public sealed class BowireAiThreatModelEndpointTests : IDisposable
 {
     private readonly IBowireUserStore _originalStore;
