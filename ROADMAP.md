@@ -12,7 +12,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 - [#25](https://github.com/Kuestenlogik/Bowire/issues/25) **AI side-panel integration** `kind:feature` `area:workbench` `P1`
 
-### Later
+### No milestone
 
 - [#26](https://github.com/Kuestenlogik/Bowire/issues/26) **Security testing tool — remaining tiers** `kind:feature` `area:security` `track:security-tiers` `P2`
 
