@@ -65,24 +65,26 @@ The board ships with the default *All items* view. The four views below mirror h
 - Status transitions: `Backlog` → `Next up` → `In progress` → `In review` → `Done`. The last two are driven by PR state where possible.
 - Milestones are managed in [Settings → Issues → Milestones](https://github.com/Kuestenlogik/Bowire/milestones). When a milestone closes, its issues move out of the `Roadmap` view automatically.
 
-### Milestone description = release theme
+### Milestone title = release theme
 
-The **first line** of every milestone's description is the release title tail — the same headline that lands on the GitHub Release once the milestone tags. Format:
+Every milestone's **title** carries the release headline directly: `vX.Y[.Z] — <theme>`. The theme is the same one that lands on the GitHub Release once the milestone tags, and it shows in the Project board's Roadmap view as the group heading (since Projects v2 reads the milestone title verbatim).
 
-```
-<theme — 2-5 words, no leading "vX.Y.Z —" prefix>
+Format examples that worked well in past cycles:
+- `v1.7 — new protocols + mock-as-stand-in`
+- `v1.8 — AI side-panel + workbench mocks UI`
+- `v2.0 — AI for security + protocol-plugin next wave`
 
-<optional free-form notes: slip context, stakeholder hints, &c.>
-```
+Two themes joined with `+` reads cleanly and matches the established release-title style. Keep the theme tail to roughly 2-5 words per side.
 
-Examples that worked well in past cycles: `new protocols + mock-as-stand-in` (v1.7.0), `AsyncAPI discovery source + Nuclei template runner` (v1.5.0), `AI side-panel + workbench mocks UI` (v1.8.0). Two themes joined with `+` reads cleanly and matches the established release-title style.
-
-**Why pre-commit a theme at planning time:** the headline defines what the cycle is *about* — what we'd be embarrassed to ship without. It anchors the milestone discussion ("does this issue serve the theme?"), avoids the retrospective scramble of summarising whatever happened to land, and gives the team a one-line elevator pitch through the cycle. Mid-cycle pivots are fine — edit the theme, the audit trail in GitHub captures the shift.
+**Why pre-commit a theme at planning time:** the headline defines what the cycle is *about* — what we'd be embarrassed to ship without. It anchors the milestone discussion ("does this issue serve the theme?"), avoids the retrospective scramble of summarising whatever happened to land, and gives the team a one-line elevator pitch through the cycle. Mid-cycle pivots are fine — rename the milestone (GitHub keeps the audit trail).
 
 **Mechanical consequences:**
-- `release.yml` reads the closing milestone's description-line-1 when creating the GitHub Release and uses it as the title (`vX.Y.Z — <theme>`). No hand-editing of the release title required.
-- `scripts/generate-roadmap.mjs` renders the theme as a subtitle under each milestone section in `ROADMAP.md` so the offline view shows the cycle's focus.
-- If the description's first line is empty / missing, the release falls back to bare `vX.Y.Z` and the roadmap section shows no subtitle — so missing themes are visible by their absence rather than crashing the pipeline.
+- `release.yml` parses the matching milestone's title when creating the GitHub Release and uses the `<theme>` tail as `vX.Y.Z — <theme>`. No hand-editing of the release title required.
+- `scripts/generate-roadmap.mjs` renders the full title as the section heading in `ROADMAP.md` so the offline view matches the Project board.
+- The milestone description stays free-form for slip context, stakeholder hints, &c. — no machinery parses it.
+- If the milestone title is bare (`v2.0` with no ` — <theme>` tail), the release falls back to a bare `vX.Y.Z` title and the roadmap section shows no theme — so missing themes are visible by their absence rather than crashing the pipeline.
+
+**CLI ergonomics caveat:** `gh issue list --milestone v2.0` no longer matches when the milestone is renamed to `v2.0 — <theme>` — `gh` matches the full title verbatim. Either use the full title, or look up by milestone number (`--milestone <N>`).
 
 ## Automation
 

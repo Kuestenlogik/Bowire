@@ -556,17 +556,17 @@ jobs:
           cat release-body.md
           echo "----- end -----"
 
-      # Pull the release-title theme from the matching milestone's
-      # description line 1. Convention is documented in
-      # docs/contributing/project-board.md — the first line of every
-      # milestone description carries the theme tail (e.g. "AI side-
-      # panel + workbench mocks UI"), and we splice it into the
-      # release title so the headline reads `vX.Y.Z — <theme>`.
+      # Pull the release-title theme straight from the matching
+      # milestone's title. Convention is documented in
+      # docs/contributing/project-board.md — milestone titles carry
+      # an optional `vX.Y[.Z] — <theme>` form, and we splice the
+      # theme into the GitHub Release title so it reads vX.Y.Z —
+      # <theme>.
       #
       # Lookup logic: strip the tag's `v` prefix, drop any pre-release
-      # suffix (rc.N, beta), so v1.8.0 → milestone "v1.8" first, then
-      # "v1.8.0" as fallback. Either works depending on how the team
-      # named the milestone. Empty / missing description → bare title
+      # suffix (rc.N, beta), find the milestone whose title starts
+      # with v<base> or v<major.minor> followed by either end-of-
+      # string or the ` — ` separator. Empty / missing → bare title
       # so the pipeline doesn't crash on a half-set-up milestone.
       - name: Resolve release title from milestone
         id: title
@@ -577,26 +577,30 @@ jobs:
           VERSION="${TAG#v}"
           BASE=$(echo "$VERSION" | sed -E 's/-.*$//')
           MAJ_MIN=$(echo "$BASE" | cut -d. -f1-2)
+          MS_TITLES=$(gh api "repos/${{ github.repository }}/milestones?state=all&per_page=100" \
+            --jq '.[].title' 2>/dev/null)
           THEME=""
           for candidate in "v${BASE}" "v${MAJ_MIN}"; do
-            DESC=$(gh api "repos/${{ github.repository }}/milestones?state=all&per_page=100" \
-              --jq ".[] | select(.title==\"${candidate}\") | .description // \"\"" 2>/dev/null | head -n 1)
-            FIRST_LINE=$(printf '%s' "$DESC" | head -n 1 | sed -E 's/^[[:space:]]+|[[:space:]]+$//g')
-            # Skip placeholder descriptions that don't follow the
-            # theme convention (those usually start with a noun like
-            # "Major:" or describe slip-context in a full sentence).
-            if [[ -n "$FIRST_LINE" ]] \
-               && [[ "$FIRST_LINE" != *. ]] \
-               && [[ "${#FIRST_LINE}" -le 80 ]]; then
-              THEME="$FIRST_LINE"
-              echo "Resolved theme from milestone '${candidate}': ${THEME}"
-              break
+            # Match the candidate at the start of a title, followed by
+            # either end-of-string OR ` — <theme>` / ` - <theme>`.
+            FULL=$(echo "$MS_TITLES" | grep -E "^${candidate}([[:space:]]+[—-][[:space:]]+.+)?$" | head -n 1)
+            if [[ -n "$FULL" ]]; then
+              # Strip everything up to and including the ` — ` separator
+              # to isolate the theme. If the title is bare (no theme),
+              # the strip leaves the version itself and we treat the
+              # theme as empty.
+              CANDIDATE_THEME=$(echo "$FULL" | sed -E "s/^${candidate}[[:space:]]+[—-][[:space:]]+//; t; d")
+              if [[ -n "$CANDIDATE_THEME" ]]; then
+                THEME="$CANDIDATE_THEME"
+                echo "Resolved theme from milestone '${FULL}': ${THEME}"
+                break
+              fi
             fi
           done
           if [[ -n "$THEME" ]]; then
             echo "title=${TAG} — ${THEME}" >> "$GITHUB_OUTPUT"
           else
-            echo "::notice::No release-theme found on milestones v${BASE} or v${MAJ_MIN} — release title will be bare ${TAG}."
+            echo "::notice::No theme found on milestone matching v${BASE} or v${MAJ_MIN} — release title will be bare ${TAG}."
             echo "title=${TAG}" >> "$GITHUB_OUTPUT"
           fi
 

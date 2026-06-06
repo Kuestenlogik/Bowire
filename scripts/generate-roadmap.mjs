@@ -65,7 +65,7 @@ query($org: String!, $number: Int!, $cursor: String) {
               state
               repository { nameWithOwner }
               labels(first: 20) { nodes { name } }
-              milestone { title description }
+              milestone { title }
               body
             }
             ... on DraftIssue { title body }
@@ -152,40 +152,41 @@ function classify(items) {
     return groups;
 }
 
-// Bucketing order. `null` is the "no milestone assigned yet" bucket —
-// equivalent to the old "Later" milestone (which was redundant: not
-// scheduled and no milestone both meant "not committed"). Rendered as
-// "Later" so readers see the same heading they're used to.
+// Bucketing order keyed by version prefix only. The milestone title
+// carries an optional `vX.Y — <theme>` tail per docs/contributing/
+// project-board.md, but we bucket on the version part so adding /
+// renaming the theme doesn't shuffle the section order. `null` is
+// the "no milestone assigned yet" bucket — equivalent to the old
+// "Later" milestone (not scheduled and no milestone both mean "not
+// committed"). Rendered as "Later" so readers see the same heading
+// they're used to.
 const MILESTONE_ORDER = ["v1.5", "v1.6", "v2.0", null];
 
-// Cache of milestone description → theme so the second section that
-// references the same milestone doesn't re-extract. Populated as
+// Cache of milestone title → theme so the second section that
+// references the same milestone doesn't re-parse. Populated as
 // byMilestone walks items; consumed by render() when it prints the
 // section heading.
 const MILESTONE_THEMES = new Map();
 
-function extractTheme(description) {
-    if (!description) return null;
-    const firstLine = description.split(/\r?\n/)[0]?.trim();
-    if (!firstLine) return null;
-    // Skip placeholder descriptions that don't follow the theme
-    // convention (project-board.md says: 2-5 word headline, no
-    // trailing period). Free-form prose like "Items slipped from
-    // v1.5+v1.6 — actually planned for next release" trips this.
-    if (firstLine.endsWith(".")) return null;
-    if (firstLine.length > 80) return null;
-    return firstLine;
+// Split a milestone title into `{ version, theme }`. Convention:
+// `vX.Y[.Z][-rc.N] — <theme>` where the em-dash separator and theme
+// tail are optional. Falls back to `{ version: title }` for plain
+// version-only titles so legacy milestones still bucket cleanly.
+function parseMilestoneTitle(title) {
+    if (!title) return { version: null, theme: null };
+    const m = title.match(/^(v[\d.]+(?:-[\w.]+)?)\s*(?:[—-]\s*(.+))?$/);
+    if (!m) return { version: title, theme: null };
+    return { version: m[1], theme: m[2] ? m[2].trim() : null };
 }
 
 function byMilestone(items) {
     const map = new Map(MILESTONE_ORDER.map((m) => [m, []]));
     for (const item of items) {
-        const ms = item.content.milestone?.title ?? null;
-        const desc = item.content.milestone?.description ?? null;
-        if (ms && !MILESTONE_THEMES.has(ms)) {
-            MILESTONE_THEMES.set(ms, extractTheme(desc));
+        const { version, theme } = parseMilestoneTitle(item.content.milestone?.title);
+        if (version && !MILESTONE_THEMES.has(version)) {
+            MILESTONE_THEMES.set(version, theme);
         }
-        const key = MILESTONE_ORDER.includes(ms) ? ms : null;
+        const key = MILESTONE_ORDER.includes(version) ? version : null;
         map.get(key).push(item);
     }
     return map;
@@ -231,6 +232,8 @@ function render(groups) {
             // so the section reads naturally for the offline view.
             const label = ms ?? "Later";
             const theme = ms ? MILESTONE_THEMES.get(ms) : null;
+            // Heading mirrors the full milestone title `vX.Y — <theme>`
+            // when one is set, plain version otherwise.
             lines.push(theme ? `### ${label} — ${theme}` : `### ${label}`);
             lines.push("");
             for (const item of slice) lines.push(fmtIssue(item));
