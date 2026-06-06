@@ -12,7 +12,7 @@ The roadmap, in-flight work, and bug triage all live on the [Bowire Project boar
 | Field | Values | Used for |
 |---|---|---|
 | **Status** | `Backlog` · `Next up` · `In progress` · `In review` · `Done` | Kanban swim-lane |
-| **Milestone** *(built-in)* | `v1.5` · `v1.6` · `v2.0` · `Later` | Version-targeting — the same Milestone the GitHub issue carries |
+| **Milestone** *(built-in)* | `v1.x` · `v2.0` · *(unset)* | Version-targeting — the same Milestone the GitHub issue carries. Unset = backlog (rendered as "Later" in `ROADMAP.md`); no dedicated "Later" milestone, since it would be redundant with the unset state. |
 | **Area** | `workbench` · `cli` · `security` · `mcp` · `plugin-sdk` · `mock` · `docs` · `site` · `bootcamp` · `multi` | Component filter |
 | **Track** | `auth` · `protocols` · `marketing-ia` · `observability` · `security-tiers` · `bootcamp-content` · `none` | Multi-phase initiatives that span releases |
 | **Effort** | `XS` · `S` · `M` · `L` · `XL` | T-shirt estimate |
@@ -64,6 +64,25 @@ The board ships with the default *All items* view. The four views below mirror h
 - New issue created via *Convert from Markdown* (in the issue editor) or *Create issue* — the board adds it as `Backlog` by default.
 - Status transitions: `Backlog` → `Next up` → `In progress` → `In review` → `Done`. The last two are driven by PR state where possible.
 - Milestones are managed in [Settings → Issues → Milestones](https://github.com/Kuestenlogik/Bowire/milestones). When a milestone closes, its issues move out of the `Roadmap` view automatically.
+
+### Milestone description = release theme
+
+The **first line** of every milestone's description is the release title tail — the same headline that lands on the GitHub Release once the milestone tags. Format:
+
+```
+<theme — 2-5 words, no leading "vX.Y.Z —" prefix>
+
+<optional free-form notes: slip context, stakeholder hints, &c.>
+```
+
+Examples that worked well in past cycles: `new protocols + mock-as-stand-in` (v1.7.0), `AsyncAPI discovery source + Nuclei template runner` (v1.5.0), `AI side-panel + workbench mocks UI` (v1.8.0). Two themes joined with `+` reads cleanly and matches the established release-title style.
+
+**Why pre-commit a theme at planning time:** the headline defines what the cycle is *about* — what we'd be embarrassed to ship without. It anchors the milestone discussion ("does this issue serve the theme?"), avoids the retrospective scramble of summarising whatever happened to land, and gives the team a one-line elevator pitch through the cycle. Mid-cycle pivots are fine — edit the theme, the audit trail in GitHub captures the shift.
+
+**Mechanical consequences:**
+- `release.yml` reads the closing milestone's description-line-1 when creating the GitHub Release and uses it as the title (`vX.Y.Z — <theme>`). No hand-editing of the release title required.
+- `scripts/generate-roadmap.mjs` renders the theme as a subtitle under each milestone section in `ROADMAP.md` so the offline view shows the cycle's focus.
+- If the description's first line is empty / missing, the release falls back to bare `vX.Y.Z` and the roadmap section shows no subtitle — so missing themes are visible by their absence rather than crashing the pipeline.
 
 ## Automation
 

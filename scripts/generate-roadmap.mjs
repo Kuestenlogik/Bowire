@@ -65,7 +65,7 @@ query($org: String!, $number: Int!, $cursor: String) {
               state
               repository { nameWithOwner }
               labels(first: 20) { nodes { name } }
-              milestone { title }
+              milestone { title description }
               body
             }
             ... on DraftIssue { title body }
@@ -152,12 +152,39 @@ function classify(items) {
     return groups;
 }
 
-const MILESTONE_ORDER = ["v1.5", "v1.6", "v2.0", "Later", null];
+// Bucketing order. `null` is the "no milestone assigned yet" bucket —
+// equivalent to the old "Later" milestone (which was redundant: not
+// scheduled and no milestone both meant "not committed"). Rendered as
+// "Later" so readers see the same heading they're used to.
+const MILESTONE_ORDER = ["v1.5", "v1.6", "v2.0", null];
+
+// Cache of milestone description → theme so the second section that
+// references the same milestone doesn't re-extract. Populated as
+// byMilestone walks items; consumed by render() when it prints the
+// section heading.
+const MILESTONE_THEMES = new Map();
+
+function extractTheme(description) {
+    if (!description) return null;
+    const firstLine = description.split(/\r?\n/)[0]?.trim();
+    if (!firstLine) return null;
+    // Skip placeholder descriptions that don't follow the theme
+    // convention (project-board.md says: 2-5 word headline, no
+    // trailing period). Free-form prose like "Items slipped from
+    // v1.5+v1.6 — actually planned for next release" trips this.
+    if (firstLine.endsWith(".")) return null;
+    if (firstLine.length > 80) return null;
+    return firstLine;
+}
 
 function byMilestone(items) {
     const map = new Map(MILESTONE_ORDER.map((m) => [m, []]));
     for (const item of items) {
         const ms = item.content.milestone?.title ?? null;
+        const desc = item.content.milestone?.description ?? null;
+        if (ms && !MILESTONE_THEMES.has(ms)) {
+            MILESTONE_THEMES.set(ms, extractTheme(desc));
+        }
         const key = MILESTONE_ORDER.includes(ms) ? ms : null;
         map.get(key).push(item);
     }
@@ -200,7 +227,11 @@ function render(groups) {
         for (const ms of MILESTONE_ORDER) {
             const slice = byMs.get(ms) ?? [];
             if (slice.length === 0) continue;
-            lines.push(`### ${ms ?? "No milestone"}`);
+            // `null` bucket = no milestone assigned — render as "Later"
+            // so the section reads naturally for the offline view.
+            const label = ms ?? "Later";
+            const theme = ms ? MILESTONE_THEMES.get(ms) : null;
+            lines.push(theme ? `### ${label} — ${theme}` : `### ${label}`);
             lines.push("");
             for (const item of slice) lines.push(fmtIssue(item));
             lines.push("");

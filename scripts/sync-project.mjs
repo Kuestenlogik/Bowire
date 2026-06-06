@@ -84,13 +84,13 @@ const MAPPING = {
     "Sidebar display: method name vs path toggle": { status: "Backlog", area: "workbench", priority: "P3", kind: "feature" },
     "Schema watch mode": { status: "Backlog", area: "workbench", priority: "P3", kind: "feature" },
     "Programmatic environment provisioning in embedded mode": { status: "Backlog", area: "workbench", priority: "P2", kind: "feature" },
-    "Marketing site — gallery / lightbox layer on solutions/*": { status: "Backlog", area: "site", track: "marketing-ia", priority: "P3", kind: "feature", milestone: "Later",
+    "Marketing site — gallery / lightbox layer on solutions/*": { status: "Backlog", area: "site", track: "marketing-ia", priority: "P3", kind: "feature",
         body: trackedBody("planned-no-commitments-yet", "The new responsive image pipeline (optimize-images.mjs + picture.html) already emits -400w / -1200w / original variants. Layer a small JS lightbox that swaps the thumbnail-grid render (400w) for the full-resolution AVIF on click — initial page load gets the smallest variant, original only hits the wire on click.") },
     "Marketing site — migrate <img> tags to picture.html partial": { status: "Backlog", area: "site", track: "marketing-ia", priority: "P2", kind: "debt", milestone: "v1.5",
         body: trackedBody("planned-no-commitments-yet", "Image-perf pipeline shipped (sharp → AVIF + WebP, three variant widths; picture.html partial; Lighthouse CI gates). Remaining: migrate every <img src=\"…\"> in site/_includes/*.html + site/**/*.html to the picture.html partial, then drop the legacy .png originals from the deploy bundle once the AVIF fallback chain has been verified across browsers.") },
     'Marketing — "why not just Console.WriteLine or Serilog/Loki/Grafana?"': { status: "Backlog", area: "site", track: "marketing-ia", priority: "P2", kind: "docs", milestone: "v1.5",
         body: trackedBody("planned-no-commitments-yet", "Write the missing leg of the pitch: when does Bowire beat (or augment) Console.WriteLine-debugging and a Serilog/Loki/Grafana observability stack? Likely framing: dev-time *interactive call & inspect* loop vs ops-time *log-aggregation*; Bowire makes the contract executable, Grafana makes the running system observable — different jobs, same engineering team.") },
-    "Marketing site — second row of specialist comparisons": { status: "Backlog", area: "site", track: "marketing-ia", priority: "P3", kind: "feature", milestone: "Later",
+    "Marketing site — second row of specialist comparisons": { status: "Backlog", area: "site", track: "marketing-ia", priority: "P3", kind: "feature",
         body: trackedBody("planned-no-commitments-yet", "The comparison table's \"top-5-competitors check\" framing already lets us mention more tools in the best-for strip without committing them to a full table row. A second row under the existing strip would cover specialist tools where Bowire overlaps but isn't the same shape: k6 / JMeter, WireMock / Mockoon, Burp Suite / ZAP, HTTPie / curl, MQTT Explorer / kcat, SwaggerHub / Stoplight.") },
 };
 
