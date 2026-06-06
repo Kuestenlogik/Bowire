@@ -27,9 +27,12 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 - [#60](https://github.com/Kuestenlogik/Bowire/issues/60) **AI Nuclei-template suggestion: generate scan templates per endpoint** 
 - [#62](https://github.com/Kuestenlogik/Bowire/issues/62) **AI schema-aware fuzz values: boundary inputs per field via Mock-Replay** 
 
-### Later
+### v1.10 — gRPC Connect
 
 - [#33](https://github.com/Kuestenlogik/Bowire/issues/33) **Protocol plugins — Connect Phase 1+3 + OTLP** `kind:feature` `area:plugin-sdk` `track:protocols` `P2`
+
+### Later
+
 - [#34](https://github.com/Kuestenlogik/Bowire/issues/34) **AsyncAPI discovery source — remaining bindings + V2 overloads + YAML pre-normaliser** `kind:feature` `area:plugin-sdk` `track:protocols` `P2`
 - [#35](https://github.com/Kuestenlogik/Bowire/issues/35) **Nuclei template compat — OAST + non-HTTP transports (Phase 2f + 2g)** `kind:feature` `area:security` `track:security-tiers` `P3`
 - [#36](https://github.com/Kuestenlogik/Bowire/issues/36) **Replay-Mock — HTTPS MITM / record mode** `kind:feature` `area:mock` `P3`
