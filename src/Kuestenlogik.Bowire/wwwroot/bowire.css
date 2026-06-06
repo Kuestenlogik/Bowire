@@ -10026,6 +10026,63 @@ details[open] > .bowire-json-tree-summary::before {
 }
 .bowire-ai-threat-scan-btn:hover { border-color: var(--bowire-accent, #5fb2ff); color: var(--bowire-accent, #5fb2ff); }
 
+/* #60 — per-row template generator */
+.bowire-ai-threat-scan { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.bowire-ai-template-trigger { display: inline-flex; gap: 4px; align-items: center; }
+.bowire-ai-template-class {
+    font-size: 11px;
+    padding: 1px 4px;
+    border: 1px solid var(--bowire-border);
+    background: var(--bowire-bg-subtle, transparent);
+    color: var(--bowire-text-secondary);
+    border-radius: 4px;
+}
+.bowire-ai-template-gen-btn {
+    font-size: 11px;
+    padding: 2px 8px;
+    border: 1px solid var(--bowire-border);
+    background: transparent;
+    color: var(--bowire-text-secondary);
+    border-radius: 4px;
+    cursor: pointer;
+}
+.bowire-ai-template-gen-btn:hover { border-color: var(--bowire-accent, #5fb2ff); color: var(--bowire-accent, #5fb2ff); }
+.bowire-ai-template-gen-btn[disabled] { opacity: 0.5; cursor: progress; }
+.bowire-ai-template-output {
+    margin-top: 6px;
+    padding: 8px;
+    border: 1px solid var(--bowire-border);
+    border-radius: 4px;
+    background: var(--bowire-bg-subtle, rgba(255, 255, 255, 0.02));
+}
+.bowire-ai-template-status { font-size: 11px; color: var(--bowire-text-tertiary); }
+.bowire-ai-template-error { font-size: 12px; color: var(--bowire-error, #ef4444); }
+.bowire-ai-template-yaml {
+    margin: 0;
+    padding: 6px 8px;
+    background: var(--bowire-bg, transparent);
+    font-family: var(--bowire-mono);
+    font-size: 11px;
+    overflow-x: auto;
+    white-space: pre;
+    color: var(--bowire-text);
+}
+.bowire-ai-template-actions { display: flex; gap: 6px; margin-top: 6px; }
+.bowire-ai-template-copy,
+.bowire-ai-template-save {
+    font-size: 11px;
+    padding: 2px 8px;
+    border: 1px solid var(--bowire-border);
+    background: transparent;
+    color: var(--bowire-text-secondary);
+    border-radius: 4px;
+    cursor: pointer;
+}
+.bowire-ai-template-copy:hover,
+.bowire-ai-template-save:hover { border-color: var(--bowire-accent, #5fb2ff); color: var(--bowire-accent, #5fb2ff); }
+.bowire-ai-template-save[disabled] { opacity: 0.5; cursor: progress; }
+.bowire-ai-template-meta { margin-top: 4px; font-size: 10px; color: var(--bowire-text-tertiary); }
+
 /* ===== Plugin Inspect modal (#27) ===== */
 .bowire-modal-overlay {
     position: fixed;

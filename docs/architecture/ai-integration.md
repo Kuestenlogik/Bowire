@@ -209,6 +209,23 @@ guard against sloppy model output. Same prompt-engineering discipline as triage:
 envelope, score below 5 when the endpoint looks read-only / well-scoped, never invent CVEs. Markdown-fenced
 output recovered by the parser; garbage falls back to an empty ranking.
 
+**Nuclei template suggestion (#60).** Two new endpoints. `POST /api/ai/template-suggest` takes
+`{path, class, verb?, protocol?, service?, inputShape?, authState?, notes?}` and returns
+`{yaml, suggestedFilename, modelId, raw}`. The class is one of `auth-bypass / idor / mass-assignment /
+parameter-tampering / injection-sqli / injection-cmdi / injection-template / ssrf / path-traversal /
+open-redirect` — unknown classes 400-out with the full list in the error message. The system prompt
+constrains the model to a Nuclei v3 YAML structure (id + info + http + matchers), holds the path exactly
+as given (no invented endpoints), uses `{{BaseURL}}` for the host placeholder, and rejects real
+secrets. `POST /api/ai/template-save` writes the returned YAML to `~/.bowire/templates/<filename>.yaml`
+via `IBowireUserStore`. The filename guard rejects path traversal, sub-directories, and any extension
+other than `.yaml` / `.yml` so the save endpoint can't be tricked into writing outside the templates
+directory. Frontend: each threat-model row gets a class dropdown (pre-populated with the model's first
+`suggestedTemplate`) + a `Generate template` button. The result drops into an inline `<pre>` block with
+`Copy YAML` and `Save to ~/.bowire/templates` actions; the scanner reads from that directory via
+`bowire scan --nuclei ~/.bowire/templates`, so the generated template is one CLI call away from running.
+Markdown fences in the model's output are stripped server-side so the YAML pasted into the editor is
+clean either way.
+
 **Findings triage (#61).** New endpoint `POST /api/ai/triage` takes a finding + matched evidence + protocol /
 endpoint context and returns a JSON verdict `{realScore: 0-100, reasoning, fix}`. The fuzz panel
 (`semantics-menu.js`) renders a `?` button next to every `Vulnerable` row; click expands the row into an
