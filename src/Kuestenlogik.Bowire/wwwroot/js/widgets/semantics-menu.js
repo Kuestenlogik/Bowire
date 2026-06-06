@@ -1511,5 +1511,14 @@
         _leafName: bowireSemanticsLeafName,
         _expandScopeKeys: bowireExpandScopeKeys,
         _builtInTags: bowireBuiltInSemanticTags,
-        _companions: bowireSemanticCompanions
+        _companions: bowireSemanticCompanions,
+        // Screenshot-helper seam (#62 fuzz panel). Opens the picker
+        // pre-populated with the seeded value list so the marketing
+        // shot doesn't need a real model. Same opts shape the menu
+        // uses, plus a values array.
+        _seedFuzzPicker: function (opts, values, leafName) {
+            var panel = bowireOpenAiFuzzPanel(opts || { jsonPath: '$.field' }, leafName || 'field');
+            bowireRenderAiFuzzPicker(panel, opts || { jsonPath: '$.field' }, values || [], leafName || 'field');
+            return panel;
+        }
     };

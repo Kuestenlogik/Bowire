@@ -539,6 +539,160 @@ async function clickMethodItem(page, text) {
         log(`  (ready/method-detail/editable/wrong-protocol failed: ${e.message.split('\n')[0]})`);
     }
 
+    // ---- 11) AI-feature shots (#25 / #59 / #60 / #62) ----
+    // The marketing CI runs without an Ollama provider, so we seed the
+    // panel state via the __bowireAi._seed* hooks instead of hitting a
+    // real model. Each shot drives one of the AI surfaces into a
+    // deterministic demo state and captures it.
+    try {
+        // Reopen the main workbench + select a method so the response
+        // pane (which hosts the AI tab) is rendered.
+        await page.goto(URL, { waitUntil: 'domcontentloaded' });
+        await page.waitForSelector('#bowire-app.bowire-app-ready', { timeout: 15000 });
+        await page.waitForTimeout(500);
+        await expandAllGroups(page);
+        const firstMethod = page.locator('.bowire-method-item').first();
+        if (await firstMethod.isVisible().catch(() => false)) {
+            await firstMethod.click().catch(() => {});
+            await page.waitForTimeout(500);
+        }
+        // Click the AI tab in the response pane.
+        const aiTab = page.locator('#bowire-response-tab-ai').first();
+        if (await aiTab.isVisible().catch(() => false)) {
+            await aiTab.click();
+            await page.waitForTimeout(300);
+        }
+
+        // Seed a "connected to ollama llama3.2:3b" status so the panel
+        // shows the live state instead of the install hint.
+        await page.evaluate(() => {
+            const ai = window.__bowireAi;
+            if (!ai || !ai._seedStatus) return;
+            ai._seedStatus({
+                hasClient: true,
+                hostManaged: false,
+                providerId: 'ollama',
+                endpoint: 'http://localhost:11434',
+                model: 'llama3.2:3b',
+                autoDetectLocal: true
+            });
+            ai._seedProbe({
+                ollama: {
+                    endpoint: 'http://localhost:11434',
+                    provider: 'ollama',
+                    models: ['llama3.2:3b', 'qwen2.5:7b', 'codellama:13b']
+                },
+                lmstudio: null
+            });
+            ai._seedChat([
+                { role: 'user', content: 'Why is GetPortCall returning empty bodies for IDs > 1000?' },
+                { role: 'assistant', content: 'The response schema declares `manifest` as required, but the seed data only populates IDs 1-1000. Either widen the seed or relax the schema.' }
+            ]);
+            // Re-render the panel so the seeded state shows.
+            const panel = document.querySelector('.bowire-ai-panel');
+            if (panel) {
+                const rendered = ai.renderPanel();
+                panel.parentNode.replaceChild(rendered, panel);
+            }
+        });
+        await page.waitForTimeout(400);
+        await shot(page, 'ai-panel');
+
+        // Threat-model: seed a ranked list with mixed-risk endpoints
+        // so the colour-coded scores render across the spectrum.
+        await page.evaluate(() => {
+            const ai = window.__bowireAi;
+            if (!ai || !ai._seedThreatModel) return;
+            const endpointIndex = {
+                e1: { endpointId: 'e1', path: '/api/orders/{id}', verb: 'GET', protocol: 'rest', service: 'OrdersService', serverUrl: 'https://api.example.com' },
+                e2: { endpointId: 'e2', path: '/api/admin/users', verb: 'DELETE', protocol: 'rest', service: 'AdminService', serverUrl: 'https://api.example.com' },
+                e3: { endpointId: 'e3', path: '/api/files/{path}', verb: 'GET', protocol: 'rest', service: 'FilesService', serverUrl: 'https://api.example.com' },
+                e4: { endpointId: 'e4', path: '/api/auth/reset-password', verb: 'POST', protocol: 'rest', service: 'AuthService', serverUrl: 'https://api.example.com' },
+                e5: { endpointId: 'e5', path: '/api/products', verb: 'GET', protocol: 'rest', service: 'CatalogService', serverUrl: 'https://api.example.com' }
+            };
+            ai._seedThreatModel({
+                inputCount: 47,
+                modelId: 'llama3.2:3b',
+                endpointIndex,
+                ranked: [
+                    { endpointId: 'e2', risk: 9, why: 'Unauthenticated DELETE on admin path — IDOR + auth-bypass surface', suggestedTemplates: ['auth-bypass', 'idor'] },
+                    { endpointId: 'e3', risk: 8, why: 'Path parameter flows into a file lookup — classic path-traversal risk', suggestedTemplates: ['path-traversal'] },
+                    { endpointId: 'e1', risk: 7, why: 'Resource-id path with no scoping; classic IDOR candidate', suggestedTemplates: ['idor', 'mass-assignment'] },
+                    { endpointId: 'e4', risk: 5, why: 'Password-reset POST — rate limit + email-injection worth a probe', suggestedTemplates: ['injection-template'] },
+                    { endpointId: 'e5', risk: 2, why: 'Read-only listing, no parameters', suggestedTemplates: [] }
+                ]
+            });
+            const panel = document.querySelector('.bowire-ai-panel');
+            if (panel) {
+                const rendered = ai.renderPanel();
+                panel.parentNode.replaceChild(rendered, panel);
+            }
+        });
+        await page.waitForTimeout(400);
+        await shot(page, 'ai-threat-model');
+
+        // Template-suggest: same threat-model state, plus a seeded YAML
+        // output box on the top row so the generator's expanded shape
+        // is visible.
+        await page.evaluate(() => {
+            const ai = window.__bowireAi;
+            if (!ai || !ai._seedTemplate) return;
+            const yaml = [
+                'id: auth-bypass-admin-users',
+                'info:',
+                '  name: Unauthenticated DELETE on /api/admin/users',
+                '  author: bowire-ai',
+                '  severity: high',
+                '  tags: [auth-bypass, ai-suggested, bowire]',
+                'http:',
+                '  - method: DELETE',
+                '    path:',
+                '      - "{{BaseURL}}/api/admin/users"',
+                '    matchers-condition: and',
+                '    matchers:',
+                '      - type: status',
+                '        status: [200, 204]',
+                '      - type: word',
+                '        part: body',
+                '        words: ["deleted"]'
+            ].join('\n');
+            ai._seedTemplate('e2', {
+                yaml,
+                suggestedFilename: 'bowire-ai-api-admin-users-auth-bypass.yaml',
+                modelId: 'llama3.2:3b'
+            });
+        });
+        await page.waitForTimeout(300);
+        await shot(page, 'ai-template-suggest');
+
+        // Fuzz-values: open the picker panel with a realistic mix of
+        // boundary inputs that show all three severity badges.
+        await page.evaluate(() => {
+            const sm = window.__bowireSemanticsMenu;
+            if (!sm || !sm._seedFuzzPicker) return;
+            sm._seedFuzzPicker(
+                { jsonPath: '$.order.itemCount' },
+                [
+                    { value: 0, why: 'boundary: zero', severity: 'info' },
+                    { value: -1, why: 'boundary: negative on uint field', severity: 'low' },
+                    { value: 2147483648, why: 'int32 overflow', severity: 'medium' },
+                    { value: '9999999999999999999999', why: 'stringified overflow', severity: 'medium' },
+                    { value: null, why: 'explicit null', severity: 'low' },
+                    { value: 3.14, why: 'float into int field', severity: 'low' },
+                    { value: '0x7F', why: 'hex-encoded boundary', severity: 'info' },
+                    { value: true, why: 'wrong-type coercion', severity: 'low' },
+                    { value: 'NaN', why: 'IEEE-754 sentinel as string', severity: 'low' },
+                    { value: 1e308, why: 'double overflow', severity: 'medium' }
+                ],
+                'itemCount'
+            );
+        });
+        await page.waitForTimeout(400);
+        await shot(page, 'ai-fuzz-values');
+    } catch (e) {
+        log(`  (AI feature shots failed: ${e.message.split('\n')[0]})`);
+    }
+
     await ctx.close();
     await browser.close();
     log('done');

@@ -738,5 +738,39 @@
         getProbe: function () { return aiProbe; },
         refreshStatus: refreshAiStatus,
         refreshProbe: refreshAiProbe,
-        resetChat: function () { chatHistory.length = 0; }
+        resetChat: function () { chatHistory.length = 0; },
+        // Screenshot-helper seams. Used by scripts/capture-screenshots.js
+        // to seed the panel with deterministic demo data without needing
+        // a real IChatClient on the marketing CI runner. Prefix `_` so
+        // they're clearly out of the supported API surface.
+        _seedStatus: function (st) { aiStatus = st; },
+        _seedProbe: function (pr) { aiProbe = pr; },
+        _seedChat: function (history) {
+            chatHistory.length = 0;
+            if (Array.isArray(history)) {
+                history.forEach(function (m) { chatHistory.push(m); });
+            }
+        },
+        _seedThreatModel: function (state) {
+            if (!state) {
+                threatState.ranked = null;
+                threatState.lastRun = 0;
+                return;
+            }
+            threatState.ranked = state.ranked || [];
+            threatState.lastInputCount = state.inputCount || (state.ranked || []).length;
+            threatState.truncated = !!state.truncated;
+            threatState.modelId = state.modelId || null;
+            threatState.endpointIndex = state.endpointIndex || {};
+            threatState.lastRun = Date.now();
+            threatState.error = null;
+        },
+        _seedTemplate: function (endpointId, body) {
+            var outputId = 'bowire-ai-template-out-' + endpointId;
+            var output = document.getElementById(outputId);
+            if (!output) return false;
+            output.style.display = 'block';
+            bowireRenderTemplateOutput(output, { ok: true, body: body });
+            return true;
+        }
     };
