@@ -6,6 +6,12 @@
         const e = document.createElement(tag);
         if (attrs) {
             for (const [k, v] of Object.entries(attrs)) {
+                // Skip undefined/null so the caller can use conditional
+                // expressions like `readOnly: locked ? 'readonly' : undefined`
+                // without accidentally setting the attribute to the
+                // literal string "undefined" (which makes inputs locked,
+                // anchors disabled, &c).
+                if (v === undefined || v === null) continue;
                 if (k === 'className') e.className = v;
                 else if (k === 'textContent') e.textContent = v;
                 else if (k === 'innerHTML') e.innerHTML = v;

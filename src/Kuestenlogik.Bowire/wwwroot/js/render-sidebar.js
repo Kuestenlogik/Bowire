@@ -174,24 +174,34 @@
             })
         ));
 
-        var input = el('input', {
+        // Build the attrs map conditionally — el()'s default path is
+        // setAttribute(k, v) for every key, and setAttribute(k, undefined)
+        // sets the attribute to the literal string "undefined" which the
+        // browser then treats as truthy. That made the URL input look
+        // read-only when locked was false. Build the attrs object so
+        // only the keys that matter are passed.
+        var inputAttrs = {
             className: 'bowire-url-input' + (locked ? ' locked' : ''),
             type: 'text',
             value: url,
             placeholder: 'https://api.example.com/openapi.json',
-            readOnly: locked ? 'readonly' : undefined,
-            title: locked ? 'URL is fixed via --url parameter' : 'Discovery URL — gRPC server, OpenAPI doc, SignalR hub, ...',
-            onKeydown: locked ? undefined : function (e) {
+            title: locked ? 'URL is fixed via --url parameter' : 'Discovery URL — gRPC server, OpenAPI doc, SignalR hub, ...'
+        };
+        if (locked) {
+            inputAttrs.readOnly = 'readonly';
+        } else {
+            inputAttrs.onKeydown = function (e) {
                 if (e.key === 'Enter') {
                     e.preventDefault();
                     onCommit(e.target.value.trim());
                 }
-            },
-            onBlur: locked ? undefined : function (e) {
+            };
+            inputAttrs.onBlur = function (e) {
                 var v = e.target.value.trim();
                 if (v !== url) onCommit(v);
-            }
-        });
+            };
+        }
+        var input = el('input', inputAttrs);
         row.appendChild(input);
 
         if (locked) {
