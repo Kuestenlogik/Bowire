@@ -204,7 +204,11 @@ internal static class BowirePluginEndpoints
             var prerelease = req.TryGetProperty("prerelease", out var pre) && pre.ValueKind == JsonValueKind.True;
 
             if (string.IsNullOrWhiteSpace(packageId))
-                return Results.BadRequest(new { error = "packageId required" });
+                return BowireEndpointHelpers.Problem(
+                    type: "urn:bowire:invalid-input",
+                    title: "packageId is required",
+                    status: 400,
+                    instance: ctx.Request.Path);
 
             return await RunBowirePluginCommandAsync("install", packageId, version, prerelease);
         }).ExcludeFromDescription();
@@ -238,7 +242,11 @@ internal static class BowirePluginEndpoints
         endpoints.MapDelete($"{basePath}/api/plugins/{{packageId}}", async (string packageId) =>
         {
             if (string.IsNullOrWhiteSpace(packageId))
-                return Results.BadRequest(new { error = "packageId required" });
+                return BowireEndpointHelpers.Problem(
+                    type: "urn:bowire:invalid-input",
+                    title: "packageId is required",
+                    status: 400,
+                    instance: "/api/plugins/{packageId}");
             return await RunBowirePluginCommandAsync("uninstall", packageId, version: null, prerelease: false);
         }).ExcludeFromDescription();
 
@@ -248,7 +256,11 @@ internal static class BowirePluginEndpoints
         endpoints.MapGet($"{basePath}/api/plugins/{{packageId}}/latest", async (string packageId, HttpContext ctx) =>
         {
             if (string.IsNullOrWhiteSpace(packageId))
-                return Results.BadRequest(new { error = "packageId required" });
+                return BowireEndpointHelpers.Problem(
+                    type: "urn:bowire:invalid-input",
+                    title: "packageId is required",
+                    status: 400,
+                    instance: ctx.Request.Path);
 
             var prerelease = ctx.Request.Query["prerelease"].ToString() == "true";
             // NuGet v3 registration index — same source the package
@@ -283,12 +295,26 @@ internal static class BowirePluginEndpoints
                         v is not null && !v.Contains('-', StringComparison.Ordinal));
                 }
                 return latest is null
-                    ? Results.NotFound(new { packageId, error = "no versions found" })
+                    ? BowireEndpointHelpers.Problem(
+                        type: "urn:bowire:plugin:no-versions",
+                        title: $"No versions found for {packageId}",
+                        status: 404,
+                        instance: ctx.Request.Path,
+                        extensions: new Dictionary<string, object?> { ["packageId"] = packageId })
                     : Results.Ok(new { packageId, latest, prerelease });
             }
             catch (Exception ex)
             {
-                return Results.Json(new { packageId, error = ex.Message }, statusCode: 502);
+                return BowireEndpointHelpers.Problem(
+                    type: "urn:bowire:plugin:registry-error",
+                    title: $"Couldn't reach the plugin registry for {packageId}",
+                    status: 502,
+                    detail: ex.Message,
+                    instance: ctx.Request.Path,
+                    extensions: new Dictionary<string, object?> {
+                        ["packageId"] = packageId,
+                        ["exceptionType"] = ex.GetType().Name,
+                    });
             }
         }).ExcludeFromDescription();
 
@@ -309,7 +335,13 @@ internal static class BowirePluginEndpoints
             }
             catch (Exception ex)
             {
-                return Results.Json(new { error = ex.Message }, statusCode: 502);
+                return BowireEndpointHelpers.Problem(
+                    type: "urn:bowire:plugin:check-failed",
+                    title: "Plugin update check failed",
+                    status: 502,
+                    detail: ex.Message,
+                    instance: ctx.Request.Path,
+                    extensions: new Dictionary<string, object?> { ["exceptionType"] = ex.GetType().Name });
             }
         }).ExcludeFromDescription();
 
@@ -365,11 +397,23 @@ internal static class BowirePluginEndpoints
         // argument parser as a malformed value.
         if (!string.IsNullOrEmpty(packageIdOrEmpty) && !SafeIdentifier.IsMatch(packageIdOrEmpty))
         {
-            return Results.BadRequest(new { error = "invalid packageId" });
+            return BowireEndpointHelpers.Problem(
+                type: "urn:bowire:plugin:invalid-id",
+                title: "Invalid packageId",
+                status: 400,
+                detail: "Plugin ids must match [A-Za-z0-9][A-Za-z0-9._+-]* — alphanumerics plus dots / dashes / underscores / +. Anything else trips the input-validation guard.",
+                instance: "/api/plugins",
+                extensions: new Dictionary<string, object?> { ["packageId"] = packageIdOrEmpty });
         }
         if (!string.IsNullOrEmpty(version) && !SafeIdentifier.IsMatch(version))
         {
-            return Results.BadRequest(new { error = "invalid version" });
+            return BowireEndpointHelpers.Problem(
+                type: "urn:bowire:plugin:invalid-version",
+                title: "Invalid version",
+                status: 400,
+                detail: "Versions must match [A-Za-z0-9][A-Za-z0-9._+-]* (NuGet / SemVer character set).",
+                instance: "/api/plugins",
+                extensions: new Dictionary<string, object?> { ["version"] = version });
         }
 
         try
@@ -406,13 +450,31 @@ internal static class BowirePluginEndpoints
 
             return proc.ExitCode == 0
                 ? Results.Ok(new { ok = true, verb, packageId = packageIdOrEmpty, output })
-                : Results.Json(
-                    new { ok = false, verb, packageId = packageIdOrEmpty, exitCode = proc.ExitCode, output, error = err },
-                    statusCode: 500);
+                : BowireEndpointHelpers.Problem(
+                    type: "urn:bowire:plugin:cli-failed",
+                    title: $"bowire plugin {verb} failed (exit {proc.ExitCode})",
+                    status: 500,
+                    detail: string.IsNullOrEmpty(err) ? output : err,
+                    instance: "/api/plugins",
+                    extensions: new Dictionary<string, object?> {
+                        ["verb"] = verb,
+                        ["packageId"] = packageIdOrEmpty,
+                        ["exitCode"] = proc.ExitCode,
+                        ["stdout"] = output,
+                    });
         }
         catch (Exception ex)
         {
-            return Results.Json(new { ok = false, verb, error = ex.Message }, statusCode: 500);
+            return BowireEndpointHelpers.Problem(
+                type: "urn:bowire:plugin:cli-error",
+                title: $"Couldn't run `bowire plugin {verb}`",
+                status: 500,
+                detail: ex.Message,
+                instance: "/api/plugins",
+                extensions: new Dictionary<string, object?> {
+                    ["verb"] = verb,
+                    ["exceptionType"] = ex.GetType().Name,
+                });
         }
     }
 

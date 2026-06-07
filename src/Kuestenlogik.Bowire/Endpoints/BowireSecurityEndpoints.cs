@@ -46,23 +46,50 @@ internal static class BowireSecurityEndpoints
             }
             catch (JsonException ex)
             {
-                return Results.BadRequest(new { error = $"Could not parse request body: {ex.Message}" });
+                return BowireEndpointHelpers.Problem(
+                    type: "urn:bowire:invalid-input",
+                    title: "Request body isn't valid JSON",
+                    status: 400,
+                    detail: ex.Message,
+                    instance: ctx.Request.Path);
             }
 
             if (req is null)
-                return Results.BadRequest(new { error = "Empty request body." });
+                return BowireEndpointHelpers.Problem(
+                    type: "urn:bowire:invalid-input",
+                    title: "Empty request body",
+                    status: 400,
+                    instance: ctx.Request.Path);
             if (string.IsNullOrWhiteSpace(req.Target))
-                return Results.BadRequest(new { error = "target is required." });
+                return BowireEndpointHelpers.Problem(
+                    type: "urn:bowire:invalid-input",
+                    title: "'target' is required",
+                    status: 400,
+                    instance: ctx.Request.Path);
             if (string.IsNullOrWhiteSpace(req.Field))
-                return Results.BadRequest(new { error = "field is required." });
+                return BowireEndpointHelpers.Problem(
+                    type: "urn:bowire:invalid-input",
+                    title: "'field' is required",
+                    status: 400,
+                    instance: ctx.Request.Path);
             var hasCustomPayloads = req.CustomPayloads is { Count: > 0 };
             if (!hasCustomPayloads && string.IsNullOrWhiteSpace(req.Category))
-                return Results.BadRequest(new { error = "category or customPayloads is required." });
+                return BowireEndpointHelpers.Problem(
+                    type: "urn:bowire:invalid-input",
+                    title: "Either 'category' or 'customPayloads' is required",
+                    status: 400,
+                    instance: ctx.Request.Path);
             // Cap server-side at 50 custom payloads — the workbench
             // already caps at 5 by default but a misbehaving client
             // shouldn't be able to fire a DOS-shaped volley either.
             if (hasCustomPayloads && req.CustomPayloads!.Count > 50)
-                return Results.BadRequest(new { error = "customPayloads must be ≤ 50 entries." });
+                return BowireEndpointHelpers.Problem(
+                    type: "urn:bowire:security:payload-cap",
+                    title: "customPayloads must be ≤ 50 entries",
+                    status: 400,
+                    detail: $"Server-side cap to prevent DoS-shaped volleys. You sent {req.CustomPayloads!.Count}. The workbench's default cap is 5 — anything above is a non-default override.",
+                    instance: ctx.Request.Path,
+                    extensions: new Dictionary<string, object?> { ["count"] = req.CustomPayloads.Count, ["maxCount"] = 50 });
 
             // Lightweight HttpClient per call — AllowAutoRedirect off
             // for the same scope-safety reason ScanCommand uses; the
@@ -95,7 +122,12 @@ internal static class BowireSecurityEndpoints
                 }, ctx.RequestAborted).ConfigureAwait(false);
 
                 if (!string.IsNullOrEmpty(result.ErrorMessage))
-                    return Results.BadRequest(new { error = result.ErrorMessage });
+                    return BowireEndpointHelpers.Problem(
+                        type: "urn:bowire:security:fuzz-rejected",
+                        title: "Fuzz request rejected",
+                        status: 400,
+                        detail: result.ErrorMessage,
+                        instance: ctx.Request.Path);
 
                 // Project the result down to a JSON-friendly DTO so the
                 // workbench-side renderer doesn't have to know about
@@ -120,7 +152,13 @@ internal static class BowireSecurityEndpoints
             }
             catch (Exception ex)
             {
-                return Results.Json(new { error = ex.Message }, statusCode: 500);
+                return BowireEndpointHelpers.Problem(
+                    type: "urn:bowire:security:fuzz-error",
+                    title: "Fuzz execution failed",
+                    status: 500,
+                    detail: ex.Message,
+                    instance: ctx.Request.Path,
+                    extensions: new Dictionary<string, object?> { ["exceptionType"] = ex.GetType().Name });
             }
         }).ExcludeFromDescription();
 

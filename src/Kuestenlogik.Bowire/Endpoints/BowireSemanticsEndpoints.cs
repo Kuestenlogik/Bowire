@@ -130,11 +130,20 @@ internal static class BowireSemanticsEndpoints
             var req = await ReadAnnotationRequestAsync<AnnotationWriteRequest>(ctx);
             if (req is null)
             {
-                return Results.BadRequest(new { error = "Request body must be valid JSON." });
+                return BowireEndpointHelpers.Problem(
+                    type: "urn:bowire:invalid-input",
+                    title: "Request body must be valid JSON",
+                    status: 400,
+                    instance: ctx.Request.Path);
             }
             if (!ValidateWriteRequest(req, out var validationError))
             {
-                return Results.BadRequest(new { error = validationError });
+                return BowireEndpointHelpers.Problem(
+                    type: "urn:bowire:invalid-input",
+                    title: "Validation failed",
+                    status: 400,
+                    detail: validationError,
+                    instance: ctx.Request.Path);
             }
 
             var store = ctx.RequestServices.GetService<LayeredAnnotationStore>();
@@ -144,7 +153,12 @@ internal static class BowireSemanticsEndpoints
                 // path the GET takes, but for a write that's a 404
                 // ("no store available") so the UI knows the action
                 // didn't land.
-                return Results.NotFound(new { error = "Annotation store is not available." });
+                return BowireEndpointHelpers.Problem(
+                    type: "urn:bowire:semantics:no-store",
+                    title: "Annotation store is not available",
+                    status: 404,
+                    detail: "Bowire was wired without AddBowire — the annotation layer isn't registered.",
+                    instance: ctx.Request.Path);
             }
 
             var key = new AnnotationKey(req.Service!, req.Method!, req.MessageType ?? AnnotationKey.Wildcard, req.JsonPath!);
@@ -159,10 +173,13 @@ internal static class BowireSemanticsEndpoints
                 case AnnotationTier.User:
                     if (store.UserFileLayer is null)
                     {
-                        return Results.NotFound(new
-                        {
-                            error = "User-tier persistence is disabled (SchemaHintsPath is empty).",
-                        });
+                        return BowireEndpointHelpers.Problem(
+                            type: "urn:bowire:semantics:tier-disabled",
+                            title: "User-tier persistence is disabled",
+                            status: 404,
+                            detail: "SchemaHintsPath is empty in the host configuration.",
+                            instance: ctx.Request.Path,
+                            extensions: new Dictionary<string, object?> { ["tier"] = "user" });
                     }
                     await EnsureFileLayerLoadedAsync(store.UserFileLayer, ctx.RequestAborted);
                     store.UserFileLayer.Set(key, tag);
@@ -171,20 +188,24 @@ internal static class BowireSemanticsEndpoints
                 case AnnotationTier.Project:
                     if (store.ProjectFileLayer is null)
                     {
-                        return Results.NotFound(new
-                        {
-                            error = "Project-tier persistence is disabled (no bowire.schema-hints.json in CWD).",
-                        });
+                        return BowireEndpointHelpers.Problem(
+                            type: "urn:bowire:semantics:tier-disabled",
+                            title: "Project-tier persistence is disabled",
+                            status: 404,
+                            detail: "No bowire.schema-hints.json found in the current working directory.",
+                            instance: ctx.Request.Path,
+                            extensions: new Dictionary<string, object?> { ["tier"] = "project" });
                     }
                     await EnsureFileLayerLoadedAsync(store.ProjectFileLayer, ctx.RequestAborted);
                     store.ProjectFileLayer.Set(key, tag);
                     await store.ProjectFileLayer.SaveAsync(ctx.RequestAborted);
                     break;
                 default:
-                    return Results.BadRequest(new
-                    {
-                        error = "Field 'scope' must be one of 'session', 'user', 'project'.",
-                    });
+                    return BowireEndpointHelpers.Problem(
+                        type: "urn:bowire:invalid-input",
+                        title: "Field 'scope' must be one of 'session', 'user', 'project'",
+                        status: 400,
+                        instance: ctx.Request.Path);
             }
 
             return Results.Ok(BuildEffectiveAfterWriteResponse(store, key));
@@ -196,17 +217,31 @@ internal static class BowireSemanticsEndpoints
             var req = await ReadAnnotationRequestAsync<AnnotationDeleteRequest>(ctx);
             if (req is null)
             {
-                return Results.BadRequest(new { error = "Request body must be valid JSON." });
+                return BowireEndpointHelpers.Problem(
+                    type: "urn:bowire:invalid-input",
+                    title: "Request body must be valid JSON",
+                    status: 400,
+                    instance: ctx.Request.Path);
             }
             if (!ValidateDeleteRequest(req, out var validationError))
             {
-                return Results.BadRequest(new { error = validationError });
+                return BowireEndpointHelpers.Problem(
+                    type: "urn:bowire:invalid-input",
+                    title: "Validation failed",
+                    status: 400,
+                    detail: validationError,
+                    instance: ctx.Request.Path);
             }
 
             var store = ctx.RequestServices.GetService<LayeredAnnotationStore>();
             if (store is null)
             {
-                return Results.NotFound(new { error = "Annotation store is not available." });
+                return BowireEndpointHelpers.Problem(
+                    type: "urn:bowire:semantics:no-store",
+                    title: "Annotation store is not available",
+                    status: 404,
+                    detail: "Bowire was wired without AddBowire — the annotation layer isn't registered.",
+                    instance: ctx.Request.Path);
             }
 
             var key = new AnnotationKey(req.Service!, req.Method!, req.MessageType ?? AnnotationKey.Wildcard, req.JsonPath!);
@@ -220,10 +255,13 @@ internal static class BowireSemanticsEndpoints
                 case AnnotationTier.User:
                     if (store.UserFileLayer is null)
                     {
-                        return Results.NotFound(new
-                        {
-                            error = "User-tier persistence is disabled (SchemaHintsPath is empty).",
-                        });
+                        return BowireEndpointHelpers.Problem(
+                            type: "urn:bowire:semantics:tier-disabled",
+                            title: "User-tier persistence is disabled",
+                            status: 404,
+                            detail: "SchemaHintsPath is empty in the host configuration.",
+                            instance: ctx.Request.Path,
+                            extensions: new Dictionary<string, object?> { ["tier"] = "user" });
                     }
                     await EnsureFileLayerLoadedAsync(store.UserFileLayer, ctx.RequestAborted);
                     store.UserFileLayer.Remove(key);
@@ -232,20 +270,24 @@ internal static class BowireSemanticsEndpoints
                 case AnnotationTier.Project:
                     if (store.ProjectFileLayer is null)
                     {
-                        return Results.NotFound(new
-                        {
-                            error = "Project-tier persistence is disabled (no bowire.schema-hints.json in CWD).",
-                        });
+                        return BowireEndpointHelpers.Problem(
+                            type: "urn:bowire:semantics:tier-disabled",
+                            title: "Project-tier persistence is disabled",
+                            status: 404,
+                            detail: "No bowire.schema-hints.json found in the current working directory.",
+                            instance: ctx.Request.Path,
+                            extensions: new Dictionary<string, object?> { ["tier"] = "project" });
                     }
                     await EnsureFileLayerLoadedAsync(store.ProjectFileLayer, ctx.RequestAborted);
                     store.ProjectFileLayer.Remove(key);
                     await store.ProjectFileLayer.SaveAsync(ctx.RequestAborted);
                     break;
                 default:
-                    return Results.BadRequest(new
-                    {
-                        error = "Field 'scope' must be one of 'session', 'user', 'project'.",
-                    });
+                    return BowireEndpointHelpers.Problem(
+                        type: "urn:bowire:invalid-input",
+                        title: "Field 'scope' must be one of 'session', 'user', 'project'",
+                        status: 400,
+                        instance: ctx.Request.Path);
             }
 
             // Cross-tier survival — a DELETE at the session tier still

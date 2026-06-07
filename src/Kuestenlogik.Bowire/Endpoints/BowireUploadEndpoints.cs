@@ -26,7 +26,12 @@ internal static class BowireUploadEndpoints
             var body = await new StreamReader(ctx.Request.Body).ReadToEndAsync(ctx.RequestAborted);
 
             if (string.IsNullOrWhiteSpace(body))
-                return Results.BadRequest(new { error = "Empty proto content." });
+                return BowireEndpointHelpers.Problem(
+                    type: "urn:bowire:invalid-input",
+                    title: "Empty proto content",
+                    status: 400,
+                    detail: "POST the raw .proto file contents as the request body (Content-Type: text/plain).",
+                    instance: ctx.Request.Path);
 
             var services = ProtoUploadStore.AddAndParse(body);
             return Results.Json(new
@@ -51,7 +56,12 @@ internal static class BowireUploadEndpoints
             var body = await new StreamReader(ctx.Request.Body).ReadToEndAsync(ctx.RequestAborted);
 
             if (string.IsNullOrWhiteSpace(body))
-                return Results.BadRequest(new { error = "Empty OpenAPI document." });
+                return BowireEndpointHelpers.Problem(
+                    type: "urn:bowire:invalid-input",
+                    title: "Empty OpenAPI document",
+                    status: 400,
+                    detail: "POST the raw .json / .yaml OpenAPI document as the request body.",
+                    instance: ctx.Request.Path);
 
             // Source name for display in the UI — pass via ?name=foo.json query
             var name = ctx.Request.Query["name"].FirstOrDefault();

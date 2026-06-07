@@ -51,9 +51,17 @@ internal static class BowireAuthEndpoints
             }
 
             if (body is null || string.IsNullOrEmpty(body.TokenUrl))
-                return Results.Json(new { error = "Missing tokenUrl" }, BowireEndpointHelpers.JsonOptions, statusCode: 400);
+                return BowireEndpointHelpers.Problem(
+                    type: "urn:bowire:invalid-input",
+                    title: "Missing tokenUrl",
+                    status: 400,
+                    instance: ctx.Request.Path);
             if (string.IsNullOrEmpty(body.ClientId))
-                return Results.Json(new { error = "Missing clientId" }, BowireEndpointHelpers.JsonOptions, statusCode: 400);
+                return BowireEndpointHelpers.Problem(
+                    type: "urn:bowire:invalid-input",
+                    title: "Missing clientId",
+                    status: 400,
+                    instance: ctx.Request.Path);
 
             try
             {
@@ -134,7 +142,11 @@ internal static class BowireAuthEndpoints
             if (body is null || string.IsNullOrEmpty(body.TokenUrl) || string.IsNullOrEmpty(body.Code) ||
                 string.IsNullOrEmpty(body.ClientId) || string.IsNullOrEmpty(body.RedirectUri))
             {
-                return Results.Json(new { error = "Missing tokenUrl, code, clientId, or redirectUri" }, BowireEndpointHelpers.JsonOptions, statusCode: 400);
+                return BowireEndpointHelpers.Problem(
+                    type: "urn:bowire:invalid-input",
+                    title: "Missing one of: tokenUrl, code, clientId, redirectUri",
+                    status: 400,
+                    instance: ctx.Request.Path);
             }
             if (!Uri.TryCreate(body.TokenUrl, UriKind.Absolute, out var tokenUri))
                 return BowireEndpointHelpers.Problem(
@@ -212,7 +224,11 @@ internal static class BowireAuthEndpoints
             if (body is null || string.IsNullOrEmpty(body.TokenUrl) || string.IsNullOrEmpty(body.RefreshToken) ||
                 string.IsNullOrEmpty(body.ClientId))
             {
-                return Results.Json(new { error = "Missing tokenUrl, refreshToken, or clientId" }, BowireEndpointHelpers.JsonOptions, statusCode: 400);
+                return BowireEndpointHelpers.Problem(
+                    type: "urn:bowire:invalid-input",
+                    title: "Missing one of: tokenUrl, refreshToken, clientId",
+                    status: 400,
+                    instance: ctx.Request.Path);
             }
             if (!Uri.TryCreate(body.TokenUrl, UriKind.Absolute, out var tokenUri))
                 return BowireEndpointHelpers.Problem(
@@ -288,9 +304,17 @@ internal static class BowireAuthEndpoints
             }
 
             if (body is null || string.IsNullOrEmpty(body.Url))
-                return Results.Json(new { error = "Missing url" }, BowireEndpointHelpers.JsonOptions, statusCode: 400);
+                return BowireEndpointHelpers.Problem(
+                    type: "urn:bowire:invalid-input",
+                    title: "Missing 'url' field",
+                    status: 400,
+                    instance: ctx.Request.Path);
             if (!Uri.TryCreate(body.Url, UriKind.Absolute, out var tokenUri))
-                return Results.Json(new { error = "url is not a valid absolute URL" }, BowireEndpointHelpers.JsonOptions, statusCode: 400);
+                return BowireEndpointHelpers.Problem(
+                    type: "urn:bowire:auth:invalid-url",
+                    title: "url is not a valid absolute URL",
+                    status: 400,
+                    instance: ctx.Request.Path);
 
             try
             {

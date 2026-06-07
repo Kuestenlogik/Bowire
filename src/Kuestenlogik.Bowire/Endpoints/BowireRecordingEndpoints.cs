@@ -48,7 +48,12 @@ internal static class BowireRecordingEndpoints
             {
                 BowireEndpointHelpers.GetLogger(ctx).LogWarning(ex,
                     "Rejected invalid recordings JSON from PUT /api/recordings");
-                return Results.Json(new { error = "Invalid JSON: " + ex.Message }, BowireEndpointHelpers.JsonOptions, statusCode: 400);
+                return BowireEndpointHelpers.Problem(
+                    type: "urn:bowire:invalid-input",
+                    title: "Request body isn't valid JSON",
+                    status: 400,
+                    detail: ex.Message,
+                    instance: ctx.Request.Path);
             }
         }).ExcludeFromDescription();
 
