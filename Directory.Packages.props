@@ -134,6 +134,6 @@
          (auto-detect on 127.0.0.1:11434). Cloud providers slot in via
          the same abstraction once Phase 3 wires Microsoft.Extensions.AI.OpenAI. -->
     <PackageVersion Include="Microsoft.Extensions.AI" Version="9.7.0" />
-    <PackageVersion Include="OllamaSharp" Version="5.4.1" />
+    <PackageVersion Include="OllamaSharp" Version="5.4.25" />
   </ItemGroup>
 </Project>
