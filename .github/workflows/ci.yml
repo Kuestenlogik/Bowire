@@ -84,7 +84,7 @@ jobs:
         # from forks, so the upload would fail noisily for outside
         # contributors.
         if: ${{ !github.event.pull_request.head.repo.fork }}
-        uses: codecov/codecov-action@v6
+        uses: codecov/codecov-action@v7
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: artifacts/coverage/merged/Cobertura.xml
