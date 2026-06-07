@@ -566,7 +566,9 @@ public static class BowireAiEndpoints
         }).ExcludeFromDescription();
 
         endpoints.MapPost($"{basePath}/api/ai/chat",
-            async (HttpContext ctx, [Microsoft.AspNetCore.Mvc.FromServices] IChatClient? client) =>
+            async (HttpContext ctx,
+                [Microsoft.AspNetCore.Mvc.FromServices] IChatClient? client,
+                [Microsoft.AspNetCore.Mvc.FromServices] BowireAiRuntime runtime) =>
         {
             if (client is null)
             {
@@ -609,6 +611,26 @@ public static class BowireAiEndpoints
             catch (OperationCanceledException)
             {
                 return Results.Json(new { error = "canceled" }, JsonOpts, statusCode: 499);
+            }
+            catch (HttpRequestException hre)
+                when (hre.StatusCode == System.Net.HttpStatusCode.NotFound)
+            {
+                // Ollama (and most OpenAI-compatible servers) return 404
+                // when the configured model isn't installed on the
+                // endpoint. The raw HttpRequestException.Message is
+                // "Response status code does not indicate success: 404
+                // (Not Found)." which reads like a Bowire-side bug — file
+                // a structured error the UI can render with the model
+                // name + actionable fix (#87).
+                var modelName = runtime.Options.Model ?? "(unknown)";
+                return Results.Json(new
+                {
+                    error = $"Model '{modelName}' isn't available on the AI server. "
+                          + $"Pull it with `ollama pull {modelName}` (or your provider's equivalent), "
+                          + "or pick a different model in Settings → AI.",
+                    type = "ModelNotFound",
+                    model = modelName,
+                }, JsonOpts, statusCode: 502);
             }
             catch (Exception ex)
             {
