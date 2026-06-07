@@ -4156,6 +4156,69 @@ img.bowire-logo-icon {
     background: var(--bowire-error);
 }
 
+/* ---------- Problem cards (RFC 7807 — #88) ---------- */
+.bowire-problem-card {
+    border: 1px solid var(--bowire-error);
+    border-left-width: 3px;
+    border-radius: var(--bowire-radius-sm);
+    padding: 10px 12px;
+    margin: 8px 0;
+    background: var(--bowire-bg);
+}
+
+.bowire-problem-title {
+    color: var(--bowire-error);
+    font-weight: 600;
+    font-size: 13px;
+    line-height: 1.4;
+}
+
+.bowire-problem-details {
+    margin-top: 6px;
+}
+
+.bowire-problem-details summary {
+    cursor: pointer;
+    color: var(--bowire-text-tertiary);
+    font-size: 11px;
+    user-select: none;
+}
+
+.bowire-problem-detail-body {
+    margin-top: 6px;
+    padding: 8px;
+    font-family: var(--bowire-font-mono);
+    font-size: 11px;
+    line-height: 1.5;
+    color: var(--bowire-text-secondary);
+    background: var(--bowire-bg-elevated);
+    border-radius: var(--bowire-radius-sm);
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+.bowire-problem-actions {
+    margin-top: 8px;
+    display: flex;
+    gap: 6px;
+}
+
+.bowire-problem-action {
+    padding: 4px 10px;
+    background: var(--bowire-bg-elevated);
+    border: 1px solid var(--bowire-border);
+    border-radius: var(--bowire-radius-sm);
+    color: var(--bowire-text);
+    font-size: 11px;
+    text-decoration: none;
+    transition: border-color var(--bowire-transition);
+}
+
+.bowire-problem-action:hover {
+    border-color: var(--bowire-accent);
+    color: var(--bowire-accent-text);
+}
+
 /* ---------- Toast Notifications ---------- */
 .bowire-toast-container {
     position: fixed;

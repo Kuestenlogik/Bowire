@@ -570,11 +570,19 @@ public static class BowireAiEndpoints
                 [Microsoft.AspNetCore.Mvc.FromServices] IChatClient? client,
                 [Microsoft.AspNetCore.Mvc.FromServices] BowireAiRuntime runtime) =>
         {
+            const string Instance = "/api/ai/chat";
+
             if (client is null)
             {
-                return Results.Json(
-                    new { error = "No IChatClient registered. Add Kuestenlogik.Bowire.Ai and call AddBowireAi(), or register your own client." },
-                    JsonOpts, statusCode: 503);
+                return Endpoints.BowireEndpointHelpers.Problem(
+                    type: "urn:bowire:ai:no-chat-client",
+                    title: "No AI chat client registered",
+                    status: 503,
+                    detail: "No IChatClient was registered on the host. Install Kuestenlogik.Bowire.Ai and call AddBowireAi(), or register your own IChatClient.",
+                    instance: Instance,
+                    extensions: new Dictionary<string, object?> {
+                        ["links"] = new[] { new { rel = "configure", href = "/#settings/ai" } }
+                    });
             }
 
             ChatRequest? req;
@@ -585,14 +593,22 @@ public static class BowireAiEndpoints
             }
             catch (JsonException ex)
             {
-                return Results.Json(new { error = "Invalid JSON: " + ex.Message },
-                    JsonOpts, statusCode: 400);
+                return Endpoints.BowireEndpointHelpers.Problem(
+                    type: "urn:bowire:invalid-input",
+                    title: "Request body isn't valid JSON",
+                    status: 400,
+                    detail: ex.Message,
+                    instance: Instance);
             }
 
             if (req is null || req.Messages is null || req.Messages.Length == 0)
             {
-                return Results.Json(new { error = "messages[] required" },
-                    JsonOpts, statusCode: 400);
+                return Endpoints.BowireEndpointHelpers.Problem(
+                    type: "urn:bowire:invalid-input",
+                    title: "Request is missing a 'messages' array",
+                    status: 400,
+                    detail: "The chat endpoint requires { \"messages\": [{ role, content }, ...] } in the request body.",
+                    instance: Instance);
             }
 
             var messages = req.Messages.Select(m =>
@@ -610,7 +626,11 @@ public static class BowireAiEndpoints
             }
             catch (OperationCanceledException)
             {
-                return Results.Json(new { error = "canceled" }, JsonOpts, statusCode: 499);
+                return Endpoints.BowireEndpointHelpers.Problem(
+                    type: "urn:bowire:canceled",
+                    title: "Request was canceled",
+                    status: 499,
+                    instance: Instance);
             }
             catch (HttpRequestException hre)
                 when (hre.StatusCode == System.Net.HttpStatusCode.NotFound)
@@ -619,23 +639,36 @@ public static class BowireAiEndpoints
                 // when the configured model isn't installed on the
                 // endpoint. The raw HttpRequestException.Message is
                 // "Response status code does not indicate success: 404
-                // (Not Found)." which reads like a Bowire-side bug — file
+                // (Not Found)." which reads like a Bowire-side bug — surface
                 // a structured error the UI can render with the model
-                // name + actionable fix (#87).
+                // name + actionable fix (#87, #88).
                 var modelName = runtime.Options.Model ?? "(unknown)";
-                return Results.Json(new
-                {
-                    error = $"Model '{modelName}' isn't available on the AI server. "
+                var endpoint = runtime.Options.Endpoint ?? "(unknown)";
+                return Endpoints.BowireEndpointHelpers.Problem(
+                    type: "urn:bowire:ai:model-not-found",
+                    title: $"Model '{modelName}' is not installed on the AI server",
+                    status: 502,
+                    detail: $"The AI server at {endpoint} returned 404 for the configured model '{modelName}'. "
                           + $"Pull it with `ollama pull {modelName}` (or your provider's equivalent), "
                           + "or pick a different model in Settings → AI.",
-                    type = "ModelNotFound",
-                    model = modelName,
-                }, JsonOpts, statusCode: 502);
+                    instance: Instance,
+                    extensions: new Dictionary<string, object?> {
+                        ["model"] = modelName,
+                        ["endpoint"] = endpoint,
+                        ["links"] = new[] { new { rel = "configure", href = "/#settings/ai" } }
+                    });
             }
             catch (Exception ex)
             {
-                return Results.Json(new { error = ex.Message, type = ex.GetType().Name },
-                    JsonOpts, statusCode: 502);
+                return Endpoints.BowireEndpointHelpers.Problem(
+                    type: "urn:bowire:ai:provider-error",
+                    title: "The AI provider returned an error",
+                    status: 502,
+                    detail: ex.Message,
+                    instance: Instance,
+                    extensions: new Dictionary<string, object?> {
+                        ["exceptionType"] = ex.GetType().Name
+                    });
             }
         }).ExcludeFromDescription();
 

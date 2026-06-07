@@ -460,6 +460,110 @@
         }
     }
 
+    /**
+     * Normalise an error response body into the {title, detail, links,
+     * extensions} shape every error renderer in the workbench wants
+     * (#88). Accepts:
+     *
+     *   - RFC 7807 problem+json: { type, title, status, detail, instance, ... }
+     *   - Legacy ad-hoc shape:   { error, type?, ...extensions }
+     *   - Plain string:          surfaced as the title
+     *   - null/undefined:        a generic fallback
+     *
+     * Returns null when there's nothing error-shaped in the input.
+     * Callers should use the result like:
+     *
+     *   var problem = normalizeProblem(body);
+     *   if (problem) renderProblem(problem, container);
+     */
+    function normalizeProblem(body) {
+        if (body === null || body === undefined) return null;
+        if (typeof body === 'string') {
+            return { title: body, detail: null, links: [], extensions: {} };
+        }
+        if (typeof body !== 'object') return null;
+
+        // problem+json: title is always present in a 7807 body.
+        if (typeof body.title === 'string' && body.title) {
+            var extensions = {};
+            for (var k in body) {
+                if (!Object.prototype.hasOwnProperty.call(body, k)) continue;
+                if (k === 'type' || k === 'title' || k === 'status' ||
+                    k === 'detail' || k === 'instance' || k === 'error' ||
+                    k === 'links') continue;
+                extensions[k] = body[k];
+            }
+            return {
+                type: body.type || null,
+                title: body.title,
+                detail: body.detail || null,
+                status: body.status || null,
+                instance: body.instance || null,
+                links: Array.isArray(body.links) ? body.links : [],
+                extensions: extensions,
+            };
+        }
+
+        // Legacy shape: { error: "...", type?: "...", ...extensions }
+        if (typeof body.error === 'string' && body.error) {
+            var extensions2 = {};
+            for (var k2 in body) {
+                if (!Object.prototype.hasOwnProperty.call(body, k2)) continue;
+                if (k2 === 'error' || k2 === 'type') continue;
+                extensions2[k2] = body[k2];
+            }
+            return {
+                type: body.type || null,
+                title: body.error,
+                detail: null,
+                links: [],
+                extensions: extensions2,
+            };
+        }
+
+        return null;
+    }
+
+    /**
+     * Render a normalized problem object into a DOM container as a
+     * structured error card (#88). Headline + collapsible detail + any
+     * action links the backend exposed via `links` (e.g. "Configure"
+     * pointing at Settings → AI).
+     */
+    function renderProblem(problem, container) {
+        if (!problem || !container) return;
+        var card = el('div', { className: 'bowire-problem-card' });
+
+        card.appendChild(el('div', { className: 'bowire-problem-title', textContent: problem.title }));
+
+        if (problem.detail) {
+            var details = el('details', { className: 'bowire-problem-details' });
+            details.appendChild(el('summary', { textContent: 'Details' }));
+            details.appendChild(el('div', { className: 'bowire-problem-detail-body', textContent: problem.detail }));
+            card.appendChild(details);
+        }
+
+        if (problem.links && problem.links.length > 0) {
+            var actions = el('div', { className: 'bowire-problem-actions' });
+            for (var i = 0; i < problem.links.length; i++) {
+                var lnk = problem.links[i];
+                if (!lnk || !lnk.href) continue;
+                var label = lnk.rel === 'configure' ? 'Configure'
+                          : lnk.rel === 'docs' ? 'Open docs'
+                          : lnk.rel === 'retry' ? 'Retry'
+                          : (lnk.rel || 'Open');
+                actions.appendChild(el('a', {
+                    className: 'bowire-problem-action',
+                    href: lnk.href,
+                    textContent: label
+                }));
+            }
+            if (actions.childNodes.length > 0) card.appendChild(actions);
+        }
+
+        container.appendChild(card);
+    }
+
     // Toast notification with optional undo callback.
     // Returns the toast element so callers can add custom content.
     // Options: { undo: function, duration: ms (0 = sticky) }

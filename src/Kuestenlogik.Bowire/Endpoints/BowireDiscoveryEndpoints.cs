@@ -211,12 +211,29 @@ internal static class BowireDiscoveryEndpoints
             if (allProtocolServices.Count > 0)
                 return Results.Json(allProtocolServices, BowireEndpointHelpers.JsonOptions);
 
-            // No services from any source
-            var errorMsg = discoveryErrors.Count > 0
-                ? string.Join("; ", discoveryErrors)
-                : "No protocol plugins loaded. Upload .proto files or configure ProtoSources.";
-
-            return Results.Json(new { error = errorMsg }, BowireEndpointHelpers.JsonOptions, statusCode: 502);
+            // No services from any source — surface as ProblemDetails so
+            // the frontend can render the per-plugin failure list as
+            // an actionable detail block (#88).
+            if (discoveryErrors.Count > 0)
+            {
+                return BowireEndpointHelpers.Problem(
+                    type: "urn:bowire:discovery:no-match",
+                    title: "No protocol plugin recognised this URL",
+                    status: 502,
+                    detail: "Every loaded plugin probed the URL and either returned no services or failed. See `attempts` for the per-plugin error message.",
+                    instance: "/api/services",
+                    extensions: new Dictionary<string, object?> {
+                        ["serverUrl"] = serverUrl,
+                        ["attempts"] = discoveryErrors,
+                        ["hint"] = "Add a `protocol@` prefix (e.g. `rest@" + serverUrl + "`) to pin a specific plugin and skip the others' probes."
+                    });
+            }
+            return BowireEndpointHelpers.Problem(
+                type: "urn:bowire:discovery:no-plugins",
+                title: "No protocol plugins are loaded",
+                status: 502,
+                detail: "Bowire has no protocol plugins available to probe this URL. Upload .proto / OpenAPI / GraphQL SDL files via the Schema Files tab, or configure ProtoSources on the host.",
+                instance: "/api/services");
         }).ExcludeFromDescription();
 
         return endpoints;

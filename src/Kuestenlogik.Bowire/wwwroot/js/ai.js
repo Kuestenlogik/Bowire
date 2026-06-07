@@ -462,11 +462,21 @@
                 if (resp.ok && resp.body && typeof resp.body.content === 'string') {
                     chatHistory.push({ role: 'assistant', content: resp.body.content });
                 } else {
-                    chatHistory.push({ role: 'assistant', content: '⚠ ' + ((resp.body && resp.body.error) || 'AI request failed (HTTP ' + resp.status + ').') });
+                    // Server returned a problem+json (or legacy { error }).
+                    // Carry the normalized problem so the renderer can
+                    // surface the structured form (title + details +
+                    // links). Fallback to text when the body is empty
+                    // (network blip — caught case below should be hit
+                    // instead but be defensive).
+                    var problem = normalizeProblem(resp.body) || normalizeProblem('AI request failed (HTTP ' + resp.status + ').');
+                    chatHistory.push({ role: 'assistant', problem: problem });
                 }
             })
             .catch(function (err) {
-                chatHistory.push({ role: 'assistant', content: '⚠ Network error: ' + (err && err.message ? err.message : err) });
+                chatHistory.push({
+                    role: 'assistant',
+                    problem: normalizeProblem('Network error: ' + (err && err.message ? err.message : err))
+                });
             })
             .finally(function () { chatBusy = false; });
     }
@@ -637,10 +647,18 @@
 
             var transcript = el('div', { className: 'bowire-ai-chat-transcript' });
             chatHistory.forEach(function (m) {
-                transcript.appendChild(el('div', {
-                    className: 'bowire-ai-chat-msg bowire-ai-chat-msg-' + m.role,
-                    textContent: (m.role === 'user' ? 'You: ' : 'AI: ') + m.content
-                }));
+                var bubble = el('div', { className: 'bowire-ai-chat-msg bowire-ai-chat-msg-' + m.role });
+                // Structured-error bubble (#88): render the Problem
+                // card instead of the plain assistant content. The
+                // prefix "AI: " is still useful to anchor the bubble
+                // in the conversation.
+                if (m.problem) {
+                    bubble.appendChild(el('div', { className: 'bowire-ai-chat-prefix', textContent: 'AI:' }));
+                    renderProblem(m.problem, bubble);
+                } else {
+                    bubble.textContent = (m.role === 'user' ? 'You: ' : 'AI: ') + m.content;
+                }
+                transcript.appendChild(bubble);
             });
             chatHost.appendChild(transcript);
 
