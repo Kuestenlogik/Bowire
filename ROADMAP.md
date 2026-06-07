@@ -51,6 +51,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 - [#85](https://github.com/Kuestenlogik/Bowire/issues/85) **Request-pane Body: split stacked Form / Selection Set / Query into sub-tabs** 
 - [#88](https://github.com/Kuestenlogik/Bowire/issues/88) **Adopt RFC 7807 ProblemDetails as the API error convention** 
 - [#89](https://github.com/Kuestenlogik/Bowire/issues/89) **AI side-panel: ground the chat in workbench state + invoke via MCP tool calling** 
+- [#90](https://github.com/Kuestenlogik/Bowire/issues/90) **AI panel: move from response-pane tab to a right-side drawer** 
 
 ---
 
