@@ -453,7 +453,15 @@
     // ---- Helpers ----
 
     function buildConnectedHeadline() {
-        if (serverUrls.length === 0) return 'Connected (embedded)';
+        // "Connected (embedded)" only makes sense when Bowire is mounted
+        // inside the user's own app — services come from the in-process
+        // EndpointDataSource scan, not from a URL. In standalone mode an
+        // empty serverUrls list just means "the user hasn't pointed at
+        // anything yet"; calling that "Connected (embedded)" is wrong
+        // and confusing.
+        if (serverUrls.length === 0) {
+            return uiMode === 'embedded' ? 'Connected (embedded)' : 'Pick a method from the sidebar';
+        }
         if (serverUrls.length === 1) return 'Connected to ' + serverUrls[0];
         return 'Connected to ' + serverUrls.length + ' URLs';
     }
