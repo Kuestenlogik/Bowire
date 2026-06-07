@@ -42,7 +42,12 @@ internal static class BowireAuthEndpoints
             }
             catch (JsonException ex)
             {
-                return Results.Json(new { error = "Invalid request body: " + ex.Message }, BowireEndpointHelpers.JsonOptions, statusCode: 400);
+                return BowireEndpointHelpers.Problem(
+                    type: "urn:bowire:invalid-input",
+                    title: "Request body isn't valid JSON",
+                    status: 400,
+                    detail: ex.Message,
+                    instance: ctx.Request.Path);
             }
 
             if (body is null || string.IsNullOrEmpty(body.TokenUrl))
@@ -62,7 +67,11 @@ internal static class BowireAuthEndpoints
                 if (!string.IsNullOrEmpty(body.Audience)) form.Add(new("audience", body.Audience));
 
                 if (!Uri.TryCreate(body.TokenUrl, UriKind.Absolute, out var tokenUri))
-                    return Results.Json(new { error = "tokenUrl is not a valid absolute URL" }, BowireEndpointHelpers.JsonOptions, statusCode: 400);
+                    return BowireEndpointHelpers.Problem(
+                    type: "urn:bowire:auth:invalid-token-url",
+                    title: "tokenUrl is not a valid absolute URL",
+                    status: 400,
+                    instance: ctx.Request.Path);
 
                 var http = ctx.RequestServices
                     .GetRequiredService<IHttpClientFactory>()
@@ -73,11 +82,13 @@ internal static class BowireAuthEndpoints
 
                 if (!resp.IsSuccessStatusCode)
                 {
-                    return Results.Json(new
-                    {
-                        error = $"Token endpoint returned HTTP {(int)resp.StatusCode}",
-                        details = responseBody
-                    }, BowireEndpointHelpers.JsonOptions, statusCode: 502);
+                    return BowireEndpointHelpers.Problem(
+                        type: "urn:bowire:auth:token-endpoint-error",
+                        title: $"Identity provider returned HTTP {(int)resp.StatusCode}",
+                        status: 502,
+                        detail: responseBody,
+                        instance: ctx.Request.Path,
+                        extensions: new Dictionary<string, object?> { ["upstreamStatus"] = (int)resp.StatusCode });
                 }
 
                 // Pass the token endpoint's JSON body straight through
@@ -87,7 +98,13 @@ internal static class BowireAuthEndpoints
             {
                 BowireEndpointHelpers.GetLogger(ctx).LogWarning(ex,
                     "OAuth client_credentials proxy failed for {TokenUrl}", body.TokenUrl);
-                return Results.Json(new { error = ex.Message }, BowireEndpointHelpers.JsonOptions, statusCode: 502);
+                return BowireEndpointHelpers.Problem(
+                    type: "urn:bowire:auth:upstream-error",
+                    title: "Identity provider call failed",
+                    status: 502,
+                    detail: ex.Message + (ex.InnerException is { } inner ? "\n\nInner: " + inner.Message : string.Empty),
+                    instance: ctx.Request.Path,
+                    extensions: new Dictionary<string, object?> { ["exceptionType"] = ex.GetType().Name });
             }
         }).ExcludeFromDescription();
 
@@ -106,7 +123,12 @@ internal static class BowireAuthEndpoints
             }
             catch (JsonException ex)
             {
-                return Results.Json(new { error = "Invalid request body: " + ex.Message }, BowireEndpointHelpers.JsonOptions, statusCode: 400);
+                return BowireEndpointHelpers.Problem(
+                    type: "urn:bowire:invalid-input",
+                    title: "Request body isn't valid JSON",
+                    status: 400,
+                    detail: ex.Message,
+                    instance: ctx.Request.Path);
             }
 
             if (body is null || string.IsNullOrEmpty(body.TokenUrl) || string.IsNullOrEmpty(body.Code) ||
@@ -115,7 +137,11 @@ internal static class BowireAuthEndpoints
                 return Results.Json(new { error = "Missing tokenUrl, code, clientId, or redirectUri" }, BowireEndpointHelpers.JsonOptions, statusCode: 400);
             }
             if (!Uri.TryCreate(body.TokenUrl, UriKind.Absolute, out var tokenUri))
-                return Results.Json(new { error = "tokenUrl is not a valid absolute URL" }, BowireEndpointHelpers.JsonOptions, statusCode: 400);
+                return BowireEndpointHelpers.Problem(
+                    type: "urn:bowire:auth:invalid-token-url",
+                    title: "tokenUrl is not a valid absolute URL",
+                    status: 400,
+                    instance: ctx.Request.Path);
 
             try
             {
@@ -138,11 +164,13 @@ internal static class BowireAuthEndpoints
 
                 if (!resp.IsSuccessStatusCode)
                 {
-                    return Results.Json(new
-                    {
-                        error = $"Token endpoint returned HTTP {(int)resp.StatusCode}",
-                        details = responseBody
-                    }, BowireEndpointHelpers.JsonOptions, statusCode: 502);
+                    return BowireEndpointHelpers.Problem(
+                        type: "urn:bowire:auth:token-endpoint-error",
+                        title: $"Identity provider returned HTTP {(int)resp.StatusCode}",
+                        status: 502,
+                        detail: responseBody,
+                        instance: ctx.Request.Path,
+                        extensions: new Dictionary<string, object?> { ["upstreamStatus"] = (int)resp.StatusCode });
                 }
                 return Results.Content(responseBody, "application/json");
             }
@@ -150,7 +178,13 @@ internal static class BowireAuthEndpoints
             {
                 BowireEndpointHelpers.GetLogger(ctx).LogWarning(ex,
                     "OAuth authorization_code proxy failed for {TokenUrl}", body.TokenUrl);
-                return Results.Json(new { error = ex.Message }, BowireEndpointHelpers.JsonOptions, statusCode: 502);
+                return BowireEndpointHelpers.Problem(
+                    type: "urn:bowire:auth:upstream-error",
+                    title: "Identity provider call failed",
+                    status: 502,
+                    detail: ex.Message + (ex.InnerException is { } inner ? "\n\nInner: " + inner.Message : string.Empty),
+                    instance: ctx.Request.Path,
+                    extensions: new Dictionary<string, object?> { ["exceptionType"] = ex.GetType().Name });
             }
         }).ExcludeFromDescription();
 
@@ -167,7 +201,12 @@ internal static class BowireAuthEndpoints
             }
             catch (JsonException ex)
             {
-                return Results.Json(new { error = "Invalid request body: " + ex.Message }, BowireEndpointHelpers.JsonOptions, statusCode: 400);
+                return BowireEndpointHelpers.Problem(
+                    type: "urn:bowire:invalid-input",
+                    title: "Request body isn't valid JSON",
+                    status: 400,
+                    detail: ex.Message,
+                    instance: ctx.Request.Path);
             }
 
             if (body is null || string.IsNullOrEmpty(body.TokenUrl) || string.IsNullOrEmpty(body.RefreshToken) ||
@@ -176,7 +215,11 @@ internal static class BowireAuthEndpoints
                 return Results.Json(new { error = "Missing tokenUrl, refreshToken, or clientId" }, BowireEndpointHelpers.JsonOptions, statusCode: 400);
             }
             if (!Uri.TryCreate(body.TokenUrl, UriKind.Absolute, out var tokenUri))
-                return Results.Json(new { error = "tokenUrl is not a valid absolute URL" }, BowireEndpointHelpers.JsonOptions, statusCode: 400);
+                return BowireEndpointHelpers.Problem(
+                    type: "urn:bowire:auth:invalid-token-url",
+                    title: "tokenUrl is not a valid absolute URL",
+                    status: 400,
+                    instance: ctx.Request.Path);
 
             try
             {
@@ -198,11 +241,13 @@ internal static class BowireAuthEndpoints
 
                 if (!resp.IsSuccessStatusCode)
                 {
-                    return Results.Json(new
-                    {
-                        error = $"Token endpoint returned HTTP {(int)resp.StatusCode}",
-                        details = responseBody
-                    }, BowireEndpointHelpers.JsonOptions, statusCode: 502);
+                    return BowireEndpointHelpers.Problem(
+                        type: "urn:bowire:auth:token-endpoint-error",
+                        title: $"Identity provider returned HTTP {(int)resp.StatusCode}",
+                        status: 502,
+                        detail: responseBody,
+                        instance: ctx.Request.Path,
+                        extensions: new Dictionary<string, object?> { ["upstreamStatus"] = (int)resp.StatusCode });
                 }
                 return Results.Content(responseBody, "application/json");
             }
@@ -210,7 +255,13 @@ internal static class BowireAuthEndpoints
             {
                 BowireEndpointHelpers.GetLogger(ctx).LogWarning(ex,
                     "OAuth refresh_token proxy failed for {TokenUrl}", body.TokenUrl);
-                return Results.Json(new { error = ex.Message }, BowireEndpointHelpers.JsonOptions, statusCode: 502);
+                return BowireEndpointHelpers.Problem(
+                    type: "urn:bowire:auth:upstream-error",
+                    title: "Identity provider call failed",
+                    status: 502,
+                    detail: ex.Message + (ex.InnerException is { } inner ? "\n\nInner: " + inner.Message : string.Empty),
+                    instance: ctx.Request.Path,
+                    extensions: new Dictionary<string, object?> { ["exceptionType"] = ex.GetType().Name });
             }
         }).ExcludeFromDescription();
 
@@ -228,7 +279,12 @@ internal static class BowireAuthEndpoints
             }
             catch (JsonException ex)
             {
-                return Results.Json(new { error = "Invalid request body: " + ex.Message }, BowireEndpointHelpers.JsonOptions, statusCode: 400);
+                return BowireEndpointHelpers.Problem(
+                    type: "urn:bowire:invalid-input",
+                    title: "Request body isn't valid JSON",
+                    status: 400,
+                    detail: ex.Message,
+                    instance: ctx.Request.Path);
             }
 
             if (body is null || string.IsNullOrEmpty(body.Url))
@@ -262,11 +318,13 @@ internal static class BowireAuthEndpoints
 
                 if (!resp.IsSuccessStatusCode)
                 {
-                    return Results.Json(new
-                    {
-                        error = $"Token endpoint returned HTTP {(int)resp.StatusCode}",
-                        details = responseBody
-                    }, BowireEndpointHelpers.JsonOptions, statusCode: 502);
+                    return BowireEndpointHelpers.Problem(
+                        type: "urn:bowire:auth:token-endpoint-error",
+                        title: $"Identity provider returned HTTP {(int)resp.StatusCode}",
+                        status: 502,
+                        detail: responseBody,
+                        instance: ctx.Request.Path,
+                        extensions: new Dictionary<string, object?> { ["upstreamStatus"] = (int)resp.StatusCode });
                 }
 
                 return Results.Content(responseBody, resp.Content.Headers.ContentType?.MediaType ?? "application/json");
@@ -275,7 +333,13 @@ internal static class BowireAuthEndpoints
             {
                 BowireEndpointHelpers.GetLogger(ctx).LogWarning(ex,
                     "Custom token proxy failed for {Url}", body.Url);
-                return Results.Json(new { error = ex.Message }, BowireEndpointHelpers.JsonOptions, statusCode: 502);
+                return BowireEndpointHelpers.Problem(
+                    type: "urn:bowire:auth:upstream-error",
+                    title: "Identity provider call failed",
+                    status: 502,
+                    detail: ex.Message + (ex.InnerException is { } inner ? "\n\nInner: " + inner.Message : string.Empty),
+                    instance: ctx.Request.Path,
+                    extensions: new Dictionary<string, object?> { ["exceptionType"] = ex.GetType().Name });
             }
         }).ExcludeFromDescription();
 
@@ -298,7 +362,11 @@ internal static class BowireAuthEndpoints
         {
             var envId = ctx.Request.Query["env"].ToString();
             if (string.IsNullOrEmpty(envId))
-                return Results.Json(new { error = "Missing env query parameter" }, BowireEndpointHelpers.JsonOptions, statusCode: 400);
+                return BowireEndpointHelpers.Problem(
+                    type: "urn:bowire:invalid-input",
+                    title: "Missing 'env' query parameter",
+                    status: 400,
+                    instance: ctx.Request.Path);
             var snapshot = CookieJar.Snapshot(envId);
             return Results.Json(new { env = envId, cookies = snapshot }, BowireEndpointHelpers.JsonOptions);
         }).ExcludeFromDescription();
@@ -307,7 +375,11 @@ internal static class BowireAuthEndpoints
         {
             var envId = ctx.Request.Query["env"].ToString();
             if (string.IsNullOrEmpty(envId))
-                return Results.Json(new { error = "Missing env query parameter" }, BowireEndpointHelpers.JsonOptions, statusCode: 400);
+                return BowireEndpointHelpers.Problem(
+                    type: "urn:bowire:invalid-input",
+                    title: "Missing 'env' query parameter",
+                    status: 400,
+                    instance: ctx.Request.Path);
             var cleared = CookieJar.Clear(envId);
             return Results.Json(new { env = envId, cleared }, BowireEndpointHelpers.JsonOptions);
         }).ExcludeFromDescription();
