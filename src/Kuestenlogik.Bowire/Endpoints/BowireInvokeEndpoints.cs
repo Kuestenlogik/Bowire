@@ -35,7 +35,12 @@ internal static class BowireInvokeEndpoints
                 ctx.Request.Body, BowireEndpointHelpers.JsonOptions, ctx.RequestAborted);
 
             if (body is null)
-                return Results.BadRequest(new { error = "Invalid request body." });
+                return BowireEndpointHelpers.Problem(
+                    type: "urn:bowire:invalid-input",
+                    title: "Request body is missing or malformed",
+                    status: 400,
+                    detail: "The /api/invoke endpoint requires a JSON body with { protocol, service, method, messages, ... }.",
+                    instance: "/api/invoke");
 
             var rawServerUrl = ctx.Request.Query["serverUrl"].FirstOrDefault()
                 ?? BowireEndpointHelpers.ResolveServerUrl(options, ctx.Request);
@@ -86,12 +91,12 @@ internal static class BowireInvokeEndpoints
                 var httpInvoker = BowireEndpointHelpers.GetRegistry().FindHttpInvoker();
                 if (httpInvoker is null)
                 {
-                    return Results.Json(new
-                    {
-                        error = "HTTP transcoding invocation requires the REST plugin. "
-                            + "Install Kuestenlogik.Bowire.Protocol.Rest (or run `bowire plugin install Kuestenlogik.Bowire.Protocol.Rest`) "
-                            + "to enable invoking transcoded gRPC methods via HTTP."
-                    }, BowireEndpointHelpers.JsonOptions, statusCode: 501);
+                    return BowireEndpointHelpers.Problem(
+                        type: "urn:bowire:invoke:rest-plugin-required",
+                        title: "HTTP transcoding needs the REST plugin",
+                        status: 501,
+                        detail: "Transcoded gRPC invocation goes through the REST plugin's IInlineHttpInvoker. Install Kuestenlogik.Bowire.Protocol.Rest (`bowire plugin install Kuestenlogik.Bowire.Protocol.Rest`) and re-discover.",
+                        instance: "/api/invoke");
                 }
 
                 try
@@ -114,12 +119,18 @@ internal static class BowireInvokeEndpoints
                     BowireEndpointHelpers.GetLogger(ctx).LogWarning(ex,
                         "Transcoded HTTP invoke failed for {Service}/{Method} at {ServerUrl}",
                         BowireEndpointHelpers.SafeLog(body.Service), BowireEndpointHelpers.SafeLog(body.Method), BowireEndpointHelpers.SafeLog(serverUrl));
-                    return Results.Json(new
-                    {
-                        error = ex.Message,
-                        details = ex.InnerException?.Message,
-                        type = ex.GetType().Name
-                    }, BowireEndpointHelpers.JsonOptions, statusCode: 502);
+                    return BowireEndpointHelpers.Problem(
+                        type: "urn:bowire:invoke:upstream-error",
+                        title: $"Transcoded HTTP invoke failed: {body.Service}.{body.Method}",
+                        status: 502,
+                        detail: ex.Message + (ex.InnerException is { } inner ? "\n\nInner: " + inner.Message : string.Empty),
+                        instance: "/api/invoke",
+                        extensions: new Dictionary<string, object?> {
+                            ["service"] = body.Service,
+                            ["method"] = body.Method,
+                            ["serverUrl"] = serverUrl,
+                            ["exceptionType"] = ex.GetType().Name,
+                        });
                 }
             }
 
@@ -129,7 +140,15 @@ internal static class BowireInvokeEndpoints
                 ?? (registry.Protocols.Count > 0 ? registry.Protocols[0] : null);
 
             if (protocol is null)
-                return Results.Json(new { error = "No protocol plugin available." }, BowireEndpointHelpers.JsonOptions, statusCode: 502);
+                return BowireEndpointHelpers.Problem(
+                    type: "urn:bowire:invoke:no-plugin",
+                    title: "No protocol plugin available to dispatch this call",
+                    status: 502,
+                    detail: $"The requested protocol '{body.Protocol ?? "(default)"}' isn't loaded and no fallback is available. Install the matching plugin or pin a loaded one via the protocol@ URL hint.",
+                    instance: "/api/invoke",
+                    extensions: new Dictionary<string, object?> {
+                        ["protocol"] = body.Protocol,
+                    });
 
             // #29 self-telemetry. Bracket the invoke with the
             // bowire.invoke.* instruments. Cheap when no OTel listener
@@ -195,13 +214,23 @@ internal static class BowireInvokeEndpoints
                 BowireEndpointHelpers.GetLogger(ctx).LogWarning(ex,
                     "Invoke failed for {Protocol} {Service}/{Method} at {ServerUrl}",
                     protocol.Id, BowireEndpointHelpers.SafeLog(body.Service), BowireEndpointHelpers.SafeLog(body.Method), BowireEndpointHelpers.SafeLog(serverUrl));
-                return Results.Json(new
-                {
-                    error = ex.Message,
-                    details = ex.InnerException?.Message,
-                    type = ex.GetType().Name,
-                    stack = ex.StackTrace
-                }, BowireEndpointHelpers.JsonOptions, statusCode: 502);
+                var detailBuilder = new System.Text.StringBuilder(ex.Message);
+                if (ex.InnerException is { } inner) detailBuilder.Append("\n\nInner: ").Append(inner.Message);
+                return BowireEndpointHelpers.Problem(
+                    type: outcome == "canceled" ? "urn:bowire:canceled" : "urn:bowire:invoke:upstream-error",
+                    title: outcome == "canceled"
+                        ? $"Call canceled: {body.Service}.{body.Method}"
+                        : $"Upstream error invoking {body.Service}.{body.Method}",
+                    status: 502,
+                    detail: detailBuilder.ToString(),
+                    instance: "/api/invoke",
+                    extensions: new Dictionary<string, object?> {
+                        ["protocol"] = protocol.Id,
+                        ["service"] = body.Service,
+                        ["method"] = body.Method,
+                        ["serverUrl"] = serverUrl,
+                        ["exceptionType"] = ex.GetType().Name,
+                    });
             }
             finally
             {
