@@ -49,7 +49,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 - [#58](https://github.com/Kuestenlogik/Bowire/issues/58) **Workspace: complete the Git-native story (.blw file)** 
 - [Kuestenlogik/Bowire.Protocol.Surgewave#11](https://github.com/Kuestenlogik/Bowire.Protocol.Surgewave/issues/11) **Light up Surgewave protocol plugin** 
 - [#85](https://github.com/Kuestenlogik/Bowire/issues/85) **Request-pane Body: split stacked Form / Selection Set / Query into sub-tabs** 
-- [#87](https://github.com/Kuestenlogik/Bowire/issues/87) **AI chat 404 surfaced raw — should explain missing model + point to fix** 
 
 ---
 
