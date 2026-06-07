@@ -249,6 +249,13 @@
     let isLoadingServices = false;
     let discoveryErrors = {};   // { [url]: error message }
     let activeRequestTab = 'body';
+    // Sub-tab within the Body tab. For GraphQL methods the Body tab
+    // composes from three surfaces (Query / Variables form / Selection
+    // set picker) — historically all three rendered stacked, which
+    // ate vertical space and forced scrolling. The sub-tab strip
+    // gates rendering to one surface at a time (#85). Source-of-truth
+    // sub-tab wins as the default ("query" for GraphQL).
+    let activeBodySubTab = 'query';
     let activeResponseTab = 'response';
     let isExecuting = false;
     let sseSource = null;
