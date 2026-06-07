@@ -77,17 +77,19 @@ internal static class BowireDiscoveryEndpoints
             }
 
             // Standalone tool launched without --url and with no proto
-            // uploads / sources to consult: there is genuinely nothing
-            // to discover. Returning an empty list immediately keeps the
-            // first-run UI snappy — without this the gRPC reflection
-            // path tries to handshake with the local Bowire host (which
-            // doesn't ship gRPC services), wedges for ~10 s, then fails.
-            // The ServerUrls.Count check covers the case where the user
-            // passes --url on the command line.
+            // uploads / sources to consult AND no runtime URL in the
+            // request: there is genuinely nothing to discover. Returning
+            // an empty list immediately keeps the first-run UI snappy —
+            // without this the gRPC reflection path tries to handshake
+            // with the local Bowire host (which doesn't ship gRPC
+            // services), wedges for ~10 s, then fails. The serverUrl
+            // check covers URLs added at runtime via the sidebar (#82);
+            // the ServerUrls.Count check covers --url on the command line.
             if (options.Mode == BowireMode.Standalone
                 && options.ServerUrls.Count == 0
                 && options.ProtoSources.Count == 0
-                && !ProtoUploadStore.HasUploads)
+                && !ProtoUploadStore.HasUploads
+                && string.IsNullOrEmpty(serverUrl))
             {
                 return Results.Json(Array.Empty<BowireServiceInfo>(), BowireEndpointHelpers.JsonOptions);
             }
