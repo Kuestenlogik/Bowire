@@ -1113,8 +1113,31 @@
             // active tab. We mirror the click into requestInputMode so
             // every existing code path that branches on it (sync helpers,
             // render gates further down) keeps working.
-            bodySubTabs.push({ id: 'form', label: 'Form' });
-            bodySubTabs.push({ id: 'json', label: 'JSON' });
+            // Protocol-specific labels match the conventions of each
+            // ecosystem so the sub-tab strip reads native (#85): gRPC
+            // calls a request a "Message" (single proto envelope);
+            // JSON-RPC calls them "Params" (per the JSON-RPC 2.0 spec);
+            // REST / SignalR / WebSocket / OData / SOAP fall back to
+            // the generic "Form" / "Body" pair. JSON stays "JSON"
+            // everywhere because it's the wire format, not a protocol
+            // term.
+            var src = selectedService && selectedService.source;
+            var formLabel, jsonLabel;
+            if (src === 'grpc') {
+                formLabel = 'Message';
+                jsonLabel = 'JSON';
+            } else if (src === 'jsonrpc') {
+                formLabel = 'Params';
+                jsonLabel = 'JSON';
+            } else if (src === 'rest' || src === 'odata') {
+                formLabel = 'Form';
+                jsonLabel = 'Body';
+            } else {
+                formLabel = 'Form';
+                jsonLabel = 'JSON';
+            }
+            bodySubTabs.push({ id: 'form', label: formLabel });
+            bodySubTabs.push({ id: 'json', label: jsonLabel });
             // Mirror activeBodySubTab → requestInputMode so the lower
             // render gates pick the right surface. The reverse mirror
             // happens in the legacy buttons' onClick (kept for now in
