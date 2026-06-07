@@ -10,45 +10,46 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### Later
 
-- [#25](https://github.com/Kuestenlogik/Bowire/issues/25) **AI side-panel integration** `kind:feature` `area:workbench` `P1`
-- [#26](https://github.com/Kuestenlogik/Bowire/issues/26) **Security testing tool — remaining tiers** `kind:feature` `area:security` `track:security-tiers` `P2`
+- [#25](https://github.com/Kuestenlogik/Bowire/issues/25) **AI side-panel integration** `area:workbench`
+- [#26](https://github.com/Kuestenlogik/Bowire/issues/26) **Security testing tool — remaining tiers** `area:security` `track:security-tiers`
 
 ## Next up
 
 ### Later
 
-- [#28](https://github.com/Kuestenlogik/Bowire/issues/28) **Multi-tenant data model + SCIM (Phase B)** `kind:feature` `area:workbench` `track:auth` `P2`
+- [#28](https://github.com/Kuestenlogik/Bowire/issues/28) **Multi-tenant data model + SCIM (Phase B)** `area:workbench` `track:auth`
 
 ## Backlog
 
 ### v1.10 — gRPC Connect
 
-- [#33](https://github.com/Kuestenlogik/Bowire/issues/33) **Protocol plugins — Connect Phase 1+3 + OTLP** `kind:feature` `area:plugin-sdk` `track:protocols` `P2`
+- [#33](https://github.com/Kuestenlogik/Bowire/issues/33) **Protocol plugins — Connect Phase 1+3 + OTLP** `area:plugin-sdk` `track:protocols`
 
 ### Later
 
-- [#34](https://github.com/Kuestenlogik/Bowire/issues/34) **AsyncAPI discovery source — remaining bindings + V2 overloads + YAML pre-normaliser** `kind:feature` `area:plugin-sdk` `track:protocols` `P2`
-- [#35](https://github.com/Kuestenlogik/Bowire/issues/35) **Nuclei template compat — OAST + non-HTTP transports (Phase 2f + 2g)** `kind:feature` `area:security` `track:security-tiers` `P3`
-- [#36](https://github.com/Kuestenlogik/Bowire/issues/36) **Replay-Mock — HTTPS MITM / record mode** `kind:feature` `area:mock` `P3`
-- [#37](https://github.com/Kuestenlogik/Bowire/issues/37) **Bowire.Mcp — remaining tools + adapter modes** `kind:feature` `area:mcp` `P2`
-- [#38](https://github.com/Kuestenlogik/Bowire/issues/38) **CLI — Phase 3 polish (completion + validators + error rendering)** `kind:debt` `area:cli` `P2`
-- [#39](https://github.com/Kuestenlogik/Bowire/issues/39) **HAR Import polish** `kind:feature` `area:workbench` `P2`
-- [#40](https://github.com/Kuestenlogik/Bowire/issues/40) **Freeform Request Builder** `kind:feature` `area:workbench` `P2`
-- [#41](https://github.com/Kuestenlogik/Bowire/issues/41) **First RC of the new versioning discipline** `kind:debt` `area:multi` `P3`
-- [Kuestenlogik/Bowire.Templates#3](https://github.com/Kuestenlogik/Bowire.Templates/issues/3) **Plugin project template — `dotnet new bowire-plugin`** `kind:feature` `area:plugin-sdk` `P3`
-- [#43](https://github.com/Kuestenlogik/Bowire/issues/43) **MCP SSE-transport support** `kind:feature` `area:mcp` `P3`
-- [#44](https://github.com/Kuestenlogik/Bowire/issues/44) **Sidecar packaging — Docker / Compose / Kubernetes** `kind:docs` `area:docs` `P3`
-- [Kuestenlogik/Bowire.Samples#13](https://github.com/Kuestenlogik/Bowire.Samples/issues/13) **SimpleGraphQLSubscriptions sample** `kind:feature` `area:plugin-sdk` `P3`
-- [#46](https://github.com/Kuestenlogik/Bowire/issues/46) **MCP server-side notifications via IInlineSseSubscriber** `kind:feature` `area:mcp` `P3`
-- [#47](https://github.com/Kuestenlogik/Bowire/issues/47) **Sidebar display: method name vs path toggle** `kind:feature` `area:workbench` `P3`
-- [#48](https://github.com/Kuestenlogik/Bowire/issues/48) **Schema watch mode** `kind:feature` `area:workbench` `P3`
-- [#49](https://github.com/Kuestenlogik/Bowire/issues/49) **Programmatic environment provisioning in embedded mode** `kind:feature` `area:workbench` `P2`
-- [#50](https://github.com/Kuestenlogik/Bowire/issues/50) **Marketing site — gallery / lightbox layer on solutions/*** `kind:feature` `area:site` `track:marketing-ia` `P3`
-- [#51](https://github.com/Kuestenlogik/Bowire/issues/51) **Marketing site — migrate <img> tags to picture.html partial** `kind:debt` `area:site` `track:marketing-ia` `P2`
-- [#53](https://github.com/Kuestenlogik/Bowire/issues/53) **Marketing site — second row of specialist comparisons** `kind:feature` `area:site` `track:marketing-ia` `P3`
+- [#34](https://github.com/Kuestenlogik/Bowire/issues/34) **AsyncAPI discovery source — remaining bindings + V2 overloads + YAML pre-normaliser** `area:plugin-sdk` `track:protocols`
+- [#35](https://github.com/Kuestenlogik/Bowire/issues/35) **Nuclei template compat — OAST + non-HTTP transports (Phase 2f + 2g)** `area:security` `track:security-tiers`
+- [#36](https://github.com/Kuestenlogik/Bowire/issues/36) **Replay-Mock — HTTPS MITM / record mode** `area:mock`
+- [#37](https://github.com/Kuestenlogik/Bowire/issues/37) **Bowire.Mcp — remaining tools + adapter modes** `area:mcp`
+- [#38](https://github.com/Kuestenlogik/Bowire/issues/38) **CLI — Phase 3 polish (completion + validators + error rendering)** `area:cli`
+- [#39](https://github.com/Kuestenlogik/Bowire/issues/39) **HAR Import polish** `area:workbench`
+- [#40](https://github.com/Kuestenlogik/Bowire/issues/40) **Freeform Request Builder** `area:workbench`
+- [#41](https://github.com/Kuestenlogik/Bowire/issues/41) **First RC of the new versioning discipline** `area:multi`
+- [Kuestenlogik/Bowire.Templates#3](https://github.com/Kuestenlogik/Bowire.Templates/issues/3) **Plugin project template — `dotnet new bowire-plugin`** `area:plugin-sdk`
+- [#43](https://github.com/Kuestenlogik/Bowire/issues/43) **MCP SSE-transport support** `area:mcp`
+- [#44](https://github.com/Kuestenlogik/Bowire/issues/44) **Sidecar packaging — Docker / Compose / Kubernetes** `area:docs`
+- [Kuestenlogik/Bowire.Samples#13](https://github.com/Kuestenlogik/Bowire.Samples/issues/13) **SimpleGraphQLSubscriptions sample** `area:plugin-sdk`
+- [#46](https://github.com/Kuestenlogik/Bowire/issues/46) **MCP server-side notifications via IInlineSseSubscriber** `area:mcp`
+- [#47](https://github.com/Kuestenlogik/Bowire/issues/47) **Sidebar display: method name vs path toggle** `area:workbench`
+- [#48](https://github.com/Kuestenlogik/Bowire/issues/48) **Schema watch mode** `area:workbench`
+- [#49](https://github.com/Kuestenlogik/Bowire/issues/49) **Programmatic environment provisioning in embedded mode** `area:workbench`
+- [#50](https://github.com/Kuestenlogik/Bowire/issues/50) **Marketing site — gallery / lightbox layer on solutions/*** `area:site` `track:marketing-ia`
+- [#51](https://github.com/Kuestenlogik/Bowire/issues/51) **Marketing site — migrate <img> tags to picture.html partial** `area:site` `track:marketing-ia`
+- [#53](https://github.com/Kuestenlogik/Bowire/issues/53) **Marketing site — second row of specialist comparisons** `area:site` `track:marketing-ia`
 - [#58](https://github.com/Kuestenlogik/Bowire/issues/58) **Workspace: complete the Git-native story (.blw file)** 
 - [Kuestenlogik/Bowire.Protocol.Surgewave#11](https://github.com/Kuestenlogik/Bowire.Protocol.Surgewave/issues/11) **Light up Surgewave protocol plugin** 
 - [#85](https://github.com/Kuestenlogik/Bowire/issues/85) **Request-pane Body: split stacked Form / Selection Set / Query into sub-tabs** 
+- [#87](https://github.com/Kuestenlogik/Bowire/issues/87) **AI chat 404 surfaced raw — should explain missing model + point to fix** 
 
 ---
 
