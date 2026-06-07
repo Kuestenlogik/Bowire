@@ -1018,37 +1018,13 @@
             onClick: function () { activeRequestTab = 'schema'; render(); }
         });
 
-        // Input mode toggle (Form / JSON)
+        // Form/JSON input-mode toggle used to live here as a pair of
+        // pill buttons in the request-pane tab strip — always visible,
+        // even when the user was on Metadata/Schema/History/Code where
+        // it had no effect. Now it's part of the Body sub-tab strip
+        // (#85), so the chrome only appears where it's actionable and
+        // matches the GraphQL [Query/Variables/Selection set] pattern.
         var hasInputFields = selectedMethod && selectedMethod.inputType && selectedMethod.inputType.fields && selectedMethod.inputType.fields.length > 0;
-        if (hasInputFields && !isMultiMessage) {
-            var modeToggle = el('div', { className: 'bowire-input-mode-toggle' },
-                el('button', {
-                    id: 'bowire-input-mode-form-btn',
-                    className: 'bowire-input-mode-btn' + (requestInputMode === 'form' ? ' active' : ''),
-                    textContent: 'Form',
-                    onClick: function () {
-                        if (requestInputMode === 'json') {
-                            syncJsonToForm();
-                        }
-                        requestInputMode = 'form';
-                        render();
-                    }
-                }),
-                el('button', {
-                    id: 'bowire-input-mode-json-btn',
-                    className: 'bowire-input-mode-btn' + (requestInputMode === 'json' ? ' active' : ''),
-                    textContent: 'JSON',
-                    onClick: function () {
-                        if (requestInputMode === 'form') {
-                            syncFormToJson();
-                        }
-                        requestInputMode = 'json';
-                        render();
-                    }
-                })
-            );
-            tabs.appendChild(modeToggle);
-        }
         const historyTab = el('div', {
             id: 'bowire-request-tab-history',
             className: `bowire-tab ${activeRequestTab === 'history' ? 'active' : ''}`,
@@ -1128,6 +1104,25 @@
             if (hasGqlQuery) bodySubTabs.push({ id: 'query', label: 'Query' });
             if (hasInputFormFields) bodySubTabs.push({ id: 'form', label: 'Variables' });
             if (hasGqlSelectionSet) bodySubTabs.push({ id: 'selection', label: 'Selection set' });
+        } else if (hasInputFormFields && !isMultiMessage && !isChannelMethod()) {
+            // REST / gRPC unary / JSON-RPC / OData / SOAP — the existing
+            // Form vs. JSON toggle that lived in the top-pane tab strip
+            // (mode-buttons next to Body/Metadata/Schema). Surface it as
+            // Body sub-tabs instead so the chrome is consistent with the
+            // GraphQL case and the toggle only appears when Body is the
+            // active tab. We mirror the click into requestInputMode so
+            // every existing code path that branches on it (sync helpers,
+            // render gates further down) keeps working.
+            bodySubTabs.push({ id: 'form', label: 'Form' });
+            bodySubTabs.push({ id: 'json', label: 'JSON' });
+            // Mirror activeBodySubTab → requestInputMode so the lower
+            // render gates pick the right surface. The reverse mirror
+            // happens in the legacy buttons' onClick (kept for now in
+            // case anything still reads them); when those buttons are
+            // dropped the mirror becomes one-way.
+            if (activeBodySubTab === 'form' || activeBodySubTab === 'json') {
+                requestInputMode = activeBodySubTab;
+            }
         }
 
         // If the active sub-tab isn't applicable for this method
@@ -1147,7 +1142,22 @@
                         className: 'bowire-sub-tab' + (activeBodySubTab === t.id ? ' active' : ''),
                         role: 'tab',
                         textContent: t.label,
-                        onClick: function () { activeBodySubTab = t.id; render(); }
+                        onClick: function () {
+                            // Form ↔ JSON swap needs the existing sync
+                            // helpers so values stay in step. The legacy
+                            // top-strip toggle did the same; preserving
+                            // it here so the sub-tab is a drop-in.
+                            if (activeBodySubTab === 'form' && t.id === 'json') {
+                                syncFormToJson();
+                            } else if (activeBodySubTab === 'json' && t.id === 'form') {
+                                syncJsonToForm();
+                            }
+                            activeBodySubTab = t.id;
+                            if (t.id === 'form' || t.id === 'json') {
+                                requestInputMode = t.id;
+                            }
+                            render();
+                        }
                     }));
                 })(bodySubTabs[sti]);
             }
