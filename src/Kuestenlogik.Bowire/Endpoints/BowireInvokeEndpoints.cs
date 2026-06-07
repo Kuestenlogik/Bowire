@@ -31,8 +31,21 @@ internal static class BowireInvokeEndpoints
         // Invoke a unary or client-streaming call
         endpoints.MapPost($"{basePath}/api/invoke", async (HttpContext ctx) =>
         {
-            var body = await JsonSerializer.DeserializeAsync<InvokeRequest>(
-                ctx.Request.Body, BowireEndpointHelpers.JsonOptions, ctx.RequestAborted);
+            InvokeRequest? body;
+            try
+            {
+                body = await JsonSerializer.DeserializeAsync<InvokeRequest>(
+                    ctx.Request.Body, BowireEndpointHelpers.JsonOptions, ctx.RequestAborted);
+            }
+            catch (JsonException ex)
+            {
+                return BowireEndpointHelpers.Problem(
+                    type: "urn:bowire:invalid-input",
+                    title: "Request body isn't valid JSON",
+                    status: 400,
+                    detail: ex.Message,
+                    instance: "/api/invoke");
+            }
 
             if (body is null)
                 return BowireEndpointHelpers.Problem(
