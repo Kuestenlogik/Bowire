@@ -68,6 +68,15 @@
         }
         body.appendChild(renderMain());
 
+        // AI drawer (#90). Sits at the right edge of the workbench body,
+        // peer with the sidebar + main pane. Drawer is rendered only when
+        // open so closed drawer doesn't waste DOM; CSS shrinks the main
+        // pane proportionally via the .bowire-with-ai-drawer modifier.
+        if (aiDrawerOpen) {
+            body.classList.add('bowire-with-ai-drawer');
+            body.appendChild(renderAiDrawer());
+        }
+
         next.appendChild(body);
 
         if (typeof window.morphdom === 'function') {
@@ -154,6 +163,49 @@
             document.addEventListener('mousemove', onMove);
             document.addEventListener('mouseup', onUp);
         });
+    }
+
+    // ---- AI drawer (#90) ----
+    // Sits at the right edge of the workbench body next to the main pane.
+    // Rendered only when aiDrawerOpen is true; the topbar toggle button
+    // flips the state + persists it to localStorage. Contains the same
+    // AI panel that used to live as a response-pane tab — no logic
+    // duplication; we just call window.__bowireAi.renderPanel().
+    function renderAiDrawer() {
+        var drawer = el('div', {
+            id: 'bowire-ai-drawer',
+            className: 'bowire-ai-drawer',
+            role: 'complementary',
+            'aria-label': 'AI assistant'
+        });
+        var header = el('div', { className: 'bowire-ai-drawer-header' },
+            el('span', { className: 'bowire-ai-drawer-title', textContent: 'AI assistant' }),
+            el('button', {
+                id: 'bowire-ai-drawer-close',
+                className: 'bowire-ai-drawer-close',
+                title: 'Close (Ctrl+Shift+A)',
+                'aria-label': 'Close AI drawer',
+                onClick: function () {
+                    aiDrawerOpen = false;
+                    try { localStorage.setItem('bowire_ai_drawer_open', '0'); } catch { /* ignore */ }
+                    render();
+                },
+                innerHTML: svgIcon('close')
+            })
+        );
+        drawer.appendChild(header);
+
+        var content = el('div', { className: 'bowire-ai-drawer-content' });
+        if (window.__bowireAi) {
+            content.appendChild(window.__bowireAi.renderPanel());
+        } else {
+            content.appendChild(el('p', {
+                className: 'bowire-ai-drawer-empty',
+                textContent: 'AI module not loaded.'
+            }));
+        }
+        drawer.appendChild(content);
+        return drawer;
     }
 
     // ---- Topbar (brand + command palette + env + theme) ----
@@ -446,10 +498,35 @@
             }, settingsBtn, updateBadge);
         }
 
+        // AI drawer toggle (#90) — promoted from the response-pane tab
+        // strip to a topbar control so the assistant is reachable from
+        // anywhere in the workbench, not just when looking at a method
+        // response. Badge carries the live hint count from the hint
+        // engine, same number the old tab badge showed.
+        var aiHintCount = 0;
+        try { aiHintCount = window.__bowireAi ? window.__bowireAi.hintCount() : 0; } catch { /* ignore */ }
+        var aiToggleBtn = el('button', {
+            id: 'bowire-ai-drawer-toggle',
+            className: 'bowire-topbar-icon-btn bowire-ai-drawer-toggle' + (aiDrawerOpen ? ' active' : ''),
+            title: aiDrawerOpen ? 'Close AI assistant (Ctrl+Shift+A)' : 'Open AI assistant (Ctrl+Shift+A)',
+            'aria-label': 'Toggle AI assistant',
+            onClick: function () {
+                aiDrawerOpen = !aiDrawerOpen;
+                try { localStorage.setItem('bowire_ai_drawer_open', aiDrawerOpen ? '1' : '0'); } catch { /* ignore */ }
+                render();
+            }
+        },
+            el('span', { innerHTML: svgIcon('spark') }),
+            aiHintCount > 0
+                ? el('span', { className: 'bowire-ai-drawer-badge', textContent: String(aiHintCount) })
+                : null
+        );
+
         var right = el('div', { id: 'bowire-topbar-right', className: 'bowire-topbar-right' },
             renderEnvSelector(),
             watchBtn,
             renderThemeToggle(),
+            aiToggleBtn,
             aboutBtn,
             settingsBtn
         );

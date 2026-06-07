@@ -585,6 +585,100 @@ body {
     min-width: 0;
 }
 
+/* ---------- AI drawer (#90) ---------- */
+/* Sits right of the main pane, peer with the sidebar. Renders only
+   when aiDrawerOpen — closed drawer = no DOM, no width cost. The
+   main pane just gives up 360 px when the drawer's there. */
+.bowire-ai-drawer {
+    width: 360px;
+    min-width: 280px;
+    max-width: 50vw;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    border-left: 1px solid var(--bowire-border);
+    background: var(--bowire-bg);
+    overflow: hidden;
+}
+
+.bowire-ai-drawer-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--bowire-border);
+    background: var(--bowire-bg-elevated);
+    flex-shrink: 0;
+}
+
+.bowire-ai-drawer-title {
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    color: var(--bowire-text);
+}
+
+.bowire-ai-drawer-close {
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    color: var(--bowire-text-tertiary);
+    padding: 4px;
+    display: flex;
+    align-items: center;
+    border-radius: var(--bowire-radius-sm);
+    transition: background var(--bowire-transition), color var(--bowire-transition);
+}
+
+.bowire-ai-drawer-close:hover {
+    background: var(--bowire-bg);
+    color: var(--bowire-text);
+}
+
+.bowire-ai-drawer-close svg {
+    width: 14px;
+    height: 14px;
+}
+
+.bowire-ai-drawer-content {
+    flex: 1;
+    overflow: auto;
+}
+
+.bowire-ai-drawer-empty {
+    padding: 20px;
+    color: var(--bowire-text-tertiary);
+    text-align: center;
+    font-size: 12px;
+}
+
+/* Topbar toggle button — small accent badge for the hint count */
+.bowire-ai-drawer-toggle {
+    position: relative;
+}
+
+.bowire-ai-drawer-toggle.active {
+    background: var(--bowire-accent-subtle);
+    color: var(--bowire-accent-text);
+}
+
+.bowire-ai-drawer-badge {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    min-width: 14px;
+    height: 14px;
+    padding: 0 3px;
+    font-size: 9px;
+    font-weight: 600;
+    line-height: 14px;
+    text-align: center;
+    background: var(--bowire-accent);
+    color: var(--bowire-bg);
+    border-radius: 7px;
+    pointer-events: none;
+}
+
 /* ---------- Sidebar Header ---------- */
 .bowire-sidebar-header {
     padding: 20px 16px 12px;

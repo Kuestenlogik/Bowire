@@ -34,6 +34,18 @@
                 return;
             }
 
+            // Ctrl/Cmd+Shift+A — toggle the AI drawer (#90). Shift is in
+            // the chord deliberately: Ctrl+A is "select all" inside text
+            // inputs and we don't want to steal it.
+            if ((e.ctrlKey || e.metaKey) && e.shiftKey
+                && (e.key === 'A' || e.key === 'a')) {
+                e.preventDefault();
+                aiDrawerOpen = !aiDrawerOpen;
+                try { localStorage.setItem('bowire_ai_drawer_open', aiDrawerOpen ? '1' : '0'); } catch { /* ignore */ }
+                render();
+                return;
+            }
+
             // Esc: close overlay, stop streaming, or disconnect channel
             if (e.key === 'Escape') {
                 if (aboutOpen) {

@@ -248,6 +248,12 @@
     // landing.js' detectLandingState reads both to pick a state.
     let isLoadingServices = false;
     let discoveryErrors = {};   // { [url]: error message }
+    // AI drawer (#90). Was a tab in the response pane; now a workbench-
+    // wide side drawer that persists across method/service switches and
+    // coexists with the response view. Open state mirrored to
+    // localStorage so the user's preference is sticky across reloads.
+    let aiDrawerOpen = false;
+    try { aiDrawerOpen = localStorage.getItem('bowire_ai_drawer_open') === '1'; } catch { /* ignore */ }
     let activeRequestTab = 'body';
     // Sub-tab within the Body tab. For GraphQL methods the Body tab
     // composes from three surfaces (Query / Variables form / Selection
