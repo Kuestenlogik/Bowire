@@ -27,7 +27,11 @@ internal static class BowireChannelEndpoints
                 ctx.Request.Body, BowireEndpointHelpers.JsonOptions, ctx.RequestAborted);
 
             if (body is null || string.IsNullOrEmpty(body.Service) || string.IsNullOrEmpty(body.Method))
-                return Results.BadRequest(new { error = "Missing 'service' or 'method'." });
+                return BowireEndpointHelpers.Problem(
+                    type: "urn:bowire:invalid-input",
+                    title: "Channel open requires 'service' and 'method'",
+                    status: 400,
+                    instance: "/api/channel/open");
 
             var rawServerUrl = ctx.Request.Query["serverUrl"].FirstOrDefault()
                 ?? BowireEndpointHelpers.ResolveServerUrl(options, ctx.Request);
@@ -54,7 +58,13 @@ internal static class BowireChannelEndpoints
                 ?? (registry.Protocols.Count > 0 ? registry.Protocols[0] : null);
 
             if (protocol is null)
-                return Results.Json(new { error = "No protocol plugin available." }, BowireEndpointHelpers.JsonOptions, statusCode: 502);
+                return BowireEndpointHelpers.Problem(
+                    type: "urn:bowire:invoke:no-plugin",
+                    title: "No protocol plugin available to open a channel",
+                    status: 502,
+                    detail: $"The requested protocol '{body.Protocol ?? "(default)"}' isn't loaded.",
+                    instance: "/api/channel/open",
+                    extensions: new Dictionary<string, object?> { ["protocol"] = body.Protocol });
 
             try
             {
@@ -63,7 +73,17 @@ internal static class BowireChannelEndpoints
                     options.ShowInternalServices, body.Metadata, ctx.RequestAborted);
 
                 if (channel is null)
-                    return Results.Json(new { error = "Protocol does not support channels." }, BowireEndpointHelpers.JsonOptions, statusCode: 400);
+                    return BowireEndpointHelpers.Problem(
+                        type: "urn:bowire:channel:unsupported",
+                        title: $"Protocol '{protocol.Id}' doesn't support streaming channels",
+                        status: 400,
+                        detail: "The selected method maps to a unary call. Use /api/invoke instead, or pick a streaming method on a streaming-capable protocol (gRPC, SignalR, WebSocket, ...).",
+                        instance: "/api/channel/open",
+                        extensions: new Dictionary<string, object?> {
+                            ["protocol"] = protocol.Id,
+                            ["service"] = body.Service,
+                            ["method"] = body.Method,
+                        });
 
                 ChannelStore.Add(channel);
 
@@ -83,7 +103,19 @@ internal static class BowireChannelEndpoints
                 BowireEndpointHelpers.GetLogger(ctx).LogWarning(ex,
                     "Channel open failed for {Protocol} {Service}/{Method} at {ServerUrl}",
                     protocol.Id, BowireEndpointHelpers.SafeLog(body.Service), BowireEndpointHelpers.SafeLog(body.Method), BowireEndpointHelpers.SafeLog(serverUrl));
-                return Results.Json(new { error = ex.Message }, BowireEndpointHelpers.JsonOptions, statusCode: 502);
+                return BowireEndpointHelpers.Problem(
+                    type: "urn:bowire:channel:open-failed",
+                    title: $"Couldn't open a channel to {body.Service}.{body.Method}",
+                    status: 502,
+                    detail: ex.Message + (ex.InnerException is { } inner ? "\n\nInner: " + inner.Message : string.Empty),
+                    instance: "/api/channel/open",
+                    extensions: new Dictionary<string, object?> {
+                        ["protocol"] = protocol.Id,
+                        ["service"] = body.Service,
+                        ["method"] = body.Method,
+                        ["serverUrl"] = serverUrl,
+                        ["exceptionType"] = ex.GetType().Name,
+                    });
             }
         }).ExcludeFromDescription();
 
@@ -94,14 +126,29 @@ internal static class BowireChannelEndpoints
                 ctx.Request.Body, BowireEndpointHelpers.JsonOptions, ctx.RequestAborted);
 
             if (body is null || string.IsNullOrEmpty(body.Message))
-                return Results.BadRequest(new { error = "Missing 'message'." });
+                return BowireEndpointHelpers.Problem(
+                    type: "urn:bowire:invalid-input",
+                    title: "Channel send requires a 'message' field",
+                    status: 400,
+                    instance: $"/api/channel/{id}/send");
 
             var channel = ChannelStore.Get(id);
             if (channel is null)
-                return Results.NotFound(new { error = "Channel not found." });
+                return BowireEndpointHelpers.Problem(
+                    type: "urn:bowire:channel:not-found",
+                    title: $"Channel {id} not found",
+                    status: 404,
+                    detail: "The channel may have been closed or never existed. Re-open via POST /api/channel/open.",
+                    instance: $"/api/channel/{id}/send",
+                    extensions: new Dictionary<string, object?> { ["channelId"] = id });
 
             if (channel.IsClosed)
-                return Results.Json(new { error = "Channel is closed." }, BowireEndpointHelpers.JsonOptions, statusCode: 400);
+                return BowireEndpointHelpers.Problem(
+                    type: "urn:bowire:channel:closed",
+                    title: $"Channel {id} is closed",
+                    status: 400,
+                    instance: $"/api/channel/{id}/send",
+                    extensions: new Dictionary<string, object?> { ["channelId"] = id });
 
             try
             {
@@ -112,7 +159,16 @@ internal static class BowireChannelEndpoints
             {
                 BowireEndpointHelpers.GetLogger(ctx).LogWarning(ex,
                     "Channel send failed for channel {ChannelId}", BowireEndpointHelpers.SafeLog(id));
-                return Results.Json(new { error = ex.Message }, BowireEndpointHelpers.JsonOptions, statusCode: 500);
+                return BowireEndpointHelpers.Problem(
+                    type: "urn:bowire:channel:send-failed",
+                    title: $"Couldn't send on channel {id}",
+                    status: 500,
+                    detail: ex.Message,
+                    instance: $"/api/channel/{id}/send",
+                    extensions: new Dictionary<string, object?> {
+                        ["channelId"] = id,
+                        ["exceptionType"] = ex.GetType().Name,
+                    });
             }
         }).ExcludeFromDescription();
 
@@ -121,7 +177,12 @@ internal static class BowireChannelEndpoints
         {
             var channel = ChannelStore.Get(id);
             if (channel is null)
-                return Results.NotFound(new { error = "Channel not found." });
+                return BowireEndpointHelpers.Problem(
+                    type: "urn:bowire:channel:not-found",
+                    title: $"Channel {id} not found",
+                    status: 404,
+                    instance: $"/api/channel/{id}/close",
+                    extensions: new Dictionary<string, object?> { ["channelId"] = id });
 
             await channel.CloseAsync();
             return Results.Json(new { closed = true, sentCount = channel.SentCount }, BowireEndpointHelpers.JsonOptions);
