@@ -70,7 +70,13 @@ internal static class BowireWorkspaceEndpoints
             }
             catch (Exception ex)
             {
-                return Results.BadRequest(new { error = ex.Message });
+                return BowireEndpointHelpers.Problem(
+                    type: "urn:bowire:workspace:save-failed",
+                    title: "Couldn't save workspace",
+                    status: 400,
+                    detail: ex.Message,
+                    instance: ctx.Request.Path,
+                    extensions: new Dictionary<string, object?> { ["exceptionType"] = ex.GetType().Name });
             }
         }).ExcludeFromDescription();
 
