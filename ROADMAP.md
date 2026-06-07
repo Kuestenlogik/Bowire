@@ -48,7 +48,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 - [#53](https://github.com/Kuestenlogik/Bowire/issues/53) **Marketing site — second row of specialist comparisons** `area:site` `track:marketing-ia`
 - [#58](https://github.com/Kuestenlogik/Bowire/issues/58) **Workspace: complete the Git-native story (.blw file)** 
 - [Kuestenlogik/Bowire.Protocol.Surgewave#11](https://github.com/Kuestenlogik/Bowire.Protocol.Surgewave/issues/11) **Light up Surgewave protocol plugin** 
-- [#85](https://github.com/Kuestenlogik/Bowire/issues/85) **Request-pane Body: split stacked Form / Selection Set / Query into sub-tabs** 
 - [#89](https://github.com/Kuestenlogik/Bowire/issues/89) **AI side-panel: ground the chat in workbench state + invoke via MCP tool calling** 
 - [#90](https://github.com/Kuestenlogik/Bowire/issues/90) **AI panel: move from response-pane tab to a right-side drawer** 
 - [#91](https://github.com/Kuestenlogik/Bowire/issues/91) **Frontend ProblemDetails migration — adopt renderProblem() everywhere body.error is read** 
