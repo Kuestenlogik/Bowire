@@ -1105,6 +1105,64 @@
         // another tab-content pane by position accidentally.
         const bodyContent = el('div', { id: 'bowire-request-tab-body-content', className: `bowire-tab-content ${activeRequestTab === 'body' ? 'active' : ''}` });
 
+        // Sub-tabs within the Body pane (#85). For GraphQL methods the
+        // historical layout stacked Selection set + Query + Variables
+        // form vertically; that eats screen real-estate when users
+        // typically work in one surface at a time. We compute which
+        // sub-tabs apply for the current method below, render a strip
+        // when ≥ 2 apply (so single-surface protocols don't get
+        // useless chrome), and gate each surface's render block on
+        // the active sub-tab id.
+        var bodySubTabs = [];
+        var isGqlMethod = isGraphQLMethod();
+        var hasGqlSelectionSet = isGqlMethod && selectedMethod && selectedMethod.outputType
+            && selectedMethod.outputType.fields && selectedMethod.outputType.fields.length > 0;
+        var hasGqlQuery = isGqlMethod && selectedMethod;
+        var hasInputFormFields = selectedMethod && selectedMethod.inputType
+            && selectedMethod.inputType.fields && selectedMethod.inputType.fields.length > 0;
+
+        if (isGqlMethod) {
+            // Order matters: Query first as the default sub-tab (it's
+            // what gets POSTed); Variables next (most-edited secondary);
+            // Selection set last (high-level structure).
+            if (hasGqlQuery) bodySubTabs.push({ id: 'query', label: 'Query' });
+            if (hasInputFormFields) bodySubTabs.push({ id: 'form', label: 'Variables' });
+            if (hasGqlSelectionSet) bodySubTabs.push({ id: 'selection', label: 'Selection set' });
+        }
+
+        // If the active sub-tab isn't applicable for this method
+        // (switched from a method with a Selection set to one without,
+        // for example), snap back to the first applicable tab.
+        if (bodySubTabs.length >= 2 && !bodySubTabs.some(function (t) { return t.id === activeBodySubTab; })) {
+            activeBodySubTab = bodySubTabs[0].id;
+        }
+
+        // Render the sub-tab strip when ≥ 2 sub-tabs apply.
+        if (bodySubTabs.length >= 2) {
+            var subTabBar = el('div', { className: 'bowire-sub-tabs', role: 'tablist' });
+            for (var sti = 0; sti < bodySubTabs.length; sti++) {
+                (function (t) {
+                    subTabBar.appendChild(el('button', {
+                        id: 'bowire-body-subtab-' + t.id,
+                        className: 'bowire-sub-tab' + (activeBodySubTab === t.id ? ' active' : ''),
+                        role: 'tab',
+                        textContent: t.label,
+                        onClick: function () { activeBodySubTab = t.id; render(); }
+                    }));
+                })(bodySubTabs[sti]);
+            }
+            bodyContent.appendChild(subTabBar);
+        }
+
+        // showSurface(name) is the gate for every surface block below.
+        // Returns true when (a) there's no sub-tab strip (single
+        // surface — render unconditionally), or (b) the active sub-tab
+        // matches the requested surface. Keeps the existing per-protocol
+        // render blocks intact — we only wrap them in the gate.
+        function showSurface(name) {
+            return bodySubTabs.length < 2 || activeBodySubTab === name;
+        }
+
         // GraphQL: Selection-set picker pane above the query editor.
         // Renders a checkbox tree of the discovered output type. Toggling
         // a field updates graphqlSelections and re-renders so the query
@@ -1112,8 +1170,7 @@
         // the user hasn't manually overridden the query — in that case the
         // override wins, which is a deliberate "manual edit > picker"
         // ordering).
-        if (isGraphQLMethod() && selectedMethod && selectedMethod.outputType
-            && selectedMethod.outputType.fields && selectedMethod.outputType.fields.length > 0) {
+        if (hasGqlSelectionSet && showSurface('selection')) {
             var selKey = graphqlMethodKey();
             var sels = getGraphQLSelections();
 
@@ -1158,7 +1215,7 @@
         // selection set. Stored per-method in graphqlQueryOverrides — when
         // the user clicks "Reset to default" we drop the override and the
         // pane regenerates from the discovered method shape.
-        if (isGraphQLMethod()) {
+        if (hasGqlQuery && showSurface('query')) {
             var queryKey = graphqlMethodKey();
             var queryHeader = el('div', { className: 'bowire-pane-header' },
                 el('span', { className: 'bowire-pane-title', textContent: 'GraphQL Query' }),
@@ -1254,7 +1311,16 @@
             bodyContent.appendChild(wsBox);
         }
 
-        if (isMultiMessage) {
+        // For GraphQL methods the form/JSON editor surface lives behind
+        // the 'form' sub-tab. Skip the whole block (multi-message,
+        // form, JSON variants) when GraphQL is active and the user is
+        // on a different sub-tab — that surface re-renders when they
+        // switch back. Non-GraphQL methods fall through unchanged so
+        // REST/gRPC/JSON-RPC keep their existing single-surface layout.
+        var skipFormSurface = isGqlMethod && bodySubTabs.length >= 2 && activeBodySubTab !== 'form';
+        if (skipFormSurface) {
+            // Intentional no-op — sub-tab gate excludes this surface.
+        } else if (isMultiMessage) {
             // Multi-message mode: header with Format All + Template All
             const paneHeader = el('div', { className: 'bowire-pane-header' },
                 el('span', { className: 'bowire-pane-title', textContent: 'JSON Messages' }),
