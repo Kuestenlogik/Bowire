@@ -821,7 +821,13 @@
     }
 
     function methodSupportsTranscoding(method) {
-        return !!(method && method.httpMethod && method.httpPath);
+        // Transcoding only makes sense for gRPC methods that carry a
+        // google.api.http annotation — one method, two transports
+        // (native gRPC vs. transcoded HTTP). REST methods are always
+        // populated with httpMethod/httpPath because REST *is* HTTP;
+        // checking those alone made the toggle render on every REST
+        // endpoint (#86), where it has nothing to switch.
+        return !!(method && method.source === 'grpc' && method.httpMethod && method.httpPath);
     }
 
     /**
