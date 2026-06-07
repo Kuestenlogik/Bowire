@@ -22,15 +22,16 @@
     //   standalone: Config has URLs or user needs to enter them.
     //     - editable: URLs can be added/removed
     //     - locked:   URLs are read-only (central hosted test tool)
-    var configHasUrls = (Array.isArray(config.serverUrls) && config.serverUrls.length > 0)
-        || !!config.serverUrl;
-    // embeddedMode (explicit flag from the host) wins over heuristics.
-    // When set, the URL bar is always hidden regardless of serverUrls.
+    // embeddedMode is the authoritative signal from the host
+    // (BrowserUiHost sets BowireMode.Standalone for the CLI; embedded
+    // hosts that MapBowire() inside their own app set embeddedMode=true).
+    // Earlier code fell back to "do we have URLs?" to guess the mode,
+    // which made the standalone CLI launched without --url look like an
+    // embedded host → the URL bar was hidden → no way to add a URL (#81).
+    // Trust the flag.
     var uiMode = config.embeddedMode
         ? 'embedded'
-        : (config.lockServerUrl
-            ? 'standalone-locked'
-            : (configHasUrls ? 'standalone' : 'embedded'));
+        : (config.lockServerUrl ? 'standalone-locked' : 'standalone');
 
     // ---- Server URL State (standalone mode) ----
     // Multi-URL: a list of discovery URLs, each fetched independently. The
