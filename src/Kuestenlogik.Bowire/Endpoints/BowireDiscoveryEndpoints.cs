@@ -119,17 +119,34 @@ internal static class BowireDiscoveryEndpoints
                 : registry.Protocols.Where(p =>
                     string.Equals(p.Id, pluginHint, StringComparison.OrdinalIgnoreCase));
 
-            foreach (var protocol in protocolsToProbe)
+            // Probe all matching plugins in parallel. Each plugin's
+            // DiscoverAsync enforces its own per-probe timeout (HTTP
+            // client, MQTT broker connect, gRPC reflection handshake,
+            // …). Total wall-clock = max(per-probe) rather than the
+            // sum — without this, with 12 bundled plugins probing
+            // serially, an arbitrary URL takes ~30 s and blows past
+            // the frontend's 12 s abort (#83). A linked CancellationToken
+            // with a 10 s ceiling caps any single plugin so one wedge
+            // can't drag the whole fanout past the frontend limit.
+            using var probeCts = CancellationTokenSource.CreateLinkedTokenSource(ctx.RequestAborted);
+            // 8 s ceiling on any single plugin's probe — frontend
+            // aborts the /api/services fetch at 12 s, so we leave a
+            // ~4 s margin for the slowest plugin's TCP teardown +
+            // JSON serialization of the merged result.
+            probeCts.CancelAfter(TimeSpan.FromSeconds(8));
+            var probeCt = probeCts.Token;
+            var logger = BowireEndpointHelpers.GetLogger(ctx);
+
+            var probeTasks = protocolsToProbe.Select(async protocol =>
             {
-                // #29 self-telemetry. One increment per (protocol, target)
-                // probe attempt; outcome dimension separates ok / error
-                // for dashboards. Cheap when no listener is attached.
                 var probeStart = Stopwatch.GetTimestamp();
                 string discoverOutcome = "ok";
                 int discoveredCount = 0;
+                List<BowireServiceInfo> services = [];
+                string? errorMessage = null;
                 try
                 {
-                    var services = await protocol.DiscoverAsync(serverUrl, options.ShowInternalServices, ctx.RequestAborted);
+                    services = await protocol.DiscoverAsync(serverUrl, options.ShowInternalServices, probeCt);
                     foreach (var svc in services)
                     {
                         svc.Source = protocol.Id;
@@ -140,15 +157,15 @@ internal static class BowireDiscoveryEndpoints
                         svc.OriginUrl ??= serverUrl;
                         discoveredCount++;
                     }
-                    allProtocolServices.AddRange(services);
                 }
                 catch (Exception ex)
                 {
                     discoverOutcome = ex is OperationCanceledException ? "canceled" : "error";
-                    BowireEndpointHelpers.GetLogger(ctx).LogWarning(ex,
+                    logger.LogWarning(ex,
                         "Discovery failed for protocol {Protocol} at {ServerUrl}",
                         protocol.Name, BowireEndpointHelpers.SafeLog(serverUrl));
-                    discoveryErrors.Add($"{protocol.Name}: {ex.Message}");
+                    errorMessage = $"{protocol.Name}: {ex.Message}";
+                    services = [];
                 }
                 finally
                 {
@@ -162,6 +179,14 @@ internal static class BowireDiscoveryEndpoints
                     });
                     _ = elapsedMs; // wired up if/when we add a discover-duration histogram
                 }
+                return (services, errorMessage);
+            }).ToArray();
+
+            var probeResults = await Task.WhenAll(probeTasks);
+            foreach (var (services, errorMessage) in probeResults)
+            {
+                allProtocolServices.AddRange(services);
+                if (errorMessage is not null) discoveryErrors.Add(errorMessage);
             }
 
             // Same for proto-sourced services
