@@ -448,14 +448,177 @@
         return aiInflightProbe;
     }
 
+    /**
+     * Snapshot the live workbench state so the AI's system prompt can
+     * ground the model in what the user is actually looking at (#89
+     * Phase 1). Pure read of the existing closure-scoped globals —
+     * no extra fetches.
+     *
+     * Output is small on purpose: a small model needs concise context
+     * more than a complete API surface dump. Top-level service +
+     * method counts always; the selected method's full schema only
+     * when one is picked (that's where the user's attention is).
+     */
+    function collectWorkbenchContext() {
+        var urlState = (typeof serverUrls !== 'undefined' && Array.isArray(serverUrls))
+            ? serverUrls.map(function (u) {
+                var status = (typeof connectionStatuses !== 'undefined' && connectionStatuses)
+                    ? (connectionStatuses[u] || 'unknown') : 'unknown';
+                return { url: u, status: status };
+            }) : [];
+
+        var svcSummary = [];
+        if (typeof services !== 'undefined' && Array.isArray(services)) {
+            for (var i = 0; i < services.length; i++) {
+                var s = services[i];
+                svcSummary.push({
+                    name: s.name,
+                    protocol: s.source,
+                    methods: (s.methods || []).map(function (m) { return m.name; }),
+                });
+            }
+        }
+
+        var selected = null;
+        if (typeof selectedService !== 'undefined' && selectedService
+            && typeof selectedMethod !== 'undefined' && selectedMethod) {
+            selected = {
+                service: selectedService.name,
+                method: selectedMethod.name,
+                protocol: selectedService.source,
+                methodType: selectedMethod.methodType,
+                description: selectedMethod.description,
+                inputType: selectedMethod.inputType ? {
+                    name: selectedMethod.inputType.fullName || selectedMethod.inputType.name,
+                    fields: (selectedMethod.inputType.fields || []).map(function (f) {
+                        return { name: f.name, type: f.type, optional: !!f.optional };
+                    }),
+                } : null,
+                outputType: selectedMethod.outputType ? {
+                    name: selectedMethod.outputType.fullName || selectedMethod.outputType.name,
+                } : null,
+                originUrl: selectedService.originUrl,
+            };
+        }
+
+        var recent = [];
+        try {
+            if (typeof getHistory === 'function') {
+                var h = getHistory() || [];
+                for (var ri = 0; ri < Math.min(h.length, 5); ri++) {
+                    var e = h[ri];
+                    recent.push({
+                        service: e.service,
+                        method: e.method,
+                        status: e.status,
+                        // Drop body excerpts — they're often large + privacy-sensitive.
+                    });
+                }
+            }
+        } catch { /* defensive */ }
+
+        return {
+            urls: urlState,
+            services: svcSummary,
+            selected: selected,
+            recent: recent,
+            ai: aiStatus ? { model: aiStatus.model, provider: aiStatus.providerId, endpoint: aiStatus.endpoint } : null,
+        };
+    }
+
+    /**
+     * Build a system prompt from a workbench-context snapshot. The
+     * prompt tells the model what Bowire is, names the loaded
+     * services + the selected method, and asks the model to answer
+     * with that context rather than going general-knowledge.
+     *
+     * Returns null when the context is genuinely empty (no URLs, no
+     * services, no method selected) — at that point the model has
+     * nothing workbench-specific to ground in and a generic system
+     * prompt just costs tokens.
+     */
+    function buildSystemPrompt(ctx) {
+        if (!ctx) return null;
+        var hasAnything = (ctx.urls && ctx.urls.length)
+            || (ctx.services && ctx.services.length)
+            || ctx.selected
+            || (ctx.recent && ctx.recent.length);
+        if (!hasAnything) return null;
+
+        var lines = [
+            'You are the AI assistant embedded in Bowire, a multi-protocol API workbench (gRPC, REST, GraphQL, MQTT, SignalR, WebSocket, MCP, …). The user is currently testing APIs through Bowire. Ground your answers in what they have loaded; do not invent endpoints or methods that are not listed below. When the user asks about a method by name (case-insensitive, prefix-match), refer to the matching entry from the list. Suggest the next concrete action (which method to invoke, which header to add, which auth to configure) rather than generic web advice.',
+            '',
+            '## Workbench state',
+            ''
+        ];
+
+        if (ctx.urls && ctx.urls.length) {
+            lines.push('Connected URLs:');
+            for (var ui = 0; ui < ctx.urls.length; ui++) {
+                lines.push('  - ' + ctx.urls[ui].url + '  (' + ctx.urls[ui].status + ')');
+            }
+            lines.push('');
+        }
+
+        if (ctx.services && ctx.services.length) {
+            lines.push('Discovered services:');
+            for (var si = 0; si < ctx.services.length; si++) {
+                var svc = ctx.services[si];
+                lines.push('  - ' + svc.name + '  [' + svc.protocol + ']  — methods: ' + svc.methods.join(', '));
+            }
+            lines.push('');
+        }
+
+        if (ctx.selected) {
+            var sel = ctx.selected;
+            lines.push('Selected method (this is what the user is looking at right now):');
+            lines.push('  ' + sel.service + '.' + sel.method + '  [' + sel.protocol + (sel.methodType ? ', ' + sel.methodType : '') + ']');
+            if (sel.description) lines.push('  Description: ' + sel.description);
+            if (sel.inputType) {
+                lines.push('  Input (' + sel.inputType.name + '):');
+                for (var fi = 0; fi < sel.inputType.fields.length; fi++) {
+                    var f = sel.inputType.fields[fi];
+                    lines.push('    - ' + f.name + ': ' + f.type + (f.optional ? '  (optional)' : ''));
+                }
+            }
+            if (sel.outputType) lines.push('  Output: ' + sel.outputType.name);
+            if (sel.originUrl) lines.push('  Origin URL: ' + sel.originUrl);
+            lines.push('');
+        }
+
+        if (ctx.recent && ctx.recent.length) {
+            lines.push('Recent calls:');
+            for (var ki = 0; ki < ctx.recent.length; ki++) {
+                var r = ctx.recent[ki];
+                lines.push('  - ' + r.service + '.' + r.method + '  → ' + (r.status || 'unknown'));
+            }
+            lines.push('');
+        }
+
+        if (ctx.ai) {
+            lines.push('AI provider: ' + (ctx.ai.provider || 'unknown') + ', model: ' + (ctx.ai.model || 'unknown') + ', endpoint: ' + (ctx.ai.endpoint || 'unknown'));
+        }
+
+        return lines.join('\n');
+    }
+
     function sendChat(text) {
         if (!text || chatBusy) return Promise.resolve(null);
         chatBusy = true;
         chatHistory.push({ role: 'user', content: text });
+        // Build a fresh system prompt every turn — the workbench state
+        // moves (user selects another method, adds a URL, runs a call)
+        // and the model should see the snapshot that matches the question.
+        // We send it as a transient message in front of chatHistory but
+        // DON'T persist it in chatHistory (avoids drift + UI clutter).
+        var sysPrompt = buildSystemPrompt(collectWorkbenchContext());
+        var outgoing = sysPrompt
+            ? [{ role: 'system', content: sysPrompt }].concat(chatHistory)
+            : chatHistory;
         return fetch(aiPrefix() + '/api/ai/chat', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ messages: chatHistory })
+            body: JSON.stringify({ messages: outgoing })
         })
             .then(function (r) { return r.json().then(function (b) { return { ok: r.ok, status: r.status, body: b }; }); })
             .then(function (resp) {
