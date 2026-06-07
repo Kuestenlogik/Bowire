@@ -47,8 +47,17 @@ internal static class BowireDiscoveryEndpoints
         // List all services (proto sources + protocol plugins, merged)
         endpoints.MapGet($"{basePath}/api/services", async (HttpContext ctx) =>
         {
+            // In embedded mode the request's host IS the API target — fall
+            // back to it when no explicit serverUrl was provided. In
+            // standalone mode the host is the workbench itself; falling
+            // back probes the workbench's own URL, which the JSON-RPC
+            // plugin then "matches" with a phantom stub service (#84).
+            // So skip the fallback for standalone — leave serverUrl empty
+            // and let the short-circuit fire.
             var rawServerUrl = ctx.Request.Query["serverUrl"].FirstOrDefault()
-                ?? BowireEndpointHelpers.ResolveServerUrl(options, ctx.Request);
+                ?? (options.Mode == BowireMode.Standalone
+                    ? string.Empty
+                    : BowireEndpointHelpers.ResolveServerUrl(options, ctx.Request));
 
             // Optional 'hint@url' form: when present, narrow the
             // plugin loop below to the named plugin only. Saves the
