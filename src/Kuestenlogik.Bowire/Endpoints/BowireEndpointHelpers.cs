@@ -230,4 +230,59 @@ internal static class BowireEndpointHelpers
 
         return merged;
     }
+
+    /// <summary>
+    /// Build an RFC 7807 problem+json response (#88). Every error path
+    /// across the API converges on this so the frontend can render
+    /// errors with one component (title + collapsible detail + actionable
+    /// links) instead of parsing ad-hoc shapes per endpoint.
+    /// <para>
+    /// <paramref name="type"/> is a stable URN — the canonical name of
+    /// the error class. Treat it as documentation + the key for tests
+    /// and frontend special-casing. <paramref name="title"/> is the
+    /// one-line headline the user sees. <paramref name="detail"/> is
+    /// the longer-form explanation: which upstream, what it actually
+    /// said, what the user can do. <paramref name="extensions"/>
+    /// carries typed payload the UI can act on (model name, endpoint,
+    /// links to settings pages).
+    /// </para>
+    /// <para>
+    /// We keep the body backward-compatible with the legacy
+    /// <c>{ error: "..." }</c> shape by also emitting an
+    /// <c>error</c> field set to the title — older frontend renderers
+    /// that haven't been updated still surface something readable.
+    /// </para>
+    /// </summary>
+    public static IResult Problem(
+        string type,
+        string title,
+        int status,
+        string? detail = null,
+        string? instance = null,
+        IDictionary<string, object?>? extensions = null)
+    {
+        var body = new Dictionary<string, object?>(StringComparer.Ordinal)
+        {
+            ["type"] = type,
+            ["title"] = title,
+            ["status"] = status,
+        };
+        if (!string.IsNullOrEmpty(detail)) body["detail"] = detail;
+        if (!string.IsNullOrEmpty(instance)) body["instance"] = instance;
+        // Legacy fallback — old `{ error }` consumers still get a string.
+        // Drop this once every frontend reader has switched to the
+        // ProblemDetails renderer (tracked under #88's follow-ups).
+        body["error"] = title;
+        if (extensions is not null)
+        {
+            foreach (var kv in extensions)
+            {
+                // Reserved keys can't be overwritten by extensions.
+                if (kv.Key is "type" or "title" or "status" or "detail"
+                    or "instance" or "error") continue;
+                body[kv.Key] = kv.Value;
+            }
+        }
+        return Results.Json(body, JsonOptions, contentType: "application/problem+json", statusCode: status);
+    }
 }

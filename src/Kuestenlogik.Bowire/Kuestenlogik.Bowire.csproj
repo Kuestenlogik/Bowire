@@ -11,6 +11,7 @@
     <InternalsVisibleTo Include="Kuestenlogik.Bowire.Protocol.SignalR" />
     <InternalsVisibleTo Include="Kuestenlogik.Bowire.Protocol.Mcp" />
     <InternalsVisibleTo Include="Kuestenlogik.Bowire.Protocol.Sse" />
+    <InternalsVisibleTo Include="Kuestenlogik.Bowire.Ai" />
     <InternalsVisibleTo Include="bowire" />
     <InternalsVisibleTo Include="Kuestenlogik.Bowire.Tests" />
     <InternalsVisibleTo Include="Kuestenlogik.Bowire.Protocol.Grpc.Tests" />
