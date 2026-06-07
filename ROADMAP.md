@@ -52,6 +52,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 - [#88](https://github.com/Kuestenlogik/Bowire/issues/88) **Adopt RFC 7807 ProblemDetails as the API error convention** 
 - [#89](https://github.com/Kuestenlogik/Bowire/issues/89) **AI side-panel: ground the chat in workbench state + invoke via MCP tool calling** 
 - [#90](https://github.com/Kuestenlogik/Bowire/issues/90) **AI panel: move from response-pane tab to a right-side drawer** 
+- [#91](https://github.com/Kuestenlogik/Bowire/issues/91) **Frontend ProblemDetails migration — adopt renderProblem() everywhere body.error is read** 
 
 ---
 
