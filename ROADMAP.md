@@ -51,7 +51,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 - [#90](https://github.com/Kuestenlogik/Bowire/issues/90) **AI panel: move from response-pane tab to a right-side drawer** 
 - [#92](https://github.com/Kuestenlogik/Bowire/issues/92) **Move Server-URL + Schema-Files management from sidebar to main pane** 
 - [#93](https://github.com/Kuestenlogik/Bowire/issues/93) **Topbar: connection-state pill (aggregate + per-URL popover)** 
-- [#94](https://github.com/Kuestenlogik/Bowire/issues/94) **Recordings: one-click 'Use as mock' spins up a local mock server** 
 - [#95](https://github.com/Kuestenlogik/Bowire/issues/95) **Header Library: named, scoped, toggleable header sets** 
 - [#96](https://github.com/Kuestenlogik/Bowire/issues/96) **Multi-tenant Phase C — SCIM 2.0 provisioning endpoints** 
 - [#97](https://github.com/Kuestenlogik/Bowire/issues/97) **Multi-tenant Phase E — single-user → multi-tenant migration path** 
