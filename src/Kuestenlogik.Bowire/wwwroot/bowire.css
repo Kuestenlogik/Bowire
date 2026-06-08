@@ -10311,6 +10311,47 @@ details[open] > .bowire-json-tree-summary::before {
 .bowire-ai-chat-msg-assistant {
     color: var(--bowire-text-secondary);
 }
+/* "Thinking…" bubble while a chat request is in flight. Pulsing
+   dot + ticking elapsed-seconds counter + Cancel button. Replaces
+   the old "Sending…" button-text-only feedback that left users
+   wondering whether the request hung. */
+.bowire-ai-chat-pending {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 0;
+    color: var(--bowire-text-tertiary);
+    font-style: italic;
+}
+.bowire-ai-chat-pending-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--bowire-accent);
+    animation: bowire-ai-pending-pulse 1.2s ease-in-out infinite;
+    flex-shrink: 0;
+}
+@keyframes bowire-ai-pending-pulse {
+    0%, 100% { opacity: 0.3; }
+    50% { opacity: 1; }
+}
+.bowire-ai-chat-pending-text { flex: 1; }
+.bowire-ai-chat-pending-cancel {
+    background: transparent;
+    border: 1px solid var(--bowire-border);
+    border-radius: var(--bowire-radius-sm);
+    color: var(--bowire-text-secondary);
+    padding: 2px 8px;
+    font-size: 10px;
+    cursor: pointer;
+    font-style: normal;
+    transition: border-color var(--bowire-transition), color var(--bowire-transition);
+}
+.bowire-ai-chat-pending-cancel:hover {
+    border-color: var(--bowire-error);
+    color: var(--bowire-error);
+}
+
 /* AllowInvoke toggle (#109 Phase 3) — visible header line above the
    chat transcript. Lo-fi label-with-checkbox; the surrounding chrome
    stays light because the toggle controls a session-only opt-in that

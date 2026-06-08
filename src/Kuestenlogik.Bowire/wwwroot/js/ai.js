@@ -200,6 +200,18 @@
     // offered to the model. Session-only — NEVER persisted to
     // localStorage; the user must opt in each fresh session.
     var aiAllowInvoke = false;
+    // UX progress feedback for in-flight chat requests. Local models
+    // doing tool calls take 30-45 s with llama3.2:3b — without a
+    // visible "still thinking" indicator the user assumes the request
+    // hung. chatPendingSince is the ms-timestamp the request fired;
+    // chatAbort holds the AbortController so the Cancel button can
+    // tear it down; chatTickHandle is the 1 s setInterval that
+    // re-renders the elapsed-seconds counter. All three live as a
+    // single state group — set together in sendChat, cleared together
+    // in the .finally.
+    var chatPendingSince = null;
+    var chatAbort = null;
+    var chatTickHandle = null;
 
     // #59 Threat-model state. Populated by runThreatModel(); rendered
     // by rerenderThreatModel(). Endpoint index lets per-row buttons
@@ -655,6 +667,15 @@
     function sendChat(text) {
         if (!text || chatBusy) return Promise.resolve(null);
         chatBusy = true;
+        chatPendingSince = Date.now();
+        chatAbort = new AbortController();
+        // Re-render once per second so the elapsed-time counter on the
+        // "Thinking…" bubble visibly ticks. setInterval is fine here
+        // — the only cost is one DOM diff per tick and the chat panel
+        // is small. Cleared in .finally.
+        chatTickHandle = setInterval(function () {
+            try { rerenderChatExternal(); } catch { /* harmless */ }
+        }, 1000);
         chatHistory.push({ role: 'user', content: text });
         // Two grounding paths every turn (#89 Phase 1 + Phase 2):
         //  - System prompt with a workbench overview (loaded URLs +
@@ -684,6 +705,7 @@
         return fetch(aiPrefix() + '/api/ai/chat', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
+            signal: chatAbort.signal,
             body: JSON.stringify({
                 messages: outgoing,
                 context: serializeContextForBackend(wbCtx),
@@ -739,13 +761,37 @@
                 }
             })
             .catch(function (err) {
-                chatHistory.push({
-                    role: 'assistant',
-                    problem: normalizeProblem('Network error: ' + (err && err.message ? err.message : err))
-                });
+                // AbortError is the user clicking Cancel — surface as
+                // a quiet "canceled" line instead of a Network-error
+                // problem card; the cancel was deliberate.
+                if (err && err.name === 'AbortError') {
+                    chatHistory.push({
+                        role: 'assistant',
+                        content: '(canceled)',
+                    });
+                } else {
+                    chatHistory.push({
+                        role: 'assistant',
+                        problem: normalizeProblem('Network error: ' + (err && err.message ? err.message : err))
+                    });
+                }
             })
-            .finally(function () { chatBusy = false; });
+            .finally(function () {
+                chatBusy = false;
+                chatPendingSince = null;
+                chatAbort = null;
+                if (chatTickHandle) {
+                    clearInterval(chatTickHandle);
+                    chatTickHandle = null;
+                }
+            });
     }
+
+    // Module-scope hook the per-second tick closure calls into.
+    // Assigned by rerenderChat() inside renderAiPanel() — that's
+    // where the chatHost DOM lives. Lets the setInterval refresh the
+    // pending bubble without re-running the whole renderAiPanel.
+    var rerenderChatExternal = function () { /* no-op until panel mounted */ };
 
     // ---------- panel ----------
     function renderAiPanel() {
@@ -972,6 +1018,30 @@
                 }
                 transcript.appendChild(bubble);
             });
+
+            // "Thinking…" bubble while a request is in flight (UX
+            // quick-fix). Local models with tool-calling can take
+            // 30-45 s on llama3.2:3b — without a visible counter the
+            // user assumes the request hung. The bubble shows elapsed
+            // seconds (ticking via the 1 s setInterval set in
+            // sendChat) and a Cancel button that aborts the fetch.
+            if (chatBusy && chatPendingSince) {
+                var elapsedSec = Math.max(0, Math.floor((Date.now() - chatPendingSince) / 1000));
+                var pendingBubble = el('div', { className: 'bowire-ai-chat-msg bowire-ai-chat-msg-assistant bowire-ai-chat-pending' });
+                pendingBubble.appendChild(el('span', { className: 'bowire-ai-chat-pending-dot' }));
+                pendingBubble.appendChild(el('span', {
+                    className: 'bowire-ai-chat-pending-text',
+                    textContent: 'AI: thinking… (' + elapsedSec + 's)',
+                }));
+                pendingBubble.appendChild(el('button', {
+                    type: 'button',
+                    className: 'bowire-ai-chat-pending-cancel',
+                    textContent: 'Cancel',
+                    onClick: function () { if (chatAbort) chatAbort.abort(); }
+                }));
+                transcript.appendChild(pendingBubble);
+            }
+
             chatHost.appendChild(transcript);
 
             var form = el('form', { className: 'bowire-ai-chat-form' });
@@ -998,6 +1068,11 @@
             };
             chatHost.appendChild(form);
         }
+        // Hand the tick interval (sendChat) a stable hook that always
+        // re-runs the *current* rerenderChat closure. Reassigned on
+        // every renderAiPanel() so a re-mounted drawer doesn't keep
+        // calling a stale closure that targets a detached chatHost.
+        rerenderChatExternal = rerenderChat;
         rerenderChat();
 
         var footer = el('div', { className: 'bowire-ai-footer' });
