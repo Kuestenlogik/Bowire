@@ -71,7 +71,7 @@ public sealed class BowireAiRuntime
         return Clone(snapshot);
     }
 
-    private static OllamaApiClient? Build(BowireAiOptions opts)
+    private static IChatClient? Build(BowireAiOptions opts)
     {
         // Phase 2 covers Ollama + LM Studio — both speak Ollama's wire
         // shape on the same OllamaSharp client. Phase 3 widens the
@@ -82,7 +82,23 @@ public sealed class BowireAiRuntime
         var endpoint = string.IsNullOrEmpty(opts.Endpoint)
             ? "http://localhost:11434"
             : opts.Endpoint;
-        return new OllamaApiClient(new Uri(endpoint), opts.Model);
+        // Wrap the raw OllamaApiClient with FunctionInvokingChatClient so
+        // tool calls (#108 Phase 2 + #109 Phase 3) actually round-trip:
+        // base IChatClient stops after the model emits a FunctionCallContent
+        // and never invokes the tool body. The MEAI extension reads the
+        // tool list from ChatOptions, invokes matching AIFunctions, feeds
+        // the result back to the model, and repeats until the model
+        // produces final text content.
+        //
+        // CA2000 doesn't apply here: ChatClientBuilder transfers ownership
+        // of `inner` to the returned wrapper, which is itself disposed by
+        // Update() when the runtime swaps clients.
+#pragma warning disable CA2000
+        var inner = new OllamaApiClient(new Uri(endpoint), opts.Model);
+#pragma warning restore CA2000
+        return new ChatClientBuilder(inner)
+            .UseFunctionInvocation()
+            .Build();
     }
 
     private static bool IsOllamaShape(string providerId) =>

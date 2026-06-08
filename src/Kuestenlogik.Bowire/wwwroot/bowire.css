@@ -10311,6 +10311,44 @@ details[open] > .bowire-json-tree-summary::before {
 .bowire-ai-chat-msg-assistant {
     color: var(--bowire-text-secondary);
 }
+/* Tool-call trace bubble (#108 Phase 2) — surfaces what the AI
+   actually consulted before answering. Sits between the user's
+   turn and the assistant's text so the transcript reads
+   "Looked up X → answered Y". */
+.bowire-ai-chat-msg-tools {
+    padding: 6px 0;
+    color: var(--bowire-text-tertiary);
+    font-size: 11px;
+}
+.bowire-ai-chat-tool {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    flex-wrap: wrap;
+    padding: 2px 0;
+}
+.bowire-ai-chat-tool-icon { opacity: 0.7; }
+.bowire-ai-chat-tool-name { color: var(--bowire-text-secondary); }
+.bowire-ai-chat-tool-args {
+    margin-left: 6px;
+}
+.bowire-ai-chat-tool-args summary {
+    cursor: pointer;
+    user-select: none;
+    color: var(--bowire-text-tertiary);
+    font-size: 10px;
+}
+.bowire-ai-chat-tool-args pre {
+    margin: 4px 0 0 0;
+    padding: 6px 8px;
+    background: var(--bowire-bg-elevated);
+    border-radius: 4px;
+    font-family: var(--bowire-font-mono);
+    font-size: 10px;
+    overflow-x: auto;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
 .bowire-ai-chat-form {
     display: flex;
     gap: 6px;

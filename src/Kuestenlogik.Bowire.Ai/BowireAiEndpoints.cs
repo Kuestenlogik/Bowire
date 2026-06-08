@@ -614,14 +614,39 @@ public static class BowireAiEndpoints
             var messages = req.Messages.Select(m =>
                 new ChatMessage(MapRole(m.Role), m.Content ?? string.Empty)).ToList();
 
+            // #108 — Phase 2 MCP-style tools. The chat session gets three
+            // read-only tools that close over the workbench context the
+            // frontend ships in the request body. With these, the model
+            // can drill into specific methods (describe_method) without
+            // the system prompt having to pre-list every schema; can
+            // refer back to recent calls (recent_history); and can
+            // enumerate the loaded surface on demand (list_services).
+            // Phase 3+4 (#109) add the invoke + open_method write-side
+            // tools — they slot into the same Tools list here.
+            var workbenchContext = req.Context;
+            var tools = BuildWorkbenchTools(workbenchContext);
+            var chatOptions = tools.Count > 0 ? new ChatOptions { Tools = tools } : null;
+
             try
             {
-                var response = await client.GetResponseAsync(messages, cancellationToken: ctx.RequestAborted);
+                var response = await client.GetResponseAsync(messages, chatOptions, ctx.RequestAborted);
+                // Surface every tool call the model made so the frontend
+                // can render them as visible steps in the transcript
+                // ("Looked up pet.getPetById"). Helps the user trust
+                // what the AI did rather than guessing from the prose.
+                var toolCalls = response.Messages
+                    .SelectMany(m => m.Contents.OfType<FunctionCallContent>())
+                    .Select(f => new {
+                        name = f.Name,
+                        arguments = f.Arguments,
+                    })
+                    .ToArray();
                 return Results.Json(new
                 {
                     content = response.Text,
                     finishReason = response.FinishReason?.Value,
                     modelId = response.ModelId,
+                    toolCalls = toolCalls.Length > 0 ? toolCalls : null,
                 }, JsonOpts);
             }
             catch (OperationCanceledException)
@@ -745,10 +770,112 @@ public static class BowireAiEndpoints
         }
     }
 
+    /// <summary>
+    /// Build the read-only AIFunction tool list for a chat call
+    /// (#108 — Phase 2 of #89). Tools close over the workbench-state
+    /// snapshot the frontend shipped in the request body. Empty list
+    /// when there's no context — the chat still works, just without
+    /// tools, falling back to system-prompt-only grounding.
+    /// </summary>
+    private static List<AITool> BuildWorkbenchTools(WorkbenchContext? wbCtx)
+    {
+        var tools = new List<AITool>();
+        if (wbCtx is null) return tools;
+
+        var services = wbCtx.Services ?? [];
+
+        tools.Add(AIFunctionFactory.Create(
+            () => services.Select(s => new
+            {
+                name = s.Name,
+                protocol = s.Protocol,
+                originUrl = s.OriginUrl,
+                methodCount = s.Methods?.Length ?? 0,
+                methods = s.Methods?.Select(m => m.Name).ToArray() ?? [],
+            }).ToArray(),
+            name: "bowire_list_services",
+            description: "List every API service currently discovered in the workbench. Returns each service's name, protocol, origin URL, and the names of its methods. Call this first to see what's available before drilling into a specific method."));
+
+        tools.Add(AIFunctionFactory.Create(
+            (string service, string method) =>
+            {
+                var svc = services.FirstOrDefault(s => string.Equals(s.Name, service, StringComparison.OrdinalIgnoreCase));
+                if (svc is null) return (object)new { error = $"Service '{service}' is not in the workbench. Call bowire_list_services to see the available services." };
+                var m = svc.Methods?.FirstOrDefault(x => string.Equals(x.Name, method, StringComparison.OrdinalIgnoreCase));
+                if (m is null) return new { error = $"Method '{method}' is not on service '{service}'. Methods available: " + string.Join(", ", svc.Methods?.Select(x => x.Name) ?? []) };
+                return new
+                {
+                    service = svc.Name,
+                    method = m.Name,
+                    protocol = svc.Protocol,
+                    originUrl = svc.OriginUrl,
+                    description = m.Description,
+                    methodType = m.MethodType,
+                    inputType = m.InputTypeName,
+                    inputFields = m.InputFields,
+                    outputType = m.OutputTypeName,
+                };
+            },
+            name: "bowire_describe_method",
+            description: "Get the full input/output schema for one method on one service, plus its origin URL, protocol, and method type. Use after bowire_list_services to drill into a specific method the user is asking about."));
+
+        tools.Add(AIFunctionFactory.Create(
+            (int? limit) =>
+            {
+                var recent = wbCtx.Recent ?? [];
+                var take = limit is > 0 ? Math.Min(limit.Value, recent.Length) : Math.Min(5, recent.Length);
+                return recent.Take(take).ToArray();
+            },
+            name: "bowire_recent_history",
+            description: "Return the last N recent calls (default 5) with service, method, and status. Use when the user references prior calls (\"why did that 500?\") or to spot patterns across recent invocations."));
+
+        return tools;
+    }
+
     /// <summary>Minimal-subset chat request shape -- one role + content pair per message.</summary>
-    private sealed record ChatRequest(ChatRequestMessage[] Messages, string? Model);
+    private sealed record ChatRequest(
+        ChatRequestMessage[] Messages,
+        string? Model,
+        WorkbenchContext? Context);
 
     private sealed record ChatRequestMessage(string Role, string Content);
+
+    /// <summary>
+    /// Workbench-state snapshot the frontend ships with every chat
+    /// request (#89 Phase 2). Closes over what the AIFunction tools
+    /// see: list_services / describe_method / recent_history all read
+    /// from this. The frontend already builds this in ai.js'
+    /// collectWorkbenchContext() — we just plumb it from system-prompt
+    /// text into structured data the tools can query.
+    /// </summary>
+    private sealed record WorkbenchContext(
+        string[]? ServerUrls,
+        WorkbenchService[]? Services,
+        WorkbenchHistoryEntry[]? Recent);
+
+    private sealed record WorkbenchService(
+        string Name,
+        string? Protocol,
+        string? OriginUrl,
+        WorkbenchMethod[]? Methods);
+
+    private sealed record WorkbenchMethod(
+        string Name,
+        string? Description,
+        string? MethodType,
+        string? InputTypeName,
+        WorkbenchField[]? InputFields,
+        string? OutputTypeName);
+
+    private sealed record WorkbenchField(
+        string Name,
+        string? Type,
+        bool Optional);
+
+    private sealed record WorkbenchHistoryEntry(
+        string Service,
+        string Method,
+        string? Status);
 
     /// <summary>
     /// Patch shape for <c>POST /api/ai/config</c>. All fields nullable so

@@ -527,6 +527,49 @@
     }
 
     /**
+     * Project the JS-side workbench-context snapshot down to the shape
+     * the backend's WorkbenchContext record (BowireAiEndpoints.cs)
+     * deserialises. Mostly a 1:1 mapping; renames a few field names
+     * to match C# casing conventions.
+     */
+    function serializeContextForBackend(ctx) {
+        if (!ctx) return null;
+        return {
+            serverUrls: (ctx.urls || []).map(function (u) { return u.url; }),
+            services: (ctx.services || []).map(function (s) {
+                return {
+                    name: s.name,
+                    protocol: s.protocol,
+                    originUrl: ctx.selected && ctx.selected.service === s.name ? ctx.selected.originUrl : null,
+                    methods: (s.methods || []).map(function (mName) {
+                        // For the selected method we have full schema in
+                        // ctx.selected; for everything else we only have
+                        // the name. Surface what we have so the model can
+                        // at least enumerate, and tools (describe_method)
+                        // return "more detail not in snapshot" when asked
+                        // about a non-selected method.
+                        if (ctx.selected && ctx.selected.service === s.name && ctx.selected.method === mName) {
+                            var sel = ctx.selected;
+                            return {
+                                name: mName,
+                                description: sel.description,
+                                methodType: sel.methodType,
+                                inputTypeName: sel.inputType ? sel.inputType.name : null,
+                                inputFields: sel.inputType ? sel.inputType.fields : null,
+                                outputTypeName: sel.outputType ? sel.outputType.name : null,
+                            };
+                        }
+                        return { name: mName };
+                    }),
+                };
+            }),
+            recent: (ctx.recent || []).map(function (r) {
+                return { service: r.service, method: r.method, status: r.status };
+            }),
+        };
+    }
+
+    /**
      * Build a system prompt from a workbench-context snapshot. The
      * prompt tells the model what Bowire is, names the loaded
      * services + the selected method, and asks the model to answer
@@ -606,23 +649,53 @@
         if (!text || chatBusy) return Promise.resolve(null);
         chatBusy = true;
         chatHistory.push({ role: 'user', content: text });
-        // Build a fresh system prompt every turn — the workbench state
-        // moves (user selects another method, adds a URL, runs a call)
-        // and the model should see the snapshot that matches the question.
-        // We send it as a transient message in front of chatHistory but
-        // DON'T persist it in chatHistory (avoids drift + UI clutter).
-        var sysPrompt = buildSystemPrompt(collectWorkbenchContext());
+        // Two grounding paths every turn (#89 Phase 1 + Phase 2):
+        //  - System prompt with a workbench overview (loaded URLs +
+        //    service names + selected method's schema). Catches every
+        //    question that doesn't need a tool call.
+        //  - The same snapshot serialised as `context` in the request
+        //    body so the backend's MCP-style tools (#108) can read it
+        //    on demand without burning tokens to keep huge schemas in
+        //    the prompt itself.
+        // Both rebuild every turn — the workbench state moves, the
+        // model should see the snapshot that matches the question.
+        var wbCtx = collectWorkbenchContext();
+        var sysPrompt = buildSystemPrompt(wbCtx);
         var outgoing = sysPrompt
-            ? [{ role: 'system', content: sysPrompt }].concat(chatHistory)
-            : chatHistory;
+            ? [{ role: 'system', content: sysPrompt }].concat(chatHistory.filter(function (m) {
+                // Skip transient assistant-side problem renders + tool-call
+                // bubbles — they're UI artifacts, not conversation turns.
+                return !m.problem && !m.toolCalls;
+            }))
+            : chatHistory.filter(function (m) { return !m.problem && !m.toolCalls; });
+        // Backend-facing shape — strip the UI's role names down to the
+        // {role, content} pair the endpoint deserialises. Drop assistant
+        // entries that only carried a problem card (no text content).
+        outgoing = outgoing.map(function (m) {
+            return { role: m.role, content: m.content || '' };
+        });
         return fetch(aiPrefix() + '/api/ai/chat', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ messages: outgoing })
+            body: JSON.stringify({
+                messages: outgoing,
+                context: serializeContextForBackend(wbCtx),
+            })
         })
             .then(function (r) { return r.json().then(function (b) { return { ok: r.ok, status: r.status, body: b }; }); })
             .then(function (resp) {
                 if (resp.ok && resp.body && typeof resp.body.content === 'string') {
+                    // Tool calls (#108 Phase 2) — show before the
+                    // assistant text so the transcript reads "AI looked
+                    // up X, then said Y". Pushed as their own bubble
+                    // so the transcript filter skips them on the next
+                    // turn (no point re-grounding via prior tool calls).
+                    if (Array.isArray(resp.body.toolCalls) && resp.body.toolCalls.length > 0) {
+                        chatHistory.push({
+                            role: 'assistant',
+                            toolCalls: resp.body.toolCalls,
+                        });
+                    }
                     chatHistory.push({ role: 'assistant', content: resp.body.content });
                 } else {
                     // Server returned a problem+json (or legacy { error }).
@@ -818,6 +891,31 @@
                 if (m.problem) {
                     bubble.appendChild(el('div', { className: 'bowire-ai-chat-prefix', textContent: 'AI:' }));
                     renderProblem(m.problem, bubble);
+                } else if (m.toolCalls) {
+                    // Tool-call trace bubble (#108 Phase 2). Renders
+                    // each tool call as a small "consulted X" line so
+                    // the user can see what the AI actually looked up
+                    // before answering. Stays collapsed by default —
+                    // open a <details> for the raw arguments JSON.
+                    bubble.classList.add('bowire-ai-chat-msg-tools');
+                    m.toolCalls.forEach(function (tc) {
+                        var prettyName = tc.name
+                            .replace(/^bowire_/, '')
+                            .replace(/_/g, ' ');
+                        var line = el('div', { className: 'bowire-ai-chat-tool' });
+                        line.appendChild(el('span', { className: 'bowire-ai-chat-tool-icon', textContent: '🔧' }));
+                        line.appendChild(el('span', {
+                            className: 'bowire-ai-chat-tool-name',
+                            textContent: 'Consulted ' + prettyName,
+                        }));
+                        if (tc.arguments && Object.keys(tc.arguments).length > 0) {
+                            var args = el('details', { className: 'bowire-ai-chat-tool-args' });
+                            args.appendChild(el('summary', { textContent: 'args' }));
+                            args.appendChild(el('pre', { textContent: JSON.stringify(tc.arguments, null, 2) }));
+                            line.appendChild(args);
+                        }
+                        bubble.appendChild(line);
+                    });
                 } else {
                     bubble.textContent = (m.role === 'user' ? 'You: ' : 'AI: ') + m.content;
                 }
