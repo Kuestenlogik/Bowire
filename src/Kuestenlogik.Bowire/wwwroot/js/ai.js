@@ -399,6 +399,13 @@
         }
     }
 
+    // Tick handle for the threat-model "Ranking… (Ns)" counter.
+    // Same pattern as chatTickHandle — re-renders the threat section
+    // once per second while a request is in flight so the user can
+    // see elapsed time. Local-model threat ranking takes 10-30 s;
+    // without a counter the button just sits at "Ranking…" and looks
+    // hung.
+    var threatTickHandle = null;
     function runThreatModel() {
         if (threatState.running) return Promise.resolve(threatState);
         var collected = collectThreatEndpoints();
@@ -407,8 +414,13 @@
             return Promise.resolve(threatState);
         }
         threatState.running = true;
+        threatState.startedAt = Date.now();
         threatState.error = null;
         threatState.endpointIndex = collected.index;
+        if (threatTickHandle) clearInterval(threatTickHandle);
+        threatTickHandle = setInterval(function () {
+            try { if (rerenderThreatModelExternal) rerenderThreatModelExternal(); } catch { /* harmless */ }
+        }, 1000);
         return fetch(aiPrefix() + '/api/ai/threat-model', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -420,6 +432,7 @@
             .then(function (resp) { return resp.json().then(function (b) { return { ok: resp.ok, status: resp.status, body: b }; }); })
             .then(function (resp) {
                 threatState.running = false;
+                if (threatTickHandle) { clearInterval(threatTickHandle); threatTickHandle = null; }
                 if (!resp.ok) {
                     threatState.error = (resp.body && resp.body.error) || ('Request failed (HTTP ' + resp.status + ').');
                     threatState.ranked = null;
@@ -434,6 +447,7 @@
             })
             .catch(function (err) {
                 threatState.running = false;
+                if (threatTickHandle) { clearInterval(threatTickHandle); threatTickHandle = null; }
                 threatState.error = 'Network error: ' + (err && err.message ? err.message : err);
                 threatState.ranked = null;
                 return threatState;
@@ -787,11 +801,13 @@
             });
     }
 
-    // Module-scope hook the per-second tick closure calls into.
-    // Assigned by rerenderChat() inside renderAiPanel() — that's
-    // where the chatHost DOM lives. Lets the setInterval refresh the
-    // pending bubble without re-running the whole renderAiPanel.
+    // Module-scope hooks the per-second tick closures call into.
+    // Assigned by the matching rerenderX() function inside
+    // renderAiPanel() — that's where the host DOM lives. Lets the
+    // setInterval ticks refresh the pending/elapsed UI without
+    // re-running the whole renderAiPanel.
     var rerenderChatExternal = function () { /* no-op until panel mounted */ };
+    var rerenderThreatModelExternal = function () { /* no-op until panel mounted */ };
 
     // ---------- panel ----------
     function renderAiPanel() {
@@ -845,10 +861,21 @@
             }));
 
             var runRow = el('div', { className: 'bowire-ai-threat-runrow' });
+            // While running, surface elapsed seconds in the button text
+            // so the user sees the request is alive (local-model
+            // threat-model takes 10-30 s with llama3.2:1b). Driven by
+            // the threatTickHandle setInterval that re-renders this
+            // section once per second; the seconds counter ticks
+            // visibly.
+            var elapsedThreatSec = threatState.running && threatState.startedAt
+                ? Math.max(0, Math.floor((Date.now() - threatState.startedAt) / 1000))
+                : 0;
             var runBtn = el('button', {
                 type: 'button',
                 className: 'bowire-ai-threat-run',
-                textContent: threatState.running ? 'Ranking…' : 'Run threat model',
+                textContent: threatState.running
+                    ? 'Ranking… (' + elapsedThreatSec + 's)'
+                    : 'Run threat model',
                 onClick: function () { runThreatModel().then(rerenderThreatModel); }
             });
             if (threatState.running) runBtn.setAttribute('disabled', 'disabled');
@@ -944,6 +971,7 @@
 
             threatHost.appendChild(section);
         }
+        rerenderThreatModelExternal = rerenderThreatModel;
         rerenderThreatModel();
 
         // Phase 2 chat surface. Renders only when /api/ai/status reports
