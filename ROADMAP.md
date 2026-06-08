@@ -75,6 +75,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 - [#122](https://github.com/Kuestenlogik/Bowire/issues/122) **Direction-color + protocol-glyph (two-axis encoding)** 
 - [#123](https://github.com/Kuestenlogik/Bowire/issues/123) **Workbench tabs that carry protocol-typed state** 
 - [#124](https://github.com/Kuestenlogik/Bowire/issues/124) **Cross-protocol omnibox (Cmd/Ctrl+K)** 
+- [#125](https://github.com/Kuestenlogik/Bowire/issues/125) **Multi-source {{...}} variable resolver** 
 
 ---
 
