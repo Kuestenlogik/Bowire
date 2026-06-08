@@ -100,8 +100,12 @@ public sealed class OAuthEndpointTests : IClassFixture<OAuthEndpointTests.OAuthF
         Assert.Equal(HttpStatusCode.BadGateway, resp.StatusCode);
         var json = await resp.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
         using var doc = JsonDocument.Parse(json);
+        // Post-#88 ProblemDetails: title carries "HTTP 401" (mirrored
+        // into the back-compat `error` field too); the upstream body
+        // moves from the old `details` (plural) into RFC 7807's
+        // canonical `detail` (singular).
         Assert.Contains("HTTP 401", doc.RootElement.GetProperty("error").GetString() ?? "", StringComparison.Ordinal);
-        Assert.Contains("invalid_client", doc.RootElement.GetProperty("details").GetString() ?? "", StringComparison.Ordinal);
+        Assert.Contains("invalid_client", doc.RootElement.GetProperty("detail").GetString() ?? "", StringComparison.Ordinal);
     }
 
     [Fact]

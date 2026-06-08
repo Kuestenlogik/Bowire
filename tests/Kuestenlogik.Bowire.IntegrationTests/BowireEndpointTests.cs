@@ -159,7 +159,11 @@ public sealed class BowireEndpointTests : IClassFixture<BowireTestFixture>
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
         var content = await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
-        Assert.Contains("Invalid JSON", content);
+        // Post-#88 the shape is application/problem+json: title +
+        // detail (the JSON-parser's own message lives in detail).
+        // "valid JSON" anchors against the title; the parse-error
+        // string still contains "JSON literal" / "Expecting value".
+        Assert.Contains("valid JSON", content, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]

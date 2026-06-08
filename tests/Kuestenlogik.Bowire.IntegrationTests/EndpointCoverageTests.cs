@@ -426,7 +426,10 @@ public sealed class EndpointCoverageTests : IClassFixture<BowireTestFixture>
 
         Assert.Equal(HttpStatusCode.BadRequest, resp.StatusCode);
         var json = await resp.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
-        Assert.Contains("Invalid JSON", json, StringComparison.OrdinalIgnoreCase);
+        // Post-#88 ProblemDetails: title reads "Request body isn't
+        // valid JSON". Match against "valid JSON" (case-insensitive)
+        // which appears in both the title + the parser's own message.
+        Assert.Contains("valid JSON", json, StringComparison.OrdinalIgnoreCase);
     }
 
     // ---------- BowireChannelEndpoints — happy paths via FakeChannelProtocol ----------
