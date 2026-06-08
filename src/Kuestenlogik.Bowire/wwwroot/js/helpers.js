@@ -525,6 +525,21 @@
     }
 
     /**
+     * One-line helper for toast / button-text / inline-text error
+     * contexts (#91). Returns just the title of a problem+json body
+     * (or the legacy `error` string, or a generic fallback) — no DOM,
+     * no card. Use for cases where a single string is all that fits;
+     * use renderProblem when you have room for the full structured
+     * card. Defensive: never throws, always returns a string.
+     */
+    function problemTitle(body, fallback) {
+        if (typeof body === 'string' && body) return body;
+        var p = normalizeProblem(body);
+        if (p && p.title) return p.title;
+        return fallback || 'Request failed';
+    }
+
+    /**
      * Render a normalized problem object into a DOM container as a
      * structured error card (#88). Headline + collapsible detail + any
      * action links the backend exposed via `links` (e.g. "Configure"

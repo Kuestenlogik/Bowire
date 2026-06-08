@@ -396,10 +396,11 @@
             var fullName = selectedService.name + '/' + selectedMethod.name;
 
             var result = await resp.json();
-            if (result.error) {
-                channelError = result.error;
-                addConsoleEntry({ type: 'error', method: fullName, status: 'Channel open failed', body: result.error });
-                toast('Channel open failed: ' + result.error, 'error');
+            if (result.error || result.title) {
+                var msg = problemTitle(result);
+                channelError = msg;
+                addConsoleEntry({ type: 'error', method: fullName, status: 'Channel open failed', body: msg });
+                toast('Channel open failed: ' + msg, 'error');
                 render();
                 return;
             }
@@ -619,9 +620,10 @@
             });
 
             var result = await resp.json();
-            if (result.error) {
-                addConsoleEntry({ type: 'error', method: sendFullName, status: 'Send failed', body: result.error });
-                toast('Send failed: ' + result.error, 'error');
+            if (result.error || result.title) {
+                var msg = problemTitle(result);
+                addConsoleEntry({ type: 'error', method: sendFullName, status: 'Send failed', body: msg });
+                toast('Send failed: ' + msg, 'error');
                 return;
             }
 

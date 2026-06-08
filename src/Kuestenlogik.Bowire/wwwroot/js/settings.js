@@ -411,7 +411,7 @@
                 } else {
                     aiSettingsState.result = {
                         kind: 'err',
-                        text: (resp.body && resp.body.error) || ('Save failed (HTTP ' + resp.status + ').')
+                        text: problemTitle(resp.body, 'Save failed (HTTP ' + resp.status + ').')
                     };
                 }
                 renderSettingsDialog();

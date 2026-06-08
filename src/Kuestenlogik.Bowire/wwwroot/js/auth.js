@@ -359,8 +359,8 @@
         try { result = await resp.json(); }
         catch { throw new Error('Token endpoint returned invalid JSON (HTTP ' + resp.status + ')'); }
 
-        if (!resp.ok || result.error) {
-            throw new Error(result.error || ('HTTP ' + resp.status));
+        if (!resp.ok || result.error || result.title) {
+            throw new Error(problemTitle(result, 'HTTP ' + resp.status));
         }
         if (!result.access_token) throw new Error('Token response missing access_token');
 
@@ -481,7 +481,7 @@
         var result;
         try { result = await resp.json(); }
         catch { throw new Error('Token endpoint returned invalid JSON (HTTP ' + resp.status + ')'); }
-        if (!resp.ok || result.error) throw new Error(result.error || ('HTTP ' + resp.status));
+        if (!resp.ok || result.error || result.title) throw new Error(problemTitle(result, 'HTTP ' + resp.status));
         if (!result.access_token) throw new Error('Token response missing access_token');
 
         var ttl = parseInt(result.expires_in, 10);
@@ -548,7 +548,7 @@
         var result;
         try { result = await resp.json(); }
         catch { throw new Error('Refresh endpoint returned invalid JSON'); }
-        if (!resp.ok || result.error) throw new Error(result.error || ('HTTP ' + resp.status));
+        if (!resp.ok || result.error || result.title) throw new Error(problemTitle(result, 'HTTP ' + resp.status));
         if (!result.access_token) throw new Error('Refresh response missing access_token');
 
         var ttl = parseInt(result.expires_in, 10);

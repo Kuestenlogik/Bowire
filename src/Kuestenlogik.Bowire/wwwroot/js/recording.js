@@ -267,7 +267,7 @@
         });
         if (!resp.ok) {
             var msg = 'HTTP ' + resp.status;
-            try { var body = await resp.json(); if (body && body.error) msg = body.error; } catch {}
+            try { var body = await resp.json(); if (body) msg = problemTitle(body, msg); } catch {}
             throw new Error(msg);
         }
         return await resp.json();

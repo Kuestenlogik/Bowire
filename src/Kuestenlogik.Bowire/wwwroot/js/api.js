@@ -299,10 +299,14 @@
             });
 
             const result = await resp.json();
-            if (result.error) {
-                responseError = result.error;
+            // #91 — accept both legacy { error } and RFC 7807 problem+json
+            // shapes. Title carries the headline regardless; the response
+            // pane error renderer already knows how to handle both via
+            // normalizeProblem (see render-main.js's response error path).
+            if (result.error || result.title) {
+                responseError = result;
                 statusInfo = { status: 'Error', durationMs: 0, responseSize: 0 };
-                addConsoleEntry({ type: 'error', method: fullName, status: 'Error', body: result.error });
+                addConsoleEntry({ type: 'error', method: fullName, status: 'Error', body: problemTitle(result, 'Request failed') });
             } else {
                 responseData = result.response;
                 captureResponse(result.response); // for ${response.X} chaining

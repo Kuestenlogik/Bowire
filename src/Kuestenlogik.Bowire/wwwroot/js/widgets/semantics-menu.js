@@ -1016,7 +1016,7 @@
             return resp.json().then(function (b) { return { ok: resp.ok, status: resp.status, body: b }; });
         }).then(function (resp) {
             if (!resp.ok) {
-                bowireRenderAiFuzzPanelStatus(panel, '⚠ ' + ((resp.body && resp.body.error) || ('HTTP ' + resp.status)));
+                bowireRenderAiFuzzPanelStatus(panel, '⚠ ' + problemTitle(resp.body, 'HTTP ' + resp.status));
                 return;
             }
             var values = (resp.body && resp.body.values) || [];
@@ -1217,7 +1217,7 @@
         }).then(function (r) { return r.json().then(function (b) { return { ok: r.ok, status: r.status, body: b }; }); })
           .then(function (resp) {
               if (!resp.ok) {
-                  status.textContent = '⚠ ' + ((resp.body && resp.body.error) || ('HTTP ' + resp.status));
+                  status.textContent = '⚠ ' + problemTitle(resp.body, 'HTTP ' + resp.status);
                   return;
               }
               status.remove();
@@ -1441,7 +1441,7 @@
                 .then(function (resp) {
                     inflight = false;
                     if (!resp.ok) {
-                        var msg = resp.body && resp.body.error ? resp.body.error : ('HTTP ' + resp.status);
+                        var msg = problemTitle(resp.body, 'HTTP ' + resp.status);
                         verdictBox.textContent = '⚠ ' + msg;
                         verdictBox.classList.add('error');
                         return;
