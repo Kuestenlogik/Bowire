@@ -8,7 +8,7 @@ Bowire's browser UI is a single-page application built with pure HTML, CSS, and 
 
 ## Layout
 
-The UI is organized into four main areas. Click any region in the
+The UI is organized into five main areas. Click any region in the
 diagram below to jump to its detail page:
 
 <picture class="ui-anatomy-picture">
@@ -16,12 +16,13 @@ diagram below to jump to its detail page:
   <img class="ui-anatomy-img" src="../images/ui-anatomy-light.svg" alt="Bowire workbench layout — click any region to open its UI Guide page">
 </picture>
 
-1. **[Sidebar](sidebar.md)** &mdash; service list, search, favorites, protocol tabs
-2. **[Request Pane](request-pane.md)** &mdash; form/JSON editor, metadata headers, import
-3. **[Response Pane](response-pane.md)** &mdash; syntax-highlighted response, streaming view, copy/download
-4. **[Action Bar](action-bar.md)** &mdash; execute button, repeat, status indicators
+1. **[Topbar](topbar.md)** &mdash; brand, command palette / global search, connection pill, environment selector, theme, AI drawer, About, Settings
+2. **[Sidebar](sidebar.md)** &mdash; service list, search, favorites, protocol tabs
+3. **[Request Pane](request-pane.md)** &mdash; form/JSON editor, metadata headers, import
+4. **[Response Pane](response-pane.md)** &mdash; syntax-highlighted response, streaming view, copy/download
+5. **[Action Bar](action-bar.md)** &mdash; execute button, repeat, status indicators
 
-On desktop, the sidebar sits on the left with the request and response panes stacked or side-by-side on the right. On mobile, the sidebar collapses behind a hamburger menu and panels stack vertically.
+On desktop, the topbar runs across the full width; the sidebar sits on the left with the request and response panes stacked or side-by-side on the right; the optional AI drawer slides in from the right edge. On mobile, the sidebar collapses behind a hamburger menu and panels stack vertically.
 
 ## Theme
 
