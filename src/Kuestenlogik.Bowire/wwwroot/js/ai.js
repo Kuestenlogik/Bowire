@@ -406,6 +406,13 @@
     // without a counter the button just sits at "Ranking…" and looks
     // hung.
     var threatTickHandle = null;
+    // #112 — heuristic vs. AI tier toggle. Default is heuristic so
+    // Security works without an AI client; flipping the toggle in
+    // the Security drawer routes the next Run through /api/ai/threat-model
+    // instead. Session-only, never persisted to localStorage — the
+    // user opts in each fresh session to avoid surprise spend / latency
+    // when reopening the workbench.
+    var threatUseAi = false;
     function runThreatModel() {
         if (threatState.running) return Promise.resolve(threatState);
         var collected = collectThreatEndpoints();
@@ -417,11 +424,18 @@
         threatState.startedAt = Date.now();
         threatState.error = null;
         threatState.endpointIndex = collected.index;
+        threatState.tier = threatUseAi ? 'ai' : 'heuristic';
         if (threatTickHandle) clearInterval(threatTickHandle);
         threatTickHandle = setInterval(function () {
             try { if (rerenderThreatModelExternal) rerenderThreatModelExternal(); } catch { /* harmless */ }
         }, 1000);
-        return fetch(aiPrefix() + '/api/ai/threat-model', {
+        // Both endpoints sit under the same Bowire mount prefix —
+        // /api/ai/* for the AI tier (gated on the AI package) and
+        // /api/security/* for the heuristic tier (core, always
+        // available). aiPrefix() collapses the embedded vs standalone
+        // case so the same JS works in both.
+        var url = aiPrefix() + (threatUseAi ? '/api/ai/threat-model' : '/api/security/threat-model');
+        return fetch(url, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -1057,20 +1071,46 @@
 
         function rerenderThreatModel() {
             threatHost.replaceChildren();
-            if (!aiStatus || !aiStatus.hasClient) {
-                threatHost.appendChild(el('p', {
-                    className: 'bowire-ai-empty',
-                    textContent: 'No AI client configured. The threat-model surface ranks discovered endpoints with an LLM. Configure a model in Settings → AI to enable. A heuristic tier (no AI required) is tracked in #112.'
-                }));
-                return;
-            }
 
             var section = el('div', { className: 'bowire-ai-threat-section' });
             section.appendChild(el('h4', { className: 'bowire-ai-threat-title', textContent: 'Threat model' }));
             section.appendChild(el('p', {
                 className: 'bowire-ai-threat-help',
-                textContent: 'Rank discovered endpoints by attack-surface risk. The model proposes — you confirm before scanning.'
+                textContent: 'Rank discovered endpoints by attack-surface risk. Heuristic by default — no AI required; toggle to use the AI if configured.'
             }));
+
+            // #112 — tier toggle. Default heuristic; opt in to AI.
+            // AI option is disabled when no IChatClient is registered.
+            var hasAi = !!(aiStatus && aiStatus.hasClient);
+            var tierRow = el('div', { className: 'bowire-ai-threat-tierrow' });
+            var heurBtn = el('button', {
+                type: 'button',
+                className: 'bowire-ai-threat-tier' + (!threatUseAi ? ' active' : ''),
+                textContent: 'Heuristic',
+                title: 'Deterministic rule engine — sub-millisecond, no model required',
+                onClick: function () {
+                    if (threatState.running) return;
+                    threatUseAi = false;
+                    rerenderThreatModel();
+                }
+            });
+            var aiBtn = el('button', {
+                type: 'button',
+                className: 'bowire-ai-threat-tier' + (threatUseAi ? ' active' : ''),
+                textContent: 'AI-assisted',
+                title: hasAi
+                    ? 'Send to the configured AI for semantic ranking on top of the heuristic rules'
+                    : 'Configure a model in Settings → AI to enable',
+                onClick: function () {
+                    if (threatState.running || !hasAi) return;
+                    threatUseAi = true;
+                    rerenderThreatModel();
+                }
+            });
+            if (!hasAi) aiBtn.setAttribute('disabled', 'disabled');
+            tierRow.appendChild(heurBtn);
+            tierRow.appendChild(aiBtn);
+            section.appendChild(tierRow);
 
             var runRow = el('div', { className: 'bowire-ai-threat-runrow' });
             var elapsedThreatSec = threatState.running && threatState.startedAt
@@ -1118,6 +1158,21 @@
                     li.appendChild(rowHeader);
                     if (row.why) {
                         li.appendChild(el('div', { className: 'bowire-ai-threat-why', textContent: row.why }));
+                    }
+                    // #112 — render the rule trace for heuristic rows
+                    // as a collapsible details so users can audit which
+                    // rules fired against which endpoint. AI rows have
+                    // no ruleTrace; the model's `why` carries the
+                    // reasoning text.
+                    if (row.ruleTrace && row.ruleTrace.length > 0) {
+                        var traceEl = el('details', { className: 'bowire-ai-threat-trace' });
+                        traceEl.appendChild(el('summary', { textContent: row.ruleTrace.length + ' rule' + (row.ruleTrace.length === 1 ? '' : 's') + ' fired' }));
+                        var traceList = el('ul');
+                        row.ruleTrace.forEach(function (line) {
+                            traceList.appendChild(el('li', { textContent: line }));
+                        });
+                        traceEl.appendChild(traceList);
+                        li.appendChild(traceEl);
                     }
                     if (row.suggestedTemplates && row.suggestedTemplates.length > 0) {
                         var tplWrap = el('div', { className: 'bowire-ai-threat-templates' });
