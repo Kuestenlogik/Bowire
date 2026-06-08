@@ -647,7 +647,14 @@
         try { aiHintCount = window.__bowireAi ? window.__bowireAi.hintCount() : 0; } catch { /* ignore */ }
         var aiToggleBtn = el('button', {
             id: 'bowire-ai-drawer-toggle',
-            className: 'bowire-topbar-icon-btn bowire-ai-drawer-toggle' + (aiDrawerOpen ? ' active' : ''),
+            // Reuse the .bowire-theme-toggle-btn baseline so the AI
+            // button matches the env / watch / theme / about / settings
+            // chrome (34px height, bordered pill, transparent bg, hover).
+            // The .bowire-ai-drawer-toggle modifier adds the active-state
+            // highlight + anchors the hint-count badge. Originally used
+            // a made-up .bowire-topbar-icon-btn that had no rules — the
+            // button collapsed to a thin sliver without an icon.
+            className: 'bowire-theme-toggle-btn bowire-ai-drawer-toggle' + (aiDrawerOpen ? ' active' : ''),
             title: aiDrawerOpen ? 'Close AI assistant (Ctrl+Shift+A)' : 'Open AI assistant (Ctrl+Shift+A)',
             'aria-label': 'Toggle AI assistant',
             onClick: function () {
@@ -656,7 +663,10 @@
                 render();
             }
         },
-            el('span', { innerHTML: svgIcon('spark') }),
+            el('span', {
+                innerHTML: svgIcon('spark'),
+                style: 'width:16px;height:16px;display:flex',
+            }),
             aiHintCount > 0
                 ? el('span', { className: 'bowire-ai-drawer-badge', textContent: String(aiHintCount) })
                 : null
