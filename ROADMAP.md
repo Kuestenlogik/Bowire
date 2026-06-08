@@ -58,6 +58,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 - [#96](https://github.com/Kuestenlogik/Bowire/issues/96) **Multi-tenant Phase C — SCIM 2.0 provisioning endpoints** 
 - [#97](https://github.com/Kuestenlogik/Bowire/issues/97) **Multi-tenant Phase E — single-user → multi-tenant migration path** 
 - [#98](https://github.com/Kuestenlogik/Bowire/issues/98) **Multi-tenant Phase F — user chip, scoped state copy, admin impersonation** 
+- [#99](https://github.com/Kuestenlogik/Bowire/issues/99) **Submarine — transparent proxy / MITM mode (6th deployment shape)** 
 
 ---
 
