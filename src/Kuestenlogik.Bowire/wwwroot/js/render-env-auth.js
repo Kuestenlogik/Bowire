@@ -707,7 +707,11 @@
             nextLabel = 'auto';
         }
 
-        var capitalPref = pref.charAt(0).toUpperCase() + pref.slice(1);
+        // Icon-only button \u2014 the topbar cluster is dense (env, watch,
+        // theme, AI, about, settings). The visible label was redundant
+        // with the icon's state-pattern, so dropped. The full state +
+        // next-action is in the tooltip; the accessible name is in
+        // aria-label.
         return el('button', {
             id: 'bowire-theme-toggle-btn',
             className: 'bowire-theme-toggle-btn' + (pref === 'auto' ? ' is-auto' : ''),
@@ -725,10 +729,6 @@
             el('span', {
                 innerHTML: svgIcon(iconName),
                 style: 'width:16px;height:16px;display:flex'
-            }),
-            el('span', {
-                className: 'bowire-theme-toggle-label',
-                textContent: capitalPref
             })
         );
     }
