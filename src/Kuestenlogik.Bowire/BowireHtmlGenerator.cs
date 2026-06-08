@@ -43,12 +43,14 @@ internal static class BowireHtmlGenerator
     ///     theme. Used by the in-app loading-screen `&lt;img&gt;` that
     ///     displays when app theme is dark.
     /// </summary>
-    private static readonly Lazy<string> FaviconBrowserTabDataUrl = new(() =>
-    {
-        var svg = ReadEmbeddedFile("favicon.svg");
-        var bytes = System.Text.Encoding.UTF8.GetBytes(svg);
-        return "data:image/svg+xml;base64," + Convert.ToBase64String(bytes);
-    });
+    // FaviconBrowserTabDataUrl was the single-icon variant that relied
+    // on the inline @media (prefers-color-scheme) inside the SVG to
+    // flip black ↔ white. Chromium-family browsers don't reliably
+    // honour CSS-inside-SVG-favicons; switched to two explicit
+    // <link rel="icon"> tags with media="(prefers-color-scheme: ...)"
+    // attributes that point at the deterministic black + white
+    // variants below — every browser respects the attribute-level
+    // media query.
 
     private static readonly Lazy<string> FaviconDataUrl = new(() =>
     {
@@ -188,7 +190,8 @@ internal static class BowireHtmlGenerator
                    <meta charset="UTF-8">
                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
                    <title>{{title}} — {{desc}}</title>
-                   <link rel="icon" type="image/svg+xml" href="{{FaviconBrowserTabDataUrl.Value}}">
+                   <link rel="icon" type="image/svg+xml" href="{{FaviconDataUrl.Value}}" media="(prefers-color-scheme: light)">
+                   <link rel="icon" type="image/svg+xml" href="{{FaviconMonoDataUrl.Value}}" media="(prefers-color-scheme: dark)">
                    <style>{{css}}</style>
                </head>
                <body>

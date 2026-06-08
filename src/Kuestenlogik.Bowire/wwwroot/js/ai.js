@@ -815,7 +815,7 @@
 
         // Header
         var header = el('div', { className: 'bowire-ai-header' });
-        header.appendChild(el('h3', { textContent: 'AI side-panel' }));
+        header.appendChild(el('h3', { textContent: 'AI assistant' }));
         header.appendChild(el('span', {
             className: 'bowire-ai-mode',
             textContent: 'Hint engine — no model required'
@@ -842,137 +842,10 @@
             panel.appendChild(list);
         }
 
-        // #59 Threat-model surface. Sits between the hint list and the
-        // chat composer so the "rank my whole service surface" button
-        // is the first AI action a user sees after the hints. Only
-        // renders when hasClient=true.
-        var threatHost = el('div', { className: 'bowire-ai-threat-host' });
-        panel.appendChild(threatHost);
-
-        function rerenderThreatModel() {
-            threatHost.replaceChildren();
-            if (!aiStatus || !aiStatus.hasClient) return;
-
-            var section = el('div', { className: 'bowire-ai-threat-section' });
-            section.appendChild(el('h4', { className: 'bowire-ai-threat-title', textContent: 'Threat model' }));
-            section.appendChild(el('p', {
-                className: 'bowire-ai-threat-help',
-                textContent: 'Rank discovered endpoints by attack-surface risk. The model proposes — you confirm before scanning.'
-            }));
-
-            var runRow = el('div', { className: 'bowire-ai-threat-runrow' });
-            // While running, surface elapsed seconds in the button text
-            // so the user sees the request is alive (local-model
-            // threat-model takes 10-30 s with llama3.2:1b). Driven by
-            // the threatTickHandle setInterval that re-renders this
-            // section once per second; the seconds counter ticks
-            // visibly.
-            var elapsedThreatSec = threatState.running && threatState.startedAt
-                ? Math.max(0, Math.floor((Date.now() - threatState.startedAt) / 1000))
-                : 0;
-            var runBtn = el('button', {
-                type: 'button',
-                className: 'bowire-ai-threat-run',
-                textContent: threatState.running
-                    ? 'Ranking… (' + elapsedThreatSec + 's)'
-                    : 'Run threat model',
-                onClick: function () { runThreatModel().then(rerenderThreatModel); }
-            });
-            if (threatState.running) runBtn.setAttribute('disabled', 'disabled');
-            runRow.appendChild(runBtn);
-            var statusLine = el('span', { className: 'bowire-ai-threat-meta' });
-            if (threatState.error) {
-                statusLine.textContent = '⚠ ' + threatState.error;
-                statusLine.classList.add('err');
-            } else if (threatState.lastRun) {
-                statusLine.textContent = threatState.lastInputCount + ' endpoint(s) considered'
-                    + (threatState.truncated ? ' (truncated to first 200)' : '')
-                    + (threatState.modelId ? ' · ' + threatState.modelId : '');
-            }
-            runRow.appendChild(statusLine);
-            section.appendChild(runRow);
-
-            if (threatState.ranked && threatState.ranked.length > 0) {
-                var list = el('ol', { className: 'bowire-ai-threat-list' });
-                threatState.ranked.forEach(function (row) {
-                    var endpoint = threatState.endpointIndex[row.endpointId];
-                    var li = el('li', { className: 'bowire-ai-threat-row' });
-                    var header = el('div', { className: 'bowire-ai-threat-row-head' });
-                    var scoreClass = row.risk >= 8 ? 'high' : row.risk >= 5 ? 'medium' : 'low';
-                    header.appendChild(el('span', {
-                        className: 'bowire-ai-threat-score score-' + scoreClass,
-                        textContent: row.risk + '/10'
-                    }));
-                    header.appendChild(el('code', {
-                        className: 'bowire-ai-threat-endpoint',
-                        textContent: endpoint
-                            ? ((endpoint.verb ? endpoint.verb + ' ' : '') + (endpoint.path || row.endpointId))
-                            : row.endpointId
-                    }));
-                    li.appendChild(header);
-                    if (row.why) {
-                        li.appendChild(el('div', { className: 'bowire-ai-threat-why', textContent: row.why }));
-                    }
-                    if (row.suggestedTemplates && row.suggestedTemplates.length > 0) {
-                        var tplWrap = el('div', { className: 'bowire-ai-threat-templates' });
-                        tplWrap.appendChild(el('span', {
-                            className: 'bowire-ai-threat-templates-label',
-                            textContent: 'Suggested:'
-                        }));
-                        row.suggestedTemplates.forEach(function (t) {
-                            tplWrap.appendChild(el('span', {
-                                className: 'bowire-ai-threat-template-chip',
-                                textContent: t
-                            }));
-                        });
-                        li.appendChild(tplWrap);
-                    }
-                    // Action row: copy the CLI command (Tier-1
-                    // shortcut) + generate a Nuclei template via #60.
-                    if (endpoint && endpoint.path) {
-                        var actionRow = el('div', { className: 'bowire-ai-threat-scan' });
-                        var scanBtn = el('button', {
-                            type: 'button',
-                            className: 'bowire-ai-threat-scan-btn',
-                            textContent: 'Copy bowire scan command',
-                            onClick: (function (ep, templates) {
-                                return function () {
-                                    var cmd = 'bowire scan --url ' + (ep.serverUrl || '<server>')
-                                        + ' --path ' + ep.path
-                                        + (templates.length > 0 ? ' --templates ' + templates.join(',') : '');
-                                    if (navigator.clipboard) {
-                                        navigator.clipboard.writeText(cmd).then(function () {
-                                            scanBtn.textContent = 'Copied';
-                                            setTimeout(function () {
-                                                scanBtn.textContent = 'Copy bowire scan command';
-                                            }, 1500);
-                                        });
-                                    }
-                                };
-                            })(endpoint, row.suggestedTemplates || [])
-                        });
-                        actionRow.appendChild(scanBtn);
-                        // #60 per-row template-generator. Class picker
-                        // is pre-populated with the model's first
-                        // suggestedTemplate, falls back to 'idor'.
-                        var defaultClass = (row.suggestedTemplates && row.suggestedTemplates[0]) || 'idor';
-                        actionRow.appendChild(bowireBuildTemplateGenerator(endpoint, defaultClass));
-                        li.appendChild(actionRow);
-                        // Output box that the generator targets.
-                        var outputBox = el('div', { className: 'bowire-ai-template-output' });
-                        outputBox.id = 'bowire-ai-template-out-' + endpoint.endpointId;
-                        outputBox.style.display = 'none';
-                        li.appendChild(outputBox);
-                    }
-                    list.appendChild(li);
-                });
-                section.appendChild(list);
-            }
-
-            threatHost.appendChild(section);
-        }
-        rerenderThreatModelExternal = rerenderThreatModel;
-        rerenderThreatModel();
+        // Threat-model + template-suggest moved to the Security drawer
+        // (#111). The AI drawer stays focused on conversational
+        // surfaces — hints + chat — so the mental model is clean:
+        // "AI = assistant", "Security = scanner / analysis tools".
 
         // Phase 2 chat surface. Renders only when /api/ai/status reports
         // hasClient=true; otherwise the footer becomes a probe-driven
@@ -1160,9 +1033,154 @@
         return panel;
     }
 
+    // #111 — Security drawer surface. Lives parallel to the AI drawer.
+    // Hosts the threat-model + per-row template generator that used to
+    // live inside the AI drawer; the AI drawer keeps Hints + Chat.
+    // The two drawers are independent (own toggles, own state), so a
+    // user running a scan keeps the chat available for "explain this
+    // finding" without losing scroll position.
+    function renderSecurityPanel() {
+        var panel = el('div', { className: 'bowire-security-panel' });
+
+        var header = el('div', { className: 'bowire-ai-header' });
+        header.appendChild(el('h3', { textContent: 'Security' }));
+        header.appendChild(el('span', {
+            className: 'bowire-ai-mode',
+            textContent: aiStatus && aiStatus.hasClient
+                ? 'AI-assisted ranking — opt-in heuristic tier (#112) in v1.10'
+                : 'Configure AI in Settings to enable ranking'
+        }));
+        panel.appendChild(header);
+
+        var threatHost = el('div', { className: 'bowire-ai-threat-host' });
+        panel.appendChild(threatHost);
+
+        function rerenderThreatModel() {
+            threatHost.replaceChildren();
+            if (!aiStatus || !aiStatus.hasClient) {
+                threatHost.appendChild(el('p', {
+                    className: 'bowire-ai-empty',
+                    textContent: 'No AI client configured. The threat-model surface ranks discovered endpoints with an LLM. Configure a model in Settings → AI to enable. A heuristic tier (no AI required) is tracked in #112.'
+                }));
+                return;
+            }
+
+            var section = el('div', { className: 'bowire-ai-threat-section' });
+            section.appendChild(el('h4', { className: 'bowire-ai-threat-title', textContent: 'Threat model' }));
+            section.appendChild(el('p', {
+                className: 'bowire-ai-threat-help',
+                textContent: 'Rank discovered endpoints by attack-surface risk. The model proposes — you confirm before scanning.'
+            }));
+
+            var runRow = el('div', { className: 'bowire-ai-threat-runrow' });
+            var elapsedThreatSec = threatState.running && threatState.startedAt
+                ? Math.max(0, Math.floor((Date.now() - threatState.startedAt) / 1000))
+                : 0;
+            var runBtn = el('button', {
+                type: 'button',
+                className: 'bowire-ai-threat-run',
+                textContent: threatState.running
+                    ? 'Ranking… (' + elapsedThreatSec + 's)'
+                    : 'Run threat model',
+                onClick: function () { runThreatModel().then(rerenderThreatModel); }
+            });
+            if (threatState.running) runBtn.setAttribute('disabled', 'disabled');
+            runRow.appendChild(runBtn);
+            var statusLine = el('span', { className: 'bowire-ai-threat-meta' });
+            if (threatState.error) {
+                statusLine.textContent = '⚠ ' + threatState.error;
+                statusLine.classList.add('err');
+            } else if (threatState.lastRun) {
+                statusLine.textContent = threatState.lastInputCount + ' endpoint(s) considered'
+                    + (threatState.truncated ? ' (truncated to first 200)' : '')
+                    + (threatState.modelId ? ' · ' + threatState.modelId : '');
+            }
+            runRow.appendChild(statusLine);
+            section.appendChild(runRow);
+
+            if (threatState.ranked && threatState.ranked.length > 0) {
+                var list = el('ol', { className: 'bowire-ai-threat-list' });
+                threatState.ranked.forEach(function (row) {
+                    var endpoint = threatState.endpointIndex[row.endpointId];
+                    var li = el('li', { className: 'bowire-ai-threat-row' });
+                    var rowHeader = el('div', { className: 'bowire-ai-threat-row-head' });
+                    var scoreClass = row.risk >= 8 ? 'high' : row.risk >= 5 ? 'medium' : 'low';
+                    rowHeader.appendChild(el('span', {
+                        className: 'bowire-ai-threat-score score-' + scoreClass,
+                        textContent: row.risk + '/10'
+                    }));
+                    rowHeader.appendChild(el('code', {
+                        className: 'bowire-ai-threat-endpoint',
+                        textContent: endpoint
+                            ? ((endpoint.verb ? endpoint.verb + ' ' : '') + (endpoint.path || row.endpointId))
+                            : row.endpointId
+                    }));
+                    li.appendChild(rowHeader);
+                    if (row.why) {
+                        li.appendChild(el('div', { className: 'bowire-ai-threat-why', textContent: row.why }));
+                    }
+                    if (row.suggestedTemplates && row.suggestedTemplates.length > 0) {
+                        var tplWrap = el('div', { className: 'bowire-ai-threat-templates' });
+                        tplWrap.appendChild(el('span', {
+                            className: 'bowire-ai-threat-templates-label',
+                            textContent: 'Suggested:'
+                        }));
+                        row.suggestedTemplates.forEach(function (t) {
+                            tplWrap.appendChild(el('span', {
+                                className: 'bowire-ai-threat-template-chip',
+                                textContent: t
+                            }));
+                        });
+                        li.appendChild(tplWrap);
+                    }
+                    if (endpoint && endpoint.path) {
+                        var actionRow = el('div', { className: 'bowire-ai-threat-scan' });
+                        var scanBtn = el('button', {
+                            type: 'button',
+                            className: 'bowire-ai-threat-scan-btn',
+                            textContent: 'Copy bowire scan command',
+                            onClick: (function (ep, templates) {
+                                return function () {
+                                    var cmd = 'bowire scan --url ' + (ep.serverUrl || '<server>')
+                                        + ' --path ' + ep.path
+                                        + (templates.length > 0 ? ' --templates ' + templates.join(',') : '');
+                                    if (navigator.clipboard) {
+                                        navigator.clipboard.writeText(cmd).then(function () {
+                                            scanBtn.textContent = 'Copied';
+                                            setTimeout(function () {
+                                                scanBtn.textContent = 'Copy bowire scan command';
+                                            }, 1500);
+                                        });
+                                    }
+                                };
+                            })(endpoint, row.suggestedTemplates || [])
+                        });
+                        actionRow.appendChild(scanBtn);
+                        var defaultClass = (row.suggestedTemplates && row.suggestedTemplates[0]) || 'idor';
+                        actionRow.appendChild(bowireBuildTemplateGenerator(endpoint, defaultClass));
+                        li.appendChild(actionRow);
+                        var outputBox = el('div', { className: 'bowire-ai-template-output' });
+                        outputBox.id = 'bowire-ai-template-out-' + endpoint.endpointId;
+                        outputBox.style.display = 'none';
+                        li.appendChild(outputBox);
+                    }
+                    list.appendChild(li);
+                });
+                section.appendChild(list);
+            }
+
+            threatHost.appendChild(section);
+        }
+        rerenderThreatModelExternal = rerenderThreatModel;
+        rerenderThreatModel();
+
+        return panel;
+    }
+
     // Expose for render-main.js
     window.__bowireAi = {
         renderPanel: renderAiPanel,
+        renderSecurityPanel: renderSecurityPanel,
         evaluateHints: evaluateHints,
         hintCount: function () { return evaluateHints().length; },
         // Phase 2 surface. Lets render layers (and tests) read or reset

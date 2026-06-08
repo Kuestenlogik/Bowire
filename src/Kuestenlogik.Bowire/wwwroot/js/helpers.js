@@ -702,6 +702,17 @@
             // the universal "sparkle" affordance from Copilot / ChatGPT /
             // Gemini, so users recognize the AI tab without reading the label.
             spark: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.8 5.7L19 10l-5.2 1.3L12 17l-1.8-5.7L5 10l5.2-1.3L12 3z"/></svg>',
+            // Robot-head used for the AI drawer toggle (#111 — paired
+            // with a separate shield icon for the Security drawer so
+            // the two surfaces are visually distinct in the topbar).
+            // Lucide-style "bot" — rounded rect head + antenna + two
+            // dot eyes + a mouth line. Reads as a friendly assistant
+            // rather than the more abstract sparkle.
+            bot: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v4"/><rect x="3" y="6" width="18" height="14" rx="3"/><path d="M2 14h2M20 14h2"/><circle cx="9" cy="13" r="1" fill="currentColor"/><circle cx="15" cy="13" r="1" fill="currentColor"/><path d="M9 17h6"/></svg>',
+            // Shield — Security drawer toggle (#111). Classic outline
+            // shield without internal decoration so it reads at 16 px
+            // without competing with the bot icon's two-eye anchor.
+            shield: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>',
             // Bowire brand mark — full horizontal knot + Circle-B
             // derived from images/bowire_logo.svg. Uses currentColor
             // so the surrounding CSS `color:` rule drives the fill

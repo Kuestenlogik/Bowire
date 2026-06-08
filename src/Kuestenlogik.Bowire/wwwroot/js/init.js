@@ -46,6 +46,17 @@
                 return;
             }
 
+            // Ctrl/Cmd+Shift+S — toggle the Security drawer (#111).
+            // Paired with the AI shortcut for muscle-memory consistency.
+            if ((e.ctrlKey || e.metaKey) && e.shiftKey
+                && (e.key === 'S' || e.key === 's')) {
+                e.preventDefault();
+                securityDrawerOpen = !securityDrawerOpen;
+                try { localStorage.setItem('bowire_security_drawer_open', securityDrawerOpen ? '1' : '0'); } catch { /* ignore */ }
+                render();
+                return;
+            }
+
             // Esc: close overlay, stop streaming, or disconnect channel
             if (e.key === 'Escape') {
                 if (aboutOpen) {
