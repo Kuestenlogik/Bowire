@@ -234,7 +234,19 @@
         if (freeformRequest && (responseData || responseError)) {
             var respSection = el('div', { className: 'bowire-freeform-response' });
             if (responseError) {
-                respSection.appendChild(el('div', { className: 'bowire-response-output error', textContent: responseError }));
+                // #91 — render structured problem+json when available.
+                var errOut = el('div', { className: 'bowire-response-output error' });
+                var prob = (typeof responseError === 'object')
+                    ? normalizeProblem(responseError)
+                    : null;
+                if (prob) {
+                    renderProblem(prob, errOut);
+                } else {
+                    errOut.textContent = (typeof responseError === 'string')
+                        ? responseError
+                        : problemTitle(responseError, 'Request failed');
+                }
+                respSection.appendChild(errOut);
             } else if (responseData) {
                 var output = el('div', { className: 'bowire-response-output is-interactive' });
                 output.innerHTML = highlightJsonInteractive(responseData);
@@ -279,10 +291,11 @@
                 })
             });
             var result = await resp.json();
-            if (result.error) {
-                responseError = result.error;
+            // #91 — accept both legacy { error } and RFC 7807 shapes.
+            if (result.error || result.title) {
+                responseError = result;
                 statusInfo = { status: 'Error', durationMs: result.duration_ms || 0 };
-                addConsoleEntry({ type: 'error', method: fullName, status: 'Error', body: result.error });
+                addConsoleEntry({ type: 'error', method: fullName, status: 'Error', body: problemTitle(result) });
             } else {
                 responseData = result.response;
                 statusInfo = { status: result.status, durationMs: result.duration_ms || 0 };
@@ -3597,8 +3610,20 @@
                 el('span', { className: 'bowire-loading-text', textContent: 'Executing...' })
             ));
         } else if (responseError) {
+            // #91 — render structured problem+json when the upstream
+            // returned one; fall back to plain text for legacy
+            // strings and exception messages.
             const output = el('div', { className: 'bowire-response-output error' });
-            output.textContent = responseError;
+            var prob = (typeof responseError === 'object')
+                ? normalizeProblem(responseError)
+                : null;
+            if (prob) {
+                renderProblem(prob, output);
+            } else {
+                output.textContent = (typeof responseError === 'string')
+                    ? responseError
+                    : (problemTitle(responseError, 'Request failed'));
+            }
             respBody.appendChild(output);
         } else if (streamMessages.length > 0) {
             // Wireshark-style: append-only list + selectable detail pane.
