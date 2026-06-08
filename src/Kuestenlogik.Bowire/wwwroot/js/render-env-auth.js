@@ -208,6 +208,146 @@
         return drawer;
     }
 
+    // ---- Connection pill (#93) ----
+    // Topbar at-a-glance for "where am I connected and is everything
+    // healthy?". Aggregates the per-URL connectionStatuses + service
+    // counts + discoveryErrors into a single dot + summary text;
+    // expands on hover/click into a per-URL list with statuses, service
+    // counts, and any error message + retry affordance.
+    //
+    // Hidden in embedded mode (the host owns the URL, no value in
+    // adding chrome around a knob the user can't turn). Otherwise
+    // renders as a quiet pill until something needs attention — same
+    // visual contract as the env-selector to its right.
+    function renderConnectionPill() {
+        if (uiMode === 'embedded') return null;
+
+        // ---- Aggregate state ----
+        // Order matters: error wins over connecting wins over connected.
+        // 'firstRun' is a soft state for "no URLs at all yet" — encourages
+        // the user to click and open the source-selector.
+        var urls = (typeof serverUrls !== 'undefined' && Array.isArray(serverUrls)) ? serverUrls : [];
+        var urlsPresent = urls.filter(function (u) { return !!u; });
+        var aggregate;
+        var summary;
+        if (urlsPresent.length === 0) {
+            aggregate = 'first-run';
+            summary = 'Pick a URL';
+        } else {
+            var counts = { connected: 0, connecting: 0, error: 0, disconnected: 0 };
+            for (var ci = 0; ci < urlsPresent.length; ci++) {
+                var st = (connectionStatuses && connectionStatuses[urlsPresent[ci]]) || 'disconnected';
+                counts[st] = (counts[st] || 0) + 1;
+            }
+            if (counts.error > 0) {
+                aggregate = 'error';
+                summary = counts.error + ' / ' + urlsPresent.length + ' failed';
+            } else if (counts.connecting > 0) {
+                aggregate = 'connecting';
+                summary = counts.connecting + ' / ' + urlsPresent.length + ' connecting…';
+            } else if (counts.connected === urlsPresent.length) {
+                aggregate = 'connected';
+                summary = urlsPresent.length === 1
+                    ? truncateMiddle(urlsPresent[0], 28)
+                    : 'All ' + urlsPresent.length + ' connected';
+            } else {
+                aggregate = 'partial';
+                summary = counts.connected + ' / ' + urlsPresent.length + ' connected';
+            }
+        }
+
+        // ---- Pill button (the hover anchor) ----
+        var pill = el('div', { className: 'bowire-conn-pill bowire-conn-pill-' + aggregate });
+        var dot = el('span', { className: 'bowire-conn-pill-dot' });
+        pill.appendChild(dot);
+        pill.appendChild(el('span', { className: 'bowire-conn-pill-text', textContent: summary }));
+
+        // ---- Hover popover ----
+        // CSS :hover handles the show/hide so we don't need a state var
+        // for popover-open. Positioned absolutely below the pill.
+        var popover = el('div', { className: 'bowire-conn-popover', role: 'tooltip' });
+
+        if (aggregate === 'first-run') {
+            popover.appendChild(el('div', { className: 'bowire-conn-popover-empty',
+                textContent: 'No URLs configured yet. Add one via the sidebar or the welcome card.' }));
+        } else {
+            var header = el('div', { className: 'bowire-conn-popover-header' },
+                el('span', { textContent: 'Connections' }),
+                el('span', { className: 'bowire-conn-popover-count', textContent: urlsPresent.length + ' URL' + (urlsPresent.length === 1 ? '' : 's') })
+            );
+            popover.appendChild(header);
+
+            var list = el('div', { className: 'bowire-conn-popover-list' });
+            for (var li = 0; li < urlsPresent.length; li++) {
+                (function (url) {
+                    var status = (connectionStatuses && connectionStatuses[url]) || 'disconnected';
+                    var err = (discoveryErrors && discoveryErrors[url]) || null;
+
+                    // Per-URL service count. We walk the discovered
+                    // services list and tally — both how many services
+                    // came from this URL and the total method count, so
+                    // the user sees the *real* surface they get from it.
+                    var svcCount = 0;
+                    var methodCount = 0;
+                    if (typeof services !== 'undefined' && Array.isArray(services)) {
+                        for (var si = 0; si < services.length; si++) {
+                            if (services[si].originUrl === url) {
+                                svcCount++;
+                                methodCount += (services[si].methods || []).length;
+                            }
+                        }
+                    }
+
+                    var row = el('div', { className: 'bowire-conn-popover-row bowire-conn-row-' + status });
+
+                    var topRow = el('div', { className: 'bowire-conn-popover-row-top' },
+                        el('span', { className: 'bowire-conn-popover-row-dot' }),
+                        el('span', {
+                            className: 'bowire-conn-popover-row-url',
+                            textContent: truncateMiddle(url, 36),
+                            title: url
+                        }),
+                        el('span', {
+                            className: 'bowire-conn-popover-row-status',
+                            textContent: status === 'connected' ? 'OK'
+                                       : status === 'connecting' ? '…'
+                                       : status === 'error' ? 'failed'
+                                       : 'idle'
+                        })
+                    );
+                    row.appendChild(topRow);
+
+                    if (status === 'connected' && svcCount > 0) {
+                        row.appendChild(el('div', { className: 'bowire-conn-popover-row-meta',
+                            textContent: svcCount + ' service' + (svcCount === 1 ? '' : 's') + ' · ' + methodCount + ' method' + (methodCount === 1 ? '' : 's') }));
+                    }
+                    if (err) {
+                        row.appendChild(el('div', { className: 'bowire-conn-popover-row-err',
+                            textContent: err }));
+                    }
+                    list.appendChild(row);
+                })(urlsPresent[li]);
+            }
+            popover.appendChild(list);
+        }
+        pill.appendChild(popover);
+        return pill;
+    }
+
+    // truncateMiddle — collapse long URLs like
+    //   "https://petstore3.swagger.io/api/v3/openapi.json"
+    // into
+    //   "https://petstor…3/openapi.json"
+    // so the pill + popover rows have a predictable width without
+    // dropping the discriminating tail (which is what tells two URLs
+    // on the same host apart).
+    function truncateMiddle(s, max) {
+        if (!s || s.length <= max) return s || '';
+        var keepStart = Math.ceil((max - 1) * 0.5);
+        var keepEnd = Math.floor((max - 1) * 0.5);
+        return s.slice(0, keepStart) + '…' + s.slice(-keepEnd);
+    }
+
     // ---- Topbar (brand + command palette + env + theme) ----
     //
     // Three-column grid: [brand | search palette | right controls]. On
@@ -523,6 +663,7 @@
         );
 
         var right = el('div', { id: 'bowire-topbar-right', className: 'bowire-topbar-right' },
+            renderConnectionPill(),
             renderEnvSelector(),
             watchBtn,
             renderThemeToggle(),

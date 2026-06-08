@@ -585,6 +585,178 @@ body {
     min-width: 0;
 }
 
+/* ---------- Connection pill (#93) ---------- */
+.bowire-conn-pill {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    height: 26px;
+    border: 1px solid var(--bowire-border);
+    border-radius: 13px;
+    background: var(--bowire-bg-elevated);
+    font-size: 11px;
+    line-height: 1;
+    color: var(--bowire-text-secondary);
+    cursor: default;
+    user-select: none;
+    transition: border-color var(--bowire-transition), color var(--bowire-transition);
+}
+
+.bowire-conn-pill:hover {
+    color: var(--bowire-text);
+    border-color: var(--bowire-text-tertiary);
+}
+
+.bowire-conn-pill-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    background: var(--bowire-text-tertiary);
+}
+
+.bowire-conn-pill-connected .bowire-conn-pill-dot { background: #22c55e; }
+.bowire-conn-pill-error     .bowire-conn-pill-dot { background: var(--bowire-error); }
+.bowire-conn-pill-connecting .bowire-conn-pill-dot,
+.bowire-conn-pill-partial    .bowire-conn-pill-dot { background: #f59e0b; }
+.bowire-conn-pill-first-run  .bowire-conn-pill-dot { background: var(--bowire-text-tertiary); }
+
+.bowire-conn-pill-connecting .bowire-conn-pill-dot {
+    animation: bowire-conn-pulse 1.2s ease-in-out infinite;
+}
+@keyframes bowire-conn-pulse {
+    0%, 100% { opacity: 0.4; }
+    50% { opacity: 1; }
+}
+
+.bowire-conn-pill-text {
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-family: var(--bowire-font-mono);
+    font-size: 11px;
+}
+
+/* Popover — hover-anchored on the pill. Closed by default; revealed
+   on :hover. Positioned absolutely below the pill, aligned to its right
+   edge so it doesn't overflow the topbar when the pill is on the right
+   side of the screen. */
+.bowire-conn-popover {
+    position: absolute;
+    top: calc(100% + 6px);
+    right: 0;
+    min-width: 280px;
+    max-width: 380px;
+    padding: 10px;
+    background: var(--bowire-bg-elevated);
+    border: 1px solid var(--bowire-border);
+    border-radius: var(--bowire-radius-sm);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.18);
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(-2px);
+    transition: opacity 120ms ease-out, transform 120ms ease-out;
+    z-index: 100;
+}
+
+.bowire-conn-pill:hover .bowire-conn-popover,
+.bowire-conn-pill:focus-within .bowire-conn-popover {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateY(0);
+}
+
+.bowire-conn-popover-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    padding: 0 2px 8px 2px;
+    border-bottom: 1px solid var(--bowire-border);
+    margin-bottom: 8px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--bowire-text);
+}
+
+.bowire-conn-popover-count {
+    font-weight: 400;
+    color: var(--bowire-text-tertiary);
+}
+
+.bowire-conn-popover-empty {
+    padding: 6px 2px;
+    font-size: 11px;
+    color: var(--bowire-text-tertiary);
+    line-height: 1.4;
+}
+
+.bowire-conn-popover-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.bowire-conn-popover-row {
+    padding: 6px 8px;
+    border-radius: var(--bowire-radius-sm);
+    background: var(--bowire-bg);
+}
+
+.bowire-conn-popover-row-top {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.bowire-conn-popover-row-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    background: var(--bowire-text-tertiary);
+}
+
+.bowire-conn-row-connected   .bowire-conn-popover-row-dot { background: #22c55e; }
+.bowire-conn-row-error       .bowire-conn-popover-row-dot { background: var(--bowire-error); }
+.bowire-conn-row-connecting  .bowire-conn-popover-row-dot { background: #f59e0b; }
+
+.bowire-conn-popover-row-url {
+    flex: 1;
+    font-family: var(--bowire-font-mono);
+    font-size: 11px;
+    color: var(--bowire-text);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.bowire-conn-popover-row-status {
+    font-size: 10px;
+    color: var(--bowire-text-tertiary);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    flex-shrink: 0;
+}
+
+.bowire-conn-popover-row-meta {
+    margin-top: 4px;
+    padding-left: 12px;
+    font-size: 10px;
+    color: var(--bowire-text-tertiary);
+}
+
+.bowire-conn-popover-row-err {
+    margin-top: 4px;
+    padding-left: 12px;
+    font-size: 10px;
+    color: var(--bowire-error);
+    line-height: 1.4;
+    word-break: break-word;
+}
+
 /* ---------- AI drawer (#90) ---------- */
 /* Sits right of the main pane, peer with the sidebar. Renders only
    when aiDrawerOpen — closed drawer = no DOM, no width cost. The
