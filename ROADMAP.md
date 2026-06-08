@@ -23,7 +23,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v1.9 — AI for security
 
-- [#108](https://github.com/Kuestenlogik/Bowire/issues/108) **AI MCP Phase 2 — read-only tools (list_services / describe_method / recent_history)** 
 - [#109](https://github.com/Kuestenlogik/Bowire/issues/109) **AI MCP Phase 3+4 — invoke tool with auto-invoke gate + open_method UI navigation** 
 
 ### v1.10 — gRPC Connect
