@@ -52,6 +52,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 - [#90](https://github.com/Kuestenlogik/Bowire/issues/90) **AI panel: move from response-pane tab to a right-side drawer** 
 - [#91](https://github.com/Kuestenlogik/Bowire/issues/91) **Frontend ProblemDetails migration — adopt renderProblem() everywhere body.error is read** 
 - [#92](https://github.com/Kuestenlogik/Bowire/issues/92) **Move Server-URL + Schema-Files management from sidebar to main pane** 
+- [#93](https://github.com/Kuestenlogik/Bowire/issues/93) **Topbar: connection-state pill (aggregate + per-URL popover)** 
 
 ---
 
