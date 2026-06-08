@@ -69,6 +69,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 - [#110](https://github.com/Kuestenlogik/Bowire/issues/110) **Site: surface the AI assistant in the launch wizard + quickstart** 
 - [#113](https://github.com/Kuestenlogik/Bowire/issues/113) **Polish: tabs visually connect to content; drop the background glow** 
 - [#114](https://github.com/Kuestenlogik/Bowire/issues/114) **Hints: render contextually at the target surface (drop the static list in the drawer)** 
+- [#115](https://github.com/Kuestenlogik/Bowire/issues/115) **v2.0 — UI refactor: re-architect the workbench shell** 
 
 ---
 
