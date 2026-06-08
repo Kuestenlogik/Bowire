@@ -10311,6 +10311,31 @@ details[open] > .bowire-json-tree-summary::before {
 .bowire-ai-chat-msg-assistant {
     color: var(--bowire-text-secondary);
 }
+/* AllowInvoke toggle (#109 Phase 3) — visible header line above the
+   chat transcript. Lo-fi label-with-checkbox; the surrounding chrome
+   stays light because the toggle controls a session-only opt-in that
+   should be unobtrusive when off. */
+.bowire-ai-chat-toggle {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 8px 8px;
+    font-size: 11px;
+    color: var(--bowire-text-secondary);
+    border-bottom: 1px solid var(--bowire-border);
+    margin-bottom: 6px;
+    cursor: pointer;
+    user-select: none;
+}
+.bowire-ai-chat-toggle input[type="checkbox"] {
+    accent-color: var(--bowire-accent);
+    cursor: pointer;
+}
+.bowire-ai-chat-toggle-hint {
+    margin-left: auto;
+    color: var(--bowire-text-tertiary);
+    font-size: 10px;
+}
 /* Tool-call trace bubble (#108 Phase 2) — surfaces what the AI
    actually consulted before answering. Sits between the user's
    turn and the assistant's text so the transcript reads

@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 using System.Text.Json;
+using Kuestenlogik.Bowire;
 using Kuestenlogik.Bowire.Auth;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
@@ -614,17 +615,13 @@ public static class BowireAiEndpoints
             var messages = req.Messages.Select(m =>
                 new ChatMessage(MapRole(m.Role), m.Content ?? string.Empty)).ToList();
 
-            // #108 — Phase 2 MCP-style tools. The chat session gets three
-            // read-only tools that close over the workbench context the
-            // frontend ships in the request body. With these, the model
-            // can drill into specific methods (describe_method) without
-            // the system prompt having to pre-list every schema; can
-            // refer back to recent calls (recent_history); and can
-            // enumerate the loaded surface on demand (list_services).
-            // Phase 3+4 (#109) add the invoke + open_method write-side
-            // tools — they slot into the same Tools list here.
+            // #108 + #109 — MCP-style tools. Phase 2 (read-only) always
+            // available when context is provided; Phase 3+4 (invoke +
+            // open_method) gated on the per-session AllowInvoke flag the
+            // frontend sets via a toggle in the AI drawer.
             var workbenchContext = req.Context;
-            var tools = BuildWorkbenchTools(workbenchContext);
+            var sp = ctx.RequestServices;
+            var tools = BuildWorkbenchTools(workbenchContext, sp);
             var chatOptions = tools.Count > 0 ? new ChatOptions { Tools = tools } : null;
 
             try
@@ -777,7 +774,7 @@ public static class BowireAiEndpoints
     /// when there's no context — the chat still works, just without
     /// tools, falling back to system-prompt-only grounding.
     /// </summary>
-    private static List<AITool> BuildWorkbenchTools(WorkbenchContext? wbCtx)
+    private static List<AITool> BuildWorkbenchTools(WorkbenchContext? wbCtx, IServiceProvider sp)
     {
         var tools = new List<AITool>();
         if (wbCtx is null) return tools;
@@ -829,7 +826,114 @@ public static class BowireAiEndpoints
             name: "bowire_recent_history",
             description: "Return the last N recent calls (default 5) with service, method, and status. Use when the user references prior calls (\"why did that 500?\") or to spot patterns across recent invocations."));
 
+        // #109 — Phase 4: navigation tool. Always available (no side
+        // effects beyond UI state); the frontend reads the tool-call
+        // name out of the response's toolCalls array and dispatches
+        // selectMethod() locally. The tool body itself just records
+        // the request — the actual navigation happens client-side.
+        tools.Add(AIFunctionFactory.Create(
+            (string service, string method) =>
+            {
+                var svc = services.FirstOrDefault(s => string.Equals(s.Name, service, StringComparison.OrdinalIgnoreCase));
+                if (svc is null) return (object)new { ok = false, error = $"Service '{service}' is not in the workbench." };
+                var m = svc.Methods?.FirstOrDefault(x => string.Equals(x.Name, method, StringComparison.OrdinalIgnoreCase));
+                if (m is null) return new { ok = false, error = $"Method '{method}' is not on service '{service}'." };
+                return new { ok = true, service = svc.Name, method = m.Name, hint = "The workbench will navigate to this method when the user confirms." };
+            },
+            name: "bowire_open_method",
+            description: "Ask the workbench to select a method, so the user lands on its request pane and can hit Send themselves. Use when the user asks \"open X\" or when you want to point the user at the right next step. Returns ok=true on success; the frontend handles the actual navigation."));
+
+        // #109 — Phase 3: write-side invoke tool. ONLY registered when
+        // the user explicitly opted in via the drawer toggle
+        // (AllowInvoke). When off, the model literally cannot try —
+        // the tool doesn't appear in its tool list and the chat is
+        // safe by default against accidental production mutations.
+        if (wbCtx.AllowInvoke == true)
+        {
+            tools.Add(AIFunctionFactory.Create(
+                async (string service, string method, string? messageJson) =>
+                {
+                    var svc = services.FirstOrDefault(s => string.Equals(s.Name, service, StringComparison.OrdinalIgnoreCase));
+                    if (svc is null) return (object)new { ok = false, error = $"Service '{service}' is not in the workbench." };
+                    var m = svc.Methods?.FirstOrDefault(x => string.Equals(x.Name, method, StringComparison.OrdinalIgnoreCase));
+                    if (m is null) return new { ok = false, error = $"Method '{method}' is not on service '{service}'." };
+
+                    var registry = sp.GetService<BowireProtocolRegistry>();
+                    if (registry is null) return new { ok = false, error = "Protocol registry not available — Bowire core isn't wired." };
+
+                    var protocol = svc.Protocol is not null
+                        ? registry.GetById(svc.Protocol)
+                        : (registry.Protocols.Count > 0 ? registry.Protocols[0] : null);
+                    if (protocol is null) return new { ok = false, error = $"No protocol plugin loaded for '{svc.Protocol ?? "(default)"}'." };
+
+                    var serverUrl = svc.OriginUrl ?? wbCtx.ServerUrls?.FirstOrDefault() ?? string.Empty;
+                    var body = string.IsNullOrEmpty(messageJson) ? "{}" : messageJson;
+
+                    try
+                    {
+                        var result = await protocol.InvokeAsync(
+                            serverUrl, service, method,
+                            [body], showInternalServices: false, metadata: null, CancellationToken.None);
+
+                        AppendAuditLog(new
+                        {
+                            ts = DateTimeOffset.UtcNow,
+                            service,
+                            method,
+                            protocol = protocol.Id,
+                            serverUrl,
+                            status = result.Status,
+                            durationMs = result.DurationMs,
+                        });
+
+                        return new
+                        {
+                            ok = true,
+                            status = result.Status,
+                            durationMs = result.DurationMs,
+                            response = result.Response,
+                        };
+                    }
+                    catch (Exception ex)
+                    {
+                        AppendAuditLog(new
+                        {
+                            ts = DateTimeOffset.UtcNow,
+                            service,
+                            method,
+                            protocol = protocol.Id,
+                            serverUrl,
+                            error = ex.Message,
+                        });
+                        return new { ok = false, error = ex.Message };
+                    }
+                },
+                name: "bowire_invoke",
+                description: "Invoke a service method against its server. ONLY available when the user has explicitly enabled AI invokes in the drawer. Returns the actual response payload + status + duration. Use to test a hypothesis or to act on the user's request when they ask you to run something."));
+        }
+
         return tools;
+    }
+
+    /// <summary>
+    /// Append a single JSON line to the per-user AI-actions audit log
+    /// (#109 Phase 3). Every invoke the model runs lands here with
+    /// timestamp + endpoint + outcome — auditable trail for users
+    /// who turned auto-invoke on. Best-effort: failures don't bubble
+    /// because the audit shouldn't be able to break the chat itself.
+    /// </summary>
+    private static void AppendAuditLog(object entry)
+    {
+        try
+        {
+            var store = BowireUserContext.Current;
+            var path = store.GetUserPath(".ai-actions.jsonl");
+            var dir = Path.GetDirectoryName(path);
+            if (!string.IsNullOrEmpty(dir)) Directory.CreateDirectory(dir);
+            var line = JsonSerializer.Serialize(entry, JsonOpts) + "\n";
+            File.AppendAllText(path, line);
+        }
+        catch { /* audit must not break the chat */ }
     }
 
     /// <summary>Minimal-subset chat request shape -- one role + content pair per message.</summary>
@@ -851,7 +955,13 @@ public static class BowireAiEndpoints
     private sealed record WorkbenchContext(
         string[]? ServerUrls,
         WorkbenchService[]? Services,
-        WorkbenchHistoryEntry[]? Recent);
+        WorkbenchHistoryEntry[]? Recent,
+        // #109 Phase 3 — opt-in gate for the write-side invoke tool.
+        // Off by default: bowire_invoke isn't even registered, the
+        // model literally cannot call it. The user flips it on via a
+        // toggle in the AI drawer when they want the AI to act
+        // (per-session, never persisted to localStorage).
+        bool? AllowInvoke);
 
     private sealed record WorkbenchService(
         string Name,
