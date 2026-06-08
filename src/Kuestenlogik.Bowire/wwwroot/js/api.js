@@ -233,6 +233,13 @@
             list = list.filter(function (s) { return protocolFilter.has(s.source); });
         }
 
+        // URL filter — multi-select per discovery URL (originUrl). Same
+        // contract as protocolFilter: empty = no filter. Skip in proto
+        // mode (uploads don't have a meaningful originUrl).
+        if (urlFilter.size > 0 && sourceMode !== 'proto') {
+            list = list.filter(function (s) { return s.originUrl && urlFilter.has(s.originUrl); });
+        }
+
         // Plugin enable toggle — drop services from disabled plugins.
         // Separate from protocolFilter (which is an explicit include-set)
         // so users can disable a plugin once and not have to maintain

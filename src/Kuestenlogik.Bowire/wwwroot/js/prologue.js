@@ -147,6 +147,28 @@
             localStorage.setItem(METHOD_TYPE_FILTER_KEY, JSON.stringify(Array.from(methodTypeFilter)));
         } catch {}
     }
+    // URL filter: Set of originUrl strings the user has narrowed the
+    // service list to. Empty = no filter = show services from every
+    // discovery URL. Useful in multi-URL setups (think gateway + admin
+    // backend + a staging clone) where the same protocol shows up at
+    // several origins and the user wants to focus on just one. The
+    // dropdown only renders this section when serverUrls.length > 1,
+    // because a one-URL filter is trivially the empty-or-everything
+    // toggle.
+    const URL_FILTER_KEY = 'bowire_url_filter';
+    let urlFilter = (function () {
+        try {
+            var raw = localStorage.getItem(URL_FILTER_KEY);
+            if (!raw) return new Set();
+            var arr = JSON.parse(raw);
+            return new Set(Array.isArray(arr) ? arr : []);
+        } catch { return new Set(); }
+    })();
+    function persistUrlFilter() {
+        try {
+            localStorage.setItem(URL_FILTER_KEY, JSON.stringify(Array.from(urlFilter)));
+        } catch {}
+    }
 
     // Controls the visibility of the filter popup (anchored next to the
     // search bar). Closed by an outside-click handler when open.

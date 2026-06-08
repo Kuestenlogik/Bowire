@@ -941,19 +941,25 @@
             return services.some(function (s) { return s.source === p.id; });
         });
         // Show the filter button when there are multiple protocols OR
-        // multiple method types — either dimension gives the user
-        // something useful to narrow down.
+        // multiple method types OR multiple discovery URLs — every
+        // dimension above 1 gives the user something useful to narrow
+        // down. The URL dimension is new — distinguishes services
+        // discovered from different origins (gateway vs. admin
+        // backend vs. staging clone) when the same protocol shows up
+        // at multiple URLs.
         var allMethodTypes = new Set();
+        var allOriginUrls = new Set();
         for (var ats = 0; ats < services.length; ats++) {
             if (!services[ats].methods) continue;
+            if (services[ats].originUrl) allOriginUrls.add(services[ats].originUrl);
             for (var atm = 0; atm < services[ats].methods.length; atm++) {
                 allMethodTypes.add(services[ats].methods[atm].methodType || 'Unary');
             }
         }
-        if (viewSwitchActiveProtocols.length > 1 || allMethodTypes.size > 1) {
+        if (viewSwitchActiveProtocols.length > 1 || allMethodTypes.size > 1 || allOriginUrls.size > 1) {
             var filterDisabled = sidebarView !== 'services';
             var filterBtnWrapperTop = el('div', { className: 'bowire-protocol-filter-wrapper' });
-            var totalFilterCount = protocolFilter.size + methodTypeFilter.size;
+            var totalFilterCount = protocolFilter.size + methodTypeFilter.size + urlFilter.size;
             var filterBtnAttrs = {
                 id: 'bowire-protocol-filter-btn',
                 className: 'bowire-protocol-filter-btn'
@@ -1107,6 +1113,72 @@
                         }
                     }
 
+                    // ---- URL section ----
+                    // Only meaningful when ≥ 2 discovery URLs are loaded.
+                    // Single-URL setups would offer a no-op toggle.
+                    // Skipped in proto mode entirely — uploaded schemas
+                    // have no per-URL grouping to filter on.
+                    if (sourceMode !== 'proto' && typeof serverUrls !== 'undefined' && serverUrls.length > 1) {
+                        var presentUrls = new Set();
+                        for (var us = 0; us < services.length; us++) {
+                            if (services[us].originUrl) presentUrls.add(services[us].originUrl);
+                        }
+                        if (presentUrls.size > 1) {
+                            popupTop.appendChild(el('div', { className: 'bowire-protocol-filter-popup-header', style: 'margin-top:6px' },
+                                el('span', { textContent: 'Filter by URL' }),
+                                urlFilter.size > 0
+                                    ? el('button', {
+                                        className: 'bowire-protocol-filter-clear',
+                                        textContent: 'Clear',
+                                        title: 'Remove all URL filters',
+                                        onClick: function (e) {
+                                            e.stopPropagation();
+                                            urlFilter.clear();
+                                            persistUrlFilter();
+                                            render();
+                                        }
+                                    })
+                                    : null
+                            ));
+                            for (var ui2 = 0; ui2 < serverUrls.length; ui2++) {
+                                (function (url) {
+                                    if (!url || !presentUrls.has(url)) return;
+                                    var urlMethodCount = services
+                                        .filter(function (s) { return s.originUrl === url; })
+                                        .reduce(function (acc, s) { return acc + (s.methods ? s.methods.length : 0); }, 0);
+                                    var isOn = urlFilter.has(url);
+                                    // Truncate long URLs in the label —
+                                    // OpenAPI-doc paths can be 60+ chars and
+                                    // the popup width is fixed. Title carries
+                                    // the full URL for hover.
+                                    var shortUrl = url.length > 38
+                                        ? url.slice(0, 14) + '…' + url.slice(-22)
+                                        : url;
+                                    popupTop.appendChild(el('div', {
+                                        className: 'bowire-protocol-filter-option' + (isOn ? ' selected' : ''),
+                                        role: 'menuitemcheckbox',
+                                        'aria-checked': isOn ? 'true' : 'false',
+                                        title: url,
+                                        onClick: function (e) {
+                                            e.stopPropagation();
+                                            if (urlFilter.has(url)) {
+                                                urlFilter.delete(url);
+                                            } else {
+                                                urlFilter.add(url);
+                                            }
+                                            persistUrlFilter();
+                                            render();
+                                        }
+                                    },
+                                        el('span', { className: 'bowire-protocol-filter-check', textContent: isOn ? '✓' : '' }),
+                                        el('span', { className: 'bowire-protocol-filter-proto-name', textContent: shortUrl }),
+                                        el('span', { className: 'bowire-protocol-filter-proto-count', textContent: urlMethodCount + ' method' + (urlMethodCount === 1 ? '' : 's') })
+                                    ));
+                                })(serverUrls[ui2]);
+                            }
+                        }
+                    }
+
                     filterBtnWrapperTop.appendChild(popupTop);
                     // setTimeout(0) defers until after morphdom has
                     // merged the off-screen tree into the live DOM.
@@ -1140,7 +1212,7 @@
         // When nothing is active, the row is omitted entirely and the
         // sidebar doesn't pay vertical space for an empty container.
         if (sidebarView === 'services') {
-            var anyFilterActive = protocolFilter.size > 0 || methodTypeFilter.size > 0 || !!nameFilter;
+            var anyFilterActive = protocolFilter.size > 0 || methodTypeFilter.size > 0 || urlFilter.size > 0 || !!nameFilter;
             if (anyFilterActive) {
                 var filterRow = el('div', {
                     id: 'bowire-sidebar-filter-row',
@@ -1198,6 +1270,34 @@
                                 e.stopPropagation();
                                 methodTypeFilter.delete(mtype);
                                 persistMethodTypeFilter();
+                                render();
+                            }
+                        })
+                    ));
+                });
+
+                // --- URL chips (one per active URL filter) ---
+                urlFilter.forEach(function (url) {
+                    var shortUrl = url.length > 30
+                        ? url.slice(0, 10) + '…' + url.slice(-18)
+                        : url;
+                    filterRow.appendChild(el('div', { className: 'bowire-filter-chip', title: url },
+                        el('span', {
+                            className: 'bowire-filter-chip-icon',
+                            innerHTML: svgIcon('connect')
+                        }),
+                        el('span', {
+                            className: 'bowire-filter-chip-label',
+                            textContent: shortUrl
+                        }),
+                        el('button', {
+                            className: 'bowire-filter-chip-remove',
+                            title: 'Remove this URL filter',
+                            textContent: '×',
+                            onClick: function (e) {
+                                e.stopPropagation();
+                                urlFilter.delete(url);
+                                persistUrlFilter();
                                 render();
                             }
                         })
