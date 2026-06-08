@@ -128,6 +128,37 @@
             <p class="launch-boat-desc">One Bowire, several authenticated passengers. Per-user state across sessions, scheduled port calls. Today: works behind your OIDC reverse proxy.</p>
           </button>
 
+          <button type="button" class="launch-boat" data-boat="submarine">
+            <span class="protocol-card-ribbon" aria-hidden="true">concept</span>
+            <div class="launch-boat-diagram">
+              <!-- Submarine photo — silhouette running near periscope
+                   depth, conning tower bearing the Bowire mark. Sits
+                   beneath the wire, sees every protocol pass overhead.
+                   Concept tier — design tracked in #99 (transparent
+                   proxy / MITM mode), no shipping code yet. -->
+              <img src="{{ '/assets/images/launch/submarine.jpg' | relative_url }}"
+                   alt="Submarine at periscope depth with the Bowire mark on the conning tower"
+                   loading="lazy" width="680" height="440">
+            </div>
+            <h3 class="launch-boat-name">Submarine</h3>
+            <p class="launch-boat-mode">Transparent proxy</p>
+            <p class="launch-boat-desc">Sits beneath the wire &mdash; sees every call your client makes to your server, in any of Bowire&rsquo;s 12 protocols, without changing either end. Designing now; <a href="https://github.com/Kuestenlogik/Bowire/issues/99" target="_blank" rel="noopener">follow the concept</a>.</p>
+          </button>
+
+          <!-- Overflow card — once the in-page stepper hits 6 boats, the
+               7th slot becomes a doorway to /boats.html rather than yet
+               another boat. Keeps the Home page focused on shapes a
+               first-time visitor can act on immediately; concepts +
+               second-row preview boats live on the boats page where they
+               have room to breathe. Becomes an <a> instead of a <button>
+               because clicking it leaves the stepper. -->
+          <a class="launch-boat launch-boat-more" href="{{ '/boats.html' | relative_url }}">
+            <div class="launch-boat-more-icon" aria-hidden="true">&rarr;</div>
+            <h3 class="launch-boat-name">Explore more</h3>
+            <p class="launch-boat-mode">Concept boats</p>
+            <p class="launch-boat-desc">Submarine in detail, plus Ferry (CI/CD), Tugboat (IDE extension), and Lighthouse (scheduled probes). Open the design notes and weigh in.</p>
+          </a>
+
         </div>
       </div>
 

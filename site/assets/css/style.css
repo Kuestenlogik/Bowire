@@ -8105,8 +8105,37 @@ html[data-theme="light"] {
 
 @media (min-width: 1180px) {
     .launch-boats {
-        grid-template-columns: repeat(5, 1fr);
+        /* 4-column grid keeps cards comfortably wide once we hit ≥ 6
+           cards (5 production + Submarine + Explore-more overflow).
+           Was 5col when the stepper had exactly 5 boats; the relayout
+           gives 7 cards a clean 4+3 row split. */
+        grid-template-columns: repeat(4, 1fr);
     }
+}
+
+/* Overflow tile — link to /boats.html for the concept boats that
+   don't fit on the home stepper. Visually distinct from real boats
+   (no image, dashed border, arrow icon) so it doesn't get mistaken
+   for a sixth shipping mode. Inherits the .launch-boat sizing +
+   stacking but drops the cursor/transform/hover dance. */
+.launch-boat-more {
+    text-decoration: none;
+    border-style: dashed;
+    background: transparent;
+    justify-content: center;
+}
+
+.launch-boat-more:hover {
+    border-color: var(--accent, #f49a02);
+    background: var(--bg-elevated);
+}
+
+.launch-boat-more-icon {
+    font-size: 32px;
+    line-height: 1;
+    color: var(--accent, #f49a02);
+    text-align: center;
+    margin: 12px 0 4px;
 }
 
 .launch-boat {
@@ -8859,4 +8888,163 @@ html[data-theme="light"] {
     :root:not([data-theme]) .theme-video-dark {
         display: none !important;
     }
+}
+
+/* ============================================================
+   /boats.html — every Bowire deployment shape, including the
+   concept tier. Visually echoes the home-page launch stepper
+   but is text-first (no photographs) so concepts that don't
+   have boat photos yet still get a polished surface.
+   ============================================================ */
+.boats-page {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 48px 24px 80px;
+}
+
+.boats-page-header {
+    text-align: center;
+    margin-bottom: 48px;
+}
+
+.boats-page-title {
+    font-size: 2.4rem;
+    margin: 0 0 12px;
+}
+
+.boats-page-lede {
+    font-size: 1.05rem;
+    color: var(--text-secondary, #b5b6cc);
+    max-width: 640px;
+    margin: 0 auto;
+}
+
+.boats-section {
+    margin-top: 48px;
+}
+
+.boats-section-header {
+    margin-bottom: 20px;
+}
+
+.boats-section-title {
+    font-size: 1.4rem;
+    margin: 0 0 6px;
+}
+
+.boats-section-sub {
+    margin: 0;
+    color: var(--text-tertiary, #8b8c9c);
+    font-size: 0.95rem;
+}
+
+.boats-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+}
+
+@media (min-width: 760px) {
+    .boats-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+.boats-card {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+    padding: 18px 18px 22px;
+    background: var(--bg-elevated, #1a1a25);
+    border: 1.5px solid var(--border, #2a2a3a);
+    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.boats-card-name {
+    font-size: 1.15rem;
+    margin: 0;
+}
+
+.boats-card-mode {
+    margin: 0;
+    color: var(--accent, #f49a02);
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+}
+
+.boats-card-desc {
+    margin: 8px 0 0;
+    font-size: 0.92rem;
+    line-height: 1.5;
+    color: var(--text-secondary, #b5b6cc);
+}
+
+.boats-card-desc a {
+    color: var(--accent, #f49a02);
+    text-decoration: none;
+}
+
+.boats-card-desc a:hover {
+    text-decoration: underline;
+}
+
+/* Concept tier — dashed border + slightly muted background so the
+   reader's eye distinguishes "designing" from "shipping" without
+   having to read the ribbon text. */
+.boats-card-concept {
+    border-style: dashed;
+    background: transparent;
+}
+
+.boats-card-preview {
+    border-color: var(--warning, #f49a02);
+}
+
+/* Ribbon — same diagonal banderole as the launch stepper but
+   anchored to .boats-card for the page-local layout. */
+.boats-card-ribbon {
+    position: absolute;
+    top: 14px;
+    right: -40px;
+    width: 140px;
+    transform: rotate(45deg);
+    background: var(--warning, #f49a02);
+    color: #1a1f29;
+    text-align: center;
+    padding: 3px 0;
+    font-family: var(--font-mono);
+    font-size: 0.68rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+    pointer-events: none;
+    z-index: 1;
+}
+
+.boats-page-footer {
+    margin-top: 56px;
+    padding-top: 24px;
+    border-top: 1px solid var(--border, #2a2a3a);
+    text-align: center;
+    color: var(--text-tertiary, #8b8c9c);
+    font-size: 0.9rem;
+}
+
+.boats-page-footer p {
+    margin: 6px 0;
+}
+
+.boats-page-footer a {
+    color: var(--accent, #f49a02);
+    text-decoration: none;
+}
+
+.boats-page-footer a:hover {
+    text-decoration: underline;
 }
