@@ -2012,3 +2012,89 @@ object.theme-img-dark, object.theme-img-light {
 :root[data-theme="light"] .ui-anatomy-img {
     content: url("../images/ui-anatomy-light.svg");
 }
+
+/* ============================================================
+   Reading mode (#119) — strips persistent chrome and reflows the
+   content column. Same shape as the marketing site's reading
+   mode for visual + behavioural parity. Toggled via the Aa button
+   in the docs header or the R keyboard shortcut. Persisted to
+   localStorage as `bowire_reading_mode`.
+   ============================================================ */
+:root[data-reading-mode="1"] .bowire-docs-header,
+:root[data-reading-mode="1"] .bowire-docs-sidebar,
+:root[data-reading-mode="1"] .bowire-docs-toc,
+:root[data-reading-mode="1"] .bowire-docs-affix,
+:root[data-reading-mode="1"] .bowire-docs-footer,
+:root[data-reading-mode="1"] #breadcrumb,
+:root[data-reading-mode="1"] .toc-toggle {
+    display: none !important;
+}
+
+:root[data-reading-mode="1"] body::after {
+    content: "Reading mode — press R to exit";
+    position: fixed;
+    bottom: 16px;
+    right: 16px;
+    z-index: 50;
+    padding: 6px 12px;
+    font-family: var(--font-mono, ui-monospace, monospace);
+    font-size: 11px;
+    color: var(--text-tertiary, #8b8c9c);
+    background: var(--bg-elevated, #1a1a25);
+    border: 1px solid var(--border, #2a2a3a);
+    border-radius: 999px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+    pointer-events: none;
+}
+
+:root[data-reading-mode="1"] .bowire-docs-main,
+:root[data-reading-mode="1"] .bowire-docs-content,
+:root[data-reading-mode="1"] article {
+    max-width: 72ch;
+    margin-left: auto;
+    margin-right: auto;
+    padding-top: 48px;
+    padding-bottom: 48px;
+}
+
+:root[data-reading-mode="1"] article {
+    font-size: 1.05rem;
+    line-height: 1.75;
+}
+
+:root[data-reading-mode="1"] article h1,
+:root[data-reading-mode="1"] article h2,
+:root[data-reading-mode="1"] article h3 {
+    line-height: 1.3;
+    margin-top: 1.6em;
+}
+
+.reading-mode-glyph {
+    font-weight: 600;
+    font-size: 12px;
+    letter-spacing: -0.02em;
+    line-height: 1;
+}
+
+:root[data-reading-mode="1"] #bowire-docs-reading-mode-toggle {
+    background: var(--accent-subtle, rgba(99, 102, 241, 0.15));
+    border-color: var(--accent, #6366f1);
+    color: var(--accent, #6366f1);
+}
+
+@media print {
+    .bowire-docs-header,
+    .bowire-docs-sidebar,
+    .bowire-docs-toc,
+    .bowire-docs-affix,
+    .bowire-docs-footer,
+    #breadcrumb,
+    .toc-toggle {
+        display: none !important;
+    }
+    .bowire-docs-main,
+    .bowire-docs-content,
+    article {
+        max-width: none;
+    }
+}
