@@ -10478,6 +10478,60 @@ details[open] > .bowire-json-tree-summary::before {
 .bowire-ai-threat-section { display: flex; flex-direction: column; gap: 6px; }
 .bowire-ai-threat-title { margin: 0; font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--bowire-text-tertiary); }
 .bowire-ai-threat-help { font-size: 11px; margin: 0; color: var(--bowire-text-secondary); line-height: 1.4; }
+/* Tier toggle (#112) — pair of pill buttons that switch between
+   heuristic + AI ranking. Active gets a filled bg; disabled (no AI
+   client) renders muted. */
+.bowire-ai-threat-tierrow {
+    display: flex;
+    gap: 4px;
+    margin: 4px 0 8px;
+}
+.bowire-ai-threat-tier {
+    flex: 1;
+    background: transparent;
+    border: 1px solid var(--bowire-border);
+    border-radius: var(--bowire-radius-sm);
+    color: var(--bowire-text-secondary);
+    cursor: pointer;
+    font-size: 11px;
+    padding: 4px 10px;
+    transition: background var(--bowire-transition), color var(--bowire-transition), border-color var(--bowire-transition);
+}
+.bowire-ai-threat-tier:hover:not(:disabled) {
+    color: var(--bowire-text);
+    border-color: var(--bowire-text-tertiary);
+}
+.bowire-ai-threat-tier.active {
+    background: var(--bowire-accent-subtle);
+    border-color: var(--bowire-accent);
+    color: var(--bowire-accent-text);
+    font-weight: 500;
+}
+.bowire-ai-threat-tier:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+}
+/* Rule trace under each heuristic-ranked row. Indented + smaller
+   than the row body so it reads as supporting context, not as the
+   row's headline. */
+.bowire-ai-threat-trace {
+    margin-top: 4px;
+    font-size: 10px;
+    color: var(--bowire-text-tertiary);
+}
+.bowire-ai-threat-trace summary {
+    cursor: pointer;
+    user-select: none;
+}
+.bowire-ai-threat-trace ul {
+    margin: 4px 0 0 16px;
+    padding: 0;
+    list-style: disc;
+}
+.bowire-ai-threat-trace li {
+    margin: 2px 0;
+    line-height: 1.4;
+}
 .bowire-ai-threat-runrow { display: flex; align-items: center; gap: 10px; }
 .bowire-ai-threat-run {
     padding: 4px 12px;

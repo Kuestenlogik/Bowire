@@ -162,6 +162,70 @@ internal static class BowireSecurityEndpoints
             }
         }).ExcludeFromDescription();
 
+        // #112 — heuristic threat-model. Deterministic, sub-millisecond,
+        // no AI required. Mirrors the response shape /api/ai/threat-model
+        // emits so the workbench can render either source with the same
+        // code path; adds a `ruleTrace` per row explaining which rules
+        // fired. Frontend Security drawer defaults to this and switches
+        // to the AI path only when the operator opts in via the "Use
+        // AI for ranking" toggle.
+        endpoints.MapPost($"{basePath}/api/security/threat-model", async (HttpContext ctx) =>
+        {
+            ThreatHeuristicRequest? req;
+            try
+            {
+                req = await JsonSerializer.DeserializeAsync<ThreatHeuristicRequest>(
+                    ctx.Request.Body, s_jsonOpts, ctx.RequestAborted).ConfigureAwait(false);
+            }
+            catch (JsonException ex)
+            {
+                return BowireEndpointHelpers.Problem(
+                    type: "urn:bowire:invalid-input",
+                    title: "Request body isn't valid JSON",
+                    status: 400,
+                    detail: ex.Message,
+                    instance: ctx.Request.Path);
+            }
+
+            if (req?.Endpoints is null || req.Endpoints.Length == 0)
+            {
+                return BowireEndpointHelpers.Problem(
+                    type: "urn:bowire:invalid-input",
+                    title: "'endpoints' array is required and must be non-empty",
+                    status: 400,
+                    instance: ctx.Request.Path);
+            }
+
+            // Map the wire DTOs to the engine's record shape.
+            var input = req.Endpoints.Select(e => new ThreatHeuristic.Endpoint(
+                EndpointId: e.EndpointId ?? string.Empty,
+                Path: e.Path ?? string.Empty,
+                Verb: e.Verb,
+                Protocol: e.Protocol,
+                Service: e.Service,
+                InputShape: e.InputShape,
+                AuthState: e.AuthState)).ToArray();
+
+            var topN = req.TopN ?? 10;
+            var ranking = ThreatHeuristic.Rank(input, topN);
+
+            return Results.Json(new
+            {
+                ranked = ranking.Ranked.Select(r => new
+                {
+                    endpointId = r.EndpointId,
+                    risk = r.Risk,
+                    why = r.Why,
+                    suggestedTemplates = r.SuggestedTemplates,
+                    ruleTrace = r.RuleTrace,
+                }).ToArray(),
+                inputCount = req.Endpoints.Length,
+                truncated = req.Endpoints.Length > 200,
+                modelId = "heuristic",
+                source = "heuristic",
+            }, BowireEndpointHelpers.JsonOptions);
+        }).ExcludeFromDescription();
+
         return endpoints;
     }
 
@@ -170,6 +234,24 @@ internal static class BowireSecurityEndpoints
         if (string.IsNullOrEmpty(body)) return null;
         const int cap = 512;
         return body.Length <= cap ? body : body[..cap] + "…";
+    }
+
+    /// <summary>Heuristic threat-model request shape (#112). Same fields as the AI threat-model.</summary>
+    private sealed class ThreatHeuristicRequest
+    {
+        public ThreatHeuristicEndpoint[]? Endpoints { get; init; }
+        public int? TopN { get; init; }
+    }
+
+    private sealed class ThreatHeuristicEndpoint
+    {
+        public string? EndpointId { get; init; }
+        public string? Path { get; init; }
+        public string? Verb { get; init; }
+        public string? Protocol { get; init; }
+        public string? Service { get; init; }
+        public string? InputShape { get; init; }
+        public string? AuthState { get; init; }
     }
 
     /// <summary>JSON DTO for the POST body. Matches the workbench-side request shape byte-for-byte.</summary>
