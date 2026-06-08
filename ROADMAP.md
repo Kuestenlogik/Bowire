@@ -60,6 +60,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 - [#98](https://github.com/Kuestenlogik/Bowire/issues/98) **Multi-tenant Phase F — user chip, scoped state copy, admin impersonation** 
 - [#99](https://github.com/Kuestenlogik/Bowire/issues/99) **Submarine — transparent proxy / MITM mode (6th deployment shape)** 
 - [#100](https://github.com/Kuestenlogik/Bowire/issues/100) **Ferry — CI/CD runner (collection / recording → headless run + JUnit report)** 
+- [#101](https://github.com/Kuestenlogik/Bowire/issues/101) **Tugboat — VS Code + JetBrains workbench extension** 
 
 ---
 
