@@ -996,45 +996,6 @@ document.querySelectorAll('.copy-btn').forEach(btn => {
     // a single deferred main.js, so a brief flash on first load is OK).
     applyTheme(getTheme());
 
-    // ---- Reading mode (#119) ------------------------------------
-    // Toggle strips persistent chrome and reflows the content column
-    // to a comfortable reading width. State lives in localStorage so
-    // a returning reader lands in the mode they left in (the inline
-    // init script in default.html applies the data attribute before
-    // first paint — this just wires the button + the R keyboard
-    // shortcut). Toggle is a peer of the theme toggle, same chrome.
-    const READING_KEY = 'bowire_reading_mode';
-    function isReadingMode() {
-        return document.documentElement.getAttribute('data-reading-mode') === '1';
-    }
-    function setReadingMode(on) {
-        if (on) {
-            document.documentElement.setAttribute('data-reading-mode', '1');
-            try { localStorage.setItem(READING_KEY, '1'); } catch { /* ignore */ }
-        } else {
-            document.documentElement.removeAttribute('data-reading-mode');
-            try { localStorage.setItem(READING_KEY, '0'); } catch { /* ignore */ }
-        }
-    }
-    const readingBtn = document.getElementById('reading-mode-toggle');
-    if (readingBtn) {
-        readingBtn.addEventListener('click', function () {
-            setReadingMode(!isReadingMode());
-        });
-    }
-    // R toggles reading mode anywhere on a content page, except while
-    // typing in a text input. Conflict-free — R isn't used elsewhere
-    // on the site (theme uses T, search uses /, Cmd/Ctrl+K).
-    document.addEventListener('keydown', function (e) {
-        if (e.key !== 'r' && e.key !== 'R') return;
-        if (e.ctrlKey || e.metaKey || e.altKey) return;
-        const active = document.activeElement;
-        if (active && /^(INPUT|TEXTAREA|SELECT)$/i.test(active.tagName)) return;
-        if (active && active.isContentEditable) return;
-        e.preventDefault();
-        setReadingMode(!isReadingMode());
-    });
-
     const themeBtn = document.getElementById('theme-toggle');
     if (themeBtn) {
         updateButton(themeBtn, getTheme());

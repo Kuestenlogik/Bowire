@@ -8861,86 +8861,11 @@ html[data-theme="light"] {
     }
 }
 
-/* ============================================================
-   Reading mode (#119) — strips persistent chrome and reflows the
-   content column to a comfortable reading width. Toggled via the
-   Aa button in the header or the R keyboard shortcut. Persisted to
-   localStorage as `bowire_reading_mode`. The synchronous init in
-   default.html's <head> sets `data-reading-mode="1"` on <html>
-   before the body renders so a returning reader doesn't see the
-   full chrome flash before it hides.
-   ============================================================ */
-:root[data-reading-mode="1"] .site-header,
-:root[data-reading-mode="1"] .site-footer,
-:root[data-reading-mode="1"] .footer-cta,
-:root[data-reading-mode="1"] .page-outline,
-:root[data-reading-mode="1"] .section-nav,
-:root[data-reading-mode="1"] .bowire-page-outline-overlay,
-:root[data-reading-mode="1"] .mobile-menu-toggle {
-    display: none !important;
-}
-
-/* Floating reading-mode-on indicator — a tiny pill bottom-right
-   so the reader can find their way back to the chrome. Mirrors
-   the "Back to top" affordance most reader modes ship with. */
-:root[data-reading-mode="1"] body::after {
-    content: "Reading mode — press R to exit";
-    position: fixed;
-    bottom: 16px;
-    right: 16px;
-    z-index: 50;
-    padding: 6px 12px;
-    font-family: var(--font-mono, ui-monospace, monospace);
-    font-size: 11px;
-    color: var(--text-tertiary, #8b8c9c);
-    background: var(--bg-elevated, #1a1a25);
-    border: 1px solid var(--border, #2a2a3a);
-    border-radius: 999px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
-    pointer-events: none;
-}
-
-/* Reflow the content column to ~72 ch with breathing room. The
-   .container is the main-page wrapper; overriding it here gives us
-   the reading shape without per-page edits. */
-:root[data-reading-mode="1"] main .container,
-:root[data-reading-mode="1"] .page-content .container {
-    max-width: 72ch;
-    padding-top: 48px;
-    padding-bottom: 48px;
-}
-
-/* Typography — looser line height, slightly larger body, justified
-   prevented (irregular spacing hurts readability more than ragged
-   right at this column width). */
-:root[data-reading-mode="1"] main {
-    font-size: 1.05rem;
-    line-height: 1.75;
-    text-align: left;
-}
-
-:root[data-reading-mode="1"] main h1,
-:root[data-reading-mode="1"] main h2,
-:root[data-reading-mode="1"] main h3 {
-    line-height: 1.3;
-    margin-top: 1.6em;
-}
-
-/* Toggle button — active state lifts the Aa background. */
-.theme-toggle .reading-mode-glyph {
-    font-weight: 600;
-    font-size: 12px;
-    letter-spacing: -0.02em;
-    line-height: 1;
-}
-
-:root[data-reading-mode="1"] #reading-mode-toggle {
-    background: var(--accent-subtle, rgba(99, 102, 241, 0.15));
-    border-color: var(--accent, #6366f1);
-    color: var(--accent, #6366f1);
-}
-
-/* Print stylesheet shares the no-chrome layout. */
+/* Print stylesheet — strip persistent chrome so saved PDFs / printed
+   copies render the content without the site nav and footer. Custom
+   reading-mode toggle (initial #119 work) was dropped in favour of
+   the browser's native reader-mode affordance; the print-friendly
+   layout still has independent value. */
 @media print {
     .site-header,
     .site-footer,

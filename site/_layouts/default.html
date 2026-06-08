@@ -17,12 +17,6 @@
         : mode;
       document.documentElement.setAttribute('data-theme', mode);
       document.documentElement.setAttribute('data-theme-resolved', resolved);
-      // Reading mode (#119) — same idea: read state synchronously so
-      // we don't flash the full chrome on first paint for a returning
-      // reader who left in reading mode.
-      if (localStorage.getItem('bowire_reading_mode') === '1') {
-        document.documentElement.setAttribute('data-reading-mode', '1');
-      }
     })();
   </script>
 

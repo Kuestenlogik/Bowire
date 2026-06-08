@@ -26,13 +26,6 @@
       <a href="{{ '/' | relative_url }}" class="nav-home" aria-label="Home" title="Home">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/><path d="M10 21v-6h4v6"/></svg>
       </a>
-      <button class="theme-toggle" id="reading-mode-toggle" type="button" aria-label="Toggle reading mode" title="Reading mode (press R)">
-        <!-- "Aa" glyph — universal reading-mode affordance. Stays as
-             plain text so it inherits the theme-toggle's pill chrome
-             without needing a per-icon SVG; main.js flips the active
-             class on the button when the mode is on. -->
-        <span class="reading-mode-glyph" aria-hidden="true">Aa</span>
-      </button>
       <button class="theme-toggle" id="theme-toggle" type="button" aria-label="Toggle theme" title="Theme">
         <!-- Icon injected by main.js based on current theme state -->
       </button>
