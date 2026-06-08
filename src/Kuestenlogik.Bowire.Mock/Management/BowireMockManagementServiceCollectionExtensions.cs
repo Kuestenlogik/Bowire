@@ -20,6 +20,11 @@ public static class BowireMockManagementServiceCollectionExtensions
     public static IServiceCollection AddBowireMockManagement(this IServiceCollection services)
     {
         services.AddSingleton<MockRegistry>();
+        // #94 — one-click "Use as mock" host manager. Sibling of
+        // MockRegistry: registry tracks the static-mock instances #56
+        // ships, manager tracks the recording-derived mocks the
+        // workbench's "Use as mock" button spins up.
+        services.AddSingleton<BowireMockHostManager>();
         return services;
     }
 }

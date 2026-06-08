@@ -121,6 +121,7 @@ public static class BowireServiceCollectionExtensions
                 .BindConfiguration("Bowire:PluginUpdateCheck");
         services.AddHostedService<PluginUpdateCheckHostedService>();
 
+
         // Auth provider seam is *separate* — embedded hosts call
         // services.AddBowireAuth(builder.Configuration) explicitly when
         // they want Bowire to gate its own endpoints; otherwise the

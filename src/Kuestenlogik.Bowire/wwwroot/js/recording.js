@@ -738,6 +738,51 @@
         URL.revokeObjectURL(a.href);
     }
 
+    // ---- #94 — Use Recording as Mock ----
+    // POST /api/mock/from-recording with the recording id. Backend
+    // boots a MockServer on a free local port, returns
+    // { mockId, url, port }. Toast surfaces the URL + a copy button so
+    // the user can paste it into another tool with one click.
+    function useRecordingAsMock(rec) {
+        if (!rec || !rec.id) return;
+        fetch('/api/mock/from-recording', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ recordingId: rec.id, label: rec.name }),
+        }).then(function (resp) {
+            return resp.json().then(function (body) {
+                return { ok: resp.ok, status: resp.status, body: body };
+            });
+        }).then(function (resp) {
+            if (!resp.ok) {
+                toast('Use as mock failed: ' + problemTitle(resp.body, 'HTTP ' + resp.status), 'error');
+                return;
+            }
+            var url = resp.body && resp.body.url ? resp.body.url : null;
+            if (!url) {
+                toast('Mock started but no URL returned', 'error');
+                return;
+            }
+            if (navigator.clipboard) {
+                navigator.clipboard.writeText(url).then(function () {
+                    toast('Mock URL copied: ' + url, 'success');
+                }).catch(function () {
+                    toast('Mock running at ' + url + ' (copy failed)', 'success');
+                });
+            } else {
+                toast('Mock running at ' + url, 'success');
+            }
+            addConsoleEntry({
+                type: 'response',
+                method: rec.name,
+                status: 'Mock running on port ' + resp.body.port,
+                body: url,
+            });
+        }).catch(function (err) {
+            toast('Use as mock failed: ' + (err && err.message ? err.message : err), 'error');
+        });
+    }
+
     // ---- Manager Modal ----
     function renderRecordingManager() {
         var existing = $('.bowire-recording-modal-overlay');
@@ -977,6 +1022,20 @@
             }
         },
             el('span', { textContent: 'Convert to Tests' })
+        ));
+
+        // #94 — one-click "Use as mock". Boots a local MockServer
+        // against this recording and copies the resulting URL to the
+        // clipboard. Toast carries the URL + a copy button for
+        // re-grab; the manager-pane Mocks tab lists active hosts so
+        // the user can stop them when done.
+        toolbar.appendChild(el('button', {
+            className: 'bowire-recording-action-btn',
+            disabled: rec.steps.length === 0,
+            title: 'Spin up a local mock server that returns this recording verbatim. URL is copied to your clipboard.',
+            onClick: function () { useRecordingAsMock(rec); }
+        },
+            el('span', { textContent: 'Use as mock' })
         ));
 
         toolbar.appendChild(el('button', {
