@@ -194,6 +194,12 @@
     var aiInflightProbe = null;
     var chatHistory = [];       // [{ role: 'user'|'assistant', content: '...' }]
     var chatBusy = false;
+    // #109 — Phase 3 gate: when true, the chat request marks
+    // context.allowInvoke = true and the backend registers the
+    // bowire_invoke tool. When false (default), the tool isn't even
+    // offered to the model. Session-only — NEVER persisted to
+    // localStorage; the user must opt in each fresh session.
+    var aiAllowInvoke = false;
 
     // #59 Threat-model state. Populated by runThreatModel(); rendered
     // by rerenderThreatModel(). Endpoint index lets per-row buttons
@@ -535,6 +541,7 @@
     function serializeContextForBackend(ctx) {
         if (!ctx) return null;
         return {
+            allowInvoke: aiAllowInvoke,
             serverUrls: (ctx.urls || []).map(function (u) { return u.url; }),
             services: (ctx.services || []).map(function (s) {
                 return {
@@ -694,6 +701,29 @@
                         chatHistory.push({
                             role: 'assistant',
                             toolCalls: resp.body.toolCalls,
+                        });
+                        // #109 Phase 4 — dispatch on tool name. The
+                        // open_method tool's server-side body just
+                        // validates the request; the actual navigation
+                        // is client-side here. Looking at the tool name
+                        // (not a side-channel) keeps the protocol
+                        // dumb-pipe: the same response shape the AI
+                        // returned drives the UI.
+                        resp.body.toolCalls.forEach(function (tc) {
+                            if (tc.name === 'bowire_open_method'
+                                && tc.arguments && tc.arguments.service && tc.arguments.method
+                                && typeof services !== 'undefined' && typeof openTab === 'function') {
+                                var svc = services.find(function (s) {
+                                    return s.name && s.name.toLowerCase() === tc.arguments.service.toLowerCase();
+                                });
+                                if (!svc || !svc.methods) return;
+                                var m = svc.methods.find(function (x) {
+                                    return x.name && x.name.toLowerCase() === tc.arguments.method.toLowerCase();
+                                });
+                                if (m) {
+                                    try { openTab(svc, m); render(); } catch { /* ignore */ }
+                                }
+                            }
                         });
                     }
                     chatHistory.push({ role: 'assistant', content: resp.body.content });
@@ -880,6 +910,27 @@
         function rerenderChat() {
             chatHost.replaceChildren();
             if (!aiStatus || !aiStatus.hasClient) return;
+
+            // #109 — Phase 3 opt-in gate. Toggle is session-only,
+            // never persisted (see aiAllowInvoke comment). When OFF
+            // the backend doesn't even register the bowire_invoke
+            // tool — the model literally cannot try. When ON the
+            // AI can dispatch real calls; every invoke writes to
+            // ~/.bowire/.ai-actions.jsonl for audit.
+            var invokeRow = el('label', { className: 'bowire-ai-chat-toggle' });
+            var invokeBox = el('input', { type: 'checkbox' });
+            if (aiAllowInvoke) invokeBox.checked = true;
+            invokeBox.addEventListener('change', function () {
+                aiAllowInvoke = invokeBox.checked;
+                rerenderChat();
+            });
+            invokeRow.appendChild(invokeBox);
+            invokeRow.appendChild(el('span', { textContent: 'Allow AI to invoke methods' }));
+            invokeRow.appendChild(el('span', {
+                className: 'bowire-ai-chat-toggle-hint',
+                textContent: aiAllowInvoke ? '· session only, audited' : '· off — AI may only observe',
+            }));
+            chatHost.appendChild(invokeRow);
 
             var transcript = el('div', { className: 'bowire-ai-chat-transcript' });
             chatHistory.forEach(function (m) {
