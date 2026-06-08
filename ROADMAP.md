@@ -63,6 +63,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 - [#101](https://github.com/Kuestenlogik/Bowire/issues/101) **Tugboat — VS Code + JetBrains workbench extension** 
 - [#102](https://github.com/Kuestenlogik/Bowire/issues/102) **Lighthouse — scheduled probes + alerting (Postman Monitors / Synthetics analog)** 
 - [#103](https://github.com/Kuestenlogik/Bowire/issues/103) **Generate boat photos: submarine, ferry, tugboat, lighthouse** 
+- [#104](https://github.com/Kuestenlogik/Bowire/issues/104) **AI security scan orchestration — one button chains threat-model → templates → fuzz → triage → report** 
 
 ---
 
