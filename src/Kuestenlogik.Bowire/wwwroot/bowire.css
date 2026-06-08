@@ -48,6 +48,31 @@
     --bowire-badge-client: #a78bfa;
     --bowire-badge-duplex: #fb923c;
 
+    /* #120 — protocol-as-color. One hue per registered protocol so the
+       multi-protocol surface becomes scannable at a glance. Lavender
+       (the Bowire accent) is reserved for application-level affordances
+       only; protocols never share its hue, which keeps "is this a
+       Bowire control?" vs "is this protocol info?" visually separable.
+       Direction-axis (#122) layers on top via chroma shifts. */
+    --bowire-protocol-rest: #f97316;
+    --bowire-protocol-grpc: #3b82f6;
+    --bowire-protocol-graphql: #ec4899;
+    --bowire-protocol-mqtt: #14b8a6;
+    --bowire-protocol-signalr: #a855f7;
+    --bowire-protocol-websocket: #06b6d4;
+    --bowire-protocol-sse: #84cc16;
+    --bowire-protocol-nats: #f59e0b;
+    --bowire-protocol-amqp: #fb7185;
+    --bowire-protocol-kafka: #d946ef;
+    --bowire-protocol-odata: #22d3ee;
+    --bowire-protocol-mcp: #fbbf24;
+    --bowire-protocol-socketio: #34d399;
+    --bowire-protocol-asyncapi: #818cf8;
+    /* Fallback for protocols we haven't tuned yet: neutral grey. Visible
+       enough to read as "protocol info"; quiet enough not to claim a
+       hue it shouldn't. */
+    --bowire-protocol-default: #6a6a82;
+
     --bowire-font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     --bowire-font-mono: "JetBrains Mono", "Fira Code", "Cascadia Code", "Consolas", monospace;
 
@@ -139,6 +164,25 @@
     --bowire-badge-server: #059669;
     --bowire-badge-client: #7c3aed;
     --bowire-badge-duplex: #ea580c;
+
+    /* #120 — protocol-as-color (light-mode counterparts). Same hues at
+       lower lightness so they read against the bright surface without
+       blooming. */
+    --bowire-protocol-rest: #ea580c;
+    --bowire-protocol-grpc: #2563eb;
+    --bowire-protocol-graphql: #db2777;
+    --bowire-protocol-mqtt: #0d9488;
+    --bowire-protocol-signalr: #9333ea;
+    --bowire-protocol-websocket: #0891b2;
+    --bowire-protocol-sse: #65a30d;
+    --bowire-protocol-nats: #d97706;
+    --bowire-protocol-amqp: #e11d48;
+    --bowire-protocol-kafka: #c026d3;
+    --bowire-protocol-odata: #0e7490;
+    --bowire-protocol-mcp: #d97706;
+    --bowire-protocol-socketio: #059669;
+    --bowire-protocol-asyncapi: #6366f1;
+    --bowire-protocol-default: #6a6a82;
 
     --bowire-shadow-sm: 0 2px 6px rgba(15, 15, 35, 0.06);
     --bowire-shadow-md: 0 8px 24px rgba(15, 15, 35, 0.10);
@@ -1492,6 +1536,45 @@ img.bowire-logo-icon {
 
 .bowire-service-group {
     margin-bottom: 4px;
+    /* #120 — resolve `--bowire-protocol-<id>` into a local
+       `--protocol-color` token so the group + every nested element can
+       reach the protocol's hue with a single var() call. Set per
+       protocol via the data-protocol attribute below. Falls back to
+       the neutral `default` token for protocols we haven't tuned. */
+    --protocol-color: var(--bowire-protocol-default);
+    /* Left-edge stripe — the at-a-glance "this is REST / gRPC / …"
+       cue. Drawn as a border on the group rather than an extra DOM
+       node so the protocol color sits flush with the service header
+       chevron + the method rows beneath it. */
+    border-left: 3px solid var(--protocol-color);
+    border-top-left-radius: 4px;
+    border-bottom-left-radius: 4px;
+}
+
+/* Per-protocol resolution. New protocols only need one line each —
+   no markup change in the JS side once the data attribute is in
+   place. */
+.bowire-service-group[data-protocol="rest"]      { --protocol-color: var(--bowire-protocol-rest); }
+.bowire-service-group[data-protocol="grpc"]      { --protocol-color: var(--bowire-protocol-grpc); }
+.bowire-service-group[data-protocol="graphql"]   { --protocol-color: var(--bowire-protocol-graphql); }
+.bowire-service-group[data-protocol="mqtt"]      { --protocol-color: var(--bowire-protocol-mqtt); }
+.bowire-service-group[data-protocol="signalr"]   { --protocol-color: var(--bowire-protocol-signalr); }
+.bowire-service-group[data-protocol="websocket"] { --protocol-color: var(--bowire-protocol-websocket); }
+.bowire-service-group[data-protocol="sse"]       { --protocol-color: var(--bowire-protocol-sse); }
+.bowire-service-group[data-protocol="nats"]      { --protocol-color: var(--bowire-protocol-nats); }
+.bowire-service-group[data-protocol="amqp"]      { --protocol-color: var(--bowire-protocol-amqp); }
+.bowire-service-group[data-protocol="kafka"]     { --protocol-color: var(--bowire-protocol-kafka); }
+.bowire-service-group[data-protocol="odata"]     { --protocol-color: var(--bowire-protocol-odata); }
+.bowire-service-group[data-protocol="mcp"]       { --protocol-color: var(--bowire-protocol-mcp); }
+.bowire-service-group[data-protocol="socketio"]  { --protocol-color: var(--bowire-protocol-socketio); }
+.bowire-service-group[data-protocol="asyncapi"]  { --protocol-color: var(--bowire-protocol-asyncapi); }
+.bowire-service-group[data-protocol="proto"]     { --protocol-color: var(--bowire-protocol-grpc); }
+
+/* Protocol-tinted service-icon inside the group header. Inherits the
+   group's --protocol-color so the icon reads in the protocol's hue
+   instead of the neutral text-secondary baseline. */
+.bowire-service-group .bowire-service-proto-icon {
+    color: var(--protocol-color);
 }
 
 .bowire-service-header {
