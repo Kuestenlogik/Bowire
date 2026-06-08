@@ -49,7 +49,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 - [#58](https://github.com/Kuestenlogik/Bowire/issues/58) **Workspace: complete the Git-native story (.blw file)** 
 - [Kuestenlogik/Bowire.Protocol.Surgewave#11](https://github.com/Kuestenlogik/Bowire.Protocol.Surgewave/issues/11) **Light up Surgewave protocol plugin** 
 - [#90](https://github.com/Kuestenlogik/Bowire/issues/90) **AI panel: move from response-pane tab to a right-side drawer** 
-- [#91](https://github.com/Kuestenlogik/Bowire/issues/91) **Frontend ProblemDetails migration — adopt renderProblem() everywhere body.error is read** 
 - [#92](https://github.com/Kuestenlogik/Bowire/issues/92) **Move Server-URL + Schema-Files management from sidebar to main pane** 
 - [#93](https://github.com/Kuestenlogik/Bowire/issues/93) **Topbar: connection-state pill (aggregate + per-URL popover)** 
 - [#94](https://github.com/Kuestenlogik/Bowire/issues/94) **Recordings: one-click 'Use as mock' spins up a local mock server** 
