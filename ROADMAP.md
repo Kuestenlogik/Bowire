@@ -53,6 +53,8 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 - [#91](https://github.com/Kuestenlogik/Bowire/issues/91) **Frontend ProblemDetails migration — adopt renderProblem() everywhere body.error is read** 
 - [#92](https://github.com/Kuestenlogik/Bowire/issues/92) **Move Server-URL + Schema-Files management from sidebar to main pane** 
 - [#93](https://github.com/Kuestenlogik/Bowire/issues/93) **Topbar: connection-state pill (aggregate + per-URL popover)** 
+- [#94](https://github.com/Kuestenlogik/Bowire/issues/94) **Recordings: one-click 'Use as mock' spins up a local mock server** 
+- [#95](https://github.com/Kuestenlogik/Bowire/issues/95) **Header Library: named, scoped, toggleable header sets** 
 
 ---
 
