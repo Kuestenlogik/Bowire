@@ -24,10 +24,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 ### v1.10 — gRPC Connect
 
 - [#33](https://github.com/Kuestenlogik/Bowire/issues/33) **Protocol plugins — Connect Phase 1+3 + OTLP** `area:plugin-sdk` `track:protocols`
-- [#104](https://github.com/Kuestenlogik/Bowire/issues/104) **AI security scan orchestration — one button chains threat-model → templates → fuzz → triage → report** 
-- [#105](https://github.com/Kuestenlogik/Bowire/issues/105) **AI JWT analyzer — claim-by-claim verdict, algorithm flags, scope/audience cross-check** 
-- [#106](https://github.com/Kuestenlogik/Bowire/issues/106) **AI OWASP API Top 10 panel — per-method status + concrete probe per risk** 
-- [#107](https://github.com/Kuestenlogik/Bowire/issues/107) **AI security report — markdown writeup grouped by severity + OWASP mapping + diff-vs-last-run** 
 
 ### Later
 
@@ -66,6 +62,10 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 - [#101](https://github.com/Kuestenlogik/Bowire/issues/101) **Tugboat — VS Code + JetBrains workbench extension** 
 - [#102](https://github.com/Kuestenlogik/Bowire/issues/102) **Lighthouse — scheduled probes + alerting (Postman Monitors / Synthetics analog)** 
 - [#103](https://github.com/Kuestenlogik/Bowire/issues/103) **Generate boat photos: submarine, ferry, tugboat, lighthouse** 
+- [#104](https://github.com/Kuestenlogik/Bowire/issues/104) **AI security scan orchestration — one button chains threat-model → templates → fuzz → triage → report** 
+- [#105](https://github.com/Kuestenlogik/Bowire/issues/105) **AI JWT analyzer — claim-by-claim verdict, algorithm flags, scope/audience cross-check** 
+- [#106](https://github.com/Kuestenlogik/Bowire/issues/106) **AI OWASP API Top 10 panel — per-method status + concrete probe per risk** 
+- [#107](https://github.com/Kuestenlogik/Bowire/issues/107) **AI security report — markdown writeup grouped by severity + OWASP mapping + diff-vs-last-run** 
 - [#110](https://github.com/Kuestenlogik/Bowire/issues/110) **Site: surface the AI assistant in the launch wizard + quickstart** 
 - [#113](https://github.com/Kuestenlogik/Bowire/issues/113) **Polish: tabs visually connect to content; drop the background glow** 
 - [#114](https://github.com/Kuestenlogik/Bowire/issues/114) **Hints: render contextually at the target surface (drop the static list in the drawer)** 
