@@ -68,6 +68,8 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 - [#107](https://github.com/Kuestenlogik/Bowire/issues/107) **AI security report — markdown writeup grouped by severity + OWASP mapping + diff-vs-last-run** 
 - [#110](https://github.com/Kuestenlogik/Bowire/issues/110) **Site: surface the AI assistant in the launch wizard + quickstart** 
 - [#111](https://github.com/Kuestenlogik/Bowire/issues/111) **AI drawer: tabs for Chat / Threat / Templates / Fuzz to kill the nested-scrollbar stack** 
+- [#112](https://github.com/Kuestenlogik/Bowire/issues/112) **Threat model: add a deterministic heuristic tier (AI becomes opt-in, not required)** 
+- [#113](https://github.com/Kuestenlogik/Bowire/issues/113) **Polish: tabs visually connect to content; drop the background glow** 
 
 ---
 
