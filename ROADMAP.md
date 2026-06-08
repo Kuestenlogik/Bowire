@@ -72,6 +72,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 - [#115](https://github.com/Kuestenlogik/Bowire/issues/115) **v2.0 — UI refactor: re-architect the workbench shell** 
 - [#116](https://github.com/Kuestenlogik/Bowire/issues/116) **Workspaces — named, switchable contexts that bundle URLs / envs / collections / AI config** 
 - [#117](https://github.com/Kuestenlogik/Bowire/issues/117) **i18n — extract every UI string; ship DE + EN catalogues** 
+- [#119](https://github.com/Kuestenlogik/Bowire/issues/119) **Reading mode on bowire.io + docs + api-docs + Bootcamp** 
 
 ---
 
