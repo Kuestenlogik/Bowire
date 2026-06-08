@@ -28,6 +28,11 @@ The roadmap calls this **Tier 4**. Tiers 1–3 (record-as-attack, fuzz UI, MITM 
 
 The 94 commits since v1.8.0 carry a lot more than the marquee. Highlights of the supporting work:
 
+**Security as a first-class drawer, with a tier that doesn't need AI (#111 + #112)**
+- **Separate Security drawer.** Threat-Model + Nuclei template suggestion left the AI drawer for their own surface (shield icon in the topbar, `Ctrl/Cmd+Shift+S`). The AI drawer stays focused on conversational assistance (hints + chat). Mental model: AI = assistant, Security = scanner / analysis.
+- **Heuristic ranking tier — no AI required.** Default ranking is now a deterministic rule engine (`ThreatHeuristic` in core): verb-based mutation scoring, BOLA-pattern detection on path params, admin / auth / PII path matching, anonymous-auth bumps, sensitive-field-name detection in the input shape. Sub-millisecond per endpoint. Each ranked row carries a `ruleTrace` so users can audit which rules fired against which endpoint.
+- **AI tier becomes opt-in.** A tier toggle in the drawer lets the operator switch to AI-assisted ranking when they want semantic adjustments on top of the heuristic. Default heuristic → security tooling works on installs that don't have or don't want AI.
+
 **AI assistant — full MCP-style tool calling (#89, #108, #109)**
 - **Phase 1: chat grounding.** Every chat send prepends a workbench-state snapshot (loaded URLs + service names + selected method's full schema + recent calls) as a system prompt. The model answers from real data instead of generic web knowledge.
 - **Phase 2: read-only tools (#108).** Three `Microsoft.Extensions.AI` `AIFunction`s available on every chat request: `bowire_list_services`, `bowire_describe_method`, `bowire_recent_history`. The model calls them mid-conversation to drill in. The Ollama path is wrapped in `FunctionInvokingChatClient` so the tool-call loop actually round-trips. Tool calls render as visible "Consulted X" steps in the chat transcript with collapsible args.
