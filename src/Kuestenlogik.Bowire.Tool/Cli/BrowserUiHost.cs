@@ -121,6 +121,11 @@ internal static class BrowserUiHost
         // out to `bowire mock --recording`.
         builder.Services.AddBowireMockManagement();
 
+        // #94 — IRecordingJsonProvider adapter that bridges the
+        // Mock-package endpoints to the workbench's RecordingStore
+        // (internal in core; reachable here via InternalsVisibleTo).
+        builder.Services.AddSingleton<IRecordingJsonProvider, WorkbenchRecordingJsonProvider>();
+
         // Self-telemetry seam (#29). Off by default -- opted in via
         // --telemetry / Bowire:Telemetry:Enabled=true. When on, wires
         // the OTLP exporter against the canonical Kuestenlogik.Bowire
@@ -214,6 +219,11 @@ internal static class BrowserUiHost
         // bowire HTML mount (standalone => "" so endpoints land at
         // `/api/mocks`, not `/bowire/api/mocks`).
         app.MapBowireMockManagement(basePath: string.Empty);
+
+        // #94 — "Use as mock" one-click endpoints. Recording lookup
+        // dialled through a tiny adapter so the Mock package doesn't
+        // see the workbench's internal RecordingStore.
+        app.MapBowireMockHostEndpoints(basePath: string.Empty);
 
         // AI endpoints (#25 Phase 2). Same base-path discipline.
         app.MapBowireAiEndpoints(basePath: string.Empty);
