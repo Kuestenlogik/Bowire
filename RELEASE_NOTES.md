@@ -28,9 +28,15 @@ The roadmap calls this **Tier 4**. Tiers 1–3 (record-as-attack, fuzz UI, MITM 
 
 The 94 commits since v1.8.0 carry a lot more than the marquee. Highlights of the supporting work:
 
+**AI assistant — full MCP-style tool calling (#89, #108, #109)**
+- **Phase 1: chat grounding.** Every chat send prepends a workbench-state snapshot (loaded URLs + service names + selected method's full schema + recent calls) as a system prompt. The model answers from real data instead of generic web knowledge.
+- **Phase 2: read-only tools (#108).** Three `Microsoft.Extensions.AI` `AIFunction`s available on every chat request: `bowire_list_services`, `bowire_describe_method`, `bowire_recent_history`. The model calls them mid-conversation to drill in. The Ollama path is wrapped in `FunctionInvokingChatClient` so the tool-call loop actually round-trips. Tool calls render as visible "Consulted X" steps in the chat transcript with collapsible args.
+- **Phase 3: invoke tool (#109).** Opt-in via the "Allow AI to invoke methods" toggle in the drawer header. When OFF (default), `bowire_invoke` isn't even registered — the model literally cannot try. When ON, the AI dispatches through `protocol.InvokeAsync` (same path `/api/invoke` uses) and every call writes a JSONL row to `~/.bowire/.ai-actions.jsonl` for audit. Toggle is session-only — never persisted to localStorage.
+- **Phase 4: UI navigation (#109).** `bowire_open_method` tool lets the AI navigate the workbench to the right method ("Show me `pet.findPetsByStatus`" → workbench opens the request pane on it). Always available, no side effects beyond UI state.
+- **"Thinking…" feedback in the drawer.** Local models with tool calling take 15-45 s per turn. The chat now shows a live `(N s)` counter with a pulsing accent dot + a Cancel button that aborts the fetch — no more wondering whether the request hung.
+
 **Workbench UX**
 - **AI side panel moves into a right-side drawer (#90)** with a topbar toggle + `Ctrl/Cmd+Shift+A` shortcut. Persists across method/service switches. Was a peer of Response/Logs/Code in the response-pane tab strip, which forced you to choose between seeing the AI and seeing the response.
-- **AI chat is now grounded in the live workbench state (#89 Phase 1)**. Type `getpetbyid` and the model knows you have `pet.getPetById` discovered, what its input shape is, and what URL it lives at — answers reference real methods instead of generic web advice.
 - **Connection-state pill in the topbar (#93)**. Aggregate state for every configured discovery URL — green when all connected, amber when partial / connecting, red when any failed. Hover for a per-URL breakdown with service counts + the failure message.
 - **Body sub-tabs (#85)**. GraphQL Body now splits Query / Variables / Selection-set into a sub-tab strip; REST / gRPC / JSON-RPC get protocol-aware Form / JSON pair labels (gRPC: Message / JSON; JSON-RPC: Params / JSON; REST: Form / Body). Was a vertical stack of three surfaces; now one surface at a time.
 - **Filter services by discovery URL** in the sidebar's filter popup. Multi-URL setups can narrow to one origin.
@@ -59,6 +65,7 @@ The 94 commits since v1.8.0 carry a lot more than the marquee. Highlights of the
 - Or update an existing host: `dotnet add package Kuestenlogik.Bowire --version 1.9.0` + the matching protocol-plugin versions.
 - Frontend / ProblemDetails: nothing to change. Legacy `body.error` reads still work; new `body.title` + `body.detail` + extensions are additive.
 - AI defaults: if you don't have `Kuestenlogik.Bowire.Ai` installed, every AI feature stays gracefully off and the Phase-1 hint engine continues working — no extra config required.
+- AI tool calling (#108 / #109): the chat side panel sends the workbench context with every request automatically. The `bowire_invoke` write-side tool is gated on the new drawer toggle ("Allow AI to invoke methods") — off by default; flip per session to let the AI dispatch real calls.
 
 ---
 
