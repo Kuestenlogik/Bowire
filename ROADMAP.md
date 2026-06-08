@@ -71,6 +71,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 - [#116](https://github.com/Kuestenlogik/Bowire/issues/116) **Workspaces — named, switchable contexts that bundle URLs / envs / collections / AI config** 
 - [#117](https://github.com/Kuestenlogik/Bowire/issues/117) **i18n — extract every UI string; ship DE + EN catalogues** 
 - [#120](https://github.com/Kuestenlogik/Bowire/issues/120) **Single accent + protocol as the only color** 
+- [#121](https://github.com/Kuestenlogik/Bowire/issues/121) **Context-aware empty states across every pane** 
 
 ---
 
