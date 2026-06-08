@@ -66,6 +66,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 - [#104](https://github.com/Kuestenlogik/Bowire/issues/104) **AI security scan orchestration — one button chains threat-model → templates → fuzz → triage → report** 
 - [#105](https://github.com/Kuestenlogik/Bowire/issues/105) **AI JWT analyzer — claim-by-claim verdict, algorithm flags, scope/audience cross-check** 
 - [#106](https://github.com/Kuestenlogik/Bowire/issues/106) **AI OWASP API Top 10 panel — per-method status + concrete probe per risk** 
+- [#107](https://github.com/Kuestenlogik/Bowire/issues/107) **AI security report — markdown writeup grouped by severity + OWASP mapping + diff-vs-last-run** 
 
 ---
 
