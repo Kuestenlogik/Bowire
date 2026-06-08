@@ -276,6 +276,14 @@
     // localStorage so the user's preference is sticky across reloads.
     let aiDrawerOpen = false;
     try { aiDrawerOpen = localStorage.getItem('bowire_ai_drawer_open') === '1'; } catch { /* ignore */ }
+    // Security drawer (#111). Peer of the AI drawer, lives on the
+    // right edge of the body with its own topbar toggle. Hosts the
+    // threat-model + template-suggest surfaces that used to live
+    // inside the AI drawer; the AI drawer stays focused on hints +
+    // chat. Open state mirrored to localStorage so the user's
+    // preference is sticky across reloads.
+    let securityDrawerOpen = false;
+    try { securityDrawerOpen = localStorage.getItem('bowire_security_drawer_open') === '1'; } catch { /* ignore */ }
     let activeRequestTab = 'body';
     // Sub-tab within the Body tab. For GraphQL methods the Body tab
     // composes from three surfaces (Query / Variables form / Selection

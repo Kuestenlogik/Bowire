@@ -834,6 +834,24 @@ body {
     color: var(--bowire-accent-text);
 }
 
+/* Security drawer toggle (#111). Same baseline as the AI toggle,
+   distinct active-state tint so the two are visually
+   differentiable in the topbar when both are open. */
+.bowire-security-drawer-toggle {
+    position: relative;
+}
+.bowire-security-drawer-toggle.active {
+    background: var(--bowire-bg);
+    color: var(--bowire-text);
+    border-color: var(--bowire-text-tertiary);
+}
+/* Security drawer body — inherits .bowire-ai-drawer baseline since
+   it has identical chrome (column, header, content). Only added
+   here so future per-drawer tweaks have a hook. */
+.bowire-security-drawer {
+    /* All baseline styling inherited from .bowire-ai-drawer. */
+}
+
 .bowire-ai-drawer-badge {
     position: absolute;
     top: 2px;

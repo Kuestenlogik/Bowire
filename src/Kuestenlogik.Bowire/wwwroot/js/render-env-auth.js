@@ -76,6 +76,13 @@
             body.classList.add('bowire-with-ai-drawer');
             body.appendChild(renderAiDrawer());
         }
+        // Security drawer (#111). Independent of the AI drawer — when
+        // both are open they coexist (main pane gives up width to
+        // both). Rendered to the right of the AI drawer.
+        if (securityDrawerOpen) {
+            body.classList.add('bowire-with-security-drawer');
+            body.appendChild(renderSecurityDrawer());
+        }
 
         next.appendChild(body);
 
@@ -346,6 +353,49 @@
         var keepStart = Math.ceil((max - 1) * 0.5);
         var keepEnd = Math.floor((max - 1) * 0.5);
         return s.slice(0, keepStart) + '…' + s.slice(-keepEnd);
+    }
+
+    // ---- Security drawer (#111) ----
+    // Mirror of renderAiDrawer for the Security surface. Same chrome
+    // (header + close button + content area), different host call
+    // (window.__bowireAi.renderSecurityPanel) and different toggle
+    // wiring (securityDrawerOpen + bowire_security_drawer_open
+    // localStorage key).
+    function renderSecurityDrawer() {
+        var drawer = el('div', {
+            id: 'bowire-security-drawer',
+            className: 'bowire-ai-drawer bowire-security-drawer',
+            role: 'complementary',
+            'aria-label': 'Security tools'
+        });
+        var header = el('div', { className: 'bowire-ai-drawer-header' },
+            el('span', { className: 'bowire-ai-drawer-title', textContent: 'Security' }),
+            el('button', {
+                id: 'bowire-security-drawer-close',
+                className: 'bowire-ai-drawer-close',
+                title: 'Close Security drawer',
+                'aria-label': 'Close Security drawer',
+                onClick: function () {
+                    securityDrawerOpen = false;
+                    try { localStorage.setItem('bowire_security_drawer_open', '0'); } catch { /* ignore */ }
+                    render();
+                },
+                innerHTML: svgIcon('close')
+            })
+        );
+        drawer.appendChild(header);
+
+        var content = el('div', { className: 'bowire-ai-drawer-content' });
+        if (window.__bowireAi && typeof window.__bowireAi.renderSecurityPanel === 'function') {
+            content.appendChild(window.__bowireAi.renderSecurityPanel());
+        } else {
+            content.appendChild(el('p', {
+                className: 'bowire-ai-drawer-empty',
+                textContent: 'AI module not loaded — Security panel needs Kuestenlogik.Bowire.Ai.'
+            }));
+        }
+        drawer.appendChild(content);
+        return drawer;
     }
 
     // ---- Topbar (brand + command palette + env + theme) ----
@@ -664,12 +714,33 @@
             }
         },
             el('span', {
-                innerHTML: svgIcon('spark'),
+                innerHTML: svgIcon('bot'),
                 style: 'width:16px;height:16px;display:flex',
             }),
             aiHintCount > 0
                 ? el('span', { className: 'bowire-ai-drawer-badge', textContent: String(aiHintCount) })
                 : null
+        );
+
+        // Security drawer toggle (#111). Sits next to the AI drawer
+        // toggle. Shield icon signals "scanner / analysis tools" —
+        // distinct from the assistant's bot icon. Drawer hosts the
+        // Threat-Model surface that used to live inside the AI drawer.
+        var securityToggleBtn = el('button', {
+            id: 'bowire-security-drawer-toggle',
+            className: 'bowire-theme-toggle-btn bowire-security-drawer-toggle' + (securityDrawerOpen ? ' active' : ''),
+            title: securityDrawerOpen ? 'Close Security drawer' : 'Open Security drawer',
+            'aria-label': 'Toggle Security drawer',
+            onClick: function () {
+                securityDrawerOpen = !securityDrawerOpen;
+                try { localStorage.setItem('bowire_security_drawer_open', securityDrawerOpen ? '1' : '0'); } catch { /* ignore */ }
+                render();
+            }
+        },
+            el('span', {
+                innerHTML: svgIcon('shield'),
+                style: 'width:16px;height:16px;display:flex',
+            })
         );
 
         var right = el('div', { id: 'bowire-topbar-right', className: 'bowire-topbar-right' },
@@ -678,6 +749,7 @@
             watchBtn,
             renderThemeToggle(),
             aiToggleBtn,
+            securityToggleBtn,
             aboutBtn,
             settingsBtn
         );
