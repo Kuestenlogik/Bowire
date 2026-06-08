@@ -51,7 +51,8 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 - [#89](https://github.com/Kuestenlogik/Bowire/issues/89) **AI side-panel: ground the chat in workbench state + invoke via MCP tool calling** 
 - [#90](https://github.com/Kuestenlogik/Bowire/issues/90) **AI panel: move from response-pane tab to a right-side drawer** 
 - [#91](https://github.com/Kuestenlogik/Bowire/issues/91) **Frontend ProblemDetails migration — adopt renderProblem() everywhere body.error is read** 
+- [#92](https://github.com/Kuestenlogik/Bowire/issues/92) **Move Server-URL + Schema-Files management from sidebar to main pane** 
 
 ---
 
-*Generated 2026-06-07 from [Project #2](https://github.com/orgs/Kuestenlogik/projects/2).*
+*Generated 2026-06-08 from [Project #2](https://github.com/orgs/Kuestenlogik/projects/2).*
