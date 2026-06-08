@@ -10,6 +10,58 @@ and uses it as the GitHub Release body.
 
 ---
 
+## v1.9.0 — 2026-06-08 — AI for security
+
+### Highlights — Tier 4 of the security roadmap lands
+
+Bowire's product positioning has been "Burp Suite for the non-HTTP protocols, with schema-awareness, self-hosted, with AI-assisted threat modeling via MCP." v1.9 closes the AI-assisted half of that promise — every discovered API surface in the workbench can now be analyzed by an LLM that grounds itself in the actual schema + traffic, not generic web knowledge.
+
+- **AI threat-model (#59)** — rank every discovered endpoint by attack-surface risk. The model reads the API's input/output shapes, auth posture, and recent traffic, and returns a sorted list with reasoning per endpoint. Sets the scan order for everything that follows.
+- **AI Nuclei-template suggestion (#60)** — per endpoint, generate Nuclei templates targeting the identified risks. Bowire feeds the model the OpenAPI / proto / GraphQL schema; the model returns YAML that drops straight into the Nuclei runner.
+- **AI findings triage (#61)** — every Nuclei hit gets a real-vs-false-positive verdict + a concrete fix suggestion. Cuts triage time per finding by an order of magnitude on a noisy scan.
+- **AI schema-aware fuzz values (#62)** — boundary inputs per field, derived from the schema's types + constraints. Composes with the existing fuzz harness.
+- **AI Settings UI (#63)** — pick the provider (Ollama, LM Studio, BYOK cloud) + endpoint + model directly from the workbench's Settings dialog. No `appsettings.json` edits, no restart.
+
+The roadmap calls this **Tier 4**. Tiers 1–3 (record-as-attack, fuzz UI, MITM proxy) shipped through v1.4.x; Tier 5 (auto-exploit / proof-of-vulnerability) is its own framing and a different risk posture, deliberately out of scope here.
+
+### Also in this release
+
+The 94 commits since v1.8.0 carry a lot more than the marquee. Highlights of the supporting work:
+
+**Workbench UX**
+- **AI side panel moves into a right-side drawer (#90)** with a topbar toggle + `Ctrl/Cmd+Shift+A` shortcut. Persists across method/service switches. Was a peer of Response/Logs/Code in the response-pane tab strip, which forced you to choose between seeing the AI and seeing the response.
+- **AI chat is now grounded in the live workbench state (#89 Phase 1)**. Type `getpetbyid` and the model knows you have `pet.getPetById` discovered, what its input shape is, and what URL it lives at — answers reference real methods instead of generic web advice.
+- **Connection-state pill in the topbar (#93)**. Aggregate state for every configured discovery URL — green when all connected, amber when partial / connecting, red when any failed. Hover for a per-URL breakdown with service counts + the failure message.
+- **Body sub-tabs (#85)**. GraphQL Body now splits Query / Variables / Selection-set into a sub-tab strip; REST / gRPC / JSON-RPC get protocol-aware Form / JSON pair labels (gRPC: Message / JSON; JSON-RPC: Params / JSON; REST: Form / Body). Was a vertical stack of three surfaces; now one surface at a time.
+- **Filter services by discovery URL** in the sidebar's filter popup. Multi-URL setups can narrow to one origin.
+- **Theme toggle dropped its visible label** — tooltip still carries the state + next action; the topbar right cluster reads cleaner.
+
+**API conventions**
+- **RFC 7807 ProblemDetails (#88)** is the new shape for every API error response. `application/problem+json` with stable `type` URNs (`urn:bowire:ai:model-not-found`, `urn:bowire:discovery:no-match`, …), structured `detail`, and typed extensions per error class. Backward-compatible: every body still carries an `error` field set to the title so legacy readers degrade gracefully.
+- **AI 404 errors now actionable (#87)**. Missing model surfaces as "Model 'X' isn't available — pull it with `ollama pull X` or pick a different model in Settings → AI", with a `links: [{rel: configure}]` extension pointing back at the settings page.
+
+**Bug fixes**
+- **#65** — URL input in the sidebar was read-only despite `lockServerUrl=false`. `el()` helper coerced `undefined` attribute values to the literal string `"undefined"`, which the browser treats as truthy.
+- **#66** — Settings → Plugins tab was in a fetch/render infinite loop; the plugins-tab fetches now fire once per tab-open instead of once per render.
+- **#81** — Standalone CLI without `--url` was falling back to embedded UI mode because the heuristic checked `serverUrls.length` instead of trusting `config.embeddedMode`.
+- **#82** — Standalone CLI's discovery endpoint short-circuited to `[]` even when a runtime URL was passed via the sidebar.
+- **#83** — Plugin discovery probes ran sequentially (12 plugins × ~2-3 s ≈ 30 s) and the frontend timed out at 12 s. Now parallel with `Task.WhenAll` + a 8 s per-probe ceiling.
+- **#84** — Standalone discovery without a URL fell back to the workbench's own URL, which the JSON-RPC plugin matched with a phantom "Methods" stub.
+- **#86** — gRPC/HTTP transcoding toggle rendered on every REST method because the predicate didn't check `method.source === 'grpc'`.
+
+**Docs**
+- New [Topbar UI Guide page](https://bowire.io/docs/ui-guide/topbar.html) documenting the brand + command palette + connection pill + env selector + AI drawer.
+- Phase F (multi-tenant UI affordances), SCIM (Phase C), and the single-user → multi-tenant migration path now tracked as discrete issues for the Cruise-ship-out-of-preview path.
+
+### Upgrading
+
+- Pull the new tool: `dotnet tool update -g bowire`
+- Or update an existing host: `dotnet add package Kuestenlogik.Bowire --version 1.9.0` + the matching protocol-plugin versions.
+- Frontend / ProblemDetails: nothing to change. Legacy `body.error` reads still work; new `body.title` + `body.detail` + extensions are additive.
+- AI defaults: if you don't have `Kuestenlogik.Bowire.Ai` installed, every AI feature stays gracefully off and the Phase-1 hint engine continues working — no extra config required.
+
+---
+
 ## 1.3.0 — 2026-05-12
 
 ### Highlights
