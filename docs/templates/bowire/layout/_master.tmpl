@@ -39,6 +39,11 @@
           var el = document.documentElement;
           el.setAttribute('data-bs-theme', resolved);
           el.setAttribute('data-theme', mode);
+          // Reading mode (#119) — same key the marketing site uses
+          // so the choice persists across site ↔ docs ↔ api-docs.
+          if (localStorage.getItem('bowire_reading_mode') === '1') {
+            el.setAttribute('data-reading-mode', '1');
+          }
         })();
       </script>
 
@@ -300,6 +305,13 @@
           <a href="{{_rel}}../index.html" class="bowire-docs-nav-home" aria-label="Home" title="Home">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/><path d="M10 21v-6h4v6"/></svg>
           </a>
+          {{!--- Reading mode toggle (#119) — strips chrome + reflows
+                column to ~72 ch. Same key the marketing site uses
+                (bowire_reading_mode) so the choice persists across
+                site ↔ docs. -------------------------------------}}
+          <button class="bowire-docs-theme-toggle" id="bowire-docs-reading-mode-toggle" type="button" aria-label="Toggle reading mode" title="Reading mode (press R)">
+            <span class="reading-mode-glyph" aria-hidden="true">Aa</span>
+          </button>
           {{!--- Theme toggle — cycles light → dark → auto, same
                 localStorage('theme') key the marketing site uses so the
                 choice carries across site ↔ docs. Icon is injected by
@@ -458,6 +470,40 @@
           document.documentElement.style.setProperty('--theme-transition-x', x + 'px');
           document.documentElement.style.setProperty('--theme-transition-y', y + 'px');
           document.startViewTransition(commit);
+        });
+      })();
+    </script>
+
+    {{!--- Reading mode toggle (#119) — strips chrome + reflows the
+          content column. Same key the marketing site uses
+          (bowire_reading_mode) so the choice persists across site
+          ↔ docs ↔ api-docs. R toggles anywhere on the page except
+          while typing in an input. ----------------------------}}
+    <script>
+      (function () {
+        var key = 'bowire_reading_mode';
+        function isOn() { return document.documentElement.getAttribute('data-reading-mode') === '1'; }
+        function set(on) {
+          if (on) {
+            document.documentElement.setAttribute('data-reading-mode', '1');
+            try { localStorage.setItem(key, '1'); } catch { /* ignore */ }
+          } else {
+            document.documentElement.removeAttribute('data-reading-mode');
+            try { localStorage.setItem(key, '0'); } catch { /* ignore */ }
+          }
+        }
+        var btn = document.getElementById('bowire-docs-reading-mode-toggle');
+        if (btn) {
+          btn.addEventListener('click', function () { set(!isOn()); });
+        }
+        document.addEventListener('keydown', function (e) {
+          if (e.key !== 'r' && e.key !== 'R') return;
+          if (e.ctrlKey || e.metaKey || e.altKey) return;
+          var active = document.activeElement;
+          if (active && /^(INPUT|TEXTAREA|SELECT)$/i.test(active.tagName)) return;
+          if (active && active.isContentEditable) return;
+          e.preventDefault();
+          set(!isOn());
         });
       })();
     </script>
