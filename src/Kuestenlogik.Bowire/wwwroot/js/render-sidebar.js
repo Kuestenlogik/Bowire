@@ -1467,7 +1467,14 @@
                 // Stable id for morphdom keyed matching so the click
                 // handlers survive re-renders without re-binding.
                 var safeGroupId = 'bowire-svc-' + svc.name.replace(/[^a-zA-Z0-9_-]/g, '_');
-                const group = el('div', { id: safeGroupId, className: 'bowire-service-group' });
+                // #120 — stamp the protocol id on every service group so
+                // CSS can paint a per-protocol left-edge stripe + tint
+                // child affordances without per-protocol JS branching.
+                const group = el('div', {
+                    id: safeGroupId,
+                    className: 'bowire-service-group',
+                    'data-protocol': svc.source || 'default'
+                });
 
                 const headerEl = el('div', {
                     className: 'bowire-service-header',
