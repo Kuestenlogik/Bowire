@@ -21,6 +21,10 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ## Backlog
 
+### v1.9 — AI for security
+
+- [#108](https://github.com/Kuestenlogik/Bowire/issues/108) **AI MCP Phase 2 — read-only tools (list_services / describe_method / recent_history)** 
+
 ### v1.10 — gRPC Connect
 
 - [#33](https://github.com/Kuestenlogik/Bowire/issues/33) **Protocol plugins — Connect Phase 1+3 + OTLP** `area:plugin-sdk` `track:protocols`
