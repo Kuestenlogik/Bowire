@@ -1,0 +1,96 @@
+---
+layout: page
+title: Boats — every Bowire deployment shape
+description: Five shipping deployment modes for Bowire (Sailboat, Speedboat, Dazzle ship, Container ship, Cruise ship), plus the concept boats being designed for future versions (Submarine, Ferry, Tugboat, Lighthouse).
+---
+
+<section class="boats-page">
+  <header class="boats-page-header">
+    <h1 class="boats-page-title">Every shape Bowire can take</h1>
+    <p class="boats-page-lede">Bowire ships as a workbench for testing APIs, but the *shape* it takes depends on where you put it. Five modes ship today; a handful more are being designed.</p>
+  </header>
+
+  <section class="boats-section">
+    <header class="boats-section-header">
+      <h2 class="boats-section-title">Shipping today</h2>
+      <p class="boats-section-sub">Run any of these against any service, in any of Bowire's 12 protocols.</p>
+    </header>
+    <div class="boats-grid">
+
+      <article class="boats-card">
+        <h3 class="boats-card-name">Sailboat</h3>
+        <p class="boats-card-mode">Embedded endpoint</p>
+        <p class="boats-card-desc">No engine of its own &mdash; sails with the host's wind. Bowire embeds into your ASP.NET app's process. <code>app.MapBowire()</code> and every endpoint is browsable at <code>/bowire</code> next to your own routes.</p>
+      </article>
+
+      <article class="boats-card">
+        <h3 class="boats-card-name">Speedboat</h3>
+        <p class="boats-card-mode">Standalone CLI</p>
+        <p class="boats-card-desc">Installed as a global <code>dotnet tool</code> on your laptop. Point Bowire at any URL &mdash; staging gRPC in the morning, REST after lunch, WebSocket all afternoon.</p>
+      </article>
+
+      <article class="boats-card">
+        <h3 class="boats-card-name">Dazzle ship</h3>
+        <p class="boats-card-mode">Replay mock</p>
+        <p class="boats-card-desc">Looks like the real backend, isn't. Replay a recorded session as a standalone mock server. Pin responses, ship to CI, no live host required.</p>
+      </article>
+
+      <article class="boats-card">
+        <h3 class="boats-card-name">Container ship</h3>
+        <p class="boats-card-mode">Docker sidecar</p>
+        <p class="boats-card-desc">Bowire runs as its own container next to your services. A docker-compose service or a Kubernetes pod sidecar. Same workbench UI as the standalone CLI, every endpoint browsable from inside the cluster.</p>
+      </article>
+
+      <article class="boats-card boats-card-preview">
+        <span class="boats-card-ribbon">preview</span>
+        <h3 class="boats-card-name">Cruise ship</h3>
+        <p class="boats-card-mode">Multi-user host</p>
+        <p class="boats-card-desc">One Bowire, several authenticated passengers. Per-user state across sessions. Today: works behind your OIDC reverse proxy. <a href="https://github.com/Kuestenlogik/Bowire/issues/28" target="_blank" rel="noopener">Tracking the path to GA &rarr;</a></p>
+      </article>
+
+    </div>
+  </section>
+
+  <section class="boats-section">
+    <header class="boats-section-header">
+      <h2 class="boats-section-title">Designing now</h2>
+      <p class="boats-section-sub">Concept tier &mdash; the shape is sketched, the implementation is not. <a href="https://github.com/Kuestenlogik/Bowire/issues?q=is%3Aissue+is%3Aopen+label%3Akind%3Aconcept" target="_blank" rel="noopener">Follow every concept on GitHub &rarr;</a></p>
+    </header>
+    <div class="boats-grid">
+
+      <article class="boats-card boats-card-concept">
+        <span class="boats-card-ribbon">concept</span>
+        <h3 class="boats-card-name">Submarine</h3>
+        <p class="boats-card-mode">Transparent proxy</p>
+        <p class="boats-card-desc">Sits beneath the wire &mdash; sees every call your client makes to your server, in any of Bowire's 12 protocols, without changing either end. Watch, record, optionally modify in flight. <a href="https://github.com/Kuestenlogik/Bowire/issues/99" target="_blank" rel="noopener">Concept &rarr;</a></p>
+      </article>
+
+      <article class="boats-card boats-card-concept">
+        <span class="boats-card-ribbon">concept</span>
+        <h3 class="boats-card-name">Ferry</h3>
+        <p class="boats-card-mode">CI/CD runner</p>
+        <p class="boats-card-desc">Saved collection or recorded session &rarr; headless run with assertions &rarr; JUnit / JSON report. <code>bowire ferry run</code> in your pipeline, no workbench, just exit codes. Multi-protocol from day one. <a href="https://github.com/Kuestenlogik/Bowire/issues/100" target="_blank" rel="noopener">Concept &rarr;</a></p>
+      </article>
+
+      <article class="boats-card boats-card-concept">
+        <span class="boats-card-ribbon">concept</span>
+        <h3 class="boats-card-name">Tugboat</h3>
+        <p class="boats-card-mode">IDE extension</p>
+        <p class="boats-card-desc">Bowire in a VS Code side panel or a JetBrains tool window. Workspace-aware collections + envs live next to the code (git-friendly), same workbench you know. <a href="https://github.com/Kuestenlogik/Bowire/issues/101" target="_blank" rel="noopener">Concept &rarr;</a></p>
+      </article>
+
+      <article class="boats-card boats-card-concept">
+        <span class="boats-card-ribbon">concept</span>
+        <h3 class="boats-card-name">Lighthouse</h3>
+        <p class="boats-card-mode">Scheduled probes + alerts</p>
+        <p class="boats-card-desc">Long-running probe loop. Saved invocations + assertions + a schedule &rarr; outcome ledger + OTLP metrics + Slack / PagerDuty signals on pass &harr; fail. Multi-protocol Postman Monitors. <a href="https://github.com/Kuestenlogik/Bowire/issues/102" target="_blank" rel="noopener">Concept &rarr;</a></p>
+      </article>
+
+    </div>
+  </section>
+
+  <footer class="boats-page-footer">
+    <p>Got a shape we're missing? <a href="https://github.com/Kuestenlogik/Bowire/issues/new?labels=kind%3Aconcept&amp;title=Concept%20boat%3A%20" target="_blank" rel="noopener">Open an issue &rarr;</a></p>
+    <p><a href="{{ '/#launch' | relative_url }}">&larr; Back to the launch stepper</a></p>
+  </footer>
+</section>
