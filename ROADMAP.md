@@ -72,6 +72,9 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 - [#117](https://github.com/Kuestenlogik/Bowire/issues/117) **i18n — extract every UI string; ship DE + EN catalogues** 
 - [#120](https://github.com/Kuestenlogik/Bowire/issues/120) **Single accent + protocol as the only color** 
 - [#121](https://github.com/Kuestenlogik/Bowire/issues/121) **Context-aware empty states across every pane** 
+- [#122](https://github.com/Kuestenlogik/Bowire/issues/122) **Direction-color + protocol-glyph (two-axis encoding)** 
+- [#123](https://github.com/Kuestenlogik/Bowire/issues/123) **Workbench tabs that carry protocol-typed state** 
+- [#124](https://github.com/Kuestenlogik/Bowire/issues/124) **Cross-protocol omnibox (Cmd/Ctrl+K)** 
 
 ---
 
