@@ -568,11 +568,14 @@ body {
     border-left: 1px solid var(--bowire-border-subtle);
 }
 .bowire-topbar-right > .bowire-topbar-overflow-btn {
-    margin-left: 4px;
-    padding-left: 12px;
-    border-left: 1px solid var(--bowire-border-subtle);
-    border-radius: 0;
-    padding-right: 4px;
+    /* Match the symmetric padding of the other theme-toggle-btn
+       buttons in the right cluster (Search magnifier, Assistant
+       toggle). Earlier rule was asymmetric (12 left / 4 right)
+       and shaved the right side, making the ⋮ button visibly
+       narrower than its peers. */
+    padding-left: 10px;
+    padding-right: 10px;
+    border-radius: var(--bowire-radius-sm);
 }
 .bowire-overflow-glyph {
     font-size: 18px;
