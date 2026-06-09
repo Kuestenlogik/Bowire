@@ -65,15 +65,13 @@
         // workbench body, before the mode sidebar.
         body.appendChild(renderActivityRail());
 
-        // #133 Phase 2 — modes without a sidebar skip the sidebar +
-        // splitter entirely so the main pane spans edge to edge.
-        // Home is the landing launchpad; Benchmarks + Parallel are
-        // preview-stage landing pages. The mode catalogue
-        // eventually owns this declaration (#137); for now it's a
-        // per-mode allow-list.
-        var modeHasSidebar = railMode !== 'home'
-                          && railMode !== 'benchmarks'
-                          && railMode !== 'parallel';
+        // #137 — sidebar visibility driven by the rail-mode
+        // catalogue. Modes that declare sidebar.kind === 'none' skip
+        // the sidebar + splitter entirely so the main pane spans
+        // edge to edge. Home / Benchmarks / Parallel today; new
+        // modes only need to set sidebar: { kind: 'none' } to
+        // opt out.
+        var modeHasSidebar = currentRailSidebarSpec().kind !== 'none';
         if (modeHasSidebar) {
             body.appendChild(renderSidebar());
             if (!isMobile()) {
