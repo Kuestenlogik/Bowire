@@ -8406,6 +8406,72 @@ details[open] > .bowire-json-tree-summary::before {
     color: var(--bowire-error);
 }
 
+/* #125 Phase 2 — vars-autocomplete dropdown. Floating popover
+   below the active text-input/textarea, opens on '{{' typing,
+   filters as the operator keeps typing. */
+.bowire-vars-ac-popover {
+    position: fixed;
+    z-index: 250;
+    display: none;
+    min-width: 260px;
+    max-width: 420px;
+    max-height: 320px;
+    overflow-y: auto;
+    background: var(--bowire-bg-elevated);
+    border: 1px solid var(--bowire-border);
+    border-radius: var(--bowire-radius-md);
+    box-shadow: var(--bowire-shadow-md);
+    padding: 4px;
+    font-size: 12px;
+}
+.bowire-vars-ac-row {
+    display: grid;
+    grid-template-columns: auto auto 1fr;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 8px;
+    border-radius: var(--bowire-radius-sm);
+    cursor: pointer;
+    color: var(--bowire-text);
+}
+.bowire-vars-ac-row.selected {
+    background: var(--bowire-accent-subtle);
+    color: var(--bowire-accent-text);
+}
+.bowire-vars-ac-row-kind {
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 1px 6px;
+    border-radius: var(--bowire-radius-pill);
+    background: var(--bowire-surface);
+    color: var(--bowire-text-secondary);
+}
+/* Source-color coding per the issue body — same chroma as the
+   chip-rendering Phase 2.5 work will use, so the dropdown badges
+   already cue the operator to the source category. */
+.bowire-vars-ac-row-env .bowire-vars-ac-row-kind { background: rgba(99, 102, 241, 0.18); color: #818cf8; }
+.bowire-vars-ac-row-prev .bowire-vars-ac-row-kind,
+.bowire-vars-ac-row-step .bowire-vars-ac-row-kind { background: rgba(56, 189, 248, 0.18); color: #38bdf8; }
+.bowire-vars-ac-row-runtime .bowire-vars-ac-row-kind { background: rgba(251, 191, 36, 0.18); color: #fbbf24; }
+.bowire-vars-ac-row-secret .bowire-vars-ac-row-kind { background: rgba(239, 68, 68, 0.18); color: #ef4444; }
+.bowire-vars-ac-row-ai .bowire-vars-ac-row-kind { background: rgba(168, 85, 247, 0.18); color: #a855f7; }
+.bowire-vars-ac-row-source .bowire-vars-ac-row-kind { background: var(--bowire-accent-subtle); color: var(--bowire-accent); }
+.bowire-vars-ac-row-label {
+    font-family: var(--bowire-font-mono);
+    font-size: 12px;
+}
+.bowire-vars-ac-row-desc {
+    color: var(--bowire-text-tertiary);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    overflow: hidden;
+}
+.bowire-vars-ac-row.selected .bowire-vars-ac-row-desc {
+    color: var(--bowire-accent-text);
+    opacity: 0.85;
+}
+
 .bowire-env-list-item-name {
     flex: 1;
     overflow: hidden;

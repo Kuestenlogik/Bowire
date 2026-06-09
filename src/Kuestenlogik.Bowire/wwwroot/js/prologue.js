@@ -322,6 +322,11 @@
     let recordingsTrashOpen = false;
     let collectionsTrashOpen = false;
 
+    // #125 Phase 2 — vars-autocomplete dropdown state. Single
+    // floating popover; only one active across the whole document
+    // because at most one input/textarea has the caret.
+    let varsACState = null;   // { target, anchorPos, query, suggestions, selectedIdx } | null
+
     // #143 Phase 3 — multi-select state per list. Session-only so a
     // refresh clears it. Anchor tracks the last single-click for
     // shift-range expansion.
