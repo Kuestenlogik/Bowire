@@ -297,6 +297,41 @@
     // #152 — selected URL in the Sources rail-mode detail view.
     let sourcesSelectedUrl = null;
 
+    // #152 v2 — per-URL header bag. Keys are URLs (the full string
+    // the operator typed, including the 'rest@' / 'graphql@' prefix
+    // if present); values are { header: value } maps. Applied to
+    // every request invoked against the matching URL by api.js's
+    // request-header builder.
+    //
+    // Storage key wsKey-wrapped so each workspace owns its own set
+    // — Auth tokens for 'staging' shouldn't bleed into 'production'.
+    let urlHeaders = {};
+    try {
+        var rawUrlHeaders = localStorage.getItem(wsKey('bowire_url_headers'));
+        if (rawUrlHeaders) urlHeaders = JSON.parse(rawUrlHeaders) || {};
+    } catch { /* corrupt; reset */ }
+    function persistUrlHeaders() {
+        try { localStorage.setItem(wsKey('bowire_url_headers'), JSON.stringify(urlHeaders)); markSaved('URL headers'); }
+        catch (e) { markSaveFailed('URL headers', e); }
+    }
+    function getUrlHeaders(url) {
+        if (!url) return {};
+        return Object.assign({}, urlHeaders[url] || {});
+    }
+    function setUrlHeader(url, key, value) {
+        if (!url || !key) return;
+        if (!urlHeaders[url]) urlHeaders[url] = {};
+        urlHeaders[url][key] = value;
+        persistUrlHeaders();
+    }
+    function deleteUrlHeader(url, key) {
+        if (!url || !key) return;
+        if (!urlHeaders[url]) return;
+        delete urlHeaders[url][key];
+        if (Object.keys(urlHeaders[url]).length === 0) delete urlHeaders[url];
+        persistUrlHeaders();
+    }
+
     // #143 Phase 2 — Trash-store per list. localStorage-persisted
     // so a missed Undo toast isn't a permanent loss. Each entry
     // carries the original item + a deletedAt timestamp. The

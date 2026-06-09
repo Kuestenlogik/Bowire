@@ -1044,12 +1044,76 @@
                 textContent: 'Drop-zone + Replace / Remove actions land in #152 follow-up.'
             })
         ));
+        // #152 v2 — per-URL headers editor. Applied to every
+        // request invoked against this URL by the api.js request-
+        // header builder.
+        var headers = (typeof getUrlHeaders === 'function') ? getUrlHeaders(u) : {};
+        var headerRows = el('div', { className: 'bowire-url-headers-list' });
+        var headerKeys = Object.keys(headers).sort();
+        headerKeys.forEach(function (k) {
+            headerRows.appendChild(el('div', { className: 'bowire-url-header-row' },
+                el('input', {
+                    type: 'text',
+                    className: 'bowire-url-header-key',
+                    value: k,
+                    placeholder: 'Header name',
+                    onChange: function (e) {
+                        var newKey = String(e.target.value || '').trim();
+                        if (!newKey || newKey === k) return;
+                        var v = headers[k];
+                        deleteUrlHeader(u, k);
+                        setUrlHeader(u, newKey, v);
+                        render();
+                    }
+                }),
+                el('input', {
+                    type: 'text',
+                    className: 'bowire-url-header-value',
+                    value: headers[k],
+                    placeholder: 'Value (supports {{vars}})',
+                    onChange: function (e) {
+                        setUrlHeader(u, k, String(e.target.value || ''));
+                    }
+                }),
+                el('button', {
+                    type: 'button',
+                    className: 'bowire-list-row-delete',
+                    title: 'Remove header',
+                    innerHTML: svgIcon('trash'),
+                    style: 'opacity:1;',
+                    onClick: function () {
+                        deleteUrlHeader(u, k);
+                        render();
+                    }
+                })
+            ));
+        });
+        if (headerKeys.length === 0) {
+            headerRows.appendChild(el('p', {
+                className: 'bowire-sources-hint',
+                style: 'color:var(--bowire-text-tertiary); font-size:12px; margin:0;',
+                textContent: 'No headers configured. Add one to send it with every request to this URL.'
+            }));
+        }
         main.appendChild(el('div', { className: 'bowire-ws-detail-section' },
             el('div', { className: 'bowire-ws-detail-section-label', textContent: 'Per-URL headers' }),
-            el('p', {
-                className: 'bowire-sources-hint',
-                style: 'color:var(--bowire-text-tertiary); font-size:12px;',
-                textContent: 'Composes with #95 Header Library. Editor lands in the follow-up.'
+            headerRows,
+            el('button', {
+                className: 'bowire-settings-action-btn',
+                style: 'align-self:flex-start; margin-top:4px;',
+                textContent: '+ Add header',
+                onClick: function () {
+                    bowirePrompt('Header name', {
+                        title: 'Add header',
+                        placeholder: 'Authorization',
+                        confirmText: 'Add',
+                    }).then(function (name) {
+                        if (!name) return;
+                        if (headers[name] !== undefined) { toast('Header already exists', 'info'); return; }
+                        setUrlHeader(u, name, '');
+                        render();
+                    });
+                }
             })
         ));
 
