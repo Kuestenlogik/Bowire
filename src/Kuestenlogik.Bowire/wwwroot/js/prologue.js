@@ -289,6 +289,14 @@
     // only; not persisted to localStorage so a reload starts with the
     // menu closed. Closes on Esc / outside click via init.js handlers.
     let topbarOverflowOpen = false;
+
+    // #133 — activity-rail mode. Persisted per-workspace once #116
+    // lands; for now scoped globally to localStorage. Phase 1 only
+    // wires the Discover mode to the existing sidebar content; the
+    // rest of the icons render with a "coming soon" tooltip until
+    // their dedicated sidebar templates land in Phase 2-4.
+    let railMode = 'discover';
+    try { railMode = localStorage.getItem('bowire_rail_mode') || 'discover'; } catch { /* ignore */ }
     let activeRequestTab = 'body';
     // Sub-tab within the Body tab. For GraphQL methods the Body tab
     // composes from three surfaces (Query / Variables form / Selection
