@@ -8526,6 +8526,72 @@ details[open] > .bowire-json-tree-summary::before {
 .bowire-vars-chip-secret  { background: rgba(239, 68, 68, 0.22);  color: #ef4444; }
 .bowire-vars-chip-ai      { background: rgba(168, 85, 247, 0.22); color: #a855f7; }
 
+/* #125 Phase 2 v3 — invisible mirror div used to compute the
+   caret pixel coordinate. Lives off-screen; never visible. */
+.bowire-vars-ac-mirror {
+    position: absolute !important;
+    top: -9999px !important;
+    left: 0 !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+    overflow: hidden !important;
+}
+
+/* Resolved-value preview popover — opens above the caret when
+   the operator's caret sits inside a closed {{ref}}. Distinct
+   from the autocomplete dropdown which opens BELOW the caret
+   when the operator is typing a new ref. */
+.bowire-vars-ref-preview {
+    position: fixed;
+    z-index: 240;
+    display: none;
+    max-width: 480px;
+    background: var(--bowire-bg-elevated);
+    border: 1px solid var(--bowire-border);
+    border-radius: var(--bowire-radius-md);
+    box-shadow: var(--bowire-shadow-md);
+    padding: 6px 10px;
+    font-size: 12px;
+    display: none;
+    align-items: center;
+    gap: 8px;
+    color: var(--bowire-text);
+}
+.bowire-vars-ref-preview[style*="display: block"] { display: inline-flex; }
+.bowire-vars-ref-preview-kind {
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 1px 6px;
+    border-radius: var(--bowire-radius-pill);
+}
+.bowire-vars-ref-preview-kind-env     { background: rgba(99, 102, 241, 0.22); color: #818cf8; }
+.bowire-vars-ref-preview-kind-prev    { background: rgba(56, 189, 248, 0.22); color: #38bdf8; }
+.bowire-vars-ref-preview-kind-step    { background: rgba(56, 189, 248, 0.22); color: #38bdf8; }
+.bowire-vars-ref-preview-kind-runtime { background: rgba(251, 191, 36, 0.22); color: #fbbf24; }
+.bowire-vars-ref-preview-kind-secret  { background: rgba(239, 68, 68, 0.22);  color: #ef4444; }
+.bowire-vars-ref-preview-kind-ai      { background: rgba(168, 85, 247, 0.22); color: #a855f7; }
+.bowire-vars-ref-preview-ref {
+    font-family: var(--bowire-font-mono);
+    color: var(--bowire-text-secondary);
+}
+.bowire-vars-ref-preview-arrow {
+    color: var(--bowire-text-tertiary);
+}
+.bowire-vars-ref-preview-value {
+    font-family: var(--bowire-font-mono);
+    color: var(--bowire-success);
+    word-break: break-all;
+    max-width: 280px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.bowire-vars-ref-preview-error {
+    color: var(--bowire-warning);
+    font-style: italic;
+}
+
 .bowire-env-list-item-name {
     flex: 1;
     overflow: hidden;
