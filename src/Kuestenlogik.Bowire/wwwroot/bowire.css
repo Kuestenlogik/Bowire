@@ -91,13 +91,16 @@
     --bowire-font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     --bowire-font-mono: "JetBrains Mono", "Fira Code", "Cascadia Code", "Consolas", monospace;
 
-    /* Radii — #142 sharper-style sweep. Reduced from 10/14/20 to
-       4/6/10 so the workbench reads as IDE-shaped rather than
-       consumer-app-shaped. Pill (full-radius) stays for true pill
-       affordances (badges, status dots, connection chip). */
-    --bowire-radius-sm: 4px;
-    --bowire-radius-md: 6px;
-    --bowire-radius-lg: 10px;
+    /* Radii — #142 sharper-style sweep. Tightened to 2/4/6 after
+       the Hoppscotch source check (their Tailwind `rounded` = 4 px
+       across nearly every surface). Bowire keeps a 3-step scale
+       for slight tuning per component, but the spread is narrow
+       so the whole app reads near-square. Pill (full-radius)
+       stays for true pill affordances (badges, status dots,
+       connection chip). */
+    --bowire-radius-sm: 2px;
+    --bowire-radius-md: 4px;
+    --bowire-radius-lg: 6px;
     --bowire-radius-pill: 999px;
     /* Fallback alias: any `var(--bowire-radius)` usage without a suffix
        used to resolve to 0 (undefined var → initial value), making the
