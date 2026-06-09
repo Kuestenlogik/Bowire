@@ -93,6 +93,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 - [#145](https://github.com/Kuestenlogik/Bowire/issues/145) **Deprecate ${name} in favour of {{name}} (multi-phase migration)** 
 - [#146](https://github.com/Kuestenlogik/Bowire/issues/146) **Workspace-side environment inclusion list (shared envs + per-workspace selection)** 
 - [#147](https://github.com/Kuestenlogik/Bowire/issues/147) **Git-backed workspace storage — composes with #144 storage modes + #58** 
+- [#148](https://github.com/Kuestenlogik/Bowire/issues/148) **Per-entity file storage format for git-backed workspaces (envs / collections / scripts)** 
 
 ---
 
