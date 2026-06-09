@@ -697,43 +697,33 @@ body {
     width: 48px;
     display: flex;
     flex-direction: column;
-    align-items: center;
-    gap: 4px;
-    padding: 8px 0;
+    /* Flush against the edges — Hoppscotch-style. No outer padding,
+       no inner gap; buttons stretch to the full 48 px width and
+       stack edge-to-edge so hover/active fills run all the way to
+       the screen edge. */
+    align-items: stretch;
+    gap: 0;
+    padding: 0;
     background: var(--bowire-sidebar-bg);
     border-right: 1px solid var(--bowire-border-subtle);
     overflow: hidden;
 }
-.bowire-rail-brand {
-    width: 32px;
-    height: 32px;
-    margin-bottom: 8px;
-    cursor: pointer;
-    color: var(--bowire-text);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: var(--bowire-radius-sm);
-    transition: background var(--bowire-transition);
-}
-.bowire-rail-brand:hover { background: var(--bowire-surface-hover); }
-.bowire-rail-brand svg { width: 22px; height: 22px; }
 .bowire-rail-divider {
-    width: 24px;
+    width: 100%;
     height: 1px;
-    margin: 4px 0;
+    margin: 0;
     background: var(--bowire-border-subtle);
 }
 .bowire-rail-btn {
     position: relative;
-    width: 36px;
-    height: 36px;
+    width: 100%;
+    height: 44px;
     display: flex;
     align-items: center;
     justify-content: center;
     background: transparent;
     border: 0;
-    border-radius: var(--bowire-radius-sm);
+    border-radius: 0;
     color: var(--bowire-text-tertiary);
     cursor: pointer;
     transition: background var(--bowire-transition), color var(--bowire-transition);
@@ -750,12 +740,11 @@ body {
 .bowire-rail-btn.active::before {
     content: '';
     position: absolute;
-    left: -6px;
-    top: 6px;
-    bottom: 6px;
-    width: 3px;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 2px;
     background: var(--bowire-accent);
-    border-radius: 0 2px 2px 0;
 }
 .bowire-rail-btn-stub { opacity: 0.55; }
 .bowire-rail-btn-stub:hover { opacity: 0.85; }
@@ -766,15 +755,7 @@ body {
    separated from the mode list by a divider. */
 .bowire-rail-toggle-sidebar {
     margin-top: auto;
-}
-.bowire-rail-toggle-sidebar::before {
-    content: '';
-    position: absolute;
-    top: -8px;
-    left: 6px;
-    right: 6px;
-    height: 1px;
-    background: var(--bowire-border-subtle);
+    border-top: 1px solid var(--bowire-border-subtle);
 }
 
 /* #138 — Statusbar pinned at the bottom of the workbench. IDE-
