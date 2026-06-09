@@ -560,7 +560,7 @@
             id: 'bowire-command-palette-input',
             className: 'bowire-command-palette-input',
             type: 'text',
-            placeholder: 'Search methods, filters, protocols, environments \u2026',
+            placeholder: 'Search methods, recordings, mocks, modes\u2026 (Ctrl/Cmd+K)',
             value: searchQuery,
             autocomplete: 'off',
             spellcheck: 'false',
@@ -1094,6 +1094,100 @@
                 render();
             }
         });
+
+        // #124 — Recordings (by name). Up to 5 matches.
+        if (typeof recordingsList !== 'undefined' && Array.isArray(recordingsList)) {
+            var recMatches = 0;
+            for (var ri = 0; ri < recordingsList.length && recMatches < 5; ri++) {
+                (function (rec) {
+                    if ((rec.name || '').toLowerCase().indexOf(qLower) === -1) return;
+                    recMatches++;
+                    var steps = (rec.steps ? rec.steps.length : 0);
+                    out.push({
+                        group: 'Recordings',
+                        label: rec.name,
+                        sublabel: steps + ' step' + (steps === 1 ? '' : 's'),
+                        icon: svgIcon('recording'),
+                        onSelect: function () {
+                            recordingManagerSelectedId = rec.id;
+                            railMode = 'recordings';
+                            try { localStorage.setItem('bowire_rail_mode', 'recordings'); } catch { /* ignore */ }
+                            searchSuggestionsOpen = false;
+                            searchQuery = '';
+                            render();
+                        }
+                    });
+                })(recordingsList[ri]);
+            }
+        }
+
+        // #124 — Active mocks (by recording name + port).
+        if (typeof mocksList !== 'undefined' && Array.isArray(mocksList)) {
+            for (var moi = 0; moi < mocksList.length; moi++) {
+                (function (mk) {
+                    var hay = (mk.recordingName || '') + ' ' + String(mk.port);
+                    if (hay.toLowerCase().indexOf(qLower) === -1) return;
+                    out.push({
+                        group: 'Active mocks',
+                        label: mk.recordingName || ('mock-' + mk.port),
+                        sublabel: 'port ' + mk.port,
+                        icon: svgIcon('server'),
+                        onSelect: function () {
+                            mockSelectedId = mk.mockId;
+                            railMode = 'mocks';
+                            try { localStorage.setItem('bowire_rail_mode', 'mocks'); } catch { /* ignore */ }
+                            searchSuggestionsOpen = false;
+                            searchQuery = '';
+                            render();
+                        }
+                    });
+                })(mocksList[moi]);
+            }
+        }
+
+        // #124 — Rail-mode jumps. Lets the operator type 'home',
+        // 'security', 'bench' etc. to navigate without clicking the
+        // rail. Substring match on mode label + id.
+        var railJumps = [
+            { id: 'home',         label: 'Home',              icon: 'house' },
+            { id: 'discover',     label: 'Discover',          icon: 'compass' },
+            { id: 'collections',  label: 'Collections',       icon: 'list' },
+            { id: 'environments', label: 'Environments',      icon: 'globe' },
+            { id: 'recordings',   label: 'Recordings',        icon: 'recording' },
+            { id: 'mocks',        label: 'Mocks',             icon: 'server' },
+            { id: 'flows',        label: 'Flows',             icon: 'flow' },
+            { id: 'proxy',        label: 'Proxy / MITM',      icon: 'disconnect' },
+            { id: 'benchmarks',   label: 'Benchmarks',        icon: 'chart' },
+            { id: 'parallel',     label: 'Parallel sessions', icon: 'lightning' },
+            { id: 'security',     label: 'Security',          icon: 'shield' },
+        ];
+        for (var rj = 0; rj < railJumps.length; rj++) {
+            (function (mode) {
+                if (mode.label.toLowerCase().indexOf(qLower) === -1
+                    && mode.id.toLowerCase().indexOf(qLower) === -1) return;
+                if (railMode === mode.id) return; // already there
+                out.push({
+                    group: 'Navigate',
+                    label: 'Go to ' + mode.label,
+                    sublabel: 'Rail mode',
+                    icon: svgIcon(mode.icon),
+                    onSelect: function () {
+                        railMode = mode.id;
+                        try { localStorage.setItem('bowire_rail_mode', mode.id); } catch { /* ignore */ }
+                        // Mirror the rail-button click handler's
+                        // sidebarView sync so the legacy main-pane
+                        // routing picks up the right editor.
+                        if (mode.id === 'environments') sidebarView = 'environments';
+                        else if (mode.id === 'flows') sidebarView = 'flows';
+                        else if (mode.id === 'proxy') sidebarView = 'proxy';
+                        else if (mode.id === 'discover') sidebarView = 'services';
+                        searchSuggestionsOpen = false;
+                        searchQuery = '';
+                        render();
+                    }
+                });
+            })(railJumps[rj]);
+        }
 
         // --- Protocol filter matches ---
         for (var pi = 0; pi < protocols.length; pi++) {

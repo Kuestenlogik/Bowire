@@ -34,6 +34,27 @@
                 return;
             }
 
+            // #124 Cmd/Ctrl+K — open the command palette omnibox.
+            // Same input as the topbar palette; this shortcut focuses
+            // it from anywhere and pops the suggestion dropdown so
+            // operators can search methods, recordings, mocks, and
+            // rail-mode jumps without reaching for the mouse.
+            if ((e.ctrlKey || e.metaKey) && !e.shiftKey && !e.altKey
+                && (e.key === 'k' || e.key === 'K')) {
+                e.preventDefault();
+                searchSuggestionsOpen = true;
+                searchSuggestionIndex = 0;
+                render();
+                requestAnimationFrame(function () {
+                    var input = document.getElementById('bowire-command-palette-input');
+                    if (input) {
+                        input.focus();
+                        input.select();
+                    }
+                });
+                return;
+            }
+
             // Ctrl/Cmd+Shift+A — toggle the AI drawer (#90). Shift is in
             // the chord deliberately: Ctrl+A is "select all" inside text
             // inputs and we don't want to steal it.
