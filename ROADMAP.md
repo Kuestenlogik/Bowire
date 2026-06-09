@@ -90,6 +90,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 - [#137](https://github.com/Kuestenlogik/Bowire/issues/137) **Sidebar declaration per rail mode + stable toggle location** 
 - [#138](https://github.com/Kuestenlogik/Bowire/issues/138) **Statusbar at bottom — move connection pill + env + watch out of topbar** 
 - [#139](https://github.com/Kuestenlogik/Bowire/issues/139) **Per-mode favorites filter (drop the standalone Favorites tab)** 
+- [#140](https://github.com/Kuestenlogik/Bowire/issues/140) **Per-mode 'Saved Configs' / Presets (distinct from cross-workflow favorites)** 
 
 ---
 
