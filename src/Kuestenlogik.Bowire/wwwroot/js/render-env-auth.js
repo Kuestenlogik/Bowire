@@ -462,7 +462,7 @@
         }, el('span', {
             innerHTML: svgIcon(splitMode === 'vertical' ? 'splitVertical' : 'splitHorizontal'),
             style: 'width:14px;height:14px;display:flex'
-        }));
+        })));
         if (typeof renderWatchButton === 'function') {
             var wb = renderWatchButton();
             if (wb) right.appendChild(wb);
