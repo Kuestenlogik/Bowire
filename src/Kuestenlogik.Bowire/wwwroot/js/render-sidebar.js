@@ -689,7 +689,7 @@
                         : null
                 );
                 list.appendChild(item);
-            })(envs[i]);
+            })(sourceList[i]);
         }
 
         // The variable editor lives in the main pane (renderMain)
