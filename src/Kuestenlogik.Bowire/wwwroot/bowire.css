@@ -756,6 +756,49 @@ body {
 .bowire-rail-btn-stub { opacity: 0.55; }
 .bowire-rail-btn-stub:hover { opacity: 0.85; }
 
+/* #92 — Sources management view in the main pane. */
+.bowire-conn-pill-clickable {
+    cursor: pointer;
+    transition: background var(--bowire-transition);
+}
+.bowire-conn-pill-clickable:hover {
+    background: var(--bowire-surface-hover);
+}
+.bowire-main-sources {
+    overflow: auto;
+}
+.bowire-sources-wrap {
+    max-width: 800px;
+    margin: 24px auto;
+    padding: 0 24px;
+}
+.bowire-sources-title {
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: var(--bowire-heading-tracking);
+    margin: 0 0 8px;
+    color: var(--bowire-text);
+}
+.bowire-sources-subtitle {
+    margin: 0 0 24px;
+    font-size: 13px;
+    color: var(--bowire-text-secondary);
+}
+.bowire-sources-section {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--bowire-text-tertiary);
+    margin: 16px 0 8px;
+    font-weight: 600;
+}
+.bowire-sources-hint {
+    margin: 24px 0 0;
+    font-size: 11px;
+    color: var(--bowire-text-tertiary);
+    font-style: italic;
+}
+
 .bowire-sidebar {
     width: var(--bowire-sidebar-width);
     min-width: var(--bowire-sidebar-width);

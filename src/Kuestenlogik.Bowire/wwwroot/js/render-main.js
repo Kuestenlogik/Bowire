@@ -724,6 +724,37 @@
             return main;
         }
 
+        // #92 — Sources management view. When the operator clicks
+        // the topbar connection pill (or otherwise sets sidebarView
+        // to 'sources'), the main pane swaps to the full-width URL
+        // + schema editor. Reuses the existing renderUrlBarRow
+        // helper at unlocked / editable width; lockServerUrl still
+        // forces readonly.
+        if (sidebarView === 'sources') {
+            var srcMain = el('div', { id: 'bowire-main-sources', className: 'bowire-main bowire-main-sources' });
+            var srcWrap = el('div', { className: 'bowire-sources-wrap' });
+            srcWrap.appendChild(el('h2', { className: 'bowire-sources-title', textContent: 'Sources' }));
+            srcWrap.appendChild(el('p', {
+                className: 'bowire-sources-subtitle',
+                textContent: config.lockServerUrl
+                    ? 'URLs configured by the host — read-only.'
+                    : 'Discovery URLs and schema files. Drop a schema below to import; type a URL to add it.'
+            }));
+            srcWrap.appendChild(el('h3', { className: 'bowire-sources-section', textContent: 'Discovery URLs' }));
+            // Reuse the sidebar's URL bar at full main-pane width.
+            // The renderUrlBarRow already understands the locked vs.
+            // editable cases.
+            srcWrap.appendChild(renderUrlBarRow(!!config.lockServerUrl));
+            // Future: add schema-file drop zone, catalogue source
+            // chip (#136), per-URL origin badge.
+            srcWrap.appendChild(el('p', {
+                className: 'bowire-sources-hint',
+                textContent: 'Schema-file management and catalogue providers (#92, #136) land in subsequent commits.'
+            }));
+            srcMain.appendChild(srcWrap);
+            return srcMain;
+        }
+
         // ID encodes the current view mode so morphdom fully replaces
         // the main pane when switching between environments editor,
         // freeform builder, landing page, and the normal request/response

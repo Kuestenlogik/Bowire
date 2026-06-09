@@ -274,8 +274,22 @@
             }
         }
 
-        // ---- Pill button (the hover anchor) ----
-        var pill = el('div', { className: 'bowire-conn-pill bowire-conn-pill-' + aggregate });
+        // ---- Pill button (the hover anchor + click trigger) ----
+        // #92 — click opens the full URL/Schema management view in
+        // the main pane (sidebarView='sources'). Hover still shows
+        // the per-URL detail popover via CSS.
+        var pill = el('div', {
+            className: 'bowire-conn-pill bowire-conn-pill-' + aggregate + ' bowire-conn-pill-clickable',
+            title: 'Click to manage URLs and schemas',
+            onClick: function () {
+                if (sidebarView === 'sources') {
+                    sidebarView = 'services';
+                } else {
+                    sidebarView = 'sources';
+                }
+                render();
+            }
+        });
         var dot = el('span', { className: 'bowire-conn-pill-dot' });
         pill.appendChild(dot);
         pill.appendChild(el('span', { className: 'bowire-conn-pill-text', textContent: summary }));
