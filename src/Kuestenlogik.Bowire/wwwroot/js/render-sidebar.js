@@ -817,6 +817,20 @@
         return sidebar;
     }
 
+    // #133 Phase 2 — Environments rail mode sidebar. Reuses the
+    // existing renderEnvironmentsListInto helper but wraps it in a
+    // sidebar-mode container so the legacy Discover segmented-
+    // control + protocol filter chrome doesn't render on top.
+    function renderEnvironmentsSidebar() {
+        var sidebar = el('div', { id: 'bowire-sidebar', className: 'bowire-sidebar bowire-sidebar-mode' });
+        var list = el('div', { className: 'bowire-env-sidebar-list' });
+        if (typeof renderEnvironmentsListInto === 'function') {
+            renderEnvironmentsListInto(list);
+        }
+        sidebar.appendChild(list);
+        return sidebar;
+    }
+
     // #133 Phase 2 — Collections rail mode sidebar. Lists every
     // saved collection as a clickable row with the standard
     // active-state. Header carries a 'New collection' button and
@@ -979,6 +993,9 @@
         // falls through to the legacy Discover sidebar.
         if (railMode === 'collections') {
             return renderCollectionsSidebar();
+        }
+        if (railMode === 'environments') {
+            return renderEnvironmentsSidebar();
         }
         if (railMode === 'recordings') {
             return renderRecordingsSidebar();
