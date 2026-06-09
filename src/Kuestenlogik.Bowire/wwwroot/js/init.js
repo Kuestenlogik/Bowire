@@ -79,6 +79,68 @@
                 return;
             }
 
+            // #143 Phase 3 — Del / Backspace on a list sidebar with
+            // a non-empty selection moves the selection to trash.
+            // Falls back to the row that the rail-mode list has
+            // visually selected (recordingManagerSelectedId etc.)
+            // when the multi-select set is empty. Skip when typing
+            // in a text field so the chord doesn't intercept real
+            // editing.
+            var inTextForDel = document.activeElement
+                && (/^(INPUT|TEXTAREA|SELECT)$/i.test(document.activeElement.tagName)
+                    || document.activeElement.isContentEditable);
+            if (!inTextForDel && (e.key === 'Delete' || e.key === 'Backspace')) {
+                if (railMode === 'recordings' && typeof recordingsSelected !== 'undefined') {
+                    var rIds = recordingsSelected.size > 0
+                        ? Array.from(recordingsSelected)
+                        : (recordingManagerSelectedId ? [recordingManagerSelectedId] : []);
+                    if (rIds.length > 0) {
+                        e.preventDefault();
+                        var rRemoved = [];
+                        rIds.forEach(function (id) {
+                            var idx = recordingsList.findIndex(function (r) { return r.id === id; });
+                            if (idx < 0) return;
+                            rRemoved.push({ entry: recordingsList[idx], originalIdx: idx, deletedAt: Date.now() });
+                            recordingsList.splice(idx, 1);
+                            if (recordingManagerSelectedId === id) recordingManagerSelectedId = null;
+                            if (recordingActiveId === id) recordingActiveId = null;
+                        });
+                        for (var rk = rRemoved.length - 1; rk >= 0; rk--) recordingsTrash.unshift(rRemoved[rk]);
+                        recordingsSelected.clear();
+                        recordingsSelectionAnchor = null;
+                        persistRecordings();
+                        persistRecordingsTrash();
+                        toast(rRemoved.length + ' recording' + (rRemoved.length === 1 ? '' : 's') + ' moved to trash', 'success');
+                        render();
+                        return;
+                    }
+                }
+                if (railMode === 'collections' && typeof collectionsSelected !== 'undefined') {
+                    var cIds = collectionsSelected.size > 0
+                        ? Array.from(collectionsSelected)
+                        : (collectionManagerSelectedId ? [collectionManagerSelectedId] : []);
+                    if (cIds.length > 0) {
+                        e.preventDefault();
+                        var cRemoved = [];
+                        cIds.forEach(function (id) {
+                            var idx = collectionsList.findIndex(function (c) { return c.id === id; });
+                            if (idx < 0) return;
+                            cRemoved.push({ entry: collectionsList[idx], originalIdx: idx, deletedAt: Date.now() });
+                            collectionsList.splice(idx, 1);
+                            if (collectionManagerSelectedId === id) collectionManagerSelectedId = null;
+                        });
+                        for (var ck = cRemoved.length - 1; ck >= 0; ck--) collectionsTrash.unshift(cRemoved[ck]);
+                        collectionsSelected.clear();
+                        collectionsSelectionAnchor = null;
+                        persistCollections();
+                        persistCollectionsTrash();
+                        toast(cRemoved.length + ' collection' + (cRemoved.length === 1 ? '' : 's') + ' moved to trash', 'success');
+                        render();
+                        return;
+                    }
+                }
+            }
+
             // Ctrl/Cmd+Shift+S — toggle the Security drawer (#111).
             // Paired with the AI shortcut for muscle-memory consistency.
             if ((e.ctrlKey || e.metaKey) && e.shiftKey
