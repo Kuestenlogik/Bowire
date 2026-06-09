@@ -702,6 +702,159 @@
         return frag;
     }
 
+    // #116 — Workspaces rail-mode main pane. Right-hand detail view:
+    // color picker, inline rename, description, stats (env / recording
+    // / collection counts), switch + delete actions. Bundles every
+    // workspace config touchpoint into one surface.
+    function renderWorkspaceDetailMain() {
+        var main = el('div', { id: 'bowire-main-workspaces', className: 'bowire-main bowire-main-workspaces' });
+
+        var ws = workspaces.find(function (w) { return w.id === workspacesSelectedId; })
+                 || activeWorkspace();
+        if (!ws) {
+            main.appendChild(el('p', {
+                className: 'bowire-ai-empty',
+                style: 'padding:24px',
+                textContent: 'No workspace selected. Pick one in the sidebar or create a new one.'
+            }));
+            return main;
+        }
+
+        var isActive = ws.id === activeWorkspaceId;
+        var allEnvs = (typeof getAllSharedEnvironments === 'function') ? getAllSharedEnvironments() : [];
+        var envCount = ws.includeAllEnvironments
+            ? allEnvs.length
+            : (Array.isArray(ws.includedEnvironmentIds) ? ws.includedEnvironmentIds.length : 0);
+
+        var header = el('div', { className: 'bowire-ws-detail-header' },
+            el('span', {
+                className: 'bowire-ws-detail-dot',
+                style: 'background:' + (ws.color || 'var(--bowire-accent)')
+            }),
+            el('input', {
+                type: 'text',
+                className: 'bowire-ws-detail-name',
+                value: ws.name,
+                'aria-label': 'Workspace name',
+                onChange: function (e) {
+                    var v = String(e.target.value || '').trim();
+                    if (v) { renameWorkspace(ws.id, v); render(); }
+                }
+            }),
+            isActive
+                ? el('span', { className: 'bowire-ws-detail-badge', textContent: 'Active' })
+                : el('button', {
+                    className: 'bowire-ws-detail-switch-btn',
+                    textContent: 'Switch to this workspace',
+                    onClick: function () { switchWorkspace(ws.id); }
+                })
+        );
+        main.appendChild(header);
+
+        // Color picker — predefined palette so the dots stay distinct
+        // at a glance. Custom-color UI can land later.
+        var palette = ['#6366f1', '#22c55e', '#f59e0b', '#ec4899', '#06b6d4', '#a855f7', '#ef4444', '#64748b'];
+        var colorRow = el('div', { className: 'bowire-ws-detail-section' },
+            el('div', { className: 'bowire-ws-detail-section-label', textContent: 'Color' }),
+            el('div', { className: 'bowire-ws-detail-color-row' },
+                palette.map(function (c) {
+                    return el('button', {
+                        className: 'bowire-ws-detail-color-swatch' + (ws.color === c ? ' selected' : ''),
+                        style: 'background:' + c,
+                        title: c,
+                        onClick: function () {
+                            ws.color = c;
+                            persistWorkspaces();
+                            render();
+                        }
+                    });
+                })
+            )
+        );
+        main.appendChild(colorRow);
+
+        var descRow = el('div', { className: 'bowire-ws-detail-section' },
+            el('div', { className: 'bowire-ws-detail-section-label', textContent: 'Description' }),
+            el('textarea', {
+                className: 'bowire-ws-detail-desc',
+                value: ws.description || '',
+                placeholder: 'Notes — what this workspace is for, who shares it, …',
+                rows: '3',
+                onChange: function (e) {
+                    ws.description = String(e.target.value || '').trim();
+                    persistWorkspaces();
+                }
+            })
+        );
+        main.appendChild(descRow);
+
+        // Stats grid — counts of what's in this workspace.
+        function statTile(label, value, hint) {
+            return el('div', { className: 'bowire-ws-detail-stat' },
+                el('div', { className: 'bowire-ws-detail-stat-value', textContent: String(value) }),
+                el('div', { className: 'bowire-ws-detail-stat-label', textContent: label }),
+                hint ? el('div', { className: 'bowire-ws-detail-stat-hint', textContent: hint }) : null
+            );
+        }
+        // Only the ACTIVE workspace's state is currently in memory.
+        // For non-active workspaces the counts are stored hints from
+        // the persisted workspace meta (added in future as needed); for
+        // now show '—' so it's clear those reflect 'currently loaded'.
+        var recordingCount = isActive ? (Array.isArray(recordingsList) ? recordingsList.length : 0) : '—';
+        var collectionCount = isActive ? (Array.isArray(collectionsList) ? collectionsList.length : 0) : '—';
+        main.appendChild(el('div', { className: 'bowire-ws-detail-section' },
+            el('div', { className: 'bowire-ws-detail-section-label', textContent: 'Contents' }),
+            el('div', { className: 'bowire-ws-detail-stats' },
+                statTile('Environments', envCount, ws.includeAllEnvironments ? 'all shared envs' : 'selected'),
+                statTile('Recordings', recordingCount, isActive ? 'in this workspace' : 'switch to load'),
+                statTile('Collections', collectionCount, isActive ? 'in this workspace' : 'switch to load')
+            )
+        ));
+
+        // Metadata strip — IDs / timestamps so the operator can see
+        // creation / last-opened for audit / debugging.
+        var createdStr = ws.createdAt ? new Date(ws.createdAt).toLocaleString() : '—';
+        var openedStr = ws.lastOpenedAt ? new Date(ws.lastOpenedAt).toLocaleString() : '—';
+        main.appendChild(el('div', { className: 'bowire-ws-detail-section' },
+            el('div', { className: 'bowire-ws-detail-section-label', textContent: 'Metadata' }),
+            el('div', { className: 'bowire-ws-detail-meta-grid' },
+                el('div', { textContent: 'ID' }),
+                el('div', { className: 'bowire-ws-detail-meta-value', textContent: ws.id }),
+                el('div', { textContent: 'Created' }),
+                el('div', { className: 'bowire-ws-detail-meta-value', textContent: createdStr }),
+                el('div', { textContent: 'Last opened' }),
+                el('div', { className: 'bowire-ws-detail-meta-value', textContent: openedStr })
+            )
+        ));
+
+        // Danger zone — delete button. Only render when more than one
+        // workspace exists (can't delete the last one).
+        if (workspaces.length > 1) {
+            main.appendChild(el('div', { className: 'bowire-ws-detail-section bowire-ws-detail-danger' },
+                el('div', { className: 'bowire-ws-detail-section-label', textContent: 'Danger zone' }),
+                el('button', {
+                    className: 'bowire-settings-action-btn bowire-ws-detail-delete-btn',
+                    textContent: 'Delete this workspace',
+                    onClick: function () {
+                        var wsName = ws.name;
+                        var wsId = ws.id;
+                        bowireConfirm(
+                            'Delete workspace "' + wsName + '"? URLs / envs / recordings scoped to this workspace are removed.',
+                            function () {
+                                deleteWorkspace(wsId);
+                                workspacesSelectedId = activeWorkspaceId;
+                                render();
+                            },
+                            { title: 'Delete workspace', confirmText: 'Delete', danger: true }
+                        );
+                    }
+                })
+            ));
+        }
+
+        return main;
+    }
+
     // #139 — Home tile (favorite or recent entry). Resolves the
     // service + method from the live discovery list so the tile
     // shows method type + protocol icon when available, and
@@ -1054,6 +1207,10 @@
         // used to live in the right-side drawer. Sidebar still shows
         // the services tree so the operator can drill into a method
         // from the same screen without losing the security view.
+        if (railMode === 'workspaces') {
+            return renderWorkspaceDetailMain();
+        }
+
         if (railMode === 'security') {
             var secMain = el('div', { id: 'bowire-main-security', className: 'bowire-main bowire-main-security' });
             if (window.__bowireAi && typeof window.__bowireAi.renderSecurityPanel === 'function') {

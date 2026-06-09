@@ -8699,6 +8699,154 @@ details[open] > .bowire-json-tree-summary::before {
     background: var(--bowire-surface);
 }
 
+/* #116 — Workspaces rail-mode detail pane. */
+.bowire-main-workspaces {
+    padding: 24px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+.bowire-ws-detail-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+.bowire-ws-detail-dot {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+.bowire-ws-detail-name {
+    flex: 1;
+    font-size: 20px;
+    font-weight: 600;
+    background: transparent;
+    border: 1px solid transparent;
+    color: var(--bowire-text);
+    padding: 4px 8px;
+    border-radius: var(--bowire-radius-md);
+}
+.bowire-ws-detail-name:hover,
+.bowire-ws-detail-name:focus {
+    border-color: var(--bowire-border);
+    background: var(--bowire-surface);
+    outline: none;
+}
+.bowire-ws-detail-badge {
+    background: var(--bowire-success-bg);
+    color: var(--bowire-success);
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 3px 10px;
+    border-radius: var(--bowire-radius-pill);
+}
+.bowire-ws-detail-switch-btn {
+    background: var(--bowire-accent);
+    color: white;
+    border: 0;
+    padding: 6px 14px;
+    border-radius: var(--bowire-radius-md);
+    cursor: pointer;
+    font-size: 12px;
+}
+.bowire-ws-detail-switch-btn:hover {
+    background: var(--bowire-accent-hover);
+}
+.bowire-ws-detail-section {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+.bowire-ws-detail-section-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--bowire-text-tertiary);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+}
+.bowire-ws-detail-color-row {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+.bowire-ws-detail-color-swatch {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    border: 2px solid transparent;
+    cursor: pointer;
+    padding: 0;
+}
+.bowire-ws-detail-color-swatch.selected {
+    border-color: var(--bowire-text);
+    transform: scale(1.1);
+}
+.bowire-ws-detail-desc {
+    width: 100%;
+    background: var(--bowire-surface);
+    border: 1px solid var(--bowire-border);
+    color: var(--bowire-text);
+    padding: 8px 12px;
+    border-radius: var(--bowire-radius-md);
+    font-size: 13px;
+    font-family: inherit;
+    resize: vertical;
+}
+.bowire-ws-detail-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 12px;
+}
+.bowire-ws-detail-stat {
+    background: var(--bowire-surface);
+    border-radius: var(--bowire-radius-md);
+    padding: 12px 16px;
+}
+.bowire-ws-detail-stat-value {
+    font-size: 24px;
+    font-weight: 600;
+    color: var(--bowire-text);
+}
+.bowire-ws-detail-stat-label {
+    font-size: 12px;
+    color: var(--bowire-text-secondary);
+    margin-top: 2px;
+}
+.bowire-ws-detail-stat-hint {
+    font-size: 10px;
+    color: var(--bowire-text-tertiary);
+    margin-top: 4px;
+}
+.bowire-ws-detail-meta-grid {
+    display: grid;
+    grid-template-columns: max-content 1fr;
+    gap: 4px 16px;
+    font-size: 12px;
+    color: var(--bowire-text-secondary);
+}
+.bowire-ws-detail-meta-value {
+    font-family: var(--bowire-font-mono);
+    color: var(--bowire-text);
+}
+.bowire-ws-detail-danger {
+    border-top: 1px solid var(--bowire-border-subtle);
+    padding-top: 16px;
+}
+.bowire-ws-detail-delete-btn {
+    background: var(--bowire-error-bg);
+    color: var(--bowire-error);
+    border: 1px solid var(--bowire-error);
+    align-self: flex-start;
+}
+.bowire-ws-detail-delete-btn:hover {
+    background: var(--bowire-error);
+    color: white;
+}
+
 .bowire-env-list-item-name {
     flex: 1;
     overflow: hidden;
