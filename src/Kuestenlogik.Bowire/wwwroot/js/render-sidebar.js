@@ -651,7 +651,7 @@
         var modes = [
             { id: 'home',         icon: 'house',     label: 'Home',              group: 'work',      wired: true },
             { id: 'discover',     icon: 'compass',   label: 'Discover',          group: 'work',      wired: true },
-            { id: 'collections',  icon: 'list',      label: 'Collections',       group: 'work',      wired: true },
+            { id: 'collections',  icon: 'folder',    label: 'Collections',       group: 'work',      wired: true },
             { id: 'environments', icon: 'globe',     label: 'Environments',      group: 'work',      wired: true },
             { id: 'recordings',   icon: 'recording', label: 'Recordings',        group: 'scenarios', wired: true },
             { id: 'mocks',        icon: 'server',    label: 'Mocks',             group: 'scenarios', wired: true },
