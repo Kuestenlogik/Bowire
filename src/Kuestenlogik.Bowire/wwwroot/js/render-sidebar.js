@@ -1084,89 +1084,10 @@
                 ? el('span', { className: 'bowire-view-pill-badge', textContent: String(servicesCountForSwitch) })
                 : null
         ));
-        viewSwitch.appendChild(el('button', {
-            id: 'bowire-view-pill-favorites',
-            className: 'bowire-view-pill' + (sidebarView === 'favorites' ? ' active' : ''),
-            role: 'tab',
-            'aria-label': 'Favorites view',
-            'aria-selected': sidebarView === 'favorites' ? 'true' : 'false',
-            onClick: function () {
-                if (sidebarView === 'favorites') return;
-                setSidebarView('favorites');
-                render();
-            }
-        },
-            el('span', { className: 'bowire-view-pill-icon', innerHTML: svgIcon('starFilled') }),
-            el('span', { textContent: 'Favorites' }),
-            favCountForSwitch > 0
-                ? el('span', { className: 'bowire-view-pill-badge', textContent: String(favCountForSwitch) })
-                : null
-        ));
-
-        var envCountForSwitch = getEnvironments().length;
-        viewSwitch.appendChild(el('button', {
-            id: 'bowire-view-pill-environments',
-            className: 'bowire-view-pill' + (sidebarView === 'environments' ? ' active' : ''),
-            role: 'tab',
-            'aria-label': 'Environments view',
-            'aria-selected': sidebarView === 'environments' ? 'true' : 'false',
-            onClick: function () {
-                if (sidebarView === 'environments') return;
-                setSidebarView('environments');
-                render();
-            }
-        },
-            el('span', { className: 'bowire-view-pill-icon', innerHTML: svgIcon('globe') }),
-            el('span', { textContent: 'Environments' }),
-            envCountForSwitch > 0
-                ? el('span', { className: 'bowire-view-pill-badge', textContent: String(envCountForSwitch) })
-                : null
-        ));
-
-        var flowCountForSwitch = flowsList.length;
-        viewSwitch.appendChild(el('button', {
-            id: 'bowire-view-pill-flows',
-            className: 'bowire-view-pill' + (sidebarView === 'flows' ? ' active' : ''),
-            role: 'tab',
-            'aria-label': 'Flows view',
-            'aria-selected': sidebarView === 'flows' ? 'true' : 'false',
-            onClick: function () {
-                if (sidebarView === 'flows') return;
-                setSidebarView('flows');
-                render();
-            }
-        },
-            el('span', { className: 'bowire-view-pill-icon', innerHTML: svgIcon('play') }),
-            el('span', { textContent: 'Flows' }),
-            flowCountForSwitch > 0
-                ? el('span', { className: 'bowire-view-pill-badge', textContent: String(flowCountForSwitch) })
-                : null
-        ));
-
-        // Tier-3 Stage C — captured-flows view (sidecar `bowire proxy` API).
-        // Badge reflects the live snapshot count; the SSE subscriber
-        // updates it as flows land.
-        var proxyCountForSwitch = (typeof proxyFlows !== 'undefined' && proxyFlows) ? proxyFlows.length : 0;
-        viewSwitch.appendChild(el('button', {
-            id: 'bowire-view-pill-proxy',
-            className: 'bowire-view-pill' + (sidebarView === 'proxy' ? ' active' : ''),
-            role: 'tab',
-            'aria-label': 'Proxy view',
-            'aria-selected': sidebarView === 'proxy' ? 'true' : 'false',
-            title: 'Captured HTTP/HTTPS traffic from `bowire proxy`',
-            onClick: function () {
-                if (sidebarView === 'proxy') return;
-                setSidebarView('proxy');
-                if (typeof bowireProxyConnect === 'function') bowireProxyConnect();
-                render();
-            }
-        },
-            el('span', { className: 'bowire-view-pill-icon', innerHTML: svgIcon('connect') }),
-            el('span', { textContent: 'Proxy' }),
-            proxyCountForSwitch > 0
-                ? el('span', { className: 'bowire-view-pill-badge', textContent: String(proxyCountForSwitch) })
-                : null
-        ));
+        // Favorites / Environments / Flows / Proxy pills retired —
+        // each moved to its own rail mode (#133 Phase 2). Discover's
+        // sidebar is the Services tree alone; the rail handles the
+        // cross-cutting navigation those four pills used to.
 
         // "+" button — always visible in the tab row, all views
         viewSwitch.appendChild(el('span', { style: 'flex:1' }));
