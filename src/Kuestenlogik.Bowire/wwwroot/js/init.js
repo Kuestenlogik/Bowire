@@ -159,6 +159,21 @@
                     render();
                     return;
                 }
+                // #143 Phase 3 — Esc clears any in-progress
+                // multi-select on the active list sidebar.
+                if ((typeof recordingsSelected !== 'undefined' && recordingsSelected.size > 0)
+                    || (typeof collectionsSelected !== 'undefined' && collectionsSelected.size > 0)) {
+                    if (typeof recordingsSelected !== 'undefined') {
+                        recordingsSelected.clear();
+                        recordingsSelectionAnchor = null;
+                    }
+                    if (typeof collectionsSelected !== 'undefined') {
+                        collectionsSelected.clear();
+                        collectionsSelectionAnchor = null;
+                    }
+                    render();
+                    return;
+                }
                 if (aboutOpen) {
                     closeAbout();
                     return;

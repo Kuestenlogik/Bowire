@@ -8367,6 +8367,45 @@ details[open] > .bowire-json-tree-summary::before {
     border-color: var(--bowire-error);
 }
 
+/* #143 Phase 3 — multi-select header + selected-row chrome. */
+.bowire-env-list-item.selected {
+    background: var(--bowire-accent-subtle);
+    box-shadow: inset 2px 0 0 var(--bowire-accent);
+}
+.bowire-env-list-item.selected.active {
+    background: var(--bowire-accent-subtle);
+    color: var(--bowire-accent-text);
+}
+.bowire-selection-header {
+    background: var(--bowire-accent-subtle) !important;
+    border-bottom: 1px solid var(--bowire-accent) !important;
+}
+.bowire-selection-count {
+    color: var(--bowire-accent-text);
+    font-weight: 500;
+    flex: 1;
+}
+.bowire-selection-action {
+    background: transparent;
+    border: 0;
+    color: var(--bowire-text-secondary);
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: var(--bowire-radius-sm);
+    font-size: 13px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+.bowire-selection-action:hover {
+    background: var(--bowire-surface-hover);
+    color: var(--bowire-text);
+}
+.bowire-selection-action-danger:hover {
+    background: var(--bowire-error-bg);
+    color: var(--bowire-error);
+}
+
 .bowire-env-list-item-name {
     flex: 1;
     overflow: hidden;

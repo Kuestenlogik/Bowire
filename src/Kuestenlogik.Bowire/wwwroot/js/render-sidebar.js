@@ -796,27 +796,109 @@
     function renderRecordingsSidebar() {
         var sidebar = el('div', { id: 'bowire-sidebar', className: 'bowire-sidebar bowire-sidebar-mode' });
 
-        // Header — same shape as the recordings modal's left header
-        // (title + start/stop record button), but living in the
-        // sidebar context.
-        var header = el('div', { className: 'bowire-env-list-header' },
-            el('span', { textContent: 'Recordings' }),
-            el('button', {
-                className: 'bowire-env-add-btn',
-                title: isRecording() ? 'Stop the current recording' : 'Start a new recording',
-                'aria-label': isRecording() ? 'Stop recording' : 'Start recording',
-                innerHTML: svgIcon(isRecording() ? 'square' : 'record'),
-                onClick: function () {
-                    if (isRecording()) {
-                        stopRecording();
-                    } else {
-                        startRecording();
+        // #143 Phase 3 — selection-mode header swaps in when the
+        // user has multi-selected at least one row. Header shows
+        // 'N selected · Delete · Clear' instead of the normal
+        // title + record toggle.
+        var header;
+        if (recordingsSelected.size > 0) {
+            header = el('div', { className: 'bowire-env-list-header bowire-selection-header' },
+                el('span', { className: 'bowire-selection-count', textContent: recordingsSelected.size + ' selected' }),
+                el('button', {
+                    className: 'bowire-selection-action bowire-selection-action-danger',
+                    title: 'Move selected to trash',
+                    onClick: function () {
+                        var ids = Array.from(recordingsSelected);
+                        var removed = [];
+                        ids.forEach(function (rid) {
+                            var idx = recordingsList.findIndex(function (r) { return r.id === rid; });
+                            if (idx < 0) return;
+                            removed.push({ entry: recordingsList[idx], originalIdx: idx, deletedAt: Date.now() });
+                            recordingsList.splice(idx, 1);
+                            if (recordingManagerSelectedId === rid) recordingManagerSelectedId = null;
+                            if (recordingActiveId === rid) recordingActiveId = null;
+                        });
+                        // Prepend the batch so undo restores the
+                        // most-recently-deleted first.
+                        for (var k = removed.length - 1; k >= 0; k--) recordingsTrash.unshift(removed[k]);
+                        recordingsSelected.clear();
+                        recordingsSelectionAnchor = null;
+                        persistRecordings();
+                        persistRecordingsTrash();
+                        toast(removed.length + ' recording' + (removed.length === 1 ? '' : 's') + ' moved to trash', 'success', {
+                            undo: function () {
+                                for (var u = 0; u < removed.length; u++) {
+                                    var t = removed[u];
+                                    recordingsList.splice(Math.min(t.originalIdx, recordingsList.length), 0, t.entry);
+                                    // Pop from trash front.
+                                    var tIdx = recordingsTrash.findIndex(function (x) { return x.entry && x.entry.id === t.entry.id; });
+                                    if (tIdx >= 0) recordingsTrash.splice(tIdx, 1);
+                                }
+                                persistRecordings();
+                                persistRecordingsTrash();
+                                render();
+                            }
+                        });
+                        render();
                     }
-                    if (recordingActiveId) recordingManagerSelectedId = recordingActiveId;
-                    render();
-                }
-            })
-        );
+                }, el('span', { innerHTML: svgIcon('trash'), style: 'width:13px;height:13px;display:inline-flex' })),
+                el('button', {
+                    className: 'bowire-selection-action',
+                    title: 'Clear selection (Esc)',
+                    textContent: '×',
+                    onClick: function () {
+                        recordingsSelected.clear();
+                        recordingsSelectionAnchor = null;
+                        render();
+                    }
+                })
+            );
+        } else {
+            // Normal header — same shape as the recordings modal's
+            // left header: title + start/stop record button.
+            header = el('div', { className: 'bowire-env-list-header' },
+                el('span', { textContent: 'Recordings' }),
+                el('button', {
+                    className: 'bowire-env-add-btn',
+                    title: isRecording() ? 'Stop the current recording' : 'Start a new recording',
+                    'aria-label': isRecording() ? 'Stop recording' : 'Start recording',
+                    innerHTML: svgIcon(isRecording() ? 'square' : 'record'),
+                    onClick: function () {
+                        if (isRecording()) {
+                            stopRecording();
+                        } else {
+                            startRecording();
+                        }
+                        if (recordingActiveId) recordingManagerSelectedId = recordingActiveId;
+                        render();
+                    }
+                }),
+                // ⋮ overflow with 'Delete all' when list non-empty.
+                recordingsList.length > 0 ? el('button', {
+                    className: 'bowire-env-add-btn',
+                    title: 'More actions',
+                    'aria-label': 'More actions',
+                    textContent: '⋮',
+                    onClick: function () {
+                        if (confirm('Move all ' + recordingsList.length + ' recordings to trash?')) {
+                            // Same bulk-move path as the selection
+                            // Delete action, but over the full list.
+                            var removed = recordingsList.map(function (r, idx) {
+                                return { entry: r, originalIdx: idx, deletedAt: Date.now() };
+                            });
+                            recordingsList.length = 0;
+                            recordingManagerSelectedId = null;
+                            recordingActiveId = null;
+                            for (var k = removed.length - 1; k >= 0; k--) recordingsTrash.unshift(removed[k]);
+                            persistRecordings();
+                            persistRecordingsTrash();
+                            toast(removed.length + ' recordings moved to trash', 'success');
+                            render();
+                        }
+                    }
+                }) : null
+            );
+        }
         sidebar.appendChild(header);
 
         // List
@@ -837,8 +919,10 @@
             sidebar.appendChild(emptyHost);
         } else {
             var list = el('div', { id: 'bowire-recordings-list', className: 'bowire-env-list' });
-            recordingsList.forEach(function (rec) {
+            var recIds = recordingsList.map(function (r) { return r.id; });
+            recordingsList.forEach(function (rec, idx) {
                 var isActive = recordingManagerSelectedId === rec.id;
+                var isSelected = recordingsSelected.has(rec.id);
                 // Stable per-recording id so morphdom keys the row by
                 // recording instead of by position. Without the id,
                 // the topmost row was inheriting a stale onClick
@@ -846,9 +930,22 @@
                 // mode's first list item) and the click went nowhere.
                 var row = el('div', {
                     id: 'bowire-rec-row-' + rec.id,
-                    className: 'bowire-env-list-item' + (isActive ? ' active' : ''),
-                    onClick: function () {
-                        recordingManagerSelectedId = rec.id;
+                    className: 'bowire-env-list-item'
+                        + (isActive ? ' active' : '')
+                        + (isSelected ? ' selected' : ''),
+                    onClick: function (e) {
+                        // #143 Phase 3 — modifier-aware click handling.
+                        // Shift / Ctrl / Cmd modify the multi-select
+                        // set; plain click acts as single-row select
+                        // (clears any in-progress multi-select).
+                        var isMod = applyListSelectionClick(recordingsSelected, recordingsSelectionAnchor, recIds, idx, e);
+                        if (isMod) {
+                            recordingsSelectionAnchor = idx;
+                        } else {
+                            recordingsSelected.clear();
+                            recordingsSelectionAnchor = idx;
+                            recordingManagerSelectedId = rec.id;
+                        }
                         render();
                     }
                 });
@@ -935,20 +1032,92 @@
     function renderCollectionsSidebar() {
         var sidebar = el('div', { id: 'bowire-sidebar', className: 'bowire-sidebar bowire-sidebar-mode' });
 
-        var header = el('div', { className: 'bowire-env-list-header' },
-            el('span', { textContent: 'Collections' }),
-            el('button', {
-                className: 'bowire-env-add-btn',
-                title: 'Create new collection',
-                'aria-label': 'Create new collection',
-                innerHTML: svgIcon('plus'),
-                onClick: function () {
-                    var col = createCollection();
-                    collectionManagerSelectedId = col.id;
-                    render();
-                }
-            })
-        );
+        // #143 Phase 3 — selection header swap when multi-selecting.
+        var header;
+        if (collectionsSelected.size > 0) {
+            header = el('div', { className: 'bowire-env-list-header bowire-selection-header' },
+                el('span', { className: 'bowire-selection-count', textContent: collectionsSelected.size + ' selected' }),
+                el('button', {
+                    className: 'bowire-selection-action bowire-selection-action-danger',
+                    title: 'Move selected to trash',
+                    onClick: function () {
+                        var ids = Array.from(collectionsSelected);
+                        var removed = [];
+                        ids.forEach(function (cid) {
+                            var idx = collectionsList.findIndex(function (c) { return c.id === cid; });
+                            if (idx < 0) return;
+                            removed.push({ entry: collectionsList[idx], originalIdx: idx, deletedAt: Date.now() });
+                            collectionsList.splice(idx, 1);
+                            if (collectionManagerSelectedId === cid) collectionManagerSelectedId = null;
+                        });
+                        for (var k = removed.length - 1; k >= 0; k--) collectionsTrash.unshift(removed[k]);
+                        collectionsSelected.clear();
+                        collectionsSelectionAnchor = null;
+                        persistCollections();
+                        persistCollectionsTrash();
+                        toast(removed.length + ' collection' + (removed.length === 1 ? '' : 's') + ' moved to trash', 'success', {
+                            undo: function () {
+                                for (var u = 0; u < removed.length; u++) {
+                                    var t = removed[u];
+                                    collectionsList.splice(Math.min(t.originalIdx, collectionsList.length), 0, t.entry);
+                                    var tIdx = collectionsTrash.findIndex(function (x) { return x.entry && x.entry.id === t.entry.id; });
+                                    if (tIdx >= 0) collectionsTrash.splice(tIdx, 1);
+                                }
+                                persistCollections();
+                                persistCollectionsTrash();
+                                render();
+                            }
+                        });
+                        render();
+                    }
+                }, el('span', { innerHTML: svgIcon('trash'), style: 'width:13px;height:13px;display:inline-flex' })),
+                el('button', {
+                    className: 'bowire-selection-action',
+                    title: 'Clear selection (Esc)',
+                    textContent: '×',
+                    onClick: function () {
+                        collectionsSelected.clear();
+                        collectionsSelectionAnchor = null;
+                        render();
+                    }
+                })
+            );
+        } else {
+            header = el('div', { className: 'bowire-env-list-header' },
+                el('span', { textContent: 'Collections' }),
+                el('button', {
+                    className: 'bowire-env-add-btn',
+                    title: 'Create new collection',
+                    'aria-label': 'Create new collection',
+                    innerHTML: svgIcon('plus'),
+                    onClick: function () {
+                        var col = createCollection();
+                        collectionManagerSelectedId = col.id;
+                        render();
+                    }
+                }),
+                collectionsList && collectionsList.length > 0 ? el('button', {
+                    className: 'bowire-env-add-btn',
+                    title: 'More actions',
+                    'aria-label': 'More actions',
+                    textContent: '⋮',
+                    onClick: function () {
+                        if (confirm('Move all ' + collectionsList.length + ' collections to trash?')) {
+                            var removed = collectionsList.map(function (c, idx) {
+                                return { entry: c, originalIdx: idx, deletedAt: Date.now() };
+                            });
+                            collectionsList.length = 0;
+                            collectionManagerSelectedId = null;
+                            for (var k = removed.length - 1; k >= 0; k--) collectionsTrash.unshift(removed[k]);
+                            persistCollections();
+                            persistCollectionsTrash();
+                            toast(removed.length + ' collections moved to trash', 'success');
+                            render();
+                        }
+                    }
+                }) : null
+            );
+        }
         sidebar.appendChild(header);
 
         if (!collectionsList || collectionsList.length === 0) {
@@ -993,16 +1162,27 @@
             sidebar.appendChild(emptyHost);
         } else {
             var list = el('div', { id: 'bowire-collections-list', className: 'bowire-env-list' });
-            collectionsList.forEach(function (col) {
+            var colIds = collectionsList.map(function (c) { return c.id; });
+            collectionsList.forEach(function (col, idx) {
                 var isActive = collectionManagerSelectedId === col.id;
+                var isSelected = collectionsSelected.has(col.id);
                 // Stable per-collection id so morphdom keys by entry
                 // instead of position (otherwise the first row can
                 // inherit a stale onClick from a previous render).
                 var row = el('div', {
                     id: 'bowire-col-row-' + col.id,
-                    className: 'bowire-env-list-item' + (isActive ? ' active' : ''),
-                    onClick: function () {
-                        collectionManagerSelectedId = col.id;
+                    className: 'bowire-env-list-item'
+                        + (isActive ? ' active' : '')
+                        + (isSelected ? ' selected' : ''),
+                    onClick: function (e) {
+                        var isMod = applyListSelectionClick(collectionsSelected, collectionsSelectionAnchor, colIds, idx, e);
+                        if (isMod) {
+                            collectionsSelectionAnchor = idx;
+                        } else {
+                            collectionsSelected.clear();
+                            collectionsSelectionAnchor = idx;
+                            collectionManagerSelectedId = col.id;
+                        }
                         render();
                     }
                 });
