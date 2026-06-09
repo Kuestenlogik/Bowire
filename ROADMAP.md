@@ -94,6 +94,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 - [#142](https://github.com/Kuestenlogik/Bowire/issues/142) **Sharper radii — straighter visual style across tabs / cards / drawers** 
 - [#144](https://github.com/Kuestenlogik/Bowire/issues/144) **Large-recording capture/replay — chunked disk layout, lazy step-load, GB-scale** 
 - [#145](https://github.com/Kuestenlogik/Bowire/issues/145) **Deprecate ${name} in favour of {{name}} (multi-phase migration)** 
+- [#146](https://github.com/Kuestenlogik/Bowire/issues/146) **Workspace-side environment inclusion list (shared envs + per-workspace selection)** 
 
 ---
 
