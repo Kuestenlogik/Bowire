@@ -45,9 +45,11 @@
     // yet (very early bootstrap) so the legacy unscoped path
     // applies.
     // #144 Phase 1.7+ — read the active workspace's recording-
-    // storage mode at the disk-touch points. Default 'both' keeps
-    // today's behaviour; 'browser-only' skips every backend call
-    // so the recordings stay purely in localStorage.
+    // storage mode at the disk-touch points.
+    //   'both'         → localStorage + disk
+    //   'browser-only' → localStorage only; disk calls skipped
+    //   'disk-only'    → disk only; localStorage cache skipped,
+    //                    manifest-only fetch on init.
     function _recordingsModeAllowsDisk() {
         try {
             if (typeof getRecordingStorageMode === 'function') {
@@ -55,6 +57,58 @@
             }
         } catch { /* fall through */ }
         return true;
+    }
+    function _recordingsModeAllowsLocalStorage() {
+        try {
+            if (typeof getRecordingStorageMode === 'function') {
+                return getRecordingStorageMode() !== 'disk-only';
+            }
+        } catch { /* fall through */ }
+        return true;
+    }
+    function _recordingsModeIsDiskOnly() {
+        try {
+            if (typeof getRecordingStorageMode === 'function') {
+                return getRecordingStorageMode() === 'disk-only';
+            }
+        } catch { /* fall through */ }
+        return false;
+    }
+
+    // #144 Phase 1.8 — lazy-fetch step bodies for a manifest-only
+    // recording. Called when the operator opens a recording's
+    // detail view; walks the stepsManifest entries and fetches
+    // each step from /api/recordings/<id>/step/<n>, replacing the
+    // manifest array with the assembled steps[] in place.
+    // Returns a promise so callers can await before reading
+    // rec.steps. Idempotent — re-running on a hydrated recording
+    // is a no-op.
+    function hydrateRecording(rec) {
+        if (!rec) return Promise.resolve(rec);
+        if (Array.isArray(rec.steps) && rec.steps.length > 0) {
+            // Already hydrated; nothing to do.
+            return Promise.resolve(rec);
+        }
+        var manifest = Array.isArray(rec.stepsManifest) ? rec.stepsManifest : [];
+        if (manifest.length === 0) {
+            rec.steps = [];
+            return Promise.resolve(rec);
+        }
+        var prefix = config.prefix;
+        var wsParam = _recordingsWsParam();
+        var promises = manifest.map(function (entry, idx) {
+            var url = prefix + '/api/recordings/'
+                + encodeURIComponent(rec.id) + '/step/' + idx + wsParam;
+            return fetch(url)
+                .then(function (r) { return r.ok ? r.json() : null; })
+                .catch(function () { return null; });
+        });
+        return Promise.all(promises).then(function (steps) {
+            rec.steps = steps.filter(function (s) { return !!s; });
+            // Keep stepsManifest around so the operator can switch
+            // back to manifest-only view if we add one later.
+            return rec;
+        });
     }
 
     // #144 Phase 1.7 — POST a single captured step to the chunked
@@ -121,14 +175,27 @@
             catch { recordingsList = []; }
             return Promise.resolve();
         }
-        return fetch(config.prefix + '/api/recordings' + _recordingsWsParam())
+        // #144 Phase 1.8 — disk-only mode loads the manifest-only
+        // shape so the initial paint is light. Step bodies fetch
+        // on demand via hydrateRecording().
+        var url = config.prefix + '/api/recordings' + _recordingsWsParam();
+        if (_recordingsModeIsDiskOnly()) {
+            url += (url.indexOf('?') >= 0 ? '&' : '?') + 'manifestOnly=1';
+        }
+        return fetch(url)
             .then(function (r) { return r.ok ? r.json() : null; })
             .then(function (data) {
                 if (data && Array.isArray(data.recordings)) {
                     recordingsList = data.recordings;
-                    try { localStorage.setItem(wsKey(RECORDINGS_KEY), JSON.stringify(recordingsList)); } catch { /* ignore */ }
+                    // Skip the localStorage write for disk-only
+                    // workspaces — the cache shape would carry only
+                    // manifests and risks confusing the next session
+                    // if the operator switches modes.
+                    if (_recordingsModeAllowsLocalStorage()) {
+                        try { localStorage.setItem(wsKey(RECORDINGS_KEY), JSON.stringify(recordingsList)); } catch { /* ignore */ }
+                    }
                 } else {
-                    recordingsList = loadRecordings();
+                    recordingsList = _recordingsModeAllowsLocalStorage() ? loadRecordings() : [];
                 }
             })
             .catch(function () {
@@ -243,8 +310,10 @@
         // document. The debounced PUT still triggers as a safety net
         // for the case where the per-step POST fails (offline,
         // server hiccup); it then re-syncs the whole list.
-        try { localStorage.setItem(wsKey(RECORDINGS_KEY), JSON.stringify(recordingsList)); markSaved('recordings'); }
-        catch (e) { markSaveFailed('recordings', e); }
+        if (_recordingsModeAllowsLocalStorage()) {
+            try { localStorage.setItem(wsKey(RECORDINGS_KEY), JSON.stringify(recordingsList)); markSaved('recordings'); }
+            catch (e) { markSaveFailed('recordings', e); }
+        }
         appendStepToDisk(rec, step);
         // Don't re-render here — addHistory's caller already calls render()
         // after the response has been processed.

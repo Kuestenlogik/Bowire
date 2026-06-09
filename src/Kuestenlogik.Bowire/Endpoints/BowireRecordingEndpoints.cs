@@ -31,9 +31,17 @@ internal static class BowireRecordingEndpoints
             // never adopt workspaces stay on the legacy unscoped
             // path. Frontend reads activeWorkspaceId from prologue
             // and adds it as ?workspaceId=… on every call.
+            //
+            // #144 Phase 1.8 — manifestOnly=1 returns the same shape
+            // but with stepsManifest in place of inlined step
+            // bodies. Frontend's 'disk-only' storage mode reads this
+            // on init + lazy-fetches step bodies on demand.
             var wsId = ctx.Request.Query["workspaceId"].ToString();
+            var manifestOnly = ctx.Request.Query["manifestOnly"].ToString() == "1";
             return Results.Content(
-                ChunkedRecordingStore.LoadAll(string.IsNullOrEmpty(wsId) ? null : wsId),
+                ChunkedRecordingStore.LoadAll(
+                    string.IsNullOrEmpty(wsId) ? null : wsId,
+                    manifestOnly),
                 "application/json");
         }).ExcludeFromDescription();
 

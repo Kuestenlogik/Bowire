@@ -98,7 +98,7 @@ internal static class ChunkedRecordingStore
     /// frontend already consumes. Returns an empty shape when no
     /// recordings exist or the directory is unreadable.
     /// </summary>
-    public static string LoadAll(string? workspaceId = null)
+    public static string LoadAll(string? workspaceId = null, bool manifestOnly = false)
     {
         lock (DiskLock)
         {
@@ -111,7 +111,9 @@ internal static class ChunkedRecordingStore
                 {
                     foreach (var dir in Directory.EnumerateDirectories(root))
                     {
-                        var doc = TryAssembleRecording(dir);
+                        var doc = manifestOnly
+                            ? TryReadRecordingMetadataOnly(dir)
+                            : TryAssembleRecording(dir);
                         if (doc.HasValue) recordings.Add(doc.Value);
                     }
                 }
@@ -122,6 +124,29 @@ internal static class ChunkedRecordingStore
             {
                 return """{"recordings":[]}""";
             }
+        }
+    }
+
+    /// <summary>
+    /// Read a recording's metadata file as-is without assembling
+    /// step bodies. Used by the manifest-only LoadAll path so the
+    /// workbench can list recordings + their step counts without
+    /// paying for body reads. The frontend lazy-fetches each step
+    /// via <c>GET /api/recordings/&lt;id&gt;/step/&lt;n&gt;</c> when
+    /// the detail view actually needs it.
+    /// </summary>
+    private static JsonElement? TryReadRecordingMetadataOnly(string recordingDir)
+    {
+        var metadataPath = Path.Combine(recordingDir, RecordingMetadataFile);
+        if (!File.Exists(metadataPath)) return null;
+        try
+        {
+            var doc = JsonDocument.Parse(File.ReadAllText(metadataPath));
+            return doc.RootElement.Clone();
+        }
+        catch
+        {
+            return null;
         }
     }
 
