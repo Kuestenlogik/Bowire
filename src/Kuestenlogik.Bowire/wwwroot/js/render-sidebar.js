@@ -654,7 +654,7 @@
             { id: 'environments', icon: 'globe',     label: 'Environments',      group: 'work',      wired: true },
             { id: 'recordings',   icon: 'recording', label: 'Recordings',        group: 'scenarios', wired: true },
             { id: 'mocks',        icon: 'server',    label: 'Mocks',             group: 'scenarios', wired: true },
-            { id: 'flows',        icon: 'flow',      label: 'Flows',             group: 'scenarios', wired: false },
+            { id: 'flows',        icon: 'flow',      label: 'Flows',             group: 'scenarios', wired: true },
             { id: 'proxy',        icon: 'disconnect',label: 'Proxy / MITM',      group: 'quality',   wired: false },
             { id: 'benchmarks',   icon: 'chart',     label: 'Benchmarks',        group: 'quality',   wired: false },
             { id: 'parallel',     icon: 'lightning', label: 'Parallel sessions', group: 'quality',   wired: false },
@@ -704,6 +704,8 @@
                     // active.
                     if (m.id === 'environments') {
                         sidebarView = 'environments';
+                    } else if (m.id === 'flows') {
+                        sidebarView = 'flows';
                     } else if (m.id === 'discover') {
                         sidebarView = 'services';
                     }
