@@ -39,12 +39,25 @@
     // Debounced PUT to /api/recordings — same 400ms debounce as environments
     // so the disk file stays in sync without thrashing on every step append.
     var _recordingsDiskSyncTimer = null;
+    // #144 Phase 1.6 — append workspaceId so the disk store routes
+    // captures into ~/.bowire/workspaces/<wsId>/recordings/. Falls
+    // back to empty when the prologue hasn't loaded the workspace
+    // yet (very early bootstrap) so the legacy unscoped path
+    // applies.
+    function _recordingsWsParam() {
+        try {
+            if (typeof activeWorkspaceId === 'string' && activeWorkspaceId) {
+                return '?workspaceId=' + encodeURIComponent(activeWorkspaceId);
+            }
+        } catch { /* ignore */ }
+        return '';
+    }
     function scheduleRecordingsDiskSync() {
         if (_recordingsDiskSyncTimer) clearTimeout(_recordingsDiskSyncTimer);
         _recordingsDiskSyncTimer = setTimeout(function () {
             _recordingsDiskSyncTimer = null;
             var payload = JSON.stringify({ recordings: recordingsList });
-            fetch(config.prefix + '/api/recordings', {
+            fetch(config.prefix + '/api/recordings' + _recordingsWsParam(), {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: payload
@@ -56,7 +69,7 @@
     // and CLI usage. The disk file wins over the localStorage cache (the
     // localStorage cache only matters for instant updates between roundtrips).
     function loadRecordingsFromDisk() {
-        return fetch(config.prefix + '/api/recordings')
+        return fetch(config.prefix + '/api/recordings' + _recordingsWsParam())
             .then(function (r) { return r.ok ? r.json() : null; })
             .then(function (data) {
                 if (data && Array.isArray(data.recordings)) {
