@@ -88,6 +88,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 - [#135](https://github.com/Kuestenlogik/Bowire/issues/135) **Request/response layout toggle — vertical / horizontal / auto split** 
 - [#136](https://github.com/Kuestenlogik/Bowire/issues/136) **URL / service catalogue providers (local / http / consul / kubernetes / agent)** 
 - [#137](https://github.com/Kuestenlogik/Bowire/issues/137) **Sidebar declaration per rail mode + stable toggle location** 
+- [#138](https://github.com/Kuestenlogik/Bowire/issues/138) **Statusbar at bottom — move connection pill + env + watch out of topbar** 
 
 ---
 
