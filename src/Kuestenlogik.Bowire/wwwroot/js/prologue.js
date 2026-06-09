@@ -609,6 +609,24 @@
     }
     // #146 — workspace-level switch: include all shared environments
     // automatically. When on, no per-env curation needed. Flipping
+    // #144 Phase 1.7+ — recording storage mode per workspace.
+    //   'both'         (default) → write to localStorage AND user-folder via /api/recordings.
+    //   'browser-only'           → write to localStorage ONLY; disk sync skipped entirely.
+    // Phase 1.8 will add 'disk-only' once manifest-only loading +
+    // per-step lazy fetch land; today's read path still assumes the
+    // full list is in memory.
+    function getRecordingStorageMode(ws) {
+        var target = ws || (typeof activeWorkspace === 'function' ? activeWorkspace() : null);
+        if (!target) return 'both';
+        return target.recordingStorageMode === 'browser-only' ? 'browser-only' : 'both';
+    }
+    function setWorkspaceRecordingStorageMode(id, mode) {
+        var ws = workspaces.find(function (w) { return w.id === id; });
+        if (!ws) return;
+        ws.recordingStorageMode = (mode === 'browser-only') ? 'browser-only' : 'both';
+        persistWorkspaces();
+    }
+
     // the toggle persists immediately so a workspace switch reads
     // the new state from disk.
     function setWorkspaceIncludeAllEnvs(id, value) {

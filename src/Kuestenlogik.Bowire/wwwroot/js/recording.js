@@ -44,6 +44,19 @@
     // back to empty when the prologue hasn't loaded the workspace
     // yet (very early bootstrap) so the legacy unscoped path
     // applies.
+    // #144 Phase 1.7+ — read the active workspace's recording-
+    // storage mode at the disk-touch points. Default 'both' keeps
+    // today's behaviour; 'browser-only' skips every backend call
+    // so the recordings stay purely in localStorage.
+    function _recordingsModeAllowsDisk() {
+        try {
+            if (typeof getRecordingStorageMode === 'function') {
+                return getRecordingStorageMode() !== 'browser-only';
+            }
+        } catch { /* fall through */ }
+        return true;
+    }
+
     // #144 Phase 1.7 — POST a single captured step to the chunked
     // store so capture writes are O(1) per step instead of O(n)
     // rewrites of the entire document. Fire-and-forget; if the
@@ -51,6 +64,10 @@
     // the next debounced full-document PUT (triggered by any other
     // mutation) syncs the disk back into shape.
     function appendStepToDisk(rec, step) {
+        // #144 Phase 1.7+ — workspace storage-mode gate. When the
+        // active workspace opted into 'browser-only', skip every
+        // backend write — localStorage is the source of truth.
+        if (!_recordingsModeAllowsDisk()) return;
         var url = config.prefix + '/api/recordings/'
             + encodeURIComponent(rec.id) + '/step' + _recordingsWsParam();
         var meta = {
@@ -77,6 +94,9 @@
         return '';
     }
     function scheduleRecordingsDiskSync() {
+        // Skip the debounced PUT when this workspace is browser-only.
+        // localStorage is the source of truth; no backend call.
+        if (!_recordingsModeAllowsDisk()) return;
         if (_recordingsDiskSyncTimer) clearTimeout(_recordingsDiskSyncTimer);
         _recordingsDiskSyncTimer = setTimeout(function () {
             _recordingsDiskSyncTimer = null;
@@ -93,6 +113,14 @@
     // and CLI usage. The disk file wins over the localStorage cache (the
     // localStorage cache only matters for instant updates between roundtrips).
     function loadRecordingsFromDisk() {
+        if (!_recordingsModeAllowsDisk()) {
+            // Browser-only workspace: skip the disk fetch and read
+            // the localStorage cache directly. Cleaner than a fetch
+            // that'd be a no-op anyway.
+            try { recordingsList = loadRecordings(); }
+            catch { recordingsList = []; }
+            return Promise.resolve();
+        }
         return fetch(config.prefix + '/api/recordings' + _recordingsWsParam())
             .then(function (r) { return r.ok ? r.json() : null; })
             .then(function (data) {
