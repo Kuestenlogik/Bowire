@@ -40,6 +40,90 @@
                 return 'Pick a method in the sidebar to see context-aware hints here.';
             }
         },
+        // ---- Phase 2 observation hints (#149) ----
+        // Each rule reads from a concrete signal in the context. No
+        // procedural how-to; only 'I noticed X, you might want to Y'.
+        {
+            id: 'slow-response',
+            level: 'warn',
+            match: function (c) { return !!c.method && c.responseDurationMs >= 2000; },
+            render: function (c) {
+                return c.method.name + ' took '
+                    + (c.responseDurationMs / 1000).toFixed(1)
+                    + 's. Consider checking server load, network distance, or whether the request shape is forcing a full table scan.';
+            }
+        },
+        {
+            id: 'large-response',
+            level: 'tip',
+            match: function (c) { return !!c.method && c.responseBytes >= 100 * 1024; },
+            render: function (c) {
+                var kb = Math.round(c.responseBytes / 1024);
+                return 'Response body is ' + kb + ' KB. Most APIs page or filter at this scale — check for a `limit`, `pageSize`, or `fields` parameter to slice the payload.';
+            }
+        },
+        {
+            id: 'repeated-error',
+            level: 'warn',
+            match: function (c) { return !!c.method && c.consecutiveErrors >= 3; },
+            render: function (c) {
+                return c.consecutiveErrors + ' consecutive '
+                    + (c.recentSameError || 'error')
+                    + ' responses from ' + c.method.name
+                    + '. Retry isn’t helping — fix the request shape, auth, or server state before firing again.';
+            }
+        },
+        {
+            id: 'response-status-mismatch',
+            level: 'info',
+            match: function (c) {
+                return !!c.method && !!c.actualStatus && !!c.expectedStatus
+                    && c.actualStatus !== c.expectedStatus
+                    && c.actualStatus !== 'Error' && c.actualStatus !== 'NetworkError';
+            },
+            render: function (c) {
+                return 'Schema declared HTTP ' + c.expectedStatus
+                    + ' but the server returned ' + c.actualStatus
+                    + '. Either the schema is stale (regenerate) or the server contract drifted.';
+            }
+        },
+        {
+            id: 'auth-header-ineffective',
+            level: 'warn',
+            match: function (c) {
+                // Approximation without per-call header capture: a 401
+                // / 403 on a method whose name suggests it should be
+                // authenticated. Refined when request-header tracking
+                // lands as its own hook.
+                if (!c.method) return false;
+                var s = String(c.actualStatus || '');
+                return (s === '401' || s === '403' || s === 'Unauthorized' || s === 'Forbidden')
+                    && c.callsToThisMethodInLastMinute >= 2;
+            },
+            render: function () {
+                return 'Auth-rejected '
+                    + 'after multiple attempts. Token may be expired, scope-too-narrow, or wrong bearer prefix — re-check the Authorization header before retrying.';
+            }
+        },
+        {
+            id: 'recording-step-duplicate',
+            level: 'tip',
+            match: function (c) { return c.recordingStepsForMethod >= 3; },
+            render: function (c) {
+                return c.recordingStepsForMethod + ' steps of '
+                    + c.method.name
+                    + ' in the active recording. If the calls are interchangeable, you only need one — extras inflate the replay without adding coverage.';
+            }
+        },
+        {
+            id: 'unstable-response-shape',
+            level: 'warn',
+            match: function (c) { return c.shapeDriftCount >= 2; },
+            render: function (c) {
+                return c.method.name + ' returned '
+                    + c.shapeDriftCount + ' different response shapes across recent calls — fields appear or disappear between calls. Tests that bind to specific keys will be flaky; consider asserting shape before value.';
+            }
+        },
         {
             id: 'grpc-empty-response',
             level: 'warn',
@@ -118,6 +202,23 @@
     ];
 
     // ---------- state collection ----------
+    // #149 — in-memory response-shape memory per method. Tracks the
+    // last few response key-sets so the unstable-shape hint can
+    // detect a method whose response shape varies call-to-call.
+    // Bounded at 5 entries per method to keep memory tiny.
+    var responseShapeMemory = {};
+    function noteResponseShape(method, response) {
+        if (!method || !response || typeof response !== 'object') return;
+        var key = (method.fullName || method.name || '');
+        if (!key) return;
+        try {
+            var shape = Object.keys(response).sort().join(',');
+            var arr = responseShapeMemory[key] || (responseShapeMemory[key] = []);
+            arr.push(shape);
+            if (arr.length > 5) arr.shift();
+        } catch { /* shape extraction is best-effort */ }
+    }
+
     function collectContext() {
         var method = (typeof selectedMethod !== 'undefined') ? selectedMethod : null;
         var service = (typeof selectedService !== 'undefined') ? selectedService : null;
@@ -127,6 +228,12 @@
         var responseText = '';
         try { responseText = lastResponse == null ? '' : (typeof lastResponse === 'string' ? lastResponse : JSON.stringify(lastResponse)); }
         catch { responseText = ''; }
+
+        // Remember this method's response shape so the unstable-
+        // shape hint has at least one prior to compare against.
+        if (method && lastResponse && typeof lastResponse === 'object') {
+            noteResponseShape(method, lastResponse);
+        }
 
         // Schema-vs-response known-key set (cheap REST-only check).
         var schemaKeys = [];
@@ -156,16 +263,86 @@
             }
         } catch { /* ignore */ }
 
+        // Latest history entry for this method — duration, status,
+        // size derived from there. Cheaper than maintaining a
+        // separate lastResponseDurationMs / lastResponseBytes pair.
+        var latestForMethod = null;
+        var consecutiveErrors = 0;
+        var recentSameError = null;
+        try {
+            if (typeof getHistory === 'function' && method) {
+                var hist = getHistory();
+                for (var hi = 0; hi < hist.length; hi++) {
+                    if (hist[hi].method !== method.name) continue;
+                    if (!latestForMethod) latestForMethod = hist[hi];
+                    var isOk = (typeof isHistoryEntryOk === 'function') ? isHistoryEntryOk(hist[hi]) : false;
+                    if (!isOk) {
+                        consecutiveErrors++;
+                        if (!recentSameError) recentSameError = String(hist[hi].status || 'Error');
+                        else if (String(hist[hi].status || 'Error') !== recentSameError) break;
+                    } else {
+                        break;
+                    }
+                }
+            }
+        } catch { /* history not available */ }
+
+        // Compare current response shape to recent shapes for the
+        // same method. 'Unstable' = 2+ distinct shapes recorded.
+        var shapeDriftCount = 0;
+        try {
+            if (method) {
+                var key = method.fullName || method.name || '';
+                var shapes = responseShapeMemory[key] || [];
+                if (shapes.length >= 2) {
+                    var unique = {};
+                    for (var si = 0; si < shapes.length; si++) unique[shapes[si]] = true;
+                    shapeDriftCount = Object.keys(unique).length;
+                }
+            }
+        } catch { /* ignore */ }
+
+        // Count steps in the active recording that hit the same
+        // (service, method) so the duplicate-step hint can fire.
+        var recordingStepsForMethod = 0;
+        try {
+            if (typeof recordingActiveId !== 'undefined' && recordingActiveId && method) {
+                var rec = recordings.find(function (r) { return r.id === recordingActiveId; });
+                if (rec && Array.isArray(rec.steps)) {
+                    recordingStepsForMethod = rec.steps.filter(function (s) {
+                        return s.method === method.name && s.service === (service && service.name);
+                    }).length;
+                }
+            }
+        } catch { /* ignore */ }
+
+        // Schema-declared status code. Only present when the method's
+        // schema carries it (REST OpenAPI), used by the mismatch hint.
+        var expectedStatus = null;
+        try {
+            if (method && method.responseSchema && method.responseSchema.statusCode) {
+                expectedStatus = String(method.responseSchema.statusCode);
+            }
+        } catch { /* ignore */ }
+
         return {
             method: method,
             service: service,
             serverUrl: method && method.serverUrl ? method.serverUrl : null,
             hasResponse: lastResponse !== null && lastResponse !== undefined,
             responseText: responseText,
+            responseBytes: responseText.length,
+            responseDurationMs: latestForMethod ? Number(latestForMethod.durationMs || 0) : 0,
+            actualStatus: latestForMethod ? String(latestForMethod.status || '') : null,
+            expectedStatus: expectedStatus,
             lastStatusCode: (typeof lastResponseStatusCode !== 'undefined') ? lastResponseStatusCode : null,
             responseHasUnknownKeys: hasUnknownKeys,
             responseUnknownKeys: unknownKeys,
             callsToThisMethodInLastMinute: callsRecent,
+            consecutiveErrors: consecutiveErrors,
+            recentSameError: recentSameError,
+            shapeDriftCount: shapeDriftCount,
+            recordingStepsForMethod: recordingStepsForMethod,
             runningMockCount: runningMockCount,
             recordingsCount: recordings.length
         };
