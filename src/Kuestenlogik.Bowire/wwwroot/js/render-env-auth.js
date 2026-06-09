@@ -212,10 +212,10 @@
             id: 'bowire-ai-drawer',
             className: 'bowire-ai-drawer',
             role: 'complementary',
-            'aria-label': 'AI assistant'
+            'aria-label': 'Assistant'
         });
         var header = el('div', { className: 'bowire-ai-drawer-header' },
-            el('span', { className: 'bowire-ai-drawer-title', textContent: 'AI assistant' }),
+            el('span', { className: 'bowire-ai-drawer-title', textContent: 'Assistant' }),
             el('button', {
                 id: 'bowire-ai-drawer-close',
                 className: 'bowire-ai-drawer-close',
@@ -808,8 +808,8 @@
             // a made-up .bowire-topbar-icon-btn that had no rules — the
             // button collapsed to a thin sliver without an icon.
             className: 'bowire-theme-toggle-btn bowire-ai-drawer-toggle' + (aiDrawerOpen ? ' active' : ''),
-            title: aiDrawerOpen ? 'Close AI assistant (Ctrl+Shift+A)' : 'Open AI assistant (Ctrl+Shift+A)',
-            'aria-label': 'Toggle AI assistant',
+            title: aiDrawerOpen ? 'Close Assistant (Ctrl+Shift+A)' : 'Open Assistant (Ctrl+Shift+A)',
+            'aria-label': 'Toggle Assistant',
             onClick: function () {
                 aiDrawerOpen = !aiDrawerOpen;
                 try { localStorage.setItem('bowire_ai_drawer_open', aiDrawerOpen ? '1' : '0'); } catch { /* ignore */ }

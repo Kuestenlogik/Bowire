@@ -40,7 +40,9 @@
             // the package isn't installed the section shows an install
             // hint instead of the form, so the user discovers the
             // capability without having to read the docs.
-            { id: 'ai', label: 'AI', icon: 'spark' },
+            // Tab id stays 'ai' for back-compat with deep-links;
+            // user-visible label flips to Assistant per #134.
+            { id: 'ai', label: 'Assistant', icon: 'spark' },
             // "Plugins" — per-plugin enable toggles. Always present, even
             // when no plugin contributes its own settings, because the
             // enable toggle itself doesn't need a plugin to opt in.
@@ -425,7 +427,12 @@
 
     function renderSettingsAi() {
         var section = el('div', { className: 'bowire-settings-section' });
-        section.appendChild(el('h3', { className: 'bowire-settings-section-title', textContent: 'AI' }));
+        // Section title flips to Assistant. The sub-section labels
+        // below ('AI provider', 'AI model', 'AI endpoint') keep
+        // 'AI' because that's the technology vocabulary the
+        // operator configures — naming it Assistant there would
+        // hide what the field actually selects.
+        section.appendChild(el('h3', { className: 'bowire-settings-section-title', textContent: 'Assistant' }));
 
         if (!aiSettingsState.loaded) {
             section.appendChild(el('p', {
