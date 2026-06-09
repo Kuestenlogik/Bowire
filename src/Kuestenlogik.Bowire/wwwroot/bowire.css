@@ -2559,6 +2559,58 @@ img.bowire-logo-icon {
     border-bottom-color: var(--bowire-accent);
 }
 
+/* #123 — protocol + direction colors on every tab. Protocol stripe
+   on the left edge (consistent with the sidebar group stripe);
+   direction tint on the active tab's bottom underline so the user
+   sees both axes without reading text. */
+.bowire-request-tab[data-protocol] {
+    --tab-protocol-color: var(--bowire-protocol-default);
+    border-left: 3px solid var(--tab-protocol-color);
+}
+.bowire-request-tab[data-protocol="rest"]      { --tab-protocol-color: var(--bowire-protocol-rest); }
+.bowire-request-tab[data-protocol="grpc"]      { --tab-protocol-color: var(--bowire-protocol-grpc); }
+.bowire-request-tab[data-protocol="proto"]     { --tab-protocol-color: var(--bowire-protocol-grpc); }
+.bowire-request-tab[data-protocol="graphql"]   { --tab-protocol-color: var(--bowire-protocol-graphql); }
+.bowire-request-tab[data-protocol="mqtt"]      { --tab-protocol-color: var(--bowire-protocol-mqtt); }
+.bowire-request-tab[data-protocol="signalr"]   { --tab-protocol-color: var(--bowire-protocol-signalr); }
+.bowire-request-tab[data-protocol="websocket"] { --tab-protocol-color: var(--bowire-protocol-websocket); }
+.bowire-request-tab[data-protocol="sse"]       { --tab-protocol-color: var(--bowire-protocol-sse); }
+.bowire-request-tab[data-protocol="nats"]      { --tab-protocol-color: var(--bowire-protocol-nats); }
+.bowire-request-tab[data-protocol="amqp"]      { --tab-protocol-color: var(--bowire-protocol-amqp); }
+.bowire-request-tab[data-protocol="kafka"]     { --tab-protocol-color: var(--bowire-protocol-kafka); }
+.bowire-request-tab[data-protocol="odata"]     { --tab-protocol-color: var(--bowire-protocol-odata); }
+.bowire-request-tab[data-protocol="mcp"]       { --tab-protocol-color: var(--bowire-protocol-mcp); }
+
+.bowire-request-tab[data-direction="warm"].active    { border-bottom-color: var(--bowire-direction-warm); }
+.bowire-request-tab[data-direction="cool"].active    { border-bottom-color: var(--bowire-direction-cool); }
+.bowire-request-tab[data-direction="duplex"].active  { border-bottom-color: var(--bowire-direction-duplex); }
+.bowire-request-tab[data-direction="neutral"].active { border-bottom-color: var(--bowire-direction-neutral); }
+
+/* "+" new-tab button — peer of the tabs, lives at the right of the
+   scroll container. Same height + alignment so it sits flush with
+   the strip. */
+.bowire-request-tab-new {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    margin: 4px;
+    background: transparent;
+    border: 1px dashed var(--bowire-border);
+    border-radius: var(--bowire-radius-sm);
+    color: var(--bowire-text-tertiary);
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: color var(--bowire-transition), border-color var(--bowire-transition), background var(--bowire-transition);
+}
+.bowire-request-tab-new:hover {
+    color: var(--bowire-text);
+    border-color: var(--bowire-text-tertiary);
+    background: var(--bowire-surface-hover);
+}
+.bowire-request-tab-new svg { width: 14px; height: 14px; }
+
 .bowire-request-tab-proto {
     font-size: 9px;
     font-weight: 700;
