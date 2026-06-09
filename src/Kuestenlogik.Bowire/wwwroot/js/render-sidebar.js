@@ -732,6 +732,7 @@
         { id: 'benchmarks',   icon: 'chart',     label: 'Benchmarks',        group: 'quality',   wired: true,  sidebar: { kind: 'none' } },
         { id: 'parallel',     icon: 'lightning', label: 'Parallel sessions', group: 'quality',   wired: true,  sidebar: { kind: 'none' } },
         { id: 'security',     icon: 'shield',    label: 'Security',          group: 'hardening', wired: true,  sidebar: { kind: 'services' } },
+        { id: 'workspaces',   icon: 'briefcase', label: 'Workspaces',        group: 'hardening', wired: true,  sidebar: { kind: 'workspaces' } },
     ];
     function _railModeById(id) {
         for (var i = 0; i < _railModes.length; i++) {
@@ -1072,6 +1073,91 @@
             persist: function () { persistRecordingsTrash(); },
             nameOf: function (e) { return e && e.name ? e.name : '(unnamed recording)'; }
         }));
+
+        return sidebar;
+    }
+
+    // #116 — Workspaces rail mode sidebar. Lists every workspace as
+    // a clickable row; clicking selects (right pane shows detail);
+    // double-click switches. Header has the same '+' new-workspace
+    // affordance as the topbar chip's menu.
+    function renderWorkspacesSidebar() {
+        var sidebar = el('div', { id: 'bowire-sidebar', className: 'bowire-sidebar bowire-sidebar-mode' });
+
+        var header = el('div', { className: 'bowire-env-list-header' },
+            el('span', { textContent: 'Workspaces' }),
+            el('button', {
+                className: 'bowire-env-add-btn',
+                title: 'Create new workspace',
+                'aria-label': 'Create new workspace',
+                innerHTML: svgIcon('plus'),
+                onClick: function () {
+                    bowirePrompt('New workspace name', {
+                        title: 'Create workspace',
+                        placeholder: 'e.g. Payments — staging',
+                        confirmText: 'Create',
+                    }).then(function (name) {
+                        if (name) {
+                            var ws = createWorkspace(name);
+                            workspacesSelectedId = ws.id;
+                            render();
+                        }
+                    });
+                }
+            })
+        );
+        sidebar.appendChild(header);
+
+        var list = el('div', { id: 'bowire-workspaces-list', className: 'bowire-env-list' });
+        var wsIds = workspaces.map(function (w) { return w.id; });
+        if (!workspacesSelectedId || wsIds.indexOf(workspacesSelectedId) < 0) {
+            workspacesSelectedId = activeWorkspaceId;
+        }
+        workspaces.forEach(function (w) {
+            var isActive = w.id === activeWorkspaceId;
+            var isSelected = w.id === workspacesSelectedId;
+            var envCount = w.includeAllEnvironments
+                ? (typeof getAllSharedEnvironments === 'function' ? getAllSharedEnvironments().length : 0)
+                : (Array.isArray(w.includedEnvironmentIds) ? w.includedEnvironmentIds.length : 0);
+            var row = el('div', {
+                id: 'bowire-ws-row-' + w.id,
+                className: 'bowire-env-list-item'
+                    + (isSelected ? ' selected' : '')
+                    + (isActive ? ' active-env' : ''),
+                onClick: function () {
+                    workspacesSelectedId = w.id;
+                    render();
+                },
+                onDblClick: function () {
+                    if (w.id !== activeWorkspaceId) switchWorkspace(w.id);
+                }
+            },
+                el('span', {
+                    className: 'bowire-env-color-dot' + (isActive ? ' active' : ''),
+                    style: 'background:' + (w.color || 'var(--bowire-accent)'),
+                    title: isActive ? 'Active workspace' : ''
+                }),
+                el('span', { className: 'bowire-env-list-item-name', textContent: w.name }),
+                el('span', { style: 'flex:1' }),
+                el('span', {
+                    className: 'bowire-env-list-item-meta',
+                    textContent: envCount + (w.includeAllEnvironments ? ' (all)' : '')
+                }),
+                !isActive
+                    ? el('button', {
+                        className: 'bowire-env-sidebar-activate-btn',
+                        title: 'Switch to this workspace',
+                        textContent: '▶',
+                        onClick: function (e) {
+                            e.stopPropagation();
+                            switchWorkspace(w.id);
+                        }
+                    })
+                    : null
+            );
+            list.appendChild(row);
+        });
+        sidebar.appendChild(list);
 
         return sidebar;
     }
@@ -1493,6 +1579,7 @@
             case 'environments': return renderEnvironmentsSidebar();
             case 'recordings':   return renderRecordingsSidebar();
             case 'mocks':        return renderMocksSidebar();
+            case 'workspaces':   return renderWorkspacesSidebar();
             // 'flows', 'proxy', 'services' fall through to the legacy
             // sidebar below (built from the discover service tree).
             // Their main pane reads sidebarView, which the rail-button
