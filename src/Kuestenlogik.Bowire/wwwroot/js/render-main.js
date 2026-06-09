@@ -854,6 +854,23 @@
                         el('div', { className: 'bowire-ws-detail-storage-title', textContent: 'Browser-only (no disk writes)' }),
                         el('div', { className: 'bowire-ws-detail-storage-meta', textContent: 'Recordings stay in localStorage. Browser clear = data loss. Useful for sandbox / privacy workflows. Subject to the ~5–10 MB localStorage quota.' })
                     )
+                ),
+                el('label', { className: 'bowire-ws-detail-storage-option' + (storageMode === 'disk-only' ? ' selected' : '') },
+                    el('input', {
+                        type: 'radio',
+                        name: 'ws-rec-storage-' + ws.id,
+                        checked: storageMode === 'disk-only',
+                        onChange: function () {
+                            if (typeof setWorkspaceRecordingStorageMode === 'function') {
+                                setWorkspaceRecordingStorageMode(ws.id, 'disk-only');
+                                render();
+                            }
+                        }
+                    }),
+                    el('div', { className: 'bowire-ws-detail-storage-text' },
+                        el('div', { className: 'bowire-ws-detail-storage-title', textContent: 'Disk-only (no browser cache)' }),
+                        el('div', { className: 'bowire-ws-detail-storage-meta', textContent: 'Recordings on disk only. List loads metadata-only on init; step bodies fetch on demand when you open a recording. Use for GB-scale captures that would blow the localStorage quota.' })
+                    )
                 )
             )
         ));

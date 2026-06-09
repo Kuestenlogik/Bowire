@@ -1012,14 +1012,34 @@
                             recordingsSelected.clear();
                             recordingsSelectionAnchor = idx;
                             recordingManagerSelectedId = rec.id;
+                            // #144 Phase 1.8 — when this workspace
+                            // loaded manifest-only, fetch the step
+                            // bodies for the just-selected recording
+                            // so the detail pane has something to
+                            // render. Idempotent on already-hydrated
+                            // entries.
+                            if (typeof hydrateRecording === 'function'
+                                && (!Array.isArray(rec.steps) || rec.steps.length === 0)
+                                && Array.isArray(rec.stepsManifest)
+                                && rec.stepsManifest.length > 0) {
+                                hydrateRecording(rec).then(function () { render(); });
+                            }
                         }
                         render();
                     }
                 });
                 row.appendChild(el('div', { className: 'bowire-env-list-item-name', textContent: rec.name }));
+                // #144 Phase 1.8 — for manifest-only recordings the
+                // steps[] array is empty until hydration; read step
+                // count from stepCount (written by the backend) or
+                // stepsManifest.length as a fallback.
+                var stepN = 0;
+                if (rec.steps && rec.steps.length) stepN = rec.steps.length;
+                else if (typeof rec.stepCount === 'number') stepN = rec.stepCount;
+                else if (Array.isArray(rec.stepsManifest)) stepN = rec.stepsManifest.length;
                 row.appendChild(el('div', {
                     className: 'bowire-env-list-item-meta',
-                    textContent: (rec.steps ? rec.steps.length : 0) + ' step' + ((rec.steps && rec.steps.length === 1) ? '' : 's')
+                    textContent: stepN + ' step' + (stepN === 1 ? '' : 's')
                         + (rec.id === recordingActiveId ? ' · ● recording' : '')
                 }));
                 // #143 — per-row delete with undo toast.

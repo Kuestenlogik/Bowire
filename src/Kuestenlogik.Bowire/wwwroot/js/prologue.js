@@ -612,18 +612,19 @@
     // #144 Phase 1.7+ — recording storage mode per workspace.
     //   'both'         (default) → write to localStorage AND user-folder via /api/recordings.
     //   'browser-only'           → write to localStorage ONLY; disk sync skipped entirely.
-    // Phase 1.8 will add 'disk-only' once manifest-only loading +
-    // per-step lazy fetch land; today's read path still assumes the
-    // full list is in memory.
+    //   'disk-only'    (Phase 1.8) → no localStorage cache; manifest-only fetch on init,
+    //                                step bodies lazy-fetched on demand.
     function getRecordingStorageMode(ws) {
         var target = ws || (typeof activeWorkspace === 'function' ? activeWorkspace() : null);
         if (!target) return 'both';
-        return target.recordingStorageMode === 'browser-only' ? 'browser-only' : 'both';
+        var m = target.recordingStorageMode;
+        if (m === 'browser-only' || m === 'disk-only') return m;
+        return 'both';
     }
     function setWorkspaceRecordingStorageMode(id, mode) {
         var ws = workspaces.find(function (w) { return w.id === id; });
         if (!ws) return;
-        ws.recordingStorageMode = (mode === 'browser-only') ? 'browser-only' : 'both';
+        ws.recordingStorageMode = (mode === 'browser-only' || mode === 'disk-only') ? mode : 'both';
         persistWorkspaces();
     }
 
