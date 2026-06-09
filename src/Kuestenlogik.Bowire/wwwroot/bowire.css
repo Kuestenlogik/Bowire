@@ -11089,6 +11089,32 @@ details[open] > .bowire-json-tree-summary::before {
 .bowire-ai-mode-connected {
     color: var(--bowire-success);
 }
+
+/* Status dot in the drawer chrome header — small visual cue + a
+   tooltip for the full provider/model string. Three states. */
+.bowire-ai-drawer-title-row {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+.bowire-ai-status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    cursor: help;
+    flex-shrink: 0;
+}
+.bowire-ai-status-dot-connected {
+    background: var(--bowire-success);
+    box-shadow: 0 0 0 2px rgba(52, 211, 153, 0.18);
+}
+.bowire-ai-status-dot-idle {
+    background: var(--bowire-text-tertiary);
+}
+.bowire-ai-status-dot-missing {
+    background: var(--bowire-warning);
+    box-shadow: 0 0 0 2px rgba(251, 191, 36, 0.18);
+}
 .bowire-ai-empty {
     font-size: 13px;
     color: var(--bowire-text-secondary);

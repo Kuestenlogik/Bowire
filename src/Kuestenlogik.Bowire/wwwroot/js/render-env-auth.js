@@ -234,8 +234,30 @@
             role: 'complementary',
             'aria-label': 'Assistant'
         });
+        // Live status dot — three states, all carrying a hover
+        // tooltip with the detail string. Connected (green) is the
+        // common case; idle (grey) means no model; missing (amber)
+        // means the AI package isn't installed.
+        var aiSt = (typeof window.__bowireAi === 'object' && window.__bowireAi)
+            ? window.__bowireAi.getStatus()
+            : null;
+        var statusClass, statusTitle;
+        if (aiSt && aiSt.hasClient) {
+            statusClass = 'bowire-ai-status-dot bowire-ai-status-dot-connected';
+            statusTitle = 'Connected · ' + (aiSt.providerId || 'unknown') + ' · ' + (aiSt.model || '(default model)');
+        } else if (aiSt === null) {
+            statusClass = 'bowire-ai-status-dot bowire-ai-status-dot-missing';
+            statusTitle = 'AI package not installed — chat unavailable. Hints still work.';
+        } else {
+            statusClass = 'bowire-ai-status-dot bowire-ai-status-dot-idle';
+            statusTitle = 'No model configured — open Settings → Assistant to connect one.';
+        }
+
         var header = el('div', { className: 'bowire-ai-drawer-header' },
-            el('span', { className: 'bowire-ai-drawer-title', textContent: 'Assistant' }),
+            el('div', { className: 'bowire-ai-drawer-title-row' },
+                el('span', { className: 'bowire-ai-drawer-title', textContent: 'Assistant' }),
+                el('span', { className: statusClass, title: statusTitle, 'aria-label': statusTitle })
+            ),
             el('button', {
                 id: 'bowire-ai-drawer-close',
                 className: 'bowire-ai-drawer-close',
