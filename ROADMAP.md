@@ -79,6 +79,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 - [#126](https://github.com/Kuestenlogik/Bowire/issues/126) **Pre-/post-scripts with a protocol-typed sandbox** 
 - [#127](https://github.com/Kuestenlogik/Bowire/issues/127) **Auto-save to workspace + live save-state pill** 
 - [#128](https://github.com/Kuestenlogik/Bowire/issues/128) **Bowire Agent — register embedded instances with a central hub** 
+- [#129](https://github.com/Kuestenlogik/Bowire/issues/129) **Layout cleanup — top bar, sidebar, main pane, drawers (left-sidebar model stays)** 
 
 ---
 
