@@ -61,6 +61,12 @@
             body.appendChild(backdrop);
         }
 
+        // #133 — activity rail. Sits at the very leftmost edge of the
+        // workbench body, before the sidebar. Phase 1 only wires the
+        // Discover mode to the existing sidebar content; clicking
+        // other icons shows a 'coming soon' toast until Phase 2-4
+        // give each mode its own sidebar template.
+        body.appendChild(renderActivityRail());
         body.appendChild(renderSidebar());
         // Sidebar-resize splitter lives between the sidebar and the main
         // pane. Hidden on mobile (sidebar is an overlay there, no split

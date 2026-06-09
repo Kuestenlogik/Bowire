@@ -682,6 +682,80 @@ body {
     .bowire-topbar-brand .bowire-logo-text { max-width: 120px; }
 }
 
+/* #133 — Activity rail. Always-visible icon column at the leftmost
+   edge of the workbench body. Phase 1: 48 px wide, brand mark at
+   top, icon-only mode buttons, grouped by intent with hairline
+   dividers. Active mode gets a 3 px accent left-stripe + subtle
+   bg fill (same idea as the segmented control's active state, but
+   anchored vertically). */
+.bowire-activity-rail {
+    flex: 0 0 48px;
+    width: 48px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: 8px 0;
+    background: var(--bowire-sidebar-bg);
+    border-right: 1px solid var(--bowire-border-subtle);
+    overflow: hidden;
+}
+.bowire-rail-brand {
+    width: 32px;
+    height: 32px;
+    margin-bottom: 8px;
+    cursor: pointer;
+    color: var(--bowire-text);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--bowire-radius-sm);
+    transition: background var(--bowire-transition);
+}
+.bowire-rail-brand:hover { background: var(--bowire-surface-hover); }
+.bowire-rail-brand svg { width: 22px; height: 22px; }
+.bowire-rail-divider {
+    width: 24px;
+    height: 1px;
+    margin: 4px 0;
+    background: var(--bowire-border-subtle);
+}
+.bowire-rail-btn {
+    position: relative;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: 0;
+    border-radius: var(--bowire-radius-sm);
+    color: var(--bowire-text-tertiary);
+    cursor: pointer;
+    transition: background var(--bowire-transition), color var(--bowire-transition);
+}
+.bowire-rail-btn svg { width: 18px; height: 18px; }
+.bowire-rail-btn:hover {
+    background: var(--bowire-surface-hover);
+    color: var(--bowire-text);
+}
+.bowire-rail-btn.active {
+    background: var(--bowire-accent-subtle);
+    color: var(--bowire-accent);
+}
+.bowire-rail-btn.active::before {
+    content: '';
+    position: absolute;
+    left: -6px;
+    top: 6px;
+    bottom: 6px;
+    width: 3px;
+    background: var(--bowire-accent);
+    border-radius: 0 2px 2px 0;
+}
+.bowire-rail-btn-stub { opacity: 0.55; }
+.bowire-rail-btn-stub:hover { opacity: 0.85; }
+
 .bowire-sidebar {
     width: var(--bowire-sidebar-width);
     min-width: var(--bowire-sidebar-width);
