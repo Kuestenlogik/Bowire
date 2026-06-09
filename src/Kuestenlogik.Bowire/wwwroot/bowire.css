@@ -749,10 +749,11 @@ body {
 .bowire-rail-btn-stub { opacity: 0.55; }
 .bowire-rail-btn-stub:hover { opacity: 0.85; }
 
-/* #137 — sidebar-toggle pinned to the rail bottom. margin-top:
-   auto pushes it away from the mode buttons so it sits flush at
-   the bottom regardless of how many modes are above. Visually
-   separated from the mode list by a divider. */
+/* #137 — sidebar-toggle + Settings live at the rail bottom.
+   margin-top: auto on the first 'bottom' button pushes both away
+   from the mode list; Settings sits below the toggle as the very
+   last rail entry. Visually separated from the mode list by a
+   hairline border above the first one. */
 .bowire-rail-toggle-sidebar {
     margin-top: auto;
     border-top: 1px solid var(--bowire-border-subtle);

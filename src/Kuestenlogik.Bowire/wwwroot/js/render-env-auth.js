@@ -901,10 +901,10 @@
                     className: 'bowire-topbar-overflow-item',
                     onClick: function () { topbarOverflowOpen = false; openAbout(); render(); }
                 }, el('span', { textContent: 'About Bowire' })),
-                el('div', {
-                    className: 'bowire-topbar-overflow-item',
-                    onClick: function () { topbarOverflowOpen = false; openSettings(); render(); }
-                }, el('span', { textContent: 'Settings' })),
+                // Settings moved to the activity-rail bottom — peer
+                // of the sidebar-toggle, VS Code / JetBrains
+                // convention. Kept reachable here too would just
+                // duplicate the entry point.
             ) : null
         );
         bar.appendChild(right);
