@@ -540,8 +540,11 @@
 
     function renderEnvironmentsListInto(list) {
         var envs = getEnvironments();
+        var allEnvs = (typeof getAllSharedEnvironments === 'function') ? getAllSharedEnvironments() : envs;
         var activeId = getActiveEnvId();
         var globals = getGlobalVars();
+        var ws = (typeof activeWorkspace === 'function') ? activeWorkspace() : null;
+        var includeAll = !!(ws && ws.includeAllEnvironments);
 
         // Default selection: active env, or first env, or globals
         if (!envSidebarSelectedId) {
@@ -568,6 +571,34 @@
         );
         list.appendChild(header);
 
+        // #146 — workspace 'include all envs' toggle. When on, the
+        // workspace sees every shared env without per-env curation.
+        // When off, the operator picks via checkboxes in the list
+        // below. Stored on the workspace; persists across reloads.
+        if (ws) {
+            var toggleRow = el('div', { className: 'bowire-env-sidebar-includeall' },
+                el('label', { className: 'bowire-env-sidebar-includeall-label' },
+                    el('input', {
+                        type: 'checkbox',
+                        checked: includeAll,
+                        onChange: function (e) {
+                            if (typeof setWorkspaceIncludeAllEnvs === 'function') {
+                                setWorkspaceIncludeAllEnvs(ws.id, e.target.checked);
+                                render();
+                            }
+                        }
+                    }),
+                    el('span', { textContent: 'Include all environments in "' + (ws.name || 'workspace') + '"' })
+                ),
+                el('span', { className: 'bowire-env-sidebar-includeall-meta',
+                    textContent: includeAll
+                        ? 'Every shared env is in scope. Disable to pick per-env.'
+                        : 'Pick which shared envs apply via the checkboxes below.'
+                })
+            );
+            list.appendChild(toggleRow);
+        }
+
         // Globals first — always available, visually part of the
         // selectable list (not a footer/separator).
         var globalVarCount = Object.keys(globals).length;
@@ -588,22 +619,52 @@
                 : null
         ));
 
-        // Environment list
-        for (var i = 0; i < envs.length; i++) {
+        // Environment list \u2014 iterate over EVERY shared env so the
+        // operator can see the full catalogue + toggle inclusion.
+        // The visible envs (via getEnvironments() filter) light up
+        // 'in scope' for active-env activation; the rest stay greyed
+        // with their inclusion checkbox unchecked.
+        var sourceList = includeAll ? envs : allEnvs;
+        for (var i = 0; i < sourceList.length; i++) {
             (function (env) {
                 var isActive = env.id === activeId;
                 var isSelected = env.id === envSidebarSelectedId;
                 var varCount = Object.keys(env.vars || {}).length;
+                var isIncluded = includeAll
+                    || (typeof isEnvIncludedInWorkspace === 'function' ? isEnvIncludedInWorkspace(env.id) : true);
                 var item = el('div', {
                     id: 'bowire-env-item-' + env.id,
                     className: 'bowire-env-sidebar-item'
                         + (isSelected ? ' selected' : '')
-                        + (isActive ? ' active-env' : ''),
+                        + (isActive ? ' active-env' : '')
+                        + (!isIncluded ? ' bowire-env-sidebar-item-excluded' : ''),
                     onClick: function () {
                         envSidebarSelectedId = env.id;
                         render();
                     }
                 },
+                    // #146 \u2014 inclusion checkbox. Hidden when the
+                    // workspace's 'include all' switch is on (the
+                    // checkbox would be permanently checked +
+                    // disabled, which is just visual noise).
+                    !includeAll
+                        ? el('input', {
+                            type: 'checkbox',
+                            className: 'bowire-env-sidebar-item-include',
+                            checked: isIncluded,
+                            title: isIncluded
+                                ? 'Included in "' + (ws ? ws.name : 'workspace') + '". Uncheck to hide.'
+                                : 'Not in scope for this workspace. Check to include.',
+                            onClick: function (e) { e.stopPropagation(); },
+                            onChange: function (e) {
+                                e.stopPropagation();
+                                if (typeof setEnvIncludedInWorkspace === 'function') {
+                                    setEnvIncludedInWorkspace(env.id, e.target.checked);
+                                    render();
+                                }
+                            }
+                        })
+                        : null,
                     el('span', {
                         className: 'bowire-env-color-dot' + (isActive ? ' active' : ''),
                         style: 'background:' + (env.color || '#6366f1'),
@@ -614,7 +675,7 @@
                     varCount > 0
                         ? el('span', { className: 'bowire-env-sidebar-item-count', textContent: String(varCount) })
                         : null,
-                    !isActive
+                    (!isActive && isIncluded)
                         ? el('button', {
                             className: 'bowire-env-sidebar-activate-btn',
                             title: 'Set as active environment',

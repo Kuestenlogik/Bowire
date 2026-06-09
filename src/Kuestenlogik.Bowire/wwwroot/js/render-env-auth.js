@@ -1003,6 +1003,20 @@
                 },
                     el('div', { className: 'bowire-workspace-menu-section' },
                         workspaces.map(function (w) {
+                            // #146 — workspace env-count label. Shows
+                            // 'all' when the workspace includes every
+                            // shared env, else the explicit count
+                            // from the inclusion list.
+                            var envLabel = '';
+                            try {
+                                if (w.includeAllEnvironments) {
+                                    var all = (typeof getAllSharedEnvironments === 'function') ? getAllSharedEnvironments() : [];
+                                    envLabel = 'all (' + all.length + ')';
+                                } else {
+                                    var n = Array.isArray(w.includedEnvironmentIds) ? w.includedEnvironmentIds.length : 0;
+                                    envLabel = n + ' env' + (n === 1 ? '' : 's');
+                                }
+                            } catch { /* ignore */ }
                             return el('div', {
                                 className: 'bowire-workspace-menu-item' + (w.id === activeWorkspaceId ? ' active' : ''),
                                 onClick: function () {
@@ -1013,6 +1027,7 @@
                             },
                                 el('span', { className: 'bowire-workspace-menu-item-dot', style: 'background:' + (w.color || 'var(--bowire-accent)') }),
                                 el('span', { className: 'bowire-workspace-menu-item-name', textContent: w.name }),
+                                el('span', { className: 'bowire-workspace-menu-item-envcount', textContent: envLabel }),
                                 w.id === activeWorkspaceId
                                     ? el('span', { className: 'bowire-workspace-menu-item-check', textContent: '✓' })
                                     : null

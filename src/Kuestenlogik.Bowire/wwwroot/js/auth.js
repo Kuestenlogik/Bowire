@@ -730,6 +730,12 @@
         envColorIndex++;
         var env = { id: genEnvId(), name: name || 'New Environment', vars: {}, color: color };
         envs.push(env);
+        // #146 — saveEnvironments updates the workspace inclusion
+        // list with whatever the saved list contains, so pushing
+        // env onto envs first ensures it lands in the active
+        // workspace by default. Operators creating an env in a
+        // curated workspace see it immediately; the env is also
+        // available to other workspaces via their include toggles.
         saveEnvironments(envs);
         return env;
     }
