@@ -2942,7 +2942,12 @@ img.bowire-logo-icon {
     max-width: 200px;
     min-width: 0;
     cursor: pointer;
-    border-bottom: 2px solid transparent;
+    /* Active-tab indicator lives on the TOP edge (Hoppscotch
+       convention). Inactive tabs have no top decoration so the row
+       reads as a clean strip; 2 px transparent top keeps the
+       layout from jumping when the active tab changes. */
+    border-top: 2px solid transparent;
+    border-bottom: 0;
     color: var(--bowire-text-secondary);
     font-size: 12px;
     white-space: nowrap;
@@ -2958,7 +2963,7 @@ img.bowire-logo-icon {
 
 .bowire-request-tab.active {
     color: var(--bowire-text);
-    border-bottom-color: var(--bowire-accent);
+    border-top-color: var(--bowire-accent);
 }
 
 /* #123 — protocol + direction colors on every tab. Protocol stripe
@@ -2983,10 +2988,10 @@ img.bowire-logo-icon {
 .bowire-request-tab[data-protocol="odata"]     { --tab-protocol-color: var(--bowire-protocol-odata); }
 .bowire-request-tab[data-protocol="mcp"]       { --tab-protocol-color: var(--bowire-protocol-mcp); }
 
-.bowire-request-tab[data-direction="warm"].active    { border-bottom-color: var(--bowire-direction-warm); }
-.bowire-request-tab[data-direction="cool"].active    { border-bottom-color: var(--bowire-direction-cool); }
-.bowire-request-tab[data-direction="duplex"].active  { border-bottom-color: var(--bowire-direction-duplex); }
-.bowire-request-tab[data-direction="neutral"].active { border-bottom-color: var(--bowire-direction-neutral); }
+.bowire-request-tab[data-direction="warm"].active    { border-top-color: var(--bowire-direction-warm); }
+.bowire-request-tab[data-direction="cool"].active    { border-top-color: var(--bowire-direction-cool); }
+.bowire-request-tab[data-direction="duplex"].active  { border-top-color: var(--bowire-direction-duplex); }
+.bowire-request-tab[data-direction="neutral"].active { border-top-color: var(--bowire-direction-neutral); }
 
 /* "+" new-tab button — peer of the tabs, lives at the right of the
    scroll container. Same height + alignment so it sits flush with
@@ -4613,13 +4618,14 @@ img.bowire-logo-icon {
     font-weight: 500;
     color: var(--bowire-text-tertiary);
     cursor: pointer;
-    border-bottom: 2px solid transparent;
+    /* Hoppscotch-style — accent stripe lives on the TOP edge of
+       the active tab; inactive tabs have no top decoration so they
+       read as plain text. 2 px transparent border on every tab so
+       the row height stays stable when an active tab swaps in. */
+    border-top: 2px solid transparent;
+    border-bottom: 0;
     transition: all var(--bowire-transition);
     user-select: none;
-    /* Negative margin overlaps the container's bottom border so the
-       active underline sits flush with the seam to the content
-       pane below — no 1 px gap, no visual stack of separators. */
-    margin-bottom: -1px;
 }
 
 .bowire-tab:hover {
@@ -4628,7 +4634,7 @@ img.bowire-logo-icon {
 
 .bowire-tab.active {
     color: var(--bowire-accent-text);
-    border-bottom-color: var(--bowire-accent);
+    border-top-color: var(--bowire-accent);
     background: var(--bowire-bg-elevated);
 }
 

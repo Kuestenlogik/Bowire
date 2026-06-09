@@ -784,7 +784,7 @@
                     // links). Fallback to text when the body is empty
                     // (network blip — caught case below should be hit
                     // instead but be defensive).
-                    var problem = normalizeProblem(resp.body) || normalizeProblem('AI request failed (HTTP ' + resp.status + ').');
+                    var problem = normalizeProblem(resp.body) || normalizeProblem('Assistant request failed (HTTP ' + resp.status + ').');
                     chatHistory.push({ role: 'assistant', problem: problem });
                 }
             })
@@ -829,7 +829,7 @@
 
         // Header
         var header = el('div', { className: 'bowire-ai-header' });
-        header.appendChild(el('h3', { textContent: 'AI assistant' }));
+        header.appendChild(el('h3', { textContent: 'Assistant' }));
         header.appendChild(el('span', {
             className: 'bowire-ai-mode',
             textContent: 'Hint engine — no model required'
