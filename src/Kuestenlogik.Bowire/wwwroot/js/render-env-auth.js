@@ -107,6 +107,28 @@
 
         next.appendChild(body);
 
+        // #124 v2 — Omnibox modal overlay. When searchSuggestionsOpen
+        // is true, the palette built in renderTopbar gets re-parented
+        // into a centered modal card with a backdrop. Click on the
+        // backdrop closes; Esc is handled in init.js's keydown.
+        if (searchSuggestionsOpen && _omniboxPaletteForModal) {
+            var backdrop = el('div', {
+                id: 'bowire-omnibox-backdrop',
+                className: 'bowire-omnibox-backdrop',
+                onClick: function (e) {
+                    if (e.target === e.currentTarget) {
+                        searchSuggestionsOpen = false;
+                        searchQuery = '';
+                        render();
+                    }
+                }
+            });
+            var modal = el('div', { className: 'bowire-omnibox-modal' });
+            modal.appendChild(_omniboxPaletteForModal);
+            backdrop.appendChild(modal);
+            next.appendChild(backdrop);
+        }
+
         // #138 — Statusbar at the very bottom of the app. Hosts the
         // connection pill (moved from topbar), env selector + watch
         // button, plus future ambient indicators (hint count, save
@@ -572,7 +594,11 @@
         bar.appendChild(brand);
 
         // --- Command palette (center column) ---
+        // #124 v2 — build paletteWrap unconditionally for stash on a
+        // module-level slot so the modal-overlay mount in
+        // render()'s body assembly can append it without rebuilding.
         var paletteWrap = el('div', { id: 'bowire-topbar-palette', className: 'bowire-topbar-palette' });
+        _omniboxPaletteForModal = paletteWrap;
 
         var searchInputEl = el('input', {
             id: 'bowire-command-palette-input',
@@ -761,7 +787,41 @@
             searchSuggestionCache = [];
         }
 
-        bar.appendChild(paletteWrap);
+        // #124 v2 — topbar shows a Hoppscotch/Linear-style search
+        // *trigger* (button that looks like a search field) instead
+        // of the inline input. Click or Cmd/Ctrl+K opens the modal
+        // overlay rendered at body-render time (see
+        // renderOmniboxModal). The actual input + suggestions live
+        // in the modal; the trigger only carries hint text + the
+        // keyboard chord chip.
+        var triggerWrap = el('div', { className: 'bowire-omnibox-trigger-wrap' });
+        triggerWrap.appendChild(el('button', {
+            id: 'bowire-omnibox-trigger',
+            type: 'button',
+            className: 'bowire-omnibox-trigger',
+            title: 'Open command palette',
+            onClick: function () {
+                searchSuggestionsOpen = true;
+                searchSuggestionIndex = 0;
+                render();
+                requestAnimationFrame(function () {
+                    var input = document.getElementById('bowire-command-palette-input');
+                    if (input) { input.focus(); input.select(); }
+                });
+            }
+        },
+            el('span', { className: 'bowire-omnibox-trigger-icon', innerHTML: svgIcon('compass') }),
+            el('span', { className: 'bowire-omnibox-trigger-text', textContent: 'Search methods, recordings, modes…' }),
+            el('span', { className: 'bowire-omnibox-trigger-chord' },
+                el('kbd', { textContent: navigator.platform.indexOf('Mac') !== -1 ? '⌘' : 'Ctrl' }),
+                el('kbd', { textContent: 'K' })
+            )
+        ));
+        bar.appendChild(triggerWrap);
+        // The actual paletteWrap (with input + suggestions) renders
+        // INSIDE the modal overlay — see renderOmniboxModal below.
+        // We still build it here to capture all the existing
+        // suggestion + keyboard logic in one place.
 
         // Schema Watch toggle moved to the statusbar in #138 along
         // with the connection pill + env selector. Local definition

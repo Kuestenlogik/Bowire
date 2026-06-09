@@ -810,6 +810,114 @@ body {
     padding: 0 6px;
 }
 
+/* #124 v2 — Omnibox modal. Centered overlay with backdrop,
+   activated by Cmd/Ctrl+K or by clicking the topbar trigger
+   button. Hosts the re-parented topbar-palette DOM so all the
+   keyboard / suggestion / select logic stays in one place. */
+.bowire-omnibox-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 200;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding-top: 80px;
+    backdrop-filter: blur(2px);
+}
+.bowire-omnibox-modal {
+    width: min(640px, calc(100vw - 32px));
+    max-height: calc(100vh - 160px);
+    background: var(--bowire-bg-elevated);
+    border: 1px solid var(--bowire-border);
+    border-radius: var(--bowire-radius-lg);
+    box-shadow: var(--bowire-shadow-lg);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+/* The re-parented topbar-palette inside the modal — let it fill
+   the modal naturally, drop the topbar's grid-column constraint. */
+.bowire-omnibox-modal .bowire-topbar-palette {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+}
+.bowire-omnibox-modal .bowire-command-palette-input {
+    font-size: 16px;
+    height: 48px;
+    border-radius: 0;
+    border: 0;
+    border-bottom: 1px solid var(--bowire-border-subtle);
+    background: transparent;
+    padding: 0 16px;
+}
+.bowire-omnibox-modal .bowire-command-palette-dropdown {
+    position: static;
+    box-shadow: none;
+    border: 0;
+    border-radius: 0;
+    overflow-y: auto;
+    max-height: 60vh;
+    background: transparent;
+}
+
+/* Topbar trigger button — Hoppscotch / Linear / Discord shape.
+   Reads like a search field but is a button; click opens the
+   modal. */
+.bowire-omnibox-trigger-wrap {
+    display: flex;
+    justify-content: center;
+}
+.bowire-omnibox-trigger {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    max-width: 480px;
+    height: 32px;
+    padding: 0 10px;
+    background: var(--bowire-surface);
+    border: 1px solid var(--bowire-border-subtle);
+    border-radius: var(--bowire-radius-md);
+    color: var(--bowire-text-tertiary);
+    cursor: pointer;
+    font-size: 13px;
+    transition: background var(--bowire-transition), border-color var(--bowire-transition), color var(--bowire-transition);
+}
+.bowire-omnibox-trigger:hover {
+    background: var(--bowire-surface-hover);
+    border-color: var(--bowire-text-tertiary);
+    color: var(--bowire-text);
+}
+.bowire-omnibox-trigger-icon {
+    display: inline-flex;
+    width: 14px;
+    height: 14px;
+}
+.bowire-omnibox-trigger-icon svg { width: 14px; height: 14px; }
+.bowire-omnibox-trigger-text {
+    flex: 1;
+    text-align: left;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.bowire-omnibox-trigger-chord {
+    display: inline-flex;
+    gap: 2px;
+}
+.bowire-omnibox-trigger-chord kbd {
+    background: var(--bowire-bg);
+    border: 1px solid var(--bowire-border-subtle);
+    border-radius: var(--bowire-radius-sm);
+    padding: 1px 5px;
+    font-family: var(--bowire-font-mono);
+    font-size: 10px;
+    color: var(--bowire-text-secondary);
+}
+
 /* #127 — save-state pill. Small, low-noise, fades after the
    markSaved timeout. Idle state = no DOM; the user only sees
    chrome when something actually happened. */

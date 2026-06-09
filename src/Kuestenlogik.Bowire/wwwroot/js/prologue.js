@@ -319,6 +319,15 @@
         }
     } catch { /* ignore */ }
 
+    // #124 v2 — module-level slot for the omnibox palette DOM. The
+    // topbar's renderTopbar builds the palette every render cycle
+    // (with all the up-to-date suggestion bindings); body-render
+    // appends it inside a modal overlay when searchSuggestionsOpen
+    // is true. Storing the reference here keeps the build in one
+    // place without forcing renderTopbar to know about modal
+    // mounting.
+    let _omniboxPaletteForModal = null;
+
     // #127 — auto-save tracking. Every persist fn calls markSaved
     // after a successful write so the statusbar can show a small
     // "Saved" pill that fades after 2 s. State {kind, at, target}:
