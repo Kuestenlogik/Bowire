@@ -90,12 +90,23 @@
         }
         body.appendChild(renderMain());
 
+        // #138 — Statusbar at the bottom. Hosts connection pill +
+        // env selector + watch button (moved here from the topbar).
+        // Sits below the body's main flex row via the wrapper
+        // restructure below.
+
         // #133 Phase 2 — Security drawer retired. Security content
         // now lives in the main pane when the Security rail mode is
         // active (renderMain reads railMode and routes accordingly).
         // The right-side drawer concept is gone.
 
         next.appendChild(body);
+
+        // #138 — Statusbar at the very bottom of the app. Hosts the
+        // connection pill (moved from topbar), env selector + watch
+        // button, plus future ambient indicators (hint count, save
+        // state, workspace name).
+        next.appendChild(renderStatusBar());
 
         if (typeof window.morphdom === 'function') {
             window.morphdom(app, next, {
@@ -380,6 +391,61 @@
         return s.slice(0, keepStart) + '…' + s.slice(-keepEnd);
     }
 
+    // Schema Watch toggle button — extracted in #138 so both
+    // topbar (legacy) and statusbar mount it from the same
+    // helper.
+    function renderWatchButton() {
+        return el('button', {
+            id: 'bowire-schema-watch-btn',
+            className: 'bowire-theme-toggle-btn' + (isSchemaWatchActive() ? ' is-watching' : ''),
+            title: isSchemaWatchActive()
+                ? 'Schema watch active — click to stop'
+                : 'Start schema watch (re-discover every 15s)',
+            'aria-label': isSchemaWatchActive() ? 'Stop schema watch' : 'Start schema watch',
+            onClick: function () {
+                if (isSchemaWatchActive()) { stopSchemaWatch(); }
+                else { startSchemaWatch(15000); }
+                render();
+            }
+        }, el('span', {
+            innerHTML: svgIcon('replay'),
+            style: 'width:16px;height:16px;display:flex'
+        }));
+    }
+
+    // ---- Statusbar (#138) ----
+    // Thin strip pinned to the bottom of the workbench. IDE-style
+    // ambient telemetry — connection state, active env, watch button,
+    // and (when their issues ship) hint counts, save indicators,
+    // workspace name. Hosts items moved out of the topbar so the
+    // topbar reads as navigation + identity, not "everything".
+    function renderStatusBar() {
+        if (uiMode === 'embedded') return el('div', { id: 'bowire-statusbar', style: 'display:none' });
+        var bar = el('div', { id: 'bowire-statusbar', className: 'bowire-statusbar' });
+
+        var left = el('div', { className: 'bowire-statusbar-left' },
+            renderConnectionPill(),
+        );
+        bar.appendChild(left);
+
+        var centre = el('div', { className: 'bowire-statusbar-centre' },
+            renderEnvSelector(),
+        );
+        bar.appendChild(centre);
+
+        var right = el('div', { className: 'bowire-statusbar-right' });
+        // Watch button (existing local var renderTopbar built but
+        // now lives here). Built inline since we no longer need it
+        // upstairs.
+        if (typeof renderWatchButton === 'function') {
+            var wb = renderWatchButton();
+            if (wb) right.appendChild(wb);
+        }
+        bar.appendChild(right);
+
+        return bar;
+    }
+
     // ---- Security drawer (#111) ----
     // Mirror of renderAiDrawer for the Security surface. Same chrome
     // (header + close button + content area), different host call
@@ -652,24 +718,9 @@
 
         bar.appendChild(paletteWrap);
 
-        // --- Right controls: env + theme ---
-        // Schema Watch toggle
-        var watchBtn = el('button', {
-            id: 'bowire-schema-watch-btn',
-            className: 'bowire-theme-toggle-btn' + (isSchemaWatchActive() ? ' is-watching' : ''),
-            title: isSchemaWatchActive()
-                ? 'Schema watch active — click to stop'
-                : 'Start schema watch (re-discover every 15s)',
-            'aria-label': isSchemaWatchActive() ? 'Stop schema watch' : 'Start schema watch',
-            onClick: function () {
-                if (isSchemaWatchActive()) { stopSchemaWatch(); }
-                else { startSchemaWatch(15000); }
-                render();
-            }
-        }, el('span', {
-            innerHTML: svgIcon('replay'),
-            style: 'width:16px;height:16px;display:flex'
-        }));
+        // Schema Watch toggle moved to the statusbar in #138 along
+        // with the connection pill + env selector. Local definition
+        // dropped from the topbar.
 
         // About button — pops the standalone About dialog (version,
         // open-source notices, Küstenlogik credit). Sits between the
@@ -791,14 +842,10 @@
         }));
 
         var right = el('div', { id: 'bowire-topbar-right', className: 'bowire-topbar-right' },
-            // Connection-context group (pill + env selector + watch
-            // sit together because they all describe "what am I
-            // connected to right now").
-            el('div', { className: 'bowire-topbar-group bowire-topbar-context' },
-                renderConnectionPill(),
-                renderEnvSelector(),
-                watchBtn,
-            ),
+            // #138 — connection pill + env selector + watch button
+            // moved out of the topbar into the new statusbar at the
+            // bottom. Topbar right now reads as: drawer toggles +
+            // overflow.
             // Drawer-toggle group. Security toggle retired in
             // #133 Phase 2 — Security is now a rail mode, not a
             // drawer. Assistant (AI) stays as a drawer because it's

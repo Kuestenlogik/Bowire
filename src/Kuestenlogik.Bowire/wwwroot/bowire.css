@@ -756,6 +756,59 @@ body {
 .bowire-rail-btn-stub { opacity: 0.55; }
 .bowire-rail-btn-stub:hover { opacity: 0.85; }
 
+/* #137 — sidebar-toggle pinned to the rail bottom. margin-top:
+   auto pushes it away from the mode buttons so it sits flush at
+   the bottom regardless of how many modes are above. Visually
+   separated from the mode list by a divider. */
+.bowire-rail-toggle-sidebar {
+    margin-top: auto;
+}
+.bowire-rail-toggle-sidebar::before {
+    content: '';
+    position: absolute;
+    top: -8px;
+    left: 6px;
+    right: 6px;
+    height: 1px;
+    background: var(--bowire-border-subtle);
+}
+
+/* #138 — Statusbar pinned at the bottom of the workbench. IDE-
+   style 28 px strip carrying ambient telemetry: connection state,
+   active env, watch button, plus future hint / save indicators. */
+.bowire-statusbar {
+    flex: 0 0 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    padding: 0 12px;
+    gap: 8px;
+    background: var(--bowire-bg-elevated);
+    border-top: 1px solid var(--bowire-border-subtle);
+    font-size: 11px;
+    color: var(--bowire-text-secondary);
+}
+.bowire-statusbar-left,
+.bowire-statusbar-centre,
+.bowire-statusbar-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.bowire-statusbar-centre {
+    flex: 1;
+    justify-content: center;
+}
+.bowire-statusbar .bowire-conn-pill,
+.bowire-statusbar .bowire-env-bar,
+.bowire-statusbar .bowire-theme-toggle-btn {
+    height: 22px;
+    font-size: 11px;
+}
+.bowire-statusbar .bowire-theme-toggle-btn {
+    padding: 0 6px;
+}
+
 /* #92 — Sources management view in the main pane. */
 .bowire-conn-pill-clickable {
     cursor: pointer;
