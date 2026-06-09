@@ -5338,6 +5338,25 @@ img.bowire-logo-icon {
     width: 90vw;
     animation: bowire-confirm-slide 150ms ease-out;
 }
+
+/* Prompt-shape input. Sits between the message + the action row;
+   carries the field that the operator's typing into. */
+.bowire-prompt-input {
+    display: block;
+    width: 100%;
+    margin: 12px 0;
+    padding: 8px 10px;
+    font-size: 14px;
+    background: var(--bowire-bg);
+    border: 1px solid var(--bowire-border);
+    border-radius: var(--bowire-radius-md);
+    color: var(--bowire-text);
+}
+.bowire-prompt-input:focus {
+    outline: none;
+    border-color: var(--bowire-accent);
+    box-shadow: 0 0 0 2px var(--bowire-accent-subtle);
+}
 @keyframes bowire-confirm-slide {
     from { opacity: 0; transform: scale(0.95) translateY(-8px); }
     to { opacity: 1; transform: scale(1) translateY(0); }

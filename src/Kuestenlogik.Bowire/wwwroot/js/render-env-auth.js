@@ -1038,11 +1038,18 @@
                     el('div', {
                         className: 'bowire-workspace-menu-item bowire-workspace-menu-item-action',
                         onClick: function () {
-                            var name = prompt('New workspace name?');
-                            if (!name) { workspaceMenuOpen = false; render(); return; }
-                            createWorkspace(name.trim());
                             workspaceMenuOpen = false;
                             render();
+                            bowirePrompt('New workspace name', {
+                                title: 'Create workspace',
+                                placeholder: 'e.g. Payments — staging',
+                                confirmText: 'Create',
+                            }).then(function (name) {
+                                if (name) {
+                                    createWorkspace(name);
+                                    render();
+                                }
+                            });
                         }
                     },
                         el('span', { className: 'bowire-workspace-menu-item-icon', textContent: '+' }),
@@ -1051,10 +1058,20 @@
                     el('div', {
                         className: 'bowire-workspace-menu-item bowire-workspace-menu-item-action',
                         onClick: function () {
-                            var renamed = prompt('Rename workspace', ws.name);
-                            if (renamed && renamed.trim()) renameWorkspace(ws.id, renamed.trim());
+                            var oldName = ws.name;
+                            var wsId = ws.id;
                             workspaceMenuOpen = false;
                             render();
+                            bowirePrompt('Rename workspace', {
+                                title: 'Rename',
+                                defaultValue: oldName,
+                                confirmText: 'Rename',
+                            }).then(function (renamed) {
+                                if (renamed) {
+                                    renameWorkspace(wsId, renamed);
+                                    render();
+                                }
+                            });
                         }
                     },
                         el('span', { className: 'bowire-workspace-menu-item-icon', textContent: '✎' }),
@@ -1063,11 +1080,15 @@
                     workspaces.length > 1 ? el('div', {
                         className: 'bowire-workspace-menu-item bowire-workspace-menu-item-action bowire-workspace-menu-item-danger',
                         onClick: function () {
-                            if (confirm('Delete workspace "' + ws.name + '"? Phase 1 has no per-workspace state isolation, so the underlying URLs/envs stay.')) {
-                                deleteWorkspace(ws.id);
-                            }
+                            var wsName = ws.name;
+                            var wsId = ws.id;
                             workspaceMenuOpen = false;
                             render();
+                            bowireConfirm(
+                                'Delete workspace "' + wsName + '"? The underlying URLs / envs / recordings for this workspace are removed.',
+                                function () { deleteWorkspace(wsId); render(); },
+                                { title: 'Delete workspace', confirmText: 'Delete', danger: true }
+                            );
                         }
                     },
                         el('span', { className: 'bowire-workspace-menu-item-icon', textContent: '🗑' }),

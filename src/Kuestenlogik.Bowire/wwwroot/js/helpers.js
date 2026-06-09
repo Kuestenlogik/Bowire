@@ -816,6 +816,72 @@
         });
     }
 
+    // In-app prompt dialog — mirrors bowireConfirm's shape + theme
+    // so callers don't reach for browser-native window.prompt(),
+    // which doesn't match Bowire's theme and isn't available at
+    // all under some embedded hosts. Resolves the promise with the
+    // entered string (trimmed) or null when the operator cancels.
+    function bowirePrompt(message, options) {
+        var opts = options || {};
+        return new Promise(function (resolve) {
+            var existing = document.querySelector('.bowire-confirm-overlay');
+            if (existing) existing.remove();
+
+            var input = el('input', {
+                type: 'text',
+                className: 'bowire-prompt-input',
+                value: opts.defaultValue || '',
+                placeholder: opts.placeholder || '',
+                'aria-label': message,
+            });
+
+            function commit() {
+                var val = String(input.value || '').trim();
+                overlay.remove();
+                resolve(val || null);
+            }
+
+            var confirmBtn = el('button', {
+                className: 'bowire-confirm-btn' + (opts.danger ? ' danger' : ''),
+                textContent: opts.confirmText || 'OK',
+                'aria-label': opts.confirmText || 'OK',
+                onClick: commit,
+            });
+            var cancelBtn = el('button', {
+                className: 'bowire-confirm-btn cancel',
+                textContent: opts.cancelText || 'Cancel',
+                'aria-label': 'Cancel',
+                onClick: function () { overlay.remove(); resolve(null); },
+            });
+
+            input.addEventListener('keydown', function (e) {
+                if (e.key === 'Enter') { e.preventDefault(); commit(); }
+                else if (e.key === 'Escape') { e.preventDefault(); overlay.remove(); resolve(null); }
+            });
+
+            var dialog = el('div', {
+                className: 'bowire-confirm-dialog bowire-prompt-dialog',
+                role: 'dialog',
+                'aria-modal': 'true',
+                'aria-labelledby': 'bowire-prompt-title'
+            },
+                opts.title ? el('div', { id: 'bowire-prompt-title', className: 'bowire-confirm-title', textContent: opts.title }) : null,
+                el('div', { className: 'bowire-confirm-message', textContent: message }),
+                input,
+                el('div', { className: 'bowire-confirm-actions' }, cancelBtn, confirmBtn)
+            );
+
+            var overlay = el('div', {
+                className: 'bowire-confirm-overlay',
+                onClick: function (e) { if (e.target === overlay) { overlay.remove(); resolve(null); } }
+            }, dialog);
+            document.body.appendChild(overlay);
+            // Focus the input + select existing text so the operator
+            // can replace it with one keystroke.
+            setTimeout(function () { input.focus(); input.select(); }, 0);
+        });
+    }
+
     function svgIcon(name) {
         const icons = {
             search: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>',
