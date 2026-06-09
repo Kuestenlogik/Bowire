@@ -44,6 +44,30 @@
     // back to empty when the prologue hasn't loaded the workspace
     // yet (very early bootstrap) so the legacy unscoped path
     // applies.
+    // #144 Phase 1.7 — POST a single captured step to the chunked
+    // store so capture writes are O(1) per step instead of O(n)
+    // rewrites of the entire document. Fire-and-forget; if the
+    // request fails the localStorage cache still has the step and
+    // the next debounced full-document PUT (triggered by any other
+    // mutation) syncs the disk back into shape.
+    function appendStepToDisk(rec, step) {
+        var url = config.prefix + '/api/recordings/'
+            + encodeURIComponent(rec.id) + '/step' + _recordingsWsParam();
+        var meta = {
+            id: rec.id,
+            name: rec.name,
+            description: rec.description,
+            createdAt: rec.createdAt,
+            recordingFormatVersion: rec.recordingFormatVersion,
+            schemaSnapshot: rec.schemaSnapshot,
+        };
+        fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ step: step, metadata: meta }),
+        }).catch(function () { /* offline — localStorage still has it */ });
+    }
+
     function _recordingsWsParam() {
         try {
             if (typeof activeWorkspaceId === 'string' && activeWorkspaceId) {
@@ -167,10 +191,11 @@
         if (!isRecording()) return;
         var rec = recordingsList.find(function (r) { return r.id === recordingActiveId; });
         if (!rec) return;
-        rec.steps.push(Object.assign({
+        var step = Object.assign({
             id: nextStepId(),
             capturedAt: Date.now()
-        }, entry));
+        }, entry);
+        rec.steps.push(step);
         // Phase-5 schema-snapshot accumulation — fold the cached effective
         // annotations for (entry.service, entry.method) into the recording's
         // sidecar. The cache is populated by extensions.js whenever the
@@ -182,7 +207,17 @@
         try {
             mergeRecordingSchemaSnapshot(rec, entry.service, entry.method);
         } catch (_) { /* snapshot is a side-channel — recording stays valid */ }
-        persistRecordings();
+        // #144 Phase 1.7 — append the single step via POST instead of
+        // PUT-ing the whole list. localStorage still gets the updated
+        // recordingsList for instant-render + offline fallback, but
+        // the disk hit goes through the chunked-store append path —
+        // O(1) write per step instead of O(n) rewrite of the entire
+        // document. The debounced PUT still triggers as a safety net
+        // for the case where the per-step POST fails (offline,
+        // server hiccup); it then re-syncs the whole list.
+        try { localStorage.setItem(wsKey(RECORDINGS_KEY), JSON.stringify(recordingsList)); markSaved('recordings'); }
+        catch (e) { markSaveFailed('recordings', e); }
+        appendStepToDisk(rec, step);
         // Don't re-render here — addHistory's caller already calls render()
         // after the response has been processed.
     }

@@ -119,6 +119,10 @@
     <BowireJsFragment Include="wwwroot\js\settings.js" />
     <BowireJsFragment Include="wwwroot\js\plugin-update-badge.js" />
     <BowireJsFragment Include="wwwroot\js\ai.js" />
+    <!-- #125 Phase 2 — vars resolver UX. Must come before init.js
+         (which calls installVarsAutocomplete + installVarsChips). -->
+    <BowireJsFragment Include="wwwroot\js\vars-autocomplete.js" />
+    <BowireJsFragment Include="wwwroot\js\vars-chips.js" />
     <!--
       Frame-semantics framework + built-in widgets. extensions.js MUST
       come before any widget bundle so window.BowireExtensions.register
