@@ -787,13 +787,10 @@
             searchSuggestionCache = [];
         }
 
-        // #124 v2 — compact magnifier button in the topbar centre.
-        // Click or Cmd/Ctrl+K opens the modal overlay. GitHub /
-        // Hoppscotch convention — the topbar carries identity +
-        // primary actions, not a search field. The full input +
-        // suggestion list live in the modal.
-        var triggerWrap = el('div', { className: 'bowire-omnibox-trigger-wrap' });
-        triggerWrap.appendChild(el('button', {
+        // #124 v2 — compact magnifier button. Built here so it can
+        // be reused on the right cluster below. Click or
+        // Cmd/Ctrl+K opens the modal overlay.
+        var omniboxTriggerBtn = el('button', {
             id: 'bowire-omnibox-trigger',
             type: 'button',
             className: 'bowire-theme-toggle-btn bowire-omnibox-trigger-btn',
@@ -811,8 +808,10 @@
         }, el('span', {
             innerHTML: svgIcon('search'),
             style: 'width:16px;height:16px;display:flex'
-        })));
-        bar.appendChild(triggerWrap);
+        }));
+        // Centre column stays empty — magnifier moves to the right
+        // cluster where it groups naturally with Assistant + ⋮.
+        bar.appendChild(el('div', { className: 'bowire-topbar-palette-spacer' }));
         // The actual paletteWrap (with input + suggestions) renders
         // INSIDE the modal overlay — see renderOmniboxModal below.
         // We still build it here to capture all the existing
@@ -953,8 +952,11 @@
             // Drawer-toggle group. Security toggle retired in
             // #133 Phase 2 — Security is now a rail mode, not a
             // drawer. Assistant (AI) stays as a drawer because it's
-            // cross-cutting (used alongside every mode).
+            // cross-cutting (used alongside every mode). Omnibox
+            // search trigger sits at the front so the eye lands on
+            // 'search' before the assistant + overflow.
             el('div', { className: 'bowire-topbar-group bowire-topbar-drawers' },
+                omniboxTriggerBtn,
                 aiToggleBtn,
             ),
             // Overflow.

@@ -330,7 +330,11 @@ body {
     justify-content: center;
 }
 .bowire-topbar-brand-text {
-    padding-left: 8px;
+    /* Wordmark starts flush against the right edge of the 48 px
+       logo container, which is also the right edge of the activity
+       rail. The eye lands on logo+wordmark as one anchor instead
+       of two separated marks. */
+    padding-left: 0;
 }
 
 .bowire-topbar-brand-text {
@@ -11081,6 +11085,9 @@ details[open] > .bowire-json-tree-summary::before {
     font-size: 11px;
     color: var(--bowire-text-tertiary);
     font-weight: 500;
+}
+.bowire-ai-mode-connected {
+    color: var(--bowire-success);
 }
 .bowire-ai-empty {
     font-size: 13px;

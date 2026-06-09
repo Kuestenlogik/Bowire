@@ -827,14 +827,30 @@
     function renderAiPanel() {
         var panel = el('div', { className: 'bowire-ai-panel' });
 
-        // Header — the drawer chrome already carries the
-        // 'Assistant' title up top; the inner panel only needs the
-        // mode sublabel ('Hint engine — no model required') so we
-        // don't render the same word twice.
+        // Header sublabel — tells the operator what's actually
+        // happening right now: which model is connected, or what's
+        // missing if it isn't. The previous text ('Hint engine —
+        // no model required') was Bowire-internal jargon that
+        // didn't answer the only question an operator opening the
+        // drawer cares about: 'can the AI help me now?'.
         var header = el('div', { className: 'bowire-ai-header' });
+        var sublabelText;
+        var sublabelClass = 'bowire-ai-mode';
+        if (aiStatus && aiStatus.hasClient) {
+            sublabelText = 'Connected · ' + (aiStatus.providerId || 'unknown')
+                + ' · ' + (aiStatus.model || '(default model)');
+            sublabelClass += ' bowire-ai-mode-connected';
+        } else if (aiStatus === null) {
+            // Status endpoint 404 → the AI package isn't installed
+            // in this Bowire build.
+            sublabelText = 'AI package not installed — chat unavailable. Hints still work.';
+        } else {
+            // Package installed but no model configured.
+            sublabelText = 'No model configured — open Settings → Assistant to connect one.';
+        }
         header.appendChild(el('span', {
-            className: 'bowire-ai-mode',
-            textContent: 'Hint engine — no model required'
+            className: sublabelClass,
+            textContent: sublabelText,
         }));
         panel.appendChild(header);
 
