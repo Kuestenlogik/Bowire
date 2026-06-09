@@ -20,10 +20,21 @@
                 else e.setAttribute(k, v);
             }
         }
-        for (const c of children) {
-            if (typeof c === 'string') e.appendChild(document.createTextNode(c));
-            else if (c) e.appendChild(c);
+        // Children may be: a Node, a string, null/undefined (skip),
+        // or an array of any of the above. Arrays come from
+        // .map(...) callers — without the unwrap branch, appendChild
+        // throws TypeError and the parent never renders. The same
+        // shape works fine in JSX-style frameworks; matching it here
+        // keeps el() idiomatic for callers that build conditional
+        // children lists.
+        function appendChildren(node, list) {
+            for (const c of list) {
+                if (Array.isArray(c)) appendChildren(node, c);
+                else if (typeof c === 'string') node.appendChild(document.createTextNode(c));
+                else if (c) node.appendChild(c);
+            }
         }
+        appendChildren(e, children);
         return e;
     }
 
