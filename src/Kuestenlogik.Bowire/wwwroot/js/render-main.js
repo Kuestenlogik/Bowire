@@ -823,6 +823,37 @@
             return homeMain;
         }
 
+        // #133 Phase 2 — Recordings rail mode owns the main pane.
+        // Sidebar shows the recordings list; main pane shows the
+        // selected recording's detail (steps + actions). When no
+        // recording is selected (fresh entry, or after a delete),
+        // an empty card guides the operator toward the next step.
+        if (railMode === 'recordings') {
+            var recMain = el('div', { id: 'bowire-main-recordings', className: 'bowire-main bowire-main-recordings' });
+            var selectedRec = recordingsList.find(function (r) { return r.id === recordingManagerSelectedId; });
+            if (selectedRec && typeof renderRecordingDetail === 'function') {
+                recMain.appendChild(renderRecordingDetail(selectedRec));
+            } else {
+                var emptyWrap = el('div', { style: 'padding:32px' });
+                emptyWrap.appendChild(renderEmptyCard({
+                    icon: 'recording',
+                    headline: recordingsList.length === 0 ? 'No recordings yet' : 'Pick a recording',
+                    body: recordingsList.length === 0
+                        ? 'Start a recording from the sidebar to capture a sequence of calls.'
+                        : 'Pick a recording from the sidebar list to see its steps and actions.',
+                    actions: recordingsList.length === 0
+                        ? [{
+                            label: 'Start recording',
+                            primary: true,
+                            onClick: function () { startRecording(); render(); }
+                        }]
+                        : []
+                }));
+                recMain.appendChild(emptyWrap);
+            }
+            return recMain;
+        }
+
         // #133 Phase 2 — Security rail mode owns the main pane.
         // When the operator picks the 🛡️ Security icon on the rail,
         // the main pane swaps to the Security surface (threat-model,
