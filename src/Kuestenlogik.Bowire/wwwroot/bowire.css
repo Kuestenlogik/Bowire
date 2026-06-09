@@ -237,7 +237,7 @@
 }
 *::-webkit-scrollbar-thumb {
     background: var(--bowire-border);
-    border-radius: 3px;
+    border-radius: var(--bowire-radius-sm);
 }
 *::-webkit-scrollbar-thumb:hover {
     background: var(--bowire-text-tertiary);
@@ -293,10 +293,10 @@ body {
     grid-template-columns: auto 1fr auto;
     align-items: center;
     gap: 16px;
-    /* #129 Round 3 — tighter topbar (8/16 padding instead of 12/20)
-       gives back ~16 px of vertical real-estate to the data pane
-       without losing breathing room. Density scale used: 8 / 16. */
-    padding: 8px 16px;
+    /* #129 Round 3 — tighter topbar (density scale 8 / 16). Left
+       padding is 0 so the brand cluster can align flush with the
+       48 px activity rail below it. */
+    padding: 8px 16px 8px 0;
     --bowire-topbar-height: 56px;
     /* Glass-material — translucent bg + backdrop-filter blur+saturate
        lets the body's mesh gradient and any content scrolled underneath
@@ -316,8 +316,21 @@ body {
 .bowire-topbar-brand {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 0;
     min-width: 0;
+}
+/* Logo column is exactly 48 px so it aligns vertically with the
+   activity-rail icons below (rail buttons stretch to full 48 px
+   width). The logo image inside is centered both axes. */
+.bowire-topbar-brand .bowire-logo-icon {
+    width: 48px;
+    flex: 0 0 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.bowire-topbar-brand-text {
+    padding-left: 8px;
 }
 
 .bowire-topbar-brand-text {
@@ -328,7 +341,9 @@ body {
 
 .bowire-topbar-brand .bowire-logo-text {
     font-weight: 600;
-    font-size: 14px;
+    /* Aligned with the marketing-site wordmark (~17 px) so the app
+       reads as part of the same product, not a smaller sub-page. */
+    font-size: 17px;
     color: var(--bowire-text);
     line-height: 1.2;
     white-space: nowrap;
@@ -411,7 +426,7 @@ body {
     height: 18px;
     padding: 0 5px;
     border: 1px solid var(--bowire-border);
-    border-radius: 4px;
+    border-radius: var(--bowire-radius-md);
     color: var(--bowire-text-tertiary);
     font-size: 10px;
     font-family: var(--bowire-font-mono);
@@ -491,7 +506,7 @@ body {
     padding: 1px 6px;
     background: var(--bowire-surface);
     color: var(--bowire-text-secondary);
-    border-radius: 4px;
+    border-radius: var(--bowire-radius-md);
     font-size: 9px;
     font-weight: 600;
     text-transform: uppercase;
@@ -1354,7 +1369,7 @@ body {
     text-align: center;
     background: var(--bowire-accent);
     color: var(--bowire-bg);
-    border-radius: 7px;
+    border-radius: var(--bowire-radius-lg);
     pointer-events: none;
 }
 
@@ -1757,7 +1772,7 @@ img.bowire-logo-icon {
     padding: 0 4px;
     background: var(--bowire-accent);
     color: white;
-    border-radius: 8px;
+    border-radius: var(--bowire-radius-lg);
     font-size: 10px;
     font-weight: 600;
     font-variant-numeric: tabular-nums;
@@ -2363,7 +2378,7 @@ img.bowire-logo-icon {
     min-width: 18px;
     height: 18px;
     padding: 0 5px;
-    border-radius: 9px;
+    border-radius: var(--bowire-radius-lg);
     font-size: 10px;
     font-weight: 600;
     font-variant-numeric: tabular-nums;
@@ -3053,7 +3068,7 @@ img.bowire-logo-icon {
     text-transform: uppercase;
     letter-spacing: 0.04em;
     padding: 1px 5px;
-    border-radius: 3px;
+    border-radius: var(--bowire-radius-sm);
     color: white;
     flex-shrink: 0;
     line-height: 1.4;
@@ -3081,7 +3096,7 @@ img.bowire-logo-icon {
     background: transparent;
     color: var(--bowire-text-tertiary);
     cursor: pointer;
-    border-radius: 3px;
+    border-radius: var(--bowire-radius-sm);
     padding: 0;
     flex-shrink: 0;
     opacity: 0;
@@ -3422,7 +3437,7 @@ img.bowire-logo-icon {
     border-left-width: 3px;
     background: rgba(217, 119, 6, 0.08);
     color: var(--bowire-text);
-    border-radius: 4px;
+    border-radius: var(--bowire-radius-md);
     font-family: var(--bowire-font-mono);
     font-size: 12px;
 }
@@ -3449,7 +3464,7 @@ img.bowire-logo-icon {
     color: var(--bowire-text-muted);
     font-size: 11px;
     font-weight: 600;
-    border-radius: 4px;
+    border-radius: var(--bowire-radius-md);
     cursor: pointer;
     margin-left: 4px;
 }
@@ -3514,7 +3529,7 @@ img.bowire-logo-icon {
     font-family: var(--bowire-font-mono);
     padding: 4px 8px;
     border: 1px solid var(--bowire-border);
-    border-radius: 4px;
+    border-radius: var(--bowire-radius-md);
     background: var(--bowire-bg);
     color: var(--bowire-text);
     cursor: pointer;
@@ -3529,7 +3544,7 @@ img.bowire-logo-icon {
     font-weight: 700;
     font-family: var(--bowire-font-mono);
     padding: 2px 6px;
-    border-radius: 3px;
+    border-radius: var(--bowire-radius-sm);
 }
 .bowire-diff-stat.add {
     background: rgba(34, 197, 94, 0.18);
@@ -3602,7 +3617,7 @@ img.bowire-logo-icon {
     color: var(--bowire-text-muted);
     font-size: 11px;
     font-weight: 600;
-    border-radius: 4px;
+    border-radius: var(--bowire-radius-md);
     cursor: pointer;
 }
 .bowire-code-lang-pill:hover {
@@ -3619,7 +3634,7 @@ img.bowire-logo-icon {
     padding: 14px 16px;
     background: var(--bowire-bg-elevated);
     border: 1px solid var(--bowire-border);
-    border-radius: 4px;
+    border-radius: var(--bowire-radius-md);
     font-family: var(--bowire-font-mono);
     font-size: 12px;
     line-height: 1.55;
@@ -3650,7 +3665,7 @@ img.bowire-logo-icon {
     border: 1px solid var(--bowire-border);
     background: var(--bowire-bg);
     color: var(--bowire-text);
-    border-radius: 4px;
+    border-radius: var(--bowire-radius-md);
     font-size: 12px;
     font-family: var(--bowire-font-sans);
     outline: none;
@@ -3672,7 +3687,7 @@ img.bowire-logo-icon {
     color: var(--bowire-text-muted);
     font-size: 11px;
     font-weight: 600;
-    border-radius: 4px;
+    border-radius: var(--bowire-radius-md);
     cursor: pointer;
 }
 .bowire-history-filter-pill:hover {
@@ -3689,7 +3704,7 @@ img.bowire-logo-icon {
 .bowire-mcp-content {
     margin: 12px;
     border: 1px solid var(--bowire-border);
-    border-radius: 4px;
+    border-radius: var(--bowire-radius-md);
     background: var(--bowire-bg-elevated);
     overflow: hidden;
 }
@@ -3735,7 +3750,7 @@ img.bowire-logo-icon {
     font-size: 9px;
     font-weight: 700;
     letter-spacing: 0.5px;
-    border-radius: 3px;
+    border-radius: var(--bowire-radius-sm);
     vertical-align: middle;
     font-family: var(--bowire-font-mono);
 }
@@ -3768,7 +3783,7 @@ img.bowire-logo-icon {
     font-size: 9px;
     font-weight: 700;
     letter-spacing: 0.5px;
-    border-radius: 3px;
+    border-radius: var(--bowire-radius-sm);
     vertical-align: middle;
     font-family: var(--bowire-font-mono);
     background: rgba(34, 211, 238, 0.18);
@@ -3800,7 +3815,7 @@ img.bowire-logo-icon {
     font-size: 9px;
     font-weight: 700;
     letter-spacing: 0.5px;
-    border-radius: 3px;
+    border-radius: var(--bowire-radius-sm);
     vertical-align: middle;
     font-family: var(--bowire-font-mono);
     background: rgba(148, 163, 184, 0.18);
@@ -3875,7 +3890,7 @@ img.bowire-logo-icon {
     font-size: 9px;
     font-weight: 700;
     letter-spacing: 0.5px;
-    border-radius: 3px;
+    border-radius: var(--bowire-radius-sm);
     vertical-align: middle;
     font-family: var(--bowire-font-mono);
     background: rgba(251, 191, 36, 0.18);
@@ -3900,7 +3915,7 @@ img.bowire-logo-icon {
     font-size: 9px;
     font-weight: 700;
     letter-spacing: 0.5px;
-    border-radius: 3px;
+    border-radius: var(--bowire-radius-sm);
     vertical-align: middle;
     font-family: var(--bowire-font-mono);
     background: rgba(148, 163, 184, 0.18);
@@ -4229,7 +4244,7 @@ img.bowire-logo-icon {
     border: 1px solid var(--bowire-border-subtle);
     background: transparent;
     color: var(--bowire-text-secondary);
-    border-radius: 4px;
+    border-radius: var(--bowire-radius-md);
     cursor: pointer;
     transition: background var(--bowire-transition), color var(--bowire-transition);
 }
@@ -4291,7 +4306,7 @@ img.bowire-logo-icon {
     border: 1px solid var(--bowire-border-subtle);
     background: transparent;
     color: var(--bowire-text-secondary);
-    border-radius: 4px;
+    border-radius: var(--bowire-radius-md);
     cursor: pointer;
     transition: background var(--bowire-transition), color var(--bowire-transition);
 }
@@ -4893,7 +4908,7 @@ img.bowire-logo-icon {
     color: var(--bowire-warning);
     padding: 2px 6px;
     border: 1px solid rgba(217, 119, 6, 0.3);
-    border-radius: 3px;
+    border-radius: var(--bowire-radius-sm);
     margin-top: 4px;
     display: inline-block;
 }
@@ -4930,7 +4945,7 @@ img.bowire-logo-icon {
     font-weight: 700;
     text-transform: uppercase;
     padding: 2px 5px;
-    border-radius: 3px;
+    border-radius: var(--bowire-radius-sm);
     color: white;
     flex-shrink: 0;
 }
@@ -5290,7 +5305,7 @@ img.bowire-logo-icon {
     border: none;
     cursor: pointer;
     padding: 2px 6px;
-    border-radius: 3px;
+    border-radius: var(--bowire-radius-sm);
     white-space: nowrap;
     transition: background 120ms;
 }
@@ -5304,7 +5319,7 @@ img.bowire-logo-icon {
     color: var(--bowire-text-tertiary);
     cursor: pointer;
     padding: 2px;
-    border-radius: 3px;
+    border-radius: var(--bowire-radius-sm);
     flex-shrink: 0;
     transition: color 120ms;
 }
@@ -5442,7 +5457,7 @@ img.bowire-logo-icon {
     line-height: 1.4;
     padding: 4px 8px;
     margin: 4px 0 0;
-    border-radius: 4px;
+    border-radius: var(--bowire-radius-md);
     font-family: var(--bowire-font-mono, monospace);
     min-height: 20px;
 }
@@ -5757,13 +5772,13 @@ details[open] > .bowire-json-tree-summary::before {
     width: 28px;
     height: 28px;
     border: none;
-    border-radius: 4px;
+    border-radius: var(--bowire-radius-md);
     cursor: pointer;
     padding: 0;
     background: none;
 }
 .bowire-env-color-picker::-webkit-color-swatch-wrapper { padding: 2px; }
-.bowire-env-color-picker::-webkit-color-swatch { border-radius: 3px; border: 1px solid var(--bowire-border); }
+.bowire-env-color-picker::-webkit-color-swatch { border-radius: var(--bowire-radius-sm); border: 1px solid var(--bowire-border); }
 
 /* Custom env dropdown in topbar */
 .bowire-env-dropdown-wrapper { position: relative; }
@@ -5998,7 +6013,7 @@ details[open] > .bowire-json-tree-summary::before {
 .bowire-settings-plugin-health {
     background: rgba(239, 68, 68, 0.08);
     border: 1px solid rgba(239, 68, 68, 0.35);
-    border-radius: 8px;
+    border-radius: var(--bowire-radius-lg);
     padding: 12px 14px;
     margin-bottom: 18px;
     display: flex;
@@ -6179,7 +6194,7 @@ details[open] > .bowire-json-tree-summary::before {
     padding: 2px 8px;
     background: var(--bowire-bg);
     border: 1px solid var(--bowire-border);
-    border-radius: 3px;
+    border-radius: var(--bowire-radius-sm);
     font-family: var(--bowire-font-mono, monospace);
     font-size: 11px;
     text-align: center;
@@ -6257,7 +6272,7 @@ details[open] > .bowire-json-tree-summary::before {
     padding: 10px 12px;
     margin: 12px 0;
     border: 1px solid var(--bowire-border);
-    border-radius: 6px;
+    border-radius: var(--bowire-radius-lg);
     background: var(--bowire-bg-elevated);
 }
 .bowire-settings-update-check-text {
@@ -6269,7 +6284,7 @@ details[open] > .bowire-json-tree-summary::before {
 .bowire-settings-update-check-btn {
     padding: 6px 12px;
     border: 1px solid var(--bowire-border);
-    border-radius: 4px;
+    border-radius: var(--bowire-radius-md);
     background: var(--bowire-bg);
     color: var(--bowire-text);
     font-size: 12px;
@@ -6468,7 +6483,7 @@ details[open] > .bowire-json-tree-summary::before {
     text-transform: uppercase;
     letter-spacing: 0.5px;
     padding: 3px 8px;
-    border-radius: 4px;
+    border-radius: var(--bowire-radius-md);
     color: #fff;
     flex-shrink: 0;
     line-height: 1;
@@ -6584,7 +6599,7 @@ details[open] > .bowire-json-tree-summary::before {
     background: transparent;
     color: var(--bowire-text-dim);
     cursor: pointer;
-    border-radius: 3px;
+    border-radius: var(--bowire-radius-sm);
     transition: color 120ms, background 120ms;
 }
 .bowire-flow-card-action-btn:hover { color: var(--bowire-accent); background: var(--bowire-sidebar-hover); }
@@ -6788,7 +6803,7 @@ details[open] > .bowire-json-tree-summary::before {
    copies the matching ${response.X} chaining variable. */
 .bowire-response-output.is-interactive .bowire-json-pickable {
     cursor: pointer;
-    border-radius: 3px;
+    border-radius: var(--bowire-radius-sm);
     padding: 0 2px;
     margin: 0 -2px;
     transition: background-color 80ms ease;
@@ -6919,7 +6934,7 @@ details[open] > .bowire-json-tree-summary::before {
     border: none;
     color: var(--bowire-text-tertiary);
     cursor: pointer;
-    border-radius: 3px;
+    border-radius: var(--bowire-radius-sm);
     font-size: 14px;
     transition: all var(--bowire-transition);
 }
@@ -7126,7 +7141,7 @@ details[open] > .bowire-json-tree-summary::before {
 .bowire-form-label-required {
     font-size: 10px;
     padding: 1px 5px;
-    border-radius: 3px;
+    border-radius: var(--bowire-radius-sm);
     background: rgba(248, 113, 113, 0.15);
     color: var(--bowire-error);
     font-weight: 600;
@@ -7135,7 +7150,7 @@ details[open] > .bowire-json-tree-summary::before {
 .bowire-form-label-optional {
     font-size: 10px;
     padding: 1px 5px;
-    border-radius: 3px;
+    border-radius: var(--bowire-radius-sm);
     background: var(--bowire-surface);
     color: var(--bowire-text-tertiary);
     font-style: italic;
@@ -7144,7 +7159,7 @@ details[open] > .bowire-json-tree-summary::before {
 .bowire-form-label-type {
     font-size: 10px;
     padding: 1px 5px;
-    border-radius: 3px;
+    border-radius: var(--bowire-radius-sm);
     background: var(--bowire-surface);
     color: var(--bowire-text-tertiary);
     font-family: var(--bowire-font-mono);
@@ -7483,7 +7498,7 @@ details[open] > .bowire-json-tree-summary::before {
 .bowire-shortcut-row kbd {
     background: var(--bowire-surface);
     border: 1px solid var(--bowire-border);
-    border-radius: 4px;
+    border-radius: var(--bowire-radius-md);
     padding: 2px 8px;
     font-family: var(--bowire-font-mono);
     font-size: 12px;
@@ -8057,7 +8072,7 @@ details[open] > .bowire-json-tree-summary::before {
     color: var(--bowire-text-tertiary);
     background: var(--bowire-bg);
     padding: 2px 6px;
-    border-radius: 8px;
+    border-radius: var(--bowire-radius-lg);
     flex-shrink: 0;
     margin-left: 8px;
 }
@@ -8349,7 +8364,7 @@ details[open] > .bowire-json-tree-summary::before {
     min-width: 18px;
     height: 16px;
     padding: 0 5px;
-    border-radius: 8px;
+    border-radius: var(--bowire-radius-lg);
     background: var(--bowire-accent);
     color: white;
     font-size: 9px;
@@ -8417,7 +8432,7 @@ details[open] > .bowire-json-tree-summary::before {
     min-width: 22px;
     height: 18px;
     padding: 0 6px;
-    border-radius: 9px;
+    border-radius: var(--bowire-radius-lg);
     background: var(--bowire-sidebar-hover);
     color: var(--bowire-text-tertiary);
     font-size: 10px;
@@ -8521,7 +8536,7 @@ details[open] > .bowire-json-tree-summary::before {
     min-width: 30px;
     height: 16px;
     padding: 0 4px;
-    border-radius: 3px;
+    border-radius: var(--bowire-radius-sm);
     background: var(--bowire-sidebar-bg);
     color: var(--bowire-text-secondary);
     font-size: 9px;
@@ -8686,7 +8701,7 @@ details[open] > .bowire-json-tree-summary::before {
 .bowire-perf-progress {
     height: 6px;
     background: var(--bowire-sidebar-bg);
-    border-radius: 3px;
+    border-radius: var(--bowire-radius-sm);
     overflow: hidden;
 }
 
@@ -9146,7 +9161,7 @@ details[open] > .bowire-json-tree-summary::before {
     font-size: 8px;
     font-weight: 700;
     padding: 1px 4px;
-    border-radius: 3px;
+    border-radius: var(--bowire-radius-sm);
     background: var(--bowire-warning-bg);
     color: var(--bowire-warning);
     margin-left: 4px;
@@ -9164,7 +9179,7 @@ details[open] > .bowire-json-tree-summary::before {
     display: inline-block;
     margin-left: 10px;
     padding: 2px 8px;
-    border-radius: 4px;
+    border-radius: var(--bowire-radius-md);
     background: var(--bowire-warning-bg);
     color: var(--bowire-warning);
     font-size: 10px;
@@ -9195,7 +9210,7 @@ details[open] > .bowire-json-tree-summary::before {
     text-transform: uppercase;
     letter-spacing: 0.05em;
     padding: 1px 5px;
-    border-radius: 3px;
+    border-radius: var(--bowire-radius-sm);
     background: var(--bowire-sidebar-hover);
     color: var(--bowire-text-secondary);
     margin-left: 4px;
@@ -9364,7 +9379,7 @@ details[open] > .bowire-json-tree-summary::before {
 }
 .bowire-recording-step-protocol {
     padding: 1px 6px;
-    border-radius: 3px;
+    border-radius: var(--bowire-radius-sm);
     background: var(--bowire-accent-subtle);
     color: var(--bowire-accent-text);
     font-family: var(--bowire-font-mono);
@@ -9381,7 +9396,7 @@ details[open] > .bowire-json-tree-summary::before {
 }
 .bowire-recording-step-status {
     padding: 1px 6px;
-    border-radius: 3px;
+    border-radius: var(--bowire-radius-sm);
     font-family: var(--bowire-font-mono);
     font-size: 10px;
     color: var(--bowire-text-tertiary);
@@ -9681,7 +9696,7 @@ details[open] > .bowire-json-tree-summary::before {
     padding: 0 6px;
     font-size: 9px;
     font-weight: 700;
-    border-radius: 3px;
+    border-radius: var(--bowire-radius-sm);
     background: var(--bowire-accent-subtle);
     color: var(--bowire-accent);
     font-family: var(--bowire-font-mono);
@@ -9944,7 +9959,7 @@ details[open] > .bowire-json-tree-summary::before {
     min-width: 22px;
     height: 18px;
     padding: 0 6px;
-    border-radius: 9px;
+    border-radius: var(--bowire-radius-lg);
     background: var(--bowire-accent-subtle);
     color: var(--bowire-accent);
     font-size: 11px;
@@ -9986,7 +10001,7 @@ details[open] > .bowire-json-tree-summary::before {
     overflow-y: auto;
     background: var(--bowire-surface);
     border: 1px solid var(--bowire-border);
-    border-radius: 8px;
+    border-radius: var(--bowire-radius-lg);
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
     padding: 4px 0;
     animation: bowire-fade-in 120ms ease-out;
@@ -10025,7 +10040,7 @@ details[open] > .bowire-json-tree-summary::before {
     display: inline-flex;
     align-items: center;
     padding: 1px 6px;
-    border-radius: 4px;
+    border-radius: var(--bowire-radius-md);
     background: var(--bowire-border);
     color: var(--bowire-text-tertiary);
     font-size: 10px;
@@ -10390,7 +10405,7 @@ details[open] > .bowire-json-tree-summary::before {
     border: 1px solid var(--bowire-border);
     background: var(--bowire-bg-subtle, transparent);
     color: var(--bowire-text-secondary);
-    border-radius: 9px;
+    border-radius: var(--bowire-radius-lg);
     cursor: pointer;
 }
 .bowire-fuzz-triage-btn:hover { border-color: var(--bowire-accent, #5fb2ff); color: var(--bowire-accent, #5fb2ff); }
@@ -10501,7 +10516,7 @@ details[open] > .bowire-json-tree-summary::before {
     min-width: 48px;
     text-align: center;
     padding: 2px 4px;
-    border-radius: 3px;
+    border-radius: var(--bowire-radius-sm);
     background: var(--bowire-bg-elevated);
     color: var(--bowire-text-secondary);
 }
@@ -10512,7 +10527,7 @@ details[open] > .bowire-json-tree-summary::before {
     min-width: 36px;
     text-align: center;
     padding: 2px 4px;
-    border-radius: 3px;
+    border-radius: var(--bowire-radius-sm);
 }
 .bowire-proxy-status-ok { background: rgba(46, 160, 67, 0.18); color: #2ea043; }
 .bowire-proxy-status-warn { background: rgba(255, 196, 0, 0.18); color: #d29922; }
@@ -10564,7 +10579,7 @@ details[open] > .bowire-json-tree-summary::before {
 .bowire-proxy-detail-side {
     background: var(--bowire-bg-elevated);
     border: 1px solid var(--bowire-border);
-    border-radius: 6px;
+    border-radius: var(--bowire-radius-lg);
     overflow: hidden;
 }
 .bowire-proxy-detail-side-title {
@@ -10678,7 +10693,7 @@ details[open] > .bowire-json-tree-summary::before {
 }
 .bowire-flow-assertion-result {
     padding: 2px 6px;
-    border-radius: 3px;
+    border-radius: var(--bowire-radius-sm);
 }
 .bowire-flow-assertion-result.pass {
     color: #2ea043;
@@ -10751,7 +10766,7 @@ details[open] > .bowire-json-tree-summary::before {
     z-index: 10000;
     background: var(--bowire-bg-elevated);
     border: 1px solid var(--bowire-border);
-    border-radius: 4px;
+    border-radius: var(--bowire-radius-md);
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
     max-height: 240px;
     overflow-y: auto;
@@ -11010,7 +11025,7 @@ details[open] > .bowire-json-tree-summary::before {
     gap: 10px;
     align-items: flex-start;
     padding: 10px 12px;
-    border-radius: 6px;
+    border-radius: var(--bowire-radius-lg);
     background: var(--bowire-bg-elevated, rgba(255, 255, 255, 0.04));
     border: 1px solid var(--bowire-border);
     font-size: 13px;
@@ -11060,7 +11075,7 @@ details[open] > .bowire-json-tree-summary::before {
     overflow-y: auto;
     padding: 6px 8px;
     border: 1px solid var(--bowire-border);
-    border-radius: 4px;
+    border-radius: var(--bowire-radius-md);
     background: var(--bowire-bg-subtle, rgba(255, 255, 255, 0.02));
 }
 .bowire-ai-chat-msg {
@@ -11171,7 +11186,7 @@ details[open] > .bowire-json-tree-summary::before {
     margin: 4px 0 0 0;
     padding: 6px 8px;
     background: var(--bowire-bg-elevated);
-    border-radius: 4px;
+    border-radius: var(--bowire-radius-md);
     font-family: var(--bowire-font-mono);
     font-size: 10px;
     overflow-x: auto;
@@ -11188,7 +11203,7 @@ details[open] > .bowire-json-tree-summary::before {
     font-size: 12px;
     padding: 6px 8px;
     border: 1px solid var(--bowire-border);
-    border-radius: 4px;
+    border-radius: var(--bowire-radius-md);
     background: var(--bowire-bg-subtle, transparent);
     color: var(--bowire-text-primary);
     resize: vertical;
@@ -11198,7 +11213,7 @@ details[open] > .bowire-json-tree-summary::before {
     border: 1px solid var(--bowire-border);
     background: var(--bowire-accent, #5fb2ff);
     color: #fff;
-    border-radius: 4px;
+    border-radius: var(--bowire-radius-md);
     cursor: pointer;
 }
 .bowire-ai-chat-send[disabled] {
@@ -11283,7 +11298,7 @@ details[open] > .bowire-json-tree-summary::before {
     border: 1px solid var(--bowire-border);
     background: var(--bowire-accent, #5fb2ff);
     color: #fff;
-    border-radius: 4px;
+    border-radius: var(--bowire-radius-md);
     cursor: pointer;
     font-size: 12px;
 }
@@ -11309,7 +11324,7 @@ details[open] > .bowire-json-tree-summary::before {
 .bowire-ai-threat-template-chip {
     font-size: 10px;
     padding: 1px 6px;
-    border-radius: 9px;
+    border-radius: var(--bowire-radius-lg);
     border: 1px solid var(--bowire-border);
     color: var(--bowire-text-secondary);
 }
@@ -11320,7 +11335,7 @@ details[open] > .bowire-json-tree-summary::before {
     border: 1px solid var(--bowire-border);
     background: transparent;
     color: var(--bowire-text-secondary);
-    border-radius: 4px;
+    border-radius: var(--bowire-radius-md);
     cursor: pointer;
 }
 .bowire-ai-threat-scan-btn:hover { border-color: var(--bowire-accent, #5fb2ff); color: var(--bowire-accent, #5fb2ff); }
@@ -11334,7 +11349,7 @@ details[open] > .bowire-json-tree-summary::before {
     border: 1px solid var(--bowire-border);
     background: var(--bowire-bg-subtle, transparent);
     color: var(--bowire-text-secondary);
-    border-radius: 4px;
+    border-radius: var(--bowire-radius-md);
 }
 .bowire-ai-template-gen-btn {
     font-size: 11px;
@@ -11342,7 +11357,7 @@ details[open] > .bowire-json-tree-summary::before {
     border: 1px solid var(--bowire-border);
     background: transparent;
     color: var(--bowire-text-secondary);
-    border-radius: 4px;
+    border-radius: var(--bowire-radius-md);
     cursor: pointer;
 }
 .bowire-ai-template-gen-btn:hover { border-color: var(--bowire-accent, #5fb2ff); color: var(--bowire-accent, #5fb2ff); }
@@ -11351,7 +11366,7 @@ details[open] > .bowire-json-tree-summary::before {
     margin-top: 6px;
     padding: 8px;
     border: 1px solid var(--bowire-border);
-    border-radius: 4px;
+    border-radius: var(--bowire-radius-md);
     background: var(--bowire-bg-subtle, rgba(255, 255, 255, 0.02));
 }
 .bowire-ai-template-status { font-size: 11px; color: var(--bowire-text-tertiary); }
@@ -11374,7 +11389,7 @@ details[open] > .bowire-json-tree-summary::before {
     border: 1px solid var(--bowire-border);
     background: transparent;
     color: var(--bowire-text-secondary);
-    border-radius: 4px;
+    border-radius: var(--bowire-radius-md);
     cursor: pointer;
 }
 .bowire-ai-template-copy:hover,
@@ -11392,7 +11407,7 @@ details[open] > .bowire-json-tree-summary::before {
     overflow-y: auto;
     background: var(--bowire-bg-elev, var(--bowire-bg, #1a1d23));
     border: 1px solid var(--bowire-border);
-    border-radius: 6px;
+    border-radius: var(--bowire-radius-lg);
     padding: 12px;
     z-index: 9000;
     color: var(--bowire-text);
@@ -11412,14 +11427,14 @@ details[open] > .bowire-json-tree-summary::before {
 .bowire-ai-fuzz-status { font-size: 12px; color: var(--bowire-text-tertiary); }
 .bowire-ai-fuzz-note { font-size: 11px; color: var(--bowire-text-secondary); font-style: italic; }
 .bowire-ai-fuzz-picker { display: flex; flex-direction: column; gap: 4px; }
-.bowire-ai-fuzz-row { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; padding: 4px 6px; border: 1px solid var(--bowire-border); border-radius: 4px; cursor: pointer; }
+.bowire-ai-fuzz-row { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; padding: 4px 6px; border: 1px solid var(--bowire-border); border-radius: var(--bowire-radius-md); cursor: pointer; }
 .bowire-ai-fuzz-row:hover { border-color: var(--bowire-accent, #5fb2ff); }
 .bowire-ai-fuzz-row-meta { display: inline-flex; gap: 6px; align-items: center; flex: 1; min-width: 0; }
 .bowire-ai-fuzz-row-sev {
     font-size: 10px;
     text-transform: uppercase;
     padding: 1px 6px;
-    border-radius: 9px;
+    border-radius: var(--bowire-radius-lg);
     border: 1px solid currentColor;
 }
 .bowire-ai-fuzz-row-sev.sev-info { color: var(--bowire-text-tertiary); }
@@ -11433,7 +11448,7 @@ details[open] > .bowire-json-tree-summary::before {
     border: 1px solid var(--bowire-border);
     background: var(--bowire-accent, #5fb2ff);
     color: #fff;
-    border-radius: 4px;
+    border-radius: var(--bowire-radius-md);
     cursor: pointer;
     font-size: 12px;
 }
@@ -11460,7 +11475,7 @@ details[open] > .bowire-json-tree-summary::before {
 .bowire-modal-panel {
     background: var(--bowire-bg, #1a1d23);
     border: 1px solid var(--bowire-border);
-    border-radius: 8px;
+    border-radius: var(--bowire-radius-lg);
     width: min(720px, 92vw);
     max-height: 84vh;
     display: flex;
@@ -11538,7 +11553,7 @@ details[open] > .bowire-json-tree-summary::before {
 .bowire-plugin-inspect-contrib-list code {
     background: var(--bowire-bg-elevated, rgba(255, 255, 255, 0.05));
     padding: 2px 8px;
-    border-radius: 4px;
+    border-radius: var(--bowire-radius-md);
     font-size: 12px;
 }
 .bowire-plugin-inspect-loaded {
@@ -11563,3 +11578,4 @@ details[open] > .bowire-json-tree-summary::before {
     color: var(--bowire-text-tertiary);
     font-family: var(--bowire-mono, monospace);
 }
+
