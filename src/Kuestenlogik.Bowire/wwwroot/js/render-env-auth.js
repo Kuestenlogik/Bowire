@@ -348,9 +348,13 @@
                 render();
             }
         });
+        // Title carries the at-a-glance summary so the operator can
+        // get the state via hover even when the visible chrome is
+        // just the lamp. Long URLs in the inline text didn't help
+        // anyway — they were truncated and didn't fit the name.
+        pill.setAttribute('title', summary);
         var dot = el('span', { className: 'bowire-conn-pill-dot' });
         pill.appendChild(dot);
-        pill.appendChild(el('span', { className: 'bowire-conn-pill-text', textContent: summary }));
 
         // ---- Hover popover ----
         // CSS :hover handles the show/hide so we don't need a state var
