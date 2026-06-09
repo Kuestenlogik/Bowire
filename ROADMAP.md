@@ -96,6 +96,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 - [#148](https://github.com/Kuestenlogik/Bowire/issues/148) **Per-entity file storage format for git-backed workspaces (envs / collections / scripts)** 
 - [#149](https://github.com/Kuestenlogik/Bowire/issues/149) **Workspace CLI — bowire workspace init / export / import / migrate-format** 
 - [#150](https://github.com/Kuestenlogik/Bowire/issues/150) **Filesystem-watch + reconcile UI for externally-edited workspace files** 
+- [#151](https://github.com/Kuestenlogik/Bowire/issues/151) **Secret-file separation + workspace lock file for safe team-shared git workspaces** 
 
 ---
 
