@@ -8924,11 +8924,23 @@ details[open] > .bowire-json-tree-summary::before {
 
 /* #152 v3 — Sources list rows. Symmetric breathing room around
    the protocol icon + status dot so the name doesn't crowd the
-   visual anchors. */
+   visual anchors. Hopscotch-style tightening (#6 in screenshot
+   review): 12 px body font, denser vertical padding, subtler
+   hover than the accent-subtle wash. */
 .bowire-sources-list-item {
     gap: 10px;
-    padding-left: 10px;
-    padding-right: 10px;
+    padding: 6px 12px;
+    font-size: 12px;
+    line-height: 16px;
+    border-radius: var(--bowire-radius-sm);
+}
+.bowire-sources-list-item:hover {
+    background: var(--bowire-bg-elevated);
+    color: var(--bowire-text);
+}
+.bowire-sources-list-item.selected {
+    background: var(--bowire-bg-elevated);
+    box-shadow: inset 2px 0 0 var(--bowire-accent);
 }
 .bowire-sources-list-item-proto {
     display: inline-flex;
