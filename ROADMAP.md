@@ -81,6 +81,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 - [#128](https://github.com/Kuestenlogik/Bowire/issues/128) **Bowire Agent — register embedded instances with a central hub** 
 - [#129](https://github.com/Kuestenlogik/Bowire/issues/129) **Layout cleanup — top bar, sidebar, main pane, drawers (left-sidebar model stays)** 
 - [#130](https://github.com/Kuestenlogik/Bowire/issues/130) **Comparison table: add Hoppscotch + topic-based filtering** 
+- [#131](https://github.com/Kuestenlogik/Bowire/issues/131) **Benchmarks: first-class surface (single / collection / recording / random / scheduled)** 
 
 ---
 
