@@ -86,6 +86,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 - [#133](https://github.com/Kuestenlogik/Bowire/issues/133) **Activity rail (left) — switch workbench focus by use case (dev / security / perf / mocks / …)** 
 - [#134](https://github.com/Kuestenlogik/Bowire/issues/134) **Rename surface 'AI' → 'Assistant' (technology stays; user-facing labels shift)** 
 - [#135](https://github.com/Kuestenlogik/Bowire/issues/135) **Request/response layout toggle — vertical / horizontal / auto split** 
+- [#136](https://github.com/Kuestenlogik/Bowire/issues/136) **URL / service catalogue providers (local / http / consul / kubernetes / agent)** 
 
 ---
 
