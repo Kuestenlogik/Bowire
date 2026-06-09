@@ -345,9 +345,12 @@ body {
 
 .bowire-topbar-brand .bowire-logo-text {
     font-weight: 600;
-    /* Aligned with the marketing-site wordmark (~17 px) so the app
-       reads as part of the same product, not a smaller sub-page. */
-    font-size: 17px;
+    /* Scaled down per maintainer review — earlier 17 px matched
+       the marketing site's hero wordmark, but in the workbench
+       chrome it competed with the data pane. 15 px keeps the
+       'same product' feel while letting the topbar read as
+       chrome, not headline. */
+    font-size: 15px;
     color: var(--bowire-text);
     line-height: 1.2;
     white-space: nowrap;
@@ -1574,14 +1577,18 @@ body {
 }
 
 .bowire-logo-icon {
-    width: 28px;
-    height: 28px;
+    /* Slightly smaller mark so it doesn't dominate the topbar.
+       Stays centered inside the 48 px brand column (rail width)
+       — only the visual size of the mark shrinks, the alignment
+       to the rail icons below is preserved. */
+    width: 22px;
+    height: 22px;
     border-radius: var(--bowire-radius-sm);
     background: var(--bowire-accent);
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 16px;
+    font-size: 13px;
     color: white;
     font-weight: 700;
     flex-shrink: 0;
