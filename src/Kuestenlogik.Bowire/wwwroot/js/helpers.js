@@ -540,6 +540,93 @@
     }
 
     /**
+     * Render an empty-state card (#121). Reusable across every pane
+     * that can be empty so the operator gets a consistent "what's
+     * possible from here" shape instead of a literal "No X" string.
+     *
+     * opts:
+     *   icon      — optional svg-icon id (Bowire icon catalog) for
+     *               the large centred glyph above the headline.
+     *               Falls back to a neutral dot.
+     *   headline  — short string naming the gap ("No recordings yet").
+     *   body      — optional longer text explaining the pane's purpose.
+     *   actions   — array of { label, onClick, primary? } objects;
+     *               renders as one button per entry. Pass [] for no
+     *               buttons (rare — most empty states have at least
+     *               one obvious next step).
+     *   hintKey   — optional localStorage key for a dismissible
+     *               first-time hint. When set + not yet dismissed,
+     *               the body text shows with a small "Got it" dismiss
+     *               link below.
+     *
+     * Returns a DOM node the caller appendChilds into the pane.
+     * No state ownership — caller decides when the card mounts.
+     */
+    function renderEmptyCard(opts) {
+        opts = opts || {};
+        var card = el('div', { className: 'bowire-empty-card' });
+
+        // Large centred icon. Neutral by default; callers can pass an
+        // icon id that matches the pane's identity (recording, mock,
+        // collection, etc.) for stronger semantic anchoring.
+        var iconEl = el('div', { className: 'bowire-empty-card-icon' });
+        if (opts.icon && typeof svgIcon === 'function') {
+            iconEl.innerHTML = svgIcon(opts.icon);
+        } else {
+            iconEl.textContent = '•';
+        }
+        card.appendChild(iconEl);
+
+        if (opts.headline) {
+            card.appendChild(el('h3', {
+                className: 'bowire-empty-card-headline',
+                textContent: opts.headline,
+            }));
+        }
+
+        // Hint visibility — show by default; suppress when the user
+        // has previously dismissed it (localStorage flag).
+        var hintDismissed = false;
+        if (opts.hintKey) {
+            try { hintDismissed = localStorage.getItem(opts.hintKey) === '1'; } catch { /* ignore */ }
+        }
+        if (opts.body && !hintDismissed) {
+            var bodyEl = el('p', { className: 'bowire-empty-card-body', textContent: opts.body });
+            card.appendChild(bodyEl);
+            if (opts.hintKey) {
+                var dismiss = el('button', {
+                    type: 'button',
+                    className: 'bowire-empty-card-dismiss',
+                    textContent: 'Got it — don’t show again',
+                    onClick: function () {
+                        try { localStorage.setItem(opts.hintKey, '1'); } catch { /* ignore */ }
+                        bodyEl.remove();
+                        dismiss.remove();
+                    }
+                });
+                card.appendChild(dismiss);
+            }
+        }
+
+        var actions = Array.isArray(opts.actions) ? opts.actions : [];
+        if (actions.length > 0) {
+            var actionsRow = el('div', { className: 'bowire-empty-card-actions' });
+            actions.forEach(function (a) {
+                if (!a) return;
+                actionsRow.appendChild(el('button', {
+                    type: 'button',
+                    className: 'bowire-empty-card-action' + (a.primary ? ' bowire-empty-card-action-primary' : ''),
+                    onClick: a.onClick,
+                    textContent: a.label,
+                }));
+            });
+            card.appendChild(actionsRow);
+        }
+
+        return card;
+    }
+
+    /**
      * Render a normalized problem object into a DOM container as a
      * structured error card (#88). Headline + collapsible detail + any
      * action links the backend exposed via `links` (e.g. "Configure"
@@ -691,6 +778,10 @@
             disconnect: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 7h3a5 5 0 010 10h-3M9 17H6a5 5 0 010-10h3"/><line x1="8" y1="12" x2="16" y2="12" stroke-dasharray="2 2"/></svg>',
             send: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>',
             replay: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 4v6h6"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg>',
+            // #121 — empty-card icons. Recording = solid dot (the
+            // capture affordance), console = terminal prompt.
+            recording: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="6" fill="currentColor"/></svg>',
+            console: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>',
             repeat: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 014-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 01-4 4H3"/></svg>',
             lock: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>',
             star: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>',

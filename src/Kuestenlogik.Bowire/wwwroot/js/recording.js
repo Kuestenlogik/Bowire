@@ -824,8 +824,23 @@
 
         var list = el('div', { className: 'bowire-env-list' });
         if (recordingsList.length === 0) {
-            list.appendChild(el('div', { className: 'bowire-env-list-empty',
-                textContent: 'No recordings yet. Click ● in the action bar to start capturing a sequence of calls.' }));
+            // #121 — context-aware empty card. Recording is the
+            // entry point for tests, mocks, flows, and Postman-style
+            // sequences. Two actions: start one now, or import a
+            // .blw / .har / Postman run.
+            list.appendChild(renderEmptyCard({
+                icon: 'recording',
+                headline: 'No recordings yet',
+                body: 'Recordings capture a sequence of calls verbatim — request, response, timing, metadata. Use them as test fixtures, mock fixtures, or seed a flow / collection from real traffic.',
+                hintKey: 'bowire_empty_recordings_hint',
+                actions: [
+                    {
+                        label: 'Start recording',
+                        primary: true,
+                        onClick: function () { startRecording(); render(); }
+                    },
+                ]
+            }));
         }
         for (var i = 0; i < recordingsList.length; i++) {
             (function (rec) {

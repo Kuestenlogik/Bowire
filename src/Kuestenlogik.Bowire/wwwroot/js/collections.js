@@ -130,8 +130,51 @@
 
         var list = el('div', { className: 'bowire-env-list' });
         if (collectionsList.length === 0) {
-            list.appendChild(el('div', { className: 'bowire-env-list-empty',
-                textContent: 'No collections yet. Save a request or click + to create one.' }));
+            // #121 — context-aware empty card. Replaces the bare
+            // "No collections yet" string with the "what's possible"
+            // shape. Three actions cover the realistic next steps:
+            // start fresh, import from Postman, or just close + use
+            // 'Save to Collection' from a request pane.
+            list.appendChild(renderEmptyCard({
+                icon: 'list',
+                headline: 'No collections yet',
+                body: 'Collections group requests you want to keep — saved variations of the same call, or a per-feature bundle. Start a fresh one, or import a Postman collection.',
+                hintKey: 'bowire_empty_collections_hint',
+                actions: [
+                    {
+                        label: 'New collection',
+                        primary: true,
+                        onClick: function () {
+                            var col = createCollection();
+                            collectionManagerSelectedId = col.id;
+                            render();
+                        }
+                    },
+                    {
+                        label: 'Import Postman',
+                        onClick: function () {
+                            // Mirror the toolbar's Import Postman flow
+                            // (collection-manager keeps its file input
+                            // ephemeral, so we spawn a peer one here).
+                            var input = document.createElement('input');
+                            input.type = 'file';
+                            input.accept = '.json,application/json';
+                            input.onchange = async function () {
+                                if (!input.files || !input.files[0]) return;
+                                try {
+                                    var text = await input.files[0].text();
+                                    var imported = importPostmanCollection(text);
+                                    if (imported) {
+                                        toast('Imported "' + imported.name + '" (' + imported.items.length + ' items)', 'success');
+                                        render();
+                                    }
+                                } catch (e) { toast('Import failed: ' + e.message, 'error'); }
+                            };
+                            input.click();
+                        }
+                    },
+                ]
+            }));
         }
         for (var i = 0; i < collectionsList.length; i++) {
             (function (col) {
