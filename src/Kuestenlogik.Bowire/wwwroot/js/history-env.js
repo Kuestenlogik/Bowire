@@ -284,7 +284,15 @@
         if (typeof input !== 'string') return input;
         // Two syntaxes resolve through the same dispatch table:
         // - ${name}        (Bowire's original Bash-style placeholder)
-        // - {{source.path}} (Postman / #125 multi-source resolver)
+        // - {{source.path}} (Postman / #125 multi-source resolver,
+        //                    canonical going forward — supports the
+        //                    full source-prefix vocabulary + the
+        //                    {{{{name}}}} quadruple-brace escape)
+        // Existing recordings / collections that use ${name} keep
+        // working unchanged; ${name} stays alongside as legacy. New
+        // surfaces prefer {{name}}. A future bump deprecates the
+        // dollar form once every shipped template/example is on the
+        // curly syntax.
         // Each placeholder rewrites to its resolved string; unknown
         // refs are left intact so the operator sees the typo.
         var hasDollar = input.indexOf('${') !== -1;
@@ -359,12 +367,27 @@
             });
         }
         if (hasCurly) {
-            // {{name}} — match the inner content greedily but stop at
-            // the first '}}'; double-curly so it doesn't collide with
-            // single-brace JSON literals.
+            // Three-pass curly substitution:
+            //   1) Detect {{{{NAME}}}} → quadruple-brace escape.
+            //      Postman has no escape at all; we copy the doubling
+            //      pattern from ${name}'s $${name} so an author can
+            //      emit a literal {{NAME}} in output even when {{NAME}}
+            //      would otherwise resolve. Park the inner text under
+            //      a sentinel so the next pass leaves it alone.
+            //   2) Resolve {{NAME}} normally (env/prev/runtime/step/…).
+            //   3) Swap sentinels back to literal {{NAME}}.
+            // Sentinel uses U+E000 / U+E001 from the Private-Use Area
+            // so it can't collide with any real source text.
+            var SENT_OPEN = '', SENT_CLOSE = '';  // U+E000 / U+E001 PUA sentinels
+            out = out.replace(/\{\{\{\{([^{}]+)\}\}\}\}/g, function (_m, name) {
+                return SENT_OPEN + name + SENT_CLOSE;
+            });
             out = out.replace(/\{\{([^{}]+)\}\}/g, function (match, name) {
                 return resolveKey(name.trim(), match);
             });
+            if (out.indexOf(SENT_OPEN) !== -1) {
+                out = out.split(SENT_OPEN).join('{{').split(SENT_CLOSE).join('}}');
+            }
         }
         return out;
     }
