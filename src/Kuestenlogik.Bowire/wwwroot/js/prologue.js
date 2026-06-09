@@ -82,7 +82,8 @@
 
     function persistServerUrls() {
         if (config.lockServerUrl) return;
-        try { localStorage.setItem(SERVER_URLS_KEY, JSON.stringify(serverUrls)); } catch {}
+        try { localStorage.setItem(SERVER_URLS_KEY, JSON.stringify(serverUrls)); markSaved('URLs'); }
+        catch (e) { markSaveFailed('URLs', e); }
     }
 
     // Backwards-compat aliases for code paths that haven't been refactored yet
@@ -317,6 +318,36 @@
             splitMode = storedSplit;
         }
     } catch { /* ignore */ }
+
+    // #127 — auto-save tracking. Every persist fn calls markSaved
+    // after a successful write so the statusbar can show a small
+    // "Saved" pill that fades after 2 s. State {kind, at, target}:
+    //  kind = 'idle' | 'saved' | 'failed'
+    //  at = timestamp of the last transition (drives the fade)
+    //  target = which slot was written ('tabs', 'urls', ...)
+    let saveState = { kind: 'idle', at: 0, target: '' };
+    let saveStateClearTimer = null;
+    function markSaved(target) {
+        saveState = { kind: 'saved', at: Date.now(), target: target || 'state' };
+        if (saveStateClearTimer) clearTimeout(saveStateClearTimer);
+        saveStateClearTimer = setTimeout(function () {
+            saveState = { kind: 'idle', at: 0, target: '' };
+            saveStateClearTimer = null;
+            try { render(); } catch { /* harmless */ }
+        }, 2000);
+        try { render(); } catch { /* harmless */ }
+    }
+    function markSaveFailed(target, error) {
+        saveState = { kind: 'failed', at: Date.now(), target: target || 'state', error: error };
+        if (saveStateClearTimer) clearTimeout(saveStateClearTimer);
+        // Failures linger longer (4 s) so the operator catches them.
+        saveStateClearTimer = setTimeout(function () {
+            saveState = { kind: 'idle', at: 0, target: '' };
+            saveStateClearTimer = null;
+            try { render(); } catch { /* harmless */ }
+        }, 4000);
+        try { render(); } catch { /* harmless */ }
+    }
     let activeRequestTab = 'body';
     // Sub-tab within the Body tab. For GraphQL methods the Body tab
     // composes from three surfaces (Query / Variables form / Selection
@@ -633,7 +664,8 @@
                 active: activeTabId,
             };
             localStorage.setItem('bowire_request_tabs', JSON.stringify(data));
-        } catch { /* ignore */ }
+            markSaved('tabs');
+        } catch (e) { markSaveFailed('tabs', e); }
     }
     function restoreRequestTabsFromStorage() {
         try {
@@ -1110,7 +1142,8 @@
     function persistCollections() {
         try {
             localStorage.setItem(COLLECTIONS_KEY, JSON.stringify(collectionsList));
-        } catch {}
+            markSaved('collections');
+        } catch (e) { markSaveFailed('collections', e); }
         scheduleCollectionsDiskSync();
     }
 

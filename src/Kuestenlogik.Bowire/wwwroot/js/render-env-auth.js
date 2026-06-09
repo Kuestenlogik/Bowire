@@ -428,9 +428,29 @@
         if (uiMode === 'embedded') return el('div', { id: 'bowire-statusbar', style: 'display:none' });
         var bar = el('div', { id: 'bowire-statusbar', className: 'bowire-statusbar' });
 
-        // Left cluster — empty for now. Reserved for workspace
-        // name (#116) + hint count (#114) once those land.
+        // Left cluster — #127 save-state pill. Idle = no chrome (the
+        // operator doesn't need to be told 'nothing happened just
+        // now'). Saved = brief green-tinted check + 'Saved
+        // <target>' for ~2 s. Failed = amber-tinted warning + the
+        // failed-target label, sticks for ~4 s.
         var left = el('div', { className: 'bowire-statusbar-left' });
+        if (saveState && saveState.kind === 'saved') {
+            left.appendChild(el('span', {
+                className: 'bowire-save-pill bowire-save-pill-saved',
+                title: 'Saved to localStorage',
+            },
+                el('span', { className: 'bowire-save-pill-dot' }),
+                el('span', { textContent: 'Saved ' + saveState.target })
+            ));
+        } else if (saveState && saveState.kind === 'failed') {
+            left.appendChild(el('span', {
+                className: 'bowire-save-pill bowire-save-pill-failed',
+                title: 'Save failed — check browser console',
+            },
+                el('span', { className: 'bowire-save-pill-dot' }),
+                el('span', { textContent: 'Save failed: ' + saveState.target })
+            ));
+        }
         bar.appendChild(left);
 
         var centre = el('div', { className: 'bowire-statusbar-centre' });

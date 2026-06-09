@@ -795,6 +795,36 @@ body {
     padding: 0 6px;
 }
 
+/* #127 — save-state pill. Small, low-noise, fades after the
+   markSaved timeout. Idle state = no DOM; the user only sees
+   chrome when something actually happened. */
+.bowire-save-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0 8px;
+    height: 18px;
+    border-radius: var(--bowire-radius-pill);
+    font-size: 11px;
+    line-height: 1;
+    transition: opacity 200ms ease;
+}
+.bowire-save-pill-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+}
+.bowire-save-pill-saved {
+    background: var(--bowire-success-bg);
+    color: var(--bowire-success);
+}
+.bowire-save-pill-saved .bowire-save-pill-dot { background: var(--bowire-success); }
+.bowire-save-pill-failed {
+    background: var(--bowire-warning-bg);
+    color: var(--bowire-warning);
+}
+.bowire-save-pill-failed .bowire-save-pill-dot { background: var(--bowire-warning); }
+
 /* #139 — Home mode. Cross-workflow launchpad: Favorites grid +
    Recent activity grid. */
 .bowire-main-home {
