@@ -625,9 +625,9 @@
             function () {
                 bowireConfirm('Clear all favorites?', function () {
                     var backup = getFavorites();
-                    localStorage.removeItem(FAVORITES_KEY);
+                    localStorage.removeItem(wsKey(FAVORITES_KEY));
                     render();
-                    toast('Favorites cleared', 'success', { undo: function () { try { localStorage.setItem(FAVORITES_KEY, JSON.stringify(backup)); } catch {} render(); } });
+                    toast('Favorites cleared', 'success', { undo: function () { try { localStorage.setItem(wsKey(FAVORITES_KEY), JSON.stringify(backup)); } catch {} render(); } });
                 }, { title: 'Clear Favorites', danger: true, confirmText: 'Clear' });
             }
         ));

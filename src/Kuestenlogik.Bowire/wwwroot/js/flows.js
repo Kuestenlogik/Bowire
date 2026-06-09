@@ -29,7 +29,7 @@
 
     function loadFlows() {
         try {
-            var raw = localStorage.getItem(FLOWS_KEY);
+            var raw = localStorage.getItem(wsKey(FLOWS_KEY));
             var list = raw ? JSON.parse(raw) : [];
             // Migrate Phase 1 flows: ensure condition nodes have branch arrays
             for (var fi = 0; fi < list.length; fi++) {
@@ -57,7 +57,7 @@
     }
 
     function persistFlows() {
-        try { localStorage.setItem(FLOWS_KEY, JSON.stringify(flowsList)); } catch {}
+        try { localStorage.setItem(wsKey(FLOWS_KEY), JSON.stringify(flowsList)); } catch {}
     }
 
     function createFlow(name) {
