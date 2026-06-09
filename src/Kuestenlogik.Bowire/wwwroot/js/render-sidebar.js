@@ -646,6 +646,7 @@
     function renderActivityRail() {
         var modes = [
             { id: 'discover',   icon: 'compass',   label: 'Discover',          group: 'work' },
+            { id: 'environments', icon: 'globe',   label: 'Environments',      group: 'work' },
             { id: 'recordings', icon: 'recording', label: 'Recordings',        group: 'scenarios' },
             { id: 'mocks',      icon: 'server',    label: 'Mocks',             group: 'scenarios' },
             { id: 'flows',      icon: 'flow',      label: 'Flows',             group: 'scenarios' },
@@ -657,21 +658,16 @@
 
         var rail = el('div', { id: 'bowire-activity-rail', className: 'bowire-activity-rail' });
 
-        // Brand mark at the top — same B-glyph the topbar uses.
-        rail.appendChild(el('div', {
-            className: 'bowire-rail-brand',
-            title: 'Bowire — workbench home',
-            onClick: function () {
-                if (railMode !== 'discover') {
-                    railMode = 'discover';
-                    try { localStorage.setItem('bowire_rail_mode', 'discover'); } catch { /* ignore */ }
-                    render();
-                }
-            },
-            innerHTML: '<svg viewBox="0 0 95 95" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><g transform="translate(-57.679684,-154.66912)"><path d="m 98.433779,206.65457 v 16.57418 h 7.672911 c 3.27394,0 5.83185,-0.75992 7.67344,-2.27997 1.87082,-1.52004 2.80603,-3.59565 2.80603,-6.22649 0,-2.51391 -0.92052,-4.48667 -2.76211,-5.91902 -1.81236,-1.43234 -4.35557,-2.1487 -7.62951,-2.1487 z"/><path d="m 98.433779,181.22304 v 14.90814 h 6.225971 c 2.92316,0 5.21814,-0.70167 6.88434,-2.10478 1.69543,-1.43235 2.54299,-3.39093 2.54299,-5.87561 0,-4.61859 -3.44955,-6.92775 -10.3482,-6.92775 z"/><path d="m 105.23698,154.66911 c -26.26504,-1.7e-4 -47.557183,21.29175 -47.557298,47.55679 -1.66e-4,26.26524 21.292058,47.55747 47.557298,47.5573 26.26504,-1.2e-4 47.55695,-21.29226 47.55678,-47.5573 -1.2e-4,-26.26484 -21.29194,-47.55667 -47.55678,-47.55679 z M 84.270824,170.7875 h 22.888516 c 7.01558,0 12.4085,1.28631 16.17937,3.85868 3.77088,2.57238 5.65651,6.19671 5.65651,10.87376 0,3.39086 -1.15458,6.35812 -3.46387,8.90126 -2.28007,2.54315 -5.20324,4.31175 -8.76949,5.30562 v 0.17519 c 4.47243,0.5554 8.03849,2.20696 10.69857,4.95473 2.6893,2.74777 4.03386,6.09499 4.03386,10.04125 0,5.75862 -2.06092,10.33336 -6.18257,13.72423 -4.12165,3.36163 -9.74863,5.04258 -16.88114,5.04258 H 84.270824 Z"/></g></svg>'
-        }));
+        // Brand mark dropped — topbar already carries the Bowire
+        // wordmark + logo as the workbench-identity anchor;
+        // duplicating it on the rail is just visual repetition.
+        // Discover stays the default mode and is reachable as the
+        // first icon below.
 
         var lastGroup = null;
+        // Build mode buttons first; sidebar-toggle goes at the
+        // bottom once the loop completes (rendered separately so it
+        // sits below the mode list with margin-top: auto via CSS).
         modes.forEach(function (m) {
             if (lastGroup !== null && m.group !== lastGroup) {
                 rail.appendChild(el('div', { className: 'bowire-rail-divider' }));
@@ -679,10 +675,13 @@
             lastGroup = m.group;
             var isActive = railMode === m.id;
             // Modes wired so far. Phase 1 shipped just Discover;
-            // Phase 2 wires Security — sidebar stays the services
-            // tree; Main pane swaps to the Security surface that
-            // used to live in the right-side drawer.
-            var isWired = m.id === 'discover' || m.id === 'security';
+            // Phase 2 wires Security + Environments. Environments
+            // mode lands the operator on the existing full-width
+            // env editor in the main pane; sidebar list of envs
+            // stays the same.
+            var isWired = m.id === 'discover'
+                       || m.id === 'security'
+                       || m.id === 'environments';
             rail.appendChild(el('button', {
                 type: 'button',
                 className: 'bowire-rail-btn' + (isActive ? ' active' : '') + (isWired ? '' : ' bowire-rail-btn-stub'),
@@ -696,12 +695,46 @@
                     if (railMode === m.id) return;
                     railMode = m.id;
                     try { localStorage.setItem('bowire_rail_mode', m.id); } catch { /* ignore */ }
+                    // For wired modes that piggyback on the legacy
+                    // sidebarView state (Environments today; more
+                    // in Phase 2 follow-ups), also flip
+                    // sidebarView so the existing main-pane
+                    // routing picks up the right editor. Leaving
+                    // it untouched would keep the request/response
+                    // layout while the rail shows Environments
+                    // active.
+                    if (m.id === 'environments') {
+                        sidebarView = 'environments';
+                    } else if (m.id === 'discover') {
+                        sidebarView = 'services';
+                    }
                     render();
                 }
             },
                 el('span', { innerHTML: svgIcon(m.icon) })
             ));
         });
+
+        // Sidebar collapse/expand toggle at the rail bottom. #137 —
+        // moves the toggle out of the main-pane header (which
+        // disappeared in non-default main-pane variants like
+        // Sources / Security mode), into a position that's always
+        // visible regardless of which mode is active. Hoppscotch
+        // puts a similar toggle in the workbench footer; rail-
+        // bottom keeps the affordance compact and on the same axis
+        // as the mode picker.
+        rail.appendChild(el('button', {
+            type: 'button',
+            className: 'bowire-rail-btn bowire-rail-toggle-sidebar',
+            title: sidebarCollapsed ? 'Show sidebar' : 'Hide sidebar',
+            'aria-label': 'Toggle sidebar',
+            onClick: function () {
+                sidebarCollapsed = !sidebarCollapsed;
+                render();
+            }
+        },
+            el('span', { innerHTML: svgIcon('sidebar') })
+        ));
 
         return rail;
     }
