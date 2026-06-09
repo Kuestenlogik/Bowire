@@ -7,6 +7,13 @@
         const app = document.getElementById('bowire-app');
         if (!app) return;
 
+        // #123 — lazy tab rehydrate. One-shot guard inside; cheap
+        // no-op on every subsequent render once services land. Putting
+        // it at the top of render() means tab persistence works even
+        // when the discovery completion path doesn't end in a render()
+        // call directly.
+        rehydrateRequestTabs();
+
         // Apply the persisted user-set sidebar width as an inline CSS var
         // override on #bowire-app. morphdom runs with `childrenOnly: true`
         // so it never touches the root's inline styles — the override sticks

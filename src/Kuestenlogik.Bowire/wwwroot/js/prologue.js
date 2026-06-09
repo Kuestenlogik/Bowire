@@ -585,6 +585,69 @@
     // existing tab or creates a new one.
     let requestTabs = [];   // [{ id, serviceKey, methodKey, service, method }]
     let activeTabId = null;
+    // #123 — open-tab persistence. Save the (serviceKey, methodKey,
+    // id) triplets to localStorage on every tab mutation; rehydrate
+    // service/method object references lazily once discovery
+    // surfaces the right service. Stale entries (service no longer
+    // discovered) are dropped silently — opening the same workbench
+    // against a different schema shouldn't surface phantom tabs.
+    function persistRequestTabs() {
+        try {
+            var data = {
+                tabs: requestTabs.map(function (t) {
+                    return { id: t.id, serviceKey: t.serviceKey, methodKey: t.methodKey };
+                }),
+                active: activeTabId,
+            };
+            localStorage.setItem('bowire_request_tabs', JSON.stringify(data));
+        } catch { /* ignore */ }
+    }
+    function restoreRequestTabsFromStorage() {
+        try {
+            var raw = localStorage.getItem('bowire_request_tabs');
+            if (!raw) return null;
+            var data = JSON.parse(raw);
+            if (!data || !Array.isArray(data.tabs)) return null;
+            return data;
+        } catch { return null; }
+    }
+    // One-shot rehydrate guard. The first render() call that finds
+    // requestTabs empty + services populated + a saved tab set in
+    // localStorage will rehydrate; subsequent renders skip even if
+    // the user manually closes every tab. Without the guard we'd
+    // resurrect tabs the user just closed on the next render.
+    let requestTabsRehydrated = false;
+    function rehydrateRequestTabs() {
+        if (requestTabsRehydrated) return;
+        if (requestTabs.length > 0) { requestTabsRehydrated = true; return; }
+        if (!Array.isArray(services) || services.length === 0) return;
+        var data = restoreRequestTabsFromStorage();
+        if (!data || data.tabs.length === 0) { requestTabsRehydrated = true; return; }
+        requestTabsRehydrated = true;
+        for (var i = 0; i < data.tabs.length; i++) {
+            var t = data.tabs[i];
+            var svc = services.find(function (s) { return s.name === t.serviceKey; });
+            if (!svc) continue;
+            var meth = (svc.methods || []).find(function (m) { return m.name === t.methodKey; });
+            if (!meth) continue;
+            requestTabs.push({
+                id: t.id,
+                serviceKey: t.serviceKey,
+                methodKey: t.methodKey,
+                service: svc,
+                method: meth,
+            });
+        }
+        if (requestTabs.length > 0) {
+            // Pick the previously-active tab when it survived,
+            // otherwise default to the first restored tab.
+            var activeStillAround = requestTabs.find(function (x) { return x.id === data.active; });
+            var firstTab = activeStillAround || requestTabs[0];
+            activeTabId = firstTab.id;
+            selectedMethod = firstTab.method;
+            selectedService = firstTab.service;
+        }
+    }
 
     let _tabIdCounter = 0;
     function nextTabId() {
@@ -625,6 +688,7 @@
         };
         requestTabs.push(tab);
         activeTabId = tab.id;
+        persistRequestTabs();
 
         // Apply the new selection
         selectedMethod = method;
@@ -676,6 +740,7 @@
         saveCurrentMethodState();
 
         activeTabId = tab.id;
+        persistRequestTabs();
         selectedMethod = tab.method;
         selectedService = tab.service;
 
@@ -714,6 +779,7 @@
         if (idx < 0) return;
 
         requestTabs.splice(idx, 1);
+        persistRequestTabs();
 
         if (activeTabId === tabId) {
             if (requestTabs.length === 0) {

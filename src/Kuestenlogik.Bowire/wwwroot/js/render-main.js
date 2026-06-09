@@ -890,22 +890,29 @@
         main.appendChild(header);
 
         // Request tab bar — visible when 2+ tabs are open so the user
-        // can switch between simultaneously open methods. Each tab
-        // shows the method name, a protocol badge, and a close button.
-        if (requestTabs.length >= 2) {
+        // #123 — tab strip is always present once there's at least one
+        // open tab, plus a "+" button so the operator can spawn a
+        // fresh blank tab without going through the sidebar. The
+        // previous "show only when >=2" heuristic hid the affordance
+        // exactly when the user needed to discover it.
+        if (requestTabs.length >= 1) {
             var tabBar = el('div', { id: 'bowire-request-tabs', className: 'bowire-request-tabs' });
             var tabScroll = el('div', { className: 'bowire-request-tabs-scroll' });
             for (var ti = 0; ti < requestTabs.length; ti++) {
                 (function (tab) {
                     var isActive = tab.id === activeTabId;
+                    var dir = methodDirection(tab.method);
+                    var proto = (tab.service && tab.service.source) || 'default';
                     var tabEl = el('div', {
                         className: 'bowire-request-tab' + (isActive ? ' active' : ''),
                         title: tab.serviceKey + ' / ' + tab.methodKey,
+                        'data-protocol': proto,
+                        'data-direction': dir,
                         onClick: function () { switchTab(tab.id); }
                     },
                         el('span', {
                             className: 'bowire-request-tab-proto',
-                            dataset: { type: methodBadgeType(tab.method) },
+                            dataset: { type: methodBadgeType(tab.method), direction: dir },
                             textContent: methodBadgeText(tab.method)
                         }),
                         el('span', {
@@ -915,7 +922,7 @@
                         el('button', {
                             className: 'bowire-request-tab-close',
                             innerHTML: svgIcon('close'),
-                            title: 'Close tab',
+                            title: 'Close tab (Ctrl+W)',
                             onClick: function (e) {
                                 e.stopPropagation();
                                 closeTab(tab.id);
@@ -925,6 +932,17 @@
                     tabScroll.appendChild(tabEl);
                 })(requestTabs[ti]);
             }
+            // "+" tab — opens a freeform request pane (no service /
+            // method picked yet). The user fills in URL + method by
+            // hand or via the omnibox once #124 lands.
+            tabScroll.appendChild(el('button', {
+                className: 'bowire-request-tab-new',
+                title: 'New tab (Ctrl+T)',
+                onClick: function () {
+                    startFreeformRequest();
+                },
+                innerHTML: svgIcon('plus')
+            }));
             tabBar.appendChild(tabScroll);
             main.appendChild(tabBar);
         }

@@ -57,6 +57,57 @@
                 return;
             }
 
+            // #123 — tab keyboard shortcuts. Ignored while the user is
+            // typing in an input / textarea / contenteditable so the
+            // chords don't intercept normal text editing.
+            var inText = document.activeElement
+                && (/^(INPUT|TEXTAREA|SELECT)$/i.test(document.activeElement.tagName)
+                    || document.activeElement.isContentEditable);
+            // Ctrl/Cmd+T — new (freeform) tab. T alone is browser
+            // 'new tab'; Shift+ makes it ours without breaking the
+            // browser shortcut for users who want it.
+            if ((e.ctrlKey || e.metaKey) && !e.shiftKey && !e.altKey
+                && (e.key === 't' || e.key === 'T')
+                && !inText) {
+                e.preventDefault();
+                startFreeformRequest();
+                return;
+            }
+            // Ctrl/Cmd+W — close the active tab. Skip when no tabs
+            // are open so the browser's close-window stays available.
+            if ((e.ctrlKey || e.metaKey) && !e.shiftKey && !e.altKey
+                && (e.key === 'w' || e.key === 'W')
+                && requestTabs.length > 0 && activeTabId !== null) {
+                e.preventDefault();
+                closeTab(activeTabId);
+                return;
+            }
+            // Ctrl+Tab / Ctrl+Shift+Tab — cycle tabs.
+            if (e.ctrlKey && !e.metaKey && !e.altKey && e.key === 'Tab'
+                && requestTabs.length >= 2) {
+                e.preventDefault();
+                var idx = -1;
+                for (var ti = 0; ti < requestTabs.length; ti++) {
+                    if (requestTabs[ti].id === activeTabId) { idx = ti; break; }
+                }
+                if (idx < 0) idx = 0;
+                var nextIdx = e.shiftKey
+                    ? (idx - 1 + requestTabs.length) % requestTabs.length
+                    : (idx + 1) % requestTabs.length;
+                switchTab(requestTabs[nextIdx].id);
+                return;
+            }
+            // Ctrl+1..9 — jump to the Nth tab.
+            if ((e.ctrlKey || e.metaKey) && !e.shiftKey && !e.altKey
+                && /^[1-9]$/.test(e.key) && !inText) {
+                var pos = parseInt(e.key, 10) - 1;
+                if (pos < requestTabs.length) {
+                    e.preventDefault();
+                    switchTab(requestTabs[pos].id);
+                    return;
+                }
+            }
+
             // Esc: close overlay, stop streaming, or disconnect channel
             if (e.key === 'Escape') {
                 if (aboutOpen) {
