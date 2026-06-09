@@ -811,6 +811,53 @@
             )
         ));
 
+        // Recording storage mode — per-workspace choice between
+        // 'both' (default; localStorage cache + user-folder sync) and
+        // 'browser-only' (skip every backend write; localStorage is
+        // the source of truth). #144 Phase 1.8 will add 'disk-only'
+        // once manifest-only loading is wired.
+        var storageMode = (typeof getRecordingStorageMode === 'function')
+            ? getRecordingStorageMode(ws) : 'both';
+        main.appendChild(el('div', { className: 'bowire-ws-detail-section' },
+            el('div', { className: 'bowire-ws-detail-section-label', textContent: 'Recording storage' }),
+            el('div', { className: 'bowire-ws-detail-storage-row' },
+                el('label', { className: 'bowire-ws-detail-storage-option' + (storageMode === 'both' ? ' selected' : '') },
+                    el('input', {
+                        type: 'radio',
+                        name: 'ws-rec-storage-' + ws.id,
+                        checked: storageMode === 'both',
+                        onChange: function () {
+                            if (typeof setWorkspaceRecordingStorageMode === 'function') {
+                                setWorkspaceRecordingStorageMode(ws.id, 'both');
+                                render();
+                            }
+                        }
+                    }),
+                    el('div', { className: 'bowire-ws-detail-storage-text' },
+                        el('div', { className: 'bowire-ws-detail-storage-title', textContent: 'Disk + browser cache (recommended)' }),
+                        el('div', { className: 'bowire-ws-detail-storage-meta', textContent: 'Source of truth on disk under ~/.bowire/workspaces/' + ws.id + '/recordings/. Survives browser clears + lets the CLI read what the workbench captured.' })
+                    )
+                ),
+                el('label', { className: 'bowire-ws-detail-storage-option' + (storageMode === 'browser-only' ? ' selected' : '') },
+                    el('input', {
+                        type: 'radio',
+                        name: 'ws-rec-storage-' + ws.id,
+                        checked: storageMode === 'browser-only',
+                        onChange: function () {
+                            if (typeof setWorkspaceRecordingStorageMode === 'function') {
+                                setWorkspaceRecordingStorageMode(ws.id, 'browser-only');
+                                render();
+                            }
+                        }
+                    }),
+                    el('div', { className: 'bowire-ws-detail-storage-text' },
+                        el('div', { className: 'bowire-ws-detail-storage-title', textContent: 'Browser-only (no disk writes)' }),
+                        el('div', { className: 'bowire-ws-detail-storage-meta', textContent: 'Recordings stay in localStorage. Browser clear = data loss. Useful for sandbox / privacy workflows. Subject to the ~5–10 MB localStorage quota.' })
+                    )
+                )
+            )
+        ));
+
         // Metadata strip — IDs / timestamps so the operator can see
         // creation / last-opened for audit / debugging.
         var createdStr = ws.createdAt ? new Date(ws.createdAt).toLocaleString() : '—';
