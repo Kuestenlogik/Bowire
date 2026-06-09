@@ -825,9 +825,28 @@ body {
     min-height: 0;
 }
 .bowire-home-wrap {
-    max-width: 1000px;
-    margin: 24px auto;
-    padding: 0 24px;
+    /* Same shape as the environment editor (.bowire-env-editor-main):
+       full-width with consistent 24 px padding. height: auto so the
+       wrap can grow taller than the viewport and the .bowire-main-home
+       parent's overflow-y: auto picks up the scroll. */
+    padding: 24px;
+}
+/* Side-by-side layout: Favorites + Recent live in a 2-column grid
+   below the title strip. Collapses to a single column below 900 px
+   so narrow viewports don't squeeze each tile too tight. */
+.bowire-home-sections {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 32px;
+}
+@media (max-width: 900px) {
+    .bowire-home-sections {
+        grid-template-columns: 1fr;
+        gap: 24px;
+    }
+}
+.bowire-home-section {
+    margin-bottom: 0; /* override the stacked default */
 }
 .bowire-home-title {
     font-size: 24px;
@@ -968,9 +987,8 @@ body {
     overflow: auto;
 }
 .bowire-sources-wrap {
-    max-width: 800px;
-    margin: 24px auto;
-    padding: 0 24px;
+    /* Match env editor + home — full-width with 24 px padding. */
+    padding: 24px;
 }
 .bowire-sources-title {
     font-size: 20px;
