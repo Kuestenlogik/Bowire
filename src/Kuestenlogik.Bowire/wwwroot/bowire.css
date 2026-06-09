@@ -958,13 +958,11 @@ body {
 }
 
 /* ---------- AI drawer (#90) ---------- */
-/* Sits right of the main pane, peer with the sidebar. Renders only
-   when aiDrawerOpen — closed drawer = no DOM, no width cost. The
-   main pane just gives up 360 px when the drawer's there.
-   #129 Round 3 — overlay below 1400 px instead of stealing main-
-   pane width. Standard laptop widths (1366 / 1440) get the main
-   pane unshrunk; wider screens still see side-by-side coexistence
-   so the user can read both at once. */
+/* Assistant drawer (formerly AI drawer #90). #133 Phase 2 moved it
+   from the right edge to the left, sitting between the activity
+   rail and the mode sidebar. Renders only when aiDrawerOpen.
+   Border switches to border-right since the drawer is now left of
+   the sidebar. */
 .bowire-ai-drawer {
     width: 360px;
     min-width: 280px;
@@ -972,31 +970,23 @@ body {
     flex-shrink: 0;
     display: flex;
     flex-direction: column;
-    border-left: 1px solid var(--bowire-border);
+    border-right: 1px solid var(--bowire-border);
+    border-left: none;
     background: var(--bowire-bg);
     overflow: hidden;
 }
 
 @media (max-width: 1400px) {
-    .bowire-ai-drawer,
-    .bowire-security-drawer {
+    .bowire-ai-drawer {
         position: fixed;
         top: var(--bowire-topbar-height, 56px);
-        right: 0;
+        /* 48 px rail width — drawer slides in next to it */
+        left: 48px;
         bottom: 0;
         z-index: 90;
         box-shadow: var(--bowire-shadow-lg);
     }
-    /* Stack: AI on top of Security when both are open — the second
-       drawer comes second in the source, so its z-index wins
-       naturally. Offset Security to the left of AI so they don't
-       cover each other. */
-    .bowire-security-drawer {
-        right: 360px;
-    }
-    /* Drop the main-pane width reservation since drawers float. */
-    .bowire-with-ai-drawer .bowire-main-pane,
-    .bowire-with-security-drawer .bowire-main-pane {
+    .bowire-with-ai-drawer .bowire-main-pane {
         margin-right: 0;
     }
 }
