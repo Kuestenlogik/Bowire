@@ -865,6 +865,40 @@
             return stubMain;
         }
 
+        // #133 Phase 2 — Collections rail mode. Sidebar lists every
+        // saved collection; main pane shows the selected collection's
+        // detail (renderCollectionDetail handles items + actions).
+        // Same shape as Recordings; reuses the legacy modal's right-
+        // pane renderer so the visual feels familiar to operators
+        // muscle-trained on the old modal flow.
+        if (railMode === 'collections') {
+            var colMain = el('div', { id: 'bowire-main-collections', className: 'bowire-main bowire-main-collections' });
+            var selectedCol = (collectionsList || []).find(function (c) { return c.id === collectionManagerSelectedId; });
+            if (selectedCol && typeof renderCollectionDetail === 'function') {
+                colMain.appendChild(renderCollectionDetail(selectedCol));
+            } else {
+                var emptyWrap = el('div', { style: 'padding:32px' });
+                emptyWrap.appendChild(renderEmptyCard({
+                    icon: 'list',
+                    headline: (collectionsList && collectionsList.length > 0) ? 'Pick a collection' : 'No collections yet',
+                    body: (collectionsList && collectionsList.length > 0)
+                        ? 'Pick a collection from the sidebar to see its items and actions.'
+                        : 'Collections group saved requests. Start one from the sidebar, or import a Postman collection.',
+                    actions: (collectionsList && collectionsList.length > 0) ? [] : [{
+                        label: 'New collection',
+                        primary: true,
+                        onClick: function () {
+                            var col = createCollection();
+                            collectionManagerSelectedId = col.id;
+                            render();
+                        }
+                    }]
+                }));
+                colMain.appendChild(emptyWrap);
+            }
+            return colMain;
+        }
+
         // #133 Phase 2 — Mocks rail mode owns the main pane. Sidebar
         // lists running mock hosts; main pane shows the selected
         // mock's detail (URL + copy + stop + a live request-log
