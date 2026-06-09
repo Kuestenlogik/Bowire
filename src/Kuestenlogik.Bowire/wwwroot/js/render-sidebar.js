@@ -740,6 +740,23 @@
             el('span', { innerHTML: svgIcon('sidebar') })
         ));
 
+        // Settings — anchored at the very bottom of the rail (peer
+        // of the sidebar-toggle, below it). Moved out of the topbar
+        // ⋮ overflow into the rail per VS Code / JetBrains
+        // convention; reachable from every mode without going
+        // through a menu.
+        rail.appendChild(el('button', {
+            type: 'button',
+            className: 'bowire-rail-btn bowire-rail-settings',
+            title: 'Settings',
+            'aria-label': 'Settings',
+            onClick: function () {
+                if (typeof openSettings === 'function') openSettings();
+            }
+        },
+            el('span', { innerHTML: svgIcon('settings') })
+        ));
+
         return rail;
     }
 
