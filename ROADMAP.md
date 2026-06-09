@@ -21,12 +21,9 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ## Backlog
 
-### v1.10 — gRPC Connect
-
-- [#33](https://github.com/Kuestenlogik/Bowire/issues/33) **Protocol plugins — Connect Phase 1+3 + OTLP** `area:plugin-sdk` `track:protocols`
-
 ### Later
 
+- [#33](https://github.com/Kuestenlogik/Bowire/issues/33) **Protocol plugins — Connect Phase 1+3 + OTLP** `area:plugin-sdk` `track:protocols`
 - [#34](https://github.com/Kuestenlogik/Bowire/issues/34) **AsyncAPI discovery source — remaining bindings + V2 overloads + YAML pre-normaliser** `area:plugin-sdk` `track:protocols`
 - [#35](https://github.com/Kuestenlogik/Bowire/issues/35) **Nuclei template compat — OAST + non-HTTP transports (Phase 2f + 2g)** `area:security` `track:security-tiers`
 - [#36](https://github.com/Kuestenlogik/Bowire/issues/36) **Replay-Mock — HTTPS MITM / record mode** `area:mock`
