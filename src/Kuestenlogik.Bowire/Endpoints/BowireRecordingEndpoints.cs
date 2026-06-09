@@ -23,12 +23,18 @@ internal static class BowireRecordingEndpoints
     public static IEndpointRouteBuilder MapBowireRecordingEndpoints(
         this IEndpointRouteBuilder endpoints, BowireOptions options, string basePath)
     {
-        endpoints.MapGet($"{basePath}/api/recordings", () =>
+        endpoints.MapGet($"{basePath}/api/recordings", (HttpContext ctx) =>
         {
-            // #144 — chunked store assembles the wire-compat shape on
-            // the fly from the per-recording directory layout. Legacy
-            // recordings.json migrates on first read.
-            return Results.Content(ChunkedRecordingStore.LoadAll(), "application/json");
+            // #144 Phase 1.6 — pass workspaceId so each workspace's
+            // captures land in their own directory tree under
+            // ~/.bowire/workspaces/<wsId>/recordings/. Hosts that
+            // never adopt workspaces stay on the legacy unscoped
+            // path. Frontend reads activeWorkspaceId from prologue
+            // and adds it as ?workspaceId=… on every call.
+            var wsId = ctx.Request.Query["workspaceId"].ToString();
+            return Results.Content(
+                ChunkedRecordingStore.LoadAll(string.IsNullOrEmpty(wsId) ? null : wsId),
+                "application/json");
         }).ExcludeFromDescription();
 
         endpoints.MapPut($"{basePath}/api/recordings", async (HttpContext ctx) =>
@@ -44,7 +50,8 @@ internal static class BowireRecordingEndpoints
                 // Falls back to the raw JSON when enrichment fails so
                 // a parse hiccup never blocks a save.
                 var enriched = TryEnrichWithSourceSchema(json) ?? json;
-                ChunkedRecordingStore.SaveAll(enriched);
+                var wsId = ctx.Request.Query["workspaceId"].ToString();
+                ChunkedRecordingStore.SaveAll(enriched, string.IsNullOrEmpty(wsId) ? null : wsId);
                 return Results.Json(new { saved = true }, BowireEndpointHelpers.JsonOptions);
             }
             catch (JsonException ex)
@@ -74,10 +81,109 @@ internal static class BowireRecordingEndpoints
             }
         }).ExcludeFromDescription();
 
-        endpoints.MapDelete($"{basePath}/api/recordings", () =>
+        endpoints.MapDelete($"{basePath}/api/recordings", (HttpContext ctx) =>
         {
-            ChunkedRecordingStore.DeleteAll();
+            var wsId = ctx.Request.Query["workspaceId"].ToString();
+            ChunkedRecordingStore.DeleteAll(string.IsNullOrEmpty(wsId) ? null : wsId);
             return Results.Json(new { cleared = true }, BowireEndpointHelpers.JsonOptions);
+        }).ExcludeFromDescription();
+
+        // #144 Phase 1.5 — per-step endpoints. Lets the workbench
+        // capture path append one step at a time without rewriting
+        // the whole document, and lets the detail-view / replay
+        // path lazy-fetch a single step body on demand.
+        endpoints.MapGet($"{basePath}/api/recordings/{{id}}/manifest", (string id, HttpContext ctx) =>
+        {
+            var wsId = ctx.Request.Query["workspaceId"].ToString();
+            var json = ChunkedRecordingStore.LoadManifest(id, string.IsNullOrEmpty(wsId) ? null : wsId);
+            if (json is null)
+            {
+                return BowireEndpointHelpers.Problem(
+                    type: "urn:bowire:recording-not-found",
+                    title: "Recording not found",
+                    status: 404,
+                    detail: $"No recording with id '{id}' on disk.",
+                    instance: null);
+            }
+            return Results.Content(json, "application/json");
+        }).ExcludeFromDescription();
+
+        endpoints.MapGet($"{basePath}/api/recordings/{{id}}/step/{{n:int}}", (string id, int n, HttpContext ctx) =>
+        {
+            var wsId = ctx.Request.Query["workspaceId"].ToString();
+            var json = ChunkedRecordingStore.LoadStep(id, n, string.IsNullOrEmpty(wsId) ? null : wsId);
+            if (json is null)
+            {
+                return BowireEndpointHelpers.Problem(
+                    type: "urn:bowire:step-not-found",
+                    title: "Recording step not found",
+                    status: 404,
+                    detail: $"No step {n} in recording '{id}'.",
+                    instance: null);
+            }
+            return Results.Content(json, "application/json");
+        }).ExcludeFromDescription();
+
+        endpoints.MapPost($"{basePath}/api/recordings/{{id}}/step", async (string id, HttpContext ctx) =>
+        {
+            string body;
+            try
+            {
+                body = await new StreamReader(ctx.Request.Body).ReadToEndAsync(ctx.RequestAborted);
+            }
+            catch (Exception ex)
+            {
+                return BowireEndpointHelpers.Problem(
+                    type: "urn:bowire:invalid-input",
+                    title: "Failed to read request body",
+                    status: 400,
+                    detail: ex.Message,
+                    instance: ctx.Request.Path);
+            }
+            try
+            {
+                // Accept either { step: {...}, metadata?: {...} }
+                // (preferred — explicit shape) or just a bare step
+                // object (lenient). The bare form skips metadata
+                // seeding which means the recording's name etc. must
+                // come from a prior PUT.
+                var doc = System.Text.Json.Nodes.JsonNode.Parse(body) as System.Text.Json.Nodes.JsonObject
+                          ?? throw new JsonException("Request body must be a JSON object.");
+                System.Text.Json.Nodes.JsonObject step;
+                System.Text.Json.Nodes.JsonObject? metadata = null;
+                if (doc["step"] is System.Text.Json.Nodes.JsonObject explicitStep)
+                {
+                    step = explicitStep;
+                    metadata = doc["metadata"] as System.Text.Json.Nodes.JsonObject;
+                }
+                else
+                {
+                    step = doc;
+                }
+                var wsId = ctx.Request.Query["workspaceId"].ToString();
+                var idx = ChunkedRecordingStore.AppendStep(id, step, metadata,
+                    string.IsNullOrEmpty(wsId) ? null : wsId);
+                return Results.Json(new { appended = true, stepIndex = idx },
+                    BowireEndpointHelpers.JsonOptions);
+            }
+            catch (JsonException ex)
+            {
+                return BowireEndpointHelpers.Problem(
+                    type: "urn:bowire:invalid-input",
+                    title: "Request body isn't valid JSON",
+                    status: 400,
+                    detail: ex.Message,
+                    instance: ctx.Request.Path);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BowireEndpointHelpers.Problem(
+                    type: "urn:bowire:recording-too-large",
+                    title: "Recording exceeds the configured size cap",
+                    status: 413,
+                    detail: ex.Message,
+                    instance: ctx.Request.Path);
+            }
         }).ExcludeFromDescription();
 
         return endpoints;

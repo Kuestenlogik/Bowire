@@ -68,6 +68,24 @@ internal static class ChunkedRecordingStore
     }
 
     /// <summary>
+    /// Per-workspace root resolution (#144 Phase 1.6 / #116). When a
+    /// workspaceId is supplied, recordings land under
+    /// <c>~/.bowire/workspaces/&lt;wsId&gt;/recordings/</c> so each
+    /// workspace's captures are isolated on disk. Without a workspaceId
+    /// the legacy root applies — that path is still used by hosts that
+    /// haven't adopted workspaces yet.
+    /// </summary>
+    internal static string ResolveRootPath(string? workspaceId)
+    {
+        if (string.IsNullOrWhiteSpace(workspaceId)) return RootPath;
+        var sanitised = SanitiseId(workspaceId!);
+        if (string.IsNullOrEmpty(sanitised)) return RootPath;
+        return _testRootOverride is not null
+            ? Path.Combine(_testRootOverride, "workspaces", sanitised, "recordings")
+            : BowireUserContext.GetUserPath(Path.Combine("workspaces", sanitised, "recordings"));
+    }
+
+    /// <summary>
     /// Per-recording byte cap; rejects appends that would push the
     /// recording past this limit. Default 5 GB. Configurable via
     /// <c>Bowire:Recording:MaxBytes</c> in a future pass.
@@ -80,17 +98,18 @@ internal static class ChunkedRecordingStore
     /// frontend already consumes. Returns an empty shape when no
     /// recordings exist or the directory is unreadable.
     /// </summary>
-    public static string LoadAll()
+    public static string LoadAll(string? workspaceId = null)
     {
         lock (DiskLock)
         {
             MigrateFromLegacyIfNeeded();
             try
             {
+                var root = ResolveRootPath(workspaceId);
                 var recordings = new List<JsonElement>();
-                if (Directory.Exists(RootPath))
+                if (Directory.Exists(root))
                 {
-                    foreach (var dir in Directory.EnumerateDirectories(RootPath))
+                    foreach (var dir in Directory.EnumerateDirectories(root))
                     {
                         var doc = TryAssembleRecording(dir);
                         if (doc.HasValue) recordings.Add(doc.Value);
@@ -113,7 +132,7 @@ internal static class ChunkedRecordingStore
     /// document are removed from disk so the operator's UI delete
     /// propagates.
     /// </summary>
-    public static void SaveAll(string json)
+    public static void SaveAll(string json, string? workspaceId = null)
     {
         lock (DiskLock)
         {
@@ -124,7 +143,8 @@ internal static class ChunkedRecordingStore
                 throw new JsonException("Top-level object must carry a 'recordings' array.");
             }
 
-            Directory.CreateDirectory(RootPath);
+            var rootPath = ResolveRootPath(workspaceId);
+            Directory.CreateDirectory(rootPath);
             var seenIds = new HashSet<string>(StringComparer.Ordinal);
 
             foreach (var rec in arr.EnumerateArray())
@@ -138,11 +158,11 @@ internal static class ChunkedRecordingStore
                 var id = SanitiseId(idProp.GetString()!);
                 if (string.IsNullOrEmpty(id)) continue;
                 seenIds.Add(id);
-                WriteOneRecording(id, rec);
+                WriteOneRecording(rootPath, id, rec);
             }
 
             // Sweep out directories the operator deleted from the UI.
-            foreach (var dir in Directory.EnumerateDirectories(RootPath))
+            foreach (var dir in Directory.EnumerateDirectories(rootPath))
             {
                 var name = Path.GetFileName(dir);
                 if (!seenIds.Contains(name))
@@ -157,15 +177,172 @@ internal static class ChunkedRecordingStore
     /// Convenience wrapper for the wire-compat <c>DELETE /api/recordings</c>
     /// — wipes every recording from disk.
     /// </summary>
-    public static void DeleteAll()
+    public static void DeleteAll(string? workspaceId = null)
     {
         lock (DiskLock)
         {
-            if (!Directory.Exists(RootPath)) return;
-            foreach (var dir in Directory.EnumerateDirectories(RootPath))
+            var root = ResolveRootPath(workspaceId);
+            if (!Directory.Exists(root)) return;
+            foreach (var dir in Directory.EnumerateDirectories(root))
             {
                 TryDeleteRecursive(dir);
             }
+        }
+    }
+
+    /// <summary>
+    /// Append a single step to <paramref name="recordingId"/>. The
+    /// recording's metadata file is created on first append if it
+    /// doesn't exist yet — <paramref name="recordingMetadata"/> seeds
+    /// the top-level fields when that happens. Used by capture so a
+    /// single step write doesn't have to round-trip the whole document.
+    /// </summary>
+    public static int AppendStep(string recordingId, JsonObject step, JsonObject? recordingMetadata, string? workspaceId = null)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(recordingId);
+        ArgumentNullException.ThrowIfNull(step);
+
+        var id = SanitiseId(recordingId);
+        if (string.IsNullOrEmpty(id)) throw new ArgumentException("Recording id sanitised to empty.", nameof(recordingId));
+
+        lock (DiskLock)
+        {
+            MigrateFromLegacyIfNeeded();
+            var rootPath = ResolveRootPath(workspaceId);
+            var dir = Path.Combine(rootPath, id);
+            Directory.CreateDirectory(dir);
+            var stepsDir = Path.Combine(dir, StepsDirectory);
+            Directory.CreateDirectory(stepsDir);
+            var bodiesDir = Path.Combine(dir, BodiesDirectory);
+            Directory.CreateDirectory(bodiesDir);
+
+            // Load or seed the metadata file. Seeding only happens
+            // on the very first append for a brand-new recording —
+            // operator-visible fields (name, createdAt, etc.) come
+            // from the second arg so the workbench owns the shape.
+            var metaPath = Path.Combine(dir, RecordingMetadataFile);
+            JsonObject meta;
+            if (File.Exists(metaPath))
+            {
+                meta = (JsonNode.Parse(File.ReadAllText(metaPath)) as JsonObject)
+                       ?? new JsonObject();
+            }
+            else
+            {
+                meta = recordingMetadata is null ? new JsonObject() : (JsonObject)recordingMetadata.DeepClone();
+                meta["id"] = id;
+            }
+
+            var manifest = meta["stepsManifest"] as JsonArray ?? new JsonArray();
+            int idx = manifest.Count;
+            var stepFile = $"{idx:D4}.json";
+
+            var stepObjForDisk = (JsonObject)step.DeepClone();
+
+            // Same content-address handling as SaveAll — large bodies
+            // get hashed into bodies/, small ones stay inline on the
+            // step file.
+            long stepBytes = 0;
+            if (stepObjForDisk["response"] is JsonValue v
+                && v.TryGetValue<string>(out var responseText)
+                && responseText is { Length: > InlineBodyThreshold })
+            {
+                var hash = Sha256(responseText);
+                var bodyPath = Path.Combine(bodiesDir, hash);
+                if (!File.Exists(bodyPath)) File.WriteAllText(bodyPath, responseText);
+                stepBytes = responseText.Length;
+                stepObjForDisk["responseRef"] = hash;
+                stepObjForDisk.Remove("response");
+            }
+            else if (stepObjForDisk["response"] is JsonValue inline
+                     && inline.TryGetValue<string>(out var inlineText))
+            {
+                stepBytes = inlineText.Length;
+            }
+
+            long existingBytes = ((long?)meta["sizeBytes"]) ?? 0L;
+            long newTotal = existingBytes + stepBytes;
+            if (newTotal > MaxBytesPerRecording)
+            {
+                throw new InvalidOperationException(
+                    $"Recording '{id}' would exceed the {MaxBytesPerRecording:N0}-byte cap; reject.");
+            }
+
+            var stepJson = stepObjForDisk.ToJsonString(JsonOptions);
+            File.WriteAllText(Path.Combine(stepsDir, stepFile), stepJson);
+
+            manifest.Add(new JsonObject
+            {
+                ["id"] = (string?)step["id"] ?? idx.ToString("D4", System.Globalization.CultureInfo.InvariantCulture),
+                ["file"] = stepFile,
+                ["service"] = (string?)step["service"],
+                ["method"] = (string?)step["method"],
+                ["status"] = (string?)step["status"],
+                ["bytes"] = stepJson.Length,
+            });
+            meta["stepsManifest"] = manifest;
+            meta["sizeBytes"] = newTotal;
+            meta["stepCount"] = manifest.Count;
+            File.WriteAllText(metaPath, meta.ToJsonString(JsonOptions));
+            return idx;
+        }
+    }
+
+    /// <summary>
+    /// Return the manifest + metadata for <paramref name="recordingId"/>
+    /// WITHOUT inlining step bodies. Used by the UI to render the
+    /// detail-view header / step list before the operator scrolls
+    /// into a specific step. Returns null when the recording doesn't
+    /// exist.
+    /// </summary>
+    public static string? LoadManifest(string recordingId, string? workspaceId = null)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(recordingId);
+        var id = SanitiseId(recordingId);
+        if (string.IsNullOrEmpty(id)) return null;
+        lock (DiskLock)
+        {
+            var path = Path.Combine(ResolveRootPath(workspaceId), id, RecordingMetadataFile);
+            if (!File.Exists(path)) return null;
+            return File.ReadAllText(path);
+        }
+    }
+
+    /// <summary>
+    /// Return a single step's body resolved through the content-
+    /// addressed bodies/ store. Used by lazy step-fetch in the
+    /// detail view + streaming replay. Returns null when the step
+    /// file doesn't exist or can't be parsed.
+    /// </summary>
+    public static string? LoadStep(string recordingId, int stepIndex, string? workspaceId = null)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(recordingId);
+        if (stepIndex < 0) return null;
+        var id = SanitiseId(recordingId);
+        if (string.IsNullOrEmpty(id)) return null;
+        lock (DiskLock)
+        {
+            var rootPath = ResolveRootPath(workspaceId);
+            var stepPath = Path.Combine(rootPath, id, StepsDirectory, $"{stepIndex:D4}.json");
+            if (!File.Exists(stepPath)) return null;
+            JsonNode? stepNode;
+            try { stepNode = JsonNode.Parse(File.ReadAllText(stepPath)); }
+            catch { return null; }
+            if (stepNode is JsonObject obj && obj["responseRef"] is JsonValue refVal)
+            {
+                var hash = (string?)refVal;
+                if (!string.IsNullOrEmpty(hash))
+                {
+                    var bodyPath = Path.Combine(rootPath, id, BodiesDirectory, hash);
+                    if (File.Exists(bodyPath))
+                    {
+                        obj["response"] = File.ReadAllText(bodyPath);
+                        obj.Remove("responseRef");
+                    }
+                }
+                return obj.ToJsonString(JsonOptions);
+            }
+            return stepNode?.ToJsonString(JsonOptions);
         }
     }
 
@@ -229,9 +406,9 @@ internal static class ChunkedRecordingStore
         return JsonDocument.Parse(recObj.ToJsonString()).RootElement.Clone();
     }
 
-    private static void WriteOneRecording(string id, JsonElement rec)
+    private static void WriteOneRecording(string rootPath, string id, JsonElement rec)
     {
-        var dir = Path.Combine(RootPath, id);
+        var dir = Path.Combine(rootPath, id);
         Directory.CreateDirectory(dir);
         var stepsDir = Path.Combine(dir, StepsDirectory);
         Directory.CreateDirectory(stepsDir);
