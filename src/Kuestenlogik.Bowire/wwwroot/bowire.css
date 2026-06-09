@@ -288,8 +288,12 @@ body {
     display: grid;
     grid-template-columns: auto 1fr auto;
     align-items: center;
-    gap: 20px;
-    padding: 12px 20px;
+    gap: 16px;
+    /* #129 Round 3 — tighter topbar (8/16 padding instead of 12/20)
+       gives back ~16 px of vertical real-estate to the data pane
+       without losing breathing room. Density scale used: 8 / 16. */
+    padding: 8px 16px;
+    --bowire-topbar-height: 56px;
     /* Glass-material — translucent bg + backdrop-filter blur+saturate
        lets the body's mesh gradient and any content scrolled underneath
        bleed through, so the topbar reads as a depth layer instead of
@@ -882,7 +886,11 @@ body {
 /* ---------- AI drawer (#90) ---------- */
 /* Sits right of the main pane, peer with the sidebar. Renders only
    when aiDrawerOpen — closed drawer = no DOM, no width cost. The
-   main pane just gives up 360 px when the drawer's there. */
+   main pane just gives up 360 px when the drawer's there.
+   #129 Round 3 — overlay below 1400 px instead of stealing main-
+   pane width. Standard laptop widths (1366 / 1440) get the main
+   pane unshrunk; wider screens still see side-by-side coexistence
+   so the user can read both at once. */
 .bowire-ai-drawer {
     width: 360px;
     min-width: 280px;
@@ -893,6 +901,30 @@ body {
     border-left: 1px solid var(--bowire-border);
     background: var(--bowire-bg);
     overflow: hidden;
+}
+
+@media (max-width: 1400px) {
+    .bowire-ai-drawer,
+    .bowire-security-drawer {
+        position: fixed;
+        top: var(--bowire-topbar-height, 56px);
+        right: 0;
+        bottom: 0;
+        z-index: 90;
+        box-shadow: var(--bowire-shadow-lg);
+    }
+    /* Stack: AI on top of Security when both are open — the second
+       drawer comes second in the source, so its z-index wins
+       naturally. Offset Security to the left of AI so they don't
+       cover each other. */
+    .bowire-security-drawer {
+        right: 360px;
+    }
+    /* Drop the main-pane width reservation since drawers float. */
+    .bowire-with-ai-drawer .bowire-main-pane,
+    .bowire-with-security-drawer .bowire-main-pane {
+        margin-right: 0;
+    }
 }
 
 .bowire-ai-drawer-header {
@@ -1503,14 +1535,23 @@ img.bowire-logo-icon {
     font-variant-numeric: tabular-nums;
 }
 
-/* ---------- Filter chip row (below the search bar) ---------- */
+/* ---------- Filter chip row (below the search bar) ----------
+   #129 Round 3 — single-line horizontal scroll instead of multi-row
+   wrap. With many active filters the previous wrap could eat 2-3
+   vertical rows; scrolling keeps the sidebar's vertical density
+   stable + makes the row read as "active filters" rather than as a
+   secondary nav. */
 .bowire-filter-chips {
     display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-    padding: 0 12px 8px;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    gap: 4px;
+    padding: 4px 12px 8px;
     flex-shrink: 0;
+    scrollbar-width: thin;
 }
+.bowire-filter-chips::-webkit-scrollbar { height: 4px; }
+.bowire-filter-chips::-webkit-scrollbar-thumb { background: var(--bowire-border); border-radius: 2px; }
 
 .bowire-filter-chip {
     display: inline-flex;
