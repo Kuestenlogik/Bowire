@@ -290,6 +290,8 @@
     // only; not persisted to localStorage so a reload starts with the
     // menu closed. Closes on Esc / outside click via init.js handlers.
     let topbarOverflowOpen = false;
+    // #116 workspace switcher menu — open/closed.
+    let workspaceMenuOpen = false;
 
     // #133 — activity-rail mode. Persisted per-workspace once #116
     // lands; for now scoped globally to localStorage. Phase 1 only
@@ -318,6 +320,89 @@
             splitMode = storedSplit;
         }
     } catch { /* ignore */ }
+
+    // #116 — Workspaces Phase 1. UI surface + naming only; actual
+    // state isolation (per-workspace URLs / envs / collections /
+    // recordings / AI config) lands in Phase 2. For now the
+    // workspace acts as a labelled folder for the operator's
+    // context — switching swaps the visible name + the save-pill
+    // label but the underlying state stays global. Once Phase 2
+    // wires the storage prefix into every persist fn, switching
+    // becomes structural.
+    let workspaces = [];
+    let activeWorkspaceId = null;
+    try {
+        var rawWs = localStorage.getItem('bowire_workspaces');
+        if (rawWs) {
+            var parsed = JSON.parse(rawWs);
+            if (Array.isArray(parsed)) workspaces = parsed;
+        }
+        activeWorkspaceId = localStorage.getItem('bowire_active_workspace') || null;
+    } catch { /* ignore */ }
+    // First-run seed: every install gets a Personal workspace so
+    // the switcher has at least one entry.
+    if (workspaces.length === 0) {
+        workspaces.push({
+            id: 'personal',
+            name: 'Personal',
+            color: '#6366f1',
+            createdAt: Date.now(),
+            lastOpenedAt: Date.now(),
+        });
+        activeWorkspaceId = 'personal';
+    }
+    if (!activeWorkspaceId || !workspaces.find(function (w) { return w.id === activeWorkspaceId; })) {
+        activeWorkspaceId = workspaces[0].id;
+    }
+    function persistWorkspaces() {
+        try {
+            localStorage.setItem('bowire_workspaces', JSON.stringify(workspaces));
+            if (activeWorkspaceId) localStorage.setItem('bowire_active_workspace', activeWorkspaceId);
+            markSaved('workspace');
+        } catch (e) { markSaveFailed('workspace', e); }
+    }
+    function activeWorkspace() {
+        return workspaces.find(function (w) { return w.id === activeWorkspaceId; }) || workspaces[0];
+    }
+    function createWorkspace(name, color) {
+        var id = 'ws_' + Math.random().toString(36).slice(2, 10);
+        var ws = {
+            id: id,
+            name: name || ('Workspace ' + (workspaces.length + 1)),
+            color: color || '#6366f1',
+            createdAt: Date.now(),
+            lastOpenedAt: Date.now(),
+        };
+        workspaces.push(ws);
+        activeWorkspaceId = id;
+        persistWorkspaces();
+        return ws;
+    }
+    function switchWorkspace(id) {
+        var ws = workspaces.find(function (w) { return w.id === id; });
+        if (!ws) return;
+        activeWorkspaceId = id;
+        ws.lastOpenedAt = Date.now();
+        persistWorkspaces();
+    }
+    function renameWorkspace(id, name) {
+        var ws = workspaces.find(function (w) { return w.id === id; });
+        if (!ws) return;
+        ws.name = name;
+        persistWorkspaces();
+    }
+    function deleteWorkspace(id) {
+        // Personal is the seed — keep at least one workspace; refuse
+        // to delete the last one. Otherwise drop the entry and
+        // re-point active to whatever's left.
+        if (workspaces.length <= 1) return false;
+        var idx = workspaces.findIndex(function (w) { return w.id === id; });
+        if (idx < 0) return false;
+        workspaces.splice(idx, 1);
+        if (activeWorkspaceId === id) activeWorkspaceId = workspaces[0].id;
+        persistWorkspaces();
+        return true;
+    }
 
     // #124 v2 — module-level slot for the omnibox palette DOM. The
     // topbar's renderTopbar builds the palette every render cycle
@@ -1101,6 +1186,16 @@
         };
         selectedMethod = null;
         selectedService = null;
+        // The freeform builder only renders in the Discover main
+        // pane; switching modes (Home, Mocks, Recordings, …)
+        // bypasses it. Force Discover so clicking the '+' tab
+        // button (or Ctrl+T) lands the operator on the builder
+        // regardless of the active rail mode.
+        if (typeof railMode !== 'undefined' && railMode !== 'discover') {
+            railMode = 'discover';
+            try { localStorage.setItem('bowire_rail_mode', 'discover'); } catch { /* ignore */ }
+            if (typeof sidebarView !== 'undefined') sidebarView = 'services';
+        }
         render();
     }
 

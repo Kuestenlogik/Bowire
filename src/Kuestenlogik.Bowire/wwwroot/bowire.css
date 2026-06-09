@@ -915,6 +915,109 @@ body {
 }
 .bowire-save-pill-failed .bowire-save-pill-dot { background: var(--bowire-warning); }
 
+/* #116 Workspace switcher chip in the topbar context group. */
+.bowire-workspace-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 28px;
+    padding: 0 10px;
+    background: var(--bowire-surface);
+    border: 1px solid var(--bowire-border-subtle);
+    border-radius: var(--bowire-radius-md);
+    color: var(--bowire-text);
+    cursor: pointer;
+    font-size: 12px;
+    transition: background var(--bowire-transition), border-color var(--bowire-transition);
+}
+.bowire-workspace-chip:hover {
+    background: var(--bowire-surface-hover);
+    border-color: var(--bowire-text-tertiary);
+}
+.bowire-workspace-chip.active {
+    background: var(--bowire-accent-subtle);
+    border-color: var(--bowire-accent);
+}
+.bowire-workspace-chip-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+.bowire-workspace-chip-name {
+    max-width: 160px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.bowire-workspace-chip-caret {
+    color: var(--bowire-text-tertiary);
+    font-size: 10px;
+    line-height: 1;
+}
+
+.bowire-workspace-menu {
+    position: absolute;
+    top: 100%;
+    margin-top: 4px;
+    min-width: 240px;
+    background: var(--bowire-bg-elevated);
+    border: 1px solid var(--bowire-border);
+    border-radius: var(--bowire-radius-md);
+    box-shadow: var(--bowire-shadow-md);
+    z-index: 100;
+    padding: 4px;
+}
+.bowire-workspace-menu-section {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+}
+.bowire-workspace-menu-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 10px;
+    border-radius: var(--bowire-radius-sm);
+    cursor: pointer;
+    color: var(--bowire-text);
+    font-size: 13px;
+    transition: background var(--bowire-transition);
+}
+.bowire-workspace-menu-item:hover {
+    background: var(--bowire-surface-hover);
+}
+.bowire-workspace-menu-item.active {
+    background: var(--bowire-accent-subtle);
+    color: var(--bowire-accent-text);
+}
+.bowire-workspace-menu-item-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+.bowire-workspace-menu-item-name {
+    flex: 1;
+}
+.bowire-workspace-menu-item-check {
+    color: var(--bowire-accent);
+}
+.bowire-workspace-menu-item-icon {
+    width: 14px;
+    display: inline-flex;
+    justify-content: center;
+    color: var(--bowire-text-secondary);
+}
+.bowire-workspace-menu-divider {
+    height: 1px;
+    margin: 4px 0;
+    background: var(--bowire-border-subtle);
+}
+.bowire-workspace-menu-item-danger {
+    color: var(--bowire-error);
+}
+
 /* #139 — Home mode. Cross-workflow launchpad: Favorites grid +
    Recent activity grid. */
 .bowire-main-home {
