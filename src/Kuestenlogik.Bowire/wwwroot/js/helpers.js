@@ -448,6 +448,48 @@
         return method && method.methodType;
     }
 
+    /**
+     * #122 — direction axis: maps a method (or step descriptor) to one
+     * of warm / cool / duplex / neutral. CSS picks up the value via
+     * data-direction on the badge / row / step affordance and resolves
+     * it to the corresponding --bowire-direction-* variable.
+     *
+     * Mapping intent (see issue body):
+     *   warm    = client → server (mutation, send, publish, request kick-off)
+     *   cool    = server → client (read, response, server-stream, subscribe-incoming)
+     *   duplex  = bidirectional (duplex stream, websocket, hub method)
+     *   neutral = metadata-only / unclassified / fallback
+     */
+    function methodDirection(method) {
+        if (!method) return 'neutral';
+        // REST verbs first — most explicit signal.
+        var verb = (method.httpMethod || '').toUpperCase();
+        if (verb === 'GET' || verb === 'HEAD' || verb === 'OPTIONS') return 'cool';
+        if (verb === 'POST' || verb === 'PUT' || verb === 'PATCH' || verb === 'DELETE') return 'warm';
+
+        // gRPC / streaming method types.
+        switch (method.methodType) {
+            case 'Unary':           return 'warm';      // client initiates
+            case 'ServerStreaming': return 'cool';      // server emits
+            case 'ClientStreaming': return 'warm';      // client emits
+            case 'Duplex':          return 'duplex';
+            case 'asyncapi-send':   return 'warm';
+            case 'asyncapi-receive':return 'cool';
+        }
+
+        // Pub/Sub-shaped sources (MQTT publish vs subscribe, NATS pub vs sub).
+        var op = (method.operation || method.kind || '').toLowerCase();
+        if (op === 'publish' || op === 'send' || op === 'pub') return 'warm';
+        if (op === 'subscribe' || op === 'receive' || op === 'sub') return 'cool';
+
+        // GraphQL operation kinds.
+        if (op === 'query') return 'cool';
+        if (op === 'mutation') return 'warm';
+        if (op === 'subscription') return 'cool';
+
+        return 'neutral';
+    }
+
     function methodBadgeLabel(type) {
         switch (type) {
             case 'Unary': return 'Unary';
