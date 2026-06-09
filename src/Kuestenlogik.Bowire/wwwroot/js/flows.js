@@ -214,7 +214,7 @@
                 try {
                     var data = JSON.parse(reader.result);
                     if (!data.nodes || !Array.isArray(data.nodes)) {
-                        alert('Invalid flow file.');
+                        toast('Invalid flow file — missing nodes[].', 'error');
                         return;
                     }
                     data.id = 'flow_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
@@ -227,7 +227,7 @@
                     flowEditorSelectedId = data.id;
                     render();
                 } catch (e) {
-                    alert('Failed to import flow: ' + e.message);
+                    toast('Failed to import flow: ' + (e && e.message ? e.message : 'unknown error'), 'error');
                 }
             };
             reader.readAsText(input.files[0]);
