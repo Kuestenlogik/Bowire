@@ -322,6 +322,36 @@
     let recordingsTrashOpen = false;
     let collectionsTrashOpen = false;
 
+    // #143 Phase 3 — multi-select state per list. Session-only so a
+    // refresh clears it. Anchor tracks the last single-click for
+    // shift-range expansion.
+    let recordingsSelected = new Set();
+    let recordingsSelectionAnchor = null;
+    let collectionsSelected = new Set();
+    let collectionsSelectionAnchor = null;
+    // Generic helper — applies the click modifier rules to a Set.
+    // Returns true if the modifier-aware click should be treated as
+    // a selection (ctrl/meta/shift); false means it's a plain click
+    // that the caller wants to fall through to single-row select.
+    function applyListSelectionClick(set, anchorIdx, ids, idx, e) {
+        if (e && (e.shiftKey)) {
+            // Shift+click: extend the range from anchor (or 0 if no
+            // anchor yet) to this idx. Plain set semantics — we add
+            // every id in the range without clearing existing.
+            var from = anchorIdx == null ? idx : Math.min(anchorIdx, idx);
+            var to = anchorIdx == null ? idx : Math.max(anchorIdx, idx);
+            for (var i = from; i <= to && i < ids.length; i++) set.add(ids[i]);
+            return true;
+        }
+        if (e && (e.ctrlKey || e.metaKey)) {
+            // Ctrl/Cmd+click: toggle single row in set.
+            if (set.has(ids[idx])) set.delete(ids[idx]);
+            else set.add(ids[idx]);
+            return true;
+        }
+        return false;
+    }
+
     // #133 — activity-rail mode. Persisted per-workspace once #116
     // lands; for now scoped globally to localStorage. Phase 1 only
     // wires the Discover mode to the existing sidebar content; the
