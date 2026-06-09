@@ -314,7 +314,25 @@
         var body = el('div', { className: 'bowire-console-body' });
 
         if (consoleLog.length === 0) {
-            body.appendChild(el('div', { className: 'bowire-console-empty', textContent: 'No activity yet. Send a request to see it here.' }));
+            // #121 — context-aware empty card. The console is a passive
+            // log: there's no action that fills it directly, but we
+            // can shortcut the user to the action that does
+            // (focus + scroll to the request pane).
+            body.appendChild(renderEmptyCard({
+                icon: 'console',
+                headline: 'No activity yet',
+                body: 'Console captures every request, response, channel-frame, and error. Fire a call from the request pane and it lands here as a sortable timeline.',
+                hintKey: 'bowire_empty_console_hint',
+                actions: [
+                    {
+                        label: 'Focus request pane',
+                        onClick: function () {
+                            var pane = document.querySelector('.bowire-request-pane, .bowire-freeform-pane');
+                            if (pane) pane.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        }
+                    },
+                ]
+            }));
         } else {
             for (var i = 0; i < consoleLog.length; i++) {
                 body.appendChild(buildConsoleRow(consoleLog[i]));
