@@ -760,7 +760,9 @@
                 textContent: 'Favorites and recent activity across every workflow. Click an entry to open it in Discover.'
             }));
 
-            // ---- Favorites grid ----
+            // ---- Side-by-side grid: Favorites + Recent activity ----
+            var sections = el('div', { className: 'bowire-home-sections' });
+
             var favs = (typeof getFavorites === 'function') ? getFavorites() : [];
             var favSection = el('div', { className: 'bowire-home-section' });
             favSection.appendChild(el('h3', { className: 'bowire-home-section-title' },
@@ -794,7 +796,7 @@
                 });
                 favSection.appendChild(favGrid);
             }
-            homeWrap.appendChild(favSection);
+            sections.appendChild(favSection);
 
             // ---- Recent activity ----
             var recent = (typeof getRecentMethods === 'function') ? getRecentMethods() : [];
@@ -817,7 +819,8 @@
                 });
                 recentSection.appendChild(recentGrid);
             }
-            homeWrap.appendChild(recentSection);
+            sections.appendChild(recentSection);
+            homeWrap.appendChild(sections);
 
             homeMain.appendChild(homeWrap);
             return homeMain;
