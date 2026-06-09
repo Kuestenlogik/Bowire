@@ -629,6 +629,11 @@
             id: 'bowire-command-palette-input',
             className: 'bowire-command-palette-input',
             type: 'text',
+            // Search-palette + autocomplete are meta-UI; opt out of
+            // both the autocomplete-on-{{ trigger and the chip
+            // overlay so the field stays a plain search box.
+            'data-bowire-no-vars-chip': '1',
+            'data-bowire-no-vars-ac': '1',
             placeholder: 'Search methods, recordings, mocks, modes\u2026 (Ctrl/Cmd+K)',
             value: searchQuery,
             autocomplete: 'off',
