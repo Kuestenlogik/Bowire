@@ -293,6 +293,35 @@
     // #116 workspace switcher menu — open/closed.
     let workspaceMenuOpen = false;
 
+    // #143 Phase 2 — Trash-store per list. localStorage-persisted
+    // so a missed Undo toast isn't a permanent loss. Each entry
+    // carries the original item + a deletedAt timestamp. The
+    // sidebar's 'Recently deleted' section reads from these.
+    // Auto-purge after 30 days happens on startup below.
+    let recordingsTrash = [];
+    let collectionsTrash = [];
+    try {
+        var rawRTrash = localStorage.getItem('bowire_recordings_trash');
+        if (rawRTrash) recordingsTrash = JSON.parse(rawRTrash) || [];
+        var rawCTrash = localStorage.getItem('bowire_collections_trash');
+        if (rawCTrash) collectionsTrash = JSON.parse(rawCTrash) || [];
+    } catch { /* ignore */ }
+    // Drop anything older than 30 days.
+    (function purgeOldTrash() {
+        var cutoff = Date.now() - 30 * 24 * 60 * 60 * 1000;
+        recordingsTrash = recordingsTrash.filter(function (t) { return t.deletedAt > cutoff; });
+        collectionsTrash = collectionsTrash.filter(function (t) { return t.deletedAt > cutoff; });
+    })();
+    function persistRecordingsTrash() {
+        try { localStorage.setItem('bowire_recordings_trash', JSON.stringify(recordingsTrash)); } catch { /* ignore */ }
+    }
+    function persistCollectionsTrash() {
+        try { localStorage.setItem('bowire_collections_trash', JSON.stringify(collectionsTrash)); } catch { /* ignore */ }
+    }
+    // Trash-section open/closed per sidebar — session-only.
+    let recordingsTrashOpen = false;
+    let collectionsTrashOpen = false;
+
     // #133 — activity-rail mode. Persisted per-workspace once #116
     // lands; for now scoped globally to localStorage. Phase 1 only
     // wires the Discover mode to the existing sidebar content; the

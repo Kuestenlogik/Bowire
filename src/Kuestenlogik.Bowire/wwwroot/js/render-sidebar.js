@@ -873,12 +873,20 @@
                         recordingsList.splice(idx, 1);
                         if (recordingManagerSelectedId === rec.id) recordingManagerSelectedId = null;
                         if (recordingActiveId === rec.id) recordingActiveId = null;
+                        // #143 Phase 2 — move to trash (recoverable
+                        // for 30 days) instead of immediate purge.
+                        recordingsTrash.unshift({ entry: backup, deletedAt: Date.now(), originalIdx: idx });
                         persistRecordings();
-                        toast('Recording deleted', 'success', {
+                        persistRecordingsTrash();
+                        toast('Recording moved to trash', 'success', {
                             undo: function () {
-                                recordingsList.splice(Math.min(idx, recordingsList.length), 0, backup);
-                                persistRecordings();
-                                render();
+                                var t = recordingsTrash.shift();
+                                if (t) {
+                                    recordingsList.splice(Math.min(idx, recordingsList.length), 0, t.entry);
+                                    persistRecordings();
+                                    persistRecordingsTrash();
+                                    render();
+                                }
                             }
                         });
                         render();
@@ -888,6 +896,19 @@
             });
             sidebar.appendChild(list);
         }
+
+        // #143 Phase 2 — Recently deleted recordings (30-day TTL).
+        sidebar.appendChild(renderTrashSection({
+            trashArray: recordingsTrash,
+            isOpen: recordingsTrashOpen,
+            setOpen: function (v) { recordingsTrashOpen = v; },
+            restoreAt: function (t) {
+                recordingsList.splice(Math.min(t.originalIdx || recordingsList.length, recordingsList.length), 0, t.entry);
+                persistRecordings();
+            },
+            persist: function () { persistRecordingsTrash(); },
+            nameOf: function (e) { return e && e.name ? e.name : '(unnamed recording)'; }
+        }));
 
         return sidebar;
     }
@@ -1003,12 +1024,19 @@
                         var backup = collectionsList[idx];
                         collectionsList.splice(idx, 1);
                         if (collectionManagerSelectedId === col.id) collectionManagerSelectedId = null;
+                        // Move to trash so a missed toast isn't fatal.
+                        collectionsTrash.unshift({ entry: backup, deletedAt: Date.now(), originalIdx: idx });
                         persistCollections();
-                        toast('Collection deleted', 'success', {
+                        persistCollectionsTrash();
+                        toast('Collection moved to trash', 'success', {
                             undo: function () {
-                                collectionsList.splice(Math.min(idx, collectionsList.length), 0, backup);
-                                persistCollections();
-                                render();
+                                var t = collectionsTrash.shift();
+                                if (t) {
+                                    collectionsList.splice(Math.min(idx, collectionsList.length), 0, t.entry);
+                                    persistCollections();
+                                    persistCollectionsTrash();
+                                    render();
+                                }
                             }
                         });
                         render();
@@ -1019,7 +1047,95 @@
             sidebar.appendChild(list);
         }
 
+        // #143 Phase 2 — Recently deleted collections (30-day TTL).
+        sidebar.appendChild(renderTrashSection({
+            trashArray: collectionsTrash,
+            isOpen: collectionsTrashOpen,
+            setOpen: function (v) { collectionsTrashOpen = v; },
+            restoreAt: function (t) {
+                collectionsList.splice(Math.min(t.originalIdx || collectionsList.length, collectionsList.length), 0, t.entry);
+                persistCollections();
+            },
+            persist: function () { persistCollectionsTrash(); },
+            nameOf: function (e) { return e && e.name ? e.name : '(unnamed collection)'; }
+        }));
+
         return sidebar;
+    }
+
+    // #143 Phase 2 — Renders a collapsible 'Recently deleted'
+    // section at the bottom of a list sidebar. Each entry can be
+    // restored or permanently deleted. Auto-purge after 30 days
+    // happens at startup so the section only shows what's actually
+    // recoverable.
+    //
+    // opts: { trashArray, isOpen, setOpen, restoreAt(item), purgeAll, persist, labelOne, labelMany, nameOf }
+    function renderTrashSection(opts) {
+        var section = el('div', { className: 'bowire-trash-section' });
+        var trash = opts.trashArray || [];
+        if (trash.length === 0) return section;
+
+        var header = el('div', {
+            className: 'bowire-trash-header',
+            onClick: function () { opts.setOpen(!opts.isOpen); render(); }
+        },
+            el('span', { textContent: '🗑 Recently deleted' }),
+            el('span', { className: 'bowire-trash-count', textContent: String(trash.length) }),
+            el('span', { className: 'bowire-trash-caret', textContent: opts.isOpen ? '▾' : '▸' })
+        );
+        section.appendChild(header);
+
+        if (!opts.isOpen) return section;
+
+        var list = el('div', { className: 'bowire-trash-list' });
+        trash.forEach(function (t, i) {
+            var row = el('div', { className: 'bowire-trash-row' },
+                el('div', { className: 'bowire-trash-row-name', textContent: opts.nameOf(t.entry) }),
+                el('div', { className: 'bowire-trash-row-meta', textContent: 'deleted ' + new Date(t.deletedAt).toLocaleString() }),
+                el('button', {
+                    type: 'button',
+                    className: 'bowire-trash-row-action',
+                    title: 'Restore',
+                    textContent: '↩',
+                    onClick: function () {
+                        opts.restoreAt(t);
+                        trash.splice(i, 1);
+                        opts.persist();
+                        render();
+                    }
+                }),
+                el('button', {
+                    type: 'button',
+                    className: 'bowire-trash-row-action bowire-trash-row-action-danger',
+                    title: 'Delete permanently',
+                    textContent: '×',
+                    onClick: function () {
+                        trash.splice(i, 1);
+                        opts.persist();
+                        render();
+                    }
+                })
+            );
+            list.appendChild(row);
+        });
+        section.appendChild(list);
+
+        if (trash.length > 0) {
+            section.appendChild(el('button', {
+                type: 'button',
+                className: 'bowire-trash-empty-btn',
+                textContent: 'Empty trash',
+                onClick: function () {
+                    if (confirm('Permanently delete all ' + trash.length + ' items in trash?')) {
+                        trash.length = 0;
+                        opts.persist();
+                        render();
+                    }
+                }
+            }));
+        }
+
+        return section;
     }
 
     // #133 Phase 2 — Mocks rail mode sidebar. Lists every running
