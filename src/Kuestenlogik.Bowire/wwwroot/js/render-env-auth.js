@@ -477,12 +477,13 @@
         // failed-target label, sticks for ~4 s.
         var left = el('div', { className: 'bowire-statusbar-left' });
         if (saveState && saveState.kind === 'saved') {
+            var ws = typeof activeWorkspace === 'function' ? activeWorkspace() : null;
             left.appendChild(el('span', {
                 className: 'bowire-save-pill bowire-save-pill-saved',
-                title: 'Saved to localStorage',
+                title: ws ? ('Saved to ' + ws.name) : 'Saved to localStorage',
             },
                 el('span', { className: 'bowire-save-pill-dot' }),
-                el('span', { textContent: 'Saved ' + saveState.target })
+                el('span', { textContent: ws ? ('Saved to ' + ws.name) : ('Saved ' + saveState.target) })
             ));
         } else if (saveState && saveState.kind === 'failed') {
             left.appendChild(el('span', {
@@ -960,13 +961,95 @@
             textContent: '⋮'
         }));
 
+        // #116 Workspaces Phase 1 — workspace switcher chip.
+        // Click opens a small menu with every workspace + a
+        // 'New workspace…' action.
+        var ws = activeWorkspace();
+        var wsChip = el('button', {
+            id: 'bowire-workspace-chip',
+            type: 'button',
+            className: 'bowire-workspace-chip' + (workspaceMenuOpen ? ' active' : ''),
+            title: 'Workspace: ' + ws.name,
+            'aria-label': 'Switch workspace',
+            onClick: function (e) {
+                e.stopPropagation();
+                workspaceMenuOpen = !workspaceMenuOpen;
+                render();
+            }
+        },
+            el('span', { className: 'bowire-workspace-chip-dot', style: 'background:' + (ws.color || 'var(--bowire-accent)') }),
+            el('span', { className: 'bowire-workspace-chip-name', textContent: ws.name }),
+            el('span', { className: 'bowire-workspace-chip-caret', textContent: '▾' })
+        );
+
         var right = el('div', { id: 'bowire-topbar-right', className: 'bowire-topbar-right' },
-            // #138 — connection pill + watch button live in the
-            // statusbar at the bottom (system-status info). Env
-            // selector stays here: it's editor-context (which set
-            // of variables your tabs interpolate), peer of the
-            // command palette, not ambient telemetry.
+            // #116 workspace + #138 env selector form the editor-
+            // context group — both describe 'what state am I
+            // editing right now'.
             el('div', { className: 'bowire-topbar-group bowire-topbar-context' },
+                wsChip,
+                workspaceMenuOpen ? el('div', {
+                    className: 'bowire-workspace-menu',
+                    onClick: function (e) { e.stopPropagation(); }
+                },
+                    el('div', { className: 'bowire-workspace-menu-section' },
+                        workspaces.map(function (w) {
+                            return el('div', {
+                                className: 'bowire-workspace-menu-item' + (w.id === activeWorkspaceId ? ' active' : ''),
+                                onClick: function () {
+                                    if (w.id !== activeWorkspaceId) switchWorkspace(w.id);
+                                    workspaceMenuOpen = false;
+                                    render();
+                                }
+                            },
+                                el('span', { className: 'bowire-workspace-menu-item-dot', style: 'background:' + (w.color || 'var(--bowire-accent)') }),
+                                el('span', { className: 'bowire-workspace-menu-item-name', textContent: w.name }),
+                                w.id === activeWorkspaceId
+                                    ? el('span', { className: 'bowire-workspace-menu-item-check', textContent: '✓' })
+                                    : null
+                            );
+                        })
+                    ),
+                    el('div', { className: 'bowire-workspace-menu-divider' }),
+                    el('div', {
+                        className: 'bowire-workspace-menu-item bowire-workspace-menu-item-action',
+                        onClick: function () {
+                            var name = prompt('New workspace name?');
+                            if (!name) { workspaceMenuOpen = false; render(); return; }
+                            createWorkspace(name.trim());
+                            workspaceMenuOpen = false;
+                            render();
+                        }
+                    },
+                        el('span', { className: 'bowire-workspace-menu-item-icon', textContent: '+' }),
+                        el('span', { textContent: 'New workspace…' })
+                    ),
+                    el('div', {
+                        className: 'bowire-workspace-menu-item bowire-workspace-menu-item-action',
+                        onClick: function () {
+                            var renamed = prompt('Rename workspace', ws.name);
+                            if (renamed && renamed.trim()) renameWorkspace(ws.id, renamed.trim());
+                            workspaceMenuOpen = false;
+                            render();
+                        }
+                    },
+                        el('span', { className: 'bowire-workspace-menu-item-icon', textContent: '✎' }),
+                        el('span', { textContent: 'Rename current…' })
+                    ),
+                    workspaces.length > 1 ? el('div', {
+                        className: 'bowire-workspace-menu-item bowire-workspace-menu-item-action bowire-workspace-menu-item-danger',
+                        onClick: function () {
+                            if (confirm('Delete workspace "' + ws.name + '"? Phase 1 has no per-workspace state isolation, so the underlying URLs/envs stay.')) {
+                                deleteWorkspace(ws.id);
+                            }
+                            workspaceMenuOpen = false;
+                            render();
+                        }
+                    },
+                        el('span', { className: 'bowire-workspace-menu-item-icon', textContent: '🗑' }),
+                        el('span', { textContent: 'Delete current' })
+                    ) : null
+                ) : null,
                 renderEnvSelector(),
             ),
             // Drawer-toggle group. Security toggle retired in

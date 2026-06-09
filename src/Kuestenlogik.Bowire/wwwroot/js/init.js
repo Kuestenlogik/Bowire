@@ -154,6 +154,11 @@
                     render();
                     return;
                 }
+                if (workspaceMenuOpen) {
+                    workspaceMenuOpen = false;
+                    render();
+                    return;
+                }
                 if (aboutOpen) {
                     closeAbout();
                     return;
@@ -320,6 +325,15 @@
                 var inside = (ovBtn && ovBtn.contains(e.target)) || (ovMenu && ovMenu.contains(e.target));
                 if (!inside) {
                     topbarOverflowOpen = false;
+                    changed = true;
+                }
+            }
+            if (workspaceMenuOpen) {
+                var wsBtn = document.getElementById('bowire-workspace-chip');
+                var wsMenu = document.querySelector('.bowire-workspace-menu');
+                var wsInside = (wsBtn && wsBtn.contains(e.target)) || (wsMenu && wsMenu.contains(e.target));
+                if (!wsInside) {
+                    workspaceMenuOpen = false;
                     changed = true;
                 }
             }
