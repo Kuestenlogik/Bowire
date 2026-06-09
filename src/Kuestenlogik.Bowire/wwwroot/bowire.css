@@ -1390,6 +1390,11 @@ body {
 .bowire-ai-drawer-content {
     flex: 1;
     overflow: auto;
+    /* Inner padding so hints, chat input, status text don't hug
+       the drawer's left/right edges. The panel inside used to have
+       its own padding hand-rolled per section — easier to put it
+       on the host. */
+    padding: 12px 16px;
 }
 
 .bowire-ai-drawer-empty {

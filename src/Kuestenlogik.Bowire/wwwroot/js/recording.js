@@ -72,6 +72,28 @@
     }
 
     function startRecording(name) {
+        // If the most recent recording is empty (0 steps), reuse it
+        // instead of piling another empty 'Recording <timestamp>'
+        // entry onto the list. Operators who tap Start Recording
+        // several times in a row before capturing anything were
+        // ending up with multiple stale 0-step entries in the
+        // Recordings sidebar — now they get one slot that resets
+        // its name + activates again.
+        var lastIdx = recordingsList.length - 1;
+        var lastEmpty = lastIdx >= 0
+            && (!recordingsList[lastIdx].steps || recordingsList[lastIdx].steps.length === 0)
+            ? recordingsList[lastIdx]
+            : null;
+        if (lastEmpty) {
+            if (name) lastEmpty.name = name;
+            else lastEmpty.name = 'Recording ' + new Date().toLocaleString();
+            lastEmpty.createdAt = Date.now();
+            recordingActiveId = lastEmpty.id;
+            persistRecordings();
+            addConsoleEntry({ type: 'response', method: lastEmpty.name, status: 'Recording resumed (empty)' });
+            render();
+            return;
+        }
         var rec = {
             id: nextRecordingId(),
             name: name || ('Recording ' + new Date().toLocaleString()),
@@ -104,8 +126,21 @@
         var name = rec ? rec.name : 'Recording';
         var stepCount = rec ? rec.steps.length : 0;
         recordingActiveId = null;
+        // If the recording captured zero steps, drop it instead of
+        // saving an empty entry the operator would just have to
+        // clean up later. Matches the 'reuse latest empty' behaviour
+        // in startRecording — empty slots are noise, not state.
+        if (rec && stepCount === 0) {
+            var idx = recordingsList.indexOf(rec);
+            if (idx >= 0) recordingsList.splice(idx, 1);
+            if (recordingManagerSelectedId === rec.id) recordingManagerSelectedId = null;
+        }
         persistRecordings();
-        addConsoleEntry({ type: 'response', method: name, status: 'Recording stopped (' + stepCount + ' step' + (stepCount !== 1 ? 's' : '') + ')' });
+        if (stepCount === 0) {
+            addConsoleEntry({ type: 'response', method: name, status: 'Recording dropped (0 steps)' });
+        } else {
+            addConsoleEntry({ type: 'response', method: name, status: 'Recording stopped (' + stepCount + ' step' + (stepCount !== 1 ? 's' : '') + ')' });
+        }
         render();
     }
 

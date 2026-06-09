@@ -827,9 +827,11 @@
     function renderAiPanel() {
         var panel = el('div', { className: 'bowire-ai-panel' });
 
-        // Header
+        // Header — the drawer chrome already carries the
+        // 'Assistant' title up top; the inner panel only needs the
+        // mode sublabel ('Hint engine — no model required') so we
+        // don't render the same word twice.
         var header = el('div', { className: 'bowire-ai-header' });
-        header.appendChild(el('h3', { textContent: 'Assistant' }));
         header.appendChild(el('span', {
             className: 'bowire-ai-mode',
             textContent: 'Hint engine — no model required'
