@@ -678,7 +678,8 @@
      * exists for that pair, switch to it; otherwise create a new tab
      * and make it active.
      */
-    function openTab(svc, method) {
+    function openTab(svc, method, opts) {
+        opts = opts || {};
         var existing = null;
         for (var i = 0; i < requestTabs.length; i++) {
             if (requestTabs[i].serviceKey === svc.name
@@ -698,14 +699,38 @@
         stashCurrentChannel();
         saveCurrentMethodState();
 
-        var tab = {
-            id: nextTabId(),
-            serviceKey: svc.name,
-            methodKey: method.name,
-            service: svc,
-            method: method
-        };
-        requestTabs.push(tab);
+        // Browser/Hoppscotch-style tab semantics: by default, the
+        // active tab adopts the new method (replacing what was open
+        // there). A separate, explicit `inNewTab: true` opens a fresh
+        // tab — that path is taken by the '+' button on the strip,
+        // by Ctrl/Cmd+click on a method row, and by middle-click.
+        // The previous behaviour ('every method click = new tab')
+        // produced an ever-growing tab strip on normal navigation.
+        var activeTab = null;
+        if (!opts.inNewTab && activeTabId !== null) {
+            for (var j = 0; j < requestTabs.length; j++) {
+                if (requestTabs[j].id === activeTabId) { activeTab = requestTabs[j]; break; }
+            }
+        }
+        var tab;
+        if (activeTab) {
+            // Repurpose the active tab. Keep the id stable so
+            // persisted state + UI focus don't flicker.
+            activeTab.serviceKey = svc.name;
+            activeTab.methodKey = method.name;
+            activeTab.service = svc;
+            activeTab.method = method;
+            tab = activeTab;
+        } else {
+            tab = {
+                id: nextTabId(),
+                serviceKey: svc.name,
+                methodKey: method.name,
+                service: svc,
+                method: method
+            };
+            requestTabs.push(tab);
+        }
         activeTabId = tab.id;
         persistRequestTabs();
 
