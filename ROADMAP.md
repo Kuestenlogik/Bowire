@@ -83,6 +83,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 - [#130](https://github.com/Kuestenlogik/Bowire/issues/130) **Comparison table: add Hoppscotch + topic-based filtering** 
 - [#131](https://github.com/Kuestenlogik/Bowire/issues/131) **Benchmarks: first-class surface (single / collection / recording / random / scheduled)** 
 - [#132](https://github.com/Kuestenlogik/Bowire/issues/132) **Parallel sessions for recordings / collections (phase 1 local, phase 2 distributed)** 
+- [#133](https://github.com/Kuestenlogik/Bowire/issues/133) **Activity rail (left) — switch workbench focus by use case (dev / security / perf / mocks / …)** 
 
 ---
 
