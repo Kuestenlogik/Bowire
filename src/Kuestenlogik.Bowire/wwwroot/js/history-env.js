@@ -280,7 +280,7 @@
      * System variables (now, uuid, etc.) take precedence over user-defined vars
      * with the same name.
      */
-    function substituteVars(input) {
+    function substituteVars(input, _resolvingFromCaller) {
         if (typeof input !== 'string') return input;
         // Two syntaxes resolve through the same dispatch table:
         // - ${name}        (Bowire's original Bash-style placeholder)
@@ -299,6 +299,17 @@
         var hasCurly = input.indexOf('{{') !== -1;
         if (!hasDollar && !hasCurly) return input;
         var vars = getMergedVars();
+        // #125 Phase 2 — cycle detection. A var that references
+        // itself transitively (A: {{B}}, B: {{A}}) would otherwise
+        // recurse infinitely. We pass the call stack through
+        // resolveKey via the third arg; each env-var resolution
+        // pushes its key on entry and pops on exit. A repeat push
+        // short-circuits with an inline error marker so the operator
+        // sees the cycle exactly where it lives instead of the
+        // browser tab freezing.
+        // Inherit the caller's resolving set when this is a recursive
+        // call from env-var expansion; otherwise start fresh.
+        var resolving = _resolvingFromCaller || new Set();
 
         function resolveKey(key, match) {
             // ${response.path} / {{prev.path}} / {{response.path}} — read from last response.
@@ -319,11 +330,20 @@
             }
             // {{env.NAME}} — explicit env-var prefix. {{NAME}} (no
             // prefix) also resolves through env, matching the
-            // Postman default behaviour.
+            // Postman default behaviour. Env-var values can
+            // themselves contain {{...}} so we recurse via
+            // substituteVars — the cycle guard above prevents
+            // infinite loops.
             if (key.indexOf('env.') === 0) {
                 var envKey = key.substring('env.'.length);
-                return Object.prototype.hasOwnProperty.call(vars, envKey)
-                    ? String(vars[envKey]) : match;
+                if (!Object.prototype.hasOwnProperty.call(vars, envKey)) return match;
+                if (resolving.has(envKey)) return '<<cycle:' + envKey + '>>';
+                resolving.add(envKey);
+                try {
+                    return substituteVars(String(vars[envKey]), resolving);
+                } finally {
+                    resolving.delete(envKey);
+                }
             }
             // {{step<N>.path}} — read response.path from recording step N.
             var stepMatch = /^step(\d+)\.(.+)$/.exec(key);
@@ -354,9 +374,16 @@
                 && Object.prototype.hasOwnProperty.call(flowVars, key)) {
                 return String(flowVars[key]);
             }
-            // Bare env var lookup.
-            return Object.prototype.hasOwnProperty.call(vars, key)
-                ? String(vars[key]) : match;
+            // Bare env var lookup. Same recursive expansion + cycle
+            // guard as the explicit {{env.X}} branch so a chain like
+            // A → B → A surfaces as <<cycle:A>> instead of freezing.
+            if (Object.prototype.hasOwnProperty.call(vars, key)) {
+                if (resolving.has(key)) return '<<cycle:' + key + '>>';
+                resolving.add(key);
+                try { return substituteVars(String(vars[key]), resolving); }
+                finally { resolving.delete(key); }
+            }
+            return match;
         }
 
         var out = input;

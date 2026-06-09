@@ -445,6 +445,12 @@
             catch (e) { console.warn('[bowire-ext] bootstrap failed', e); }
         }
 
+        // #125 Phase 2 — vars-autocomplete dropdown installs once
+        // at boot; sits on document-level listeners so it covers
+        // every dynamically-mounted text input/textarea without
+        // per-field wiring.
+        try { installVarsAutocomplete(); } catch (e) { console.warn('[vars-ac] install failed', e); }
+
         Promise.allSettled([
             loadEnvironmentsFromDisk(),
             loadRecordingsFromDisk()
