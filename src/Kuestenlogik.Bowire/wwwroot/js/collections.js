@@ -16,11 +16,11 @@
             status: 'running',
             results: []
         };
-        renderCollectionManager();
+        render();
 
         for (var i = 0; i < col.items.length; i++) {
             collectionRunState.stepIndex = i;
-            renderCollectionManager();
+            render();
 
             var item = col.items[i];
             try {
@@ -43,11 +43,11 @@
                     error: e.message
                 });
             }
-            renderCollectionManager();
+            render();
         }
 
         collectionRunState.status = 'done';
-        renderCollectionManager();
+        render();
     }
 
     function runCollectionItem(item) {
@@ -104,133 +104,8 @@
     }
 
     // ---- Collection Manager (modal) ----
-    function renderCollectionManager() {
-        var existing = $('.bowire-collection-modal-overlay');
-        if (existing) existing.remove();
-        if (!collectionManagerOpen) return;
-
-        var selected = collectionsList.find(function (c) { return c.id === collectionManagerSelectedId; });
-
-        // Left panel: collection list
-        var leftPanel = el('div', { className: 'bowire-env-modal-left' });
-        leftPanel.appendChild(el('div', { className: 'bowire-env-list-header' },
-            el('span', { textContent: 'Collections' }),
-            el('button', {
-                className: 'bowire-env-add-btn',
-                title: 'Create new collection',
-                'aria-label': 'Create new collection',
-                innerHTML: svgIcon('plus'),
-                onClick: function () {
-                    var col = createCollection();
-                    collectionManagerSelectedId = col.id;
-                    renderCollectionManager();
-                }
-            })
-        ));
-
-        var list = el('div', { className: 'bowire-env-list' });
-        if (collectionsList.length === 0) {
-            // #121 — context-aware empty card. Replaces the bare
-            // "No collections yet" string with the "what's possible"
-            // shape. Three actions cover the realistic next steps:
-            // start fresh, import from Postman, or just close + use
-            // 'Save to Collection' from a request pane.
-            list.appendChild(renderEmptyCard({
-                icon: 'list',
-                headline: 'No collections yet',
-                body: 'Collections group requests you want to keep — saved variations of the same call, or a per-feature bundle. Start a fresh one, or import a Postman collection.',
-                hintKey: 'bowire_empty_collections_hint',
-                actions: [
-                    {
-                        label: 'New collection',
-                        primary: true,
-                        onClick: function () {
-                            var col = createCollection();
-                            collectionManagerSelectedId = col.id;
-                            render();
-                        }
-                    },
-                    {
-                        label: 'Import Postman',
-                        onClick: function () {
-                            // Mirror the toolbar's Import Postman flow
-                            // (collection-manager keeps its file input
-                            // ephemeral, so we spawn a peer one here).
-                            var input = document.createElement('input');
-                            input.type = 'file';
-                            input.accept = '.json,application/json';
-                            input.onchange = async function () {
-                                if (!input.files || !input.files[0]) return;
-                                try {
-                                    var text = await input.files[0].text();
-                                    var imported = importPostmanCollection(text);
-                                    if (imported) {
-                                        toast('Imported "' + imported.name + '" (' + imported.items.length + ' items)', 'success');
-                                        render();
-                                    }
-                                } catch (e) { toast('Import failed: ' + e.message, 'error'); }
-                            };
-                            input.click();
-                        }
-                    },
-                ]
-            }));
-        }
-        for (var i = 0; i < collectionsList.length; i++) {
-            (function (col) {
-                var isSelected = collectionManagerSelectedId === col.id;
-                list.appendChild(el('div', {
-                    className: 'bowire-env-list-item' + (isSelected ? ' active' : ''),
-                    onClick: function () {
-                        collectionManagerSelectedId = col.id;
-                        renderCollectionManager();
-                    }
-                },
-                    el('span', { className: 'bowire-env-list-item-name', textContent: col.name }),
-                    el('span', { className: 'bowire-env-list-item-count', textContent: String(col.items.length) })
-                ));
-            })(collectionsList[i]);
-        }
-        leftPanel.appendChild(list);
-
-        // Right panel: selected collection detail
-        var rightPanel = el('div', { className: 'bowire-env-modal-right' });
-        if (selected) {
-            rightPanel.appendChild(renderCollectionDetail(selected));
-        } else {
-            rightPanel.appendChild(el('div', { className: 'bowire-env-empty',
-                textContent: 'Select a collection on the left or click + to create one.' }));
-        }
-
-        var modal = el('div', { className: 'bowire-env-modal bowire-collection-modal' },
-            el('div', { className: 'bowire-env-modal-header' },
-                el('div', { className: 'bowire-env-modal-title' },
-                    el('span', { innerHTML: svgIcon('list'), className: 'bowire-env-modal-icon' }),
-                    el('span', { textContent: 'Collections' })
-                ),
-                el('button', {
-                    className: 'bowire-env-modal-close',
-                    innerHTML: svgIcon('close'),
-                    title: 'Close (Esc)',
-                    'aria-label': 'Close collections',
-                    onClick: function () { collectionManagerOpen = false; renderCollectionManager(); }
-                })
-            ),
-            el('div', { className: 'bowire-env-modal-body' }, leftPanel, rightPanel)
-        );
-
-        var overlay = el('div', {
-            className: 'bowire-env-modal-overlay bowire-collection-modal-overlay',
-            role: 'dialog',
-            'aria-modal': 'true',
-            'aria-label': 'Collections',
-            onClick: function (e) {
-                if (e.target === overlay) { collectionManagerOpen = false; renderCollectionManager(); }
-            }
-        }, modal);
-
-        document.body.appendChild(overlay);
-    }
+    // renderCollectionManager modal retired in #133 Phase 3.
+    // Every entry path now jumps to railMode = 'collections'.
 
     function renderCollectionDetail(col) {
         var pane = el('div', { className: 'bowire-recording-detail' });
@@ -298,7 +173,7 @@
                         if (imported) {
                             toast('Imported "' + imported.name + '" (' + imported.items.length + ' items)', 'success');
                             collectionManagerSelectedId = imported.id;
-                            renderCollectionManager();
+                            render();
                         }
                     } catch (e) {
                         toast('Import failed: ' + e.message, 'error');
@@ -318,8 +193,8 @@
                 bowireConfirm('Delete collection "' + col.name + '"?', function () {
                     var backup = JSON.parse(JSON.stringify(col));
                     deleteCollection(col.id);
-                    renderCollectionManager();
-                    toast('Collection deleted', 'success', { undo: function () { collectionsList.push(backup); persistCollections(); renderCollectionManager(); } });
+                    render();
+                    toast('Collection deleted', 'success', { undo: function () { collectionsList.push(backup); persistCollections(); render(); } });
                 }, { title: 'Delete Collection', danger: true, confirmText: 'Delete' });
             }
         },
@@ -368,7 +243,7 @@
                         onClick: function (e) {
                             e.stopPropagation();
                             removeFromCollection(col.id, item.id);
-                            renderCollectionManager();
+                            render();
                         }
                     });
 

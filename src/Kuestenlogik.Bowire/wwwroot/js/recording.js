@@ -186,7 +186,7 @@
         if (recordingActiveId === id) recordingActiveId = null;
         if (recordingManagerSelectedId === id) recordingManagerSelectedId = null;
         persistRecordings();
-        renderRecordingManager();
+        render();
     }
 
     function renameRecording(id, name) {
@@ -203,7 +203,7 @@
         if (idx < 0) return;
         rec.steps.splice(idx, 1);
         persistRecordings();
-        renderRecordingManager();
+        render();
     }
 
     // ---- Replay ----
@@ -277,7 +277,7 @@
         if (!pluginCheckState || pluginCheckState.installing) return;
         pluginCheckState.installing = true;
         pluginCheckState.error = null;
-        renderRecordingManager();
+        render();
         var anyFailed = false;
         for (var i = 0; i < pluginCheckState.missing.length; i++) {
             var entry = pluginCheckState.missing[i];
@@ -287,7 +287,7 @@
                 continue;
             }
             pluginCheckState.perPackage[entry.id] = 'installing';
-            renderRecordingManager();
+            render();
             try {
                 await installMissingPlugin(entry.packageId);
                 pluginCheckState.perPackage[entry.id] = 'done';
@@ -295,19 +295,19 @@
                 pluginCheckState.perPackage[entry.id] = 'failed';
                 anyFailed = true;
             }
-            renderRecordingManager();
+            render();
         }
         pluginCheckState.installing = false;
         pluginCheckState.installedAll = !anyFailed;
         if (anyFailed) {
             pluginCheckState.error = 'Some installs failed. Check the workbench logs.';
         }
-        renderRecordingManager();
+        render();
     }
 
     function dismissPluginCheck() {
         pluginCheckState = null;
-        renderRecordingManager();
+        render();
     }
 
     async function replayRecording(id) {
@@ -329,7 +329,7 @@
                 error: null,
                 perPackage: {}
             };
-            renderRecordingManager();
+            render();
             return;
         }
 
@@ -339,11 +339,11 @@
             status: 'running',
             results: []
         };
-        renderRecordingManager();
+        render();
 
         for (var i = 0; i < rec.steps.length; i++) {
             recordingReplayState.stepIndex = i;
-            renderRecordingManager();
+            render();
 
             var step = rec.steps[i];
             try {
@@ -364,11 +364,11 @@
                     error: e.message
                 });
             }
-            renderRecordingManager();
+            render();
         }
 
         recordingReplayState.status = 'done';
-        renderRecordingManager();
+        render();
     }
 
     function replaySingleStep(step) {
@@ -783,123 +783,9 @@
         });
     }
 
-    // ---- Manager Modal ----
-    function renderRecordingManager() {
-        var existing = $('.bowire-recording-modal-overlay');
-        if (existing) existing.remove();
-        var existingPlugin = $('.bowire-plugin-check-overlay');
-        if (existingPlugin) existingPlugin.remove();
-
-        // Plugin-check modal renders independently — it can pop up
-        // even when the recording manager isn't open (replay clicked
-        // from elsewhere). Stack it above the manager overlay when
-        // both are visible.
-        renderPluginCheckModal();
-
-        if (!recordingManagerOpen) return;
-
-        var selected = recordingsList.find(function (r) { return r.id === recordingManagerSelectedId; });
-
-        // Left panel: list of recordings
-        var leftPanel = el('div', { className: 'bowire-env-modal-left' });
-
-        leftPanel.appendChild(el('div', { className: 'bowire-env-list-header' },
-            el('span', { textContent: 'Recordings' }),
-            el('button', {
-                className: 'bowire-env-add-btn',
-                title: 'Start new recording',
-                'aria-label': 'Start new recording',
-                innerHTML: svgIcon('record'),
-                onClick: function () {
-                    if (isRecording()) {
-                        stopRecording();
-                    } else {
-                        startRecording();
-                    }
-                    recordingManagerSelectedId = recordingActiveId;
-                    renderRecordingManager();
-                }
-            })
-        ));
-
-        var list = el('div', { className: 'bowire-env-list' });
-        if (recordingsList.length === 0) {
-            // #121 — context-aware empty card. Recording is the
-            // entry point for tests, mocks, flows, and Postman-style
-            // sequences. Two actions: start one now, or import a
-            // .blw / .har / Postman run.
-            list.appendChild(renderEmptyCard({
-                icon: 'recording',
-                headline: 'No recordings yet',
-                body: 'Recordings capture a sequence of calls verbatim — request, response, timing, metadata. Use them as test fixtures, mock fixtures, or seed a flow / collection from real traffic.',
-                hintKey: 'bowire_empty_recordings_hint',
-                actions: [
-                    {
-                        label: 'Start recording',
-                        primary: true,
-                        onClick: function () { startRecording(); render(); }
-                    },
-                ]
-            }));
-        }
-        for (var i = 0; i < recordingsList.length; i++) {
-            (function (rec) {
-                var isSelected = recordingManagerSelectedId === rec.id;
-                var isActive = recordingActiveId === rec.id;
-                var item = el('div', {
-                    className: 'bowire-env-list-item' + (isSelected ? ' active' : '') + (isActive ? ' bowire-recording-active' : ''),
-                    onClick: function () {
-                        recordingManagerSelectedId = rec.id;
-                        renderRecordingManager();
-                    }
-                },
-                    el('span', { className: 'bowire-env-list-item-name', textContent: rec.name }),
-                    el('span', { className: 'bowire-env-list-item-count', textContent: String(rec.steps.length) })
-                );
-                list.appendChild(item);
-            })(recordingsList[i]);
-        }
-        leftPanel.appendChild(list);
-
-        // Right panel: selected recording detail
-        var rightPanel = el('div', { className: 'bowire-env-modal-right' });
-
-        if (selected) {
-            rightPanel.appendChild(renderRecordingDetail(selected));
-        } else {
-            rightPanel.appendChild(el('div', { className: 'bowire-env-empty',
-                textContent: 'Select a recording on the left or click ● to start a new one.' }));
-        }
-
-        var modal = el('div', { className: 'bowire-env-modal bowire-recording-modal' },
-            el('div', { className: 'bowire-env-modal-header' },
-                el('div', { className: 'bowire-env-modal-title' },
-                    el('span', { innerHTML: svgIcon('record'), className: 'bowire-env-modal-icon' }),
-                    el('span', { textContent: 'Recordings' })
-                ),
-                el('button', {
-                    className: 'bowire-env-modal-close',
-                    innerHTML: svgIcon('close'),
-                    title: 'Close (Esc)',
-                    'aria-label': 'Close recordings',
-                    onClick: function () { recordingManagerOpen = false; renderRecordingManager(); }
-                })
-            ),
-            el('div', { className: 'bowire-env-modal-body' }, leftPanel, rightPanel)
-        );
-
-        var overlay = el('div', {
-            className: 'bowire-env-modal-overlay bowire-recording-modal-overlay',
-            role: 'dialog',
-            'aria-modal': 'true',
-            'aria-label': 'Recordings',
-            onClick: function (e) {
-                if (e.target === overlay) { recordingManagerOpen = false; renderRecordingManager(); }
-            }
-        }, modal);
-
-        document.body.appendChild(overlay);
-    }
+    // renderRecordingManager modal retired in #133 Phase 3.
+    // The rail mode owns the same workflow; entry paths jump
+    // directly to railMode = 'recordings'.
 
     function renderPluginCheckModal() {
         if (!pluginCheckState) return;
@@ -1033,7 +919,7 @@
             onClick: function () {
                 var added = convertRecordingToTests(rec.id);
                 addConsoleEntry({ type: 'response', method: rec.name, status: 'Added ' + added + ' test assertions' });
-                renderRecordingManager();
+                render();
             }
         },
             el('span', { textContent: 'Convert to Tests' })
@@ -1060,9 +946,9 @@
             onClick: function () {
                 var flowId = convertRecordingToFlow(rec.id);
                 if (!flowId) return;
-                // Switch the sidebar to the Flows view and open the new flow.
-                recordingManagerOpen = false;
-                renderRecordingManager();
+                // Switch to the Flows rail mode + open the new flow.
+                railMode = 'flows';
+                try { localStorage.setItem('bowire_rail_mode', 'flows'); } catch { /* ignore */ }
                 if (typeof setSidebarView === 'function') setSidebarView('flows');
                 flowEditorSelectedId = flowId;
                 render();
@@ -1111,8 +997,8 @@
             onClick: function () {
                 if (!window.__bowireMocks) return;
                 window.__bowireMocks.startFromRecording(rec, 0).then(function () {
-                    recordingManagerOpen = false;
-                    renderRecordingManager();
+                    // Hop to the Mocks rail mode so the new mock host
+                    // is immediately visible.
                     window.__bowireMocks.open();
                 }).catch(function () { /* toast already shown */ });
             }
