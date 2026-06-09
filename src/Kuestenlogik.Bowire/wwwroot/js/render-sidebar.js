@@ -508,7 +508,7 @@
                 if (available) {
                     item.appendChild(el('span', {
                         className: 'bowire-method-badge',
-                        dataset: { type: methodBadgeType(row.method) },
+                        dataset: { type: methodBadgeType(row.method), direction: methodDirection(row.method) },
                         textContent: methodBadgeText(row.method)
                     }));
                 }
@@ -1523,6 +1523,12 @@
                         className: 'bowire-method-item'
                             + (isActive ? ' active' : '')
                             + (executing ? ' executing' : ''),
+                        // #122 — direction encoded on the row itself
+                        // so the right-edge rail picks up the warm /
+                        // cool / duplex hue. Pairs with the
+                        // protocol-color stripe on the group's left
+                        // edge for the two-axis read.
+                        'data-direction': methodDirection(m),
                         onClick: function () {
                             openTab(svc, m);
                         }
@@ -1557,7 +1563,7 @@
                         }) : null,
                         el('span', {
                             className: 'bowire-method-badge',
-                            dataset: { type: methodBadgeType(m) },
+                            dataset: { type: methodBadgeType(m), direction: methodDirection(m) },
                             textContent: methodBadgeText(m)
                         })
                     );

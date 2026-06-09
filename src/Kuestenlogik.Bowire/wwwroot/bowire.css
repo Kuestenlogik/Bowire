@@ -73,6 +73,21 @@
        hue it shouldn't. */
     --bowire-protocol-default: #6a6a82;
 
+    /* #122 — direction axis. Warm = client → server (request,
+       publish, send, mutation verb). Cool = server → client
+       (response, subscribe-incoming, server-stream). Duplex =
+       bidirectional (websocket, duplex stream, hub method).
+       Neutral = metadata-only / unattributed.
+       Composes with --bowire-protocol-<id>: a method-row gets its
+       protocol color as the outline + the direction color as the
+       fill tint. Scannable at a glance: red-ish lump moving = a
+       client→server REST call, blue-ish lump = a server→client gRPC
+       stream. */
+    --bowire-direction-warm: #f97316;
+    --bowire-direction-cool: #3b82f6;
+    --bowire-direction-duplex: #a855f7;
+    --bowire-direction-neutral: #6a6a82;
+
     --bowire-font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     --bowire-font-mono: "JetBrains Mono", "Fira Code", "Cascadia Code", "Consolas", monospace;
 
@@ -183,6 +198,12 @@
     --bowire-protocol-socketio: #059669;
     --bowire-protocol-asyncapi: #6366f1;
     --bowire-protocol-default: #6a6a82;
+
+    /* #122 — direction axis (light-mode counterparts). */
+    --bowire-direction-warm: #ea580c;
+    --bowire-direction-cool: #2563eb;
+    --bowire-direction-duplex: #9333ea;
+    --bowire-direction-neutral: #6a6a82;
 
     --bowire-shadow-sm: 0 2px 6px rgba(15, 15, 35, 0.06);
     --bowire-shadow-md: 0 8px 24px rgba(15, 15, 35, 0.10);
@@ -1690,6 +1711,35 @@ img.bowire-logo-icon {
 .bowire-method-badge[data-type="HTTP_DELETE"] { background: #ef4444; min-width: 44px; } /* red */
 .bowire-method-badge[data-type="HTTP_HEAD"]   { background: #6b7280; min-width: 36px; } /* gray */
 .bowire-method-badge[data-type="HTTP_OPTIONS"]{ background: #6b7280; min-width: 52px; } /* gray */
+
+/* #122 — direction-axis rail on every method badge. A 2 px left-edge
+   bar in the direction color (warm = client→server, cool =
+   server→client, duplex = bidirectional) layered on top of the
+   existing verb / type background. Two-axis read at a glance:
+   verb color in the fill, direction in the left rail.
+   --direction-color is resolved per data-direction below. */
+.bowire-method-badge[data-direction] {
+    --direction-color: var(--bowire-direction-neutral);
+    box-shadow: inset 3px 0 0 var(--direction-color);
+    padding-left: 11px;
+}
+.bowire-method-badge[data-direction="warm"]    { --direction-color: var(--bowire-direction-warm); }
+.bowire-method-badge[data-direction="cool"]    { --direction-color: var(--bowire-direction-cool); }
+.bowire-method-badge[data-direction="duplex"]  { --direction-color: var(--bowire-direction-duplex); }
+.bowire-method-badge[data-direction="neutral"] { --direction-color: var(--bowire-direction-neutral); }
+
+/* Method-row's own data-direction (mirrored from the badge so a
+   scanning eye picks up the direction without reading the badge).
+   3 px rail on the row's right edge, kept subtle so the protocol
+   stripe on the group's left edge stays the primary cue. */
+.bowire-method-item[data-direction] {
+    --direction-color: var(--bowire-direction-neutral);
+    box-shadow: inset -3px 0 0 var(--direction-color);
+}
+.bowire-method-item[data-direction="warm"]    { --direction-color: var(--bowire-direction-warm); }
+.bowire-method-item[data-direction="cool"]    { --direction-color: var(--bowire-direction-cool); }
+.bowire-method-item[data-direction="duplex"]  { --direction-color: var(--bowire-direction-duplex); }
+.bowire-method-item[data-direction="neutral"] { --direction-color: var(--bowire-direction-neutral); }
 
 /* AsyncAPI operation direction. The badge carries the official
    AsyncAPI brand gradient (cyan → purple → magenta) so it reads as
