@@ -826,6 +826,45 @@
             return homeMain;
         }
 
+        // #133 Phase 2 — Benchmarks + Parallel modes land as
+        // 'preview' shells until the full implementations (#131
+        // benchmarks, #132 parallel) ship. Empty card carries the
+        // mode's intent + a direct link to the tracking issue so
+        // operators see what's coming without falling into a dead
+        // end. The mode is wired (no 'coming soon' toast) — it's
+        // just the home that's a stub.
+        if (railMode === 'benchmarks' || railMode === 'parallel') {
+            var stubMain = el('div', { id: 'bowire-main-' + railMode, className: 'bowire-main bowire-main-stub' });
+            var stubWrap = el('div', { style: 'padding:24px' });
+            var spec = railMode === 'benchmarks'
+                ? {
+                    headline: 'Benchmarks (preview)',
+                    body: 'First-class home for performance testing — run a single method, a full collection, a recording, a random mix, or a scheduled probe. Latency histograms, status distribution, throughput, regression diff against the previous run. Full implementation tracked in #131.',
+                    issue: 131,
+                    label: 'Open Benchmarks spec (#131)'
+                }
+                : {
+                    headline: 'Parallel sessions (preview)',
+                    body: 'Multi-session execution for recordings + collections. Phase 1 runs N concurrent sessions locally with per-session env slots; phase 2 distributes across linked Bowire nodes for geographic load or coordinated stress. Full implementation tracked in #132.',
+                    issue: 132,
+                    label: 'Open Parallel spec (#132)'
+                };
+            stubWrap.appendChild(renderEmptyCard({
+                icon: railMode === 'benchmarks' ? 'chart' : 'lightning',
+                headline: spec.headline,
+                body: spec.body,
+                actions: [{
+                    label: spec.label,
+                    primary: true,
+                    onClick: function () {
+                        window.open('https://github.com/Kuestenlogik/Bowire/issues/' + spec.issue, '_blank', 'noopener');
+                    }
+                }]
+            }));
+            stubMain.appendChild(stubWrap);
+            return stubMain;
+        }
+
         // #133 Phase 2 — Mocks rail mode owns the main pane. Sidebar
         // lists running mock hosts; main pane shows the selected
         // mock's detail (URL + copy + stop + a live request-log

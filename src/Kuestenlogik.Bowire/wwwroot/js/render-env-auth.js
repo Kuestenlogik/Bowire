@@ -76,11 +76,15 @@
             body.appendChild(renderAiDrawer());
         }
 
-        // #133 Phase 2 — modes without a sidebar (Home today) skip
-        // the sidebar + splitter entirely so the main pane spans
-        // edge to edge. The mode catalogue eventually owns this
-        // declaration (#137); for now it's a per-mode allow-list.
-        var modeHasSidebar = railMode !== 'home';
+        // #133 Phase 2 — modes without a sidebar skip the sidebar +
+        // splitter entirely so the main pane spans edge to edge.
+        // Home is the landing launchpad; Benchmarks + Parallel are
+        // preview-stage landing pages. The mode catalogue
+        // eventually owns this declaration (#137); for now it's a
+        // per-mode allow-list.
+        var modeHasSidebar = railMode !== 'home'
+                          && railMode !== 'benchmarks'
+                          && railMode !== 'parallel';
         if (modeHasSidebar) {
             body.appendChild(renderSidebar());
             if (!isMobile()) {
