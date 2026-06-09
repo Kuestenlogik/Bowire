@@ -651,6 +651,7 @@
         var modes = [
             { id: 'home',         icon: 'house',     label: 'Home',              group: 'work',      wired: true },
             { id: 'discover',     icon: 'compass',   label: 'Discover',          group: 'work',      wired: true },
+            { id: 'collections',  icon: 'list',      label: 'Collections',       group: 'work',      wired: true },
             { id: 'environments', icon: 'globe',     label: 'Environments',      group: 'work',      wired: true },
             { id: 'recordings',   icon: 'recording', label: 'Recordings',        group: 'scenarios', wired: true },
             { id: 'mocks',        icon: 'server',    label: 'Mocks',             group: 'scenarios', wired: true },
@@ -816,6 +817,94 @@
         return sidebar;
     }
 
+    // #133 Phase 2 — Collections rail mode sidebar. Lists every
+    // saved collection as a clickable row with the standard
+    // active-state. Header carries a 'New collection' button and
+    // a Postman-import affordance — same actions the legacy
+    // collections-manager modal exposed.
+    function renderCollectionsSidebar() {
+        var sidebar = el('div', { id: 'bowire-sidebar', className: 'bowire-sidebar bowire-sidebar-mode' });
+
+        var header = el('div', { className: 'bowire-env-list-header' },
+            el('span', { textContent: 'Collections' }),
+            el('button', {
+                className: 'bowire-env-add-btn',
+                title: 'Create new collection',
+                'aria-label': 'Create new collection',
+                innerHTML: svgIcon('plus'),
+                onClick: function () {
+                    var col = createCollection();
+                    collectionManagerSelectedId = col.id;
+                    render();
+                }
+            })
+        );
+        sidebar.appendChild(header);
+
+        if (!collectionsList || collectionsList.length === 0) {
+            var emptyHost = el('div', { style: 'padding:12px' });
+            emptyHost.appendChild(renderEmptyCard({
+                icon: 'list',
+                headline: 'No collections yet',
+                body: 'Collections group requests you want to keep. Start a fresh one, or import a Postman collection.',
+                hintKey: 'bowire_empty_collections_hint',
+                actions: [
+                    {
+                        label: 'New collection',
+                        primary: true,
+                        onClick: function () {
+                            var col = createCollection();
+                            collectionManagerSelectedId = col.id;
+                            render();
+                        }
+                    },
+                    {
+                        label: 'Import Postman',
+                        onClick: function () {
+                            var input = document.createElement('input');
+                            input.type = 'file';
+                            input.accept = '.json,application/json';
+                            input.onchange = async function () {
+                                if (!input.files || !input.files[0]) return;
+                                try {
+                                    var text = await input.files[0].text();
+                                    var imported = importPostmanCollection(text);
+                                    if (imported) {
+                                        toast('Imported "' + imported.name + '" (' + imported.items.length + ' items)', 'success');
+                                        render();
+                                    }
+                                } catch (e) { toast('Import failed: ' + e.message, 'error'); }
+                            };
+                            input.click();
+                        }
+                    },
+                ]
+            }));
+            sidebar.appendChild(emptyHost);
+        } else {
+            var list = el('div', { className: 'bowire-env-list' });
+            collectionsList.forEach(function (col) {
+                var isActive = collectionManagerSelectedId === col.id;
+                var row = el('div', {
+                    className: 'bowire-env-list-item' + (isActive ? ' active' : ''),
+                    onClick: function () {
+                        collectionManagerSelectedId = col.id;
+                        render();
+                    }
+                });
+                row.appendChild(el('div', { className: 'bowire-env-list-item-name', textContent: col.name }));
+                row.appendChild(el('div', {
+                    className: 'bowire-env-list-item-meta',
+                    textContent: (col.items ? col.items.length : 0) + ' item' + ((col.items && col.items.length === 1) ? '' : 's')
+                }));
+                list.appendChild(row);
+            });
+            sidebar.appendChild(list);
+        }
+
+        return sidebar;
+    }
+
     // #133 Phase 2 — Mocks rail mode sidebar. Lists every running
     // mock host (from the BowireMockHostManager #94) as a clickable
     // row. Selecting a mock swaps the main pane to its detail view
@@ -888,6 +977,9 @@
         // #133 Phase 2 — rail-mode routing. Modes that have their
         // own sidebar template render it here; everything else
         // falls through to the legacy Discover sidebar.
+        if (railMode === 'collections') {
+            return renderCollectionsSidebar();
+        }
         if (railMode === 'recordings') {
             return renderRecordingsSidebar();
         }
