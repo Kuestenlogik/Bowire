@@ -1226,15 +1226,17 @@
                 // Divider
                 dropdown.appendChild(el('div', { className: 'bowire-new-dropdown-divider' }));
 
-                // Collection
+                // Collection — switches to the Collections rail
+                // mode and selects the freshly-created entry.
                 dropdown.appendChild(el('div', {
                     className: 'bowire-new-dropdown-item',
                     onClick: function () {
                         var col = createCollection();
-                        collectionManagerOpen = true;
                         collectionManagerSelectedId = col.id;
+                        railMode = 'collections';
+                        try { localStorage.setItem('bowire_rail_mode', 'collections'); } catch { /* ignore */ }
                         dropdown.remove();
-                        renderCollectionManager();
+                        render();
                     }
                 }, el('span', { textContent: 'Collection' })));
 
