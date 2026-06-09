@@ -643,24 +643,50 @@
     // the Discover mode is wired (it wraps the existing sidebar);
     // every other icon toasts 'coming soon' on click until its mode-
     // specific sidebar template lands in Phase 2-4.
+    // #137 — single source of truth for the rail mode catalogue.
+    // Each entry declares which sidebar template renders (kind)
+    // and whether the sidebar is collapsible. The render-env-auth
+    // body assembly + the renderSidebar dispatcher both read from
+    // this so a new mode only needs one entry to wire up its
+    // sidebar shape.
+    //
+    // sidebar.kind values:
+    //   'none'         → no sidebar; main pane spans edge to edge
+    //   'services'     → discover services tree (Discover, Security)
+    //   'collections'  → Collections list (Collections mode)
+    //   'environments' → Environments list (Environments mode)
+    //   'recordings'   → Recordings list
+    //   'mocks'        → Mocks list
+    //   'flows'        → legacy flows sidebar via sidebarView='flows'
+    //   'proxy'        → legacy proxy sidebar via sidebarView='proxy'
+    var _railModes = [
+        { id: 'home',         icon: 'house',     label: 'Home',              group: 'work',      wired: true,  sidebar: { kind: 'none' } },
+        { id: 'discover',     icon: 'compass',   label: 'Discover',          group: 'work',      wired: true,  sidebar: { kind: 'services' } },
+        { id: 'collections',  icon: 'folder',    label: 'Collections',       group: 'work',      wired: true,  sidebar: { kind: 'collections' } },
+        { id: 'environments', icon: 'globe',     label: 'Environments',      group: 'work',      wired: true,  sidebar: { kind: 'environments' } },
+        { id: 'recordings',   icon: 'recording', label: 'Recordings',        group: 'scenarios', wired: true,  sidebar: { kind: 'recordings' } },
+        { id: 'mocks',        icon: 'server',    label: 'Mocks',             group: 'scenarios', wired: true,  sidebar: { kind: 'mocks' } },
+        { id: 'flows',        icon: 'flow',      label: 'Flows',             group: 'scenarios', wired: true,  sidebar: { kind: 'flows' } },
+        { id: 'proxy',        icon: 'disconnect',label: 'Proxy / MITM',      group: 'quality',   wired: true,  sidebar: { kind: 'proxy' } },
+        { id: 'benchmarks',   icon: 'chart',     label: 'Benchmarks',        group: 'quality',   wired: true,  sidebar: { kind: 'none' } },
+        { id: 'parallel',     icon: 'lightning', label: 'Parallel sessions', group: 'quality',   wired: true,  sidebar: { kind: 'none' } },
+        { id: 'security',     icon: 'shield',    label: 'Security',          group: 'hardening', wired: true,  sidebar: { kind: 'services' } },
+    ];
+    function _railModeById(id) {
+        for (var i = 0; i < _railModes.length; i++) {
+            if (_railModes[i].id === id) return _railModes[i];
+        }
+        return null;
+    }
+    function currentRailSidebarSpec() {
+        var m = _railModeById(railMode);
+        return (m && m.sidebar) ? m.sidebar : { kind: 'none' };
+    }
+
     function renderActivityRail() {
-        // Mode catalogue. `wired: false` is a temporary marker for
-        // modes whose sidebar template + main-pane home haven't
-        // landed yet; clicking shows a 'coming soon' toast instead
-        // of switching. Drops off the moment every mode is wired.
-        var modes = [
-            { id: 'home',         icon: 'house',     label: 'Home',              group: 'work',      wired: true },
-            { id: 'discover',     icon: 'compass',   label: 'Discover',          group: 'work',      wired: true },
-            { id: 'collections',  icon: 'folder',    label: 'Collections',       group: 'work',      wired: true },
-            { id: 'environments', icon: 'globe',     label: 'Environments',      group: 'work',      wired: true },
-            { id: 'recordings',   icon: 'recording', label: 'Recordings',        group: 'scenarios', wired: true },
-            { id: 'mocks',        icon: 'server',    label: 'Mocks',             group: 'scenarios', wired: true },
-            { id: 'flows',        icon: 'flow',      label: 'Flows',             group: 'scenarios', wired: true },
-            { id: 'proxy',        icon: 'disconnect',label: 'Proxy / MITM',      group: 'quality',   wired: true },
-            { id: 'benchmarks',   icon: 'chart',     label: 'Benchmarks',        group: 'quality',   wired: true },
-            { id: 'parallel',     icon: 'lightning', label: 'Parallel sessions', group: 'quality',   wired: true },
-            { id: 'security',     icon: 'shield',    label: 'Security',          group: 'hardening', wired: true },
-        ];
+        // Local alias — keep the rail-renderer reading the same
+        // catalogue everyone else uses.
+        var modes = _railModes;
 
         var rail = el('div', { id: 'bowire-activity-rail', className: 'bowire-activity-rail' });
 
@@ -1018,20 +1044,21 @@
     }
 
     function renderSidebar() {
-        // #133 Phase 2 — rail-mode routing. Modes that have their
-        // own sidebar template render it here; everything else
-        // falls through to the legacy Discover sidebar.
-        if (railMode === 'collections') {
-            return renderCollectionsSidebar();
-        }
-        if (railMode === 'environments') {
-            return renderEnvironmentsSidebar();
-        }
-        if (railMode === 'recordings') {
-            return renderRecordingsSidebar();
-        }
-        if (railMode === 'mocks') {
-            return renderMocksSidebar();
+        // #137 — sidebar dispatch driven by the rail-mode catalogue.
+        // Each mode declares its sidebar 'kind' in _railModes; this
+        // dispatcher maps the kind to its renderer. New modes only
+        // need to (a) add a catalogue entry with the right kind, and
+        // (b) either reuse an existing renderer or extend this map.
+        var spec = currentRailSidebarSpec();
+        switch (spec.kind) {
+            case 'collections':  return renderCollectionsSidebar();
+            case 'environments': return renderEnvironmentsSidebar();
+            case 'recordings':   return renderRecordingsSidebar();
+            case 'mocks':        return renderMocksSidebar();
+            // 'flows', 'proxy', 'services' fall through to the legacy
+            // sidebar below (built from the discover service tree).
+            // Their main pane reads sidebarView, which the rail-button
+            // onClick keeps in sync.
         }
 
         // Each top-level child of the sidebar gets a stable id so morphdom
