@@ -653,7 +653,7 @@
             { id: 'discover',     icon: 'compass',   label: 'Discover',          group: 'work',      wired: true },
             { id: 'environments', icon: 'globe',     label: 'Environments',      group: 'work',      wired: true },
             { id: 'recordings',   icon: 'recording', label: 'Recordings',        group: 'scenarios', wired: true },
-            { id: 'mocks',        icon: 'server',    label: 'Mocks',             group: 'scenarios', wired: false },
+            { id: 'mocks',        icon: 'server',    label: 'Mocks',             group: 'scenarios', wired: true },
             { id: 'flows',        icon: 'flow',      label: 'Flows',             group: 'scenarios', wired: false },
             { id: 'proxy',        icon: 'disconnect',label: 'Proxy / MITM',      group: 'quality',   wired: false },
             { id: 'benchmarks',   icon: 'chart',     label: 'Benchmarks',        group: 'quality',   wired: false },
@@ -812,12 +812,83 @@
         return sidebar;
     }
 
+    // #133 Phase 2 — Mocks rail mode sidebar. Lists every running
+    // mock host (from the BowireMockHostManager #94) as a clickable
+    // row. Selecting a mock swaps the main pane to its detail view
+    // (URL, log toggle, stop action). Refresh button at the top
+    // re-fetches /api/mock/hosts so externally-started mocks land
+    // in the list without page reload.
+    function renderMocksSidebar() {
+        var sidebar = el('div', { id: 'bowire-sidebar', className: 'bowire-sidebar bowire-sidebar-mode' });
+
+        var header = el('div', { className: 'bowire-env-list-header' },
+            el('span', { textContent: 'Running mocks' }),
+            el('button', {
+                className: 'bowire-env-add-btn',
+                title: 'Refresh the list of running mocks',
+                'aria-label': 'Refresh mocks',
+                innerHTML: svgIcon('replay'),
+                onClick: function () {
+                    if (typeof fetchMocks === 'function') {
+                        fetchMocks().then(function () { render(); });
+                    }
+                }
+            })
+        );
+        sidebar.appendChild(header);
+
+        if (!mocksList || mocksList.length === 0) {
+            var emptyHost = el('div', { style: 'padding:12px' });
+            emptyHost.appendChild(renderEmptyCard({
+                icon: 'server',
+                headline: 'No mocks running',
+                body: 'Mocks spin up from a recording. Switch to the Recordings mode, pick a session, and use "Run as mock".',
+                actions: [
+                    {
+                        label: 'Go to Recordings',
+                        primary: true,
+                        onClick: function () {
+                            railMode = 'recordings';
+                            try { localStorage.setItem('bowire_rail_mode', 'recordings'); } catch { /* ignore */ }
+                            render();
+                        }
+                    }
+                ]
+            }));
+            sidebar.appendChild(emptyHost);
+        } else {
+            var list = el('div', { className: 'bowire-env-list' });
+            mocksList.forEach(function (m) {
+                var isActive = mockSelectedId === m.mockId;
+                var row = el('div', {
+                    className: 'bowire-env-list-item' + (isActive ? ' active' : ''),
+                    onClick: function () {
+                        mockSelectedId = m.mockId;
+                        render();
+                    }
+                });
+                row.appendChild(el('div', { className: 'bowire-env-list-item-name', textContent: m.recordingName || ('mock-' + m.port) }));
+                row.appendChild(el('div', {
+                    className: 'bowire-env-list-item-meta',
+                    textContent: 'port ' + m.port
+                }));
+                list.appendChild(row);
+            });
+            sidebar.appendChild(list);
+        }
+
+        return sidebar;
+    }
+
     function renderSidebar() {
         // #133 Phase 2 — rail-mode routing. Modes that have their
         // own sidebar template render it here; everything else
         // falls through to the legacy Discover sidebar.
         if (railMode === 'recordings') {
             return renderRecordingsSidebar();
+        }
+        if (railMode === 'mocks') {
+            return renderMocksSidebar();
         }
 
         // Each top-level child of the sidebar gets a stable id so morphdom

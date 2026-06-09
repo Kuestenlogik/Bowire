@@ -299,6 +299,10 @@
     // restore their last-active mode from localStorage.
     let railMode = 'home';
     try { railMode = localStorage.getItem('bowire_rail_mode') || 'home'; } catch { /* ignore */ }
+    // #133 Phase 2 — Mocks mode selection. Session-only;
+    // re-derived from the live mocksList every render so a stopped
+    // mock automatically deselects.
+    let mockSelectedId = null;
     let activeRequestTab = 'body';
     // Sub-tab within the Body tab. For GraphQL methods the Body tab
     // composes from three surfaces (Query / Variables form / Selection

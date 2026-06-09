@@ -823,6 +823,123 @@
             return homeMain;
         }
 
+        // #133 Phase 2 — Mocks rail mode owns the main pane. Sidebar
+        // lists running mock hosts; main pane shows the selected
+        // mock's detail (URL + copy + stop + a live request-log
+        // toggle). Mirrors the table the legacy manager modal
+        // (#94 #56) renders, but inlined into the workbench instead
+        // of a popup.
+        if (railMode === 'mocks') {
+            var mockMain = el('div', { id: 'bowire-main-mocks', className: 'bowire-main bowire-main-mocks' });
+            var mockMainWrap = el('div', { className: 'bowire-mocks-wrap', style: 'padding:24px' });
+
+            var selectedMock = (mocksList || []).find(function (m) { return m.mockId === mockSelectedId; });
+
+            if (!selectedMock) {
+                mockMainWrap.appendChild(renderEmptyCard({
+                    icon: 'server',
+                    headline: (mocksList && mocksList.length > 0) ? 'Pick a mock' : 'No mocks running',
+                    body: (mocksList && mocksList.length > 0)
+                        ? 'Pick a running mock from the sidebar to see its URL, live request log, and stop control.'
+                        : 'Mocks are spun up from a recording — switch to the Recordings mode and use "Run as mock" on any session.',
+                    actions: (mocksList && mocksList.length > 0) ? [] : [{
+                        label: 'Go to Recordings',
+                        primary: true,
+                        onClick: function () {
+                            railMode = 'recordings';
+                            try { localStorage.setItem('bowire_rail_mode', 'recordings'); } catch { /* ignore */ }
+                            render();
+                        }
+                    }]
+                }));
+            } else {
+                var url = 'http://127.0.0.1:' + selectedMock.port;
+                mockMainWrap.appendChild(el('h2', {
+                    className: 'bowire-sources-title',
+                    textContent: selectedMock.recordingName || ('mock-' + selectedMock.port)
+                }));
+                mockMainWrap.appendChild(el('p', {
+                    className: 'bowire-sources-subtitle',
+                    textContent: 'Mock host on port ' + selectedMock.port + ' · started ' + (selectedMock.startedAt || 'unknown')
+                }));
+
+                // URL card with copy + open buttons
+                var urlCard = el('div', { className: 'bowire-mocks-url-card' });
+                urlCard.appendChild(el('code', { className: 'bowire-mocks-url', textContent: url }));
+                urlCard.appendChild(el('button', {
+                    className: 'bowire-empty-card-action',
+                    textContent: 'Copy URL',
+                    onClick: function () {
+                        if (navigator.clipboard) {
+                            navigator.clipboard.writeText(url).then(function () {
+                                toast('Mock URL copied: ' + url, 'success');
+                            });
+                        }
+                    }
+                }));
+                urlCard.appendChild(el('a', {
+                    className: 'bowire-empty-card-action',
+                    href: url,
+                    target: '_blank',
+                    rel: 'noopener',
+                    textContent: 'Open in tab'
+                }));
+                urlCard.appendChild(el('button', {
+                    className: 'bowire-empty-card-action bowire-recording-action-danger',
+                    textContent: 'Stop mock',
+                    onClick: function () {
+                        if (typeof stopMock === 'function') stopMock(selectedMock.mockId);
+                    }
+                }));
+                mockMainWrap.appendChild(urlCard);
+
+                // Live log toggle + display
+                var logCard = el('div', { className: 'bowire-mocks-log-card', style: 'margin-top:16px' });
+                var logOpen = mockLogOpenFor === selectedMock.mockId;
+                var logState = (typeof mockLogState !== 'undefined' && mockLogState[selectedMock.mockId])
+                    ? mockLogState[selectedMock.mockId]
+                    : { total: 0, entries: [] };
+                logCard.appendChild(el('div', { className: 'bowire-sources-section', style: 'display:flex;align-items:center;gap:8px' },
+                    el('span', { textContent: 'Live request log' }),
+                    el('span', { className: 'bowire-home-section-count', textContent: logState.total + ' request' + (logState.total === 1 ? '' : 's') }),
+                    el('button', {
+                        className: 'bowire-empty-card-action',
+                        textContent: logOpen ? 'Pause polling' : 'Start polling',
+                        onClick: function () {
+                            if (mockLogOpenFor === selectedMock.mockId) {
+                                mockLogOpenFor = null;
+                                if (typeof stopMockLogPolling === 'function') stopMockLogPolling(selectedMock.mockId);
+                            } else {
+                                mockLogOpenFor = selectedMock.mockId;
+                                if (typeof startMockLogPolling === 'function') startMockLogPolling(selectedMock.mockId);
+                            }
+                            render();
+                        }
+                    })
+                ));
+                if (logOpen) {
+                    if (!logState.entries.length) {
+                        logCard.appendChild(el('p', {
+                            className: 'bowire-sources-hint',
+                            textContent: 'No requests yet. Fire one against ' + url + ' and it shows up here.'
+                        }));
+                    } else {
+                        var ul = el('ul', { className: 'bowire-mocks-log-list', style: 'margin:8px 0 0;padding:0;list-style:none' });
+                        logState.entries.slice(0, 20).forEach(function (e, i) {
+                            var li = el('li', { style: 'padding:6px 0;border-top:1px solid var(--bowire-border-subtle);font-size:12px;font-family:var(--bowire-font-mono)' });
+                            li.textContent = '[' + (e.timestamp || '?') + '] ' + (e.method || 'REQ') + ' ' + (e.path || '/') + ' → ' + (e.status || '?');
+                            ul.appendChild(li);
+                        });
+                        logCard.appendChild(ul);
+                    }
+                }
+                mockMainWrap.appendChild(logCard);
+            }
+
+            mockMain.appendChild(mockMainWrap);
+            return mockMain;
+        }
+
         // #133 Phase 2 — Recordings rail mode owns the main pane.
         // Sidebar shows the recordings list; main pane shows the
         // selected recording's detail (steps + actions). When no

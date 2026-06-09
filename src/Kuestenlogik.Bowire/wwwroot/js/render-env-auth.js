@@ -76,17 +76,20 @@
             body.appendChild(renderAiDrawer());
         }
 
-        body.appendChild(renderSidebar());
-        // Sidebar-resize splitter lives between the sidebar and the main
-        // pane. Hidden on mobile (sidebar is an overlay there, no split
-        // layout) and when the sidebar is collapsed (CSS hides it via the
-        // adjacent-sibling rule).
-        if (!isMobile()) {
-            body.appendChild(el('div', {
-                className: 'bowire-sidebar-splitter',
-                id: 'bowire-sidebar-splitter',
-                title: 'Drag to resize the sidebar'
-            }));
+        // #133 Phase 2 — modes without a sidebar (Home today) skip
+        // the sidebar + splitter entirely so the main pane spans
+        // edge to edge. The mode catalogue eventually owns this
+        // declaration (#137); for now it's a per-mode allow-list.
+        var modeHasSidebar = railMode !== 'home';
+        if (modeHasSidebar) {
+            body.appendChild(renderSidebar());
+            if (!isMobile()) {
+                body.appendChild(el('div', {
+                    className: 'bowire-sidebar-splitter',
+                    id: 'bowire-sidebar-splitter',
+                    title: 'Drag to resize the sidebar'
+                }));
+            }
         }
         body.appendChild(renderMain());
 
@@ -423,24 +426,24 @@
         if (uiMode === 'embedded') return el('div', { id: 'bowire-statusbar', style: 'display:none' });
         var bar = el('div', { id: 'bowire-statusbar', className: 'bowire-statusbar' });
 
-        var left = el('div', { className: 'bowire-statusbar-left' },
-            renderConnectionPill(),
-        );
+        // Left cluster — empty for now. Reserved for workspace
+        // name (#116) + hint count (#114) once those land.
+        var left = el('div', { className: 'bowire-statusbar-left' });
         bar.appendChild(left);
 
-        var centre = el('div', { className: 'bowire-statusbar-centre' },
-            renderEnvSelector(),
-        );
+        var centre = el('div', { className: 'bowire-statusbar-centre' });
         bar.appendChild(centre);
 
+        // Right cluster — system status (connection state + watch
+        // toggle). Connection anchors to the rightmost edge per
+        // maintainer call; env selector moved back to the topbar
+        // so the editor-context switch lives next to navigation.
         var right = el('div', { className: 'bowire-statusbar-right' });
-        // Watch button (existing local var renderTopbar built but
-        // now lives here). Built inline since we no longer need it
-        // upstairs.
         if (typeof renderWatchButton === 'function') {
             var wb = renderWatchButton();
             if (wb) right.appendChild(wb);
         }
+        right.appendChild(renderConnectionPill());
         bar.appendChild(right);
 
         return bar;
@@ -842,10 +845,14 @@
         }));
 
         var right = el('div', { id: 'bowire-topbar-right', className: 'bowire-topbar-right' },
-            // #138 — connection pill + env selector + watch button
-            // moved out of the topbar into the new statusbar at the
-            // bottom. Topbar right now reads as: drawer toggles +
-            // overflow.
+            // #138 — connection pill + watch button live in the
+            // statusbar at the bottom (system-status info). Env
+            // selector stays here: it's editor-context (which set
+            // of variables your tabs interpolate), peer of the
+            // command palette, not ambient telemetry.
+            el('div', { className: 'bowire-topbar-group bowire-topbar-context' },
+                renderEnvSelector(),
+            ),
             // Drawer-toggle group. Security toggle retired in
             // #133 Phase 2 — Security is now a rail mode, not a
             // drawer. Assistant (AI) stays as a drawer because it's
