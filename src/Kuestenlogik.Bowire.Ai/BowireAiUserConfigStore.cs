@@ -23,7 +23,7 @@ namespace Kuestenlogik.Bowire.Ai;
 /// </remarks>
 public static class BowireAiUserConfigStore
 {
-    private const string Filename = "ai-config.json";
+    private const string GlobalFilename = "ai-config.json";
 
     private static readonly JsonSerializerOptions JsonOpts = new()
     {
@@ -31,17 +31,54 @@ public static class BowireAiUserConfigStore
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
     };
 
+    // #116 Phase 3 — per-workspace override path. A workspace's
+    // override is stored as ai-config.<workspaceId>.json next to
+    // the global ai-config.json. Resolution at load time prefers
+    // the override; falls back to global; falls back to runtime
+    // defaults. Operators who never opt a workspace into its own
+    // config see no behavioural change.
+    private static string OverrideFilename(string workspaceId)
+        => $"ai-config.{SanitiseWorkspaceId(workspaceId)}.json";
+
+    private static string SanitiseWorkspaceId(string id)
+    {
+        // Workspace IDs are generated client-side as 'ws_' + a-z0-9
+        // slug, plus the seeded 'personal'. Defensive sanitisation
+        // here keeps a hostile workspaceId out of the file path.
+        var sb = new System.Text.StringBuilder(id.Length);
+        foreach (var c in id)
+        {
+            if (char.IsLetterOrDigit(c) || c == '_' || c == '-') sb.Append(c);
+        }
+        var sanitised = sb.ToString();
+        return sanitised.Length == 0 ? "default" : sanitised;
+    }
+
     /// <summary>
     /// Load the persisted config and return a <see cref="BowireAiOptions"/>
     /// populated from it. Returns <c>null</c> when no file is present so
     /// callers can distinguish "user hasn't picked anything" from "user
     /// explicitly saved these defaults".
     /// </summary>
-    public static BowireAiOptions? TryLoad()
+    /// <param name="workspaceId">
+    /// When set, prefer the workspace's own override file. Falls back to
+    /// global when the override doesn't exist.
+    /// </param>
+    public static BowireAiOptions? TryLoad(string? workspaceId = null)
+    {
+        if (!string.IsNullOrWhiteSpace(workspaceId))
+        {
+            var overrideOpts = TryLoadFile(OverrideFilename(workspaceId));
+            if (overrideOpts is not null) return overrideOpts;
+        }
+        return TryLoadFile(GlobalFilename);
+    }
+
+    private static BowireAiOptions? TryLoadFile(string filename)
     {
         try
         {
-            var path = BowireUserContext.GetUserPath(Filename);
+            var path = BowireUserContext.GetUserPath(filename);
             if (!File.Exists(path)) return null;
             var json = File.ReadAllText(path);
             var dto = JsonSerializer.Deserialize<PersistedConfig>(json, JsonOpts);
@@ -57,21 +94,59 @@ public static class BowireAiUserConfigStore
     }
 
     /// <summary>
-    /// Persist <paramref name="opts"/> to <c>ai-config.json</c>. Creates
-    /// the parent directory if needed. Throws on I/O errors so the
-    /// caller (the <c>POST /api/ai/config</c> handler) can return 500
-    /// with the underlying message instead of silently dropping the
-    /// user's pick.
+    /// Persist <paramref name="opts"/> to <c>ai-config.json</c> when no
+    /// workspaceId is given, or to <c>ai-config.&lt;workspaceId&gt;.json</c>
+    /// when one is. Creates the parent directory if needed. Throws on
+    /// I/O errors so the caller (the <c>POST /api/ai/config</c> handler)
+    /// can return 500 with the underlying message instead of silently
+    /// dropping the user's pick.
     /// </summary>
-    public static void Save(BowireAiOptions opts)
+    public static void Save(BowireAiOptions opts, string? workspaceId = null)
     {
         ArgumentNullException.ThrowIfNull(opts);
-        var path = BowireUserContext.GetUserPath(Filename);
+        var filename = string.IsNullOrWhiteSpace(workspaceId)
+            ? GlobalFilename
+            : OverrideFilename(workspaceId!);
+        var path = BowireUserContext.GetUserPath(filename);
         var dir = Path.GetDirectoryName(path);
         if (!string.IsNullOrEmpty(dir)) Directory.CreateDirectory(dir);
         var dto = PersistedConfig.From(opts);
         var json = JsonSerializer.Serialize(dto, JsonOpts);
         File.WriteAllText(path, json);
+    }
+
+    /// <summary>
+    /// Drop a workspace's per-workspace override so loads fall back
+    /// to the global config. No-op when no override exists.
+    /// </summary>
+    public static void RemoveOverride(string workspaceId)
+    {
+        if (string.IsNullOrWhiteSpace(workspaceId)) return;
+        try
+        {
+            var path = BowireUserContext.GetUserPath(OverrideFilename(workspaceId));
+            if (File.Exists(path)) File.Delete(path);
+        }
+        catch
+        {
+            // Best-effort cleanup; the override stays on disk and
+            // continues to apply. Not worth surfacing as a 500.
+        }
+    }
+
+    /// <summary>
+    /// True when a per-workspace override file exists for the given
+    /// workspace id. Used by the API to flag "this workspace is
+    /// overriding the global config" so the UI can render correctly.
+    /// </summary>
+    public static bool HasOverride(string? workspaceId)
+    {
+        if (string.IsNullOrWhiteSpace(workspaceId)) return false;
+        try
+        {
+            return File.Exists(BowireUserContext.GetUserPath(OverrideFilename(workspaceId!)));
+        }
+        catch { return false; }
     }
 
     // Persisted shape stays decoupled from BowireAiOptions so renaming a

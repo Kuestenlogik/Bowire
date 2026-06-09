@@ -476,7 +476,12 @@
 
     function refreshAiStatus() {
         if (aiInflightStatus) return aiInflightStatus;
-        aiInflightStatus = fetch(aiPrefix() + '/api/ai/status')
+        // #116 Phase 3 — pass workspaceId so the resolver returns
+        // override > global > defaults for the active workspace.
+        var statusWsParam = '';
+        try { if (typeof activeWorkspaceId === 'string' && activeWorkspaceId) statusWsParam = '?workspaceId=' + encodeURIComponent(activeWorkspaceId); }
+        catch { /* prologue not loaded yet — skip */ }
+        aiInflightStatus = fetch(aiPrefix() + '/api/ai/status' + statusWsParam)
             .then(function (r) { return r.ok ? r.json() : null; })
             .then(function (data) { aiStatus = data; return data; })
             .catch(function () { aiStatus = null; return null; })

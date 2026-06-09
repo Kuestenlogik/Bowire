@@ -8592,6 +8592,52 @@ details[open] > .bowire-json-tree-summary::before {
     font-style: italic;
 }
 
+/* #116 Phase 3 — Settings → Assistant scope bar. Tells the
+   operator whether the editor is showing the global config or
+   a workspace override, and offers the path to switch. */
+.bowire-ai-scope-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    margin-bottom: 12px;
+    background: var(--bowire-surface);
+    border-radius: var(--bowire-radius-md);
+    border-left: 3px solid var(--bowire-text-tertiary);
+}
+.bowire-ai-scope-tag {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 2px 6px;
+    border-radius: var(--bowire-radius-pill);
+    flex-shrink: 0;
+}
+.bowire-ai-scope-tag-global {
+    background: var(--bowire-accent-subtle);
+    color: var(--bowire-accent);
+}
+.bowire-ai-scope-tag-override {
+    background: var(--bowire-warning-bg);
+    color: var(--bowire-warning);
+}
+.bowire-ai-scope-bar:has(.bowire-ai-scope-tag-override) {
+    border-left-color: var(--bowire-warning);
+}
+.bowire-ai-scope-desc {
+    flex: 1;
+    font-size: 12px;
+    color: var(--bowire-text-secondary);
+    line-height: 1.4;
+}
+.bowire-ai-scope-remove {
+    flex-shrink: 0;
+}
+.bowire-ai-save-ws-btn {
+    margin-left: 8px;
+}
+
 .bowire-env-list-item-name {
     flex: 1;
     overflow: hidden;
