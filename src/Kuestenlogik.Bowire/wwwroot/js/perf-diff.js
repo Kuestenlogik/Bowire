@@ -513,12 +513,15 @@
             title: 'Open collections manager',
             'aria-label': 'Open collections manager',
             onClick: function () {
-                collectionManagerOpen = true;
+                // #133 Phase 3 — switch to Collections rail mode
+                // instead of opening the legacy modal.
                 collectionsList = loadCollections();
                 if (collectionsList.length > 0 && !collectionManagerSelectedId) {
                     collectionManagerSelectedId = collectionsList[0].id;
                 }
-                renderCollectionManager();
+                railMode = 'collections';
+                try { localStorage.setItem('bowire_rail_mode', 'collections'); } catch { /* ignore */ }
+                render();
             }
         },
             el('span', { innerHTML: svgIcon('list'), style: 'width:14px;height:14px;display:flex' })
@@ -648,14 +651,17 @@
             id: active ? 'bowire-recording-stop-btn' : 'bowire-recording-start-btn',
             className: 'bowire-console-toggle bowire-recording-toggle' + (active ? ' active' : ''),
             title: active
-                ? 'Recording — click to stop. Shift-click to open recordings manager.'
-                : 'Start recording a sequence of calls. Shift-click to open recordings manager.',
+                ? 'Recording — click to stop. Shift-click to switch to Recordings mode.'
+                : 'Start recording a sequence of calls. Shift-click to switch to Recordings mode.',
             onClick: function (e) {
                 if (e.shiftKey) {
-                    recordingManagerOpen = true;
+                    // #133 Phase 3 — switch to the rail mode instead
+                    // of opening the legacy modal.
                     recordingManagerSelectedId = recordingActiveId
                         || (recordingsList.length > 0 ? recordingsList[recordingsList.length - 1].id : null);
-                    renderRecordingManager();
+                    railMode = 'recordings';
+                    try { localStorage.setItem('bowire_rail_mode', 'recordings'); } catch { /* ignore */ }
+                    render();
                     return;
                 }
                 if (active) {
@@ -666,10 +672,11 @@
             },
             onContextMenu: function (e) {
                 e.preventDefault();
-                recordingManagerOpen = true;
                 recordingManagerSelectedId = recordingActiveId
                     || (recordingsList.length > 0 ? recordingsList[recordingsList.length - 1].id : null);
-                renderRecordingManager();
+                railMode = 'recordings';
+                try { localStorage.setItem('bowire_rail_mode', 'recordings'); } catch { /* ignore */ }
+                render();
             }
         },
             el('span', { innerHTML: svgIcon('record'), className: 'bowire-console-toggle-icon bowire-recording-toggle-icon' }),

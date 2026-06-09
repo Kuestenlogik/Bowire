@@ -280,8 +280,14 @@
     }
 
     function openMocksManager() {
-        mocksManagerOpen = true;
-        loadMocks().then(renderMocksManager);
+        // #133 Phase 3 — modal retired; jump straight to the Mocks
+        // rail mode and refresh the list. Callers that still call
+        // openMocksManager() (recording's "Run as mock" success,
+        // sidebar 'new mock' shortcut) keep working without code
+        // change.
+        railMode = 'mocks';
+        try { localStorage.setItem('bowire_rail_mode', 'mocks'); } catch { /* ignore */ }
+        loadMocks().then(function () { render(); });
     }
 
     // Expose for recording.js + render-sidebar.js to call from their
