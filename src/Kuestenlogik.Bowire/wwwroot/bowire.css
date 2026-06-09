@@ -8472,6 +8472,60 @@ details[open] > .bowire-json-tree-summary::before {
     opacity: 0.85;
 }
 
+/* #125 Phase 2 v2 — chip overlay. <input>/<textarea> stay
+   atomic; the overlay sits on top, mirrors the same text, and
+   renders {{...}} matches as colored spans. The field's text
+   becomes transparent so only the chips show; the caret stays
+   visible via caret-color so the operator still sees where
+   they're typing. */
+.bowire-vars-chip-host {
+    position: relative;
+    display: inline-block;
+    width: 100%;
+}
+.bowire-vars-chip-field {
+    color: transparent !important;
+    caret-color: var(--bowire-text);
+    /* Selection background still shows behind the overlay so the
+       operator sees what's selected even though the foreground is
+       transparent. */
+    -webkit-text-fill-color: transparent;
+}
+.bowire-vars-chip-field::selection {
+    background: var(--bowire-accent-subtle);
+    color: var(--bowire-text);
+    -webkit-text-fill-color: var(--bowire-text);
+}
+.bowire-vars-chip-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    pointer-events: none;
+    color: var(--bowire-text);
+    background: transparent;
+    overflow: hidden;
+    z-index: 1;
+}
+.bowire-vars-chip-host > .bowire-vars-chip-field {
+    position: relative;
+    z-index: 2;
+    background: transparent;
+}
+.bowire-vars-chip {
+    border-radius: var(--bowire-radius-sm);
+    padding: 0 2px;
+    font-weight: 500;
+}
+/* Source-color tints — matches the autocomplete dropdown's kind
+   badge palette so the visual vocabulary is consistent across
+   both surfaces. */
+.bowire-vars-chip-env     { background: rgba(99, 102, 241, 0.22); color: #818cf8; }
+.bowire-vars-chip-prev    { background: rgba(56, 189, 248, 0.22); color: #38bdf8; }
+.bowire-vars-chip-step    { background: rgba(56, 189, 248, 0.22); color: #38bdf8; }
+.bowire-vars-chip-runtime { background: rgba(251, 191, 36, 0.22); color: #fbbf24; }
+.bowire-vars-chip-secret  { background: rgba(239, 68, 68, 0.22);  color: #ef4444; }
+.bowire-vars-chip-ai      { background: rgba(168, 85, 247, 0.22); color: #a855f7; }
+
 .bowire-env-list-item-name {
     flex: 1;
     overflow: hidden;

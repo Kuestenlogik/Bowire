@@ -450,6 +450,11 @@
         // every dynamically-mounted text input/textarea without
         // per-field wiring.
         try { installVarsAutocomplete(); } catch (e) { console.warn('[vars-ac] install failed', e); }
+        // #125 Phase 2 v2 — chip overlay attaches lazily on focus
+        // so dynamically-mounted forms get coverage without
+        // per-field wiring. Skip eligible fields by setting
+        // data-bowire-no-vars-chip="1".
+        try { installVarsChips(); } catch (e) { console.warn('[vars-chips] install failed', e); }
 
         Promise.allSettled([
             loadEnvironmentsFromDisk(),

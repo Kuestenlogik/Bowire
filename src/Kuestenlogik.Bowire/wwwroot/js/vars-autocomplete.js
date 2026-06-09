@@ -111,6 +111,11 @@
 
     function isVarsACEligibleTarget(t) {
         if (!t) return false;
+        // Opt-out: fields that aren't template-bearing (search
+        // palette, workspace rename prompt, etc.) set
+        // data-bowire-no-vars-ac="1" so the dropdown leaves them
+        // alone.
+        if (t.dataset && t.dataset.bowireNoVarsAc === '1') return false;
         var tag = t.tagName;
         if (tag === 'TEXTAREA') return true;
         if (tag === 'INPUT') {
