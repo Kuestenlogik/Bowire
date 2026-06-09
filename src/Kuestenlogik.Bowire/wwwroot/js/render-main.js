@@ -711,17 +711,17 @@
         // the services tree so the operator can drill into a method
         // from the same screen without losing the security view.
         if (railMode === 'security') {
-            var main = el('div', { id: 'bowire-main-security', className: 'bowire-main bowire-main-security' });
+            var secMain = el('div', { id: 'bowire-main-security', className: 'bowire-main bowire-main-security' });
             if (window.__bowireAi && typeof window.__bowireAi.renderSecurityPanel === 'function') {
-                main.appendChild(window.__bowireAi.renderSecurityPanel());
+                secMain.appendChild(window.__bowireAi.renderSecurityPanel());
             } else {
-                main.appendChild(el('p', {
+                secMain.appendChild(el('p', {
                     className: 'bowire-ai-empty',
                     style: 'padding:24px',
                     textContent: 'Security tools need Kuestenlogik.Bowire.Ai installed in the workbench process. Install the package + restart, or switch back to Discover via the rail.'
                 }));
             }
-            return main;
+            return secMain;
         }
 
         // #92 — Sources management view. When the operator clicks
