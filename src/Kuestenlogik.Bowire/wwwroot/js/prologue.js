@@ -412,6 +412,13 @@
             color: '#6366f1',
             createdAt: Date.now(),
             lastOpenedAt: Date.now(),
+            // #146 — Personal defaults to 'include every shared
+            // environment automatically' so the new user landing in
+            // Personal sees every env they create without curating.
+            // Operators creating a second workspace decide
+            // explicitly via the rail-mode toggle.
+            includeAllEnvironments: true,
+            includedEnvironmentIds: [],
         });
         activeWorkspaceId = 'personal';
     }
@@ -429,6 +436,99 @@
         return 'bowire_ws_' + activeWorkspaceId + '_'
             + String(baseKey).replace(/^bowire_/, '');
     }
+
+    // #146 — one-shot migration of envs from per-workspace bucketed
+    // storage to a single shared store + per-workspace inclusion
+    // lists. Walks every bowire_ws_<id>_environments key, collects
+    // into the shared list (de-duped by name; later wins), populates
+    // each workspace's includedEnvironmentIds from the bucket they
+    // originated in. Also flattens bowire_ws_<id>_global_vars into
+    // the shared global-vars store (merging keys; later wins).
+    // Marker bowire_envs_shared_migrated_v1 prevents re-running.
+    (function migrateEnvsToSharedStore() {
+        try {
+            if (localStorage.getItem('bowire_envs_shared_migrated_v1') === '1') return;
+            if (!Array.isArray(workspaces) || workspaces.length === 0) return;
+            var shared = [];
+            var byName = new Map(); // name → id in shared list
+            var sharedGlobals = {};
+            try {
+                var existingSharedRaw = localStorage.getItem('bowire_environments_shared');
+                if (existingSharedRaw) {
+                    var parsed = JSON.parse(existingSharedRaw);
+                    if (Array.isArray(parsed)) {
+                        for (var si = 0; si < parsed.length; si++) {
+                            shared.push(parsed[si]);
+                            byName.set(parsed[si].name, parsed[si].id);
+                        }
+                    }
+                }
+            } catch { /* ignore */ }
+            for (var wi = 0; wi < workspaces.length; wi++) {
+                var w = workspaces[wi];
+                var bucketKey = 'bowire_ws_' + w.id + '_environments';
+                var bucket = [];
+                try {
+                    var raw = localStorage.getItem(bucketKey);
+                    if (raw) {
+                        var arr = JSON.parse(raw);
+                        if (Array.isArray(arr)) bucket = arr;
+                    }
+                } catch { /* ignore */ }
+                w.includedEnvironmentIds = w.includedEnvironmentIds || [];
+                for (var ei = 0; ei < bucket.length; ei++) {
+                    var env = bucket[ei];
+                    if (!env || !env.id) continue;
+                    if (byName.has(env.name)) {
+                        // 'later wins' — overwrite the shared entry
+                        // with this workspace's copy. We keep the
+                        // SHARED id (so other workspaces that already
+                        // included the original keep referencing the
+                        // same record).
+                        var sharedId = byName.get(env.name);
+                        for (var ti = 0; ti < shared.length; ti++) {
+                            if (shared[ti].id === sharedId) { shared[ti] = Object.assign({}, env, { id: sharedId }); break; }
+                        }
+                        if (w.includedEnvironmentIds.indexOf(sharedId) === -1) {
+                            w.includedEnvironmentIds.push(sharedId);
+                        }
+                    } else {
+                        shared.push(env);
+                        byName.set(env.name, env.id);
+                        w.includedEnvironmentIds.push(env.id);
+                    }
+                }
+                // Merge per-workspace globals into shared globals.
+                try {
+                    var gKey = 'bowire_ws_' + w.id + '_global_vars';
+                    var rawG = localStorage.getItem(gKey);
+                    if (rawG) {
+                        var gObj = JSON.parse(rawG);
+                        if (gObj && typeof gObj === 'object') {
+                            for (var gk in gObj) {
+                                if (Object.prototype.hasOwnProperty.call(gObj, gk)) sharedGlobals[gk] = gObj[gk];
+                            }
+                        }
+                    }
+                } catch { /* ignore */ }
+            }
+            try {
+                localStorage.setItem('bowire_environments_shared', JSON.stringify(shared));
+                if (Object.keys(sharedGlobals).length > 0) {
+                    var existingG = {};
+                    try {
+                        var rawExist = localStorage.getItem('bowire_global_vars_shared');
+                        if (rawExist) existingG = JSON.parse(rawExist) || {};
+                    } catch { /* ignore */ }
+                    var mergedG = Object.assign({}, existingG, sharedGlobals);
+                    localStorage.setItem('bowire_global_vars_shared', JSON.stringify(mergedG));
+                }
+                localStorage.setItem('bowire_envs_shared_migrated_v1', '1');
+                // persist the updated workspace meta with inclusion lists
+                localStorage.setItem('bowire_workspaces', JSON.stringify(workspaces));
+            } catch { /* localStorage write may fail — skip */ }
+        } catch { /* never crash boot over a migration */ }
+    })();
 
     // #116 Phase 2 — one-shot migration. On first boot with the
     // workspace-prefixed storage layout, copy the existing flat
@@ -478,6 +578,11 @@
             color: color || '#6366f1',
             createdAt: Date.now(),
             lastOpenedAt: Date.now(),
+            // #146 — new workspaces start CURATED (per-env opt-in)
+            // so the operator decides explicitly which shared envs
+            // belong here. Personal is the one default-catchall.
+            includeAllEnvironments: false,
+            includedEnvironmentIds: [],
         };
         workspaces.push(ws);
         activeWorkspaceId = id;
@@ -500,6 +605,17 @@
         // wrong. Wallclock cost is one paint.
         try { window.location.reload(); } catch { /* embedded host */ }
     }
+    // #146 — workspace-level switch: include all shared environments
+    // automatically. When on, no per-env curation needed. Flipping
+    // the toggle persists immediately so a workspace switch reads
+    // the new state from disk.
+    function setWorkspaceIncludeAllEnvs(id, value) {
+        var ws = workspaces.find(function (w) { return w.id === id; });
+        if (!ws) return;
+        ws.includeAllEnvironments = !!value;
+        persistWorkspaces();
+    }
+
     function renameWorkspace(id, name) {
         var ws = workspaces.find(function (w) { return w.id === id; });
         if (!ws) return;

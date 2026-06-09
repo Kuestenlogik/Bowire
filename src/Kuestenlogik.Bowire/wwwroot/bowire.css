@@ -8638,6 +8638,48 @@ details[open] > .bowire-json-tree-summary::before {
     margin-left: 8px;
 }
 
+/* #146 — Environments rail-mode includeAll toggle + per-env
+   inclusion checkboxes + workspace-switcher env-count label. */
+.bowire-env-sidebar-includeall {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 10px 12px;
+    margin: 0 8px 8px;
+    background: var(--bowire-surface);
+    border-radius: var(--bowire-radius-md);
+}
+.bowire-env-sidebar-includeall-label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    font-size: 12px;
+    color: var(--bowire-text);
+}
+.bowire-env-sidebar-includeall-meta {
+    font-size: 11px;
+    color: var(--bowire-text-tertiary);
+    padding-left: 22px;
+}
+.bowire-env-sidebar-item-include {
+    flex-shrink: 0;
+    margin: 0;
+}
+.bowire-env-sidebar-item-excluded {
+    opacity: 0.55;
+}
+.bowire-env-sidebar-item-excluded .bowire-env-color-dot {
+    filter: grayscale(0.6);
+}
+.bowire-workspace-menu-item-envcount {
+    font-size: 10px;
+    color: var(--bowire-text-tertiary);
+    padding: 1px 6px;
+    border-radius: var(--bowire-radius-pill);
+    background: var(--bowire-surface);
+}
+
 .bowire-env-list-item-name {
     flex: 1;
     overflow: hidden;

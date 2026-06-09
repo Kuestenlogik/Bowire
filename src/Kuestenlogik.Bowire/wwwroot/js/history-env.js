@@ -106,32 +106,115 @@
     }
 
     // ---- Environments + Variables (Postman-style) ----
-    // Storage shape:
-    //   bowire_environments → [{ id, name, vars: { key: value, ... } }, ...]
-    //   bowire_global_vars  → { key: value, ... }
-    //   bowire_active_env   → id (or '' for none)
+    // #146 Storage shape (post-migration):
+    //   bowire_environments_shared → [{ id, name, vars: {...} }, ...] (GLOBAL, all workspaces see same list)
+    //   bowire_global_vars_shared  → { key: value, ... } (GLOBAL, always in scope)
+    //   bowire_ws_<id>_active_env  → id of the workspace's active env
+    //   workspaces[*].includedEnvironmentIds → string[] — which shared envs are visible to this workspace
+    //
+    // Pre-#146 (Phase 2) shape was bowire_ws_<id>_environments per
+    // workspace; migration collapses those into the shared store
+    // and seeds each workspace's includedEnvironmentIds.
+    const SHARED_ENVS_KEY = 'bowire_environments_shared';
+    const SHARED_GLOBAL_VARS_KEY = 'bowire_global_vars_shared';
 
-    function getEnvironments() {
+    // Returns every env in the shared store, ignoring workspace
+    // inclusion. Used by the Environments rail-mode UI to render
+    // 'include / exclude' checkboxes against every available env.
+    function getAllSharedEnvironments() {
         try {
-            var raw = localStorage.getItem(wsKey(ENVIRONMENTS_KEY));
+            var raw = localStorage.getItem(SHARED_ENVS_KEY);
             var list = raw ? JSON.parse(raw) : [];
             return Array.isArray(list) ? list : [];
         } catch { return []; }
     }
 
-    function saveEnvironments(envs) {
-        localStorage.setItem(wsKey(ENVIRONMENTS_KEY), JSON.stringify(envs));
+    function saveAllSharedEnvironments(envs) {
+        try { localStorage.setItem(SHARED_ENVS_KEY, JSON.stringify(envs)); markSaved('environments'); }
+        catch (e) { markSaveFailed('environments', e); }
         scheduleDiskSync();
+    }
+
+    // Returns envs filtered to the active workspace's inclusion
+    // list — this is what every existing caller (resolver, env
+    // selector, save loops, &c.) sees. Pre-#146 callers don't need
+    // to know about the shared store.
+    function getEnvironments() {
+        var all = getAllSharedEnvironments();
+        var ws = (typeof activeWorkspace === 'function') ? activeWorkspace() : null;
+        if (!ws) return all;
+        // #146 — workspace-level 'include all environments' switch.
+        // When on, no per-env curation needed; the workspace sees
+        // every shared env. Useful for the operator who treats one
+        // workspace as the catch-all and others as filtered views.
+        if (ws.includeAllEnvironments) return all;
+        if (!Array.isArray(ws.includedEnvironmentIds)) return all;
+        var included = new Set(ws.includedEnvironmentIds);
+        return all.filter(function (e) { return included.has(e.id); });
+    }
+
+    // Mutating an env list at the workspace level means rewriting
+    // the shared store plus updating the inclusion list. Adds /
+    // removes flow through here so the two stores stay coherent.
+    function saveEnvironments(envs) {
+        // Write the WORKSPACE-VISIBLE subset back into the shared
+        // store: shared = (shared - workspace-visible-before)
+        //                 + (workspace-visible-after)
+        // The pre-update shared list minus the workspace's current
+        // inclusion list = the envs NOT visible to this workspace.
+        // Concatenate the saved envs to that and write it back.
+        var ws = (typeof activeWorkspace === 'function') ? activeWorkspace() : null;
+        var existingShared = getAllSharedEnvironments();
+        var includedBefore = (ws && Array.isArray(ws.includedEnvironmentIds))
+            ? new Set(ws.includedEnvironmentIds) : null;
+        var notVisible = includedBefore
+            ? existingShared.filter(function (e) { return !includedBefore.has(e.id); })
+            : [];
+        // De-dupe by id — if the caller passed in a new env that's
+        // already in the not-visible bucket, prefer the caller's
+        // version.
+        var savedIds = new Set(envs.map(function (e) { return e.id; }));
+        var merged = notVisible.filter(function (e) { return !savedIds.has(e.id); }).concat(envs);
+        saveAllSharedEnvironments(merged);
+        if (ws) {
+            ws.includedEnvironmentIds = envs.map(function (e) { return e.id; });
+            if (typeof persistWorkspaces === 'function') persistWorkspaces();
+        }
+    }
+
+    // Add/remove an env id from the active workspace's inclusion
+    // list. Mutates only the workspace meta; the shared env store
+    // is untouched. Used by the Environments rail-mode checkbox.
+    function setEnvIncludedInWorkspace(envId, included) {
+        var ws = (typeof activeWorkspace === 'function') ? activeWorkspace() : null;
+        if (!ws) return;
+        if (!Array.isArray(ws.includedEnvironmentIds)) ws.includedEnvironmentIds = [];
+        var idx = ws.includedEnvironmentIds.indexOf(envId);
+        if (included && idx < 0) ws.includedEnvironmentIds.push(envId);
+        else if (!included && idx >= 0) ws.includedEnvironmentIds.splice(idx, 1);
+        // If the active env got excluded, clear it so getActiveEnvId()
+        // doesn't return a phantom value the resolver can't match.
+        if (!included && getActiveEnvId() === envId) {
+            try { localStorage.removeItem(wsKey(ACTIVE_ENV_KEY)); } catch { /* ignore */ }
+        }
+        if (typeof persistWorkspaces === 'function') persistWorkspaces();
+    }
+
+    function isEnvIncludedInWorkspace(envId) {
+        var ws = (typeof activeWorkspace === 'function') ? activeWorkspace() : null;
+        if (!ws || !Array.isArray(ws.includedEnvironmentIds)) return true; // open by default
+        return ws.includedEnvironmentIds.indexOf(envId) !== -1;
     }
 
     function getGlobalVars() {
         try {
-            return JSON.parse(localStorage.getItem(wsKey(GLOBAL_VARS_KEY)) || '{}') || {};
+            return JSON.parse(localStorage.getItem(SHARED_GLOBAL_VARS_KEY) || '{}') || {};
         } catch { return {}; }
     }
 
     function saveGlobalVars(vars) {
-        localStorage.setItem(wsKey(GLOBAL_VARS_KEY), JSON.stringify(vars));
+        try { localStorage.setItem(SHARED_GLOBAL_VARS_KEY, JSON.stringify(vars)); }
+        catch { /* ignore */ }
         scheduleDiskSync();
     }
 
