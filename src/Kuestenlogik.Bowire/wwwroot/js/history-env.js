@@ -281,35 +281,125 @@
      * with the same name.
      */
     function substituteVars(input) {
-        if (typeof input !== 'string' || input.indexOf('${') === -1) return input;
+        if (typeof input !== 'string') return input;
+        // Two syntaxes resolve through the same dispatch table:
+        // - ${name}        (Bowire's original Bash-style placeholder)
+        // - {{source.path}} (Postman / #125 multi-source resolver)
+        // Each placeholder rewrites to its resolved string; unknown
+        // refs are left intact so the operator sees the typo.
+        var hasDollar = input.indexOf('${') !== -1;
+        var hasCurly = input.indexOf('{{') !== -1;
+        if (!hasDollar && !hasCurly) return input;
         var vars = getMergedVars();
-        return input.replace(/\$(\$?)\{([^}]+)\}/g, function (match, esc, name) {
-            if (esc) return '${' + name + '}'; // $${var} → literal ${var}
-            var key = name.trim();
 
-            // Request chaining: ${response.path.to.field} reads from the last response.
-            // Plain ${response} returns the whole body. Unknown paths leave the
-            // placeholder untouched so chaining bugs are visible.
-            if (key === 'response' || key.indexOf('response.') === 0) {
-                var path = key === 'response' ? '' : key.substring('response.'.length);
+        function resolveKey(key, match) {
+            // ${response.path} / {{prev.path}} / {{response.path}} — read from last response.
+            if (key === 'response' || key.indexOf('response.') === 0
+                || key === 'prev' || key.indexOf('prev.') === 0) {
+                var prefix = key.indexOf('prev') === 0 ? 'prev' : 'response';
+                var path = key === prefix ? '' : key.substring(prefix.length + 1);
                 var resolved = resolveResponseVar(path);
                 return resolved === null ? match : resolved;
             }
-
-            var sys = resolveSystemVar(key);
-            if (sys !== null) return sys;
-
-            // Per-flow-run vars (Variable-node assignments, Foreach
-            // loop item). These shadow global / env vars so a flow
-            // can introduce a temporary binding without colliding
-            // with a long-lived environment variable of the same name.
+            // {{runtime.X}} — wrapper around the existing system vars.
+            // Lets the operator type runtime.now / runtime.uuid /
+            // runtime.timestamp explicitly while ${now} / ${uuid}
+            // still works bare.
+            if (key.indexOf('runtime.') === 0) {
+                var sys = resolveSystemVar(key.substring('runtime.'.length));
+                return sys === null ? match : sys;
+            }
+            // {{env.NAME}} — explicit env-var prefix. {{NAME}} (no
+            // prefix) also resolves through env, matching the
+            // Postman default behaviour.
+            if (key.indexOf('env.') === 0) {
+                var envKey = key.substring('env.'.length);
+                return Object.prototype.hasOwnProperty.call(vars, envKey)
+                    ? String(vars[envKey]) : match;
+            }
+            // {{step<N>.path}} — read response.path from recording step N.
+            var stepMatch = /^step(\d+)\.(.+)$/.exec(key);
+            if (stepMatch) {
+                var stepIdx = parseInt(stepMatch[1], 10);
+                var stepPath = stepMatch[2];
+                var stepResolved = resolveStepVar(stepIdx, stepPath);
+                return stepResolved === null ? match : stepResolved;
+            }
+            // {{secret.NAME}} — placeholder for the OS keyring read
+            // (Phase 2). For now resolves to a masked literal so the
+            // operator's template doesn't leak the bare placeholder
+            // when copied.
+            if (key.indexOf('secret.') === 0) {
+                return '****';
+            }
+            // {{ai.NAME}} — placeholder for the AI-suggested-value
+            // path (Phase 2). For now leaves the placeholder intact
+            // so the operator sees it's unresolved.
+            if (key.indexOf('ai.') === 0) {
+                return match;
+            }
+            // System var (bare ${now} / ${uuid}).
+            var sysBare = resolveSystemVar(key);
+            if (sysBare !== null) return sysBare;
+            // Per-flow-run vars shadow env vars.
             if (typeof flowVars !== 'undefined' && flowVars
                 && Object.prototype.hasOwnProperty.call(flowVars, key)) {
                 return String(flowVars[key]);
             }
+            // Bare env var lookup.
+            return Object.prototype.hasOwnProperty.call(vars, key)
+                ? String(vars[key]) : match;
+        }
 
-            return Object.prototype.hasOwnProperty.call(vars, key) ? String(vars[key]) : match;
-        });
+        var out = input;
+        if (hasDollar) {
+            out = out.replace(/\$(\$?)\{([^}]+)\}/g, function (match, esc, name) {
+                if (esc) return '${' + name + '}'; // $${x} → literal ${x}
+                return resolveKey(name.trim(), match);
+            });
+        }
+        if (hasCurly) {
+            // {{name}} — match the inner content greedily but stop at
+            // the first '}}'; double-curly so it doesn't collide with
+            // single-brace JSON literals.
+            out = out.replace(/\{\{([^{}]+)\}\}/g, function (match, name) {
+                return resolveKey(name.trim(), match);
+            });
+        }
+        return out;
+    }
+
+    // #125 Phase 1 — step<N>.path resolution. Looks up the Nth step
+    // in the *currently selected* recording and applies the same
+    // path walk resolveResponseVar uses. Returns null on miss.
+    function resolveStepVar(stepIdx, path) {
+        var rec = null;
+        if (typeof recordingsList !== 'undefined' && recordingManagerSelectedId) {
+            rec = recordingsList.find(function (r) { return r.id === recordingManagerSelectedId; });
+        }
+        if (!rec || !rec.steps || stepIdx < 1 || stepIdx > rec.steps.length) return null;
+        var step = rec.steps[stepIdx - 1];
+        if (!step || step.response == null) return null;
+        // Reuse resolveResponseVar's body-walk by temporarily
+        // pointing lastResponse* at this step. resolveResponseVar
+        // is module-scoped and reads the module's
+        // lastResponseJson / lastResponseText — so swap, resolve,
+        // restore.
+        var prevJson = typeof lastResponseJson !== 'undefined' ? lastResponseJson : undefined;
+        var prevText = typeof lastResponseText !== 'undefined' ? lastResponseText : undefined;
+        try {
+            // step.response may be a JSON string OR an already-parsed
+            // object depending on the recorder path that wrote it.
+            var asObj = typeof step.response === 'string'
+                ? (function () { try { return JSON.parse(step.response); } catch { return null; } })()
+                : step.response;
+            if (typeof lastResponseJson !== 'undefined') lastResponseJson = asObj;
+            if (typeof lastResponseText !== 'undefined') lastResponseText = (typeof step.response === 'string') ? step.response : JSON.stringify(step.response);
+            return resolveResponseVar(path);
+        } finally {
+            if (typeof lastResponseJson !== 'undefined') lastResponseJson = prevJson;
+            if (typeof lastResponseText !== 'undefined') lastResponseText = prevText;
+        }
     }
 
     function substituteMetadata(meta) {
