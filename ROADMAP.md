@@ -91,6 +91,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 - [#138](https://github.com/Kuestenlogik/Bowire/issues/138) **Statusbar at bottom — move connection pill + env + watch out of topbar** 
 - [#139](https://github.com/Kuestenlogik/Bowire/issues/139) **Per-mode favorites filter (drop the standalone Favorites tab)** 
 - [#140](https://github.com/Kuestenlogik/Bowire/issues/140) **Per-mode 'Saved Configs' / Presets (distinct from cross-workflow favorites)** 
+- [#142](https://github.com/Kuestenlogik/Bowire/issues/142) **Sharper radii — straighter visual style across tabs / cards / drawers** 
 
 ---
 
