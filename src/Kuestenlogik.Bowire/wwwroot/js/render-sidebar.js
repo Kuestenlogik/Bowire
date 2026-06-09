@@ -1062,32 +1062,11 @@
         //      because the user is inside "my picks", not browsing the whole
         //      API surface. The star in the services view keeps its
         //      add/remove toggle behaviour.
-        var favCountForSwitch = getFavorites().length;
-        var servicesCountForSwitch = getFilteredServices().reduce(
-            function (acc, s) { return acc + (s.methods ? s.methods.length : 0); }, 0);
-        var viewSwitch = el('div', { id: 'bowire-sidebar-view-switch', className: 'bowire-view-switch', role: 'tablist' });
-        viewSwitch.appendChild(el('button', {
-            id: 'bowire-view-pill-services',
-            className: 'bowire-view-pill' + (sidebarView === 'services' ? ' active' : ''),
-            role: 'tab',
-            'aria-label': 'Services view',
-            'aria-selected': sidebarView === 'services' ? 'true' : 'false',
-            onClick: function () {
-                if (sidebarView === 'services') return;
-                setSidebarView('services');
-                render();
-            }
-        },
-            el('span', { className: 'bowire-view-pill-icon', innerHTML: svgIcon('list') }),
-            el('span', { textContent: 'Services' }),
-            servicesCountForSwitch > 0
-                ? el('span', { className: 'bowire-view-pill-badge', textContent: String(servicesCountForSwitch) })
-                : null
-        ));
-        // Favorites / Environments / Flows / Proxy pills retired —
-        // each moved to its own rail mode (#133 Phase 2). Discover's
-        // sidebar is the Services tree alone; the rail handles the
-        // cross-cutting navigation those four pills used to.
+        // Segmented control retired — Discover is the services tree
+        // alone, so a single-pill 'Services' tab was just chrome with
+        // no choice. The viewSwitch container stays as the host for
+        // the '+' new-request dropdown that lives at its right edge.
+        var viewSwitch = el('div', { id: 'bowire-sidebar-view-switch', className: 'bowire-view-switch', role: 'toolbar' });
 
         // "+" button — always visible in the tab row, all views
         viewSwitch.appendChild(el('span', { style: 'flex:1' }));

@@ -1027,7 +1027,7 @@
     const RECORDINGS_KEY = 'bowire_recordings';
     let recordingsList = [];          // all known recordings
     let recordingActiveId = null;     // id of the recording currently being captured to (null = not recording)
-    let recordingManagerOpen = false; // modal visibility
+    // recordingManagerOpen retired — Recordings rail mode owns the surface.
     let recordingManagerSelectedId = null; // selected recording in the manager left panel
     let recordingReplayState = null;  // { recordingId, stepIndex, status, errors[] } during replay
 
@@ -1075,7 +1075,7 @@
     // + disk sync like recordings/environments.
     const COLLECTIONS_KEY = 'bowire_collections';
     let collectionsList = [];
-    let collectionManagerOpen = false;
+    // collectionManagerOpen retired — Collections rail mode owns the surface.
     let collectionManagerSelectedId = null;
     let collectionRunState = null; // { collectionId, stepIndex, status, results[] }
 

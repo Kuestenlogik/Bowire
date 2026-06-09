@@ -135,11 +135,11 @@
                     closeSettings();
                     return;
                 }
-                if (recordingManagerOpen) {
-                    recordingManagerOpen = false;
-                    renderRecordingManager();
-                    return;
-                }
+                // recordingManagerOpen / collectionManagerOpen /
+                // mocksManagerOpen modal branches dropped in
+                // #133 Phase 3 — those surfaces are rail modes.
+                // Esc on a rail mode falls through to the default
+                // (no-op or the streaming/channel branches below).
                 // envManagerOpen modal removed — envs are inline now
                 if (showShortcutsOverlay) {
                     showShortcutsOverlay = false;
