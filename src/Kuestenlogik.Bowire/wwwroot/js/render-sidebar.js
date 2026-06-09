@@ -1166,27 +1166,125 @@
         if (!sourcesSelectedUrl || serverUrls.indexOf(sourcesSelectedUrl) < 0) {
             sourcesSelectedUrl = serverUrls[0];
         }
+
+        // #152 v3 — selection-mode header swap (same #143 shape as
+        // recordings/collections). 'N selected' bar with bulk
+        // delete + clear.
+        if (sourcesSelected.size > 0) {
+            var selHeader = el('div', { className: 'bowire-env-list-header bowire-selection-header' },
+                el('span', { className: 'bowire-selection-count', textContent: sourcesSelected.size + ' selected' }),
+                el('button', {
+                    className: 'bowire-selection-action bowire-selection-action-danger',
+                    title: 'Remove selected URLs',
+                    onClick: function () {
+                        var urls = Array.from(sourcesSelected);
+                        urls.forEach(function (uu) {
+                            if (typeof removeServerUrl === 'function') removeServerUrl(uu);
+                            else {
+                                var ri = serverUrls.indexOf(uu);
+                                if (ri >= 0) serverUrls.splice(ri, 1);
+                            }
+                            removeUrlMeta(uu);
+                        });
+                        if (typeof persistServerUrls === 'function') persistServerUrls();
+                        if (sourcesSelected.has(sourcesSelectedUrl)) {
+                            sourcesSelectedUrl = serverUrls[0] || null;
+                        }
+                        sourcesSelected.clear();
+                        sourcesSelectionAnchor = null;
+                        if (typeof onServerUrlChanged === 'function') onServerUrlChanged();
+                        toast(urls.length + ' URL' + (urls.length === 1 ? '' : 's') + ' removed', 'success');
+                        render();
+                    }
+                }, el('span', { innerHTML: svgIcon('trash'), style: 'width:13px;height:13px;display:inline-flex' })),
+                el('button', {
+                    className: 'bowire-selection-action',
+                    title: 'Clear selection (Esc)',
+                    textContent: '×',
+                    onClick: function () {
+                        sourcesSelected.clear();
+                        sourcesSelectionAnchor = null;
+                        render();
+                    }
+                })
+            );
+            sidebar.replaceChild(selHeader, sidebar.firstChild);
+        } else if (serverUrls.length > 0 && !config.lockServerUrl) {
+            // ⋮ overflow on the normal header for 'Remove all'.
+            var existingHeader = sidebar.firstChild;
+            existingHeader.appendChild(el('button', {
+                className: 'bowire-env-add-btn',
+                title: 'More actions',
+                'aria-label': 'More actions',
+                textContent: '⋮',
+                onClick: function () {
+                    var n = serverUrls.length;
+                    bowireConfirm(
+                        'Remove all ' + n + ' URLs from this workspace?',
+                        function () {
+                            serverUrls.length = 0;
+                            urlHeaders = {};
+                            urlMeta = {};
+                            if (typeof persistServerUrls === 'function') persistServerUrls();
+                            persistUrlHeaders();
+                            persistUrlMeta();
+                            sourcesSelectedUrl = null;
+                            sourcesSelected.clear();
+                            if (typeof onServerUrlChanged === 'function') onServerUrlChanged();
+                            toast(n + ' URLs removed', 'success');
+                            render();
+                        },
+                        { title: 'Remove all URLs', confirmText: 'Remove ' + n, danger: true }
+                    );
+                }
+            }));
+        }
+
         var list = el('div', { id: 'bowire-sources-list', className: 'bowire-env-list' });
+        var urlIds = serverUrls.slice();
         serverUrls.forEach(function (u, idx) {
             var isSelected = u === sourcesSelectedUrl;
+            var isMultiSelected = sourcesSelected.has(u);
             var status = (typeof connectionStatuses === 'object' && connectionStatuses)
                 ? (connectionStatuses[u] || 'disconnected') : 'disconnected';
+            // Fixed #5 — count via urlMatchesService so prefixed +
+            // resolved URL variants both match.
             var svcN = (typeof services !== 'undefined')
-                ? services.filter(function (s) { return s.originUrl === u; }).length : 0;
-            // Short label = host + path (truncated). Full URL on the
-            // title attribute for hover.
-            var displayLabel = u.replace(/^([a-z]+@)/, ''); // strip protocol prefix
+                ? services.filter(function (s) { return urlMatchesService(u, s); }).length : 0;
+            var meta = (typeof getUrlMeta === 'function') ? getUrlMeta(u) : {};
+            var displayName = meta.name || _stripUrlPrefix(u);
+            var proto = (typeof getUrlProtocolHint === 'function') ? getUrlProtocolHint(u) : null;
+            var dotColor = meta.color || null;
             var row = el('div', {
                 id: 'bowire-src-row-' + idx,
-                className: 'bowire-env-list-item' + (isSelected ? ' selected' : ''),
+                className: 'bowire-env-list-item bowire-sources-list-item'
+                    + (isSelected ? ' selected' : '')
+                    + (isMultiSelected ? ' bowire-multi-selected' : ''),
                 title: u,
-                onClick: function () { sourcesSelectedUrl = u; render(); }
+                onClick: function (e) {
+                    var isMod = applyListSelectionClick(sourcesSelected, sourcesSelectionAnchor, urlIds, idx, e);
+                    if (isMod) {
+                        sourcesSelectionAnchor = idx;
+                    } else {
+                        sourcesSelected.clear();
+                        sourcesSelectionAnchor = idx;
+                        sourcesSelectedUrl = u;
+                    }
+                    render();
+                }
             },
+                // Protocol icon — #8 — show the protocol-glyph
+                // when we can derive it from the URL prefix.
+                el('span', {
+                    className: 'bowire-sources-list-item-proto',
+                    title: proto || 'unknown protocol',
+                    innerHTML: proto ? svgIcon(_protoIconName(proto)) : ''
+                }),
                 el('span', {
                     className: 'bowire-conn-pill-dot bowire-conn-pill-dot-' + status,
-                    style: 'width:8px;height:8px;border-radius:50%;flex-shrink:0;'
+                    style: dotColor ? ('background:' + dotColor + ';') : '',
                 }),
-                el('span', { className: 'bowire-env-list-item-name', textContent: displayLabel }),
+                el('span', { className: 'bowire-env-list-item-name', textContent: displayName }),
                 el('span', { style: 'flex:1' }),
                 el('span', { className: 'bowire-env-list-item-meta', textContent: svcN + ' svc' + (svcN === 1 ? '' : 's') }),
                 !config.lockServerUrl ? el('button', {
@@ -1203,6 +1301,7 @@
                             if (ri >= 0) serverUrls.splice(ri, 1);
                             if (typeof persistServerUrls === 'function') persistServerUrls();
                         }
+                        removeUrlMeta(u);
                         if (sourcesSelectedUrl === u) sourcesSelectedUrl = serverUrls[0] || null;
                         if (typeof onServerUrlChanged === 'function') onServerUrlChanged();
                         render();
@@ -1213,6 +1312,19 @@
         });
         sidebar.appendChild(list);
         return sidebar;
+    }
+
+    // Map an unprefixed protocol name to an SVG icon name. Falls
+    // back to plug when unknown.
+    function _protoIconName(proto) {
+        var p = String(proto || '').toLowerCase();
+        if (p === 'rest' || p === 'http') return 'globe';
+        if (p === 'graphql') return 'beaker';
+        if (p === 'grpc') return 'lightning';
+        if (p === 'mqtt' || p === 'amqp') return 'flow';
+        if (p === 'signalr' || p === 'websocket' || p === 'ws') return 'flow';
+        if (p === 'mcp') return 'bot';
+        return 'plug';
     }
 
     // #116 — Workspaces rail mode sidebar. Lists every workspace as

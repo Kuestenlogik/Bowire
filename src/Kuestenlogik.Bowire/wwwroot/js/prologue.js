@@ -296,6 +296,10 @@
     let workspacesSelectedId = null;
     // #152 — selected URL in the Sources rail-mode detail view.
     let sourcesSelectedUrl = null;
+    // #152 v3 — multi-select state on the Sources list (reuses the
+    // #143 selection model: Set of urls + anchor index).
+    let sourcesSelected = new Set();
+    let sourcesSelectionAnchor = null;
 
     // #152 v2 — per-URL header bag. Keys are URLs (the full string
     // the operator typed, including the 'rest@' / 'graphql@' prefix
@@ -330,6 +334,58 @@
         delete urlHeaders[url][key];
         if (Object.keys(urlHeaders[url]).length === 0) delete urlHeaders[url];
         persistUrlHeaders();
+    }
+
+    // #152 v3 — per-URL metadata. Sister bag to urlHeaders. Carries
+    // operator-visible identity for a URL (custom name shown in
+    // dropdowns, color dot in the source list) without rewriting
+    // the serverUrls[] array shape — entries there stay raw URL
+    // strings so existing code paths keep working.
+    let urlMeta = {};
+    try {
+        var rawUrlMeta = localStorage.getItem(wsKey('bowire_url_meta'));
+        if (rawUrlMeta) urlMeta = JSON.parse(rawUrlMeta) || {};
+    } catch { /* corrupt; reset */ }
+    function persistUrlMeta() {
+        try { localStorage.setItem(wsKey('bowire_url_meta'), JSON.stringify(urlMeta)); markSaved('URL meta'); }
+        catch (e) { markSaveFailed('URL meta', e); }
+    }
+    function getUrlMeta(url) {
+        if (!url) return {};
+        return Object.assign({}, urlMeta[url] || {});
+    }
+    function setUrlMeta(url, patch) {
+        if (!url || !patch) return;
+        if (!urlMeta[url]) urlMeta[url] = {};
+        Object.assign(urlMeta[url], patch);
+        persistUrlMeta();
+    }
+    function removeUrlMeta(url) {
+        if (!url) return;
+        if (urlMeta[url]) { delete urlMeta[url]; persistUrlMeta(); }
+    }
+
+    // Extract a protocol hint from the URL's prefix syntax
+    // (rest@..., graphql@..., grpc@...). Returns null when no
+    // prefix is present — discovery still finds the protocol.
+    function getUrlProtocolHint(url) {
+        if (!url) return null;
+        var m = String(url).match(/^([a-z]+)@/i);
+        return m ? m[1].toLowerCase() : null;
+    }
+
+    // Stable normaliser for service-count lookups. Some code paths
+    // store originUrl as the raw user input (prefix included), some
+    // as the resolved URL minus prefix. Compare both forms so the
+    // count in the Sources sidebar matches reality.
+    function _stripUrlPrefix(url) {
+        if (!url) return url;
+        return String(url).replace(/^[a-z]+@/i, '');
+    }
+    function urlMatchesService(url, svc) {
+        if (!svc || !svc.originUrl || !url) return false;
+        if (svc.originUrl === url) return true;
+        return _stripUrlPrefix(svc.originUrl) === _stripUrlPrefix(url);
     }
 
     // #143 Phase 2 — Trash-store per list. localStorage-persisted

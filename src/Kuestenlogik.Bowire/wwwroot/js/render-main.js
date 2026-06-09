@@ -962,32 +962,84 @@
         }
         var methodN = svcList.reduce(function (n, s) { return n + ((s.methods && s.methods.length) || 0); }, 0);
 
+        var meta = (typeof getUrlMeta === 'function') ? getUrlMeta(u) : {};
+        var dotColor = meta.color || null;
         var header = el('div', { className: 'bowire-ws-detail-header' },
             el('span', {
                 className: 'bowire-conn-pill-dot bowire-conn-pill-dot-' + status,
                 style: 'width:20px;height:20px;border-radius:50%;flex-shrink:0;'
+                    + (dotColor ? ('background:' + dotColor + ';') : '')
             }),
             el('input', {
                 type: 'text',
                 className: 'bowire-ws-detail-name',
-                value: u,
-                'aria-label': 'URL',
-                readonly: !!config.lockServerUrl,
+                value: meta.name || _stripUrlPrefix(u),
+                placeholder: 'Optional display name (defaults to host)',
+                'aria-label': 'Display name',
                 onChange: function (e) {
                     var v = String(e.target.value || '').trim();
-                    if (!v || v === u) return;
-                    var idx = serverUrls.indexOf(u);
-                    if (idx < 0) return;
-                    serverUrls[idx] = v;
-                    sourcesSelectedUrl = v;
-                    if (typeof persistServerUrls === 'function') persistServerUrls();
-                    if (typeof onServerUrlChanged === 'function') onServerUrlChanged();
+                    setUrlMeta(u, { name: v || null });
                     render();
                 }
             }),
             el('span', { className: 'bowire-ws-detail-badge', textContent: statusLabel })
         );
         main.appendChild(header);
+
+        // Editable URL field below the header — the URL is what
+        // discovery actually hits; the input above is the operator-
+        // visible name.
+        main.appendChild(el('div', { className: 'bowire-ws-detail-section' },
+            el('div', { className: 'bowire-ws-detail-section-label', textContent: 'URL' }),
+            el('input', {
+                type: 'text',
+                className: 'bowire-url-header-value',
+                value: u,
+                readonly: !!config.lockServerUrl,
+                onChange: function (e) {
+                    var v = String(e.target.value || '').trim();
+                    if (!v || v === u) return;
+                    var idx = serverUrls.indexOf(u);
+                    if (idx < 0) return;
+                    // Re-key the meta + headers bags so the operator
+                    // doesn't lose them on a URL edit.
+                    var oldMeta = urlMeta[u];
+                    var oldHeaders = urlHeaders[u];
+                    serverUrls[idx] = v;
+                    if (oldMeta) { delete urlMeta[u]; urlMeta[v] = oldMeta; persistUrlMeta(); }
+                    if (oldHeaders) { delete urlHeaders[u]; urlHeaders[v] = oldHeaders; persistUrlHeaders(); }
+                    sourcesSelectedUrl = v;
+                    if (typeof persistServerUrls === 'function') persistServerUrls();
+                    if (typeof onServerUrlChanged === 'function') onServerUrlChanged();
+                    render();
+                }
+            })
+        ));
+
+        // Color picker — same palette as the Workspaces detail
+        // pane so the operator picks from a curated set instead of
+        // a color wheel.
+        var palette = ['#6366f1', '#22c55e', '#f59e0b', '#ec4899', '#06b6d4', '#a855f7', '#ef4444', '#64748b'];
+        main.appendChild(el('div', { className: 'bowire-ws-detail-section' },
+            el('div', { className: 'bowire-ws-detail-section-label', textContent: 'Color' }),
+            el('div', { className: 'bowire-ws-detail-color-row' },
+                palette.map(function (c) {
+                    return el('button', {
+                        className: 'bowire-ws-detail-color-swatch' + ((meta.color === c) ? ' selected' : ''),
+                        style: 'background:' + c,
+                        title: c,
+                        onClick: function () { setUrlMeta(u, { color: c }); render(); }
+                    });
+                }),
+                meta.color ? el('button', {
+                    className: 'bowire-ws-detail-color-swatch',
+                    style: 'background:transparent; border:1px dashed var(--bowire-border); color:var(--bowire-text-tertiary); font-size:14px;',
+                    title: 'Clear color',
+                    textContent: '×',
+                    onClick: function () { setUrlMeta(u, { color: null }); render(); }
+                }) : null
+            )
+        ));
 
         main.appendChild(el('div', { className: 'bowire-ws-detail-section' },
             el('div', { className: 'bowire-ws-detail-section-label', textContent: 'Discovery' }),
