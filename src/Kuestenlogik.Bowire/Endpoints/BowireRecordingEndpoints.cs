@@ -25,7 +25,10 @@ internal static class BowireRecordingEndpoints
     {
         endpoints.MapGet($"{basePath}/api/recordings", () =>
         {
-            return Results.Content(RecordingStore.Load(), "application/json");
+            // #144 — chunked store assembles the wire-compat shape on
+            // the fly from the per-recording directory layout. Legacy
+            // recordings.json migrates on first read.
+            return Results.Content(ChunkedRecordingStore.LoadAll(), "application/json");
         }).ExcludeFromDescription();
 
         endpoints.MapPut($"{basePath}/api/recordings", async (HttpContext ctx) =>
@@ -41,7 +44,7 @@ internal static class BowireRecordingEndpoints
                 // Falls back to the raw JSON when enrichment fails so
                 // a parse hiccup never blocks a save.
                 var enriched = TryEnrichWithSourceSchema(json) ?? json;
-                RecordingStore.Save(enriched);
+                ChunkedRecordingStore.SaveAll(enriched);
                 return Results.Json(new { saved = true }, BowireEndpointHelpers.JsonOptions);
             }
             catch (JsonException ex)
@@ -55,11 +58,25 @@ internal static class BowireRecordingEndpoints
                     detail: ex.Message,
                     instance: ctx.Request.Path);
             }
+            catch (InvalidOperationException ex)
+            {
+                // ChunkedRecordingStore throws on per-recording size
+                // cap. Surface as 413 Payload Too Large so the UI can
+                // distinguish 'too big' from 'malformed'.
+                BowireEndpointHelpers.GetLogger(ctx).LogWarning(ex,
+                    "Rejected oversized recording from PUT /api/recordings");
+                return BowireEndpointHelpers.Problem(
+                    type: "urn:bowire:recording-too-large",
+                    title: "Recording exceeds the configured size cap",
+                    status: 413,
+                    detail: ex.Message,
+                    instance: ctx.Request.Path);
+            }
         }).ExcludeFromDescription();
 
         endpoints.MapDelete($"{basePath}/api/recordings", () =>
         {
-            RecordingStore.Save("""{"recordings":[]}""");
+            ChunkedRecordingStore.DeleteAll();
             return Results.Json(new { cleared = true }, BowireEndpointHelpers.JsonOptions);
         }).ExcludeFromDescription();
 
