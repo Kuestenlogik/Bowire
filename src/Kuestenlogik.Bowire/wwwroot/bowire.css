@@ -8889,6 +8889,36 @@ details[open] > .bowire-json-tree-summary::before {
     line-height: 1.4;
 }
 
+/* #152 v2 — per-URL headers editor in the Sources rail-mode
+   detail pane. */
+.bowire-url-headers-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+.bowire-url-header-row {
+    display: grid;
+    grid-template-columns: minmax(160px, 1fr) 2fr auto;
+    gap: 8px;
+    align-items: center;
+}
+.bowire-url-header-key,
+.bowire-url-header-value {
+    width: 100%;
+    background: var(--bowire-surface);
+    border: 1px solid var(--bowire-border);
+    color: var(--bowire-text);
+    padding: 6px 10px;
+    border-radius: var(--bowire-radius-md);
+    font-size: 12px;
+    font-family: var(--bowire-font-mono);
+}
+.bowire-url-header-key:focus,
+.bowire-url-header-value:focus {
+    outline: none;
+    border-color: var(--bowire-accent);
+}
+
 .bowire-env-list-item-name {
     flex: 1;
     overflow: hidden;

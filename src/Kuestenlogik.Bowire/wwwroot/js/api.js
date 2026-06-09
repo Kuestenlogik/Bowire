@@ -253,7 +253,24 @@
         return list;
     }
 
+    // #152 v2 — merge any per-URL headers (configured in the Sources
+    // rail mode) into the metadata. Caller-supplied keys win — the
+    // explicit metadata wins over the catch-all per-URL set so the
+    // request pane's headers tab can still override.
+    function _mergeUrlHeaders(svc, metadata) {
+        try {
+            if (typeof getUrlHeaders !== 'function') return metadata;
+            var u = (svc && svc.originUrl) || (typeof serverUrls !== 'undefined' && serverUrls[0]) || null;
+            if (!u) return metadata;
+            var bag = getUrlHeaders(u);
+            if (!bag || Object.keys(bag).length === 0) return metadata;
+            var out = Object.assign({}, bag, metadata || {});
+            return out;
+        } catch { return metadata; }
+    }
+
     async function invokeUnary(service, method, messages, metadata) {
+        metadata = _mergeUrlHeaders(selectedService, metadata);
         isExecuting = true;
         markJobActive(service, method);
         responseData = null;
@@ -420,6 +437,7 @@
     }
 
     function invokeStreaming(service, method, messages, metadata) {
+        metadata = _mergeUrlHeaders(selectedService, metadata);
         isExecuting = true;
         markJobActive(service, method);
         responseData = null;
