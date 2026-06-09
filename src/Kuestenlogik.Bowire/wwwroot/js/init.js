@@ -223,6 +223,12 @@
                 }
                 // #143 Phase 3 — Esc clears any in-progress
                 // multi-select on the active list sidebar.
+                if ((typeof sourcesSelected !== 'undefined' && sourcesSelected.size > 0)) {
+                    sourcesSelected.clear();
+                    sourcesSelectionAnchor = null;
+                    render();
+                    return;
+                }
                 if ((typeof recordingsSelected !== 'undefined' && recordingsSelected.size > 0)
                     || (typeof collectionsSelected !== 'undefined' && collectionsSelected.size > 0)) {
                     if (typeof recordingsSelected !== 'undefined') {

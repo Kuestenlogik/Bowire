@@ -833,6 +833,14 @@
                 value: opts.defaultValue || '',
                 placeholder: opts.placeholder || '',
                 'aria-label': message,
+                // #152 v3 — opt out of the vars-chip overlay + the
+                // vars-autocomplete dropdown. bowirePrompt is meta-
+                // UI (collects a name / URL / id); without this the
+                // chip-overlay's color:transparent rule was hiding
+                // the typed text and the operator saw only what the
+                // overlay had rendered.
+                'data-bowire-no-vars-chip': '1',
+                'data-bowire-no-vars-ac': '1',
             });
 
             function commit() {

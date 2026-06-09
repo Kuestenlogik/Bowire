@@ -8922,6 +8922,32 @@ details[open] > .bowire-json-tree-summary::before {
     border-color: var(--bowire-accent);
 }
 
+/* #152 v3 — Sources list rows. Symmetric breathing room around
+   the protocol icon + status dot so the name doesn't crowd the
+   visual anchors. */
+.bowire-sources-list-item {
+    gap: 10px;
+    padding-left: 10px;
+    padding-right: 10px;
+}
+.bowire-sources-list-item-proto {
+    display: inline-flex;
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+    color: var(--bowire-text-tertiary);
+    align-items: center;
+    justify-content: center;
+}
+.bowire-sources-list-item-proto svg {
+    width: 14px;
+    height: 14px;
+}
+.bowire-sources-list-item.bowire-multi-selected {
+    background: var(--bowire-accent-subtle);
+    box-shadow: inset 2px 0 0 var(--bowire-accent);
+}
+
 .bowire-env-list-item-name {
     flex: 1;
     overflow: hidden;
