@@ -787,19 +787,18 @@
             searchSuggestionCache = [];
         }
 
-        // #124 v2 — topbar shows a Hoppscotch/Linear-style search
-        // *trigger* (button that looks like a search field) instead
-        // of the inline input. Click or Cmd/Ctrl+K opens the modal
-        // overlay rendered at body-render time (see
-        // renderOmniboxModal). The actual input + suggestions live
-        // in the modal; the trigger only carries hint text + the
-        // keyboard chord chip.
+        // #124 v2 — compact magnifier button in the topbar centre.
+        // Click or Cmd/Ctrl+K opens the modal overlay. GitHub /
+        // Hoppscotch convention — the topbar carries identity +
+        // primary actions, not a search field. The full input +
+        // suggestion list live in the modal.
         var triggerWrap = el('div', { className: 'bowire-omnibox-trigger-wrap' });
         triggerWrap.appendChild(el('button', {
             id: 'bowire-omnibox-trigger',
             type: 'button',
-            className: 'bowire-omnibox-trigger',
-            title: 'Open command palette',
+            className: 'bowire-theme-toggle-btn bowire-omnibox-trigger-btn',
+            title: 'Search methods, recordings, modes… (Ctrl/Cmd+K)',
+            'aria-label': 'Open command palette',
             onClick: function () {
                 searchSuggestionsOpen = true;
                 searchSuggestionIndex = 0;
@@ -809,14 +808,10 @@
                     if (input) { input.focus(); input.select(); }
                 });
             }
-        },
-            el('span', { className: 'bowire-omnibox-trigger-icon', innerHTML: svgIcon('compass') }),
-            el('span', { className: 'bowire-omnibox-trigger-text', textContent: 'Search methods, recordings, modes…' }),
-            el('span', { className: 'bowire-omnibox-trigger-chord' },
-                el('kbd', { textContent: navigator.platform.indexOf('Mac') !== -1 ? '⌘' : 'Ctrl' }),
-                el('kbd', { textContent: 'K' })
-            )
-        ));
+        }, el('span', {
+            innerHTML: svgIcon('search'),
+            style: 'width:16px;height:16px;display:flex'
+        })));
         bar.appendChild(triggerWrap);
         // The actual paletteWrap (with input + suggestions) renders
         // INSIDE the modal overlay — see renderOmniboxModal below.

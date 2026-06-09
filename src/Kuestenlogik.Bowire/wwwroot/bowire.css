@@ -861,61 +861,24 @@ body {
     overflow-y: auto;
     max-height: 60vh;
     background: transparent;
+    padding: 8px 0;
+}
+/* Dropdown items + group labels get 16 px horizontal padding so
+   they breathe inside the modal — the inline-dropdown variant
+   sits flush against the topbar so it doesn't need padding, but
+   the modal does. */
+.bowire-omnibox-modal .bowire-command-palette-item,
+.bowire-omnibox-modal .bowire-command-palette-group-header {
+    padding-left: 16px !important;
+    padding-right: 16px !important;
 }
 
-/* Topbar trigger button — Hoppscotch / Linear / Discord shape.
-   Reads like a search field but is a button; click opens the
-   modal. */
+/* Compact magnifier button in the topbar centre — click or
+   Cmd/Ctrl+K opens the modal. GitHub-style: identity + actions
+   live in the topbar, not a search field. */
 .bowire-omnibox-trigger-wrap {
     display: flex;
     justify-content: center;
-}
-.bowire-omnibox-trigger {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    width: 100%;
-    max-width: 480px;
-    height: 32px;
-    padding: 0 10px;
-    background: var(--bowire-surface);
-    border: 1px solid var(--bowire-border-subtle);
-    border-radius: var(--bowire-radius-md);
-    color: var(--bowire-text-tertiary);
-    cursor: pointer;
-    font-size: 13px;
-    transition: background var(--bowire-transition), border-color var(--bowire-transition), color var(--bowire-transition);
-}
-.bowire-omnibox-trigger:hover {
-    background: var(--bowire-surface-hover);
-    border-color: var(--bowire-text-tertiary);
-    color: var(--bowire-text);
-}
-.bowire-omnibox-trigger-icon {
-    display: inline-flex;
-    width: 14px;
-    height: 14px;
-}
-.bowire-omnibox-trigger-icon svg { width: 14px; height: 14px; }
-.bowire-omnibox-trigger-text {
-    flex: 1;
-    text-align: left;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-.bowire-omnibox-trigger-chord {
-    display: inline-flex;
-    gap: 2px;
-}
-.bowire-omnibox-trigger-chord kbd {
-    background: var(--bowire-bg);
-    border: 1px solid var(--bowire-border-subtle);
-    border-radius: var(--bowire-radius-sm);
-    padding: 1px 5px;
-    font-family: var(--bowire-font-mono);
-    font-size: 10px;
-    color: var(--bowire-text-secondary);
 }
 
 /* #127 — save-state pill. Small, low-noise, fades after the
