@@ -1781,8 +1781,21 @@
                         // protocol-color stripe on the group's left
                         // edge for the two-axis read.
                         'data-direction': methodDirection(m),
-                        onClick: function () {
-                            openTab(svc, m);
+                        onClick: function (e) {
+                            // Browser-style modifier: Ctrl/Cmd+click
+                            // (or middle-click) opens in a new tab;
+                            // plain click adopts the active tab.
+                            var inNewTab = !!(e && (e.ctrlKey || e.metaKey || e.button === 1));
+                            openTab(svc, m, { inNewTab: inNewTab });
+                        },
+                        // Wire middle-click via auxclick since DOM
+                        // click events don't fire for button 1
+                        // (middle mouse) by default.
+                        onAuxClick: function (e) {
+                            if (e && e.button === 1) {
+                                e.preventDefault();
+                                openTab(svc, m, { inNewTab: true });
+                            }
                         }
                     },
                         // Order: [name (flex:1)] [deprecated] [star] [badge]
