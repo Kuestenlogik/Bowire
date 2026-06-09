@@ -62,19 +62,8 @@
         }
 
         // #133 — activity rail. Sits at the very leftmost edge of the
-        // workbench body, before the assistant drawer + sidebar.
+        // workbench body, before the mode sidebar.
         body.appendChild(renderActivityRail());
-
-        // #133 Phase 2 — Assistant drawer (formerly AI drawer, #90).
-        // Migrated from the right edge to the left, sitting between
-        // the activity rail and the mode sidebar. Reads as
-        // 'assistant always lives in the same spot, regardless of
-        // which mode I'm in'. Matches the convention adopted by
-        // Cursor / Continue / Copilot Chat.
-        if (aiDrawerOpen) {
-            body.classList.add('bowire-with-ai-drawer');
-            body.appendChild(renderAiDrawer());
-        }
 
         // #133 Phase 2 — modes without a sidebar skip the sidebar +
         // splitter entirely so the main pane spans edge to edge.
@@ -96,6 +85,15 @@
             }
         }
         body.appendChild(renderMain());
+
+        // Assistant drawer (#90, formerly AI drawer). Sits at the
+        // right edge of the body, peer with the main pane. Cross-
+        // cutting — visible across every rail mode when open;
+        // independent of which sidebar template is active.
+        if (aiDrawerOpen) {
+            body.classList.add('bowire-with-ai-drawer');
+            body.appendChild(renderAiDrawer());
+        }
 
         // #138 — Statusbar at the bottom. Hosts connection pill +
         // env selector + watch button (moved here from the topbar).

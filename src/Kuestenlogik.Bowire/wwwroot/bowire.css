@@ -1200,11 +1200,10 @@ body {
 }
 
 /* ---------- AI drawer (#90) ---------- */
-/* Assistant drawer (formerly AI drawer #90). #133 Phase 2 moved it
-   from the right edge to the left, sitting between the activity
-   rail and the mode sidebar. Renders only when aiDrawerOpen.
-   Border switches to border-right since the drawer is now left of
-   the sidebar. */
+/* Assistant drawer (#90, formerly the AI drawer). Cross-cutting
+   companion panel — visible alongside any rail mode. Anchors to
+   the right edge of the body so it doesn't shift main-pane focus
+   left every time the operator opens chat. */
 .bowire-ai-drawer {
     width: 360px;
     min-width: 280px;
@@ -1212,8 +1211,8 @@ body {
     flex-shrink: 0;
     display: flex;
     flex-direction: column;
-    border-right: 1px solid var(--bowire-border);
-    border-left: none;
+    border-left: 1px solid var(--bowire-border);
+    border-right: none;
     background: var(--bowire-bg);
     overflow: hidden;
 }
@@ -1222,8 +1221,7 @@ body {
     .bowire-ai-drawer {
         position: fixed;
         top: var(--bowire-topbar-height, 56px);
-        /* 48 px rail width — drawer slides in next to it */
-        left: 48px;
+        right: 0;
         bottom: 0;
         z-index: 90;
         box-shadow: var(--bowire-shadow-lg);
