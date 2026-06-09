@@ -61,7 +61,7 @@ public static class BowireAiEndpoints
         }).ExcludeFromDescription();
 
         endpoints.MapGet($"{basePath}/api/ai/status",
-            (BowireAiRuntime runtime, IServiceProvider sp) =>
+            (BowireAiRuntime runtime, IServiceProvider sp, HttpContext ctx) =>
         {
             // hasClient reflects the live runtime state so Settings-UI
             // edits show up immediately. hostManaged tells the UI that
@@ -70,15 +70,27 @@ public static class BowireAiEndpoints
             // user's pick but doesn't swap the active client.
             var registered = sp.GetService<IChatClient>();
             var hostManaged = registered is not null and not MutableChatClient;
-            var opts = runtime.Options;
+            // #116 Phase 3 — per-workspace override resolution. When the
+            // UI passes ?workspaceId=X we prefer that workspace's
+            // override file; falls back to the global file; falls back
+            // to the runtime defaults. hasOverride tells the UI to
+            // render the 'override' state in the Settings tab.
+            var workspaceId = ctx.Request.Query["workspaceId"].ToString();
+            var hasOverride = BowireAiUserConfigStore.HasOverride(workspaceId);
+            var resolved = (!string.IsNullOrEmpty(workspaceId)
+                            ? BowireAiUserConfigStore.TryLoad(workspaceId)
+                            : null)
+                          ?? runtime.Options;
             return Results.Json(new
             {
                 hasClient = hostManaged || runtime.Current is not null,
                 hostManaged,
-                opts.ProviderId,
-                opts.Endpoint,
-                opts.Model,
-                opts.AutoDetectLocal,
+                resolved.ProviderId,
+                resolved.Endpoint,
+                resolved.Model,
+                resolved.AutoDetectLocal,
+                hasOverride,
+                workspaceId = string.IsNullOrEmpty(workspaceId) ? null : workspaceId,
             }, JsonOpts);
         }).ExcludeFromDescription();
 
@@ -132,7 +144,14 @@ public static class BowireAiEndpoints
 
             try
             {
-                BowireAiUserConfigStore.Save(next);
+                // #116 Phase 3 — when the UI passes workspaceId, write
+                // the per-workspace override file. Without it the
+                // global file is written and every workspace inherits
+                // the new value.
+                var workspaceId = ctx.Request.Query["workspaceId"].ToString();
+                BowireAiUserConfigStore.Save(
+                    next,
+                    string.IsNullOrWhiteSpace(workspaceId) ? null : workspaceId);
             }
             catch (Exception ex)
             {
@@ -155,6 +174,52 @@ public static class BowireAiEndpoints
             return Results.Json(new
             {
                 saved = true,
+                hostManaged,
+                applied.ProviderId,
+                applied.Endpoint,
+                applied.Model,
+                applied.AutoDetectLocal,
+            }, JsonOpts);
+        }).ExcludeFromDescription();
+
+        // #116 Phase 3 — DELETE /api/ai/config?workspaceId=X drops a
+        // workspace's per-workspace override so subsequent loads fall
+        // back to the global config. No-op when no override exists.
+        endpoints.MapDelete($"{basePath}/api/ai/config",
+            (HttpContext ctx, BowireAiRuntime runtime, IServiceProvider sp) =>
+        {
+            var workspaceId = ctx.Request.Query["workspaceId"].ToString();
+            if (string.IsNullOrWhiteSpace(workspaceId))
+            {
+                return Results.Json(
+                    new { error = "workspaceId query parameter required." },
+                    JsonOpts, statusCode: 400);
+            }
+            BowireAiUserConfigStore.RemoveOverride(workspaceId);
+            // Hot-swap the runtime back to the global config when not
+            // host-managed so the active client reflects what's now
+            // resolved for this workspace.
+            var registered = sp.GetService<IChatClient>();
+            var hostManaged = registered is not null and not MutableChatClient;
+            BowireAiOptions applied;
+            if (hostManaged)
+            {
+                applied = BowireAiUserConfigStore.TryLoad() ?? runtime.Options;
+            }
+            else
+            {
+                var globalOpts = BowireAiUserConfigStore.TryLoad() ?? new BowireAiOptions
+                {
+                    ProviderId = runtime.Options.ProviderId,
+                    Endpoint = runtime.Options.Endpoint,
+                    Model = runtime.Options.Model,
+                    AutoDetectLocal = runtime.Options.AutoDetectLocal,
+                };
+                applied = runtime.Update(globalOpts);
+            }
+            return Results.Json(new
+            {
+                deleted = true,
                 hostManaged,
                 applied.ProviderId,
                 applied.Endpoint,

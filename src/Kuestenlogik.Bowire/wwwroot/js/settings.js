@@ -343,8 +343,14 @@
         if (aiSettingsState.loaded && !force) return;
         aiSettingsState.loading = true;
         var p = aiSettingsPrefix();
+        // #116 Phase 3 — pass workspaceId so the backend resolves
+        // override > global > defaults + reports whether this
+        // workspace has its own override file.
+        var wsParam = '';
+        try { if (typeof activeWorkspaceId === 'string' && activeWorkspaceId) wsParam = '?workspaceId=' + encodeURIComponent(activeWorkspaceId); }
+        catch { /* prologue not loaded yet — skip */ }
         Promise.all([
-            fetch(p + '/api/ai/status').then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; }),
+            fetch(p + '/api/ai/status' + wsParam).then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; }),
             fetch(p + '/api/ai/probe-local').then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; })
         ]).then(function (results) {
             aiSettingsState.status = results[0];
@@ -366,13 +372,58 @@
         });
     }
 
-    function saveAiSettings() {
+    // #116 Phase 3 — drop the per-workspace override so this
+    // workspace inherits the global default again. Issues a DELETE
+    // to /api/ai/config?workspaceId=<id> which removes the override
+    // file + hot-swaps the runtime back to global (unless
+    // host-managed).
+    function removeAiWorkspaceOverride() {
+        if (aiSettingsState.saving) return;
+        var wsId = '';
+        try { if (typeof activeWorkspaceId === 'string') wsId = activeWorkspaceId; } catch { /* ignore */ }
+        if (!wsId) return;
+        aiSettingsState.saving = true;
+        aiSettingsState.result = null;
+        renderSettingsDialog();
+        var p = aiSettingsPrefix();
+        fetch(p + '/api/ai/config?workspaceId=' + encodeURIComponent(wsId), {
+            method: 'DELETE'
+        })
+            .then(function (r) { return r.json().then(function (b) { return { ok: r.ok, status: r.status, body: b }; }); })
+            .then(function (resp) {
+                aiSettingsState.saving = false;
+                if (resp.ok) {
+                    aiSettingsState.result = { kind: 'ok', text: 'Override removed. This workspace now inherits the global default.' };
+                    loadAiSettings(true);
+                    if (window.__bowireAi && window.__bowireAi.refreshStatus) window.__bowireAi.refreshStatus();
+                } else {
+                    aiSettingsState.result = { kind: 'err', text: problemTitle(resp.body, 'Remove failed (HTTP ' + resp.status + ').') };
+                }
+                renderSettingsDialog();
+            })
+            .catch(function (err) {
+                aiSettingsState.saving = false;
+                aiSettingsState.result = { kind: 'err', text: err && err.message ? err.message : 'Remove failed.' };
+                renderSettingsDialog();
+            });
+    }
+
+    // #116 Phase 3 — saveScope: 'global' writes ai-config.json (every
+    // workspace inherits it). 'workspace' writes the per-workspace
+    // override file. The Settings UI exposes both with explicit
+    // buttons so the operator picks scope at save time.
+    function saveAiSettings(saveScope) {
         if (aiSettingsState.saving || !aiSettingsState.draft) return;
         aiSettingsState.saving = true;
         aiSettingsState.result = null;
         renderSettingsDialog();
         var p = aiSettingsPrefix();
-        fetch(p + '/api/ai/config', {
+        var wsParam = '';
+        if (saveScope === 'workspace') {
+            try { if (typeof activeWorkspaceId === 'string' && activeWorkspaceId) wsParam = '?workspaceId=' + encodeURIComponent(activeWorkspaceId); }
+            catch { /* prologue not loaded yet — fall back to global */ }
+        }
+        fetch(p + '/api/ai/config' + wsParam, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(aiSettingsState.draft)
@@ -469,6 +520,45 @@
         var draft = aiSettingsState.draft;
         var hostManaged = !!st.hostManaged;
         var probe = aiSettingsState.probe || {};
+
+        // #116 Phase 3 — scope header. Tells the operator whether
+        // the editor is showing the global config or a workspace
+        // override, and exposes the path to switch between them.
+        var wsName = null;
+        try {
+            if (typeof activeWorkspace === 'function') {
+                var aw = activeWorkspace();
+                if (aw) wsName = aw.name;
+            }
+        } catch { /* prologue not loaded — skip */ }
+        if (wsName) {
+            var scopeBar = el('div', { className: 'bowire-ai-scope-bar' });
+            if (st.hasOverride) {
+                scopeBar.appendChild(el('span', {
+                    className: 'bowire-ai-scope-tag bowire-ai-scope-tag-override',
+                    textContent: 'Workspace override'
+                }));
+                scopeBar.appendChild(el('span', {
+                    className: 'bowire-ai-scope-desc',
+                    textContent: 'These values apply only inside "' + wsName + '". Remove the override to inherit the global config.'
+                }));
+                scopeBar.appendChild(el('button', {
+                    className: 'bowire-settings-action-btn bowire-ai-scope-remove',
+                    textContent: 'Use global instead',
+                    onClick: function () { removeAiWorkspaceOverride(); }
+                }));
+            } else {
+                scopeBar.appendChild(el('span', {
+                    className: 'bowire-ai-scope-tag bowire-ai-scope-tag-global',
+                    textContent: 'Global'
+                }));
+                scopeBar.appendChild(el('span', {
+                    className: 'bowire-ai-scope-desc',
+                    textContent: 'No workspace-specific override. The global default applies inside "' + wsName + '" (and every other workspace).'
+                }));
+            }
+            section.appendChild(scopeBar);
+        }
 
         // Live status header — green dot when connected, yellow when
         // package installed but no client (e.g. unsupported provider id),
@@ -569,21 +659,36 @@
             draft.autoDetectLocal,
             function (v) { draft.autoDetectLocal = v; }));
 
-        // Save row — keeps the action visually grouped with the form
-        // and shows the last save result inline.
+        // #116 Phase 3 — two save buttons, explicit scope. The
+        // operator picks whether the edit applies to every
+        // workspace (global) or just this one (override).
         var saveRow = el('div', { className: 'bowire-settings-row bowire-settings-ai-save-row' });
-        var saveBtn = el('button', {
+        var saveGlobalBtn = el('button', {
             className: 'bowire-settings-action-btn',
-            textContent: aiSettingsState.saving ? 'Saving…' : (hostManaged ? 'Save (host-managed)' : 'Save'),
-            onClick: function () { saveAiSettings(); }
+            textContent: aiSettingsState.saving ? 'Saving…' : 'Save as global default',
+            title: 'Persists to ai-config.json. Workspaces without their own override inherit these values.',
+            onClick: function () { saveAiSettings('global'); }
         });
-        if (aiSettingsState.saving) saveBtn.setAttribute('disabled', 'disabled');
+        var saveWsBtn = wsName ? el('button', {
+            className: 'bowire-settings-action-btn bowire-ai-save-ws-btn',
+            textContent: aiSettingsState.saving ? '…' : 'Save for "' + wsName + '" only',
+            title: 'Persists to ai-config.<workspaceId>.json. Other workspaces keep the global config.',
+            onClick: function () { saveAiSettings('workspace'); }
+        }) : null;
+        if (aiSettingsState.saving) {
+            saveGlobalBtn.setAttribute('disabled', 'disabled');
+            if (saveWsBtn) saveWsBtn.setAttribute('disabled', 'disabled');
+        }
+        if (hostManaged) {
+            saveGlobalBtn.textContent = aiSettingsState.saving ? 'Saving…' : 'Save as global default (host-managed)';
+        }
         var resultBox = el('span', { className: 'bowire-settings-ai-result' });
         if (aiSettingsState.result) {
             resultBox.classList.add(aiSettingsState.result.kind === 'ok' ? 'ok' : 'err');
             resultBox.textContent = aiSettingsState.result.text;
         }
-        saveRow.appendChild(saveBtn);
+        saveRow.appendChild(saveGlobalBtn);
+        if (saveWsBtn) saveRow.appendChild(saveWsBtn);
         saveRow.appendChild(resultBox);
         section.appendChild(saveRow);
 
