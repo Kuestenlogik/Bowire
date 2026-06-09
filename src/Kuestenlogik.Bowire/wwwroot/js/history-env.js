@@ -1,7 +1,7 @@
     // ---- History ----
     function getHistory() {
         try {
-            return JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]');
+            return JSON.parse(localStorage.getItem(wsKey(HISTORY_KEY)) || '[]');
         } catch {
             return [];
         }
@@ -54,23 +54,23 @@
             timestamp: Date.now()
         });
         if (history.length > MAX_HISTORY) history.length = MAX_HISTORY;
-        localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+        localStorage.setItem(wsKey(HISTORY_KEY), JSON.stringify(history));
     }
 
     function clearHistory() {
-        localStorage.removeItem(HISTORY_KEY);
+        localStorage.removeItem(wsKey(HISTORY_KEY));
         render();
     }
 
     function restoreHistory(entries) {
-        try { localStorage.setItem(HISTORY_KEY, JSON.stringify(entries)); } catch {}
+        try { localStorage.setItem(wsKey(HISTORY_KEY), JSON.stringify(entries)); } catch {}
         render();
     }
 
     // ---- Favorites ----
     function getFavorites() {
         try {
-            return JSON.parse(localStorage.getItem(FAVORITES_KEY) || '[]');
+            return JSON.parse(localStorage.getItem(wsKey(FAVORITES_KEY)) || '[]');
         } catch {
             return [];
         }
@@ -88,7 +88,7 @@
         } else {
             favs.push({ service: service, method: method });
         }
-        localStorage.setItem(FAVORITES_KEY, JSON.stringify(favs));
+        localStorage.setItem(wsKey(FAVORITES_KEY), JSON.stringify(favs));
         render();
     }
 
@@ -101,7 +101,7 @@
         if (toIdx < 0 || toIdx >= favs.length) return;
         var moved = favs.splice(fromIdx, 1)[0];
         favs.splice(toIdx, 0, moved);
-        localStorage.setItem(FAVORITES_KEY, JSON.stringify(favs));
+        localStorage.setItem(wsKey(FAVORITES_KEY), JSON.stringify(favs));
         render();
     }
 
@@ -113,35 +113,35 @@
 
     function getEnvironments() {
         try {
-            var raw = localStorage.getItem(ENVIRONMENTS_KEY);
+            var raw = localStorage.getItem(wsKey(ENVIRONMENTS_KEY));
             var list = raw ? JSON.parse(raw) : [];
             return Array.isArray(list) ? list : [];
         } catch { return []; }
     }
 
     function saveEnvironments(envs) {
-        localStorage.setItem(ENVIRONMENTS_KEY, JSON.stringify(envs));
+        localStorage.setItem(wsKey(ENVIRONMENTS_KEY), JSON.stringify(envs));
         scheduleDiskSync();
     }
 
     function getGlobalVars() {
         try {
-            return JSON.parse(localStorage.getItem(GLOBAL_VARS_KEY) || '{}') || {};
+            return JSON.parse(localStorage.getItem(wsKey(GLOBAL_VARS_KEY)) || '{}') || {};
         } catch { return {}; }
     }
 
     function saveGlobalVars(vars) {
-        localStorage.setItem(GLOBAL_VARS_KEY, JSON.stringify(vars));
+        localStorage.setItem(wsKey(GLOBAL_VARS_KEY), JSON.stringify(vars));
         scheduleDiskSync();
     }
 
     function getActiveEnvId() {
-        return localStorage.getItem(ACTIVE_ENV_KEY) || '';
+        return localStorage.getItem(wsKey(ACTIVE_ENV_KEY)) || '';
     }
 
     function setActiveEnvId(id) {
-        if (id) localStorage.setItem(ACTIVE_ENV_KEY, id);
-        else localStorage.removeItem(ACTIVE_ENV_KEY);
+        if (id) localStorage.setItem(wsKey(ACTIVE_ENV_KEY), id);
+        else localStorage.removeItem(wsKey(ACTIVE_ENV_KEY));
         scheduleDiskSync();
     }
 
@@ -179,14 +179,14 @@
             diskSyncSuspended = true;
             try {
                 if (data.environments && Array.isArray(data.environments)) {
-                    localStorage.setItem(ENVIRONMENTS_KEY, JSON.stringify(data.environments));
+                    localStorage.setItem(wsKey(ENVIRONMENTS_KEY), JSON.stringify(data.environments));
                 }
                 if (data.globals && typeof data.globals === 'object') {
-                    localStorage.setItem(GLOBAL_VARS_KEY, JSON.stringify(data.globals));
+                    localStorage.setItem(wsKey(GLOBAL_VARS_KEY), JSON.stringify(data.globals));
                 }
                 if (typeof data.activeEnvId === 'string') {
-                    if (data.activeEnvId) localStorage.setItem(ACTIVE_ENV_KEY, data.activeEnvId);
-                    else localStorage.removeItem(ACTIVE_ENV_KEY);
+                    if (data.activeEnvId) localStorage.setItem(wsKey(ACTIVE_ENV_KEY), data.activeEnvId);
+                    else localStorage.removeItem(wsKey(ACTIVE_ENV_KEY));
                 }
             } finally {
                 diskSyncSuspended = false;
@@ -197,9 +197,9 @@
     async function clearAllEnvironments() {
         diskSyncSuspended = true;
         try {
-            localStorage.removeItem(ENVIRONMENTS_KEY);
-            localStorage.removeItem(GLOBAL_VARS_KEY);
-            localStorage.removeItem(ACTIVE_ENV_KEY);
+            localStorage.removeItem(wsKey(ENVIRONMENTS_KEY));
+            localStorage.removeItem(wsKey(GLOBAL_VARS_KEY));
+            localStorage.removeItem(wsKey(ACTIVE_ENV_KEY));
             try {
                 await fetch(config.prefix + '/api/environments', { method: 'DELETE' });
             } catch { /* offline */ }

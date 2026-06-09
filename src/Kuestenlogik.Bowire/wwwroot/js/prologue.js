@@ -54,7 +54,7 @@
         // even if localStorage has an older/empty set.
         var urls = [];
         try {
-            var raw = localStorage.getItem(SERVER_URLS_KEY);
+            var raw = localStorage.getItem(wsKey(SERVER_URLS_KEY));
             if (raw) {
                 var parsed = JSON.parse(raw);
                 if (Array.isArray(parsed)) urls = parsed;
@@ -82,7 +82,7 @@
 
     function persistServerUrls() {
         if (config.lockServerUrl) return;
-        try { localStorage.setItem(SERVER_URLS_KEY, JSON.stringify(serverUrls)); markSaved('URLs'); }
+        try { localStorage.setItem(wsKey(SERVER_URLS_KEY), JSON.stringify(serverUrls)); markSaved('URLs'); }
         catch (e) { markSaveFailed('URLs', e); }
     }
 
@@ -301,9 +301,9 @@
     let recordingsTrash = [];
     let collectionsTrash = [];
     try {
-        var rawRTrash = localStorage.getItem('bowire_recordings_trash');
+        var rawRTrash = localStorage.getItem(wsKey('bowire_recordings_trash'));
         if (rawRTrash) recordingsTrash = JSON.parse(rawRTrash) || [];
-        var rawCTrash = localStorage.getItem('bowire_collections_trash');
+        var rawCTrash = localStorage.getItem(wsKey('bowire_collections_trash'));
         if (rawCTrash) collectionsTrash = JSON.parse(rawCTrash) || [];
     } catch { /* ignore */ }
     // Drop anything older than 30 days.
@@ -313,10 +313,10 @@
         collectionsTrash = collectionsTrash.filter(function (t) { return t.deletedAt > cutoff; });
     })();
     function persistRecordingsTrash() {
-        try { localStorage.setItem('bowire_recordings_trash', JSON.stringify(recordingsTrash)); } catch { /* ignore */ }
+        try { localStorage.setItem(wsKey('bowire_recordings_trash'), JSON.stringify(recordingsTrash)); } catch { /* ignore */ }
     }
     function persistCollectionsTrash() {
-        try { localStorage.setItem('bowire_collections_trash', JSON.stringify(collectionsTrash)); } catch { /* ignore */ }
+        try { localStorage.setItem(wsKey('bowire_collections_trash'), JSON.stringify(collectionsTrash)); } catch { /* ignore */ }
     }
     // Trash-section open/closed per sidebar — session-only.
     let recordingsTrashOpen = false;
@@ -418,6 +418,48 @@
     if (!activeWorkspaceId || !workspaces.find(function (w) { return w.id === activeWorkspaceId; })) {
         activeWorkspaceId = workspaces[0].id;
     }
+    // #116 Phase 2 — wraps a flat storage key into a workspace-
+    // scoped one ('bowire_recordings' → 'bowire_ws_<id>_recordings').
+    // Global UI prefs (theme, sidebar width, drawer state, etc.) do
+    // NOT route through this — they intentionally stay shared. The
+    // per-workspace store sites call wsKey at every localStorage
+    // setItem / getItem so a workspace switch picks up a fresh slate.
+    function wsKey(baseKey) {
+        if (!activeWorkspaceId) return baseKey;
+        return 'bowire_ws_' + activeWorkspaceId + '_'
+            + String(baseKey).replace(/^bowire_/, '');
+    }
+
+    // #116 Phase 2 — one-shot migration. On first boot with the
+    // workspace-prefixed storage layout, copy the existing flat
+    // keys into the active workspace's namespace so the operator's
+    // pre-Phase-2 state shows up where they expect. Doesn't delete
+    // the originals — a downgrade still reads them. Marked done in
+    // localStorage so we don't churn on every load.
+    (function migrateToWorkspacedStorage() {
+        try {
+            if (localStorage.getItem('bowire_ws_v2_migrated') === '1') return;
+            var keys = [
+                'bowire_server_urls', 'bowire_history', 'bowire_favorites',
+                'bowire_environments', 'bowire_active_env', 'bowire_global_vars',
+                'bowire_method_scripts', 'bowire_recent_methods',
+                'bowire_recordings', 'bowire_collections',
+                'bowire_recordings_trash', 'bowire_collections_trash',
+                'bowire_request_tabs', 'bowire_flows',
+            ];
+            for (var i = 0; i < keys.length; i++) {
+                var src = keys[i];
+                var dst = wsKey(src);
+                if (src === dst) continue;
+                var val = localStorage.getItem(src);
+                if (val == null) continue;
+                if (localStorage.getItem(dst) != null) continue; // never overwrite
+                localStorage.setItem(dst, val);
+            }
+            localStorage.setItem('bowire_ws_v2_migrated', '1');
+        } catch { /* localStorage may be disabled — skip */ }
+    })();
+
     function persistWorkspaces() {
         try {
             localStorage.setItem('bowire_workspaces', JSON.stringify(workspaces));
@@ -448,6 +490,15 @@
         activeWorkspaceId = id;
         ws.lastOpenedAt = Date.now();
         persistWorkspaces();
+        // #116 Phase 2 — every per-workspace store routes through
+        // wsKey(...) keyed off activeWorkspaceId. A full reload
+        // is the cleanest way to swap recordings / collections /
+        // env / URLs / tabs / scripts to the new namespace; an
+        // in-place re-fetch would have to walk every load-fn,
+        // re-render every cached widget, and clear the URL bar's
+        // discovery state — significantly more surface to get
+        // wrong. Wallclock cost is one paint.
+        try { window.location.reload(); } catch { /* embedded host */ }
     }
     function renameWorkspace(id, name) {
         var ws = workspaces.find(function (w) { return w.id === id; });
@@ -623,12 +674,12 @@
     const METHOD_SCRIPTS_KEY = 'bowire_method_scripts';
 
     function loadAllMethodScripts() {
-        try { return JSON.parse(localStorage.getItem(METHOD_SCRIPTS_KEY) || '{}'); }
+        try { return JSON.parse(localStorage.getItem(wsKey(METHOD_SCRIPTS_KEY)) || '{}'); }
         catch { return {}; }
     }
 
     function saveAllMethodScripts(map) {
-        try { localStorage.setItem(METHOD_SCRIPTS_KEY, JSON.stringify(map)); } catch {}
+        try { localStorage.setItem(wsKey(METHOD_SCRIPTS_KEY), JSON.stringify(map)); } catch {}
     }
 
     function getMethodScripts(svcName, methodName) {
@@ -659,7 +710,7 @@
     const MAX_RECENT_METHODS = 10;
     function getRecentMethods() {
         try {
-            var raw = localStorage.getItem(RECENT_METHODS_KEY);
+            var raw = localStorage.getItem(wsKey(RECENT_METHODS_KEY));
             if (!raw) return [];
             var arr = JSON.parse(raw);
             return Array.isArray(arr) ? arr : [];
@@ -675,7 +726,7 @@
         });
         list.unshift({ service: svcName, method: methodName });
         if (list.length > MAX_RECENT_METHODS) list.length = MAX_RECENT_METHODS;
-        try { localStorage.setItem(RECENT_METHODS_KEY, JSON.stringify(list)); } catch {}
+        try { localStorage.setItem(wsKey(RECENT_METHODS_KEY), JSON.stringify(list)); } catch {}
     }
 
     // ---- Channel State (Duplex / Client Streaming) ----
@@ -821,13 +872,13 @@
                 }),
                 active: activeTabId,
             };
-            localStorage.setItem('bowire_request_tabs', JSON.stringify(data));
+            localStorage.setItem(wsKey('bowire_request_tabs'), JSON.stringify(data));
             markSaved('tabs');
         } catch (e) { markSaveFailed('tabs', e); }
     }
     function restoreRequestTabsFromStorage() {
         try {
-            var raw = localStorage.getItem('bowire_request_tabs');
+            var raw = localStorage.getItem(wsKey('bowire_request_tabs'));
             if (!raw) return null;
             var data = JSON.parse(raw);
             if (!data || !Array.isArray(data.tabs)) return null;
@@ -1281,7 +1332,7 @@
 
     function loadCollections() {
         try {
-            var raw = localStorage.getItem(COLLECTIONS_KEY);
+            var raw = localStorage.getItem(wsKey(COLLECTIONS_KEY));
             var list = raw ? JSON.parse(raw) : [];
             return Array.isArray(list) ? list : [];
         } catch { return []; }
@@ -1297,7 +1348,7 @@
             .then(function (data) {
                 if (data && Array.isArray(data.collections)) {
                     collectionsList = data.collections;
-                    try { localStorage.setItem(COLLECTIONS_KEY, JSON.stringify(collectionsList)); } catch { /* ignore */ }
+                    try { localStorage.setItem(wsKey(COLLECTIONS_KEY), JSON.stringify(collectionsList)); } catch { /* ignore */ }
                 } else {
                     collectionsList = loadCollections();
                 }
@@ -1309,7 +1360,7 @@
 
     function persistCollections() {
         try {
-            localStorage.setItem(COLLECTIONS_KEY, JSON.stringify(collectionsList));
+            localStorage.setItem(wsKey(COLLECTIONS_KEY), JSON.stringify(collectionsList));
             markSaved('collections');
         } catch (e) { markSaveFailed('collections', e); }
         scheduleCollectionsDiskSync();

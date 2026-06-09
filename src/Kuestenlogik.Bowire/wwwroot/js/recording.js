@@ -21,7 +21,7 @@
 
     function loadRecordings() {
         try {
-            var raw = localStorage.getItem(RECORDINGS_KEY);
+            var raw = localStorage.getItem(wsKey(RECORDINGS_KEY));
             var list = raw ? JSON.parse(raw) : [];
             return Array.isArray(list) ? list : [];
         } catch {
@@ -31,7 +31,7 @@
 
     function persistRecordings() {
         try {
-            localStorage.setItem(RECORDINGS_KEY, JSON.stringify(recordingsList));
+            localStorage.setItem(wsKey(RECORDINGS_KEY), JSON.stringify(recordingsList));
         } catch { /* localStorage full / disabled — fall through */ }
         scheduleRecordingsDiskSync();
     }
@@ -61,7 +61,7 @@
             .then(function (data) {
                 if (data && Array.isArray(data.recordings)) {
                     recordingsList = data.recordings;
-                    try { localStorage.setItem(RECORDINGS_KEY, JSON.stringify(recordingsList)); } catch { /* ignore */ }
+                    try { localStorage.setItem(wsKey(RECORDINGS_KEY), JSON.stringify(recordingsList)); } catch { /* ignore */ }
                 } else {
                     recordingsList = loadRecordings();
                 }
