@@ -410,7 +410,16 @@
         var envs = getEnvironments();
         var activeId = getActiveEnvId();
         var isGlobals = envSidebarSelectedId === '__globals__';
-        var selectedEnv = isGlobals ? null : envs.find(function (e) { return e.id === envSidebarSelectedId; });
+        // Resolve from the SHARED env store (not the workspace-
+        // filtered subset) so excluded-but-selectable envs still
+        // render in the right pane when the operator picks one
+        // for inclusion via the checkbox. Falls back to the
+        // filtered list when the shared lookup isn't available.
+        var allEnvs = (typeof getAllSharedEnvironments === 'function') ? getAllSharedEnvironments() : envs;
+        var selectedEnv = isGlobals
+            ? null
+            : (allEnvs.find(function (e) { return e.id === envSidebarSelectedId; })
+               || envs.find(function (e) { return e.id === envSidebarSelectedId; }));
         // ID includes the selected env AND the active tab so morphdom
         // fully replaces the editor when switching between environments
         // or tabs instead of reusing the old DOM with stale closures.
@@ -919,6 +928,162 @@
         return main;
     }
 
+    // #152 — Sources rail-mode main pane. Right-hand detail view
+    // for the selected URL: status header + discovery summary +
+    // headers (placeholder) + schema imports (placeholder) +
+    // delete action. Subsequent commits flesh out the headers /
+    // schema sections; v1 focuses on the consolidated surface.
+    function renderSourcesDetailMain() {
+        var main = el('div', { id: 'bowire-main-sources', className: 'bowire-main bowire-main-workspaces' });
+
+        if (!serverUrls || serverUrls.length === 0) {
+            main.appendChild(el('p', {
+                className: 'bowire-ai-empty',
+                style: 'padding:24px',
+                textContent: 'No URLs configured yet. Add one via the + button in the sidebar to start discovery.'
+            }));
+            return main;
+        }
+        if (!sourcesSelectedUrl || serverUrls.indexOf(sourcesSelectedUrl) < 0) {
+            sourcesSelectedUrl = serverUrls[0];
+        }
+        var u = sourcesSelectedUrl;
+        var status = (typeof connectionStatuses === 'object' && connectionStatuses)
+            ? (connectionStatuses[u] || 'disconnected') : 'disconnected';
+        var statusLabel = status === 'connected' ? 'Connected'
+                        : status === 'disconnected' ? 'Disconnected'
+                        : status === 'discovering' ? 'Discovering' : status;
+        var svcList = (typeof services !== 'undefined')
+            ? services.filter(function (s) { return s.originUrl === u; }) : [];
+        var protoCounts = {};
+        for (var i = 0; i < svcList.length; i++) {
+            var proto = svcList[i].source || 'unknown';
+            protoCounts[proto] = (protoCounts[proto] || 0) + 1;
+        }
+        var methodN = svcList.reduce(function (n, s) { return n + ((s.methods && s.methods.length) || 0); }, 0);
+
+        var header = el('div', { className: 'bowire-ws-detail-header' },
+            el('span', {
+                className: 'bowire-conn-pill-dot bowire-conn-pill-dot-' + status,
+                style: 'width:20px;height:20px;border-radius:50%;flex-shrink:0;'
+            }),
+            el('input', {
+                type: 'text',
+                className: 'bowire-ws-detail-name',
+                value: u,
+                'aria-label': 'URL',
+                readonly: !!config.lockServerUrl,
+                onChange: function (e) {
+                    var v = String(e.target.value || '').trim();
+                    if (!v || v === u) return;
+                    var idx = serverUrls.indexOf(u);
+                    if (idx < 0) return;
+                    serverUrls[idx] = v;
+                    sourcesSelectedUrl = v;
+                    if (typeof persistServerUrls === 'function') persistServerUrls();
+                    if (typeof onServerUrlChanged === 'function') onServerUrlChanged();
+                    render();
+                }
+            }),
+            el('span', { className: 'bowire-ws-detail-badge', textContent: statusLabel })
+        );
+        main.appendChild(header);
+
+        main.appendChild(el('div', { className: 'bowire-ws-detail-section' },
+            el('div', { className: 'bowire-ws-detail-section-label', textContent: 'Discovery' }),
+            el('div', { className: 'bowire-ws-detail-stats' },
+                el('div', { className: 'bowire-ws-detail-stat' },
+                    el('div', { className: 'bowire-ws-detail-stat-value', textContent: String(svcList.length) }),
+                    el('div', { className: 'bowire-ws-detail-stat-label', textContent: 'Services' })
+                ),
+                el('div', { className: 'bowire-ws-detail-stat' },
+                    el('div', { className: 'bowire-ws-detail-stat-value', textContent: String(methodN) }),
+                    el('div', { className: 'bowire-ws-detail-stat-label', textContent: 'Methods' })
+                ),
+                el('div', { className: 'bowire-ws-detail-stat' },
+                    el('div', { className: 'bowire-ws-detail-stat-value', textContent: String(Object.keys(protoCounts).length || '—') }),
+                    el('div', { className: 'bowire-ws-detail-stat-label', textContent: 'Protocols' }),
+                    el('div', { className: 'bowire-ws-detail-stat-hint', textContent: Object.keys(protoCounts).join(', ') || 'no protocols detected' })
+                )
+            )
+        ));
+
+        var actions = el('div', { className: 'bowire-ws-detail-section' },
+            el('div', { className: 'bowire-ws-detail-section-label', textContent: 'Actions' }),
+            el('div', { style: 'display:flex; gap:8px; flex-wrap:wrap;' },
+                el('button', {
+                    className: 'bowire-settings-action-btn',
+                    textContent: 'Refresh discovery',
+                    onClick: function () {
+                        if (typeof refreshServices === 'function') refreshServices(u);
+                        else if (typeof onServerUrlChanged === 'function') onServerUrlChanged();
+                    }
+                }),
+                el('button', {
+                    className: 'bowire-settings-action-btn',
+                    textContent: 'Open in Discover',
+                    onClick: function () {
+                        railMode = 'discover';
+                        sidebarView = 'services';
+                        try { localStorage.setItem('bowire_rail_mode', 'discover'); } catch { /* ignore */ }
+                        render();
+                    }
+                })
+            )
+        );
+        main.appendChild(actions);
+
+        // Schema-file management + per-URL headers are placeholders for
+        // the next pass — drop zone + key/value editor land in
+        // follow-ups so this rail mode ships in a usable state today.
+        main.appendChild(el('div', { className: 'bowire-ws-detail-section' },
+            el('div', { className: 'bowire-ws-detail-section-label', textContent: 'Schema files' }),
+            el('p', {
+                className: 'bowire-sources-hint',
+                style: 'color:var(--bowire-text-tertiary); font-size:12px;',
+                textContent: 'Drop-zone + Replace / Remove actions land in #152 follow-up.'
+            })
+        ));
+        main.appendChild(el('div', { className: 'bowire-ws-detail-section' },
+            el('div', { className: 'bowire-ws-detail-section-label', textContent: 'Per-URL headers' }),
+            el('p', {
+                className: 'bowire-sources-hint',
+                style: 'color:var(--bowire-text-tertiary); font-size:12px;',
+                textContent: 'Composes with #95 Header Library. Editor lands in the follow-up.'
+            })
+        ));
+
+        if (!config.lockServerUrl && serverUrls.length > 1) {
+            main.appendChild(el('div', { className: 'bowire-ws-detail-section bowire-ws-detail-danger' },
+                el('div', { className: 'bowire-ws-detail-section-label', textContent: 'Danger zone' }),
+                el('button', {
+                    className: 'bowire-settings-action-btn bowire-ws-detail-delete-btn',
+                    textContent: 'Remove this URL',
+                    onClick: function () {
+                        var snapshot = u;
+                        bowireConfirm(
+                            'Remove "' + snapshot + '" from the workspace? Discovered services for this URL are dropped from the in-memory cache.',
+                            function () {
+                                if (typeof removeServerUrl === 'function') removeServerUrl(snapshot);
+                                else {
+                                    var ri = serverUrls.indexOf(snapshot);
+                                    if (ri >= 0) serverUrls.splice(ri, 1);
+                                    if (typeof persistServerUrls === 'function') persistServerUrls();
+                                }
+                                if (sourcesSelectedUrl === snapshot) sourcesSelectedUrl = serverUrls[0] || null;
+                                if (typeof onServerUrlChanged === 'function') onServerUrlChanged();
+                                render();
+                            },
+                            { title: 'Remove URL', confirmText: 'Remove', danger: true }
+                        );
+                    }
+                })
+            ));
+        }
+
+        return main;
+    }
+
     // #139 — Home tile (favorite or recent entry). Resolves the
     // service + method from the live discovery list so the tile
     // shows method type + protocol icon when available, and
@@ -1273,6 +1438,10 @@
         // from the same screen without losing the security view.
         if (railMode === 'workspaces') {
             return renderWorkspaceDetailMain();
+        }
+
+        if (railMode === 'sources') {
+            return renderSourcesDetailMain();
         }
 
         if (railMode === 'security') {

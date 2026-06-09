@@ -294,6 +294,8 @@
     let workspaceMenuOpen = false;
     // #116 — selected workspace in the rail-mode detail view.
     let workspacesSelectedId = null;
+    // #152 — selected URL in the Sources rail-mode detail view.
+    let sourcesSelectedUrl = null;
 
     // #143 Phase 2 — Trash-store per list. localStorage-persisted
     // so a missed Undo toast isn't a permanent loss. Each entry

@@ -722,6 +722,7 @@
     //   'proxy'        → legacy proxy sidebar via sidebarView='proxy'
     var _railModes = [
         { id: 'home',         icon: 'house',     label: 'Home',              group: 'work',      wired: true,  sidebar: { kind: 'none' } },
+        { id: 'sources',      icon: 'plug',      label: 'Sources',           group: 'work',      wired: true,  sidebar: { kind: 'sources' } },
         { id: 'discover',     icon: 'compass',   label: 'Discover',          group: 'work',      wired: true,  sidebar: { kind: 'services' } },
         { id: 'collections',  icon: 'folder',    label: 'Collections',       group: 'work',      wired: true,  sidebar: { kind: 'collections' } },
         { id: 'environments', icon: 'globe',     label: 'Environments',      group: 'work',      wired: true,  sidebar: { kind: 'environments' } },
@@ -1094,6 +1095,123 @@
             nameOf: function (e) { return e && e.name ? e.name : '(unnamed recording)'; }
         }));
 
+        return sidebar;
+    }
+
+    // #152 — Sources rail mode sidebar. Lists every configured
+    // discovery URL as a clickable row; the right pane shows the
+    // selected URL's discovery state + headers + schema imports.
+    function renderSourcesSidebar() {
+        var sidebar = el('div', { id: 'bowire-sidebar', className: 'bowire-sidebar bowire-sidebar-mode' });
+
+        var header = el('div', { className: 'bowire-env-list-header' },
+            el('span', { textContent: 'Sources' }),
+            !config.lockServerUrl ? el('button', {
+                className: 'bowire-env-add-btn',
+                title: 'Add a discovery URL',
+                'aria-label': 'Add URL',
+                innerHTML: svgIcon('plus'),
+                onClick: function () {
+                    bowirePrompt('Add discovery URL', {
+                        title: 'New source',
+                        placeholder: 'rest@https://… / graphql@…  or plain https://…',
+                        confirmText: 'Add',
+                    }).then(function (raw) {
+                        if (!raw) return;
+                        if (typeof addServerUrl === 'function') addServerUrl(raw);
+                        else if (typeof serverUrls !== 'undefined' && serverUrls.indexOf(raw) < 0) {
+                            serverUrls.push(raw);
+                            if (typeof persistServerUrls === 'function') persistServerUrls();
+                        }
+                        sourcesSelectedUrl = raw;
+                        if (typeof onServerUrlChanged === 'function') onServerUrlChanged();
+                        render();
+                    });
+                }
+            }) : null
+        );
+        sidebar.appendChild(header);
+
+        if (!serverUrls || serverUrls.length === 0) {
+            var emptyHost = el('div', { style: 'padding:12px' });
+            emptyHost.appendChild(renderEmptyCard({
+                icon: 'plug',
+                headline: 'No URLs yet',
+                body: 'Add a discovery URL to start exploring. Prefix with rest@, graphql@, grpc@ if the protocol isn’t obvious from the host.',
+                actions: !config.lockServerUrl ? [
+                    {
+                        label: 'Add URL',
+                        primary: true,
+                        onClick: function () {
+                            bowirePrompt('Add discovery URL', {
+                                title: 'New source',
+                                placeholder: 'rest@https://… / graphql@…',
+                                confirmText: 'Add',
+                            }).then(function (raw) {
+                                if (!raw) return;
+                                if (typeof addServerUrl === 'function') addServerUrl(raw);
+                                else { serverUrls.push(raw); if (typeof persistServerUrls === 'function') persistServerUrls(); }
+                                sourcesSelectedUrl = raw;
+                                if (typeof onServerUrlChanged === 'function') onServerUrlChanged();
+                                render();
+                            });
+                        }
+                    }
+                ] : null
+            }));
+            sidebar.appendChild(emptyHost);
+            return sidebar;
+        }
+
+        if (!sourcesSelectedUrl || serverUrls.indexOf(sourcesSelectedUrl) < 0) {
+            sourcesSelectedUrl = serverUrls[0];
+        }
+        var list = el('div', { id: 'bowire-sources-list', className: 'bowire-env-list' });
+        serverUrls.forEach(function (u, idx) {
+            var isSelected = u === sourcesSelectedUrl;
+            var status = (typeof connectionStatuses === 'object' && connectionStatuses)
+                ? (connectionStatuses[u] || 'disconnected') : 'disconnected';
+            var svcN = (typeof services !== 'undefined')
+                ? services.filter(function (s) { return s.originUrl === u; }).length : 0;
+            // Short label = host + path (truncated). Full URL on the
+            // title attribute for hover.
+            var displayLabel = u.replace(/^([a-z]+@)/, ''); // strip protocol prefix
+            var row = el('div', {
+                id: 'bowire-src-row-' + idx,
+                className: 'bowire-env-list-item' + (isSelected ? ' selected' : ''),
+                title: u,
+                onClick: function () { sourcesSelectedUrl = u; render(); }
+            },
+                el('span', {
+                    className: 'bowire-conn-pill-dot bowire-conn-pill-dot-' + status,
+                    style: 'width:8px;height:8px;border-radius:50%;flex-shrink:0;'
+                }),
+                el('span', { className: 'bowire-env-list-item-name', textContent: displayLabel }),
+                el('span', { style: 'flex:1' }),
+                el('span', { className: 'bowire-env-list-item-meta', textContent: svcN + ' svc' + (svcN === 1 ? '' : 's') }),
+                !config.lockServerUrl ? el('button', {
+                    type: 'button',
+                    className: 'bowire-list-row-delete',
+                    title: 'Remove URL',
+                    'aria-label': 'Remove URL',
+                    innerHTML: svgIcon('trash'),
+                    onClick: function (e) {
+                        e.stopPropagation();
+                        if (typeof removeServerUrl === 'function') removeServerUrl(u);
+                        else {
+                            var ri = serverUrls.indexOf(u);
+                            if (ri >= 0) serverUrls.splice(ri, 1);
+                            if (typeof persistServerUrls === 'function') persistServerUrls();
+                        }
+                        if (sourcesSelectedUrl === u) sourcesSelectedUrl = serverUrls[0] || null;
+                        if (typeof onServerUrlChanged === 'function') onServerUrlChanged();
+                        render();
+                    }
+                }) : null
+            );
+            list.appendChild(row);
+        });
+        sidebar.appendChild(list);
         return sidebar;
     }
 
@@ -1600,6 +1718,7 @@
             case 'recordings':   return renderRecordingsSidebar();
             case 'mocks':        return renderMocksSidebar();
             case 'workspaces':   return renderWorkspacesSidebar();
+            case 'sources':      return renderSourcesSidebar();
             // 'flows', 'proxy', 'services' fall through to the legacy
             // sidebar below (built from the discover service tree).
             // Their main pane reads sidebarView, which the rail-button
