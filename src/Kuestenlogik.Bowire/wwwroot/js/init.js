@@ -143,6 +143,12 @@
 
             // Esc: close overlay, stop streaming, or disconnect channel
             if (e.key === 'Escape') {
+                if (searchSuggestionsOpen) {
+                    searchSuggestionsOpen = false;
+                    searchQuery = '';
+                    render();
+                    return;
+                }
                 if (topbarOverflowOpen) {
                     topbarOverflowOpen = false;
                     render();
