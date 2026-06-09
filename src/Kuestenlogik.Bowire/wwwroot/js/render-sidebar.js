@@ -644,17 +644,21 @@
     // every other icon toasts 'coming soon' on click until its mode-
     // specific sidebar template lands in Phase 2-4.
     function renderActivityRail() {
+        // Mode catalogue. `wired: false` is a temporary marker for
+        // modes whose sidebar template + main-pane home haven't
+        // landed yet; clicking shows a 'coming soon' toast instead
+        // of switching. Drops off the moment every mode is wired.
         var modes = [
-            { id: 'home',       icon: 'house',     label: 'Home',              group: 'work' },
-            { id: 'discover',   icon: 'compass',   label: 'Discover',          group: 'work' },
-            { id: 'environments', icon: 'globe',   label: 'Environments',      group: 'work' },
-            { id: 'recordings', icon: 'recording', label: 'Recordings',        group: 'scenarios' },
-            { id: 'mocks',      icon: 'server',    label: 'Mocks',             group: 'scenarios' },
-            { id: 'flows',      icon: 'flow',      label: 'Flows',             group: 'scenarios' },
-            { id: 'proxy',      icon: 'disconnect',label: 'Proxy / MITM',      group: 'quality' },
-            { id: 'benchmarks', icon: 'chart',     label: 'Benchmarks',        group: 'quality' },
-            { id: 'parallel',   icon: 'lightning', label: 'Parallel sessions', group: 'quality' },
-            { id: 'security',   icon: 'shield',    label: 'Security',          group: 'hardening' },
+            { id: 'home',         icon: 'house',     label: 'Home',              group: 'work',      wired: true },
+            { id: 'discover',     icon: 'compass',   label: 'Discover',          group: 'work',      wired: true },
+            { id: 'environments', icon: 'globe',     label: 'Environments',      group: 'work',      wired: true },
+            { id: 'recordings',   icon: 'recording', label: 'Recordings',        group: 'scenarios', wired: true },
+            { id: 'mocks',        icon: 'server',    label: 'Mocks',             group: 'scenarios', wired: false },
+            { id: 'flows',        icon: 'flow',      label: 'Flows',             group: 'scenarios', wired: false },
+            { id: 'proxy',        icon: 'disconnect',label: 'Proxy / MITM',      group: 'quality',   wired: false },
+            { id: 'benchmarks',   icon: 'chart',     label: 'Benchmarks',        group: 'quality',   wired: false },
+            { id: 'parallel',     icon: 'lightning', label: 'Parallel sessions', group: 'quality',   wired: false },
+            { id: 'security',     icon: 'shield',    label: 'Security',          group: 'hardening', wired: true },
         ];
 
         var rail = el('div', { id: 'bowire-activity-rail', className: 'bowire-activity-rail' });
@@ -676,14 +680,7 @@
             lastGroup = m.group;
             var isActive = railMode === m.id;
             // Modes wired so far. Phase 1 shipped just Discover;
-            // Phase 2 wires Security + Environments. Environments
-            // mode lands the operator on the existing full-width
-            // env editor in the main pane; sidebar list of envs
-            // stays the same.
-            var isWired = m.id === 'home'
-                       || m.id === 'discover'
-                       || m.id === 'security'
-                       || m.id === 'environments';
+            var isWired = m.wired !== false;
             rail.appendChild(el('button', {
                 type: 'button',
                 className: 'bowire-rail-btn' + (isActive ? ' active' : '') + (isWired ? '' : ' bowire-rail-btn-stub'),
@@ -741,7 +738,88 @@
         return rail;
     }
 
+    // #133 Phase 2 — Recordings rail mode sidebar. Lists every
+    // recorded session as a clickable row; selecting one swaps the
+    // main pane to its detail (steps + actions toolbar). Replaces
+    // the manager-modal entry path for users on the recordings
+    // mode. The legacy modal still works for users still on
+    // Discover (#56 — kept for backward muscle memory; deprecated
+    // in Phase 3).
+    function renderRecordingsSidebar() {
+        var sidebar = el('div', { id: 'bowire-sidebar', className: 'bowire-sidebar bowire-sidebar-mode' });
+
+        // Header — same shape as the recordings modal's left header
+        // (title + start/stop record button), but living in the
+        // sidebar context.
+        var header = el('div', { className: 'bowire-env-list-header' },
+            el('span', { textContent: 'Recordings' }),
+            el('button', {
+                className: 'bowire-env-add-btn',
+                title: isRecording() ? 'Stop the current recording' : 'Start a new recording',
+                'aria-label': isRecording() ? 'Stop recording' : 'Start recording',
+                innerHTML: svgIcon(isRecording() ? 'square' : 'record'),
+                onClick: function () {
+                    if (isRecording()) {
+                        stopRecording();
+                    } else {
+                        startRecording();
+                    }
+                    if (recordingActiveId) recordingManagerSelectedId = recordingActiveId;
+                    render();
+                }
+            })
+        );
+        sidebar.appendChild(header);
+
+        // List
+        if (recordingsList.length === 0) {
+            var emptyHost = el('div', { className: 'bowire-recordings-sidebar-empty', style: 'padding:12px' });
+            emptyHost.appendChild(renderEmptyCard({
+                icon: 'recording',
+                headline: 'No recordings yet',
+                body: 'Recordings capture a sequence of calls verbatim. Start one to begin.',
+                actions: [
+                    {
+                        label: 'Start recording',
+                        primary: true,
+                        onClick: function () { startRecording(); render(); }
+                    }
+                ]
+            }));
+            sidebar.appendChild(emptyHost);
+        } else {
+            var list = el('div', { className: 'bowire-env-list' });
+            recordingsList.forEach(function (rec) {
+                var isActive = recordingManagerSelectedId === rec.id;
+                var row = el('div', {
+                    className: 'bowire-env-list-item' + (isActive ? ' active' : ''),
+                    onClick: function () {
+                        recordingManagerSelectedId = rec.id;
+                        render();
+                    }
+                });
+                row.appendChild(el('div', { className: 'bowire-env-list-item-name', textContent: rec.name }));
+                row.appendChild(el('div', {
+                    className: 'bowire-env-list-item-meta',
+                    textContent: (rec.steps ? rec.steps.length : 0) + ' step' + ((rec.steps && rec.steps.length === 1) ? '' : 's')
+                        + (rec.id === recordingActiveId ? ' · ● recording' : '')
+                }));
+                list.appendChild(row);
+            });
+            sidebar.appendChild(list);
+        }
+
+        return sidebar;
+    }
+
     function renderSidebar() {
+        // #133 Phase 2 — rail-mode routing. Modes that have their
+        // own sidebar template render it here; everything else
+        // falls through to the legacy Discover sidebar.
+        if (railMode === 'recordings') {
+            return renderRecordingsSidebar();
+        }
+
         // Each top-level child of the sidebar gets a stable id so morphdom
         // matches them by key instead of by position. Without ids, morphdom
         // slides the old nodes rightward when a view switch changes the
