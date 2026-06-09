@@ -443,6 +443,26 @@
         // maintainer call; env selector moved back to the topbar
         // so the editor-context switch lives next to navigation.
         var right = el('div', { className: 'bowire-statusbar-right' });
+        // #135 split-toggle. Cycles horizontal ↔ vertical. Icon
+        // shows the CURRENT layout (state-pattern, matches how
+        // browser-engine toggles work) — click flips. Reflowing the
+        // content + persisting happens in the onClick.
+        right.appendChild(el('button', {
+            id: 'bowire-split-toggle-btn',
+            className: 'bowire-theme-toggle-btn',
+            title: splitMode === 'vertical'
+                ? 'Vertical split — click to switch to horizontal (Ctrl/Cmd+Alt+\\)'
+                : 'Horizontal split — click to switch to vertical (Ctrl/Cmd+Alt+\\)',
+            'aria-label': 'Toggle split orientation',
+            onClick: function () {
+                splitMode = splitMode === 'horizontal' ? 'vertical' : 'horizontal';
+                try { localStorage.setItem('bowire_split_mode', splitMode); } catch { /* ignore */ }
+                render();
+            }
+        }, el('span', {
+            innerHTML: svgIcon(splitMode === 'vertical' ? 'splitVertical' : 'splitHorizontal'),
+            style: 'width:14px;height:14px;display:flex'
+        }));
         if (typeof renderWatchButton === 'function') {
             var wb = renderWatchButton();
             if (wb) right.appendChild(wb);

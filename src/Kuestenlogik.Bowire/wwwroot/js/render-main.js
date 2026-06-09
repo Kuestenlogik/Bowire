@@ -1369,8 +1369,14 @@
             return main;
         }
 
-        // Content area: request + response panes
-        const content = el('div', { className: 'bowire-content bowire-content-enter' });
+        // Content area: request + response panes. #135 split-mode
+        // attribute drives whether the two panes sit side-by-side
+        // (horizontal) or stacked (vertical) — CSS rules below the
+        // attribute selector flip the flex-direction.
+        const content = el('div', {
+            className: 'bowire-content bowire-content-enter',
+            'data-split': splitMode,
+        });
         var reqPane = renderRequestPane();
         var resPane = renderResponsePane();
         var divider = el('div', { className: 'bowire-pane-divider' });

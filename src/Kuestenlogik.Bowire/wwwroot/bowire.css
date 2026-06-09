@@ -3210,6 +3210,24 @@ img.bowire-logo-icon {
     border-left: 1px solid var(--bowire-border);
 }
 
+/* #135 — vertical split: stack request on top, response below.
+   Drop the inter-pane left-border (horizontal-mode separator) +
+   add a top border on the response so the two panes still read
+   as distinct surfaces. Pane divider becomes a horizontal bar
+   instead of a vertical one. */
+.bowire-content[data-split="vertical"] {
+    flex-direction: column;
+}
+.bowire-content[data-split="vertical"] .bowire-pane + .bowire-pane {
+    border-left: 0;
+    border-top: 1px solid var(--bowire-border);
+}
+.bowire-content[data-split="vertical"] .bowire-pane-divider {
+    width: 100%;
+    height: 6px;
+    cursor: row-resize;
+}
+
 .bowire-pane-header {
     display: flex;
     align-items: center;

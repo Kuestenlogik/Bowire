@@ -46,6 +46,18 @@
                 return;
             }
 
+            // Ctrl/Cmd+Alt+\ — toggle the request/response split
+            // orientation (#135). Browser-style: '\' lives on the
+            // same key as '|' on US/EU keyboards, mirrors the
+            // 'split editor' chord most editors use.
+            if ((e.ctrlKey || e.metaKey) && e.altKey && e.key === '\\') {
+                e.preventDefault();
+                splitMode = splitMode === 'horizontal' ? 'vertical' : 'horizontal';
+                try { localStorage.setItem('bowire_split_mode', splitMode); } catch { /* ignore */ }
+                render();
+                return;
+            }
+
             // Ctrl/Cmd+Shift+S — toggle the Security drawer (#111).
             // Paired with the AI shortcut for muscle-memory consistency.
             if ((e.ctrlKey || e.metaKey) && e.shiftKey

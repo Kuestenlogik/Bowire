@@ -303,6 +303,20 @@
     // re-derived from the live mocksList every render so a stopped
     // mock automatically deselects.
     let mockSelectedId = null;
+
+    // #135 — request/response split orientation. 'horizontal' (today's
+    // default) renders the two panes side-by-side; 'vertical' stacks
+    // them (request on top, response below). Persisted globally for
+    // now; per-tab persistence lands in a follow-up. Validate against
+    // the known values so a stale localStorage entry from a previous
+    // version doesn't break rendering.
+    let splitMode = 'horizontal';
+    try {
+        var storedSplit = localStorage.getItem('bowire_split_mode');
+        if (storedSplit === 'vertical' || storedSplit === 'horizontal') {
+            splitMode = storedSplit;
+        }
+    } catch { /* ignore */ }
     let activeRequestTab = 'body';
     // Sub-tab within the Body tab. For GraphQL methods the Body tab
     // composes from three surfaces (Query / Variables form / Selection
