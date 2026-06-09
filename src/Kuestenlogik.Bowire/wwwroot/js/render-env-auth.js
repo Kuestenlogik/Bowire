@@ -340,11 +340,10 @@
             className: 'bowire-conn-pill bowire-conn-pill-' + aggregate + ' bowire-conn-pill-clickable',
             title: 'Click to manage URLs and schemas',
             onClick: function () {
-                if (sidebarView === 'sources') {
-                    sidebarView = 'services';
-                } else {
-                    sidebarView = 'sources';
-                }
+                // #152 — pill now routes to the Sources rail mode;
+                // legacy sidebarView='sources' shim retired.
+                railMode = 'sources';
+                try { localStorage.setItem('bowire_rail_mode', 'sources'); } catch { /* ignore */ }
                 render();
             }
         });
