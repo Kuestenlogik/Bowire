@@ -85,6 +85,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 - [#132](https://github.com/Kuestenlogik/Bowire/issues/132) **Parallel sessions for recordings / collections (phase 1 local, phase 2 distributed)** 
 - [#133](https://github.com/Kuestenlogik/Bowire/issues/133) **Activity rail (left) — switch workbench focus by use case (dev / security / perf / mocks / …)** 
 - [#134](https://github.com/Kuestenlogik/Bowire/issues/134) **Rename surface 'AI' → 'Assistant' (technology stays; user-facing labels shift)** 
+- [#135](https://github.com/Kuestenlogik/Bowire/issues/135) **Request/response layout toggle — vertical / horizontal / auto split** 
 
 ---
 
