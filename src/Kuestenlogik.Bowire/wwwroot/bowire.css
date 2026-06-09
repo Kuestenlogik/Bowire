@@ -253,19 +253,14 @@ body {
     font-size: 14px;
     line-height: 1.5;
     color: var(--bowire-text);
-    /* Mesh-gradient body background — radial accent-glow top-left
-       plus a warmer secondary hue bottom-right, both at low opacity.
-       The gradient sits behind the topbar so its backdrop-filter has
-       chromatic data to blur — without this, the glass would read
-       as flat-tinted, not actual material. background-attachment:
-       fixed keeps the glow anchored to the viewport when content
-       scrolls, so the gradient feels like ambient lighting on the
-       window, not a pattern that moves with the page. */
-    background:
-        radial-gradient(ellipse 800px 600px at 20% 10%, var(--bowire-accent-glow), transparent 60%),
-        radial-gradient(ellipse 600px 800px at 95% 90%, rgba(255, 110, 200, 0.10), transparent 60%),
-        var(--bowire-bg);
-    background-attachment: fixed;
+    /* #129 — single-tone surface. The previous mesh-gradient added
+       ambient noise behind every pane, which competed with the data
+       the operator was actually looking at. A flat bg lets the
+       protocol colors (#120) and direction tints (#122) carry the
+       only chromatic load. Glass-material effects on the topbar
+       still work — the flat surface gives the backdrop-filter blur
+       a clean baseline. */
+    background: var(--bowire-bg);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
 }
@@ -528,6 +523,68 @@ body {
     padding: 0;
     background: transparent;
     margin: 0;
+}
+
+/* #129 — topbar groups. Each group reads as one cohesive cluster;
+   visual dividers between groups reinforce the "three clusters,
+   not eight buttons" intent. */
+.bowire-topbar-group {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0;
+    position: relative;
+}
+.bowire-topbar-group + .bowire-topbar-group {
+    margin-left: 4px;
+    padding-left: 12px;
+    border-left: 1px solid var(--bowire-border-subtle);
+}
+.bowire-topbar-right > .bowire-topbar-overflow-btn {
+    margin-left: 4px;
+    padding-left: 12px;
+    border-left: 1px solid var(--bowire-border-subtle);
+    border-radius: 0;
+    padding-right: 4px;
+}
+.bowire-overflow-glyph {
+    font-size: 18px;
+    line-height: 1;
+    font-weight: 700;
+    letter-spacing: -0.05em;
+}
+.bowire-topbar-overflow-btn.active {
+    color: var(--bowire-text);
+    background: var(--bowire-surface-hover);
+}
+
+/* Overflow menu — anchored top-right under the ⋮ button. Single
+   column, generous row height for hit target, no decoration. */
+.bowire-topbar-overflow-menu {
+    position: absolute;
+    top: calc(100% + 6px);
+    right: 8px;
+    min-width: 200px;
+    background: var(--bowire-bg-elevated);
+    border: 1px solid var(--bowire-border);
+    border-radius: var(--bowire-radius-md);
+    box-shadow: var(--bowire-shadow-md);
+    z-index: 1000;
+    padding: 4px;
+}
+.bowire-topbar-overflow-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    border-radius: var(--bowire-radius-sm);
+    cursor: pointer;
+    color: var(--bowire-text);
+    font-size: 13px;
+    transition: background var(--bowire-transition);
+}
+.bowire-topbar-overflow-item:hover {
+    background: var(--bowire-surface-hover);
 }
 
 .bowire-theme-toggle-btn {

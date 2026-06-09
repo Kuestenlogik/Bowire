@@ -750,15 +750,66 @@
             })
         );
 
+        // #129 — top-bar density discipline. Theme / About / Settings /
+        // Watch collapse behind a single ⋮ overflow menu so the right
+        // cluster reads as "connection context · drawer toggles ·
+        // overflow" instead of "8 individual buttons". High-frequency
+        // affordances (AI + Security drawer toggles) stay visible;
+        // low-frequency ones (theme cycle, about, settings) hide
+        // behind the overflow.
+        var overflowBtn = el('button', {
+            id: 'bowire-topbar-overflow',
+            className: 'bowire-theme-toggle-btn bowire-topbar-overflow-btn'
+                + (topbarOverflowOpen ? ' active' : ''),
+            title: 'More',
+            'aria-label': 'More',
+            onClick: function () {
+                topbarOverflowOpen = !topbarOverflowOpen;
+                render();
+            }
+        }, el('span', {
+            className: 'bowire-overflow-glyph',
+            textContent: '⋮'
+        }));
+
         var right = el('div', { id: 'bowire-topbar-right', className: 'bowire-topbar-right' },
-            renderConnectionPill(),
-            renderEnvSelector(),
-            watchBtn,
-            renderThemeToggle(),
-            aiToggleBtn,
-            securityToggleBtn,
-            aboutBtn,
-            settingsBtn
+            // Connection-context group (pill + env selector + watch
+            // sit together because they all describe "what am I
+            // connected to right now").
+            el('div', { className: 'bowire-topbar-group bowire-topbar-context' },
+                renderConnectionPill(),
+                renderEnvSelector(),
+                watchBtn,
+            ),
+            // Drawer-toggle group.
+            el('div', { className: 'bowire-topbar-group bowire-topbar-drawers' },
+                aiToggleBtn,
+                securityToggleBtn,
+            ),
+            // Overflow.
+            overflowBtn,
+            // The overflow popover renders next to the overflow button
+            // when open. Anchors to the topbar via fixed position +
+            // computed right offset; closing happens via re-click,
+            // Esc, or click-outside (handled in init.js's keydown +
+            // pointerdown listeners).
+            topbarOverflowOpen ? el('div', {
+                className: 'bowire-topbar-overflow-menu',
+                onClick: function (e) { e.stopPropagation(); }
+            },
+                el('div', {
+                    className: 'bowire-topbar-overflow-item',
+                    onClick: function () { topbarOverflowOpen = false; render(); cycleTheme(); }
+                }, el('span', { textContent: 'Theme' })),
+                el('div', {
+                    className: 'bowire-topbar-overflow-item',
+                    onClick: function () { topbarOverflowOpen = false; openAbout(); render(); }
+                }, el('span', { textContent: 'About Bowire' })),
+                el('div', {
+                    className: 'bowire-topbar-overflow-item',
+                    onClick: function () { topbarOverflowOpen = false; openSettings(); render(); }
+                }, el('span', { textContent: 'Settings' })),
+            ) : null
         );
         bar.appendChild(right);
 
@@ -775,6 +826,18 @@
     // compute `next = "light"`, so light → dark would silently no-op.
     // Reading the state at click time works regardless of how many
     // times the DOM has been re-diffed underneath us.
+    // #129 — shared theme cycle so the overflow menu (and any future
+    // caller) can advance the theme without rendering the visible
+    // toggle button. Same auto → dark → light → auto rotation as the
+    // toggle's onClick.
+    function cycleTheme() {
+        var cur = themePreference;
+        var next = cur === 'auto' ? 'dark'
+                 : cur === 'dark' ? 'light'
+                 : 'auto';
+        setThemePreference(next);
+    }
+
     function renderThemeToggle() {
         var pref = themePreference;
         var iconName;
