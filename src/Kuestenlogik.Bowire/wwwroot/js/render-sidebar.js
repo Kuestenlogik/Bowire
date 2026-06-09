@@ -810,10 +810,16 @@
             }));
             sidebar.appendChild(emptyHost);
         } else {
-            var list = el('div', { className: 'bowire-env-list' });
+            var list = el('div', { id: 'bowire-recordings-list', className: 'bowire-env-list' });
             recordingsList.forEach(function (rec) {
                 var isActive = recordingManagerSelectedId === rec.id;
+                // Stable per-recording id so morphdom keys the row by
+                // recording instead of by position. Without the id,
+                // the topmost row was inheriting a stale onClick
+                // closure from a previous render (or a previous
+                // mode's first list item) and the click went nowhere.
                 var row = el('div', {
+                    id: 'bowire-rec-row-' + rec.id,
                     className: 'bowire-env-list-item' + (isActive ? ' active' : ''),
                     onClick: function () {
                         recordingManagerSelectedId = rec.id;
@@ -913,10 +919,14 @@
             }));
             sidebar.appendChild(emptyHost);
         } else {
-            var list = el('div', { className: 'bowire-env-list' });
+            var list = el('div', { id: 'bowire-collections-list', className: 'bowire-env-list' });
             collectionsList.forEach(function (col) {
                 var isActive = collectionManagerSelectedId === col.id;
+                // Stable per-collection id so morphdom keys by entry
+                // instead of position (otherwise the first row can
+                // inherit a stale onClick from a previous render).
                 var row = el('div', {
+                    id: 'bowire-col-row-' + col.id,
                     className: 'bowire-env-list-item' + (isActive ? ' active' : ''),
                     onClick: function () {
                         collectionManagerSelectedId = col.id;
@@ -981,10 +991,13 @@
             }));
             sidebar.appendChild(emptyHost);
         } else {
-            var list = el('div', { className: 'bowire-env-list' });
+            var list = el('div', { id: 'bowire-mocks-list', className: 'bowire-env-list' });
             mocksList.forEach(function (m) {
                 var isActive = mockSelectedId === m.mockId;
+                // Stable per-mock id so morphdom keys by mock entry
+                // instead of position.
                 var row = el('div', {
+                    id: 'bowire-mock-row-' + m.mockId,
                     className: 'bowire-env-list-item' + (isActive ? ' active' : ''),
                     onClick: function () {
                         mockSelectedId = m.mockId;

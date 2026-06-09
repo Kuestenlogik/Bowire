@@ -827,32 +827,13 @@
     function renderAiPanel() {
         var panel = el('div', { className: 'bowire-ai-panel' });
 
-        // Header sublabel — tells the operator what's actually
-        // happening right now: which model is connected, or what's
-        // missing if it isn't. The previous text ('Hint engine —
-        // no model required') was Bowire-internal jargon that
-        // didn't answer the only question an operator opening the
-        // drawer cares about: 'can the AI help me now?'.
-        var header = el('div', { className: 'bowire-ai-header' });
-        var sublabelText;
-        var sublabelClass = 'bowire-ai-mode';
-        if (aiStatus && aiStatus.hasClient) {
-            sublabelText = 'Connected · ' + (aiStatus.providerId || 'unknown')
-                + ' · ' + (aiStatus.model || '(default model)');
-            sublabelClass += ' bowire-ai-mode-connected';
-        } else if (aiStatus === null) {
-            // Status endpoint 404 → the AI package isn't installed
-            // in this Bowire build.
-            sublabelText = 'AI package not installed — chat unavailable. Hints still work.';
-        } else {
-            // Package installed but no model configured.
-            sublabelText = 'No model configured — open Settings → Assistant to connect one.';
-        }
-        header.appendChild(el('span', {
-            className: sublabelClass,
-            textContent: sublabelText,
-        }));
-        panel.appendChild(header);
+        // Header subtitle dropped — drawer chrome already shows
+        // 'Assistant' title; footer at the bottom shows the
+        // connection state via the rerenderFooter helper which
+        // tracks aiStatus / aiProbe live. Header text computed at
+        // initial render was getting out of sync with the
+        // async-updated footer (issue: header said 'not installed'
+        // while footer said 'Connected: ollama').
 
         // Hints
         var hints = evaluateHints();
@@ -1012,10 +993,12 @@
         function rerenderFooter() {
             footer.replaceChildren();
             if (aiStatus && aiStatus.hasClient) {
-                footer.appendChild(el('span', {
-                    className: 'bowire-ai-status bowire-ai-status-live',
-                    textContent: 'Connected: ' + (aiStatus.providerId || 'unknown') + ' · ' + (aiStatus.model || '(default model)')
-                }));
+                // Connection state now lives as a status dot in the
+                // drawer chrome header (renderAiDrawer in
+                // render-env-auth.js) with hover tooltip for the
+                // provider / model details. Footer skips the long
+                // 'Connected: …' string here so the info shows once,
+                // up top.
                 return;
             }
             // No IChatClient registered. Two sub-cases:
