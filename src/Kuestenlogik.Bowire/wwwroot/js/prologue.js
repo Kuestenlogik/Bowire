@@ -284,6 +284,11 @@
     // preference is sticky across reloads.
     let securityDrawerOpen = false;
     try { securityDrawerOpen = localStorage.getItem('bowire_security_drawer_open') === '1'; } catch { /* ignore */ }
+
+    // #129 — topbar overflow menu (Theme + About + Settings). Session-
+    // only; not persisted to localStorage so a reload starts with the
+    // menu closed. Closes on Esc / outside click via init.js handlers.
+    let topbarOverflowOpen = false;
     let activeRequestTab = 'body';
     // Sub-tab within the Body tab. For GraphQL methods the Body tab
     // composes from three surfaces (Query / Variables form / Selection

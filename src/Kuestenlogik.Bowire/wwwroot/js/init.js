@@ -110,6 +110,11 @@
 
             // Esc: close overlay, stop streaming, or disconnect channel
             if (e.key === 'Escape') {
+                if (topbarOverflowOpen) {
+                    topbarOverflowOpen = false;
+                    render();
+                    return;
+                }
                 if (aboutOpen) {
                     closeAbout();
                     return;
@@ -265,6 +270,17 @@
                 var palette = document.getElementById('bowire-topbar-palette');
                 if (!palette || !palette.contains(e.target)) {
                     searchSuggestionsOpen = false;
+                    changed = true;
+                }
+            }
+            if (topbarOverflowOpen) {
+                // Same idea: clicks inside the overflow button or its
+                // menu keep it open; clicks anywhere else close it.
+                var ovBtn = document.getElementById('bowire-topbar-overflow');
+                var ovMenu = document.querySelector('.bowire-topbar-overflow-menu');
+                var inside = (ovBtn && ovBtn.contains(e.target)) || (ovMenu && ovMenu.contains(e.target));
+                if (!inside) {
+                    topbarOverflowOpen = false;
                     changed = true;
                 }
             }
