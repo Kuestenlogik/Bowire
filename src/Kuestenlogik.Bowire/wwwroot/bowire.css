@@ -91,12 +91,13 @@
     --bowire-font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     --bowire-font-mono: "JetBrains Mono", "Fira Code", "Cascadia Code", "Consolas", monospace;
 
-    /* Radii — pushed up from v1's 6/8/12 so cards read as soft cards
-       instead of boxes. Pill (full-radius) is for badges + active-pill
-       indicators that should track around their content. */
-    --bowire-radius-sm: 10px;
-    --bowire-radius-md: 14px;
-    --bowire-radius-lg: 20px;
+    /* Radii — #142 sharper-style sweep. Reduced from 10/14/20 to
+       4/6/10 so the workbench reads as IDE-shaped rather than
+       consumer-app-shaped. Pill (full-radius) stays for true pill
+       affordances (badges, status dots, connection chip). */
+    --bowire-radius-sm: 4px;
+    --bowire-radius-md: 6px;
+    --bowire-radius-lg: 10px;
     --bowire-radius-pill: 999px;
     /* Fallback alias: any `var(--bowire-radius)` usage without a suffix
        used to resolve to 0 (undefined var → initial value), making the
@@ -1033,7 +1034,7 @@ body {
     padding: 4px 10px;
     height: 26px;
     border: 1px solid var(--bowire-border);
-    border-radius: 13px;
+    border-radius: var(--bowire-radius-pill);
     background: var(--bowire-bg-elevated);
     font-size: 11px;
     line-height: 1;
@@ -1864,7 +1865,7 @@ img.bowire-logo-icon {
     background: var(--bowire-accent-subtle);
     border: 1px solid var(--bowire-accent);
     color: var(--bowire-text);
-    border-radius: 12px;
+    border-radius: var(--bowire-radius-pill);
     font-size: 11px;
     font-weight: 500;
     font-family: var(--bowire-font-sans);
@@ -2042,7 +2043,7 @@ img.bowire-logo-icon {
     color: var(--bowire-text-tertiary);
     background: var(--bowire-surface);
     padding: 1px 6px;
-    border-radius: 10px;
+    border-radius: var(--bowire-radius-pill);
     font-weight: 500;
     flex-shrink: 0;
 }
@@ -2519,7 +2520,7 @@ img.bowire-logo-icon {
 .bowire-env-editor-active-badge {
     font-size: 11px;
     padding: 3px 10px;
-    border-radius: 10px;
+    border-radius: var(--bowire-radius-pill);
     background: rgba(52, 211, 153, 0.15);
     color: var(--bowire-success);
     font-weight: 600;
@@ -5325,7 +5326,7 @@ img.bowire-logo-icon {
 .bowire-env-diff-chip {
     font-size: 11px;
     padding: 2px 8px;
-    border-radius: 10px;
+    border-radius: var(--bowire-radius-pill);
     border: 1px solid var(--bowire-border);
     background: var(--bowire-bg);
     color: var(--bowire-text-secondary);
@@ -6064,7 +6065,7 @@ details[open] > .bowire-json-tree-summary::before {
 .bowire-settings-toggle {
     width: 36px;
     height: 20px;
-    border-radius: 10px;
+    border-radius: var(--bowire-radius-pill);
     background: var(--bowire-border);
     border: none;
     cursor: pointer;
@@ -6638,7 +6639,7 @@ details[open] > .bowire-json-tree-summary::before {
     text-transform: uppercase;
     letter-spacing: 0.5px;
     padding: 2px 10px;
-    border-radius: 10px;
+    border-radius: var(--bowire-radius-pill);
     margin-bottom: 4px;
 }
 .bowire-flow-branch-label.true { color: #43a047; background: rgba(67, 160, 71, 0.1); }
@@ -6823,7 +6824,7 @@ details[open] > .bowire-json-tree-summary::before {
     min-width: 20px;
     height: 20px;
     padding: 0 6px;
-    border-radius: 10px;
+    border-radius: var(--bowire-radius-pill);
     background: var(--bowire-accent);
     color: white;
     font-size: 11px;
@@ -7788,7 +7789,7 @@ details[open] > .bowire-json-tree-summary::before {
     min-width: 20px;
     height: 20px;
     padding: 0 6px;
-    border-radius: 10px;
+    border-radius: var(--bowire-radius-pill);
     background: var(--bowire-accent-subtle);
     color: var(--bowire-accent-text);
     font-size: 10px;
@@ -8025,7 +8026,7 @@ details[open] > .bowire-json-tree-summary::before {
     justify-content: center;
     width: 20px;
     height: 20px;
-    border-radius: 10px;
+    border-radius: var(--bowire-radius-pill);
     background: var(--bowire-warning-bg);
     color: var(--bowire-warning);
     flex-shrink: 0;
@@ -10103,7 +10104,7 @@ details[open] > .bowire-json-tree-summary::before {
 .bowire-plugin-check-status {
     flex-shrink: 0;
     padding: 4px 10px;
-    border-radius: 12px;
+    border-radius: var(--bowire-radius-pill);
     font-size: 11px;
     font-weight: 600;
     text-transform: uppercase;
@@ -10738,7 +10739,7 @@ details[open] > .bowire-json-tree-summary::before {
     border: 1px solid var(--bowire-border);
     color: var(--bowire-text-secondary);
     padding: 3px 10px;
-    border-radius: 12px;
+    border-radius: var(--bowire-radius-pill);
     font-size: 11px;
     cursor: pointer;
 }
