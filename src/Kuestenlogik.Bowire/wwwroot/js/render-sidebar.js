@@ -941,21 +941,26 @@
                     'aria-label': 'More actions',
                     textContent: '⋮',
                     onClick: function () {
-                        if (confirm('Move all ' + recordingsList.length + ' recordings to trash?')) {
-                            // Same bulk-move path as the selection
-                            // Delete action, but over the full list.
-                            var removed = recordingsList.map(function (r, idx) {
-                                return { entry: r, originalIdx: idx, deletedAt: Date.now() };
-                            });
-                            recordingsList.length = 0;
-                            recordingManagerSelectedId = null;
-                            recordingActiveId = null;
-                            for (var k = removed.length - 1; k >= 0; k--) recordingsTrash.unshift(removed[k]);
-                            persistRecordings();
-                            persistRecordingsTrash();
-                            toast(removed.length + ' recordings moved to trash', 'success');
-                            render();
-                        }
+                        var n = recordingsList.length;
+                        bowireConfirm(
+                            'Move all ' + n + ' recordings to trash?',
+                            function () {
+                                // Same bulk-move path as the selection
+                                // Delete action, but over the full list.
+                                var removed = recordingsList.map(function (r, idx) {
+                                    return { entry: r, originalIdx: idx, deletedAt: Date.now() };
+                                });
+                                recordingsList.length = 0;
+                                recordingManagerSelectedId = null;
+                                recordingActiveId = null;
+                                for (var k = removed.length - 1; k >= 0; k--) recordingsTrash.unshift(removed[k]);
+                                persistRecordings();
+                                persistRecordingsTrash();
+                                toast(removed.length + ' recordings moved to trash', 'success');
+                                render();
+                            },
+                            { title: 'Move all to trash', confirmText: 'Move ' + n, danger: true }
+                        );
                     }
                 }) : null
             );
@@ -1163,18 +1168,23 @@
                     'aria-label': 'More actions',
                     textContent: '⋮',
                     onClick: function () {
-                        if (confirm('Move all ' + collectionsList.length + ' collections to trash?')) {
-                            var removed = collectionsList.map(function (c, idx) {
-                                return { entry: c, originalIdx: idx, deletedAt: Date.now() };
-                            });
-                            collectionsList.length = 0;
-                            collectionManagerSelectedId = null;
-                            for (var k = removed.length - 1; k >= 0; k--) collectionsTrash.unshift(removed[k]);
-                            persistCollections();
-                            persistCollectionsTrash();
-                            toast(removed.length + ' collections moved to trash', 'success');
-                            render();
-                        }
+                        var n = collectionsList.length;
+                        bowireConfirm(
+                            'Move all ' + n + ' collections to trash?',
+                            function () {
+                                var removed = collectionsList.map(function (c, idx) {
+                                    return { entry: c, originalIdx: idx, deletedAt: Date.now() };
+                                });
+                                collectionsList.length = 0;
+                                collectionManagerSelectedId = null;
+                                for (var k = removed.length - 1; k >= 0; k--) collectionsTrash.unshift(removed[k]);
+                                persistCollections();
+                                persistCollectionsTrash();
+                                toast(removed.length + ' collections moved to trash', 'success');
+                                render();
+                            },
+                            { title: 'Move all to trash', confirmText: 'Move ' + n, danger: true }
+                        );
                     }
                 }) : null
             );
@@ -1367,11 +1377,16 @@
                 className: 'bowire-trash-empty-btn',
                 textContent: 'Empty trash',
                 onClick: function () {
-                    if (confirm('Permanently delete all ' + trash.length + ' items in trash?')) {
-                        trash.length = 0;
-                        opts.persist();
-                        render();
-                    }
+                    var n = trash.length;
+                    bowireConfirm(
+                        'Permanently delete all ' + n + ' items in trash? This cannot be undone.',
+                        function () {
+                            trash.length = 0;
+                            opts.persist();
+                            render();
+                        },
+                        { title: 'Empty trash', confirmText: 'Delete ' + n, danger: true }
+                    );
                 }
             }));
         }

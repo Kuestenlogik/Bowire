@@ -1344,9 +1344,11 @@
             textContent: 'Uninstall',
             onClick: function () {
                 if (bundled) return;
-                if (window.confirm('Uninstall ' + pkgId + '?')) {
-                    runPluginAction(pkgId, 'uninstall');
-                }
+                bowireConfirm(
+                    'Uninstall ' + pkgId + '? The package is removed from disk and the workbench restarts to unload it.',
+                    function () { runPluginAction(pkgId, 'uninstall'); },
+                    { title: 'Uninstall plugin', confirmText: 'Uninstall', danger: true }
+                );
             }
         });
         actions.appendChild(uninstallBtn);
