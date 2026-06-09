@@ -295,8 +295,10 @@
     // wires the Discover mode to the existing sidebar content; the
     // rest of the icons render with a "coming soon" tooltip until
     // their dedicated sidebar templates land in Phase 2-4.
-    let railMode = 'discover';
-    try { railMode = localStorage.getItem('bowire_rail_mode') || 'discover'; } catch { /* ignore */ }
+    // #139 — Home mode is the first-launch default. Returning users
+    // restore their last-active mode from localStorage.
+    let railMode = 'home';
+    try { railMode = localStorage.getItem('bowire_rail_mode') || 'home'; } catch { /* ignore */ }
     let activeRequestTab = 'body';
     // Sub-tab within the Body tab. For GraphQL methods the Body tab
     // composes from three surfaces (Query / Variables form / Selection

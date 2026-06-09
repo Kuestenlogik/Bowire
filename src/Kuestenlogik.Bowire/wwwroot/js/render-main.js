@@ -702,7 +702,127 @@
         return frag;
     }
 
+    // #139 — Home tile (favorite or recent entry). Resolves the
+    // service + method from the live discovery list so the tile
+    // shows method type + protocol icon when available, and
+    // gracefully degrades to plain text when the method isn't in
+    // the current discovery (stale favorite).
+    function renderHomeTile(serviceName, methodName, isFavorite) {
+        var svc = services.find(function (s) { return s.name === serviceName; });
+        var meth = svc && (svc.methods || []).find(function (m) { return m.name === methodName; });
+        var available = !!(svc && meth);
+        var proto = svc ? svc.source : null;
+        var dir = meth ? (typeof methodDirection === 'function' ? methodDirection(meth) : 'neutral') : 'neutral';
+
+        var tile = el('div', {
+            className: 'bowire-home-tile' + (available ? '' : ' bowire-home-tile-stale'),
+            'data-protocol': proto || 'default',
+            'data-direction': dir,
+            title: available
+                ? 'Open in Discover'
+                : 'Method no longer in discovery — connect to its server to use it',
+            onClick: function () {
+                if (!available) return;
+                railMode = 'discover';
+                try { localStorage.setItem('bowire_rail_mode', 'discover'); } catch { /* ignore */ }
+                sidebarView = 'services';
+                openTab(svc, meth);
+            }
+        });
+
+        if (meth) {
+            tile.appendChild(el('span', {
+                className: 'bowire-home-tile-badge bowire-method-badge',
+                dataset: { type: methodBadgeType(meth), direction: dir },
+                textContent: methodBadgeText(meth),
+            }));
+        }
+        tile.appendChild(el('div', { className: 'bowire-home-tile-method', textContent: methodName }));
+        tile.appendChild(el('div', { className: 'bowire-home-tile-service', textContent: serviceName }));
+
+        return tile;
+    }
+
     function renderMain() {
+        // #139 — Home rail mode. Default landing for first-time
+        // users; cross-workflow launchpad. Phase 1 shows recent
+        // activity + favorites as two grids; click opens the method
+        // in Discover. Launch-picker ('what do you want to do with
+        // this favorite?') lands in Phase 2 once more modes are
+        // wired.
+        if (railMode === 'home') {
+            var homeMain = el('div', { id: 'bowire-main-home', className: 'bowire-main bowire-main-home' });
+            var homeWrap = el('div', { className: 'bowire-home-wrap' });
+
+            homeWrap.appendChild(el('h2', { className: 'bowire-home-title', textContent: 'Home' }));
+            homeWrap.appendChild(el('p', {
+                className: 'bowire-home-subtitle',
+                textContent: 'Favorites and recent activity across every workflow. Click an entry to open it in Discover.'
+            }));
+
+            // ---- Favorites grid ----
+            var favs = (typeof getFavorites === 'function') ? getFavorites() : [];
+            var favSection = el('div', { className: 'bowire-home-section' });
+            favSection.appendChild(el('h3', { className: 'bowire-home-section-title' },
+                el('span', { innerHTML: svgIcon('starFilled'), style: 'color:var(--bowire-accent)' }),
+                el('span', { textContent: 'Favorites' }),
+                el('span', { className: 'bowire-home-section-count', textContent: favs.length + (favs.length === 1 ? ' entry' : ' entries') })
+            ));
+            if (favs.length === 0) {
+                favSection.appendChild(renderEmptyCard({
+                    icon: 'star',
+                    headline: 'No favorites yet',
+                    body: 'Star a method from the sidebar or any recent entry below — it lands here for one-click access across every workflow.',
+                    hintKey: 'bowire_home_favs_hint',
+                    actions: [
+                        {
+                            label: 'Go to Discover',
+                            primary: true,
+                            onClick: function () {
+                                railMode = 'discover';
+                                try { localStorage.setItem('bowire_rail_mode', 'discover'); } catch { /* ignore */ }
+                                sidebarView = 'services';
+                                render();
+                            }
+                        }
+                    ]
+                }));
+            } else {
+                var favGrid = el('div', { className: 'bowire-home-grid' });
+                favs.forEach(function (fav) {
+                    favGrid.appendChild(renderHomeTile(fav.service, fav.method, true));
+                });
+                favSection.appendChild(favGrid);
+            }
+            homeWrap.appendChild(favSection);
+
+            // ---- Recent activity ----
+            var recent = (typeof getRecentMethods === 'function') ? getRecentMethods() : [];
+            var recentSection = el('div', { className: 'bowire-home-section' });
+            recentSection.appendChild(el('h3', { className: 'bowire-home-section-title' },
+                el('span', { innerHTML: svgIcon('history') }),
+                el('span', { textContent: 'Recent activity' }),
+                el('span', { className: 'bowire-home-section-count', textContent: recent.length + (recent.length === 1 ? ' entry' : ' entries') })
+            ));
+            if (recent.length === 0) {
+                recentSection.appendChild(renderEmptyCard({
+                    icon: 'console',
+                    headline: 'No recent activity',
+                    body: 'Open methods in Discover and they land here in MRU order.'
+                }));
+            } else {
+                var recentGrid = el('div', { className: 'bowire-home-grid' });
+                recent.slice(0, 10).forEach(function (r) {
+                    recentGrid.appendChild(renderHomeTile(r.service, r.method, false));
+                });
+                recentSection.appendChild(recentGrid);
+            }
+            homeWrap.appendChild(recentSection);
+
+            homeMain.appendChild(homeWrap);
+            return homeMain;
+        }
+
         // #133 Phase 2 — Security rail mode owns the main pane.
         // When the operator picks the 🛡️ Security icon on the rail,
         // the main pane swaps to the Security surface (threat-model,

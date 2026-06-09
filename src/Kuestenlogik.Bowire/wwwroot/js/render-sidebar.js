@@ -645,6 +645,7 @@
     // specific sidebar template lands in Phase 2-4.
     function renderActivityRail() {
         var modes = [
+            { id: 'home',       icon: 'house',     label: 'Home',              group: 'work' },
             { id: 'discover',   icon: 'compass',   label: 'Discover',          group: 'work' },
             { id: 'environments', icon: 'globe',   label: 'Environments',      group: 'work' },
             { id: 'recordings', icon: 'recording', label: 'Recordings',        group: 'scenarios' },
@@ -679,7 +680,8 @@
             // mode lands the operator on the existing full-width
             // env editor in the main pane; sidebar list of envs
             // stays the same.
-            var isWired = m.id === 'discover'
+            var isWired = m.id === 'home'
+                       || m.id === 'discover'
                        || m.id === 'security'
                        || m.id === 'environments';
             rail.appendChild(el('button', {
