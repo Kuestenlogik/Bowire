@@ -62,11 +62,20 @@
         }
 
         // #133 — activity rail. Sits at the very leftmost edge of the
-        // workbench body, before the sidebar. Phase 1 only wires the
-        // Discover mode to the existing sidebar content; clicking
-        // other icons shows a 'coming soon' toast until Phase 2-4
-        // give each mode its own sidebar template.
+        // workbench body, before the assistant drawer + sidebar.
         body.appendChild(renderActivityRail());
+
+        // #133 Phase 2 — Assistant drawer (formerly AI drawer, #90).
+        // Migrated from the right edge to the left, sitting between
+        // the activity rail and the mode sidebar. Reads as
+        // 'assistant always lives in the same spot, regardless of
+        // which mode I'm in'. Matches the convention adopted by
+        // Cursor / Continue / Copilot Chat.
+        if (aiDrawerOpen) {
+            body.classList.add('bowire-with-ai-drawer');
+            body.appendChild(renderAiDrawer());
+        }
+
         body.appendChild(renderSidebar());
         // Sidebar-resize splitter lives between the sidebar and the main
         // pane. Hidden on mobile (sidebar is an overlay there, no split
@@ -81,21 +90,10 @@
         }
         body.appendChild(renderMain());
 
-        // AI drawer (#90). Sits at the right edge of the workbench body,
-        // peer with the sidebar + main pane. Drawer is rendered only when
-        // open so closed drawer doesn't waste DOM; CSS shrinks the main
-        // pane proportionally via the .bowire-with-ai-drawer modifier.
-        if (aiDrawerOpen) {
-            body.classList.add('bowire-with-ai-drawer');
-            body.appendChild(renderAiDrawer());
-        }
-        // Security drawer (#111). Independent of the AI drawer — when
-        // both are open they coexist (main pane gives up width to
-        // both). Rendered to the right of the AI drawer.
-        if (securityDrawerOpen) {
-            body.classList.add('bowire-with-security-drawer');
-            body.appendChild(renderSecurityDrawer());
-        }
+        // #133 Phase 2 — Security drawer retired. Security content
+        // now lives in the main pane when the Security rail mode is
+        // active (renderMain reads railMode and routes accordingly).
+        // The right-side drawer concept is gone.
 
         next.appendChild(body);
 
@@ -787,10 +785,12 @@
                 renderEnvSelector(),
                 watchBtn,
             ),
-            // Drawer-toggle group.
+            // Drawer-toggle group. Security toggle retired in
+            // #133 Phase 2 — Security is now a rail mode, not a
+            // drawer. Assistant (AI) stays as a drawer because it's
+            // cross-cutting (used alongside every mode).
             el('div', { className: 'bowire-topbar-group bowire-topbar-drawers' },
                 aiToggleBtn,
-                securityToggleBtn,
             ),
             // Overflow.
             overflowBtn,

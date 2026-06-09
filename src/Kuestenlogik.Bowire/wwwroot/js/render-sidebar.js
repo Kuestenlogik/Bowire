@@ -678,7 +678,11 @@
             }
             lastGroup = m.group;
             var isActive = railMode === m.id;
-            var isWired = m.id === 'discover';
+            // Modes wired so far. Phase 1 shipped just Discover;
+            // Phase 2 wires Security — sidebar stays the services
+            // tree; Main pane swaps to the Security surface that
+            // used to live in the right-side drawer.
+            var isWired = m.id === 'discover' || m.id === 'security';
             rail.appendChild(el('button', {
                 type: 'button',
                 className: 'bowire-rail-btn' + (isActive ? ' active' : '') + (isWired ? '' : ' bowire-rail-btn-stub'),

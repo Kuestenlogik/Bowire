@@ -703,6 +703,27 @@
     }
 
     function renderMain() {
+        // #133 Phase 2 — Security rail mode owns the main pane.
+        // When the operator picks the 🛡️ Security icon on the rail,
+        // the main pane swaps to the Security surface (threat-model,
+        // tier toggle, ranked endpoints, template generator) that
+        // used to live in the right-side drawer. Sidebar still shows
+        // the services tree so the operator can drill into a method
+        // from the same screen without losing the security view.
+        if (railMode === 'security') {
+            var main = el('div', { id: 'bowire-main-security', className: 'bowire-main bowire-main-security' });
+            if (window.__bowireAi && typeof window.__bowireAi.renderSecurityPanel === 'function') {
+                main.appendChild(window.__bowireAi.renderSecurityPanel());
+            } else {
+                main.appendChild(el('p', {
+                    className: 'bowire-ai-empty',
+                    style: 'padding:24px',
+                    textContent: 'Security tools need Kuestenlogik.Bowire.Ai installed in the workbench process. Install the package + restart, or switch back to Discover via the rail.'
+                }));
+            }
+            return main;
+        }
+
         // ID encodes the current view mode so morphdom fully replaces
         // the main pane when switching between environments editor,
         // freeform builder, landing page, and the normal request/response
