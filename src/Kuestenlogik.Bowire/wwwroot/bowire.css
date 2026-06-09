@@ -1907,18 +1907,21 @@ img.bowire-logo-icon {
    row has a single bottom border that the active tab's thicker
    underline overlaps. Filter button lives at the right end via
    margin-left: auto. */
+/* #129 Round 2 — sidebar view switch reshaped as a segmented
+   control. Single pill-shaped container holds the per-view buttons
+   tightly; active button gets a filled accent-subtle background
+   instead of an underline. Reads as one cohesive control instead of
+   four separate tab buttons. Same DOM as before; CSS-only swap. */
 .bowire-view-switch {
     display: flex;
-    align-items: stretch;
-    gap: 0;
-    padding: 0 12px;
-    border-bottom: 1px solid var(--bowire-border);
+    align-items: center;
+    gap: 4px;
+    margin: 8px 12px;
+    padding: 4px;
+    background: var(--bowire-sidebar-bg);
+    border: 1px solid var(--bowire-border-subtle);
+    border-radius: var(--bowire-radius-md);
     flex-shrink: 0;
-    /* Wrap onto a second row instead of clipping when the sidebar is
-       narrower than the four labels can fit (mobile, manual splitter
-       drag). The default sidebar width + the SIDEBAR_WIDTH_MIN cap
-       in prologue.js are sized so all four tabs sit on one line in
-       the normal flow — wrap is the safety net, not the default. */
     flex-wrap: wrap;
 }
 
@@ -1927,32 +1930,27 @@ img.bowire-logo-icon {
     display: flex;
     align-items: center;
     gap: 6px;
-    padding: 10px 14px;
+    padding: 6px 10px;
     font-size: 12px;
     font-weight: 500;
     background: transparent;
     border: none;
-    border-radius: 0;
-    border-bottom: 2px solid transparent;
+    border-radius: var(--bowire-radius-sm);
     color: var(--bowire-text-tertiary);
     cursor: pointer;
     transition: color var(--bowire-transition),
-                border-color var(--bowire-transition);
+                background var(--bowire-transition);
     font-family: var(--bowire-font-sans);
-    /* Overlap the container bottom border so the 2 px active underline
-       sits right on top of the 1 px container line instead of floating
-       above it. */
-    margin-bottom: -1px;
 }
 
 .bowire-view-pill:hover {
     color: var(--bowire-text);
+    background: var(--bowire-surface-hover);
 }
 
 .bowire-view-pill.active {
-    color: var(--bowire-accent);
-    border-bottom-color: var(--bowire-accent);
-    background: transparent;
+    color: var(--bowire-accent-text);
+    background: var(--bowire-accent-subtle);
 }
 
 /* Push the filter button to the right edge of the tab row. Stretch
@@ -4225,6 +4223,17 @@ img.bowire-logo-icon {
 .bowire-status-dot.pending { background: var(--bowire-warning); }
 
 /* ---------- Tabs ---------- */
+/* #129 Round 2 / #113 — tab-cohesion. Tab strip and content pane
+   read as one unit:
+   - Tab strip sits on the elevated surface; content pane inherits
+     the same color so the seam between them disappears.
+   - Active tab keeps its 2 px accent underline but the underline
+     no longer sits over a separator line — content-pane TOP border
+     is gone, so the active tab's underline is the only horizontal
+     mark in that band. Visually the active tab "owns" the pane
+     below; inactive tabs read as siblings.
+   - The faint container bottom border stays so the strip is still
+     anchored visually when no tab is active. */
 .bowire-tabs {
     display: flex;
     gap: 0;
@@ -4234,7 +4243,7 @@ img.bowire-logo-icon {
 }
 
 .bowire-tab {
-    padding: 10px 16px;
+    padding: 8px 16px;
     font-size: 12px;
     font-weight: 500;
     color: var(--bowire-text-tertiary);
@@ -4242,6 +4251,10 @@ img.bowire-logo-icon {
     border-bottom: 2px solid transparent;
     transition: all var(--bowire-transition);
     user-select: none;
+    /* Negative margin overlaps the container's bottom border so the
+       active underline sits flush with the seam to the content
+       pane below — no 1 px gap, no visual stack of separators. */
+    margin-bottom: -1px;
 }
 
 .bowire-tab:hover {
@@ -4251,12 +4264,16 @@ img.bowire-logo-icon {
 .bowire-tab.active {
     color: var(--bowire-accent-text);
     border-bottom-color: var(--bowire-accent);
+    background: var(--bowire-bg-elevated);
 }
 
 .bowire-tab-content {
     display: none;
     flex: 1;
     overflow: auto;
+    /* Inherit the strip's elevated surface so the tab→pane seam
+       disappears; active tab visually continues into the content. */
+    background: var(--bowire-bg-elevated);
 }
 
 .bowire-tab-content.active {
