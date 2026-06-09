@@ -858,6 +858,32 @@
                     textContent: (rec.steps ? rec.steps.length : 0) + ' step' + ((rec.steps && rec.steps.length === 1) ? '' : 's')
                         + (rec.id === recordingActiveId ? ' · ● recording' : '')
                 }));
+                // #143 — per-row delete with undo toast.
+                row.appendChild(el('button', {
+                    type: 'button',
+                    className: 'bowire-list-row-delete',
+                    title: 'Delete recording',
+                    'aria-label': 'Delete recording',
+                    innerHTML: svgIcon('trash'),
+                    onClick: function (e) {
+                        e.stopPropagation();
+                        var idx = recordingsList.indexOf(rec);
+                        if (idx < 0) return;
+                        var backup = recordingsList[idx];
+                        recordingsList.splice(idx, 1);
+                        if (recordingManagerSelectedId === rec.id) recordingManagerSelectedId = null;
+                        if (recordingActiveId === rec.id) recordingActiveId = null;
+                        persistRecordings();
+                        toast('Recording deleted', 'success', {
+                            undo: function () {
+                                recordingsList.splice(Math.min(idx, recordingsList.length), 0, backup);
+                                persistRecordings();
+                                render();
+                            }
+                        });
+                        render();
+                    }
+                }));
                 list.appendChild(row);
             });
             sidebar.appendChild(list);
@@ -964,6 +990,30 @@
                     className: 'bowire-env-list-item-meta',
                     textContent: (col.items ? col.items.length : 0) + ' item' + ((col.items && col.items.length === 1) ? '' : 's')
                 }));
+                row.appendChild(el('button', {
+                    type: 'button',
+                    className: 'bowire-list-row-delete',
+                    title: 'Delete collection',
+                    'aria-label': 'Delete collection',
+                    innerHTML: svgIcon('trash'),
+                    onClick: function (e) {
+                        e.stopPropagation();
+                        var idx = collectionsList.indexOf(col);
+                        if (idx < 0) return;
+                        var backup = collectionsList[idx];
+                        collectionsList.splice(idx, 1);
+                        if (collectionManagerSelectedId === col.id) collectionManagerSelectedId = null;
+                        persistCollections();
+                        toast('Collection deleted', 'success', {
+                            undo: function () {
+                                collectionsList.splice(Math.min(idx, collectionsList.length), 0, backup);
+                                persistCollections();
+                                render();
+                            }
+                        });
+                        render();
+                    }
+                }));
                 list.appendChild(row);
             });
             sidebar.appendChild(list);
@@ -1034,6 +1084,22 @@
                 row.appendChild(el('div', {
                     className: 'bowire-env-list-item-meta',
                     textContent: 'port ' + m.port
+                }));
+                // Mocks delete = stop the host. No undo (the port +
+                // process are released; can't bring them back).
+                row.appendChild(el('button', {
+                    type: 'button',
+                    className: 'bowire-list-row-delete',
+                    title: 'Stop mock host',
+                    'aria-label': 'Stop mock host',
+                    innerHTML: svgIcon('trash'),
+                    onClick: function (e) {
+                        e.stopPropagation();
+                        if (typeof stopMock === 'function') {
+                            stopMock(m.mockId);
+                            if (mockSelectedId === m.mockId) mockSelectedId = null;
+                        }
+                    }
                 }));
                 list.appendChild(row);
             });

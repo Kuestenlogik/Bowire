@@ -8242,6 +8242,33 @@ details[open] > .bowire-json-tree-summary::before {
     color: var(--bowire-accent-text);
 }
 
+/* #143 — per-row delete affordance. Hidden until the row is
+   hovered or focused; sits at the right edge with a subtle
+   trash icon. */
+.bowire-list-row-delete {
+    opacity: 0;
+    background: transparent;
+    border: 0;
+    color: var(--bowire-text-tertiary);
+    cursor: pointer;
+    padding: 4px;
+    border-radius: var(--bowire-radius-sm);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: opacity var(--bowire-transition), background var(--bowire-transition), color var(--bowire-transition);
+}
+.bowire-list-row-delete svg { width: 13px; height: 13px; }
+.bowire-env-list-item:hover .bowire-list-row-delete,
+.bowire-env-list-item:focus-within .bowire-list-row-delete,
+.bowire-env-list-item.active .bowire-list-row-delete {
+    opacity: 1;
+}
+.bowire-list-row-delete:hover {
+    background: var(--bowire-error-bg);
+    color: var(--bowire-error);
+}
+
 .bowire-env-list-item-name {
     flex: 1;
     overflow: hidden;
