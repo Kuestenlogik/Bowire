@@ -15,6 +15,69 @@
     // tells the operator what's *available* up front.
 
     var _varsACPopover = null;
+    var _varsRefPopover = null;   // resolved-value preview when caret is INSIDE a closed {{ref}}
+    var _varsACMirror = null;     // hidden div used to measure caret pixel coords
+
+    // #125 Phase 2 v3 — measure where the caret sits in pixel
+    // coordinates inside an <input> or <textarea>. Classic
+    // mirror-div technique: clone the field's typography into a
+    // hidden div, copy the text up to the caret, insert a marker
+    // span, read its rect. The marker is zero-width so it doesn't
+    // shift the layout it's about to measure.
+    function getCaretCoords(field) {
+        if (!field) return null;
+        if (!_varsACMirror) {
+            _varsACMirror = document.createElement('div');
+            _varsACMirror.className = 'bowire-vars-ac-mirror';
+            _varsACMirror.setAttribute('aria-hidden', 'true');
+            document.body.appendChild(_varsACMirror);
+        }
+        var cs = window.getComputedStyle(field);
+        var props = ['font', 'fontFamily', 'fontSize', 'fontWeight', 'fontStyle',
+            'letterSpacing', 'textTransform', 'wordSpacing', 'lineHeight', 'tabSize',
+            'padding', 'paddingTop', 'paddingRight', 'paddingBottom', 'paddingLeft',
+            'borderTopWidth', 'borderRightWidth', 'borderBottomWidth', 'borderLeftWidth',
+            'boxSizing', 'textIndent'];
+        for (var i = 0; i < props.length; i++) {
+            _varsACMirror.style[props[i]] = cs[props[i]];
+        }
+        _varsACMirror.style.position = 'absolute';
+        _varsACMirror.style.visibility = 'hidden';
+        _varsACMirror.style.pointerEvents = 'none';
+        _varsACMirror.style.left = '0';
+        _varsACMirror.style.top = '0';
+        _varsACMirror.style.borderStyle = 'solid';
+        _varsACMirror.style.borderColor = 'transparent';
+        _varsACMirror.style.width = field.offsetWidth + 'px';
+        _varsACMirror.style.height = 'auto';
+        // Word wrap: textareas wrap, inputs don't.
+        if (field.tagName === 'INPUT') {
+            _varsACMirror.style.whiteSpace = 'pre';
+            _varsACMirror.style.overflow = 'hidden';
+        } else {
+            _varsACMirror.style.whiteSpace = 'pre-wrap';
+            _varsACMirror.style.wordWrap = 'break-word';
+        }
+
+        var caret = typeof field.selectionStart === 'number' ? field.selectionStart : (field.value || '').length;
+        var value = field.value != null ? String(field.value) : '';
+        _varsACMirror.textContent = '';
+        _varsACMirror.appendChild(document.createTextNode(value.substring(0, caret)));
+        var marker = document.createElement('span');
+        marker.textContent = '​'; // zero-width space — doesn't take up layout but has a rect
+        _varsACMirror.appendChild(marker);
+        _varsACMirror.appendChild(document.createTextNode(value.substring(caret) || ' '));
+
+        var fieldRect = field.getBoundingClientRect();
+        var markerRect = marker.getBoundingClientRect();
+        var mirrorRect = _varsACMirror.getBoundingClientRect();
+
+        return {
+            left: fieldRect.left + (markerRect.left - mirrorRect.left) - (field.scrollLeft || 0),
+            top: fieldRect.top + (markerRect.top - mirrorRect.top) - (field.scrollTop || 0),
+            height: markerRect.height || parseFloat(cs.lineHeight) || parseFloat(cs.fontSize) || 16,
+        };
+    }
 
     function installVarsAutocomplete() {
         if (window.__bowireVarsACInstalled) return;
@@ -24,8 +87,42 @@
         document.addEventListener('keydown', onVarsACKeydown, true);
         document.addEventListener('mousedown', onVarsACMousedown, true);
         document.addEventListener('blur', onVarsACBlur, true);
-        window.addEventListener('scroll', closeVarsAC, true);
-        window.addEventListener('resize', closeVarsAC, true);
+        // #125 Phase 2 v3 — selectionchange fires when the caret
+        // moves without a value change (arrow-keys, mouse-click
+        // inside the field). Pull the ref-preview path off the
+        // input event so it surfaces even when the operator is
+        // just navigating through an existing template.
+        document.addEventListener('selectionchange', onVarsACSelectionChange, true);
+        document.addEventListener('focusin', onVarsACFocusIn, true);
+        window.addEventListener('scroll', function () {
+            closeVarsAC();
+            closeVarsRefPreview();
+        }, true);
+        window.addEventListener('resize', function () {
+            closeVarsAC();
+            closeVarsRefPreview();
+        });
+    }
+
+    function onVarsACSelectionChange() {
+        var target = document.activeElement;
+        if (!isVarsACEligibleTarget(target)) {
+            closeVarsRefPreview();
+            return;
+        }
+        // Skip when the autocomplete dropdown is open — the
+        // dropdown owns the user's attention; the preview would
+        // crowd the screen.
+        if (varsACState) return;
+        var caret = getTargetCaret(target);
+        var value = getTargetValue(target);
+        var enclosed = findEnclosingRef(value, caret);
+        if (enclosed) showVarsRefPreview(target, enclosed);
+        else closeVarsRefPreview();
+    }
+
+    function onVarsACFocusIn(e) {
+        onVarsACSelectionChange();
     }
 
     function onVarsACInput(e) {
@@ -33,12 +130,20 @@
         if (!isVarsACEligibleTarget(target)) return;
         var caret = getTargetCaret(target);
         var value = getTargetValue(target);
+
         // Look back from the caret for an unclosed '{{'. The popover
         // activates the moment two opening braces precede the caret
         // without a closing pair in between.
         var openIdx = findOpenCurlyBefore(value, caret);
         if (openIdx < 0) {
             closeVarsAC();
+            // #125 Phase 2 v3 — if the caret sits inside a CLOSED
+            // {{ref}}, show the resolved-value preview instead of
+            // the autocomplete dropdown. Two distinct surfaces, two
+            // distinct moments.
+            var enclosed = findEnclosingRef(value, caret);
+            if (enclosed) showVarsRefPreview(target, enclosed);
+            else closeVarsRefPreview();
             return;
         }
         var query = value.substring(openIdx + 2, caret);
@@ -97,15 +202,19 @@
     }
 
     function onVarsACBlur(e) {
-        if (!varsACState) return;
         // setTimeout so a click inside the popover lands before we
         // tear the state down.
         setTimeout(function () {
-            if (!varsACState) return;
             var ae = document.activeElement;
-            if (ae !== varsACState.target && (!_varsACPopover || !_varsACPopover.contains(ae))) {
-                closeVarsAC();
+            if (varsACState) {
+                if (ae !== varsACState.target && (!_varsACPopover || !_varsACPopover.contains(ae))) {
+                    closeVarsAC();
+                }
             }
+            // Preview popover also folds when focus leaves the
+            // template field — no point dangling a resolved value
+            // for a field the operator isn't looking at.
+            if (!isVarsACEligibleTarget(ae)) closeVarsRefPreview();
         }, 0);
     }
 
@@ -133,6 +242,107 @@
     }
     function getTargetValue(t) {
         return t.value != null ? String(t.value) : '';
+    }
+
+    // #125 Phase 2 v3 — find the closed {{...}} that encloses the
+    // caret position, if any. Used to decide whether to show the
+    // resolved-value preview popover.
+    function findEnclosingRef(value, caret) {
+        if (!value) return null;
+        var re = /\{\{([^{}]+)\}\}/g;
+        var m;
+        while ((m = re.exec(value)) !== null) {
+            var start = m.index;
+            var end = m.index + m[0].length;
+            if (caret >= start && caret <= end) {
+                return { start: start, end: end, ref: m[1].trim(), match: m[0] };
+            }
+        }
+        return null;
+    }
+
+    function showVarsRefPreview(target, enclosed) {
+        if (!_varsRefPopover) {
+            _varsRefPopover = document.createElement('div');
+            _varsRefPopover.className = 'bowire-vars-ref-preview';
+            document.body.appendChild(_varsRefPopover);
+        }
+        var ref = enclosed.ref;
+        var kind = (typeof classifyVarKind === 'function')
+            ? classifyVarKind(ref)
+            : 'env';
+
+        // Resolve via the same substituteVars seam every send-path
+        // routes through. Wrap in a single curly so the resolver
+        // treats it as a {{...}} reference.
+        var resolved, error = null;
+        try {
+            resolved = (typeof substituteVars === 'function')
+                ? substituteVars('{{' + ref + '}}')
+                : '{{' + ref + '}}';
+            // Detect cycle marker emitted by the resolver.
+            if (typeof resolved === 'string' && /<<cycle:[^>]+>>/.test(resolved)) {
+                error = 'Circular reference detected';
+            } else if (resolved === '{{' + ref + '}}') {
+                // The resolver left the placeholder intact → unresolved.
+                if (kind === 'ai') {
+                    error = 'AI-suggested value not implemented yet (Phase 2 stub)';
+                } else if (kind === 'secret') {
+                    resolved = '****';
+                    error = null;
+                } else {
+                    error = 'Not resolved — check the source / name';
+                }
+            }
+        } catch (e) {
+            error = e.message || 'Resolver threw';
+        }
+
+        var preview = error
+            ? '<span class="bowire-vars-ref-preview-error">' + escapeHtmlVA(error) + '</span>'
+            : '<span class="bowire-vars-ref-preview-value">' + escapeHtmlVA(String(resolved)) + '</span>';
+        var label = '<span class="bowire-vars-ref-preview-kind bowire-vars-ref-preview-kind-' + kind + '">'
+            + escapeHtmlVA(kind) + '</span>'
+            + '<span class="bowire-vars-ref-preview-ref">' + escapeHtmlVA(enclosed.match) + '</span>';
+        _varsRefPopover.innerHTML = label + '<span class="bowire-vars-ref-preview-arrow">→</span>' + preview;
+
+        // Position above the caret. Mirror-div coords from the
+        // autocomplete plumbing.
+        var coords = getCaretCoords(target);
+        if (coords) {
+            // Show, measure, then place. Need to set display: block
+            // before reading offsetHeight.
+            _varsRefPopover.style.display = 'block';
+            _varsRefPopover.style.left = '0';
+            _varsRefPopover.style.top = '0';
+            var ph = _varsRefPopover.offsetHeight || 30;
+            var pw = _varsRefPopover.offsetWidth || 240;
+            var topPx = coords.top - ph - 4;
+            if (topPx < 8) topPx = coords.top + coords.height + 4; // flip below if no room above
+            var leftPx = coords.left;
+            if (leftPx + pw > window.innerWidth - 8) leftPx = window.innerWidth - pw - 8;
+            leftPx = Math.max(8, leftPx);
+            _varsRefPopover.style.left = leftPx + 'px';
+            _varsRefPopover.style.top = topPx + 'px';
+        } else {
+            var rect = target.getBoundingClientRect();
+            _varsRefPopover.style.left = Math.max(8, rect.left) + 'px';
+            _varsRefPopover.style.top = (rect.top - 30) + 'px';
+            _varsRefPopover.style.display = 'block';
+        }
+    }
+
+    function closeVarsRefPreview() {
+        if (_varsRefPopover) _varsRefPopover.style.display = 'none';
+    }
+
+    function escapeHtmlVA(s) {
+        return String(s)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
     }
 
     function findOpenCurlyBefore(value, caret) {
@@ -258,11 +468,32 @@
             row.appendChild(desc);
             _varsACPopover.appendChild(row);
         });
-        // Position below-left of the target. Crude but functional;
-        // refining to caret-tracking is a follow-up.
-        var rect = varsACState.target.getBoundingClientRect();
-        _varsACPopover.style.left = Math.max(8, rect.left) + 'px';
-        _varsACPopover.style.top = (rect.bottom + 2) + 'px';
+        // Anchor at the exact caret column (mirror-div technique).
+        // Clamp into viewport so the popover stays visible even when
+        // the caret is at the far right edge of the screen.
+        var coords = getCaretCoords(varsACState.target);
+        if (!coords) {
+            var rect = varsACState.target.getBoundingClientRect();
+            _varsACPopover.style.left = Math.max(8, rect.left) + 'px';
+            _varsACPopover.style.top = (rect.bottom + 2) + 'px';
+        } else {
+            var popoverW = 280;
+            var popoverH = 320;
+            var leftPx = coords.left;
+            var topPx = coords.top + coords.height + 4;
+            // Flip above the caret if the popover would clip the
+            // bottom of the viewport.
+            if (topPx + popoverH > window.innerHeight - 8) {
+                topPx = coords.top - popoverH - 4;
+            }
+            // Clamp left so popover stays on-screen.
+            if (leftPx + popoverW > window.innerWidth - 8) {
+                leftPx = window.innerWidth - popoverW - 8;
+            }
+            leftPx = Math.max(8, leftPx);
+            _varsACPopover.style.left = leftPx + 'px';
+            _varsACPopover.style.top = topPx + 'px';
+        }
         _varsACPopover.style.display = 'block';
     }
 
