@@ -34,6 +34,19 @@
                 return;
             }
 
+            // #127 — Cmd/Ctrl+S Force-Flush. Writes every persist*()
+            // slot in one sweep so the operator can pin the current
+            // state without waiting for the throttled autosave path.
+            // The browser's native Cmd+S (save page as) is intercepted;
+            // the workbench surface is dynamic and 'save page' has no
+            // useful semantics here anyway.
+            if ((e.ctrlKey || e.metaKey) && !e.shiftKey && !e.altKey
+                && (e.key === 's' || e.key === 'S')) {
+                e.preventDefault();
+                flushAllPersists();
+                return;
+            }
+
             // #124 Cmd/Ctrl+K — open the command palette omnibox.
             // Same input as the topbar palette; this shortcut focuses
             // it from anywhere and pops the suggestion dropdown so
@@ -450,6 +463,21 @@
             try { window.__bowireExtFramework.loadExternalExtensions(); }
             catch (e) { console.warn('[bowire-ext] bootstrap failed', e); }
         }
+
+        // #127 — capability probe for the workspace-folder open
+        // action. Embedded hosts get { available: false } back so the
+        // save-pill click is gated off (the host is typically a
+        // production server). Single fire-and-forget GET; failure
+        // leaves canOpenWorkspaceFolder at its boot default of false.
+        fetch(config.prefix + '/api/workspace/can-open-folder')
+            .then(function (r) { return r.ok ? r.json() : null; })
+            .then(function (data) {
+                if (data && data.available) {
+                    canOpenWorkspaceFolder = true;
+                    render();
+                }
+            })
+            .catch(function () { /* leave false */ });
 
         // #125 Phase 2 — vars-autocomplete dropdown installs once
         // at boot; sits on document-level listeners so it covers

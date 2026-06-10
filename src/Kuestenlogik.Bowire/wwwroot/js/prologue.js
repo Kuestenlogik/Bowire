@@ -766,6 +766,46 @@
     //  target = which slot was written ('tabs', 'urls', ...)
     let saveState = { kind: 'idle', at: 0, target: '' };
     let saveStateClearTimer = null;
+
+    // #127 — folder-open capability. Set once at boot from
+    // /api/workspace/can-open-folder. Embedded hosts get { available:
+    // false } back so the save-pill click is gated off (the host is
+    // typically a production server, spawning a desktop process there
+    // makes zero sense). Standalone tool: true.
+    let canOpenWorkspaceFolder = false;
+
+    // #127 — Cmd+S Force-Flush. Calls every top-level persist*()
+    // function in sequence so a Cmd+S press writes EVERY known slot,
+    // not just whatever's about to autosave. Wraps each call in
+    // try/catch so a single broken slot doesn't abort the rest. All
+    // persist*() functions live in this IIFE (declared in their own
+    // fragment file) and are reachable via function hoisting; the
+    // per-fragment try/catch protects the flush from a single broken
+    // call breaking the whole sweep.
+    function flushAllPersists() {
+        var ok = 0, fail = 0;
+        function tryRun(label, fn) {
+            try { fn(); ok++; }
+            catch (e) { console.warn('[bowire] flush ' + label + ' failed', e); fail++; }
+        }
+        tryRun('serverUrls',      function () { persistServerUrls(); });
+        tryRun('protocolFilter',  function () { persistProtocolFilter(); });
+        tryRun('methodTypeFilter',function () { persistMethodTypeFilter(); });
+        tryRun('urlFilter',       function () { persistUrlFilter(); });
+        tryRun('expandedServices',function () { persistExpandedServices(); });
+        tryRun('urlHeaders',      function () { persistUrlHeaders(); });
+        tryRun('urlMeta',         function () { persistUrlMeta(); });
+        tryRun('recordingsTrash', function () { persistRecordingsTrash(); });
+        tryRun('collectionsTrash',function () { persistCollectionsTrash(); });
+        tryRun('workspaces',      function () { persistWorkspaces(); });
+        tryRun('requestTabs',     function () { persistRequestTabs(); });
+        tryRun('collections',     function () { persistCollections(); });
+        tryRun('recordings',      function () { persistRecordings(); });
+        tryRun('flows',           function () { persistFlows(); });
+        tryRun('benchmarks',      function () { persistBenchmarks(); });
+        markSaved(fail > 0 ? ('flush (' + ok + ' ok, ' + fail + ' err)') : 'all');
+    }
+
     function markSaved(target) {
         saveState = { kind: 'saved', at: Date.now(), target: target || 'state' };
         if (saveStateClearTimer) clearTimeout(saveStateClearTimer);

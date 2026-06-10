@@ -950,6 +950,17 @@ body {
 }
 .bowire-save-pill-failed .bowire-save-pill-dot { background: var(--bowire-warning); }
 
+/* #127 — clickable save-pill (standalone mode only). Hover affordance
+   so the operator sees the click is live; without
+   .bowire-save-pill-clickable the pill stays a flat indicator. */
+.bowire-save-pill-clickable {
+    cursor: pointer;
+    transition: filter var(--bowire-transition);
+}
+.bowire-save-pill-clickable:hover {
+    filter: brightness(1.08);
+}
+
 /* #116 Workspace switcher chip in the topbar context group.
    Mirrors .bowire-theme-toggle-btn — rahmenlos default, border on
    hover — so every clickable thing in the topbar has the same
