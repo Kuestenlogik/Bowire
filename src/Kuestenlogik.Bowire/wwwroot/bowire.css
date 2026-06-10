@@ -651,6 +651,21 @@ no decoration. */
     background: var(--bowire-surface-hover);
 }
 
+/* #154 Phase 1 — Help affordance when the Bowire.Help package isn't
+   installed. Disabled-not-hidden: users see the capability exists
+   and how to enable it instead of wondering why the docs button
+   vanished. Click still works (falls back to opening bowire.io/docs
+   in a new tab) but the visual treatment signals 'this lives
+   somewhere else without the package'. */
+.bowire-topbar-overflow-item-disabled {
+    color: var(--bowire-text-tertiary);
+    font-style: italic;
+}
+.bowire-topbar-overflow-item-disabled:hover {
+    background: var(--bowire-surface-hover);
+    color: var(--bowire-text-secondary);
+}
+
 .bowire-theme-toggle-btn {
     /* Topbar buttons are rahmenlos by default — the border only
        materialises on hover so the chrome reads as quiet
