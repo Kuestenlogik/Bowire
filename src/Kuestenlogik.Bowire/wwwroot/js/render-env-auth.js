@@ -1286,8 +1286,77 @@
         return out;
     }
 
+    // #124 Phase 2 — scoring layer for the method-match ranking.
+    // Returns 0 = no hit, higher = better. Layers as the issue body
+    // enumerates:
+    //   1000  exact name match (case-insensitive)
+    //    500  name prefix match
+    //    200  camelCase / snake / kebab boundary match in name
+    //    100  plain substring in name
+    //     50  substring elsewhere (fullName / service / description /
+    //         summary / httpPath)
+    // Plus boosts on top of the base score:
+    //     +75 method is in the recently-used list (MRU bonus)
+    //     +25 same-protocol bonus when a protocol filter is active
+    // Workspace-affinity is implicit because services[] is already
+    // workspace-scoped — no extra bonus needed today.
+    function _scoreMethodMatch(method, svc, qLower) {
+        var name = (method.name || '').toLowerCase();
+        var base = 0;
+        if (name === qLower) base = 1000;
+        else if (name.indexOf(qLower) === 0) base = 500;
+        else {
+            // camelCase / snake / kebab boundary: query matches the start
+            // of a name segment (after upper-case, _, - or /).
+            var boundaryHit = false;
+            var raw = method.name || '';
+            for (var i = 0; i < raw.length - qLower.length + 1; i++) {
+                var prevChar = i === 0 ? '_' : raw.charAt(i - 1);
+                var atBoundary = i === 0
+                    || prevChar === '_' || prevChar === '-' || prevChar === '/'
+                    || (prevChar === prevChar.toLowerCase() && raw.charAt(i) !== raw.charAt(i).toLowerCase());
+                if (atBoundary && raw.substring(i, i + qLower.length).toLowerCase() === qLower) {
+                    boundaryHit = true;
+                    break;
+                }
+            }
+            if (boundaryHit) base = 200;
+            else if (name.indexOf(qLower) !== -1) base = 100;
+            else {
+                var extras = (
+                    (method.fullName || '') + ' ' +
+                    (svc.name || '') + ' ' +
+                    (method.description || '') + ' ' +
+                    (method.summary || '') + ' ' +
+                    (method.httpPath || '')
+                ).toLowerCase();
+                if (extras.indexOf(qLower) !== -1) base = 50;
+            }
+        }
+        if (base === 0) return 0;
+        // MRU bonus.
+        try {
+            var recents = (typeof getRecentMethods === 'function') ? getRecentMethods() : [];
+            for (var r = 0; r < recents.length; r++) {
+                if (recents[r].service === svc.name && recents[r].method === method.name) {
+                    base += 75;
+                    break;
+                }
+            }
+        } catch { /* recents may not be loaded yet */ }
+        // Protocol-filter affinity.
+        try {
+            if (typeof protocolFilter !== 'undefined' && protocolFilter.size > 0
+                && protocolFilter.has(svc.source)) {
+                base += 25;
+            }
+        } catch { /* ignore */ }
+        return base;
+    }
+
     // Builds the list of suggestions shown under the command palette.
-    // Order: Methods > Filters > Protocols > Environments. Each
+    // Order: AI lane (?-prefix) → Methods (scored top 8) → Filters →
+    // Recordings → Mocks → Navigate → Protocols → Environments. Each
     // suggestion carries an onSelect callback that does the work.
     function buildSearchSuggestions(query) {
         var q = (query || '').trim();
@@ -1295,28 +1364,52 @@
         var qLower = q.toLowerCase();
         var out = [];
 
-        // --- Methods (top 8) ---
+        // --- #124 AI lane via `?` prefix ---
+        // Single ? — empty prompt, just an affordance row.
+        // ?<text> — routes the query to the Assistant. Phase 1 opens
+        // the AI drawer with the question seeded; inline-streaming the
+        // answer into the dropdown is Phase 2 (richer UI, needs
+        // multiline rendering + cancellation).
+        if (q.charAt(0) === '?') {
+            var prompt = q.substring(1).trim();
+            out.push({
+                group: 'Assistant',
+                label: prompt ? ('Ask Assistant: ' + prompt) : 'Ask Assistant…',
+                sublabel: prompt
+                    ? 'Opens the Assistant drawer with this prompt'
+                    : 'Type your question after the ? prefix',
+                icon: svgIcon('spark'),
+                onSelect: function () {
+                    searchSuggestionsOpen = false;
+                    searchQuery = '';
+                    aiDrawerOpen = true;
+                    try { localStorage.setItem('bowire_ai_drawer_open', '1'); } catch { /* ignore */ }
+                    if (prompt && typeof sendChat === 'function') {
+                        try { sendChat(prompt); }
+                        catch (e) { console.warn('[ai] sendChat failed', e); }
+                    }
+                    render();
+                }
+            });
+            // ?-prefix returns exclusively the AI lane — the user opted
+            // into the AI channel, don't pollute the dropdown with
+            // method matches for "how"/"what" prefixes.
+            return out;
+        }
+
+        // --- Methods (scored, top 8) ---
         var methodMatches = [];
         for (var si = 0; si < services.length; si++) {
             var svc = services[si];
             if (!svc.methods) continue;
             for (var mi = 0; mi < svc.methods.length; mi++) {
                 var m = svc.methods[mi];
-                var hay = (
-                    (m.name || '') + ' ' +
-                    (m.fullName || '') + ' ' +
-                    (svc.name || '') + ' ' +
-                    (m.description || '') + ' ' +
-                    (m.summary || '') + ' ' +
-                    (m.httpPath || '')
-                ).toLowerCase();
-                if (hay.indexOf(qLower) !== -1) {
-                    methodMatches.push({ svc: svc, method: m });
-                    if (methodMatches.length >= 8) break;
-                }
+                var score = _scoreMethodMatch(m, svc, qLower);
+                if (score > 0) methodMatches.push({ svc: svc, method: m, score: score });
             }
-            if (methodMatches.length >= 8) break;
         }
+        methodMatches.sort(function (a, b) { return b.score - a.score; });
+        if (methodMatches.length > 8) methodMatches = methodMatches.slice(0, 8);
         for (var mmi = 0; mmi < methodMatches.length; mmi++) {
             (function (mm) {
                 var proto = protocols.find(function (p) { return p.id === mm.svc.source; });
