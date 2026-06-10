@@ -647,11 +647,16 @@ body {
 }
 
 .bowire-theme-toggle-btn {
-    height: 34px;
+    /* Topbar buttons are rahmenlos by default — the border only
+       materialises on hover so the chrome reads as quiet
+       affordances rather than a row of competing pills. Same
+       baseline applies to .bowire-workspace-chip below; together
+       they keep the topbar visually uniform. */
+    height: 30px;
     padding: 0 10px;
     gap: 6px;
     background: transparent;
-    border: 1px solid var(--bowire-border);
+    border: 1px solid transparent;
     border-radius: var(--bowire-radius-sm);
     color: var(--bowire-text-secondary);
     cursor: pointer;
@@ -668,6 +673,7 @@ body {
 
 .bowire-theme-toggle-btn:hover {
     background: var(--bowire-surface-hover);
+    border-color: var(--bowire-border);
     color: var(--bowire-text);
 }
 
@@ -947,16 +953,23 @@ body {
 }
 .bowire-save-pill-failed .bowire-save-pill-dot { background: var(--bowire-warning); }
 
-/* #116 Workspace switcher chip in the topbar context group. */
+/* #116 Workspace switcher chip in the topbar context group.
+   Mirrors .bowire-theme-toggle-btn — rahmenlos default, border on
+   hover — so every clickable thing in the topbar has the same
+   quiet baseline. Height + radius are deliberately unified at
+   30px / radius-sm so chips and theme-toggle-buttons align on the
+   topbar baseline. The .active branch keeps the accent affordance
+   for the *current* workspace because that's a state, not just
+   hover feedback. */
 .bowire-workspace-chip {
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    height: 28px;
+    height: 30px;
     padding: 0 10px;
-    background: var(--bowire-surface);
-    border: 1px solid var(--bowire-border-subtle);
-    border-radius: var(--bowire-radius-md);
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: var(--bowire-radius-sm);
     color: var(--bowire-text);
     cursor: pointer;
     font-size: 12px;
@@ -964,7 +977,7 @@ body {
 }
 .bowire-workspace-chip:hover {
     background: var(--bowire-surface-hover);
-    border-color: var(--bowire-text-tertiary);
+    border-color: var(--bowire-border);
 }
 .bowire-workspace-chip.active {
     background: var(--bowire-accent-subtle);
