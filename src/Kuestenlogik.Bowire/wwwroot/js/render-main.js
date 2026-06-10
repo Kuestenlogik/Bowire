@@ -1753,6 +1753,37 @@
                 dataset: { type: methodBadgeType(selectedMethod) },
                 textContent: selectedMethod.httpMethod || methodBadgeLabel(selectedMethod.methodType)
             }));
+
+            // #114 — inline hint chip at the method header. Surfaces the
+            // deterministic hint engine's results at the place where the
+            // operator looks for help (the method they're about to
+            // invoke) instead of burying them in the Assistant drawer's
+            // static list. Click opens the drawer to read the full
+            // text; the chip itself is a one-glance affordance.
+            // The drawer's list survives as a history/index — Power
+            // users keep their overview, but the trigger to LOOK at it
+            // now lives where the context is.
+            if (typeof evaluateHints === 'function') {
+                try {
+                    var hints = evaluateHints();
+                    if (hints && hints.length > 0) {
+                        header.appendChild(el('button', {
+                            className: 'bowire-header-hint-chip',
+                            title: hints.length + ' hint' + (hints.length === 1 ? '' : 's') + ' for this method — click to open the Assistant',
+                            'aria-label': 'Open Assistant hints (' + hints.length + ')',
+                            onClick: function () {
+                                aiDrawerOpen = true;
+                                try { localStorage.setItem('bowire_ai_drawer_open', '1'); } catch { /* ignore */ }
+                                render();
+                            }
+                        },
+                            el('span', { className: 'bowire-header-hint-chip-icon', innerHTML: svgIcon('spark') }),
+                            el('span', { className: 'bowire-header-hint-chip-count', textContent: String(hints.length) })
+                        ));
+                    }
+                } catch { /* hint engine may throw on partial state — fail silent */ }
+            }
+
             // Copy invoke URL — useful in embedded mode where there's no
             // visible URL bar. Builds a curl-friendly URL from the method.
             header.appendChild(el('button', {
