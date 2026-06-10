@@ -132,10 +132,17 @@
             recordingFormatVersion: rec.recordingFormatVersion,
             schemaSnapshot: rec.schemaSnapshot,
         };
+        // #125 Phase 4 — sanitise before the disk write so secret
+        // values never land in the recording file. The resolver
+        // hands the real value to the upstream; if an API echoes the
+        // bearer token back in a response field, this strip prevents
+        // the recording from carrying it.
+        var safeStep = (typeof sanitiseForExport === 'function')
+            ? sanitiseForExport(step) : step;
         fetch(url, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ step: step, metadata: meta }),
+            body: JSON.stringify({ step: safeStep, metadata: meta }),
         }).catch(function () { /* offline — localStorage still has it */ });
     }
 
@@ -154,7 +161,11 @@
         if (_recordingsDiskSyncTimer) clearTimeout(_recordingsDiskSyncTimer);
         _recordingsDiskSyncTimer = setTimeout(function () {
             _recordingsDiskSyncTimer = null;
-            var payload = JSON.stringify({ recordings: recordingsList });
+            // #125 Phase 4 — sanitise secret values before the
+            // full-document PUT. Same contract as appendStepToDisk.
+            var safeRecordings = (typeof sanitiseForExport === 'function')
+                ? sanitiseForExport(recordingsList) : recordingsList;
+            var payload = JSON.stringify({ recordings: safeRecordings });
             fetch(config.prefix + '/api/recordings' + _recordingsWsParam(), {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },

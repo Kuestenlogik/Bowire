@@ -285,14 +285,20 @@
                 error = 'Circular reference detected';
             } else if (resolved === '{{' + ref + '}}') {
                 // The resolver left the placeholder intact → unresolved.
+                // #125 Phase 4: ai.* needs prefetch before send (no
+                // value yet → "will be resolved at send time"); secret.*
+                // means the named secret isn't set on the workspace.
                 if (kind === 'ai') {
-                    error = 'AI-suggested value not implemented yet (Phase 2 stub)';
+                    error = 'Resolved at send time via prefetch — not cached yet';
                 } else if (kind === 'secret') {
-                    resolved = '****';
-                    error = null;
+                    error = 'No secret named "' + ref.replace(/^secret\./, '') + '" in this workspace';
                 } else {
                     error = 'Not resolved — check the source / name';
                 }
+            } else if (kind === 'secret') {
+                // Successfully resolved secret — mask in the preview
+                // so the UI never displays the bearer token.
+                resolved = '••••••••';
             }
         } catch (e) {
             error = e.message || 'Resolver threw';

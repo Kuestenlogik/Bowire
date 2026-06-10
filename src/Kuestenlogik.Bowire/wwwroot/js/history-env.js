@@ -436,18 +436,35 @@
                 var stepResolved = resolveStepVar(stepIdx, stepPath);
                 return stepResolved === null ? match : stepResolved;
             }
-            // {{secret.NAME}} — placeholder for the OS keyring read
-            // (Phase 2). For now resolves to a masked literal so the
-            // operator's template doesn't leak the bare placeholder
-            // when copied.
+            // {{secret.NAME}} — workspace-scoped in-memory secret.
+            // Phase 4 stores secrets only in the JS session (cleared
+            // on reload); Phase 5 will wrap an OS keyring. The
+            // resolver returns the REAL value to the request
+            // pipeline so the upstream actually gets the bearer
+            // token / API key. UI chips render masked, and
+            // recording / export sanitisers replace the resolved
+            // value with '***' before it leaves the workbench.
             if (key.indexOf('secret.') === 0) {
-                return '****';
+                var secretName = key.substring('secret.'.length);
+                var secretValue = (typeof resolveSecret === 'function')
+                    ? resolveSecret(secretName) : null;
+                // Unset secrets leave the placeholder intact so the
+                // operator sees the typo / missing config instead of
+                // a silent empty substitution.
+                return secretValue === null ? match : secretValue;
             }
-            // {{ai.NAME}} — placeholder for the AI-suggested-value
-            // path (Phase 2). For now leaves the placeholder intact
-            // so the operator sees it's unresolved.
+            // {{ai.NAME}} — session-cached AI-suggested value. The
+            // synchronous resolver only reads from the cache —
+            // prefetchAiVars(template) is the async path that
+            // populates the cache before a send. Missing entries
+            // leave the placeholder so the operator sees that the
+            // ai-prefetch step hasn't run yet (or returned no
+            // value), instead of a silent empty substitution.
             if (key.indexOf('ai.') === 0) {
-                return match;
+                var aiName = key.substring('ai.'.length);
+                var aiValue = (typeof resolveAiVar === 'function')
+                    ? resolveAiVar(aiName) : null;
+                return aiValue === null ? match : aiValue;
             }
             // System var (bare ${now} / ${uuid}).
             var sysBare = resolveSystemVar(key);
