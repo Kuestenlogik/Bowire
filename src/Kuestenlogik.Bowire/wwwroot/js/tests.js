@@ -4,7 +4,7 @@
         var body = el('div', { className: 'bowire-pane-body bowire-tests-body' });
 
         body.appendChild(el('div', { className: 'bowire-tests-hint',
-            textContent: 'Newman-style assertions that run automatically after every successful response. Use ${var} substitution in expected values if you need them resolved at run time.' }));
+            textContent: 'Newman-style assertions that run automatically after every successful response. Use {{var}} substitution in expected values if you need them resolved at run time.' }));
 
         var tests = getTestsFor(selectedService.name, selectedMethod.name);
 

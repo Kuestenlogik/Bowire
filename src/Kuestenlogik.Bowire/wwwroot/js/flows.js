@@ -1002,7 +1002,7 @@
                 } else if (node.type === 'variable') {
                     content.appendChild(el('div', { className: 'bowire-flow-card-title', textContent: 'Set Variable' }));
                     content.appendChild(el('div', { className: 'bowire-flow-card-subtitle',
-                        textContent: (node.varName || '') + ' = ${response.' + (node.path || '') + '}' }));
+                        textContent: (node.varName || '') + ' = {{prev.' + (node.path || '') + '}}' }));
                 } else if (node.type === 'loop') {
                     var loopTypeForLabel = node.loopType || 'count';
                     var loopLabel = loopTypeForLabel === 'while'
