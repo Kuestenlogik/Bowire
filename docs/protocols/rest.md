@@ -169,6 +169,23 @@ Tracked on the [roadmap](https://github.com/Kuestenlogik/Bowire/blob/main/ROADMA
 
 - Code snippet export (curl, python, JavaScript)
 
+## Try it with a public endpoint
+
+If you'd rather poke at a real-world API before standing up your own host, these public endpoints serve well-known OpenAPI specs and accept anonymous calls. Pass any of them as `--url` to the standalone tool, or add them via the **Sources** rail in the workbench:
+
+| Use case | URL | Notes |
+|----------|-----|-------|
+| OpenAPI 3 discovery | `https://petstore3.swagger.io/api/v3/openapi.json` | The canonical Petstore — GETs, POSTs, path + query + body params, auth-protected endpoints |
+| Swagger 2 discovery | `https://petstore.swagger.io/v2/swagger.json` | The older Petstore for backwards-compat testing |
+| Schema-free Freeform | `https://jsonplaceholder.typicode.com` | `/posts`, `/users`, `/comments` — fast, deterministic; ideal for recording / replay |
+| Schema-free Freeform | `https://dummyjson.com` | `/products`, `/auth/login` (Bearer-token roundtrip), `/users` with pagination |
+| Schema-free Freeform | `https://reqres.in/api` | `/users?page=1`, `/login` — small, deterministic test fixtures |
+| Latency / status probes | `https://httpbin.org` | `/get`, `/post`, `/status/{code}`, `/delay/{n}` — perfect for the Benchmarks rail mode |
+
+`httpbin.org/delay/{n}` returns after exactly *n* seconds; combine it with the Benchmarks rail's concurrency setting to see p50/p95 behaviour change as you fan out. `httpbin.org/status/500` produces a deterministic error stream for testing your error-handling assertions.
+
+> These are third-party services that may rate-limit, slow down, or disappear without notice. Treat them as convenience for getting started — for sustained testing, run [`Bowire.Samples/SimpleRest/`](#sample) locally.
+
 ## Sample
 
 `Bowire.Samples/SimpleRest/` is a Minimal API host with `Microsoft.AspNetCore.OpenApi`, three tags (`Todos`, `Tags`, `Legacy`), all five common verbs, a deprecated endpoint, and `app.MapBowire()` for embedded discovery. Run it:

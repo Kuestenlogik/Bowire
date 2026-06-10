@@ -86,6 +86,24 @@ Per-environment auth helpers (Bearer / Basic / API Key / JWT / OAuth) work exact
 - **Selection-set picker is depth-capped at 3.** Deeper nested objects render as "leaf" message fields you can check or uncheck, but you can't expand into their inner fields from the picker. Workaround: edit the query manually in the editor pane below.
 - **Unions and interfaces** in the picker pick the first member type's fields. Inline fragment selection (`... on User { ... }`) is not yet exposed in the visual picker; edit the query manually if you need it.
 
+## Try it with a public endpoint
+
+Three well-known introspection-enabled GraphQL endpoints work as drop-in `--url` targets for the standalone tool. Each accepts anonymous queries:
+
+| Endpoint | What's in it |
+|----------|--------------|
+| `https://countries.trevorblades.com/graphql` | Countries / languages / continents; small schema, fast — good first introspection target |
+| `https://rickandmortyapi.com/graphql` | Characters / Episodes / Locations; bigger result sets, lists with pagination |
+| `https://swapi-graphql.netlify.app/.netlify/functions/index` | Star Wars films / people / planets via Relay-style Connection / Edge pagination |
+
+```bash
+bowire --url https://countries.trevorblades.com/graphql
+```
+
+Bowire sends the canonical introspection query, rebuilds the schema, and the **Query** + **Mutation** services show up in the sidebar.
+
+> These are third-party services that may rate-limit, slow down, or disappear without notice. Treat them as convenience for getting started — for sustained testing, run [`Bowire.Samples/SimpleGraphQL`](#sample) locally.
+
 ## Sample
 
 `Bowire.Samples/SimpleGraphQL` is a hand-rolled minimal introspection-capable server (no HotChocolate / no graphql-dotnet). It exposes:

@@ -83,3 +83,12 @@ The UI stays protocol-agnostic: the same sidebar, request editor, and response v
 ## Multiple protocols in one session
 
 Every installed plugin runs simultaneously. A single Bowire instance against a service that speaks gRPC, REST, and SignalR shows all three in the sidebar with per-protocol badges. Filter to a single protocol via the [command palette](../features/command-palette.md) or the sidebar protocol pills.
+
+## Public test endpoints
+
+If you want to try Bowire against a real-world service before standing up your own host, each protocol guide ends with a **"Try it with a public endpoint"** section listing well-known, anonymously-callable endpoints you can pass straight to `--url`:
+
+- [REST → Try it with a public endpoint](rest.md#try-it-with-a-public-endpoint) — Swagger Petstore (OpenAPI 3 & Swagger 2), JSONPlaceholder, DummyJSON, ReqRes, httpbin
+- [GraphQL → Try it with a public endpoint](graphql.md#try-it-with-a-public-endpoint) — Countries, Rick & Morty, Star Wars (SWAPI)
+
+These are third-party services that may rate-limit or disappear without notice. The per-protocol `Bowire.Samples/` projects are the canonical try-it path for sustained testing.
