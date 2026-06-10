@@ -1,0 +1,54 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Description>In-app help for Bowire — registers an IBowireHelpProvider over the docs/ markdown set. Embedded ASP.NET hosts opt in via builder.AddBowireHelp(); without this package the workbench renders Help affordances as disabled with an install hint. The standalone tool + Docker image take this as a transitive reference so CLI users get docs without extra setup.</Description>
+    <PackageId>Kuestenlogik.Bowire.Help</PackageId>
+    <PackageTags>bowire;help;documentation;markdown;developer-tools</PackageTags>
+    <IsPackable>true</IsPackable>
+  </PropertyGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="Kuestenlogik.Bowire.Tests" />
+  </ItemGroup>
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Kuestenlogik.Bowire\Kuestenlogik.Bowire.csproj" />
+    <PackageReference Include="Markdig" />
+  </ItemGroup>
+  <!-- Embedded user-facing docs. Whitelist by category — we ship
+       the parts of docs/ that read as a user guide (setup, ui-guide,
+       features, protocols-as-reference, the landing page) but skip
+       architecture/api/contributing/security-examples which are
+       developer-internal and only make sense on the marketing site.
+       Logical name carries the relative path with backslashes
+       normalised to forward slashes — the provider parses these
+       back into topic IDs at startup. Single 'bowire-help-docs/'
+       prefix makes the resource-set scan a trivial StartsWith
+       filter.
+
+       Phase 3+ can pivot this to a dedicated user-manual/ tree
+       without touching the provider — the source path is the only
+       thing that changes. -->
+  <ItemGroup>
+    <EmbeddedResource Include="..\..\docs\index.md">
+      <LogicalName>bowire-help-docs/index.md</LogicalName>
+      <Link>docs\index.md</Link>
+    </EmbeddedResource>
+    <EmbeddedResource Include="..\..\docs\setup\**\*.md">
+      <LogicalName>bowire-help-docs/setup/%(RecursiveDir)%(Filename)%(Extension)</LogicalName>
+      <Link>docs\setup\%(RecursiveDir)%(Filename)%(Extension)</Link>
+    </EmbeddedResource>
+    <EmbeddedResource Include="..\..\docs\ui-guide\**\*.md">
+      <LogicalName>bowire-help-docs/ui-guide/%(RecursiveDir)%(Filename)%(Extension)</LogicalName>
+      <Link>docs\ui-guide\%(RecursiveDir)%(Filename)%(Extension)</Link>
+    </EmbeddedResource>
+    <EmbeddedResource Include="..\..\docs\features\**\*.md">
+      <LogicalName>bowire-help-docs/features/%(RecursiveDir)%(Filename)%(Extension)</LogicalName>
+      <Link>docs\features\%(RecursiveDir)%(Filename)%(Extension)</Link>
+    </EmbeddedResource>
+    <EmbeddedResource Include="..\..\docs\protocols\**\*.md">
+      <LogicalName>bowire-help-docs/protocols/%(RecursiveDir)%(Filename)%(Extension)</LogicalName>
+      <Link>docs\protocols\%(RecursiveDir)%(Filename)%(Extension)</Link>
+    </EmbeddedResource>
+  </ItemGroup>
+</Project>

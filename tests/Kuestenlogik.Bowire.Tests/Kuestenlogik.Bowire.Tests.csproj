@@ -26,6 +26,11 @@
          explicitly because the package is opt-in and the rest of the
          test suite shouldn't depend on it being installed. -->
     <ProjectReference Include="..\..\src\Kuestenlogik.Bowire.Ai\Kuestenlogik.Bowire.Ai.csproj" />
+    <!-- Optional Help package: tests cover the markdown provider's
+         resource scan, front-matter parsing, search ranking, and
+         AddBowireHelp registration. Same opt-in shape as the Ai
+         package above. -->
+    <ProjectReference Include="..\..\src\Kuestenlogik.Bowire.Help\Kuestenlogik.Bowire.Help.csproj" />
     <!-- Tiny fake sidecar executable used by the sidecar plugin
          integration tests. ReferenceOutputAssembly=false because the
          tests only need its built EXE on disk (located via
