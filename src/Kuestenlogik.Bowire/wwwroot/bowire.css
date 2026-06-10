@@ -961,6 +961,140 @@ body {
     filter: brightness(1.08);
 }
 
+/* #140 — per-mode Presets / Saved Configs bar. Sits at the top of a
+   workflow mode's setup form (Benchmarks today; Mocks / Parallel /
+   Security follow). Reads as a quiet utility row, not a chrome
+   highlight — keep weight low so the form below stays the focus. */
+.bowire-presets-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0 0 12px 0;
+    padding: 8px 10px;
+    border: 1px solid var(--bowire-border-subtle);
+    border-radius: var(--bowire-radius-sm);
+    background: var(--bowire-surface);
+}
+.bowire-presets-select {
+    height: 28px;
+    padding: 0 8px;
+    background: var(--bowire-bg);
+    border: 1px solid var(--bowire-border);
+    border-radius: var(--bowire-radius-sm);
+    color: var(--bowire-text);
+    font-size: 12px;
+    cursor: pointer;
+    min-width: 180px;
+}
+.bowire-presets-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    height: 28px;
+    padding: 0 10px;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: var(--bowire-radius-sm);
+    color: var(--bowire-text-secondary);
+    cursor: pointer;
+    font-size: 12px;
+    transition: all var(--bowire-transition);
+}
+.bowire-presets-btn:hover {
+    background: var(--bowire-surface-hover);
+    border-color: var(--bowire-border);
+    color: var(--bowire-text);
+}
+.bowire-presets-btn span svg { width: 12px; height: 12px; }
+
+.bowire-presets-modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.4);
+    z-index: 2000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.bowire-presets-modal {
+    background: var(--bowire-bg-elevated);
+    border: 1px solid var(--bowire-border);
+    border-radius: var(--bowire-radius-md);
+    box-shadow: var(--bowire-shadow-md);
+    padding: 20px;
+    min-width: 420px;
+    max-width: 90vw;
+    max-height: 80vh;
+    overflow: auto;
+}
+.bowire-presets-modal-title {
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 12px;
+}
+.bowire-presets-modal-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 16px;
+}
+.bowire-presets-modal-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 6px 8px;
+    border: 1px solid var(--bowire-border-subtle);
+    border-radius: var(--bowire-radius-sm);
+}
+.bowire-presets-modal-name {
+    flex: 1;
+    font-size: 13px;
+}
+.bowire-presets-modal-default-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    color: var(--bowire-text-secondary);
+    cursor: pointer;
+}
+.bowire-presets-modal-delete {
+    height: 24px;
+    padding: 0 8px;
+    background: transparent;
+    border: 1px solid var(--bowire-border);
+    border-radius: var(--bowire-radius-sm);
+    color: var(--bowire-danger);
+    cursor: pointer;
+    font-size: 11px;
+}
+.bowire-presets-modal-delete:hover {
+    background: var(--bowire-danger);
+    color: #fff;
+}
+.bowire-presets-empty {
+    margin: 12px 0;
+    color: var(--bowire-text-tertiary);
+    font-size: 12px;
+}
+.bowire-presets-modal-actions {
+    display: flex;
+    justify-content: flex-end;
+}
+.bowire-presets-modal-close {
+    height: 30px;
+    padding: 0 14px;
+    background: var(--bowire-accent);
+    border: none;
+    border-radius: var(--bowire-radius-sm);
+    color: #fff;
+    cursor: pointer;
+    font-size: 12px;
+}
+.bowire-presets-modal-close:hover {
+    filter: brightness(1.1);
+}
+
 /* #116 Workspace switcher chip in the topbar context group.
    Mirrors .bowire-theme-toggle-btn — rahmenlos default, border on
    hover — so every clickable thing in the topbar has the same

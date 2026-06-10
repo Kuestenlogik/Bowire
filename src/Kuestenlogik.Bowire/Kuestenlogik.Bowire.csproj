@@ -115,6 +115,12 @@
          svgIcon, renderEmptyCard, bowireConfirm), auth.js (applyAuth),
          history-env.js (substituteVars, serverUrlParamForService),
          and the live benchmark scratchpad declared in prologue.js. -->
+    <!-- #140 Per-Mode Presets / Saved Configs framework. Generic
+         load / save / set-default API + Manage-modal. Consumed by
+         Benchmarks (this phase); Mocks / Parallel / Security / Proxy /
+         Catalogue layer on the same API. Must come before benchmarks.js
+         so benchmarks.js can call renderPresetsBar. -->
+    <BowireJsFragment Include="wwwroot\js\presets.js" />
     <BowireJsFragment Include="wwwroot\js\benchmarks.js" />
     <BowireJsFragment Include="wwwroot\js\render-sidebar.js" />
     <BowireJsFragment Include="wwwroot\js\landing.js" />
