@@ -356,6 +356,48 @@
             })
         ));
 
+        // ---- #140 Presets bar ----
+        // Saves and loads load-profile configs (n / concurrency / body
+        // / metadata). Service + method stay tied to the spec — a
+        // preset called "100-session staging p95" applies to whatever
+        // method this spec is pointing at. Auto-applies the default
+        // preset (if any) when this spec is loaded for the first time
+        // in this render — guarded by the spec's _autoApplied flag so
+        // a user-driven later edit isn't clobbered.
+        if (typeof renderPresetsBar === 'function') {
+            try {
+                var defaultPreset = (typeof getDefaultPreset === 'function')
+                    ? getDefaultPreset('benchmarks') : null;
+                if (defaultPreset && !spec._autoApplied) {
+                    spec._autoApplied = true;
+                    var cfg = defaultPreset.config || {};
+                    if (cfg.body !== undefined) spec.body = cfg.body;
+                    if (cfg.metadata !== undefined) spec.metadata = cfg.metadata;
+                    if (cfg.n !== undefined) spec.n = cfg.n;
+                    if (cfg.concurrency !== undefined) spec.concurrency = cfg.concurrency;
+                    persistBenchmarks();
+                }
+                main.appendChild(renderPresetsBar({
+                    mode: 'benchmarks',
+                    snapshot: function () {
+                        return {
+                            body: spec.body,
+                            metadata: spec.metadata,
+                            n: spec.n,
+                            concurrency: spec.concurrency
+                        };
+                    },
+                    apply: function (cfg) {
+                        if (cfg.body !== undefined) spec.body = cfg.body;
+                        if (cfg.metadata !== undefined) spec.metadata = cfg.metadata;
+                        if (cfg.n !== undefined) spec.n = cfg.n;
+                        if (cfg.concurrency !== undefined) spec.concurrency = cfg.concurrency;
+                        persistBenchmarks();
+                    }
+                }));
+            } catch (e) { console.warn('[benchmarks] presets bar failed', e); }
+        }
+
         // ---- Target: service / method ----
         // Drop-downs sourced from the current workspace's discovered
         // services. If the spec captures a name that's no longer in
