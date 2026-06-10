@@ -806,6 +806,91 @@
         markSaved(fail > 0 ? ('flush (' + ok + ' ok, ' + fail + ' err)') : 'all');
     }
 
+    // ---- #115 App-Version-Marker + Cosmetic-State-Reset ----
+    //
+    // Pragmatic alternative to the bowire_v2_*-prefix-sweep originally
+    // listed in #115. Instead of rewriting every storage key on a
+    // major version bump (risky: a per-key migration that loses data
+    // is worse than the staleness it tries to prevent), we keep ONE
+    // marker that records the major version of the install and reset
+    // only the cosmetic UI state when the major changes.
+    //
+    // Data keys (workspaces, environments, recordings, collections,
+    // history, favorites, server-urls, request-tabs, …) carry their
+    // own per-key migrations with markers like bowire_envs_shared_
+    // migrated_v1. Those don't need a prefix rewrite; they already
+    // handle their own schema evolution.
+    //
+    // Persistent user settings (theme, watch-interval, vars-dollar-
+    // snooze) also stay — the user chose those deliberately, a major
+    // version bump shouldn't nuke them.
+    //
+    // What WE reset is pure UI state: which drawer was open, what
+    // the split mode was, what rail mode the user was last in,
+    // sidebar width, filter chips. Stale values here can point at
+    // surfaces that changed shape across the major bump. A reset
+    // means the user sees the new shell with new defaults.
+    var APP_VERSION_KEY = 'bowire_app_version';
+    var COSMETIC_KEYS_RESET_ON_BUMP = [
+        'bowire_ai_drawer_open',
+        'bowire_security_drawer_open',
+        'bowire_split_mode',
+        'bowire_rail_mode',
+        'bowire_expanded_services',
+        'bowire_sidebar_width',
+        'bowire_sidebar_view',
+        'bowire_protocol_filter',
+        'bowire_method_type_filter',
+        'bowire_url_filter',
+        'bowire_name_filter',
+        'bowire_source_mode',
+        'bowire_transcoding_mode'
+    ];
+
+    function _appMajorVersion() {
+        var v = (config && config.version) || '';
+        // Match leading MAJOR.MINOR from strings like "2.0.1-rc.3" or
+        // "0.9.4" so a patch release doesn't trigger the cosmetic
+        // reset — only minor + major bumps do.
+        var m = String(v).match(/^(\d+\.\d+)/);
+        return m ? m[1] : '';
+    }
+
+    function checkAppVersionMarker() {
+        var current = _appMajorVersion();
+        if (!current) return; // version unknown — don't gamble
+        var stored;
+        try { stored = localStorage.getItem(APP_VERSION_KEY); }
+        catch { return; }
+        if (stored === current) return; // happy path: same version
+
+        // First boot (stored===null) doesn't toast — there was no
+        // previous install to warn about. Just record the marker.
+        if (stored !== null) {
+            for (var i = 0; i < COSMETIC_KEYS_RESET_ON_BUMP.length; i++) {
+                try { localStorage.removeItem(COSMETIC_KEYS_RESET_ON_BUMP[i]); }
+                catch { /* ignore */ }
+            }
+            // Toast deferred so it lands AFTER the main render — the
+            // toast container is appended to document.body by toast()
+            // but morphdom replaces #bowire-app on every render, and
+            // popping the toast mid-boot can race.
+            setTimeout(function () {
+                if (typeof toast === 'function') {
+                    toast(
+                        'Bowire upgraded from v' + stored + ' to v' + current
+                        + ' — workbench layout reset to defaults. Your data '
+                        + '(workspaces, recordings, environments, collections, …) is untouched.',
+                        'info',
+                        { duration: 8000 }
+                    );
+                }
+            }, 500);
+        }
+        try { localStorage.setItem(APP_VERSION_KEY, current); }
+        catch { /* quota — best-effort */ }
+    }
+
     function markSaved(target) {
         saveState = { kind: 'saved', at: Date.now(), target: target || 'state' };
         if (saveStateClearTimer) clearTimeout(saveStateClearTimer);
