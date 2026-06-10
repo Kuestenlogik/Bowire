@@ -318,12 +318,21 @@ body {
     align-items: center;
     gap: 0;
     min-width: 0;
+    /* Fill the topbar vertically so the children's align-items:
+       center actually has a consistent box to center against —
+       without this, the brand collapsed to the tallest child
+       (the wordmark) and the smaller logo column rendered
+       slightly above the wordmark baseline after the size cut. */
+    height: 100%;
 }
-/* Logo column is exactly 48 px so it aligns vertically with the
-   activity-rail icons below (rail buttons stretch to full 48 px
-   width). The logo image inside is centered both axes. */
-.bowire-topbar-brand .bowire-logo-icon {
+/* Logo column wrapper — 48 px wide so it aligns with the
+   activity-rail icons below (rail buttons are 48 px wide). The
+   actual logo mark inside is 22 px (set on .bowire-logo-icon);
+   the column flex-centers it both axes so the smaller mark
+   stays on the topbar's vertical midline. */
+.bowire-topbar-brand-logo-col {
     width: 48px;
+    height: 100%;
     flex: 0 0 48px;
     display: flex;
     align-items: center;

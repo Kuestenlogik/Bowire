@@ -606,8 +606,13 @@
         var logoIcon = logoSrc
             ? el('img', { className: 'bowire-logo-icon', src: logoSrc, alt: '' })
             : el('div', { className: 'bowire-logo-icon', textContent: (config.title || 'B').charAt(0) });
+        // Wrap the logo in a 48 px column so the column anchors to
+        // the activity-rail width below while the inner mark can
+        // size independently. Without the wrapper the .bowire-logo-
+        // icon rule fought between '48 px column' and '22 px mark'.
+        var logoCol = el('div', { className: 'bowire-topbar-brand-logo-col' }, logoIcon);
         var brand = el('div', { id: 'bowire-topbar-brand', className: 'bowire-topbar-brand' },
-            logoIcon,
+            logoCol,
             el('div', { className: 'bowire-topbar-brand-text' },
                 el('div', { className: 'bowire-logo-text', textContent: config.title }),
                 config.description
