@@ -318,21 +318,21 @@ body {
     align-items: center;
     gap: 0;
     min-width: 0;
-    /* Fill the topbar vertically so the children's align-items:
-       center actually has a consistent box to center against —
-       without this, the brand collapsed to the tallest child
-       (the wordmark) and the smaller logo column rendered
-       slightly above the wordmark baseline after the size cut. */
-    height: 100%;
+    /* No height: 100% — that fights with the topbar grid's
+       auto-row sizing and creates a circular dependency with the
+       logo-col's own height: 100%. Let the brand auto-size from
+       its tallest child (the 22 px logo), then the topbar grid's
+       align-items: center positions the whole brand on the
+       topbar's vertical midline. */
 }
 /* Logo column wrapper — 48 px wide so it aligns with the
    activity-rail icons below (rail buttons are 48 px wide). The
-   actual logo mark inside is 22 px (set on .bowire-logo-icon);
-   the column flex-centers it both axes so the smaller mark
-   stays on the topbar's vertical midline. */
+   inner mark is 22 px from .bowire-logo-icon; we don't set a
+   column height so it shrink-wraps the image and the brand's
+   align-items: center handles vertical placement against the
+   wordmark. */
 .bowire-topbar-brand-logo-col {
     width: 48px;
-    height: 100%;
     flex: 0 0 48px;
     display: flex;
     align-items: center;
@@ -361,7 +361,24 @@ body {
        chrome, not headline. */
     font-size: 15px;
     color: var(--bowire-text);
-    line-height: 1.2;
+    /* Vertical-alignment root cause + fix.
+       Inter's hhea metrics are asymmetric (ascent ~968/1000,
+       descent ~232/1000), so even at line-height: 1.2 the cap
+       region ('Bowire') sits ~0.8 px above the line-box centre
+       — its visible glyphs occupy a tighter band than the
+       line-box reserves. When the line-box is flex-centred
+       against a geometrically-centred 22 px logo, the wordmark
+       reads as 'shifted up'.
+       Fix: text-box-trim: trim-both + text-box-edge: cap
+       alphabetic trim the metric whitespace from the line-box
+       so its top edge equals cap-top + its bottom edge equals
+       baseline. The line-box is then the cap region itself; its
+       geometric centre = the visual centre of the glyphs.
+       line-height: 1 reins in older engines that don't trim
+       (the asymmetry on the smaller box is sub-pixel). */
+    line-height: 1;
+    text-box-trim: trim-both;
+    text-box-edge: cap alphabetic;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
