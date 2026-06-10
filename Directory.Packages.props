@@ -135,5 +135,10 @@
          the same abstraction once Phase 3 wires Microsoft.Extensions.AI.OpenAI. -->
     <PackageVersion Include="Microsoft.Extensions.AI" Version="10.6.0" />
     <PackageVersion Include="OllamaSharp" Version="5.4.25" />
+    <!-- Markdig powers the in-app help search (#154 Phase 2) — the
+         indexer walks parsed markdown to strip layout and code-block
+         noise before tokenising. The on-the-wire body stays raw
+         markdown so the client renderer keeps full control. -->
+    <PackageVersion Include="Markdig" Version="0.45.0" />
   </ItemGroup>
 </Project>
