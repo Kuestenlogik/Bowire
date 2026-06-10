@@ -699,17 +699,12 @@
     // renderInlineVarEditor removed — replaced by renderEnvVariableTable
     // in render-main.js (full-width main pane with multi-line values).
 
-    // #133 — Activity rail. Always-visible icon column on the leftmost
-    // edge that switches workbench focus by use case. Phase 1: only
-    // the Discover mode is wired (it wraps the existing sidebar);
-    // every other icon toasts 'coming soon' on click until its mode-
-    // specific sidebar template lands in Phase 2-4.
-    // #137 — single source of truth for the rail mode catalogue.
-    // Each entry declares which sidebar template renders (kind)
-    // and whether the sidebar is collapsible. The render-env-auth
-    // body assembly + the renderSidebar dispatcher both read from
-    // this so a new mode only needs one entry to wire up its
-    // sidebar shape.
+    // #133 / #137 — Activity rail. Always-visible icon column on the
+    // leftmost edge that switches workbench focus by use case. Single
+    // source of truth for the rail mode catalogue: each entry declares
+    // which sidebar template renders (kind). The render-env-auth body
+    // assembly + the renderSidebar dispatcher both read from this so a
+    // new mode only needs one entry to wire up its sidebar shape.
     //
     // sidebar.kind values:
     //   'none'         → no sidebar; main pane spans edge to edge
@@ -718,22 +713,25 @@
     //   'environments' → Environments list (Environments mode)
     //   'recordings'   → Recordings list
     //   'mocks'        → Mocks list
+    //   'workspaces'   → Workspaces list
+    //   'sources'      → Sources list
+    //   'benchmarks'   → Benchmarks list
     //   'flows'        → legacy flows sidebar via sidebarView='flows'
     //   'proxy'        → legacy proxy sidebar via sidebarView='proxy'
     var _railModes = [
-        { id: 'home',         icon: 'house',     label: 'Home',              group: 'work',      wired: true,  sidebar: { kind: 'none' } },
-        { id: 'sources',      icon: 'plug',      label: 'Sources',           group: 'work',      wired: true,  sidebar: { kind: 'sources' } },
-        { id: 'discover',     icon: 'compass',   label: 'Discover',          group: 'work',      wired: true,  sidebar: { kind: 'services' } },
-        { id: 'collections',  icon: 'folder',    label: 'Collections',       group: 'work',      wired: true,  sidebar: { kind: 'collections' } },
-        { id: 'environments', icon: 'globe',     label: 'Environments',      group: 'work',      wired: true,  sidebar: { kind: 'environments' } },
-        { id: 'recordings',   icon: 'recording', label: 'Recordings',        group: 'scenarios', wired: true,  sidebar: { kind: 'recordings' } },
-        { id: 'mocks',        icon: 'server',    label: 'Mocks',             group: 'scenarios', wired: true,  sidebar: { kind: 'mocks' } },
-        { id: 'flows',        icon: 'flow',      label: 'Flows',             group: 'scenarios', wired: true,  sidebar: { kind: 'flows' } },
-        { id: 'proxy',        icon: 'disconnect',label: 'Proxy / MITM',      group: 'quality',   wired: true,  sidebar: { kind: 'proxy' } },
-        { id: 'benchmarks',   icon: 'chart',     label: 'Benchmarks',        group: 'quality',   wired: true,  sidebar: { kind: 'benchmarks' } },
-        { id: 'parallel',     icon: 'lightning', label: 'Parallel sessions', group: 'quality',   wired: true,  sidebar: { kind: 'none' } },
-        { id: 'security',     icon: 'shield',    label: 'Security',          group: 'hardening', wired: true,  sidebar: { kind: 'services' } },
-        { id: 'workspaces',   icon: 'briefcase', label: 'Workspaces',        group: 'hardening', wired: true,  sidebar: { kind: 'workspaces' } },
+        { id: 'home',         icon: 'house',     label: 'Home',              group: 'work',      sidebar: { kind: 'none' } },
+        { id: 'sources',      icon: 'plug',      label: 'Sources',           group: 'work',      sidebar: { kind: 'sources' } },
+        { id: 'discover',     icon: 'compass',   label: 'Discover',          group: 'work',      sidebar: { kind: 'services' } },
+        { id: 'collections',  icon: 'folder',    label: 'Collections',       group: 'work',      sidebar: { kind: 'collections' } },
+        { id: 'environments', icon: 'globe',     label: 'Environments',      group: 'work',      sidebar: { kind: 'environments' } },
+        { id: 'recordings',   icon: 'recording', label: 'Recordings',        group: 'scenarios', sidebar: { kind: 'recordings' } },
+        { id: 'mocks',        icon: 'server',    label: 'Mocks',             group: 'scenarios', sidebar: { kind: 'mocks' } },
+        { id: 'flows',        icon: 'flow',      label: 'Flows',             group: 'scenarios', sidebar: { kind: 'flows' } },
+        { id: 'proxy',        icon: 'disconnect',label: 'Proxy / MITM',      group: 'quality',   sidebar: { kind: 'proxy' } },
+        { id: 'benchmarks',   icon: 'chart',     label: 'Benchmarks',        group: 'quality',   sidebar: { kind: 'benchmarks' } },
+        { id: 'parallel',     icon: 'lightning', label: 'Parallel sessions', group: 'quality',   sidebar: { kind: 'none' } },
+        { id: 'security',     icon: 'shield',    label: 'Security',          group: 'hardening', sidebar: { kind: 'services' } },
+        { id: 'workspaces',   icon: 'briefcase', label: 'Workspaces',        group: 'hardening', sidebar: { kind: 'workspaces' } },
     ];
     function _railModeById(id) {
         for (var i = 0; i < _railModes.length; i++) {
@@ -769,29 +767,22 @@
             }
             lastGroup = m.group;
             var isActive = railMode === m.id;
-            // Modes wired so far. Phase 1 shipped just Discover;
-            var isWired = m.wired !== false;
             rail.appendChild(el('button', {
                 type: 'button',
-                className: 'bowire-rail-btn' + (isActive ? ' active' : '') + (isWired ? '' : ' bowire-rail-btn-stub'),
-                title: m.label + (isWired ? '' : ' — coming soon'),
+                className: 'bowire-rail-btn' + (isActive ? ' active' : ''),
+                title: m.label,
                 'aria-label': m.label,
                 onClick: function () {
-                    if (!isWired) {
-                        toast(m.label + ' — coming soon (Phase 2-4 of #133)', 'info');
-                        return;
-                    }
                     if (railMode === m.id) return;
                     railMode = m.id;
                     try { localStorage.setItem('bowire_rail_mode', m.id); } catch { /* ignore */ }
-                    // For wired modes that piggyback on the legacy
-                    // sidebarView state (Environments today; more
-                    // in Phase 2 follow-ups), also flip
-                    // sidebarView so the existing main-pane
-                    // routing picks up the right editor. Leaving
-                    // it untouched would keep the request/response
-                    // layout while the rail shows Environments
-                    // active.
+                    // Modes that piggyback on the legacy
+                    // sidebarView state (Environments, Flows, Proxy,
+                    // Discover) also flip sidebarView so the existing
+                    // main-pane routing picks up the right editor.
+                    // Leaving it untouched would keep the request/
+                    // response layout while the rail shows the
+                    // mode-specific surface active.
                     if (m.id === 'environments') {
                         sidebarView = 'environments';
                     } else if (m.id === 'flows') {

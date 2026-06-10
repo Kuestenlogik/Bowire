@@ -803,9 +803,6 @@ body {
     width: 2px;
     background: var(--bowire-accent);
 }
-.bowire-rail-btn-stub { opacity: 0.55; }
-.bowire-rail-btn-stub:hover { opacity: 0.85; }
-
 /* #137 — sidebar-toggle + Settings live at the rail bottom.
    margin-top: auto on the first 'bottom' button pushes both away
    from the mode list; Settings sits below the toggle as the very
