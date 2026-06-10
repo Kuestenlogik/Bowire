@@ -46,7 +46,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 - [#58](https://github.com/Kuestenlogik/Bowire/issues/58) **Workspace: complete the Git-native story (.blw file)** 
 - [Kuestenlogik/Bowire.Protocol.Surgewave#11](https://github.com/Kuestenlogik/Bowire.Protocol.Surgewave/issues/11) **Light up Surgewave protocol plugin** 
 - [#90](https://github.com/Kuestenlogik/Bowire/issues/90) **AI panel: move from response-pane tab to a right-side drawer** 
-- [#92](https://github.com/Kuestenlogik/Bowire/issues/92) **Move Server-URL + Schema-Files management from sidebar to main pane** 
 - [#93](https://github.com/Kuestenlogik/Bowire/issues/93) **Topbar: connection-state pill (aggregate + per-URL popover)** 
 - [#95](https://github.com/Kuestenlogik/Bowire/issues/95) **Header Library: named, scoped, toggleable header sets** 
 - [#96](https://github.com/Kuestenlogik/Bowire/issues/96) **Multi-tenant Phase C — SCIM 2.0 provisioning endpoints** 
@@ -62,7 +61,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 - [#106](https://github.com/Kuestenlogik/Bowire/issues/106) **AI OWASP API Top 10 panel — per-method status + concrete probe per risk** 
 - [#107](https://github.com/Kuestenlogik/Bowire/issues/107) **AI security report — markdown writeup grouped by severity + OWASP mapping + diff-vs-last-run** 
 - [#110](https://github.com/Kuestenlogik/Bowire/issues/110) **Site: surface the AI assistant in the launch wizard + quickstart** 
-- [#113](https://github.com/Kuestenlogik/Bowire/issues/113) **Polish: tabs visually connect to content; drop the background glow** 
 - [#114](https://github.com/Kuestenlogik/Bowire/issues/114) **Hints: render contextually at the target surface (drop the static list in the drawer)** 
 - [#115](https://github.com/Kuestenlogik/Bowire/issues/115) **v2.0 — UI refactor: re-architect the workbench shell** 
 - [#116](https://github.com/Kuestenlogik/Bowire/issues/116) **Workspaces — named, switchable contexts that bundle URLs / envs / collections / AI config** 
