@@ -74,9 +74,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 - [#130](https://github.com/Kuestenlogik/Bowire/issues/130) **Comparison table: add Hoppscotch + topic-based filtering** 
 - [#131](https://github.com/Kuestenlogik/Bowire/issues/131) **Benchmarks: first-class surface (single / collection / recording / random / scheduled)** 
 - [#132](https://github.com/Kuestenlogik/Bowire/issues/132) **Parallel sessions for recordings / collections (phase 1 local, phase 2 distributed)** 
-- [#135](https://github.com/Kuestenlogik/Bowire/issues/135) **Request/response layout toggle — vertical / horizontal / auto split** 
 - [#136](https://github.com/Kuestenlogik/Bowire/issues/136) **URL / service catalogue providers (local / http / consul / kubernetes / agent)** 
-- [#137](https://github.com/Kuestenlogik/Bowire/issues/137) **Sidebar declaration per rail mode + stable toggle location** 
 - [#138](https://github.com/Kuestenlogik/Bowire/issues/138) **Statusbar at bottom — move connection pill + env + watch out of topbar** 
 - [#139](https://github.com/Kuestenlogik/Bowire/issues/139) **Per-mode favorites filter (drop the standalone Favorites tab)** 
 - [#140](https://github.com/Kuestenlogik/Bowire/issues/140) **Per-mode 'Saved Configs' / Presets (distinct from cross-workflow favorites)** 
