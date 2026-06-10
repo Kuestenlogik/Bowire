@@ -226,16 +226,12 @@
     // AI panel that used to live as a response-pane tab — no logic
     // duplication; we just call window.__bowireAi.renderPanel().
     function renderAiDrawer() {
-        var drawer = el('div', {
-            id: 'bowire-ai-drawer',
-            className: 'bowire-ai-drawer',
-            role: 'complementary',
-            'aria-label': 'Assistant'
-        });
         // Live status dot — three states, all carrying a hover
         // tooltip with the detail string. Connected (green) is the
         // common case; idle (grey) means no model; missing (amber)
-        // means the AI package isn't installed.
+        // means the AI package isn't installed. Lives in the drawer's
+        // titleAccessory slot — same shape every drawer surface uses
+        // through the renderDrawer primitive.
         var aiSt = (typeof window.__bowireAi === 'object' && window.__bowireAi)
             ? window.__bowireAi.getStatus()
             : null;
@@ -250,38 +246,34 @@
             statusClass = 'bowire-ai-status-dot bowire-ai-status-dot-idle';
             statusTitle = 'No model configured — open Settings → Assistant to connect one.';
         }
+        var statusDot = el('span', {
+            className: statusClass,
+            title: statusTitle,
+            'aria-label': statusTitle
+        });
 
-        var header = el('div', { className: 'bowire-ai-drawer-header' },
-            el('div', { className: 'bowire-ai-drawer-title-row' },
-                el('span', { className: 'bowire-ai-drawer-title', textContent: 'Assistant' }),
-                el('span', { className: statusClass, title: statusTitle, 'aria-label': statusTitle })
-            ),
-            el('button', {
-                id: 'bowire-ai-drawer-close',
-                className: 'bowire-ai-drawer-close',
-                title: 'Close (Ctrl+Shift+A)',
-                'aria-label': 'Close AI drawer',
-                onClick: function () {
-                    aiDrawerOpen = false;
-                    try { localStorage.setItem('bowire_ai_drawer_open', '0'); } catch { /* ignore */ }
-                    render();
-                },
-                innerHTML: svgIcon('close')
-            })
-        );
-        drawer.appendChild(header);
-
-        var content = el('div', { className: 'bowire-ai-drawer-content' });
-        if (window.__bowireAi) {
-            content.appendChild(window.__bowireAi.renderPanel());
-        } else {
-            content.appendChild(el('p', {
-                className: 'bowire-ai-drawer-empty',
-                textContent: 'AI module not loaded.'
-            }));
-        }
-        drawer.appendChild(content);
-        return drawer;
+        return renderDrawer({
+            id: 'bowire-ai-drawer',
+            className: 'bowire-ai-drawer',
+            title: 'Assistant',
+            titleAccessory: statusDot,
+            closeTitle: 'Close (Ctrl+Shift+A)',
+            closeAriaLabel: 'Close AI drawer',
+            ariaLabel: 'Assistant',
+            onClose: function () {
+                aiDrawerOpen = false;
+                try { localStorage.setItem('bowire_ai_drawer_open', '0'); } catch { /* ignore */ }
+                render();
+            },
+            content: function () {
+                return window.__bowireAi
+                    ? window.__bowireAi.renderPanel()
+                    : el('p', {
+                        className: 'bowire-drawer-empty',
+                        textContent: 'AI module not loaded.'
+                    });
+            }
+        });
     }
 
     // ---- Connection pill (#93) ----
@@ -576,40 +568,27 @@
     // wiring (securityDrawerOpen + bowire_security_drawer_open
     // localStorage key).
     function renderSecurityDrawer() {
-        var drawer = el('div', {
+        return renderDrawer({
             id: 'bowire-security-drawer',
-            className: 'bowire-ai-drawer bowire-security-drawer',
-            role: 'complementary',
-            'aria-label': 'Security tools'
+            className: 'bowire-security-drawer',
+            title: 'Security',
+            closeTitle: 'Close Security drawer',
+            closeAriaLabel: 'Close Security drawer',
+            ariaLabel: 'Security tools',
+            onClose: function () {
+                securityDrawerOpen = false;
+                try { localStorage.setItem('bowire_security_drawer_open', '0'); } catch { /* ignore */ }
+                render();
+            },
+            content: function () {
+                return (window.__bowireAi && typeof window.__bowireAi.renderSecurityPanel === 'function')
+                    ? window.__bowireAi.renderSecurityPanel()
+                    : el('p', {
+                        className: 'bowire-drawer-empty',
+                        textContent: 'AI module not loaded — Security panel needs Kuestenlogik.Bowire.Ai.'
+                    });
+            }
         });
-        var header = el('div', { className: 'bowire-ai-drawer-header' },
-            el('span', { className: 'bowire-ai-drawer-title', textContent: 'Security' }),
-            el('button', {
-                id: 'bowire-security-drawer-close',
-                className: 'bowire-ai-drawer-close',
-                title: 'Close Security drawer',
-                'aria-label': 'Close Security drawer',
-                onClick: function () {
-                    securityDrawerOpen = false;
-                    try { localStorage.setItem('bowire_security_drawer_open', '0'); } catch { /* ignore */ }
-                    render();
-                },
-                innerHTML: svgIcon('close')
-            })
-        );
-        drawer.appendChild(header);
-
-        var content = el('div', { className: 'bowire-ai-drawer-content' });
-        if (window.__bowireAi && typeof window.__bowireAi.renderSecurityPanel === 'function') {
-            content.appendChild(window.__bowireAi.renderSecurityPanel());
-        } else {
-            content.appendChild(el('p', {
-                className: 'bowire-ai-drawer-empty',
-                textContent: 'AI module not loaded — Security panel needs Kuestenlogik.Bowire.Ai.'
-            }));
-        }
-        drawer.appendChild(content);
-        return drawer;
     }
 
     // ---- Topbar (brand + command palette + env + theme) ----

@@ -1615,6 +1615,13 @@ body {
    companion panel — visible alongside any rail mode. Anchors to
    the right edge of the body so it doesn't shift main-pane focus
    left every time the operator opens chat. */
+/* #115 Drawer-Primitive — shared chrome for AI, Security, and future
+   workbench drawers. Both the new generic .bowire-drawer* classes
+   (emitted by renderDrawer in helpers.js) and the legacy
+   .bowire-ai-drawer* classes (still present as the root className
+   on the AI drawer for back-compat) map to the same rules via the
+   selector list. Future drawers should use only .bowire-drawer*. */
+.bowire-drawer,
 .bowire-ai-drawer {
     width: 360px;
     min-width: 280px;
@@ -1629,6 +1636,7 @@ body {
 }
 
 @media (max-width: 1400px) {
+    .bowire-drawer,
     .bowire-ai-drawer {
         position: fixed;
         top: var(--bowire-topbar-height, 56px);
@@ -1642,6 +1650,7 @@ body {
     }
 }
 
+.bowire-drawer-header,
 .bowire-ai-drawer-header {
     display: flex;
     align-items: center;
@@ -1652,6 +1661,7 @@ body {
     flex-shrink: 0;
 }
 
+.bowire-drawer-title,
 .bowire-ai-drawer-title {
     font-size: 12px;
     font-weight: 600;
@@ -1659,6 +1669,7 @@ body {
     color: var(--bowire-text);
 }
 
+.bowire-drawer-close,
 .bowire-ai-drawer-close {
     background: transparent;
     border: none;
@@ -1671,16 +1682,19 @@ body {
     transition: background var(--bowire-transition), color var(--bowire-transition);
 }
 
+.bowire-drawer-close:hover,
 .bowire-ai-drawer-close:hover {
     background: var(--bowire-bg);
     color: var(--bowire-text);
 }
 
+.bowire-drawer-close svg,
 .bowire-ai-drawer-close svg {
     width: 14px;
     height: 14px;
 }
 
+.bowire-drawer-content,
 .bowire-ai-drawer-content {
     flex: 1;
     overflow: auto;
@@ -1691,6 +1705,7 @@ body {
     padding: 12px 16px;
 }
 
+.bowire-drawer-empty,
 .bowire-ai-drawer-empty {
     padding: 20px;
     color: var(--bowire-text-tertiary);
@@ -12195,7 +12210,12 @@ details[open] > .bowire-json-tree-summary::before {
 }
 
 /* Status dot in the drawer chrome header — small visual cue + a
-   tooltip for the full provider/model string. Three states. */
+   tooltip for the full provider/model string. Three states.
+   The title-row hosts the title text + optional accessory (AI's
+   status dot today; future drawers can put their own accessories
+   like badge counters here). Same selector list pattern as the
+   other drawer chrome rules. */
+.bowire-drawer-title-row,
 .bowire-ai-drawer-title-row {
     display: inline-flex;
     align-items: center;

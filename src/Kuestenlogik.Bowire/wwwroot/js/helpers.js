@@ -615,6 +615,75 @@
      * Returns a DOM node the caller appendChilds into the pane.
      * No state ownership — caller decides when the card mounts.
      */
+    // ---- #115 Drawer-Primitive ----
+    //
+    // Shared widget for every right-side workbench drawer (AI,
+    // Security, future Inspector, …). Replaces the two hand-built
+    // drawers (renderAiDrawer + renderSecurityDrawer) that each
+    // duplicated their own root + header + close button. Standardised
+    // chrome means every drawer reads the same to operators, and
+    // adding a new drawer is one renderDrawer({...}) call instead of
+    // a copy-paste-and-rename.
+    //
+    // Options:
+    //   id          — root element id (required for morphdom keying)
+    //   className   — optional extra CSS classes on the root
+    //   title       — header label, plain string
+    //   titleAccessory — optional DOM node placed right of the title
+    //                    (e.g. AI's live status dot)
+    //   closeTitle  — tooltip for the close button (defaults to 'Close')
+    //   closeAriaLabel — aria-label for the close button
+    //   ariaLabel   — aria-label for the drawer root
+    //   onClose     — function called when the close button is clicked
+    //   content     — DOM node OR a function returning one. Functions
+    //                 let the caller defer content building until the
+    //                 drawer is actually being rendered (the Assistant
+    //                 panel is non-trivial to assemble).
+    function renderDrawer(opts) {
+        opts = opts || {};
+        var drawer = el('div', {
+            id: opts.id,
+            className: 'bowire-drawer' + (opts.className ? ' ' + opts.className : ''),
+            role: 'complementary',
+            'aria-label': opts.ariaLabel || opts.title || 'Drawer'
+        });
+
+        var titleRow = el('div', { className: 'bowire-drawer-title-row' },
+            el('span', { className: 'bowire-drawer-title', textContent: opts.title || '' }),
+            opts.titleAccessory || null
+        );
+
+        var header = el('div', { className: 'bowire-drawer-header' },
+            titleRow,
+            el('button', {
+                className: 'bowire-drawer-close',
+                title: opts.closeTitle || 'Close',
+                'aria-label': opts.closeAriaLabel || ('Close ' + (opts.title || 'drawer')),
+                innerHTML: svgIcon('close'),
+                onClick: function () {
+                    if (typeof opts.onClose === 'function') opts.onClose();
+                }
+            })
+        );
+        drawer.appendChild(header);
+
+        var contentWrap = el('div', { className: 'bowire-drawer-content' });
+        var content;
+        try {
+            content = (typeof opts.content === 'function') ? opts.content() : opts.content;
+        } catch (e) {
+            console.warn('[drawer] content render failed', e);
+            content = el('p', {
+                className: 'bowire-drawer-empty',
+                textContent: 'Drawer content failed to render.'
+            });
+        }
+        if (content) contentWrap.appendChild(content);
+        drawer.appendChild(contentWrap);
+
+        return drawer;
+    }
+
     function renderEmptyCard(opts) {
         opts = opts || {};
         var card = el('div', { className: 'bowire-empty-card' });
