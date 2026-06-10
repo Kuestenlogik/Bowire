@@ -217,7 +217,9 @@
 }
 
 /* ---------- Reset & Base ---------- */
-*, *::before, *::after {
+*,
+*::before,
+*::after {
     box-sizing: border-box;
     margin: 0;
     padding: 0;
@@ -247,7 +249,8 @@
     scrollbar-color: var(--bowire-border) transparent;
 }
 
-html, body {
+html,
+body {
     height: 100%;
     overflow: hidden;
 }
@@ -583,7 +586,7 @@ body {
 
 /* #129 — topbar groups. Each group reads as one cohesive cluster;
    visual dividers between groups reinforce the "three clusters,
-   not eight buttons" intent. */
+not eight buttons" intent. */
 .bowire-topbar-group {
     display: flex;
     align-items: center;
@@ -618,7 +621,9 @@ body {
 }
 
 /* Overflow menu — anchored top-right under the ⋮ button. Single
-   column, generous row height for hit target, no decoration. */
+   column,
+generous row height for hit target,
+no decoration. */
 .bowire-topbar-overflow-menu {
     position: absolute;
     top: calc(100% + 6px);
@@ -666,11 +671,6 @@ body {
     transition: all var(--bowire-transition);
     flex-shrink: 0;
 }
-.bowire-theme-toggle-label {
-    font-size: 11px;
-    font-weight: 500;
-}
-
 .bowire-theme-toggle-btn:hover {
     background: var(--bowire-surface-hover);
     border-color: var(--bowire-border);
@@ -744,10 +744,14 @@ body {
 }
 
 /* #133 — Activity rail. Always-visible icon column at the leftmost
-   edge of the workbench body. Phase 1: 48 px wide, brand mark at
-   top, icon-only mode buttons, grouped by intent with hairline
+   edge of the workbench body. Phase 1: 48 px wide,
+brand mark at
+   top,
+icon-only mode buttons,
+grouped by intent with hairline
    dividers. Active mode gets a 3 px accent left-stripe + subtle
-   bg fill (same idea as the segmented control's active state, but
+   bg fill (same idea as the segmented control's active state,
+but
    anchored vertically). */
 .bowire-activity-rail {
     flex: 0 0 48px;
@@ -815,7 +819,9 @@ body {
 
 /* #138 — Statusbar pinned at the bottom of the workbench. IDE-
    style 28 px strip carrying ambient telemetry: connection state,
-   active env, watch button, plus future hint / save indicators. */
+active env,
+watch button,
+plus future hint / save indicators. */
 .bowire-statusbar {
     flex: 0 0 28px;
     height: 28px;
@@ -850,7 +856,7 @@ body {
 }
 
 /* #124 v2 — Omnibox modal. Centered overlay with backdrop,
-   activated by Cmd/Ctrl+K or by clicking the topbar trigger
+activated by Cmd/Ctrl+K or by clicking the topbar trigger
    button. Hosts the re-parented topbar-palette DOM so all the
    keyboard / suggestion / select logic stays in one place. */
 .bowire-omnibox-backdrop {
@@ -876,7 +882,8 @@ body {
     flex-direction: column;
 }
 /* The re-parented topbar-palette inside the modal — let it fill
-   the modal naturally, drop the topbar's grid-column constraint. */
+   the modal naturally,
+drop the topbar's grid-column constraint. */
 .bowire-omnibox-modal .bowire-topbar-palette {
     display: flex;
     flex-direction: column;
@@ -904,7 +911,8 @@ body {
 }
 /* Dropdown items + group labels get 16 px horizontal padding so
    they breathe inside the modal — the inline-dropdown variant
-   sits flush against the topbar so it doesn't need padding, but
+   sits flush against the topbar so it doesn't need padding,
+but
    the modal does. */
 .bowire-omnibox-modal .bowire-command-palette-item,
 .bowire-omnibox-modal .bowire-command-palette-group-header {
@@ -914,13 +922,14 @@ body {
 
 /* Compact magnifier button in the topbar centre — click or
    Cmd/Ctrl+K opens the modal. GitHub-style: identity + actions
-   live in the topbar, not a search field. */
-.bowire-omnibox-trigger-wrap {
+   live in the topbar {
     display: flex;
     justify-content: center;
 }
 
-/* #127 — save-state pill. Small, low-noise, fades after the
+/* #127 — save-state pill. Small,
+low-noise,
+fades after the
    markSaved timeout. Idle state = no DOM; the user only sees
    chrome when something actually happened. */
 .bowire-save-pill {
@@ -963,7 +972,8 @@ body {
 
 /* #140 — per-mode Presets / Saved Configs bar. Sits at the top of a
    workflow mode's setup form (Benchmarks today; Mocks / Parallel /
-   Security follow). Reads as a quiet utility row, not a chrome
+   Security follow). Reads as a quiet utility row,
+not a chrome
    highlight — keep weight low so the form below stays the focus. */
 .bowire-presets-bar {
     display: flex;
@@ -1096,12 +1106,14 @@ body {
 }
 
 /* #116 Workspace switcher chip in the topbar context group.
-   Mirrors .bowire-theme-toggle-btn — rahmenlos default, border on
+   Mirrors .bowire-theme-toggle-btn — rahmenlos default,
+border on
    hover — so every clickable thing in the topbar has the same
    quiet baseline. Height + radius are deliberately unified at
    30px / radius-sm so chips and theme-toggle-buttons align on the
    topbar baseline. The .active branch keeps the accent affordance
-   for the *current* workspace because that's a state, not just
+   for the *current* workspace because that's a state,
+not just
    hover feedback. */
 .bowire-workspace-chip {
     display: inline-flex;
@@ -1300,15 +1312,15 @@ body {
     background: var(--bowire-surface-hover);
     transform: translateY(-1px);
 }
-.bowire-home-tile[data-protocol="rest"]      { --protocol-color: var(--bowire-protocol-rest); }
-.bowire-home-tile[data-protocol="grpc"]      { --protocol-color: var(--bowire-protocol-grpc); }
-.bowire-home-tile[data-protocol="proto"]     { --protocol-color: var(--bowire-protocol-grpc); }
-.bowire-home-tile[data-protocol="graphql"]   { --protocol-color: var(--bowire-protocol-graphql); }
-.bowire-home-tile[data-protocol="mqtt"]      { --protocol-color: var(--bowire-protocol-mqtt); }
-.bowire-home-tile[data-protocol="signalr"]   { --protocol-color: var(--bowire-protocol-signalr); }
+.bowire-home-tile[data-protocol="rest"] { --protocol-color: var(--bowire-protocol-rest); }
+.bowire-home-tile[data-protocol="grpc"] { --protocol-color: var(--bowire-protocol-grpc); }
+.bowire-home-tile[data-protocol="proto"] { --protocol-color: var(--bowire-protocol-grpc); }
+.bowire-home-tile[data-protocol="graphql"] { --protocol-color: var(--bowire-protocol-graphql); }
+.bowire-home-tile[data-protocol="mqtt"] { --protocol-color: var(--bowire-protocol-mqtt); }
+.bowire-home-tile[data-protocol="signalr"] { --protocol-color: var(--bowire-protocol-signalr); }
 .bowire-home-tile[data-protocol="websocket"] { --protocol-color: var(--bowire-protocol-websocket); }
-.bowire-home-tile[data-protocol="sse"]       { --protocol-color: var(--bowire-protocol-sse); }
-.bowire-home-tile[data-protocol="nats"]      { --protocol-color: var(--bowire-protocol-nats); }
+.bowire-home-tile[data-protocol="sse"] { --protocol-color: var(--bowire-protocol-sse); }
+.bowire-home-tile[data-protocol="nats"] { --protocol-color: var(--bowire-protocol-nats); }
 .bowire-home-tile-badge {
     align-self: flex-start;
     margin-bottom: 2px;
@@ -1494,7 +1506,8 @@ body {
 }
 
 /* Popover — hover-anchored on the pill. Closed by default; revealed
-   on :hover. Positioned absolutely below the pill, aligned to its right
+   on :hover. Positioned absolutely below the pill,
+aligned to its right
    edge so it doesn't overflow the topbar when the pill is on the right
    side of the screen. */
 .bowire-conn-popover {
@@ -1611,11 +1624,14 @@ body {
 }
 
 /* ---------- AI drawer (#90) ---------- */
-/* Assistant drawer (#90, formerly the AI drawer). Cross-cutting
+/* Assistant drawer (#90,
+formerly the AI drawer). Cross-cutting
    companion panel — visible alongside any rail mode. Anchors to
    the right edge of the body so it doesn't shift main-pane focus
    left every time the operator opens chat. */
-/* #115 Drawer-Primitive — shared chrome for AI, Security, and future
+/* #115 Drawer-Primitive — shared chrome for AI,
+Security,
+and future
    workbench drawers. Both the new generic .bowire-drawer* classes
    (emitted by renderDrawer in helpers.js) and the legacy
    .bowire-ai-drawer* classes (still present as the root className
@@ -1724,7 +1740,7 @@ body {
 }
 
 /* Security drawer toggle (#111). Same baseline as the AI toggle,
-   distinct active-state tint so the two are visually
+distinct active-state tint so the two are visually
    differentiable in the topbar when both are open. */
 .bowire-security-drawer-toggle {
     position: relative;
@@ -1735,7 +1751,9 @@ body {
     border-color: var(--bowire-text-tertiary);
 }
 /* Security drawer body — inherits .bowire-ai-drawer baseline since
-   it has identical chrome (column, header, content). Only added
+   it has identical chrome (column,
+header,
+content). Only added
    here so future per-drawer tweaks have a hook. */
 .bowire-security-drawer {
     /* All baseline styling inherited from .bowire-ai-drawer. */
@@ -1757,21 +1775,6 @@ body {
     border-radius: var(--bowire-radius-lg);
     pointer-events: none;
 }
-
-/* ---------- Sidebar Header ---------- */
-.bowire-sidebar-header {
-    padding: 20px 16px 12px;
-    border-bottom: 1px solid var(--bowire-border);
-    flex-shrink: 0;
-}
-
-.bowire-logo {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    margin-bottom: 4px;
-}
-
 .bowire-logo-icon {
     /* Slightly smaller mark so it doesn't dominate the topbar.
        Stays centered inside the 48 px brand column (rail width)
@@ -1790,7 +1793,8 @@ body {
     flex-shrink: 0;
 }
 
-/* When the host provides a logo SVG (config.logoIcon → <img>), strip
+/* When the host provides a logo SVG (config.logoIcon → <img>),
+strip
    the accent tile background and let the SVG itself carry the brand
    mark. Kept as an overrides block so the fallback (first letter of
    the title) still uses the original tile styling. */
@@ -1941,35 +1945,6 @@ img.bowire-logo-icon {
     display: flex;
     align-items: center;
 }
-
-.bowire-url-connect {
-    height: 30px;
-    padding: 0 12px;
-    background: var(--bowire-accent);
-    border: none;
-    border-radius: var(--bowire-radius-sm);
-    color: white;
-    font-size: 11px;
-    font-weight: 600;
-    cursor: pointer;
-    white-space: nowrap;
-    font-family: var(--bowire-font-sans);
-    transition: all var(--bowire-transition);
-}
-
-.bowire-url-connect:hover {
-    background: var(--bowire-accent-hover);
-}
-
-.bowire-url-connect:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-}
-
-.bowire-url-connect.connecting {
-    background: var(--bowire-warning);
-}
-
 .bowire-url-status {
     flex-shrink: 0;
 }
@@ -1997,63 +1972,6 @@ img.bowire-logo-icon {
     background: var(--bowire-warning);
     animation: bowire-pulse 1s ease-in-out infinite;
 }
-
-/* ---------- Protocol Tabs ---------- */
-.bowire-protocol-tabs {
-    display: flex;
-    gap: 0;
-    padding: 0 16px;
-    border-bottom: 1px solid var(--bowire-border);
-    flex-shrink: 0;
-}
-
-.bowire-protocol-tab {
-    flex: 1;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-    padding: 8px 12px;
-    background: transparent;
-    border: none;
-    border-bottom: 2px solid transparent;
-    color: var(--bowire-text-tertiary);
-    font-size: 12px;
-    font-weight: 500;
-    cursor: pointer;
-    font-family: var(--bowire-font-sans);
-    transition: all var(--bowire-transition);
-}
-
-.bowire-protocol-tab:hover {
-    color: var(--bowire-text-secondary);
-    background: var(--bowire-sidebar-hover);
-}
-
-.bowire-protocol-tab.active {
-    color: var(--bowire-accent-text);
-    border-bottom-color: var(--bowire-accent);
-}
-
-.bowire-protocol-tab-icon {
-    width: 14px;
-    height: 14px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.bowire-protocol-tab-icon svg {
-    width: 14px;
-    height: 14px;
-}
-
-/* ---------- Sidebar Search ---------- */
-.bowire-search {
-    padding: 12px 16px;
-    flex-shrink: 0;
-}
-
 .bowire-search-input {
     width: 100%;
     height: 36px;
@@ -2076,25 +1994,22 @@ img.bowire-logo-icon {
 .bowire-search-input::placeholder {
     color: var(--bowire-text-tertiary);
 }
-
-.bowire-search-wrapper {
-    position: relative;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-}
-
 /* ---------- Protocol filter (button + popup + chips) ---------- */
 .bowire-protocol-filter-wrapper {
     position: relative;
     flex-shrink: 0;
 }
 
-/* Filter button — five visual states, icon-only (no border, no bg).
+/* Filter button — five visual states,
+icon-only (no border,
+no bg).
    The icon brightness communicates the state:
-     disabled   → 0.35 opacity, no pointer
-     available  → 0.6 opacity (subtle, unobtrusive default)
-     hover      → 1.0 opacity, full text color
+     disabled   → 0.35 opacity,
+no pointer
+     available  → 0.6 opacity (subtle,
+unobtrusive default)
+     hover      → 1.0 opacity,
+full text color
      active/press → 0.8 opacity + slight scale-down for tactile feel
      filter-on  → accent color at full opacity                       */
 .bowire-protocol-filter-btn {
@@ -2273,25 +2188,6 @@ img.bowire-logo-icon {
     color: var(--bowire-text-tertiary);
     font-variant-numeric: tabular-nums;
 }
-
-/* ---------- Filter chip row (below the search bar) ----------
-   #129 Round 3 — single-line horizontal scroll instead of multi-row
-   wrap. With many active filters the previous wrap could eat 2-3
-   vertical rows; scrolling keeps the sidebar's vertical density
-   stable + makes the row read as "active filters" rather than as a
-   secondary nav. */
-.bowire-filter-chips {
-    display: flex;
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    gap: 4px;
-    padding: 4px 12px 8px;
-    flex-shrink: 0;
-    scrollbar-width: thin;
-}
-.bowire-filter-chips::-webkit-scrollbar { height: 4px; }
-.bowire-filter-chips::-webkit-scrollbar-thumb { background: var(--bowire-border); border-radius: 2px; }
-
 .bowire-filter-chip {
     display: inline-flex;
     align-items: center;
@@ -2346,42 +2242,6 @@ img.bowire-logo-icon {
     background: var(--bowire-error);
     color: white;
 }
-
-.bowire-search-icon {
-    position: absolute;
-    left: 12px;
-    top: 50%;
-    transform: translateY(-50%);
-    color: var(--bowire-text-tertiary);
-    pointer-events: none;
-    width: 14px;
-    height: 14px;
-}
-
-.bowire-search-clear {
-    position: absolute;
-    right: 8px;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 20px;
-    height: 20px;
-    border: none;
-    background: var(--bowire-sidebar-hover);
-    color: var(--bowire-text-muted);
-    border-radius: 50%;
-    font-size: 14px;
-    line-height: 1;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 0;
-}
-.bowire-search-clear:hover {
-    background: var(--bowire-border);
-    color: var(--bowire-text);
-}
-
 /* ---------- Sidebar Service List ---------- */
 .bowire-service-list {
     flex: 1;
@@ -2412,21 +2272,21 @@ img.bowire-logo-icon {
 /* Per-protocol resolution. New protocols only need one line each —
    no markup change in the JS side once the data attribute is in
    place. */
-.bowire-service-group[data-protocol="rest"]      { --protocol-color: var(--bowire-protocol-rest); }
-.bowire-service-group[data-protocol="grpc"]      { --protocol-color: var(--bowire-protocol-grpc); }
-.bowire-service-group[data-protocol="graphql"]   { --protocol-color: var(--bowire-protocol-graphql); }
-.bowire-service-group[data-protocol="mqtt"]      { --protocol-color: var(--bowire-protocol-mqtt); }
-.bowire-service-group[data-protocol="signalr"]   { --protocol-color: var(--bowire-protocol-signalr); }
+.bowire-service-group[data-protocol="rest"] { --protocol-color: var(--bowire-protocol-rest); }
+.bowire-service-group[data-protocol="grpc"] { --protocol-color: var(--bowire-protocol-grpc); }
+.bowire-service-group[data-protocol="graphql"] { --protocol-color: var(--bowire-protocol-graphql); }
+.bowire-service-group[data-protocol="mqtt"] { --protocol-color: var(--bowire-protocol-mqtt); }
+.bowire-service-group[data-protocol="signalr"] { --protocol-color: var(--bowire-protocol-signalr); }
 .bowire-service-group[data-protocol="websocket"] { --protocol-color: var(--bowire-protocol-websocket); }
-.bowire-service-group[data-protocol="sse"]       { --protocol-color: var(--bowire-protocol-sse); }
-.bowire-service-group[data-protocol="nats"]      { --protocol-color: var(--bowire-protocol-nats); }
-.bowire-service-group[data-protocol="amqp"]      { --protocol-color: var(--bowire-protocol-amqp); }
-.bowire-service-group[data-protocol="kafka"]     { --protocol-color: var(--bowire-protocol-kafka); }
-.bowire-service-group[data-protocol="odata"]     { --protocol-color: var(--bowire-protocol-odata); }
-.bowire-service-group[data-protocol="mcp"]       { --protocol-color: var(--bowire-protocol-mcp); }
-.bowire-service-group[data-protocol="socketio"]  { --protocol-color: var(--bowire-protocol-socketio); }
-.bowire-service-group[data-protocol="asyncapi"]  { --protocol-color: var(--bowire-protocol-asyncapi); }
-.bowire-service-group[data-protocol="proto"]     { --protocol-color: var(--bowire-protocol-grpc); }
+.bowire-service-group[data-protocol="sse"] { --protocol-color: var(--bowire-protocol-sse); }
+.bowire-service-group[data-protocol="nats"] { --protocol-color: var(--bowire-protocol-nats); }
+.bowire-service-group[data-protocol="amqp"] { --protocol-color: var(--bowire-protocol-amqp); }
+.bowire-service-group[data-protocol="kafka"] { --protocol-color: var(--bowire-protocol-kafka); }
+.bowire-service-group[data-protocol="odata"] { --protocol-color: var(--bowire-protocol-odata); }
+.bowire-service-group[data-protocol="mcp"] { --protocol-color: var(--bowire-protocol-mcp); }
+.bowire-service-group[data-protocol="socketio"] { --protocol-color: var(--bowire-protocol-socketio); }
+.bowire-service-group[data-protocol="asyncapi"] { --protocol-color: var(--bowire-protocol-asyncapi); }
+.bowire-service-group[data-protocol="proto"] { --protocol-color: var(--bowire-protocol-grpc); }
 
 /* Protocol-tinted service-icon inside the group header. Inherits the
    group's --protocol-color so the icon reads in the protocol's hue
@@ -2541,48 +2401,54 @@ img.bowire-logo-icon {
 .bowire-method-badge[data-type="Duplex"] { background: var(--bowire-badge-duplex); }
 
 /* HTTP verb colors — borrowed from common API tooling conventions */
-.bowire-method-badge[data-type="HTTP_GET"]    { background: #10b981; min-width: 36px; } /* green */
-.bowire-method-badge[data-type="HTTP_POST"]   { background: #3b82f6; min-width: 36px; } /* blue */
-.bowire-method-badge[data-type="HTTP_PUT"]    { background: #f59e0b; min-width: 36px; } /* orange */
-.bowire-method-badge[data-type="HTTP_PATCH"]  { background: #8b5cf6; min-width: 36px; } /* purple */
+.bowire-method-badge[data-type="HTTP_GET"] { background: #10b981; min-width: 36px; } /* green */
+.bowire-method-badge[data-type="HTTP_POST"] { background: #3b82f6; min-width: 36px; } /* blue */
+.bowire-method-badge[data-type="HTTP_PUT"] { background: #f59e0b; min-width: 36px; } /* orange */
+.bowire-method-badge[data-type="HTTP_PATCH"] { background: #8b5cf6; min-width: 36px; } /* purple */
 .bowire-method-badge[data-type="HTTP_DELETE"] { background: #ef4444; min-width: 44px; } /* red */
-.bowire-method-badge[data-type="HTTP_HEAD"]   { background: #6b7280; min-width: 36px; } /* gray */
-.bowire-method-badge[data-type="HTTP_OPTIONS"]{ background: #6b7280; min-width: 52px; } /* gray */
+.bowire-method-badge[data-type="HTTP_HEAD"] { background: #6b7280; min-width: 36px; } /* gray */
+.bowire-method-badge[data-type="HTTP_OPTIONS"] { background: #6b7280; min-width: 52px; } /* gray */
 
 /* #122 — direction-axis rail on every method badge. A 2 px left-edge
-   bar in the direction color (warm = client→server, cool =
-   server→client, duplex = bidirectional) layered on top of the
+   bar in the direction color (warm = client→server,
+cool =
+   server→client,
+duplex = bidirectional) layered on top of the
    existing verb / type background. Two-axis read at a glance:
-   verb color in the fill, direction in the left rail.
+   verb color in the fill,
+direction in the left rail.
    --direction-color is resolved per data-direction below. */
 .bowire-method-badge[data-direction] {
     --direction-color: var(--bowire-direction-neutral);
     box-shadow: inset 3px 0 0 var(--direction-color);
     padding-left: 11px;
 }
-.bowire-method-badge[data-direction="warm"]    { --direction-color: var(--bowire-direction-warm); }
-.bowire-method-badge[data-direction="cool"]    { --direction-color: var(--bowire-direction-cool); }
-.bowire-method-badge[data-direction="duplex"]  { --direction-color: var(--bowire-direction-duplex); }
+.bowire-method-badge[data-direction="warm"] { --direction-color: var(--bowire-direction-warm); }
+.bowire-method-badge[data-direction="cool"] { --direction-color: var(--bowire-direction-cool); }
+.bowire-method-badge[data-direction="duplex"] { --direction-color: var(--bowire-direction-duplex); }
 .bowire-method-badge[data-direction="neutral"] { --direction-color: var(--bowire-direction-neutral); }
 
 /* Method-row's own data-direction (mirrored from the badge so a
    scanning eye picks up the direction without reading the badge).
-   3 px rail on the row's right edge, kept subtle so the protocol
+   3 px rail on the row's right edge,
+kept subtle so the protocol
    stripe on the group's left edge stays the primary cue. */
 .bowire-method-item[data-direction] {
     --direction-color: var(--bowire-direction-neutral);
     box-shadow: inset -3px 0 0 var(--direction-color);
 }
-.bowire-method-item[data-direction="warm"]    { --direction-color: var(--bowire-direction-warm); }
-.bowire-method-item[data-direction="cool"]    { --direction-color: var(--bowire-direction-cool); }
-.bowire-method-item[data-direction="duplex"]  { --direction-color: var(--bowire-direction-duplex); }
+.bowire-method-item[data-direction="warm"] { --direction-color: var(--bowire-direction-warm); }
+.bowire-method-item[data-direction="cool"] { --direction-color: var(--bowire-direction-cool); }
+.bowire-method-item[data-direction="duplex"] { --direction-color: var(--bowire-direction-duplex); }
 .bowire-method-item[data-direction="neutral"] { --direction-color: var(--bowire-direction-neutral); }
 
 /* AsyncAPI operation direction. The badge carries the official
    AsyncAPI brand gradient (cyan → purple → magenta) so it reads as
-   "this came from a schema, not from reflection" without needing a
+   "this came from a schema,
+not from reflection" without needing a
    separate sidebar pill. Arrow content comes from shortType() in
-   helpers.js — `→` for send (us → broker), `←` for receive
+   helpers.js — `→` for send (us → broker),
+`←` for receive
    (broker → us). Slightly wider min-width so the arrow glyph isn't
    cramped against the rounded corners. */
 .bowire-method-badge[data-type="asyncapi-send"],
@@ -2616,7 +2482,9 @@ img.bowire-logo-icon {
 }
 
 /* Executing indicator — small play icon visible only when the method
-   has an active job running (streaming, unary in-flight, channel open). */
+   has an active job running (streaming,
+unary in-flight,
+channel open). */
 .bowire-method-executing {
     display: inline-flex;
     align-items: center;
@@ -2683,7 +2551,7 @@ img.bowire-logo-icon {
 
 /* ---------- Sidebar view switch (Services | Favorites) ---------- */
 /* MudBlazor-style tabs: no individual borders or pill backgrounds,
-   only an accent-coloured underline under the active tab. The whole
+only an accent-coloured underline under the active tab. The whole
    row has a single bottom border that the active tab's thicker
    underline overlaps. Filter button lives at the right end via
    margin-left: auto. */
@@ -2704,35 +2572,6 @@ img.bowire-logo-icon {
     flex-shrink: 0;
     flex-wrap: wrap;
 }
-
-.bowire-view-pill {
-    flex: 0 0 auto;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    padding: 6px 10px;
-    font-size: 12px;
-    font-weight: 500;
-    background: transparent;
-    border: none;
-    border-radius: var(--bowire-radius-sm);
-    color: var(--bowire-text-tertiary);
-    cursor: pointer;
-    transition: color var(--bowire-transition),
-                background var(--bowire-transition);
-    font-family: var(--bowire-font-sans);
-}
-
-.bowire-view-pill:hover {
-    color: var(--bowire-text);
-    background: var(--bowire-surface-hover);
-}
-
-.bowire-view-pill.active {
-    color: var(--bowire-accent-text);
-    background: var(--bowire-accent-subtle);
-}
-
 /* Push the filter button to the right edge of the tab row. Stretch
    vertically so the icon-button inside fills the tab height and its
    hover/open background covers the full tab-row height — otherwise
@@ -2742,44 +2581,6 @@ img.bowire-logo-icon {
     display: flex;
     align-items: stretch;
 }
-
-.bowire-view-pill-icon {
-    display: inline-flex;
-    align-items: center;
-    width: 12px;
-    height: 12px;
-    /* Inherit color from the parent pill so the icon tracks the tab's
-       theme-aware text color: tertiary when idle, text on hover, accent
-       when active. The previous --bowire-warning override painted every
-       icon yellow regardless of theme. */
-}
-
-.bowire-view-pill-icon svg {
-    width: 100%;
-    height: 100%;
-}
-
-/* MudBlazor-style circular count badge next to the tab label */
-.bowire-view-pill-badge {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-width: 18px;
-    height: 18px;
-    padding: 0 5px;
-    border-radius: var(--bowire-radius-lg);
-    font-size: 10px;
-    font-weight: 600;
-    font-variant-numeric: tabular-nums;
-    background: var(--bowire-border);
-    color: var(--bowire-text-secondary);
-    line-height: 1;
-}
-.bowire-view-pill.active .bowire-view-pill-badge {
-    background: var(--bowire-accent);
-    color: #fff;
-}
-
 /* ---------- Environments sidebar view (Postman-style inline) ---- */
 .bowire-env-sidebar-header {
     display: flex;
@@ -2837,15 +2638,7 @@ img.bowire-logo-icon {
 }
 .bowire-env-sidebar-item.active-env .bowire-env-sidebar-item-name {
     font-weight: 600;
-}
-.bowire-env-sidebar-active-dot {
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background: var(--bowire-success);
-    flex-shrink: 0;
-}
-.bowire-env-sidebar-item-name {
+}.bowire-env-sidebar-item-name {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -3107,45 +2900,6 @@ img.bowire-logo-icon {
     border-color: var(--bowire-accent);
     color: var(--bowire-accent);
 }
-.bowire-env-sidebar-name-row {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    padding: 0 12px 8px;
-}
-.bowire-env-sidebar-name-input {
-    flex: 1;
-    background: var(--bowire-bg);
-    border: 1px solid var(--bowire-border);
-    color: var(--bowire-text);
-    padding: 4px 8px;
-    border-radius: var(--bowire-radius-sm);
-    font-size: 13px;
-    font-weight: 600;
-    font-family: var(--bowire-font-sans);
-}
-.bowire-env-sidebar-name-input:focus {
-    outline: none;
-    border-color: var(--bowire-accent);
-}
-.bowire-env-sidebar-delete-btn {
-    background: none;
-    border: none;
-    color: var(--bowire-text-tertiary);
-    cursor: pointer;
-    padding: 4px;
-    display: inline-flex;
-    width: 20px;
-    height: 20px;
-    opacity: 0.5;
-    transition: opacity var(--bowire-transition), color var(--bowire-transition);
-}
-.bowire-env-sidebar-delete-btn:hover {
-    opacity: 1;
-    color: var(--bowire-error);
-}
-.bowire-env-sidebar-delete-btn svg { width: 100%; height: 100%; }
-
 /* ---------- Favorites view — inline protocol badge + remove button ---- */
 .bowire-favorites-proto-badge {
     display: inline-flex;
@@ -3218,19 +2972,6 @@ img.bowire-logo-icon {
 .bowire-method-item.unavailable:hover {
     background: transparent;
 }
-
-.bowire-favorites-header {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    padding: 6px 16px;
-    font-size: 11px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-    color: var(--bowire-warning);
-}
-
 /* ---------- Sidebar Footer ---------- */
 .bowire-sidebar-footer {
     padding: 12px 16px;
@@ -3407,26 +3148,27 @@ img.bowire-logo-icon {
     --tab-protocol-color: var(--bowire-protocol-default);
     border-left: 3px solid var(--tab-protocol-color);
 }
-.bowire-request-tab[data-protocol="rest"]      { --tab-protocol-color: var(--bowire-protocol-rest); }
-.bowire-request-tab[data-protocol="grpc"]      { --tab-protocol-color: var(--bowire-protocol-grpc); }
-.bowire-request-tab[data-protocol="proto"]     { --tab-protocol-color: var(--bowire-protocol-grpc); }
-.bowire-request-tab[data-protocol="graphql"]   { --tab-protocol-color: var(--bowire-protocol-graphql); }
-.bowire-request-tab[data-protocol="mqtt"]      { --tab-protocol-color: var(--bowire-protocol-mqtt); }
-.bowire-request-tab[data-protocol="signalr"]   { --tab-protocol-color: var(--bowire-protocol-signalr); }
+.bowire-request-tab[data-protocol="rest"] { --tab-protocol-color: var(--bowire-protocol-rest); }
+.bowire-request-tab[data-protocol="grpc"] { --tab-protocol-color: var(--bowire-protocol-grpc); }
+.bowire-request-tab[data-protocol="proto"] { --tab-protocol-color: var(--bowire-protocol-grpc); }
+.bowire-request-tab[data-protocol="graphql"] { --tab-protocol-color: var(--bowire-protocol-graphql); }
+.bowire-request-tab[data-protocol="mqtt"] { --tab-protocol-color: var(--bowire-protocol-mqtt); }
+.bowire-request-tab[data-protocol="signalr"] { --tab-protocol-color: var(--bowire-protocol-signalr); }
 .bowire-request-tab[data-protocol="websocket"] { --tab-protocol-color: var(--bowire-protocol-websocket); }
-.bowire-request-tab[data-protocol="sse"]       { --tab-protocol-color: var(--bowire-protocol-sse); }
-.bowire-request-tab[data-protocol="nats"]      { --tab-protocol-color: var(--bowire-protocol-nats); }
-.bowire-request-tab[data-protocol="amqp"]      { --tab-protocol-color: var(--bowire-protocol-amqp); }
-.bowire-request-tab[data-protocol="kafka"]     { --tab-protocol-color: var(--bowire-protocol-kafka); }
-.bowire-request-tab[data-protocol="odata"]     { --tab-protocol-color: var(--bowire-protocol-odata); }
-.bowire-request-tab[data-protocol="mcp"]       { --tab-protocol-color: var(--bowire-protocol-mcp); }
+.bowire-request-tab[data-protocol="sse"] { --tab-protocol-color: var(--bowire-protocol-sse); }
+.bowire-request-tab[data-protocol="nats"] { --tab-protocol-color: var(--bowire-protocol-nats); }
+.bowire-request-tab[data-protocol="amqp"] { --tab-protocol-color: var(--bowire-protocol-amqp); }
+.bowire-request-tab[data-protocol="kafka"] { --tab-protocol-color: var(--bowire-protocol-kafka); }
+.bowire-request-tab[data-protocol="odata"] { --tab-protocol-color: var(--bowire-protocol-odata); }
+.bowire-request-tab[data-protocol="mcp"] { --tab-protocol-color: var(--bowire-protocol-mcp); }
 
-.bowire-request-tab[data-direction="warm"].active    { border-top-color: var(--bowire-direction-warm); }
-.bowire-request-tab[data-direction="cool"].active    { border-top-color: var(--bowire-direction-cool); }
-.bowire-request-tab[data-direction="duplex"].active  { border-top-color: var(--bowire-direction-duplex); }
+.bowire-request-tab[data-direction="warm"].active { border-top-color: var(--bowire-direction-warm); }
+.bowire-request-tab[data-direction="cool"].active { border-top-color: var(--bowire-direction-cool); }
+.bowire-request-tab[data-direction="duplex"].active { border-top-color: var(--bowire-direction-duplex); }
 .bowire-request-tab[data-direction="neutral"].active { border-top-color: var(--bowire-direction-neutral); }
 
-/* "+" new-tab button — peer of the tabs, lives at the right of the
+/* "+" new-tab button — peer of the tabs,
+lives at the right of the
    scroll container. Same height + alignment so it sits flush with
    the strip. */
 .bowire-request-tab-new {
@@ -3628,14 +3370,6 @@ img.bowire-logo-icon {
     max-width: 360px;
     line-height: 1.6;
 }
-
-/* ---------- Request / Response Panes ---------- */
-.bowire-panes {
-    flex: 1;
-    display: flex;
-    overflow: hidden;
-}
-
 .bowire-pane {
     flex: 1;
     display: flex;
@@ -3648,7 +3382,8 @@ img.bowire-logo-icon {
     border-left: 1px solid var(--bowire-border);
 }
 
-/* #135 — vertical split: stack request on top, response below.
+/* #135 — vertical split: stack request on top,
+response below.
    Drop the inter-pane left-border (horizontal-mode separator) +
    add a top border on the response so the two panes still read
    as distinct surfaces. Pane divider becomes a horizontal bar
@@ -4228,7 +3963,8 @@ img.bowire-logo-icon {
 }
 
 /* Byte-oriented detail pane (DIS + UDP): envelope JSON on top,
-   optional text pane, hex dump below. */
+optional text pane,
+hex dump below. */
 .bowire-stream-detail-body-bytes {
     display: flex;
     flex-direction: column;
@@ -4295,8 +4031,10 @@ img.bowire-logo-icon {
 /* ---------- Surgewave broker-tap badges ---------- */
 /* Surfaced on `surgewave://embedded` streams — each event kind gets
    its own colour so the list pane reads at a glance like an event
-   log (green = acknowledged, blue = dispatched, red = refused,
-   orange = coordination event). */
+   log (green = acknowledged,
+blue = dispatched,
+red = refused,
+orange = coordination event). */
 .bowire-surgewave-tap-badge {
     display: inline-block;
     padding: 1px 6px;
@@ -4458,7 +4196,8 @@ img.bowire-logo-icon {
 /* Collapsible filter panel — slides in below the toolbar when the
    filter toggle is on. Structured as a column of
    `.bowire-stream-filter-row`s so future "advanced" modes (filter by
-   known keys, multiple key:value rules) can append rows without
+   known keys,
+multiple key:value rules) can append rows without
    reshaping the layout. */
 .bowire-stream-filter-panel {
     display: flex;
@@ -4601,7 +4340,8 @@ img.bowire-logo-icon {
 }
 
 /* Phase 3.1 — split-pane primitive. The layout.js helper writes inline
-   styles for the slot sizes (flex-basis tracks the ratio), so this
+   styles for the slot sizes (flex-basis tracks the ratio),
+so this
    rule only carries the divider chrome and the focus ring. The
    divider element itself has tabIndex=0 so keyboard users can nudge
    it via the arrow handlers in layout.js. */
@@ -4710,10 +4450,12 @@ img.bowire-logo-icon {
 
 /* Maximized state — the widget pane lifts out of its split-pane slot
    and covers the entire viewport. position: fixed pins it against
-   the browser window, z-index parks it above everything else
+   the browser window,
+z-index parks it above everything else
    including modals (which run at z: 100). The map widget's
    internal ResizeObserver picks up the new container dimensions
-   automatically and re-flows MapLibre via map.resize(), so no
+   automatically and re-flows MapLibre via map.resize(),
+so no
    extra wiring needed on the viewer side. */
 .bowire-widget-pane.is-maximized {
     position: fixed;
@@ -4758,7 +4500,8 @@ img.bowire-logo-icon {
    via ::before keeps the split line subtle while giving users an 8 px
    target to grab — big enough that aim errors don't land on the last
    list item above. `pointer-events: none` on the pseudo-element routes
-   every click to the parent splitter, not through to the children of
+   every click to the parent splitter,
+not through to the children of
    neighbouring flex items. */
 .bowire-stream-splitter {
     flex: 0 0 8px;
@@ -4789,7 +4532,8 @@ img.bowire-logo-icon {
 }
 
 /* ---------- Sidebar Splitter (between sidebar and main pane) ---------- */
-/* Same 8 px hit area + 2 px visible bar pattern, rotated for the vertical
+/* Same 8 px hit area + 2 px visible bar pattern,
+rotated for the vertical
    split. */
 .bowire-sidebar-splitter {
     flex: 0 0 8px;
@@ -4815,7 +4559,8 @@ img.bowire-logo-icon {
     transition: all var(--bowire-transition);
     pointer-events: none;
 }
-/* Grip dots — centred vertically, visible on hover */
+/* Grip dots — centred vertically,
+visible on hover */
 .bowire-sidebar-splitter::after {
     content: '···';
     position: absolute;
@@ -4911,31 +4656,12 @@ img.bowire-logo-icon {
     scrollbar-gutter: stable;
 }
 
-/* ---------- Maximized: hide list + splitter, detail fills 100% ---------- */
+/* ---------- Maximized: hide list + splitter,
+detail fills 100% ---------- */
 .bowire-response-output.streaming.is-maximized .bowire-stream-list-pane,
 .bowire-response-output.streaming.is-maximized .bowire-stream-splitter {
     display: none;
 }
-
-/* Legacy stream message classes (kept for compatibility) */
-.bowire-stream-message {
-    padding: 8px 0;
-    border-bottom: 1px dashed var(--bowire-border-subtle);
-    animation: bowire-slide-in 200ms ease-out;
-}
-
-.bowire-stream-message:last-child {
-    border-bottom: none;
-}
-
-.bowire-stream-index {
-    font-size: 10px;
-    color: var(--bowire-text-tertiary);
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    margin-bottom: 4px;
-}
-
 @keyframes bowire-slide-in {
     from {
         opacity: 0;
@@ -5032,7 +4758,8 @@ img.bowire-logo-icon {
      the same color so the seam between them disappears.
    - Active tab keeps its 2 px accent underline but the underline
      no longer sits over a separator line — content-pane TOP border
-     is gone, so the active tab's underline is the only horizontal
+     is gone,
+so the active tab's underline is the only horizontal
      mark in that band. Visually the active tab "owns" the pane
      below; inactive tabs read as siblings.
    - The faint container bottom border stays so the strip is still
@@ -5086,7 +4813,8 @@ img.bowire-logo-icon {
 }
 
 /* Sub-tabs inside the Body pane (#85). Lighter visual weight than
-   .bowire-tab — these aren't first-class pane tabs, they're a way
+   .bowire-tab — these aren't first-class pane tabs,
+they're a way
    to switch between composing surfaces for the same request. Sits
    directly under the request-pane tab strip; the underline is
    thinner and the strip itself doesn't take a full-height border. */
@@ -5811,7 +5539,8 @@ img.bowire-logo-icon {
 }
 .bowire-env-diff-chip.equal { color: #34d399; border-color: rgba(52, 211, 153, 0.4); }
 .bowire-env-diff-chip.changed { color: #fb923c; border-color: rgba(251, 146, 60, 0.4); }
-.bowire-env-diff-chip.only-a, .bowire-env-diff-chip.only-b {
+.bowire-env-diff-chip.only-a,
+.bowire-env-diff-chip.only-b {
     color: #60a5fa; border-color: rgba(96, 165, 250, 0.4);
 }
 .bowire-env-diff-empty {
@@ -5958,8 +5687,10 @@ details[open] > .bowire-json-tree-summary::before {
 }
 
 /* #114 Phase 2 — inline hint banners. Renders at the surface that
-   the hint targets (response pane, auth panel) so the operator reads
-   it at the place where the signal originated, instead of having to
+   the hint targets (response pane,
+auth panel) so the operator reads
+   it at the place where the signal originated,
+instead of having to
    flip to the Assistant drawer. Drawer's list stays as the global
    index. Level-coded left border (info / warn / tip) keeps the
    priority readable at a glance. */
@@ -5981,9 +5712,9 @@ details[open] > .bowire-json-tree-summary::before {
     font-size: 12px;
     line-height: 1.4;
 }
-.bowire-inline-hint-warn  { border-left-color: var(--bowire-warning); }
-.bowire-inline-hint-tip   { border-left-color: var(--bowire-success); }
-.bowire-inline-hint-info  { border-left-color: var(--bowire-accent); }
+.bowire-inline-hint-warn { border-left-color: var(--bowire-warning); }
+.bowire-inline-hint-tip { border-left-color: var(--bowire-success); }
+.bowire-inline-hint-info { border-left-color: var(--bowire-accent); }
 .bowire-inline-hint-icon {
     display: inline-flex;
     width: 14px;
@@ -6019,7 +5750,8 @@ details[open] > .bowire-json-tree-summary::before {
    between the method badge and the copy-URL button. The hint count
    lives in the chip; the full hint texts are still listed in the
    Assistant drawer (the chip's click opens it). Sized to match the
-   header-badge so the two read as siblings, not as a pill + button
+   header-badge so the two read as siblings,
+not as a pill + button
    mismatch. */
 .bowire-header-hint-chip {
     display: inline-flex;
@@ -6074,7 +5806,8 @@ details[open] > .bowire-json-tree-summary::before {
 
 /* Breadcrumb navigation: Protocol > Service. Sits inside .bowire-header-info
  * stacked above the method-name title — it provides the navigational
- * context, the headerName provides the prominent label.
+ * context,
+the headerName provides the prominent label.
  */
 .bowire-breadcrumb {
     display: flex;
@@ -6151,9 +5884,11 @@ details[open] > .bowire-json-tree-summary::before {
     border-color: var(--bowire-accent);
 }
 /* The Body / Mock-Response textareas reuse the generic .bowire-editor
-   styling, which has no border or background tint (the embedded code
+   styling,
+which has no border or background tint (the embedded code
    editor lives inside a dedicated pane that supplies the chrome). In
-   the freeform builder there's no surrounding pane, so the textarea
+   the freeform builder there's no surrounding pane,
+so the textarea
    blended into the page background and looked like static text.
    Match the freeform-input chrome here so the body field is visibly
    an input. */
@@ -6226,7 +5961,9 @@ details[open] > .bowire-json-tree-summary::before {
     margin-bottom: 8px;
     border-left: 2px solid var(--bowire-border-subtle, var(--bowire-border));
 }
-/* Services toolbar — contains +, filter, and chip row */
+/* Services toolbar — contains +,
+filter,
+and chip row */
 .bowire-services-toolbar {
     display: flex;
     align-items: center;
@@ -6633,7 +6370,8 @@ details[open] > .bowire-json-tree-summary::before {
     font-size: 12px;
     font-family: var(--bowire-font-mono, monospace);
 }
-.bowire-settings-input:focus, .bowire-settings-select:focus { outline: none; border-color: var(--bowire-accent); }
+.bowire-settings-input:focus,
+.bowire-settings-select:focus { outline: none; border-color: var(--bowire-accent); }
 /* Toggle switch */
 .bowire-settings-toggle {
     width: 36px;
@@ -6671,7 +6409,9 @@ details[open] > .bowire-json-tree-summary::before {
 .bowire-settings-action-btn:hover { border-color: var(--bowire-accent); color: var(--bowire-accent); }
 .bowire-settings-action-btn[disabled] { opacity: 0.5; cursor: progress; }
 .bowire-settings-action-btn.danger:hover { border-color: var(--bowire-error); color: var(--bowire-error); }
-/* AI tab (#63) — status badge, save row, model picker wrap */
+/* AI tab (#63) — status badge,
+save row,
+model picker wrap */
 .bowire-ai-settings-status {
     font-size: 12px;
     padding: 8px 10px;
@@ -6764,7 +6504,9 @@ details[open] > .bowire-json-tree-summary::before {
 }
 
 /* Plugin-update-check banner — sits at the top of Settings → Plugins.
-   Shows opt-in state, last-run timestamp, and a manual "Check now"
+   Shows opt-in state,
+last-run timestamp,
+and a manual "Check now"
    button that is always available (the opt-in only gates the daily
    background sweep). */
 .bowire-settings-update-check {
@@ -6802,7 +6544,8 @@ details[open] > .bowire-json-tree-summary::before {
     cursor: progress;
 }
 
-/* About topbar button — renders a literal "?" glyph, sized to match
+/* About topbar button — renders a literal "?" glyph,
+sized to match
    the 16px-icon footprint of the neighbouring theme / settings buttons
    so the row stays visually balanced. */
 .bowire-about-btn-glyph {
@@ -6818,7 +6561,10 @@ details[open] > .bowire-json-tree-summary::before {
 }
 
 /* About — standalone dialog opened from the topbar ?-button. Mirrors
-   the Settings overlay frame (border, radius, shadow, fade-in) but
+   the Settings overlay frame (border,
+radius,
+shadow,
+fade-in) but
    without the left sidebar — the panel is a single column. */
 .bowire-about-overlay {
     position: fixed;
@@ -7085,7 +6831,9 @@ details[open] > .bowire-json-tree-summary::before {
     border-color: var(--bowire-accent);
 }
 
-/* Card actions (move, duplicate, delete) */
+/* Card actions (move,
+duplicate,
+delete) */
 .bowire-flow-card-actions {
     display: flex;
     gap: 2px;
@@ -7156,7 +6904,9 @@ details[open] > .bowire-json-tree-summary::before {
 /* Nested cards (inside branches/loops) — slightly narrower */
 .bowire-flow-card.nested { max-width: 420px; }
 
-/* Header action buttons (export, import, duplicate) */
+/* Header action buttons (export,
+import,
+duplicate) */
 .bowire-flow-canvas-action-btn {
     display: flex;
     align-items: center;
@@ -7584,39 +7334,6 @@ details[open] > .bowire-json-tree-summary::before {
     align-items: center;
     padding-right: 8px;
 }
-
-.bowire-input-mode-btn {
-    padding: 3px 10px;
-    font-size: 11px;
-    font-weight: 500;
-    border: 1px solid var(--bowire-border);
-    background: transparent;
-    color: var(--bowire-text-tertiary);
-    cursor: pointer;
-    font-family: var(--bowire-font-sans);
-    transition: all var(--bowire-transition);
-}
-
-.bowire-input-mode-btn:first-child {
-    border-radius: var(--bowire-radius-sm) 0 0 var(--bowire-radius-sm);
-}
-
-.bowire-input-mode-btn:last-child {
-    border-radius: 0 var(--bowire-radius-sm) var(--bowire-radius-sm) 0;
-    border-left: none;
-}
-
-.bowire-input-mode-btn.active {
-    background: var(--bowire-accent-subtle);
-    color: var(--bowire-accent-text);
-    border-color: var(--bowire-accent);
-}
-
-.bowire-input-mode-btn:hover:not(.active) {
-    color: var(--bowire-text-secondary);
-    border-color: var(--bowire-text-tertiary);
-}
-
 /* ---------- Form Input ---------- */
 .bowire-form {
     padding: 12px 16px;
@@ -8038,7 +7755,8 @@ details[open] > .bowire-json-tree-summary::before {
     color: var(--bowire-accent-text);
 }
 
-/* ---------- Guided Tour (lightweight, no deps) ---------- */
+/* ---------- Guided Tour (lightweight,
+no deps) ---------- */
 .bowire-tour-overlay {
     position: fixed;
     inset: 0;
@@ -8183,7 +7901,8 @@ details[open] > .bowire-json-tree-summary::before {
     border-color: var(--bowire-accent);
 }
 /* Flashed for ~800 ms when the landing page's Upload Schema button
-   switches sidebar mode programmatically, so the user sees where the
+   switches sidebar mode programmatically,
+so the user sees where the
    click landed even when the page-main keeps showing the welcome
    cards (services / urls still empty). */
 .bowire-source-tab-flash {
@@ -8331,73 +8050,6 @@ details[open] > .bowire-json-tree-summary::before {
     display: flex;
     align-items: center;
 }
-
-.bowire-env-select {
-    flex: 1;
-    /* Matches the 34px topbar control baseline (command palette,
-       env-manage button, theme toggle all share it). */
-    height: 34px;
-    padding: 0 8px;
-    min-width: 0;
-    background: var(--bowire-bg);
-    border: 1px solid var(--bowire-border);
-    border-radius: var(--bowire-radius-sm);
-    color: var(--bowire-text);
-    font-size: 12px;
-    font-family: var(--bowire-font-sans);
-    cursor: pointer;
-    outline: none;
-    transition: border-color var(--bowire-transition);
-}
-
-.bowire-env-select:hover,
-.bowire-env-select:focus {
-    border-color: var(--bowire-accent);
-}
-
-.bowire-env-count {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-width: 20px;
-    height: 20px;
-    padding: 0 6px;
-    border-radius: var(--bowire-radius-pill);
-    background: var(--bowire-accent-subtle);
-    color: var(--bowire-accent-text);
-    font-size: 10px;
-    font-weight: 600;
-    font-family: var(--bowire-font-mono);
-}
-
-.bowire-env-manage {
-    /* 34px baseline — see .bowire-command-palette-row comment. */
-    width: 34px;
-    height: 34px;
-    padding: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: transparent;
-    border: 1px solid var(--bowire-border);
-    border-radius: var(--bowire-radius-sm);
-    color: var(--bowire-text-secondary);
-    cursor: pointer;
-    transition: all var(--bowire-transition);
-    flex-shrink: 0;
-}
-
-.bowire-env-manage:hover {
-    background: var(--bowire-sidebar-hover);
-    color: var(--bowire-accent);
-    border-color: var(--bowire-accent);
-}
-
-.bowire-env-manage svg {
-    width: 14px;
-    height: 14px;
-}
-
 /* ---------- Environments Manager Modal ---------- */
 .bowire-env-modal-overlay {
     position: fixed;
@@ -8440,61 +8092,11 @@ details[open] > .bowire-json-tree-summary::before {
     font-weight: 600;
     color: var(--bowire-text);
 }
-
-.bowire-env-modal-icon {
-    width: 16px;
-    height: 16px;
-    color: var(--bowire-accent);
-    display: flex;
-    align-items: center;
-}
-
-.bowire-env-modal-close {
-    width: 28px;
-    height: 28px;
-    padding: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: transparent;
-    border: none;
-    color: var(--bowire-text-secondary);
-    cursor: pointer;
-    border-radius: var(--bowire-radius-sm);
-    transition: all var(--bowire-transition);
-}
-
-.bowire-env-modal-close:hover {
-    background: var(--bowire-sidebar-hover);
-    color: var(--bowire-text);
-}
-
-.bowire-env-modal-close svg {
-    width: 14px;
-    height: 14px;
-}
-
 .bowire-env-modal-body {
     flex: 1;
     display: flex;
     min-height: 0;
 }
-
-.bowire-env-modal-left {
-    width: 240px;
-    border-right: 1px solid var(--bowire-border);
-    display: flex;
-    flex-direction: column;
-    background: var(--bowire-sidebar-bg);
-    flex-shrink: 0;
-}
-
-.bowire-env-modal-right {
-    flex: 1;
-    overflow-y: auto;
-    padding: 18px 22px;
-}
-
 .bowire-env-list-header {
     display: flex;
     align-items: center;
@@ -8727,8 +8329,9 @@ details[open] > .bowire-json-tree-summary::before {
 }
 
 /* #125 Phase 2 — vars-autocomplete dropdown. Floating popover
-   below the active text-input/textarea, opens on '{{' typing,
-   filters as the operator keeps typing. */
+   below the active text-input/textarea,
+opens on '{{' typing,
+filters as the operator keeps typing. */
 .bowire-vars-ac-popover {
     position: fixed;
     z-index: 250;
@@ -8768,7 +8371,8 @@ details[open] > .bowire-json-tree-summary::before {
     color: var(--bowire-text-secondary);
 }
 /* Source-color coding per the issue body — same chroma as the
-   chip-rendering Phase 2.5 work will use, so the dropdown badges
+   chip-rendering Phase 2.5 work will use,
+so the dropdown badges
    already cue the operator to the source category. */
 .bowire-vars-ac-row-env .bowire-vars-ac-row-kind { background: rgba(99, 102, 241, 0.18); color: #818cf8; }
 .bowire-vars-ac-row-prev .bowire-vars-ac-row-kind,
@@ -8793,7 +8397,9 @@ details[open] > .bowire-json-tree-summary::before {
 }
 
 /* #125 Phase 2 v2 — chip overlay. <input>/<textarea> stay
-   atomic; the overlay sits on top, mirrors the same text, and
+   atomic; the overlay sits on top,
+mirrors the same text,
+and
    renders {{...}} matches as colored spans. The field's text
    becomes transparent so only the chips show; the caret stays
    visible via caret-color so the operator still sees where
@@ -8839,12 +8445,12 @@ details[open] > .bowire-json-tree-summary::before {
 /* Source-color tints — matches the autocomplete dropdown's kind
    badge palette so the visual vocabulary is consistent across
    both surfaces. */
-.bowire-vars-chip-env     { background: rgba(99, 102, 241, 0.22); color: #818cf8; }
-.bowire-vars-chip-prev    { background: rgba(56, 189, 248, 0.22); color: #38bdf8; }
-.bowire-vars-chip-step    { background: rgba(56, 189, 248, 0.22); color: #38bdf8; }
+.bowire-vars-chip-env { background: rgba(99, 102, 241, 0.22); color: #818cf8; }
+.bowire-vars-chip-prev { background: rgba(56, 189, 248, 0.22); color: #38bdf8; }
+.bowire-vars-chip-step { background: rgba(56, 189, 248, 0.22); color: #38bdf8; }
 .bowire-vars-chip-runtime { background: rgba(251, 191, 36, 0.22); color: #fbbf24; }
-.bowire-vars-chip-secret  { background: rgba(239, 68, 68, 0.22);  color: #ef4444; }
-.bowire-vars-chip-ai      { background: rgba(168, 85, 247, 0.22); color: #a855f7; }
+.bowire-vars-chip-secret { background: rgba(239, 68, 68, 0.22);  color: #ef4444; }
+.bowire-vars-chip-ai { background: rgba(168, 85, 247, 0.22); color: #a855f7; }
 
 /* #125 Phase 2 v3 — invisible mirror div used to compute the
    caret pixel coordinate. Lives off-screen; never visible. */
@@ -8885,12 +8491,12 @@ details[open] > .bowire-json-tree-summary::before {
     padding: 1px 6px;
     border-radius: var(--bowire-radius-pill);
 }
-.bowire-vars-ref-preview-kind-env     { background: rgba(99, 102, 241, 0.22); color: #818cf8; }
-.bowire-vars-ref-preview-kind-prev    { background: rgba(56, 189, 248, 0.22); color: #38bdf8; }
-.bowire-vars-ref-preview-kind-step    { background: rgba(56, 189, 248, 0.22); color: #38bdf8; }
+.bowire-vars-ref-preview-kind-env { background: rgba(99, 102, 241, 0.22); color: #818cf8; }
+.bowire-vars-ref-preview-kind-prev { background: rgba(56, 189, 248, 0.22); color: #38bdf8; }
+.bowire-vars-ref-preview-kind-step { background: rgba(56, 189, 248, 0.22); color: #38bdf8; }
 .bowire-vars-ref-preview-kind-runtime { background: rgba(251, 191, 36, 0.22); color: #fbbf24; }
-.bowire-vars-ref-preview-kind-secret  { background: rgba(239, 68, 68, 0.22);  color: #ef4444; }
-.bowire-vars-ref-preview-kind-ai      { background: rgba(168, 85, 247, 0.22); color: #a855f7; }
+.bowire-vars-ref-preview-kind-secret { background: rgba(239, 68, 68, 0.22);  color: #ef4444; }
+.bowire-vars-ref-preview-kind-ai { background: rgba(168, 85, 247, 0.22); color: #a855f7; }
 .bowire-vars-ref-preview-ref {
     font-family: var(--bowire-font-mono);
     color: var(--bowire-text-secondary);
@@ -8914,7 +8520,8 @@ details[open] > .bowire-json-tree-summary::before {
 
 /* #116 Phase 3 — Settings → Assistant scope bar. Tells the
    operator whether the editor is showing the global config or
-   a workspace override, and offers the path to switch. */
+   a workspace override,
+and offers the path to switch. */
 .bowire-ai-scope-bar {
     display: flex;
     align-items: center;
@@ -9223,7 +8830,9 @@ details[open] > .bowire-json-tree-summary::before {
 /* #152 v3 — Sources list rows. Symmetric breathing room around
    the protocol icon + status dot so the name doesn't crowd the
    visual anchors. Hopscotch-style tightening (#6 in screenshot
-   review): 12 px body font, denser vertical padding, subtler
+   review): 12 px body font,
+denser vertical padding,
+subtler
    hover than the accent-subtle wash. */
 .bowire-sources-list-item {
     gap: 10px;
@@ -9264,25 +8873,6 @@ details[open] > .bowire-json-tree-summary::before {
     text-overflow: ellipsis;
     white-space: nowrap;
 }
-
-.bowire-env-list-item-count {
-    font-size: 10px;
-    font-family: var(--bowire-font-mono);
-    color: var(--bowire-text-tertiary);
-    background: var(--bowire-bg);
-    padding: 2px 6px;
-    border-radius: var(--bowire-radius-lg);
-    flex-shrink: 0;
-    margin-left: 8px;
-}
-
-.bowire-env-empty {
-    color: var(--bowire-text-tertiary);
-    font-size: 13px;
-    text-align: center;
-    padding: 60px 20px;
-}
-
 @keyframes bowire-fade-in {
     from { opacity: 0; }
     to { opacity: 1; }
@@ -9704,13 +9294,13 @@ details[open] > .bowire-json-tree-summary::before {
     background: var(--bowire-sidebar-hover);
 }
 
-.bowire-console-row.request    { border-left-color: var(--bowire-info); }
-.bowire-console-row.response   { border-left-color: var(--bowire-text-tertiary); }
+.bowire-console-row.request { border-left-color: var(--bowire-info); }
+.bowire-console-row.response { border-left-color: var(--bowire-text-tertiary); }
 .bowire-console-row.response.ok { border-left-color: var(--bowire-success); }
 .bowire-console-row.response.warn { border-left-color: var(--bowire-warning); }
-.bowire-console-row.stream     { border-left-color: var(--bowire-accent); }
-.bowire-console-row.channel    { border-left-color: var(--bowire-accent-text); }
-.bowire-console-row.error      { border-left-color: var(--bowire-error); }
+.bowire-console-row.stream { border-left-color: var(--bowire-accent); }
+.bowire-console-row.channel { border-left-color: var(--bowire-accent-text); }
+.bowire-console-row.error { border-left-color: var(--bowire-error); }
 
 .bowire-console-summary {
     display: flex;
@@ -9984,9 +9574,9 @@ details[open] > .bowire-json-tree-summary::before {
     color: var(--bowire-text);
 }
 
-.bowire-perf-status-name.ok      { color: var(--bowire-success); }
+.bowire-perf-status-name.ok { color: var(--bowire-success); }
 .bowire-perf-status-name.warning { color: var(--bowire-warning); }
-.bowire-perf-status-name.error   { color: var(--bowire-error); }
+.bowire-perf-status-name.error { color: var(--bowire-error); }
 
 .bowire-perf-status-count {
     color: var(--bowire-text-tertiary);
@@ -10415,10 +10005,10 @@ details[open] > .bowire-json-tree-summary::before {
     margin-left: 4px;
 }
 
-.bowire-form-label-source.bowire-source-path   { background: rgba(245, 158, 11, 0.15); color: #f59e0b; }
-.bowire-form-label-source.bowire-source-query  { background: rgba(59, 130, 246, 0.15); color: #3b82f6; }
+.bowire-form-label-source.bowire-source-path { background: rgba(245, 158, 11, 0.15); color: #f59e0b; }
+.bowire-form-label-source.bowire-source-query { background: rgba(59, 130, 246, 0.15); color: #3b82f6; }
 .bowire-form-label-source.bowire-source-header { background: rgba(139, 92, 246, 0.15); color: #8b5cf6; }
-.bowire-form-label-source.bowire-source-body   { background: rgba(16, 185, 129, 0.15); color: #10b981; }
+.bowire-form-label-source.bowire-source-body { background: rgba(16, 185, 129, 0.15); color: #10b981; }
 
 /* Per-field description below the label */
 .bowire-form-field-desc {
@@ -10458,20 +10048,13 @@ details[open] > .bowire-json-tree-summary::before {
 }
 
 /* The recordings modal piggy-backs on the env-modal frame (overlay,
-   header, two-column body). Only the recording-specific bits below need
-   their own styling: the detail pane, the action toolbar, and the step
-   list. */
-.bowire-recording-modal {
+header,
+two-column body). Only the recording-specific bits below need
+   their own styling: the detail pane,
+the action toolbar {
     width: min(960px, 90vw);
     height: min(640px, 85vh);
 }
-.bowire-recording-modal .bowire-env-modal-icon svg {
-    color: #ef4444;
-}
-.bowire-recording-active {
-    border-left: 3px solid #ef4444;
-}
-
 .bowire-recording-detail {
     display: flex;
     flex-direction: column;
@@ -10640,9 +10223,11 @@ details[open] > .bowire-json-tree-summary::before {
    Empty-State Landing Page
    ============================================================
    Rendered by wwwroot/js/landing.js whenever no method is selected.
-   Seven distinct states, each detected at render time and dispatched
+   Seven distinct states,
+each detected at render time and dispatched
    to its own renderState* function. Shared shell: a centred container
-   with a single .bowire-landing-card / -hero, plus a footer with the
+   with a single .bowire-landing-card / -hero,
+plus a footer with the
    guided-tour and docs links. */
 
 .bowire-landing {
@@ -10666,7 +10251,8 @@ details[open] > .bowire-json-tree-summary::before {
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
 }
 
-/* Hero shell — used by first-run only. Wider, with the big logo. */
+/* Hero shell — used by first-run only. Wider,
+with the big logo. */
 .bowire-landing-hero {
     width: 100%;
     max-width: 880px;
@@ -11421,10 +11007,13 @@ details[open] > .bowire-json-tree-summary::before {
 }
 
 /* ----------------------------------------------------------------------
-   Frame-semantics framework — Phase 4 right-click menu, badges, and
+   Frame-semantics framework — Phase 4 right-click menu,
+badges,
+and
    companion-field suggestion. The menu floats over the response pane
    via `position: fixed`; viewport-clamping happens in JS so the CSS
-   only needs to describe a small popup at (0, 0).
+   only needs to describe a small popup at (0,
+0).
    ---------------------------------------------------------------------- */
 
 .bowire-semantics-menu {
@@ -11647,7 +11236,8 @@ details[open] > .bowire-json-tree-summary::before {
 
 /* Inline semantic badge next to a response-tree leaf label. The colour
    tier reflects the annotation source — neutral grey for auto-detected,
-   a slight accent tint for plugin hints, full accent for user-pinned
+a slight accent tint for plugin hints,
+full accent for user-pinned
    values. Click-target is the whole badge; it shares the right-click
    handler with the label itself. */
 .bowire-semantics-badge {
@@ -12170,17 +11760,7 @@ details[open] > .bowire-json-tree-summary::before {
     border: 1px solid var(--bowire-border);
     border-radius: 999px;
     cursor: help;
-}
-
-/* ===== AI side-panel (#25 Phase 1) ===== */
-.bowire-tab-ai {
-    margin-left: auto;
-}
-.bowire-ai-tab-content {
-    padding: 16px 18px;
-    overflow-y: auto;
-}
-.bowire-ai-panel {
+}.bowire-ai-panel {
     display: flex;
     flex-direction: column;
     gap: 14px;
@@ -12205,10 +11785,6 @@ details[open] > .bowire-json-tree-summary::before {
     color: var(--bowire-text-tertiary);
     font-weight: 500;
 }
-.bowire-ai-mode-connected {
-    color: var(--bowire-success);
-}
-
 /* Status dot in the drawer chrome header — small visual cue + a
    tooltip for the full provider/model string. Three states.
    The title-row hosts the title text + optional accessory (AI's
@@ -12284,15 +11860,6 @@ details[open] > .bowire-json-tree-summary::before {
     border-top: 1px solid var(--bowire-border);
     padding-top: 10px;
 }
-.bowire-ai-model-link {
-    font-size: 12px;
-    color: var(--bowire-text-tertiary);
-    text-decoration: none;
-}
-.bowire-ai-model-link:hover {
-    color: var(--bowire-accent, #5fb2ff);
-}
-
 /* Phase 2 — chat surface + status footer */
 .bowire-ai-chat-host {
     display: flex;
@@ -12456,11 +12023,7 @@ details[open] > .bowire-json-tree-summary::before {
 .bowire-ai-status {
     font-size: 11px;
     color: var(--bowire-text-tertiary);
-}
-.bowire-ai-status-live {
-    color: var(--bowire-success, #6ad27a);
-}
-.bowire-ai-detected {
+}.bowire-ai-detected {
     font-size: 11px;
     color: var(--bowire-text-tertiary);
     margin-top: 4px;
@@ -12505,7 +12068,8 @@ details[open] > .bowire-json-tree-summary::before {
     opacity: 0.5;
 }
 /* Rule trace under each heuristic-ranked row. Indented + smaller
-   than the row body so it reads as supporting context, not as the
+   than the row body so it reads as supporting context,
+not as the
    row's headline. */
 .bowire-ai-threat-trace {
     margin-top: 4px;
