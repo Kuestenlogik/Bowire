@@ -5808,6 +5808,43 @@ details[open] > .bowire-json-tree-summary::before {
     animation: bowire-pulse 1.5s ease-in-out infinite;
 }
 
+/* #114 — inline hint chip at the method header. Small accent pill
+   between the method badge and the copy-URL button. The hint count
+   lives in the chip; the full hint texts are still listed in the
+   Assistant drawer (the chip's click opens it). Sized to match the
+   header-badge so the two read as siblings, not as a pill + button
+   mismatch. */
+.bowire-header-hint-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    height: 22px;
+    padding: 0 8px;
+    margin-left: 6px;
+    background: var(--bowire-accent-subtle);
+    border: 1px solid transparent;
+    border-radius: var(--bowire-radius-sm);
+    color: var(--bowire-accent);
+    cursor: pointer;
+    font-size: 11px;
+    font-weight: 500;
+    line-height: 1;
+    transition: background var(--bowire-transition), border-color var(--bowire-transition);
+}
+.bowire-header-hint-chip:hover {
+    background: var(--bowire-accent-subtle);
+    border-color: var(--bowire-accent);
+}
+.bowire-header-hint-chip-icon {
+    display: inline-flex;
+    width: 12px;
+    height: 12px;
+}
+.bowire-header-hint-chip-icon svg { width: 100%; height: 100%; }
+.bowire-header-hint-chip-count {
+    font-variant-numeric: tabular-nums;
+}
+
 /* Copy invoke URL button in the method header */
 .bowire-header-copy-url {
     background: none;
