@@ -2019,6 +2019,103 @@
     // the relevant fields onto the spec's `lastRun` property and the
     // scratchpad resets.
     let benchmarksList = null;       // null = not yet loaded; [] = loaded, empty
+
+    // ---- #125 Phase 4 — secret.* + ai.* source-prefix state ----
+    //
+    // secrets: in-memory Map per workspace, populated through the
+    // Workspace-detail Settings section. Phase 4 is intentionally
+    // session-local — no disk plaintext until Phase 5 wraps an
+    // OS-keyring (Windows Credential Manager / macOS Keychain /
+    // libsecret). The map carries names → values; the resolver
+    // surfaces the real value to the request pipeline but the chip
+    // renders masked, and recording / export sanitisers replace the
+    // value with '***' before it leaves the workbench.
+    //
+    // ai-cache: a session-scoped Object keyed by the full `ai.<path>`
+    // reference. prefetchAiVars(template) scans the template once
+    // before send-time, calls sendChat with a short prompt
+    // ("suggest a value for X in context Y"), parses the answer and
+    // writes the cache. substituteVars then returns the cached value
+    // synchronously the same way it does for env vars.
+    var _workspaceSecrets = {};      // workspaceId → { name → value }
+    var _aiVarsCache = {};           // 'ai.NAME' → resolved value (string)
+    var _aiVarsInflight = {};        // 'ai.NAME' → Promise (dedup concurrent prefetches)
+
+    function getWorkspaceSecrets(workspaceId) {
+        var id = workspaceId || activeWorkspaceId;
+        if (!id) return {};
+        return _workspaceSecrets[id] || (_workspaceSecrets[id] = {});
+    }
+    function setWorkspaceSecret(name, value, workspaceId) {
+        var bag = getWorkspaceSecrets(workspaceId);
+        if (value === null || value === undefined || value === '') delete bag[name];
+        else bag[name] = String(value);
+    }
+    function listWorkspaceSecrets(workspaceId) {
+        return Object.keys(getWorkspaceSecrets(workspaceId));
+    }
+    function resolveSecret(name) {
+        var bag = getWorkspaceSecrets();
+        return Object.prototype.hasOwnProperty.call(bag, name) ? bag[name] : null;
+    }
+    function resolveAiVar(key) {
+        // key is the full prefix-stripped name, e.g. 'next_pet_id'.
+        // Cache lookup uses the unprefixed key.
+        return Object.prototype.hasOwnProperty.call(_aiVarsCache, key)
+            ? _aiVarsCache[key] : null;
+    }
+    function clearAiVarsCache() { _aiVarsCache = {}; _aiVarsInflight = {}; }
+
+    // #125 Phase 4 — secret sanitiser. Walk a JSON-serialisable value
+    // and replace any string occurrence of a current secret's value
+    // with '***'. Used at every export boundary (recording step disk
+    // write, recording export download, mock response capture). The
+    // resolver hands the real value to the upstream request but the
+    // captured response shouldn't carry it back in plaintext (an API
+    // that echoes the auth header in a debug field would otherwise
+    // leak it into the recording).
+    //
+    // Skip-cheap path: if the workspace has no secrets, return the
+    // value untouched. Otherwise walk recursively. The replace is
+    // string-contains, not key-aware — we don't know which fields
+    // can carry the value, so we treat every string as suspect.
+    function sanitiseForExport(value) {
+        var bag = (typeof getWorkspaceSecrets === 'function')
+            ? getWorkspaceSecrets() : {};
+        var values = [];
+        for (var k in bag) {
+            if (Object.prototype.hasOwnProperty.call(bag, k) && bag[k]) {
+                values.push(bag[k]);
+            }
+        }
+        if (values.length === 0) return value;
+        return _walkAndReplace(value, values);
+    }
+
+    function _walkAndReplace(value, secretValues) {
+        if (value === null || value === undefined) return value;
+        var t = typeof value;
+        if (t === 'string') {
+            var out = value;
+            for (var i = 0; i < secretValues.length; i++) {
+                if (out.indexOf(secretValues[i]) !== -1) {
+                    out = out.split(secretValues[i]).join('***');
+                }
+            }
+            return out;
+        }
+        if (t !== 'object') return value;
+        if (Array.isArray(value)) {
+            return value.map(function (v) { return _walkAndReplace(v, secretValues); });
+        }
+        var copy = {};
+        for (var k in value) {
+            if (Object.prototype.hasOwnProperty.call(value, k)) {
+                copy[k] = _walkAndReplace(value[k], secretValues);
+            }
+        }
+        return copy;
+    }
     let benchmarksSelectedId = null;
     let benchmarkActiveSpecId = null; // spec currently running, if any
 

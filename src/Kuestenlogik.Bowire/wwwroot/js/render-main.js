@@ -900,6 +900,70 @@
             )
         ));
 
+        // #125 Phase 4 — Secrets section. Session-only in-memory
+        // store (cleared on reload); Phase 5 wraps an OS keyring.
+        // Values are masked in the table; the resolver still hands
+        // the real value to the request pipeline so the upstream
+        // gets the bearer token / API key. Recording / export
+        // sanitisers replace the value with '***' before it leaves
+        // the workbench.
+        var secretsBag = (typeof getWorkspaceSecrets === 'function')
+            ? getWorkspaceSecrets(ws.id) : {};
+        var secretsSection = el('div', { className: 'bowire-ws-detail-section' },
+            el('div', { className: 'bowire-ws-detail-section-label', textContent: 'Secrets' }),
+            el('div', {
+                className: 'bowire-ws-detail-stat-hint',
+                style: 'margin-bottom:8px',
+                textContent: 'Reference as {{secret.NAME}} in any input. Session-only — cleared on reload. Phase 5 wraps the OS keyring.'
+            })
+        );
+        var secretNames = (typeof listWorkspaceSecrets === 'function')
+            ? listWorkspaceSecrets(ws.id) : [];
+        if (secretNames.length > 0) {
+            var secretsList = el('div', { style: 'display:flex;flex-direction:column;gap:4px;margin-bottom:8px' });
+            secretNames.forEach(function (name) {
+                secretsList.appendChild(el('div', {
+                    style: 'display:flex;align-items:center;gap:8px;font-size:12px;padding:4px 8px;background:var(--bowire-surface);border:1px solid var(--bowire-border-subtle);border-radius:var(--bowire-radius-sm)'
+                },
+                    el('span', { style: 'flex:1;font-family:var(--bowire-mono)', textContent: name }),
+                    el('span', { style: 'font-family:var(--bowire-mono);color:var(--bowire-text-tertiary)', textContent: '••••••••' }),
+                    el('button', {
+                        className: 'bowire-presets-btn',
+                        style: 'height:22px;padding:0 8px',
+                        textContent: 'Remove',
+                        onClick: function () {
+                            setWorkspaceSecret(name, null, ws.id);
+                            render();
+                        }
+                    })
+                ));
+            });
+            secretsSection.appendChild(secretsList);
+        }
+        secretsSection.appendChild(el('button', {
+            className: 'bowire-presets-btn',
+            textContent: '+ Add secret',
+            onClick: function () {
+                bowirePrompt('Secret name', {
+                    title: 'Add secret',
+                    placeholder: 'e.g. GH_TOKEN',
+                    confirmText: 'Next'
+                }).then(function (name) {
+                    if (!name) return;
+                    bowirePrompt('Value for ' + name, {
+                        title: 'Add secret value',
+                        placeholder: '(value is not stored on disk)',
+                        confirmText: 'Save'
+                    }).then(function (value) {
+                        if (!value) return;
+                        setWorkspaceSecret(name, value, ws.id);
+                        render();
+                    });
+                });
+            }
+        }));
+        main.appendChild(secretsSection);
+
         // Danger zone — delete button. Only render when more than one
         // workspace exists (can't delete the last one).
         if (workspaces.length > 1) {

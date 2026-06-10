@@ -132,6 +132,24 @@
         var protocolId = spec.protocol || targetService.source || selectedProtocol || undefined;
         var fullName = spec.service + '/' + spec.method;
 
+        // #125 Phase 4 — prefetch ai.* refs from body + metadata ONCE
+        // before kicking off the workers. The cache is session-scoped,
+        // so all N iterations share the same resolved value. That's
+        // intentional for benchmarks: the load profile should be
+        // consistent across the run, not re-generate the AI value 1000
+        // times (which would also dominate the latency numbers).
+        if (typeof window.bowirePrefetchAiVars === 'function') {
+            try {
+                var aiTpls = [bodyTemplate];
+                for (var mk in metadataTemplate) {
+                    if (Object.prototype.hasOwnProperty.call(metadataTemplate, mk)) {
+                        aiTpls.push(String(metadataTemplate[mk] || ''));
+                    }
+                }
+                await window.bowirePrefetchAiVars(aiTpls);
+            } catch (e) { console.warn('[ai-prefetch] benchmark failed', e); }
+        }
+
         resetBenchmark({ n: n, concurrency: concurrency });
         benchmark.running = true;
         benchmark.startTime = performance.now();

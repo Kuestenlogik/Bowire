@@ -1539,3 +1539,105 @@
             return true;
         }
     };
+
+    // ---- #125 Phase 4 — ai.* prefetch ----
+    //
+    // Async path that populates the _aiVarsCache before send-time so
+    // substituteVars (sync) can resolve {{ai.NAME}} normally. Call
+    // sites: execute.js / runBenchmarkSpec / perf-diff before they
+    // substituteVars the template.
+    //
+    // The model gets a tiny single-shot prompt with the variable name
+    // plus a context hint (the currently-selected service + method
+    // when available). Answer is expected to be ONE value, no prose;
+    // we accept the first non-empty line as the value. Empty / errored
+    // responses leave the cache slot unset so the user sees the
+    // unresolved placeholder, not a silent empty string.
+    //
+    // Concurrency: a per-name Promise lives in _aiVarsInflight so
+    // multiple substitutions in the same template share one AI call.
+    //
+    // No-op when:
+    //   - AI module not loaded (no chat client)
+    //   - The template contains no {{ai.X}} refs
+    //   - The cache slot for a referenced name is already populated
+
+    async function prefetchAiVars(templates) {
+        if (typeof templates === 'string') templates = [templates];
+        if (!Array.isArray(templates) || templates.length === 0) return;
+
+        var names = new Set();
+        var re = /\{\{\s*ai\.([^}\s]+)\s*\}\}/g;
+        templates.forEach(function (t) {
+            if (typeof t !== 'string') return;
+            var m;
+            while ((m = re.exec(t)) !== null) {
+                names.add(m[1]);
+            }
+        });
+        if (names.size === 0) return;
+
+        var pending = [];
+        names.forEach(function (name) {
+            // Cache hit → nothing to do.
+            if (typeof resolveAiVar === 'function' && resolveAiVar(name) !== null) return;
+            // In-flight dedup.
+            if (_aiVarsInflight[name]) {
+                pending.push(_aiVarsInflight[name]);
+                return;
+            }
+            // Compose a tiny single-shot prompt. We DON'T use sendChat
+            // (which writes to chatHistory and renders the drawer) —
+            // this is an unattended substitution call. Direct fetch
+            // against /api/ai/chat keeps it out of the visible UI.
+            var p = _runAiPrefetch(name).then(function (value) {
+                if (value !== null && value !== undefined && String(value).length > 0) {
+                    _aiVarsCache[name] = String(value);
+                }
+            }).catch(function () {
+                // Leave cache unset; substituteVars returns the
+                // placeholder, operator sees the unresolved state.
+            }).finally(function () {
+                delete _aiVarsInflight[name];
+            });
+            _aiVarsInflight[name] = p;
+            pending.push(p);
+        });
+        await Promise.all(pending);
+    }
+
+    async function _runAiPrefetch(name) {
+        // Context hint — the selected method, if any. The model sees
+        // it but isn't forced to use it; the value just has to be
+        // reasonable for the variable name.
+        var ctx = '';
+        try {
+            if (typeof selectedMethod !== 'undefined' && selectedMethod) {
+                ctx = ' (in the context of calling ' + selectedMethod.name + ')';
+            }
+        } catch { /* selectedMethod may not be in scope */ }
+
+        var prompt = 'Suggest one plausible value for a variable named "' + name + '"'
+            + ctx + '. Reply with ONLY the value, no prose, no quotes, no surrounding text.';
+
+        var resp = await fetch(config.prefix + '/api/ai/chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                messages: [{ role: 'user', content: prompt }]
+            })
+        });
+        if (!resp.ok) return null;
+        var data = await resp.json();
+        // The endpoint returns a chat-message envelope. Grab the
+        // first non-empty line and strip surrounding quotes / spaces.
+        var raw = (data && data.content) || (data && data.message && data.message.content) || '';
+        if (!raw) return null;
+        var first = String(raw).split('\n').find(function (l) { return l.trim().length > 0; });
+        if (!first) return null;
+        return first.trim().replace(/^["']|["']$/g, '');
+    }
+
+    // Expose at module scope so execute.js + benchmarks.js +
+    // perf-diff can await it before their substituteVars calls.
+    window.bowirePrefetchAiVars = prefetchAiVars;

@@ -53,6 +53,30 @@
                 requestMessages = [editor ? editor.value : '{}'];
             }
         }
+        // #125 Phase 4 — prefetch ai.* refs from every template the
+        // upcoming substitution will touch (body + metadata snapshots
+        // + URL). The prefetch is no-op when nothing matches; when
+        // there are matches it awaits the AI calls and populates the
+        // session cache that substituteVars reads from.
+        if (typeof window.bowirePrefetchAiVars === 'function') {
+            try {
+                var aiTemplates = requestMessages.slice();
+                // metadata values + URL also pass through substituteVars,
+                // so include them in the scan.
+                var mdRowsAi = $$('.bowire-metadata-row');
+                for (var mdi = 0; mdi < mdRowsAi.length; mdi++) {
+                    var mdInputs = mdRowsAi[mdi].querySelectorAll('.bowire-metadata-input');
+                    if (mdInputs.length === 2 && mdInputs[1].value) {
+                        aiTemplates.push(mdInputs[1].value);
+                    }
+                }
+                if (selectedService && selectedService.originUrl) {
+                    aiTemplates.push(selectedService.originUrl);
+                }
+                await window.bowirePrefetchAiVars(aiTemplates);
+            } catch (e) { console.warn('[ai-prefetch] failed', e); }
+        }
+
         // Substitute ${var} placeholders from active environment + globals
         let messages = substituteMessages(
             requestMessages.map(function (m) { return m || '{}'; })
