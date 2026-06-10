@@ -33,7 +33,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 - [#40](https://github.com/Kuestenlogik/Bowire/issues/40) **Freeform Request Builder** `area:workbench`
 - [#41](https://github.com/Kuestenlogik/Bowire/issues/41) **First RC of the new versioning discipline** `area:multi`
 - [Kuestenlogik/Bowire.Templates#3](https://github.com/Kuestenlogik/Bowire.Templates/issues/3) **Plugin project template — `dotnet new bowire-plugin`** `area:plugin-sdk`
-- [#43](https://github.com/Kuestenlogik/Bowire/issues/43) **MCP SSE-transport support** `area:mcp`
 - [#44](https://github.com/Kuestenlogik/Bowire/issues/44) **Sidecar packaging — Docker / Compose / Kubernetes** `area:docs`
 - [Kuestenlogik/Bowire.Samples#13](https://github.com/Kuestenlogik/Bowire.Samples/issues/13) **SimpleGraphQLSubscriptions sample** `area:plugin-sdk`
 - [#46](https://github.com/Kuestenlogik/Bowire/issues/46) **MCP server-side notifications via IInlineSseSubscriber** `area:mcp`
