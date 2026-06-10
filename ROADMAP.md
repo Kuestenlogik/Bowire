@@ -78,7 +78,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 - [#140](https://github.com/Kuestenlogik/Bowire/issues/140) **Per-mode 'Saved Configs' / Presets (distinct from cross-workflow favorites)** 
 - [#144](https://github.com/Kuestenlogik/Bowire/issues/144) **Large-recording capture/replay — chunked disk layout, lazy step-load, GB-scale** 
 - [#145](https://github.com/Kuestenlogik/Bowire/issues/145) **Deprecate ${name} in favour of {{name}} (multi-phase migration)** 
-- [#146](https://github.com/Kuestenlogik/Bowire/issues/146) **Workspace-side environment inclusion list (shared envs + per-workspace selection)** 
 - [#147](https://github.com/Kuestenlogik/Bowire/issues/147) **Git-backed workspace storage — composes with #144 storage modes + #58** 
 - [#148](https://github.com/Kuestenlogik/Bowire/issues/148) **Per-entity file storage format for git-backed workspaces (envs / collections / scripts)** 
 - [#149](https://github.com/Kuestenlogik/Bowire/issues/149) **Workspace CLI — bowire workspace init / export / import / migrate-format** 
