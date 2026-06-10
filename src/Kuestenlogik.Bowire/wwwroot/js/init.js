@@ -468,6 +468,14 @@
         ]).finally(function () {
             render();
 
+            // #145 Phase 1 — once recordings + envs are hydrated,
+            // scan the active workspace for legacy ${name} usage and
+            // surface the soft-deprecation toast (sticky; user picks
+            // Snooze or Dismiss). Snooze marker is workspace-scoped,
+            // so switching workspaces re-checks per-workspace.
+            try { showLegacyVarsToastIfNeeded(); }
+            catch (e) { console.warn('[vars-deprecation] toast failed', e); }
+
             // Reveal the app and fade out the loading overlay. The
             // overlay lives in the static HTML so it's visible from
             // the very first paint — no FOUC. We remove it after a

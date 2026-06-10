@@ -2869,7 +2869,7 @@
             codeContent.appendChild(codeBox);
             codeContent.appendChild(el('div', {
                 className: 'bowire-code-hint',
-                textContent: 'The snippet uses the current request body, metadata, and the active environment\u2019s ${var} substitutions. Re-generates whenever you switch language or edit the form.'
+                textContent: 'The snippet uses the current request body, metadata, and the active environment\u2019s {{var}} substitutions. Re-generates whenever you switch language or edit the form.'
             }));
         }
         pane.appendChild(codeContent);

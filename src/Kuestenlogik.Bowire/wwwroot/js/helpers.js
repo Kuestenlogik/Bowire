@@ -47,7 +47,7 @@
     function serverUrlParam(prefix, url) {
         var u = url ?? getPrimaryServerUrl();
         if (!u) return '';
-        // Substitute ${var} placeholders so users can use ${baseUrl} in the URL field
+        // Substitute {{var}} placeholders so users can use {{baseUrl}} in the URL field
         var resolved = substituteVars(u);
         var sep = prefix ? '&' : '?';
         return sep + 'serverUrl=' + encodeURIComponent(resolved);

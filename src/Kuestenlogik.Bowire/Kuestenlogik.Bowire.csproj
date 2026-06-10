@@ -131,6 +131,12 @@
          (which calls installVarsAutocomplete + installVarsChips). -->
     <BowireJsFragment Include="wwwroot\js\vars-autocomplete.js" />
     <BowireJsFragment Include="wwwroot\js\vars-chips.js" />
+    <!-- #145 Phase 1 — soft deprecation of ${name}. Scanner + toast
+         called from init.js post-boot, so it must come before
+         init.js. Reads recordingsList / collectionsList / flowsList /
+         freeformRequest / getEnvironments(), all available globally
+         from earlier fragments. -->
+    <BowireJsFragment Include="wwwroot\js\vars-deprecation.js" />
     <!--
       Frame-semantics framework + built-in widgets. extensions.js MUST
       come before any widget bundle so window.BowireExtensions.register

@@ -144,7 +144,7 @@
         body.appendChild(configRow);
 
         body.appendChild(el('div', { className: 'bowire-perf-hint',
-            textContent: 'Repeats the current request body and metadata using the active environment + auth helper. ${now}, ${uuid} and other system variables regenerate per call.' }));
+            textContent: 'Repeats the current request body and metadata using the active environment + auth helper. {{runtime.now}}, {{runtime.uuid}} and other system variables regenerate per call.' }));
 
         // Progress bar
         if (benchmark.running || benchmark.completed > 0) {
