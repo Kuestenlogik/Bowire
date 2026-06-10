@@ -49,7 +49,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 - [#96](https://github.com/Kuestenlogik/Bowire/issues/96) **Multi-tenant Phase C — SCIM 2.0 provisioning endpoints** 
 - [#97](https://github.com/Kuestenlogik/Bowire/issues/97) **Multi-tenant Phase E — single-user → multi-tenant migration path** 
 - [#98](https://github.com/Kuestenlogik/Bowire/issues/98) **Multi-tenant Phase F — user chip, scoped state copy, admin impersonation** 
-- [#99](https://github.com/Kuestenlogik/Bowire/issues/99) **Submarine — transparent proxy / MITM mode (6th deployment shape)** 
 - [#100](https://github.com/Kuestenlogik/Bowire/issues/100) **Ferry — CI/CD runner (collection / recording → headless run + JUnit report)** 
 - [#101](https://github.com/Kuestenlogik/Bowire/issues/101) **Tugboat — VS Code + JetBrains workbench extension** 
 - [#102](https://github.com/Kuestenlogik/Bowire/issues/102) **Lighthouse — scheduled probes + alerting (Postman Monitors / Synthetics analog)** 
@@ -63,7 +62,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 - [#115](https://github.com/Kuestenlogik/Bowire/issues/115) **v2.0 — UI refactor: re-architect the workbench shell** 
 - [#116](https://github.com/Kuestenlogik/Bowire/issues/116) **Workspaces — named, switchable contexts that bundle URLs / envs / collections / AI config** 
 - [#117](https://github.com/Kuestenlogik/Bowire/issues/117) **i18n — extract every UI string; ship DE + EN catalogues** 
-- [#123](https://github.com/Kuestenlogik/Bowire/issues/123) **Workbench tabs that carry protocol-typed state** 
 - [#124](https://github.com/Kuestenlogik/Bowire/issues/124) **Cross-protocol omnibox (Cmd/Ctrl+K)** 
 - [#125](https://github.com/Kuestenlogik/Bowire/issues/125) **Multi-source {{...}} variable resolver** 
 - [#126](https://github.com/Kuestenlogik/Bowire/issues/126) **Pre-/post-scripts with a protocol-typed sandbox** 
