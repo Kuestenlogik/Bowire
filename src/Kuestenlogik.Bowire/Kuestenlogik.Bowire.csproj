@@ -108,6 +108,14 @@
     <BowireJsFragment Include="wwwroot\js\protocols.js" />
     <BowireJsFragment Include="wwwroot\js\execute.js" />
     <BowireJsFragment Include="wwwroot\js\render-env-auth.js" />
+    <!-- #131 Phase 1 — Benchmarks rail-mode renderer + spec-based
+         runner. Must come before render-sidebar.js (which dispatches
+         to renderBenchmarksSidebar) and render-main.js (which calls
+         renderBenchmarksDetailMain). Depends on helpers.js (el,
+         svgIcon, renderEmptyCard, bowireConfirm), auth.js (applyAuth),
+         history-env.js (substituteVars, serverUrlParamForService),
+         and the live benchmark scratchpad declared in prologue.js. -->
+    <BowireJsFragment Include="wwwroot\js\benchmarks.js" />
     <BowireJsFragment Include="wwwroot\js\render-sidebar.js" />
     <BowireJsFragment Include="wwwroot\js\landing.js" />
     <BowireJsFragment Include="wwwroot\js\autocomplete.js" />

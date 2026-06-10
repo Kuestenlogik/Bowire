@@ -1886,6 +1886,17 @@
         };
     }
 
+    // ---- #131 Benchmarks rail-mode state ----
+    // Per-workspace list of saved benchmark specs + their last result.
+    // Hydrated lazily in loadBenchmarks() (benchmarks.js). The legacy
+    // `benchmark` object above stays as the live-run scratchpad for the
+    // in-progress execution; once a run completes the renderer copies
+    // the relevant fields onto the spec's `lastRun` property and the
+    // scratchpad resets.
+    let benchmarksList = null;       // null = not yet loaded; [] = loaded, empty
+    let benchmarksSelectedId = null;
+    let benchmarkActiveSpecId = null; // spec currently running, if any
+
     // ---- Request Chaining State ----
     // Holds the parsed JSON of the last successful response so subsequent
     // requests can reference its fields via ${response.path.to.field}.

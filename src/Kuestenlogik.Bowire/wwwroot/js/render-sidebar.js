@@ -730,7 +730,7 @@
         { id: 'mocks',        icon: 'server',    label: 'Mocks',             group: 'scenarios', wired: true,  sidebar: { kind: 'mocks' } },
         { id: 'flows',        icon: 'flow',      label: 'Flows',             group: 'scenarios', wired: true,  sidebar: { kind: 'flows' } },
         { id: 'proxy',        icon: 'disconnect',label: 'Proxy / MITM',      group: 'quality',   wired: true,  sidebar: { kind: 'proxy' } },
-        { id: 'benchmarks',   icon: 'chart',     label: 'Benchmarks',        group: 'quality',   wired: true,  sidebar: { kind: 'none' } },
+        { id: 'benchmarks',   icon: 'chart',     label: 'Benchmarks',        group: 'quality',   wired: true,  sidebar: { kind: 'benchmarks' } },
         { id: 'parallel',     icon: 'lightning', label: 'Parallel sessions', group: 'quality',   wired: true,  sidebar: { kind: 'none' } },
         { id: 'security',     icon: 'shield',    label: 'Security',          group: 'hardening', wired: true,  sidebar: { kind: 'services' } },
         { id: 'workspaces',   icon: 'briefcase', label: 'Workspaces',        group: 'hardening', wired: true,  sidebar: { kind: 'workspaces' } },
@@ -1831,6 +1831,7 @@
             case 'mocks':        return renderMocksSidebar();
             case 'workspaces':   return renderWorkspacesSidebar();
             case 'sources':      return renderSourcesSidebar();
+            case 'benchmarks':   return renderBenchmarksSidebar();
             // 'flows', 'proxy', 'services' fall through to the legacy
             // sidebar below (built from the discover service tree).
             // Their main pane reads sidebarView, which the rail-button
