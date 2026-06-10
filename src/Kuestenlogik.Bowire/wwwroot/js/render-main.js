@@ -1760,12 +1760,13 @@
             // invoke) instead of burying them in the Assistant drawer's
             // static list. Click opens the drawer to read the full
             // text; the chip itself is a one-glance affordance.
-            // The drawer's list survives as a history/index — Power
-            // users keep their overview, but the trigger to LOOK at it
-            // now lives where the context is.
-            if (typeof evaluateHints === 'function') {
+            // Phase 2 — only hints WITH surface='header' (or no surface
+            // → defaults to header) appear here. Response/auth-targeted
+            // hints render inline at their own surface; the drawer
+            // still shows the full unfiltered list as the history view.
+            if (typeof evaluateHintsForSurface === 'function') {
                 try {
-                    var hints = evaluateHints();
+                    var hints = evaluateHintsForSurface('header');
                     if (hints && hints.length > 0) {
                         header.appendChild(el('button', {
                             className: 'bowire-header-hint-chip',
@@ -4387,6 +4388,19 @@
         // body, not under the response tabs — see renderAiDrawer in
         // render-env-auth.js. Toggle button lives in the topbar.
         pane.appendChild(tabs);
+
+        // #114 Phase 2 — inline hint banners at the response surface.
+        // Hints flagged with surface='response' (slow-response,
+        // large-response, response-status-mismatch, …) land here so
+        // the operator reads them at the place where the signal
+        // originated, instead of having to flip to the Assistant
+        // drawer. The drawer's list keeps the full unfiltered view.
+        if (typeof renderInlineHintBanners === 'function') {
+            try {
+                var rBanners = renderInlineHintBanners('response');
+                if (rBanners) pane.appendChild(rBanners);
+            } catch (e) { console.warn('[hints] response banners failed', e); }
+        }
 
         // Response tab
         const respContent = el('div', { className: `bowire-tab-content ${activeResponseTab === 'response' ? 'active' : ''}` });

@@ -25,6 +25,15 @@
     // Each hint:
     //   id       — stable identifier (for filtering / dismiss-once later).
     //   level    — 'info' | 'warn' | 'tip'. Cosmetic for now, drives styling.
+    //   surface  — where the hint should render (default 'header'):
+    //                'header'    — method-header chip + Assistant drawer
+    //                'response'  — inline banner above the response pane
+    //                'auth'      — inline banner at the Auth panel
+    //              Surface-targeted hints land at the spot the operator
+    //              looks for help, instead of all queueing into a single
+    //              drawer list (#114 Phase 2). The Assistant drawer's
+    //              list still shows every fired hint regardless of
+    //              surface — that stays as the index / history view.
     //   match    — (ctx) -> bool. ctx is the snapshot built by collectContext().
     //   render   — (ctx) -> string. Plain text, may include the method name.
     //
@@ -46,6 +55,7 @@
         {
             id: 'slow-response',
             level: 'warn',
+            surface: 'response',
             match: function (c) { return !!c.method && c.responseDurationMs >= 2000; },
             render: function (c) {
                 return c.method.name + ' took '
@@ -56,6 +66,7 @@
         {
             id: 'large-response',
             level: 'tip',
+            surface: 'response',
             match: function (c) { return !!c.method && c.responseBytes >= 100 * 1024; },
             render: function (c) {
                 var kb = Math.round(c.responseBytes / 1024);
@@ -76,6 +87,7 @@
         {
             id: 'response-status-mismatch',
             level: 'info',
+            surface: 'response',
             match: function (c) {
                 return !!c.method && !!c.actualStatus && !!c.expectedStatus
                     && c.actualStatus !== c.expectedStatus
@@ -90,6 +102,7 @@
         {
             id: 'auth-header-ineffective',
             level: 'warn',
+            surface: 'auth',
             match: function (c) {
                 // Approximation without per-call header capture: a 401
                 // / 403 on a method whose name suggests it should be
@@ -118,6 +131,7 @@
         {
             id: 'unstable-response-shape',
             level: 'warn',
+            surface: 'response',
             match: function (c) { return c.shapeDriftCount >= 2; },
             render: function (c) {
                 return c.method.name + ' returned '
@@ -127,6 +141,7 @@
         {
             id: 'grpc-empty-response',
             level: 'warn',
+            surface: 'response',
             match: function (c) {
                 return c.method && c.method.protocol === 'grpc' && c.hasResponse
                     && c.responseText !== null && c.responseText.length === 0;
@@ -151,6 +166,7 @@
         {
             id: 'response-extra-fields',
             level: 'warn',
+            surface: 'response',
             match: function (c) {
                 return c.method && c.method.protocol === 'rest' && c.responseHasUnknownKeys;
             },
@@ -192,6 +208,7 @@
         {
             id: 'auth-method-no-token',
             level: 'warn',
+            surface: 'auth',
             match: function (c) {
                 return c.hasResponse && c.lastStatusCode === 401;
             },
@@ -355,11 +372,70 @@
             var h = BOWIRE_AI_HINTS[i];
             try {
                 if (h.match(ctx)) {
-                    fired.push({ id: h.id, level: h.level, text: h.render(ctx) });
+                    fired.push({
+                        id: h.id,
+                        level: h.level,
+                        // Default surface is 'header' so existing untyped
+                        // hints continue rendering on the method-header
+                        // chip — backwards-compatible with the Phase 1
+                        // (#114) chip we shipped earlier.
+                        surface: h.surface || 'header',
+                        text: h.render(ctx)
+                    });
                 }
             } catch { /* hint may throw on unexpected state shape — ignore */ }
         }
         return fired;
+    }
+
+    // #114 Phase 2 — surface-filtered hint lookup. Per-surface
+    // renderers (response pane, auth panel, …) call this with their
+    // surface name; only matching-surface hints come back. The
+    // Assistant drawer keeps calling evaluateHints() unfiltered so
+    // its list remains the global index / history view.
+    function evaluateHintsForSurface(surface) {
+        if (!surface) return [];
+        return evaluateHints().filter(function (h) { return h.surface === surface; });
+    }
+
+    // #114 Phase 2 — universal inline hint-banner renderer. Returns a
+    // div with one .bowire-inline-hint per fired hint (or null when
+    // no hints fire, so callers can skip an empty wrapper). Used by
+    // both the response pane and the auth panel — same widget, same
+    // styling, different surface filter. Each banner shows level
+    // colour, hint text, and a "Open Assistant" affordance for deeper
+    // context. Dismissal lives in the issue body's Phase 3 — for now,
+    // hints stay until their match() rule stops firing.
+    function renderInlineHintBanners(surface) {
+        var hints = evaluateHintsForSurface(surface);
+        if (!hints || hints.length === 0) return null;
+        var wrap = el('div', { className: 'bowire-inline-hint-wrap' });
+        hints.forEach(function (h) {
+            var row = el('div', {
+                className: 'bowire-inline-hint bowire-inline-hint-' + (h.level || 'info'),
+                role: 'note'
+            });
+            row.appendChild(el('span', {
+                className: 'bowire-inline-hint-icon',
+                innerHTML: svgIcon('spark')
+            }));
+            row.appendChild(el('span', {
+                className: 'bowire-inline-hint-text',
+                textContent: h.text
+            }));
+            row.appendChild(el('button', {
+                className: 'bowire-inline-hint-open',
+                title: 'Open the Assistant drawer',
+                textContent: 'Open Assistant',
+                onClick: function () {
+                    aiDrawerOpen = true;
+                    try { localStorage.setItem('bowire_ai_drawer_open', '1'); } catch { /* ignore */ }
+                    render();
+                }
+            }));
+            wrap.appendChild(row);
+        });
+        return wrap;
     }
 
     // ---------- Phase 2 status + chat plumbing ----------
