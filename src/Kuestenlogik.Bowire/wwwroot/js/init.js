@@ -1,5 +1,13 @@
     // ---- Init ----
     function init() {
+        // #115 — check the app-version marker first so a major-bump
+        // cosmetic reset (drawer-open / split-mode / rail-mode / …)
+        // lands BEFORE any rendering reads those keys. Data and user
+        // settings (theme, watch-interval) are untouched; see the
+        // checkAppVersionMarker contract in prologue.js for the list.
+        try { checkAppVersionMarker(); }
+        catch (e) { console.warn('[bowire] version-marker check failed', e); }
+
         // Apply stored theme preference (or auto → OS) immediately so
         // the first paint is correct. Replaces the old
         // `setAttribute('data-theme', config.theme)` hard-wire, which
