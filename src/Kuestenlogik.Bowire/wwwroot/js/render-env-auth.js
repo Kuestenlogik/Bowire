@@ -478,20 +478,52 @@
         // now'). Saved = brief green-tinted check + 'Saved
         // <target>' for ~2 s. Failed = amber-tinted warning + the
         // failed-target label, sticks for ~4 s.
+        // #127 — save-pill is clickable in standalone mode: opens the
+        // workspace's user-folder in the host OS's file manager so the
+        // operator can poke around with their usual tooling. The click
+        // is gated on canOpenWorkspaceFolder (probed at boot from
+        // /api/workspace/can-open-folder), which is false in embedded
+        // hosts. Hover-affordance only materialises when the click
+        // would actually do something.
+        function _onSavePillClick() {
+            if (!canOpenWorkspaceFolder) return;
+            var ws = typeof activeWorkspace === 'function' ? activeWorkspace() : null;
+            var qs = (ws && ws.id) ? ('?workspaceId=' + encodeURIComponent(ws.id)) : '';
+            fetch(config.prefix + '/api/workspace/open-folder' + qs, { method: 'POST' })
+                .then(function (r) {
+                    if (!r.ok && typeof toast === 'function') {
+                        toast('Couldn’t open the workspace folder — see the server log.', 'error');
+                    }
+                })
+                .catch(function () {
+                    if (typeof toast === 'function') {
+                        toast('Network error opening the workspace folder.', 'error');
+                    }
+                });
+        }
+        var _savePillClickable = canOpenWorkspaceFolder;
+        var _savePillTitleSuffix = _savePillClickable
+            ? '\nClick to open this workspace’s folder'
+            : '';
+
         var left = el('div', { className: 'bowire-statusbar-left' });
         if (saveState && saveState.kind === 'saved') {
             var ws = typeof activeWorkspace === 'function' ? activeWorkspace() : null;
             left.appendChild(el('span', {
-                className: 'bowire-save-pill bowire-save-pill-saved',
-                title: ws ? ('Saved to ' + ws.name) : 'Saved to localStorage',
+                className: 'bowire-save-pill bowire-save-pill-saved'
+                    + (_savePillClickable ? ' bowire-save-pill-clickable' : ''),
+                title: (ws ? ('Saved to ' + ws.name) : 'Saved to localStorage') + _savePillTitleSuffix,
+                onClick: _savePillClickable ? _onSavePillClick : null,
             },
                 el('span', { className: 'bowire-save-pill-dot' }),
                 el('span', { textContent: ws ? ('Saved to ' + ws.name) : ('Saved ' + saveState.target) })
             ));
         } else if (saveState && saveState.kind === 'failed') {
             left.appendChild(el('span', {
-                className: 'bowire-save-pill bowire-save-pill-failed',
-                title: 'Save failed — check browser console',
+                className: 'bowire-save-pill bowire-save-pill-failed'
+                    + (_savePillClickable ? ' bowire-save-pill-clickable' : ''),
+                title: 'Save failed — check browser console' + _savePillTitleSuffix,
+                onClick: _savePillClickable ? _onSavePillClick : null,
             },
                 el('span', { className: 'bowire-save-pill-dot' }),
                 el('span', { textContent: 'Save failed: ' + saveState.target })
