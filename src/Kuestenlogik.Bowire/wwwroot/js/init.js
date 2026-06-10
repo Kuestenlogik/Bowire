@@ -487,6 +487,21 @@
             })
             .catch(function () { /* leave false */ });
 
+        // #154 Phase 1 — in-app help capability probe. Returns true
+        // when an IBowireHelpProvider is registered (i.e. the
+        // Kuestenlogik.Bowire.Help package is installed). When
+        // false, Help affordances render disabled with an install
+        // hint — see render-env-auth.js topbar overflow.
+        fetch(config.prefix + '/api/help/available')
+            .then(function (r) { return r.ok ? r.json() : null; })
+            .then(function (data) {
+                if (data && data.available) {
+                    helpAvailable = true;
+                    render();
+                }
+            })
+            .catch(function () { /* leave false */ });
+
         // #125 Phase 2 — vars-autocomplete dropdown installs once
         // at boot; sits on document-level listeners so it covers
         // every dynamically-mounted text input/textarea without

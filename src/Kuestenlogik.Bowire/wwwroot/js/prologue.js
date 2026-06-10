@@ -774,6 +774,14 @@
     // makes zero sense). Standalone tool: true.
     let canOpenWorkspaceFolder = false;
 
+    // #154 Phase 1 — in-app help capability. Set once at boot from
+    // /api/help/available. true = IBowireHelpProvider is registered
+    // (the Kuestenlogik.Bowire.Help package was installed); false =
+    // workbench renders Help affordances as disabled with an "install
+    // the Help package" tooltip. Phase 3 ships the Help drawer + F1
+    // binding that consume this state.
+    let helpAvailable = false;
+
     // #127 — Cmd+S Force-Flush. Calls every top-level persist*()
     // function in sequence so a Cmd+S press writes EVERY known slot,
     // not just whatever's about to autosave. Wraps each call in

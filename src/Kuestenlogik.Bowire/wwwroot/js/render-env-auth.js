@@ -1137,6 +1137,33 @@
                     className: 'bowire-topbar-overflow-item',
                     onClick: function () { topbarOverflowOpen = false; render(); cycleTheme(); }
                 }, el('span', { textContent: 'Theme' })),
+                // #154 Phase 1 — Help affordance. Renders disabled
+                // when the Kuestenlogik.Bowire.Help package isn't
+                // installed (the capability probe at boot returned
+                // available:false). The disabled-not-hidden choice
+                // matters: users see the capability exists and how
+                // to enable it, instead of wondering why the docs
+                // button vanished. Phase 3 wires the actual drawer
+                // open; right now the active branch is a stub
+                // pointing at bowire.io/docs.
+                el('div', {
+                    className: 'bowire-topbar-overflow-item'
+                        + (helpAvailable ? '' : ' bowire-topbar-overflow-item-disabled'),
+                    title: helpAvailable
+                        ? 'Open in-app docs'
+                        : 'Install the Kuestenlogik.Bowire.Help NuGet package to enable in-app docs (or visit bowire.io/docs).',
+                    onClick: function () {
+                        topbarOverflowOpen = false;
+                        if (helpAvailable) {
+                            // Phase 3 will open a Help drawer here.
+                            render();
+                        } else {
+                            window.open('https://bowire.io/docs', '_blank', 'noopener');
+                        }
+                    }
+                },
+                    el('span', { textContent: helpAvailable ? 'Help' : 'Help (package missing)' })
+                ),
                 el('div', {
                     className: 'bowire-topbar-overflow-item',
                     onClick: function () { topbarOverflowOpen = false; openAbout(); render(); }
