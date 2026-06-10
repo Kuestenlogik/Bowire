@@ -98,7 +98,8 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 - [#150](https://github.com/Kuestenlogik/Bowire/issues/150) **Filesystem-watch + reconcile UI for externally-edited workspace files** 
 - [#151](https://github.com/Kuestenlogik/Bowire/issues/151) **Secret-file separation + workspace lock file for safe team-shared git workspaces** 
 - [#152](https://github.com/Kuestenlogik/Bowire/issues/152) **Sources rail mode — centralise URL / schema-file management** 
+- [#153](https://github.com/Kuestenlogik/Bowire/issues/153) **Bowire as transparent interceptor — embedded middleware + standalone reverse-proxy** 
 
 ---
 
-*Generated 2026-06-09 from [Project #2](https://github.com/orgs/Kuestenlogik/projects/2).*
+*Generated 2026-06-10 from [Project #2](https://github.com/orgs/Kuestenlogik/projects/2).*
