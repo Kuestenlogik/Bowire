@@ -1216,7 +1216,32 @@
 
             chatHost.appendChild(transcript);
 
-            var form = el('form', { className: 'bowire-ai-chat-form' });
+            // Submit handler reads the current input value via DOM
+            // query (form.querySelector) instead of the captured
+            // `input` ref. morphdom may preserve the live form node
+            // across renders while replacing its children — in that
+            // case the captured `input` reference points at a
+            // detached textarea whose value is always empty. Reading
+            // via querySelector at submit-time stays correct under
+            // either morphdom path (kept or replaced).
+            function _submitChat() {
+                var formEl = document.querySelector('.bowire-ai-chat-form');
+                if (!formEl) return;
+                var inputEl = formEl.querySelector('.bowire-ai-chat-input');
+                if (!inputEl) return;
+                var text = (inputEl.value || '').trim();
+                if (!text || chatBusy) return;
+                inputEl.value = '';
+                sendChat(text).then(rerenderChatExternal);
+                rerenderChatExternal();
+            }
+            var form = el('form', {
+                className: 'bowire-ai-chat-form',
+                onSubmit: function (e) {
+                    e.preventDefault();
+                    _submitChat();
+                }
+            });
             var input = el('textarea', {
                 className: 'bowire-ai-chat-input',
                 placeholder: 'Ask the model — Bowire ships the workbench context as a system prompt.',
@@ -1225,19 +1250,19 @@
             var send = el('button', {
                 type: 'submit',
                 className: 'bowire-ai-chat-send',
-                textContent: chatBusy ? 'Sending…' : 'Send'
+                textContent: chatBusy ? 'Sending…' : 'Send',
+                // Belt + braces: explicit click handler in addition to
+                // the form-submit so even if the form's onSubmit is
+                // dropped or the button somehow loses its submit
+                // semantics, the click path still works.
+                onClick: function (e) {
+                    e.preventDefault();
+                    _submitChat();
+                }
             });
             if (chatBusy) send.setAttribute('disabled', 'disabled');
             form.appendChild(input);
             form.appendChild(send);
-            form.onsubmit = function (e) {
-                e.preventDefault();
-                var text = (input.value || '').trim();
-                if (!text || chatBusy) return;
-                input.value = '';
-                sendChat(text).then(rerenderChat);
-                rerenderChat();
-            };
             chatHost.appendChild(form);
         }
         // Hand the tick interval (sendChat) a stable hook that always
