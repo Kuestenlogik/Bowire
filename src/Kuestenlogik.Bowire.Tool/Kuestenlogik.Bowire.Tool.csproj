@@ -114,6 +114,11 @@
          IChatClient registration out of the box. Embedded hosts opt
          in by adding Kuestenlogik.Bowire.Ai themselves. -->
     <ProjectReference Include="..\Kuestenlogik.Bowire.Ai\Kuestenlogik.Bowire.Ai.csproj" />
+    <!-- #154 Phase 4 — Help package transitively shipped with the
+         standalone CLI + Docker image. CLI users expect in-app help;
+         no extra setup step. Embedded hosts opt in via
+         builder.AddBowireHelp() the same way they add AI. -->
+    <ProjectReference Include="..\Kuestenlogik.Bowire.Help\Kuestenlogik.Bowire.Help.csproj" />
     <PackageReference Include="System.CommandLine" />
   </ItemGroup>
 </Project>
