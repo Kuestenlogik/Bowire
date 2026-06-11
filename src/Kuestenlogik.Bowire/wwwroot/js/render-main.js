@@ -900,6 +900,125 @@
             )
         ));
 
+        // Sources section (#155 Phase 1) — URLs + Schema-Files for the
+        // active workspace. The Sources rail mode was retired in
+        // favour of this in-workspace surface: a workspace is the
+        // project folder, sources are an integral part of it.
+        // Only render for the ACTIVE workspace, because URL state
+        // (serverUrls / connectionStatuses / services) is the live
+        // discovery state of the active workspace only. Non-active
+        // workspaces show a hint instead.
+        var sourcesSection = el('div', { className: 'bowire-ws-detail-section' },
+            el('div', { className: 'bowire-ws-detail-section-label', textContent: 'Sources' })
+        );
+        if (!isActive) {
+            sourcesSection.appendChild(el('p', {
+                className: 'bowire-ws-detail-stat-hint',
+                textContent: 'Switch to this workspace to manage its URLs and schema files.'
+            }));
+        } else {
+            // URL list — one row per URL with status + name + service
+            // count + a Remove + Open-in-Discover action.
+            var urls = (typeof serverUrls !== 'undefined' && Array.isArray(serverUrls)) ? serverUrls : [];
+            if (urls.length === 0) {
+                sourcesSection.appendChild(el('p', {
+                    className: 'bowire-ws-detail-stat-hint',
+                    style: 'margin-bottom:8px',
+                    textContent: 'No URLs yet. Add one below to start discovery.'
+                }));
+            } else {
+                var srcList = el('div', { style: 'display:flex;flex-direction:column;gap:4px;margin-bottom:8px' });
+                urls.forEach(function (u) {
+                    var st = (typeof connectionStatuses === 'object' && connectionStatuses)
+                        ? (connectionStatuses[u] || 'disconnected') : 'disconnected';
+                    var meta = (typeof getUrlMeta === 'function') ? getUrlMeta(u) : {};
+                    var name = meta.name || (typeof _stripUrlPrefix === 'function' ? _stripUrlPrefix(u) : u);
+                    var svcN = (typeof services !== 'undefined')
+                        ? services.filter(function (s) {
+                            return typeof urlMatchesService === 'function'
+                                ? urlMatchesService(u, s) : s.originUrl === u;
+                        }).length : 0;
+                    srcList.appendChild(el('div', {
+                        style: 'display:flex;align-items:center;gap:8px;padding:6px 8px;background:var(--bowire-surface);border:1px solid var(--bowire-border-subtle);border-radius:var(--bowire-radius-sm)'
+                    },
+                        el('span', {
+                            className: 'bowire-conn-pill-dot bowire-conn-pill-dot-' + st,
+                            style: 'width:10px;height:10px;border-radius:50%;flex-shrink:0;background:'
+                                + (st === 'connected' ? 'var(--bowire-success)'
+                                    : st === 'error' ? 'var(--bowire-danger)'
+                                    : st === 'discovering' ? 'var(--bowire-warning)'
+                                    : 'var(--bowire-text-tertiary)')
+                        }),
+                        el('span', { style: 'flex:1;font-size:12px;font-family:var(--bowire-mono);overflow:hidden;text-overflow:ellipsis;white-space:nowrap', textContent: name, title: u }),
+                        el('span', { style: 'font-size:11px;color:var(--bowire-text-tertiary);flex-shrink:0', textContent: svcN + ' svc' + (svcN === 1 ? '' : 's') }),
+                        el('button', {
+                            className: 'bowire-presets-btn',
+                            style: 'height:22px;padding:0 8px;font-size:11px',
+                            title: 'Open this URL in Discover',
+                            textContent: 'Discover',
+                            onClick: function () {
+                                railMode = 'discover';
+                                sidebarView = 'services';
+                                try { localStorage.setItem('bowire_rail_mode', 'discover'); } catch { /* ignore */ }
+                                render();
+                            }
+                        }),
+                        el('button', {
+                            className: 'bowire-presets-btn',
+                            style: 'height:22px;padding:0 8px;font-size:11px;color:var(--bowire-danger)',
+                            title: 'Remove this URL from the workspace',
+                            textContent: 'Remove',
+                            onClick: function () {
+                                bowireConfirm('Remove URL "' + name + '"?', {
+                                    confirmText: 'Remove',
+                                    danger: true
+                                }).then(function (ok) {
+                                    if (!ok) return;
+                                    var idx = serverUrls.indexOf(u);
+                                    if (idx >= 0) serverUrls.splice(idx, 1);
+                                    if (typeof persistServerUrls === 'function') persistServerUrls();
+                                    render();
+                                });
+                            }
+                        })
+                    ));
+                });
+                sourcesSection.appendChild(srcList);
+            }
+            // Add URL input row.
+            sourcesSection.appendChild(el('button', {
+                className: 'bowire-presets-btn',
+                textContent: '+ Add URL',
+                onClick: function () {
+                    bowirePrompt('Server URL', {
+                        title: 'Add URL',
+                        placeholder: 'e.g. https://petstore3.swagger.io/api/v3/openapi.json',
+                        confirmText: 'Add'
+                    }).then(function (raw) {
+                        if (!raw) return;
+                        var trimmed = String(raw).trim();
+                        if (!trimmed) return;
+                        if (serverUrls.indexOf(trimmed) < 0) {
+                            serverUrls.push(trimmed);
+                            if (typeof persistServerUrls === 'function') persistServerUrls();
+                            // Trigger discovery for the new URL.
+                            if (typeof fetchServices === 'function') fetchServices();
+                        }
+                        render();
+                    });
+                }
+            }));
+            // Schema-files hint — full drop-zone editor lands in a
+            // follow-up; for now point operators at the Discover rail
+            // where the existing upload path lives.
+            sourcesSection.appendChild(el('p', {
+                className: 'bowire-ws-detail-stat-hint',
+                style: 'margin-top:10px',
+                textContent: 'Schema files (.proto / .openapi.json / .graphql sdl) — drop-zone editor lands in a follow-up. For now upload via the Discover rail.'
+            }));
+        }
+        main.appendChild(sourcesSection);
+
         // #125 Phase 4 — Secrets section. Session-only in-memory
         // store (cleared on reload); Phase 5 wraps an OS keyring.
         // Values are masked in the table; the resolver still hands

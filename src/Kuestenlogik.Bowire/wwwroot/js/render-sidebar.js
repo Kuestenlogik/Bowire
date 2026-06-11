@@ -720,7 +720,12 @@
     //   'proxy'        → legacy proxy sidebar via sidebarView='proxy'
     var _railModes = [
         { id: 'home',         icon: 'house',     label: 'Home',              group: 'work',      sidebar: { kind: 'none' } },
-        { id: 'sources',      icon: 'plug',      label: 'Sources',           group: 'work',      sidebar: { kind: 'sources' } },
+        // 'sources' rail mode retired — URL + Schema-File management
+        // moved into the Workspace-detail pane (workspaces are the
+        // proper owner: each workspace's sources are an integral part
+        // of "what I'm working on right now"). Boot migration in
+        // prologue.js rewrites a stale railMode='sources' to
+        // 'workspaces' so existing installs land on the new spot.
         { id: 'discover',     icon: 'compass',   label: 'Discover',          group: 'work',      sidebar: { kind: 'services' } },
         { id: 'collections',  icon: 'folder',    label: 'Collections',       group: 'work',      sidebar: { kind: 'collections' } },
         { id: 'environments', icon: 'globe',     label: 'Environments',      group: 'work',      sidebar: { kind: 'environments' } },
