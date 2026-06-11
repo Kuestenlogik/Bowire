@@ -461,6 +461,14 @@
     // restore their last-active mode from localStorage.
     let railMode = 'home';
     try { railMode = localStorage.getItem('bowire_rail_mode') || 'home'; } catch { /* ignore */ }
+    // Boot migration — the 'sources' rail mode was retired in favour
+    // of the Workspace-detail pane (workspaces own their sources now).
+    // Stale localStorage entries map to 'workspaces' so existing
+    // installs land in the new place instead of on a missing mode.
+    if (railMode === 'sources') {
+        railMode = 'workspaces';
+        try { localStorage.setItem('bowire_rail_mode', 'workspaces'); } catch { /* ignore */ }
+    }
     // #133 Phase 2 — Mocks mode selection. Session-only;
     // re-derived from the live mocksList every render so a stopped
     // mock automatically deselects.
