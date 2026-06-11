@@ -1813,20 +1813,6 @@
         return sidebar;
     }
 
-    // Pattern D — small chevron in the top-right corner of EVERY
-    // sidebar mode that triggers the collapse. Appended after the
-    // mode-specific render so each per-mode header stays untouched.
-    // Sits absolute-positioned via CSS at the wrapper's edge.
-    function _sidebarHeaderCollapseChevron() {
-        return el('button', {
-            type: 'button',
-            className: 'bowire-sidebar-header-collapse',
-            title: 'Hide sidebar (Ctrl+B)',
-            'aria-label': 'Hide sidebar',
-            onClick: function () { setSidebarCollapsed(true); render(); }
-        }, el('span', { innerHTML: svgIcon('chevron') }));
-    }
-
     function renderSidebar() {
         // #137 — sidebar dispatch driven by the rail-mode catalogue.
         // Each mode declares its sidebar 'kind' in _railModes; this
@@ -1844,10 +1830,7 @@
             case 'sources':      sidebar = renderSourcesSidebar(); break;
             case 'benchmarks':   sidebar = renderBenchmarksSidebar(); break;
         }
-        if (sidebar) {
-            sidebar.appendChild(_sidebarHeaderCollapseChevron());
-            return sidebar;
-        }
+        if (sidebar) return sidebar;
         // 'flows', 'proxy', 'services' fall through to the legacy
         // sidebar below (built from the discover service tree).
         // Their main pane reads sidebarView, which the rail-button
@@ -2758,10 +2741,6 @@
             })
         );
         sidebar.appendChild(footer);
-
-        // Pattern D — header-chevron also on the legacy services
-        // sidebar so the user has the same affordance everywhere.
-        sidebar.appendChild(_sidebarHeaderCollapseChevron());
         return sidebar;
     }
 

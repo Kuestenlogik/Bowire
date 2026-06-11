@@ -1002,7 +1002,8 @@ but
    - Pattern A: .bowire-sidebar-edge-toggle on the splitter / rail edge
    - Pattern B: double-click on the active rail icon
    - Pattern C: drag the splitter below the collapse threshold
-   - Pattern D: .bowire-sidebar-header-collapse top-right per sidebar
+   - Pattern D was retired — see the comment further down where the
+     header-collapse rule used to live
    - Plus Ctrl/Cmd+B keyboard shortcut */
 .bowire-rail-settings {
     margin-top: auto;
@@ -1090,38 +1091,14 @@ but
     transition: opacity 100ms ease;
 }
 
-/* Pattern D — top-right chevron inside the sidebar wrapper.
-   Absolute-positioned so it doesn't disturb per-mode headers.
-   Faint by default, materialises on hover. */
-.bowire-sidebar-header-collapse {
-    position: absolute;
-    top: 8px;
-    right: 6px;
-    width: 22px;
-    height: 22px;
-    padding: 0;
-    background: transparent;
-    border: none;
-    border-radius: var(--bowire-radius-sm);
-    color: var(--bowire-text-tertiary);
-    cursor: pointer;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    opacity: 0.5;
-    transition: opacity var(--bowire-transition), background var(--bowire-transition);
-    z-index: 4;
-}
-.bowire-sidebar-header-collapse:hover {
-    opacity: 1;
-    background: var(--bowire-surface-hover);
-    color: var(--bowire-text);
-}
-.bowire-sidebar-header-collapse svg {
-    width: 12px;
-    height: 12px;
-    transform: rotate(180deg);
-}
+/* Pattern D retired — the splitter-integrated edge-chevron
+   (Pattern A) covers the affordance more prominently. The earlier
+   top-right per-sidebar chevron added visual noise without adding
+   reach (Ctrl/Cmd+B + double-click on the active rail icon + the
+   splitter chevron + drag-to-collapse together cover every use
+   case). The sidebar.position:relative declaration stays because
+   other features (collapse-preview overlay, scrolled-shadow, …)
+   rely on a positioning context here. */
 .bowire-sidebar { position: relative; }
 
 /* #138 — Statusbar pinned at the bottom of the workbench. IDE-
