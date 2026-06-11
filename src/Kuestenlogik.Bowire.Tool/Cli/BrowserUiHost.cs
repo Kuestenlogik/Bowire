@@ -141,6 +141,12 @@ internal static class BrowserUiHost
         // Phase 3.
         builder.Services.AddBowireAi(builder.Configuration);
 
+        // #154 Phase 4 — in-app help. The standalone CLI always
+        // ships with the Help provider so users get docs without
+        // extra setup. Embedded hosts opt in via AddBowireHelp() in
+        // their own Program.cs.
+        builder.Services.AddBowireHelp();
+
         // Opt-in auth gate. When --auth-provider <id> is set, the
         // matching IBowireAuthProvider plugin gets to wire its scheme
         // + the BowireAuthPolicies.Default policy; otherwise this is
