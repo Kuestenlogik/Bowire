@@ -1014,44 +1014,66 @@ but
    - collapsed: sits at the rail edge, chevron points RIGHT ('show')
    Both vertically centred with a generous hit area for Fitt's-law
    forgiveness. Visible on hover of the surrounding region. */
+/* Chevron lives INSIDE the splitter (rendered as its child) and
+   inherits the splitter's hover state. No own background or border —
+   the splitter IS the control surface, the chevron is the glyph
+   that lives in it. Color matches the splitter's grip-dots; on
+   splitter-hover both deepen together. */
 .bowire-sidebar-edge-toggle {
     position: absolute;
     top: 50%;
+    /* Vertical centring fallback. The expanded variant overrides
+       transform with translate(-50%, -50%) to also centre horizontally
+       inside the splitter; the collapsed variant keeps this rule so
+       the chevron isn't off-centre on the rail edge. */
     transform: translateY(-50%);
     width: 18px;
-    height: 36px;
+    height: 28px;
     padding: 0;
-    background: var(--bowire-bg-elevated);
-    border: 1px solid var(--bowire-border-subtle);
-    border-radius: var(--bowire-radius-sm);
+    background: transparent;
+    border: none;
+    border-radius: 0;
     color: var(--bowire-text-tertiary);
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
     z-index: 5;
-    opacity: 0;
-    transition: opacity var(--bowire-transition), color var(--bowire-transition);
+    transition: color var(--bowire-transition);
 }
-.bowire-sidebar-edge-toggle:hover { opacity: 1; color: var(--bowire-text); }
 .bowire-sidebar-edge-toggle svg {
-    width: 14px;
-    height: 14px;
+    width: 12px;
+    height: 12px;
+    transition: transform var(--bowire-transition);
 }
-/* Expanded: sits right at the splitter column. */
+
+/* Expanded: chevron centred inside the splitter. Inherits the
+   splitter's hover state — no separate opacity-fade. */
 .bowire-sidebar-edge-toggle-expanded {
-    left: calc(var(--bowire-rail-width, 56px) + var(--bowire-sidebar-width, 400px) - 9px);
+    left: 50%;
+    transform: translate(-50%, -50%);
 }
 .bowire-sidebar-edge-toggle-expanded svg { transform: rotate(180deg); }
-/* Show the edge-toggle when the user is in the sidebar region. */
-.bowire-app-body:hover .bowire-sidebar-edge-toggle-expanded { opacity: 0.7; }
+.bowire-sidebar-splitter:hover .bowire-sidebar-edge-toggle-expanded {
+    color: var(--bowire-accent);
+}
 
-/* Collapsed: sits right at the rail's right edge. */
+/* Collapsed: small flush-with-rail indicator strip. */
 .bowire-sidebar-edge-toggle-collapsed {
     left: var(--bowire-rail-width, 56px);
     opacity: 0.6;
+    width: 14px;
+    height: 40px;
+    background: var(--bowire-surface);
+    border-right: 1px solid var(--bowire-border-subtle);
+    border-top-right-radius: var(--bowire-radius-sm);
+    border-bottom-right-radius: var(--bowire-radius-sm);
 }
-.bowire-sidebar-edge-toggle-collapsed:hover { opacity: 1; }
+.bowire-sidebar-edge-toggle-collapsed:hover {
+    opacity: 1;
+    background: var(--bowire-surface-hover);
+    color: var(--bowire-accent);
+}
 
 /* Body modifier — when the sidebar is collapsed the main pane
    expands to fill the row left of the rail. The render-env-auth
@@ -4816,56 +4838,63 @@ not through to the children of
     top: 2.5px;
 }
 
-/* ---------- Sidebar Splitter (between sidebar and main pane) ---------- */
-/* Same 8 px hit area + 2 px visible bar pattern,
-rotated for the vertical
-   split. */
+/* ---------- Sidebar Splitter ----------
+   Splitter is its own visible control — 1 px column with a subtle
+   border by default, deepens on hover. Chevron-toggle (rendered as
+   a child in render-env-auth.js) sits centred and is treated as an
+   integral part of the splitter, not an overlay. The grip-pattern
+   (3 horizontal dots) flanks the chevron above + below on hover so
+   it reads as a control with both 'resize' and 'collapse' semantics. */
 .bowire-sidebar-splitter {
-    flex: 0 0 8px;
+    flex: 0 0 10px;
     background: transparent;
     cursor: ew-resize;
     flex-shrink: 0;
     position: relative;
     z-index: 2;
+    border-left: 1px solid var(--bowire-border-subtle);
+    transition: background var(--bowire-transition), border-color var(--bowire-transition);
+}
+.bowire-sidebar-splitter:hover,
+.bowire-sidebar-splitter:active {
+    background: var(--bowire-surface);
+    border-left-color: var(--bowire-accent);
 }
 
-/* Vertical line — slightly brighter than the border so it's
-   visible but not distracting. On hover the accent colour and
-   a subtle grip pattern (3 dots) appear. */
+/* Top grip-dot cluster: subtle three-dot run above the chevron. */
 .bowire-sidebar-splitter::before {
     content: '';
     position: absolute;
-    top: 0;
-    bottom: 0;
-    left: 3px;
+    top: calc(50% - 32px);
+    left: 50%;
+    transform: translateX(-50%);
     width: 2px;
-    background: var(--bowire-border);
-    opacity: 0.7;
-    transition: all var(--bowire-transition);
+    height: 14px;
+    background-image: radial-gradient(circle, var(--bowire-text-tertiary) 1px, transparent 1.5px);
+    background-size: 2px 5px;
+    background-repeat: repeat-y;
+    opacity: 0;
+    transition: opacity var(--bowire-transition);
     pointer-events: none;
 }
-/* Grip dots — centred vertically,
-visible on hover */
+/* Bottom grip-dot cluster: mirror of ::before, sitting below
+   the chevron. Same height + spacing for a symmetric grip pattern. */
 .bowire-sidebar-splitter::after {
-    content: '···';
+    content: '';
     position: absolute;
-    top: 50%;
+    top: calc(50% + 18px);
     left: 50%;
-    transform: translate(-50%, -50%) rotate(90deg);
-    font-size: 10px;
-    letter-spacing: 2px;
-    color: var(--bowire-text-tertiary);
+    transform: translateX(-50%);
+    width: 2px;
+    height: 14px;
+    background-image: radial-gradient(circle, var(--bowire-text-tertiary) 1px, transparent 1.5px);
+    background-size: 2px 5px;
+    background-repeat: repeat-y;
     opacity: 0;
     transition: opacity var(--bowire-transition);
     pointer-events: none;
 }
 .bowire-sidebar-splitter:hover::before,
-.bowire-sidebar-splitter:active::before {
-    background: var(--bowire-accent);
-    width: 3px;
-    left: 2.5px;
-    opacity: 1;
-}
 .bowire-sidebar-splitter:hover::after {
     opacity: 0.7;
 }

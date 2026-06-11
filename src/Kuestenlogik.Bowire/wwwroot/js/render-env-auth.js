@@ -89,22 +89,36 @@
             } else {
                 body.appendChild(renderSidebar());
                 if (!isMobile()) {
-                    body.appendChild(el('div', {
+                    // Pattern A — chevron lives AS A CHILD of the splitter
+                    // so stacking/positioning is unambiguous. The
+                    // splitter's mousedown handler ignores events whose
+                    // target is the chevron (or the chevron's span),
+                    // so a click on the chevron fires its onClick
+                    // instead of starting a drag.
+                    var splitter = el('div', {
                         className: 'bowire-sidebar-splitter',
                         id: 'bowire-sidebar-splitter',
                         title: 'Drag to resize the sidebar — drag past the minimum to collapse, or double-click to toggle'
-                    }));
-                    // Pattern A — chevron sits ON the splitter so a
-                    // user who sees the resize-edge gets the hide
-                    // affordance for free. Chevron points LEFT
-                    // ('collapse to the left').
-                    body.appendChild(el('button', {
+                    });
+                    splitter.appendChild(el('button', {
                         type: 'button',
                         className: 'bowire-sidebar-edge-toggle bowire-sidebar-edge-toggle-expanded',
-                        title: 'Hide sidebar (Ctrl+B)',
+                        title: 'Hide sidebar (Ctrl+B) — drag to resize',
                         'aria-label': 'Hide sidebar',
-                        onClick: function () { setSidebarCollapsed(true); render(); }
+                        // No stopPropagation on mousedown — the splitter
+                        // needs the event so the user can start a drag
+                        // FROM the chevron pixel. The splitter's
+                        // mousedown handler uses a movement threshold:
+                        // a wiggle-free click here still fires onClick
+                        // (browser default), a drag past threshold
+                        // becomes a resize.
+                        onClick: function (e) {
+                            e.stopPropagation();
+                            setSidebarCollapsed(true);
+                            render();
+                        }
                     }, el('span', { innerHTML: svgIcon('chevron') })));
+                    body.appendChild(splitter);
                 }
             }
         }
@@ -226,11 +240,22 @@
         if (!splitter || !app || splitter.dataset.dragHooked === '1') return;
         splitter.dataset.dragHooked = '1';
         splitter.addEventListener('mousedown', function (e) {
-            e.preventDefault();
+            // Don't preventDefault yet — we don't know if this is a
+            // drag or a click on a child (like the chevron-toggle).
+            // The browser will dispatch the chevron's click event on
+            // mouseup-without-significant-movement; preventDefault
+            // here would suppress it. We DO call preventDefault as
+            // soon as a real drag is detected (below).
             e.stopPropagation();
-            document.body.style.cursor = 'ew-resize';
-            document.body.style.userSelect = 'none';
-            app.classList.add('is-resizing');
+
+            // Drag-vs-click threshold. Kept tiny (2 px) so the
+            // chevron-toggle still clicks reliably on a steady
+            // mousedown→mouseup, but small enough that the initial
+            // "snap" when drag activates is imperceptible. Any
+            // intentional drag overshoots 2 px in the first frame.
+            var DRAG_THRESHOLD = 2;
+            var startClientX = e.clientX;
+            var dragStarted = false;
 
             // Pattern C extension — drag past this threshold (well
             // below SIDEBAR_WIDTH_MIN) triggers a collapse on mouse-
@@ -239,12 +264,41 @@
             var COLLAPSE_THRESHOLD = 120; // px relative to the app
             var inCollapseZone = false;
             var sidebarEl = document.querySelector('#bowire-sidebar');
+            // Lock in the click offset relative to the splitter's left
+            // edge at mousedown — that's how far inside the splitter
+            // the user grabbed. Subtracting it from clientX during
+            // move keeps the splitter's left edge aligned with the
+            // grabbed-point so the splitter follows the cursor cleanly
+            // instead of jumping ahead by the offset.
+            var splitterRect = splitter.getBoundingClientRect();
+            var grabOffsetX = e.clientX - splitterRect.left;
+
+            function _enterDragMode() {
+                if (dragStarted) return;
+                dragStarted = true;
+                document.body.style.cursor = 'ew-resize';
+                document.body.style.userSelect = 'none';
+                app.classList.add('is-resizing');
+                // No re-baseline of grabOffsetX. With THRESHOLD=2 the
+                // implied 2 px "snap" is small enough to be invisible,
+                // and keeping the original grabOffsetX means the
+                // cursor stays at the same relative position INSIDE
+                // the splitter for the entire drag (no offset drift).
+            }
+
             function onMove(ev) {
+                // Threshold gate — small wiggles below DRAG_THRESHOLD
+                // don't enter drag mode, so a quick click on the
+                // chevron stays a click.
+                if (!dragStarted) {
+                    if (Math.abs(ev.clientX - startClientX) < DRAG_THRESHOLD) return;
+                    _enterDragMode();
+                }
                 // Compute sidebar width relative to the app container's
                 // left edge. getBoundingClientRect is re-read every move
                 // so we stay correct under viewport changes mid-drag.
                 var rect = app.getBoundingClientRect();
-                var raw = Math.round(ev.clientX - rect.left);
+                var raw = Math.round(ev.clientX - rect.left - grabOffsetX);
                 inCollapseZone = raw < COLLAPSE_THRESHOLD;
                 if (sidebarEl) sidebarEl.classList.toggle('bowire-sidebar-collapse-preview', inCollapseZone);
 
@@ -261,6 +315,10 @@
             function onUp() {
                 document.removeEventListener('mousemove', onMove);
                 document.removeEventListener('mouseup', onUp);
+                // No drag means no resize happened — nothing to clean
+                // up or persist. The browser will still dispatch the
+                // chevron's click event for the toggle action.
+                if (!dragStarted) return;
                 document.body.style.cursor = '';
                 document.body.style.userSelect = '';
                 app.classList.remove('is-resizing');
