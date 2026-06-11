@@ -1863,7 +1863,7 @@
         // host isn't in pure embedded mode), view switch, protocol filter
         // row, service/favorites list, and a minimal footer with just the
         // count + tour button.
-        const sidebar = el('div', { className: `bowire-sidebar ${sidebarCollapsed ? 'collapsed' : ''}` });
+        sidebar = el('div', { className: `bowire-sidebar ${sidebarCollapsed ? 'collapsed' : ''}` });
 
         // Source selector — URL input (with reflection) or schema file upload.
         // Hidden in pure embedded mode because neither control is useful
