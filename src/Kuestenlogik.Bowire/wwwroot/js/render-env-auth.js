@@ -93,6 +93,21 @@
             body.appendChild(renderAiDrawer());
         }
 
+        // #154 Phase 3 — Help drawer. Same right-edge slot as the
+        // Assistant; only one of the two renders at a time (the
+        // newest open wins because both push onto the same body
+        // flex row, and CSS gives them identical width). Operators
+        // toggling between Assistant and Help is rare enough that a
+        // hard either/or is fine; if it becomes annoying we'll add
+        // a second drawer slot below.
+        if (helpDrawerOpen && helpAvailable && typeof renderHelpDrawer === 'function') {
+            var helpDrawer = renderHelpDrawer();
+            if (helpDrawer) {
+                body.classList.add('bowire-with-ai-drawer'); // reuse the margin-right rule
+                body.appendChild(helpDrawer);
+            }
+        }
+
         // #138 — Statusbar at the bottom. Hosts connection pill +
         // env selector + watch button (moved here from the topbar).
         // Sits below the body's main flex row via the wrapper
@@ -1137,26 +1152,24 @@
                     className: 'bowire-topbar-overflow-item',
                     onClick: function () { topbarOverflowOpen = false; render(); cycleTheme(); }
                 }, el('span', { textContent: 'Theme' })),
-                // #154 Phase 1 — Help affordance. Renders disabled
-                // when the Kuestenlogik.Bowire.Help package isn't
-                // installed (the capability probe at boot returned
-                // available:false). The disabled-not-hidden choice
-                // matters: users see the capability exists and how
-                // to enable it, instead of wondering why the docs
-                // button vanished. Phase 3 wires the actual drawer
-                // open; right now the active branch is a stub
-                // pointing at bowire.io/docs.
+                // #154 — Help affordance. When the Help package is
+                // installed (Phase 1 capability probe returned true)
+                // the click opens the Help drawer (Phase 3, F1).
+                // Without the package the entry is disabled-not-
+                // hidden — operators see the capability exists and
+                // how to enable it, instead of wondering why the
+                // docs button vanished. Click in that branch falls
+                // back to opening bowire.io/docs externally.
                 el('div', {
                     className: 'bowire-topbar-overflow-item'
                         + (helpAvailable ? '' : ' bowire-topbar-overflow-item-disabled'),
                     title: helpAvailable
-                        ? 'Open in-app docs'
+                        ? 'Open Help (F1)'
                         : 'Install the Kuestenlogik.Bowire.Help NuGet package to enable in-app docs (or visit bowire.io/docs).',
                     onClick: function () {
                         topbarOverflowOpen = false;
                         if (helpAvailable) {
-                            // Phase 3 will open a Help drawer here.
-                            render();
+                            helpOpenDrawer();
                         } else {
                             window.open('https://bowire.io/docs', '_blank', 'noopener');
                         }

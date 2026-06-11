@@ -782,6 +782,25 @@
     // binding that consume this state.
     let helpAvailable = false;
 
+    // #154 Phase 3 — Help drawer state.
+    //  helpDrawerOpen    — visibility, mirrored to localStorage
+    //  helpTopics        — list of { id, title, categoryId }; lazy-
+    //                      loaded on first open
+    //  helpTopicsLoaded  — fetch dedup
+    //  helpSelectedId    — currently-rendered topic id
+    //  helpSelectedTopic — { id, title, markdown, categoryId } or null
+    //  helpSearchQuery   — search input text
+    //  helpSearchHits    — [{ id, title, excerpt, score }] when query non-empty
+    let helpDrawerOpen = false;
+    try { helpDrawerOpen = localStorage.getItem('bowire_help_drawer_open') === '1'; }
+    catch { /* ignore */ }
+    let helpTopics = [];
+    let helpTopicsLoaded = false;
+    let helpSelectedId = null;
+    let helpSelectedTopic = null;
+    let helpSearchQuery = '';
+    let helpSearchHits = [];
+
     // #127 — Cmd+S Force-Flush. Calls every top-level persist*()
     // function in sequence so a Cmd+S press writes EVERY known slot,
     // not just whatever's about to autosave. Wraps each call in

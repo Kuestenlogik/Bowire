@@ -42,6 +42,24 @@
                 return;
             }
 
+            // #154 Phase 3 — F1 opens the Help drawer at the topic
+            // most relevant to the current rail mode. Esc closes it
+            // when it's open and nothing else is competing for Esc.
+            // Both no-ops when the Help package isn't installed
+            // (helpAvailable === false from the boot probe).
+            if (e.key === 'F1' && helpAvailable && typeof helpOpenDrawer === 'function') {
+                e.preventDefault();
+                helpOpenDrawer();
+                return;
+            }
+            if (e.key === 'Escape' && helpDrawerOpen
+                && typeof helpCloseDrawer === 'function'
+                && !searchSuggestionsOpen) {
+                e.preventDefault();
+                helpCloseDrawer();
+                return;
+            }
+
             // #127 — Cmd/Ctrl+S Force-Flush. Writes every persist*()
             // slot in one sweep so the operator can pin the current
             // state without waiting for the throttled autosave path.
