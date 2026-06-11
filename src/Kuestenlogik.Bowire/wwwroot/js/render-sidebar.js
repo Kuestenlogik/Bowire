@@ -2023,6 +2023,24 @@
         if (sidebarView === 'services') {
             var svcToolbar = el('div', { id: 'bowire-services-toolbar', className: 'bowire-services-toolbar' });
 
+        // #156 — favorites-only toggle, rendered as a small pill in
+        // the services toolbar. Always visible (so the affordance is
+        // discoverable), state-driven background so the operator
+        // sees at a glance whether the view is narrowed.
+        svcToolbar.appendChild(el('button', {
+            type: 'button',
+            id: 'bowire-favorites-only-btn',
+            className: 'bowire-fav-only-toggle' + (favoritesOnly ? ' active' : ''),
+            title: favoritesOnly
+                ? 'Showing favorites only — click to show everything'
+                : 'Filter the list to favorited methods only',
+            'aria-pressed': favoritesOnly ? 'true' : 'false',
+            onClick: function () {
+                setFavoritesOnly(!favoritesOnly);
+                render();
+            }
+        }, el('span', { innerHTML: svgIcon(favoritesOnly ? 'starFilled' : 'star') })));
+
         // Protocol filter button — always rendered on the view-switch
         // row when there are ≥2 protocols with services, so toggling
         // Services ↔ Favorites doesn't change the row width and the
@@ -2311,12 +2329,33 @@
         // When nothing is active, the row is omitted entirely and the
         // sidebar doesn't pay vertical space for an empty container.
         if (sidebarView === 'services') {
-            var anyFilterActive = protocolFilter.size > 0 || methodTypeFilter.size > 0 || urlFilter.size > 0 || !!nameFilter;
+            var anyFilterActive = protocolFilter.size > 0 || methodTypeFilter.size > 0 || urlFilter.size > 0 || !!nameFilter || favoritesOnly;
             if (anyFilterActive) {
                 var filterRow = el('div', {
                     id: 'bowire-sidebar-filter-row',
                     className: 'bowire-sidebar-filter-row'
                 });
+
+                // #156 — favorites-only chip. Pinned first because
+                // it changes the meaning of every other filter. Click
+                // the × to drop the favorites filter; click the
+                // chip body to keep it (no-op).
+                if (favoritesOnly) {
+                    filterRow.appendChild(el('div', { className: 'bowire-filter-chip bowire-filter-chip-favorites' },
+                        el('span', { className: 'bowire-filter-chip-icon', innerHTML: svgIcon('starFilled') }),
+                        el('span', { className: 'bowire-filter-chip-label', textContent: 'Favorites only' }),
+                        el('button', {
+                            className: 'bowire-filter-chip-remove',
+                            title: 'Show everything again',
+                            textContent: '×',
+                            onClick: function (e) {
+                                e.stopPropagation();
+                                setFavoritesOnly(false);
+                                render();
+                            }
+                        })
+                    ));
+                }
 
                 // --- Protocol chips (one per active protocol filter) ---
                 protocolFilter.forEach(function (protoId) {
@@ -2552,6 +2591,15 @@
                 if (methodTypeFilter.size > 0) {
                     baseMethods = baseMethods.filter(function (m) {
                         return methodTypeFilter.has(m.methodType || 'Unary');
+                    });
+                }
+                // #156 — favorites-only narrows the per-service list
+                // to the starred methods. Applied alongside the other
+                // method-level filters so the service-counts in the
+                // sidebar remain meaningful.
+                if (favoritesOnly && typeof isFavorite === 'function') {
+                    baseMethods = baseMethods.filter(function (m) {
+                        return isFavorite(svc.name, m.name);
                     });
                 }
                 const filteredMethods = query

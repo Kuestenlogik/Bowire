@@ -250,6 +250,22 @@
             });
         }
 
+        // #156 — favorites-only filter. Composes with the other
+        // filters (intersect): a service is kept only when it has at
+        // least one favorited method that survived the upstream
+        // filters. The renderer further narrows each service to its
+        // favorited methods only — see service-list rendering.
+        if (typeof favoritesOnly !== 'undefined' && favoritesOnly
+            && typeof isFavorite === 'function') {
+            list = list.filter(function (s) {
+                if (!s.methods) return false;
+                for (var i = 0; i < s.methods.length; i++) {
+                    if (isFavorite(s.name, s.methods[i].name)) return true;
+                }
+                return false;
+            });
+        }
+
         return list;
     }
 

@@ -1937,6 +1937,29 @@
                 textContent: selectedMethod.httpMethod || methodBadgeLabel(selectedMethod.methodType)
             }));
 
+            // #156 — favorite star in the method header. Toggle the
+            // current method's favorite state from where the operator
+            // is looking at it instead of having to navigate to Home.
+            // Filled glyph = favorited, outline = not. Reads + writes
+            // the same workspace-scoped store the Home page consumes.
+            if (typeof isFavorite === 'function' && typeof toggleFavorite === 'function') {
+                try {
+                    var svcName = selectedService.name;
+                    var mthName = selectedMethod.name;
+                    var isStar = isFavorite(svcName, mthName);
+                    header.appendChild(el('button', {
+                        className: 'bowire-header-fav-btn' + (isStar ? ' active' : ''),
+                        title: isStar ? 'Remove from favorites' : 'Add to favorites',
+                        'aria-label': isStar ? 'Remove from favorites' : 'Add to favorites',
+                        onClick: function () {
+                            toggleFavorite(svcName, mthName);
+                            render();
+                        },
+                        innerHTML: svgIcon(isStar ? 'starFilled' : 'star')
+                    }));
+                } catch (e) { console.warn('[favorites] header-star failed', e); }
+            }
+
             // #114 — inline hint chip at the method header. Surfaces the
             // deterministic hint engine's results at the place where the
             // operator looks for help (the method they're about to

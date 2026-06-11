@@ -175,6 +175,16 @@
     // search bar). Closed by an outside-click handler when open.
     let protocolFilterOpen = false;
 
+    // #156 — favorites-only toggle. Persists per workspace so each
+    // project remembers whether the operator likes the focused view.
+    // Hydrated below where wsKey() / activeWorkspaceId are reachable.
+    let favoritesOnly = false;
+    function setFavoritesOnly(v) {
+        favoritesOnly = !!v;
+        try { localStorage.setItem(wsKey('bowire_favorites_only'), favoritesOnly ? '1' : '0'); }
+        catch { /* ignore */ }
+    }
+
     // ---- Command palette / global search ----
     // The topbar has a central search input that both live-filters the
     // sidebar list (via the legacy `searchQuery` state below) AND opens a
@@ -539,6 +549,13 @@
         return 'bowire_ws_' + activeWorkspaceId + '_'
             + String(baseKey).replace(/^bowire_/, '');
     }
+
+    // #156 — late hydration of favoritesOnly now that wsKey() is
+    // reachable. Declared as `let` at the top of the module so the
+    // state is module-scoped; only the read-from-localStorage happens
+    // here once activeWorkspaceId is set.
+    try { favoritesOnly = localStorage.getItem(wsKey('bowire_favorites_only')) === '1'; }
+    catch { /* ignore */ }
 
     // #146 — one-shot migration of envs from per-workspace bucketed
     // storage to a single shared store + per-workspace inclusion

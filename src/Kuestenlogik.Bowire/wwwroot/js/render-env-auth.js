@@ -999,14 +999,11 @@
         // dropped from the topbar.
 
         // About button — pops the standalone About dialog (version,
-        // open-source notices, Küstenlogik credit). Sits between the
-        // theme toggle and Settings: the gear is for changing config,
-        // the question mark is for "what is this thing".
-        //
-        // Renders a literal "?" glyph rather than the lucide help-circle
-        // SVG: the icon's curved path reads as a generic scribble at
-        // 16px, the typographic question mark is always recognisable
-        // because the user's font already has it.
+        // open-source notices, Küstenlogik credit). 'info' glyph (i in
+        // a circle) so it reads as 'what is this thing' and stays
+        // distinct from the 'help' glyph (? in a circle) on the help
+        // button right next to it. Both icons live in the topbar
+        // directly now — overflow menu retired.
         var aboutBtn = el('button', {
             id: 'bowire-about-btn',
             className: 'bowire-theme-toggle-btn bowire-about-btn',
@@ -1014,8 +1011,33 @@
             'aria-label': 'About Bowire',
             onClick: openAbout
         }, el('span', {
-            className: 'bowire-about-btn-glyph',
-            textContent: '?'
+            innerHTML: svgIcon('info'),
+            style: 'width:16px;height:16px;display:flex'
+        }));
+
+        // Help button — opens the in-app docs drawer (F1). Greyed out
+        // with an install hint when the Kuestenlogik.Bowire.Help
+        // package isn't installed (capability probe at boot returned
+        // available:false); click in that branch falls back to
+        // opening bowire.io/docs externally.
+        var helpBtn = el('button', {
+            id: 'bowire-help-btn',
+            className: 'bowire-theme-toggle-btn'
+                + (helpAvailable ? '' : ' bowire-theme-toggle-btn-disabled'),
+            title: helpAvailable
+                ? 'Help (F1)'
+                : 'Install Kuestenlogik.Bowire.Help for in-app docs (or visit bowire.io/docs)',
+            'aria-label': 'Help',
+            onClick: function () {
+                if (helpAvailable) {
+                    helpOpenDrawer();
+                } else {
+                    window.open('https://bowire.io/docs', '_blank', 'noopener');
+                }
+            }
+        }, el('span', {
+            innerHTML: svgIcon('help'),
+            style: 'width:16px;height:16px;display:flex'
         }));
 
         // Settings button — wrapped so the plugin-update badge (when
@@ -1095,27 +1117,12 @@
             })
         );
 
-        // #129 — top-bar density discipline. Theme / About / Settings /
-        // Watch collapse behind a single ⋮ overflow menu so the right
-        // cluster reads as "connection context · drawer toggles ·
-        // overflow" instead of "8 individual buttons". High-frequency
-        // affordances (AI + Security drawer toggles) stay visible;
-        // low-frequency ones (theme cycle, about, settings) hide
-        // behind the overflow.
-        var overflowBtn = el('button', {
-            id: 'bowire-topbar-overflow',
-            className: 'bowire-theme-toggle-btn bowire-topbar-overflow-btn'
-                + (topbarOverflowOpen ? ' active' : ''),
-            title: 'More',
-            'aria-label': 'More',
-            onClick: function () {
-                topbarOverflowOpen = !topbarOverflowOpen;
-                render();
-            }
-        }, el('span', {
-            className: 'bowire-overflow-glyph',
-            textContent: '⋮'
-        }));
+        // #292 — Theme / Help / About promoted out of the ⋮ overflow
+        // into direct topbar buttons. Theme is a three-state cycle
+        // (auto → dark → light → auto), rendered by the existing
+        // renderThemeToggle helper that picks the right icon for the
+        // current state.
+        var themeBtn = (typeof renderThemeToggle === 'function') ? renderThemeToggle() : null;
 
         // #116 Workspaces Phase 1 — workspace switcher chip.
         // Click opens a small menu with every workspace + a
@@ -1244,65 +1251,21 @@
                 ) : null,
                 renderEnvSelector(),
             ),
-            // Drawer-toggle group. Security toggle retired in
-            // #133 Phase 2 — Security is now a rail mode, not a
-            // drawer. Assistant (AI) stays as a drawer because it's
-            // cross-cutting (used alongside every mode). Omnibox
-            // search trigger sits at the front so the eye lands on
-            // 'search' before the assistant + overflow.
+            // Drawer + utility group. Security toggle retired in
+            // #133 Phase 2 (Security is a rail mode now, not a
+            // drawer). Assistant stays as a drawer because it's
+            // cross-cutting. Omnibox search trigger sits at the front
+            // so the eye lands on 'search' before the drawers. Theme
+            // / Help / About promoted out of the old ⋮ overflow
+            // (#292) — Settings stays at the activity-rail bottom
+            // per VS Code / JetBrains convention.
             el('div', { className: 'bowire-topbar-group bowire-topbar-drawers' },
                 omniboxTriggerBtn,
                 aiToggleBtn,
-            ),
-            // Overflow.
-            overflowBtn,
-            // The overflow popover renders next to the overflow button
-            // when open. Anchors to the topbar via fixed position +
-            // computed right offset; closing happens via re-click,
-            // Esc, or click-outside (handled in init.js's keydown +
-            // pointerdown listeners).
-            topbarOverflowOpen ? el('div', {
-                className: 'bowire-topbar-overflow-menu',
-                onClick: function (e) { e.stopPropagation(); }
-            },
-                el('div', {
-                    className: 'bowire-topbar-overflow-item',
-                    onClick: function () { topbarOverflowOpen = false; render(); cycleTheme(); }
-                }, el('span', { textContent: 'Theme' })),
-                // #154 — Help affordance. When the Help package is
-                // installed (Phase 1 capability probe returned true)
-                // the click opens the Help drawer (Phase 3, F1).
-                // Without the package the entry is disabled-not-
-                // hidden — operators see the capability exists and
-                // how to enable it, instead of wondering why the
-                // docs button vanished. Click in that branch falls
-                // back to opening bowire.io/docs externally.
-                el('div', {
-                    className: 'bowire-topbar-overflow-item'
-                        + (helpAvailable ? '' : ' bowire-topbar-overflow-item-disabled'),
-                    title: helpAvailable
-                        ? 'Open Help (F1)'
-                        : 'Install the Kuestenlogik.Bowire.Help NuGet package to enable in-app docs (or visit bowire.io/docs).',
-                    onClick: function () {
-                        topbarOverflowOpen = false;
-                        if (helpAvailable) {
-                            helpOpenDrawer();
-                        } else {
-                            window.open('https://bowire.io/docs', '_blank', 'noopener');
-                        }
-                    }
-                },
-                    el('span', { textContent: helpAvailable ? 'Help' : 'Help (package missing)' })
-                ),
-                el('div', {
-                    className: 'bowire-topbar-overflow-item',
-                    onClick: function () { topbarOverflowOpen = false; openAbout(); render(); }
-                }, el('span', { textContent: 'About Bowire' })),
-                // Settings moved to the activity-rail bottom — peer
-                // of the sidebar-toggle, VS Code / JetBrains
-                // convention. Kept reachable here too would just
-                // duplicate the entry point.
-            ) : null
+                themeBtn,
+                helpBtn,
+                aboutBtn
+            )
         );
         bar.appendChild(right);
 
@@ -1487,6 +1450,20 @@
                 base += 25;
             }
         } catch { /* ignore */ }
+        // #156 — favorite bonus. Methods the operator has explicitly
+        // pinned rise above tied matches; the dropdown also renders
+        // a star glyph on the row so the user sees why it's at the
+        // top. Same +50 weight as a substring-elsewhere hit, so a
+        // favorite that matches by name beats an unfavorite that
+        // matches by name (both have base 100), but a favorite
+        // matched only by description (base 50) still loses to an
+        // unfavorite matched by name (base 100). Intent: nudge, not
+        // override.
+        try {
+            if (typeof isFavorite === 'function' && isFavorite(svc.name, method.name)) {
+                base += 50;
+            }
+        } catch { /* ignore */ }
         return base;
     }
 
@@ -1549,6 +1526,14 @@
         for (var mmi = 0; mmi < methodMatches.length; mmi++) {
             (function (mm) {
                 var proto = protocols.find(function (p) { return p.id === mm.svc.source; });
+                // #156 — flag favorites in the sublabel so the operator
+                // sees WHY the row ranks at the top. Star renders as
+                // a leading glyph in the sublabel because the existing
+                // suggestion shape doesn't have a separate trailing
+                // marker slot.
+                var fav = false;
+                try { fav = (typeof isFavorite === 'function') && isFavorite(mm.svc.name, mm.method.name); }
+                catch { /* ignore */ }
                 out.push({
                     group: 'Methods',
                     // Label = just the method name. The service goes on
@@ -1556,7 +1541,7 @@
                     // the scan reads as "method ← service" instead of
                     // duplicating the service name in two places.
                     label: mm.method.name,
-                    sublabel: mm.svc.name,
+                    sublabel: (fav ? '★ ' : '') + mm.svc.name,
                     icon: proto ? proto.icon : null,
                     badge: mm.method.methodType === 'Unary' ? null : (mm.method.methodType || ''),
                     badgeType: (mm.method.methodType || '').toLowerCase(),
