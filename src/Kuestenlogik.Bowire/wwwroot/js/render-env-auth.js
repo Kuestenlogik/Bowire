@@ -73,13 +73,39 @@
         // opt out.
         var modeHasSidebar = currentRailSidebarSpec().kind !== 'none';
         if (modeHasSidebar) {
-            body.appendChild(renderSidebar());
-            if (!isMobile()) {
-                body.appendChild(el('div', {
-                    className: 'bowire-sidebar-splitter',
-                    id: 'bowire-sidebar-splitter',
-                    title: 'Drag to resize the sidebar'
-                }));
+            if (sidebarCollapsed) {
+                body.classList.add('bowire-sidebar-is-collapsed');
+                // Pattern A — when the sidebar is hidden the
+                // affordance to bring it back lives at the rail edge.
+                // Small chevron-button pointing right, vertically
+                // centred, full-height-hover for forgiving aim.
+                body.appendChild(el('button', {
+                    type: 'button',
+                    className: 'bowire-sidebar-edge-toggle bowire-sidebar-edge-toggle-collapsed',
+                    title: 'Show sidebar (Ctrl+B)',
+                    'aria-label': 'Show sidebar',
+                    onClick: function () { setSidebarCollapsed(false); render(); }
+                }, el('span', { innerHTML: svgIcon('chevron') })));
+            } else {
+                body.appendChild(renderSidebar());
+                if (!isMobile()) {
+                    body.appendChild(el('div', {
+                        className: 'bowire-sidebar-splitter',
+                        id: 'bowire-sidebar-splitter',
+                        title: 'Drag to resize the sidebar — drag past the minimum to collapse'
+                    }));
+                    // Pattern A — chevron sits ON the splitter so a
+                    // user who sees the resize-edge gets the hide
+                    // affordance for free. Chevron points LEFT
+                    // ('collapse to the left').
+                    body.appendChild(el('button', {
+                        type: 'button',
+                        className: 'bowire-sidebar-edge-toggle bowire-sidebar-edge-toggle-expanded',
+                        title: 'Hide sidebar (Ctrl+B)',
+                        'aria-label': 'Hide sidebar',
+                        onClick: function () { setSidebarCollapsed(true); render(); }
+                    }, el('span', { innerHTML: svgIcon('chevron') })));
+                }
             }
         }
         body.appendChild(renderMain());
@@ -206,12 +232,23 @@
             document.body.style.userSelect = 'none';
             app.classList.add('is-resizing');
 
+            // Pattern C extension — drag past this threshold (well
+            // below SIDEBAR_WIDTH_MIN) triggers a collapse on mouse-
+            // up. While dragging in the danger zone the sidebar gets
+            // a translucent overlay as a "release to hide" preview.
+            var COLLAPSE_THRESHOLD = 120; // px relative to the app
+            var inCollapseZone = false;
+            var sidebarEl = document.querySelector('#bowire-sidebar');
             function onMove(ev) {
                 // Compute sidebar width relative to the app container's
                 // left edge. getBoundingClientRect is re-read every move
                 // so we stay correct under viewport changes mid-drag.
                 var rect = app.getBoundingClientRect();
-                var w = Math.round(ev.clientX - rect.left);
+                var raw = Math.round(ev.clientX - rect.left);
+                inCollapseZone = raw < COLLAPSE_THRESHOLD;
+                if (sidebarEl) sidebarEl.classList.toggle('bowire-sidebar-collapse-preview', inCollapseZone);
+
+                var w = raw;
                 if (w < SIDEBAR_WIDTH_MIN) w = SIDEBAR_WIDTH_MIN;
                 if (w > SIDEBAR_WIDTH_MAX) w = SIDEBAR_WIDTH_MAX;
                 // Also cap at 70% of the viewport to prevent the user
@@ -227,7 +264,16 @@
                 document.body.style.cursor = '';
                 document.body.style.userSelect = '';
                 app.classList.remove('is-resizing');
+                if (sidebarEl) sidebarEl.classList.remove('bowire-sidebar-collapse-preview');
                 try { localStorage.setItem(SIDEBAR_WIDTH_KEY, String(sidebarWidth)); } catch { /* ignore */ }
+                // Pattern C — if the user released the drag inside
+                // the collapse zone, finish the gesture by hiding the
+                // sidebar entirely. The width they had still persists
+                // for the next show.
+                if (inCollapseZone) {
+                    setSidebarCollapsed(true);
+                    render();
+                }
             }
             document.addEventListener('mousemove', onMove);
             document.addEventListener('mouseup', onUp);

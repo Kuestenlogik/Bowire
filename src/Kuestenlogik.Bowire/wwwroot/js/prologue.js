@@ -971,6 +971,24 @@
     let streamMessages = [];
     let statusInfo = null;
     let sidebarCollapsed = false;
+    try { sidebarCollapsed = localStorage.getItem('bowire_sidebar_collapsed') === '1'; }
+    catch { /* ignore */ }
+    function setSidebarCollapsed(v) {
+        sidebarCollapsed = !!v;
+        try { localStorage.setItem('bowire_sidebar_collapsed', sidebarCollapsed ? '1' : '0'); }
+        catch { /* ignore */ }
+    }
+    function toggleSidebarCollapsed() {
+        // Modes without a sidebar (sidebar.kind === 'none') have
+        // nothing to collapse — skip the toggle so Ctrl+B doesn't
+        // appear to do nothing.
+        if (typeof currentRailSidebarSpec === 'function') {
+            var spec = currentRailSidebarSpec();
+            if (spec && spec.kind === 'none') return;
+        }
+        setSidebarCollapsed(!sidebarCollapsed);
+        render();
+    }
     let requestMessages = ['']; // Array of JSON strings, one per message
     // ---- Streaming UI state (Wireshark-style: list of messages + detail pane) ----
     let streamSelectedIndex = null;     // null = follow latest; otherwise index into streamMessages
