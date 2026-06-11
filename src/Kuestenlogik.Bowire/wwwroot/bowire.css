@@ -651,6 +651,173 @@ no decoration. */
     background: var(--bowire-surface-hover);
 }
 
+/* #154 Phase 3 — Help drawer body layout. Two columns: navigation
+   on the left (search + topic tree), rendered topic on the right.
+   The drawer chrome itself comes from the renderDrawer primitive
+   (#115); these rules only style the inner panes. Wider than the
+   Assistant drawer's content because rendered markdown reads better
+   with more horizontal room. */
+.bowire-help-drawer {
+    width: 520px;
+    max-width: 60vw;
+}
+.bowire-help-body {
+    display: flex;
+    height: 100%;
+    gap: 0;
+    margin: -12px -16px; /* cancel renderDrawer's content padding */
+}
+.bowire-help-nav {
+    width: 200px;
+    flex-shrink: 0;
+    border-right: 1px solid var(--bowire-border-subtle);
+    background: var(--bowire-surface);
+    overflow-y: auto;
+    padding: 8px 6px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+.bowire-help-search {
+    width: 100%;
+    height: 28px;
+    padding: 0 8px;
+    background: var(--bowire-bg);
+    border: 1px solid var(--bowire-border);
+    border-radius: var(--bowire-radius-sm);
+    color: var(--bowire-text);
+    font-size: 12px;
+    margin-bottom: 4px;
+}
+.bowire-help-search:focus {
+    outline: none;
+    border-color: var(--bowire-accent);
+}
+.bowire-help-cat-header {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--bowire-text-tertiary);
+    padding: 8px 8px 2px;
+}
+.bowire-help-topic-row {
+    display: block;
+    width: 100%;
+    text-align: left;
+    padding: 5px 8px;
+    background: transparent;
+    border: none;
+    border-radius: var(--bowire-radius-sm);
+    color: var(--bowire-text);
+    cursor: pointer;
+    font-size: 12px;
+    transition: background var(--bowire-transition);
+}
+.bowire-help-topic-row:hover { background: var(--bowire-surface-hover); }
+.bowire-help-topic-row.selected {
+    background: var(--bowire-accent-subtle);
+    color: var(--bowire-accent);
+}
+.bowire-help-hit-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-top: 4px;
+}
+.bowire-help-hit {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    text-align: left;
+    padding: 6px 8px;
+    background: transparent;
+    border: 1px solid var(--bowire-border-subtle);
+    border-radius: var(--bowire-radius-sm);
+    color: var(--bowire-text);
+    cursor: pointer;
+}
+.bowire-help-hit:hover { background: var(--bowire-surface-hover); }
+.bowire-help-hit.selected { border-color: var(--bowire-accent); }
+.bowire-help-hit-title { font-size: 12px; font-weight: 500; }
+.bowire-help-hit-excerpt {
+    font-size: 11px;
+    color: var(--bowire-text-secondary);
+    line-height: 1.4;
+}
+.bowire-help-empty {
+    padding: 16px 12px;
+    color: var(--bowire-text-tertiary);
+    font-size: 12px;
+    text-align: center;
+}
+.bowire-help-topic-count {
+    display: inline-block;
+    min-width: 18px;
+    padding: 0 6px;
+    background: var(--bowire-bg-elevated);
+    border-radius: 9px;
+    font-size: 10px;
+    color: var(--bowire-text-tertiary);
+    text-align: center;
+}
+.bowire-help-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px 20px;
+    background: var(--bowire-bg);
+    line-height: 1.6;
+    font-size: 13px;
+}
+
+/* Mini-markdown rendered output. Tight scope — only what the
+   embedded docs actually use: headings, paragraphs, lists,
+   blockquotes, inline + fenced code, bold/italic, links, hr. */
+.bowire-help-md-h1 { font-size: 20px; font-weight: 600; margin: 0 0 12px; }
+.bowire-help-md-h2 { font-size: 16px; font-weight: 600; margin: 18px 0 8px; padding-top: 4px; border-top: 1px solid var(--bowire-border-subtle); }
+.bowire-help-md-h3 { font-size: 14px; font-weight: 600; margin: 14px 0 6px; }
+.bowire-help-md-h4,
+.bowire-help-md-h5,
+.bowire-help-md-h6 { font-size: 13px; font-weight: 600; margin: 12px 0 4px; }
+.bowire-help-md-p { margin: 0 0 10px; }
+.bowire-help-md-ul,
+.bowire-help-md-ol { margin: 0 0 10px 18px; padding: 0; }
+.bowire-help-md-ul li,
+.bowire-help-md-ol li { margin: 2px 0; }
+.bowire-help-md-code-inline {
+    background: var(--bowire-surface);
+    border: 1px solid var(--bowire-border-subtle);
+    border-radius: 3px;
+    padding: 1px 5px;
+    font-family: var(--bowire-mono);
+    font-size: 12px;
+}
+.bowire-help-md-pre {
+    background: var(--bowire-surface);
+    border: 1px solid var(--bowire-border-subtle);
+    border-radius: var(--bowire-radius-sm);
+    padding: 10px 12px;
+    margin: 0 0 10px;
+    overflow-x: auto;
+    font-family: var(--bowire-mono);
+    font-size: 12px;
+    line-height: 1.5;
+}
+.bowire-help-md-pre code { font-family: inherit; }
+.bowire-help-md-quote {
+    margin: 0 0 10px;
+    padding: 4px 10px;
+    border-left: 3px solid var(--bowire-accent);
+    color: var(--bowire-text-secondary);
+    background: var(--bowire-surface);
+    font-style: italic;
+}
+.bowire-help-md-hr {
+    border: none;
+    border-top: 1px solid var(--bowire-border-subtle);
+    margin: 14px 0;
+}
+
 /* #154 Phase 1 — Help affordance when the Bowire.Help package isn't
    installed. Disabled-not-hidden: users see the capability exists
    and how to enable it instead of wondering why the docs button

@@ -143,6 +143,12 @@
          freeformRequest / getEnvironments(), all available globally
          from earlier fragments. -->
     <BowireJsFragment Include="wwwroot\js\vars-deprecation.js" />
+    <!-- #154 Phase 3 — Help drawer renderer + per-rail topic
+         resolution + mini-markdown renderer. Uses the renderDrawer
+         primitive from #115 (declared in helpers.js earlier in this
+         list). Consumed by render-env-auth.js's drawer mount + topbar
+         overflow click, and by init.js's F1 keybind. -->
+    <BowireJsFragment Include="wwwroot\js\help.js" />
     <!--
       Frame-semantics framework + built-in widgets. extensions.js MUST
       come before any widget bundle so window.BowireExtensions.register
