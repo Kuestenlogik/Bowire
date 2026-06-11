@@ -84,6 +84,8 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 - [#154](https://github.com/Kuestenlogik/Bowire/issues/154) **Help as optional NuGet package — `Kuestenlogik.Bowire.Help`** 
 - [#155](https://github.com/Kuestenlogik/Bowire/issues/155) **Workspace = project folder — strictly per-workspace, sharing via copy actions** 
 - [#156](https://github.com/Kuestenlogik/Bowire/issues/156) **Favorites as a connective UI element** 
+- [#157](https://github.com/Kuestenlogik/Bowire/issues/157) **"Add to…" quick-actions at the method header** 
+- [#158](https://github.com/Kuestenlogik/Bowire/issues/158) **Cross-feature state visibility in the service tree** 
 
 ---
 
