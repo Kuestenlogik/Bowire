@@ -1174,14 +1174,29 @@ drop the topbar's grid-column constraint. */
     flex: 1;
     min-height: 0;
 }
-.bowire-omnibox-modal .bowire-command-palette-input {
-    font-size: 16px;
-    height: 48px;
-    border-radius: 0;
+/* Inside the modal, push the padding onto the ROW (which holds
+   icon + input + hint) so the magnifier and the `/` hint glyph
+   breathe inside the modal too — previously only the input had
+   padding, which made the icon + hint cling to the modal edges. */
+.bowire-omnibox-modal .bowire-command-palette-row {
+    padding: 0 18px;
+    height: 56px;
+    gap: 12px;
     border: 0;
+    border-radius: 0;
     border-bottom: 1px solid var(--bowire-border-subtle);
     background: transparent;
-    padding: 0 16px;
+}
+.bowire-omnibox-modal .bowire-command-palette-row:focus-within {
+    box-shadow: none;
+}
+.bowire-omnibox-modal .bowire-command-palette-icon {
+    width: 16px;
+    height: 16px;
+}
+.bowire-omnibox-modal .bowire-command-palette-input {
+    font-size: 16px;
+    padding: 0;
 }
 .bowire-omnibox-modal .bowire-command-palette-dropdown {
     position: static;
@@ -6035,6 +6050,82 @@ instead of having to
     background: var(--bowire-surface-hover);
     color: var(--bowire-accent);
     border-color: var(--bowire-accent);
+}
+
+/* #156 — favorites-only toggle in the Discover services toolbar.
+   Always visible so the affordance is discoverable; accent-tinted
+   when active so the operator sees the view is narrowed. */
+.bowire-fav-only-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: var(--bowire-radius-sm);
+    color: var(--bowire-text-tertiary);
+    cursor: pointer;
+    transition: all var(--bowire-transition);
+}
+.bowire-fav-only-toggle:hover {
+    background: var(--bowire-surface-hover);
+    border-color: var(--bowire-border);
+    color: var(--bowire-text);
+}
+.bowire-fav-only-toggle.active {
+    background: var(--bowire-accent-subtle);
+    border-color: var(--bowire-accent);
+    color: var(--bowire-accent);
+}
+.bowire-fav-only-toggle svg {
+    width: 14px;
+    height: 14px;
+}
+
+/* #156 — favorites-only chip in the filter row. Accent-tinted so it
+   stands out from the protocol / URL / type chips around it. */
+.bowire-filter-chip-favorites {
+    background: var(--bowire-accent-subtle);
+    color: var(--bowire-accent);
+    border: 1px solid var(--bowire-accent);
+}
+
+/* #156 — favorite star in the method header. Sits between the
+   method badge and the hint chip. Outline glyph by default,
+   filled accent when starred. No background — the star IS the
+   affordance. Generous hit area via padding for Fitt's-law
+   forgiveness. */
+.bowire-header-fav-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    padding: 0;
+    margin-left: 6px;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: var(--bowire-radius-sm);
+    color: var(--bowire-text-tertiary);
+    cursor: pointer;
+    transition: color var(--bowire-transition), background var(--bowire-transition), border-color var(--bowire-transition);
+}
+.bowire-header-fav-btn:hover {
+    background: var(--bowire-surface-hover);
+    border-color: var(--bowire-border);
+    color: var(--bowire-text);
+}
+.bowire-header-fav-btn.active {
+    color: var(--bowire-accent);
+}
+.bowire-header-fav-btn.active:hover {
+    color: var(--bowire-accent);
+}
+.bowire-header-fav-btn svg {
+    width: 14px;
+    height: 14px;
 }
 
 /* #114 — inline hint chip at the method header. Small accent pill
