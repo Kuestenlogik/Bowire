@@ -82,7 +82,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 - [#152](https://github.com/Kuestenlogik/Bowire/issues/152) **Sources rail mode — centralise URL / schema-file management** 
 - [#153](https://github.com/Kuestenlogik/Bowire/issues/153) **Bowire as transparent interceptor — embedded middleware + standalone reverse-proxy** 
 - [#154](https://github.com/Kuestenlogik/Bowire/issues/154) **Help as optional NuGet package — `Kuestenlogik.Bowire.Help`** 
-- [#155](https://github.com/Kuestenlogik/Bowire/issues/155) **Workspace = Projektordner — strikt per-Workspace, Sharing via Copy-Actions** 
+- [#155](https://github.com/Kuestenlogik/Bowire/issues/155) **Workspace = project folder — strictly per-workspace, sharing via copy actions** 
 
 ---
 
