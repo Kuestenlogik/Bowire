@@ -92,7 +92,7 @@
                     body.appendChild(el('div', {
                         className: 'bowire-sidebar-splitter',
                         id: 'bowire-sidebar-splitter',
-                        title: 'Drag to resize the sidebar — drag past the minimum to collapse'
+                        title: 'Drag to resize the sidebar — drag past the minimum to collapse, or double-click to toggle'
                     }));
                     // Pattern A — chevron sits ON the splitter so a
                     // user who sees the resize-edge gets the hide
@@ -277,6 +277,19 @@
             }
             document.addEventListener('mousemove', onMove);
             document.addEventListener('mouseup', onUp);
+        });
+
+        // Double-click on the splitter toggles the sidebar. Composes
+        // with the chevron-button (pattern A) sitting on the same
+        // splitter — chevron is the discoverable affordance, dblclick
+        // is the muscle-memory shortcut once users know the pattern.
+        // The dblclick event fires AFTER two mousedown→mouseup pairs
+        // without intervening drag motion, so a normal resize drag
+        // won't accidentally trigger it.
+        splitter.addEventListener('dblclick', function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            toggleSidebarCollapsed();
         });
     }
 
