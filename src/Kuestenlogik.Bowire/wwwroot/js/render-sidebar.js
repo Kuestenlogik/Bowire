@@ -767,10 +767,19 @@
             }
             lastGroup = m.group;
             var isActive = railMode === m.id;
+            var modeHasSidebar = m.sidebar && m.sidebar.kind !== 'none';
             rail.appendChild(el('button', {
                 type: 'button',
                 className: 'bowire-rail-btn' + (isActive ? ' active' : ''),
-                title: m.label,
+                // Pattern B — double-click on the ACTIVE mode toggles
+                // the sidebar. Tooltip-suffix only shows the hint on
+                // the active button so non-active modes don't lie
+                // ('Double-click to collapse' would do nothing on a
+                // mode the user isn't in).
+                title: m.label
+                    + (isActive && modeHasSidebar
+                        ? '\n(double-click to ' + (sidebarCollapsed ? 'expand' : 'collapse') + ' the sidebar)'
+                        : ''),
                 'aria-label': m.label,
                 onClick: function () {
                     if (railMode === m.id) return;
@@ -793,38 +802,29 @@
                         sidebarView = 'services';
                     }
                     render();
+                },
+                onDblClick: function () {
+                    // Pattern B fires only when the user double-clicks
+                    // the ALREADY-active mode. Double-clicking an
+                    // inactive mode falls through onClick (which sets
+                    // it active, sidebar opens at default) — that
+                    // matches VS Code semantics.
+                    if (railMode === m.id && modeHasSidebar) {
+                        toggleSidebarCollapsed();
+                    }
                 }
             },
                 el('span', { innerHTML: svgIcon(m.icon) })
             ));
         });
 
-        // Sidebar collapse/expand toggle at the rail bottom. #137 —
-        // moves the toggle out of the main-pane header (which
-        // disappeared in non-default main-pane variants like
-        // Sources / Security mode), into a position that's always
-        // visible regardless of which mode is active. Hoppscotch
-        // puts a similar toggle in the workbench footer; rail-
-        // bottom keeps the affordance compact and on the same axis
-        // as the mode picker.
-        rail.appendChild(el('button', {
-            type: 'button',
-            className: 'bowire-rail-btn bowire-rail-toggle-sidebar',
-            title: sidebarCollapsed ? 'Show sidebar' : 'Hide sidebar',
-            'aria-label': 'Toggle sidebar',
-            onClick: function () {
-                sidebarCollapsed = !sidebarCollapsed;
-                render();
-            }
-        },
-            el('span', { innerHTML: svgIcon('sidebar') })
-        ));
-
-        // Settings — anchored at the very bottom of the rail (peer
-        // of the sidebar-toggle, below it). Moved out of the topbar
-        // ⋮ overflow into the rail per VS Code / JetBrains
-        // convention; reachable from every mode without going
-        // through a menu.
+        // Settings — anchored at the very bottom of the rail. Moved
+        // out of the topbar ⋮ overflow into the rail per VS Code /
+        // JetBrains convention; reachable from every mode without
+        // going through a menu. The old sidebar-toggle that sat at
+        // the rail bottom is gone — toggle now lives at the
+        // wirkungsort (sidebar edge-chevron + header-chevron +
+        // rail double-click + Ctrl+B).
         rail.appendChild(el('button', {
             type: 'button',
             className: 'bowire-rail-btn bowire-rail-settings',
@@ -1808,6 +1808,20 @@
         return sidebar;
     }
 
+    // Pattern D — small chevron in the top-right corner of EVERY
+    // sidebar mode that triggers the collapse. Appended after the
+    // mode-specific render so each per-mode header stays untouched.
+    // Sits absolute-positioned via CSS at the wrapper's edge.
+    function _sidebarHeaderCollapseChevron() {
+        return el('button', {
+            type: 'button',
+            className: 'bowire-sidebar-header-collapse',
+            title: 'Hide sidebar (Ctrl+B)',
+            'aria-label': 'Hide sidebar',
+            onClick: function () { setSidebarCollapsed(true); render(); }
+        }, el('span', { innerHTML: svgIcon('chevron') }));
+    }
+
     function renderSidebar() {
         // #137 — sidebar dispatch driven by the rail-mode catalogue.
         // Each mode declares its sidebar 'kind' in _railModes; this
@@ -1815,19 +1829,24 @@
         // need to (a) add a catalogue entry with the right kind, and
         // (b) either reuse an existing renderer or extend this map.
         var spec = currentRailSidebarSpec();
+        var sidebar = null;
         switch (spec.kind) {
-            case 'collections':  return renderCollectionsSidebar();
-            case 'environments': return renderEnvironmentsSidebar();
-            case 'recordings':   return renderRecordingsSidebar();
-            case 'mocks':        return renderMocksSidebar();
-            case 'workspaces':   return renderWorkspacesSidebar();
-            case 'sources':      return renderSourcesSidebar();
-            case 'benchmarks':   return renderBenchmarksSidebar();
-            // 'flows', 'proxy', 'services' fall through to the legacy
-            // sidebar below (built from the discover service tree).
-            // Their main pane reads sidebarView, which the rail-button
-            // onClick keeps in sync.
+            case 'collections':  sidebar = renderCollectionsSidebar(); break;
+            case 'environments': sidebar = renderEnvironmentsSidebar(); break;
+            case 'recordings':   sidebar = renderRecordingsSidebar(); break;
+            case 'mocks':        sidebar = renderMocksSidebar(); break;
+            case 'workspaces':   sidebar = renderWorkspacesSidebar(); break;
+            case 'sources':      sidebar = renderSourcesSidebar(); break;
+            case 'benchmarks':   sidebar = renderBenchmarksSidebar(); break;
         }
+        if (sidebar) {
+            sidebar.appendChild(_sidebarHeaderCollapseChevron());
+            return sidebar;
+        }
+        // 'flows', 'proxy', 'services' fall through to the legacy
+        // sidebar below (built from the discover service tree).
+        // Their main pane reads sidebarView, which the rail-button
+        // onClick keeps in sync.
 
         // Each top-level child of the sidebar gets a stable id so morphdom
         // matches them by key instead of by position. Without ids, morphdom
@@ -2735,6 +2754,9 @@
         );
         sidebar.appendChild(footer);
 
+        // Pattern D — header-chevron also on the legacy services
+        // sidebar so the user has the same affordance everywhere.
+        sidebar.appendChild(_sidebarHeaderCollapseChevron());
         return sidebar;
     }
 

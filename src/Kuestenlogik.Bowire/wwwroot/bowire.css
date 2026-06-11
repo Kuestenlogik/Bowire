@@ -994,10 +994,113 @@ but
    from the mode list; Settings sits below the toggle as the very
    last rail entry. Visually separated from the mode list by a
    hairline border above the first one. */
-.bowire-rail-toggle-sidebar {
+/* #137 / #154 toggle refactor — the rail-bottom sidebar-toggle is
+   gone. .bowire-rail-toggle-sidebar used to push itself to the
+   bottom via margin-top:auto; that role now goes to .bowire-rail-
+   settings so Settings still anchors the rail bottom. Sidebar
+   toggle now lives at the Wirkungsort:
+   - Pattern A: .bowire-sidebar-edge-toggle on the splitter / rail edge
+   - Pattern B: double-click on the active rail icon
+   - Pattern C: drag the splitter below the collapse threshold
+   - Pattern D: .bowire-sidebar-header-collapse top-right per sidebar
+   - Plus Ctrl/Cmd+B keyboard shortcut */
+.bowire-rail-settings {
     margin-top: auto;
     border-top: 1px solid var(--bowire-border-subtle);
 }
+
+/* Pattern A — sidebar edge-toggle chevron. Two variants:
+   - expanded: sits on the splitter, chevron points LEFT ('hide')
+   - collapsed: sits at the rail edge, chevron points RIGHT ('show')
+   Both vertically centred with a generous hit area for Fitt's-law
+   forgiveness. Visible on hover of the surrounding region. */
+.bowire-sidebar-edge-toggle {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 18px;
+    height: 36px;
+    padding: 0;
+    background: var(--bowire-bg-elevated);
+    border: 1px solid var(--bowire-border-subtle);
+    border-radius: var(--bowire-radius-sm);
+    color: var(--bowire-text-tertiary);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 5;
+    opacity: 0;
+    transition: opacity var(--bowire-transition), color var(--bowire-transition);
+}
+.bowire-sidebar-edge-toggle:hover { opacity: 1; color: var(--bowire-text); }
+.bowire-sidebar-edge-toggle svg {
+    width: 14px;
+    height: 14px;
+}
+/* Expanded: sits right at the splitter column. */
+.bowire-sidebar-edge-toggle-expanded {
+    left: calc(var(--bowire-rail-width, 56px) + var(--bowire-sidebar-width, 400px) - 9px);
+}
+.bowire-sidebar-edge-toggle-expanded svg { transform: rotate(180deg); }
+/* Show the edge-toggle when the user is in the sidebar region. */
+.bowire-app-body:hover .bowire-sidebar-edge-toggle-expanded { opacity: 0.7; }
+
+/* Collapsed: sits right at the rail's right edge. */
+.bowire-sidebar-edge-toggle-collapsed {
+    left: var(--bowire-rail-width, 56px);
+    opacity: 0.6;
+}
+.bowire-sidebar-edge-toggle-collapsed:hover { opacity: 1; }
+
+/* Body modifier — when the sidebar is collapsed the main pane
+   expands to fill the row left of the rail. The render-env-auth
+   body assembly adds .bowire-sidebar-is-collapsed in that branch. */
+.bowire-app-body.bowire-sidebar-is-collapsed .bowire-main-pane {
+    margin-left: 0;
+}
+
+/* Pattern C — sidebar gets a translucent overlay while the user
+   is dragging the splitter past the collapse threshold, so they
+   see what "release here to hide" means. */
+.bowire-sidebar.bowire-sidebar-collapse-preview {
+    opacity: 0.4;
+    transition: opacity 100ms ease;
+}
+
+/* Pattern D — top-right chevron inside the sidebar wrapper.
+   Absolute-positioned so it doesn't disturb per-mode headers.
+   Faint by default, materialises on hover. */
+.bowire-sidebar-header-collapse {
+    position: absolute;
+    top: 8px;
+    right: 6px;
+    width: 22px;
+    height: 22px;
+    padding: 0;
+    background: transparent;
+    border: none;
+    border-radius: var(--bowire-radius-sm);
+    color: var(--bowire-text-tertiary);
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0.5;
+    transition: opacity var(--bowire-transition), background var(--bowire-transition);
+    z-index: 4;
+}
+.bowire-sidebar-header-collapse:hover {
+    opacity: 1;
+    background: var(--bowire-surface-hover);
+    color: var(--bowire-text);
+}
+.bowire-sidebar-header-collapse svg {
+    width: 12px;
+    height: 12px;
+    transform: rotate(180deg);
+}
+.bowire-sidebar { position: relative; }
 
 /* #138 — Statusbar pinned at the bottom of the workbench. IDE-
    style 28 px strip carrying ambient telemetry: connection state,

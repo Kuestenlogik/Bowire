@@ -42,6 +42,19 @@
                 return;
             }
 
+            // Ctrl/Cmd+B — toggle the sidebar. VS Code convention;
+            // composes with the edge-chevron (pattern A), the rail-
+            // icon double-click (pattern B), and the splitter
+            // collapse-on-drag (pattern C). No-op on modes that
+            // have no sidebar in the first place (handled inside
+            // toggleSidebarCollapsed).
+            if ((e.ctrlKey || e.metaKey) && !e.shiftKey && !e.altKey
+                && (e.key === 'b' || e.key === 'B')) {
+                e.preventDefault();
+                toggleSidebarCollapsed();
+                return;
+            }
+
             // #154 Phase 3 — F1 opens the Help drawer at the topic
             // most relevant to the current rail mode. Esc closes it
             // when it's open and nothing else is competing for Esc.
