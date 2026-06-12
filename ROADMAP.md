@@ -12,11 +12,10 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.0 — UI refactor + breaking-change window
 
-**24/37 done** · 1 in progress · 12 backlog
+**25/37 done** · 12 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
-| [25](https://github.com/Kuestenlogik/Bowire/issues/25) | Bowire | AI side-panel integration | 🟡 In progress | `area:workbench` |
 | [33](https://github.com/Kuestenlogik/Bowire/issues/33) | Bowire | Protocol plugins — Connect Phase 1+3 + OTLP | ⬜ Backlog | `area:plugin-sdk` `track:protocols` |
 | [114](https://github.com/Kuestenlogik/Bowire/issues/114) | Bowire | Hints: render contextually at the target surface (drop the static list in the drawer) | ⬜ Open |  |
 | [115](https://github.com/Kuestenlogik/Bowire/issues/115) | Bowire | v2.0 — UI refactor: re-architect the workbench shell | ⬜ Open |  |
@@ -29,6 +28,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [156](https://github.com/Kuestenlogik/Bowire/issues/156) | Bowire | Favorites as a connective UI element | ⬜ Open |  |
 | [157](https://github.com/Kuestenlogik/Bowire/issues/157) | Bowire | "Add to…" quick-actions at the method header | ⬜ Open |  |
 | [158](https://github.com/Kuestenlogik/Bowire/issues/158) | Bowire | Cross-feature state visibility in the service tree | ⬜ Open |  |
+| [25](https://github.com/Kuestenlogik/Bowire/issues/25) | Bowire | AI side-panel integration | ✅ Done | `area:workbench` |
 | [43](https://github.com/Kuestenlogik/Bowire/issues/43) | Bowire | MCP SSE-transport support | ✅ Done | `area:mcp` |
 | [85](https://github.com/Kuestenlogik/Bowire/issues/85) | Bowire | Request-pane Body: split stacked Form / Selection Set / Query into sub-tabs | ✅ Done |  |
 | [90](https://github.com/Kuestenlogik/Bowire/issues/90) | Bowire | AI panel: move from response-pane tab to a right-side drawer | ✅ Done |  |
@@ -123,12 +123,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.0 — UI refactor + breaking-change window
 
-#### 🟡 In progress · [#25](https://github.com/Kuestenlogik/Bowire/issues/25) AI side-panel integration
-
-> `area:workbench`
-
-ADR: [`docs/architecture/ai-integration.md`](https://github.com/Kuestenlogik/Bowire/blob/main/docs/architecture/ai-integration.md)
-
 #### ⬜ Backlog · [#33](https://github.com/Kuestenlogik/Bowire/issues/33) Protocol plugins — Connect Phase 1+3 + OTLP
 
 > `area:plugin-sdk` · `track:protocols`
@@ -178,6 +172,12 @@ Remaining wave items after MQTT / Kafka / AMQP / SOAP / NATS / JSON-RPC / Pulsar
 #### ⬜ Open · [#158](https://github.com/Kuestenlogik/Bowire/issues/158) Cross-feature state visibility in the service tree
 
 ## Why
+
+#### ✅ Done · [#25](https://github.com/Kuestenlogik/Bowire/issues/25) AI side-panel integration
+
+> `area:workbench`
+
+ADR: [`docs/architecture/ai-integration.md`](https://github.com/Kuestenlogik/Bowire/blob/main/docs/architecture/ai-integration.md)
 
 #### ✅ Done · [#43](https://github.com/Kuestenlogik/Bowire/issues/43) MCP SSE-transport support
 
