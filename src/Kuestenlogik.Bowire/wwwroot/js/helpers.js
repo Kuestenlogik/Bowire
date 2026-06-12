@@ -1490,13 +1490,12 @@
             folder: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>',
             trash: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>',
             briefcase: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>',
-            // Lucide-style "layout" — a window outline with a sidebar
-            // strip on the left, reading as "workspace = sidebar +
-            // content pane". Used as the Workspaces glyph (rail mode,
-            // palette lane, topbar workspace dropdown trigger) so the
-            // icon mirrors what a workspace IS in the UI rather than
-            // the generic briefcase metaphor.
-            layout: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/></svg>',
+            // Lucide-style "boxes" — three stacked / overlapping
+            // cubes. Used as the Workspaces glyph (rail mode, palette
+            // lane, first-run landing card). Reads as "multiple
+            // project containers in one place", which is exactly what
+            // the Workspaces rail manages.
+            boxes: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2.97 12.92A2 2 0 0 0 2 14.63v3.24a2 2 0 0 0 .97 1.71l3 1.8a2 2 0 0 0 2.06 0L12 19v-5.5l-5-3-4.03 2.42z"/><polyline points="7 16.5 7 19.5"/><polyline points="2 14.5 7 17.5 12 14.5"/><path d="M12 5v8l4 2.5"/><path d="M16 9v8l4 2.5"/><path d="M12 13.5l4-2.5 4 2.5"/><path d="M16 11V6L12 3.5 8 6v5"/></svg>',
             plug: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 2v6M15 2v6M5 8h14v3a7 7 0 0 1-14 0V8zM12 18v4"/></svg>',
             history: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7"/><polyline points="3 4 3 9 8 9"/><polyline points="12 7 12 12 15 14"/></svg>',
             // #135 split-mode toggle icons. Side-by-side pictogram for

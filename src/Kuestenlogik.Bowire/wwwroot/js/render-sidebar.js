@@ -836,7 +836,7 @@
         { id: 'benchmarks',   icon: 'chart',     label: 'Benchmarks',        group: 'quality',   sidebar: { kind: 'benchmarks' } },
         { id: 'parallel',     icon: 'lightning', label: 'Parallel sessions', group: 'quality',   sidebar: { kind: 'none' } },
         { id: 'security',     icon: 'shield',    label: 'Security',          group: 'hardening', sidebar: { kind: 'services' } },
-        { id: 'workspaces',   icon: 'layout',    label: 'Workspaces',        group: 'hardening', sidebar: { kind: 'workspaces' } },
+        { id: 'workspaces',   icon: 'boxes',     label: 'Workspaces',        group: 'hardening', sidebar: { kind: 'workspaces' } },
     ];
     function _railModeById(id) {
         for (var i = 0; i < _railModes.length; i++) {
