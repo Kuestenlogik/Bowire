@@ -837,9 +837,8 @@
         if (kind === 'collection' && sel.value) return _renderWorkspaceCollectionDetail(ws, sel.value);
         if (kind === 'environments') return _renderWorkspaceEnvironmentsOverview(ws);
         if (kind === 'env' && sel.value) return _renderWorkspaceEnvironmentDetail(ws, sel.value);
-        if (kind === 'recordings') return _renderWorkspaceJumpDetail(ws, 'recordings', 'recording',
-            'Recordings', 'Open Recordings rail',
-            'Recordings live in this workspace. Switch to the Recordings rail to replay, edit, or export them.');
+        if (kind === 'recordings') return _renderWorkspaceRecordingsOverview(ws);
+        if (kind === 'recording' && sel.value) return _renderWorkspaceRecordingDetail(ws, sel.value);
         return _renderWorkspaceSettingsDetail(ws);
     }
 
@@ -1568,6 +1567,113 @@
         }
         if (typeof renderCollectionDetail === 'function') {
             main.appendChild(renderCollectionDetail(col));
+        }
+        return main;
+    }
+
+    function _renderWorkspaceRecordingsOverview(ws) {
+        var main = el('div', { id: 'bowire-main-workspaces', className: 'bowire-main bowire-main-workspaces' });
+        var isActive = ws.id === activeWorkspaceId;
+        var recs = isActive
+            ? ((typeof recordingsList !== 'undefined' && Array.isArray(recordingsList)) ? recordingsList : [])
+            : (typeof readWorkspaceJsonList === 'function' ? readWorkspaceJsonList(ws.id, RECORDINGS_KEY) : []);
+
+        main.appendChild(el('div', { className: 'bowire-ws-detail-header' },
+            el('span', { className: 'bowire-ws-detail-dot', style: 'background:' + (ws.color || 'var(--bowire-accent)') }),
+            el('span', { className: 'bowire-ws-detail-name', style: 'font-weight:600', textContent: ws.name }),
+            el('span', { className: 'bowire-ws-detail-stat-hint', textContent: '› Recordings' })
+        ));
+
+        var section = el('div', { className: 'bowire-ws-detail-section' });
+        section.appendChild(el('div', { className: 'bowire-ws-detail-section-label',
+            textContent: recs.length === 0 ? 'No recordings yet' : 'Recordings (' + recs.length + ')' }));
+        if (recs.length === 0) {
+            section.appendChild(el('p', {
+                className: 'bowire-ws-detail-stat-hint',
+                textContent: 'Recordings capture a sequence of live calls so you can replay them, build mocks, or run them as benchmarks. Start one from Discover, or use the + below.'
+            }));
+        } else {
+            var list = el('div', { style: 'display:flex;flex-direction:column;gap:4px;margin-top:6px' });
+            recs.forEach(function (r) {
+                var stepCount = Array.isArray(r.steps) ? r.steps.length : 0;
+                list.appendChild(el('div', {
+                    className: 'bowire-ws-detail-stat-hint',
+                    style: 'cursor:pointer;padding:6px 8px;border-radius:var(--bowire-radius-sm);display:flex;align-items:center;gap:8px',
+                    onClick: function () {
+                        if (ws.id !== activeWorkspaceId) switchWorkspace(ws.id);
+                        workspaceTreeSelection = { wsId: ws.id, kind: 'recording', value: r.id };
+                        if (typeof recordingManagerSelectedId !== 'undefined') {
+                            recordingManagerSelectedId = r.id;
+                        }
+                        render();
+                    }
+                },
+                    el('span', { innerHTML: svgIcon('recording'), style: 'width:14px;height:14px;display:inline-flex;flex-shrink:0' }),
+                    el('span', { style: 'flex:1', textContent: r.name || '(unnamed)' }),
+                    el('span', { style: 'opacity:0.6;font-size:11px', textContent: stepCount + (stepCount === 1 ? ' step' : ' steps') })
+                ));
+            });
+            section.appendChild(list);
+        }
+        section.appendChild(el('button', {
+            className: 'bowire-ws-detail-action',
+            style: 'margin-top:8px',
+            textContent: '+ Start recording',
+            onClick: function () {
+                if (ws.id !== activeWorkspaceId) switchWorkspace(ws.id);
+                if (typeof startRecording === 'function') {
+                    startRecording();
+                    railMode = 'discover';
+                    try { localStorage.setItem('bowire_rail_mode', 'discover'); } catch { /* ignore */ }
+                    render();
+                }
+            }
+        }));
+        main.appendChild(section);
+        return main;
+    }
+
+    function _renderWorkspaceRecordingDetail(ws, recordingId) {
+        var main = el('div', { id: 'bowire-main-workspaces', className: 'bowire-main bowire-main-workspaces' });
+        var isActive = ws.id === activeWorkspaceId;
+        if (!isActive) {
+            main.appendChild(el('p', {
+                className: 'bowire-ai-empty bowire-main-pad',
+                textContent: 'Switch to ' + ws.name + ' to open this recording.'
+            }));
+            main.appendChild(el('button', {
+                className: 'bowire-ws-detail-action',
+                style: 'margin:0 var(--bowire-main-gutter)',
+                textContent: 'Switch to ' + ws.name,
+                onClick: function () { switchWorkspace(ws.id); }
+            }));
+            return main;
+        }
+        var rec = (typeof recordingsList !== 'undefined' && Array.isArray(recordingsList))
+            ? recordingsList.find(function (r) { return r.id === recordingId; })
+            : null;
+        if (!rec) {
+            workspaceTreeSelection = { wsId: ws.id, kind: 'recordings' };
+            return _renderWorkspaceRecordingsOverview(ws);
+        }
+        main.appendChild(el('div', { className: 'bowire-ws-detail-header' },
+            el('span', { className: 'bowire-ws-detail-dot', style: 'background:' + (ws.color || 'var(--bowire-accent)') }),
+            el('span', { className: 'bowire-ws-detail-name', style: 'font-weight:600', textContent: ws.name }),
+            el('span', { className: 'bowire-ws-detail-stat-hint',
+                style: 'cursor:pointer',
+                textContent: '› Recordings ›',
+                onClick: function () {
+                    workspaceTreeSelection = { wsId: ws.id, kind: 'recordings' };
+                    render();
+                }
+            }),
+            el('span', { className: 'bowire-ws-detail-stat-hint', textContent: rec.name || '(unnamed)' })
+        ));
+        if (typeof recordingManagerSelectedId !== 'undefined') {
+            recordingManagerSelectedId = rec.id;
+        }
+        if (typeof renderRecordingDetail === 'function') {
+            main.appendChild(renderRecordingDetail(rec));
         }
         return main;
     }
