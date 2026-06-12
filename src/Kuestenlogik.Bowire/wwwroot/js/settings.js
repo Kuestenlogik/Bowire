@@ -856,7 +856,11 @@
                 bowireConfirm('Clear all call history?', function () {
                     var backup = getHistory();
                     clearHistory();
-                    toast('History cleared', 'success', { undo: function () { restoreHistory(backup); } });
+                    toast('History cleared', 'success', {
+                        undo: function () { restoreHistory(backup); },
+                        logAction: { kind: 'history-clear',
+                            title: 'Cleared call history (' + (Array.isArray(backup) ? backup.length : 0) + ' entries)' }
+                    });
                 }, { title: 'Clear History', danger: true, confirmText: 'Clear' });
             }
         ));
@@ -870,7 +874,11 @@
                     var backup = getFavorites();
                     localStorage.removeItem(wsKey(FAVORITES_KEY));
                     render();
-                    toast('Favorites cleared', 'success', { undo: function () { try { localStorage.setItem(wsKey(FAVORITES_KEY), JSON.stringify(backup)); } catch {} render(); } });
+                    toast('Favorites cleared', 'success', {
+                        undo: function () { try { localStorage.setItem(wsKey(FAVORITES_KEY), JSON.stringify(backup)); } catch {} render(); },
+                        logAction: { kind: 'favorites-clear',
+                            title: 'Cleared favorites (' + (Array.isArray(backup) ? backup.length : 0) + ' entries)' }
+                    });
                 }, { title: 'Clear Favorites', danger: true, confirmText: 'Clear' });
             }
         ));

@@ -194,7 +194,11 @@
                     var backup = JSON.parse(JSON.stringify(col));
                     deleteCollection(col.id);
                     render();
-                    toast('Collection deleted', 'success', { undo: function () { collectionsList.push(backup); persistCollections(); render(); } });
+                    toast('Collection deleted', 'success', {
+                        undo: function () { collectionsList.push(backup); persistCollections(); render(); },
+                        logAction: { kind: 'collection-delete',
+                            title: 'Deleted collection "' + (backup.name || 'unnamed') + '"' }
+                    });
                 }, { title: 'Delete Collection', danger: true, confirmText: 'Delete' });
             }
         },

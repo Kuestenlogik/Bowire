@@ -299,7 +299,7 @@
         // (Console lives as a bottom-attached drawer per #164 v2 and
         // is NOT a valid right-drawer tab — a stale 'console' value
         // falls back to 'assistant'.) Whitelist the valid ids.
-        if (_rd === 'assistant' || _rd === 'help' || _rd === 'tests') rightDrawerActiveTab = _rd;
+        if (_rd === 'assistant' || _rd === 'help' || _rd === 'tests' || _rd === 'activity') rightDrawerActiveTab = _rd;
     } catch { /* ignore */ }
     // #164 — Tests drawer state. Mirrors aiDrawerOpen / helpDrawerOpen;
     // when on, Tests joins the unified right-drawer tab strip with its
@@ -326,6 +326,135 @@
         try { localStorage.setItem('bowire_console_height', String(consoleHeight)); }
         catch { /* ignore */ }
     }
+    // #168 — Workbench-wide action log. Central record of every
+    // reversible operator action; surfaces as the Statusbar Activity
+    // pill + an Activity tab in the unified right drawer + Ctrl/Cmd+Z.
+    //
+    // State shape (in-memory):
+    //   { id, ts, kind, title, undoFn, redoFn, status }
+    //     status: 'available' | 'undone' | 'expired'
+    //
+    // Persistence: metadata only (no closures). Reload restores the
+    // timeline as 'expired' entries so the Activity tab still surfaces
+    // what happened, just without the undo button. TTL aligned with
+    // the trash (30 days); cap at ACTION_LOG_MAX entries so the log
+    // doesn't grow unbounded under a long session.
+    const ACTION_LOG_KEY = 'bowire_action_log';
+    const ACTION_LOG_MAX = 200;
+    const ACTION_LOG_TTL_MS = 30 * 24 * 60 * 60 * 1000;
+    let actionLog = [];
+    let actionLogRedoStack = [];
+    let activityDrawerOpen = false;
+    try { activityDrawerOpen = localStorage.getItem('bowire_activity_drawer_open') === '1'; } catch { /* ignore */ }
+
+    function _loadActionLogFromStorage() {
+        try {
+            var raw = localStorage.getItem(wsKey(ACTION_LOG_KEY));
+            if (!raw) return [];
+            var parsed = JSON.parse(raw);
+            if (!Array.isArray(parsed)) return [];
+            var cutoff = Date.now() - ACTION_LOG_TTL_MS;
+            return parsed
+                .filter(function (e) { return e && typeof e.ts === 'number' && e.ts > cutoff; })
+                .map(function (e) {
+                    // Closures didn't survive the reload — entry stays
+                    // visible in the timeline as a record of what
+                    // happened, but undo is no longer available.
+                    e.status = 'expired';
+                    e.undoFn = null;
+                    e.redoFn = null;
+                    return e;
+                });
+        } catch { return []; }
+    }
+    function _persistActionLog() {
+        try {
+            var slim = actionLog.map(function (e) {
+                return {
+                    id: e.id,
+                    ts: e.ts,
+                    kind: e.kind,
+                    title: e.title,
+                    status: e.status === 'available' ? 'available' : e.status
+                };
+            });
+            localStorage.setItem(wsKey(ACTION_LOG_KEY), JSON.stringify(slim));
+        } catch { /* quota / disabled — non-fatal */ }
+    }
+    function recordAction(opts) {
+        if (!opts || typeof opts.undo !== 'function') return null;
+        var entry = {
+            id: 'act_' + Math.random().toString(36).slice(2, 10),
+            ts: Date.now(),
+            kind: opts.kind || 'unknown',
+            title: opts.title || opts.kind || 'Action',
+            undoFn: opts.undo,
+            redoFn: typeof opts.redo === 'function' ? opts.redo : null,
+            status: 'available'
+        };
+        actionLog.unshift(entry);
+        if (actionLog.length > ACTION_LOG_MAX) actionLog.length = ACTION_LOG_MAX;
+        // Recording a new action invalidates the redo stack (matches
+        // VS Code / IntelliJ semantics — a new edit after an undo
+        // drops the redoable future).
+        actionLogRedoStack = [];
+        _persistActionLog();
+        return entry;
+    }
+    function undoLastAction() {
+        var i = actionLog.findIndex(function (e) {
+            return e.status === 'available' && typeof e.undoFn === 'function';
+        });
+        if (i < 0) return null;
+        var entry = actionLog[i];
+        try {
+            entry.undoFn();
+            entry.status = 'undone';
+            if (entry.redoFn) actionLogRedoStack.unshift(entry);
+            _persistActionLog();
+            return entry;
+        } catch (err) {
+            console.warn('[actionLog] undo failed', entry.kind, err);
+            return null;
+        }
+    }
+    function redoLastAction() {
+        if (actionLogRedoStack.length === 0) return null;
+        var entry = actionLogRedoStack.shift();
+        if (!entry || typeof entry.redoFn !== 'function') return null;
+        try {
+            entry.redoFn();
+            entry.status = 'available';
+            _persistActionLog();
+            return entry;
+        } catch (err) {
+            console.warn('[actionLog] redo failed', entry.kind, err);
+            return null;
+        }
+    }
+    function availableActionCount() {
+        var n = 0;
+        for (var i = 0; i < actionLog.length; i++) {
+            if (actionLog[i].status === 'available') n++;
+        }
+        return n;
+    }
+    function clearActionLog() {
+        actionLog = [];
+        actionLogRedoStack = [];
+        _persistActionLog();
+    }
+    // One-shot hydrate guard. wsKey() resolves off activeWorkspaceId
+    // which isn't set until much later in prologue's init, so the load
+    // can't run at the declaration site. render() calls this on every
+    // pass; the flag means we only pay the localStorage read once.
+    let _actionLogHydrated = false;
+    function hydrateActionLog() {
+        if (_actionLogHydrated) return;
+        _actionLogHydrated = true;
+        actionLog = _loadActionLogFromStorage();
+    }
+
     // Security drawer (#111). Peer of the AI drawer, lives on the
     // right edge of the body with its own topbar toggle. Hosts the
     // threat-model + template-suggest surfaces that used to live

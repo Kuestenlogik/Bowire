@@ -799,7 +799,11 @@
                     var backup = JSON.parse(JSON.stringify(flow));
                     deleteFlow(flow.id);
                     render();
-                    toast('Flow deleted', 'success', { undo: function () { flowsList.push(backup); persistFlows(); flowEditorSelectedId = backup.id; render(); } });
+                    toast('Flow deleted', 'success', {
+                        undo: function () { flowsList.push(backup); persistFlows(); flowEditorSelectedId = backup.id; render(); },
+                        logAction: { kind: 'flow-delete',
+                            title: 'Deleted flow "' + (backup.name || 'unnamed') + '"' }
+                    });
                 }, { title: 'Delete Flow', danger: true, confirmText: 'Delete' });
             }
         }, el('span', { innerHTML: svgIcon('trash') })));

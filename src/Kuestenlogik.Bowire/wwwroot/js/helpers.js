@@ -885,6 +885,10 @@
             { keys: ['Ctrl/Cmd', 'S'], action: 'Save / flush all pending writes' },
             { keys: ['R'], action: 'Repeat the last call' },
         ]},
+        { group: 'History', binds: [
+            { keys: ['Ctrl/Cmd', 'Z'], action: 'Undo the most recent reversible action' },
+            { keys: ['Ctrl/Cmd', 'Shift', 'Z'], action: 'Redo the last undone action' },
+        ]},
         { group: 'Navigation', binds: [
             { keys: ['Ctrl/Cmd', 'K'], action: 'Open the command palette' },
             { keys: ['Ctrl/Cmd', 'T'], action: 'New freeform request tab' },
@@ -1280,8 +1284,24 @@
 
     // Toast notification with optional undo callback.
     // Returns the toast element so callers can add custom content.
-    // Options: { undo: function, duration: ms (0 = sticky) }
+    // Options: { undo: function, duration: ms (0 = sticky),
+    //           logAction: { kind, title, redo? } }
+    //
+    // #168 — When logAction is set alongside undo, the action also
+    // joins the workbench-wide action log so Ctrl/Cmd+Z works after
+    // the toast has expired and the Activity drawer surfaces it.
     function toast(message, type, options) {
+        // Wire the action log first so the entry exists even if the
+        // toast container creation fails for some reason.
+        if (options && options.logAction && typeof options.undo === 'function'
+            && typeof recordAction === 'function') {
+            recordAction({
+                kind: options.logAction.kind || 'unknown',
+                title: options.logAction.title || message,
+                undo: options.undo,
+                redo: options.logAction.redo
+            });
+        }
         var opts = options || {};
         var container = $('.bowire-toast-container');
         if (!container) {

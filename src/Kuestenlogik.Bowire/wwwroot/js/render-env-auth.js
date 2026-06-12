@@ -13,6 +13,7 @@
         // when the discovery completion path doesn't end in a render()
         // call directly.
         rehydrateRequestTabs();
+        if (typeof hydrateActionLog === 'function') hydrateActionLog();
 
         // Apply the persisted user-set sidebar width as an inline CSS var
         // override on #bowire-app. morphdom runs with `childrenOnly: true`
@@ -143,12 +144,14 @@
         var helpUsable = helpDrawerOpen && helpAvailable
             && typeof renderHelpDrawer === 'function';
         var testsUsable = (typeof testsDrawerOpen !== 'undefined') && testsDrawerOpen;
-        if (aiDrawerOpen || helpUsable || testsUsable) {
+        var activityUsable = (typeof activityDrawerOpen !== 'undefined') && activityDrawerOpen;
+        if (aiDrawerOpen || helpUsable || testsUsable || activityUsable) {
             body.classList.add('bowire-with-ai-drawer');
             body.appendChild(renderUnifiedRightDrawer({
                 assistant: aiDrawerOpen,
                 help: helpUsable,
-                tests: testsUsable
+                tests: testsUsable,
+                activity: activityUsable
             }));
         }
 
@@ -456,6 +459,120 @@
         return el('span', { className: cls, title: title, textContent: label });
     }
 
+    // #168 — Activity drawer body. Chronological list of every
+    // recorded action (newest at top), each row with a one-line
+    // description, a relative timestamp, and an Undo button while the
+    // entry is still reversible. Expired entries (post-reload, closure
+    // is gone) render greyed-out so the timeline still tells the
+    // operator what happened, just without the undo affordance.
+    function _renderActivityDrawerBody() {
+        var wrap = el('div', { className: 'bowire-activity-drawer-body' });
+        var header = el('div', { className: 'bowire-activity-drawer-header' });
+        var redoableCount = (typeof actionLogRedoStack !== 'undefined'
+            && Array.isArray(actionLogRedoStack)) ? actionLogRedoStack.length : 0;
+        header.appendChild(el('button', {
+            type: 'button',
+            className: 'bowire-activity-action',
+            disabled: (typeof availableActionCount === 'function' && availableActionCount() === 0) ? 'disabled' : null,
+            title: 'Undo most recent action (Ctrl/Cmd+Z)',
+            textContent: 'Undo',
+            onClick: function () {
+                if (typeof undoLastAction === 'function') {
+                    var u = undoLastAction();
+                    if (u && typeof toast === 'function') toast('Undone: ' + u.title, 'info');
+                    render();
+                }
+            }
+        }));
+        header.appendChild(el('button', {
+            type: 'button',
+            className: 'bowire-activity-action',
+            disabled: redoableCount === 0 ? 'disabled' : null,
+            title: 'Redo last undone action (Ctrl/Cmd+Shift+Z)',
+            textContent: 'Redo',
+            onClick: function () {
+                if (typeof redoLastAction === 'function') {
+                    var r = redoLastAction();
+                    if (r && typeof toast === 'function') toast('Redone: ' + r.title, 'info');
+                    render();
+                }
+            }
+        }));
+        header.appendChild(el('span', { style: 'flex:1' }));
+        header.appendChild(el('button', {
+            type: 'button',
+            className: 'bowire-activity-action bowire-activity-action-danger',
+            disabled: (typeof actionLog !== 'undefined' && actionLog.length === 0) ? 'disabled' : null,
+            title: 'Clear the timeline (the underlying changes stay in place)',
+            textContent: 'Clear',
+            onClick: function () {
+                if (typeof clearActionLog === 'function') clearActionLog();
+                render();
+            }
+        }));
+        wrap.appendChild(header);
+
+        var list = el('div', { className: 'bowire-activity-list' });
+        if (typeof actionLog === 'undefined' || actionLog.length === 0) {
+            list.appendChild(el('p', {
+                className: 'bowire-drawer-empty',
+                textContent: 'No recorded actions yet. Reversible changes — deletions, renames, toggles — land here as you make them.'
+            }));
+        } else {
+            actionLog.forEach(function (entry) {
+                var row = el('div', {
+                    className: 'bowire-activity-row bowire-activity-row-' + entry.status
+                });
+                var meta = el('div', { className: 'bowire-activity-meta' });
+                meta.appendChild(el('div', {
+                    className: 'bowire-activity-title',
+                    textContent: entry.title
+                }));
+                meta.appendChild(el('div', {
+                    className: 'bowire-activity-time',
+                    textContent: _formatRelativeTime(entry.ts) + ' · ' + entry.kind
+                        + (entry.status === 'undone' ? ' · undone'
+                            : (entry.status === 'expired' ? ' · expired' : ''))
+                }));
+                row.appendChild(meta);
+                if (entry.status === 'available' && typeof entry.undoFn === 'function') {
+                    row.appendChild(el('button', {
+                        type: 'button',
+                        className: 'bowire-activity-row-undo',
+                        title: 'Undo this action',
+                        textContent: 'Undo',
+                        onClick: function () {
+                            try {
+                                entry.undoFn();
+                                entry.status = 'undone';
+                                if (entry.redoFn) actionLogRedoStack.unshift(entry);
+                                _persistActionLog();
+                                if (typeof toast === 'function') toast('Undone: ' + entry.title, 'info');
+                                render();
+                            } catch (e) {
+                                console.warn('[actionLog] undo failed', entry.kind, e);
+                                if (typeof toast === 'function') toast('Undo failed: ' + entry.title, 'error');
+                            }
+                        }
+                    }));
+                }
+                list.appendChild(row);
+            });
+        }
+        wrap.appendChild(list);
+        return wrap;
+    }
+
+    function _formatRelativeTime(ts) {
+        if (!ts) return 'just now';
+        var diff = Date.now() - ts;
+        if (diff < 0 || diff < 30 * 1000) return 'just now';
+        if (diff < 60 * 1000) return Math.floor(diff / 1000) + 's ago';
+        if (diff < 60 * 60 * 1000) return Math.floor(diff / 60000) + 'm ago';
+        if (diff < 24 * 60 * 60 * 1000) return Math.floor(diff / 3600000) + 'h ago';
+        return Math.floor(diff / 86400000) + 'd ago';
+    }
+
     function renderUnifiedRightDrawer(open) {
         var tabs = [];
         if (open.assistant) {
@@ -526,6 +643,36 @@
         // behaves like an IDE terminal panel (full-width, resizable
         // height) rather than competing with Assistant / Help for
         // right-side real estate. Tests stays as a right-drawer tab.
+
+        // #168 — Activity tab. Mounts when the operator opens it via
+        // the Statusbar Activity pill. Accessory shows the available
+        // (still reversible) action count; close decrements
+        // activityDrawerOpen so the drawer falls back to a sibling
+        // tab on next render.
+        if (open.activity) {
+            var availCnt = (typeof availableActionCount === 'function')
+                ? availableActionCount() : 0;
+            tabs.push({
+                id: 'activity',
+                label: 'Activity',
+                accessory: availCnt > 0 ? el('span', {
+                    className: 'bowire-help-topic-count',
+                    title: availCnt + ' reversible action'
+                        + (availCnt === 1 ? '' : 's'),
+                    textContent: String(availCnt)
+                }) : null,
+                closeTitle: 'Close Activity',
+                onClose: function () {
+                    activityDrawerOpen = false;
+                    try { localStorage.setItem('bowire_activity_drawer_open', '0'); }
+                    catch { /* ignore */ }
+                    render();
+                },
+                renderContent: function () {
+                    return _renderActivityDrawerBody();
+                }
+            });
+        }
         // #164 — Tests tab. Accessory shows pass/fail of the last
         // assertion run for the active method; '?' when assertions
         // exist but haven't been run yet. No accessory when there are
@@ -1014,6 +1161,42 @@
                 ? el('span', { className: 'bowire-statusbar-console-count', textContent: String(consoleLog.length) })
                 : null
         ));
+        // #168 — Activity pill. Count of recent reversible actions
+        // (status === 'available'); click toggles the Activity drawer
+        // tab. Hides entirely when the log is empty so the statusbar
+        // stays calm during low-activity sessions.
+        var availCount = (typeof availableActionCount === 'function')
+            ? availableActionCount() : 0;
+        if (availCount > 0 || activityDrawerOpen) {
+            right.appendChild(el('button', {
+                id: 'bowire-statusbar-activity-btn',
+                className: 'bowire-theme-toggle-btn' + (activityDrawerOpen ? ' active' : ''),
+                title: activityDrawerOpen
+                    ? 'Hide activity drawer'
+                    : ('Activity log — ' + availCount + ' reversible action'
+                        + (availCount === 1 ? '' : 's') + ' (Ctrl/Cmd+Z to undo)'),
+                'aria-label': 'Toggle activity log',
+                onClick: function () {
+                    activityDrawerOpen = !activityDrawerOpen;
+                    try { localStorage.setItem('bowire_activity_drawer_open',
+                        activityDrawerOpen ? '1' : '0'); }
+                    catch { /* ignore */ }
+                    if (activityDrawerOpen) {
+                        rightDrawerActiveTab = 'activity';
+                        try { localStorage.setItem('bowire_right_drawer_active_tab', 'activity'); }
+                        catch { /* ignore */ }
+                    }
+                    render();
+                }
+            },
+                el('span', { innerHTML: svgIcon('history'),
+                    style: 'width:14px;height:14px;display:flex' }),
+                availCount > 0
+                    ? el('span', { className: 'bowire-statusbar-console-count',
+                        textContent: String(availCount) })
+                    : null
+            ));
+        }
         // #164 — Tests drawer toggle. Peer of the Console button —
         // shows / hides the Tests tab in the unified right drawer.
         // Accessory dot inherits pass/fail color from the active
