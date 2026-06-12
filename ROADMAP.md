@@ -87,6 +87,14 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [151](https://github.com/Kuestenlogik/Bowire/issues/151) | Bowire | [Secret-file separation + workspace lock file for safe team-shared git workspaces](#issue-kuestenlogik-bowire-151) | ⬜ Open |  |
 | [153](https://github.com/Kuestenlogik/Bowire/issues/153) | Bowire | [Bowire as transparent interceptor — embedded middleware + standalone reverse-proxy](#issue-kuestenlogik-bowire-153) | ⬜ Open |  |
 
+### v2.2 — Test pillar: assertions, CI runner, regression coverage
+
+**0/1 done** · 1 backlog
+
+| # | Project | Title | Status | Tags |
+|---|---|---|---|---|
+| [170](https://github.com/Kuestenlogik/Bowire/issues/170) | Bowire | [Mock-server fault injection — latency / errors / drops / partial responses](#issue-kuestenlogik-bowire-170) | ⬜ Open |  |
+
 ### Backlog (not yet scheduled)
 
 | # | Project | Title | Status | Tags |
@@ -393,6 +401,12 @@ Two related concerns for a git-backed workspace (#147) that aren't covered yet: 
 #### <a id="issue-kuestenlogik-bowire-153"></a>⬜ Open · [#153](https://github.com/Kuestenlogik/Bowire/issues/153) Bowire as transparent interceptor — embedded middleware + standalone reverse-proxy
 
 Today Bowire watches traffic in two narrow ways: - **Discover / Recording / Benchmarks** — the operator drives a call FROM Bowire's workbench and Bowire sees both sides. - **MITM Proxy view (#36)** — read-only inspection of traffic flowing through an external Bowire-as-proxy listener. [[more]](https://github.com/Kuestenlogik/Bowire/issues/153)
+
+### v2.2 — Test pillar: assertions, CI runner, regression coverage
+
+#### <a id="issue-kuestenlogik-bowire-170"></a>⬜ Open · [#170](https://github.com/Kuestenlogik/Bowire/issues/170) Mock-server fault injection — latency / errors / drops / partial responses
+
+Mocks (#94) replay captured responses faithfully. But "code that works against the happy path" is not the same as "code that works under failure". Your client should handle 503s, timeouts, slow responses, partial streams, dropped WebSocket frames. Today there's no easy way to test that against a Bowire mock. [[more]](https://github.com/Kuestenlogik/Bowire/issues/170)
 
 ### Backlog (not yet scheduled)
 
