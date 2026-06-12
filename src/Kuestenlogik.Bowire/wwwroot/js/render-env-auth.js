@@ -142,11 +142,15 @@
         // behavior — both can now coexist without competing.
         var helpUsable = helpDrawerOpen && helpAvailable
             && typeof renderHelpDrawer === 'function';
-        if (aiDrawerOpen || helpUsable) {
+        var consoleUsable = (typeof consoleOpen !== 'undefined') && consoleOpen;
+        var testsUsable = (typeof testsDrawerOpen !== 'undefined') && testsDrawerOpen;
+        if (aiDrawerOpen || helpUsable || consoleUsable || testsUsable) {
             body.classList.add('bowire-with-ai-drawer');
             body.appendChild(renderUnifiedRightDrawer({
                 assistant: aiDrawerOpen,
-                help: helpUsable
+                help: helpUsable,
+                console: consoleUsable,
+                tests: testsUsable
             }));
         }
 
@@ -372,6 +376,41 @@
     // Active tab is sticky (localStorage via rightDrawerActiveTab in
     // prologue) so reopening lands the operator on the panel they
     // used last.
+    // #164 — pass/fail accessory for the Tests drawer tab. Counts
+    // results of the last assertion run for the active method. Returns
+    // null when there's nothing to show (no method, no assertions).
+    function _testsTabAccessory() {
+        if (!selectedMethod || !selectedService) return null;
+        if (typeof getTestsFor !== 'function') return null;
+        var tests;
+        try { tests = getTestsFor(selectedService.name, selectedMethod.name); }
+        catch { return null; }
+        if (!Array.isArray(tests) || tests.length === 0) return null;
+        var results = (typeof lastAssertionResults === 'object' && lastAssertionResults) || {};
+        var pass = 0, fail = 0, untested = 0;
+        for (var i = 0; i < tests.length; i++) {
+            var r = results[tests[i].id];
+            if (r === undefined) untested++;
+            else if (r.pass) pass++;
+            else fail++;
+        }
+        var label, cls, title;
+        if (fail > 0) {
+            label = pass + '/' + tests.length;
+            cls = 'bowire-tests-tab-accessory bowire-tests-tab-accessory-fail';
+            title = fail + ' failing · ' + pass + ' passing · ' + untested + ' untested';
+        } else if (untested === tests.length) {
+            label = String(tests.length);
+            cls = 'bowire-tests-tab-accessory';
+            title = tests.length + ' assertion' + (tests.length === 1 ? '' : 's') + ' — none run yet';
+        } else {
+            label = pass + '/' + tests.length;
+            cls = 'bowire-tests-tab-accessory bowire-tests-tab-accessory-pass';
+            title = pass + ' passing · ' + untested + ' untested';
+        }
+        return el('span', { className: cls, title: title, textContent: label });
+    }
+
     function renderUnifiedRightDrawer(open) {
         var tabs = [];
         if (open.assistant) {
@@ -434,6 +473,68 @@
                 },
                 renderContent: function () {
                     return _renderHelpDrawerContent();
+                }
+            });
+        }
+        // #164 — Console tab. Accessory shows the ring-buffer count so
+        // operators can see new activity at a glance even when the tab
+        // isn't active. Close flips consoleOpen back off and rerenders
+        // the drawer (which drops the tab + falls back to whichever
+        // other tab is still open).
+        if (open.console) {
+            tabs.push({
+                id: 'console',
+                label: 'Console',
+                accessory: consoleLog.length > 0 ? el('span', {
+                    className: 'bowire-help-topic-count',
+                    title: consoleLog.length + ' entr' + (consoleLog.length === 1 ? 'y' : 'ies'),
+                    textContent: String(consoleLog.length)
+                }) : null,
+                closeTitle: 'Close Console',
+                onClose: function () {
+                    consoleOpen = false;
+                    render();
+                },
+                renderContent: function () {
+                    var wrap = el('div', { className: 'bowire-console-tab-wrap' });
+                    if (typeof _renderConsoleTabActions === 'function') {
+                        wrap.appendChild(_renderConsoleTabActions());
+                    }
+                    if (typeof _renderConsoleDrawerBody === 'function') {
+                        wrap.appendChild(_renderConsoleDrawerBody());
+                    }
+                    return wrap;
+                }
+            });
+        }
+        // #164 — Tests tab. Accessory shows pass/fail of the last
+        // assertion run for the active method; '?' when assertions
+        // exist but haven't been run yet. No accessory when there are
+        // no assertions configured.
+        if (open.tests) {
+            var testsAcc = _testsTabAccessory();
+            tabs.push({
+                id: 'tests',
+                label: 'Tests',
+                accessory: testsAcc,
+                closeTitle: 'Close Tests',
+                onClose: function () {
+                    testsDrawerOpen = false;
+                    try { localStorage.setItem('bowire_tests_drawer_open', '0'); } catch { /* ignore */ }
+                    render();
+                },
+                renderContent: function () {
+                    if (!selectedMethod || !selectedService) {
+                        return el('div', { className: 'bowire-tests-empty bowire-main-pad' },
+                            el('p', {
+                                className: 'bowire-drawer-empty',
+                                textContent: 'Pick a method from the sidebar to see and edit its assertions. Tests run automatically after every successful response.'
+                            })
+                        );
+                    }
+                    return typeof renderTestsTab === 'function'
+                        ? renderTestsTab()
+                        : el('p', { textContent: 'Tests module not loaded.' });
                 }
             });
         }
@@ -880,7 +981,16 @@
             'aria-label': 'Toggle console',
             onClick: function () {
                 consoleOpen = !consoleOpen;
-                if (typeof renderConsolePanel === 'function') renderConsolePanel(true);
+                // #164 — Console now lives as a drawer tab. Opening
+                // means: activate the console tab so the drawer surfaces
+                // it instead of whatever was active before. Closing is
+                // a no-op for activeTab; the drawer will pick a
+                // surviving tab on next render.
+                if (consoleOpen) {
+                    rightDrawerActiveTab = 'console';
+                    try { localStorage.setItem('bowire_right_drawer_active_tab', 'console'); }
+                    catch { /* ignore */ }
+                }
                 render();
             }
         },
@@ -891,6 +1001,34 @@
             consoleLog.length > 0
                 ? el('span', { className: 'bowire-statusbar-console-count', textContent: String(consoleLog.length) })
                 : null
+        ));
+        // #164 — Tests drawer toggle. Peer of the Console button —
+        // shows / hides the Tests tab in the unified right drawer.
+        // Accessory dot inherits pass/fail color from the active
+        // method's last run when present.
+        right.appendChild(el('button', {
+            id: 'bowire-statusbar-tests-btn',
+            className: 'bowire-theme-toggle-btn' + (testsDrawerOpen ? ' active' : ''),
+            title: testsDrawerOpen
+                ? 'Hide tests drawer'
+                : 'Show tests drawer — assertions for the active method',
+            'aria-label': 'Toggle tests',
+            onClick: function () {
+                testsDrawerOpen = !testsDrawerOpen;
+                try { localStorage.setItem('bowire_tests_drawer_open', testsDrawerOpen ? '1' : '0'); }
+                catch { /* ignore */ }
+                if (testsDrawerOpen) {
+                    rightDrawerActiveTab = 'tests';
+                    try { localStorage.setItem('bowire_right_drawer_active_tab', 'tests'); }
+                    catch { /* ignore */ }
+                }
+                render();
+            }
+        },
+            el('span', {
+                innerHTML: svgIcon('beaker'),
+                style: 'width:14px;height:14px;display:flex'
+            })
         ));
         // #135 split-toggle. Cycles horizontal ↔ vertical. Icon
         // shows the CURRENT layout (state-pattern, matches how

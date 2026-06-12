@@ -249,15 +249,20 @@
         var body = document.querySelector('.bowire-console-body');
         if (!body) return false;
 
-        // Remove the "No activity yet" placeholder if present
-        var empty = body.querySelector('.bowire-console-empty');
+        // Remove the "No activity yet" placeholder (legacy class or
+        // #164's empty-card variant) so the new row replaces it
+        // instead of stacking under it.
+        var empty = body.querySelector('.bowire-console-empty, .bowire-empty-card');
         if (empty) empty.remove();
 
         var row = buildConsoleRow(entry);
         body.appendChild(row);
 
-        // Update counter in the header
-        var countEl = document.querySelector('.bowire-console-count');
+        // Update counter in the drawer-tab accessory (legacy:
+        // .bowire-console-count from the retired floating panel; new:
+        // tab accessory) — pick whichever is present.
+        var countEl = document.querySelector('.bowire-console-count')
+            || document.querySelector('#bowire-right-drawer-tab-console .bowire-help-topic-count');
         if (countEl) countEl.textContent = String(consoleLog.length);
 
         // Auto-scroll to bottom
@@ -305,43 +310,14 @@
         return row;
     }
 
-    function renderConsolePanel(autoScroll) {
-        var existing = $('.bowire-console-panel');
-        if (existing) existing.remove();
-        if (!consoleOpen) return;
-
-        var header = el('div', { className: 'bowire-console-header' },
-            el('div', { className: 'bowire-console-title' },
-                el('span', { className: 'bowire-console-title-icon', innerHTML: svgIcon('clock') }),
-                el('span', { textContent: 'Console' }),
-                el('span', { className: 'bowire-console-count', textContent: String(consoleLog.length) })
-            ),
-            el('div', { className: 'bowire-console-actions' },
-                el('button', {
-                    id: 'bowire-console-clear-btn',
-                    className: 'bowire-console-clear',
-                    textContent: 'Clear',
-                    title: 'Clear all entries',
-                    onClick: clearConsole
-                }),
-                el('button', {
-                    id: 'bowire-console-close-btn',
-                    className: 'bowire-console-close',
-                    title: 'Close console',
-                    'aria-label': 'Close console',
-                    innerHTML: svgIcon('close'),
-                    onClick: function () { consoleOpen = false; renderConsolePanel(false); }
-                })
-            )
-        );
-
-        var body = el('div', { className: 'bowire-console-body' });
-
+    // #164 — Console moved into the unified right-side drawer as a tab.
+    // _renderConsoleDrawerBody returns the tab body (header lives in
+    // the drawer's tab strip). renderConsolePanel + appendConsoleEntry
+    // now just trigger a full render() so morphdom diffs the drawer
+    // content rather than maintaining a separate floating panel.
+    function _renderConsoleDrawerBody() {
+        var body = el('div', { className: 'bowire-console-body bowire-console-drawer-body' });
         if (consoleLog.length === 0) {
-            // #121 — context-aware empty card. The console is a passive
-            // log: there's no action that fills it directly, but we
-            // can shortcut the user to the action that does
-            // (focus + scroll to the request pane).
             body.appendChild(renderEmptyCard({
                 icon: 'console',
                 headline: 'No activity yet',
@@ -362,13 +338,35 @@
                 body.appendChild(buildConsoleRow(consoleLog[i]));
             }
         }
+        return body;
+    }
 
-        var panel = el('div', { className: 'bowire-console-panel' }, header, body);
-        document.body.appendChild(panel);
+    function _renderConsoleTabActions() {
+        return el('div', { className: 'bowire-console-actions bowire-console-drawer-actions' },
+            el('button', {
+                id: 'bowire-console-clear-btn',
+                className: 'bowire-console-clear',
+                textContent: 'Clear',
+                title: 'Clear all entries',
+                onClick: clearConsole
+            })
+        );
+    }
 
-        if (autoScroll) {
+    function renderConsolePanel(autoScroll) {
+        // Floating console panel retired (#164) — the legacy
+        // bowire-console-panel root is removed if it still exists from
+        // an older session. Console now lives as a tab in the unified
+        // right-side drawer; opening it means flipping consoleOpen +
+        // setting rightDrawerActiveTab='console' (handled at the
+        // call-sites that flip consoleOpen). Auto-scroll-on-new-entry
+        // is handled via a requestAnimationFrame after render().
+        var existing = document.querySelector('.bowire-console-panel');
+        if (existing) existing.remove();
+        if (consoleOpen && autoScroll) {
             requestAnimationFrame(function () {
-                body.scrollTop = body.scrollHeight;
+                var body = document.querySelector('.bowire-console-drawer-body');
+                if (body) body.scrollTop = body.scrollHeight;
             });
         }
     }

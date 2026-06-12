@@ -295,8 +295,19 @@
     let rightDrawerActiveTab = 'assistant';
     try {
         var _rd = localStorage.getItem('bowire_right_drawer_active_tab');
-        if (_rd === 'assistant' || _rd === 'help') rightDrawerActiveTab = _rd;
+        // #164 — Console + Tests joined Assistant + Help as right-drawer
+        // tabs. Whitelist the four valid ids; anything else falls back
+        // to 'assistant' so a stale localStorage value from before the
+        // expansion doesn't pin a non-existent tab.
+        if (_rd === 'assistant' || _rd === 'help'
+            || _rd === 'console' || _rd === 'tests') rightDrawerActiveTab = _rd;
     } catch { /* ignore */ }
+    // #164 — Tests drawer state. Mirrors aiDrawerOpen / helpDrawerOpen;
+    // when on, Tests joins the unified right-drawer tab strip with its
+    // own pass/fail accessory + per-method assertions UI. Persisted so
+    // the operator's choice is sticky across reloads.
+    let testsDrawerOpen = false;
+    try { testsDrawerOpen = localStorage.getItem('bowire_tests_drawer_open') === '1'; } catch { /* ignore */ }
     // Security drawer (#111). Peer of the AI drawer, lives on the
     // right edge of the body with its own topbar toggle. Hosts the
     // threat-model + template-suggest surfaces that used to live
@@ -2228,22 +2239,31 @@
         if (consoleLog.length > CONSOLE_MAX) {
             consoleLog.splice(0, consoleLog.length - CONSOLE_MAX);
         }
-        // Fast-path: if the console is already open, try to append
-        // the new entry in place instead of tearing down + rebuilding
-        // the entire panel. This stops the flicker during streaming
-        // where every message fired a full remove + re-create cycle.
-        if (consoleOpen && appendConsoleEntry(e)) return;
-        if (consoleOpen) renderConsolePanel(true);
+        // Fast-path: when the Console tab is mounted, try to append
+        // the new entry in place instead of forcing a full render.
+        // This keeps streaming responses from re-rendering the whole
+        // workbench on every frame. Falls back to render() when the
+        // in-place append misses (e.g. the drawer isn't mounted yet).
+        if (consoleOpen && appendConsoleEntry(e)) {
+            if (typeof renderConsolePanel === 'function') renderConsolePanel(true);
+            return;
+        }
+        if (consoleOpen && typeof render === 'function') render();
     }
 
     function clearConsole() {
         consoleLog = [];
-        renderConsolePanel(false);
+        if (typeof render === 'function') render();
     }
 
     function toggleConsole() {
         consoleOpen = !consoleOpen;
-        renderConsolePanel(true);
+        if (consoleOpen && typeof rightDrawerActiveTab !== 'undefined') {
+            rightDrawerActiveTab = 'console';
+            try { localStorage.setItem('bowire_right_drawer_active_tab', 'console'); }
+            catch { /* ignore */ }
+        }
+        if (typeof render === 'function') render();
     }
 
     // ---- Performance Benchmark State ----
