@@ -1920,6 +1920,15 @@
             sectionsBand.appendChild(sections);
             homeWrap.appendChild(sectionsBand);
 
+            // Tour + Docs footer at the very bottom of Home. Used to
+            // sit under every Discover empty state — once per session
+            // is enough, and Home is the canonical welcome surface.
+            if (typeof window.bowireRenderLandingHelpFooter === 'function') {
+                var helpFooterSlot = el('div', { className: 'bowire-home-footer-slot' });
+                window.bowireRenderLandingHelpFooter(helpFooterSlot);
+                homeWrap.appendChild(helpFooterSlot);
+            }
+
             homeMain.appendChild(homeWrap);
             return homeMain;
         }
@@ -2669,12 +2678,13 @@
                     });
                 }
             }));
-        } else {
-            header.appendChild(el('div', { className: 'bowire-header-info' },
-                el('div', { className: 'bowire-header-method', textContent: config.title }),
-                el('div', { className: 'bowire-header-path', textContent: 'Select a method from the sidebar' })
-            ));
         }
+        // No 'Select a method from the sidebar' filler when there's no
+        // selection — every other rail's empty header just stays
+        // blank, and the rail's landing card / portal already speaks
+        // to the operator about what to do next. Repeating "Bowire" +
+        // a prompt here read as branding noise above the actual
+        // content.
 
         main.appendChild(header);
 

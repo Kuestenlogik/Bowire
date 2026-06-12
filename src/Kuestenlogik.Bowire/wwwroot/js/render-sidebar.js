@@ -836,6 +836,47 @@
         return (m && m.sidebar) ? m.sidebar : { kind: 'none' };
     }
 
+    // #163 — Per-rail-mode "what's in here" count. Reads from the live
+    // global lists for each surface and returns the number that lights
+    // up the rail-icon badge below. Rails that don't have a meaningful
+    // count (home, parallel, security, workspaces' own rail) return
+    // null so no badge renders.
+    function _railModeCount(modeId) {
+        switch (modeId) {
+            case 'discover':
+                return (typeof services !== 'undefined' && Array.isArray(services))
+                    ? services.length : 0;
+            case 'collections':
+                return (typeof collectionsList !== 'undefined' && Array.isArray(collectionsList))
+                    ? collectionsList.length : 0;
+            case 'recordings':
+                return (typeof recordingsList !== 'undefined' && Array.isArray(recordingsList))
+                    ? recordingsList.length : 0;
+            case 'mocks':
+                return (typeof mocksList !== 'undefined' && Array.isArray(mocksList))
+                    ? mocksList.length : 0;
+            case 'flows':
+                return (typeof flowsList !== 'undefined' && Array.isArray(flowsList))
+                    ? flowsList.length : 0;
+            case 'benchmarks':
+                return (typeof benchmarksList !== 'undefined' && Array.isArray(benchmarksList))
+                    ? benchmarksList.length : 0;
+            case 'environments':
+                if (typeof getEnvironments === 'function') {
+                    try { return getEnvironments().length; } catch { return 0; }
+                }
+                return 0;
+            case 'workspaces':
+                return (typeof workspaces !== 'undefined' && Array.isArray(workspaces))
+                    ? workspaces.length : 0;
+            case 'proxy':
+                return (typeof proxyFlows !== 'undefined' && Array.isArray(proxyFlows))
+                    ? proxyFlows.length : 0;
+            default:
+                return null;
+        }
+    }
+
     function renderActivityRail() {
         // Local alias — keep the rail-renderer reading the same
         // catalogue everyone else uses.
@@ -860,6 +901,8 @@
             lastGroup = m.group;
             var isActive = railMode === m.id;
             var modeHasSidebar = m.sidebar && m.sidebar.kind !== 'none';
+            var count = _railModeCount(m.id);
+            var hasCount = typeof count === 'number' && count > 0;
             rail.appendChild(el('button', {
                 type: 'button',
                 className: 'bowire-rail-btn' + (isActive ? ' active' : ''),
@@ -869,10 +912,11 @@
                 // ('Double-click to collapse' would do nothing on a
                 // mode the user isn't in).
                 title: m.label
+                    + (hasCount ? ' (' + count + ')' : '')
                     + (isActive && modeHasSidebar
                         ? '\n(double-click to ' + (sidebarCollapsed ? 'expand' : 'collapse') + ' the sidebar)'
                         : ''),
-                'aria-label': m.label,
+                'aria-label': m.label + (hasCount ? ', ' + count + ' items' : ''),
                 onClick: function () {
                     if (railMode === m.id) return;
                     railMode = m.id;
@@ -906,7 +950,11 @@
                     }
                 }
             },
-                el('span', { innerHTML: svgIcon(m.icon) })
+                el('span', { innerHTML: svgIcon(m.icon) }),
+                hasCount ? el('span', {
+                    className: 'bowire-rail-btn-badge',
+                    textContent: count > 99 ? '99+' : String(count)
+                }) : null
             ));
         });
 
