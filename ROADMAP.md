@@ -73,7 +73,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.1 — Scripting, variable resolver, throughput surface
 
-**0/10 done** · 10 backlog
+**0/11 done** · 11 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -87,6 +87,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [144](https://github.com/Kuestenlogik/Bowire/issues/144) | Bowire | [Large-recording capture/replay — chunked disk layout, lazy step-load, GB-scale](#issue-kuestenlogik-bowire-144) | ⬜ Open |  |
 | [145](https://github.com/Kuestenlogik/Bowire/issues/145) | Bowire | [Deprecate ${name} in favour of {{name}} (multi-phase migration)](#issue-kuestenlogik-bowire-145) | ⬜ Open |  |
 | [153](https://github.com/Kuestenlogik/Bowire/issues/153) | Bowire | [Bowire as transparent interceptor — embedded middleware + standalone reverse-proxy](#issue-kuestenlogik-bowire-153) | ⬜ Open |  |
+| [192](https://github.com/Kuestenlogik/Bowire/issues/192) | Bowire | [Workspace + Settings: sidebar tree navigation (MudBlazor TreeView / NavMenu style)](#issue-kuestenlogik-bowire-192) | ⬜ Open |  |
 
 ### v2.2 — Test pillar: assertions, CI runner, regression coverage
 
@@ -447,6 +448,10 @@ After #125 v1 landed, Bowire has two interpolation syntaxes that resolve identic
 #### <a id="issue-kuestenlogik-bowire-153"></a>⬜ Open · [#153](https://github.com/Kuestenlogik/Bowire/issues/153) Bowire as transparent interceptor — embedded middleware + standalone reverse-proxy
 
 Today Bowire watches traffic in two narrow ways: - **Discover / Recording / Benchmarks** — the operator drives a call FROM Bowire's workbench and Bowire sees both sides. - **MITM Proxy view (#36)** — read-only inspection of traffic flowing through an external Bowire-as-proxy listener. [[more]](https://github.com/Kuestenlogik/Bowire/issues/153)
+
+#### <a id="issue-kuestenlogik-bowire-192"></a>⬜ Open · [#192](https://github.com/Kuestenlogik/Bowire/issues/192) Workspace + Settings: sidebar tree navigation (MudBlazor TreeView / NavMenu style)
+
+Workspace-related navigation is slow and indirect today: [[more]](https://github.com/Kuestenlogik/Bowire/issues/192)
 
 ### v2.2 — Test pillar: assertions, CI runner, regression coverage
 
