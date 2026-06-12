@@ -12,7 +12,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.0 — UI refactor + breaking-change window
 
-**24/50 done** · 1 in progress · 25 backlog
+**24/46 done** · 1 in progress · 21 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -22,11 +22,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [115](https://github.com/Kuestenlogik/Bowire/issues/115) | Bowire | v2.0 — UI refactor: re-architect the workbench shell | ⬜ Open |  |
 | [116](https://github.com/Kuestenlogik/Bowire/issues/116) | Bowire | Workspaces — named, switchable contexts that bundle URLs / envs / collections / AI config | ⬜ Open |  |
 | [124](https://github.com/Kuestenlogik/Bowire/issues/124) | Bowire | Cross-protocol omnibox (Cmd/Ctrl+K) | ⬜ Open |  |
-| [126](https://github.com/Kuestenlogik/Bowire/issues/126) | Bowire | Pre-/post-scripts with a protocol-typed sandbox | ⬜ Open |  |
 | [127](https://github.com/Kuestenlogik/Bowire/issues/127) | Bowire | Auto-save to workspace + live save-state pill | ⬜ Open |  |
-| [131](https://github.com/Kuestenlogik/Bowire/issues/131) | Bowire | Benchmarks: first-class surface (single / collection / recording / random / scheduled) | ⬜ Open |  |
-| [132](https://github.com/Kuestenlogik/Bowire/issues/132) | Bowire | Parallel sessions for recordings / collections (phase 1 local, phase 2 distributed) | ⬜ Open |  |
-| [136](https://github.com/Kuestenlogik/Bowire/issues/136) | Bowire | URL / service catalogue providers (local / http / consul / kubernetes / agent) | ⬜ Open |  |
 | [140](https://github.com/Kuestenlogik/Bowire/issues/140) | Bowire | Per-mode 'Saved Configs' / Presets (distinct from cross-workflow favorites) | ⬜ Open |  |
 | [144](https://github.com/Kuestenlogik/Bowire/issues/144) | Bowire | Large-recording capture/replay — chunked disk layout, lazy step-load, GB-scale | ⬜ Open |  |
 | [145](https://github.com/Kuestenlogik/Bowire/issues/145) | Bowire | Deprecate ${name} in favour of {{name}} (multi-phase migration) | ⬜ Open |  |
@@ -69,12 +65,16 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.1 — workspace v3 + protocol wave 3
 
-**0/2 done** · 2 backlog
+**0/6 done** · 6 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
 | [117](https://github.com/Kuestenlogik/Bowire/issues/117) | Bowire | i18n — extract every UI string; ship DE + EN catalogues | ⬜ Open |  |
 | [125](https://github.com/Kuestenlogik/Bowire/issues/125) | Bowire | Multi-source {{...}} variable resolver | ⬜ Open |  |
+| [126](https://github.com/Kuestenlogik/Bowire/issues/126) | Bowire | Pre-/post-scripts with a protocol-typed sandbox | ⬜ Open |  |
+| [131](https://github.com/Kuestenlogik/Bowire/issues/131) | Bowire | Benchmarks: first-class surface (single / collection / recording / random / scheduled) | ⬜ Open |  |
+| [132](https://github.com/Kuestenlogik/Bowire/issues/132) | Bowire | Parallel sessions for recordings / collections (phase 1 local, phase 2 distributed) | ⬜ Open |  |
+| [136](https://github.com/Kuestenlogik/Bowire/issues/136) | Bowire | URL / service catalogue providers (local / http / consul / kubernetes / agent) | ⬜ Open |  |
 
 ### Backlog (not yet scheduled)
 
@@ -151,23 +151,7 @@ Remaining wave items after MQTT / Kafka / AMQP / SOAP / NATS / JSON-RPC / Pulsar
 
 ## Why
 
-#### ⬜ Open · [#126](https://github.com/Kuestenlogik/Bowire/issues/126) Pre-/post-scripts with a protocol-typed sandbox
-
-## Why
-
 #### ⬜ Open · [#127](https://github.com/Kuestenlogik/Bowire/issues/127) Auto-save to workspace + live save-state pill
-
-## Why
-
-#### ⬜ Open · [#131](https://github.com/Kuestenlogik/Bowire/issues/131) Benchmarks: first-class surface (single / collection / recording / random / scheduled)
-
-## Why
-
-#### ⬜ Open · [#132](https://github.com/Kuestenlogik/Bowire/issues/132) Parallel sessions for recordings / collections (phase 1 local, phase 2 distributed)
-
-## Why
-
-#### ⬜ Open · [#136](https://github.com/Kuestenlogik/Bowire/issues/136) URL / service catalogue providers (local / http / consul / kubernetes / agent)
 
 ## Why
 
@@ -336,6 +320,22 @@ Remaining wave items after MQTT / Kafka / AMQP / SOAP / NATS / JSON-RPC / Pulsar
 ## Why
 
 #### ⬜ Open · [#125](https://github.com/Kuestenlogik/Bowire/issues/125) Multi-source {{...}} variable resolver
+
+## Why
+
+#### ⬜ Open · [#126](https://github.com/Kuestenlogik/Bowire/issues/126) Pre-/post-scripts with a protocol-typed sandbox
+
+## Why
+
+#### ⬜ Open · [#131](https://github.com/Kuestenlogik/Bowire/issues/131) Benchmarks: first-class surface (single / collection / recording / random / scheduled)
+
+## Why
+
+#### ⬜ Open · [#132](https://github.com/Kuestenlogik/Bowire/issues/132) Parallel sessions for recordings / collections (phase 1 local, phase 2 distributed)
+
+## Why
+
+#### ⬜ Open · [#136](https://github.com/Kuestenlogik/Bowire/issues/136) URL / service catalogue providers (local / http / consul / kubernetes / agent)
 
 ## Why
 
