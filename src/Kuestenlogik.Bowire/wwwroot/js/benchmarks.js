@@ -321,8 +321,8 @@
     function renderBenchmarksDetailMain() {
         var main = el('div', {
             id: 'bowire-main-benchmarks',
-            className: 'bowire-main bowire-main-benchmarks',
-            style: 'padding:24px;overflow:auto'
+            className: 'bowire-main bowire-main-benchmarks bowire-main-pad',
+            style: 'overflow:auto'
         });
         loadBenchmarks();
 

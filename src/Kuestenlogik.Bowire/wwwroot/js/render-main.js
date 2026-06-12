@@ -819,8 +819,7 @@
                  || activeWorkspace();
         if (!ws) {
             main.appendChild(el('p', {
-                className: 'bowire-ai-empty',
-                style: 'padding:24px',
+                className: 'bowire-ai-empty bowire-main-pad',
                 textContent: 'No workspace selected. Pick one in the sidebar or create a new one.'
             }));
             return main;
@@ -1315,8 +1314,7 @@
 
         if (!serverUrls || serverUrls.length === 0) {
             main.appendChild(el('p', {
-                className: 'bowire-ai-empty',
-                style: 'padding:24px',
+                className: 'bowire-ai-empty bowire-main-pad',
                 textContent: 'No URLs configured yet. Add one via the + button in the sidebar to start discovery.'
             }));
             return main;
@@ -1945,7 +1943,7 @@
         // see what's coming without falling into a dead end.
         if (railMode === 'parallel') {
             var stubMain = el('div', { id: 'bowire-main-parallel', className: 'bowire-main bowire-main-stub' });
-            var stubWrap = el('div', { style: 'padding:24px' });
+            var stubWrap = el('div', { className: 'bowire-main-pad' });
             stubWrap.appendChild(renderEmptyCard({
                 icon: 'lightning',
                 headline: 'Parallel sessions (preview)',
@@ -1974,7 +1972,7 @@
             if (selectedCol && typeof renderCollectionDetail === 'function') {
                 colMain.appendChild(renderCollectionDetail(selectedCol));
             } else {
-                var emptyWrap = el('div', { style: 'padding:32px' });
+                var emptyWrap = el('div', { className: 'bowire-main-pad' });
                 var noCols = !(collectionsList && collectionsList.length > 0);
                 emptyWrap.appendChild(renderEmptyCard({
                     icon: 'list',
@@ -2036,7 +2034,7 @@
         // of a popup.
         if (railMode === 'mocks') {
             var mockMain = el('div', { id: 'bowire-main-mocks', className: 'bowire-main bowire-main-mocks' });
-            var mockMainWrap = el('div', { className: 'bowire-mocks-wrap', style: 'padding:24px' });
+            var mockMainWrap = el('div', { className: 'bowire-mocks-wrap bowire-main-pad' });
 
             var selectedMock = (mocksList || []).find(function (m) { return m.mockId === mockSelectedId; });
 
@@ -2156,7 +2154,7 @@
             if (selectedRec && typeof renderRecordingDetail === 'function') {
                 recMain.appendChild(renderRecordingDetail(selectedRec));
             } else {
-                var emptyWrap = el('div', { style: 'padding:32px' });
+                var emptyWrap = el('div', { className: 'bowire-main-pad' });
                 var noRecs = recordingsList.length === 0;
                 emptyWrap.appendChild(renderEmptyCard({
                     icon: 'recording',
@@ -2211,8 +2209,7 @@
                 secMain.appendChild(window.__bowireAi.renderSecurityPanel());
             } else {
                 secMain.appendChild(el('p', {
-                    className: 'bowire-ai-empty',
-                    style: 'padding:24px',
+                    className: 'bowire-ai-empty bowire-main-pad',
                     textContent: 'Security tools need Kuestenlogik.Bowire.Ai installed in the workbench process. Install the package + restart, or switch back to Discover via the rail.'
                 }));
             }
