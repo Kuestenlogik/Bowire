@@ -12,7 +12,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.0 — UI refactor + breaking-change window
 
-**24/40 done** · 1 in progress · 15 backlog
+**24/38 done** · 1 in progress · 13 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -23,8 +23,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [116](https://github.com/Kuestenlogik/Bowire/issues/116) | Bowire | Workspaces — named, switchable contexts that bundle URLs / envs / collections / AI config | ⬜ Open |  |
 | [124](https://github.com/Kuestenlogik/Bowire/issues/124) | Bowire | Cross-protocol omnibox (Cmd/Ctrl+K) | ⬜ Open |  |
 | [127](https://github.com/Kuestenlogik/Bowire/issues/127) | Bowire | Auto-save to workspace + live save-state pill | ⬜ Open |  |
-| [150](https://github.com/Kuestenlogik/Bowire/issues/150) | Bowire | Filesystem-watch + reconcile UI for externally-edited workspace files | ⬜ Open |  |
-| [151](https://github.com/Kuestenlogik/Bowire/issues/151) | Bowire | Secret-file separation + workspace lock file for safe team-shared git workspaces | ⬜ Open |  |
 | [152](https://github.com/Kuestenlogik/Bowire/issues/152) | Bowire | Sources rail mode — centralise URL / schema-file management | ⬜ Open |  |
 | [153](https://github.com/Kuestenlogik/Bowire/issues/153) | Bowire | Bowire as transparent interceptor — embedded middleware + standalone reverse-proxy | ⬜ Open |  |
 | [154](https://github.com/Kuestenlogik/Bowire/issues/154) | Bowire | Help as optional NuGet package — `Kuestenlogik.Bowire.Help` | ⬜ Open |  |
@@ -59,7 +57,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.1 — workspace v3 + protocol wave 3
 
-**0/12 done** · 12 backlog
+**0/14 done** · 14 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -75,6 +73,8 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [147](https://github.com/Kuestenlogik/Bowire/issues/147) | Bowire | Git-backed workspace storage — composes with #144 storage modes + #58 | ⬜ Open |  |
 | [148](https://github.com/Kuestenlogik/Bowire/issues/148) | Bowire | Per-entity file storage format for git-backed workspaces (envs / collections / scripts) | ⬜ Open |  |
 | [149](https://github.com/Kuestenlogik/Bowire/issues/149) | Bowire | Workspace CLI — bowire workspace init / export / import / migrate-format | ⬜ Open |  |
+| [150](https://github.com/Kuestenlogik/Bowire/issues/150) | Bowire | Filesystem-watch + reconcile UI for externally-edited workspace files | ⬜ Open |  |
+| [151](https://github.com/Kuestenlogik/Bowire/issues/151) | Bowire | Secret-file separation + workspace lock file for safe team-shared git workspaces | ⬜ Open |  |
 
 ### Backlog (not yet scheduled)
 
@@ -152,14 +152,6 @@ Remaining wave items after MQTT / Kafka / AMQP / SOAP / NATS / JSON-RPC / Pulsar
 ## Why
 
 #### ⬜ Open · [#127](https://github.com/Kuestenlogik/Bowire/issues/127) Auto-save to workspace + live save-state pill
-
-## Why
-
-#### ⬜ Open · [#150](https://github.com/Kuestenlogik/Bowire/issues/150) Filesystem-watch + reconcile UI for externally-edited workspace files
-
-## Why
-
-#### ⬜ Open · [#151](https://github.com/Kuestenlogik/Bowire/issues/151) Secret-file separation + workspace lock file for safe team-shared git workspaces
 
 ## Why
 
@@ -336,6 +328,14 @@ Remaining wave items after MQTT / Kafka / AMQP / SOAP / NATS / JSON-RPC / Pulsar
 ## Why
 
 #### ⬜ Open · [#149](https://github.com/Kuestenlogik/Bowire/issues/149) Workspace CLI — bowire workspace init / export / import / migrate-format
+
+## Why
+
+#### ⬜ Open · [#150](https://github.com/Kuestenlogik/Bowire/issues/150) Filesystem-watch + reconcile UI for externally-edited workspace files
+
+## Why
+
+#### ⬜ Open · [#151](https://github.com/Kuestenlogik/Bowire/issues/151) Secret-file separation + workspace lock file for safe team-shared git workspaces
 
 ## Why
 
