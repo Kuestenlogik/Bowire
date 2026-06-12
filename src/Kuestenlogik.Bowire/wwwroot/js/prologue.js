@@ -2016,9 +2016,23 @@
     function deleteCollection(id) {
         var idx = collectionsList.findIndex(function (c) { return c.id === id; });
         if (idx < 0) return;
+        var removed = collectionsList[idx];
         collectionsList.splice(idx, 1);
         if (collectionManagerSelectedId === id) collectionManagerSelectedId = null;
         persistCollections();
+        // Trash hand-off — same shape as the inline-sidebar delete
+        // path, so the central deleteCollection() doesn't hard-delete
+        // and bypass the "Recently deleted" affordance. The 30-day TTL
+        // sweep in prologue still applies; the user sees the entry in
+        // the trash section at the bottom of the Collections sidebar.
+        if (typeof collectionsTrash !== 'undefined' && removed) {
+            collectionsTrash.unshift({
+                entry: removed,
+                deletedAt: Date.now(),
+                originalIdx: idx
+            });
+            if (typeof persistCollectionsTrash === 'function') persistCollectionsTrash();
+        }
     }
 
     function addToCollection(collectionId, item) {
