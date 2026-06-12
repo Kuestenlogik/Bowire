@@ -39,6 +39,8 @@
           "features/**/toc.yml",
           "protocols/**.md",
           "protocols/**/toc.yml",
+          "samples/**.md",
+          "samples/**/toc.yml",
           "ui-guide/**.md",
           "ui-guide/**/toc.yml",
           "architecture/**.md",
