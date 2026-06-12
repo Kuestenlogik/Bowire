@@ -16,7 +16,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
-| [33](https://github.com/Kuestenlogik/Bowire/issues/33) | Bowire | [Protocol plugins — Connect Phase 1+3 + OTLP](#issue-kuestenlogik-bowire-33) | ⬜ Backlog | `area:plugin-sdk` `track:protocols` |
+| [33](https://github.com/Kuestenlogik/Bowire/issues/33) | Bowire | [Protocol plugins — Connect Phase 1+3 + OTLP](#issue-kuestenlogik-bowire-33) | ⬜ Backlog | `area:plugin-sdk` |
 | [58](https://github.com/Kuestenlogik/Bowire/issues/58) | Bowire | [Workspace: complete the Git-native story (.blw file)](#issue-kuestenlogik-bowire-58) | ⬜ Open |  |
 | [115](https://github.com/Kuestenlogik/Bowire/issues/115) | Bowire | [v2.0 — UI refactor: re-architect the workbench shell](#issue-kuestenlogik-bowire-115) | ⬜ Open |  |
 | [124](https://github.com/Kuestenlogik/Bowire/issues/124) | Bowire | [Cross-protocol omnibox (Cmd/Ctrl+K)](#issue-kuestenlogik-bowire-124) | ⬜ Open |  |
@@ -109,8 +109,8 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
-| [26](https://github.com/Kuestenlogik/Bowire/issues/26) | Bowire | [Security testing tool — remaining tiers](#issue-kuestenlogik-bowire-26) | 🟡 In progress | `area:security` `track:security-tiers` |
-| [35](https://github.com/Kuestenlogik/Bowire/issues/35) | Bowire | [Nuclei template compat — OAST + non-HTTP transports (Phase 2f + 2g)](#issue-kuestenlogik-bowire-35) | ⬜ Backlog | `area:security` `track:security-tiers` |
+| [26](https://github.com/Kuestenlogik/Bowire/issues/26) | Bowire | [Security testing tool — remaining tiers](#issue-kuestenlogik-bowire-26) | 🟡 In progress | `area:security` |
+| [35](https://github.com/Kuestenlogik/Bowire/issues/35) | Bowire | [Nuclei template compat — OAST + non-HTTP transports (Phase 2f + 2g)](#issue-kuestenlogik-bowire-35) | ⬜ Backlog | `area:security` |
 | [39](https://github.com/Kuestenlogik/Bowire/issues/39) | Bowire | [HAR Import polish](#issue-kuestenlogik-bowire-39) | ⬜ Backlog | `area:workbench` |
 | [102](https://github.com/Kuestenlogik/Bowire/issues/102) | Bowire | [Lighthouse — scheduled probes + alerting (Postman Monitors / Synthetics analog)](#issue-kuestenlogik-bowire-102) | ⬜ Open |  |
 | [104](https://github.com/Kuestenlogik/Bowire/issues/104) | Bowire | [AI security scan orchestration — one button chains threat-model → templates → fuzz → triage → report](#issue-kuestenlogik-bowire-104) | ⬜ Open |  |
@@ -132,7 +132,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
-| [34](https://github.com/Kuestenlogik/Bowire/issues/34) | Bowire | [AsyncAPI discovery source — remaining bindings + V2 overloads + YAML pre-normaliser](#issue-kuestenlogik-bowire-34) | ⬜ Backlog | `area:plugin-sdk` `track:protocols` |
+| [34](https://github.com/Kuestenlogik/Bowire/issues/34) | Bowire | [AsyncAPI discovery source — remaining bindings + V2 overloads + YAML pre-normaliser](#issue-kuestenlogik-bowire-34) | ⬜ Backlog | `area:plugin-sdk` |
 | [36](https://github.com/Kuestenlogik/Bowire/issues/36) | Bowire | [Replay-Mock — HTTPS MITM / record mode](#issue-kuestenlogik-bowire-36) | ⬜ Backlog | `area:mock` |
 | [48](https://github.com/Kuestenlogik/Bowire/issues/48) | Bowire | [Schema watch mode](#issue-kuestenlogik-bowire-48) | ⬜ Backlog | `area:workbench` |
 | [49](https://github.com/Kuestenlogik/Bowire/issues/49) | Bowire | [Programmatic environment provisioning in embedded mode](#issue-kuestenlogik-bowire-49) | ⬜ Backlog | `area:workbench` |
@@ -157,7 +157,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
-| [28](https://github.com/Kuestenlogik/Bowire/issues/28) | Bowire | [Multi-tenant data model + SCIM (Phase B)](#issue-kuestenlogik-bowire-28) | 🟢 Next up | `area:workbench` `track:auth` |
+| [28](https://github.com/Kuestenlogik/Bowire/issues/28) | Bowire | [Multi-tenant data model + SCIM (Phase B)](#issue-kuestenlogik-bowire-28) | 🟢 Next up | `area:workbench` |
 | [3](https://github.com/Kuestenlogik/Bowire.Templates/issues/3) | Templates | [Plugin project template — `dotnet new bowire-plugin`](#issue-kuestenlogik-bowire-templates-3) | ⬜ Backlog | `area:plugin-sdk` |
 | [11](https://github.com/Kuestenlogik/Bowire.Protocol.Surgewave/issues/11) | Protocol.Surgewave | [Light up Surgewave protocol plugin](#issue-kuestenlogik-bowire-protocol-surgewave-11) | ⬜ Open |  |
 | [13](https://github.com/Kuestenlogik/Bowire.Samples/issues/13) | Samples | [SimpleGraphQLSubscriptions sample](#issue-kuestenlogik-bowire-samples-13) | ⬜ Backlog | `area:plugin-sdk` |
@@ -167,9 +167,9 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [44](https://github.com/Kuestenlogik/Bowire/issues/44) | Bowire | [Sidecar packaging — Docker / Compose / Kubernetes](#issue-kuestenlogik-bowire-44) | ⬜ Backlog | `area:docs` |
 | [46](https://github.com/Kuestenlogik/Bowire/issues/46) | Bowire | [MCP server-side notifications via IInlineSseSubscriber](#issue-kuestenlogik-bowire-46) | ⬜ Backlog | `area:mcp` |
 | [47](https://github.com/Kuestenlogik/Bowire/issues/47) | Bowire | [Sidebar display: method name vs path toggle](#issue-kuestenlogik-bowire-47) | ⬜ Backlog | `area:workbench` |
-| [50](https://github.com/Kuestenlogik/Bowire/issues/50) | Bowire | [Marketing site — gallery / lightbox layer on solutions/*](#issue-kuestenlogik-bowire-50) | ⬜ Backlog | `area:site` `track:marketing-ia` |
-| [51](https://github.com/Kuestenlogik/Bowire/issues/51) | Bowire | [Marketing site — migrate <img> tags to picture.html partial](#issue-kuestenlogik-bowire-51) | ⬜ Backlog | `area:site` `track:marketing-ia` |
-| [53](https://github.com/Kuestenlogik/Bowire/issues/53) | Bowire | [Marketing site — second row of specialist comparisons](#issue-kuestenlogik-bowire-53) | ⬜ Backlog | `area:site` `track:marketing-ia` |
+| [50](https://github.com/Kuestenlogik/Bowire/issues/50) | Bowire | [Marketing site — gallery / lightbox layer on solutions/*](#issue-kuestenlogik-bowire-50) | ⬜ Backlog | `area:site` |
+| [51](https://github.com/Kuestenlogik/Bowire/issues/51) | Bowire | [Marketing site — migrate <img> tags to picture.html partial](#issue-kuestenlogik-bowire-51) | ⬜ Backlog | `area:site` |
+| [53](https://github.com/Kuestenlogik/Bowire/issues/53) | Bowire | [Marketing site — second row of specialist comparisons](#issue-kuestenlogik-bowire-53) | ⬜ Backlog | `area:site` |
 | [93](https://github.com/Kuestenlogik/Bowire/issues/93) | Bowire | [Topbar: connection-state pill (aggregate + per-URL popover)](#issue-kuestenlogik-bowire-93) | ⬜ Open |  |
 | [95](https://github.com/Kuestenlogik/Bowire/issues/95) | Bowire | [Header Library: named, scoped, toggleable header sets](#issue-kuestenlogik-bowire-95) | ⬜ Open |  |
 | [96](https://github.com/Kuestenlogik/Bowire/issues/96) | Bowire | [Multi-tenant Phase C — SCIM 2.0 provisioning endpoints](#issue-kuestenlogik-bowire-96) | ⬜ Open |  |
@@ -186,7 +186,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 #### <a id="issue-kuestenlogik-bowire-33"></a>⬜ Backlog · [#33](https://github.com/Kuestenlogik/Bowire/issues/33) Protocol plugins — Connect Phase 1+3 + OTLP
 
-> `area:plugin-sdk` · `track:protocols`
+> `area:plugin-sdk`
 
 Remaining wave items after MQTT / Kafka / AMQP / SOAP / NATS / JSON-RPC / Pulsar / DIS / UDP shipped: [[more]](https://github.com/Kuestenlogik/Bowire/issues/33)
 
@@ -488,13 +488,13 @@ Microservice teams break each other when one team changes an API without consult
 
 #### <a id="issue-kuestenlogik-bowire-26"></a>🟡 In progress · [#26](https://github.com/Kuestenlogik/Bowire/issues/26) Security testing tool — remaining tiers
 
-> `area:security` · `track:security-tiers`
+> `area:security`
 
 ADR: [`docs/architecture/security-testing.md`](https://github.com/Kuestenlogik/Bowire/blob/main/docs/architecture/security-testing.md) [[more]](https://github.com/Kuestenlogik/Bowire/issues/26)
 
 #### <a id="issue-kuestenlogik-bowire-35"></a>⬜ Backlog · [#35](https://github.com/Kuestenlogik/Bowire/issues/35) Nuclei template compat — OAST + non-HTTP transports (Phase 2f + 2g)
 
-> `area:security` · `track:security-tiers`
+> `area:security`
 
 Phase 2a-2e shipped (reader + matcher translation + variable substitution + multi-path + ScanCommand integration). Optional follow-ups: [[more]](https://github.com/Kuestenlogik/Bowire/issues/35)
 
@@ -560,7 +560,7 @@ Modern API auth is multi-step: hit `/login`, get a session cookie, hit `/refresh
 
 #### <a id="issue-kuestenlogik-bowire-34"></a>⬜ Backlog · [#34](https://github.com/Kuestenlogik/Bowire/issues/34) AsyncAPI discovery source — remaining bindings + V2 overloads + YAML pre-normaliser
 
-> `area:plugin-sdk` · `track:protocols`
+> `area:plugin-sdk`
 
 AsyncAPI loader + most bindings shipped (MQTT / Kafka / WebSocket / HTTP / AMQP / NATS / MQTT5 + schema export). Open: [[more]](https://github.com/Kuestenlogik/Bowire/issues/34)
 
@@ -624,7 +624,7 @@ Once Bowire ships in multiple services across an org, "what's the state of our A
 
 #### <a id="issue-kuestenlogik-bowire-28"></a>🟢 Next up · [#28](https://github.com/Kuestenlogik/Bowire/issues/28) Multi-tenant data model + SCIM (Phase B)
 
-> `area:workbench` · `track:auth`
+> `area:workbench`
 
 **Builds on:** #31, #32 — multi-tenant SCIM extends the auth foundation. [[more]](https://github.com/Kuestenlogik/Bowire/issues/28)
 
@@ -682,19 +682,19 @@ For REST endpoints, offer a per-sidebar toggle (sticky in localStorage) that fli
 
 #### <a id="issue-kuestenlogik-bowire-50"></a>⬜ Backlog · [#50](https://github.com/Kuestenlogik/Bowire/issues/50) Marketing site — gallery / lightbox layer on solutions/*
 
-> `area:site` · `track:marketing-ia`
+> `area:site`
 
 The new responsive image pipeline (optimize-images.mjs + picture.html) already emits -400w / -1200w / original variants. Layer a small JS lightbox that swaps the thumbnail-grid render (400w) for the full-resolution AVIF on click — initial page load gets the smallest variant, original only hits the wire on click. [[more]](https://github.com/Kuestenlogik/Bowire/issues/50)
 
 #### <a id="issue-kuestenlogik-bowire-51"></a>⬜ Backlog · [#51](https://github.com/Kuestenlogik/Bowire/issues/51) Marketing site — migrate <img> tags to picture.html partial
 
-> `area:site` · `track:marketing-ia`
+> `area:site`
 
 Image-perf pipeline shipped (sharp → AVIF + WebP, three variant widths; picture.html partial; Lighthouse CI gates). … [[more]](https://github.com/Kuestenlogik/Bowire/issues/51)
 
 #### <a id="issue-kuestenlogik-bowire-53"></a>⬜ Backlog · [#53](https://github.com/Kuestenlogik/Bowire/issues/53) Marketing site — second row of specialist comparisons
 
-> `area:site` · `track:marketing-ia`
+> `area:site`
 
 The comparison tableʼs "top-5-competitors check" framing already lets us mention more tools in the best-for strip without committing them to a full table row. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/53)
 
