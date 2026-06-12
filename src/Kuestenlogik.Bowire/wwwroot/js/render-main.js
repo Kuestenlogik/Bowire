@@ -2681,12 +2681,11 @@
         }
         // No 'Select a method from the sidebar' filler when there's no
         // selection — every other rail's empty header just stays
-        // blank, and the rail's landing card / portal already speaks
-        // to the operator about what to do next. Repeating "Bowire" +
-        // a prompt here read as branding noise above the actual
-        // content.
-
-        main.appendChild(header);
+        // blank. Only attach the header when it has actual content
+        // (a selected method's breadcrumb + name + actions): an empty
+        // wrapper rendered as a gray strip above the landing card
+        // with no function.
+        if (header.firstChild) main.appendChild(header);
 
         // Request tab bar — visible when 2+ tabs are open so the user
         // #123 — tab strip is always present once there's at least one
