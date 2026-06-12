@@ -12,20 +12,18 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.0 — Re-architected workbench shell + workspace = project folder
 
-**44/55 done** · 11 backlog
+**46/55 done** · 9 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
 | [33](https://github.com/Kuestenlogik/Bowire/issues/33) | Bowire | [Protocol plugins — Connect Phase 1+3 + OTLP](#issue-kuestenlogik-bowire-33) | ⬜ Backlog | `area:plugin-sdk` |
 | [58](https://github.com/Kuestenlogik/Bowire/issues/58) | Bowire | [Workspace: complete the Git-native story (.blw file)](#issue-kuestenlogik-bowire-58) | ⬜ Open |  |
 | [115](https://github.com/Kuestenlogik/Bowire/issues/115) | Bowire | [v2.0 — UI refactor: re-architect the workbench shell](#issue-kuestenlogik-bowire-115) | ⬜ Open |  |
-| [124](https://github.com/Kuestenlogik/Bowire/issues/124) | Bowire | [Cross-protocol omnibox (Cmd/Ctrl+K)](#issue-kuestenlogik-bowire-124) | ⬜ Open |  |
 | [147](https://github.com/Kuestenlogik/Bowire/issues/147) | Bowire | [Git-backed workspace storage — composes with #144 storage modes + #58](#issue-kuestenlogik-bowire-147) | ⬜ Open |  |
 | [148](https://github.com/Kuestenlogik/Bowire/issues/148) | Bowire | [Per-entity file storage format for git-backed workspaces (envs / collections / scripts)](#issue-kuestenlogik-bowire-148) | ⬜ Open |  |
 | [149](https://github.com/Kuestenlogik/Bowire/issues/149) | Bowire | [Workspace CLI — bowire workspace init / export / import / migrate-format](#issue-kuestenlogik-bowire-149) | ⬜ Open |  |
 | [150](https://github.com/Kuestenlogik/Bowire/issues/150) | Bowire | [Filesystem-watch + reconcile UI for externally-edited workspace files](#issue-kuestenlogik-bowire-150) | ⬜ Open |  |
 | [151](https://github.com/Kuestenlogik/Bowire/issues/151) | Bowire | [Secret-file separation + workspace lock file for safe team-shared git workspaces](#issue-kuestenlogik-bowire-151) | ⬜ Open |  |
-| [162](https://github.com/Kuestenlogik/Bowire/issues/162) | Bowire | [Cmd+K omnibox: search collections, recordings, mocks, workspaces, settings, help](#issue-kuestenlogik-bowire-162) | ⬜ Open |  |
 | [168](https://github.com/Kuestenlogik/Bowire/issues/168) | Bowire | [Workbench-wide action log with undo / redo (Ctrl+Z)](#issue-kuestenlogik-bowire-168) | ⬜ Open |  |
 | [25](https://github.com/Kuestenlogik/Bowire/issues/25) | Bowire | [AI side-panel integration](#issue-kuestenlogik-bowire-25) | ✅ Done | `area:workbench` |
 | [43](https://github.com/Kuestenlogik/Bowire/issues/43) | Bowire | [MCP SSE-transport support](#issue-kuestenlogik-bowire-43) | ✅ Done | `area:mcp` |
@@ -44,6 +42,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [121](https://github.com/Kuestenlogik/Bowire/issues/121) | Bowire | [Context-aware empty states across every pane](#issue-kuestenlogik-bowire-121) | ✅ Done |  |
 | [122](https://github.com/Kuestenlogik/Bowire/issues/122) | Bowire | [Direction-color + protocol-glyph (two-axis encoding)](#issue-kuestenlogik-bowire-122) | ✅ Done |  |
 | [123](https://github.com/Kuestenlogik/Bowire/issues/123) | Bowire | [Workbench tabs that carry protocol-typed state](#issue-kuestenlogik-bowire-123) | ✅ Done |  |
+| [124](https://github.com/Kuestenlogik/Bowire/issues/124) | Bowire | [Cross-protocol omnibox (Cmd/Ctrl+K)](#issue-kuestenlogik-bowire-124) | ✅ Done |  |
 | [127](https://github.com/Kuestenlogik/Bowire/issues/127) | Bowire | [Auto-save to workspace + live save-state pill](#issue-kuestenlogik-bowire-127) | ✅ Done |  |
 | [129](https://github.com/Kuestenlogik/Bowire/issues/129) | Bowire | [Layout cleanup — top bar, sidebar, main pane, drawers (left-sidebar model stays)](#issue-kuestenlogik-bowire-129) | ✅ Done |  |
 | [133](https://github.com/Kuestenlogik/Bowire/issues/133) | Bowire | [Activity rail (left) — switch workbench focus by use case (dev / security / perf / mocks / …)](#issue-kuestenlogik-bowire-133) | ✅ Done |  |
@@ -64,6 +63,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [159](https://github.com/Kuestenlogik/Bowire/issues/159) | Bowire | [Workspace Export / Import as .bowire JSON](#issue-kuestenlogik-bowire-159) | ✅ Done |  |
 | [160](https://github.com/Kuestenlogik/Bowire/issues/160) | Bowire | [Workspace breadcrumb in the main pane](#issue-kuestenlogik-bowire-160) | ✅ Done |  |
 | [161](https://github.com/Kuestenlogik/Bowire/issues/161) | Bowire | [Open method tabs persisted per workspace](#issue-kuestenlogik-bowire-161) | ✅ Done |  |
+| [162](https://github.com/Kuestenlogik/Bowire/issues/162) | Bowire | [Cmd+K omnibox: search collections, recordings, mocks, workspaces, settings, help](#issue-kuestenlogik-bowire-162) | ✅ Done |  |
 | [163](https://github.com/Kuestenlogik/Bowire/issues/163) | Bowire | [Activity rail icon count badges](#issue-kuestenlogik-bowire-163) | ✅ Done |  |
 | [164](https://github.com/Kuestenlogik/Bowire/issues/164) | Bowire | [Console + Tests as tabs in the unified right-side drawer](#issue-kuestenlogik-bowire-164) | ✅ Done |  |
 | [165](https://github.com/Kuestenlogik/Bowire/issues/165) | Bowire | [Workspace templates on create (REST / gRPC / mock / multi-protocol)](#issue-kuestenlogik-bowire-165) | ✅ Done |  |
@@ -199,10 +199,6 @@ Remaining wave items after MQTT / Kafka / AMQP / SOAP / NATS / JSON-RPC / Pulsar
 
 > **Status:** Phase 1 — Shell-Refactor abgeschlossen (Juni 2026). Die strukturelle Neuordnung der Workbench ist durch; was in v2.0 noch landet, sind Feature-Streams plus die echten Breaking-Change-Cleanups. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/115)
 
-#### <a id="issue-kuestenlogik-bowire-124"></a>⬜ Open · [#124](https://github.com/Kuestenlogik/Bowire/issues/124) Cross-protocol omnibox (Cmd/Ctrl+K)
-
-Bowire connects to several discovery URLs at once. Each one exposes many services. Each service has many methods. Then there are recordings, active mocks, plugin actions. Navigating between them today means: scroll the sidebar, find the service, expand it, scan for the method, click. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/124)
-
 #### <a id="issue-kuestenlogik-bowire-147"></a>⬜ Open · [#147](https://github.com/Kuestenlogik/Bowire/issues/147) Git-backed workspace storage — composes with #144 storage modes + #58
 
 #58 ("Git-native workspace") sits as a roadmap goal — a workspace's state (URLs, envs, collections, recordings, scripts, AI config overrides) should be checkable into a git repo so a team can `git push` / `git pull` their context. [[more]](https://github.com/Kuestenlogik/Bowire/issues/147)
@@ -222,10 +218,6 @@ In a git-backed workspace (#147) the operator will frequently: - Run `git pull` 
 #### <a id="issue-kuestenlogik-bowire-151"></a>⬜ Open · [#151](https://github.com/Kuestenlogik/Bowire/issues/151) Secret-file separation + workspace lock file for safe team-shared git workspaces
 
 Two related concerns for a git-backed workspace (#147) that aren't covered yet: [[more]](https://github.com/Kuestenlogik/Bowire/issues/151)
-
-#### <a id="issue-kuestenlogik-bowire-162"></a>⬜ Open · [#162](https://github.com/Kuestenlogik/Bowire/issues/162) Cmd+K omnibox: search collections, recordings, mocks, workspaces, settings, help
-
-Cmd/Ctrl+K currently searches methods + rail modes. Operators looking for "a collection named foo" or "the recording from last night" still have to navigate to the rail manually. The omnibox should be a true entry point to every workspace artifact, not just methods. [[more]](https://github.com/Kuestenlogik/Bowire/issues/162)
 
 #### <a id="issue-kuestenlogik-bowire-168"></a>⬜ Open · [#168](https://github.com/Kuestenlogik/Bowire/issues/168) Workbench-wide action log with undo / redo (Ctrl+Z)
 
@@ -302,6 +294,10 @@ The single-accent + protocol-as-color pass gives each protocol its own hue. But 
 #### <a id="issue-kuestenlogik-bowire-123"></a>✅ Done · [#123](https://github.com/Kuestenlogik/Bowire/issues/123) Workbench tabs that carry protocol-typed state
 
 Today the workbench holds one active method at a time. Switching from "the REST call I was iterating on" to "the gRPC stream I wanted to check" means losing the body I was typing, the headers I'd set, the response I was looking at. Operators end up keeping multiple browser windows open just to keep state in two places. [[more]](https://github.com/Kuestenlogik/Bowire/issues/123)
+
+#### <a id="issue-kuestenlogik-bowire-124"></a>✅ Done · [#124](https://github.com/Kuestenlogik/Bowire/issues/124) Cross-protocol omnibox (Cmd/Ctrl+K)
+
+Bowire connects to several discovery URLs at once. Each one exposes many services. Each service has many methods. Then there are recordings, active mocks, plugin actions. Navigating between them today means: scroll the sidebar, find the service, expand it, scan for the method, click. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/124)
 
 #### <a id="issue-kuestenlogik-bowire-127"></a>✅ Done · [#127](https://github.com/Kuestenlogik/Bowire/issues/127) Auto-save to workspace + live save-state pill
 
@@ -382,6 +378,10 @@ The active workspace is shown only in the topbar chip (top-right). When operator
 #### <a id="issue-kuestenlogik-bowire-161"></a>✅ Done · [#161](https://github.com/Kuestenlogik/Bowire/issues/161) Open method tabs persisted per workspace
 
 `requestTabs` + `activeTabId` are currently module-level state (not workspace-scoped). When the operator switches workspaces, the open method tabs persist visually but point at methods that may not exist in the new workspace's discovery. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/161)
+
+#### <a id="issue-kuestenlogik-bowire-162"></a>✅ Done · [#162](https://github.com/Kuestenlogik/Bowire/issues/162) Cmd+K omnibox: search collections, recordings, mocks, workspaces, settings, help
+
+Cmd/Ctrl+K currently searches methods + rail modes. Operators looking for "a collection named foo" or "the recording from last night" still have to navigate to the rail manually. The omnibox should be a true entry point to every workspace artifact, not just methods. [[more]](https://github.com/Kuestenlogik/Bowire/issues/162)
 
 #### <a id="issue-kuestenlogik-bowire-163"></a>✅ Done · [#163](https://github.com/Kuestenlogik/Bowire/issues/163) Activity rail icon count badges
 
