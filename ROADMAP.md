@@ -74,7 +74,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.1 — Scripting, variable resolver, throughput surface
 
-**0/10 done** · 10 backlog
+**0/11 done** · 11 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -88,6 +88,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [144](https://github.com/Kuestenlogik/Bowire/issues/144) | Bowire | [Large-recording capture/replay — chunked disk layout, lazy step-load, GB-scale](#issue-kuestenlogik-bowire-144) | ⬜ Open |  |
 | [145](https://github.com/Kuestenlogik/Bowire/issues/145) | Bowire | [Deprecate ${name} in favour of {{name}} (multi-phase migration)](#issue-kuestenlogik-bowire-145) | ⬜ Open |  |
 | [153](https://github.com/Kuestenlogik/Bowire/issues/153) | Bowire | [Bowire as transparent interceptor — embedded middleware + standalone reverse-proxy](#issue-kuestenlogik-bowire-153) | ⬜ Open |  |
+| [193](https://github.com/Kuestenlogik/Bowire/issues/193) | Bowire | [Workspace .blw Phase 2 — UI wiring + plugin-pin check + scope split](#issue-kuestenlogik-bowire-193) | ⬜ Open |  |
 
 ### v2.2 — Test pillar: assertions, CI runner, regression coverage
 
@@ -452,6 +453,10 @@ After #125 v1 landed, Bowire has two interpolation syntaxes that resolve identic
 #### <a id="issue-kuestenlogik-bowire-153"></a>⬜ Open · [#153](https://github.com/Kuestenlogik/Bowire/issues/153) Bowire as transparent interceptor — embedded middleware + standalone reverse-proxy
 
 Today Bowire watches traffic in two narrow ways: - **Discover / Recording / Benchmarks** — the operator drives a call FROM Bowire's workbench and Bowire sees both sides. - **MITM Proxy view (#36)** — read-only inspection of traffic flowing through an external Bowire-as-proxy listener. [[more]](https://github.com/Kuestenlogik/Bowire/issues/153)
+
+#### <a id="issue-kuestenlogik-bowire-193"></a>⬜ Open · [#193](https://github.com/Kuestenlogik/Bowire/issues/193) Workspace .blw Phase 2 — UI wiring + plugin-pin check + scope split
+
+`.blw` schema extension (Phase 1) shipped in 2f80024 — `workspaceFormatVersion`, `recordings`, `flows`, and `pluginPins` are now part of the on-disk shape with backwards-compatible deserialization and stable camelCase serialization. The workbench doesn't yet read or write the new fields; that's Phase 2. [[more]](https://github.com/Kuestenlogik/Bowire/issues/193)
 
 ### v2.2 — Test pillar: assertions, CI runner, regression coverage
 
