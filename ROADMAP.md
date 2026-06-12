@@ -12,13 +12,23 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.0 — UI refactor + breaking-change window
 
-**34/37 done** · 3 backlog
+**35/48 done** · 13 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
 | [33](https://github.com/Kuestenlogik/Bowire/issues/33) | Bowire | Protocol plugins — Connect Phase 1+3 + OTLP | ⬜ Backlog | `area:plugin-sdk` `track:protocols` |
 | [115](https://github.com/Kuestenlogik/Bowire/issues/115) | Bowire | v2.0 — UI refactor: re-architect the workbench shell | ⬜ Open |  |
 | [124](https://github.com/Kuestenlogik/Bowire/issues/124) | Bowire | Cross-protocol omnibox (Cmd/Ctrl+K) | ⬜ Open |  |
+| [160](https://github.com/Kuestenlogik/Bowire/issues/160) | Bowire | Workspace breadcrumb in the main pane | ⬜ Open |  |
+| [161](https://github.com/Kuestenlogik/Bowire/issues/161) | Bowire | Open method tabs persisted per workspace | ⬜ Open |  |
+| [162](https://github.com/Kuestenlogik/Bowire/issues/162) | Bowire | Cmd+K omnibox: search collections, recordings, mocks, workspaces, settings, help | ⬜ Open |  |
+| [163](https://github.com/Kuestenlogik/Bowire/issues/163) | Bowire | Activity rail icon count badges | ⬜ Open |  |
+| [164](https://github.com/Kuestenlogik/Bowire/issues/164) | Bowire | Console + Tests as tabs in the unified right-side drawer | ⬜ Open |  |
+| [165](https://github.com/Kuestenlogik/Bowire/issues/165) | Bowire | Workspace templates on create (REST / gRPC / mock / multi-protocol) | ⬜ Open |  |
+| [166](https://github.com/Kuestenlogik/Bowire/issues/166) | Bowire | Keyboard shortcut sheet (Cmd+/) | ⬜ Open |  |
+| [167](https://github.com/Kuestenlogik/Bowire/issues/167) | Bowire | Settings → Plugins: show protocol DisplayName instead of assembly name | ⬜ Open |  |
+| [168](https://github.com/Kuestenlogik/Bowire/issues/168) | Bowire | Workbench-wide action log with undo / redo (Ctrl+Z) | ⬜ Open |  |
+| [169](https://github.com/Kuestenlogik/Bowire/issues/169) | Bowire | Hint dismiss pattern — "Don't show again" + Settings restore | ⬜ Open |  |
 | [25](https://github.com/Kuestenlogik/Bowire/issues/25) | Bowire | AI side-panel integration | ✅ Done | `area:workbench` |
 | [43](https://github.com/Kuestenlogik/Bowire/issues/43) | Bowire | MCP SSE-transport support | ✅ Done | `area:mcp` |
 | [85](https://github.com/Kuestenlogik/Bowire/issues/85) | Bowire | Request-pane Body: split stacked Form / Selection Set / Query into sub-tabs | ✅ Done |  |
@@ -53,6 +63,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [156](https://github.com/Kuestenlogik/Bowire/issues/156) | Bowire | Favorites as a connective UI element | ✅ Done |  |
 | [157](https://github.com/Kuestenlogik/Bowire/issues/157) | Bowire | "Add to…" quick-actions at the method header | ✅ Done |  |
 | [158](https://github.com/Kuestenlogik/Bowire/issues/158) | Bowire | Cross-feature state visibility in the service tree | ✅ Done |  |
+| [159](https://github.com/Kuestenlogik/Bowire/issues/159) | Bowire | Workspace Export / Import as .bowire JSON | ✅ Done |  |
 
 ### v2.1 — workspace v3 + protocol wave 3
 
@@ -136,6 +147,46 @@ Remaining wave items after MQTT / Kafka / AMQP / SOAP / NATS / JSON-RPC / Pulsar
 #### ⬜ Open · [#124](https://github.com/Kuestenlogik/Bowire/issues/124) Cross-protocol omnibox (Cmd/Ctrl+K)
 
 ## Why
+
+#### ⬜ Open · [#160](https://github.com/Kuestenlogik/Bowire/issues/160) Workspace breadcrumb in the main pane
+
+## Problem
+
+#### ⬜ Open · [#161](https://github.com/Kuestenlogik/Bowire/issues/161) Open method tabs persisted per workspace
+
+## Problem
+
+#### ⬜ Open · [#162](https://github.com/Kuestenlogik/Bowire/issues/162) Cmd+K omnibox: search collections, recordings, mocks, workspaces, settings, help
+
+## Problem
+
+#### ⬜ Open · [#163](https://github.com/Kuestenlogik/Bowire/issues/163) Activity rail icon count badges
+
+## Problem
+
+#### ⬜ Open · [#164](https://github.com/Kuestenlogik/Bowire/issues/164) Console + Tests as tabs in the unified right-side drawer
+
+## Problem
+
+#### ⬜ Open · [#165](https://github.com/Kuestenlogik/Bowire/issues/165) Workspace templates on create (REST / gRPC / mock / multi-protocol)
+
+## Problem
+
+#### ⬜ Open · [#166](https://github.com/Kuestenlogik/Bowire/issues/166) Keyboard shortcut sheet (Cmd+/)
+
+## Problem
+
+#### ⬜ Open · [#167](https://github.com/Kuestenlogik/Bowire/issues/167) Settings → Plugins: show protocol DisplayName instead of assembly name
+
+## Problem
+
+#### ⬜ Open · [#168](https://github.com/Kuestenlogik/Bowire/issues/168) Workbench-wide action log with undo / redo (Ctrl+Z)
+
+## Problem
+
+#### ⬜ Open · [#169](https://github.com/Kuestenlogik/Bowire/issues/169) Hint dismiss pattern — "Don't show again" + Settings restore
+
+## Problem
 
 #### ✅ Done · [#25](https://github.com/Kuestenlogik/Bowire/issues/25) AI side-panel integration
 
@@ -276,6 +327,10 @@ ADR: [`docs/architecture/ai-integration.md`](https://github.com/Kuestenlogik/Bow
 #### ✅ Done · [#158](https://github.com/Kuestenlogik/Bowire/issues/158) Cross-feature state visibility in the service tree
 
 ## Why
+
+#### ✅ Done · [#159](https://github.com/Kuestenlogik/Bowire/issues/159) Workspace Export / Import as .bowire JSON
+
+## Problem
 
 ### v2.1 — workspace v3 + protocol wave 3
 
