@@ -186,31 +186,27 @@ internal static class BowireWorkspaceEndpoints
 
     private static void LaunchPlatformFileManager(string path)
     {
-        // UseShellExecute = true lets the OS pick the right handler.
-        // Per-platform fallback to the explicit command in case the
-        // shell-execute path is sandboxed out.
-        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        // CodeQL flagged the earlier per-platform Process.Start calls
+        // as cs/command-line-injection because the path (derived from
+        // a sanitised but request-bound workspaceId) was string-
+        // interpolated into the arguments. The interpolation was the
+        // attack surface, not the path itself — SanitiseWorkspaceId
+        // already strips everything outside [A-Za-z0-9_-] and the
+        // value lands under BowireUserContext.GetUserPath, so the
+        // resolved path never escapes the user root. Removing the
+        // arguments path entirely closes the static-analysis finding
+        // without weakening the runtime guarantees: pass the directory
+        // as ProcessStartInfo.FileName with UseShellExecute=true and
+        // the OS opens its native file manager at that location
+        // (Explorer on Windows, Finder on macOS, xdg-open on Linux).
+        // No command line is constructed, so there is no string to
+        // inject into.
+        var psi = new ProcessStartInfo
         {
-            Process.Start(new ProcessStartInfo("explorer.exe", $"\"{path}\"")
-            {
-                UseShellExecute = true
-            });
-        }
-        else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
-        {
-            Process.Start(new ProcessStartInfo("open", $"\"{path}\"")
-            {
-                UseShellExecute = true
-            });
-        }
-        else
-        {
-            // Linux + BSDs — xdg-open is the freedesktop convention.
-            Process.Start(new ProcessStartInfo("xdg-open", $"\"{path}\"")
-            {
-                UseShellExecute = true
-            });
-        }
+            FileName = path,
+            UseShellExecute = true,
+        };
+        Process.Start(psi);
     }
 
     internal sealed record WorkspaceFile
