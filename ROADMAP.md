@@ -12,20 +12,17 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.0 — UI refactor + breaking-change window
 
-**28/37 done** · 9 backlog
+**30/37 done** · 7 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
 | [33](https://github.com/Kuestenlogik/Bowire/issues/33) | Bowire | Protocol plugins — Connect Phase 1+3 + OTLP | ⬜ Backlog | `area:plugin-sdk` `track:protocols` |
 | [115](https://github.com/Kuestenlogik/Bowire/issues/115) | Bowire | v2.0 — UI refactor: re-architect the workbench shell | ⬜ Open |  |
 | [124](https://github.com/Kuestenlogik/Bowire/issues/124) | Bowire | Cross-protocol omnibox (Cmd/Ctrl+K) | ⬜ Open |  |
-| [152](https://github.com/Kuestenlogik/Bowire/issues/152) | Bowire | Sources rail mode — centralise URL / schema-file management | ⬜ Open |  |
-| [154](https://github.com/Kuestenlogik/Bowire/issues/154) | Bowire | Help as optional NuGet package — `Kuestenlogik.Bowire.Help` | ⬜ Open |  |
 | [155](https://github.com/Kuestenlogik/Bowire/issues/155) | Bowire | Workspace = project folder — strictly per-workspace, sharing via copy actions | ⬜ Open |  |
 | [156](https://github.com/Kuestenlogik/Bowire/issues/156) | Bowire | Favorites as a connective UI element | ⬜ Open |  |
 | [157](https://github.com/Kuestenlogik/Bowire/issues/157) | Bowire | "Add to…" quick-actions at the method header | ⬜ Open |  |
 | [158](https://github.com/Kuestenlogik/Bowire/issues/158) | Bowire | Cross-feature state visibility in the service tree | ⬜ Open |  |
-| [127](https://github.com/Kuestenlogik/Bowire/issues/127) | Bowire | Auto-save to workspace + live save-state pill | ✅ Done |  |
 | [25](https://github.com/Kuestenlogik/Bowire/issues/25) | Bowire | AI side-panel integration | ✅ Done | `area:workbench` |
 | [43](https://github.com/Kuestenlogik/Bowire/issues/43) | Bowire | MCP SSE-transport support | ✅ Done | `area:mcp` |
 | [85](https://github.com/Kuestenlogik/Bowire/issues/85) | Bowire | Request-pane Body: split stacked Form / Selection Set / Query into sub-tabs | ✅ Done |  |
@@ -43,6 +40,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [121](https://github.com/Kuestenlogik/Bowire/issues/121) | Bowire | Context-aware empty states across every pane | ✅ Done |  |
 | [122](https://github.com/Kuestenlogik/Bowire/issues/122) | Bowire | Direction-color + protocol-glyph (two-axis encoding) | ✅ Done |  |
 | [123](https://github.com/Kuestenlogik/Bowire/issues/123) | Bowire | Workbench tabs that carry protocol-typed state | ✅ Done |  |
+| [127](https://github.com/Kuestenlogik/Bowire/issues/127) | Bowire | Auto-save to workspace + live save-state pill | ✅ Done |  |
 | [129](https://github.com/Kuestenlogik/Bowire/issues/129) | Bowire | Layout cleanup — top bar, sidebar, main pane, drawers (left-sidebar model stays) | ✅ Done |  |
 | [133](https://github.com/Kuestenlogik/Bowire/issues/133) | Bowire | Activity rail (left) — switch workbench focus by use case (dev / security / perf / mocks / …) | ✅ Done |  |
 | [134](https://github.com/Kuestenlogik/Bowire/issues/134) | Bowire | Rename surface 'AI' → 'Assistant' (technology stays; user-facing labels shift) | ✅ Done |  |
@@ -53,6 +51,8 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [142](https://github.com/Kuestenlogik/Bowire/issues/142) | Bowire | Sharper radii — straighter visual style across tabs / cards / drawers | ✅ Done |  |
 | [143](https://github.com/Kuestenlogik/Bowire/issues/143) | Bowire | Uniform delete affordances on every list sidebar (single / multi-select / all) | ✅ Done |  |
 | [146](https://github.com/Kuestenlogik/Bowire/issues/146) | Bowire | Workspace-side environment inclusion list (shared envs + per-workspace selection) | ✅ Done |  |
+| [152](https://github.com/Kuestenlogik/Bowire/issues/152) | Bowire | Sources rail mode — centralise URL / schema-file management | ✅ Done |  |
+| [154](https://github.com/Kuestenlogik/Bowire/issues/154) | Bowire | Help as optional NuGet package — `Kuestenlogik.Bowire.Help` | ✅ Done |  |
 
 ### v2.1 — workspace v3 + protocol wave 3
 
@@ -137,14 +137,6 @@ Remaining wave items after MQTT / Kafka / AMQP / SOAP / NATS / JSON-RPC / Pulsar
 
 ## Why
 
-#### ⬜ Open · [#152](https://github.com/Kuestenlogik/Bowire/issues/152) Sources rail mode — centralise URL / schema-file management
-
-## Why
-
-#### ⬜ Open · [#154](https://github.com/Kuestenlogik/Bowire/issues/154) Help as optional NuGet package — `Kuestenlogik.Bowire.Help`
-
-## Why
-
 #### ⬜ Open · [#155](https://github.com/Kuestenlogik/Bowire/issues/155) Workspace = project folder — strictly per-workspace, sharing via copy actions
 
 ## Why
@@ -158,10 +150,6 @@ Remaining wave items after MQTT / Kafka / AMQP / SOAP / NATS / JSON-RPC / Pulsar
 ## Why
 
 #### ⬜ Open · [#158](https://github.com/Kuestenlogik/Bowire/issues/158) Cross-feature state visibility in the service tree
-
-## Why
-
-#### ✅ Done · [#127](https://github.com/Kuestenlogik/Bowire/issues/127) Auto-save to workspace + live save-state pill
 
 ## Why
 
@@ -237,6 +225,10 @@ ADR: [`docs/architecture/ai-integration.md`](https://github.com/Kuestenlogik/Bow
 
 ## Why
 
+#### ✅ Done · [#127](https://github.com/Kuestenlogik/Bowire/issues/127) Auto-save to workspace + live save-state pill
+
+## Why
+
 #### ✅ Done · [#129](https://github.com/Kuestenlogik/Bowire/issues/129) Layout cleanup — top bar, sidebar, main pane, drawers (left-sidebar model stays)
 
 ## Why
@@ -274,6 +266,14 @@ ADR: [`docs/architecture/ai-integration.md`](https://github.com/Kuestenlogik/Bow
 ## Why
 
 #### ✅ Done · [#146](https://github.com/Kuestenlogik/Bowire/issues/146) Workspace-side environment inclusion list (shared envs + per-workspace selection)
+
+## Why
+
+#### ✅ Done · [#152](https://github.com/Kuestenlogik/Bowire/issues/152) Sources rail mode — centralise URL / schema-file management
+
+## Why
+
+#### ✅ Done · [#154](https://github.com/Kuestenlogik/Bowire/issues/154) Help as optional NuGet package — `Kuestenlogik.Bowire.Help`
 
 ## Why
 
