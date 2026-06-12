@@ -12,7 +12,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.0 — Re-architected workbench shell + workspace = project folder
 
-**35/54 done** · 19 backlog
+**36/54 done** · 18 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -25,7 +25,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [149](https://github.com/Kuestenlogik/Bowire/issues/149) | Bowire | [Workspace CLI — bowire workspace init / export / import / migrate-format](#issue-kuestenlogik-bowire-149) | ⬜ Open |  |
 | [150](https://github.com/Kuestenlogik/Bowire/issues/150) | Bowire | [Filesystem-watch + reconcile UI for externally-edited workspace files](#issue-kuestenlogik-bowire-150) | ⬜ Open |  |
 | [151](https://github.com/Kuestenlogik/Bowire/issues/151) | Bowire | [Secret-file separation + workspace lock file for safe team-shared git workspaces](#issue-kuestenlogik-bowire-151) | ⬜ Open |  |
-| [160](https://github.com/Kuestenlogik/Bowire/issues/160) | Bowire | [Workspace breadcrumb in the main pane](#issue-kuestenlogik-bowire-160) | ⬜ Open |  |
 | [161](https://github.com/Kuestenlogik/Bowire/issues/161) | Bowire | [Open method tabs persisted per workspace](#issue-kuestenlogik-bowire-161) | ⬜ Open |  |
 | [162](https://github.com/Kuestenlogik/Bowire/issues/162) | Bowire | [Cmd+K omnibox: search collections, recordings, mocks, workspaces, settings, help](#issue-kuestenlogik-bowire-162) | ⬜ Open |  |
 | [163](https://github.com/Kuestenlogik/Bowire/issues/163) | Bowire | [Activity rail icon count badges](#issue-kuestenlogik-bowire-163) | ⬜ Open |  |
@@ -70,6 +69,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [157](https://github.com/Kuestenlogik/Bowire/issues/157) | Bowire | ["Add to…" quick-actions at the method header](#issue-kuestenlogik-bowire-157) | ✅ Done |  |
 | [158](https://github.com/Kuestenlogik/Bowire/issues/158) | Bowire | [Cross-feature state visibility in the service tree](#issue-kuestenlogik-bowire-158) | ✅ Done |  |
 | [159](https://github.com/Kuestenlogik/Bowire/issues/159) | Bowire | [Workspace Export / Import as .bowire JSON](#issue-kuestenlogik-bowire-159) | ✅ Done |  |
+| [160](https://github.com/Kuestenlogik/Bowire/issues/160) | Bowire | [Workspace breadcrumb in the main pane](#issue-kuestenlogik-bowire-160) | ✅ Done |  |
 
 ### v2.1 — Scripting, variable resolver, throughput surface
 
@@ -221,10 +221,6 @@ In a git-backed workspace (#147) the operator will frequently: - Run `git pull` 
 #### <a id="issue-kuestenlogik-bowire-151"></a>⬜ Open · [#151](https://github.com/Kuestenlogik/Bowire/issues/151) Secret-file separation + workspace lock file for safe team-shared git workspaces
 
 Two related concerns for a git-backed workspace (#147) that aren't covered yet: [[more]](https://github.com/Kuestenlogik/Bowire/issues/151)
-
-#### <a id="issue-kuestenlogik-bowire-160"></a>⬜ Open · [#160](https://github.com/Kuestenlogik/Bowire/issues/160) Workspace breadcrumb in the main pane
-
-The active workspace is shown only in the topbar chip (top-right). When operators dive into a rail (Discover, Recordings, Collections, Mocks, …) they lose visual confirmation of which workspace's data they're looking at. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/160)
 
 #### <a id="issue-kuestenlogik-bowire-161"></a>⬜ Open · [#161](https://github.com/Kuestenlogik/Bowire/issues/161) Open method tabs persisted per workspace
 
@@ -405,6 +401,10 @@ The Discover service tree today shows each method as a flat row: name, badge, op
 #### <a id="issue-kuestenlogik-bowire-159"></a>✅ Done · [#159](https://github.com/Kuestenlogik/Bowire/issues/159) Workspace Export / Import as .bowire JSON
 
 A Bowire workspace is the project folder — URLs, collections, recordings, favorites, benchmarks, flows and presets all live in it. Currently the only way to move a workspace between machines or share it with a teammate is to export each artifact one by one (and most aren't exportable at all). … [[more]](https://github.com/Kuestenlogik/Bowire/issues/159)
+
+#### <a id="issue-kuestenlogik-bowire-160"></a>✅ Done · [#160](https://github.com/Kuestenlogik/Bowire/issues/160) Workspace breadcrumb in the main pane
+
+The active workspace is shown only in the topbar chip (top-right). When operators dive into a rail (Discover, Recordings, Collections, Mocks, …) they lose visual confirmation of which workspace's data they're looking at. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/160)
 
 ### v2.1 — Scripting, variable resolver, throughput surface
 
