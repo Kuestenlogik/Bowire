@@ -1479,17 +1479,9 @@
                 'aria-label': 'Create new workspace',
                 innerHTML: svgIcon('plus'),
                 onClick: function () {
-                    bowirePrompt('New workspace name', {
-                        title: 'Create workspace',
-                        placeholder: 'e.g. Payments — staging',
-                        confirmText: 'Create',
-                    }).then(function (name) {
-                        if (name) {
-                            var ws = createWorkspace(name);
-                            workspacesSelectedId = ws.id;
-                            workspaceTreeSelection = { wsId: ws.id, kind: 'workspace' };
-                            render();
-                        }
+                    openCreateWorkspaceDialog(function (ws) {
+                        workspacesSelectedId = ws.id;
+                        workspaceTreeSelection = { wsId: ws.id, kind: 'workspace' };
                     });
                 }
             })

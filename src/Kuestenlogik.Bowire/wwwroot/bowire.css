@@ -6271,6 +6271,91 @@ they're a way
     border-color: var(--bowire-accent);
     box-shadow: 0 0 0 2px var(--bowire-accent-subtle);
 }
+.bowire-prompt-input-error {
+    border-color: var(--bowire-error, #ef4444);
+    animation: bowire-prompt-shake 0.4s ease;
+}
+@keyframes bowire-prompt-shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-4px); }
+    75% { transform: translateX(4px); }
+}
+/* #165 — Workspace create dialog. Wider than the bare bowirePrompt
+   because the template picker needs room for icon + label + desc per
+   row. Dialog itself uses the existing .bowire-confirm-dialog
+   chrome; the override widens the max-width and stacks the picker
+   below the name input. */
+.bowire-ws-create-dialog {
+    max-width: 480px;
+    width: 92vw;
+}
+.bowire-ws-template-heading {
+    margin-top: 4px;
+    margin-bottom: 8px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--bowire-text-tertiary);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+.bowire-ws-template-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-bottom: 16px;
+}
+.bowire-ws-template-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 10px 12px;
+    background: var(--bowire-bg);
+    border: 1px solid var(--bowire-border-subtle);
+    border-radius: var(--bowire-radius-md);
+    cursor: pointer;
+    transition: background var(--bowire-transition), border-color var(--bowire-transition);
+}
+.bowire-ws-template-row:hover {
+    background: var(--bowire-surface-hover, var(--bowire-bg-elevated));
+    border-color: var(--bowire-border);
+}
+.bowire-ws-template-row.selected {
+    background: var(--bowire-accent-subtle, var(--bowire-bg-elevated));
+    border-color: var(--bowire-accent);
+}
+.bowire-ws-template-radio {
+    margin-top: 2px;
+    flex-shrink: 0;
+    accent-color: var(--bowire-accent);
+}
+.bowire-ws-template-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+    color: var(--bowire-text-secondary);
+    margin-top: 1px;
+}
+.bowire-ws-template-row.selected .bowire-ws-template-icon { color: var(--bowire-accent); }
+.bowire-ws-template-icon svg { width: 16px; height: 16px; }
+.bowire-ws-template-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+.bowire-ws-template-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--bowire-text);
+}
+.bowire-ws-template-desc {
+    font-size: 11px;
+    color: var(--bowire-text-tertiary);
+    line-height: 1.4;
+}
 @keyframes bowire-confirm-slide {
     from { opacity: 0; transform: scale(0.95) translateY(-8px); }
     to { opacity: 1; transform: scale(1) translateY(0); }

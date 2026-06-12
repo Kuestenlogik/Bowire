@@ -46,6 +46,22 @@ A minimal workspace:
 }
 ```
 
+## Templates on create
+
+When you create a new workspace from the workbench (topbar workspace dropdown → **New workspace…** or the **+** button in the Workspaces rail), Bowire offers a template picker so the workspace starts with realistic seed data instead of an empty page.
+
+| Template | What it seeds |
+|----------|---------------|
+| **Empty** | No URLs, no env vars, no collections. The default. |
+| **REST API testing** | A sample URL (httpbin.org), `baseUrl` + `apiToken` global variables, and a starter collection with GET + POST stubs. |
+| **gRPC services** | A gRPC URL prefix (`grpc@…`) ready for a `.proto` upload, plus `service` + `method` placeholder globals and an empty starter collection. |
+| **Mock server build** | A starter URL pointed at postman-echo, plus an empty collection ready to capture recordings as mock fixtures. |
+| **Multi-protocol smoke test** | REST + WebSocket + gRPC URLs in one workspace, ready for cross-protocol coverage runs. |
+
+The picked template is remembered as the default for the next workspace you create — convenient when you spin up several workspaces of the same shape (e.g. five staging environments that all start as REST).
+
+Templates write directly to the new workspace's per-workspace localStorage bucket. The workbench reloads once after applying a non-empty template so the in-memory state hydrates from the freshly seeded buckets.
+
 ## File location
 
 The workspace file is read from and written to the **working directory** where Bowire was launched. The file is always named `.blw` (no base name, just the extension).
