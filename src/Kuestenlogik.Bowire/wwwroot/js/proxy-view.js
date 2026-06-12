@@ -171,26 +171,26 @@
         }
 
         if (proxyConnectionState === 'error') {
-            container.appendChild(el('div', { className: 'bowire-empty-state', style: 'padding:24px' },
-                el('div', { className: 'bowire-empty-title', textContent: 'Proxy not reachable' }),
-                el('div', { className: 'bowire-empty-desc', textContent: proxyConnectionError || 'Could not connect to ' + proxyApiUrl }),
-                el('div', { className: 'bowire-empty-desc', style: 'margin-top:8px;font-family:monospace;font-size:11px;opacity:0.7',
-                    textContent: 'Start the proxy with:  bowire proxy' }),
-                el('button', {
-                    id: 'bowire-proxy-retry-btn',
-                    className: 'bowire-recording-action-btn',
-                    style: 'margin-top:12px',
+            container.appendChild(renderEmptyCard({
+                icon: 'plug',
+                headline: 'Proxy not reachable',
+                body: (proxyConnectionError || 'Could not connect to ' + proxyApiUrl)
+                    + ' — start the proxy with `bowire proxy` in a terminal, then retry.',
+                actions: [{
+                    label: 'Retry',
+                    primary: true,
                     onClick: function () { proxyConnectionState = 'idle'; render(); }
-                }, el('span', { textContent: 'Retry' }))
-            ));
+                }]
+            }));
             return;
         }
 
         if (proxyFlows.length === 0) {
-            container.appendChild(el('div', { className: 'bowire-empty-state', style: 'padding:32px' },
-                el('div', { className: 'bowire-empty-title', textContent: 'Waiting for traffic' }),
-                el('div', { className: 'bowire-empty-desc', textContent: 'Point your browser / client at ' + proxyApiUrl.replace(/:\d+$/, ':8888') + ' to start capturing.' })
-            ));
+            container.appendChild(renderEmptyCard({
+                icon: 'globe',
+                headline: 'Waiting for traffic',
+                body: 'Point your browser / client at ' + proxyApiUrl.replace(/:\d+$/, ':8888') + ' to start capturing — captured flows land here in real time.'
+            }));
             return;
         }
 
@@ -248,26 +248,31 @@
         const pane = el('div', { className: 'bowire-env-editor-main' });
 
         if (proxyConnectionState === 'error') {
-            pane.appendChild(el('div', { className: 'bowire-empty-state', style: 'padding:48px' },
-                el('div', { className: 'bowire-empty-title', textContent: 'No proxy connection' }),
-                el('div', { className: 'bowire-empty-desc', textContent: 'Run `bowire proxy` in a terminal, then click Retry in the sidebar.' })
-            ));
+            pane.appendChild(renderEmptyCard({
+                icon: 'plug',
+                headline: 'No proxy connection',
+                body: 'Run `bowire proxy` in a terminal, then click Retry in the sidebar.'
+            }));
             return pane;
         }
 
         if (!proxyFlowSelectedId) {
-            pane.appendChild(el('div', { className: 'bowire-empty-state', style: 'padding:48px' },
-                el('div', { className: 'bowire-empty-title', textContent: 'Pick a captured flow' }),
-                el('div', { className: 'bowire-empty-desc', textContent: 'Select a row in the sidebar to inspect the request / response, or to send it into the recording pipeline.' })
-            ));
+            pane.appendChild(renderEmptyCard({
+                icon: 'globe',
+                headline: 'Pick a captured flow',
+                body: 'Select a row in the sidebar to inspect the request / response, or send it into the recording pipeline.'
+            }));
             return pane;
         }
 
         const summary = proxyFlows.find(function (f) { return f.id === proxyFlowSelectedId; });
         const detail = proxyFlowDetailCache[proxyFlowSelectedId];
         if (!summary && !detail) {
-            pane.appendChild(el('div', { className: 'bowire-empty-state', style: 'padding:48px',
-                textContent: 'Flow no longer available (evicted from ring buffer).' }));
+            pane.appendChild(renderEmptyCard({
+                icon: 'history',
+                headline: 'Flow no longer available',
+                body: 'The capture ring buffer evicted this entry. Pick a more recent flow from the sidebar.'
+            }));
             return pane;
         }
 

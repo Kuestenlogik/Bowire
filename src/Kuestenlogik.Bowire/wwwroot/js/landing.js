@@ -101,40 +101,46 @@
     // ---- State 7: ready (most common, richest) ----
 
     function renderStateReady(parent) {
+        // Discover-Ready landing now follows the rail-empty-card pattern
+        // every other rail uses: compass icon (rail identity) + headline
+        // + body + action links. Recent calls and tips render as separate
+        // portal sections below — same visual rhythm as Home's bands.
         var card = el('div', { className: 'bowire-landing-card' });
 
-        // Header — connect summary only. The big Bowire logo used to
-        // sit here too, but it doubled the "you are looking at the
-        // Bowire workbench" signal the topbar already carries. Logo
-        // now lives only in the About box (settings.js renderAboutContent).
-        var header = el('div', { className: 'bowire-landing-header' },
-            el('div', { className: 'bowire-landing-header-text' },
-                el('div', { className: 'bowire-landing-headline', textContent: buildConnectedHeadline() }),
-                el('div', { className: 'bowire-landing-subhead', textContent: buildServiceSummary() })
-            )
-        );
-        card.appendChild(header);
+        var summary = buildServiceSummary();
+        var connectLine = buildConnectedHeadline();
+        var bodyText = (connectLine === 'Pick a method from the sidebar')
+            ? 'Pick a method from the sidebar tree to compose a request and invoke it. The sidebar lists every service and method we discovered.'
+            : connectLine + (summary ? ' — ' + summary + '.' : '.');
 
-        card.appendChild(el('div', { className: 'bowire-landing-divider' }));
+        card.appendChild(renderEmptyCard({
+            icon: 'compass',
+            headline: 'Discover',
+            body: bodyText
+        }));
 
-        // Recent history quick-recall (filtered to current servers)
+        // Recent history quick-recall (filtered to current servers).
+        // Each row is its own action — clicking jumps into the request.
         var recents = getRecentHistoryForCurrentServers(5);
         if (recents.length > 0) {
-            card.appendChild(el('div', { className: 'bowire-landing-section-title',
-                textContent: 'Pick a method from the sidebar to send your first request — or jump back into a recent call:' }));
+            card.appendChild(el('div', {
+                className: 'bowire-landing-section-title',
+                textContent: 'Resume a recent call'
+            }));
             var list = el('div', { className: 'bowire-landing-history' });
             for (var i = 0; i < recents.length; i++) {
                 list.appendChild(renderRecentHistoryRow(recents[i]));
             }
             card.appendChild(list);
-        } else {
-            card.appendChild(el('div', { className: 'bowire-landing-section-title',
-                textContent: 'Pick a method from the sidebar to send your first request.' }));
         }
 
-        card.appendChild(el('div', { className: 'bowire-landing-divider' }));
-
-        // Tips
+        // Tips section. Same uppercase-section-title shape as the
+        // home portal band-titles so the page reads as one continuous
+        // column.
+        card.appendChild(el('div', {
+            className: 'bowire-landing-section-title',
+            textContent: 'Tips'
+        }));
         var tips = el('div', { className: 'bowire-landing-tips' });
         tips.appendChild(renderTipLine('search', 'Press Shift+/ to focus the command palette'));
         tips.appendChild(renderTipLine('send', 'Press Ctrl+Enter to invoke the selected method'));
@@ -150,25 +156,34 @@
     function renderStateFirstRun(parent) {
         // #291 — first-run welcome moved to the Home rail mode. From
         // Discover we point the operator at Home so the onboarding
-        // stays consolidated on one surface. Logo removed — it lives
-        // in the About box now; the topbar already says "Bowire".
-        var hint = el('div', { className: 'bowire-landing-hero' });
-        hint.appendChild(el('div', { className: 'bowire-landing-hero-headline', textContent: 'Discover is empty' }));
-        hint.appendChild(el('div', { className: 'bowire-landing-hero-tagline',
-            textContent: 'Pick a workspace and add a URL or schema file from there — Home walks you through the first steps.' }));
-        var actions = el('div', { className: 'bowire-landing-cta-grid', style: 'grid-template-columns:1fr;max-width:360px;' });
-        actions.appendChild(el('button', {
-            className: 'bowire-landing-cta-primary',
-            textContent: '→ Open Home',
-            onClick: function () {
-                railMode = 'home';
-                try { localStorage.setItem('bowire_rail_mode', 'home'); } catch { /* ignore */ }
-                render();
-            }
+        // stays consolidated on one surface. Same shape as every other
+        // rail's empty state (icon + headline + body + actions) so
+        // first impressions across rails read consistently.
+        var card = el('div', { className: 'bowire-landing-card' });
+        card.appendChild(renderEmptyCard({
+            icon: 'compass',
+            headline: 'Discover is empty',
+            body: 'Pick a workspace and add a URL or schema file from there — Home walks you through the first steps.',
+            actions: [{
+                label: 'Open Home',
+                primary: true,
+                onClick: function () {
+                    railMode = 'home';
+                    try { localStorage.setItem('bowire_rail_mode', 'home'); } catch { /* ignore */ }
+                    render();
+                }
+            }, {
+                label: 'Open Workspace',
+                onClick: function () {
+                    railMode = 'workspaces';
+                    try { localStorage.setItem('bowire_rail_mode', 'workspaces'); } catch { /* ignore */ }
+                    if (typeof workspacesSelectedId !== 'undefined') workspacesSelectedId = activeWorkspaceId;
+                    render();
+                }
+            }]
         }));
-        hint.appendChild(actions);
-        renderLandingHelpFooter(hint);
-        parent.appendChild(hint);
+        renderLandingHelpFooter(card);
+        parent.appendChild(card);
     }
 
     // #291 — Welcome hero rendered inside the Home rail mode when no
