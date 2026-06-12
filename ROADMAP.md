@@ -12,7 +12,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.0 — Re-architected workbench shell + workspace = project folder
 
-**36/54 done** · 18 backlog
+**37/54 done** · 17 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -27,7 +27,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [151](https://github.com/Kuestenlogik/Bowire/issues/151) | Bowire | [Secret-file separation + workspace lock file for safe team-shared git workspaces](#issue-kuestenlogik-bowire-151) | ⬜ Open |  |
 | [161](https://github.com/Kuestenlogik/Bowire/issues/161) | Bowire | [Open method tabs persisted per workspace](#issue-kuestenlogik-bowire-161) | ⬜ Open |  |
 | [162](https://github.com/Kuestenlogik/Bowire/issues/162) | Bowire | [Cmd+K omnibox: search collections, recordings, mocks, workspaces, settings, help](#issue-kuestenlogik-bowire-162) | ⬜ Open |  |
-| [163](https://github.com/Kuestenlogik/Bowire/issues/163) | Bowire | [Activity rail icon count badges](#issue-kuestenlogik-bowire-163) | ⬜ Open |  |
 | [164](https://github.com/Kuestenlogik/Bowire/issues/164) | Bowire | [Console + Tests as tabs in the unified right-side drawer](#issue-kuestenlogik-bowire-164) | ⬜ Open |  |
 | [165](https://github.com/Kuestenlogik/Bowire/issues/165) | Bowire | [Workspace templates on create (REST / gRPC / mock / multi-protocol)](#issue-kuestenlogik-bowire-165) | ⬜ Open |  |
 | [166](https://github.com/Kuestenlogik/Bowire/issues/166) | Bowire | [Keyboard shortcut sheet (Cmd+/)](#issue-kuestenlogik-bowire-166) | ⬜ Open |  |
@@ -70,6 +69,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [158](https://github.com/Kuestenlogik/Bowire/issues/158) | Bowire | [Cross-feature state visibility in the service tree](#issue-kuestenlogik-bowire-158) | ✅ Done |  |
 | [159](https://github.com/Kuestenlogik/Bowire/issues/159) | Bowire | [Workspace Export / Import as .bowire JSON](#issue-kuestenlogik-bowire-159) | ✅ Done |  |
 | [160](https://github.com/Kuestenlogik/Bowire/issues/160) | Bowire | [Workspace breadcrumb in the main pane](#issue-kuestenlogik-bowire-160) | ✅ Done |  |
+| [163](https://github.com/Kuestenlogik/Bowire/issues/163) | Bowire | [Activity rail icon count badges](#issue-kuestenlogik-bowire-163) | ✅ Done |  |
 
 ### v2.1 — Scripting, variable resolver, throughput surface
 
@@ -229,10 +229,6 @@ Two related concerns for a git-backed workspace (#147) that aren't covered yet: 
 #### <a id="issue-kuestenlogik-bowire-162"></a>⬜ Open · [#162](https://github.com/Kuestenlogik/Bowire/issues/162) Cmd+K omnibox: search collections, recordings, mocks, workspaces, settings, help
 
 Cmd/Ctrl+K currently searches methods + rail modes. Operators looking for "a collection named foo" or "the recording from last night" still have to navigate to the rail manually. The omnibox should be a true entry point to every workspace artifact, not just methods. [[more]](https://github.com/Kuestenlogik/Bowire/issues/162)
-
-#### <a id="issue-kuestenlogik-bowire-163"></a>⬜ Open · [#163](https://github.com/Kuestenlogik/Bowire/issues/163) Activity rail icon count badges
-
-The activity rail shows feature icons (Discover, Recordings, Collections, …) but no count of what each contains. Operators have to click in to see "is there anything here?" The cross-feature pills in the service tree (#297) solved the per-method case; rail-level counts solve the per-feature case. [[more]](https://github.com/Kuestenlogik/Bowire/issues/163)
 
 #### <a id="issue-kuestenlogik-bowire-164"></a>⬜ Open · [#164](https://github.com/Kuestenlogik/Bowire/issues/164) Console + Tests as tabs in the unified right-side drawer
 
@@ -405,6 +401,10 @@ A Bowire workspace is the project folder — URLs, collections, recordings, favo
 #### <a id="issue-kuestenlogik-bowire-160"></a>✅ Done · [#160](https://github.com/Kuestenlogik/Bowire/issues/160) Workspace breadcrumb in the main pane
 
 The active workspace is shown only in the topbar chip (top-right). When operators dive into a rail (Discover, Recordings, Collections, Mocks, …) they lose visual confirmation of which workspace's data they're looking at. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/160)
+
+#### <a id="issue-kuestenlogik-bowire-163"></a>✅ Done · [#163](https://github.com/Kuestenlogik/Bowire/issues/163) Activity rail icon count badges
+
+The activity rail shows feature icons (Discover, Recordings, Collections, …) but no count of what each contains. Operators have to click in to see "is there anything here?" The cross-feature pills in the service tree (#297) solved the per-method case; rail-level counts solve the per-feature case. [[more]](https://github.com/Kuestenlogik/Bowire/issues/163)
 
 ### v2.1 — Scripting, variable resolver, throughput surface
 
