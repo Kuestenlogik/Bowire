@@ -12,15 +12,13 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.0 — UI refactor + breaking-change window
 
-**32/37 done** · 5 backlog
+**34/37 done** · 3 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
 | [33](https://github.com/Kuestenlogik/Bowire/issues/33) | Bowire | Protocol plugins — Connect Phase 1+3 + OTLP | ⬜ Backlog | `area:plugin-sdk` `track:protocols` |
 | [115](https://github.com/Kuestenlogik/Bowire/issues/115) | Bowire | v2.0 — UI refactor: re-architect the workbench shell | ⬜ Open |  |
 | [124](https://github.com/Kuestenlogik/Bowire/issues/124) | Bowire | Cross-protocol omnibox (Cmd/Ctrl+K) | ⬜ Open |  |
-| [157](https://github.com/Kuestenlogik/Bowire/issues/157) | Bowire | "Add to…" quick-actions at the method header | ⬜ Open |  |
-| [158](https://github.com/Kuestenlogik/Bowire/issues/158) | Bowire | Cross-feature state visibility in the service tree | ⬜ Open |  |
 | [25](https://github.com/Kuestenlogik/Bowire/issues/25) | Bowire | AI side-panel integration | ✅ Done | `area:workbench` |
 | [43](https://github.com/Kuestenlogik/Bowire/issues/43) | Bowire | MCP SSE-transport support | ✅ Done | `area:mcp` |
 | [85](https://github.com/Kuestenlogik/Bowire/issues/85) | Bowire | Request-pane Body: split stacked Form / Selection Set / Query into sub-tabs | ✅ Done |  |
@@ -53,6 +51,8 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [154](https://github.com/Kuestenlogik/Bowire/issues/154) | Bowire | Help as optional NuGet package — `Kuestenlogik.Bowire.Help` | ✅ Done |  |
 | [155](https://github.com/Kuestenlogik/Bowire/issues/155) | Bowire | Workspace = project folder — strictly per-workspace, sharing via copy actions | ✅ Done |  |
 | [156](https://github.com/Kuestenlogik/Bowire/issues/156) | Bowire | Favorites as a connective UI element | ✅ Done |  |
+| [157](https://github.com/Kuestenlogik/Bowire/issues/157) | Bowire | "Add to…" quick-actions at the method header | ✅ Done |  |
+| [158](https://github.com/Kuestenlogik/Bowire/issues/158) | Bowire | Cross-feature state visibility in the service tree | ✅ Done |  |
 
 ### v2.1 — workspace v3 + protocol wave 3
 
@@ -134,14 +134,6 @@ Remaining wave items after MQTT / Kafka / AMQP / SOAP / NATS / JSON-RPC / Pulsar
 > **Status:** Phase 1 — Shell-Refactor abgeschlossen (Juni 2026). Die strukturelle Neuordnung der Workbench ist durch; was in v2.0 noch landet, sind Feature-Streams plus die echten Breaking-Change-Cleanups. …
 
 #### ⬜ Open · [#124](https://github.com/Kuestenlogik/Bowire/issues/124) Cross-protocol omnibox (Cmd/Ctrl+K)
-
-## Why
-
-#### ⬜ Open · [#157](https://github.com/Kuestenlogik/Bowire/issues/157) "Add to…" quick-actions at the method header
-
-## Why
-
-#### ⬜ Open · [#158](https://github.com/Kuestenlogik/Bowire/issues/158) Cross-feature state visibility in the service tree
 
 ## Why
 
@@ -274,6 +266,14 @@ ADR: [`docs/architecture/ai-integration.md`](https://github.com/Kuestenlogik/Bow
 ## Why
 
 #### ✅ Done · [#156](https://github.com/Kuestenlogik/Bowire/issues/156) Favorites as a connective UI element
+
+## Why
+
+#### ✅ Done · [#157](https://github.com/Kuestenlogik/Bowire/issues/157) "Add to…" quick-actions at the method header
+
+## Why
+
+#### ✅ Done · [#158](https://github.com/Kuestenlogik/Bowire/issues/158) Cross-feature state visibility in the service tree
 
 ## Why
 
