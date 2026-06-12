@@ -616,20 +616,20 @@
     // ---- Flow Sidebar List ----
     function renderFlowsListInto(container) {
         if (flowsList.length === 0) {
-            container.appendChild(el('div', { className: 'bowire-empty-state', style: 'padding:32px' },
-                el('div', { className: 'bowire-empty-title', textContent: 'No flows yet' }),
-                el('div', { className: 'bowire-empty-desc', textContent: 'Create a flow to chain multiple API calls together.' }),
-                el('button', {
-                    id: 'bowire-flow-create-first-btn',
-                    className: 'bowire-recording-action-btn',
-                    style: 'margin-top:12px',
+            container.appendChild(renderEmptyCard({
+                icon: 'flow',
+                headline: 'No flows yet',
+                body: 'Chain multiple API calls — each step’s response feeds the next.',
+                actions: [{
+                    label: 'Create flow',
+                    primary: true,
                     onClick: function () {
                         var flow = createFlow();
                         flowEditorSelectedId = flow.id;
                         render();
                     }
-                }, el('span', { innerHTML: svgIcon('plus') }), el('span', { textContent: 'Create Flow' }))
-            ));
+                }]
+            }));
             return;
         }
 
@@ -675,12 +675,35 @@
         var flow = flowsList.find(function (f) { return f.id === flowEditorSelectedId; });
 
         if (!flow) {
-            return el('div', { id: 'bowire-flow-canvas-empty', className: 'bowire-flow-canvas' },
-                el('div', { className: 'bowire-empty-state', style: 'padding:64px' },
-                    el('div', { className: 'bowire-empty-title', textContent: 'Select a flow' }),
-                    el('div', { className: 'bowire-empty-desc', textContent: 'Choose a flow from the sidebar or create a new one.' })
-                )
-            );
+            var emptyWrap = el('div', { id: 'bowire-flow-canvas-empty', className: 'bowire-flow-canvas' });
+            var hasFlows = flowsList.length > 0;
+            emptyWrap.appendChild(renderEmptyCard({
+                icon: 'flow',
+                headline: hasFlows ? 'Pick a flow' : 'No flows yet',
+                body: hasFlows
+                    ? 'Choose a flow from the sidebar list to edit its nodes, run it, or convert it into a collection.'
+                    : 'Flows chain multiple API calls together — pass the response from one into the request body of the next. Build one from scratch or start from a recording.',
+                actions: hasFlows ? [] : [
+                    {
+                        label: 'New flow',
+                        primary: true,
+                        onClick: function () {
+                            var f = createFlow();
+                            flowEditorSelectedId = f.id;
+                            render();
+                        }
+                    },
+                    {
+                        label: 'Browse recordings',
+                        onClick: function () {
+                            railMode = 'recordings';
+                            try { localStorage.setItem('bowire_rail_mode', 'recordings'); } catch { /* ignore */ }
+                            render();
+                        }
+                    }
+                ]
+            }));
+            return emptyWrap;
         }
 
         var canvas = el('div', { id: 'bowire-flow-canvas-' + flow.id, className: 'bowire-flow-canvas' });

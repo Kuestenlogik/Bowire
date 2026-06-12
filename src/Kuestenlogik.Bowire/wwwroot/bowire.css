@@ -3853,58 +3853,61 @@ lives at the right of the
     overflow: hidden;
 }
 
+/* Rail-level empty states — every "this pane has nothing yet"
+   surface uses one of these two shapes, both visually aligned with
+   the Home portal aesthetic (left-aligned, modest icon, restrained
+   headline). The previous centered-hero look was inconsistent across
+   rails ("mal sehr klein, mal sehr groß, zentriert vs. links") —
+   restyled here once so every rail's first impression reads the same. */
 .bowire-empty-state {
-    flex: 1;
     display: flex;
     flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    color: var(--bowire-text-tertiary);
-    gap: 16px;
-    padding: 40px;
+    gap: 8px;
+    color: var(--bowire-text-secondary);
+    padding: 24px 28px;
+    max-width: 640px;
 }
 
-/* #121 — context-aware empty card. Shared shape for every "this pane
-   has nothing yet" surface. Replaces the literal "No X" strings that
-   used to leave the operator on their own to find the next step. */
+/* #121 — context-aware empty card. Same left-aligned shape so every
+   rail's empty pane reads as a portal (icon-led title + one-line
+   body + action row) instead of a centered headline floating mid-pane. */
 .bowire-empty-card {
     display: flex;
     flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 12px;
-    padding: 48px 32px;
-    margin: 24px auto;
-    max-width: 480px;
-    text-align: center;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 22px 24px;
+    margin: 18px 0;
+    max-width: 640px;
+    text-align: left;
     color: var(--bowire-text-secondary);
 }
 .bowire-empty-card-icon {
-    width: 48px;
-    height: 48px;
+    width: 22px;
+    height: 22px;
     display: flex;
     align-items: center;
     justify-content: center;
-    color: var(--bowire-text-tertiary);
-    background: var(--bowire-surface);
-    border: 1px solid var(--bowire-border-subtle);
-    border-radius: var(--bowire-radius-md);
-    font-size: 22px;
+    color: var(--bowire-accent);
+    background: transparent;
+    border: 0;
+    margin-bottom: 2px;
 }
-.bowire-empty-card-icon svg { width: 24px; height: 24px; }
+.bowire-empty-card-icon svg { width: 18px; height: 18px; }
 .bowire-empty-card-headline {
-    margin: 4px 0 0;
-    font-size: 16px;
+    margin: 0;
+    font-size: 15px;
     font-weight: 600;
     color: var(--bowire-text);
     letter-spacing: var(--bowire-heading-tracking);
+    line-height: 1.3;
 }
 .bowire-empty-card-body {
     margin: 0;
     font-size: 13px;
     line-height: 1.55;
     color: var(--bowire-text-secondary);
-    max-width: 380px;
+    max-width: 560px;
 }
 .bowire-empty-card-dismiss {
     background: none;
@@ -3912,8 +3915,8 @@ lives at the right of the
     color: var(--bowire-text-tertiary);
     cursor: pointer;
     font-size: 11px;
-    padding: 2px 6px;
-    margin-top: -4px;
+    padding: 2px 0;
+    margin-top: -2px;
     text-decoration: underline;
     text-underline-offset: 2px;
 }
@@ -3921,9 +3924,9 @@ lives at the right of the
 .bowire-empty-card-actions {
     display: flex;
     flex-wrap: wrap;
-    justify-content: center;
+    justify-content: flex-start;
     gap: 8px;
-    margin-top: 12px;
+    margin-top: 6px;
 }
 .bowire-empty-card-action {
     background: transparent;
@@ -3951,21 +3954,24 @@ lives at the right of the
 }
 
 .bowire-empty-icon {
-    font-size: 48px;
-    opacity: 0.4;
+    font-size: 28px;
+    opacity: 0.5;
+    color: var(--bowire-accent);
 }
 
 .bowire-empty-title {
-    font-size: 18px;
+    font-size: 15px;
     font-weight: 600;
-    color: var(--bowire-text-secondary);
+    color: var(--bowire-text);
+    letter-spacing: var(--bowire-heading-tracking);
 }
 
 .bowire-empty-desc {
-    font-size: 14px;
-    text-align: center;
-    max-width: 360px;
-    line-height: 1.6;
+    font-size: 13px;
+    text-align: left;
+    max-width: 560px;
+    line-height: 1.55;
+    color: var(--bowire-text-secondary);
 }
 .bowire-pane {
     flex: 1;
@@ -11036,23 +11042,37 @@ plus a footer with the
 .bowire-landing {
     flex: 1;
     display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 32px 24px;
+    flex-direction: column;
+    /* Left-aligned to match the Home portal + every other rail's
+       empty / start state. Previously centered horizontally + vertically
+       which made Discover's landing card float in the middle while all
+       other rails read left-aligned ("zentriert vs. links" feedback). */
+    align-items: flex-start;
+    padding: 22px 28px;
     overflow-y: auto;
 }
 
 /* Default card shell — used by ready / discovery-failed / editable /
-   wrong-protocol / multi-url / loading. */
+   wrong-protocol / multi-url / loading. Slimmer chrome now so it
+   reads as a portal section instead of a centered modal-like card.
+   Children (empty-card / section titles / history list / tips /
+   footer) all stack vertically and align with the same left margin
+   so the rail reads as one continuous column. */
 .bowire-landing-card {
     width: 100%;
     max-width: 720px;
-    background: var(--bowire-bg-elevated);
-    border: 1px solid var(--bowire-border);
-    border-radius: var(--bowire-radius-lg);
-    padding: 32px 36px;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+    background: transparent;
+    border: 0;
+    border-radius: 0;
+    padding: 0;
+    box-shadow: none;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
 }
+/* Empty-card inside landing-card pulls its built-in margin since
+   landing-card sets its own gap. */
+.bowire-landing-card > .bowire-empty-card { margin: 0; padding-inline: 0; }
 
 /* Hero shell — used by first-run only. Wider,
 with the big logo. */
@@ -11210,15 +11230,19 @@ with the big logo. */
     min-width: 0;
 }
 .bowire-landing-headline {
-    font-size: 1.125rem;
-    font-weight: 700;
+    /* Aligned with the new portal-empty-state headline sizing so
+       Discover doesn't read taller than every other rail's first
+       impression. */
+    font-size: 15px;
+    font-weight: 600;
     color: var(--bowire-text);
+    letter-spacing: var(--bowire-heading-tracking);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
 }
 .bowire-landing-subhead {
-    font-size: 0.8125rem;
+    font-size: 13px;
     color: var(--bowire-text-secondary);
     margin-top: 2px;
     font-family: var(--bowire-font-mono);
@@ -11226,10 +11250,12 @@ with the big logo. */
 
 /* Section title used by multiple states */
 .bowire-landing-section-title {
-    font-size: 0.9375rem;
+    font-size: 12px;
     font-weight: 600;
-    color: var(--bowire-text);
-    margin: 4px 0 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--bowire-text-secondary);
+    margin: 14px 0 8px;
     line-height: 1.5;
 }
 .bowire-landing-help-text {
