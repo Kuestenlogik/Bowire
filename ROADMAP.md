@@ -90,7 +90,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.2 — Test pillar: assertions, CI runner, regression coverage
 
-**0/7 done** · 7 backlog
+**0/8 done** · 8 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -101,6 +101,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [174](https://github.com/Kuestenlogik/Bowire/issues/174) | Bowire | [Data-driven tests — CSV / JSON / generator parameterisation](#issue-kuestenlogik-bowire-174) | ⬜ Open |  |
 | [180](https://github.com/Kuestenlogik/Bowire/issues/180) | Bowire | [Assertion DSL for collection / recording replay](#issue-kuestenlogik-bowire-180) | ⬜ Open |  |
 | [181](https://github.com/Kuestenlogik/Bowire/issues/181) | Bowire | [bowire test CLI runner with JUnit / SARIF / TTY output](#issue-kuestenlogik-bowire-181) | ⬜ Open |  |
+| [191](https://github.com/Kuestenlogik/Bowire/issues/191) | Bowire | [Contract testing — Pact-style publish / verify CLI](#issue-kuestenlogik-bowire-191) | ⬜ Open |  |
 
 ### v2.3 — Security pillar: shift-left scanner, OWASP coverage, auth recording
 
@@ -478,6 +479,10 @@ Recordings + Mocks let an operator capture and replay traffic, but nothing in th
 #### <a id="issue-kuestenlogik-bowire-181"></a>⬜ Open · [#181](https://github.com/Kuestenlogik/Bowire/issues/181) bowire test CLI runner with JUnit / SARIF / TTY output
 
 Bowire is currently a UI tool. The "shift-left" / "build safer apps through continuous testing" positioning needs a headless surface that runs in CI and emits CI-friendly output (JUnit-XML, SARIF, GitHub annotations). Without it, the workbench stays a one-developer-at-a-time explorer. [[more]](https://github.com/Kuestenlogik/Bowire/issues/181)
+
+#### <a id="issue-kuestenlogik-bowire-191"></a>⬜ Open · [#191](https://github.com/Kuestenlogik/Bowire/issues/191) Contract testing — Pact-style publish / verify CLI
+
+Microservice teams break each other when one team changes an API without consulting the consumers. Contract testing (Pact-style) catches that at build time: the consumer team declares "I expect these requests + responses", the provider's CI runs the contracts, fails the build if anything doesn't match. [[more]](https://github.com/Kuestenlogik/Bowire/issues/191)
 
 ### v2.3 — Security pillar: shift-left scanner, OWASP coverage, auth recording
 
