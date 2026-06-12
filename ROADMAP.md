@@ -71,7 +71,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [158](https://github.com/Kuestenlogik/Bowire/issues/158) | Bowire | [Cross-feature state visibility in the service tree](#issue-kuestenlogik-bowire-158) | ✅ Done |  |
 | [159](https://github.com/Kuestenlogik/Bowire/issues/159) | Bowire | [Workspace Export / Import as .bowire JSON](#issue-kuestenlogik-bowire-159) | ✅ Done |  |
 
-### v2.1 — Workspace v3 + protocol wave 3
+### v2.1 — Scripting, variable resolver, throughput surface
 
 **0/10 done** · 10 backlog
 
@@ -104,7 +104,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.3 — Security pillar: shift-left scanner, OWASP coverage, auth recording
 
-**0/15 done** · 1 in progress · 14 backlog
+**0/16 done** · 1 in progress · 15 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -123,6 +123,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [184](https://github.com/Kuestenlogik/Bowire/issues/184) | Bowire | [Protocol-specific security scanners — gRPC / GraphQL / WS / MQTT / SSE / MCP](#issue-kuestenlogik-bowire-184) | ⬜ Open |  |
 | [186](https://github.com/Kuestenlogik/Bowire/issues/186) | Bowire | [HAR import — Chrome DevTools network tab as an input source](#issue-kuestenlogik-bowire-186) | ⬜ Open |  |
 | [187](https://github.com/Kuestenlogik/Bowire/issues/187) | Bowire | [CVE lookup for discovered servers — fill Bowire.VulnDb](#issue-kuestenlogik-bowire-187) | ⬜ Open |  |
+| [190](https://github.com/Kuestenlogik/Bowire/issues/190) | Bowire | [Authentication session recording + token reuse](#issue-kuestenlogik-bowire-190) | ⬜ Open |  |
 
 ### v2.4 — Dev pillar: schema watch diff, mock-from-schema, side-by-side
 
@@ -142,10 +143,11 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.5 — Continuous integration: PR bot, project file, org dashboard
 
-**0/3 done** · 3 backlog
+**0/4 done** · 4 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
+| [101](https://github.com/Kuestenlogik/Bowire/issues/101) | Bowire | [Tugboat — VS Code + JetBrains workbench extension](#issue-kuestenlogik-bowire-101) | ⬜ Open |  |
 | [172](https://github.com/Kuestenlogik/Bowire/issues/172) | Bowire | [.bowire/project.json convention — checked-in workspace configuration](#issue-kuestenlogik-bowire-172) | ⬜ Open |  |
 | [183](https://github.com/Kuestenlogik/Bowire/issues/183) | Bowire | [GitHub Action — Bowire PR-comment bot with delta + findings + perf](#issue-kuestenlogik-bowire-183) | ⬜ Open |  |
 | [188](https://github.com/Kuestenlogik/Bowire/issues/188) | Bowire | [Org-level Bowire dashboard — rollup across services](#issue-kuestenlogik-bowire-188) | ⬜ Open |  |
@@ -172,7 +174,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [96](https://github.com/Kuestenlogik/Bowire/issues/96) | Bowire | [Multi-tenant Phase C — SCIM 2.0 provisioning endpoints](#issue-kuestenlogik-bowire-96) | ⬜ Open |  |
 | [97](https://github.com/Kuestenlogik/Bowire/issues/97) | Bowire | [Multi-tenant Phase E — single-user → multi-tenant migration path](#issue-kuestenlogik-bowire-97) | ⬜ Open |  |
 | [98](https://github.com/Kuestenlogik/Bowire/issues/98) | Bowire | [Multi-tenant Phase F — user chip, scoped state copy, admin impersonation](#issue-kuestenlogik-bowire-98) | ⬜ Open |  |
-| [101](https://github.com/Kuestenlogik/Bowire/issues/101) | Bowire | [Tugboat — VS Code + JetBrains workbench extension](#issue-kuestenlogik-bowire-101) | ⬜ Open |  |
 | [103](https://github.com/Kuestenlogik/Bowire/issues/103) | Bowire | [Generate boat photos: submarine, ferry, tugboat, lighthouse](#issue-kuestenlogik-bowire-103) | ⬜ Open |  |
 | [110](https://github.com/Kuestenlogik/Bowire/issues/110) | Bowire | [Site: surface the AI assistant in the launch wizard + quickstart](#issue-kuestenlogik-bowire-110) | ⬜ Open |  |
 | [128](https://github.com/Kuestenlogik/Bowire/issues/128) | Bowire | [Bowire Agent — register embedded instances with a central hub](#issue-kuestenlogik-bowire-128) | ⬜ Open |  |
@@ -404,7 +405,7 @@ The Discover service tree today shows each method as a flat row: name, badge, op
 
 A Bowire workspace is the project folder — URLs, collections, recordings, favorites, benchmarks, flows and presets all live in it. Currently the only way to move a workspace between machines or share it with a teammate is to export each artifact one by one (and most aren't exportable at all). … [[more]](https://github.com/Kuestenlogik/Bowire/issues/159)
 
-### v2.1 — Workspace v3 + protocol wave 3
+### v2.1 — Scripting, variable resolver, throughput surface
 
 #### <a id="issue-kuestenlogik-bowire-117"></a>⬜ Open · [#117](https://github.com/Kuestenlogik/Bowire/issues/117) i18n — extract every UI string; ship DE + EN catalogues
 
@@ -546,6 +547,10 @@ Operators routinely have Chrome DevTools open watching their app's traffic. Toda
 
 Bowire knows what protocol it's talking to and often what server (Envoy, NGINX, Kestrel, gRPC-Go, fastify, &c) — that information leaks through banners, error messages, header values. What Bowire DOESN'T do is cross-reference that against a CVE database. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/187)
 
+#### <a id="issue-kuestenlogik-bowire-190"></a>⬜ Open · [#190](https://github.com/Kuestenlogik/Bowire/issues/190) Authentication session recording + token reuse
+
+Modern API auth is multi-step: hit `/login`, get a session cookie, hit `/refresh`, get a JWT, use the JWT on every subsequent call. Today Bowire has Auth-Configuration (mTLS, basic, bearer-static) but no understanding of FLOWS. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/190)
+
 ### v2.4 — Dev pillar: schema watch diff, mock-from-schema, side-by-side
 
 #### <a id="issue-kuestenlogik-bowire-34"></a>⬜ Backlog · [#34](https://github.com/Kuestenlogik/Bowire/issues/34) AsyncAPI discovery source — remaining bindings + V2 overloads + YAML pre-normaliser
@@ -593,6 +598,10 @@ Bowire already has Schema-Watch (#138) that re-runs discovery on a configurable 
 Most API design issues — inconsistent naming, returning passwords, returning unbounded result lists, missing pagination, missing versioning — are caught by code review IF the reviewer is sharp. They scale exactly with reviewer attention, which doesn't scale. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/189)
 
 ### v2.5 — Continuous integration: PR bot, project file, org dashboard
+
+#### <a id="issue-kuestenlogik-bowire-101"></a>⬜ Open · [#101](https://github.com/Kuestenlogik/Bowire/issues/101) Tugboat — VS Code + JetBrains workbench extension
+
+Thunder Client proved there's a real audience for "I want to test an API without leaving my IDE." It's REST-only and limited; the *category* it occupies is uncontested for multi-protocol. [[more]](https://github.com/Kuestenlogik/Bowire/issues/101)
 
 #### <a id="issue-kuestenlogik-bowire-172"></a>⬜ Open · [#172](https://github.com/Kuestenlogik/Bowire/issues/172) .bowire/project.json convention — checked-in workspace configuration
 
@@ -703,10 +712,6 @@ Extracted from #28 — **Phase E** of the multi-tenant rollout. Tracked separate
 #### <a id="issue-kuestenlogik-bowire-98"></a>⬜ Open · [#98](https://github.com/Kuestenlogik/Bowire/issues/98) Multi-tenant Phase F — user chip, scoped state copy, admin impersonation
 
 Phase F of the multi-tenant rollout — the UI affordances that turn "multi-user works under the hood" into "users feel it" (#28). [[more]](https://github.com/Kuestenlogik/Bowire/issues/98)
-
-#### <a id="issue-kuestenlogik-bowire-101"></a>⬜ Open · [#101](https://github.com/Kuestenlogik/Bowire/issues/101) Tugboat — VS Code + JetBrains workbench extension
-
-Thunder Client proved there's a real audience for "I want to test an API without leaving my IDE." It's REST-only and limited; the *category* it occupies is uncontested for multi-protocol. [[more]](https://github.com/Kuestenlogik/Bowire/issues/101)
 
 #### <a id="issue-kuestenlogik-bowire-103"></a>⬜ Open · [#103](https://github.com/Kuestenlogik/Bowire/issues/103) Generate boat photos: submarine, ferry, tugboat, lighthouse
 
