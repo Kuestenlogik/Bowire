@@ -730,6 +730,15 @@
         // master Allow toggle without navigating to Settings).
         if (opts.inlineToggle && typeof opts.inlineToggle.onChange === 'function') {
             var iv = !!opts.inlineToggle.value;
+            // Heuristic: an inline toggle on an alert bar usually
+            // mirrors the condition the bar is warning about (e.g.
+            // "AI is observe-only" with a toggle to allow invocation).
+            // Flipping the toggle to its "resolve" state should fade
+            // the bar out so the operator visibly perceives the
+            // resolution instead of a snap-disappear. Set
+            // dismissOnToggleTo=true to enable this; default off
+            // means the bar stays put after the flip.
+            var dismissOn = opts.inlineToggle.dismissOnToggleTo;
             var toggle = el('button', {
                 type: 'button',
                 className: 'bowire-settings-toggle bowire-alert-bar-toggle' + (iv ? ' on' : ''),
@@ -737,11 +746,14 @@
                 title: opts.inlineToggle.title || (iv ? 'On — click to turn off' : 'Off — click to turn on'),
                 onClick: function () {
                     iv = !iv;
-                    opts.inlineToggle.onChange(iv);
                     toggle.classList.toggle('on', iv);
                     toggle.setAttribute('aria-pressed', iv ? 'true' : 'false');
                     var dot = toggle.querySelector('.bowire-settings-toggle-dot');
                     if (dot) dot.style.transform = iv ? 'translateX(16px)' : 'translateX(0)';
+                    opts.inlineToggle.onChange(iv);
+                    if (dismissOn !== undefined && iv === !!dismissOn) {
+                        _fadeOutAlertBar(bar);
+                    }
                 }
             },
                 el('span', {
@@ -760,11 +772,29 @@
                 innerHTML: svgIcon('close'),
                 onClick: function () {
                     try { sessionStorage.setItem(opts.dismissKey, '1'); } catch { /* ignore */ }
-                    bar.remove();
+                    _fadeOutAlertBar(bar);
                 }
             }));
         }
         return bar;
+    }
+
+    // Smooth-fade helper for renderAlertBar. CSS handles the actual
+    // opacity + max-height animation; this just sets the dismissing
+    // class and removes the node when the transition ends, falling
+    // back to a timeout so a missing transitionend (e.g. reduced-
+    // motion users) doesn't leave the node stuck in the DOM.
+    function _fadeOutAlertBar(bar) {
+        if (!bar || bar.classList.contains('bowire-alert-bar-dismissing')) return;
+        bar.classList.add('bowire-alert-bar-dismissing');
+        var done = false;
+        function finish() {
+            if (done) return;
+            done = true;
+            if (bar.parentNode) bar.parentNode.removeChild(bar);
+        }
+        bar.addEventListener('transitionend', finish);
+        setTimeout(finish, 600);
     }
 
     function renderEmptyCard(opts) {

@@ -846,6 +846,34 @@
         // maintainer call; env selector moved back to the topbar
         // so the editor-context switch lives next to navigation.
         var right = el('div', { className: 'bowire-statusbar-right' });
+        // Console toggle — promoted to the statusbar so the activity
+        // log is reachable from any rail (Discover / Home / Recordings
+        // / …) instead of only from the response-pane / benchmark
+        // toolbars where renderConsoleToggleButton mounts it. Click
+        // toggles consoleOpen + (re-)renders the floating panel
+        // directly; the panel writes into document.body, not the
+        // render tree, so no full render() is needed.
+        right.appendChild(el('button', {
+            id: 'bowire-statusbar-console-btn',
+            className: 'bowire-theme-toggle-btn' + (consoleOpen ? ' active' : ''),
+            title: consoleOpen
+                ? 'Hide console (activity log)'
+                : 'Show console — request / response activity log (' + consoleLog.length + ')',
+            'aria-label': 'Toggle console',
+            onClick: function () {
+                consoleOpen = !consoleOpen;
+                if (typeof renderConsolePanel === 'function') renderConsolePanel(true);
+                render();
+            }
+        },
+            el('span', {
+                innerHTML: svgIcon('clock'),
+                style: 'width:14px;height:14px;display:flex'
+            }),
+            consoleLog.length > 0
+                ? el('span', { className: 'bowire-statusbar-console-count', textContent: String(consoleLog.length) })
+                : null
+        ));
         // #135 split-toggle. Cycles horizontal ↔ vertical. Icon
         // shows the CURRENT layout (state-pattern, matches how
         // browser-engine toggles work) — click flips. Reflowing the

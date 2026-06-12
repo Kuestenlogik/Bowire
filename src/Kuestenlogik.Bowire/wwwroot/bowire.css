@@ -12848,6 +12848,48 @@ full accent for user-pinned
     flex-shrink: 0;
     margin-right: 2px;
 }
+/* Statusbar console button — count badge sits to the right of the
+   clock icon. Subtle accent so the badge reads as informational, not
+   alarming. */
+.bowire-statusbar-console-count {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 16px;
+    height: 16px;
+    padding: 0 4px;
+    margin-left: 4px;
+    border-radius: 8px;
+    background: var(--bowire-accent-subtle);
+    color: var(--bowire-accent);
+    font-size: 10px;
+    font-weight: 700;
+    line-height: 1;
+}
+/* Fade-out animation. Either the dismiss X or an inline toggle
+   resolving the condition sets this class — opacity + max-height
+   transition so the bar visibly slides out instead of snapping. The
+   _fadeOutAlertBar helper removes the node on transitionend so the
+   DOM stays clean. */
+.bowire-alert-bar {
+    transition: opacity 320ms ease, max-height 320ms ease, margin 320ms ease, padding 320ms ease, border-width 320ms ease;
+    overflow: hidden;
+    max-height: 200px;
+}
+.bowire-alert-bar.bowire-alert-bar-dismissing {
+    opacity: 0;
+    max-height: 0;
+    margin-top: 0;
+    margin-bottom: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+    border-top-width: 0;
+    border-bottom-width: 0;
+    pointer-events: none;
+}
+@media (prefers-reduced-motion: reduce) {
+    .bowire-alert-bar { transition: none; }
+}
 /* Severity hues — colored left border + dot only; background stays
    neutral so the bar is informational rather than alarming. */
 .bowire-alert-bar-info {

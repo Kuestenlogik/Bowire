@@ -1736,10 +1736,12 @@
             // ---- Band 1: Continue (or first-run onboarding) ----
             if (isFirstRun) {
                 var firstRunBand = el('div', { className: 'bowire-home-band bowire-home-band-firstrun' });
-                firstRunBand.appendChild(el('p', {
-                    className: 'bowire-home-firstrun-tagline',
-                    textContent: 'Pick what you want to do — or jump back into recent activity below.'
-                }));
+                // Same Start title as the returning-operator branch
+                // below so every Home band carries a consistent header
+                // — without it the cards row floats labelless above
+                // Favorites / Recent, which the operator reads as a
+                // missing section title.
+                firstRunBand.appendChild(_renderHomeBandTitle('plus', 'Start', 'Pick what you want to do'));
                 firstRunBand.appendChild(_renderHomeStartGrid(true));
                 homeWrap.appendChild(firstRunBand);
             } else {
