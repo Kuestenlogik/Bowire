@@ -12,11 +12,10 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.0 — Re-architected workbench shell + workspace = project folder
 
-**48/55 done** · 7 backlog
+**49/55 done** · 6 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
-| [33](https://github.com/Kuestenlogik/Bowire/issues/33) | Bowire | [Protocol plugins — Connect Phase 1+3 + OTLP](#issue-kuestenlogik-bowire-33) | ⬜ Backlog | `area:plugin-sdk` |
 | [115](https://github.com/Kuestenlogik/Bowire/issues/115) | Bowire | [v2.0 — UI refactor: re-architect the workbench shell](#issue-kuestenlogik-bowire-115) | ⬜ Open |  |
 | [147](https://github.com/Kuestenlogik/Bowire/issues/147) | Bowire | [Git-backed workspace storage — composes with #144 storage modes + #58](#issue-kuestenlogik-bowire-147) | ⬜ Open |  |
 | [148](https://github.com/Kuestenlogik/Bowire/issues/148) | Bowire | [Per-entity file storage format for git-backed workspaces (envs / collections / scripts)](#issue-kuestenlogik-bowire-148) | ⬜ Open |  |
@@ -24,6 +23,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [150](https://github.com/Kuestenlogik/Bowire/issues/150) | Bowire | [Filesystem-watch + reconcile UI for externally-edited workspace files](#issue-kuestenlogik-bowire-150) | ⬜ Open |  |
 | [151](https://github.com/Kuestenlogik/Bowire/issues/151) | Bowire | [Secret-file separation + workspace lock file for safe team-shared git workspaces](#issue-kuestenlogik-bowire-151) | ⬜ Open |  |
 | [25](https://github.com/Kuestenlogik/Bowire/issues/25) | Bowire | [AI side-panel integration](#issue-kuestenlogik-bowire-25) | ✅ Done | `area:workbench` |
+| [33](https://github.com/Kuestenlogik/Bowire/issues/33) | Bowire | [Protocol plugins — Connect Phase 1+3 + OTLP](#issue-kuestenlogik-bowire-33) | ✅ Done | `area:plugin-sdk` |
 | [43](https://github.com/Kuestenlogik/Bowire/issues/43) | Bowire | [MCP SSE-transport support](#issue-kuestenlogik-bowire-43) | ✅ Done | `area:mcp` |
 | [58](https://github.com/Kuestenlogik/Bowire/issues/58) | Bowire | [Workspace: complete the Git-native story (.blw file)](#issue-kuestenlogik-bowire-58) | ✅ Done |  |
 | [85](https://github.com/Kuestenlogik/Bowire/issues/85) | Bowire | [Request-pane Body: split stacked Form / Selection Set / Query into sub-tabs](#issue-kuestenlogik-bowire-85) | ✅ Done |  |
@@ -188,12 +188,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.0 — Re-architected workbench shell + workspace = project folder
 
-#### <a id="issue-kuestenlogik-bowire-33"></a>⬜ Backlog · [#33](https://github.com/Kuestenlogik/Bowire/issues/33) Protocol plugins — Connect Phase 1+3 + OTLP
-
-> `area:plugin-sdk`
-
-Remaining wave items after MQTT / Kafka / AMQP / SOAP / NATS / JSON-RPC / Pulsar / DIS / UDP shipped: [[more]](https://github.com/Kuestenlogik/Bowire/issues/33)
-
 #### <a id="issue-kuestenlogik-bowire-115"></a>⬜ Open · [#115](https://github.com/Kuestenlogik/Bowire/issues/115) v2.0 — UI refactor: re-architect the workbench shell
 
 > **Status:** Phase 1 — Shell-Refactor abgeschlossen (Juni 2026). Die strukturelle Neuordnung der Workbench ist durch; was in v2.0 noch landet, sind Feature-Streams plus die echten Breaking-Change-Cleanups. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/115)
@@ -223,6 +217,12 @@ Two related concerns for a git-backed workspace (#147) that aren't covered yet: 
 > `area:workbench`
 
 ADR: [`docs/architecture/ai-integration.md`](https://github.com/Kuestenlogik/Bowire/blob/main/docs/architecture/ai-integration.md) [[more]](https://github.com/Kuestenlogik/Bowire/issues/25)
+
+#### <a id="issue-kuestenlogik-bowire-33"></a>✅ Done · [#33](https://github.com/Kuestenlogik/Bowire/issues/33) Protocol plugins — Connect Phase 1+3 + OTLP
+
+> `area:plugin-sdk`
+
+Remaining wave items after MQTT / Kafka / AMQP / SOAP / NATS / JSON-RPC / Pulsar / DIS / UDP shipped: [[more]](https://github.com/Kuestenlogik/Bowire/issues/33)
 
 #### <a id="issue-kuestenlogik-bowire-43"></a>✅ Done · [#43](https://github.com/Kuestenlogik/Bowire/issues/43) MCP SSE-transport support
 
