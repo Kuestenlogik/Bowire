@@ -96,6 +96,7 @@
     <BowireJsFragment Include="wwwroot\js\prologue.js" />
     <BowireJsFragment Include="wwwroot\js\test-assertions.js" />
     <BowireJsFragment Include="wwwroot\js\helpers.js" />
+    <BowireJsFragment Include="wwwroot\js\workspace-templates.js" />
     <BowireJsFragment Include="wwwroot\js\history-env.js" />
     <BowireJsFragment Include="wwwroot\js\auth.js" />
     <BowireJsFragment Include="wwwroot\js\schema-form.js" />

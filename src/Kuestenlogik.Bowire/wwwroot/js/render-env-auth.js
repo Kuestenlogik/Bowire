@@ -1461,16 +1461,7 @@
                         onClick: function () {
                             workspaceMenuOpen = false;
                             render();
-                            bowirePrompt('New workspace name', {
-                                title: 'Create workspace',
-                                placeholder: 'e.g. Payments — staging',
-                                confirmText: 'Create',
-                            }).then(function (name) {
-                                if (name) {
-                                    createWorkspace(name);
-                                    render();
-                                }
-                            });
+                            openCreateWorkspaceDialog();
                         }
                     },
                         el('span', { className: 'bowire-workspace-menu-item-icon', textContent: '+' }),
