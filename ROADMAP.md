@@ -99,12 +99,13 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.3 — Security pillar: shift-left scanner, OWASP coverage, auth recording
 
-**0/2 done** · 2 backlog
+**0/3 done** · 3 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
 | [173](https://github.com/Kuestenlogik/Bowire/issues/173) | Bowire | [OWASP API Security Top 10 — structured test suite](#issue-kuestenlogik-bowire-173) | ⬜ Open |  |
 | [175](https://github.com/Kuestenlogik/Bowire/issues/175) | Bowire | [Schema-aware mutation engine for fuzz / scan](#issue-kuestenlogik-bowire-175) | ⬜ Open |  |
+| [176](https://github.com/Kuestenlogik/Bowire/issues/176) | Bowire | [Spider / crawl — discover endpoints from a base URL](#issue-kuestenlogik-bowire-176) | ⬜ Open |  |
 
 ### v2.5 — Continuous integration: PR bot, project file, org dashboard
 
@@ -444,6 +445,10 @@ Bowire's security scan is currently generic fuzz + a handful of templates. The d
 #### <a id="issue-kuestenlogik-bowire-175"></a>⬜ Open · [#175](https://github.com/Kuestenlogik/Bowire/issues/175) Schema-aware mutation engine for fuzz / scan
 
 The current scan/fuzz path generates inputs without much awareness of the schema — generic strings, numbers, nulls. The DOZENS of subtle vulnerabilities that require schema-aware mutation (type confusion, optional→required violation, enum-out-of-range, recursion-depth, alias-abuse in GraphQL) get missed. [[more]](https://github.com/Kuestenlogik/Bowire/issues/175)
+
+#### <a id="issue-kuestenlogik-bowire-176"></a>⬜ Open · [#176](https://github.com/Kuestenlogik/Bowire/issues/176) Spider / crawl — discover endpoints from a base URL
+
+Bowire's discovery starts from "you tell me a URL or upload a schema". If the schema is incomplete, or if there are endpoints reachable but undocumented (the classic shadow-IT case at API level), Bowire never sees them. Real security testing assumes "find the things the developer forgot to declare". [[more]](https://github.com/Kuestenlogik/Bowire/issues/176)
 
 ### v2.5 — Continuous integration: PR bot, project file, org dashboard
 
