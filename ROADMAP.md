@@ -89,12 +89,13 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.2 — Test pillar: assertions, CI runner, regression coverage
 
-**0/2 done** · 2 backlog
+**0/3 done** · 3 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
 | [170](https://github.com/Kuestenlogik/Bowire/issues/170) | Bowire | [Mock-server fault injection — latency / errors / drops / partial responses](#issue-kuestenlogik-bowire-170) | ⬜ Open |  |
 | [171](https://github.com/Kuestenlogik/Bowire/issues/171) | Bowire | [Snapshot testing — capture-once, diff-on-change response baselines](#issue-kuestenlogik-bowire-171) | ⬜ Open |  |
+| [174](https://github.com/Kuestenlogik/Bowire/issues/174) | Bowire | [Data-driven tests — CSV / JSON / generator parameterisation](#issue-kuestenlogik-bowire-174) | ⬜ Open |  |
 
 ### v2.3 — Security pillar: shift-left scanner, OWASP coverage, auth recording
 
@@ -428,6 +429,10 @@ Mocks (#94) replay captured responses faithfully. But "code that works against t
 #### <a id="issue-kuestenlogik-bowire-171"></a>⬜ Open · [#171](https://github.com/Kuestenlogik/Bowire/issues/171) Snapshot testing — capture-once, diff-on-change response baselines
 
 Regression-testing API responses is hard without a baseline. A real assertion DSL covers structural checks ("status is OK", "body.id matches"), but doesn't catch "the response shape changed in a way nobody intended". Jest-style snapshot testing fills that gap: record the response once, fail if it changes unexpectedly. [[more]](https://github.com/Kuestenlogik/Bowire/issues/171)
+
+#### <a id="issue-kuestenlogik-bowire-174"></a>⬜ Open · [#174](https://github.com/Kuestenlogik/Bowire/issues/174) Data-driven tests — CSV / JSON / generator parameterisation
+
+Same request, N different inputs is a standard testing pattern. Today an operator would have to clone a collection item N times or write a script. Both flows lose the structured "same test, different data" semantics that test reporters expect. [[more]](https://github.com/Kuestenlogik/Bowire/issues/174)
 
 ### v2.3 — Security pillar: shift-left scanner, OWASP coverage, auth recording
 
