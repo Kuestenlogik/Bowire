@@ -103,9 +103,11 @@
     function renderStateReady(parent) {
         var card = el('div', { className: 'bowire-landing-card' });
 
-        // Header — logo + connect summary
+        // Header — connect summary only. The big Bowire logo used to
+        // sit here too, but it doubled the "you are looking at the
+        // Bowire workbench" signal the topbar already carries. Logo
+        // now lives only in the About box (settings.js renderAboutContent).
         var header = el('div', { className: 'bowire-landing-header' },
-            el('div', { className: 'bowire-landing-logo', innerHTML: svgIcon('bowireLogo') }),
             el('div', { className: 'bowire-landing-header-text' },
                 el('div', { className: 'bowire-landing-headline', textContent: buildConnectedHeadline() }),
                 el('div', { className: 'bowire-landing-subhead', textContent: buildServiceSummary() })
@@ -147,15 +149,10 @@
 
     function renderStateFirstRun(parent) {
         // #291 — first-run welcome moved to the Home rail mode. From
-        // Discover we now point the operator at Home so the
-        // onboarding stays consolidated on one surface. This keeps
-        // Discover focused on "browse / pick a method" without
-        // doubling as the new-user landing page.
+        // Discover we point the operator at Home so the onboarding
+        // stays consolidated on one surface. Logo removed — it lives
+        // in the About box now; the topbar already says "Bowire".
         var hint = el('div', { className: 'bowire-landing-hero' });
-        hint.appendChild(el('div', {
-            className: 'bowire-landing-hero-logo',
-            innerHTML: svgIcon('bowireLogo')
-        }));
         hint.appendChild(el('div', { className: 'bowire-landing-hero-headline', textContent: 'Discover is empty' }));
         hint.appendChild(el('div', { className: 'bowire-landing-hero-tagline',
             textContent: 'Pick a workspace and add a URL or schema file from there — Home walks you through the first steps.' }));

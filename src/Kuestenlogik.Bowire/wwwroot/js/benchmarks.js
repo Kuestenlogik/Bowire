@@ -335,7 +335,7 @@
                 body: hasAny
                     ? 'Pick one in the sidebar to see its config and last run, or add a new one.'
                     : 'Benchmarks repeat a single call N times under K concurrency and report latency percentiles + status distribution. Phase 1 ships the single-method shape; collection / recording / random / scheduled probes are tracked on #131.',
-                actions: [{
+                actions: hasAny ? [{
                     label: 'New benchmark',
                     primary: true,
                     onClick: function () {
@@ -343,7 +343,25 @@
                         benchmarksSelectedId = s.id;
                         render();
                     }
-                }]
+                }] : [
+                    {
+                        label: 'New benchmark',
+                        primary: true,
+                        onClick: function () {
+                            var s = createBenchmarkSpec();
+                            benchmarksSelectedId = s.id;
+                            render();
+                        }
+                    },
+                    {
+                        label: 'Pick a method first',
+                        onClick: function () {
+                            railMode = 'discover';
+                            try { localStorage.setItem('bowire_rail_mode', 'discover'); } catch { /* ignore */ }
+                            render();
+                        }
+                    }
+                ]
             }));
             return main;
         }
