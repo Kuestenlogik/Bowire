@@ -11,6 +11,8 @@ items:
   href: features/
 - name: Protocol Guides
   href: protocols/
+- name: Samples
+  href: samples/
 - name: Architecture
   href: architecture/
 - name: API Reference

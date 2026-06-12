@@ -12784,6 +12784,84 @@ full accent for user-pinned
     color: var(--bowire-text-tertiary);
     font-size: 10px;
 }
+/* Generic alert bar — three severities + optional dismiss X.
+   Full-width strip that mounts at the top of a pane / drawer body
+   so it reads as a status banner under the local header. Background
+   stays subtle (a tinted left border carries the urgency) so the
+   bar doesn't compete with the pane's actual content. */
+.bowire-alert-bar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid var(--bowire-border-subtle);
+    border-left: 3px solid var(--bowire-text-tertiary);
+    background: var(--bowire-bg);
+    color: var(--bowire-text-secondary);
+    font-size: 12px;
+    line-height: 1.4;
+    box-sizing: border-box;
+}
+.bowire-alert-bar-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--bowire-text-tertiary);
+    flex-shrink: 0;
+}
+.bowire-alert-bar-text { flex: 1; }
+.bowire-alert-bar-action {
+    background: transparent;
+    border: 0;
+    padding: 2px 6px;
+    color: var(--bowire-accent);
+    font: inherit;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+}
+.bowire-alert-bar-action:hover { text-decoration: underline; }
+.bowire-alert-bar-close {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    padding: 0;
+    border: 0;
+    border-radius: var(--bowire-radius-sm);
+    background: transparent;
+    color: var(--bowire-text-tertiary);
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: background var(--bowire-transition), color var(--bowire-transition);
+}
+.bowire-alert-bar-close:hover {
+    background: var(--bowire-bg-elevated);
+    color: var(--bowire-text);
+}
+.bowire-alert-bar-close svg { width: 12px; height: 12px; }
+/* Inline toggle inside an alert bar — slightly slimmer than the
+   Settings variant since the bar's height already constrains it. */
+.bowire-alert-bar-toggle {
+    flex-shrink: 0;
+    margin-right: 2px;
+}
+/* Severity hues — colored left border + dot only; background stays
+   neutral so the bar is informational rather than alarming. */
+.bowire-alert-bar-info {
+    border-left-color: var(--bowire-accent);
+}
+.bowire-alert-bar-info .bowire-alert-bar-dot { background: var(--bowire-accent); }
+.bowire-alert-bar-warning {
+    border-left-color: var(--bowire-warning, #f59e0b);
+}
+.bowire-alert-bar-warning .bowire-alert-bar-dot { background: var(--bowire-warning, #f59e0b); }
+.bowire-alert-bar-error {
+    border-left-color: var(--bowire-danger, #ef4444);
+}
+.bowire-alert-bar-error .bowire-alert-bar-dot { background: var(--bowire-danger, #ef4444); }
 /* Tool-call trace bubble (#108 Phase 2) — surfaces what the AI
    actually consulted before answering. Sits between the user's
    turn and the assistant's text so the transcript reads

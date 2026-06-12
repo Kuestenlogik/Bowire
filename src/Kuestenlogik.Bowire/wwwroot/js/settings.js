@@ -6,9 +6,12 @@
     var settingsOpen = false;
     var settingsTab = 'general';
 
-    function openSettings() {
+    function openSettings(targetTab) {
         settingsOpen = true;
-        settingsTab = 'general';
+        // Allow callers (e.g. the chat-pane invocation-status pill) to
+        // deep-link into a specific tab. Falls back to 'general' when
+        // no argument is given, preserving the legacy entry point.
+        settingsTab = targetTab && typeof targetTab === 'string' ? targetTab : 'general';
         renderSettingsDialog();
     }
 
@@ -691,6 +694,24 @@
         if (saveWsBtn) saveRow.appendChild(saveWsBtn);
         saveRow.appendChild(resultBox);
         section.appendChild(saveRow);
+
+        // Allow-AI-to-invoke toggle. Session-only by design (#109): if
+        // it persisted, an operator who turned it on for one focused
+        // session could end up with a future cold-start that fires
+        // real calls before they realise. So Settings is the canonical
+        // UI for the switch, but localStorage stays out of the loop —
+        // every reload starts back at off.
+        section.appendChild(renderSettingsToggle(
+            'Allow AI to invoke methods',
+            'When on, the assistant can dispatch real calls via the bowire_invoke tool — every invocation is audited to ~/.bowire/.ai-actions.jsonl. Session-only: every workbench restart goes back to off.',
+            typeof aiAllowInvoke !== 'undefined' && !!aiAllowInvoke,
+            function (newVal) {
+                if (typeof aiAllowInvoke !== 'undefined') aiAllowInvoke = newVal;
+                // Re-render the chat panel if it's open so its
+                // session-only banner reflects the new state.
+                render();
+            }
+        ));
 
         // Refresh button — re-runs status + probe so a user who just
         // started Ollama can see the detected models without closing

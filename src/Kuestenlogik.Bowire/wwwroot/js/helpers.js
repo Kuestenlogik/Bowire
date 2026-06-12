@@ -684,6 +684,89 @@
         return drawer;
     }
 
+    // Generic alert bar — info / warning / error severity, optional
+    // dismiss X, optional inline action button. Mounts as a full-width
+    // strip; callers append it to the top of a pane / drawer body so it
+    // sits like a status banner under the local header.
+    //
+    // opts:
+    //   severity   — 'info' | 'warning' | 'error' (default 'info')
+    //   text       — the message text
+    //   actionLabel — optional button label (e.g. 'Enable in Settings')
+    //   onAction   — onClick for the action button
+    //   dismissKey — optional sessionStorage key; when set, the bar
+    //                hides itself for the rest of the session after the
+    //                X is clicked. Use null when the bar should not be
+    //                dismissable (will keep nagging until the state
+    //                that triggered it changes).
+    function renderAlertBar(opts) {
+        opts = opts || {};
+        if (opts.dismissKey) {
+            try {
+                if (sessionStorage.getItem(opts.dismissKey) === '1') return null;
+            } catch { /* ignore */ }
+        }
+        var severity = (opts.severity === 'warning' || opts.severity === 'error') ? opts.severity : 'info';
+        var bar = el('div', {
+            className: 'bowire-alert-bar bowire-alert-bar-' + severity,
+            role: severity === 'error' ? 'alert' : 'status'
+        });
+        bar.appendChild(el('span', { className: 'bowire-alert-bar-dot' }));
+        bar.appendChild(el('span', {
+            className: 'bowire-alert-bar-text',
+            textContent: opts.text || ''
+        }));
+        if (opts.actionLabel && typeof opts.onAction === 'function') {
+            bar.appendChild(el('button', {
+                type: 'button',
+                className: 'bowire-alert-bar-action',
+                textContent: opts.actionLabel,
+                onClick: opts.onAction
+            }));
+        }
+        // Inline toggle support — same chrome as the Settings toggle
+        // switch. Use when the alert's primary call-to-action is to
+        // flip a single boolean (e.g. "AI is observe-only" → flip the
+        // master Allow toggle without navigating to Settings).
+        if (opts.inlineToggle && typeof opts.inlineToggle.onChange === 'function') {
+            var iv = !!opts.inlineToggle.value;
+            var toggle = el('button', {
+                type: 'button',
+                className: 'bowire-settings-toggle bowire-alert-bar-toggle' + (iv ? ' on' : ''),
+                'aria-pressed': iv ? 'true' : 'false',
+                title: opts.inlineToggle.title || (iv ? 'On — click to turn off' : 'Off — click to turn on'),
+                onClick: function () {
+                    iv = !iv;
+                    opts.inlineToggle.onChange(iv);
+                    toggle.classList.toggle('on', iv);
+                    toggle.setAttribute('aria-pressed', iv ? 'true' : 'false');
+                    var dot = toggle.querySelector('.bowire-settings-toggle-dot');
+                    if (dot) dot.style.transform = iv ? 'translateX(16px)' : 'translateX(0)';
+                }
+            },
+                el('span', {
+                    className: 'bowire-settings-toggle-dot',
+                    style: iv ? 'transform:translateX(16px)' : ''
+                })
+            );
+            bar.appendChild(toggle);
+        }
+        if (opts.dismissKey) {
+            bar.appendChild(el('button', {
+                type: 'button',
+                className: 'bowire-alert-bar-close',
+                title: 'Hide for this session',
+                'aria-label': 'Hide for this session',
+                innerHTML: svgIcon('close'),
+                onClick: function () {
+                    try { sessionStorage.setItem(opts.dismissKey, '1'); } catch { /* ignore */ }
+                    bar.remove();
+                }
+            }));
+        }
+        return bar;
+    }
+
     function renderEmptyCard(opts) {
         opts = opts || {};
         var card = el('div', { className: 'bowire-empty-card' });
