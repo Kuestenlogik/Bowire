@@ -16,54 +16,54 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
-| [33](https://github.com/Kuestenlogik/Bowire/issues/33) | Bowire | Protocol plugins — Connect Phase 1+3 + OTLP | ⬜ Backlog | `area:plugin-sdk` `track:protocols` |
-| [115](https://github.com/Kuestenlogik/Bowire/issues/115) | Bowire | v2.0 — UI refactor: re-architect the workbench shell | ⬜ Open |  |
-| [124](https://github.com/Kuestenlogik/Bowire/issues/124) | Bowire | Cross-protocol omnibox (Cmd/Ctrl+K) | ⬜ Open |  |
-| [160](https://github.com/Kuestenlogik/Bowire/issues/160) | Bowire | Workspace breadcrumb in the main pane | ⬜ Open |  |
-| [161](https://github.com/Kuestenlogik/Bowire/issues/161) | Bowire | Open method tabs persisted per workspace | ⬜ Open |  |
-| [162](https://github.com/Kuestenlogik/Bowire/issues/162) | Bowire | Cmd+K omnibox: search collections, recordings, mocks, workspaces, settings, help | ⬜ Open |  |
-| [163](https://github.com/Kuestenlogik/Bowire/issues/163) | Bowire | Activity rail icon count badges | ⬜ Open |  |
-| [164](https://github.com/Kuestenlogik/Bowire/issues/164) | Bowire | Console + Tests as tabs in the unified right-side drawer | ⬜ Open |  |
-| [165](https://github.com/Kuestenlogik/Bowire/issues/165) | Bowire | Workspace templates on create (REST / gRPC / mock / multi-protocol) | ⬜ Open |  |
-| [166](https://github.com/Kuestenlogik/Bowire/issues/166) | Bowire | Keyboard shortcut sheet (Cmd+/) | ⬜ Open |  |
-| [167](https://github.com/Kuestenlogik/Bowire/issues/167) | Bowire | Settings → Plugins: show protocol DisplayName instead of assembly name | ⬜ Open |  |
-| [168](https://github.com/Kuestenlogik/Bowire/issues/168) | Bowire | Workbench-wide action log with undo / redo (Ctrl+Z) | ⬜ Open |  |
-| [169](https://github.com/Kuestenlogik/Bowire/issues/169) | Bowire | Hint dismiss pattern — "Don't show again" + Settings restore | ⬜ Open |  |
-| [25](https://github.com/Kuestenlogik/Bowire/issues/25) | Bowire | AI side-panel integration | ✅ Done | `area:workbench` |
-| [43](https://github.com/Kuestenlogik/Bowire/issues/43) | Bowire | MCP SSE-transport support | ✅ Done | `area:mcp` |
-| [85](https://github.com/Kuestenlogik/Bowire/issues/85) | Bowire | Request-pane Body: split stacked Form / Selection Set / Query into sub-tabs | ✅ Done |  |
-| [90](https://github.com/Kuestenlogik/Bowire/issues/90) | Bowire | AI panel: move from response-pane tab to a right-side drawer | ✅ Done |  |
-| [91](https://github.com/Kuestenlogik/Bowire/issues/91) | Bowire | Frontend ProblemDetails migration — adopt renderProblem() everywhere body.error is read | ✅ Done |  |
-| [92](https://github.com/Kuestenlogik/Bowire/issues/92) | Bowire | Move Server-URL + Schema-Files management from sidebar to main pane | ✅ Done |  |
-| [94](https://github.com/Kuestenlogik/Bowire/issues/94) | Bowire | Recordings: one-click 'Use as mock' spins up a local mock server | ✅ Done |  |
-| [99](https://github.com/Kuestenlogik/Bowire/issues/99) | Bowire | Submarine — transparent proxy / MITM mode (6th deployment shape) | ✅ Done |  |
-| [111](https://github.com/Kuestenlogik/Bowire/issues/111) | Bowire | AI drawer: tabs for Chat / Threat / Templates / Fuzz to kill the nested-scrollbar stack | ✅ Done |  |
-| [113](https://github.com/Kuestenlogik/Bowire/issues/113) | Bowire | Polish: tabs visually connect to content; drop the background glow | ✅ Done |  |
-| [114](https://github.com/Kuestenlogik/Bowire/issues/114) | Bowire | Hints: render contextually at the target surface (drop the static list in the drawer) | ✅ Done |  |
-| [116](https://github.com/Kuestenlogik/Bowire/issues/116) | Bowire | Workspaces — named, switchable contexts that bundle URLs / envs / collections / AI config | ✅ Done |  |
-| [119](https://github.com/Kuestenlogik/Bowire/issues/119) | Bowire | Reading mode on bowire.io + docs + api-docs + Bootcamp | ✅ Done |  |
-| [120](https://github.com/Kuestenlogik/Bowire/issues/120) | Bowire | Single accent + protocol as the only color | ✅ Done |  |
-| [121](https://github.com/Kuestenlogik/Bowire/issues/121) | Bowire | Context-aware empty states across every pane | ✅ Done |  |
-| [122](https://github.com/Kuestenlogik/Bowire/issues/122) | Bowire | Direction-color + protocol-glyph (two-axis encoding) | ✅ Done |  |
-| [123](https://github.com/Kuestenlogik/Bowire/issues/123) | Bowire | Workbench tabs that carry protocol-typed state | ✅ Done |  |
-| [127](https://github.com/Kuestenlogik/Bowire/issues/127) | Bowire | Auto-save to workspace + live save-state pill | ✅ Done |  |
-| [129](https://github.com/Kuestenlogik/Bowire/issues/129) | Bowire | Layout cleanup — top bar, sidebar, main pane, drawers (left-sidebar model stays) | ✅ Done |  |
-| [133](https://github.com/Kuestenlogik/Bowire/issues/133) | Bowire | Activity rail (left) — switch workbench focus by use case (dev / security / perf / mocks / …) | ✅ Done |  |
-| [134](https://github.com/Kuestenlogik/Bowire/issues/134) | Bowire | Rename surface 'AI' → 'Assistant' (technology stays; user-facing labels shift) | ✅ Done |  |
-| [135](https://github.com/Kuestenlogik/Bowire/issues/135) | Bowire | Request/response layout toggle — vertical / horizontal / auto split | ✅ Done |  |
-| [137](https://github.com/Kuestenlogik/Bowire/issues/137) | Bowire | Sidebar declaration per rail mode + stable toggle location | ✅ Done |  |
-| [138](https://github.com/Kuestenlogik/Bowire/issues/138) | Bowire | Statusbar at bottom — move connection pill + env + watch out of topbar | ✅ Done |  |
-| [139](https://github.com/Kuestenlogik/Bowire/issues/139) | Bowire | Per-mode favorites filter (drop the standalone Favorites tab) | ✅ Done |  |
-| [142](https://github.com/Kuestenlogik/Bowire/issues/142) | Bowire | Sharper radii — straighter visual style across tabs / cards / drawers | ✅ Done |  |
-| [143](https://github.com/Kuestenlogik/Bowire/issues/143) | Bowire | Uniform delete affordances on every list sidebar (single / multi-select / all) | ✅ Done |  |
-| [146](https://github.com/Kuestenlogik/Bowire/issues/146) | Bowire | Workspace-side environment inclusion list (shared envs + per-workspace selection) | ✅ Done |  |
-| [152](https://github.com/Kuestenlogik/Bowire/issues/152) | Bowire | Sources rail mode — centralise URL / schema-file management | ✅ Done |  |
-| [154](https://github.com/Kuestenlogik/Bowire/issues/154) | Bowire | Help as optional NuGet package — `Kuestenlogik.Bowire.Help` | ✅ Done |  |
-| [155](https://github.com/Kuestenlogik/Bowire/issues/155) | Bowire | Workspace = project folder — strictly per-workspace, sharing via copy actions | ✅ Done |  |
-| [156](https://github.com/Kuestenlogik/Bowire/issues/156) | Bowire | Favorites as a connective UI element | ✅ Done |  |
-| [157](https://github.com/Kuestenlogik/Bowire/issues/157) | Bowire | "Add to…" quick-actions at the method header | ✅ Done |  |
-| [158](https://github.com/Kuestenlogik/Bowire/issues/158) | Bowire | Cross-feature state visibility in the service tree | ✅ Done |  |
-| [159](https://github.com/Kuestenlogik/Bowire/issues/159) | Bowire | Workspace Export / Import as .bowire JSON | ✅ Done |  |
+| [33](#issue-kuestenlogik-bowire-33) | Bowire | [Protocol plugins — Connect Phase 1+3 + OTLP](https://github.com/Kuestenlogik/Bowire/issues/33) | ⬜ Backlog | `area:plugin-sdk` `track:protocols` |
+| [115](#issue-kuestenlogik-bowire-115) | Bowire | [v2.0 — UI refactor: re-architect the workbench shell](https://github.com/Kuestenlogik/Bowire/issues/115) | ⬜ Open |  |
+| [124](#issue-kuestenlogik-bowire-124) | Bowire | [Cross-protocol omnibox (Cmd/Ctrl+K)](https://github.com/Kuestenlogik/Bowire/issues/124) | ⬜ Open |  |
+| [160](#issue-kuestenlogik-bowire-160) | Bowire | [Workspace breadcrumb in the main pane](https://github.com/Kuestenlogik/Bowire/issues/160) | ⬜ Open |  |
+| [161](#issue-kuestenlogik-bowire-161) | Bowire | [Open method tabs persisted per workspace](https://github.com/Kuestenlogik/Bowire/issues/161) | ⬜ Open |  |
+| [162](#issue-kuestenlogik-bowire-162) | Bowire | [Cmd+K omnibox: search collections, recordings, mocks, workspaces, settings, help](https://github.com/Kuestenlogik/Bowire/issues/162) | ⬜ Open |  |
+| [163](#issue-kuestenlogik-bowire-163) | Bowire | [Activity rail icon count badges](https://github.com/Kuestenlogik/Bowire/issues/163) | ⬜ Open |  |
+| [164](#issue-kuestenlogik-bowire-164) | Bowire | [Console + Tests as tabs in the unified right-side drawer](https://github.com/Kuestenlogik/Bowire/issues/164) | ⬜ Open |  |
+| [165](#issue-kuestenlogik-bowire-165) | Bowire | [Workspace templates on create (REST / gRPC / mock / multi-protocol)](https://github.com/Kuestenlogik/Bowire/issues/165) | ⬜ Open |  |
+| [166](#issue-kuestenlogik-bowire-166) | Bowire | [Keyboard shortcut sheet (Cmd+/)](https://github.com/Kuestenlogik/Bowire/issues/166) | ⬜ Open |  |
+| [167](#issue-kuestenlogik-bowire-167) | Bowire | [Settings → Plugins: show protocol DisplayName instead of assembly name](https://github.com/Kuestenlogik/Bowire/issues/167) | ⬜ Open |  |
+| [168](#issue-kuestenlogik-bowire-168) | Bowire | [Workbench-wide action log with undo / redo (Ctrl+Z)](https://github.com/Kuestenlogik/Bowire/issues/168) | ⬜ Open |  |
+| [169](#issue-kuestenlogik-bowire-169) | Bowire | [Hint dismiss pattern — "Don't show again" + Settings restore](https://github.com/Kuestenlogik/Bowire/issues/169) | ⬜ Open |  |
+| [25](#issue-kuestenlogik-bowire-25) | Bowire | [AI side-panel integration](https://github.com/Kuestenlogik/Bowire/issues/25) | ✅ Done | `area:workbench` |
+| [43](#issue-kuestenlogik-bowire-43) | Bowire | [MCP SSE-transport support](https://github.com/Kuestenlogik/Bowire/issues/43) | ✅ Done | `area:mcp` |
+| [85](#issue-kuestenlogik-bowire-85) | Bowire | [Request-pane Body: split stacked Form / Selection Set / Query into sub-tabs](https://github.com/Kuestenlogik/Bowire/issues/85) | ✅ Done |  |
+| [90](#issue-kuestenlogik-bowire-90) | Bowire | [AI panel: move from response-pane tab to a right-side drawer](https://github.com/Kuestenlogik/Bowire/issues/90) | ✅ Done |  |
+| [91](#issue-kuestenlogik-bowire-91) | Bowire | [Frontend ProblemDetails migration — adopt renderProblem() everywhere body.error is read](https://github.com/Kuestenlogik/Bowire/issues/91) | ✅ Done |  |
+| [92](#issue-kuestenlogik-bowire-92) | Bowire | [Move Server-URL + Schema-Files management from sidebar to main pane](https://github.com/Kuestenlogik/Bowire/issues/92) | ✅ Done |  |
+| [94](#issue-kuestenlogik-bowire-94) | Bowire | [Recordings: one-click 'Use as mock' spins up a local mock server](https://github.com/Kuestenlogik/Bowire/issues/94) | ✅ Done |  |
+| [99](#issue-kuestenlogik-bowire-99) | Bowire | [Submarine — transparent proxy / MITM mode (6th deployment shape)](https://github.com/Kuestenlogik/Bowire/issues/99) | ✅ Done |  |
+| [111](#issue-kuestenlogik-bowire-111) | Bowire | [AI drawer: tabs for Chat / Threat / Templates / Fuzz to kill the nested-scrollbar stack](https://github.com/Kuestenlogik/Bowire/issues/111) | ✅ Done |  |
+| [113](#issue-kuestenlogik-bowire-113) | Bowire | [Polish: tabs visually connect to content; drop the background glow](https://github.com/Kuestenlogik/Bowire/issues/113) | ✅ Done |  |
+| [114](#issue-kuestenlogik-bowire-114) | Bowire | [Hints: render contextually at the target surface (drop the static list in the drawer)](https://github.com/Kuestenlogik/Bowire/issues/114) | ✅ Done |  |
+| [116](#issue-kuestenlogik-bowire-116) | Bowire | [Workspaces — named, switchable contexts that bundle URLs / envs / collections / AI config](https://github.com/Kuestenlogik/Bowire/issues/116) | ✅ Done |  |
+| [119](#issue-kuestenlogik-bowire-119) | Bowire | [Reading mode on bowire.io + docs + api-docs + Bootcamp](https://github.com/Kuestenlogik/Bowire/issues/119) | ✅ Done |  |
+| [120](#issue-kuestenlogik-bowire-120) | Bowire | [Single accent + protocol as the only color](https://github.com/Kuestenlogik/Bowire/issues/120) | ✅ Done |  |
+| [121](#issue-kuestenlogik-bowire-121) | Bowire | [Context-aware empty states across every pane](https://github.com/Kuestenlogik/Bowire/issues/121) | ✅ Done |  |
+| [122](#issue-kuestenlogik-bowire-122) | Bowire | [Direction-color + protocol-glyph (two-axis encoding)](https://github.com/Kuestenlogik/Bowire/issues/122) | ✅ Done |  |
+| [123](#issue-kuestenlogik-bowire-123) | Bowire | [Workbench tabs that carry protocol-typed state](https://github.com/Kuestenlogik/Bowire/issues/123) | ✅ Done |  |
+| [127](#issue-kuestenlogik-bowire-127) | Bowire | [Auto-save to workspace + live save-state pill](https://github.com/Kuestenlogik/Bowire/issues/127) | ✅ Done |  |
+| [129](#issue-kuestenlogik-bowire-129) | Bowire | [Layout cleanup — top bar, sidebar, main pane, drawers (left-sidebar model stays)](https://github.com/Kuestenlogik/Bowire/issues/129) | ✅ Done |  |
+| [133](#issue-kuestenlogik-bowire-133) | Bowire | [Activity rail (left) — switch workbench focus by use case (dev / security / perf / mocks / …)](https://github.com/Kuestenlogik/Bowire/issues/133) | ✅ Done |  |
+| [134](#issue-kuestenlogik-bowire-134) | Bowire | [Rename surface 'AI' → 'Assistant' (technology stays; user-facing labels shift)](https://github.com/Kuestenlogik/Bowire/issues/134) | ✅ Done |  |
+| [135](#issue-kuestenlogik-bowire-135) | Bowire | [Request/response layout toggle — vertical / horizontal / auto split](https://github.com/Kuestenlogik/Bowire/issues/135) | ✅ Done |  |
+| [137](#issue-kuestenlogik-bowire-137) | Bowire | [Sidebar declaration per rail mode + stable toggle location](https://github.com/Kuestenlogik/Bowire/issues/137) | ✅ Done |  |
+| [138](#issue-kuestenlogik-bowire-138) | Bowire | [Statusbar at bottom — move connection pill + env + watch out of topbar](https://github.com/Kuestenlogik/Bowire/issues/138) | ✅ Done |  |
+| [139](#issue-kuestenlogik-bowire-139) | Bowire | [Per-mode favorites filter (drop the standalone Favorites tab)](https://github.com/Kuestenlogik/Bowire/issues/139) | ✅ Done |  |
+| [142](#issue-kuestenlogik-bowire-142) | Bowire | [Sharper radii — straighter visual style across tabs / cards / drawers](https://github.com/Kuestenlogik/Bowire/issues/142) | ✅ Done |  |
+| [143](#issue-kuestenlogik-bowire-143) | Bowire | [Uniform delete affordances on every list sidebar (single / multi-select / all)](https://github.com/Kuestenlogik/Bowire/issues/143) | ✅ Done |  |
+| [146](#issue-kuestenlogik-bowire-146) | Bowire | [Workspace-side environment inclusion list (shared envs + per-workspace selection)](https://github.com/Kuestenlogik/Bowire/issues/146) | ✅ Done |  |
+| [152](#issue-kuestenlogik-bowire-152) | Bowire | [Sources rail mode — centralise URL / schema-file management](https://github.com/Kuestenlogik/Bowire/issues/152) | ✅ Done |  |
+| [154](#issue-kuestenlogik-bowire-154) | Bowire | [Help as optional NuGet package — `Kuestenlogik.Bowire.Help`](https://github.com/Kuestenlogik/Bowire/issues/154) | ✅ Done |  |
+| [155](#issue-kuestenlogik-bowire-155) | Bowire | [Workspace = project folder — strictly per-workspace, sharing via copy actions](https://github.com/Kuestenlogik/Bowire/issues/155) | ✅ Done |  |
+| [156](#issue-kuestenlogik-bowire-156) | Bowire | [Favorites as a connective UI element](https://github.com/Kuestenlogik/Bowire/issues/156) | ✅ Done |  |
+| [157](#issue-kuestenlogik-bowire-157) | Bowire | ["Add to…" quick-actions at the method header](https://github.com/Kuestenlogik/Bowire/issues/157) | ✅ Done |  |
+| [158](#issue-kuestenlogik-bowire-158) | Bowire | [Cross-feature state visibility in the service tree](https://github.com/Kuestenlogik/Bowire/issues/158) | ✅ Done |  |
+| [159](#issue-kuestenlogik-bowire-159) | Bowire | [Workspace Export / Import as .bowire JSON](https://github.com/Kuestenlogik/Bowire/issues/159) | ✅ Done |  |
 
 ### v2.1 — workspace v3 + protocol wave 3
 
@@ -71,522 +71,522 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
-| [117](https://github.com/Kuestenlogik/Bowire/issues/117) | Bowire | i18n — extract every UI string; ship DE + EN catalogues | ⬜ Open |  |
-| [125](https://github.com/Kuestenlogik/Bowire/issues/125) | Bowire | Multi-source {{...}} variable resolver | ⬜ Open |  |
-| [126](https://github.com/Kuestenlogik/Bowire/issues/126) | Bowire | Pre-/post-scripts with a protocol-typed sandbox | ⬜ Open |  |
-| [131](https://github.com/Kuestenlogik/Bowire/issues/131) | Bowire | Benchmarks: first-class surface (single / collection / recording / random / scheduled) | ⬜ Open |  |
-| [132](https://github.com/Kuestenlogik/Bowire/issues/132) | Bowire | Parallel sessions for recordings / collections (phase 1 local, phase 2 distributed) | ⬜ Open |  |
-| [136](https://github.com/Kuestenlogik/Bowire/issues/136) | Bowire | URL / service catalogue providers (local / http / consul / kubernetes / agent) | ⬜ Open |  |
-| [140](https://github.com/Kuestenlogik/Bowire/issues/140) | Bowire | Per-mode 'Saved Configs' / Presets (distinct from cross-workflow favorites) | ⬜ Open |  |
-| [144](https://github.com/Kuestenlogik/Bowire/issues/144) | Bowire | Large-recording capture/replay — chunked disk layout, lazy step-load, GB-scale | ⬜ Open |  |
-| [145](https://github.com/Kuestenlogik/Bowire/issues/145) | Bowire | Deprecate ${name} in favour of {{name}} (multi-phase migration) | ⬜ Open |  |
-| [147](https://github.com/Kuestenlogik/Bowire/issues/147) | Bowire | Git-backed workspace storage — composes with #144 storage modes + #58 | ⬜ Open |  |
-| [148](https://github.com/Kuestenlogik/Bowire/issues/148) | Bowire | Per-entity file storage format for git-backed workspaces (envs / collections / scripts) | ⬜ Open |  |
-| [149](https://github.com/Kuestenlogik/Bowire/issues/149) | Bowire | Workspace CLI — bowire workspace init / export / import / migrate-format | ⬜ Open |  |
-| [150](https://github.com/Kuestenlogik/Bowire/issues/150) | Bowire | Filesystem-watch + reconcile UI for externally-edited workspace files | ⬜ Open |  |
-| [151](https://github.com/Kuestenlogik/Bowire/issues/151) | Bowire | Secret-file separation + workspace lock file for safe team-shared git workspaces | ⬜ Open |  |
-| [153](https://github.com/Kuestenlogik/Bowire/issues/153) | Bowire | Bowire as transparent interceptor — embedded middleware + standalone reverse-proxy | ⬜ Open |  |
+| [117](#issue-kuestenlogik-bowire-117) | Bowire | [i18n — extract every UI string; ship DE + EN catalogues](https://github.com/Kuestenlogik/Bowire/issues/117) | ⬜ Open |  |
+| [125](#issue-kuestenlogik-bowire-125) | Bowire | [Multi-source {{...}} variable resolver](https://github.com/Kuestenlogik/Bowire/issues/125) | ⬜ Open |  |
+| [126](#issue-kuestenlogik-bowire-126) | Bowire | [Pre-/post-scripts with a protocol-typed sandbox](https://github.com/Kuestenlogik/Bowire/issues/126) | ⬜ Open |  |
+| [131](#issue-kuestenlogik-bowire-131) | Bowire | [Benchmarks: first-class surface (single / collection / recording / random / scheduled)](https://github.com/Kuestenlogik/Bowire/issues/131) | ⬜ Open |  |
+| [132](#issue-kuestenlogik-bowire-132) | Bowire | [Parallel sessions for recordings / collections (phase 1 local, phase 2 distributed)](https://github.com/Kuestenlogik/Bowire/issues/132) | ⬜ Open |  |
+| [136](#issue-kuestenlogik-bowire-136) | Bowire | [URL / service catalogue providers (local / http / consul / kubernetes / agent)](https://github.com/Kuestenlogik/Bowire/issues/136) | ⬜ Open |  |
+| [140](#issue-kuestenlogik-bowire-140) | Bowire | [Per-mode 'Saved Configs' / Presets (distinct from cross-workflow favorites)](https://github.com/Kuestenlogik/Bowire/issues/140) | ⬜ Open |  |
+| [144](#issue-kuestenlogik-bowire-144) | Bowire | [Large-recording capture/replay — chunked disk layout, lazy step-load, GB-scale](https://github.com/Kuestenlogik/Bowire/issues/144) | ⬜ Open |  |
+| [145](#issue-kuestenlogik-bowire-145) | Bowire | [Deprecate ${name} in favour of {{name}} (multi-phase migration)](https://github.com/Kuestenlogik/Bowire/issues/145) | ⬜ Open |  |
+| [147](#issue-kuestenlogik-bowire-147) | Bowire | [Git-backed workspace storage — composes with #144 storage modes + #58](https://github.com/Kuestenlogik/Bowire/issues/147) | ⬜ Open |  |
+| [148](#issue-kuestenlogik-bowire-148) | Bowire | [Per-entity file storage format for git-backed workspaces (envs / collections / scripts)](https://github.com/Kuestenlogik/Bowire/issues/148) | ⬜ Open |  |
+| [149](#issue-kuestenlogik-bowire-149) | Bowire | [Workspace CLI — bowire workspace init / export / import / migrate-format](https://github.com/Kuestenlogik/Bowire/issues/149) | ⬜ Open |  |
+| [150](#issue-kuestenlogik-bowire-150) | Bowire | [Filesystem-watch + reconcile UI for externally-edited workspace files](https://github.com/Kuestenlogik/Bowire/issues/150) | ⬜ Open |  |
+| [151](#issue-kuestenlogik-bowire-151) | Bowire | [Secret-file separation + workspace lock file for safe team-shared git workspaces](https://github.com/Kuestenlogik/Bowire/issues/151) | ⬜ Open |  |
+| [153](#issue-kuestenlogik-bowire-153) | Bowire | [Bowire as transparent interceptor — embedded middleware + standalone reverse-proxy](https://github.com/Kuestenlogik/Bowire/issues/153) | ⬜ Open |  |
 
 ### Backlog (not yet scheduled)
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
-| [26](https://github.com/Kuestenlogik/Bowire/issues/26) | Bowire | Security testing tool — remaining tiers | 🟡 In progress | `area:security` `track:security-tiers` |
-| [28](https://github.com/Kuestenlogik/Bowire/issues/28) | Bowire | Multi-tenant data model + SCIM (Phase B) | 🟢 Next up | `area:workbench` `track:auth` |
-| [3](https://github.com/Kuestenlogik/Bowire.Templates/issues/3) | Templates | Plugin project template — `dotnet new bowire-plugin` | ⬜ Backlog | `area:plugin-sdk` |
-| [11](https://github.com/Kuestenlogik/Bowire.Protocol.Surgewave/issues/11) | Protocol.Surgewave | Light up Surgewave protocol plugin | ⬜ Open |  |
-| [13](https://github.com/Kuestenlogik/Bowire.Samples/issues/13) | Samples | SimpleGraphQLSubscriptions sample | ⬜ Backlog | `area:plugin-sdk` |
-| [34](https://github.com/Kuestenlogik/Bowire/issues/34) | Bowire | AsyncAPI discovery source — remaining bindings + V2 overloads + YAML pre-normaliser | ⬜ Backlog | `area:plugin-sdk` `track:protocols` |
-| [35](https://github.com/Kuestenlogik/Bowire/issues/35) | Bowire | Nuclei template compat — OAST + non-HTTP transports (Phase 2f + 2g) | ⬜ Backlog | `area:security` `track:security-tiers` |
-| [36](https://github.com/Kuestenlogik/Bowire/issues/36) | Bowire | Replay-Mock — HTTPS MITM / record mode | ⬜ Backlog | `area:mock` |
-| [37](https://github.com/Kuestenlogik/Bowire/issues/37) | Bowire | Bowire.Mcp — remaining tools + adapter modes | ⬜ Backlog | `area:mcp` |
-| [38](https://github.com/Kuestenlogik/Bowire/issues/38) | Bowire | CLI — Phase 3 polish (completion + validators + error rendering) | ⬜ Backlog | `area:cli` |
-| [39](https://github.com/Kuestenlogik/Bowire/issues/39) | Bowire | HAR Import polish | ⬜ Backlog | `area:workbench` |
-| [40](https://github.com/Kuestenlogik/Bowire/issues/40) | Bowire | Freeform Request Builder | ⬜ Backlog | `area:workbench` |
-| [41](https://github.com/Kuestenlogik/Bowire/issues/41) | Bowire | First RC of the new versioning discipline | ⬜ Backlog | `area:multi` |
-| [44](https://github.com/Kuestenlogik/Bowire/issues/44) | Bowire | Sidecar packaging — Docker / Compose / Kubernetes | ⬜ Backlog | `area:docs` |
-| [46](https://github.com/Kuestenlogik/Bowire/issues/46) | Bowire | MCP server-side notifications via IInlineSseSubscriber | ⬜ Backlog | `area:mcp` |
-| [47](https://github.com/Kuestenlogik/Bowire/issues/47) | Bowire | Sidebar display: method name vs path toggle | ⬜ Backlog | `area:workbench` |
-| [48](https://github.com/Kuestenlogik/Bowire/issues/48) | Bowire | Schema watch mode | ⬜ Backlog | `area:workbench` |
-| [49](https://github.com/Kuestenlogik/Bowire/issues/49) | Bowire | Programmatic environment provisioning in embedded mode | ⬜ Backlog | `area:workbench` |
-| [50](https://github.com/Kuestenlogik/Bowire/issues/50) | Bowire | Marketing site — gallery / lightbox layer on solutions/* | ⬜ Backlog | `area:site` `track:marketing-ia` |
-| [51](https://github.com/Kuestenlogik/Bowire/issues/51) | Bowire | Marketing site — migrate <img> tags to picture.html partial | ⬜ Backlog | `area:site` `track:marketing-ia` |
-| [53](https://github.com/Kuestenlogik/Bowire/issues/53) | Bowire | Marketing site — second row of specialist comparisons | ⬜ Backlog | `area:site` `track:marketing-ia` |
-| [58](https://github.com/Kuestenlogik/Bowire/issues/58) | Bowire | Workspace: complete the Git-native story (.blw file) | ⬜ Open |  |
-| [93](https://github.com/Kuestenlogik/Bowire/issues/93) | Bowire | Topbar: connection-state pill (aggregate + per-URL popover) | ⬜ Open |  |
-| [95](https://github.com/Kuestenlogik/Bowire/issues/95) | Bowire | Header Library: named, scoped, toggleable header sets | ⬜ Open |  |
-| [96](https://github.com/Kuestenlogik/Bowire/issues/96) | Bowire | Multi-tenant Phase C — SCIM 2.0 provisioning endpoints | ⬜ Open |  |
-| [97](https://github.com/Kuestenlogik/Bowire/issues/97) | Bowire | Multi-tenant Phase E — single-user → multi-tenant migration path | ⬜ Open |  |
-| [98](https://github.com/Kuestenlogik/Bowire/issues/98) | Bowire | Multi-tenant Phase F — user chip, scoped state copy, admin impersonation | ⬜ Open |  |
-| [100](https://github.com/Kuestenlogik/Bowire/issues/100) | Bowire | Ferry — CI/CD runner (collection / recording → headless run + JUnit report) | ⬜ Open |  |
-| [101](https://github.com/Kuestenlogik/Bowire/issues/101) | Bowire | Tugboat — VS Code + JetBrains workbench extension | ⬜ Open |  |
-| [102](https://github.com/Kuestenlogik/Bowire/issues/102) | Bowire | Lighthouse — scheduled probes + alerting (Postman Monitors / Synthetics analog) | ⬜ Open |  |
-| [103](https://github.com/Kuestenlogik/Bowire/issues/103) | Bowire | Generate boat photos: submarine, ferry, tugboat, lighthouse | ⬜ Open |  |
-| [104](https://github.com/Kuestenlogik/Bowire/issues/104) | Bowire | AI security scan orchestration — one button chains threat-model → templates → fuzz → triage → report | ⬜ Open |  |
-| [105](https://github.com/Kuestenlogik/Bowire/issues/105) | Bowire | AI JWT analyzer — claim-by-claim verdict, algorithm flags, scope/audience cross-check | ⬜ Open |  |
-| [106](https://github.com/Kuestenlogik/Bowire/issues/106) | Bowire | AI OWASP API Top 10 panel — per-method status + concrete probe per risk | ⬜ Open |  |
-| [107](https://github.com/Kuestenlogik/Bowire/issues/107) | Bowire | AI security report — markdown writeup grouped by severity + OWASP mapping + diff-vs-last-run | ⬜ Open |  |
-| [110](https://github.com/Kuestenlogik/Bowire/issues/110) | Bowire | Site: surface the AI assistant in the launch wizard + quickstart | ⬜ Open |  |
-| [128](https://github.com/Kuestenlogik/Bowire/issues/128) | Bowire | Bowire Agent — register embedded instances with a central hub | ⬜ Open |  |
-| [130](https://github.com/Kuestenlogik/Bowire/issues/130) | Bowire | Comparison table: add Hoppscotch + topic-based filtering | ⬜ Open |  |
+| [26](#issue-kuestenlogik-bowire-26) | Bowire | [Security testing tool — remaining tiers](https://github.com/Kuestenlogik/Bowire/issues/26) | 🟡 In progress | `area:security` `track:security-tiers` |
+| [28](#issue-kuestenlogik-bowire-28) | Bowire | [Multi-tenant data model + SCIM (Phase B)](https://github.com/Kuestenlogik/Bowire/issues/28) | 🟢 Next up | `area:workbench` `track:auth` |
+| [3](#issue-kuestenlogik-bowire-templates-3) | Templates | [Plugin project template — `dotnet new bowire-plugin`](https://github.com/Kuestenlogik/Bowire.Templates/issues/3) | ⬜ Backlog | `area:plugin-sdk` |
+| [11](#issue-kuestenlogik-bowire-protocol-surgewave-11) | Protocol.Surgewave | [Light up Surgewave protocol plugin](https://github.com/Kuestenlogik/Bowire.Protocol.Surgewave/issues/11) | ⬜ Open |  |
+| [13](#issue-kuestenlogik-bowire-samples-13) | Samples | [SimpleGraphQLSubscriptions sample](https://github.com/Kuestenlogik/Bowire.Samples/issues/13) | ⬜ Backlog | `area:plugin-sdk` |
+| [34](#issue-kuestenlogik-bowire-34) | Bowire | [AsyncAPI discovery source — remaining bindings + V2 overloads + YAML pre-normaliser](https://github.com/Kuestenlogik/Bowire/issues/34) | ⬜ Backlog | `area:plugin-sdk` `track:protocols` |
+| [35](#issue-kuestenlogik-bowire-35) | Bowire | [Nuclei template compat — OAST + non-HTTP transports (Phase 2f + 2g)](https://github.com/Kuestenlogik/Bowire/issues/35) | ⬜ Backlog | `area:security` `track:security-tiers` |
+| [36](#issue-kuestenlogik-bowire-36) | Bowire | [Replay-Mock — HTTPS MITM / record mode](https://github.com/Kuestenlogik/Bowire/issues/36) | ⬜ Backlog | `area:mock` |
+| [37](#issue-kuestenlogik-bowire-37) | Bowire | [Bowire.Mcp — remaining tools + adapter modes](https://github.com/Kuestenlogik/Bowire/issues/37) | ⬜ Backlog | `area:mcp` |
+| [38](#issue-kuestenlogik-bowire-38) | Bowire | [CLI — Phase 3 polish (completion + validators + error rendering)](https://github.com/Kuestenlogik/Bowire/issues/38) | ⬜ Backlog | `area:cli` |
+| [39](#issue-kuestenlogik-bowire-39) | Bowire | [HAR Import polish](https://github.com/Kuestenlogik/Bowire/issues/39) | ⬜ Backlog | `area:workbench` |
+| [40](#issue-kuestenlogik-bowire-40) | Bowire | [Freeform Request Builder](https://github.com/Kuestenlogik/Bowire/issues/40) | ⬜ Backlog | `area:workbench` |
+| [41](#issue-kuestenlogik-bowire-41) | Bowire | [First RC of the new versioning discipline](https://github.com/Kuestenlogik/Bowire/issues/41) | ⬜ Backlog | `area:multi` |
+| [44](#issue-kuestenlogik-bowire-44) | Bowire | [Sidecar packaging — Docker / Compose / Kubernetes](https://github.com/Kuestenlogik/Bowire/issues/44) | ⬜ Backlog | `area:docs` |
+| [46](#issue-kuestenlogik-bowire-46) | Bowire | [MCP server-side notifications via IInlineSseSubscriber](https://github.com/Kuestenlogik/Bowire/issues/46) | ⬜ Backlog | `area:mcp` |
+| [47](#issue-kuestenlogik-bowire-47) | Bowire | [Sidebar display: method name vs path toggle](https://github.com/Kuestenlogik/Bowire/issues/47) | ⬜ Backlog | `area:workbench` |
+| [48](#issue-kuestenlogik-bowire-48) | Bowire | [Schema watch mode](https://github.com/Kuestenlogik/Bowire/issues/48) | ⬜ Backlog | `area:workbench` |
+| [49](#issue-kuestenlogik-bowire-49) | Bowire | [Programmatic environment provisioning in embedded mode](https://github.com/Kuestenlogik/Bowire/issues/49) | ⬜ Backlog | `area:workbench` |
+| [50](#issue-kuestenlogik-bowire-50) | Bowire | [Marketing site — gallery / lightbox layer on solutions/*](https://github.com/Kuestenlogik/Bowire/issues/50) | ⬜ Backlog | `area:site` `track:marketing-ia` |
+| [51](#issue-kuestenlogik-bowire-51) | Bowire | [Marketing site — migrate <img> tags to picture.html partial](https://github.com/Kuestenlogik/Bowire/issues/51) | ⬜ Backlog | `area:site` `track:marketing-ia` |
+| [53](#issue-kuestenlogik-bowire-53) | Bowire | [Marketing site — second row of specialist comparisons](https://github.com/Kuestenlogik/Bowire/issues/53) | ⬜ Backlog | `area:site` `track:marketing-ia` |
+| [58](#issue-kuestenlogik-bowire-58) | Bowire | [Workspace: complete the Git-native story (.blw file)](https://github.com/Kuestenlogik/Bowire/issues/58) | ⬜ Open |  |
+| [93](#issue-kuestenlogik-bowire-93) | Bowire | [Topbar: connection-state pill (aggregate + per-URL popover)](https://github.com/Kuestenlogik/Bowire/issues/93) | ⬜ Open |  |
+| [95](#issue-kuestenlogik-bowire-95) | Bowire | [Header Library: named, scoped, toggleable header sets](https://github.com/Kuestenlogik/Bowire/issues/95) | ⬜ Open |  |
+| [96](#issue-kuestenlogik-bowire-96) | Bowire | [Multi-tenant Phase C — SCIM 2.0 provisioning endpoints](https://github.com/Kuestenlogik/Bowire/issues/96) | ⬜ Open |  |
+| [97](#issue-kuestenlogik-bowire-97) | Bowire | [Multi-tenant Phase E — single-user → multi-tenant migration path](https://github.com/Kuestenlogik/Bowire/issues/97) | ⬜ Open |  |
+| [98](#issue-kuestenlogik-bowire-98) | Bowire | [Multi-tenant Phase F — user chip, scoped state copy, admin impersonation](https://github.com/Kuestenlogik/Bowire/issues/98) | ⬜ Open |  |
+| [100](#issue-kuestenlogik-bowire-100) | Bowire | [Ferry — CI/CD runner (collection / recording → headless run + JUnit report)](https://github.com/Kuestenlogik/Bowire/issues/100) | ⬜ Open |  |
+| [101](#issue-kuestenlogik-bowire-101) | Bowire | [Tugboat — VS Code + JetBrains workbench extension](https://github.com/Kuestenlogik/Bowire/issues/101) | ⬜ Open |  |
+| [102](#issue-kuestenlogik-bowire-102) | Bowire | [Lighthouse — scheduled probes + alerting (Postman Monitors / Synthetics analog)](https://github.com/Kuestenlogik/Bowire/issues/102) | ⬜ Open |  |
+| [103](#issue-kuestenlogik-bowire-103) | Bowire | [Generate boat photos: submarine, ferry, tugboat, lighthouse](https://github.com/Kuestenlogik/Bowire/issues/103) | ⬜ Open |  |
+| [104](#issue-kuestenlogik-bowire-104) | Bowire | [AI security scan orchestration — one button chains threat-model → templates → fuzz → triage → report](https://github.com/Kuestenlogik/Bowire/issues/104) | ⬜ Open |  |
+| [105](#issue-kuestenlogik-bowire-105) | Bowire | [AI JWT analyzer — claim-by-claim verdict, algorithm flags, scope/audience cross-check](https://github.com/Kuestenlogik/Bowire/issues/105) | ⬜ Open |  |
+| [106](#issue-kuestenlogik-bowire-106) | Bowire | [AI OWASP API Top 10 panel — per-method status + concrete probe per risk](https://github.com/Kuestenlogik/Bowire/issues/106) | ⬜ Open |  |
+| [107](#issue-kuestenlogik-bowire-107) | Bowire | [AI security report — markdown writeup grouped by severity + OWASP mapping + diff-vs-last-run](https://github.com/Kuestenlogik/Bowire/issues/107) | ⬜ Open |  |
+| [110](#issue-kuestenlogik-bowire-110) | Bowire | [Site: surface the AI assistant in the launch wizard + quickstart](https://github.com/Kuestenlogik/Bowire/issues/110) | ⬜ Open |  |
+| [128](#issue-kuestenlogik-bowire-128) | Bowire | [Bowire Agent — register embedded instances with a central hub](https://github.com/Kuestenlogik/Bowire/issues/128) | ⬜ Open |  |
+| [130](#issue-kuestenlogik-bowire-130) | Bowire | [Comparison table: add Hoppscotch + topic-based filtering](https://github.com/Kuestenlogik/Bowire/issues/130) | ⬜ Open |  |
 
 ## Details
 
 ### v2.0 — UI refactor + breaking-change window
 
-#### ⬜ Backlog · [#33](https://github.com/Kuestenlogik/Bowire/issues/33) Protocol plugins — Connect Phase 1+3 + OTLP
+#### <a id="issue-kuestenlogik-bowire-33"></a>⬜ Backlog · [#33](https://github.com/Kuestenlogik/Bowire/issues/33) Protocol plugins — Connect Phase 1+3 + OTLP
 
 > `area:plugin-sdk` · `track:protocols`
 
 Remaining wave items after MQTT / Kafka / AMQP / SOAP / NATS / JSON-RPC / Pulsar / DIS / UDP shipped:
 
-#### ⬜ Open · [#115](https://github.com/Kuestenlogik/Bowire/issues/115) v2.0 — UI refactor: re-architect the workbench shell
+#### <a id="issue-kuestenlogik-bowire-115"></a>⬜ Open · [#115](https://github.com/Kuestenlogik/Bowire/issues/115) v2.0 — UI refactor: re-architect the workbench shell
 
 > **Status:** Phase 1 — Shell-Refactor abgeschlossen (Juni 2026). Die strukturelle Neuordnung der Workbench ist durch; was in v2.0 noch landet, sind Feature-Streams plus die echten Breaking-Change-Cleanups. …
 
-#### ⬜ Open · [#124](https://github.com/Kuestenlogik/Bowire/issues/124) Cross-protocol omnibox (Cmd/Ctrl+K)
+#### <a id="issue-kuestenlogik-bowire-124"></a>⬜ Open · [#124](https://github.com/Kuestenlogik/Bowire/issues/124) Cross-protocol omnibox (Cmd/Ctrl+K)
 
-## Why
+Bowire connects to several discovery URLs at once. Each one exposes many services. Each service has many methods. Then there are recordings, active mocks, plugin actions. Navigating between them today means: scroll the sidebar, find the service, expand it, scan for the method, click. …
 
-#### ⬜ Open · [#160](https://github.com/Kuestenlogik/Bowire/issues/160) Workspace breadcrumb in the main pane
+#### <a id="issue-kuestenlogik-bowire-160"></a>⬜ Open · [#160](https://github.com/Kuestenlogik/Bowire/issues/160) Workspace breadcrumb in the main pane
 
-## Problem
+The active workspace is shown only in the topbar chip (top-right). When operators dive into a rail (Discover, Recordings, Collections, Mocks, …) they lose visual confirmation of which workspace's data they're looking at. …
 
-#### ⬜ Open · [#161](https://github.com/Kuestenlogik/Bowire/issues/161) Open method tabs persisted per workspace
+#### <a id="issue-kuestenlogik-bowire-161"></a>⬜ Open · [#161](https://github.com/Kuestenlogik/Bowire/issues/161) Open method tabs persisted per workspace
 
-## Problem
+`requestTabs` + `activeTabId` are currently module-level state (not workspace-scoped). When the operator switches workspaces, the open method tabs persist visually but point at methods that may not exist in the new workspace's discovery. …
 
-#### ⬜ Open · [#162](https://github.com/Kuestenlogik/Bowire/issues/162) Cmd+K omnibox: search collections, recordings, mocks, workspaces, settings, help
+#### <a id="issue-kuestenlogik-bowire-162"></a>⬜ Open · [#162](https://github.com/Kuestenlogik/Bowire/issues/162) Cmd+K omnibox: search collections, recordings, mocks, workspaces, settings, help
 
-## Problem
+Cmd/Ctrl+K currently searches methods + rail modes. Operators looking for "a collection named foo" or "the recording from last night" still have to navigate to the rail manually. The omnibox should be a true entry point to every workspace artifact, not just methods.
 
-#### ⬜ Open · [#163](https://github.com/Kuestenlogik/Bowire/issues/163) Activity rail icon count badges
+#### <a id="issue-kuestenlogik-bowire-163"></a>⬜ Open · [#163](https://github.com/Kuestenlogik/Bowire/issues/163) Activity rail icon count badges
 
-## Problem
+The activity rail shows feature icons (Discover, Recordings, Collections, …) but no count of what each contains. Operators have to click in to see "is there anything here?" The cross-feature pills in the service tree (#297) solved the per-method case; rail-level counts solve the per-feature case.
 
-#### ⬜ Open · [#164](https://github.com/Kuestenlogik/Bowire/issues/164) Console + Tests as tabs in the unified right-side drawer
+#### <a id="issue-kuestenlogik-bowire-164"></a>⬜ Open · [#164](https://github.com/Kuestenlogik/Bowire/issues/164) Console + Tests as tabs in the unified right-side drawer
 
-## Problem
+#299 introduced the unified right-side drawer with tabs (Assistant + Help). The Console (request/response activity log, in `consoleLog`) currently surfaces as a bottom-pane toggle; the Tests output (per-method assertions, currently inline) has no permanent home. Both fit the same "secondary panel" model.
 
-#### ⬜ Open · [#165](https://github.com/Kuestenlogik/Bowire/issues/165) Workspace templates on create (REST / gRPC / mock / multi-protocol)
+#### <a id="issue-kuestenlogik-bowire-165"></a>⬜ Open · [#165](https://github.com/Kuestenlogik/Bowire/issues/165) Workspace templates on create (REST / gRPC / mock / multi-protocol)
 
-## Problem
+The first workspace ships empty — no example URL, no example collection, no env vars. Operators new to Bowire face a tabula rasa: "Add URL", "Add collection", "Add env var", with no idea what shape any of them should have. Onboarding stalls.
 
-#### ⬜ Open · [#166](https://github.com/Kuestenlogik/Bowire/issues/166) Keyboard shortcut sheet (Cmd+/)
+#### <a id="issue-kuestenlogik-bowire-166"></a>⬜ Open · [#166](https://github.com/Kuestenlogik/Bowire/issues/166) Keyboard shortcut sheet (Cmd+/)
 
-## Problem
+Bowire has ~15+ keyboard shortcuts (Cmd+K, Cmd+S, F1, Ctrl+Shift+A, Cmd+B, Ctrl+Tab, Ctrl+Enter, Cmd+Alt+\\, Esc cascade, …) defined in `init.js`. None are discoverable in the UI. Power-users learn by reading code; newcomers don't learn them at all.
 
-#### ⬜ Open · [#167](https://github.com/Kuestenlogik/Bowire/issues/167) Settings → Plugins: show protocol DisplayName instead of assembly name
+#### <a id="issue-kuestenlogik-bowire-167"></a>⬜ Open · [#167](https://github.com/Kuestenlogik/Bowire/issues/167) Settings → Plugins: show protocol DisplayName instead of assembly name
 
-## Problem
+Under `Settings → Plugins`, every loaded plugin shows only its assembly name (e.g. `Kuestenlogik.Bowire.Se…` truncated). …
 
-#### ⬜ Open · [#168](https://github.com/Kuestenlogik/Bowire/issues/168) Workbench-wide action log with undo / redo (Ctrl+Z)
+#### <a id="issue-kuestenlogik-bowire-168"></a>⬜ Open · [#168](https://github.com/Kuestenlogik/Bowire/issues/168) Workbench-wide action log with undo / redo (Ctrl+Z)
 
-## Problem
+Bowire surfaces undo affordances in three disconnected places:
 
-#### ⬜ Open · [#169](https://github.com/Kuestenlogik/Bowire/issues/169) Hint dismiss pattern — "Don't show again" + Settings restore
+#### <a id="issue-kuestenlogik-bowire-169"></a>⬜ Open · [#169](https://github.com/Kuestenlogik/Bowire/issues/169) Hint dismiss pattern — "Don't show again" + Settings restore
 
-## Problem
+The workbench has several "this is a hint / warning" surfaces, each with its own dismiss story:
 
-#### ✅ Done · [#25](https://github.com/Kuestenlogik/Bowire/issues/25) AI side-panel integration
+#### <a id="issue-kuestenlogik-bowire-25"></a>✅ Done · [#25](https://github.com/Kuestenlogik/Bowire/issues/25) AI side-panel integration
 
 > `area:workbench`
 
 ADR: [`docs/architecture/ai-integration.md`](https://github.com/Kuestenlogik/Bowire/blob/main/docs/architecture/ai-integration.md)
 
-#### ✅ Done · [#43](https://github.com/Kuestenlogik/Bowire/issues/43) MCP SSE-transport support
+#### <a id="issue-kuestenlogik-bowire-43"></a>✅ Done · [#43](https://github.com/Kuestenlogik/Bowire/issues/43) MCP SSE-transport support
 
 > `area:mcp`
 
 > **Status:** done via the MCP SDK migration. Architecture diverges from the original plan — body below reflects the as-shipped state; the historical plan stays in the issue history.
 
-#### ✅ Done · [#85](https://github.com/Kuestenlogik/Bowire/issues/85) Request-pane Body: split stacked Form / Selection Set / Query into sub-tabs
+#### <a id="issue-kuestenlogik-bowire-85"></a>✅ Done · [#85](https://github.com/Kuestenlogik/Bowire/issues/85) Request-pane Body: split stacked Form / Selection Set / Query into sub-tabs
 
-## Proposal
+The Request pane's **Body** tab currently stacks several composing surfaces vertically. For GraphQL that's three:
 
-#### ✅ Done · [#90](https://github.com/Kuestenlogik/Bowire/issues/90) AI panel: move from response-pane tab to a right-side drawer
+#### <a id="issue-kuestenlogik-bowire-90"></a>✅ Done · [#90](https://github.com/Kuestenlogik/Bowire/issues/90) AI panel: move from response-pane tab to a right-side drawer
 
-## Symptom
+The AI side-panel renders as a tab in the response pane, peer with Response / Metadata / Logs / Code / History / Tests. Clicking the **AI** tab hides the response and shows the AI panel in its place.
 
-#### ✅ Done · [#91](https://github.com/Kuestenlogik/Bowire/issues/91) Frontend ProblemDetails migration — adopt renderProblem() everywhere body.error is read
+#### <a id="issue-kuestenlogik-bowire-91"></a>✅ Done · [#91](https://github.com/Kuestenlogik/Bowire/issues/91) Frontend ProblemDetails migration — adopt renderProblem() everywhere body.error is read
 
-## Why
+The server-side ProblemDetails rollout (#88) is complete — every endpoint under `src/Kuestenlogik.Bowire/Endpoints/` now returns `application/problem+json` with stable `type` URNs, structured `title` / `detail` / `instance`, and typed extensions per error class. …
 
-#### ✅ Done · [#92](https://github.com/Kuestenlogik/Bowire/issues/92) Move Server-URL + Schema-Files management from sidebar to main pane
+#### <a id="issue-kuestenlogik-bowire-92"></a>✅ Done · [#92](https://github.com/Kuestenlogik/Bowire/issues/92) Move Server-URL + Schema-Files management from sidebar to main pane
 
-## Symptom
+The sidebar's top section is currently a `[Server URL] [Schema Files]` tab strip — managing *which APIs Bowire is looking at*. Below that comes the service tree — *what does the loaded API expose*. Mixing those two concerns in the same column means:
 
-#### ✅ Done · [#94](https://github.com/Kuestenlogik/Bowire/issues/94) Recordings: one-click 'Use as mock' spins up a local mock server
+#### <a id="issue-kuestenlogik-bowire-94"></a>✅ Done · [#94](https://github.com/Kuestenlogik/Bowire/issues/94) Recordings: one-click 'Use as mock' spins up a local mock server
 
-## Why
+Bowire records real traffic (the recording-pane captures request + response + metadata per step). It also has a mock server (`Kuestenlogik.Bowire.Mock`) that can replay scripted responses. …
 
-#### ✅ Done · [#99](https://github.com/Kuestenlogik/Bowire/issues/99) Submarine — transparent proxy / MITM mode (6th deployment shape)
+#### <a id="issue-kuestenlogik-bowire-99"></a>✅ Done · [#99](https://github.com/Kuestenlogik/Bowire/issues/99) Submarine — transparent proxy / MITM mode (6th deployment shape)
 
 > **Status:** done via an architecture pivot. The original "Submarine — 6th deployment shape" framing is obsolete; the same functionality lands under the consolidated tracker #153 in a cleaner form. The body below reflects the as-shipped plan; the historical proposal stays in the issue history.
 
-#### ✅ Done · [#111](https://github.com/Kuestenlogik/Bowire/issues/111) AI drawer: tabs for Chat / Threat / Templates / Fuzz to kill the nested-scrollbar stack
+#### <a id="issue-kuestenlogik-bowire-111"></a>✅ Done · [#111](https://github.com/Kuestenlogik/Bowire/issues/111) AI drawer: tabs for Chat / Threat / Templates / Fuzz to kill the nested-scrollbar stack
 
-## Symptom
+The AI drawer (#90) hosts every AI surface in a single vertically-stacked column:
 
-#### ✅ Done · [#113](https://github.com/Kuestenlogik/Bowire/issues/113) Polish: tabs visually connect to content; drop the background glow
+#### <a id="issue-kuestenlogik-bowire-113"></a>✅ Done · [#113](https://github.com/Kuestenlogik/Bowire/issues/113) Polish: tabs visually connect to content; drop the background glow
 
-## Symptom
+Two specific complaints that point at the same root cause — visual cohesion in the workbench feels stitched together rather than designed-as-one:
 
-#### ✅ Done · [#114](https://github.com/Kuestenlogik/Bowire/issues/114) Hints: render contextually at the target surface (drop the static list in the drawer)
+#### <a id="issue-kuestenlogik-bowire-114"></a>✅ Done · [#114](https://github.com/Kuestenlogik/Bowire/issues/114) Hints: render contextually at the target surface (drop the static list in the drawer)
 
-## Symptom
+Hints today live as a static list at the top of the AI drawer:
 
-#### ✅ Done · [#116](https://github.com/Kuestenlogik/Bowire/issues/116) Workspaces — named, switchable contexts that bundle URLs / envs / collections / AI config
+#### <a id="issue-kuestenlogik-bowire-116"></a>✅ Done · [#116](https://github.com/Kuestenlogik/Bowire/issues/116) Workspaces — named, switchable contexts that bundle URLs / envs / collections / AI config
 
-## Why
+API testers routinely juggle multiple projects: staging-payments at 10 AM, an OIDC integration at noon, a third-party SDK debug at 3 PM. Each context has its own discovery URLs, envs, collections, AI settings, recordings. …
 
-#### ✅ Done · [#119](https://github.com/Kuestenlogik/Bowire/issues/119) Reading mode on bowire.io + docs + api-docs + Bootcamp
+#### <a id="issue-kuestenlogik-bowire-119"></a>✅ Done · [#119](https://github.com/Kuestenlogik/Bowire/issues/119) Reading mode on bowire.io + docs + api-docs + Bootcamp
 
-## Why
+Long-form content on Bowire's public surfaces — the marketing site (`bowire.io`), the DocFX-built docs (`bowire.io/docs/`), the API reference (`bowire.io/api-docs/`), and the Bootcamp lessons (Bowire.Bootcamp) — competes with persistent chrome: sticky top navs, sidebars, TOCs, footers, sometimes ads …
 
-#### ✅ Done · [#120](https://github.com/Kuestenlogik/Bowire/issues/120) Single accent + protocol as the only color
+#### <a id="issue-kuestenlogik-bowire-120"></a>✅ Done · [#120](https://github.com/Kuestenlogik/Bowire/issues/120) Single accent + protocol as the only color
 
-## Why
+The workbench has accumulated several accent colors over the v1.x releases — indigo for AI actions, teal for security, green for "connected", amber for warnings, plus a handful of one-off highlights on individual panels. …
 
-#### ✅ Done · [#121](https://github.com/Kuestenlogik/Bowire/issues/121) Context-aware empty states across every pane
+#### <a id="issue-kuestenlogik-bowire-121"></a>✅ Done · [#121](https://github.com/Kuestenlogik/Bowire/issues/121) Context-aware empty states across every pane
 
-## Why
+Today every empty pane reads the same way: a short literal like "No requests" or "No recordings yet" and nothing else. The user lands in an empty state and has to figure out from the chrome how to fill it. Worst case: they bounce.
 
-#### ✅ Done · [#122](https://github.com/Kuestenlogik/Bowire/issues/122) Direction-color + protocol-glyph (two-axis encoding)
+#### <a id="issue-kuestenlogik-bowire-122"></a>✅ Done · [#122](https://github.com/Kuestenlogik/Bowire/issues/122) Direction-color + protocol-glyph (two-axis encoding)
 
-## Why
+The single-accent + protocol-as-color pass gives each protocol its own hue. But protocols carry a second dimension that matters just as much for scanability: **direction**. A REST request is client→server. A REST response is server→client. …
 
-#### ✅ Done · [#123](https://github.com/Kuestenlogik/Bowire/issues/123) Workbench tabs that carry protocol-typed state
+#### <a id="issue-kuestenlogik-bowire-123"></a>✅ Done · [#123](https://github.com/Kuestenlogik/Bowire/issues/123) Workbench tabs that carry protocol-typed state
 
-## Why
+Today the workbench holds one active method at a time. Switching from "the REST call I was iterating on" to "the gRPC stream I wanted to check" means losing the body I was typing, the headers I'd set, the response I was looking at. Operators end up keeping multiple browser windows open just to keep state in two places.
 
-#### ✅ Done · [#127](https://github.com/Kuestenlogik/Bowire/issues/127) Auto-save to workspace + live save-state pill
+#### <a id="issue-kuestenlogik-bowire-127"></a>✅ Done · [#127](https://github.com/Kuestenlogik/Bowire/issues/127) Auto-save to workspace + live save-state pill
 
-## Why
+Today the workbench has no "save" action because there's no persistence model surfaced to the user. Some state survives reload (env vars, recordings); other state doesn't (body content, tab open set, scroll position). Users don't know what's safe and what isn't, so they hand-copy stuff "just in case".
 
-#### ✅ Done · [#129](https://github.com/Kuestenlogik/Bowire/issues/129) Layout cleanup — top bar, sidebar, main pane, drawers (left-sidebar model stays)
+#### <a id="issue-kuestenlogik-bowire-129"></a>✅ Done · [#129](https://github.com/Kuestenlogik/Bowire/issues/129) Layout cleanup — top bar, sidebar, main pane, drawers (left-sidebar model stays)
 
-## Why
+The workbench's visual sub-systems are now stronger than they used to be (#120 protocol color, #122 direction axis, #123 tab strip), but the overall **layout** still feels stacked rather than designed: the top-bar density runs the eye out of room before the request pane begins, drawers slide in over …
 
-#### ✅ Done · [#133](https://github.com/Kuestenlogik/Bowire/issues/133) Activity rail (left) — switch workbench focus by use case (dev / security / perf / mocks / …)
+#### <a id="issue-kuestenlogik-bowire-133"></a>✅ Done · [#133](https://github.com/Kuestenlogik/Bowire/issues/133) Activity rail (left) — switch workbench focus by use case (dev / security / perf / mocks / …)
 
-## Why
+Bowire's workflows have fragmented across the v1.x releases. Each one currently lives in a different place:
 
-#### ✅ Done · [#134](https://github.com/Kuestenlogik/Bowire/issues/134) Rename surface 'AI' → 'Assistant' (technology stays; user-facing labels shift)
+#### <a id="issue-kuestenlogik-bowire-134"></a>✅ Done · [#134](https://github.com/Kuestenlogik/Bowire/issues/134) Rename surface 'AI' → 'Assistant' (technology stays; user-facing labels shift)
 
-## Why
+The surface called "AI" today (drawer toggle, settings tab, panel header, internal references) describes **the technology** powering it, not **what it does for the user**. The user-facing purpose is: *help me work in the workbench* — explain a method, suggest a body, surface a warning, draft a script, run a scan.
 
-#### ✅ Done · [#135](https://github.com/Kuestenlogik/Bowire/issues/135) Request/response layout toggle — vertical / horizontal / auto split
+#### <a id="issue-kuestenlogik-bowire-135"></a>✅ Done · [#135](https://github.com/Kuestenlogik/Bowire/issues/135) Request/response layout toggle — vertical / horizontal / auto split
 
-## Why
+Today the request pane and the response pane are stacked **vertically** — request on top, response below. …
 
-#### ✅ Done · [#137](https://github.com/Kuestenlogik/Bowire/issues/137) Sidebar declaration per rail mode + stable toggle location
+#### <a id="issue-kuestenlogik-bowire-137"></a>✅ Done · [#137](https://github.com/Kuestenlogik/Bowire/issues/137) Sidebar declaration per rail mode + stable toggle location
 
-## Why
+The sidebar's collapse/expand affordance lives inside the main pane's request/response header (`bowire-toggle-sidebar` button). That's an accident of how the workbench grew — the header was originally always present, so the toggle naturally sat next to the breadcrumb.
 
-#### ✅ Done · [#138](https://github.com/Kuestenlogik/Bowire/issues/138) Statusbar at bottom — move connection pill + env + watch out of topbar
+#### <a id="issue-kuestenlogik-bowire-138"></a>✅ Done · [#138](https://github.com/Kuestenlogik/Bowire/issues/138) Statusbar at bottom — move connection pill + env + watch out of topbar
 
-## Why
+The connection pill ("all 2 connected", "1 / 3 failed", …) sits in the topbar today. Two problems:
 
-#### ✅ Done · [#139](https://github.com/Kuestenlogik/Bowire/issues/139) Per-mode favorites filter (drop the standalone Favorites tab)
+#### <a id="issue-kuestenlogik-bowire-139"></a>✅ Done · [#139](https://github.com/Kuestenlogik/Bowire/issues/139) Per-mode favorites filter (drop the standalone Favorites tab)
 
-## Why
+Today "Favorites" means one thing: a curated subset of methods, surfaced as a sub-tab in the sidebar. Useful for "the 5 methods I poke daily" but trapped in a single dimension.
 
-#### ✅ Done · [#142](https://github.com/Kuestenlogik/Bowire/issues/142) Sharper radii — straighter visual style across tabs / cards / drawers
+#### <a id="issue-kuestenlogik-bowire-142"></a>✅ Done · [#142](https://github.com/Kuestenlogik/Bowire/issues/142) Sharper radii — straighter visual style across tabs / cards / drawers
 
-## Why
+Bowire's current visual style leans soft: 10/14/20 px border-radius values on most affordances (cards, drawers, tabs, buttons). For a workbench positioned as a precise multi-protocol tool — IDE-shaped, not consumer-app-shaped — the softness reads as decorative rather than functional. …
 
-#### ✅ Done · [#143](https://github.com/Kuestenlogik/Bowire/issues/143) Uniform delete affordances on every list sidebar (single / multi-select / all)
+#### <a id="issue-kuestenlogik-bowire-143"></a>✅ Done · [#143](https://github.com/Kuestenlogik/Bowire/issues/143) Uniform delete affordances on every list sidebar (single / multi-select / all)
 
-## Why
+Every rail-mode sidebar that lists user-created entries (Recordings, Mocks, Collections, Environments, Flows, future Presets) lets the operator **add** entries via a header `+` button or an empty-card primary action. None of them let the operator **delete** entries from the sidebar list itself. …
 
-#### ✅ Done · [#146](https://github.com/Kuestenlogik/Bowire/issues/146) Workspace-side environment inclusion list (shared envs + per-workspace selection)
+#### <a id="issue-kuestenlogik-bowire-146"></a>✅ Done · [#146](https://github.com/Kuestenlogik/Bowire/issues/146) Workspace-side environment inclusion list (shared envs + per-workspace selection)
 
-## Why
+#116 Phase 2 made environments fully workspace-scoped — switch a workspace, get a fresh empty environments list. That's correct for workspace-owned envs (per-project credentials) but wrong for shared ones (the "staging credentials" set used across every project).
 
-#### ✅ Done · [#152](https://github.com/Kuestenlogik/Bowire/issues/152) Sources rail mode — centralise URL / schema-file management
+#### <a id="issue-kuestenlogik-bowire-152"></a>✅ Done · [#152](https://github.com/Kuestenlogik/Bowire/issues/152) Sources rail mode — centralise URL / schema-file management
 
-## Why
+URL / schema-file management is scattered across the workbench:
 
-#### ✅ Done · [#154](https://github.com/Kuestenlogik/Bowire/issues/154) Help as optional NuGet package — `Kuestenlogik.Bowire.Help`
+#### <a id="issue-kuestenlogik-bowire-154"></a>✅ Done · [#154](https://github.com/Kuestenlogik/Bowire/issues/154) Help as optional NuGet package — `Kuestenlogik.Bowire.Help`
 
-## Why
+Bowire core (`Kuestenlogik.Bowire`) carries no in-app documentation today. The docs at `docs/` are a separate docfx site (bowire.io/docs). …
 
-#### ✅ Done · [#155](https://github.com/Kuestenlogik/Bowire/issues/155) Workspace = project folder — strictly per-workspace, sharing via copy actions
+#### <a id="issue-kuestenlogik-bowire-155"></a>✅ Done · [#155](https://github.com/Kuestenlogik/Bowire/issues/155) Workspace = project folder — strictly per-workspace, sharing via copy actions
 
-## Why
+The current workspace model mixes two concepts: - **Per-workspace via `wsKey()`** for most entities (URLs, URL meta, URL headers, recordings, collections, request tabs, benchmarks, presets, secrets, tabs-trash, …) - **Shared store + inclusion list** (#146) for environments — environments live in `bo …
 
-#### ✅ Done · [#156](https://github.com/Kuestenlogik/Bowire/issues/156) Favorites as a connective UI element
+#### <a id="issue-kuestenlogik-bowire-156"></a>✅ Done · [#156](https://github.com/Kuestenlogik/Bowire/issues/156) Favorites as a connective UI element
 
-## Why
+Favorites today exist in isolation. The user can star a method, but the star surface is the **Home rail mode** only — once they leave Home, the favorite-status disappears from view. There is no way to:
 
-#### ✅ Done · [#157](https://github.com/Kuestenlogik/Bowire/issues/157) "Add to…" quick-actions at the method header
+#### <a id="issue-kuestenlogik-bowire-157"></a>✅ Done · [#157](https://github.com/Kuestenlogik/Bowire/issues/157) "Add to…" quick-actions at the method header
 
-## Why
+Collections, Recordings, and Benchmarks are each entered from their own rail mode. To put the currently-open method into a collection, the operator has to:
 
-#### ✅ Done · [#158](https://github.com/Kuestenlogik/Bowire/issues/158) Cross-feature state visibility in the service tree
+#### <a id="issue-kuestenlogik-bowire-158"></a>✅ Done · [#158](https://github.com/Kuestenlogik/Bowire/issues/158) Cross-feature state visibility in the service tree
 
-## Why
+The Discover service tree today shows each method as a flat row: name, badge, optional description. There is **no signal** that a particular method:
 
-#### ✅ Done · [#159](https://github.com/Kuestenlogik/Bowire/issues/159) Workspace Export / Import as .bowire JSON
+#### <a id="issue-kuestenlogik-bowire-159"></a>✅ Done · [#159](https://github.com/Kuestenlogik/Bowire/issues/159) Workspace Export / Import as .bowire JSON
 
-## Problem
+A Bowire workspace is the project folder — URLs, collections, recordings, favorites, benchmarks, flows and presets all live in it. Currently the only way to move a workspace between machines or share it with a teammate is to export each artifact one by one (and most aren't exportable at all). …
 
 ### v2.1 — workspace v3 + protocol wave 3
 
-#### ⬜ Open · [#117](https://github.com/Kuestenlogik/Bowire/issues/117) i18n — extract every UI string; ship DE + EN catalogues
+#### <a id="issue-kuestenlogik-bowire-117"></a>⬜ Open · [#117](https://github.com/Kuestenlogik/Bowire/issues/117) i18n — extract every UI string; ship DE + EN catalogues
 
-## Why
+Bowire's UI is English-only today. Every label, every button, every tooltip, every empty-state copy is a hard-coded literal in the JS source.
 
-#### ⬜ Open · [#125](https://github.com/Kuestenlogik/Bowire/issues/125) Multi-source {{...}} variable resolver
+#### <a id="issue-kuestenlogik-bowire-125"></a>⬜ Open · [#125](https://github.com/Kuestenlogik/Bowire/issues/125) Multi-source {{...}} variable resolver
 
-## Why
+Real API testing chains requests. The token from POST /auth gets used in the next 12 calls. The pet id from POST /pet feeds into GET /pet/{id}. The timestamp from one webhook becomes the input to another. Today the operator copy-pastes by hand between request panes.
 
-#### ⬜ Open · [#126](https://github.com/Kuestenlogik/Bowire/issues/126) Pre-/post-scripts with a protocol-typed sandbox
+#### <a id="issue-kuestenlogik-bowire-126"></a>⬜ Open · [#126](https://github.com/Kuestenlogik/Bowire/issues/126) Pre-/post-scripts with a protocol-typed sandbox
 
-## Why
+Real testing workflows have steps that are too dynamic for a static template: sign the body with a per-request HMAC, refresh an access token if it's about to expire, capture a value from one response into a header on the next, encode a binary blob, assert on a complex shape after send. …
 
-#### ⬜ Open · [#131](https://github.com/Kuestenlogik/Bowire/issues/131) Benchmarks: first-class surface (single / collection / recording / random / scheduled)
+#### <a id="issue-kuestenlogik-bowire-131"></a>⬜ Open · [#131](https://github.com/Kuestenlogik/Bowire/issues/131) Benchmarks: first-class surface (single / collection / recording / random / scheduled)
 
-## Why
+Today benchmarks (Repeat N×, latency distribution, status histogram) live as an inline expansion on a single request pane. The discoverability is buried — the operator has to find a method, open its detail, scroll to the bench section. …
 
-#### ⬜ Open · [#132](https://github.com/Kuestenlogik/Bowire/issues/132) Parallel sessions for recordings / collections (phase 1 local, phase 2 distributed)
+#### <a id="issue-kuestenlogik-bowire-132"></a>⬜ Open · [#132](https://github.com/Kuestenlogik/Bowire/issues/132) Parallel sessions for recordings / collections (phase 1 local, phase 2 distributed)
 
-## Why
+Today a recording or collection runs sequentially: step 1 → step 2 → step 3, one session, one request in flight at a time. Useful for **functional** testing ("does the flow still work?") but unable to answer the parallel-shaped questions:
 
-#### ⬜ Open · [#136](https://github.com/Kuestenlogik/Bowire/issues/136) URL / service catalogue providers (local / http / consul / kubernetes / agent)
+#### <a id="issue-kuestenlogik-bowire-136"></a>⬜ Open · [#136](https://github.com/Kuestenlogik/Bowire/issues/136) URL / service catalogue providers (local / http / consul / kubernetes / agent)
 
-## Why
+Today every Bowire instance maintains its own URL list — manually typed in the sidebar, persisted to localStorage / disk. …
 
-#### ⬜ Open · [#140](https://github.com/Kuestenlogik/Bowire/issues/140) Per-mode 'Saved Configs' / Presets (distinct from cross-workflow favorites)
+#### <a id="issue-kuestenlogik-bowire-140"></a>⬜ Open · [#140](https://github.com/Kuestenlogik/Bowire/issues/140) Per-mode 'Saved Configs' / Presets (distinct from cross-workflow favorites)
 
-## Why
+Two concepts have been conflated under "favorites" in the workbench's evolution:
 
-#### ⬜ Open · [#144](https://github.com/Kuestenlogik/Bowire/issues/144) Large-recording capture/replay — chunked disk layout, lazy step-load, GB-scale
+#### <a id="issue-kuestenlogik-bowire-144"></a>⬜ Open · [#144](https://github.com/Kuestenlogik/Bowire/issues/144) Large-recording capture/replay — chunked disk layout, lazy step-load, GB-scale
 
-## Why
+Recordings today scale to KB-to-single-digit-MB before the architecture pushes back:
 
-#### ⬜ Open · [#145](https://github.com/Kuestenlogik/Bowire/issues/145) Deprecate ${name} in favour of {{name}} (multi-phase migration)
+#### <a id="issue-kuestenlogik-bowire-145"></a>⬜ Open · [#145](https://github.com/Kuestenlogik/Bowire/issues/145) Deprecate ${name} in favour of {{name}} (multi-phase migration)
 
-## Why
+After #125 v1 landed, Bowire has two interpolation syntaxes that resolve identically: - `${name}` — Bowire's original Bash-style syntax (escape: `$${name}`) - `{{name}}` — Postman / Mustache convention (escape: `{{{{name}}}}`)
 
-#### ⬜ Open · [#147](https://github.com/Kuestenlogik/Bowire/issues/147) Git-backed workspace storage — composes with #144 storage modes + #58
+#### <a id="issue-kuestenlogik-bowire-147"></a>⬜ Open · [#147](https://github.com/Kuestenlogik/Bowire/issues/147) Git-backed workspace storage — composes with #144 storage modes + #58
 
-## Why
+#58 ("Git-native workspace") sits as a roadmap goal — a workspace's state (URLs, envs, collections, recordings, scripts, AI config overrides) should be checkable into a git repo so a team can `git push` / `git pull` their context.
 
-#### ⬜ Open · [#148](https://github.com/Kuestenlogik/Bowire/issues/148) Per-entity file storage format for git-backed workspaces (envs / collections / scripts)
+#### <a id="issue-kuestenlogik-bowire-148"></a>⬜ Open · [#148](https://github.com/Kuestenlogik/Bowire/issues/148) Per-entity file storage format for git-backed workspaces (envs / collections / scripts)
 
-## Why
+For #58 + #147 to deliver real "git-native workspace" parity with Bruno, the workspace state needs to live as **per-entity files**, not as opaque bundles. Today:
 
-#### ⬜ Open · [#149](https://github.com/Kuestenlogik/Bowire/issues/149) Workspace CLI — bowire workspace init / export / import / migrate-format
+#### <a id="issue-kuestenlogik-bowire-149"></a>⬜ Open · [#149](https://github.com/Kuestenlogik/Bowire/issues/149) Workspace CLI — bowire workspace init / export / import / migrate-format
 
-## Why
+Bruno's CLI runs the same `.bru` files the GUI edits — `bruno run collections/payments/Login.bru` works straight out of a checked-out repo. Bowire's CLI today reads from `~/.bowire/` hard-wired through `BowireUserContext`. …
 
-#### ⬜ Open · [#150](https://github.com/Kuestenlogik/Bowire/issues/150) Filesystem-watch + reconcile UI for externally-edited workspace files
+#### <a id="issue-kuestenlogik-bowire-150"></a>⬜ Open · [#150](https://github.com/Kuestenlogik/Bowire/issues/150) Filesystem-watch + reconcile UI for externally-edited workspace files
 
-## Why
+In a git-backed workspace (#147) the operator will frequently: - Run `git pull` to get the team's latest envs / collections / recordings. - Edit a `.req.json` or `.js` file in their editor (faster than the workbench schema-form for some operations). - Switch git branches while the workbench is open.
 
-#### ⬜ Open · [#151](https://github.com/Kuestenlogik/Bowire/issues/151) Secret-file separation + workspace lock file for safe team-shared git workspaces
+#### <a id="issue-kuestenlogik-bowire-151"></a>⬜ Open · [#151](https://github.com/Kuestenlogik/Bowire/issues/151) Secret-file separation + workspace lock file for safe team-shared git workspaces
 
-## Why
+Two related concerns for a git-backed workspace (#147) that aren't covered yet:
 
-#### ⬜ Open · [#153](https://github.com/Kuestenlogik/Bowire/issues/153) Bowire as transparent interceptor — embedded middleware + standalone reverse-proxy
+#### <a id="issue-kuestenlogik-bowire-153"></a>⬜ Open · [#153](https://github.com/Kuestenlogik/Bowire/issues/153) Bowire as transparent interceptor — embedded middleware + standalone reverse-proxy
 
-## Why
+Today Bowire watches traffic in two narrow ways: - **Discover / Recording / Benchmarks** — the operator drives a call FROM Bowire's workbench and Bowire sees both sides. - **MITM Proxy view (#36)** — read-only inspection of traffic flowing through an external Bowire-as-proxy listener.
 
 ### Backlog (not yet scheduled)
 
-#### 🟡 In progress · [#26](https://github.com/Kuestenlogik/Bowire/issues/26) Security testing tool — remaining tiers
+#### <a id="issue-kuestenlogik-bowire-26"></a>🟡 In progress · [#26](https://github.com/Kuestenlogik/Bowire/issues/26) Security testing tool — remaining tiers
 
 > `area:security` · `track:security-tiers`
 
 ADR: [`docs/architecture/security-testing.md`](https://github.com/Kuestenlogik/Bowire/blob/main/docs/architecture/security-testing.md)
 
-#### 🟢 Next up · [#28](https://github.com/Kuestenlogik/Bowire/issues/28) Multi-tenant data model + SCIM (Phase B)
+#### <a id="issue-kuestenlogik-bowire-28"></a>🟢 Next up · [#28](https://github.com/Kuestenlogik/Bowire/issues/28) Multi-tenant data model + SCIM (Phase B)
 
 > `area:workbench` · `track:auth`
 
 **Builds on:** #31, #32 — multi-tenant SCIM extends the auth foundation.
 
-#### ⬜ Backlog · [Kuestenlogik/Bowire.Templates#3](https://github.com/Kuestenlogik/Bowire.Templates/issues/3) Plugin project template — `dotnet new bowire-plugin`
+#### <a id="issue-kuestenlogik-bowire-templates-3"></a>⬜ Backlog · [Kuestenlogik/Bowire.Templates#3](https://github.com/Kuestenlogik/Bowire.Templates/issues/3) Plugin project template — `dotnet new bowire-plugin`
 
 > `area:plugin-sdk`
 
 \`dotnet new bowire-plugin\` in the separate [Templates repo](https://github.com/Kuestenlogik/Bowire.Templates). The polyglot sidecar variants (Python / Node / Rust / Go) shipped via \`--Sidecar\`; this is the .NET-native variant.
 
-#### ⬜ Open · [Kuestenlogik/Bowire.Protocol.Surgewave#11](https://github.com/Kuestenlogik/Bowire.Protocol.Surgewave/issues/11) Light up Surgewave protocol plugin
+#### <a id="issue-kuestenlogik-bowire-protocol-surgewave-11"></a>⬜ Open · [Kuestenlogik/Bowire.Protocol.Surgewave#11](https://github.com/Kuestenlogik/Bowire.Protocol.Surgewave/issues/11) Light up Surgewave protocol plugin
 
 Tracks the Surgewave-lane work split out of Kuestenlogik/Bowire#33 so protocol-specific tickets live with the protocol-specific repo.
 
-#### ⬜ Backlog · [Kuestenlogik/Bowire.Samples#13](https://github.com/Kuestenlogik/Bowire.Samples/issues/13) SimpleGraphQLSubscriptions sample
+#### <a id="issue-kuestenlogik-bowire-samples-13"></a>⬜ Backlog · [Kuestenlogik/Bowire.Samples#13](https://github.com/Kuestenlogik/Bowire.Samples/issues/13) SimpleGraphQLSubscriptions sample
 
 > `area:plugin-sdk`
 
 Hand-rolled graphql-transport-ws server (or HotChocolate-based) so the GraphQL pluginʼs subscription code path has a runnable target.
 
-#### ⬜ Backlog · [#34](https://github.com/Kuestenlogik/Bowire/issues/34) AsyncAPI discovery source — remaining bindings + V2 overloads + YAML pre-normaliser
+#### <a id="issue-kuestenlogik-bowire-34"></a>⬜ Backlog · [#34](https://github.com/Kuestenlogik/Bowire/issues/34) AsyncAPI discovery source — remaining bindings + V2 overloads + YAML pre-normaliser
 
 > `area:plugin-sdk` · `track:protocols`
 
 AsyncAPI loader + most bindings shipped (MQTT / Kafka / WebSocket / HTTP / AMQP / NATS / MQTT5 + schema export). Open:
 
-#### ⬜ Backlog · [#35](https://github.com/Kuestenlogik/Bowire/issues/35) Nuclei template compat — OAST + non-HTTP transports (Phase 2f + 2g)
+#### <a id="issue-kuestenlogik-bowire-35"></a>⬜ Backlog · [#35](https://github.com/Kuestenlogik/Bowire/issues/35) Nuclei template compat — OAST + non-HTTP transports (Phase 2f + 2g)
 
 > `area:security` · `track:security-tiers`
 
 Phase 2a-2e shipped (reader + matcher translation + variable substitution + multi-path + ScanCommand integration). Optional follow-ups:
 
-#### ⬜ Backlog · [#36](https://github.com/Kuestenlogik/Bowire/issues/36) Replay-Mock — HTTPS MITM / record mode
+#### <a id="issue-kuestenlogik-bowire-36"></a>⬜ Backlog · [#36](https://github.com/Kuestenlogik/Bowire/issues/36) Replay-Mock — HTTPS MITM / record mode
 
 > `area:mock`
 
 WireMock-style transparent proxy that records real traffic. Deferred unless demand picks up — the existing recording-from-UI surface already covers most needs.
 
-#### ⬜ Backlog · [#37](https://github.com/Kuestenlogik/Bowire/issues/37) Bowire.Mcp — remaining tools + adapter modes
+#### <a id="issue-kuestenlogik-bowire-37"></a>⬜ Backlog · [#37](https://github.com/Kuestenlogik/Bowire/issues/37) Bowire.Mcp — remaining tools + adapter modes
 
 > `area:mcp`
 
 **Dependencies** - Related #56, #57 — Mock UI panel + request log will need MCP-tool counterparts (`bowire.mock.start/stop/list/requests`) from this set. - Related #43 — MCP SSE-transport support. …
 
-#### ⬜ Backlog · [#38](https://github.com/Kuestenlogik/Bowire/issues/38) CLI — Phase 3 polish (completion + validators + error rendering)
+#### <a id="issue-kuestenlogik-bowire-38"></a>⬜ Backlog · [#38](https://github.com/Kuestenlogik/Bowire/issues/38) CLI — Phase 3 polish (completion + validators + error rendering)
 
 > `area:cli`
 
 - [ ] **Tab-completion via dotnet-suggest** — bash / PowerShell / zsh users get free completion. - [ ] **Per-option validators** — \`--port\` validated 1..65535, \`--recording\` validated as FileInfo that exists, \`--chaos\` parsed ahead of dispatch. - [ ] **Pretty-printed System.CommandLine errors* …
 
-#### ⬜ Backlog · [#39](https://github.com/Kuestenlogik/Bowire/issues/39) HAR Import polish
+#### <a id="issue-kuestenlogik-bowire-39"></a>⬜ Backlog · [#39](https://github.com/Kuestenlogik/Bowire/issues/39) HAR Import polish
 
 > `area:workbench`
 
 \`bowire import har <file.har>\` CLI shipped. Remaining:
 
-#### ⬜ Backlog · [#40](https://github.com/Kuestenlogik/Bowire/issues/40) Freeform Request Builder
+#### <a id="issue-kuestenlogik-bowire-40"></a>⬜ Backlog · [#40](https://github.com/Kuestenlogik/Bowire/issues/40) Freeform Request Builder
 
 > `area:workbench`
 
 Bowire today is discovery-first. Freeform flips this — the user creates a request from scratch without a discovered schema.
 
-#### ⬜ Backlog · [#41](https://github.com/Kuestenlogik/Bowire/issues/41) First RC of the new versioning discipline
+#### <a id="issue-kuestenlogik-bowire-41"></a>⬜ Backlog · [#41](https://github.com/Kuestenlogik/Bowire/issues/41) First RC of the new versioning discipline
 
 > `area:multi`
 
 Features land as 1.0.x-rc.N for a smoke round before the final 1.0.x tag. Consumers opt in via --prerelease.
 
-#### ⬜ Backlog · [#44](https://github.com/Kuestenlogik/Bowire/issues/44) Sidecar packaging — Docker / Compose / Kubernetes
+#### <a id="issue-kuestenlogik-bowire-44"></a>⬜ Backlog · [#44](https://github.com/Kuestenlogik/Bowire/issues/44) Sidecar packaging — Docker / Compose / Kubernetes
 
 > `area:docs`
 
 Published \`ghcr.io/kuestenlogik/bowire:latest\` image already; missing:
 
-#### ⬜ Backlog · [#46](https://github.com/Kuestenlogik/Bowire/issues/46) MCP server-side notifications via IInlineSseSubscriber
+#### <a id="issue-kuestenlogik-bowire-46"></a>⬜ Backlog · [#46](https://github.com/Kuestenlogik/Bowire/issues/46) MCP server-side notifications via IInlineSseSubscriber
 
 > `area:mcp`
 
 Close the second half of the v0.8.11 design.
 
-#### ⬜ Backlog · [#47](https://github.com/Kuestenlogik/Bowire/issues/47) Sidebar display: method name vs path toggle
+#### <a id="issue-kuestenlogik-bowire-47"></a>⬜ Backlog · [#47](https://github.com/Kuestenlogik/Bowire/issues/47) Sidebar display: method name vs path toggle
 
 > `area:workbench`
 
 For REST endpoints, offer a per-sidebar toggle (sticky in localStorage) that flips the label between \`GetForecast\` and \`GET /api/Weather/forecast/{city}\`.
 
-#### ⬜ Backlog · [#48](https://github.com/Kuestenlogik/Bowire/issues/48) Schema watch mode
+#### <a id="issue-kuestenlogik-bowire-48"></a>⬜ Backlog · [#48](https://github.com/Kuestenlogik/Bowire/issues/48) Schema watch mode
 
 > `area:workbench`
 
 Re-discover the active server URL(s) every N seconds and show a \"+ added, − removed, ~ changed\" delta in the sidebar.
 
-#### ⬜ Backlog · [#49](https://github.com/Kuestenlogik/Bowire/issues/49) Programmatic environment provisioning in embedded mode
+#### <a id="issue-kuestenlogik-bowire-49"></a>⬜ Backlog · [#49](https://github.com/Kuestenlogik/Bowire/issues/49) Programmatic environment provisioning in embedded mode
 
 > `area:workbench`
 
 Surface IServiceCollection.AddBowireEnvironment(name, configure) (or a fluent builder on AddBowire()) so the host can pre-seed environments with variables derived from the running appʼs own IConfiguration / IOptions<T>. …
 
-#### ⬜ Backlog · [#50](https://github.com/Kuestenlogik/Bowire/issues/50) Marketing site — gallery / lightbox layer on solutions/*
+#### <a id="issue-kuestenlogik-bowire-50"></a>⬜ Backlog · [#50](https://github.com/Kuestenlogik/Bowire/issues/50) Marketing site — gallery / lightbox layer on solutions/*
 
 > `area:site` · `track:marketing-ia`
 
 The new responsive image pipeline (optimize-images.mjs + picture.html) already emits -400w / -1200w / original variants. Layer a small JS lightbox that swaps the thumbnail-grid render (400w) for the full-resolution AVIF on click — initial page load gets the smallest variant, original only hits the wire on click.
 
-#### ⬜ Backlog · [#51](https://github.com/Kuestenlogik/Bowire/issues/51) Marketing site — migrate <img> tags to picture.html partial
+#### <a id="issue-kuestenlogik-bowire-51"></a>⬜ Backlog · [#51](https://github.com/Kuestenlogik/Bowire/issues/51) Marketing site — migrate <img> tags to picture.html partial
 
 > `area:site` · `track:marketing-ia`
 
 Image-perf pipeline shipped (sharp → AVIF + WebP, three variant widths; picture.html partial; Lighthouse CI gates). …
 
-#### ⬜ Backlog · [#53](https://github.com/Kuestenlogik/Bowire/issues/53) Marketing site — second row of specialist comparisons
+#### <a id="issue-kuestenlogik-bowire-53"></a>⬜ Backlog · [#53](https://github.com/Kuestenlogik/Bowire/issues/53) Marketing site — second row of specialist comparisons
 
 > `area:site` · `track:marketing-ia`
 
 The comparison tableʼs "top-5-competitors check" framing already lets us mention more tools in the best-for strip without committing them to a full table row. …
 
-#### ⬜ Open · [#58](https://github.com/Kuestenlogik/Bowire/issues/58) Workspace: complete the Git-native story (.blw file)
+#### <a id="issue-kuestenlogik-bowire-58"></a>⬜ Open · [#58](https://github.com/Kuestenlogik/Bowire/issues/58) Workspace: complete the Git-native story (.blw file)
 
 **Dependencies** - Marketing promise on https://bowire.io / comparison table currently reads `Git-native workspace -> planned`. Bruno's `.bru` convention is the bar.
 
-#### ⬜ Open · [#93](https://github.com/Kuestenlogik/Bowire/issues/93) Topbar: connection-state pill (aggregate + per-URL popover)
+#### <a id="issue-kuestenlogik-bowire-93"></a>⬜ Open · [#93](https://github.com/Kuestenlogik/Bowire/issues/93) Topbar: connection-state pill (aggregate + per-URL popover)
 
-## Why
+Today the user has to scroll the sidebar to know whether their configured URL is actually connected — the dot lives next to the URL input inside the source selector. That's the right place for *editing* the URL, but the wrong place for *monitoring* the connection. …
 
-#### ⬜ Open · [#95](https://github.com/Kuestenlogik/Bowire/issues/95) Header Library: named, scoped, toggleable header sets
+#### <a id="issue-kuestenlogik-bowire-95"></a>⬜ Open · [#95](https://github.com/Kuestenlogik/Bowire/issues/95) Header Library: named, scoped, toggleable header sets
 
-## Why
+Headers like `Accept: application/vnd.example+json`, `X-Api-Version: 2`, `User-Agent: my-tester/1.0` get re-typed on every method, every environment, every workspace. Bowire's Metadata tab is per-request — there's no place to say "every call against api.example.com sends these three headers" without scripts.
 
-#### ⬜ Open · [#96](https://github.com/Kuestenlogik/Bowire/issues/96) Multi-tenant Phase C — SCIM 2.0 provisioning endpoints
+#### <a id="issue-kuestenlogik-bowire-96"></a>⬜ Open · [#96](https://github.com/Kuestenlogik/Bowire/issues/96) Multi-tenant Phase C — SCIM 2.0 provisioning endpoints
 
 Extracted from #28 — **Phase C** of the multi-tenant rollout. Tracked separately so it can be sized + scheduled.
 
-#### ⬜ Open · [#97](https://github.com/Kuestenlogik/Bowire/issues/97) Multi-tenant Phase E — single-user → multi-tenant migration path
+#### <a id="issue-kuestenlogik-bowire-97"></a>⬜ Open · [#97](https://github.com/Kuestenlogik/Bowire/issues/97) Multi-tenant Phase E — single-user → multi-tenant migration path
 
 Extracted from #28 — **Phase E** of the multi-tenant rollout. Tracked separately so it can be sized + scheduled.
 
-#### ⬜ Open · [#98](https://github.com/Kuestenlogik/Bowire/issues/98) Multi-tenant Phase F — user chip, scoped state copy, admin impersonation
+#### <a id="issue-kuestenlogik-bowire-98"></a>⬜ Open · [#98](https://github.com/Kuestenlogik/Bowire/issues/98) Multi-tenant Phase F — user chip, scoped state copy, admin impersonation
 
 Phase F of the multi-tenant rollout — the UI affordances that turn "multi-user works under the hood" into "users feel it" (#28).
 
-#### ⬜ Open · [#100](https://github.com/Kuestenlogik/Bowire/issues/100) Ferry — CI/CD runner (collection / recording → headless run + JUnit report)
+#### <a id="issue-kuestenlogik-bowire-100"></a>⬜ Open · [#100](https://github.com/Kuestenlogik/Bowire/issues/100) Ferry — CI/CD runner (collection / recording → headless run + JUnit report)
 
-## Why
+The five shipping boats (#28 Cruise ship preview included) cover *interactive* use — operator opens a workbench, looks at responses, decides what to do next. They don't cover the CI/CD shape: "every commit, run this collection of calls + assertions, fail the build if anything regresses."
 
-#### ⬜ Open · [#101](https://github.com/Kuestenlogik/Bowire/issues/101) Tugboat — VS Code + JetBrains workbench extension
+#### <a id="issue-kuestenlogik-bowire-101"></a>⬜ Open · [#101](https://github.com/Kuestenlogik/Bowire/issues/101) Tugboat — VS Code + JetBrains workbench extension
 
-## Why
+Thunder Client proved there's a real audience for "I want to test an API without leaving my IDE." It's REST-only and limited; the *category* it occupies is uncontested for multi-protocol.
 
-#### ⬜ Open · [#102](https://github.com/Kuestenlogik/Bowire/issues/102) Lighthouse — scheduled probes + alerting (Postman Monitors / Synthetics analog)
+#### <a id="issue-kuestenlogik-bowire-102"></a>⬜ Open · [#102](https://github.com/Kuestenlogik/Bowire/issues/102) Lighthouse — scheduled probes + alerting (Postman Monitors / Synthetics analog)
 
-## Why
+The five shipping boats + Submarine (#99) cover interactive use, embedded use, and proxied use. None of them cover the *passive* shape: "I don't want to invoke; I want to know if everything is healthy right now."
 
-#### ⬜ Open · [#103](https://github.com/Kuestenlogik/Bowire/issues/103) Generate boat photos: submarine, ferry, tugboat, lighthouse
+#### <a id="issue-kuestenlogik-bowire-103"></a>⬜ Open · [#103](https://github.com/Kuestenlogik/Bowire/issues/103) Generate boat photos: submarine, ferry, tugboat, lighthouse
 
-## Why
+The launch stepper on the home page ([`/_includes/launch.html`](https://github.com/Kuestenlogik/Bowire/blob/main/site/_includes/launch.html)) uses one photo per boat:
 
-#### ⬜ Open · [#104](https://github.com/Kuestenlogik/Bowire/issues/104) AI security scan orchestration — one button chains threat-model → templates → fuzz → triage → report
+#### <a id="issue-kuestenlogik-bowire-104"></a>⬜ Open · [#104](https://github.com/Kuestenlogik/Bowire/issues/104) AI security scan orchestration — one button chains threat-model → templates → fuzz → triage → report
 
-## Why
+Tier 4 of the security roadmap (#26) shipped four AI primitives in v1.9:
 
-#### ⬜ Open · [#105](https://github.com/Kuestenlogik/Bowire/issues/105) AI JWT analyzer — claim-by-claim verdict, algorithm flags, scope/audience cross-check
+#### <a id="issue-kuestenlogik-bowire-105"></a>⬜ Open · [#105](https://github.com/Kuestenlogik/Bowire/issues/105) AI JWT analyzer — claim-by-claim verdict, algorithm flags, scope/audience cross-check
 
-## Why
+JWT bugs are top-3 in every API security report year after year — `alg=none`, weak HS256 secrets, missing `exp`, scope creep, audience mismatch, RSA-vs-HMAC confusion attacks. …
 
-#### ⬜ Open · [#106](https://github.com/Kuestenlogik/Bowire/issues/106) AI OWASP API Top 10 panel — per-method status + concrete probe per risk
+#### <a id="issue-kuestenlogik-bowire-106"></a>⬜ Open · [#106](https://github.com/Kuestenlogik/Bowire/issues/106) AI OWASP API Top 10 panel — per-method status + concrete probe per risk
 
-## Why
+OWASP API Security Top 10 is the de-facto checklist API testers run against any new surface. It covers BOLA, broken auth, excessive data exposure, lack of resources / rate limiting, BOPLA, mass assignment, security misconfig, injection, improper inventory management, unsafe consumption of APIs.
 
-#### ⬜ Open · [#107](https://github.com/Kuestenlogik/Bowire/issues/107) AI security report — markdown writeup grouped by severity + OWASP mapping + diff-vs-last-run
+#### <a id="issue-kuestenlogik-bowire-107"></a>⬜ Open · [#107](https://github.com/Kuestenlogik/Bowire/issues/107) AI security report — markdown writeup grouped by severity + OWASP mapping + diff-vs-last-run
 
-## Why
+A scanning session produces a lot of artifacts: per-endpoint threat-model rankings, per-endpoint Nuclei runs, per-field fuzz results, AI-triaged findings. Today each lives in its own pane / log. …
 
-#### ⬜ Open · [#110](https://github.com/Kuestenlogik/Bowire/issues/110) Site: surface the AI assistant in the launch wizard + quickstart
+#### <a id="issue-kuestenlogik-bowire-110"></a>⬜ Open · [#110](https://github.com/Kuestenlogik/Bowire/issues/110) Site: surface the AI assistant in the launch wizard + quickstart
 
-## Why
+v1.9 ships the AI workbench in a real way — chat grounded in workbench state (#89 Phase 1), MCP-style tool calling (#108, #109), AI-assisted security (#59-#63). The "Straight into the water" launch wizard on bowire.io still onboards users as if AI is invisible.
 
-#### ⬜ Open · [#128](https://github.com/Kuestenlogik/Bowire/issues/128) Bowire Agent — register embedded instances with a central hub
+#### <a id="issue-kuestenlogik-bowire-128"></a>⬜ Open · [#128](https://github.com/Kuestenlogik/Bowire/issues/128) Bowire Agent — register embedded instances with a central hub
 
 **One-liner.** Bowire instances embedded in apps (e.g. a Surgewave broker) register themselves with a central Bowire **hub** so an operator sees every discovery / call / mock across the fleet in one UI, instead of poking around N per-app endpoints.
 
-#### ⬜ Open · [#130](https://github.com/Kuestenlogik/Bowire/issues/130) Comparison table: add Hoppscotch + topic-based filtering
+#### <a id="issue-kuestenlogik-bowire-130"></a>⬜ Open · [#130](https://github.com/Kuestenlogik/Bowire/issues/130) Comparison table: add Hoppscotch + topic-based filtering
 
-## Why
+The comparison table on bowire.io today lines Bowire up against Postman / Insomnia / Bruno / curl on a single feature matrix. Three gaps:
 
 ---
 
