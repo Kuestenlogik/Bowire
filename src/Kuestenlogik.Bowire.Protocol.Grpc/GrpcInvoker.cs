@@ -79,21 +79,37 @@ internal sealed class GrpcInvoker : IDisposable
         var resolved = await ResolveMethodAsync(serviceName, methodName, ct);
 
         // Connect transport bypasses GrpcChannel entirely — it speaks
-        // plain HTTP POST with the Connect envelope. Phase 2 adds
-        // server-streaming via InvokeStreamingWithFramesAsync; the
-        // unary path here only covers unary. Client-streaming + bidi
-        // (Phase 3) still surface a not-supported error.
+        // plain HTTP POST with the Connect envelope. Phase 1 covers
+        // unary, Phase 2 adds server-streaming via
+        // InvokeStreamingWithFramesAsync, Phase 3 adds client-streaming
+        // here on the unary path (the single-response shape fits) and
+        // bidi via InvokeStreamingWithFramesAsync.
         if (_transportMode == GrpcTransportMode.Connect)
         {
-            if (resolved.ClientStreaming || resolved.ServerStreaming)
+            if (resolved.ServerStreaming && !resolved.ClientStreaming)
             {
                 return new InvokeResult(null, 0,
-                    resolved.ServerStreaming && !resolved.ClientStreaming
-                        ? "Connect (Buf) server-streaming runs through InvokeStreamAsync, not the unary path. The workbench routes server-streaming methods there automatically."
-                        : "Connect (Buf) Phase 2 covers unary + server-streaming. Client-streaming and bidi are Phase 3 — use grpcweb@ or the native HTTP/2 transport for those.",
+                    "Connect (Buf) server-streaming runs through InvokeStreamAsync, not the unary path. The workbench routes server-streaming methods there automatically.",
+                    []);
+            }
+            if (resolved.ClientStreaming && resolved.ServerStreaming)
+            {
+                return new InvokeResult(null, 0,
+                    "Connect (Buf) bidi-streaming runs through InvokeStreamAsync, not the unary path. The workbench routes bidi methods there automatically.",
                     []);
             }
             _connectInvoker ??= new ConnectInvoker(_serverUrl, _mtlsConfig, _configuration);
+            if (resolved.ClientStreaming)
+            {
+                // Phase 3 client-streaming — N request frames, single
+                // response message. Same return shape as Unary so this
+                // composes with the existing workbench renderer.
+                return await _connectInvoker.InvokeClientStreamAsync(
+                    serviceName, methodName,
+                    resolved.InputType, resolved.OutputType,
+                    jsonMessages,
+                    metadata, ct).ConfigureAwait(false);
+            }
             return await _connectInvoker.InvokeUnaryAsync(
                 serviceName, methodName,
                 resolved.InputType, resolved.OutputType,
@@ -188,12 +204,12 @@ internal sealed class GrpcInvoker : IDisposable
     {
         var resolved = await ResolveMethodAsync(serviceName, methodName, ct);
 
-        // Connect Phase 2: server-streaming dispatch. The Connect path
-        // bypasses GrpcChannel — its wire is plain HTTP POST with
-        // length-prefixed envelopes (application/connect+proto), not
-        // HTTP/2 frames. Client-streaming + bidi (Phase 3) still fall
-        // through to the gRPC channel below and surface as
-        // "stream cancelled" because the channel doesn't speak Connect.
+        // Connect Phase 2: server-streaming dispatch. Phase 3 adds
+        // bidi here too. The Connect path bypasses GrpcChannel — its
+        // wire is plain HTTP POST with length-prefixed envelopes
+        // (application/connect+proto), not HTTP/2 gRPC frames.
+        // Client-only-streaming returns one response message and is
+        // routed through the unary path in InvokeUnaryAsync above.
         if (_transportMode == GrpcTransportMode.Connect
             && resolved.ServerStreaming && !resolved.ClientStreaming)
         {
@@ -209,6 +225,20 @@ internal sealed class GrpcInvoker : IDisposable
                 // last error frame as a trailing red marker, the rest as
                 // normal stream rows. Binary is null on error frames; mock
                 // replay just won't re-emit the error sentinel byte-for-byte.
+                yield return new StreamFrame(Json: frame.Json, Binary: frame.Binary);
+            }
+            yield break;
+        }
+        if (_transportMode == GrpcTransportMode.Connect
+            && resolved.ClientStreaming && resolved.ServerStreaming)
+        {
+            _connectInvoker ??= new ConnectInvoker(_serverUrl, _mtlsConfig, _configuration);
+            await foreach (var frame in _connectInvoker.InvokeBidiStreamAsync(
+                serviceName, methodName,
+                resolved.InputType, resolved.OutputType,
+                jsonMessages,
+                metadata, ct).ConfigureAwait(false))
+            {
                 yield return new StreamFrame(Json: frame.Json, Binary: frame.Binary);
             }
             yield break;

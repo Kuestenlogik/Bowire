@@ -313,6 +313,236 @@ internal sealed class ConnectInvoker : IDisposable
         }
     }
 
+    /// <summary>
+    /// Connect Phase 3 — client-streaming. POST multiple length-prefixed
+    /// request frames (one per input JSON), receive one length-prefixed
+    /// response frame, then an end-of-stream frame. Same envelope as
+    /// server-streaming; the asymmetry is that we send N and receive 1
+    /// instead of the reverse. Requires HTTP/2 because the request body
+    /// has to land in length-prefixed frames before the server
+    /// responds — which Connect treats as "stream the request, then
+    /// the server emits its reply". HTTP/1.1 would work for the
+    /// no-trailer pre-buffered case the BCL does today, but we keep
+    /// HTTP/2 explicit so the wire matches the Connect spec.
+    /// </summary>
+    public async Task<InvokeResult> InvokeClientStreamAsync(
+        string serviceName, string methodName,
+        MessageDescriptor inputType,
+        MessageDescriptor outputType,
+        List<string> requestJsons,
+        Dictionary<string, string>? metadata,
+        CancellationToken ct)
+    {
+        ArgumentNullException.ThrowIfNull(requestJsons);
+
+        var path = $"{serviceName.TrimStart('/')}/{methodName.TrimStart('/')}";
+        var target = new Uri(_baseUri, path);
+
+        // Encode all request messages into one byte buffer of
+        // length-prefixed frames. Pre-buffering is fine for client-
+        // streaming v1 because the workbench already holds every
+        // request message in memory before the call starts — we don't
+        // need true full-duplex for this leg. Bidi (below) does need
+        // it and uses a pipe.
+        // Pre-allocate the request buffer (sum of every framed payload
+        // length + 5 bytes header per frame). Avoids MemoryStream's
+        // synchronous-Write CA1849 noise while keeping the call hot
+        // path allocation-light.
+        var totalLen = 0;
+        var encoded = new List<byte[]>(requestJsons.Count);
+        foreach (var json in requestJsons)
+        {
+            var payload = JsonToProtobufBytes(json, inputType);
+            var frame = EncodeFrame(flags: 0x00, payload: payload);
+            encoded.Add(frame);
+            totalLen += frame.Length;
+        }
+        var requestBuffer = new byte[totalLen];
+        var offset = 0;
+        foreach (var frame in encoded)
+        {
+            Buffer.BlockCopy(frame, 0, requestBuffer, offset, frame.Length);
+            offset += frame.Length;
+        }
+
+        using var content = new ByteArrayContent(requestBuffer);
+        content.Headers.ContentType = new MediaTypeHeaderValue(StreamingProtobufContentType);
+
+        using var req = new HttpRequestMessage(HttpMethod.Post, target) { Content = content };
+        req.Version = HttpVersion.Version20;
+        req.VersionPolicy = HttpVersionPolicy.RequestVersionOrHigher;
+        req.Headers.TryAddWithoutValidation(ProtocolVersionHeader, ProtocolVersionValue);
+        if (metadata is not null)
+        {
+            foreach (var (k, v) in metadata)
+                req.Headers.TryAddWithoutValidation(k, v);
+        }
+
+        var sw = Stopwatch.StartNew();
+        using var resp = await _http.SendAsync(req, HttpCompletionOption.ResponseHeadersRead, ct)
+            .ConfigureAwait(false);
+
+        if (!resp.IsSuccessStatusCode)
+        {
+            var bodyBytes = await resp.Content.ReadAsByteArrayAsync(ct).ConfigureAwait(false);
+            sw.Stop();
+            var (code, message) = ParseConnectError(bodyBytes, resp);
+            return new InvokeResult(message, sw.ElapsedMilliseconds, code,
+                ExtractResponseHeaders(resp));
+        }
+
+        var stream = await resp.Content.ReadAsStreamAsync(ct).ConfigureAwait(false);
+        await using var _ = stream.ConfigureAwait(false);
+
+        string? responseJson = null;
+        byte[]? responseBinary = null;
+        string? errCode = null;
+        string? errMessage = null;
+
+        await foreach (var frame in ReadFramesAsync(stream, ct).ConfigureAwait(false))
+        {
+            if ((frame.Flags & EndStreamFlag) == EndStreamFlag)
+            {
+                var (c, m) = ParseEndOfStreamError(frame.Payload);
+                errCode = c;
+                errMessage = m;
+                break;
+            }
+            // Client-streaming returns exactly one response message per
+            // spec. If a server somehow emits more, the latest one wins
+            // and we keep the binary of the last frame — matches gRPC's
+            // "trailers contain the last status" pattern.
+            responseJson = ProtobufBytesToJson(frame.Payload, outputType);
+            responseBinary = frame.Payload;
+        }
+        sw.Stop();
+
+        var headers = ExtractResponseHeaders(resp);
+        if (errCode is not null)
+        {
+            return new InvokeResult(errMessage ?? string.Empty,
+                sw.ElapsedMilliseconds, errCode, headers);
+        }
+        return new InvokeResult(
+            Response: responseJson ?? "{}",
+            DurationMs: sw.ElapsedMilliseconds,
+            Status: "OK",
+            Metadata: headers,
+            ResponseBinary: responseBinary);
+    }
+
+    /// <summary>
+    /// Connect Phase 3 — bidirectional streaming. Full-duplex HTTP/2
+    /// POST: the workbench writes its request frames concurrently with
+    /// reading the server's response frames. End-of-stream comes from
+    /// the server as the terminating frame (flags bit 0x02).
+    /// </summary>
+    /// <remarks>
+    /// Implementation uses <see cref="System.IO.Pipelines.Pipe"/> to
+    /// hand the request body off to <see cref="HttpClient"/> while the
+    /// caller can still write frames into the producer side. The
+    /// reader side runs concurrently as it pulls response frames off
+    /// the response stream. The producer loop exits — and the
+    /// <c>PipeWriter</c> is completed — once <paramref name="requestJsons"/>
+    /// is exhausted, signalling the end of the request half. The
+    /// server's end-of-stream frame ends the consumer half.
+    /// </remarks>
+    public async IAsyncEnumerable<ConnectStreamFrame> InvokeBidiStreamAsync(
+        string serviceName, string methodName,
+        MessageDescriptor inputType,
+        MessageDescriptor outputType,
+        List<string> requestJsons,
+        Dictionary<string, string>? metadata,
+        [EnumeratorCancellation] CancellationToken ct)
+    {
+        ArgumentNullException.ThrowIfNull(requestJsons);
+
+        var path = $"{serviceName.TrimStart('/')}/{methodName.TrimStart('/')}";
+        var target = new Uri(_baseUri, path);
+
+        var pipe = new System.IO.Pipelines.Pipe();
+
+        using var content = new StreamContent(pipe.Reader.AsStream(leaveOpen: false));
+        content.Headers.ContentType = new MediaTypeHeaderValue(StreamingProtobufContentType);
+
+        using var req = new HttpRequestMessage(HttpMethod.Post, target) { Content = content };
+        // Full-duplex needs HTTP/2: HTTP/1.1 chunked uploads work as a
+        // request body but the BCL won't start reading the response
+        // until the request body completes (HTTP/1.1 semantics). HTTP/2
+        // can interleave both halves.
+        req.Version = HttpVersion.Version20;
+        req.VersionPolicy = HttpVersionPolicy.RequestVersionExact;
+        req.Headers.TryAddWithoutValidation(ProtocolVersionHeader, ProtocolVersionValue);
+        if (metadata is not null)
+        {
+            foreach (var (k, v) in metadata)
+                req.Headers.TryAddWithoutValidation(k, v);
+        }
+
+        // Spin up the producer that feeds the pipe with our request
+        // frames. Runs concurrently with the SendAsync below so the
+        // first frame can land before the server replies, the second
+        // can land after the server's first reply frame, &c.
+        var producer = Task.Run(async () =>
+        {
+            try
+            {
+                foreach (var json in requestJsons)
+                {
+                    var payload = JsonToProtobufBytes(json, inputType);
+                    var frame = EncodeFrame(flags: 0x00, payload: payload);
+                    await pipe.Writer.WriteAsync(frame, ct).ConfigureAwait(false);
+                }
+                await pipe.Writer.CompleteAsync().ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                await pipe.Writer.CompleteAsync(ex).ConfigureAwait(false);
+            }
+        }, ct);
+
+        HttpResponseMessage? resp = null;
+        try
+        {
+            resp = await _http.SendAsync(req, HttpCompletionOption.ResponseHeadersRead, ct)
+                .ConfigureAwait(false);
+
+            if (!resp.IsSuccessStatusCode)
+            {
+                var bodyBytes = await resp.Content.ReadAsByteArrayAsync(ct).ConfigureAwait(false);
+                var (code, message) = ParseConnectError(bodyBytes, resp);
+                yield return ConnectStreamFrame.Error(code, message);
+                yield break;
+            }
+
+            var stream = await resp.Content.ReadAsStreamAsync(ct).ConfigureAwait(false);
+            await using var _ = stream.ConfigureAwait(false);
+
+            await foreach (var frame in ReadFramesAsync(stream, ct).ConfigureAwait(false))
+            {
+                if ((frame.Flags & EndStreamFlag) == EndStreamFlag)
+                {
+                    var (errCode, errMessage) = ParseEndOfStreamError(frame.Payload);
+                    if (errCode is not null)
+                        yield return ConnectStreamFrame.Error(errCode, errMessage ?? string.Empty);
+                    yield break;
+                }
+                var json = ProtobufBytesToJson(frame.Payload, outputType);
+                yield return ConnectStreamFrame.Message(json, frame.Payload);
+            }
+        }
+        finally
+        {
+            resp?.Dispose();
+            // The producer is normally already done by the time we get
+            // here (it completed alongside the response). Await it so
+            // any exception inside the producer surfaces — the pipe
+            // writer would otherwise swallow it silently.
+            try { await producer.ConfigureAwait(false); }
+            catch (OperationCanceledException) { /* expected on caller-cancel */ }
+        }
+    }
+
     // ---- envelope framing -----------------------------------------
 
     /// <summary>
