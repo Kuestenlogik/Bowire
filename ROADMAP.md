@@ -89,7 +89,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.2 — Test pillar: assertions, CI runner, regression coverage
 
-**0/4 done** · 4 backlog
+**0/5 done** · 5 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -97,6 +97,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [171](https://github.com/Kuestenlogik/Bowire/issues/171) | Bowire | [Snapshot testing — capture-once, diff-on-change response baselines](#issue-kuestenlogik-bowire-171) | ⬜ Open |  |
 | [174](https://github.com/Kuestenlogik/Bowire/issues/174) | Bowire | [Data-driven tests — CSV / JSON / generator parameterisation](#issue-kuestenlogik-bowire-174) | ⬜ Open |  |
 | [180](https://github.com/Kuestenlogik/Bowire/issues/180) | Bowire | [Assertion DSL for collection / recording replay](#issue-kuestenlogik-bowire-180) | ⬜ Open |  |
+| [181](https://github.com/Kuestenlogik/Bowire/issues/181) | Bowire | [bowire test CLI runner with JUnit / SARIF / TTY output](#issue-kuestenlogik-bowire-181) | ⬜ Open |  |
 
 ### v2.3 — Security pillar: shift-left scanner, OWASP coverage, auth recording
 
@@ -450,6 +451,10 @@ Same request, N different inputs is a standard testing pattern. Today an operato
 #### <a id="issue-kuestenlogik-bowire-180"></a>⬜ Open · [#180](https://github.com/Kuestenlogik/Bowire/issues/180) Assertion DSL for collection / recording replay
 
 Recordings + Mocks let an operator capture and replay traffic, but nothing in the workbench can answer "did the response match what I expected?" Today the only assertion is "the call returned without throwing" — fine for a developer probing, useless as a regression suite. [[more]](https://github.com/Kuestenlogik/Bowire/issues/180)
+
+#### <a id="issue-kuestenlogik-bowire-181"></a>⬜ Open · [#181](https://github.com/Kuestenlogik/Bowire/issues/181) bowire test CLI runner with JUnit / SARIF / TTY output
+
+Bowire is currently a UI tool. The "shift-left" / "build safer apps through continuous testing" positioning needs a headless surface that runs in CI and emits CI-friendly output (JUnit-XML, SARIF, GitHub annotations). Without it, the workbench stays a one-developer-at-a-time explorer. [[more]](https://github.com/Kuestenlogik/Bowire/issues/181)
 
 ### v2.3 — Security pillar: shift-left scanner, OWASP coverage, auth recording
 
