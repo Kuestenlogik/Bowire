@@ -99,13 +99,22 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.3 — Security pillar: shift-left scanner, OWASP coverage, auth recording
 
-**0/3 done** · 3 backlog
+**0/4 done** · 4 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
 | [173](https://github.com/Kuestenlogik/Bowire/issues/173) | Bowire | [OWASP API Security Top 10 — structured test suite](#issue-kuestenlogik-bowire-173) | ⬜ Open |  |
 | [175](https://github.com/Kuestenlogik/Bowire/issues/175) | Bowire | [Schema-aware mutation engine for fuzz / scan](#issue-kuestenlogik-bowire-175) | ⬜ Open |  |
 | [176](https://github.com/Kuestenlogik/Bowire/issues/176) | Bowire | [Spider / crawl — discover endpoints from a base URL](#issue-kuestenlogik-bowire-176) | ⬜ Open |  |
+| [178](https://github.com/Kuestenlogik/Bowire/issues/178) | Bowire | [bowire scan CLI with SARIF output + GitHub Action wrapper](#issue-kuestenlogik-bowire-178) | ⬜ Open |  |
+
+### v2.4 — Dev pillar: schema watch diff, mock-from-schema, side-by-side
+
+**0/1 done** · 1 backlog
+
+| # | Project | Title | Status | Tags |
+|---|---|---|---|---|
+| [177](https://github.com/Kuestenlogik/Bowire/issues/177) | Bowire | [AI-assisted service scaffolding — schema + stub + collection + test](#issue-kuestenlogik-bowire-177) | ⬜ Open |  |
 
 ### v2.5 — Continuous integration: PR bot, project file, org dashboard
 
@@ -449,6 +458,16 @@ The current scan/fuzz path generates inputs without much awareness of the schema
 #### <a id="issue-kuestenlogik-bowire-176"></a>⬜ Open · [#176](https://github.com/Kuestenlogik/Bowire/issues/176) Spider / crawl — discover endpoints from a base URL
 
 Bowire's discovery starts from "you tell me a URL or upload a schema". If the schema is incomplete, or if there are endpoints reachable but undocumented (the classic shadow-IT case at API level), Bowire never sees them. Real security testing assumes "find the things the developer forgot to declare". [[more]](https://github.com/Kuestenlogik/Bowire/issues/176)
+
+#### <a id="issue-kuestenlogik-bowire-178"></a>⬜ Open · [#178](https://github.com/Kuestenlogik/Bowire/issues/178) bowire scan CLI with SARIF output + GitHub Action wrapper
+
+Same pattern as `bowire test` (v2.2): the workbench has Security primitives but no headless surface to run them in CI. Without `bowire scan` emitting SARIF for GitHub Code Scanning, the shift-left story is just talk. [[more]](https://github.com/Kuestenlogik/Bowire/issues/178)
+
+### v2.4 — Dev pillar: schema watch diff, mock-from-schema, side-by-side
+
+#### <a id="issue-kuestenlogik-bowire-177"></a>⬜ Open · [#177](https://github.com/Kuestenlogik/Bowire/issues/177) AI-assisted service scaffolding — schema + stub + collection + test
+
+The AI assistant today is reactive: it answers questions, surfaces hints, helps explain. The natural next step for a "build APIs faster" tool is generative — "scaffold a CRUD service for this Entity" → out drops a `.proto` + handler stubs + an example collection + a smoke-test. [[more]](https://github.com/Kuestenlogik/Bowire/issues/177)
 
 ### v2.5 — Continuous integration: PR bot, project file, org dashboard
 
