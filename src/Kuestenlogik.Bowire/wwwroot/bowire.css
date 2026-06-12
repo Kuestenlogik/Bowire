@@ -102,6 +102,12 @@
     --bowire-radius-md: 4px;
     --bowire-radius-lg: 6px;
     --bowire-radius-pill: 999px;
+    /* Single source of truth for the gutter every rail-mode main
+       pane uses. Home, Discover, Workspaces, Sources, Environments,
+       Collections, Recordings, Mocks, Security — all read the same
+       value so switching rails doesn't feel like the page reflows
+       margins. Adjust here, every pane follows. */
+    --bowire-main-gutter: 24px;
     /* Fallback alias: any `var(--bowire-radius)` usage without a suffix
        used to resolve to 0 (undefined var → initial value), making the
        affected elements render as sharp rectangles. Aliasing to the
@@ -1659,8 +1665,10 @@ not just
     /* Portal home — every band stacks vertically with the same
        horizontal gutter so the page reads as one column from top to
        bottom. No max-width: wide viewports fill horizontally via the
-       auto-fill grids inside each band. */
-    padding: 18px 28px 24px;
+       auto-fill grids inside each band. Padding tracks the shared
+       --bowire-main-gutter so Home, Discover, Workspaces, &c all line
+       up when switching rails. */
+    padding: var(--bowire-main-gutter);
     display: flex;
     flex-direction: column;
     gap: 22px;
@@ -2001,9 +2009,16 @@ not just
 .bowire-main-sources {
     overflow: auto;
 }
+/* Shared wrapper for rail-mode main panes that render an empty
+   state (Collections, Recordings, Mocks empty card, Security
+   missing-package note). Same padding as every other main wrap so
+   switching rails doesn't shift the content frame. */
+.bowire-main-pad {
+    padding: var(--bowire-main-gutter);
+}
 .bowire-sources-wrap {
-    /* Match env editor + home — full-width with 24 px padding. */
-    padding: 24px;
+    /* Match env editor + home via the shared gutter token. */
+    padding: var(--bowire-main-gutter);
 }
 .bowire-sources-title {
     font-size: 20px;
@@ -3467,7 +3482,7 @@ only an accent-coloured underline under the active tab. The whole
 
 /* Environment editor — full-width in the main pane */
 .bowire-env-editor-main {
-    padding: 24px;
+    padding: var(--bowire-main-gutter);
     overflow-y: auto;
     height: 100%;
 }
@@ -9658,7 +9673,7 @@ and offers the path to switch. */
 
 /* #116 — Workspaces rail-mode detail pane. */
 .bowire-main-workspaces {
-    padding: 24px;
+    padding: var(--bowire-main-gutter);
     overflow-y: auto;
     display: flex;
     flex-direction: column;
@@ -11306,7 +11321,7 @@ plus a footer with the
        which made Discover's landing card float in the middle while all
        other rails read left-aligned ("zentriert vs. links" feedback). */
     align-items: flex-start;
-    padding: 22px 28px;
+    padding: var(--bowire-main-gutter);
     overflow-y: auto;
 }
 
