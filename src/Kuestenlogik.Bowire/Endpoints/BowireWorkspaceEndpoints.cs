@@ -186,24 +186,30 @@ internal static class BowireWorkspaceEndpoints
 
     private static void LaunchPlatformFileManager(string path)
     {
-        // CodeQL flagged the earlier per-platform Process.Start calls
-        // as cs/command-line-injection because the path (derived from
-        // a sanitised but request-bound workspaceId) was string-
-        // interpolated into the arguments. The interpolation was the
-        // attack surface, not the path itself — SanitiseWorkspaceId
-        // already strips everything outside [A-Za-z0-9_-] and the
-        // value lands under BowireUserContext.GetUserPath, so the
-        // resolved path never escapes the user root. Removing the
-        // arguments path entirely closes the static-analysis finding
-        // without weakening the runtime guarantees: pass the directory
-        // as ProcessStartInfo.FileName with UseShellExecute=true and
-        // the OS opens its native file manager at that location
-        // (Explorer on Windows, Finder on macOS, xdg-open on Linux).
-        // No command line is constructed, so there is no string to
-        // inject into.
+        // Defence-in-depth: the caller already routes path through
+        // SanitiseWorkspaceId + BowireUserContext.GetUserPath, but we
+        // re-assert here that the resolved absolute path lands under
+        // the user root before handing it to the OS. The check
+        // doubles as the closure CodeQL needs to drop the
+        // cs/command-line-injection finding: an explicit guard on the
+        // value before it reaches Process.Start.
+        var userRoot = Path.GetFullPath(BowireUserContext.GetUserPath(""));
+        var resolved = Path.GetFullPath(path);
+        if (!resolved.StartsWith(userRoot, StringComparison.Ordinal))
+        {
+            throw new InvalidOperationException(
+                $"Refusing to open '{path}': resolved path escapes the user root.");
+        }
+
+        // ProcessStartInfo.FileName with UseShellExecute=true asks the
+        // OS shell to open the document at the resolved path —
+        // Explorer on Windows, Finder on macOS, xdg-open on Linux. No
+        // command-line argument string is constructed, so there is no
+        // injection surface beyond what the guard above already
+        // covered.
         var psi = new ProcessStartInfo
         {
-            FileName = path,
+            FileName = resolved,
             UseShellExecute = true,
         };
         Process.Start(psi);
