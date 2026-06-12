@@ -111,6 +111,22 @@
                 return;
             }
 
+            // #192 (B) — Ctrl/Cmd+Shift+U: quick-add a URL or schema
+            // reference to the active workspace without navigating
+            // the Workspaces rail / Sources rail / hunting for a +
+            // button. Pops the same prompt the Sources tree node's +
+            // affordance uses. No-op if no active workspace exists
+            // or the helper hasn't loaded yet (defensive).
+            if ((e.ctrlKey || e.metaKey) && e.shiftKey && !e.altKey
+                && (e.key === 'u' || e.key === 'U')) {
+                e.preventDefault();
+                var aw = (typeof activeWorkspace === 'function') ? activeWorkspace() : null;
+                if (aw && typeof _quickAddUrlToWorkspace === 'function') {
+                    _quickAddUrlToWorkspace(aw);
+                }
+                return;
+            }
+
             // #124 Cmd/Ctrl+K — open the command palette omnibox.
             // Same input as the topbar palette; this shortcut focuses
             // it from anywhere and pops the suggestion dropdown so

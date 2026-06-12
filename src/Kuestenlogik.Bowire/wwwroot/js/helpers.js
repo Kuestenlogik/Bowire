@@ -893,6 +893,9 @@
             { keys: ['Ctrl', 'Tab'], action: 'Cycle to the next request tab' },
             { keys: ['Ctrl', 'Shift', 'Tab'], action: 'Cycle to the previous request tab' },
         ]},
+        { group: 'Workspace', binds: [
+            { keys: ['Ctrl/Cmd', 'Shift', 'U'], action: 'Add a URL or schema to the active workspace' },
+        ]},
         { group: 'Drawers + layout', binds: [
             { keys: ['Ctrl/Cmd', 'B'], action: 'Toggle the sidebar' },
             { keys: ['F1'], action: 'Open the Help drawer (contextual)' },
@@ -1132,6 +1135,29 @@
             },
             onContextMenu: typeof node.onContext === 'function'
                 ? function (e) { e.preventDefault(); node.onContext(e); }
+                : null,
+            // #192 (B) — drop support. Callers opt in by setting
+            // node.onDrop(dataTransfer, event). Row flips to
+            // .drop-target while a drag hovers so the operator gets
+            // visual feedback before they let go.
+            onDragOver: typeof node.onDrop === 'function'
+                ? function (e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (e.dataTransfer) e.dataTransfer.dropEffect = 'copy';
+                    row.classList.add('drop-target');
+                }
+                : null,
+            onDragLeave: typeof node.onDrop === 'function'
+                ? function () { row.classList.remove('drop-target'); }
+                : null,
+            onDrop: typeof node.onDrop === 'function'
+                ? function (e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    row.classList.remove('drop-target');
+                    node.onDrop(e.dataTransfer, e);
+                }
                 : null
         });
 
