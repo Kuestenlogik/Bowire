@@ -12,7 +12,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.0 — Re-architected workbench shell + workspace = project folder
 
-**42/55 done** · 13 backlog
+**43/55 done** · 12 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -27,7 +27,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [151](https://github.com/Kuestenlogik/Bowire/issues/151) | Bowire | [Secret-file separation + workspace lock file for safe team-shared git workspaces](#issue-kuestenlogik-bowire-151) | ⬜ Open |  |
 | [162](https://github.com/Kuestenlogik/Bowire/issues/162) | Bowire | [Cmd+K omnibox: search collections, recordings, mocks, workspaces, settings, help](#issue-kuestenlogik-bowire-162) | ⬜ Open |  |
 | [164](https://github.com/Kuestenlogik/Bowire/issues/164) | Bowire | [Console + Tests as tabs in the unified right-side drawer](#issue-kuestenlogik-bowire-164) | ⬜ Open |  |
-| [165](https://github.com/Kuestenlogik/Bowire/issues/165) | Bowire | [Workspace templates on create (REST / gRPC / mock / multi-protocol)](#issue-kuestenlogik-bowire-165) | ⬜ Open |  |
 | [168](https://github.com/Kuestenlogik/Bowire/issues/168) | Bowire | [Workbench-wide action log with undo / redo (Ctrl+Z)](#issue-kuestenlogik-bowire-168) | ⬜ Open |  |
 | [25](https://github.com/Kuestenlogik/Bowire/issues/25) | Bowire | [AI side-panel integration](#issue-kuestenlogik-bowire-25) | ✅ Done | `area:workbench` |
 | [43](https://github.com/Kuestenlogik/Bowire/issues/43) | Bowire | [MCP SSE-transport support](#issue-kuestenlogik-bowire-43) | ✅ Done | `area:mcp` |
@@ -67,6 +66,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [160](https://github.com/Kuestenlogik/Bowire/issues/160) | Bowire | [Workspace breadcrumb in the main pane](#issue-kuestenlogik-bowire-160) | ✅ Done |  |
 | [161](https://github.com/Kuestenlogik/Bowire/issues/161) | Bowire | [Open method tabs persisted per workspace](#issue-kuestenlogik-bowire-161) | ✅ Done |  |
 | [163](https://github.com/Kuestenlogik/Bowire/issues/163) | Bowire | [Activity rail icon count badges](#issue-kuestenlogik-bowire-163) | ✅ Done |  |
+| [165](https://github.com/Kuestenlogik/Bowire/issues/165) | Bowire | [Workspace templates on create (REST / gRPC / mock / multi-protocol)](#issue-kuestenlogik-bowire-165) | ✅ Done |  |
 | [166](https://github.com/Kuestenlogik/Bowire/issues/166) | Bowire | [Keyboard shortcut sheet (Cmd+/)](#issue-kuestenlogik-bowire-166) | ✅ Done |  |
 | [167](https://github.com/Kuestenlogik/Bowire/issues/167) | Bowire | [Settings → Plugins: show protocol DisplayName instead of assembly name](#issue-kuestenlogik-bowire-167) | ✅ Done |  |
 | [169](https://github.com/Kuestenlogik/Bowire/issues/169) | Bowire | [Hint dismiss pattern — "Don't show again" + Settings restore](#issue-kuestenlogik-bowire-169) | ✅ Done |  |
@@ -231,10 +231,6 @@ Cmd/Ctrl+K currently searches methods + rail modes. Operators looking for "a col
 
 #299 introduced the unified right-side drawer with tabs (Assistant + Help). The Console (request/response activity log, in `consoleLog`) currently surfaces as a bottom-pane toggle; the Tests output (per-method assertions, currently inline) has no permanent home. Both fit the same "secondary panel" model. [[more]](https://github.com/Kuestenlogik/Bowire/issues/164)
 
-#### <a id="issue-kuestenlogik-bowire-165"></a>⬜ Open · [#165](https://github.com/Kuestenlogik/Bowire/issues/165) Workspace templates on create (REST / gRPC / mock / multi-protocol)
-
-The first workspace ships empty — no example URL, no example collection, no env vars. Operators new to Bowire face a tabula rasa: "Add URL", "Add collection", "Add env var", with no idea what shape any of them should have. Onboarding stalls. [[more]](https://github.com/Kuestenlogik/Bowire/issues/165)
-
 #### <a id="issue-kuestenlogik-bowire-168"></a>⬜ Open · [#168](https://github.com/Kuestenlogik/Bowire/issues/168) Workbench-wide action log with undo / redo (Ctrl+Z)
 
 Bowire surfaces undo affordances in three disconnected places: [[more]](https://github.com/Kuestenlogik/Bowire/issues/168)
@@ -394,6 +390,10 @@ The active workspace is shown only in the topbar chip (top-right). When operator
 #### <a id="issue-kuestenlogik-bowire-163"></a>✅ Done · [#163](https://github.com/Kuestenlogik/Bowire/issues/163) Activity rail icon count badges
 
 The activity rail shows feature icons (Discover, Recordings, Collections, …) but no count of what each contains. Operators have to click in to see "is there anything here?" The cross-feature pills in the service tree (#297) solved the per-method case; rail-level counts solve the per-feature case. [[more]](https://github.com/Kuestenlogik/Bowire/issues/163)
+
+#### <a id="issue-kuestenlogik-bowire-165"></a>✅ Done · [#165](https://github.com/Kuestenlogik/Bowire/issues/165) Workspace templates on create (REST / gRPC / mock / multi-protocol)
+
+The first workspace ships empty — no example URL, no example collection, no env vars. Operators new to Bowire face a tabula rasa: "Add URL", "Add collection", "Add env var", with no idea what shape any of them should have. Onboarding stalls. [[more]](https://github.com/Kuestenlogik/Bowire/issues/165)
 
 #### <a id="issue-kuestenlogik-bowire-166"></a>✅ Done · [#166](https://github.com/Kuestenlogik/Bowire/issues/166) Keyboard shortcut sheet (Cmd+/)
 
