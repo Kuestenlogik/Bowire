@@ -73,7 +73,7 @@
         nodes.push({
             id: 'settings:plugins',
             label: 'Plugins',
-            icon: 'layers',
+            icon: 'plug',
             badge: pluginChildren.length > 0 ? pluginChildren.length : null,
             expandable: pluginChildren.length > 0,
             expanded: pluginsExpanded,
