@@ -1103,9 +1103,18 @@
                 inlineToggle: {
                     value: !!aiAllowInvoke,
                     title: 'Allow AI to invoke methods (session only, audited)',
+                    // Flipping to ON resolves the warning — let the bar
+                    // fade itself out so the operator sees the
+                    // resolution rather than the panel snapping.
+                    dismissOnToggleTo: true,
                     onChange: function (newVal) {
+                        // Update state only — don't call render(). A
+                        // synchronous render would tear the bar out of
+                        // the DOM before the CSS fade plays. The fade
+                        // helper handles removal; the next natural
+                        // render (e.g. sending a chat message) picks
+                        // up the new state.
                         aiAllowInvoke = newVal;
-                        render();
                     }
                 },
                 dismissKey: 'bowire_ai_invoke_alert_dismissed'
