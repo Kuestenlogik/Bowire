@@ -1741,7 +1741,7 @@
                 // — without it the cards row floats labelless above
                 // Favorites / Recent, which the operator reads as a
                 // missing section title.
-                firstRunBand.appendChild(_renderHomeBandTitle('plus', 'Start', 'Pick what you want to do'));
+                firstRunBand.appendChild(_renderHomeBandTitle('rocket', 'Start','Pick what you want to do'));
                 firstRunBand.appendChild(_renderHomeStartGrid(true));
                 homeWrap.appendChild(firstRunBand);
             } else {
@@ -1799,7 +1799,7 @@
 
                 // ---- Band 2: Start ----
                 var startBand = el('div', { className: 'bowire-home-band' });
-                startBand.appendChild(_renderHomeBandTitle('plus', 'Start', 'Kick off a new use case'));
+                startBand.appendChild(_renderHomeBandTitle('rocket', 'Start','Kick off a new use case'));
                 startBand.appendChild(_renderHomeStartGrid(false));
                 homeWrap.appendChild(startBand);
             }
