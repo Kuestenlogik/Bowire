@@ -814,8 +814,17 @@
         // prologue.js rewrites a stale railMode='sources' to
         // 'workspaces' so existing installs land on the new spot.
         { id: 'discover',     icon: 'compass',   label: 'Discover',          group: 'work',      sidebar: { kind: 'services' } },
-        { id: 'collections',  icon: 'folder',    label: 'Collections',       group: 'work',      sidebar: { kind: 'collections' } },
-        { id: 'environments', icon: 'globe',     label: 'Environments',      group: 'work',      sidebar: { kind: 'environments' } },
+        // Collections rail mode kept in the catalogue (so the existing
+        // sidebar + main-pane render paths still work when the
+        // Workspaces tree dispatches to it), but hideFromRail removes
+        // the standalone button from the activity rail — collections
+        // are managed inside their workspace.
+        { id: 'collections',  icon: 'folder',    label: 'Collections',       group: 'work',      sidebar: { kind: 'collections' }, hideFromRail: true },
+        // Environments retired from the rail too — owned by workspaces:
+        // each workspace declares which envs are included, and the
+        // editor opens inline when a workspace's Environments node
+        // (or one of its env leaves) is clicked.
+        { id: 'environments', icon: 'globe',     label: 'Environments',      group: 'work',      sidebar: { kind: 'environments' }, hideFromRail: true },
         { id: 'recordings',   icon: 'recording', label: 'Recordings',        group: 'scenarios', sidebar: { kind: 'recordings' } },
         { id: 'mocks',        icon: 'server',    label: 'Mocks',             group: 'scenarios', sidebar: { kind: 'mocks' } },
         { id: 'flows',        icon: 'flow',      label: 'Flows',             group: 'scenarios', sidebar: { kind: 'flows' } },
@@ -878,9 +887,12 @@
     }
 
     function renderActivityRail() {
-        // Local alias — keep the rail-renderer reading the same
-        // catalogue everyone else uses.
-        var modes = _railModes;
+        // Modes marked hideFromRail (Collections, Environments) stay in
+        // the catalogue so railMode='…' routing keeps working when the
+        // workspace tree dispatches into them, but the standalone rail
+        // button is suppressed — they live "inside" a workspace and
+        // are reached via the Workspaces tree.
+        var modes = _railModes.filter(function (m) { return !m.hideFromRail; });
 
         var rail = el('div', { id: 'bowire-activity-rail', className: 'bowire-activity-rail' });
 
@@ -1718,10 +1730,8 @@
 
         var children = [];
         children.push(_buildSourcesTreeNode(w));
-        children.push(_buildSimpleChildNode(w, 'environments', 'globe',
-            'Environments', _countEnvironments(w)));
-        children.push(_buildSimpleChildNode(w, 'collections', 'list',
-            'Collections', _countWorkspaceList(w.id, COLLECTIONS_KEY)));
+        children.push(_buildEnvironmentsTreeNode(w));
+        children.push(_buildCollectionsTreeNode(w));
         children.push(_buildSimpleChildNode(w, 'recordings', 'recording',
             'Recordings', _countWorkspaceList(w.id, RECORDINGS_KEY)));
         children.push(_buildSimpleChildNode(w, 'settings', 'settings',
@@ -1807,6 +1817,148 @@
             addTitle: 'Add URL or schema',
             onDrop: function (dt) { _handleWorkspaceDrop(w, dt); },
             children: urlChildren
+        };
+    }
+
+    function _buildCollectionsTreeNode(w) {
+        var sel = workspaceTreeSelection || {};
+        var key = 'ws:' + w.id + ':collections';
+        var isActive = w.id === activeWorkspaceId;
+        // Read collections directly so non-active workspaces still get
+        // their list surfaced under the tree without a workspace switch.
+        var cols = isActive
+            ? ((typeof collectionsList !== 'undefined' && Array.isArray(collectionsList)) ? collectionsList : [])
+            : (typeof readWorkspaceJsonList === 'function' ? readWorkspaceJsonList(w.id, COLLECTIONS_KEY) : []);
+        var selected = sel.wsId === w.id && sel.kind === 'collections';
+        var expanded = isWorkspaceTreeNodeExpanded(key, sel.wsId === w.id);
+
+        var leafChildren = cols.map(function (c) {
+            var leafSelected = sel.wsId === w.id && sel.kind === 'collection' && sel.value === c.id;
+            return {
+                id: 'ws:' + w.id + ':collection:' + c.id,
+                label: c.name || '(unnamed)',
+                icon: 'folder',
+                badge: Array.isArray(c.items) && c.items.length > 0 ? c.items.length : null,
+                selected: leafSelected,
+                title: c.name || c.id,
+                onClick: function () {
+                    if (w.id !== activeWorkspaceId) switchWorkspace(w.id);
+                    workspacesSelectedId = w.id;
+                    workspaceTreeSelection = { wsId: w.id, kind: 'collection', value: c.id };
+                    if (typeof collectionManagerSelectedId !== 'undefined') {
+                        collectionManagerSelectedId = c.id;
+                    }
+                    render();
+                }
+            };
+        });
+
+        return {
+            id: key,
+            label: 'Collections',
+            icon: 'folder',
+            badge: cols.length || null,
+            selected: selected,
+            expandable: true,
+            expanded: expanded,
+            onClick: function () {
+                workspacesSelectedId = w.id;
+                workspaceTreeSelection = { wsId: w.id, kind: 'collections' };
+                toggleWorkspaceTreeNode(key, sel.wsId === w.id);
+                render();
+            },
+            onToggle: function () {
+                toggleWorkspaceTreeNode(key, sel.wsId === w.id);
+                render();
+            },
+            onAdd: function () {
+                if (w.id !== activeWorkspaceId) switchWorkspace(w.id);
+                if (typeof createCollection !== 'function') return;
+                var col = createCollection();
+                if (typeof collectionManagerSelectedId !== 'undefined') {
+                    collectionManagerSelectedId = col.id;
+                }
+                workspaceTreeSelection = { wsId: w.id, kind: 'collection', value: col.id };
+                workspaceTreeExpanded[key] = true;
+                persistWorkspaceTreeExpanded();
+                render();
+            },
+            addTitle: 'New collection',
+            children: leafChildren
+        };
+    }
+
+    function _buildEnvironmentsTreeNode(w) {
+        var sel = workspaceTreeSelection || {};
+        var key = 'ws:' + w.id + ':environments';
+        var isActive = w.id === activeWorkspaceId;
+        var allEnvs = (typeof getAllSharedEnvironments === 'function')
+            ? getAllSharedEnvironments() : [];
+        // For the active workspace, surface the included envs; for
+        // others fall back to whatever the workspace meta lists so the
+        // tree still reads as "what's in here" without a switch.
+        var includedIds = w.includeAllEnvironments
+            ? allEnvs.map(function (e) { return e.id; })
+            : (Array.isArray(w.includedEnvironmentIds) ? w.includedEnvironmentIds : []);
+        var envs = allEnvs.filter(function (e) { return includedIds.indexOf(e.id) !== -1; });
+
+        var selected = sel.wsId === w.id && sel.kind === 'environments';
+        var expanded = isWorkspaceTreeNodeExpanded(key, sel.wsId === w.id);
+
+        var leafChildren = envs.map(function (e) {
+            var leafSelected = sel.wsId === w.id && sel.kind === 'env' && sel.value === e.id;
+            var varCount = e.vars ? Object.keys(e.vars).length : 0;
+            return {
+                id: 'ws:' + w.id + ':env:' + e.id,
+                label: e.name || '(unnamed)',
+                icon: 'globe',
+                badge: varCount > 0 ? varCount : null,
+                selected: leafSelected,
+                title: e.name || e.id,
+                onClick: function () {
+                    if (w.id !== activeWorkspaceId) switchWorkspace(w.id);
+                    workspacesSelectedId = w.id;
+                    workspaceTreeSelection = { wsId: w.id, kind: 'env', value: e.id };
+                    if (typeof envSidebarSelectedId !== 'undefined') {
+                        envSidebarSelectedId = e.id;
+                    }
+                    render();
+                }
+            };
+        });
+
+        return {
+            id: key,
+            label: 'Environments',
+            icon: 'globe',
+            badge: envs.length || null,
+            selected: selected,
+            expandable: true,
+            expanded: expanded,
+            onClick: function () {
+                workspacesSelectedId = w.id;
+                workspaceTreeSelection = { wsId: w.id, kind: 'environments' };
+                toggleWorkspaceTreeNode(key, sel.wsId === w.id);
+                render();
+            },
+            onToggle: function () {
+                toggleWorkspaceTreeNode(key, sel.wsId === w.id);
+                render();
+            },
+            onAdd: function () {
+                if (w.id !== activeWorkspaceId) switchWorkspace(w.id);
+                if (typeof createEnvironment !== 'function') return;
+                var env = createEnvironment('New Environment');
+                if (typeof envSidebarSelectedId !== 'undefined') {
+                    envSidebarSelectedId = env.id;
+                }
+                workspaceTreeSelection = { wsId: w.id, kind: 'env', value: env.id };
+                workspaceTreeExpanded[key] = true;
+                persistWorkspaceTreeExpanded();
+                render();
+            },
+            addTitle: 'New environment',
+            children: leafChildren
         };
     }
 
