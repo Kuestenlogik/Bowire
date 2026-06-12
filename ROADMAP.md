@@ -12,13 +12,16 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.0 — Re-architected workbench shell + workspace = project folder
 
-**35/48 done** · 13 backlog
+**35/51 done** · 16 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
 | [33](https://github.com/Kuestenlogik/Bowire/issues/33) | Bowire | [Protocol plugins — Connect Phase 1+3 + OTLP](#issue-kuestenlogik-bowire-33) | ⬜ Backlog | `area:plugin-sdk` `track:protocols` |
 | [115](https://github.com/Kuestenlogik/Bowire/issues/115) | Bowire | [v2.0 — UI refactor: re-architect the workbench shell](#issue-kuestenlogik-bowire-115) | ⬜ Open |  |
 | [124](https://github.com/Kuestenlogik/Bowire/issues/124) | Bowire | [Cross-protocol omnibox (Cmd/Ctrl+K)](#issue-kuestenlogik-bowire-124) | ⬜ Open |  |
+| [147](https://github.com/Kuestenlogik/Bowire/issues/147) | Bowire | [Git-backed workspace storage — composes with #144 storage modes + #58](#issue-kuestenlogik-bowire-147) | ⬜ Open |  |
+| [148](https://github.com/Kuestenlogik/Bowire/issues/148) | Bowire | [Per-entity file storage format for git-backed workspaces (envs / collections / scripts)](#issue-kuestenlogik-bowire-148) | ⬜ Open |  |
+| [149](https://github.com/Kuestenlogik/Bowire/issues/149) | Bowire | [Workspace CLI — bowire workspace init / export / import / migrate-format](#issue-kuestenlogik-bowire-149) | ⬜ Open |  |
 | [160](https://github.com/Kuestenlogik/Bowire/issues/160) | Bowire | [Workspace breadcrumb in the main pane](#issue-kuestenlogik-bowire-160) | ⬜ Open |  |
 | [161](https://github.com/Kuestenlogik/Bowire/issues/161) | Bowire | [Open method tabs persisted per workspace](#issue-kuestenlogik-bowire-161) | ⬜ Open |  |
 | [162](https://github.com/Kuestenlogik/Bowire/issues/162) | Bowire | [Cmd+K omnibox: search collections, recordings, mocks, workspaces, settings, help](#issue-kuestenlogik-bowire-162) | ⬜ Open |  |
@@ -67,7 +70,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.1 — Workspace v3 + protocol wave 3
 
-**0/15 done** · 15 backlog
+**0/12 done** · 12 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -80,9 +83,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [140](https://github.com/Kuestenlogik/Bowire/issues/140) | Bowire | [Per-mode 'Saved Configs' / Presets (distinct from cross-workflow favorites)](#issue-kuestenlogik-bowire-140) | ⬜ Open |  |
 | [144](https://github.com/Kuestenlogik/Bowire/issues/144) | Bowire | [Large-recording capture/replay — chunked disk layout, lazy step-load, GB-scale](#issue-kuestenlogik-bowire-144) | ⬜ Open |  |
 | [145](https://github.com/Kuestenlogik/Bowire/issues/145) | Bowire | [Deprecate ${name} in favour of {{name}} (multi-phase migration)](#issue-kuestenlogik-bowire-145) | ⬜ Open |  |
-| [147](https://github.com/Kuestenlogik/Bowire/issues/147) | Bowire | [Git-backed workspace storage — composes with #144 storage modes + #58](#issue-kuestenlogik-bowire-147) | ⬜ Open |  |
-| [148](https://github.com/Kuestenlogik/Bowire/issues/148) | Bowire | [Per-entity file storage format for git-backed workspaces (envs / collections / scripts)](#issue-kuestenlogik-bowire-148) | ⬜ Open |  |
-| [149](https://github.com/Kuestenlogik/Bowire/issues/149) | Bowire | [Workspace CLI — bowire workspace init / export / import / migrate-format](#issue-kuestenlogik-bowire-149) | ⬜ Open |  |
 | [150](https://github.com/Kuestenlogik/Bowire/issues/150) | Bowire | [Filesystem-watch + reconcile UI for externally-edited workspace files](#issue-kuestenlogik-bowire-150) | ⬜ Open |  |
 | [151](https://github.com/Kuestenlogik/Bowire/issues/151) | Bowire | [Secret-file separation + workspace lock file for safe team-shared git workspaces](#issue-kuestenlogik-bowire-151) | ⬜ Open |  |
 | [153](https://github.com/Kuestenlogik/Bowire/issues/153) | Bowire | [Bowire as transparent interceptor — embedded middleware + standalone reverse-proxy](#issue-kuestenlogik-bowire-153) | ⬜ Open |  |
@@ -101,7 +101,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.3 — Security pillar: shift-left scanner, OWASP coverage, auth recording
 
-**0/4 done** · 4 backlog
+**0/5 done** · 5 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -109,6 +109,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [175](https://github.com/Kuestenlogik/Bowire/issues/175) | Bowire | [Schema-aware mutation engine for fuzz / scan](#issue-kuestenlogik-bowire-175) | ⬜ Open |  |
 | [176](https://github.com/Kuestenlogik/Bowire/issues/176) | Bowire | [Spider / crawl — discover endpoints from a base URL](#issue-kuestenlogik-bowire-176) | ⬜ Open |  |
 | [178](https://github.com/Kuestenlogik/Bowire/issues/178) | Bowire | [bowire scan CLI with SARIF output + GitHub Action wrapper](#issue-kuestenlogik-bowire-178) | ⬜ Open |  |
+| [184](https://github.com/Kuestenlogik/Bowire/issues/184) | Bowire | [Protocol-specific security scanners — gRPC / GraphQL / WS / MQTT / SSE / MCP](#issue-kuestenlogik-bowire-184) | ⬜ Open |  |
 
 ### v2.4 — Dev pillar: schema watch diff, mock-from-schema, side-by-side
 
@@ -189,6 +190,18 @@ Remaining wave items after MQTT / Kafka / AMQP / SOAP / NATS / JSON-RPC / Pulsar
 #### <a id="issue-kuestenlogik-bowire-124"></a>⬜ Open · [#124](https://github.com/Kuestenlogik/Bowire/issues/124) Cross-protocol omnibox (Cmd/Ctrl+K)
 
 Bowire connects to several discovery URLs at once. Each one exposes many services. Each service has many methods. Then there are recordings, active mocks, plugin actions. Navigating between them today means: scroll the sidebar, find the service, expand it, scan for the method, click. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/124)
+
+#### <a id="issue-kuestenlogik-bowire-147"></a>⬜ Open · [#147](https://github.com/Kuestenlogik/Bowire/issues/147) Git-backed workspace storage — composes with #144 storage modes + #58
+
+#58 ("Git-native workspace") sits as a roadmap goal — a workspace's state (URLs, envs, collections, recordings, scripts, AI config overrides) should be checkable into a git repo so a team can `git push` / `git pull` their context. [[more]](https://github.com/Kuestenlogik/Bowire/issues/147)
+
+#### <a id="issue-kuestenlogik-bowire-148"></a>⬜ Open · [#148](https://github.com/Kuestenlogik/Bowire/issues/148) Per-entity file storage format for git-backed workspaces (envs / collections / scripts)
+
+For #58 + #147 to deliver real "git-native workspace" parity with Bruno, the workspace state needs to live as **per-entity files**, not as opaque bundles. Today: [[more]](https://github.com/Kuestenlogik/Bowire/issues/148)
+
+#### <a id="issue-kuestenlogik-bowire-149"></a>⬜ Open · [#149](https://github.com/Kuestenlogik/Bowire/issues/149) Workspace CLI — bowire workspace init / export / import / migrate-format
+
+Bruno's CLI runs the same `.bru` files the GUI edits — `bruno run collections/payments/Login.bru` works straight out of a checked-out repo. Bowire's CLI today reads from `~/.bowire/` hard-wired through `BowireUserContext`. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/149)
 
 #### <a id="issue-kuestenlogik-bowire-160"></a>⬜ Open · [#160](https://github.com/Kuestenlogik/Bowire/issues/160) Workspace breadcrumb in the main pane
 
@@ -412,18 +425,6 @@ Recordings today scale to KB-to-single-digit-MB before the architecture pushes b
 
 After #125 v1 landed, Bowire has two interpolation syntaxes that resolve identically: - `${name}` — Bowire's original Bash-style syntax (escape: `$${name}`) - `{{name}}` — Postman / Mustache convention (escape: `{{{{name}}}}`) [[more]](https://github.com/Kuestenlogik/Bowire/issues/145)
 
-#### <a id="issue-kuestenlogik-bowire-147"></a>⬜ Open · [#147](https://github.com/Kuestenlogik/Bowire/issues/147) Git-backed workspace storage — composes with #144 storage modes + #58
-
-#58 ("Git-native workspace") sits as a roadmap goal — a workspace's state (URLs, envs, collections, recordings, scripts, AI config overrides) should be checkable into a git repo so a team can `git push` / `git pull` their context. [[more]](https://github.com/Kuestenlogik/Bowire/issues/147)
-
-#### <a id="issue-kuestenlogik-bowire-148"></a>⬜ Open · [#148](https://github.com/Kuestenlogik/Bowire/issues/148) Per-entity file storage format for git-backed workspaces (envs / collections / scripts)
-
-For #58 + #147 to deliver real "git-native workspace" parity with Bruno, the workspace state needs to live as **per-entity files**, not as opaque bundles. Today: [[more]](https://github.com/Kuestenlogik/Bowire/issues/148)
-
-#### <a id="issue-kuestenlogik-bowire-149"></a>⬜ Open · [#149](https://github.com/Kuestenlogik/Bowire/issues/149) Workspace CLI — bowire workspace init / export / import / migrate-format
-
-Bruno's CLI runs the same `.bru` files the GUI edits — `bruno run collections/payments/Login.bru` works straight out of a checked-out repo. Bowire's CLI today reads from `~/.bowire/` hard-wired through `BowireUserContext`. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/149)
-
 #### <a id="issue-kuestenlogik-bowire-150"></a>⬜ Open · [#150](https://github.com/Kuestenlogik/Bowire/issues/150) Filesystem-watch + reconcile UI for externally-edited workspace files
 
 In a git-backed workspace (#147) the operator will frequently: - Run `git pull` to get the team's latest envs / collections / recordings. - Edit a `.req.json` or `.js` file in their editor (faster than the workbench schema-form for some operations). - Switch git branches while the workbench is open. [[more]](https://github.com/Kuestenlogik/Bowire/issues/150)
@@ -475,6 +476,10 @@ Bowire's discovery starts from "you tell me a URL or upload a schema". If the sc
 #### <a id="issue-kuestenlogik-bowire-178"></a>⬜ Open · [#178](https://github.com/Kuestenlogik/Bowire/issues/178) bowire scan CLI with SARIF output + GitHub Action wrapper
 
 Same pattern as `bowire test` (v2.2): the workbench has Security primitives but no headless surface to run them in CI. Without `bowire scan` emitting SARIF for GitHub Code Scanning, the shift-left story is just talk. [[more]](https://github.com/Kuestenlogik/Bowire/issues/178)
+
+#### <a id="issue-kuestenlogik-bowire-184"></a>⬜ Open · [#184](https://github.com/Kuestenlogik/Bowire/issues/184) Protocol-specific security scanners — gRPC / GraphQL / WS / MQTT / SSE / MCP
+
+Each protocol Bowire speaks has its own class of vulnerabilities the HTTP-only DAST tools (ZAP, Burp) don't know about. Without protocol-specific scanners, the multi-protocol differentiation is just a feature; with them, it's the moat. [[more]](https://github.com/Kuestenlogik/Bowire/issues/184)
 
 ### v2.4 — Dev pillar: schema watch diff, mock-from-schema, side-by-side
 
