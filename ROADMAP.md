@@ -10,7 +10,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ## Overview
 
-### v2.0 — UI refactor + breaking-change window
+### v2.0 — Re-architected workbench shell + workspace = project folder
 
 **35/48 done** · 13 backlog
 
@@ -65,7 +65,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [158](https://github.com/Kuestenlogik/Bowire/issues/158) | Bowire | [Cross-feature state visibility in the service tree](#issue-kuestenlogik-bowire-158) | ✅ Done |  |
 | [159](https://github.com/Kuestenlogik/Bowire/issues/159) | Bowire | [Workspace Export / Import as .bowire JSON](#issue-kuestenlogik-bowire-159) | ✅ Done |  |
 
-### v2.1 — workspace v3 + protocol wave 3
+### v2.1 — Workspace v3 + protocol wave 3
 
 **0/15 done** · 15 backlog
 
@@ -99,11 +99,12 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.3 — Security pillar: shift-left scanner, OWASP coverage, auth recording
 
-**0/1 done** · 1 backlog
+**0/2 done** · 2 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
 | [173](https://github.com/Kuestenlogik/Bowire/issues/173) | Bowire | [OWASP API Security Top 10 — structured test suite](#issue-kuestenlogik-bowire-173) | ⬜ Open |  |
+| [175](https://github.com/Kuestenlogik/Bowire/issues/175) | Bowire | [Schema-aware mutation engine for fuzz / scan](#issue-kuestenlogik-bowire-175) | ⬜ Open |  |
 
 ### v2.5 — Continuous integration: PR bot, project file, org dashboard
 
@@ -158,7 +159,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ## Details
 
-### v2.0 — UI refactor + breaking-change window
+### v2.0 — Re-architected workbench shell + workspace = project folder
 
 #### <a id="issue-kuestenlogik-bowire-33"></a>⬜ Backlog · [#33](https://github.com/Kuestenlogik/Bowire/issues/33) Protocol plugins — Connect Phase 1+3 + OTLP
 
@@ -358,7 +359,7 @@ The Discover service tree today shows each method as a flat row: name, badge, op
 
 A Bowire workspace is the project folder — URLs, collections, recordings, favorites, benchmarks, flows and presets all live in it. Currently the only way to move a workspace between machines or share it with a teammate is to export each artifact one by one (and most aren't exportable at all). … [[more]](https://github.com/Kuestenlogik/Bowire/issues/159)
 
-### v2.1 — workspace v3 + protocol wave 3
+### v2.1 — Workspace v3 + protocol wave 3
 
 #### <a id="issue-kuestenlogik-bowire-117"></a>⬜ Open · [#117](https://github.com/Kuestenlogik/Bowire/issues/117) i18n — extract every UI string; ship DE + EN catalogues
 
@@ -439,6 +440,10 @@ Same request, N different inputs is a standard testing pattern. Today an operato
 #### <a id="issue-kuestenlogik-bowire-173"></a>⬜ Open · [#173](https://github.com/Kuestenlogik/Bowire/issues/173) OWASP API Security Top 10 — structured test suite
 
 Bowire's security scan is currently generic fuzz + a handful of templates. The de-facto industry baseline for "did you check the obvious API security mistakes?" is the OWASP API Security Top 10. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/173)
+
+#### <a id="issue-kuestenlogik-bowire-175"></a>⬜ Open · [#175](https://github.com/Kuestenlogik/Bowire/issues/175) Schema-aware mutation engine for fuzz / scan
+
+The current scan/fuzz path generates inputs without much awareness of the schema — generic strings, numbers, nulls. The DOZENS of subtle vulnerabilities that require schema-aware mutation (type confusion, optional→required violation, enum-out-of-range, recursion-depth, alias-abuse in GraphQL) get missed. [[more]](https://github.com/Kuestenlogik/Bowire/issues/175)
 
 ### v2.5 — Continuous integration: PR bot, project file, org dashboard
 
