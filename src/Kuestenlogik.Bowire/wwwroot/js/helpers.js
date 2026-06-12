@@ -791,11 +791,15 @@
         //    the session, chevron opens a tiny menu with "Don't show
         //    again" which dismisses permanently and stamps the entry in
         //    the dismissed-hints store so Settings can restore it.
-        //  - both set → permanent wins as the bar's identity (Settings
-        //    row, render-time suppression), but the session X still
-        //    works on its own.
+        //  - both set → permanent wins as the bar's identity. Both
+        //    actions write under the SAME primaryKey (the permanent
+        //    one), just with different scope, so the next render-time
+        //    isHintDismissed(primaryKey) check actually sees the
+        //    session dismiss too. Without this the X writes one key
+        //    while the render-check reads another and the bar stays
+        //    mounted across renders.
         if (opts.dismissKey || opts.permanentDismissKey) {
-            var sessionKey = opts.dismissKey || opts.permanentDismissKey;
+            var sessionKey = primaryKey;
             var permKey = opts.permanentDismissKey;
             var closeWrap = el('div', { className: 'bowire-alert-bar-close-wrap' });
             closeWrap.appendChild(el('button', {
