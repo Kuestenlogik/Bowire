@@ -283,17 +283,27 @@ function tableCell(s) {
     return String(s ?? "").replace(/\|/g, "\\|");
 }
 
+// Stable anchor id for in-file cross-links between the Overview
+// table and the Details section. Issues are unique by repo + number;
+// the anchor stamps both so a sibling-repo issue with the same number
+// as a Bowire-main one doesn't collide.
+function detailAnchorId(item) {
+    const repo = item.content.repository.nameWithOwner.replace(/[^a-z0-9]+/gi, "-").toLowerCase();
+    return `issue-${repo}-${item.content.number}`;
+}
+
 // Overview table row — one per issue. Layout:
 //   | # | Project | Title | Status | Tags |
-// Same cells regardless of which repo the issue lives in, so the rows
-// line up visually across the milestone (#155 from Bowire reads the
-// same way as #11 from a sibling repo).
+// # cell links DOWN to the detail block inside the same file (so you
+// can jump to the body excerpt without leaving the page); Title cell
+// links OUT to the GitHub issue (so the title click matches the
+// usual "click the title to open" muscle memory).
 function fmtOverviewRow(item) {
     const c = item.content;
     const status = `${statusIcon(item)} ${statusLabel(item)}`;
-    const num = `[${c.number}](${c.url})`;
+    const num = `[${c.number}](#${detailAnchorId(item)})`;
     const project = shortProject(item);
-    const title = tableCell(c.title);
+    const title = `[${tableCell(c.title)}](${c.url})`;
     const tags = buildTags(item).join(" ");
     return `| ${num} | ${project} | ${title} | ${status} | ${tags} |`;
 }
@@ -315,28 +325,53 @@ function fmtDetailBlock(item) {
     const status = statusIcon(item);
     const label = statusLabel(item);
     const tags = buildTags(item);
+    const anchor = `<a id="${detailAnchorId(item)}"></a>`;
     const lines = [];
-    lines.push(`#### ${status} ${label} · [${issueRef(item)}](${c.url}) ${c.title}`);
+    lines.push(`#### ${anchor}${status} ${label} · [${issueRef(item)}](${c.url}) ${c.title}`);
     if (tags.length > 0) {
         lines.push("");
         lines.push(`> ${tags.join(" · ")}`);
     }
-    const body = (c.body || "").trim();
-    if (body) {
-        // First paragraph, soft-trimmed at ~300 chars on the nearest
-        // sentence boundary. Long issue bodies otherwise blow up the
-        // roadmap file size.
-        let para = body.split(/\n\s*\n/)[0].trim();
-        if (para.length > 320) {
-            const cut = para.lastIndexOf(". ", 300);
-            para = cut > 80 ? para.slice(0, cut + 1) + " …" : para.slice(0, 300).trim() + " …";
-        }
+    const excerpt = firstContentParagraph(c.body || "");
+    if (excerpt) {
         lines.push("");
         // Collapse internal newlines so the paragraph reads as one
         // markdown paragraph (issue bodies often soft-wrap).
-        lines.push(para.replace(/\n+/g, " "));
+        lines.push(excerpt.replace(/\n+/g, " "));
     }
     return lines.join("\n");
+}
+
+// Extract the first "real" paragraph from an issue body. Skips
+// leading markdown headings ("## Problem", "### Why", etc.) and
+// horizontal rules so the excerpt is actual prose, not just the
+// section label. Soft-trims at ~300 chars on a sentence boundary.
+function firstContentParagraph(body) {
+    if (!body) return "";
+    const blocks = body.trim().split(/\n\s*\n/);
+    let para = "";
+    for (const raw of blocks) {
+        const block = raw.trim();
+        if (!block) continue;
+        // Drop blocks that are ONLY headings or horizontal rules.
+        if (/^#+\s/.test(block) && !/\n/.test(block)) continue;
+        if (/^[-=*]{3,}$/.test(block)) continue;
+        // A block that starts with a heading line but has body
+        // content after it: strip the heading, keep the rest.
+        if (/^#+\s/.test(block)) {
+            const stripped = block.replace(/^#+\s.*?\n+/, "").trim();
+            if (stripped) { para = stripped; break; }
+            continue;
+        }
+        para = block;
+        break;
+    }
+    if (!para) return "";
+    if (para.length > 320) {
+        const cut = para.lastIndexOf(". ", 300);
+        para = cut > 80 ? para.slice(0, cut + 1) + " …" : para.slice(0, 300).trim() + " …";
+    }
+    return para;
 }
 
 function milestoneHeading(ms) {
