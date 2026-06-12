@@ -31,6 +31,7 @@ namespace Kuestenlogik.Bowire.Protocol.Mqtt;
 public sealed class BowireMqttProtocol : IBowireProtocol
 {
     public string Name => "MQTT";
+    public string Description => "Publish / subscribe over MQTT 3.1.1 + 5 brokers.";
     public string Id => "mqtt";
 
     // Official mqtt.org logo (simpleicons).

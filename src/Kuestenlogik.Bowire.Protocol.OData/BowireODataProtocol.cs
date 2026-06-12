@@ -39,6 +39,7 @@ public sealed class BowireODataProtocol : IBowireProtocol
     private HttpClient _http = new();
 
     public string Name => "OData";
+    public string Description => "OData V4 entity-set queries, actions, and metadata-driven discovery.";
     public string Id => "odata";
 
     // OData has no official SVG; cylinder glyph ("queryable dataset") matches the site.

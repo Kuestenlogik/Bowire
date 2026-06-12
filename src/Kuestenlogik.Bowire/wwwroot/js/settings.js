@@ -1445,12 +1445,19 @@
         var pkgId = p.packageId || p.PackageId || '';
         var version = p.version || p.Version || 'unknown';
         var latest = latestVersions[pkgId];
+        // #167 — DisplayName is the user-facing identity (the protocol the
+        // plugin contributes, e.g. "GraphQL"); packageId is the assembly /
+        // NuGet name and now reads as small mono secondary text. Empty
+        // DisplayName falls back to the assembly name so third-party
+        // plugins without a manifest still render meaningfully.
+        var displayName = p.displayName || p.DisplayName || '';
+        var description = p.description || p.Description || '';
 
         var textBox = el('div', { className: 'bowire-settings-plugin-manage-text' });
         var idLine = el('div', { className: 'bowire-settings-plugin-manage-id-line' });
         idLine.appendChild(el('span', {
             className: 'bowire-settings-plugin-manage-id',
-            textContent: pkgId
+            textContent: displayName || pkgId
         }));
         if (bundled) {
             idLine.appendChild(el('span', {
@@ -1461,7 +1468,24 @@
         }
         textBox.appendChild(idLine);
 
+        if (description) {
+            textBox.appendChild(el('div', {
+                className: 'bowire-settings-plugin-manage-desc',
+                textContent: description
+            }));
+        }
+
         var versionLine = el('div', { className: 'bowire-settings-plugin-manage-version' });
+        // Show the assembly id as small mono secondary text whenever we
+        // have a real DisplayName to lead with — keeps the assembly name
+        // discoverable (for `bowire plugin uninstall <id>`, NuGet lookup,
+        // &c) without making it the heading.
+        if (displayName && pkgId && displayName !== pkgId) {
+            versionLine.appendChild(el('span', {
+                className: 'bowire-settings-plugin-manage-asm',
+                textContent: pkgId
+            }));
+        }
         versionLine.appendChild(el('span', { textContent: version }));
         if (!bundled && latest && latest !== version) {
             versionLine.appendChild(el('span', {

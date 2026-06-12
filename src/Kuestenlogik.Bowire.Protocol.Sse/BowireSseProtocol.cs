@@ -39,6 +39,7 @@ public sealed class BowireSseProtocol : IBowireProtocol, IInlineSseSubscriber
     private HttpClient _http = new() { Timeout = TimeSpan.FromHours(1) };
 
     public string Name => "SSE";
+    public string Description => "Server-Sent Events — subscribe to a one-way server-pushed event stream.";
     public string Id => "sse";
 
     // SSE has no official logo; one-way broadcast glyph matches the site card.

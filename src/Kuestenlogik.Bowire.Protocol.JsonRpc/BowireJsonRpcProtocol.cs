@@ -52,6 +52,7 @@ public sealed class BowireJsonRpcProtocol : IBowireProtocol
     private HttpClient _http = new() { Timeout = TimeSpan.FromSeconds(30) };
 
     public string Name => "JSON-RPC";
+    public string Description => "JSON-RPC 2.0 over HTTP or WebSocket — named methods with positional or keyword arguments.";
     public string Id => "jsonrpc";
 
     public void Initialize(IServiceProvider? serviceProvider)

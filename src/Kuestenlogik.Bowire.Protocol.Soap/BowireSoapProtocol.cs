@@ -41,6 +41,7 @@ public sealed class BowireSoapProtocol : IBowireProtocol
     private HttpClient _http = new() { Timeout = TimeSpan.FromSeconds(30) };
 
     public string Name => "SOAP";
+    public string Description => "Legacy SOAP services — WSDL discovery + envelope invoke.";
     public string Id => "soap";
 
     public void Initialize(IServiceProvider? serviceProvider)

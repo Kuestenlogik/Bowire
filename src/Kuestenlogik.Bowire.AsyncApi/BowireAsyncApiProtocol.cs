@@ -70,6 +70,7 @@ public sealed class BowireAsyncApiProtocol : IBowireProtocol
     private readonly Dictionary<string, IAsyncApiBindingResolver> _resolvers = new(StringComparer.OrdinalIgnoreCase);
 
     public string Name => "AsyncAPI";
+    public string Description => "AsyncAPI-described event-driven APIs — channel discovery across pub/sub bindings.";
 
     public string Id => "asyncapi";
 

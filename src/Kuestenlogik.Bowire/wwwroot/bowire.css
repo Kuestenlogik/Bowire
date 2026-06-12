@@ -12930,13 +12930,24 @@ full accent for user-pinned
 }
 
 .bowire-settings-plugin-manage-id {
-    font-family: var(--bowire-font-mono, monospace);
-    font-size: 12px;
+    /* #167 — primary identity is now the DisplayName (e.g. "GraphQL"),
+       not the assembly id, so we drop the mono font that previously
+       leaned into the assembly-name look. The assembly id moves into
+       .bowire-settings-plugin-manage-asm below as small mono secondary
+       text. */
+    font-size: 13px;
     font-weight: 600;
     color: var(--bowire-text);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+}
+
+.bowire-settings-plugin-manage-desc {
+    font-size: 11px;
+    color: var(--bowire-text-secondary);
+    margin-top: 2px;
+    line-height: 1.4;
 }
 
 .bowire-settings-plugin-manage-version {
@@ -12946,6 +12957,13 @@ full accent for user-pinned
     margin-top: 2px;
     font-size: 11px;
     color: var(--bowire-text-tertiary);
+}
+
+.bowire-settings-plugin-manage-asm {
+    font-family: var(--bowire-font-mono, monospace);
+    font-size: 11px;
+    color: var(--bowire-text-tertiary);
+    opacity: 0.8;
 }
 
 .bowire-settings-plugin-manage-update {
