@@ -316,6 +316,10 @@
     // header button so clicking outside closes it. Stays as a single
     // boolean because at most one method header is on screen at a time.
     let methodAddToMenuOpen = false;
+    // #166 — Keyboard shortcut sheet (Ctrl/Cmd+/). Session-only; the
+    // sheet is informational, no benefit in remembering it across
+    // reloads.
+    let shortcutSheetOpen = false;
     // #116 — selected workspace in the rail-mode detail view.
     let workspacesSelectedId = null;
     // #152 — selected URL in the Sources rail-mode detail view.
