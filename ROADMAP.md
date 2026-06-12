@@ -112,20 +112,22 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.4 — Dev pillar: schema watch diff, mock-from-schema, side-by-side
 
-**0/2 done** · 2 backlog
+**0/3 done** · 3 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
 | [177](https://github.com/Kuestenlogik/Bowire/issues/177) | Bowire | [AI-assisted service scaffolding — schema + stub + collection + test](#issue-kuestenlogik-bowire-177) | ⬜ Open |  |
 | [179](https://github.com/Kuestenlogik/Bowire/issues/179) | Bowire | [Mock from schema — generate a running mock without a recording](#issue-kuestenlogik-bowire-179) | ⬜ Open |  |
+| [182](https://github.com/Kuestenlogik/Bowire/issues/182) | Bowire | [Side-by-side service version diff — schema + response comparison](#issue-kuestenlogik-bowire-182) | ⬜ Open |  |
 
 ### v2.5 — Continuous integration: PR bot, project file, org dashboard
 
-**0/1 done** · 1 backlog
+**0/2 done** · 2 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
 | [172](https://github.com/Kuestenlogik/Bowire/issues/172) | Bowire | [.bowire/project.json convention — checked-in workspace configuration](#issue-kuestenlogik-bowire-172) | ⬜ Open |  |
+| [183](https://github.com/Kuestenlogik/Bowire/issues/183) | Bowire | [GitHub Action — Bowire PR-comment bot with delta + findings + perf](#issue-kuestenlogik-bowire-183) | ⬜ Open |  |
 
 ### Backlog (not yet scheduled)
 
@@ -484,11 +486,19 @@ The AI assistant today is reactive: it answers questions, surfaces hints, helps 
 
 Mocks today require a Recording: capture traffic against a real server, replay against the mock. That's great for fidelity but bad for parallel development where the consumer team starts BEFORE the provider exists. Today the consumer has to hand-write stubs. [[more]](https://github.com/Kuestenlogik/Bowire/issues/179)
 
+#### <a id="issue-kuestenlogik-bowire-182"></a>⬜ Open · [#182](https://github.com/Kuestenlogik/Bowire/issues/182) Side-by-side service version diff — schema + response comparison
+
+When an API is versioned (`v1`, `v2`), or when a server is being migrated, the operator needs to compare side-by-side: does `v2.GetUser` return the same shape as `v1.GetUser`? Today the only way is to invoke each separately and eyeball the responses. [[more]](https://github.com/Kuestenlogik/Bowire/issues/182)
+
 ### v2.5 — Continuous integration: PR bot, project file, org dashboard
 
 #### <a id="issue-kuestenlogik-bowire-172"></a>⬜ Open · [#172](https://github.com/Kuestenlogik/Bowire/issues/172) .bowire/project.json convention — checked-in workspace configuration
 
 Workspaces today live in `~/.bowire/workspaces/<id>/` (per-user, machine-local). The Export/Import (#159) exists but is opt-in. For Bowire to be the source of truth for "what this repo's API looks like", every repo needs a Bowire configuration checked-in. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/172)
+
+#### <a id="issue-kuestenlogik-bowire-183"></a>⬜ Open · [#183](https://github.com/Kuestenlogik/Bowire/issues/183) GitHub Action — Bowire PR-comment bot with delta + findings + perf
+
+Bowire runs locally on the developer's machine. When the developer pushes a PR, the reviewer sees the code diff — and nothing about the API impact. Bowire's value (regressions, security findings, perf deltas) stays invisible to reviewers. Without surfacing that on the PR, "continuous" stays aspirational. [[more]](https://github.com/Kuestenlogik/Bowire/issues/183)
 
 ### Backlog (not yet scheduled)
 
