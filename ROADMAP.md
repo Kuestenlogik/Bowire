@@ -12,7 +12,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.0 — UI refactor + breaking-change window
 
-**24/43 done** · 1 in progress · 18 backlog
+**24/40 done** · 1 in progress · 15 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -23,9 +23,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [116](https://github.com/Kuestenlogik/Bowire/issues/116) | Bowire | Workspaces — named, switchable contexts that bundle URLs / envs / collections / AI config | ⬜ Open |  |
 | [124](https://github.com/Kuestenlogik/Bowire/issues/124) | Bowire | Cross-protocol omnibox (Cmd/Ctrl+K) | ⬜ Open |  |
 | [127](https://github.com/Kuestenlogik/Bowire/issues/127) | Bowire | Auto-save to workspace + live save-state pill | ⬜ Open |  |
-| [147](https://github.com/Kuestenlogik/Bowire/issues/147) | Bowire | Git-backed workspace storage — composes with #144 storage modes + #58 | ⬜ Open |  |
-| [148](https://github.com/Kuestenlogik/Bowire/issues/148) | Bowire | Per-entity file storage format for git-backed workspaces (envs / collections / scripts) | ⬜ Open |  |
-| [149](https://github.com/Kuestenlogik/Bowire/issues/149) | Bowire | Workspace CLI — bowire workspace init / export / import / migrate-format | ⬜ Open |  |
 | [150](https://github.com/Kuestenlogik/Bowire/issues/150) | Bowire | Filesystem-watch + reconcile UI for externally-edited workspace files | ⬜ Open |  |
 | [151](https://github.com/Kuestenlogik/Bowire/issues/151) | Bowire | Secret-file separation + workspace lock file for safe team-shared git workspaces | ⬜ Open |  |
 | [152](https://github.com/Kuestenlogik/Bowire/issues/152) | Bowire | Sources rail mode — centralise URL / schema-file management | ⬜ Open |  |
@@ -62,7 +59,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.1 — workspace v3 + protocol wave 3
 
-**0/9 done** · 9 backlog
+**0/12 done** · 12 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -75,6 +72,9 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [140](https://github.com/Kuestenlogik/Bowire/issues/140) | Bowire | Per-mode 'Saved Configs' / Presets (distinct from cross-workflow favorites) | ⬜ Open |  |
 | [144](https://github.com/Kuestenlogik/Bowire/issues/144) | Bowire | Large-recording capture/replay — chunked disk layout, lazy step-load, GB-scale | ⬜ Open |  |
 | [145](https://github.com/Kuestenlogik/Bowire/issues/145) | Bowire | Deprecate ${name} in favour of {{name}} (multi-phase migration) | ⬜ Open |  |
+| [147](https://github.com/Kuestenlogik/Bowire/issues/147) | Bowire | Git-backed workspace storage — composes with #144 storage modes + #58 | ⬜ Open |  |
+| [148](https://github.com/Kuestenlogik/Bowire/issues/148) | Bowire | Per-entity file storage format for git-backed workspaces (envs / collections / scripts) | ⬜ Open |  |
+| [149](https://github.com/Kuestenlogik/Bowire/issues/149) | Bowire | Workspace CLI — bowire workspace init / export / import / migrate-format | ⬜ Open |  |
 
 ### Backlog (not yet scheduled)
 
@@ -152,18 +152,6 @@ Remaining wave items after MQTT / Kafka / AMQP / SOAP / NATS / JSON-RPC / Pulsar
 ## Why
 
 #### ⬜ Open · [#127](https://github.com/Kuestenlogik/Bowire/issues/127) Auto-save to workspace + live save-state pill
-
-## Why
-
-#### ⬜ Open · [#147](https://github.com/Kuestenlogik/Bowire/issues/147) Git-backed workspace storage — composes with #144 storage modes + #58
-
-## Why
-
-#### ⬜ Open · [#148](https://github.com/Kuestenlogik/Bowire/issues/148) Per-entity file storage format for git-backed workspaces (envs / collections / scripts)
-
-## Why
-
-#### ⬜ Open · [#149](https://github.com/Kuestenlogik/Bowire/issues/149) Workspace CLI — bowire workspace init / export / import / migrate-format
 
 ## Why
 
@@ -336,6 +324,18 @@ Remaining wave items after MQTT / Kafka / AMQP / SOAP / NATS / JSON-RPC / Pulsar
 ## Why
 
 #### ⬜ Open · [#145](https://github.com/Kuestenlogik/Bowire/issues/145) Deprecate ${name} in favour of {{name}} (multi-phase migration)
+
+## Why
+
+#### ⬜ Open · [#147](https://github.com/Kuestenlogik/Bowire/issues/147) Git-backed workspace storage — composes with #144 storage modes + #58
+
+## Why
+
+#### ⬜ Open · [#148](https://github.com/Kuestenlogik/Bowire/issues/148) Per-entity file storage format for git-backed workspaces (envs / collections / scripts)
+
+## Why
+
+#### ⬜ Open · [#149](https://github.com/Kuestenlogik/Bowire/issues/149) Workspace CLI — bowire workspace init / export / import / migrate-format
 
 ## Why
 
