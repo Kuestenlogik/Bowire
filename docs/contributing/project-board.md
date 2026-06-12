@@ -9,29 +9,31 @@ The roadmap, in-flight work, and bug triage all live on the [Bowire Project boar
 
 ## Fields
 
-| Field | Values | Used for |
-|---|---|---|
-| **Status** | `Backlog` · `Next up` · `In progress` · `In review` · `Done` | Kanban swim-lane |
-| **Milestone** *(built-in)* | `v2.0` · `v2.1` · `v2.2` · `v2.3` · `v2.4` · `v2.5` · *(unset)* | Version-targeting — the same Milestone the GitHub issue carries. Unset = unscheduled / no concrete release yet (rendered as "Backlog (not yet scheduled)" in `ROADMAP.md`). |
-| **Area** | `workbench` · `cli` · `security` · `mcp` · `plugin-sdk` · `mock` · `docs` · `site` · `bootcamp` · `multi` | Component filter |
-| **Track** | `auth` · `protocols` · `marketing-ia` · `observability` · `security-tiers` · `bootcamp-content` · `ai` · `none` | Multi-phase initiatives that span releases |
-| **Effort** | `XS` · `S` · `M` · `L` · `XL` | T-shirt estimate |
-| **Start date** *(date)* | — | When work actively began (set on `Next up` → `In progress` transition) |
-| **Target date** *(date)* | — | Soft commitment date; the milestone is the hard one |
+Concrete values live on the [Project board's field configuration](https://github.com/orgs/Kuestenlogik/projects/2/settings/fields) — what's documented here is what each field is **for**, not which options happen to exist today. The values drift over time (new areas added, new tracks spun up, finished tracks closed); the purpose stays the same.
+
+| Field | Used for |
+|---|---|
+| **Status** | Kanban swim-lane: `Backlog` → `Next up` → `In progress` → `In review` → `Done`. The only field whose values are pinned by convention; everything else is editable. |
+| **Milestone** *(built-in)* | Version-targeting — the same Milestone the GitHub issue carries. Unset = unscheduled / no concrete release yet (rendered as "Backlog (not yet scheduled)" in `ROADMAP.md`). |
+| **Area** | Which component an issue belongs to (the workbench UI, the CLI, the security surface, …). Use it as the *primary* axis for "show me everything affecting X". Stable enough that the value list barely changes between releases. |
+| **Track** | Groups a multi-release initiative that spans several milestones. Use when an issue is part of a long-running theme — examples that have lived as tracks: the auth-provider rebuild, the protocol-plugin wave, the security-tier ladder, the AI integration. Leave blank when the issue is one-shot. New tracks get added when a new long-running theme starts; tracks close when the theme ships. |
+| **Effort** | T-shirt estimate. Used to spot oversized issues (XL = split it before starting) and to right-size milestones. Not a commitment, just a sanity check. |
+| **Start date** | When work actively began (typically set on the `Next up` → `In progress` transition). Drives the Roadmap layout's left edge. |
+| **Target date** | Soft commitment date. The Milestone is the hard one; Target date is the "we'd like it by" that drives the Roadmap layout's right edge. |
 
 > Priority and Kind used to be Project fields. Both retired: **Priority** wasn't pulling its weight (the Milestone + Status combination already answered "should we do this now") and **Kind** is carried on the issue as a `kind:*` label, no need for a duplicate field on the board. See the [Labels](#labels) section below for the kind taxonomy.
 
 ## Labels
 
-Labels live on the GitHub issue itself (not on the Project board). They're the searchable side of the same information the Project fields carry, so `is:open label:area:security` works from the standard issue list without having to crack open the Project view.
+Labels live on the GitHub issue itself (not on the Project board). They're the searchable side of the same information the Project fields carry, so `is:open label:area:security` works from the standard issue list without having to crack open the Project view. The full label list lives at [github.com/Kuestenlogik/Bowire/labels](https://github.com/Kuestenlogik/Bowire/labels) — the namespaces explained below are stable; concrete values come and go.
 
-| Label namespace | Purpose | Examples |
-|---|---|---|
-| **`area:*`** | Mirror of the Project's `Area` field | `area:workbench`, `area:security`, `area:cli`, `area:mcp`, `area:plugin-sdk`, `area:mock`, `area:docs`, `area:site`, `area:bootcamp`, `area:multi` |
-| **`track:*`** | Mirror of the Project's `Track` field | `track:auth`, `track:protocols`, `track:marketing-ia`, `track:observability`, `track:security-tiers`, `track:ai`, `track:bootcamp-content` |
-| **`kind:*`** | What kind of work, where `bug` / `feature` is the default unspoken kind | `kind:concept` (ADR / design discussion), `kind:debt` (refactor / cleanup), `kind:docs` (documentation work), `kind:bug` (bug to fix), `kind:feature` (new capability). `kind:rfc` is retired — use `kind:concept` instead, both meant the same thing. |
-| **`roadmap`** | Marks an issue as tracked on the Project board. Throwaway bug reports don't need it. | — |
-| **`community-vote`** | Feature requests where reactions are read as priority signal. Don't comment "+1" — react with 👍. | — |
+| Label namespace | Purpose |
+|---|---|
+| **`area:*`** | Mirror of the Project's `Area` field — same purpose, but searchable from `gh issue list` without the Projects API. Use one. |
+| **`track:*`** | Mirror of the Project's `Track` field. Issues without a track don't get a `track:*` label — there's no `track:none`. |
+| **`kind:*`** | What kind of work, where `bug` / `feature` is the default unspoken kind that doesn't need a label. Use `kind:concept` for ADR / design discussion, `kind:debt` for refactor / cleanup, `kind:docs` for documentation work. `kind:rfc` is retired — use `kind:concept`, both meant the same thing. |
+| **`roadmap`** | Marks an issue as tracked on the Project board. Throwaway bug reports don't need it. |
+| **`community-vote`** | Feature requests where reactions are read as priority signal. Don't comment "+1" — react with 👍. |
 
 ## Recommended views
 
