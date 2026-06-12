@@ -201,7 +201,7 @@
 
         var grid = el('div', { className: 'bowire-landing-cta-grid' });
         grid.appendChild(renderFirstRunCard(
-            'boxes',
+            'layers',
             'Configure your workspace',
             'A workspace is your project folder — URLs, environments, secrets, recordings all live in it. Open the workspace detail to add your first source.',
             'Open workspace',
