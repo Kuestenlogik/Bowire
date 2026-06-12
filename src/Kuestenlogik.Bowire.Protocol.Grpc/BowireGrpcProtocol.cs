@@ -30,6 +30,7 @@ public sealed class BowireGrpcProtocol : IBowireProtocol, IBowireProtocolService
     private IConfiguration? _configuration;
 
     public string Name => "gRPC";
+    public string Description => "Proto-based unary, server-stream, client-stream, and duplex calls over HTTP/2.";
     public string Id => "grpc";
 
     /// <summary>

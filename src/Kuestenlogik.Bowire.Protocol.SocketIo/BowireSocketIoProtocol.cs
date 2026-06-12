@@ -14,6 +14,7 @@ namespace Kuestenlogik.Bowire.Protocol.SocketIo;
 public sealed class BowireSocketIoProtocol : IBowireProtocol
 {
     public string Name => "Socket.IO";
+    public string Description => "Engine.IO-based bidirectional event emitter — Node.js ecosystem.";
     public string Id => "socketio";
 
     /// <summary>

@@ -41,6 +41,7 @@ public sealed class BowireRestProtocol : IBowireProtocol, IInlineHttpInvoker
     private IServiceProvider? _serviceProvider;
 
     public string Name => "REST";
+    public string Description => "OpenAPI / Swagger — discover + invoke HTTP services described by an OpenAPI document.";
     public string Id => "rest";
 
     public string IconSvg => """<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M8 3H6a2 2 0 00-2 2v4c0 1.1-.9 2-2 2 1.1 0 2 .9 2 2v4a2 2 0 002 2h2"/><path d="M16 3h2a2 2 0 012 2v4c0 1.1.9 2 2 2-1.1 0-2 .9-2 2v4a2 2 0 01-2 2h-2"/></svg>""";

@@ -36,6 +36,7 @@ public sealed class BowireMcpProtocol : IBowireProtocol
     private static readonly JsonSerializerOptions s_indented = new() { WriteIndented = true };
 
     public string Name => "MCP";
+    public string Description => "Model Context Protocol — Claude / Cursor / Copilot tool + resource server discovery + invoke.";
     public string Id => "mcp";
 
     // Initialize stays a no-op: the SDK owns its own HttpClient through

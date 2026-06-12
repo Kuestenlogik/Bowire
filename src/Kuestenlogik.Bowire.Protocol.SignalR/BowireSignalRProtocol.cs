@@ -28,6 +28,7 @@ public sealed class BowireSignalRProtocol : IBowireProtocol
     private IConfiguration? _configuration;
 
     public string Name => "SignalR";
+    public string Description => "ASP.NET Core SignalR hubs over WebSocket / Server-Sent-Events / long-polling.";
     public string Id => "signalr";
 
     // Azure SignalR Service — official Microsoft Azure Architecture Icons (2025-11 set).

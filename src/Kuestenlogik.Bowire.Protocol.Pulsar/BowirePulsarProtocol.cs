@@ -40,6 +40,7 @@ public sealed class BowirePulsarProtocol : IBowireProtocol
     private HttpClient _http = new() { Timeout = TimeSpan.FromSeconds(15) };
 
     public string Name => "Pulsar";
+    public string Description => "Apache Pulsar publish + consume with multi-tenant topics + subscriptions.";
     public string Id => "pulsar";
 
     // Apache Pulsar logo — stylised lighthouse beam. Kept monochrome so

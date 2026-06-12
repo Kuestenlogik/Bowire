@@ -37,6 +37,7 @@ namespace Kuestenlogik.Bowire.Protocol.Nats;
 public sealed class BowireNatsProtocol : IBowireProtocol
 {
     public string Name => "NATS";
+    public string Description => "NATS Core publish/subscribe + request/reply over the NATS protocol.";
     public string Id => "nats";
 
     // Official nats.io logo (rounded N glyph, brand colour).

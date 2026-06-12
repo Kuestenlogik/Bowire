@@ -39,6 +39,7 @@ public sealed class BowireWebSocketProtocol : IBowireProtocol, IInlineWebSocketC
     private IWebSocketEndpointRegistry? _registry;
 
     public string Name => "WebSocket";
+    public string Description => "Raw WebSocket — bidirectional message stream with optional sub-protocol negotiation.";
     public string Id => "websocket";
 
     // Community WebSocket logo (gilbarbara/logos set, also on Iconify).

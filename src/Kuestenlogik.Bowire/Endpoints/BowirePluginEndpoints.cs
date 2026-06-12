@@ -41,39 +41,95 @@ internal static class BowirePluginEndpoints
         {
             var plugins = new List<object>();
 
+            // #167 — Build an assembly-name → IBowireProtocol[] map up
+            // front so both the sibling and bundled paths can enrich
+            // every plugin row with the protocol's user-facing
+            // DisplayName + Description without re-walking the
+            // registry per row.
+            var registry = BowireEndpointHelpers.GetRegistry();
+            var byAssembly = registry.Protocols
+                .Where(p => p is not null)
+                .GroupBy(p => p.GetType().Assembly.GetName().Name ?? "",
+                    StringComparer.OrdinalIgnoreCase)
+                .Where(g => !string.IsNullOrEmpty(g.Key))
+                .ToDictionary(
+                    g => g.Key,
+                    g => g.ToList(),
+                    StringComparer.OrdinalIgnoreCase);
+
+            static (string displayName, string description) DescribeAssembly(
+                string packageId, IReadOnlyDictionary<string, List<IBowireProtocol>> map)
+            {
+                if (!map.TryGetValue(packageId, out var list) || list.Count == 0)
+                    return ("", "");
+                var names = list.Select(p => p.Name).Where(n => !string.IsNullOrEmpty(n)).Distinct(StringComparer.Ordinal).ToArray();
+                var displayName = string.Join(" / ", names);
+                var description = list.Select(p => p.Description ?? "").FirstOrDefault(d => !string.IsNullOrEmpty(d)) ?? "";
+                return (displayName, description);
+            }
+
             // ---- Sibling plugins (writable, lifecycle-acted-on) ----
             // Same plugin-dir walk the original endpoint did, but each
             // entry gets source="sibling" so the merged view can
-            // distinguish them.
+            // distinguish them. plugin.json may carry displayName /
+            // description fields directly — when present they win;
+            // otherwise we fall back to the in-process registry lookup
+            // by assembly name (same as bundled plugins) so first-party
+            // ones with a published manifest still get nice labels.
             if (Directory.Exists(PluginDir))
             {
                 foreach (var dir in Directory.GetDirectories(PluginDir))
                 {
                     var metaPath = Path.Combine(dir, "plugin.json");
+                    string siblingPackageId;
+                    Dictionary<string, object?> dict;
                     if (File.Exists(metaPath))
                     {
                         try
                         {
                             var json = File.ReadAllText(metaPath);
                             var meta = JsonSerializer.Deserialize<JsonElement>(json);
-                            // Re-emit with the source flag merged in.
-                            var dict = meta.EnumerateObject()
+                            dict = meta.EnumerateObject()
                                 .ToDictionary(p => p.Name, p => (object?)p.Value);
-                            dict["source"] = "sibling";
-                            plugins.Add(dict);
                         }
-                        catch { /* skip broken */ }
+                        catch
+                        {
+                            continue; /* skip broken */
+                        }
+                        siblingPackageId = dict.TryGetValue("packageId", out var sidVal) && sidVal is JsonElement se
+                            ? se.GetString() ?? Path.GetFileName(dir)
+                            : Path.GetFileName(dir);
                     }
                     else
                     {
-                        plugins.Add(new
+                        siblingPackageId = Path.GetFileName(dir);
+                        dict = new Dictionary<string, object?>
                         {
-                            packageId = Path.GetFileName(dir),
-                            version = "unknown",
-                            files = Directory.GetFiles(dir, "*.dll").Length,
-                            source = "sibling",
-                        });
+                            ["packageId"] = siblingPackageId,
+                            ["version"] = "unknown",
+                            ["files"] = Directory.GetFiles(dir, "*.dll").Length,
+                        };
                     }
+                    static bool IsMissingOrEmptyString(IDictionary<string, object?> d, string key)
+                    {
+                        if (!d.TryGetValue(key, out var v) || v is null) return true;
+                        if (v is JsonElement je && je.ValueKind == JsonValueKind.String)
+                            return string.IsNullOrEmpty(je.GetString());
+                        if (v is JsonElement js && js.ValueKind == JsonValueKind.Null) return true;
+                        return v is string sv && string.IsNullOrEmpty(sv);
+                    }
+                    if (IsMissingOrEmptyString(dict, "displayName"))
+                    {
+                        var (dn, _) = DescribeAssembly(siblingPackageId, byAssembly);
+                        if (!string.IsNullOrEmpty(dn)) dict["displayName"] = dn;
+                    }
+                    if (IsMissingOrEmptyString(dict, "description"))
+                    {
+                        var (_, de) = DescribeAssembly(siblingPackageId, byAssembly);
+                        if (!string.IsNullOrEmpty(de)) dict["description"] = de;
+                    }
+                    dict["source"] = "sibling";
+                    plugins.Add(dict);
                 }
             }
 
@@ -113,9 +169,12 @@ internal static class BowirePluginEndpoints
                 var plus = version.IndexOf('+', StringComparison.Ordinal);
                 if (plus > 0) version = version[..plus];
 
+                var (displayName, description) = DescribeAssembly(name, byAssembly);
                 plugins.Add(new
                 {
                     packageId = name,
+                    displayName,
+                    description,
                     version,
                     source = "bundled",
                 });

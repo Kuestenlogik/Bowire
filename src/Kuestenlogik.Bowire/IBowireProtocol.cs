@@ -20,6 +20,15 @@ public interface IBowireProtocol
     /// <summary>SVG icon for the protocol tab.</summary>
     string IconSvg { get; }
 
+    /// <summary>
+    /// One-line description shown next to the plugin's display name
+    /// in <c>Settings → Plugins</c>. Optional; defaults to empty so
+    /// the row falls back to "DisplayName + version" without the
+    /// description line. Keep it short (≤ 100 characters) — the row
+    /// truncates anything wider than the manage panel.
+    /// </summary>
+    string Description => "";
+
     /// <summary>Called after registration to inject the app's service provider (embedded mode).</summary>
     void Initialize(IServiceProvider? serviceProvider) { }
 

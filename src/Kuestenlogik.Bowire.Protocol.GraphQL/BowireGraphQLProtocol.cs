@@ -55,6 +55,7 @@ public sealed class BowireGraphQLProtocol : IBowireProtocol
     internal static Func<BowireProtocolRegistry>? RegistryFactory { get; set; }
 
     public string Name => "GraphQL";
+    public string Description => "Query / Mutation / Subscription over HTTP and WebSocket.";
     public string Id => "graphql";
 
     // Official GraphQL logo (simpleicons) in brand pink.
