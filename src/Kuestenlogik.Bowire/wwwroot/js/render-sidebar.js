@@ -1462,6 +1462,12 @@
     // a clickable row; clicking selects (right pane shows detail);
     // double-click switches. Header has the same '+' new-workspace
     // affordance as the topbar chip's menu.
+    // #192 — Workspaces rail as a navigable tree (MudBlazor-inspired).
+    // Each workspace is a top-level node; expanding it surfaces
+    // Sources (with URL leaves), Environments, Collections, Recordings,
+    // and Settings as child rows. Click a leaf → main pane jumps to
+    // that node's editor. Expansion state is persisted per node so
+    // collapse survives a reload.
     function renderWorkspacesSidebar() {
         var sidebar = el('div', { id: 'bowire-sidebar', className: 'bowire-sidebar bowire-sidebar-mode' });
 
@@ -1481,6 +1487,7 @@
                         if (name) {
                             var ws = createWorkspace(name);
                             workspacesSelectedId = ws.id;
+                            workspaceTreeSelection = { wsId: ws.id, kind: 'workspace' };
                             render();
                         }
                     });
@@ -1489,58 +1496,177 @@
         );
         sidebar.appendChild(header);
 
-        var list = el('div', { id: 'bowire-workspaces-list', className: 'bowire-env-list' });
         var wsIds = workspaces.map(function (w) { return w.id; });
         if (!workspacesSelectedId || wsIds.indexOf(workspacesSelectedId) < 0) {
             workspacesSelectedId = activeWorkspaceId;
         }
-        workspaces.forEach(function (w) {
-            var isActive = w.id === activeWorkspaceId;
-            var isSelected = w.id === workspacesSelectedId;
-            var envCount = w.includeAllEnvironments
-                ? (typeof getAllSharedEnvironments === 'function' ? getAllSharedEnvironments().length : 0)
-                : (Array.isArray(w.includedEnvironmentIds) ? w.includedEnvironmentIds.length : 0);
-            var row = el('div', {
-                id: 'bowire-ws-row-' + w.id,
-                className: 'bowire-env-list-item'
-                    + (isSelected ? ' selected' : '')
-                    + (isActive ? ' active-env' : ''),
-                onClick: function () {
-                    workspacesSelectedId = w.id;
-                    render();
-                },
-                onDblClick: function () {
-                    if (w.id !== activeWorkspaceId) switchWorkspace(w.id);
-                }
-            },
-                el('span', {
-                    className: 'bowire-env-color-dot' + (isActive ? ' active' : ''),
-                    style: 'background:' + (w.color || 'var(--bowire-accent)'),
-                    title: isActive ? 'Active workspace' : ''
-                }),
-                el('span', { className: 'bowire-env-list-item-name', textContent: w.name }),
-                el('span', { style: 'flex:1' }),
-                el('span', {
-                    className: 'bowire-env-list-item-meta',
-                    textContent: envCount + (w.includeAllEnvironments ? ' (all)' : '')
-                }),
-                !isActive
-                    ? el('button', {
-                        className: 'bowire-env-sidebar-activate-btn',
-                        title: 'Switch to this workspace',
-                        textContent: '▶',
-                        onClick: function (e) {
-                            e.stopPropagation();
-                            switchWorkspace(w.id);
-                        }
-                    })
-                    : null
-            );
-            list.appendChild(row);
+        if (!workspaceTreeSelection || !workspaceTreeSelection.wsId) {
+            workspaceTreeSelection = { wsId: workspacesSelectedId, kind: 'workspace' };
+        }
+
+        var nodes = workspaces.map(function (w) {
+            return _buildWorkspaceTreeNode(w);
         });
-        sidebar.appendChild(list);
+        sidebar.appendChild(renderTree(nodes, { ariaLabel: 'Workspaces' }));
 
         return sidebar;
+    }
+
+    function _buildWorkspaceTreeNode(w) {
+        var isActive = w.id === activeWorkspaceId;
+        var sel = workspaceTreeSelection || {};
+        var wsExpandKey = 'ws:' + w.id;
+        // Default-open the active workspace so the operator sees its
+        // contents without an extra click. Other workspaces stay
+        // collapsed unless the operator opened them before.
+        var wsExpanded = isWorkspaceTreeNodeExpanded(wsExpandKey, isActive);
+        var wsSelected = sel.wsId === w.id && sel.kind === 'workspace';
+
+        var children = [];
+        children.push(_buildSourcesTreeNode(w));
+        children.push(_buildSimpleChildNode(w, 'environments', 'globe',
+            'Environments', _countEnvironments(w)));
+        children.push(_buildSimpleChildNode(w, 'collections', 'list',
+            'Collections', _countWorkspaceList(w.id, COLLECTIONS_KEY)));
+        children.push(_buildSimpleChildNode(w, 'recordings', 'recording',
+            'Recordings', _countWorkspaceList(w.id, RECORDINGS_KEY)));
+        children.push(_buildSimpleChildNode(w, 'settings', 'settings',
+            'Settings', null));
+
+        return {
+            id: wsExpandKey,
+            label: w.name,
+            accent: w.color || 'var(--bowire-accent)',
+            active: isActive,
+            selected: wsSelected,
+            expandable: true,
+            expanded: wsExpanded,
+            title: isActive ? w.name + ' (active workspace)' : w.name,
+            onClick: function () {
+                workspacesSelectedId = w.id;
+                workspaceTreeSelection = { wsId: w.id, kind: 'workspace' };
+                toggleWorkspaceTreeNode(wsExpandKey, isActive);
+                render();
+            },
+            onToggle: function () {
+                toggleWorkspaceTreeNode(wsExpandKey, isActive);
+                render();
+            },
+            onContext: function (e) {
+                if (typeof openWorkspaceContextMenu === 'function') {
+                    openWorkspaceContextMenu(w, e);
+                }
+            },
+            onAdd: !isActive ? function () {
+                switchWorkspace(w.id);
+            } : null,
+            addTitle: !isActive ? 'Switch to this workspace' : null,
+            children: children
+        };
+    }
+
+    function _buildSourcesTreeNode(w) {
+        var sel = workspaceTreeSelection || {};
+        var sourcesKey = 'ws:' + w.id + ':sources';
+        var urls = readWorkspaceUrls(w.id);
+        var sourcesSelected = sel.wsId === w.id && sel.kind === 'sources';
+        var sourcesExpanded = isWorkspaceTreeNodeExpanded(sourcesKey, sel.wsId === w.id);
+
+        var urlChildren = urls.map(function (u) {
+            var urlSelected = sel.wsId === w.id && sel.kind === 'url' && sel.value === u;
+            return {
+                id: 'ws:' + w.id + ':url:' + u,
+                label: u,
+                icon: 'plug',
+                selected: urlSelected,
+                title: u,
+                onClick: function () {
+                    workspacesSelectedId = w.id;
+                    workspaceTreeSelection = { wsId: w.id, kind: 'url', value: u };
+                    render();
+                }
+            };
+        });
+
+        return {
+            id: sourcesKey,
+            label: 'Sources',
+            icon: 'globe',
+            badge: urls.length || null,
+            selected: sourcesSelected,
+            expandable: true,
+            expanded: sourcesExpanded,
+            onClick: function () {
+                workspacesSelectedId = w.id;
+                workspaceTreeSelection = { wsId: w.id, kind: 'sources' };
+                toggleWorkspaceTreeNode(sourcesKey, sel.wsId === w.id);
+                render();
+            },
+            onToggle: function () {
+                toggleWorkspaceTreeNode(sourcesKey, sel.wsId === w.id);
+                render();
+            },
+            onAdd: function () {
+                _quickAddUrlToWorkspace(w);
+            },
+            addTitle: 'Add URL or schema',
+            children: urlChildren
+        };
+    }
+
+    function _buildSimpleChildNode(w, kind, icon, label, badge) {
+        var sel = workspaceTreeSelection || {};
+        var selected = sel.wsId === w.id && sel.kind === kind;
+        return {
+            id: 'ws:' + w.id + ':' + kind,
+            label: label,
+            icon: icon,
+            badge: badge,
+            selected: selected,
+            onClick: function () {
+                workspacesSelectedId = w.id;
+                workspaceTreeSelection = { wsId: w.id, kind: kind };
+                render();
+            }
+        };
+    }
+
+    function _countEnvironments(w) {
+        if (w.includeAllEnvironments) {
+            return (typeof getAllSharedEnvironments === 'function')
+                ? getAllSharedEnvironments().length : 0;
+        }
+        return Array.isArray(w.includedEnvironmentIds)
+            ? w.includedEnvironmentIds.length : 0;
+    }
+
+    function _countWorkspaceList(wsId, baseKey) {
+        var list = readWorkspaceJsonList(wsId, baseKey);
+        return list.length || null;
+    }
+
+    function _quickAddUrlToWorkspace(w) {
+        // If the operator is on a different workspace, switch first so
+        // the URL lands in the right per-workspace bucket. Then prompt.
+        if (w.id !== activeWorkspaceId) switchWorkspace(w.id);
+        if (typeof bowirePrompt !== 'function') return;
+        bowirePrompt('Add URL or schema reference', {
+            title: 'Add to ' + w.name,
+            placeholder: 'https://api.example.com or rest@https://… or grpc@…',
+            confirmText: 'Add'
+        }).then(function (raw) {
+            if (!raw) return;
+            raw = String(raw).trim();
+            if (!raw) return;
+            if (serverUrls.indexOf(raw) === -1) {
+                serverUrls.push(raw);
+                if (typeof persistServerUrls === 'function') persistServerUrls();
+            }
+            workspaceTreeSelection = { wsId: w.id, kind: 'url', value: raw };
+            sourcesSelectedUrl = raw;
+            sidebarView = 'sources';
+            render();
+        });
     }
 
     // #133 Phase 2 — Environments rail mode sidebar. Reuses the

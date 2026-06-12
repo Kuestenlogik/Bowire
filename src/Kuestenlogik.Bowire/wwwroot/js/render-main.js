@@ -812,11 +812,44 @@
         });
     }
 
+    // #192 — Dispatcher: when the sidebar tree picks a workspace
+    // sub-node (Sources / a URL leaf / Environments / …), the main
+    // pane swaps to the matching editor instead of always showing the
+    // workspace settings card. Keeping the dispatch here means the
+    // operator stays in the Workspaces rail while drilling in — the
+    // rail is the workspace navigator, the main pane is the editor.
     function renderWorkspaceDetailMain() {
-        var main = el('div', { id: 'bowire-main-workspaces', className: 'bowire-main bowire-main-workspaces' });
-
         var ws = workspaces.find(function (w) { return w.id === workspacesSelectedId; })
                  || activeWorkspace();
+        if (!ws) {
+            var emptyMain = el('div', { id: 'bowire-main-workspaces', className: 'bowire-main bowire-main-workspaces' });
+            emptyMain.appendChild(el('p', {
+                className: 'bowire-ai-empty bowire-main-pad',
+                textContent: 'No workspace selected. Pick one in the sidebar or create a new one.'
+            }));
+            return emptyMain;
+        }
+        var sel = (typeof workspaceTreeSelection !== 'undefined' && workspaceTreeSelection) || {};
+        var kind = (sel.wsId === ws.id) ? sel.kind : 'workspace';
+        if (kind === 'url' && sel.value) return _renderWorkspaceUrlDetail(ws, sel.value);
+        if (kind === 'sources') return _renderWorkspaceSourcesDetail(ws);
+        if (kind === 'environments') return _renderWorkspaceJumpDetail(ws, 'environments', 'globe',
+            'Environments', 'Open Environments rail',
+            'Environments are shared across all workspaces; this workspace decides which ones are included. Switch to the Environments rail to manage the shared list or open Settings here to flip inclusion per environment.');
+        if (kind === 'collections') return _renderWorkspaceJumpDetail(ws, 'collections', 'list',
+            'Collections', 'Open Collections rail',
+            'Collections live in this workspace. Switch to the Collections rail to browse or edit them.');
+        if (kind === 'recordings') return _renderWorkspaceJumpDetail(ws, 'recordings', 'recording',
+            'Recordings', 'Open Recordings rail',
+            'Recordings live in this workspace. Switch to the Recordings rail to replay, edit, or export them.');
+        return _renderWorkspaceSettingsDetail(ws);
+    }
+
+    // The current workspace settings card — name, color, includeAllEnvironments,
+    // includedEnvironmentIds list, danger zone. Reached by selecting either
+    // the workspace row itself or the "Settings" child in the tree.
+    function _renderWorkspaceSettingsDetail(ws) {
+        var main = el('div', { id: 'bowire-main-workspaces', className: 'bowire-main bowire-main-workspaces' });
         if (!ws) {
             main.appendChild(el('p', {
                 className: 'bowire-ai-empty bowire-main-pad',
@@ -1301,6 +1334,148 @@
             ));
         }
 
+        return main;
+    }
+
+    // #192 — Tree sub-views. URL leaf opens a focused URL editor;
+    // Sources node shows the URL list with the same chrome as the
+    // Sources rail but rooted in the picked workspace; Environments /
+    // Collections / Recordings show a "switch rail" jump card because
+    // the full editors already live in their dedicated rails.
+    function _renderWorkspaceUrlDetail(ws, url) {
+        var main = el('div', { id: 'bowire-main-workspaces', className: 'bowire-main bowire-main-workspaces' });
+        var isActive = ws.id === activeWorkspaceId;
+        var header = el('div', { className: 'bowire-ws-detail-header' },
+            el('span', { className: 'bowire-ws-detail-dot', style: 'background:' + (ws.color || 'var(--bowire-accent)') }),
+            el('span', { className: 'bowire-ws-detail-name', style: 'font-weight:600', textContent: ws.name }),
+            el('span', { className: 'bowire-ws-detail-stat-hint', textContent: '› Sources › ' + url })
+        );
+        main.appendChild(header);
+
+        var section = el('div', { className: 'bowire-ws-detail-section' });
+        section.appendChild(el('div', { className: 'bowire-ws-detail-section-label', textContent: 'URL' }));
+        section.appendChild(el('p', { className: 'bowire-ws-detail-stat-hint', textContent: url }));
+
+        if (isActive) {
+            var st = (typeof connectionStatuses === 'object' && connectionStatuses)
+                ? (connectionStatuses[url] || 'disconnected') : 'disconnected';
+            section.appendChild(el('p', { className: 'bowire-ws-detail-stat-hint', textContent: 'Status: ' + st }));
+            section.appendChild(el('div', { style: 'display:flex;gap:8px;margin-top:8px' },
+                el('button', {
+                    className: 'bowire-ws-detail-action',
+                    textContent: 'Open in Sources rail',
+                    onClick: function () {
+                        sourcesSelectedUrl = url;
+                        railMode = null;
+                        sidebarView = 'sources';
+                        try { localStorage.setItem('bowire_rail_mode', ''); } catch { /* ignore */ }
+                        render();
+                    }
+                }),
+                el('button', {
+                    className: 'bowire-ws-detail-action bowire-ws-detail-danger',
+                    textContent: 'Remove URL',
+                    onClick: function () {
+                        bowireConfirm('Remove ' + url + ' from this workspace?', {
+                            title: 'Remove URL', confirmText: 'Remove', danger: true
+                        }).then(function (ok) {
+                            if (!ok) return;
+                            var idx = serverUrls.indexOf(url);
+                            if (idx >= 0) {
+                                serverUrls.splice(idx, 1);
+                                if (typeof persistServerUrls === 'function') persistServerUrls();
+                            }
+                            workspaceTreeSelection = { wsId: ws.id, kind: 'sources' };
+                            render();
+                        });
+                    }
+                })
+            ));
+        } else {
+            section.appendChild(el('p', {
+                className: 'bowire-ws-detail-stat-hint',
+                textContent: 'Switch to this workspace to manage its URLs.'
+            }));
+            section.appendChild(el('button', {
+                className: 'bowire-ws-detail-action',
+                style: 'margin-top:8px',
+                textContent: 'Switch to ' + ws.name,
+                onClick: function () { switchWorkspace(ws.id); }
+            }));
+        }
+        main.appendChild(section);
+        return main;
+    }
+
+    function _renderWorkspaceSourcesDetail(ws) {
+        var main = el('div', { id: 'bowire-main-workspaces', className: 'bowire-main bowire-main-workspaces' });
+        var isActive = ws.id === activeWorkspaceId;
+        var urls = isActive
+            ? ((typeof serverUrls !== 'undefined' && Array.isArray(serverUrls)) ? serverUrls : [])
+            : (typeof readWorkspaceUrls === 'function' ? readWorkspaceUrls(ws.id) : []);
+
+        main.appendChild(el('div', { className: 'bowire-ws-detail-header' },
+            el('span', { className: 'bowire-ws-detail-dot', style: 'background:' + (ws.color || 'var(--bowire-accent)') }),
+            el('span', { className: 'bowire-ws-detail-name', style: 'font-weight:600', textContent: ws.name }),
+            el('span', { className: 'bowire-ws-detail-stat-hint', textContent: '› Sources' })
+        ));
+
+        var section = el('div', { className: 'bowire-ws-detail-section' });
+        section.appendChild(el('div', { className: 'bowire-ws-detail-section-label', textContent: 'URLs (' + urls.length + ')' }));
+        if (urls.length === 0) {
+            section.appendChild(el('p', {
+                className: 'bowire-ws-detail-stat-hint',
+                textContent: 'No URLs yet. Use the + on the Sources node in the sidebar, or Ctrl/Cmd+Shift+U.'
+            }));
+        } else {
+            var list = el('div', { style: 'display:flex;flex-direction:column;gap:4px;margin-top:6px' });
+            urls.forEach(function (u) {
+                list.appendChild(el('div', {
+                    className: 'bowire-ws-detail-stat-hint',
+                    style: 'cursor:pointer;padding:4px 6px;border-radius:var(--bowire-radius-sm)',
+                    textContent: u,
+                    onClick: function () {
+                        workspaceTreeSelection = { wsId: ws.id, kind: 'url', value: u };
+                        render();
+                    }
+                }));
+            });
+            section.appendChild(list);
+        }
+        section.appendChild(el('button', {
+            className: 'bowire-ws-detail-action',
+            style: 'margin-top:8px',
+            textContent: '+ Add URL or schema',
+            onClick: function () {
+                if (typeof _quickAddUrlToWorkspace === 'function') _quickAddUrlToWorkspace(ws);
+            }
+        }));
+        main.appendChild(section);
+        return main;
+    }
+
+    function _renderWorkspaceJumpDetail(ws, kind, icon, label, jumpLabel, body) {
+        var main = el('div', { id: 'bowire-main-workspaces', className: 'bowire-main bowire-main-workspaces' });
+        main.appendChild(el('div', { className: 'bowire-ws-detail-header' },
+            el('span', { className: 'bowire-ws-detail-dot', style: 'background:' + (ws.color || 'var(--bowire-accent)') }),
+            el('span', { className: 'bowire-ws-detail-name', style: 'font-weight:600', textContent: ws.name }),
+            el('span', { className: 'bowire-ws-detail-stat-hint', textContent: '› ' + label })
+        ));
+        var section = el('div', { className: 'bowire-ws-detail-section' });
+        section.appendChild(el('div', { className: 'bowire-ws-detail-section-label', textContent: label }));
+        section.appendChild(el('p', { className: 'bowire-ws-detail-stat-hint', textContent: body }));
+        section.appendChild(el('button', {
+            className: 'bowire-ws-detail-action',
+            style: 'margin-top:8px',
+            textContent: jumpLabel,
+            onClick: function () {
+                if (ws.id !== activeWorkspaceId) switchWorkspace(ws.id);
+                railMode = kind;
+                try { localStorage.setItem('bowire_rail_mode', kind); } catch { /* ignore */ }
+                render();
+            }
+        }));
+        main.appendChild(section);
         return main;
     }
 
