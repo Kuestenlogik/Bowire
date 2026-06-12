@@ -74,7 +74,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.1 — Scripting, variable resolver, throughput surface
 
-**0/11 done** · 11 backlog
+**0/12 done** · 12 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -89,6 +89,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [145](https://github.com/Kuestenlogik/Bowire/issues/145) | Bowire | [Deprecate ${name} in favour of {{name}} (multi-phase migration)](#issue-kuestenlogik-bowire-145) | ⬜ Open |  |
 | [153](https://github.com/Kuestenlogik/Bowire/issues/153) | Bowire | [Bowire as transparent interceptor — embedded middleware + standalone reverse-proxy](#issue-kuestenlogik-bowire-153) | ⬜ Open |  |
 | [193](https://github.com/Kuestenlogik/Bowire/issues/193) | Bowire | [Workspace .blw Phase 2 — UI wiring + plugin-pin check + scope split](#issue-kuestenlogik-bowire-193) | ⬜ Open |  |
+| [194](https://github.com/Kuestenlogik/Bowire/issues/194) | Bowire | [Action log Phase 2 — remaining mutation sites + cross-reload undo + soft-delete workspaces](#issue-kuestenlogik-bowire-194) | ⬜ Open |  |
 
 ### v2.2 — Test pillar: assertions, CI runner, regression coverage
 
@@ -457,6 +458,10 @@ Today Bowire watches traffic in two narrow ways: - **Discover / Recording / Benc
 #### <a id="issue-kuestenlogik-bowire-193"></a>⬜ Open · [#193](https://github.com/Kuestenlogik/Bowire/issues/193) Workspace .blw Phase 2 — UI wiring + plugin-pin check + scope split
 
 `.blw` schema extension (Phase 1) shipped in 2f80024 — `workspaceFormatVersion`, `recordings`, `flows`, and `pluginPins` are now part of the on-disk shape with backwards-compatible deserialization and stable camelCase serialization. The workbench doesn't yet read or write the new fields; that's Phase 2. [[more]](https://github.com/Kuestenlogik/Bowire/issues/193)
+
+#### <a id="issue-kuestenlogik-bowire-194"></a>⬜ Open · [#194](https://github.com/Kuestenlogik/Bowire/issues/194) Action log Phase 2 — remaining mutation sites + cross-reload undo + soft-delete workspaces
+
+Phase 1 shipped in e084bc3 — central `actionLog`, Statusbar pill, Activity drawer tab, Ctrl/Cmd+Z / Ctrl/Cmd+Shift+Z global shortcuts, `toast({undo, logAction})` helper. The first five mutation sites (collection-delete, flow-delete, env-delete, history-clear, favorites-clear) write to the log. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/194)
 
 ### v2.2 — Test pillar: assertions, CI runner, regression coverage
 
