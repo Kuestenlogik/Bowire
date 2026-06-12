@@ -184,6 +184,15 @@
             next.appendChild(backdrop);
         }
 
+        // #166 — Keyboard shortcut sheet overlay (Ctrl/Cmd+/). Renders
+        // only when shortcutSheetOpen is true; the helper returns null
+        // otherwise so the modal isn't even in the DOM unless asked
+        // for.
+        if (typeof renderShortcutSheet === 'function') {
+            var shortcutNode = renderShortcutSheet();
+            if (shortcutNode) next.appendChild(shortcutNode);
+        }
+
         // #138 — Statusbar at the very bottom of the app. Hosts the
         // connection pill (moved from topbar), env selector + watch
         // button, plus future ambient indicators (hint count, save

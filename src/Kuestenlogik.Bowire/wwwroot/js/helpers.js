@@ -801,6 +801,106 @@
     // class and removes the node when the transition ends, falling
     // back to a timeout so a missing transitionend (e.g. reduced-
     // motion users) doesn't leave the node stuck in the DOM.
+    // #166 — single-source-of-truth list of keyboard shortcuts in the
+    // workbench. Adding a new binding means adding it here AND to the
+    // handler in init.js — the sheet is the public face, the handler
+    // is the wiring. Grouped categories so the sheet reads as
+    // "here's what you can do" instead of an alphabetised dump.
+    var BOWIRE_KEYBINDINGS = [
+        { group: 'Execution', binds: [
+            { keys: ['Ctrl/Cmd', 'Enter'], action: 'Execute current method' },
+            { keys: ['Ctrl/Cmd', 'S'], action: 'Save / flush all pending writes' },
+            { keys: ['R'], action: 'Repeat the last call' },
+        ]},
+        { group: 'Navigation', binds: [
+            { keys: ['Ctrl/Cmd', 'K'], action: 'Open the command palette' },
+            { keys: ['Ctrl/Cmd', 'T'], action: 'New freeform request tab' },
+            { keys: ['Ctrl/Cmd', 'W'], action: 'Close the active request tab' },
+            { keys: ['Ctrl/Cmd', '1-9'], action: 'Switch to tab N' },
+            { keys: ['Ctrl', 'Tab'], action: 'Cycle to the next request tab' },
+            { keys: ['Ctrl', 'Shift', 'Tab'], action: 'Cycle to the previous request tab' },
+        ]},
+        { group: 'Drawers + layout', binds: [
+            { keys: ['Ctrl/Cmd', 'B'], action: 'Toggle the sidebar' },
+            { keys: ['F1'], action: 'Open the Help drawer (contextual)' },
+            { keys: ['Ctrl/Cmd', 'Shift', 'A'], action: 'Toggle the Assistant drawer' },
+            { keys: ['Ctrl/Cmd', 'Alt', '\\'], action: 'Toggle horizontal / vertical split' },
+        ]},
+        { group: 'System', binds: [
+            { keys: ['Ctrl/Cmd', '/'], action: 'Show this shortcut sheet' },
+            { keys: ['Esc'], action: 'Close any overlay; stop active streaming; disconnect channel' },
+        ]},
+    ];
+
+    function renderShortcutSheet() {
+        if (typeof shortcutSheetOpen === 'undefined' || !shortcutSheetOpen) return null;
+        var modal = el('div', {
+            className: 'bowire-shortcut-modal',
+            role: 'dialog',
+            'aria-modal': 'true',
+            'aria-label': 'Keyboard shortcuts'
+        });
+        var header = el('div', { className: 'bowire-shortcut-header' });
+        header.appendChild(el('span', {
+            className: 'bowire-shortcut-title',
+            textContent: 'Keyboard shortcuts'
+        }));
+        header.appendChild(el('button', {
+            type: 'button',
+            className: 'bowire-drawer-close bowire-shortcut-close',
+            title: 'Close (Esc or Ctrl/Cmd+/)',
+            'aria-label': 'Close',
+            innerHTML: svgIcon('close'),
+            onClick: function () {
+                shortcutSheetOpen = false;
+                render();
+            }
+        }));
+        modal.appendChild(header);
+
+        var body = el('div', { className: 'bowire-shortcut-body' });
+        BOWIRE_KEYBINDINGS.forEach(function (g) {
+            var section = el('div', { className: 'bowire-shortcut-section' });
+            section.appendChild(el('div', {
+                className: 'bowire-shortcut-section-title',
+                textContent: g.group
+            }));
+            var rows = el('div', { className: 'bowire-shortcut-rows' });
+            g.binds.forEach(function (b) {
+                var row = el('div', { className: 'bowire-shortcut-row' });
+                var chord = el('span', { className: 'bowire-shortcut-chord' });
+                b.keys.forEach(function (k, i) {
+                    if (i > 0) chord.appendChild(el('span', {
+                        className: 'bowire-shortcut-chord-plus', textContent: '+'
+                    }));
+                    chord.appendChild(el('kbd', {
+                        className: 'bowire-shortcut-key', textContent: k
+                    }));
+                });
+                row.appendChild(chord);
+                row.appendChild(el('span', {
+                    className: 'bowire-shortcut-action', textContent: b.action
+                }));
+                rows.appendChild(row);
+            });
+            section.appendChild(rows);
+            body.appendChild(section);
+        });
+        modal.appendChild(body);
+
+        var backdrop = el('div', {
+            className: 'bowire-shortcut-backdrop',
+            onClick: function (e) {
+                if (e.target === e.currentTarget) {
+                    shortcutSheetOpen = false;
+                    render();
+                }
+            }
+        });
+        backdrop.appendChild(modal);
+        return backdrop;
+    }
+
     function _fadeOutAlertBar(bar) {
         if (!bar || bar.classList.contains('bowire-alert-bar-dismissing')) return;
         bar.classList.add('bowire-alert-bar-dismissing');

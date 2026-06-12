@@ -1184,6 +1184,101 @@ activated by Cmd/Ctrl+K or by clicking the topbar trigger
     padding-top: 80px;
     backdrop-filter: blur(2px);
 }
+
+/* #166 — Keyboard-shortcut sheet overlay. Same backdrop shape as the
+   omnibox, but the modal is taller (room for ~15 binds across 4
+   sections) and wider so the chord + action read on one line. */
+.bowire-shortcut-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 210;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 32px;
+    backdrop-filter: blur(2px);
+}
+.bowire-shortcut-modal {
+    width: min(720px, calc(100vw - 32px));
+    max-height: calc(100vh - 64px);
+    background: var(--bowire-bg-elevated);
+    border: 1px solid var(--bowire-border);
+    border-radius: var(--bowire-radius-lg);
+    box-shadow: var(--bowire-shadow-lg);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+.bowire-shortcut-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--bowire-border);
+}
+.bowire-shortcut-title {
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    color: var(--bowire-text);
+}
+.bowire-shortcut-close { margin: 0; }
+.bowire-shortcut-body {
+    padding: 14px 18px 18px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+}
+.bowire-shortcut-section { display: flex; flex-direction: column; gap: 6px; }
+.bowire-shortcut-section-title {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--bowire-text-tertiary);
+}
+.bowire-shortcut-rows { display: grid; grid-template-columns: 1fr; gap: 4px; }
+.bowire-shortcut-row {
+    display: grid;
+    grid-template-columns: 220px 1fr;
+    gap: 16px;
+    align-items: center;
+    padding: 4px 0;
+    font-size: 12px;
+    color: var(--bowire-text-secondary);
+}
+.bowire-shortcut-chord {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    flex-wrap: wrap;
+}
+.bowire-shortcut-chord-plus {
+    color: var(--bowire-text-tertiary);
+    font-size: 10px;
+}
+.bowire-shortcut-key {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 22px;
+    padding: 2px 6px;
+    background: var(--bowire-bg);
+    border: 1px solid var(--bowire-border);
+    border-bottom-width: 2px;
+    border-radius: 4px;
+    color: var(--bowire-text);
+    font-family: var(--bowire-mono);
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 1;
+}
+.bowire-shortcut-action {
+    color: var(--bowire-text);
+    line-height: 1.4;
+}
 .bowire-omnibox-modal {
     width: min(640px, calc(100vw - 32px));
     max-height: calc(100vh - 160px);

@@ -97,6 +97,20 @@
                 return;
             }
 
+            // #166 — Ctrl/Cmd+/ opens the keyboard shortcut sheet so
+            // the operator can discover every binding without
+            // hunting through code or docs. Same chord as VS Code /
+            // GitHub / Slack — universal "show me the shortcuts"
+            // convention. Esc / Cmd+/ closes; see the keydown branch
+            // below.
+            if ((e.ctrlKey || e.metaKey) && !e.shiftKey && !e.altKey
+                && e.key === '/') {
+                e.preventDefault();
+                shortcutSheetOpen = !shortcutSheetOpen;
+                render();
+                return;
+            }
+
             // #124 Cmd/Ctrl+K — open the command palette omnibox.
             // Same input as the topbar palette; this shortcut focuses
             // it from anywhere and pops the suggestion dropdown so
@@ -274,6 +288,11 @@
 
             // Esc: close overlay, stop streaming, or disconnect channel
             if (e.key === 'Escape') {
+                if (shortcutSheetOpen) {
+                    shortcutSheetOpen = false;
+                    render();
+                    return;
+                }
                 if (searchSuggestionsOpen) {
                     searchSuggestionsOpen = false;
                     searchQuery = '';
