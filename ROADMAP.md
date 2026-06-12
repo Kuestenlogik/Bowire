@@ -74,7 +74,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.1 — Scripting, variable resolver, throughput surface
 
-**0/12 done** · 12 backlog
+**0/13 done** · 13 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -90,6 +90,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [153](https://github.com/Kuestenlogik/Bowire/issues/153) | Bowire | [Bowire as transparent interceptor — embedded middleware + standalone reverse-proxy](#issue-kuestenlogik-bowire-153) | ⬜ Open |  |
 | [193](https://github.com/Kuestenlogik/Bowire/issues/193) | Bowire | [Workspace .blw Phase 2 — UI wiring + plugin-pin check + scope split](#issue-kuestenlogik-bowire-193) | ⬜ Open |  |
 | [194](https://github.com/Kuestenlogik/Bowire/issues/194) | Bowire | [Action log Phase 2 — remaining mutation sites + cross-reload undo + soft-delete workspaces](#issue-kuestenlogik-bowire-194) | ⬜ Open |  |
+| [195](https://github.com/Kuestenlogik/Bowire/issues/195) | Bowire | [Protocol plugin — OTLP passive listener (Kuestenlogik.Bowire.Protocol.Otlp)](#issue-kuestenlogik-bowire-195) | ⬜ Open |  |
 
 ### v2.2 — Test pillar: assertions, CI runner, regression coverage
 
@@ -462,6 +463,10 @@ Today Bowire watches traffic in two narrow ways: - **Discover / Recording / Benc
 #### <a id="issue-kuestenlogik-bowire-194"></a>⬜ Open · [#194](https://github.com/Kuestenlogik/Bowire/issues/194) Action log Phase 2 — remaining mutation sites + cross-reload undo + soft-delete workspaces
 
 Phase 1 shipped in e084bc3 — central `actionLog`, Statusbar pill, Activity drawer tab, Ctrl/Cmd+Z / Ctrl/Cmd+Shift+Z global shortcuts, `toast({undo, logAction})` helper. The first five mutation sites (collection-delete, flow-delete, env-delete, history-clear, favorites-clear) write to the log. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/194)
+
+#### <a id="issue-kuestenlogik-bowire-195"></a>⬜ Open · [#195](https://github.com/Kuestenlogik/Bowire/issues/195) Protocol plugin — OTLP passive listener (Kuestenlogik.Bowire.Protocol.Otlp)
+
+Bowire's multi-protocol coverage is wide — REST / gRPC / GraphQL / MQTT / Kafka / SignalR / Connect / WebSocket / SSE / MCP / SOAP / NATS / JSON-RPC / Pulsar / DIS / UDP — but the observability lane has no first-class entry. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/195)
 
 ### v2.2 — Test pillar: assertions, CI runner, regression coverage
 
