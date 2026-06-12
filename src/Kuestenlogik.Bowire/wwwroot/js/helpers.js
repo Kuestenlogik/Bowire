@@ -1065,6 +1065,149 @@
     }
 
     /**
+     * Render a tree (#192) — MudBlazor TreeView / NavMenu shape. Used
+     * for the Workspaces rail (and later Settings) so navigation reads
+     * as "workspace → sources → URL" instead of "rail → flat list →
+     * detail pane".
+     *
+     * Node shape:
+     *   {
+     *     id:        stable string (used as expansion key)
+     *     icon:      optional svg-icon id from the catalog
+     *     label:     row text
+     *     badge:     optional small right-aligned count/label
+     *     accent:    optional CSS color for the leading dot (workspace
+     *                color, env tint, …). Mutually exclusive with icon.
+     *     active:    bold + accent-tinted (workspace is currently active)
+     *     selected:  highlighted (the currently focused node)
+     *     expandable: boolean — chevron renders only if true
+     *     expanded:  boolean — initial open state. Caller owns persistence.
+     *     onClick:   primary action. Tree itself never re-renders; the
+     *                caller decides what selection means.
+     *     onToggle:  fires when the chevron is clicked. Use this to
+     *                flip expanded state in the caller's store and call
+     *                render(). If absent, onClick is also used to toggle.
+     *     onAdd:     optional — renders a hover-visible '+' on the row.
+     *     onContext: optional — right-click handler (rename / delete / …).
+     *     children:  array of nested nodes
+     *   }
+     *
+     * opts:
+     *   ariaLabel: accessibility label for the tree role
+     *
+     * Returns a DOM node the caller appendChilds into the sidebar.
+     */
+    function renderTree(nodes, opts) {
+        opts = opts || {};
+        var tree = el('div', {
+            className: 'bowire-tree',
+            role: 'tree',
+            'aria-label': opts.ariaLabel || 'Tree'
+        });
+        (nodes || []).forEach(function (n) {
+            tree.appendChild(_renderTreeNode(n, 0));
+        });
+        return tree;
+    }
+
+    function _renderTreeNode(node, depth) {
+        if (!node) return document.createTextNode('');
+        var hasChildren = Array.isArray(node.children) && node.children.length > 0;
+        var isExpandable = !!node.expandable || hasChildren;
+        var isExpanded = isExpandable && !!node.expanded;
+
+        var wrap = el('div', {
+            className: 'bowire-tree-node' + (isExpanded ? ' expanded' : ''),
+            role: 'treeitem',
+            'aria-expanded': isExpandable ? (isExpanded ? 'true' : 'false') : null
+        });
+
+        var row = el('div', {
+            className: 'bowire-tree-row'
+                + (node.selected ? ' selected' : '')
+                + (node.active ? ' active' : ''),
+            style: 'padding-left:' + (8 + depth * 14) + 'px',
+            onClick: function (e) {
+                if (typeof node.onClick === 'function') node.onClick(e);
+            },
+            onContextMenu: typeof node.onContext === 'function'
+                ? function (e) { e.preventDefault(); node.onContext(e); }
+                : null
+        });
+
+        // Chevron — only rendered when the row is expandable so leaves
+        // align with the parent label, not the parent chevron.
+        if (isExpandable) {
+            var chevron = el('button', {
+                type: 'button',
+                className: 'bowire-tree-toggle' + (isExpanded ? ' expanded' : ''),
+                'aria-label': isExpanded ? 'Collapse' : 'Expand',
+                innerHTML: svgIcon('chevron'),
+                onClick: function (e) {
+                    e.stopPropagation();
+                    if (typeof node.onToggle === 'function') node.onToggle(e);
+                    else if (typeof node.onClick === 'function') node.onClick(e);
+                }
+            });
+            row.appendChild(chevron);
+        } else {
+            row.appendChild(el('span', { className: 'bowire-tree-toggle bowire-tree-toggle-spacer' }));
+        }
+
+        // Leading glyph: either an svg icon or an accent dot. Lines up
+        // even when only some siblings have one.
+        var glyph = el('span', { className: 'bowire-tree-glyph' });
+        if (node.icon) {
+            glyph.innerHTML = svgIcon(node.icon);
+            glyph.classList.add('bowire-tree-glyph-icon');
+        } else if (node.accent) {
+            var dot = el('span', { className: 'bowire-tree-glyph-dot' });
+            dot.style.background = node.accent;
+            glyph.appendChild(dot);
+        }
+        row.appendChild(glyph);
+
+        row.appendChild(el('span', {
+            className: 'bowire-tree-label',
+            textContent: node.label || '',
+            title: node.title || node.label || ''
+        }));
+
+        if (node.badge !== undefined && node.badge !== null && node.badge !== '') {
+            row.appendChild(el('span', {
+                className: 'bowire-tree-badge',
+                textContent: String(node.badge)
+            }));
+        }
+
+        if (typeof node.onAdd === 'function') {
+            row.appendChild(el('button', {
+                type: 'button',
+                className: 'bowire-tree-add',
+                title: node.addTitle || 'Add',
+                'aria-label': node.addTitle || 'Add',
+                innerHTML: svgIcon('plus'),
+                onClick: function (e) {
+                    e.stopPropagation();
+                    node.onAdd(e);
+                }
+            }));
+        }
+
+        wrap.appendChild(row);
+
+        if (hasChildren && isExpanded) {
+            var children = el('div', { className: 'bowire-tree-children', role: 'group' });
+            node.children.forEach(function (c) {
+                children.appendChild(_renderTreeNode(c, depth + 1));
+            });
+            wrap.appendChild(children);
+        }
+
+        return wrap;
+    }
+
+    /**
      * Render a normalized problem object into a DOM container as a
      * structured error card (#88). Headline + collapsible detail + any
      * action links the backend exposed via `links` (e.g. "Configure"

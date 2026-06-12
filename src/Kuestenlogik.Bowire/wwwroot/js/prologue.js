@@ -396,6 +396,35 @@
     }
     // #116 — selected workspace in the rail-mode detail view.
     let workspacesSelectedId = null;
+    // #192 — Workspaces tree state. Per-workspace expansion + an
+    // optional sub-node selection so the operator can click e.g. a
+    // specific URL leaf and the main pane jumps straight to that URL's
+    // editor. Persisted across reloads so collapse state survives.
+    let workspaceTreeExpanded = {};
+    try {
+        var rawWTE = localStorage.getItem('bowire_workspace_tree_expanded');
+        if (rawWTE) {
+            var parsedWTE = JSON.parse(rawWTE);
+            if (parsedWTE && typeof parsedWTE === 'object') workspaceTreeExpanded = parsedWTE;
+        }
+    } catch { /* corrupt — start fresh */ }
+    function persistWorkspaceTreeExpanded() {
+        try { localStorage.setItem('bowire_workspace_tree_expanded', JSON.stringify(workspaceTreeExpanded)); }
+        catch { /* quota / disabled — survive */ }
+    }
+    function isWorkspaceTreeNodeExpanded(key, defaultOpen) {
+        if (workspaceTreeExpanded[key] === undefined) return !!defaultOpen;
+        return !!workspaceTreeExpanded[key];
+    }
+    function toggleWorkspaceTreeNode(key, defaultOpen) {
+        var cur = isWorkspaceTreeNodeExpanded(key, defaultOpen);
+        workspaceTreeExpanded[key] = !cur;
+        persistWorkspaceTreeExpanded();
+    }
+    // Sub-selection inside a workspace subtree: { wsId, kind, value }
+    // kind ∈ 'workspace' | 'sources' | 'url' | 'environments' |
+    //        'collections' | 'recordings' | 'settings'
+    let workspaceTreeSelection = { kind: 'workspace' };
     // #152 — selected URL in the Sources rail-mode detail view.
     let sourcesSelectedUrl = null;
     // #152 v3 — multi-select state on the Sources list (reuses the
@@ -640,6 +669,33 @@
         if (!activeWorkspaceId) return baseKey;
         return 'bowire_ws_' + activeWorkspaceId + '_'
             + String(baseKey).replace(/^bowire_/, '');
+    }
+    // #192 — read a per-workspace localStorage key for a workspace
+    // *other* than the active one. Used by the Workspaces tree to
+    // surface source counts / URL lists for collapsed-but-not-active
+    // workspaces without having to switch to them.
+    function wsKeyFor(workspaceId, baseKey) {
+        if (!workspaceId) return baseKey;
+        return 'bowire_ws_' + workspaceId + '_'
+            + String(baseKey).replace(/^bowire_/, '');
+    }
+    function readWorkspaceUrls(workspaceId) {
+        if (workspaceId === activeWorkspaceId) return serverUrls.slice();
+        try {
+            var raw = localStorage.getItem(wsKeyFor(workspaceId, SERVER_URLS_KEY));
+            if (!raw) return [];
+            var parsed = JSON.parse(raw);
+            return Array.isArray(parsed) ? parsed : [];
+        } catch { return []; }
+    }
+    function readWorkspaceJsonList(workspaceId, baseKey) {
+        if (!workspaceId) return [];
+        try {
+            var raw = localStorage.getItem(wsKeyFor(workspaceId, baseKey));
+            if (!raw) return [];
+            var parsed = JSON.parse(raw);
+            return Array.isArray(parsed) ? parsed : [];
+        } catch { return []; }
     }
 
     // #156 — late hydration of favoritesOnly now that wsKey() is

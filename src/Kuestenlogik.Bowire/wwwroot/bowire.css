@@ -2136,6 +2136,132 @@ not just
     font-weight: 500;
 }
 
+/* ---------- Tree primitive (#192) ----------
+   MudBlazor-inspired navigation tree. Used by the Workspaces rail
+   today; Settings (Plugins / Protocols sub-groups) reuses the same
+   primitive so operators learn one row shape. Dense (28 px rows),
+   no connector lines, indent per depth, hover-revealed '+'. */
+.bowire-tree {
+    display: flex;
+    flex-direction: column;
+    padding: 6px 0;
+    user-select: none;
+}
+.bowire-tree-node {
+    display: flex;
+    flex-direction: column;
+}
+.bowire-tree-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    height: 28px;
+    padding-right: 8px;
+    cursor: pointer;
+    color: var(--bowire-text-secondary);
+    border-radius: var(--bowire-radius-sm);
+    transition: background var(--bowire-transition), color var(--bowire-transition);
+}
+.bowire-tree-row:hover {
+    background: var(--bowire-surface-hover, var(--bowire-bg-elevated));
+    color: var(--bowire-text);
+}
+.bowire-tree-row.selected {
+    background: var(--bowire-accent-subtle, var(--bowire-bg-elevated));
+    color: var(--bowire-text);
+}
+.bowire-tree-row.active {
+    color: var(--bowire-text);
+    font-weight: 600;
+}
+.bowire-tree-toggle {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: var(--bowire-text-tertiary);
+    cursor: pointer;
+    border-radius: var(--bowire-radius-sm);
+    transition: transform 120ms ease, color var(--bowire-transition);
+}
+.bowire-tree-toggle:hover { color: var(--bowire-text); }
+.bowire-tree-toggle svg { width: 10px; height: 10px; }
+.bowire-tree-toggle.expanded { transform: rotate(90deg); }
+.bowire-tree-toggle-spacer { cursor: default; }
+.bowire-tree-toggle-spacer:hover { background: transparent; color: var(--bowire-text-tertiary); }
+.bowire-tree-glyph {
+    width: 14px;
+    height: 14px;
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--bowire-text-tertiary);
+}
+.bowire-tree-row:hover .bowire-tree-glyph,
+.bowire-tree-row.selected .bowire-tree-glyph,
+.bowire-tree-row.active .bowire-tree-glyph {
+    color: var(--bowire-text-secondary);
+}
+.bowire-tree-glyph-icon svg { width: 13px; height: 13px; }
+.bowire-tree-glyph-dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--bowire-accent);
+}
+.bowire-tree-label {
+    flex: 1;
+    min-width: 0;
+    font-size: 12px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.bowire-tree-badge {
+    flex-shrink: 0;
+    padding: 0 6px;
+    height: 16px;
+    line-height: 16px;
+    background: var(--bowire-bg-elevated);
+    border-radius: var(--bowire-radius-pill);
+    font-size: 10px;
+    color: var(--bowire-text-tertiary);
+    font-variant-numeric: tabular-nums;
+}
+.bowire-tree-add {
+    flex-shrink: 0;
+    width: 18px;
+    height: 18px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    border: 0;
+    border-radius: var(--bowire-radius-sm);
+    background: transparent;
+    color: var(--bowire-text-tertiary);
+    opacity: 0;
+    cursor: pointer;
+    transition: opacity var(--bowire-transition), background var(--bowire-transition), color var(--bowire-transition);
+}
+.bowire-tree-add svg { width: 11px; height: 11px; }
+.bowire-tree-row:hover .bowire-tree-add { opacity: 1; }
+.bowire-tree-add:hover {
+    background: var(--bowire-surface);
+    color: var(--bowire-text);
+}
+.bowire-tree-children {
+    display: flex;
+    flex-direction: column;
+}
+
 /* ---------- Connection pill (#93) ---------- */
 .bowire-conn-pill {
     position: relative;
