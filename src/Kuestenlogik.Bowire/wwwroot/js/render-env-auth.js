@@ -2052,7 +2052,7 @@
                         group: 'Workspaces',
                         label: 'Switch to: ' + ws.name,
                         sublabel: 'Workspace',
-                        icon: svgIcon('briefcase'),
+                        icon: svgIcon('layout'),
                         onSelect: function () {
                             searchSuggestionsOpen = false;
                             searchQuery = '';
@@ -2103,7 +2103,7 @@
             { id: 'benchmarks',   label: 'Benchmarks',        icon: 'chart' },
             { id: 'parallel',     label: 'Parallel sessions', icon: 'lightning' },
             { id: 'security',     label: 'Security',          icon: 'shield' },
-            { id: 'workspaces',   label: 'Workspaces',        icon: 'briefcase' },
+            { id: 'workspaces',   label: 'Workspaces',        icon: 'layout' },
         ];
         for (var rj = 0; rj < railJumps.length; rj++) {
             (function (mode) {
