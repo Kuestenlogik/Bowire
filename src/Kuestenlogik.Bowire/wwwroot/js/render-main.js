@@ -1620,6 +1620,15 @@
                 el('span', { className: 'bowire-home-start-card-sub', textContent: sub })
             ));
         }
+        // Capability gates — skip cards whose action wouldn't work in
+        // the current uiMode / configuration. Showing a button you
+        // can't press is worse than not showing it: the operator
+        // either thinks they hit a bug or trains themselves to ignore
+        // the panel.
+        var locked = !!(typeof config !== 'undefined' && config && config.lockServerUrl);
+        var embedded = typeof uiMode !== 'undefined' && uiMode === 'embedded';
+        var hasServices = typeof services !== 'undefined' && Array.isArray(services) && services.length > 0;
+
         card('plus', 'New request', 'Freeform any protocol', function () {
             if (typeof startFreeformRequest === 'function') startFreeformRequest();
             else {
@@ -1628,25 +1637,38 @@
                 render();
             }
         });
-        card('connect', firstRun ? 'Add a URL' : 'Add URL', 'Configure a source', function () {
-            railMode = 'workspaces';
-            try { localStorage.setItem('bowire_rail_mode', 'workspaces'); } catch { /* ignore */ }
-            if (typeof workspacesSelectedId !== 'undefined') workspacesSelectedId = activeWorkspaceId;
-            render();
-        });
+        // 'Add URL' only makes sense when URL editing is allowed.
+        // Locked mode pins the host-provided URL; embedded mode pins
+        // the in-process service catalogue. Either way there's nothing
+        // for the operator to add — hide the card so the panel
+        // doesn't advertise an action that can't run.
+        if (!locked && !embedded) {
+            card('connect', firstRun ? 'Add a URL' : 'Add URL', 'Configure a source', function () {
+                railMode = 'workspaces';
+                try { localStorage.setItem('bowire_rail_mode', 'workspaces'); } catch { /* ignore */ }
+                if (typeof workspacesSelectedId !== 'undefined') workspacesSelectedId = activeWorkspaceId;
+                render();
+            });
+        }
         card('list', 'Import collection', 'Postman / OpenAPI', function () {
             railMode = 'collections';
             try { localStorage.setItem('bowire_rail_mode', 'collections'); } catch { /* ignore */ }
             render();
         });
-        card('record', 'Record session', 'Capture live calls', function () {
-            if (typeof startRecording === 'function') {
-                startRecording();
-                railMode = 'discover';
-                try { localStorage.setItem('bowire_rail_mode', 'discover'); } catch { /* ignore */ }
-                render();
-            }
-        });
+        // 'Record session' captures live traffic against discovered
+        // services. With nothing discovered there's no target, so
+        // recording would silently do nothing — hide the card until
+        // discovery yields at least one service.
+        if (hasServices) {
+            card('record', 'Record session', 'Capture live calls', function () {
+                if (typeof startRecording === 'function') {
+                    startRecording();
+                    railMode = 'discover';
+                    try { localStorage.setItem('bowire_rail_mode', 'discover'); } catch { /* ignore */ }
+                    render();
+                }
+            });
+        }
         card('server', 'Build a mock', 'Replay recordings', function () {
             railMode = 'mocks';
             try { localStorage.setItem('bowire_rail_mode', 'mocks'); } catch { /* ignore */ }
