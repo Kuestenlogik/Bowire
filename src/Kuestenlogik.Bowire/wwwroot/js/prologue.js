@@ -626,7 +626,8 @@
     // environments now). Stale localStorage entries map to
     // 'workspaces' so existing installs land where the new
     // management lives instead of on a button-less mode.
-    if (railMode === 'sources' || railMode === 'collections' || railMode === 'environments') {
+    if (railMode === 'sources' || railMode === 'collections'
+        || railMode === 'environments' || railMode === 'recordings') {
         railMode = 'workspaces';
         try { localStorage.setItem('bowire_rail_mode', 'workspaces'); } catch { /* ignore */ }
     }

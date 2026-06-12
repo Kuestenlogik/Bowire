@@ -825,7 +825,11 @@
         // editor opens inline when a workspace's Environments node
         // (or one of its env leaves) is clicked.
         { id: 'environments', icon: 'globe',     label: 'Environments',      group: 'work',      sidebar: { kind: 'environments' }, hideFromRail: true },
-        { id: 'recordings',   icon: 'recording', label: 'Recordings',        group: 'scenarios', sidebar: { kind: 'recordings' } },
+        // Recordings retired from the rail too — owned by workspaces,
+        // managed via the Workspaces tree's per-workspace Recordings
+        // sub-node. railMode='recordings' still routes the rail-mode
+        // sidebar + main pane for the legacy dispatcher.
+        { id: 'recordings',   icon: 'recording', label: 'Recordings',        group: 'scenarios', sidebar: { kind: 'recordings' }, hideFromRail: true },
         { id: 'mocks',        icon: 'server',    label: 'Mocks',             group: 'scenarios', sidebar: { kind: 'mocks' } },
         { id: 'flows',        icon: 'flow',      label: 'Flows',             group: 'scenarios', sidebar: { kind: 'flows' } },
         { id: 'proxy',        icon: 'disconnect',label: 'Proxy / MITM',      group: 'quality',   sidebar: { kind: 'proxy' } },
@@ -1732,8 +1736,7 @@
         children.push(_buildSourcesTreeNode(w));
         children.push(_buildEnvironmentsTreeNode(w));
         children.push(_buildCollectionsTreeNode(w));
-        children.push(_buildSimpleChildNode(w, 'recordings', 'recording',
-            'Recordings', _countWorkspaceList(w.id, RECORDINGS_KEY)));
+        children.push(_buildRecordingsTreeNode(w));
         children.push(_buildSimpleChildNode(w, 'settings', 'settings',
             'Settings', null));
 
@@ -1884,6 +1887,70 @@
                 render();
             },
             addTitle: 'New collection',
+            children: leafChildren
+        };
+    }
+
+    function _buildRecordingsTreeNode(w) {
+        var sel = workspaceTreeSelection || {};
+        var key = 'ws:' + w.id + ':recordings';
+        var isActive = w.id === activeWorkspaceId;
+        var recs = isActive
+            ? ((typeof recordingsList !== 'undefined' && Array.isArray(recordingsList)) ? recordingsList : [])
+            : (typeof readWorkspaceJsonList === 'function' ? readWorkspaceJsonList(w.id, RECORDINGS_KEY) : []);
+        var selected = sel.wsId === w.id && sel.kind === 'recordings';
+        var expanded = isWorkspaceTreeNodeExpanded(key, sel.wsId === w.id);
+
+        var leafChildren = recs.map(function (r) {
+            var leafSelected = sel.wsId === w.id && sel.kind === 'recording' && sel.value === r.id;
+            var stepCount = Array.isArray(r.steps) ? r.steps.length : 0;
+            return {
+                id: 'ws:' + w.id + ':recording:' + r.id,
+                label: r.name || '(unnamed)',
+                icon: 'recording',
+                badge: stepCount > 0 ? stepCount : null,
+                selected: leafSelected,
+                title: r.name || r.id,
+                onClick: function () {
+                    if (w.id !== activeWorkspaceId) switchWorkspace(w.id);
+                    workspacesSelectedId = w.id;
+                    workspaceTreeSelection = { wsId: w.id, kind: 'recording', value: r.id };
+                    if (typeof recordingManagerSelectedId !== 'undefined') {
+                        recordingManagerSelectedId = r.id;
+                    }
+                    render();
+                }
+            };
+        });
+
+        return {
+            id: key,
+            label: 'Recordings',
+            icon: 'recording',
+            badge: recs.length || null,
+            selected: selected,
+            expandable: true,
+            expanded: expanded,
+            onClick: function () {
+                workspacesSelectedId = w.id;
+                workspaceTreeSelection = { wsId: w.id, kind: 'recordings' };
+                toggleWorkspaceTreeNode(key, sel.wsId === w.id);
+                render();
+            },
+            onToggle: function () {
+                toggleWorkspaceTreeNode(key, sel.wsId === w.id);
+                render();
+            },
+            onAdd: function () {
+                if (w.id !== activeWorkspaceId) switchWorkspace(w.id);
+                if (typeof startRecording === 'function') {
+                    startRecording();
+                    railMode = 'discover';
+                    try { localStorage.setItem('bowire_rail_mode', 'discover'); } catch { /* ignore */ }
+                    render();
+                }
+            },
+            addTitle: 'Start recording',
             children: leafChildren
         };
     }
