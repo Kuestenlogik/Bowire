@@ -1898,21 +1898,53 @@
                 colMain.appendChild(renderCollectionDetail(selectedCol));
             } else {
                 var emptyWrap = el('div', { style: 'padding:32px' });
+                var noCols = !(collectionsList && collectionsList.length > 0);
                 emptyWrap.appendChild(renderEmptyCard({
                     icon: 'list',
-                    headline: (collectionsList && collectionsList.length > 0) ? 'Pick a collection' : 'No collections yet',
-                    body: (collectionsList && collectionsList.length > 0)
-                        ? 'Pick a collection from the sidebar to see its items and actions.'
-                        : 'Collections group saved requests. Start one from the sidebar, or import a Postman collection.',
-                    actions: (collectionsList && collectionsList.length > 0) ? [] : [{
-                        label: 'New collection',
-                        primary: true,
-                        onClick: function () {
-                            var col = createCollection();
-                            collectionManagerSelectedId = col.id;
-                            render();
+                    headline: noCols ? 'No collections yet' : 'Pick a collection',
+                    body: noCols
+                        ? 'Collections group saved requests so you can replay them as a set. Start fresh, or import a Postman collection / OpenAPI spec.'
+                        : 'Pick a collection from the sidebar to see its items and actions.',
+                    actions: noCols ? [
+                        {
+                            label: 'New collection',
+                            primary: true,
+                            onClick: function () {
+                                var col = createCollection();
+                                collectionManagerSelectedId = col.id;
+                                render();
+                            }
+                        },
+                        {
+                            label: 'Import Postman / OpenAPI',
+                            onClick: function () {
+                                var input = document.createElement('input');
+                                input.type = 'file';
+                                input.accept = '.json,application/json';
+                                input.onchange = function () {
+                                    if (!input.files || input.files.length === 0) return;
+                                    var reader = new FileReader();
+                                    reader.onload = function () {
+                                        if (typeof importPostmanCollection === 'function') {
+                                            importPostmanCollection(reader.result);
+                                            render();
+                                        }
+                                    };
+                                    reader.readAsText(input.files[0]);
+                                };
+                                input.click();
+                            }
+                        },
+                        {
+                            label: 'Browse Discover',
+                            onClick: function () {
+                                railMode = 'discover';
+                                try { localStorage.setItem('bowire_rail_mode', 'discover'); } catch { /* ignore */ }
+                                sidebarView = 'services';
+                                render();
+                            }
                         }
-                    }]
+                    ] : []
                 }));
                 colMain.appendChild(emptyWrap);
             }
@@ -2048,19 +2080,33 @@
                 recMain.appendChild(renderRecordingDetail(selectedRec));
             } else {
                 var emptyWrap = el('div', { style: 'padding:32px' });
+                var noRecs = recordingsList.length === 0;
                 emptyWrap.appendChild(renderEmptyCard({
                     icon: 'recording',
-                    headline: recordingsList.length === 0 ? 'No recordings yet' : 'Pick a recording',
-                    body: recordingsList.length === 0
-                        ? 'Start a recording from the sidebar to capture a sequence of calls.'
+                    headline: noRecs ? 'No recordings yet' : 'Pick a recording',
+                    body: noRecs
+                        ? 'Recordings capture a sequence of live calls so you can replay them, build mocks, or run them as benchmarks. Start one, then invoke methods from Discover.'
                         : 'Pick a recording from the sidebar list to see its steps and actions.',
-                    actions: recordingsList.length === 0
-                        ? [{
+                    actions: noRecs ? [
+                        {
                             label: 'Start recording',
                             primary: true,
-                            onClick: function () { startRecording(); render(); }
-                        }]
-                        : []
+                            onClick: function () {
+                                startRecording();
+                                railMode = 'discover';
+                                try { localStorage.setItem('bowire_rail_mode', 'discover'); } catch { /* ignore */ }
+                                render();
+                            }
+                        },
+                        {
+                            label: 'Browse Discover',
+                            onClick: function () {
+                                railMode = 'discover';
+                                try { localStorage.setItem('bowire_rail_mode', 'discover'); } catch { /* ignore */ }
+                                render();
+                            }
+                        }
+                    ] : []
                 }));
                 recMain.appendChild(emptyWrap);
             }

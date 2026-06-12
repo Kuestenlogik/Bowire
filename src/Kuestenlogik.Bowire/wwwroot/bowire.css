@@ -1059,9 +1059,12 @@ but
     color: var(--bowire-accent);
 }
 
-/* Collapsed: small flush-with-rail indicator strip. */
+/* Collapsed: small flush-with-rail indicator strip. Nudged 4 px
+   leftward (overlaps the rail edge) so the chevron reads as a clear
+   "open" affordance instead of sitting back inside the empty space
+   to the right of the rail. */
 .bowire-sidebar-edge-toggle-collapsed {
-    left: var(--bowire-rail-width, 56px);
+    left: calc(var(--bowire-rail-width, 56px) - 4px);
     opacity: 0.6;
     width: 14px;
     height: 40px;
@@ -2258,28 +2261,13 @@ and future
 .bowire-right-drawer-tab-label {
     line-height: 1;
 }
-.bowire-right-drawer-tab-close {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 18px;
-    height: 18px;
-    padding: 0;
-    margin-left: 4px;
-    border: none;
-    border-radius: var(--bowire-radius-sm);
-    background: transparent;
-    color: var(--bowire-text-tertiary);
-    cursor: pointer;
-    transition: background var(--bowire-transition), color var(--bowire-transition);
-}
-.bowire-right-drawer-tab-close:hover {
-    background: var(--bowire-border);
-    color: var(--bowire-text);
-}
-.bowire-right-drawer-tab-close svg {
-    width: 11px;
-    height: 11px;
+/* Single drawer-level close on the tab strip's right edge. Replaces
+   the per-tab X — operators were misclicking and dismissing the
+   panel they meant to switch to. Single close acts on the ACTIVE
+   tab; the other tab stays available. */
+.bowire-right-drawer-close {
+    margin-right: 8px;
+    align-self: center;
 }
 
 /* Topbar toggle button — small accent badge for the hint count */
@@ -7245,8 +7233,9 @@ model picker wrap */
 .bowire-settings-link { color: var(--bowire-accent); text-decoration: none; font-size: 13px; }
 .bowire-settings-link:hover { text-decoration: underline; }
 
-.bowire-settings-about-brand { display: flex; align-items: center; gap: 16px; padding: 4px 0 20px; border-bottom: 1px solid var(--bowire-border); margin-bottom: 16px; }
-.bowire-settings-about-brand-logo { width: 56px; height: 56px; flex-shrink: 0; }
+.bowire-settings-about-brand { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 14px; padding: 12px 0 22px; border-bottom: 1px solid var(--bowire-border); margin-bottom: 18px; }
+.bowire-settings-about-brand-logo { width: 220px; height: auto; flex-shrink: 0; color: var(--bowire-text); display: flex; align-items: center; justify-content: center; }
+.bowire-settings-about-brand-logo svg { width: 100%; height: auto; }
 .bowire-settings-about-brand-text { display: flex; flex-direction: column; gap: 2px; }
 .bowire-settings-about-brand-name { font-size: 22px; font-weight: 700; color: var(--bowire-text-primary); letter-spacing: -0.01em; }
 .bowire-settings-about-brand-version { font-size: 12px; color: var(--bowire-text-secondary); font-variant-numeric: tabular-nums; }

@@ -448,7 +448,14 @@
             });
             tabs.forEach(function (t) {
                 var isActive = t.id === activeId;
+                // Stable id per tab — morphdom keyed-matches the button
+                // to its previous node, otherwise the OLD click listener
+                // stays attached to the now-wrong tab when the tab list
+                // gets re-rendered with a different active tab (the
+                // listener was a closure over the previous render's `t`).
                 var tabBtn = el('button', {
+                    id: 'bowire-right-drawer-tab-' + t.id,
+                    type: 'button',
                     className: 'bowire-right-drawer-tab'
                         + (isActive ? ' is-active' : ''),
                     role: 'tab',
@@ -465,19 +472,27 @@
                     textContent: t.label
                 }));
                 if (t.accessory) tabBtn.appendChild(t.accessory);
-                tabBtn.appendChild(el('span', {
-                    className: 'bowire-right-drawer-tab-close',
-                    title: t.closeTitle || 'Close',
-                    innerHTML: svgIcon('close'),
-                    role: 'button',
-                    'aria-label': t.closeTitle || 'Close',
-                    onClick: function (e) {
-                        e.stopPropagation();
-                        if (typeof t.onClose === 'function') t.onClose();
-                    }
-                }));
                 tabStrip.appendChild(tabBtn);
             });
+            // Single drawer-level close on the right — closes only the
+            // ACTIVE tab. Per-tab Xs caused operators to misclick and
+            // dismiss the panel they meant to switch to; VS Code uses
+            // the same single-close convention on its right-side tool
+            // strip. The remaining tab stays accessible.
+            tabStrip.appendChild(el('span', { style: 'flex:1' }));
+            if (activeTab) {
+                tabStrip.appendChild(el('button', {
+                    id: 'bowire-right-drawer-close',
+                    type: 'button',
+                    className: 'bowire-drawer-close bowire-right-drawer-close',
+                    title: activeTab.closeTitle || 'Close',
+                    'aria-label': activeTab.closeTitle || ('Close ' + activeTab.label),
+                    innerHTML: svgIcon('close'),
+                    onClick: function () {
+                        if (typeof activeTab.onClose === 'function') activeTab.onClose();
+                    }
+                }));
+            }
             drawer.appendChild(tabStrip);
         } else if (activeTab) {
             // Single-panel mode: header mirrors the legacy drawer

@@ -821,10 +821,15 @@
     function renderAboutContent() {
         var section = el('div', { className: 'bowire-settings-section' });
 
-        // ---- Branding header: Bowire logo + product + version ----
-        var logoSrc = config.theme === 'dark' ? config.logoIconMono : config.logoIcon;
+        // Branding header: the prominent Bowire wordmark logo sits at
+        // the top of the About box. This is now the only place the
+        // big horizontal logo shows in the running workbench — the
+        // first-run Home dropped it per the portal redesign.
         section.appendChild(el('div', { className: 'bowire-settings-about-brand' },
-            el('img', { src: logoSrc || '', alt: 'Bowire', className: 'bowire-settings-about-brand-logo' }),
+            el('div', {
+                className: 'bowire-settings-about-brand-logo',
+                innerHTML: svgIcon('bowireLogo')
+            }),
             el('div', { className: 'bowire-settings-about-brand-text' },
                 el('div', { className: 'bowire-settings-about-brand-name', textContent: 'Bowire' }),
                 el('div', { className: 'bowire-settings-about-brand-version', textContent: 'Version ' + (config.version || 'unknown') }),
