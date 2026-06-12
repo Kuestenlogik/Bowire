@@ -110,11 +110,12 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.4 — Dev pillar: schema watch diff, mock-from-schema, side-by-side
 
-**0/1 done** · 1 backlog
+**0/2 done** · 2 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
 | [177](https://github.com/Kuestenlogik/Bowire/issues/177) | Bowire | [AI-assisted service scaffolding — schema + stub + collection + test](#issue-kuestenlogik-bowire-177) | ⬜ Open |  |
+| [179](https://github.com/Kuestenlogik/Bowire/issues/179) | Bowire | [Mock from schema — generate a running mock without a recording](#issue-kuestenlogik-bowire-179) | ⬜ Open |  |
 
 ### v2.5 — Continuous integration: PR bot, project file, org dashboard
 
@@ -468,6 +469,10 @@ Same pattern as `bowire test` (v2.2): the workbench has Security primitives but 
 #### <a id="issue-kuestenlogik-bowire-177"></a>⬜ Open · [#177](https://github.com/Kuestenlogik/Bowire/issues/177) AI-assisted service scaffolding — schema + stub + collection + test
 
 The AI assistant today is reactive: it answers questions, surfaces hints, helps explain. The natural next step for a "build APIs faster" tool is generative — "scaffold a CRUD service for this Entity" → out drops a `.proto` + handler stubs + an example collection + a smoke-test. [[more]](https://github.com/Kuestenlogik/Bowire/issues/177)
+
+#### <a id="issue-kuestenlogik-bowire-179"></a>⬜ Open · [#179](https://github.com/Kuestenlogik/Bowire/issues/179) Mock from schema — generate a running mock without a recording
+
+Mocks today require a Recording: capture traffic against a real server, replay against the mock. That's great for fidelity but bad for parallel development where the consumer team starts BEFORE the provider exists. Today the consumer has to hand-write stubs. [[more]](https://github.com/Kuestenlogik/Bowire/issues/179)
 
 ### v2.5 — Continuous integration: PR bot, project file, org dashboard
 
