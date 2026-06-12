@@ -1929,6 +1929,66 @@ not just
     min-width: 0;
 }
 
+/* #160 — Workspace breadcrumb at the top of every main pane. Thin
+   strip with the workspace dot + name on the left (click opens the
+   switcher), a slash separator, and the current rail label. Reads
+   as a one-line "you are here" without competing with the rail's
+   own header below. Hidden when only one workspace exists or when
+   running in embedded mode (the host owns workspace context). */
+.bowire-main-breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 16px;
+    background: var(--bowire-bg-elevated);
+    border-bottom: 1px solid var(--bowire-border-subtle);
+    font-size: 12px;
+    color: var(--bowire-text-secondary);
+    flex-shrink: 0;
+    min-height: 28px;
+}
+.bowire-main-breadcrumb-ws {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 3px 8px;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: var(--bowire-radius-sm);
+    color: var(--bowire-text);
+    font: inherit;
+    cursor: pointer;
+    transition: background var(--bowire-transition), border-color var(--bowire-transition);
+}
+.bowire-main-breadcrumb-ws:hover {
+    background: var(--bowire-surface);
+    border-color: var(--bowire-border);
+}
+.bowire-main-breadcrumb-dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+.bowire-main-breadcrumb-name {
+    font-weight: 600;
+    letter-spacing: 0.01em;
+}
+.bowire-main-breadcrumb-caret {
+    color: var(--bowire-text-tertiary);
+    font-size: 10px;
+    line-height: 1;
+}
+.bowire-main-breadcrumb-sep {
+    color: var(--bowire-text-tertiary);
+    font-weight: 400;
+}
+.bowire-main-breadcrumb-rail {
+    color: var(--bowire-text-secondary);
+    font-weight: 500;
+}
+
 /* ---------- Connection pill (#93) ---------- */
 .bowire-conn-pill {
     position: relative;
@@ -7240,7 +7300,7 @@ model picker wrap */
 .bowire-settings-link:hover { text-decoration: underline; }
 
 .bowire-settings-about-brand { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 14px; padding: 12px 0 22px; border-bottom: 1px solid var(--bowire-border); margin-bottom: 18px; }
-.bowire-settings-about-brand-logo { width: 220px; height: auto; flex-shrink: 0; color: var(--bowire-text); display: flex; align-items: center; justify-content: center; }
+.bowire-settings-about-brand-logo { width: 110px; height: auto; flex-shrink: 0; color: var(--bowire-text); display: flex; align-items: center; justify-content: center; }
 .bowire-settings-about-brand-logo svg { width: 100%; height: auto; }
 .bowire-settings-about-brand-text { display: flex; flex-direction: column; gap: 2px; }
 .bowire-settings-about-brand-name { font-size: 22px; font-weight: 700; color: var(--bowire-text-primary); letter-spacing: -0.01em; }
@@ -12872,7 +12932,7 @@ full accent for user-pinned
    _fadeOutAlertBar helper removes the node on transitionend so the
    DOM stays clean. */
 .bowire-alert-bar {
-    transition: opacity 320ms ease, max-height 320ms ease, margin 320ms ease, padding 320ms ease, border-width 320ms ease;
+    transition: opacity 520ms ease-out, max-height 520ms ease-out, margin 520ms ease-out, padding 520ms ease-out, border-width 520ms ease-out;
     overflow: hidden;
     max-height: 200px;
 }

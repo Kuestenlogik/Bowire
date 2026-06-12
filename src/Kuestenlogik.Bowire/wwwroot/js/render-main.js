@@ -1702,6 +1702,48 @@
         return tile;
     }
 
+    // #160 — Thin breadcrumb strip rendered at the top of every main
+    // pane: `[color-dot] WorkspaceName / RailLabel`. Click on the
+    // chip opens the workspace switcher (same target as the topbar
+    // chip — single source of truth). Hides when only one workspace
+    // exists (no value adding chrome the operator can't act on),
+    // hides in embedded mode (the host owns workspace context).
+    function renderWorkspaceBreadcrumb() {
+        if (typeof workspaces === 'undefined' || !Array.isArray(workspaces) || workspaces.length < 2) {
+            return null;
+        }
+        if (typeof uiMode !== 'undefined' && uiMode === 'embedded') return null;
+        var ws = (typeof activeWorkspace === 'function') ? activeWorkspace() : null;
+        if (!ws) return null;
+        var rail = (typeof _railModeById === 'function') ? _railModeById(railMode) : null;
+        var railLabel = rail ? rail.label : '';
+        var bar = el('div', { className: 'bowire-main-breadcrumb' });
+        bar.appendChild(el('button', {
+            type: 'button',
+            className: 'bowire-main-breadcrumb-ws',
+            title: 'Switch workspace',
+            onClick: function (e) {
+                e.stopPropagation();
+                if (typeof workspaceMenuOpen !== 'undefined') {
+                    workspaceMenuOpen = !workspaceMenuOpen;
+                    render();
+                }
+            }
+        },
+            el('span', {
+                className: 'bowire-main-breadcrumb-dot',
+                style: 'background:' + (ws.color || 'var(--bowire-accent)')
+            }),
+            el('span', { className: 'bowire-main-breadcrumb-name', textContent: ws.name }),
+            el('span', { className: 'bowire-main-breadcrumb-caret', textContent: '▾' })
+        ));
+        if (railLabel) {
+            bar.appendChild(el('span', { className: 'bowire-main-breadcrumb-sep', textContent: '/' }));
+            bar.appendChild(el('span', { className: 'bowire-main-breadcrumb-rail', textContent: railLabel }));
+        }
+        return bar;
+    }
+
     function renderMain() {
         // #139 — Home rail mode. Default landing for first-time
         // users; cross-workflow launchpad. Phase 1 shows recent
@@ -1819,8 +1861,10 @@
                 favSection.appendChild(renderEmptyCard({
                     icon: 'star',
                     headline: 'No favorites yet',
-                    body: 'Star a method from the sidebar or any recent entry below — it lands here for one-click access across every workflow.',
-                    hintKey: 'bowire_home_favs_hint'
+                    body: 'Star a method from the sidebar or any recent entry below — it lands here for one-click access across every workflow.'
+                    // hintKey removed — for consistency with the
+                    // 'No recent activity' card below, this hint stays
+                    // until the operator stars their first method.
                 }));
             } else {
                 var favGrid = el('div', { className: 'bowire-home-grid' });
@@ -2213,17 +2257,10 @@
             return main;
         }
 
-        // Header bar
+        // Header bar — the legacy Toggle-sidebar button used to live
+        // here; retired in favour of the splitter chevron + Cmd/Ctrl+B
+        // (#289). Two affordances for the same thing was clutter.
         const header = el('div', { className: 'bowire-header' });
-        const toggleBtn = el('button', {
-            id: 'bowire-toggle-sidebar-btn',
-            className: 'bowire-toggle-sidebar',
-            onClick: function () { sidebarCollapsed = !sidebarCollapsed; render(); },
-            innerHTML: svgIcon('sidebar'),
-            title: 'Toggle sidebar',
-            'aria-label': 'Toggle sidebar'
-        });
-        header.appendChild(toggleBtn);
 
         if (selectedMethod) {
             // Breadcrumb: Protocol > Service. The method name is rendered
