@@ -286,6 +286,17 @@ body {
     overflow: hidden;
 }
 
+/* Middle wrapper (#164 v2): stacks the body row + an optional
+   bottom-attached console panel vertically so the bottom drawer can
+   dock beneath sidebar + main without overlapping the right drawer
+   or statusbar. */
+.bowire-app-middle {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    min-height: 0;
+}
 /* Body row: sidebar + splitter + main. Sits underneath the topbar. */
 .bowire-app-body {
     flex: 1;
@@ -295,6 +306,91 @@ body {
     min-height: 0;
     position: relative; /* so the mobile backdrop can anchor to it */
 }
+/* #164 v2 — Bottom-attached console drawer. Sits below the body row
+   inside bowire-app-middle, above the statusbar. Height is driven
+   by the inline style (bowire_console_height in localStorage); a
+   top-edge splitter handles resize. */
+.bowire-bottom-drawer {
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    background: var(--bowire-bg-elevated);
+    border-top: 1px solid var(--bowire-border);
+    overflow: hidden;
+    min-height: 80px;
+    max-height: 70vh;
+    position: relative;
+}
+.bowire-bottom-drawer-splitter {
+    flex-shrink: 0;
+    height: 4px;
+    background: transparent;
+    cursor: row-resize;
+    margin-top: -2px;
+    margin-bottom: -2px;
+    z-index: 2;
+    transition: background var(--bowire-transition);
+}
+.bowire-bottom-drawer-splitter:hover {
+    background: var(--bowire-accent);
+    opacity: 0.6;
+}
+.bowire-bottom-drawer-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 6px 12px;
+    background: var(--bowire-bg);
+    border-bottom: 1px solid var(--bowire-border-subtle);
+    flex-shrink: 0;
+}
+.bowire-bottom-drawer-title {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex: 1;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--bowire-text);
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+}
+.bowire-bottom-drawer-count {
+    padding: 0 6px;
+    min-width: 18px;
+    height: 16px;
+    line-height: 16px;
+    background: var(--bowire-bg-elevated);
+    border-radius: 9px;
+    font-size: 10px;
+    color: var(--bowire-text-tertiary);
+    text-align: center;
+    text-transform: none;
+    letter-spacing: 0;
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+}
+.bowire-bottom-drawer-actions {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex-shrink: 0;
+}
+.bowire-bottom-drawer-close {
+    width: 22px;
+    height: 22px;
+}
+.bowire-bottom-drawer-close svg { width: 12px; height: 12px; }
+.bowire-bottom-drawer .bowire-console-drawer-body {
+    flex: 1;
+    overflow-y: auto;
+    min-height: 0;
+}
+/* Drag feedback — force row-resize cursor across the viewport
+   so the cursor doesn't snap back to text/pointer over child elements
+   during the drag. */
+body.bowire-resizing-vertical { cursor: row-resize !important; user-select: none; }
+body.bowire-resizing-vertical * { cursor: row-resize !important; }
 
 /* ---------- Topbar (brand + command palette + env + theme) ---------- */
 .bowire-topbar {
@@ -2345,26 +2441,33 @@ not just
 
 /* ---------- Connection pill (#93) ---------- */
 .bowire-conn-pill {
+    /* Match the statusbar's other affordances (.bowire-theme-toggle-btn):
+       no chip border / background by default, just the dot + optional
+       text. Hover materialises a quiet border so the click target
+       stays discoverable without making the statusbar read as a row
+       of competing pills. Height bumped to 30 px to align with the
+       neighbouring toggle buttons. */
     position: relative;
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    padding: 4px 10px;
-    height: 26px;
-    border: 1px solid var(--bowire-border);
-    border-radius: var(--bowire-radius-pill);
-    background: var(--bowire-bg-elevated);
+    padding: 0 8px;
+    height: 30px;
+    border: 1px solid transparent;
+    border-radius: var(--bowire-radius-sm);
+    background: transparent;
     font-size: 11px;
     line-height: 1;
     color: var(--bowire-text-secondary);
     cursor: default;
     user-select: none;
-    transition: border-color var(--bowire-transition), color var(--bowire-transition);
+    transition: background var(--bowire-transition), border-color var(--bowire-transition), color var(--bowire-transition);
 }
 
 .bowire-conn-pill:hover {
     color: var(--bowire-text);
-    border-color: var(--bowire-text-tertiary);
+    background: var(--bowire-surface-hover);
+    border-color: var(--bowire-border);
 }
 
 .bowire-conn-pill-dot {

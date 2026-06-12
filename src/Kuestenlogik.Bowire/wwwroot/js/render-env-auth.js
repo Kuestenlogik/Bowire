@@ -142,14 +142,12 @@
         // behavior — both can now coexist without competing.
         var helpUsable = helpDrawerOpen && helpAvailable
             && typeof renderHelpDrawer === 'function';
-        var consoleUsable = (typeof consoleOpen !== 'undefined') && consoleOpen;
         var testsUsable = (typeof testsDrawerOpen !== 'undefined') && testsDrawerOpen;
-        if (aiDrawerOpen || helpUsable || consoleUsable || testsUsable) {
+        if (aiDrawerOpen || helpUsable || testsUsable) {
             body.classList.add('bowire-with-ai-drawer');
             body.appendChild(renderUnifiedRightDrawer({
                 assistant: aiDrawerOpen,
                 help: helpUsable,
-                console: consoleUsable,
                 tests: testsUsable
             }));
         }
@@ -164,7 +162,22 @@
         // active (renderMain reads railMode and routes accordingly).
         // The right-side drawer concept is gone.
 
-        next.appendChild(body);
+        // #164 v2 — bowire-app-middle wraps the body row + an optional
+        // bottom-attached console panel so the layout reads:
+        //   topbar
+        //   middle (flex column)
+        //     body  (flex row: rail + sidebar + main + right-drawer)
+        //     bottom drawer  (when consoleOpen)
+        //   statusbar
+        // The bottom drawer spans the full middle width (sidebar
+        // included). Resizable height via a top-edge splitter.
+        var middle = el('div', { className: 'bowire-app-middle' });
+        middle.appendChild(body);
+        if (typeof consoleOpen !== 'undefined' && consoleOpen
+            && typeof renderConsoleBottomDrawer === 'function') {
+            middle.appendChild(renderConsoleBottomDrawer());
+        }
+        next.appendChild(middle);
 
         // #124 v2 — Omnibox modal overlay. When searchSuggestionsOpen
         // is true, the palette built in renderTopbar gets re-parented
@@ -476,37 +489,11 @@
                 }
             });
         }
-        // #164 — Console tab. Accessory shows the ring-buffer count so
-        // operators can see new activity at a glance even when the tab
-        // isn't active. Close flips consoleOpen back off and rerenders
-        // the drawer (which drops the tab + falls back to whichever
-        // other tab is still open).
-        if (open.console) {
-            tabs.push({
-                id: 'console',
-                label: 'Console',
-                accessory: consoleLog.length > 0 ? el('span', {
-                    className: 'bowire-help-topic-count',
-                    title: consoleLog.length + ' entr' + (consoleLog.length === 1 ? 'y' : 'ies'),
-                    textContent: String(consoleLog.length)
-                }) : null,
-                closeTitle: 'Close Console',
-                onClose: function () {
-                    consoleOpen = false;
-                    render();
-                },
-                renderContent: function () {
-                    var wrap = el('div', { className: 'bowire-console-tab-wrap' });
-                    if (typeof _renderConsoleTabActions === 'function') {
-                        wrap.appendChild(_renderConsoleTabActions());
-                    }
-                    if (typeof _renderConsoleDrawerBody === 'function') {
-                        wrap.appendChild(_renderConsoleDrawerBody());
-                    }
-                    return wrap;
-                }
-            });
-        }
+        // #164 v2 — Console moved out of the right-drawer tabs into a
+        // bottom-attached panel (renderConsoleBottomDrawer) so it
+        // behaves like an IDE terminal panel (full-width, resizable
+        // height) rather than competing with Assistant / Help for
+        // right-side real estate. Tests stays as a right-drawer tab.
         // #164 — Tests tab. Accessory shows pass/fail of the last
         // assertion run for the active method; '?' when assertions
         // exist but haven't been run yet. No accessory when there are
@@ -980,17 +967,10 @@
                 : 'Show console — request / response activity log (' + consoleLog.length + ')',
             'aria-label': 'Toggle console',
             onClick: function () {
+                // #164 v2 — Console toggles a bottom-attached drawer
+                // (renderConsoleBottomDrawer); render() picks it up
+                // and mounts/unmounts via bowire-app-middle.
                 consoleOpen = !consoleOpen;
-                // #164 — Console now lives as a drawer tab. Opening
-                // means: activate the console tab so the drawer surfaces
-                // it instead of whatever was active before. Closing is
-                // a no-op for activeTab; the drawer will pick a
-                // surviving tab on next render.
-                if (consoleOpen) {
-                    rightDrawerActiveTab = 'console';
-                    try { localStorage.setItem('bowire_right_drawer_active_tab', 'console'); }
-                    catch { /* ignore */ }
-                }
                 render();
             }
         },

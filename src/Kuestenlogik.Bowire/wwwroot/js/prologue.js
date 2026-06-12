@@ -295,12 +295,11 @@
     let rightDrawerActiveTab = 'assistant';
     try {
         var _rd = localStorage.getItem('bowire_right_drawer_active_tab');
-        // #164 — Console + Tests joined Assistant + Help as right-drawer
-        // tabs. Whitelist the four valid ids; anything else falls back
-        // to 'assistant' so a stale localStorage value from before the
-        // expansion doesn't pin a non-existent tab.
-        if (_rd === 'assistant' || _rd === 'help'
-            || _rd === 'console' || _rd === 'tests') rightDrawerActiveTab = _rd;
+        // #164 — Tests joined Assistant + Help as right-drawer tabs.
+        // (Console lives as a bottom-attached drawer per #164 v2 and
+        // is NOT a valid right-drawer tab — a stale 'console' value
+        // falls back to 'assistant'.) Whitelist the valid ids.
+        if (_rd === 'assistant' || _rd === 'help' || _rd === 'tests') rightDrawerActiveTab = _rd;
     } catch { /* ignore */ }
     // #164 — Tests drawer state. Mirrors aiDrawerOpen / helpDrawerOpen;
     // when on, Tests joins the unified right-drawer tab strip with its
@@ -308,6 +307,19 @@
     // the operator's choice is sticky across reloads.
     let testsDrawerOpen = false;
     try { testsDrawerOpen = localStorage.getItem('bowire_tests_drawer_open') === '1'; } catch { /* ignore */ }
+    // #164 v2 — Console height for the bottom-attached drawer.
+    // Clamped at render time (80 px floor, 70 % viewport ceiling) but
+    // stored as raw px so resize survives reloads. Default 240 px is
+    // wide enough to show 3-4 log rows without dominating the workbench.
+    let consoleHeight = 240;
+    try {
+        var _ch = parseInt(localStorage.getItem('bowire_console_height') || '', 10);
+        if (_ch > 0 && _ch < 4000) consoleHeight = _ch;
+    } catch { /* ignore */ }
+    function persistConsoleHeight() {
+        try { localStorage.setItem('bowire_console_height', String(consoleHeight)); }
+        catch { /* ignore */ }
+    }
     // Security drawer (#111). Peer of the AI drawer, lives on the
     // right edge of the body with its own topbar toggle. Hosts the
     // threat-model + template-suggest surfaces that used to live
@@ -2258,11 +2270,6 @@
 
     function toggleConsole() {
         consoleOpen = !consoleOpen;
-        if (consoleOpen && typeof rightDrawerActiveTab !== 'undefined') {
-            rightDrawerActiveTab = 'console';
-            try { localStorage.setItem('bowire_right_drawer_active_tab', 'console'); }
-            catch { /* ignore */ }
-        }
         if (typeof render === 'function') render();
     }
 
