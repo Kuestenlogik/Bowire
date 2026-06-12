@@ -311,6 +311,12 @@
     // Clamped at render time (80 px floor, 70 % viewport ceiling) but
     // stored as raw px so resize survives reloads. Default 240 px is
     // wide enough to show 3-4 log rows without dominating the workbench.
+    // #164 v3 — Activity-rail overflow popover. Opens when the user
+    // clicks the '…' button that appears once a mode no longer fits in
+    // the vertical rail (e.g. console drawer eats half the height).
+    // Session-only; resetting on reload is fine because the menu is
+    // ephemeral by nature.
+    let railOverflowOpen = false;
     let consoleHeight = 240;
     try {
         var _ch = parseInt(localStorage.getItem('bowire_console_height') || '', 10);
