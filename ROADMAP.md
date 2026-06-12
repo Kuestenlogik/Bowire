@@ -12,7 +12,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.0 — UI refactor + breaking-change window
 
-**24/52 done** · 1 in progress · 27 backlog
+**24/50 done** · 1 in progress · 25 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -21,9 +21,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [114](https://github.com/Kuestenlogik/Bowire/issues/114) | Bowire | Hints: render contextually at the target surface (drop the static list in the drawer) | ⬜ Open |  |
 | [115](https://github.com/Kuestenlogik/Bowire/issues/115) | Bowire | v2.0 — UI refactor: re-architect the workbench shell | ⬜ Open |  |
 | [116](https://github.com/Kuestenlogik/Bowire/issues/116) | Bowire | Workspaces — named, switchable contexts that bundle URLs / envs / collections / AI config | ⬜ Open |  |
-| [117](https://github.com/Kuestenlogik/Bowire/issues/117) | Bowire | i18n — extract every UI string; ship DE + EN catalogues | ⬜ Open |  |
 | [124](https://github.com/Kuestenlogik/Bowire/issues/124) | Bowire | Cross-protocol omnibox (Cmd/Ctrl+K) | ⬜ Open |  |
-| [125](https://github.com/Kuestenlogik/Bowire/issues/125) | Bowire | Multi-source {{...}} variable resolver | ⬜ Open |  |
 | [126](https://github.com/Kuestenlogik/Bowire/issues/126) | Bowire | Pre-/post-scripts with a protocol-typed sandbox | ⬜ Open |  |
 | [127](https://github.com/Kuestenlogik/Bowire/issues/127) | Bowire | Auto-save to workspace + live save-state pill | ⬜ Open |  |
 | [131](https://github.com/Kuestenlogik/Bowire/issues/131) | Bowire | Benchmarks: first-class surface (single / collection / recording / random / scheduled) | ⬜ Open |  |
@@ -68,6 +66,15 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [142](https://github.com/Kuestenlogik/Bowire/issues/142) | Bowire | Sharper radii — straighter visual style across tabs / cards / drawers | ✅ Done |  |
 | [143](https://github.com/Kuestenlogik/Bowire/issues/143) | Bowire | Uniform delete affordances on every list sidebar (single / multi-select / all) | ✅ Done |  |
 | [146](https://github.com/Kuestenlogik/Bowire/issues/146) | Bowire | Workspace-side environment inclusion list (shared envs + per-workspace selection) | ✅ Done |  |
+
+### v2.1 — workspace v3 + protocol wave 3
+
+**0/2 done** · 2 backlog
+
+| # | Project | Title | Status | Tags |
+|---|---|---|---|---|
+| [117](https://github.com/Kuestenlogik/Bowire/issues/117) | Bowire | i18n — extract every UI string; ship DE + EN catalogues | ⬜ Open |  |
+| [125](https://github.com/Kuestenlogik/Bowire/issues/125) | Bowire | Multi-source {{...}} variable resolver | ⬜ Open |  |
 
 ### Backlog (not yet scheduled)
 
@@ -140,15 +147,7 @@ Remaining wave items after MQTT / Kafka / AMQP / SOAP / NATS / JSON-RPC / Pulsar
 
 ## Why
 
-#### ⬜ Open · [#117](https://github.com/Kuestenlogik/Bowire/issues/117) i18n — extract every UI string; ship DE + EN catalogues
-
-## Why
-
 #### ⬜ Open · [#124](https://github.com/Kuestenlogik/Bowire/issues/124) Cross-protocol omnibox (Cmd/Ctrl+K)
-
-## Why
-
-#### ⬜ Open · [#125](https://github.com/Kuestenlogik/Bowire/issues/125) Multi-source {{...}} variable resolver
 
 ## Why
 
@@ -327,6 +326,16 @@ Remaining wave items after MQTT / Kafka / AMQP / SOAP / NATS / JSON-RPC / Pulsar
 ## Why
 
 #### ✅ Done · [#146](https://github.com/Kuestenlogik/Bowire/issues/146) Workspace-side environment inclusion list (shared envs + per-workspace selection)
+
+## Why
+
+### v2.1 — workspace v3 + protocol wave 3
+
+#### ⬜ Open · [#117](https://github.com/Kuestenlogik/Bowire/issues/117) i18n — extract every UI string; ship DE + EN catalogues
+
+## Why
+
+#### ⬜ Open · [#125](https://github.com/Kuestenlogik/Bowire/issues/125) Multi-source {{...}} variable resolver
 
 ## Why
 
