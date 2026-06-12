@@ -12,12 +12,11 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.0 — Re-architected workbench shell + workspace = project folder
 
-**46/55 done** · 9 backlog
+**47/55 done** · 8 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
 | [33](https://github.com/Kuestenlogik/Bowire/issues/33) | Bowire | [Protocol plugins — Connect Phase 1+3 + OTLP](#issue-kuestenlogik-bowire-33) | ⬜ Backlog | `area:plugin-sdk` |
-| [58](https://github.com/Kuestenlogik/Bowire/issues/58) | Bowire | [Workspace: complete the Git-native story (.blw file)](#issue-kuestenlogik-bowire-58) | ⬜ Open |  |
 | [115](https://github.com/Kuestenlogik/Bowire/issues/115) | Bowire | [v2.0 — UI refactor: re-architect the workbench shell](#issue-kuestenlogik-bowire-115) | ⬜ Open |  |
 | [147](https://github.com/Kuestenlogik/Bowire/issues/147) | Bowire | [Git-backed workspace storage — composes with #144 storage modes + #58](#issue-kuestenlogik-bowire-147) | ⬜ Open |  |
 | [148](https://github.com/Kuestenlogik/Bowire/issues/148) | Bowire | [Per-entity file storage format for git-backed workspaces (envs / collections / scripts)](#issue-kuestenlogik-bowire-148) | ⬜ Open |  |
@@ -27,6 +26,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [168](https://github.com/Kuestenlogik/Bowire/issues/168) | Bowire | [Workbench-wide action log with undo / redo (Ctrl+Z)](#issue-kuestenlogik-bowire-168) | ⬜ Open |  |
 | [25](https://github.com/Kuestenlogik/Bowire/issues/25) | Bowire | [AI side-panel integration](#issue-kuestenlogik-bowire-25) | ✅ Done | `area:workbench` |
 | [43](https://github.com/Kuestenlogik/Bowire/issues/43) | Bowire | [MCP SSE-transport support](#issue-kuestenlogik-bowire-43) | ✅ Done | `area:mcp` |
+| [58](https://github.com/Kuestenlogik/Bowire/issues/58) | Bowire | [Workspace: complete the Git-native story (.blw file)](#issue-kuestenlogik-bowire-58) | ✅ Done |  |
 | [85](https://github.com/Kuestenlogik/Bowire/issues/85) | Bowire | [Request-pane Body: split stacked Form / Selection Set / Query into sub-tabs](#issue-kuestenlogik-bowire-85) | ✅ Done |  |
 | [90](https://github.com/Kuestenlogik/Bowire/issues/90) | Bowire | [AI panel: move from response-pane tab to a right-side drawer](#issue-kuestenlogik-bowire-90) | ✅ Done |  |
 | [91](https://github.com/Kuestenlogik/Bowire/issues/91) | Bowire | [Frontend ProblemDetails migration — adopt renderProblem() everywhere body.error is read](#issue-kuestenlogik-bowire-91) | ✅ Done |  |
@@ -192,10 +192,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 Remaining wave items after MQTT / Kafka / AMQP / SOAP / NATS / JSON-RPC / Pulsar / DIS / UDP shipped: [[more]](https://github.com/Kuestenlogik/Bowire/issues/33)
 
-#### <a id="issue-kuestenlogik-bowire-58"></a>⬜ Open · [#58](https://github.com/Kuestenlogik/Bowire/issues/58) Workspace: complete the Git-native story (.blw file)
-
-**Dependencies** - Marketing promise on https://bowire.io / comparison table currently reads `Git-native workspace -> planned`. Bruno's `.bru` convention is the bar. [[more]](https://github.com/Kuestenlogik/Bowire/issues/58)
-
 #### <a id="issue-kuestenlogik-bowire-115"></a>⬜ Open · [#115](https://github.com/Kuestenlogik/Bowire/issues/115) v2.0 — UI refactor: re-architect the workbench shell
 
 > **Status:** Phase 1 — Shell-Refactor abgeschlossen (Juni 2026). Die strukturelle Neuordnung der Workbench ist durch; was in v2.0 noch landet, sind Feature-Streams plus die echten Breaking-Change-Cleanups. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/115)
@@ -235,6 +231,10 @@ ADR: [`docs/architecture/ai-integration.md`](https://github.com/Kuestenlogik/Bow
 > `area:mcp`
 
 > **Status:** done via the MCP SDK migration. Architecture diverges from the original plan — body below reflects the as-shipped state; the historical plan stays in the issue history. [[more]](https://github.com/Kuestenlogik/Bowire/issues/43)
+
+#### <a id="issue-kuestenlogik-bowire-58"></a>✅ Done · [#58](https://github.com/Kuestenlogik/Bowire/issues/58) Workspace: complete the Git-native story (.blw file)
+
+**Dependencies** - Marketing promise on https://bowire.io / comparison table currently reads `Git-native workspace -> planned`. Bruno's `.bru` convention is the bar. [[more]](https://github.com/Kuestenlogik/Bowire/issues/58)
 
 #### <a id="issue-kuestenlogik-bowire-85"></a>✅ Done · [#85](https://github.com/Kuestenlogik/Bowire/issues/85) Request-pane Body: split stacked Form / Selection Set / Query into sub-tabs
 
