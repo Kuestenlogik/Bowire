@@ -373,10 +373,24 @@
     function deleteRecording(id) {
         var idx = recordingsList.findIndex(function (r) { return r.id === id; });
         if (idx < 0) return;
+        var removed = recordingsList[idx];
         recordingsList.splice(idx, 1);
         if (recordingActiveId === id) recordingActiveId = null;
         if (recordingManagerSelectedId === id) recordingManagerSelectedId = null;
         persistRecordings();
+        // Soft-delete: route the entry through recordingsTrash so the
+        // 'Recently deleted' section at the bottom of the Recordings
+        // sidebar can restore it. Mirrors the inline-row delete path
+        // in render-sidebar.js — central deleteRecording() was
+        // hard-deleting and bypassing the affordance.
+        if (typeof recordingsTrash !== 'undefined' && removed) {
+            recordingsTrash.unshift({
+                entry: removed,
+                deletedAt: Date.now(),
+                originalIdx: idx
+            });
+            if (typeof persistRecordingsTrash === 'function') persistRecordingsTrash();
+        }
         render();
     }
 
