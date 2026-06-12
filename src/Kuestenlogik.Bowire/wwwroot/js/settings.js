@@ -35,21 +35,11 @@
             leaf('ai', 'Assistant', 'spark')
         ];
 
+        // Per-plugin children. The Plugins group node itself routes to
+        // the overview page on click — no separate "All plugins" entry
+        // (cleaner tree shape, matches MudBlazor NavMenu where the
+        // parent is the destination + chevron handles expansion).
         var pluginChildren = [];
-        // "All plugins" entry lands on the existing overview page —
-        // useful when the operator wants the umbrella view (toggle a
-        // plugin on/off, see install hints) instead of a specific
-        // plugin's settings.
-        pluginChildren.push({
-            id: 'settings:plugins',
-            label: 'All plugins',
-            icon: 'layers',
-            selected: settingsTab === 'plugins',
-            onClick: function () {
-                settingsTab = 'plugins';
-                renderSettingsDialog();
-            }
-        });
         for (var pi = 0; pi < protocols.length; pi++) {
             var p = protocols[pi];
             if (!isProtocolEnabled(p.id)) continue;
@@ -72,24 +62,24 @@
             })(p);
         }
 
-        // Plugins group is expandable. Default-open when the operator
-        // is already on a plugin tab so the active row is visible
+        // Plugins group — click on the label routes to the overview
+        // (enable toggles, install hints); the chevron toggles
+        // expansion independently. Default-open when the operator is
+        // already on a plugin tab so the active row is visible
         // without an extra click.
         var pluginsKey = 'plugins';
         var pluginsActive = settingsTab === 'plugins' || settingsTab.indexOf('plugin-') === 0;
         var pluginsExpanded = isSettingsTreeNodeExpanded(pluginsKey, pluginsActive);
-        // Count = enabled plugins that contribute settings.
-        var pluginsBadge = pluginChildren.length - 1; // minus the "All plugins" overview row
         nodes.push({
-            id: 'settings:plugins-group',
+            id: 'settings:plugins',
             label: 'Plugins',
             icon: 'layers',
-            badge: pluginsBadge > 0 ? pluginsBadge : null,
-            expandable: true,
+            badge: pluginChildren.length > 0 ? pluginChildren.length : null,
+            expandable: pluginChildren.length > 0,
             expanded: pluginsExpanded,
-            selected: false,
+            selected: settingsTab === 'plugins',
             onClick: function () {
-                toggleSettingsTreeNode(pluginsKey, pluginsActive);
+                settingsTab = 'plugins';
                 renderSettingsDialog();
             },
             onToggle: function () {

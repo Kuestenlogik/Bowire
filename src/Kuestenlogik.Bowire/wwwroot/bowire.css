@@ -1107,6 +1107,7 @@ but
     position: relative;
     width: 100%;
     height: 44px;
+    flex-shrink: 0;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1116,6 +1117,79 @@ but
     color: var(--bowire-text-tertiary);
     cursor: pointer;
     transition: background var(--bowire-transition), color var(--bowire-transition);
+}
+.bowire-rail-divider {
+    flex-shrink: 0;
+}
+/* #164 v3 — rail overflow affordance. When the rail is too short to
+   fit every mode (e.g. bottom console drawer eats half the height),
+   the layout pass hides the tail-end mode buttons and reveals this
+   '…' button sitting just above Settings. Clicking it opens a popover
+   listing the hidden modes; selecting one promotes it to visible and
+   fires its normal click handler. */
+.bowire-rail-overflow-btn {
+    display: none;
+}
+.bowire-rail-overflow-btn.has-overflow {
+    display: flex;
+}
+.bowire-rail-overflow-popover {
+    position: absolute;
+    left: 52px;
+    bottom: 96px;
+    z-index: 50;
+    min-width: 200px;
+    padding: 4px;
+    background: var(--bowire-bg-elevated);
+    border: 1px solid var(--bowire-border);
+    border-radius: var(--bowire-radius-md);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+}
+.bowire-rail-overflow-popover-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 8px 10px;
+    background: transparent;
+    border: 0;
+    border-radius: var(--bowire-radius-sm);
+    color: var(--bowire-text);
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+.bowire-rail-overflow-popover-item:hover {
+    background: var(--bowire-surface);
+}
+.bowire-rail-overflow-popover-item.active {
+    color: var(--bowire-accent);
+}
+.bowire-rail-overflow-popover-icon {
+    display: inline-flex;
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+}
+.bowire-rail-overflow-popover-icon svg { width: 16px; height: 16px; }
+.bowire-rail-overflow-popover-label {
+    flex: 1;
+    font-size: 12px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.bowire-rail-overflow-popover-badge {
+    padding: 0 6px;
+    min-width: 16px;
+    height: 14px;
+    line-height: 14px;
+    border-radius: 7px;
+    background: var(--bowire-accent);
+    color: var(--bowire-text-inverse, #fff);
+    font-size: 9px;
+    font-weight: 700;
+    text-align: center;
 }
 .bowire-rail-btn svg { width: 18px; height: 18px; }
 .bowire-rail-btn:hover {

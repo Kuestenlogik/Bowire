@@ -531,6 +531,19 @@
                     changed = true;
                 }
             }
+            // #164 v3 — Rail overflow '…' popover. Closes on any
+            // outside click; the button + popover are siblings inside
+            // the rail, both checked so clicking either keeps it open.
+            if (typeof railOverflowOpen !== 'undefined' && railOverflowOpen) {
+                var roBtn = document.getElementById('bowire-rail-overflow-btn');
+                var roPop = document.getElementById('bowire-rail-overflow-popover');
+                var roInside = (roBtn && roBtn.contains(e.target))
+                    || (roPop && roPop.contains(e.target));
+                if (!roInside) {
+                    railOverflowOpen = false;
+                    changed = true;
+                }
+            }
             // #296 — method header "Add to…" popup. Closes on any
             // outside click; menu's own click handler stops propagation
             // so clicks on items don't double-close before the action

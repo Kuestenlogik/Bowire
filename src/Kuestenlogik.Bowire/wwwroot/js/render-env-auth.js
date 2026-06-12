@@ -260,6 +260,38 @@
         // data-dragHooked, so repeated render() calls don't stack
         // listeners on the same node.
         attachSidebarSplitterDrag();
+
+        // #164 v3 — activity-rail overflow layout pass. Runs after
+        // every render so adding/removing the bottom console drawer,
+        // resizing the rail, or toggling the sidebar all re-flow the
+        // mode buttons + hide the overflow into the '…' popover. The
+        // ResizeObserver hook below catches geometry changes that
+        // don't go through render().
+        if (typeof _layoutActivityRail === 'function') {
+            requestAnimationFrame(_layoutActivityRail);
+        }
+        if (typeof _attachActivityRailObserver === 'function') {
+            _attachActivityRailObserver();
+        }
+    }
+
+    // ResizeObserver hook for the activity rail. Idempotent — the
+    // observer is created once and reused across renders. Re-runs the
+    // layout pass whenever the rail's bounding box changes (e.g. the
+    // bottom console drawer expanding live during a splitter drag).
+    var _activityRailObserver = null;
+    var _activityRailObservedEl = null;
+    function _attachActivityRailObserver() {
+        if (typeof ResizeObserver === 'undefined') return;
+        var rail = document.getElementById('bowire-activity-rail');
+        if (!rail) return;
+        if (rail === _activityRailObservedEl) return;
+        if (_activityRailObserver) _activityRailObserver.disconnect();
+        _activityRailObserver = new ResizeObserver(function () {
+            if (typeof _layoutActivityRail === 'function') _layoutActivityRail();
+        });
+        _activityRailObserver.observe(rail);
+        _activityRailObservedEl = rail;
     }
 
     function attachSidebarSplitterDrag() {

@@ -884,6 +884,11 @@
 
         var rail = el('div', { id: 'bowire-activity-rail', className: 'bowire-activity-rail' });
 
+        // Cache the catalogue order so the post-mount layout pass can
+        // build the overflow popover from the SAME list, in display
+        // order, without having to re-derive labels / icons from DOM.
+        _railOverflowCatalog = modes.slice();
+
         // Brand mark dropped — topbar already carries the Bowire
         // wordmark + logo as the workbench-identity anchor;
         // duplicating it on the rail is just visual repetition.
@@ -896,7 +901,10 @@
         // sits below the mode list with margin-top: auto via CSS).
         modes.forEach(function (m) {
             if (lastGroup !== null && m.group !== lastGroup) {
-                rail.appendChild(el('div', { className: 'bowire-rail-divider' }));
+                rail.appendChild(el('div', {
+                    className: 'bowire-rail-divider',
+                    'data-rail-divider-after': m.id
+                }));
             }
             lastGroup = m.group;
             var isActive = railMode === m.id;
@@ -905,6 +913,7 @@
             var hasCount = typeof count === 'number' && count > 0;
             rail.appendChild(el('button', {
                 type: 'button',
+                'data-rail-mode-id': m.id,
                 className: 'bowire-rail-btn' + (isActive ? ' active' : ''),
                 // Pattern B — double-click on the ACTIVE mode toggles
                 // the sidebar. Tooltip-suffix only shows the hint on
@@ -958,6 +967,80 @@
             ));
         });
 
+        // #164 v3 — Overflow '…' button. Always rendered (hidden via
+        // CSS unless _layoutActivityRail() decides at least one mode
+        // doesn't fit). Sits between the last mode and Settings so
+        // Settings stays anchored at the bottom whether or not any
+        // modes overflow. Inner spans hold the icon + a count badge
+        // for hidden-with-activity modes; the popover renders on click.
+        var overflowBtn = el('button', {
+            type: 'button',
+            id: 'bowire-rail-overflow-btn',
+            className: 'bowire-rail-btn bowire-rail-overflow-btn',
+            title: 'More modes',
+            'aria-label': 'More modes',
+            onClick: function (e) {
+                e.stopPropagation();
+                railOverflowOpen = !railOverflowOpen;
+                render();
+            }
+        },
+            el('span', { innerHTML: svgIcon('grip') }),
+            el('span', {
+                id: 'bowire-rail-overflow-badge',
+                className: 'bowire-rail-btn-badge',
+                style: 'display:none'
+            })
+        );
+        rail.appendChild(overflowBtn);
+
+        // Popover with the hidden modes. Mounted as a sibling of the
+        // overflow button (inside the rail's bounding box would let the
+        // overflow: hidden rule clip it), so we anchor by absolute
+        // position via CSS. Only rendered when railOverflowOpen is on
+        // AND the layout pass actually flagged some modes as overflow.
+        if (railOverflowOpen && _railOverflowHidden && _railOverflowHidden.length > 0) {
+            var popover = el('div', {
+                id: 'bowire-rail-overflow-popover',
+                className: 'bowire-rail-overflow-popover',
+                role: 'menu'
+            });
+            _railOverflowHidden.forEach(function (m) {
+                var count = _railModeCount(m.id);
+                var hasCount = typeof count === 'number' && count > 0;
+                var isActive = railMode === m.id;
+                popover.appendChild(el('button', {
+                    type: 'button',
+                    role: 'menuitem',
+                    className: 'bowire-rail-overflow-popover-item' + (isActive ? ' active' : ''),
+                    onClick: function () {
+                        railOverflowOpen = false;
+                        railMode = m.id;
+                        try { localStorage.setItem('bowire_rail_mode', m.id); } catch { /* ignore */ }
+                        if (m.id === 'environments') sidebarView = 'environments';
+                        else if (m.id === 'flows') sidebarView = 'flows';
+                        else if (m.id === 'proxy') sidebarView = 'proxy';
+                        else if (m.id === 'discover') sidebarView = 'services';
+                        render();
+                    }
+                },
+                    el('span', {
+                        className: 'bowire-rail-overflow-popover-icon',
+                        innerHTML: svgIcon(m.icon)
+                    }),
+                    el('span', {
+                        className: 'bowire-rail-overflow-popover-label',
+                        textContent: m.label
+                    }),
+                    hasCount ? el('span', {
+                        className: 'bowire-rail-overflow-popover-badge',
+                        textContent: count > 99 ? '99+' : String(count)
+                    }) : null
+                ));
+            });
+            rail.appendChild(popover);
+        }
+
         // Settings — anchored at the very bottom of the rail. Moved
         // out of the topbar ⋮ overflow into the rail per VS Code /
         // JetBrains convention; reachable from every mode without
@@ -978,6 +1061,125 @@
         ));
 
         return rail;
+    }
+
+    // #164 v3 — Activity rail overflow state. _railOverflowCatalog
+    // mirrors the catalogue order so the layout pass can build the
+    // popover from the same list the rail was rendered from.
+    // _railOverflowHidden tracks the modes the layout pass decided
+    // can't fit; cleared on every layout pass to avoid stale entries.
+    var _railOverflowCatalog = [];
+    var _railOverflowHidden = [];
+
+    // Runs after every render() via the morphdom hook in render-env-auth.
+    // Walks the mode buttons top-down, computes how many fit above the
+    // Settings anchor (with room reserved for the overflow button when
+    // anything would overflow), hides the rest via display:none, and
+    // populates _railOverflowHidden so the next render with
+    // railOverflowOpen=true can build the popover. Idempotent — running
+    // it multiple times in a row is a no-op once layout is stable.
+    function _layoutActivityRail() {
+        var rail = document.getElementById('bowire-activity-rail');
+        if (!rail) return;
+        var settings = rail.querySelector('.bowire-rail-settings');
+        var overflowBtn = rail.querySelector('#bowire-rail-overflow-btn');
+        if (!settings || !overflowBtn) return;
+
+        // First pass: unhide everything so we measure natural heights.
+        var modeBtns = rail.querySelectorAll('.bowire-rail-btn[data-rail-mode-id]');
+        for (var i = 0; i < modeBtns.length; i++) modeBtns[i].style.display = '';
+        overflowBtn.classList.remove('has-overflow');
+
+        var railHeight = rail.clientHeight;
+        var settingsHeight = settings.getBoundingClientRect().height || 44;
+        var overflowHeight = 44; // reserved when we actually need the button
+        var dividers = rail.querySelectorAll('.bowire-rail-divider');
+        var dividerHeight = dividers.length > 0 ? (dividers[0].getBoundingClientRect().height || 1) : 1;
+
+        // Build an in-order list of [el, height, modeId|null (null=divider)].
+        var slots = [];
+        var children = rail.children;
+        for (var c = 0; c < children.length; c++) {
+            var ch = children[c];
+            if (ch === settings || ch === overflowBtn) continue;
+            if (ch.id === 'bowire-rail-overflow-popover') continue;
+            if (ch.classList.contains('bowire-rail-divider')) {
+                slots.push({ el: ch, h: dividerHeight, modeId: null });
+            } else if (ch.dataset && ch.dataset.railModeId) {
+                slots.push({ el: ch, h: ch.getBoundingClientRect().height || 44, modeId: ch.dataset.railModeId });
+            }
+        }
+
+        var available = railHeight - settingsHeight;
+        var natural = slots.reduce(function (a, s) { return a + s.h; }, 0);
+        if (natural <= available) {
+            _railOverflowHidden = [];
+            overflowBtn.classList.remove('has-overflow');
+            var badge = document.getElementById('bowire-rail-overflow-badge');
+            if (badge) badge.style.display = 'none';
+            return;
+        }
+
+        // Doesn't fit — reserve space for the overflow button itself,
+        // then walk slots top-down until we exceed the budget.
+        var budget = available - overflowHeight;
+        var consumed = 0;
+        var hiddenIds = [];
+        var lastVisibleDivider = -1;
+        var allHiddenAfter = false;
+        for (var i2 = 0; i2 < slots.length; i2++) {
+            var slot = slots[i2];
+            if (allHiddenAfter) {
+                slot.el.style.display = 'none';
+                if (slot.modeId) hiddenIds.push(slot.modeId);
+                continue;
+            }
+            if (consumed + slot.h > budget) {
+                slot.el.style.display = 'none';
+                if (slot.modeId) hiddenIds.push(slot.modeId);
+                allHiddenAfter = true;
+                continue;
+            }
+            consumed += slot.h;
+            slot.el.style.display = '';
+            if (slot.modeId == null) lastVisibleDivider = i2;
+        }
+
+        // Drop a trailing visible divider (its group's content is all
+        // overflowed) so the rail doesn't end on a stray line.
+        if (lastVisibleDivider >= 0) {
+            var trailing = true;
+            for (var j = lastVisibleDivider + 1; j < slots.length; j++) {
+                if (slots[j].el.style.display !== 'none' && slots[j].modeId) {
+                    trailing = false;
+                    break;
+                }
+            }
+            if (trailing) slots[lastVisibleDivider].el.style.display = 'none';
+        }
+
+        _railOverflowHidden = hiddenIds.map(function (id) {
+            return _railOverflowCatalog.find(function (m) { return m.id === id; });
+        }).filter(function (m) { return !!m; });
+
+        overflowBtn.classList.add('has-overflow');
+
+        // Aggregate badge — sum any per-mode counts on hidden modes so
+        // the operator sees there's activity tucked behind the '…'.
+        var aggregate = 0;
+        for (var k = 0; k < _railOverflowHidden.length; k++) {
+            var c2 = _railModeCount(_railOverflowHidden[k].id);
+            if (typeof c2 === 'number' && c2 > 0) aggregate += c2;
+        }
+        var badge2 = document.getElementById('bowire-rail-overflow-badge');
+        if (badge2) {
+            if (aggregate > 0) {
+                badge2.style.display = '';
+                badge2.textContent = aggregate > 99 ? '99+' : String(aggregate);
+            } else {
+                badge2.style.display = 'none';
+            }
+        }
     }
 
     // #133 Phase 2 — Recordings rail mode sidebar. Lists every
