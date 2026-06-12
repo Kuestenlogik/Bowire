@@ -96,6 +96,22 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [170](https://github.com/Kuestenlogik/Bowire/issues/170) | Bowire | [Mock-server fault injection — latency / errors / drops / partial responses](#issue-kuestenlogik-bowire-170) | ⬜ Open |  |
 | [171](https://github.com/Kuestenlogik/Bowire/issues/171) | Bowire | [Snapshot testing — capture-once, diff-on-change response baselines](#issue-kuestenlogik-bowire-171) | ⬜ Open |  |
 
+### v2.3 — Security pillar: shift-left scanner, OWASP coverage, auth recording
+
+**0/1 done** · 1 backlog
+
+| # | Project | Title | Status | Tags |
+|---|---|---|---|---|
+| [173](https://github.com/Kuestenlogik/Bowire/issues/173) | Bowire | [OWASP API Security Top 10 — structured test suite](#issue-kuestenlogik-bowire-173) | ⬜ Open |  |
+
+### v2.5 — Continuous integration: PR bot, project file, org dashboard
+
+**0/1 done** · 1 backlog
+
+| # | Project | Title | Status | Tags |
+|---|---|---|---|---|
+| [172](https://github.com/Kuestenlogik/Bowire/issues/172) | Bowire | [.bowire/project.json convention — checked-in workspace configuration](#issue-kuestenlogik-bowire-172) | ⬜ Open |  |
+
 ### Backlog (not yet scheduled)
 
 | # | Project | Title | Status | Tags |
@@ -412,6 +428,18 @@ Mocks (#94) replay captured responses faithfully. But "code that works against t
 #### <a id="issue-kuestenlogik-bowire-171"></a>⬜ Open · [#171](https://github.com/Kuestenlogik/Bowire/issues/171) Snapshot testing — capture-once, diff-on-change response baselines
 
 Regression-testing API responses is hard without a baseline. A real assertion DSL covers structural checks ("status is OK", "body.id matches"), but doesn't catch "the response shape changed in a way nobody intended". Jest-style snapshot testing fills that gap: record the response once, fail if it changes unexpectedly. [[more]](https://github.com/Kuestenlogik/Bowire/issues/171)
+
+### v2.3 — Security pillar: shift-left scanner, OWASP coverage, auth recording
+
+#### <a id="issue-kuestenlogik-bowire-173"></a>⬜ Open · [#173](https://github.com/Kuestenlogik/Bowire/issues/173) OWASP API Security Top 10 — structured test suite
+
+Bowire's security scan is currently generic fuzz + a handful of templates. The de-facto industry baseline for "did you check the obvious API security mistakes?" is the OWASP API Security Top 10. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/173)
+
+### v2.5 — Continuous integration: PR bot, project file, org dashboard
+
+#### <a id="issue-kuestenlogik-bowire-172"></a>⬜ Open · [#172](https://github.com/Kuestenlogik/Bowire/issues/172) .bowire/project.json convention — checked-in workspace configuration
+
+Workspaces today live in `~/.bowire/workspaces/<id>/` (per-user, machine-local). The Export/Import (#159) exists but is opt-in. For Bowire to be the source of truth for "what this repo's API looks like", every repo needs a Bowire configuration checked-in. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/172)
 
 ### Backlog (not yet scheduled)
 
