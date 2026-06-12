@@ -126,14 +126,19 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.4 — Dev pillar: schema watch diff, mock-from-schema, side-by-side
 
-**0/4 done** · 4 backlog
+**0/9 done** · 9 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
+| [34](https://github.com/Kuestenlogik/Bowire/issues/34) | Bowire | [AsyncAPI discovery source — remaining bindings + V2 overloads + YAML pre-normaliser](#issue-kuestenlogik-bowire-34) | ⬜ Backlog | `area:plugin-sdk` `track:protocols` |
+| [36](https://github.com/Kuestenlogik/Bowire/issues/36) | Bowire | [Replay-Mock — HTTPS MITM / record mode](#issue-kuestenlogik-bowire-36) | ⬜ Backlog | `area:mock` |
+| [48](https://github.com/Kuestenlogik/Bowire/issues/48) | Bowire | [Schema watch mode](#issue-kuestenlogik-bowire-48) | ⬜ Backlog | `area:workbench` |
+| [49](https://github.com/Kuestenlogik/Bowire/issues/49) | Bowire | [Programmatic environment provisioning in embedded mode](#issue-kuestenlogik-bowire-49) | ⬜ Backlog | `area:workbench` |
 | [177](https://github.com/Kuestenlogik/Bowire/issues/177) | Bowire | [AI-assisted service scaffolding — schema + stub + collection + test](#issue-kuestenlogik-bowire-177) | ⬜ Open |  |
 | [179](https://github.com/Kuestenlogik/Bowire/issues/179) | Bowire | [Mock from schema — generate a running mock without a recording](#issue-kuestenlogik-bowire-179) | ⬜ Open |  |
 | [182](https://github.com/Kuestenlogik/Bowire/issues/182) | Bowire | [Side-by-side service version diff — schema + response comparison](#issue-kuestenlogik-bowire-182) | ⬜ Open |  |
 | [185](https://github.com/Kuestenlogik/Bowire/issues/185) | Bowire | [Schema-watch diff view — show what changed since last visit](#issue-kuestenlogik-bowire-185) | ⬜ Open |  |
+| [189](https://github.com/Kuestenlogik/Bowire/issues/189) | Bowire | [API design-time validation — typed rule engine over schemas](#issue-kuestenlogik-bowire-189) | ⬜ Open |  |
 
 ### v2.5 — Continuous integration: PR bot, project file, org dashboard
 
@@ -153,16 +158,12 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [3](https://github.com/Kuestenlogik/Bowire.Templates/issues/3) | Templates | [Plugin project template — `dotnet new bowire-plugin`](#issue-kuestenlogik-bowire-templates-3) | ⬜ Backlog | `area:plugin-sdk` |
 | [11](https://github.com/Kuestenlogik/Bowire.Protocol.Surgewave/issues/11) | Protocol.Surgewave | [Light up Surgewave protocol plugin](#issue-kuestenlogik-bowire-protocol-surgewave-11) | ⬜ Open |  |
 | [13](https://github.com/Kuestenlogik/Bowire.Samples/issues/13) | Samples | [SimpleGraphQLSubscriptions sample](#issue-kuestenlogik-bowire-samples-13) | ⬜ Backlog | `area:plugin-sdk` |
-| [34](https://github.com/Kuestenlogik/Bowire/issues/34) | Bowire | [AsyncAPI discovery source — remaining bindings + V2 overloads + YAML pre-normaliser](#issue-kuestenlogik-bowire-34) | ⬜ Backlog | `area:plugin-sdk` `track:protocols` |
-| [36](https://github.com/Kuestenlogik/Bowire/issues/36) | Bowire | [Replay-Mock — HTTPS MITM / record mode](#issue-kuestenlogik-bowire-36) | ⬜ Backlog | `area:mock` |
 | [37](https://github.com/Kuestenlogik/Bowire/issues/37) | Bowire | [Bowire.Mcp — remaining tools + adapter modes](#issue-kuestenlogik-bowire-37) | ⬜ Backlog | `area:mcp` |
 | [40](https://github.com/Kuestenlogik/Bowire/issues/40) | Bowire | [Freeform Request Builder](#issue-kuestenlogik-bowire-40) | ⬜ Backlog | `area:workbench` |
 | [41](https://github.com/Kuestenlogik/Bowire/issues/41) | Bowire | [First RC of the new versioning discipline](#issue-kuestenlogik-bowire-41) | ⬜ Backlog | `area:multi` |
 | [44](https://github.com/Kuestenlogik/Bowire/issues/44) | Bowire | [Sidecar packaging — Docker / Compose / Kubernetes](#issue-kuestenlogik-bowire-44) | ⬜ Backlog | `area:docs` |
 | [46](https://github.com/Kuestenlogik/Bowire/issues/46) | Bowire | [MCP server-side notifications via IInlineSseSubscriber](#issue-kuestenlogik-bowire-46) | ⬜ Backlog | `area:mcp` |
 | [47](https://github.com/Kuestenlogik/Bowire/issues/47) | Bowire | [Sidebar display: method name vs path toggle](#issue-kuestenlogik-bowire-47) | ⬜ Backlog | `area:workbench` |
-| [48](https://github.com/Kuestenlogik/Bowire/issues/48) | Bowire | [Schema watch mode](#issue-kuestenlogik-bowire-48) | ⬜ Backlog | `area:workbench` |
-| [49](https://github.com/Kuestenlogik/Bowire/issues/49) | Bowire | [Programmatic environment provisioning in embedded mode](#issue-kuestenlogik-bowire-49) | ⬜ Backlog | `area:workbench` |
 | [50](https://github.com/Kuestenlogik/Bowire/issues/50) | Bowire | [Marketing site — gallery / lightbox layer on solutions/*](#issue-kuestenlogik-bowire-50) | ⬜ Backlog | `area:site` `track:marketing-ia` |
 | [51](https://github.com/Kuestenlogik/Bowire/issues/51) | Bowire | [Marketing site — migrate <img> tags to picture.html partial](#issue-kuestenlogik-bowire-51) | ⬜ Backlog | `area:site` `track:marketing-ia` |
 | [53](https://github.com/Kuestenlogik/Bowire/issues/53) | Bowire | [Marketing site — second row of specialist comparisons](#issue-kuestenlogik-bowire-53) | ⬜ Backlog | `area:site` `track:marketing-ia` |
@@ -547,6 +548,30 @@ Bowire knows what protocol it's talking to and often what server (Envoy, NGINX, 
 
 ### v2.4 — Dev pillar: schema watch diff, mock-from-schema, side-by-side
 
+#### <a id="issue-kuestenlogik-bowire-34"></a>⬜ Backlog · [#34](https://github.com/Kuestenlogik/Bowire/issues/34) AsyncAPI discovery source — remaining bindings + V2 overloads + YAML pre-normaliser
+
+> `area:plugin-sdk` · `track:protocols`
+
+AsyncAPI loader + most bindings shipped (MQTT / Kafka / WebSocket / HTTP / AMQP / NATS / MQTT5 + schema export). Open: [[more]](https://github.com/Kuestenlogik/Bowire/issues/34)
+
+#### <a id="issue-kuestenlogik-bowire-36"></a>⬜ Backlog · [#36](https://github.com/Kuestenlogik/Bowire/issues/36) Replay-Mock — HTTPS MITM / record mode
+
+> `area:mock`
+
+WireMock-style transparent proxy that records real traffic. Deferred unless demand picks up — the existing recording-from-UI surface already covers most needs. [[more]](https://github.com/Kuestenlogik/Bowire/issues/36)
+
+#### <a id="issue-kuestenlogik-bowire-48"></a>⬜ Backlog · [#48](https://github.com/Kuestenlogik/Bowire/issues/48) Schema watch mode
+
+> `area:workbench`
+
+Re-discover the active server URL(s) every N seconds and show a \"+ added, − removed, ~ changed\" delta in the sidebar. [[more]](https://github.com/Kuestenlogik/Bowire/issues/48)
+
+#### <a id="issue-kuestenlogik-bowire-49"></a>⬜ Backlog · [#49](https://github.com/Kuestenlogik/Bowire/issues/49) Programmatic environment provisioning in embedded mode
+
+> `area:workbench`
+
+Surface IServiceCollection.AddBowireEnvironment(name, configure) (or a fluent builder on AddBowire()) so the host can pre-seed environments with variables derived from the running appʼs own IConfiguration / IOptions<T>. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/49)
+
 #### <a id="issue-kuestenlogik-bowire-177"></a>⬜ Open · [#177](https://github.com/Kuestenlogik/Bowire/issues/177) AI-assisted service scaffolding — schema + stub + collection + test
 
 The AI assistant today is reactive: it answers questions, surfaces hints, helps explain. The natural next step for a "build APIs faster" tool is generative — "scaffold a CRUD service for this Entity" → out drops a `.proto` + handler stubs + an example collection + a smoke-test. [[more]](https://github.com/Kuestenlogik/Bowire/issues/177)
@@ -562,6 +587,10 @@ When an API is versioned (`v1`, `v2`), or when a server is being migrated, the o
 #### <a id="issue-kuestenlogik-bowire-185"></a>⬜ Open · [#185](https://github.com/Kuestenlogik/Bowire/issues/185) Schema-watch diff view — show what changed since last visit
 
 Bowire already has Schema-Watch (#138) that re-runs discovery on a configurable interval. What it doesn't do is TELL the operator what changed. The natural "I came back from lunch, what's new in this API?" workflow doesn't exist. [[more]](https://github.com/Kuestenlogik/Bowire/issues/185)
+
+#### <a id="issue-kuestenlogik-bowire-189"></a>⬜ Open · [#189](https://github.com/Kuestenlogik/Bowire/issues/189) API design-time validation — typed rule engine over schemas
+
+Most API design issues — inconsistent naming, returning passwords, returning unbounded result lists, missing pagination, missing versioning — are caught by code review IF the reviewer is sharp. They scale exactly with reviewer attention, which doesn't scale. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/189)
 
 ### v2.5 — Continuous integration: PR bot, project file, org dashboard
 
@@ -601,18 +630,6 @@ Tracks the Surgewave-lane work split out of Kuestenlogik/Bowire#33 so protocol-s
 
 Hand-rolled graphql-transport-ws server (or HotChocolate-based) so the GraphQL pluginʼs subscription code path has a runnable target. [[more]](https://github.com/Kuestenlogik/Bowire.Samples/issues/13)
 
-#### <a id="issue-kuestenlogik-bowire-34"></a>⬜ Backlog · [#34](https://github.com/Kuestenlogik/Bowire/issues/34) AsyncAPI discovery source — remaining bindings + V2 overloads + YAML pre-normaliser
-
-> `area:plugin-sdk` · `track:protocols`
-
-AsyncAPI loader + most bindings shipped (MQTT / Kafka / WebSocket / HTTP / AMQP / NATS / MQTT5 + schema export). Open: [[more]](https://github.com/Kuestenlogik/Bowire/issues/34)
-
-#### <a id="issue-kuestenlogik-bowire-36"></a>⬜ Backlog · [#36](https://github.com/Kuestenlogik/Bowire/issues/36) Replay-Mock — HTTPS MITM / record mode
-
-> `area:mock`
-
-WireMock-style transparent proxy that records real traffic. Deferred unless demand picks up — the existing recording-from-UI surface already covers most needs. [[more]](https://github.com/Kuestenlogik/Bowire/issues/36)
-
 #### <a id="issue-kuestenlogik-bowire-37"></a>⬜ Backlog · [#37](https://github.com/Kuestenlogik/Bowire/issues/37) Bowire.Mcp — remaining tools + adapter modes
 
 > `area:mcp`
@@ -648,18 +665,6 @@ Close the second half of the v0.8.11 design. [[more]](https://github.com/Kuesten
 > `area:workbench`
 
 For REST endpoints, offer a per-sidebar toggle (sticky in localStorage) that flips the label between \`GetForecast\` and \`GET /api/Weather/forecast/{city}\`. [[more]](https://github.com/Kuestenlogik/Bowire/issues/47)
-
-#### <a id="issue-kuestenlogik-bowire-48"></a>⬜ Backlog · [#48](https://github.com/Kuestenlogik/Bowire/issues/48) Schema watch mode
-
-> `area:workbench`
-
-Re-discover the active server URL(s) every N seconds and show a \"+ added, − removed, ~ changed\" delta in the sidebar. [[more]](https://github.com/Kuestenlogik/Bowire/issues/48)
-
-#### <a id="issue-kuestenlogik-bowire-49"></a>⬜ Backlog · [#49](https://github.com/Kuestenlogik/Bowire/issues/49) Programmatic environment provisioning in embedded mode
-
-> `area:workbench`
-
-Surface IServiceCollection.AddBowireEnvironment(name, configure) (or a fluent builder on AddBowire()) so the host can pre-seed environments with variables derived from the running appʼs own IConfiguration / IOptions<T>. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/49)
 
 #### <a id="issue-kuestenlogik-bowire-50"></a>⬜ Backlog · [#50](https://github.com/Kuestenlogik/Bowire/issues/50) Marketing site — gallery / lightbox layer on solutions/*
 
