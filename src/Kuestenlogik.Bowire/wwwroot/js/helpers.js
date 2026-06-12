@@ -607,10 +607,14 @@
      *               renders as one button per entry. Pass [] for no
      *               buttons (rare — most empty states have at least
      *               one obvious next step).
-     *   hintKey   — optional localStorage key for a dismissible
+     *   hintKey   — optional key for a permanently dismissible
      *               first-time hint. When set + not yet dismissed,
      *               the body text shows with a small "Got it" dismiss
-     *               link below.
+     *               link below. Routed through the central hint-dismiss
+     *               store (#169) so Settings → "Hints and warnings"
+     *               can restore it.
+     *   hintLabel — human-readable description for the Settings row.
+     *               Defaults to opts.headline, then opts.hintKey.
      *
      * Returns a DOM node the caller appendChilds into the pane.
      * No state ownership — caller decides when the card mounts.
@@ -694,18 +698,26 @@
     //   text       — the message text
     //   actionLabel — optional button label (e.g. 'Enable in Settings')
     //   onAction   — onClick for the action button
-    //   dismissKey — optional sessionStorage key; when set, the bar
-    //                hides itself for the rest of the session after the
-    //                X is clicked. Use null when the bar should not be
-    //                dismissable (will keep nagging until the state
-    //                that triggered it changes).
+    //   dismissKey — session-only dismiss; bar reappears next reload.
+    //   permanentDismissKey — permanent dismiss; bar stays gone until
+    //                the operator re-enables it from Settings →
+    //                General → "Hints and warnings". When set the
+    //                close affordance becomes a split control: X
+    //                dismisses for the session, the chevron next to it
+    //                offers "Don't show again".
+    //   dismissLabel — human-readable description for the Settings
+    //                row. Defaults to the key itself, which is ugly —
+    //                callers should always provide this.
     function renderAlertBar(opts) {
         opts = opts || {};
-        if (opts.dismissKey) {
-            try {
-                if (sessionStorage.getItem(opts.dismissKey) === '1') return null;
-            } catch { /* ignore */ }
-        }
+        // Either dismiss key can suppress the bar at render-time. The
+        // permanent key wins if both are set (legacy callers that pass
+        // dismissKey only continue to behave as before via the same
+        // store; the helper just reads + writes via isHintDismissed /
+        // dismissHint instead of poking sessionStorage directly).
+        var primaryKey = opts.permanentDismissKey || opts.dismissKey;
+        if (primaryKey && typeof isHintDismissed === 'function'
+            && isHintDismissed(primaryKey)) return null;
         var severity = (opts.severity === 'warning' || opts.severity === 'error') ? opts.severity : 'info';
         var bar = el('div', {
             className: 'bowire-alert-bar bowire-alert-bar-' + severity,
@@ -773,8 +785,20 @@
             );
             bar.appendChild(toggle);
         }
-        if (opts.dismissKey) {
-            bar.appendChild(el('button', {
+        // Close affordance. Three shapes:
+        //  - dismissKey only → single X (session-only).
+        //  - permanentDismissKey only → split control: X dismisses for
+        //    the session, chevron opens a tiny menu with "Don't show
+        //    again" which dismisses permanently and stamps the entry in
+        //    the dismissed-hints store so Settings can restore it.
+        //  - both set → permanent wins as the bar's identity (Settings
+        //    row, render-time suppression), but the session X still
+        //    works on its own.
+        if (opts.dismissKey || opts.permanentDismissKey) {
+            var sessionKey = opts.dismissKey || opts.permanentDismissKey;
+            var permKey = opts.permanentDismissKey;
+            var closeWrap = el('div', { className: 'bowire-alert-bar-close-wrap' });
+            closeWrap.appendChild(el('button', {
                 type: 'button',
                 className: 'bowire-alert-bar-close',
                 title: 'Hide for this session',
@@ -788,10 +812,55 @@
                     // before the dismissing class transitions, and
                     // the dismiss would look like a snap.
                     if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
-                    try { sessionStorage.setItem(opts.dismissKey, '1'); } catch { /* ignore */ }
+                    if (typeof dismissHint === 'function') {
+                        dismissHint(sessionKey, 'session', opts.dismissLabel);
+                    } else {
+                        try { sessionStorage.setItem(sessionKey, '1'); } catch { /* ignore */ }
+                    }
                     _fadeOutAlertBar(bar);
                 }
             }));
+            if (permKey) {
+                var menuOpen = false;
+                var menu = el('div', {
+                    className: 'bowire-alert-bar-close-menu',
+                    role: 'menu',
+                    style: 'display:none'
+                });
+                menu.appendChild(el('button', {
+                    type: 'button',
+                    role: 'menuitem',
+                    className: 'bowire-alert-bar-close-menu-item',
+                    textContent: "Don't show again",
+                    onClick: function (e) {
+                        if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
+                        if (typeof dismissHint === 'function') {
+                            dismissHint(permKey, 'permanent', opts.dismissLabel);
+                        } else {
+                            try { localStorage.setItem(permKey, '1'); } catch { /* ignore */ }
+                        }
+                        _fadeOutAlertBar(bar);
+                    }
+                }));
+                var chevron = el('button', {
+                    type: 'button',
+                    className: 'bowire-alert-bar-close-chevron',
+                    title: 'More dismiss options',
+                    'aria-label': 'More dismiss options',
+                    'aria-haspopup': 'menu',
+                    'aria-expanded': 'false',
+                    innerHTML: svgIcon('chevronDown'),
+                    onClick: function (e) {
+                        if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
+                        menuOpen = !menuOpen;
+                        menu.style.display = menuOpen ? '' : 'none';
+                        chevron.setAttribute('aria-expanded', menuOpen ? 'true' : 'false');
+                    }
+                });
+                closeWrap.appendChild(chevron);
+                closeWrap.appendChild(menu);
+            }
+            bar.appendChild(closeWrap);
         }
         return bar;
     }
@@ -940,21 +1009,31 @@
         }
 
         // Hint visibility — show by default; suppress when the user
-        // has previously dismissed it (localStorage flag).
+        // has previously dismissed it. Routed through the central
+        // hint-dismiss store so Settings can restore it (#169).
         var hintDismissed = false;
         if (opts.hintKey) {
-            try { hintDismissed = localStorage.getItem(opts.hintKey) === '1'; } catch { /* ignore */ }
+            if (typeof isHintDismissed === 'function') {
+                hintDismissed = isHintDismissed(opts.hintKey);
+            } else {
+                try { hintDismissed = localStorage.getItem(opts.hintKey) === '1'; } catch { /* ignore */ }
+            }
         }
         if (opts.body && !hintDismissed) {
             var bodyEl = el('p', { className: 'bowire-empty-card-body', textContent: opts.body });
             card.appendChild(bodyEl);
             if (opts.hintKey) {
+                var hintLabel = opts.hintLabel || opts.headline || opts.hintKey;
                 var dismiss = el('button', {
                     type: 'button',
                     className: 'bowire-empty-card-dismiss',
                     textContent: 'Got it — don’t show again',
                     onClick: function () {
-                        try { localStorage.setItem(opts.hintKey, '1'); } catch { /* ignore */ }
+                        if (typeof dismissHint === 'function') {
+                            dismissHint(opts.hintKey, 'permanent', hintLabel);
+                        } else {
+                            try { localStorage.setItem(opts.hintKey, '1'); } catch { /* ignore */ }
+                        }
                         bodyEl.remove();
                         dismiss.remove();
                     }
