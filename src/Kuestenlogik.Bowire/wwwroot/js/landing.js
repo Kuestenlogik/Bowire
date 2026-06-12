@@ -147,7 +147,6 @@
         tips.appendChild(renderTipLine('repeat', 'Press R to repeat the last call'));
         card.appendChild(tips);
 
-        renderLandingHelpFooter(card);
         parent.appendChild(card);
     }
 
@@ -163,7 +162,7 @@
         card.appendChild(renderEmptyCard({
             icon: 'compass',
             headline: 'Discover is empty',
-            body: 'Pick a workspace and add a URL or schema file from there — Home walks you through the first steps.',
+            body: 'Pick a workspace and add a URL or schema file from there.',
             actions: [{
                 label: 'Open Home',
                 primary: true,
@@ -182,7 +181,6 @@
                 }
             }]
         }));
-        renderLandingHelpFooter(card);
         parent.appendChild(card);
     }
 
@@ -230,7 +228,6 @@
         ));
         hero.appendChild(grid);
 
-        renderLandingHelpFooter(hero);
         parent.appendChild(hero);
     }
 
@@ -278,7 +275,6 @@
         bullets.appendChild(el('li', { textContent: 'Network: server is reachable from this machine' }));
         card.appendChild(bullets);
 
-        renderLandingHelpFooter(card);
         parent.appendChild(card);
     }
 
@@ -318,7 +314,6 @@
         );
         card.appendChild(btn);
 
-        renderLandingHelpFooter(card);
         parent.appendChild(card);
     }
 
@@ -366,7 +361,6 @@
         card.appendChild(el('div', { className: 'bowire-landing-help-text bowire-landing-help-text-muted',
             textContent: 'Wrong protocol? Server-side reflection / introspection might not be enabled for ' + currentProtoName + '.' }));
 
-        renderLandingHelpFooter(card);
         parent.appendChild(card);
     }
 
@@ -389,7 +383,6 @@
         card.appendChild(el('div', { className: 'bowire-landing-section-title',
             textContent: 'Pick a method from the sidebar to invoke against any of the connected URLs.' }));
 
-        renderLandingHelpFooter(card);
         parent.appendChild(card);
     }
 
@@ -460,6 +453,12 @@
         );
     }
 
+    // Guided-tour + Open-docs footer. Moved out of the per-state
+    // Discover landing cards (they were appearing under every empty
+    // state; once is enough) and into the Home portal — Home is the
+    // welcome surface, that's where onboarding affordances belong.
+    // Kept exported so other callers can mount the same footer
+    // without re-implementing the smart docs branch.
     function renderLandingHelpFooter(parent) {
         var footer = el('div', { className: 'bowire-landing-footer' });
         footer.appendChild(el('button', {
@@ -469,14 +468,31 @@
                 if (typeof startTour === 'function') startTour();
             }
         }));
-        footer.appendChild(el('a', {
-            className: 'bowire-landing-footer-btn',
-            href: 'https://bowire.io/docs/',
-            target: '_blank',
-            rel: 'noopener',
-            textContent: 'Open docs →'
-        }));
+        // "Open docs" prefers the local NuGet-installed help drawer
+        // when present — that's what `helpAvailable` (boot capability
+        // probe) reports. Falls back to bowire.io/docs when the
+        // package isn't installed so the link still works.
+        var localDocs = typeof helpAvailable !== 'undefined' && helpAvailable;
+        if (localDocs && typeof helpOpenDrawer === 'function') {
+            footer.appendChild(el('button', {
+                className: 'bowire-landing-footer-btn',
+                textContent: 'Open docs →',
+                title: 'Open the in-app help drawer (F1)',
+                onClick: function () { helpOpenDrawer(); }
+            }));
+        } else {
+            footer.appendChild(el('a', {
+                className: 'bowire-landing-footer-btn',
+                href: 'https://bowire.io/docs/',
+                target: '_blank',
+                rel: 'noopener',
+                textContent: 'Open docs →'
+            }));
+        }
         parent.appendChild(footer);
+    }
+    if (typeof window !== 'undefined') {
+        window.bowireRenderLandingHelpFooter = renderLandingHelpFooter;
     }
 
     // ---- Helpers ----

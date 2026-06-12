@@ -989,6 +989,33 @@ but
     width: 2px;
     background: var(--bowire-accent);
 }
+/* #163 — count badge anchored at the bottom-right of the rail icon.
+   Subtle accent pill, ~14 px tall, the digit shrinks as the count
+   grows so '12' still fits without pushing the icon off-center.
+   '99+' is the cap so absurdly long counts don't blow the layout. */
+.bowire-rail-btn-badge {
+    position: absolute;
+    bottom: 4px;
+    right: 4px;
+    min-width: 14px;
+    height: 14px;
+    padding: 0 3px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 7px;
+    background: var(--bowire-accent);
+    color: var(--bowire-text-inverse, #fff);
+    font-size: 9px;
+    font-weight: 700;
+    line-height: 1;
+    font-feature-settings: "tnum";
+    box-shadow: 0 0 0 1px var(--bowire-bg, #000);
+    pointer-events: none;
+}
+.bowire-rail-btn.active .bowire-rail-btn-badge {
+    background: var(--bowire-accent);
+}
 /* #137 — sidebar-toggle + Settings live at the rail bottom.
    margin-top: auto on the first 'bottom' button pushes both away
    from the mode list; Settings sits below the toggle as the very
@@ -1678,6 +1705,16 @@ not just
 }
 /* First-run band — same shape as Continue, but with a tagline above
    the Start grid instead of three resume tiles. */
+.bowire-home-footer-slot {
+    margin-top: 8px;
+    padding-top: 16px;
+    border-top: 1px solid var(--bowire-border-subtle);
+}
+.bowire-home-footer-slot .bowire-landing-footer {
+    margin-top: 0;
+    padding-top: 0;
+    border-top: 0;
+}
 .bowire-home-band-firstrun .bowire-home-firstrun-tagline {
     margin: 0 0 6px;
     font-size: 13px;
