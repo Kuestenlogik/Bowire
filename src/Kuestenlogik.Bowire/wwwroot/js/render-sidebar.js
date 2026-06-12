@@ -1966,6 +1966,27 @@
         // the '+' new-request dropdown that lives at its right edge.
         var viewSwitch = el('div', { id: 'bowire-sidebar-view-switch', className: 'bowire-view-switch', role: 'toolbar' });
 
+        // Favorites-only toggle hoisted into the same row as the
+        // '+' button so the operator doesn't see two related controls
+        // (filter + create) split across separate rows. The protocol
+        // filter + filter chips stay below in the svcToolbar — those
+        // are subordinate / can take their own line.
+        if (sidebarView === 'services') {
+            viewSwitch.appendChild(el('button', {
+                type: 'button',
+                id: 'bowire-favorites-only-btn',
+                className: 'bowire-fav-only-toggle' + (favoritesOnly ? ' active' : ''),
+                title: favoritesOnly
+                    ? 'Showing favorites only — click to show everything'
+                    : 'Filter the list to favorited methods only',
+                'aria-pressed': favoritesOnly ? 'true' : 'false',
+                onClick: function () {
+                    setFavoritesOnly(!favoritesOnly);
+                    render();
+                }
+            }, el('span', { innerHTML: svgIcon(favoritesOnly ? 'starFilled' : 'star') })));
+        }
+
         // "+" button — always visible in the tab row, all views
         viewSwitch.appendChild(el('span', { style: 'flex:1' }));
         var newBtnWrapper = el('div', { className: 'bowire-new-btn-wrapper' });
@@ -2089,23 +2110,10 @@
         if (sidebarView === 'services') {
             var svcToolbar = el('div', { id: 'bowire-services-toolbar', className: 'bowire-services-toolbar' });
 
-        // #156 — favorites-only toggle, rendered as a small pill in
-        // the services toolbar. Always visible (so the affordance is
-        // discoverable), state-driven background so the operator
-        // sees at a glance whether the view is narrowed.
-        svcToolbar.appendChild(el('button', {
-            type: 'button',
-            id: 'bowire-favorites-only-btn',
-            className: 'bowire-fav-only-toggle' + (favoritesOnly ? ' active' : ''),
-            title: favoritesOnly
-                ? 'Showing favorites only — click to show everything'
-                : 'Filter the list to favorited methods only',
-            'aria-pressed': favoritesOnly ? 'true' : 'false',
-            onClick: function () {
-                setFavoritesOnly(!favoritesOnly);
-                render();
-            }
-        }, el('span', { innerHTML: svgIcon(favoritesOnly ? 'starFilled' : 'star') })));
+        // #156 — favorites-only toggle moved to the viewSwitch row
+        // above so it shares the same row as the '+' new-request
+        // button. Keeping it here would have split related controls
+        // across two rows for no reason.
 
         // Protocol filter button — always rendered on the view-switch
         // row when there are ≥2 protocols with services, so toggling

@@ -1085,6 +1085,34 @@
     function renderAiPanel() {
         var panel = el('div', { className: 'bowire-ai-panel' });
 
+        // #109 — invocation alert. Surfaces only when the master
+        // toggle in Settings → Assistant is OFF and the operator
+        // hasn't dismissed it this session. Sits at the top of the
+        // panel so it reads as a drawer-wide status banner under the
+        // tab/title strip.
+        if (typeof aiAllowInvoke !== 'undefined' && !aiAllowInvoke
+            && aiStatus && aiStatus.hasClient
+            && typeof renderAlertBar === 'function') {
+            // Inline toggle here — same chrome as Settings → Assistant
+            // so the operator can flip the master switch without
+            // navigating away. State stays session-only per the #109
+            // design (cold-start always back to off).
+            var alertBar = renderAlertBar({
+                severity: 'warning',
+                text: 'Assistant is currently in observe-only mode. It can read context but not dispatch calls. Enable to allow AI to invoke calls directly.',
+                inlineToggle: {
+                    value: !!aiAllowInvoke,
+                    title: 'Allow AI to invoke methods (session only, audited)',
+                    onChange: function (newVal) {
+                        aiAllowInvoke = newVal;
+                        render();
+                    }
+                },
+                dismissKey: 'bowire_ai_invoke_alert_dismissed'
+            });
+            if (alertBar) panel.appendChild(alertBar);
+        }
+
         // Header subtitle dropped — drawer chrome already shows
         // 'Assistant' title; footer at the bottom shows the
         // connection state via the rerenderFooter helper which
@@ -1093,24 +1121,31 @@
         // async-updated footer (issue: header said 'not installed'
         // while footer said 'Connected: ollama').
 
-        // Hints
+        // Per-method context hints — now rendered with the same
+        // renderAlertBar shape as the observe-only banner above so the
+        // operator sees one consistent "notification" type instead of
+        // two visually different "this is also a hint" formats.
+        // Severity maps cleanly: 'warn' → warning, 'tip'/'info' → info.
+        // Each hint is dismissable for the session via a stable
+        // hint-id key, mirroring the toast-stack dismiss UX.
         var hints = evaluateHints();
         if (hints.length === 0) {
             panel.appendChild(el('p', {
                 className: 'bowire-ai-empty',
                 textContent: 'No hints fire from the current workbench state. Pick a method, fire a request, or open a recording — the panel surfaces context-aware suggestions as you go.'
             }));
-        } else {
-            var list = el('ul', { className: 'bowire-ai-hint-list' });
+        } else if (typeof renderAlertBar === 'function') {
+            var hintStack = el('div', { className: 'bowire-ai-hint-list' });
             hints.forEach(function (h) {
-                list.appendChild(el('li', {
-                    className: 'bowire-ai-hint bowire-ai-hint-' + h.level
-                },
-                    el('span', { className: 'bowire-ai-hint-icon', textContent: h.level === 'warn' ? '⚠' : h.level === 'tip' ? '💡' : 'ℹ' }),
-                    el('span', { className: 'bowire-ai-hint-text', textContent: h.text })
-                ));
+                var severity = h.level === 'warn' ? 'warning' : 'info';
+                var bar = renderAlertBar({
+                    severity: severity,
+                    text: h.text,
+                    dismissKey: 'bowire_ai_hint_' + h.id + '_dismissed'
+                });
+                if (bar) hintStack.appendChild(bar);
             });
-            panel.appendChild(list);
+            panel.appendChild(hintStack);
         }
 
         // Threat-model + template-suggest moved to the Security drawer
@@ -1129,26 +1164,9 @@
             chatHost.replaceChildren();
             if (!aiStatus || !aiStatus.hasClient) return;
 
-            // #109 — Phase 3 opt-in gate. Toggle is session-only,
-            // never persisted (see aiAllowInvoke comment). When OFF
-            // the backend doesn't even register the bowire_invoke
-            // tool — the model literally cannot try. When ON the
-            // AI can dispatch real calls; every invoke writes to
-            // ~/.bowire/.ai-actions.jsonl for audit.
-            var invokeRow = el('label', { className: 'bowire-ai-chat-toggle' });
-            var invokeBox = el('input', { type: 'checkbox' });
-            if (aiAllowInvoke) invokeBox.checked = true;
-            invokeBox.addEventListener('change', function () {
-                aiAllowInvoke = invokeBox.checked;
-                rerenderChat();
-            });
-            invokeRow.appendChild(invokeBox);
-            invokeRow.appendChild(el('span', { textContent: 'Allow AI to invoke methods' }));
-            invokeRow.appendChild(el('span', {
-                className: 'bowire-ai-chat-toggle-hint',
-                textContent: aiAllowInvoke ? '· session only, audited' : '· off — AI may only observe',
-            }));
-            chatHost.appendChild(invokeRow);
+            // #109 — invoke-permission alert. Mounted at the very top
+            // of the panel (renderAiPanel inserts it before the hint
+            // list) via renderAlertBar — see panel-level mount below.
 
             var transcript = el('div', { className: 'bowire-ai-chat-transcript' });
             chatHistory.forEach(function (m) {
