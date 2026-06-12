@@ -715,6 +715,103 @@
     // color picker, inline rename, description, stats (env / recording
     // / collection counts), switch + delete actions. Bundles every
     // workspace config touchpoint into one surface.
+    // Three-way import dialog for workspace JSON. bowireConfirm only
+    // supports two buttons (confirm / cancel); the import flow needs
+    // three distinct strategies (new / merge / replace) so we build a
+    // small purpose-built modal that reuses bowire-confirm CSS classes
+    // for visual consistency.
+    function _showWorkspaceImportDialog(payload, targetWs) {
+        var existing = document.querySelector('.bowire-confirm-overlay');
+        if (existing) existing.remove();
+
+        var meta = (payload && payload.workspace) || {};
+        var data = (payload && payload.data) || {};
+        var counts = {
+            urls: Array.isArray(data.bowire_server_urls) ? data.bowire_server_urls.length : 0,
+            collections: Array.isArray(data.bowire_collections) ? data.bowire_collections.length : 0,
+            recordings: Array.isArray(data.bowire_recordings) ? data.bowire_recordings.length : 0,
+            favorites: Array.isArray(data.bowire_favorites) ? data.bowire_favorites.length : 0,
+            benchmarks: Array.isArray(data.bowire_benchmarks) ? data.bowire_benchmarks.length : 0,
+            flows: Array.isArray(data.bowire_flows) ? data.bowire_flows.length : 0
+        };
+        var summary = (meta.name || 'Imported') + ' — '
+            + counts.urls + ' URLs, '
+            + counts.collections + ' collections, '
+            + counts.recordings + ' recordings, '
+            + counts.favorites + ' favorites, '
+            + counts.benchmarks + ' benchmarks, '
+            + counts.flows + ' flows';
+
+        function close() { overlay.remove(); }
+        function runImport(mode) {
+            try {
+                if (mode === 'new') {
+                    var newId = importWorkspaceJson(payload, { mode: 'new' });
+                    workspacesSelectedId = newId;
+                    close();
+                    toast('Workspace imported', 'success');
+                    if (typeof switchWorkspace === 'function' && newId) {
+                        switchWorkspace(newId);
+                    } else {
+                        render();
+                    }
+                } else {
+                    importWorkspaceJson(payload, { mode: mode, target: targetWs.id });
+                    close();
+                    toast(mode === 'replace'
+                        ? 'Workspace "' + targetWs.name + '" replaced'
+                        : 'Merged into "' + targetWs.name + '"', 'success');
+                    try { window.location.reload(); } catch { /* ignore */ }
+                }
+            } catch (e) {
+                toast(e.message || 'Import failed', 'error');
+            }
+        }
+
+        var dialog = el('div', {
+            className: 'bowire-confirm-dialog',
+            role: 'alertdialog',
+            'aria-modal': 'true',
+            style: 'min-width:380px'
+        },
+            el('div', { className: 'bowire-confirm-title', textContent: 'Import workspace' }),
+            el('div', { className: 'bowire-confirm-message', textContent: summary }),
+            el('div', { className: 'bowire-confirm-actions', style: 'flex-wrap:wrap;gap:6px' },
+                el('button', {
+                    className: 'bowire-confirm-btn cancel',
+                    textContent: 'Cancel',
+                    onClick: close
+                }),
+                el('button', {
+                    className: 'bowire-confirm-btn danger',
+                    textContent: 'Replace "' + targetWs.name + '"',
+                    title: 'Wipe the target workspace and load the file into it',
+                    onClick: function () { runImport('replace'); }
+                }),
+                el('button', {
+                    className: 'bowire-confirm-btn',
+                    textContent: 'Merge into "' + targetWs.name + '"',
+                    title: 'Concat lists and assign maps into the current workspace',
+                    onClick: function () { runImport('merge-into'); }
+                }),
+                el('button', {
+                    className: 'bowire-confirm-btn',
+                    textContent: 'New workspace',
+                    title: 'Create a new workspace and load the file into it (recommended)',
+                    onClick: function () { runImport('new'); }
+                })
+            )
+        );
+        var overlay = el('div', {
+            className: 'bowire-confirm-overlay',
+            onClick: function (e) { if (e.target === overlay) close(); }
+        }, dialog);
+        document.body.appendChild(overlay);
+        overlay.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape') close();
+        });
+    }
+
     function renderWorkspaceDetailMain() {
         var main = el('div', { id: 'bowire-main-workspaces', className: 'bowire-main bowire-main-workspaces' });
 
@@ -797,26 +894,71 @@
         );
         main.appendChild(descRow);
 
-        // Stats grid — counts of what's in this workspace.
-        function statTile(label, value, hint) {
-            return el('div', { className: 'bowire-ws-detail-stat' },
+        // Stats grid — counts of what's in this workspace. Each tile is
+        // clickable for the ACTIVE workspace: jumps to the matching rail
+        // mode so the operator can drill in. Non-active tiles render as
+        // inert hints (the count is a stored snapshot, not live).
+        function statTile(label, value, hint, navTo) {
+            var Tag = navTo ? 'button' : 'div';
+            var node = el(Tag, {
+                className: 'bowire-ws-detail-stat' + (navTo ? ' bowire-ws-detail-stat-clickable' : ''),
+                type: navTo ? 'button' : undefined,
+                onClick: navTo ? function () {
+                    railMode = navTo;
+                    try { localStorage.setItem('bowire_rail_mode', navTo); } catch { /* ignore */ }
+                    render();
+                } : undefined
+            },
                 el('div', { className: 'bowire-ws-detail-stat-value', textContent: String(value) }),
                 el('div', { className: 'bowire-ws-detail-stat-label', textContent: label }),
                 hint ? el('div', { className: 'bowire-ws-detail-stat-hint', textContent: hint }) : null
             );
+            return node;
         }
         // Only the ACTIVE workspace's state is currently in memory.
         // For non-active workspaces the counts are stored hints from
         // the persisted workspace meta (added in future as needed); for
         // now show '—' so it's clear those reflect 'currently loaded'.
+        var urlCount = isActive
+            ? ((typeof serverUrls !== 'undefined' && Array.isArray(serverUrls)) ? serverUrls.length : 0)
+            : '—';
+        var connectedCount = 0;
+        if (isActive && typeof connectionStatuses === 'object' && connectionStatuses
+            && typeof serverUrls !== 'undefined') {
+            for (var ui = 0; ui < serverUrls.length; ui++) {
+                if (connectionStatuses[serverUrls[ui]] === 'connected') connectedCount++;
+            }
+        }
         var recordingCount = isActive ? (Array.isArray(recordingsList) ? recordingsList.length : 0) : '—';
         var collectionCount = isActive ? (Array.isArray(collectionsList) ? collectionsList.length : 0) : '—';
+        var favCount = '—';
+        if (isActive && typeof getFavorites === 'function') {
+            try { favCount = getFavorites().length; } catch { /* ignore */ }
+        }
+        var mockCount = isActive && Array.isArray(mocksList) ? mocksList.length : '—';
         main.appendChild(el('div', { className: 'bowire-ws-detail-section' },
             el('div', { className: 'bowire-ws-detail-section-label', textContent: 'Contents' }),
             el('div', { className: 'bowire-ws-detail-stats' },
-                statTile('Environments', envCount, ws.includeAllEnvironments ? 'all shared envs' : 'selected'),
-                statTile('Recordings', recordingCount, isActive ? 'in this workspace' : 'switch to load'),
-                statTile('Collections', collectionCount, isActive ? 'in this workspace' : 'switch to load')
+                statTile('URLs', urlCount,
+                    isActive
+                        ? (urlCount === 0 ? 'add one below' : connectedCount + ' connected')
+                        : 'switch to load',
+                    isActive ? 'discover' : null),
+                statTile('Environments', envCount,
+                    ws.includeAllEnvironments ? 'all shared envs' : 'selected',
+                    isActive ? 'environments' : null),
+                statTile('Recordings', recordingCount,
+                    isActive ? 'in this workspace' : 'switch to load',
+                    isActive ? 'recordings' : null),
+                statTile('Collections', collectionCount,
+                    isActive ? 'in this workspace' : 'switch to load',
+                    isActive ? 'collections' : null),
+                statTile('Favorites', favCount,
+                    isActive ? 'starred methods' : 'switch to load',
+                    isActive ? 'home' : null),
+                statTile('Mocks', mockCount,
+                    isActive ? 'running now' : 'switch to load',
+                    isActive ? 'mocks' : null)
             )
         ));
 
@@ -1008,14 +1150,15 @@
                     });
                 }
             }));
-            // Schema-files hint — full drop-zone editor lands in a
-            // follow-up; for now point operators at the Discover rail
-            // where the existing upload path lives.
-            sourcesSection.appendChild(el('p', {
-                className: 'bowire-ws-detail-stat-hint',
-                style: 'margin-top:10px',
-                textContent: 'Schema files (.proto / .openapi.json / .graphql sdl) — drop-zone editor lands in a follow-up. For now upload via the Discover rail.'
-            }));
+            // Schema files — drop-zone for .proto / .openapi.json /
+            // .yaml. Lives here because uploaded schemas are part of
+            // what the workspace knows about; the legacy sidebar
+            // selector (Discover/Flows/Proxy/Security) was retired in
+            // #294 so workspace-detail is the only mount site now.
+            sourcesSection.appendChild(el('div', { className: 'bowire-ws-detail-section-label', style: 'margin-top:14px', textContent: 'Schema files' }));
+            if (typeof renderProtoUploadPanel === 'function') {
+                sourcesSection.appendChild(renderProtoUploadPanel());
+            }
         }
         main.appendChild(sourcesSection);
 
@@ -1082,6 +1225,57 @@
             }
         }));
         main.appendChild(secretsSection);
+
+        // Share / portability — Export this workspace as a .bowire JSON
+        // bundle, or import another. Secrets are intentionally excluded
+        // from the export (session-only, would leak credentials).
+        var shareSection = el('div', { className: 'bowire-ws-detail-section' },
+            el('div', { className: 'bowire-ws-detail-section-label', textContent: 'Share' })
+        );
+        shareSection.appendChild(el('p', {
+            className: 'bowire-ws-detail-stat-hint',
+            style: 'margin-bottom:10px',
+            textContent: 'Export packages URLs, collections, recordings, favorites, benchmarks, flows and presets into a single JSON file. Secrets are NOT included.'
+        }));
+        var shareRow = el('div', { style: 'display:flex;gap:8px;flex-wrap:wrap' });
+        shareRow.appendChild(el('button', {
+            className: 'bowire-presets-btn',
+            textContent: 'Export workspace…',
+            onClick: function () {
+                if (!downloadWorkspaceExport(ws.id)) {
+                    toast('Export failed — see console', 'error');
+                    return;
+                }
+                toast('Workspace exported', 'success');
+            }
+        }));
+        shareRow.appendChild(el('button', {
+            className: 'bowire-presets-btn',
+            textContent: 'Import workspace…',
+            onClick: function () {
+                var input = document.createElement('input');
+                input.type = 'file';
+                input.accept = '.json,.bowire,application/json';
+                input.onchange = function () {
+                    if (!input.files || input.files.length === 0) return;
+                    var file = input.files[0];
+                    var reader = new FileReader();
+                    reader.onload = function () {
+                        var payload;
+                        try { payload = JSON.parse(reader.result); }
+                        catch (e) {
+                            toast('Could not parse the file as JSON', 'error');
+                            return;
+                        }
+                        _showWorkspaceImportDialog(payload, ws);
+                    };
+                    reader.readAsText(file);
+                };
+                input.click();
+            }
+        }));
+        shareSection.appendChild(shareRow);
+        main.appendChild(shareSection);
 
         // Danger zone — delete button. Only render when more than one
         // workspace exists (can't delete the last one).
@@ -1383,6 +1577,90 @@
         return main;
     }
 
+    // Portal home — band title strip. Icon + label + small sub-label.
+    function _renderHomeBandTitle(iconName, title, subtitle) {
+        return el('div', { className: 'bowire-home-band-title' },
+            el('span', { className: 'bowire-home-band-title-icon', innerHTML: svgIcon(iconName) }),
+            el('span', { className: 'bowire-home-band-title-label', textContent: title }),
+            subtitle ? el('span', { className: 'bowire-home-band-title-sub', textContent: subtitle }) : null
+        );
+    }
+
+    // One Continue-band tile — wide, accent-bordered, single-click
+    // resume target. icon + section-label up top, primary text in the
+    // middle, optional meta at the bottom.
+    function _renderContinueTile(iconName, label, primary, meta, onClick) {
+        return el('button', {
+            className: 'bowire-home-continue-tile',
+            type: 'button',
+            onClick: onClick
+        },
+            el('div', { className: 'bowire-home-continue-tile-head' },
+                el('span', { className: 'bowire-home-continue-tile-icon', innerHTML: svgIcon(iconName) }),
+                el('span', { className: 'bowire-home-continue-tile-label', textContent: label })
+            ),
+            el('div', { className: 'bowire-home-continue-tile-primary', textContent: primary, title: primary }),
+            meta ? el('div', { className: 'bowire-home-continue-tile-meta', textContent: meta }) : null
+        );
+    }
+
+    // Six canonical Start actions. firstRun=true labels the same set
+    // slightly differently (the operator hasn't seen the workspace
+    // yet) but the grid layout and hit-areas are identical.
+    function _renderHomeStartGrid(firstRun) {
+        var grid = el('div', { className: 'bowire-home-start-grid' });
+        function card(iconName, label, sub, onClick) {
+            grid.appendChild(el('button', {
+                className: 'bowire-home-start-card',
+                type: 'button',
+                onClick: onClick
+            },
+                el('span', { className: 'bowire-home-start-card-icon', innerHTML: svgIcon(iconName) }),
+                el('span', { className: 'bowire-home-start-card-label', textContent: label }),
+                el('span', { className: 'bowire-home-start-card-sub', textContent: sub })
+            ));
+        }
+        card('plus', 'New request', 'Freeform any protocol', function () {
+            if (typeof startFreeformRequest === 'function') startFreeformRequest();
+            else {
+                railMode = 'discover';
+                try { localStorage.setItem('bowire_rail_mode', 'discover'); } catch { /* ignore */ }
+                render();
+            }
+        });
+        card('connect', firstRun ? 'Add a URL' : 'Add URL', 'Configure a source', function () {
+            railMode = 'workspaces';
+            try { localStorage.setItem('bowire_rail_mode', 'workspaces'); } catch { /* ignore */ }
+            if (typeof workspacesSelectedId !== 'undefined') workspacesSelectedId = activeWorkspaceId;
+            render();
+        });
+        card('list', 'Import collection', 'Postman / OpenAPI', function () {
+            railMode = 'collections';
+            try { localStorage.setItem('bowire_rail_mode', 'collections'); } catch { /* ignore */ }
+            render();
+        });
+        card('record', 'Record session', 'Capture live calls', function () {
+            if (typeof startRecording === 'function') {
+                startRecording();
+                railMode = 'discover';
+                try { localStorage.setItem('bowire_rail_mode', 'discover'); } catch { /* ignore */ }
+                render();
+            }
+        });
+        card('server', 'Build a mock', 'Replay recordings', function () {
+            railMode = 'mocks';
+            try { localStorage.setItem('bowire_rail_mode', 'mocks'); } catch { /* ignore */ }
+            render();
+        });
+        card('compass', 'Browse Discover', 'Explore services', function () {
+            railMode = 'discover';
+            try { localStorage.setItem('bowire_rail_mode', 'discover'); } catch { /* ignore */ }
+            sidebarView = 'services';
+            render();
+        });
+        return grid;
+    }
+
     // #139 — Home tile (favorite or recent entry). Resolves the
     // service + method from the live discovery list so the tile
     // shows method type + protocol icon when available, and
@@ -1435,13 +1713,97 @@
             var homeMain = el('div', { id: 'bowire-main-home', className: 'bowire-main bowire-main-home' });
             var homeWrap = el('div', { className: 'bowire-home-wrap' });
 
-            homeWrap.appendChild(el('h2', { className: 'bowire-home-title', textContent: 'Home' }));
-            homeWrap.appendChild(el('p', {
-                className: 'bowire-home-subtitle',
-                textContent: 'Favorites and recent activity across every workflow. Click an entry to open it in Discover.'
-            }));
+            // Portal home (3 bands, left-aligned, consistent gutter):
+            //   1. Continue — last method / collection / recording (3 tiles)
+            //   2. Start    — action cards for the canonical entry points
+            //   3. Favorites + Recent activity (the muscle-memory layer)
+            //
+            // Same horizontal padding + max-width across every band so
+            // the page reads as one column from top to bottom instead of
+            // a centered hero floating above a wider grid (which was
+            // the prior layout's restless feel — user feedback).
+            //
+            // first-run state replaces the Continue band with a short
+            // tagline + two onboarding CTAs so the layout stays
+            // visually aligned but the content matches the new operator.
+            var isFirstRun = typeof window.bowireDetectLandingState === 'function'
+                && window.bowireDetectLandingState() === 'first-run';
 
-            // ---- Side-by-side grid: Favorites + Recent activity ----
+            var recent = (typeof getRecentMethods === 'function') ? getRecentMethods() : [];
+            var collections = (typeof collectionsList !== 'undefined' && Array.isArray(collectionsList)) ? collectionsList : [];
+            var recordings = (typeof recordingsList !== 'undefined' && Array.isArray(recordingsList)) ? recordingsList : [];
+
+            // ---- Band 1: Continue (or first-run onboarding) ----
+            if (isFirstRun) {
+                var firstRunBand = el('div', { className: 'bowire-home-band bowire-home-band-firstrun' });
+                firstRunBand.appendChild(el('p', {
+                    className: 'bowire-home-firstrun-tagline',
+                    textContent: 'Pick what you want to do — or jump back into recent activity below.'
+                }));
+                firstRunBand.appendChild(_renderHomeStartGrid(true));
+                homeWrap.appendChild(firstRunBand);
+            } else {
+                var hasContinueItems = recent.length > 0 || collections.length > 0 || recordings.length > 0;
+                if (hasContinueItems) {
+                    var continueBand = el('div', { className: 'bowire-home-band' });
+                    continueBand.appendChild(_renderHomeBandTitle('replay', 'Continue', 'Pick up where you left off'));
+                    var continueGrid = el('div', { className: 'bowire-home-continue-grid' });
+                    if (recent.length > 0) {
+                        continueGrid.appendChild(_renderContinueTile(
+                            'compass', 'Last method', recent[0].service + ' / ' + recent[0].method,
+                            'Open in Discover',
+                            function () {
+                                var r = recent[0];
+                                var svc = (services || []).find(function (s) { return s.name === r.service; });
+                                var mth = svc && (svc.methods || []).find(function (m) { return m.name === r.method; });
+                                if (svc && mth && typeof openTab === 'function') {
+                                    railMode = 'discover';
+                                    try { localStorage.setItem('bowire_rail_mode', 'discover'); } catch { /* ignore */ }
+                                    openTab(svc, mth);
+                                } else {
+                                    railMode = 'discover';
+                                    try { localStorage.setItem('bowire_rail_mode', 'discover'); } catch { /* ignore */ }
+                                    render();
+                                }
+                            }));
+                    }
+                    if (collections.length > 0) {
+                        var col = collections[0];
+                        continueGrid.appendChild(_renderContinueTile(
+                            'list', 'Last collection', col.name,
+                            (col.items && col.items.length) + ' item' + (col.items && col.items.length === 1 ? '' : 's'),
+                            function () {
+                                if (typeof collectionManagerSelectedId !== 'undefined') collectionManagerSelectedId = col.id;
+                                railMode = 'collections';
+                                try { localStorage.setItem('bowire_rail_mode', 'collections'); } catch { /* ignore */ }
+                                render();
+                            }));
+                    }
+                    if (recordings.length > 0) {
+                        var rec = recordings[0];
+                        continueGrid.appendChild(_renderContinueTile(
+                            'recording', 'Last recording', rec.name || ('Recording ' + rec.id),
+                            (rec.steps && rec.steps.length) + ' step' + (rec.steps && rec.steps.length === 1 ? '' : 's'),
+                            function () {
+                                if (typeof recordingManagerSelectedId !== 'undefined') recordingManagerSelectedId = rec.id;
+                                railMode = 'recordings';
+                                try { localStorage.setItem('bowire_rail_mode', 'recordings'); } catch { /* ignore */ }
+                                render();
+                            }));
+                    }
+                    continueBand.appendChild(continueGrid);
+                    homeWrap.appendChild(continueBand);
+                }
+
+                // ---- Band 2: Start ----
+                var startBand = el('div', { className: 'bowire-home-band' });
+                startBand.appendChild(_renderHomeBandTitle('plus', 'Start', 'Kick off a new use case'));
+                startBand.appendChild(_renderHomeStartGrid(false));
+                homeWrap.appendChild(startBand);
+            }
+
+            // ---- Band 3: Favorites + Recent activity ----
+            var sectionsBand = el('div', { className: 'bowire-home-band' });
             var sections = el('div', { className: 'bowire-home-sections' });
 
             var favs = (typeof getFavorites === 'function') ? getFavorites() : [];
@@ -1456,19 +1818,7 @@
                     icon: 'star',
                     headline: 'No favorites yet',
                     body: 'Star a method from the sidebar or any recent entry below — it lands here for one-click access across every workflow.',
-                    hintKey: 'bowire_home_favs_hint',
-                    actions: [
-                        {
-                            label: 'Go to Discover',
-                            primary: true,
-                            onClick: function () {
-                                railMode = 'discover';
-                                try { localStorage.setItem('bowire_rail_mode', 'discover'); } catch { /* ignore */ }
-                                sidebarView = 'services';
-                                render();
-                            }
-                        }
-                    ]
+                    hintKey: 'bowire_home_favs_hint'
                 }));
             } else {
                 var favGrid = el('div', { className: 'bowire-home-grid' });
@@ -1479,8 +1829,6 @@
             }
             sections.appendChild(favSection);
 
-            // ---- Recent activity ----
-            var recent = (typeof getRecentMethods === 'function') ? getRecentMethods() : [];
             var recentSection = el('div', { className: 'bowire-home-section' });
             recentSection.appendChild(el('h3', { className: 'bowire-home-section-title' },
                 el('span', { innerHTML: svgIcon('history') }),
@@ -1501,7 +1849,8 @@
                 recentSection.appendChild(recentGrid);
             }
             sections.appendChild(recentSection);
-            homeWrap.appendChild(sections);
+            sectionsBand.appendChild(sections);
+            homeWrap.appendChild(sectionsBand);
 
             homeMain.appendChild(homeWrap);
             return homeMain;
@@ -1959,6 +2308,209 @@
                     }));
                 } catch (e) { console.warn('[favorites] header-star failed', e); }
             }
+
+            // #296 — "Add to…" quick-action menu. Sits between the
+            // favorite star and the hint chip. The trigger is a
+            // single icon-only button; the popup lists the canonical
+            // cross-feature destinations (Collection, Preset,
+            // Benchmark, Recording). Each action snapshots the LIVE
+            // request state at click-time (not render-time) — morphdom
+            // preserves the dropdown node across renders so any captured
+            // closure values would get stale.
+            try {
+                var svcNameForMenu = selectedService.name;
+                var mthNameForMenu = selectedMethod.name;
+                var addToWrap = el('div', { className: 'bowire-header-addto-wrap' });
+                addToWrap.appendChild(el('button', {
+                    id: 'bowire-header-addto-btn',
+                    className: 'bowire-header-addto-btn' + (methodAddToMenuOpen ? ' active' : ''),
+                    title: 'Add this method to…',
+                    'aria-label': 'Add this method to…',
+                    'aria-haspopup': 'menu',
+                    'aria-expanded': methodAddToMenuOpen ? 'true' : 'false',
+                    onClick: function (e) {
+                        e.stopPropagation();
+                        methodAddToMenuOpen = !methodAddToMenuOpen;
+                        render();
+                    },
+                    innerHTML: svgIcon('plus')
+                }));
+
+                if (methodAddToMenuOpen) {
+                    var menu = el('div', {
+                        className: 'bowire-header-addto-menu',
+                        role: 'menu',
+                        onClick: function (e) { e.stopPropagation(); }
+                    });
+
+                    function _closeAddToMenu() {
+                        methodAddToMenuOpen = false;
+                    }
+                    function _snapshotRequest() {
+                        var liveSvc = selectedService;
+                        var liveMth = selectedMethod;
+                        if (!liveSvc || !liveMth) return null;
+                        var body = (Array.isArray(requestMessages) && requestMessages[0]) || '{}';
+                        var meta = {};
+                        var metaRows = document.querySelectorAll('.bowire-metadata-row');
+                        for (var mi = 0; mi < metaRows.length; mi++) {
+                            var inputs = metaRows[mi].querySelectorAll('.bowire-metadata-input');
+                            if (inputs.length === 2 && inputs[0].value.trim()) {
+                                meta[inputs[0].value.trim()] = inputs[1].value;
+                            }
+                        }
+                        return {
+                            service: liveSvc.name,
+                            method: liveMth.name,
+                            methodType: liveMth.methodType || 'Unary',
+                            protocol: liveSvc.source || selectedProtocol || 'grpc',
+                            body: body,
+                            messages: Array.isArray(requestMessages) ? requestMessages.slice() : [body],
+                            metadata: Object.keys(meta).length > 0 ? meta : null,
+                            serverUrl: liveSvc.originUrl || (Array.isArray(serverUrls) && serverUrls[0]) || null
+                        };
+                    }
+
+                    // ---- Collection section ----
+                    menu.appendChild(el('div', { className: 'bowire-header-addto-section', textContent: 'Collection' }));
+                    var existingCols = (typeof collectionsList !== 'undefined' && Array.isArray(collectionsList)) ? collectionsList : [];
+                    if (existingCols.length > 0) {
+                        existingCols.slice(0, 6).forEach(function (col) {
+                            menu.appendChild(el('button', {
+                                className: 'bowire-header-addto-item',
+                                role: 'menuitem',
+                                onClick: function () {
+                                    var snap = _snapshotRequest();
+                                    if (!snap) return;
+                                    addToCollection(col.id, snap);
+                                    toast('Added to "' + col.name + '"', 'success');
+                                    _closeAddToMenu();
+                                    render();
+                                }
+                            },
+                                el('span', { className: 'bowire-header-addto-item-icon', innerHTML: svgIcon('list') }),
+                                el('span', { textContent: col.name }),
+                                el('span', { className: 'bowire-header-addto-item-meta', textContent: col.items.length + (col.items.length === 1 ? ' entry' : ' entries') })
+                            ));
+                        });
+                        if (existingCols.length > 6) {
+                            menu.appendChild(el('div', {
+                                className: 'bowire-header-addto-item-meta',
+                                style: 'padding:4px 12px 0',
+                                textContent: '+ ' + (existingCols.length - 6) + ' more in Collections'
+                            }));
+                        }
+                    }
+                    menu.appendChild(el('button', {
+                        className: 'bowire-header-addto-item bowire-header-addto-item-create',
+                        role: 'menuitem',
+                        onClick: function () {
+                            bowirePrompt('Collection name', {
+                                title: 'New collection',
+                                placeholder: 'e.g. Smoke tests',
+                                confirmText: 'Create'
+                            }).then(function (name) {
+                                if (name === null) return;
+                                var trimmed = String(name || '').trim();
+                                var col = createCollection(trimmed || undefined);
+                                var snap = _snapshotRequest();
+                                if (snap) addToCollection(col.id, snap);
+                                toast('Saved to "' + col.name + '"', 'success');
+                                _closeAddToMenu();
+                                render();
+                            });
+                        }
+                    },
+                        el('span', { className: 'bowire-header-addto-item-icon', innerHTML: svgIcon('plus') }),
+                        el('span', { textContent: 'New collection…' })
+                    ));
+
+                    // ---- Other destinations ----
+                    menu.appendChild(el('div', { className: 'bowire-header-addto-section', textContent: 'Send to' }));
+
+                    menu.appendChild(el('button', {
+                        className: 'bowire-header-addto-item',
+                        role: 'menuitem',
+                        onClick: function () {
+                            var snap = _snapshotRequest();
+                            if (!snap) return;
+                            bowirePrompt('Preset name', {
+                                title: 'Save as preset',
+                                placeholder: snap.method + ' preset',
+                                confirmText: 'Save'
+                            }).then(function (name) {
+                                if (!name) return;
+                                if (typeof savePresetFromSnapshot === 'function') {
+                                    savePresetFromSnapshot('discover', String(name).trim(), snap);
+                                    toast('Preset saved', 'success');
+                                }
+                                _closeAddToMenu();
+                                render();
+                            });
+                        }
+                    },
+                        el('span', { className: 'bowire-header-addto-item-icon', innerHTML: svgIcon('layers') }),
+                        el('span', { textContent: 'Save as preset' })
+                    ));
+
+                    if (typeof createBenchmarkSpec === 'function') {
+                        menu.appendChild(el('button', {
+                            className: 'bowire-header-addto-item',
+                            role: 'menuitem',
+                            onClick: function () {
+                                var snap = _snapshotRequest();
+                                if (!snap) return;
+                                var spec = createBenchmarkSpec({
+                                    name: snap.service + '.' + snap.method,
+                                    service: snap.service,
+                                    method: snap.method,
+                                    protocol: snap.protocol,
+                                    body: snap.body,
+                                    metadata: snap.metadata || {}
+                                });
+                                if (typeof benchmarksSelectedId !== 'undefined' && spec) {
+                                    benchmarksSelectedId = spec.id;
+                                }
+                                railMode = 'benchmarks';
+                                try { localStorage.setItem('bowire_rail_mode', 'benchmarks'); } catch { /* ignore */ }
+                                toast('Benchmark created', 'success');
+                                _closeAddToMenu();
+                                render();
+                            }
+                        },
+                            el('span', { className: 'bowire-header-addto-item-icon', innerHTML: svgIcon('lightning') }),
+                            el('span', { textContent: 'Create benchmark' })
+                        ));
+                    }
+
+                    if (typeof startRecording === 'function') {
+                        var recActive = (typeof recordingActive === 'boolean' && recordingActive)
+                            || (typeof activeRecordingId !== 'undefined' && activeRecordingId);
+                        menu.appendChild(el('button', {
+                            className: 'bowire-header-addto-item' + (recActive ? ' bowire-header-addto-item-disabled' : ''),
+                            role: 'menuitem',
+                            disabled: recActive ? true : undefined,
+                            title: recActive ? 'Already recording — new calls land in the active recording' : 'Start a new recording; subsequent calls land there',
+                            onClick: function () {
+                                if (recActive) return;
+                                startRecording();
+                                toast('Recording started — invoke the method to capture', 'success');
+                                _closeAddToMenu();
+                                render();
+                            }
+                        },
+                            el('span', { className: 'bowire-header-addto-item-icon', innerHTML: svgIcon('record') }),
+                            el('span', { textContent: recActive ? 'Recording in progress' : 'Start recording' })
+                        ));
+                    }
+
+                    addToWrap.appendChild(menu);
+                }
+                header.appendChild(addToWrap);
+                // svcNameForMenu / mthNameForMenu kept in case future
+                // items need the labels at construction time.
+                void svcNameForMenu; void mthNameForMenu;
+            } catch (e) { console.warn('[addto] header-menu failed', e); }
 
             // #114 — inline hint chip at the method header. Surfaces the
             // deterministic hint engine's results at the place where the

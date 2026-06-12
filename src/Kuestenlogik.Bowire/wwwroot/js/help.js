@@ -65,6 +65,10 @@
         if (!helpAvailable) return;
         helpDrawerOpen = true;
         try { localStorage.setItem('bowire_help_drawer_open', '1'); } catch { /* ignore */ }
+        // #299 — opening Help makes it the active tab in the unified
+        // right-side drawer.
+        rightDrawerActiveTab = 'help';
+        try { localStorage.setItem('bowire_right_drawer_active_tab', 'help'); } catch { /* ignore */ }
         helpEnsureTopicsLoaded().then(function () {
             var wanted = targetId || helpSelectedId || helpResolveContextualTopicId();
             if (wanted !== helpSelectedId || !helpSelectedTopic) {

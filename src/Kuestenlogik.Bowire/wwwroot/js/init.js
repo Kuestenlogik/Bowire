@@ -68,9 +68,20 @@
             if (e.key === 'Escape' && helpDrawerOpen
                 && typeof helpCloseDrawer === 'function'
                 && !searchSuggestionsOpen) {
-                e.preventDefault();
-                helpCloseDrawer();
-                return;
+                // #299 — Esc closes Help only when Help is the visible
+                // active tab in the unified right-side drawer. If the
+                // user is looking at the Assistant tab (Help is sitting
+                // in the background), Esc shouldn't reach across and
+                // dismiss the off-screen Help.
+                if (aiDrawerOpen && rightDrawerActiveTab !== 'help') {
+                    // Help is open but inactive — let Esc fall through
+                    // to the next handler (which closes the omnibox /
+                    // stops streaming).
+                } else {
+                    e.preventDefault();
+                    helpCloseDrawer();
+                    return;
+                }
             }
 
             // #127 — Cmd/Ctrl+S Force-Flush. Writes every persist*()
@@ -115,6 +126,12 @@
                 e.preventDefault();
                 aiDrawerOpen = !aiDrawerOpen;
                 try { localStorage.setItem('bowire_ai_drawer_open', aiDrawerOpen ? '1' : '0'); } catch { /* ignore */ }
+                // #299 — opening via shortcut also makes Assistant the
+                // active tab in the unified right-side drawer.
+                if (aiDrawerOpen) {
+                    rightDrawerActiveTab = 'assistant';
+                    try { localStorage.setItem('bowire_right_drawer_active_tab', 'assistant'); } catch { /* ignore */ }
+                }
                 render();
                 return;
             }
@@ -445,9 +462,16 @@
             if (searchSuggestionsOpen) {
                 // Keep the dropdown open when the user is clicking
                 // inside the command-palette wrapper (e.g. the input
-                // itself or the dropdown items).
+                // itself or the dropdown items). Also exclude the
+                // trigger button: its onClick fires before this
+                // bubble-phase handler, so without the exclusion the
+                // very click that OPENS the palette would close it on
+                // the same event tick.
                 var palette = document.getElementById('bowire-topbar-palette');
-                if (!palette || !palette.contains(e.target)) {
+                var trigger = document.getElementById('bowire-omnibox-trigger');
+                var inPalette = palette && palette.contains(e.target);
+                var onTrigger = trigger && trigger.contains(e.target);
+                if (!inPalette && !onTrigger) {
                     searchSuggestionsOpen = false;
                     changed = true;
                 }
@@ -469,6 +493,20 @@
                 var wsInside = (wsBtn && wsBtn.contains(e.target)) || (wsMenu && wsMenu.contains(e.target));
                 if (!wsInside) {
                     workspaceMenuOpen = false;
+                    changed = true;
+                }
+            }
+            // #296 — method header "Add to…" popup. Closes on any
+            // outside click; menu's own click handler stops propagation
+            // so clicks on items don't double-close before the action
+            // runs.
+            if (methodAddToMenuOpen) {
+                var addToBtn = document.getElementById('bowire-header-addto-btn');
+                var addToMenu = document.querySelector('.bowire-header-addto-menu');
+                var addToInside = (addToBtn && addToBtn.contains(e.target))
+                    || (addToMenu && addToMenu.contains(e.target));
+                if (!addToInside) {
+                    methodAddToMenuOpen = false;
                     changed = true;
                 }
             }

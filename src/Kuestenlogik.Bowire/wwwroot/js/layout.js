@@ -212,9 +212,22 @@
             document.body.style.cursor = divider.style.cursor;
             document.body.style.userSelect = 'none';
 
+            // Capture the offset between the cursor and the LEADING edge
+            // of the divider at mousedown — that's how far inside the
+            // bar the user grabbed it. Subtracting that during the move
+            // keeps the cursor anchored to the same point inside the
+            // divider for the duration of the drag, so the splitter
+            // follows the mouse instead of jumping by `grabOffset` on
+            // the first mousemove event. Same fix shape as the sidebar
+            // splitter (#289).
+            var dividerRect = divider.getBoundingClientRect();
+            var startPos = eff === 'horizontal' ? ev.clientX : ev.clientY;
+            var dividerStart = eff === 'horizontal' ? dividerRect.left : dividerRect.top;
+            var grabOffset = startPos - dividerStart;
+
             function onMove(e) {
                 var pos = eff === 'horizontal' ? e.clientX : e.clientY;
-                var rel = (pos - origin) / total;
+                var rel = (pos - origin - grabOffset) / total;
                 if (rel < minRatio) rel = minRatio;
                 if (rel > maxRatio) rel = maxRatio;
                 ratio = rel;

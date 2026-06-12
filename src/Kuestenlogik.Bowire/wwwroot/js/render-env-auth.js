@@ -124,28 +124,21 @@
         }
         body.appendChild(renderMain());
 
-        // Assistant drawer (#90, formerly AI drawer). Sits at the
-        // right edge of the body, peer with the main pane. Cross-
-        // cutting — visible across every rail mode when open;
-        // independent of which sidebar template is active.
-        if (aiDrawerOpen) {
+        // #299 — Unified right-side drawer. Assistant (#90) and Help
+        // (#154 Phase 3) share one drawer chrome on the right edge of
+        // the body. When both are open, a tab strip lets the operator
+        // switch; the active tab persists across renders. When only
+        // one is open, the chrome renders without tabs. This replaces
+        // the old "newest open wins, the other is silently hidden"
+        // behavior — both can now coexist without competing.
+        var helpUsable = helpDrawerOpen && helpAvailable
+            && typeof renderHelpDrawer === 'function';
+        if (aiDrawerOpen || helpUsable) {
             body.classList.add('bowire-with-ai-drawer');
-            body.appendChild(renderAiDrawer());
-        }
-
-        // #154 Phase 3 — Help drawer. Same right-edge slot as the
-        // Assistant; only one of the two renders at a time (the
-        // newest open wins because both push onto the same body
-        // flex row, and CSS gives them identical width). Operators
-        // toggling between Assistant and Help is rare enough that a
-        // hard either/or is fine; if it becomes annoying we'll add
-        // a second drawer slot below.
-        if (helpDrawerOpen && helpAvailable && typeof renderHelpDrawer === 'function') {
-            var helpDrawer = renderHelpDrawer();
-            if (helpDrawer) {
-                body.classList.add('bowire-with-ai-drawer'); // reuse the margin-right rule
-                body.appendChild(helpDrawer);
-            }
+            body.appendChild(renderUnifiedRightDrawer({
+                assistant: aiDrawerOpen,
+                help: helpUsable
+            }));
         }
 
         // #138 — Statusbar at the bottom. Hosts connection pill +
@@ -349,6 +342,181 @@
             e.stopPropagation();
             toggleSidebarCollapsed();
         });
+    }
+
+    // ---- Unified right-side drawer (#299) ----
+    // Hosts Assistant + Help in a single right-edge slot. When both
+    // panels are open a tab strip appears in the header; when only
+    // one is open the chrome is identical to the legacy single
+    // drawer. Close per-tab via the X on each tab; close drawer-wide
+    // is implicit (closing the last tab dismisses the chrome).
+    //
+    // Active tab is sticky (localStorage via rightDrawerActiveTab in
+    // prologue) so reopening lands the operator on the panel they
+    // used last.
+    function renderUnifiedRightDrawer(open) {
+        var tabs = [];
+        if (open.assistant) {
+            // Build the Assistant status dot once, reuse it as the
+            // tab's status accessory. Same three states as the
+            // legacy single-drawer header.
+            var aiSt = (typeof window.__bowireAi === 'object' && window.__bowireAi)
+                ? window.__bowireAi.getStatus()
+                : null;
+            var statusClass, statusTitle;
+            if (aiSt && aiSt.hasClient) {
+                statusClass = 'bowire-ai-status-dot bowire-ai-status-dot-connected';
+                statusTitle = 'Connected · ' + (aiSt.providerId || 'unknown')
+                    + ' · ' + (aiSt.model || '(default model)');
+            } else if (aiSt === null) {
+                statusClass = 'bowire-ai-status-dot bowire-ai-status-dot-missing';
+                statusTitle = 'AI package not installed — chat unavailable. Hints still work.';
+            } else {
+                statusClass = 'bowire-ai-status-dot bowire-ai-status-dot-idle';
+                statusTitle = 'No model configured — open Settings → Assistant to connect one.';
+            }
+            tabs.push({
+                id: 'assistant',
+                label: 'Assistant',
+                accessory: el('span', {
+                    className: statusClass,
+                    title: statusTitle,
+                    'aria-label': statusTitle
+                }),
+                closeTitle: 'Close Assistant (Ctrl+Shift+A)',
+                onClose: function () {
+                    aiDrawerOpen = false;
+                    try { localStorage.setItem('bowire_ai_drawer_open', '0'); } catch { /* ignore */ }
+                    render();
+                },
+                renderContent: function () {
+                    return window.__bowireAi
+                        ? window.__bowireAi.renderPanel()
+                        : el('p', {
+                            className: 'bowire-drawer-empty',
+                            textContent: 'AI module not loaded.'
+                        });
+                }
+            });
+        }
+        if (open.help) {
+            var topicCount = (typeof helpTopics !== 'undefined' && helpTopics)
+                ? helpTopics.length : 0;
+            tabs.push({
+                id: 'help',
+                label: 'Help',
+                accessory: topicCount > 0 ? el('span', {
+                    className: 'bowire-help-topic-count',
+                    title: topicCount + ' topic' + (topicCount === 1 ? '' : 's') + ' loaded',
+                    textContent: String(topicCount)
+                }) : null,
+                closeTitle: 'Close Help (Esc)',
+                onClose: function () {
+                    if (typeof helpCloseDrawer === 'function') helpCloseDrawer();
+                },
+                renderContent: function () {
+                    return _renderHelpDrawerContent();
+                }
+            });
+        }
+
+        // Resolve active tab. If the sticky pick isn't currently open
+        // (e.g. user closed Assistant while Help was the active tab),
+        // fall back to the first open tab.
+        var activeId = rightDrawerActiveTab;
+        if (!tabs.find(function (t) { return t.id === activeId; })) {
+            activeId = tabs[0] ? tabs[0].id : null;
+        }
+        var activeTab = tabs.find(function (t) { return t.id === activeId; });
+
+        var drawer = el('div', {
+            id: 'bowire-right-drawer',
+            className: 'bowire-drawer bowire-right-drawer'
+                + (tabs.length > 1 ? ' bowire-right-drawer-tabbed' : ''),
+            role: 'complementary',
+            'aria-label': activeTab ? activeTab.label : 'Drawer'
+        });
+
+        if (tabs.length > 1) {
+            // Tab strip header — VS Code / JetBrains style. Each tab
+            // is a button with its accessory next to the label and an
+            // X on the right that closes JUST that tab (so the other
+            // stays accessible).
+            var tabStrip = el('div', {
+                className: 'bowire-right-drawer-tabs',
+                role: 'tablist'
+            });
+            tabs.forEach(function (t) {
+                var isActive = t.id === activeId;
+                var tabBtn = el('button', {
+                    className: 'bowire-right-drawer-tab'
+                        + (isActive ? ' is-active' : ''),
+                    role: 'tab',
+                    'aria-selected': isActive ? 'true' : 'false',
+                    onClick: function () {
+                        rightDrawerActiveTab = t.id;
+                        try { localStorage.setItem('bowire_right_drawer_active_tab', t.id); }
+                        catch { /* ignore */ }
+                        render();
+                    }
+                });
+                tabBtn.appendChild(el('span', {
+                    className: 'bowire-right-drawer-tab-label',
+                    textContent: t.label
+                }));
+                if (t.accessory) tabBtn.appendChild(t.accessory);
+                tabBtn.appendChild(el('span', {
+                    className: 'bowire-right-drawer-tab-close',
+                    title: t.closeTitle || 'Close',
+                    innerHTML: svgIcon('close'),
+                    role: 'button',
+                    'aria-label': t.closeTitle || 'Close',
+                    onClick: function (e) {
+                        e.stopPropagation();
+                        if (typeof t.onClose === 'function') t.onClose();
+                    }
+                }));
+                tabStrip.appendChild(tabBtn);
+            });
+            drawer.appendChild(tabStrip);
+        } else if (activeTab) {
+            // Single-panel mode: header mirrors the legacy drawer
+            // (title + accessory + close button) so the visual stays
+            // identical when only one panel is open.
+            var titleRow = el('div', { className: 'bowire-drawer-title-row' },
+                el('span', { className: 'bowire-drawer-title', textContent: activeTab.label }),
+                activeTab.accessory || null
+            );
+            var header = el('div', { className: 'bowire-drawer-header' },
+                titleRow,
+                el('button', {
+                    className: 'bowire-drawer-close',
+                    title: activeTab.closeTitle || 'Close',
+                    'aria-label': activeTab.closeTitle || ('Close ' + activeTab.label),
+                    innerHTML: svgIcon('close'),
+                    onClick: function () {
+                        if (typeof activeTab.onClose === 'function') activeTab.onClose();
+                    }
+                })
+            );
+            drawer.appendChild(header);
+        }
+
+        var contentWrap = el('div', { className: 'bowire-drawer-content' });
+        if (activeTab) {
+            try {
+                var content = activeTab.renderContent();
+                if (content) contentWrap.appendChild(content);
+            } catch (e) {
+                console.warn('[right-drawer] content render failed', e);
+                contentWrap.appendChild(el('p', {
+                    className: 'bowire-drawer-empty',
+                    textContent: 'Panel failed to render.'
+                }));
+            }
+        }
+        drawer.appendChild(contentWrap);
+        return drawer;
     }
 
     // ---- AI drawer (#90) ----
@@ -1023,14 +1191,23 @@
         var helpBtn = el('button', {
             id: 'bowire-help-btn',
             className: 'bowire-theme-toggle-btn'
+                + (helpAvailable && helpDrawerOpen ? ' active' : '')
                 + (helpAvailable ? '' : ' bowire-theme-toggle-btn-disabled'),
             title: helpAvailable
-                ? 'Help (F1)'
+                ? (helpDrawerOpen ? 'Close Help (F1)' : 'Help (F1)')
                 : 'Install Kuestenlogik.Bowire.Help for in-app docs (or visit bowire.io/docs)',
             'aria-label': 'Help',
             onClick: function () {
                 if (helpAvailable) {
-                    helpOpenDrawer();
+                    // #299 — toggle: closing on second click matches the
+                    // Assistant button next to it and keeps F1 as a
+                    // dedicated 'force open' shortcut (still calls
+                    // helpOpenDrawer regardless of state).
+                    if (helpDrawerOpen) {
+                        helpCloseDrawer();
+                    } else {
+                        helpOpenDrawer();
+                    }
                 } else {
                     window.open('https://bowire.io/docs', '_blank', 'noopener');
                 }
@@ -1084,6 +1261,12 @@
             onClick: function () {
                 aiDrawerOpen = !aiDrawerOpen;
                 try { localStorage.setItem('bowire_ai_drawer_open', aiDrawerOpen ? '1' : '0'); } catch { /* ignore */ }
+                // #299 — opening the panel should also make it the
+                // active tab in the unified right drawer.
+                if (aiDrawerOpen) {
+                    rightDrawerActiveTab = 'assistant';
+                    try { localStorage.setItem('bowire_right_drawer_active_tab', 'assistant'); } catch { /* ignore */ }
+                }
                 render();
             }
         },
