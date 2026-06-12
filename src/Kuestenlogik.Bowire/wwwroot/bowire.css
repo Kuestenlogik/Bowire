@@ -1638,6 +1638,37 @@ not just
     justify-content: center;
     color: var(--bowire-text-secondary);
 }
+/* #192 (C) — per-row "edit" affordance in the workspace dropdown.
+   Hover-revealed so the dropdown still reads as "pick a workspace"
+   primarily and the secondary "edit this one" action stays out of
+   the way until the operator hovers a row. */
+.bowire-workspace-menu-item-edit {
+    margin-left: auto;
+    width: 22px;
+    height: 22px;
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    border: 0;
+    border-radius: var(--bowire-radius-sm);
+    background: transparent;
+    color: var(--bowire-text-tertiary);
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity var(--bowire-transition), background var(--bowire-transition), color var(--bowire-transition);
+}
+.bowire-workspace-menu-item:hover .bowire-workspace-menu-item-edit { opacity: 1; }
+.bowire-workspace-menu-item-edit:hover {
+    background: var(--bowire-surface);
+    color: var(--bowire-text);
+}
+.bowire-workspace-menu-item-edit svg { width: 12px; height: 12px; }
+/* The check sits at margin-left:auto today; with the edit button now
+   absorbing the auto-margin, pin the check to the end so the layout
+   stays "name … envCount edit check". */
+.bowire-workspace-menu-item-check { margin-left: 4px; }
 .bowire-workspace-menu-divider {
     height: 1px;
     margin: 4px 0;
@@ -2173,6 +2204,12 @@ not just
 .bowire-tree-row.active {
     color: var(--bowire-text);
     font-weight: 600;
+}
+.bowire-tree-row.drop-target {
+    background: var(--bowire-accent-subtle, var(--bowire-bg-elevated));
+    outline: 1px dashed var(--bowire-accent);
+    outline-offset: -2px;
+    color: var(--bowire-text);
 }
 .bowire-tree-toggle {
     width: 16px;

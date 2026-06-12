@@ -1426,6 +1426,29 @@
                                 el('span', { className: 'bowire-workspace-menu-item-dot', style: 'background:' + (w.color || 'var(--bowire-accent)') }),
                                 el('span', { className: 'bowire-workspace-menu-item-name', textContent: w.name }),
                                 el('span', { className: 'bowire-workspace-menu-item-envcount', textContent: envLabel }),
+                                // #192 (C) — per-row "edit" affordance: jumps
+                                // straight into the Workspaces rail with this
+                                // workspace + Settings selected, without
+                                // going via rail-switch → list pick.
+                                el('button', {
+                                    type: 'button',
+                                    className: 'bowire-workspace-menu-item-edit',
+                                    title: 'Edit workspace',
+                                    'aria-label': 'Edit workspace',
+                                    innerHTML: svgIcon('settings'),
+                                    onClick: function (e) {
+                                        e.stopPropagation();
+                                        workspaceMenuOpen = false;
+                                        workspacesSelectedId = w.id;
+                                        if (typeof workspaceTreeSelection !== 'undefined') {
+                                            workspaceTreeSelection = { wsId: w.id, kind: 'workspace' };
+                                        }
+                                        railMode = 'workspaces';
+                                        try { localStorage.setItem('bowire_rail_mode', 'workspaces'); }
+                                        catch { /* ignore */ }
+                                        render();
+                                    }
+                                }),
                                 w.id === activeWorkspaceId
                                     ? el('span', { className: 'bowire-workspace-menu-item-check', textContent: '✓' })
                                     : null

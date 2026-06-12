@@ -1561,6 +1561,7 @@
                 switchWorkspace(w.id);
             } : null,
             addTitle: !isActive ? 'Switch to this workspace' : null,
+            onDrop: function (dt) { _handleWorkspaceDrop(w, dt); },
             children: children
         };
     }
@@ -1610,6 +1611,7 @@
                 _quickAddUrlToWorkspace(w);
             },
             addTitle: 'Add URL or schema',
+            onDrop: function (dt) { _handleWorkspaceDrop(w, dt); },
             children: urlChildren
         };
     }
@@ -1643,6 +1645,55 @@
     function _countWorkspaceList(wsId, baseKey) {
         var list = readWorkspaceJsonList(wsId, baseKey);
         return list.length || null;
+    }
+
+    // #192 (B) — schema / URL drop on a workspace subtree row.
+    // Accepts:
+    //   - One or more files (.proto / .json / .graphql / .yaml / …):
+    //     stages each as a `file://<filename>` entry on the target
+    //     workspace's serverUrls. Schema-parse pipeline lands later;
+    //     the drop establishes the source, the operator wires up the
+    //     URL prefix from the Sources rail when they're ready.
+    //   - Plain text (a URL pasted from another window): treated as
+    //     a URL string and added as-is.
+    // Switches to the target workspace first so the URL ends up in
+    // the right per-workspace bucket regardless of which workspace
+    // the operator was on when they dropped.
+    function _handleWorkspaceDrop(w, dt) {
+        if (!dt) return;
+        if (w.id !== activeWorkspaceId) switchWorkspace(w.id);
+        var added = [];
+        var files = dt.files;
+        if (files && files.length > 0) {
+            for (var i = 0; i < files.length; i++) {
+                var entry = 'file://' + files[i].name;
+                if (serverUrls.indexOf(entry) === -1) {
+                    serverUrls.push(entry);
+                    added.push(entry);
+                }
+            }
+        } else {
+            var text = '';
+            try { text = dt.getData('text/plain') || dt.getData('text/uri-list') || ''; }
+            catch { /* ignore */ }
+            text = String(text || '').trim();
+            if (text && serverUrls.indexOf(text) === -1) {
+                serverUrls.push(text);
+                added.push(text);
+            }
+        }
+        if (added.length > 0) {
+            if (typeof persistServerUrls === 'function') persistServerUrls();
+            if (typeof toast === 'function') {
+                toast('Added ' + added.length + ' source'
+                    + (added.length === 1 ? '' : 's') + ' to ' + w.name, 'success');
+            }
+            workspaceTreeSelection = { wsId: w.id, kind: 'url', value: added[0] };
+            workspaceTreeExpanded['ws:' + w.id] = true;
+            workspaceTreeExpanded['ws:' + w.id + ':sources'] = true;
+            persistWorkspaceTreeExpanded();
+        }
+        render();
     }
 
     function _quickAddUrlToWorkspace(w) {
