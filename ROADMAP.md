@@ -12,7 +12,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.0 — Re-architected workbench shell + workspace = project folder
 
-**37/54 done** · 17 backlog
+**38/54 done** · 16 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -29,7 +29,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [162](https://github.com/Kuestenlogik/Bowire/issues/162) | Bowire | [Cmd+K omnibox: search collections, recordings, mocks, workspaces, settings, help](#issue-kuestenlogik-bowire-162) | ⬜ Open |  |
 | [164](https://github.com/Kuestenlogik/Bowire/issues/164) | Bowire | [Console + Tests as tabs in the unified right-side drawer](#issue-kuestenlogik-bowire-164) | ⬜ Open |  |
 | [165](https://github.com/Kuestenlogik/Bowire/issues/165) | Bowire | [Workspace templates on create (REST / gRPC / mock / multi-protocol)](#issue-kuestenlogik-bowire-165) | ⬜ Open |  |
-| [166](https://github.com/Kuestenlogik/Bowire/issues/166) | Bowire | [Keyboard shortcut sheet (Cmd+/)](#issue-kuestenlogik-bowire-166) | ⬜ Open |  |
 | [167](https://github.com/Kuestenlogik/Bowire/issues/167) | Bowire | [Settings → Plugins: show protocol DisplayName instead of assembly name](#issue-kuestenlogik-bowire-167) | ⬜ Open |  |
 | [168](https://github.com/Kuestenlogik/Bowire/issues/168) | Bowire | [Workbench-wide action log with undo / redo (Ctrl+Z)](#issue-kuestenlogik-bowire-168) | ⬜ Open |  |
 | [169](https://github.com/Kuestenlogik/Bowire/issues/169) | Bowire | [Hint dismiss pattern — "Don't show again" + Settings restore](#issue-kuestenlogik-bowire-169) | ⬜ Open |  |
@@ -70,6 +69,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [159](https://github.com/Kuestenlogik/Bowire/issues/159) | Bowire | [Workspace Export / Import as .bowire JSON](#issue-kuestenlogik-bowire-159) | ✅ Done |  |
 | [160](https://github.com/Kuestenlogik/Bowire/issues/160) | Bowire | [Workspace breadcrumb in the main pane](#issue-kuestenlogik-bowire-160) | ✅ Done |  |
 | [163](https://github.com/Kuestenlogik/Bowire/issues/163) | Bowire | [Activity rail icon count badges](#issue-kuestenlogik-bowire-163) | ✅ Done |  |
+| [166](https://github.com/Kuestenlogik/Bowire/issues/166) | Bowire | [Keyboard shortcut sheet (Cmd+/)](#issue-kuestenlogik-bowire-166) | ✅ Done |  |
 
 ### v2.1 — Scripting, variable resolver, throughput surface
 
@@ -238,10 +238,6 @@ Cmd/Ctrl+K currently searches methods + rail modes. Operators looking for "a col
 
 The first workspace ships empty — no example URL, no example collection, no env vars. Operators new to Bowire face a tabula rasa: "Add URL", "Add collection", "Add env var", with no idea what shape any of them should have. Onboarding stalls. [[more]](https://github.com/Kuestenlogik/Bowire/issues/165)
 
-#### <a id="issue-kuestenlogik-bowire-166"></a>⬜ Open · [#166](https://github.com/Kuestenlogik/Bowire/issues/166) Keyboard shortcut sheet (Cmd+/)
-
-Bowire has ~15+ keyboard shortcuts (Cmd+K, Cmd+S, F1, Ctrl+Shift+A, Cmd+B, Ctrl+Tab, Ctrl+Enter, Cmd+Alt+\\, Esc cascade, …) defined in `init.js`. None are discoverable in the UI. Power-users learn by reading code; newcomers don't learn them at all. [[more]](https://github.com/Kuestenlogik/Bowire/issues/166)
-
 #### <a id="issue-kuestenlogik-bowire-167"></a>⬜ Open · [#167](https://github.com/Kuestenlogik/Bowire/issues/167) Settings → Plugins: show protocol DisplayName instead of assembly name
 
 Under `Settings → Plugins`, every loaded plugin shows only its assembly name (e.g. `Kuestenlogik.Bowire.Se…` truncated). … [[more]](https://github.com/Kuestenlogik/Bowire/issues/167)
@@ -405,6 +401,10 @@ The active workspace is shown only in the topbar chip (top-right). When operator
 #### <a id="issue-kuestenlogik-bowire-163"></a>✅ Done · [#163](https://github.com/Kuestenlogik/Bowire/issues/163) Activity rail icon count badges
 
 The activity rail shows feature icons (Discover, Recordings, Collections, …) but no count of what each contains. Operators have to click in to see "is there anything here?" The cross-feature pills in the service tree (#297) solved the per-method case; rail-level counts solve the per-feature case. [[more]](https://github.com/Kuestenlogik/Bowire/issues/163)
+
+#### <a id="issue-kuestenlogik-bowire-166"></a>✅ Done · [#166](https://github.com/Kuestenlogik/Bowire/issues/166) Keyboard shortcut sheet (Cmd+/)
+
+Bowire has ~15+ keyboard shortcuts (Cmd+K, Cmd+S, F1, Ctrl+Shift+A, Cmd+B, Ctrl+Tab, Ctrl+Enter, Cmd+Alt+\\, Esc cascade, …) defined in `init.js`. None are discoverable in the UI. Power-users learn by reading code; newcomers don't learn them at all. [[more]](https://github.com/Kuestenlogik/Bowire/issues/166)
 
 ### v2.1 — Scripting, variable resolver, throughput surface
 
