@@ -90,10 +90,11 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.2 — Test pillar: assertions, CI runner, regression coverage
 
-**0/6 done** · 6 backlog
+**0/7 done** · 7 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
+| [38](https://github.com/Kuestenlogik/Bowire/issues/38) | Bowire | [CLI — Phase 3 polish (completion + validators + error rendering)](#issue-kuestenlogik-bowire-38) | ⬜ Backlog | `area:cli` |
 | [100](https://github.com/Kuestenlogik/Bowire/issues/100) | Bowire | [Ferry — CI/CD runner (collection / recording → headless run + JUnit report)](#issue-kuestenlogik-bowire-100) | ⬜ Open |  |
 | [170](https://github.com/Kuestenlogik/Bowire/issues/170) | Bowire | [Mock-server fault injection — latency / errors / drops / partial responses](#issue-kuestenlogik-bowire-170) | ⬜ Open |  |
 | [171](https://github.com/Kuestenlogik/Bowire/issues/171) | Bowire | [Snapshot testing — capture-once, diff-on-change response baselines](#issue-kuestenlogik-bowire-171) | ⬜ Open |  |
@@ -103,15 +104,21 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.3 — Security pillar: shift-left scanner, OWASP coverage, auth recording
 
-**0/5 done** · 5 backlog
+**0/11 done** · 1 in progress · 10 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
+| [26](https://github.com/Kuestenlogik/Bowire/issues/26) | Bowire | [Security testing tool — remaining tiers](#issue-kuestenlogik-bowire-26) | 🟡 In progress | `area:security` `track:security-tiers` |
+| [35](https://github.com/Kuestenlogik/Bowire/issues/35) | Bowire | [Nuclei template compat — OAST + non-HTTP transports (Phase 2f + 2g)](#issue-kuestenlogik-bowire-35) | ⬜ Backlog | `area:security` `track:security-tiers` |
+| [39](https://github.com/Kuestenlogik/Bowire/issues/39) | Bowire | [HAR Import polish](#issue-kuestenlogik-bowire-39) | ⬜ Backlog | `area:workbench` |
+| [102](https://github.com/Kuestenlogik/Bowire/issues/102) | Bowire | [Lighthouse — scheduled probes + alerting (Postman Monitors / Synthetics analog)](#issue-kuestenlogik-bowire-102) | ⬜ Open |  |
 | [173](https://github.com/Kuestenlogik/Bowire/issues/173) | Bowire | [OWASP API Security Top 10 — structured test suite](#issue-kuestenlogik-bowire-173) | ⬜ Open |  |
 | [175](https://github.com/Kuestenlogik/Bowire/issues/175) | Bowire | [Schema-aware mutation engine for fuzz / scan](#issue-kuestenlogik-bowire-175) | ⬜ Open |  |
 | [176](https://github.com/Kuestenlogik/Bowire/issues/176) | Bowire | [Spider / crawl — discover endpoints from a base URL](#issue-kuestenlogik-bowire-176) | ⬜ Open |  |
 | [178](https://github.com/Kuestenlogik/Bowire/issues/178) | Bowire | [bowire scan CLI with SARIF output + GitHub Action wrapper](#issue-kuestenlogik-bowire-178) | ⬜ Open |  |
 | [184](https://github.com/Kuestenlogik/Bowire/issues/184) | Bowire | [Protocol-specific security scanners — gRPC / GraphQL / WS / MQTT / SSE / MCP](#issue-kuestenlogik-bowire-184) | ⬜ Open |  |
+| [186](https://github.com/Kuestenlogik/Bowire/issues/186) | Bowire | [HAR import — Chrome DevTools network tab as an input source](#issue-kuestenlogik-bowire-186) | ⬜ Open |  |
+| [187](https://github.com/Kuestenlogik/Bowire/issues/187) | Bowire | [CVE lookup for discovered servers — fill Bowire.VulnDb](#issue-kuestenlogik-bowire-187) | ⬜ Open |  |
 
 ### v2.4 — Dev pillar: schema watch diff, mock-from-schema, side-by-side
 
@@ -137,17 +144,13 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
-| [26](https://github.com/Kuestenlogik/Bowire/issues/26) | Bowire | [Security testing tool — remaining tiers](#issue-kuestenlogik-bowire-26) | 🟡 In progress | `area:security` `track:security-tiers` |
 | [28](https://github.com/Kuestenlogik/Bowire/issues/28) | Bowire | [Multi-tenant data model + SCIM (Phase B)](#issue-kuestenlogik-bowire-28) | 🟢 Next up | `area:workbench` `track:auth` |
 | [3](https://github.com/Kuestenlogik/Bowire.Templates/issues/3) | Templates | [Plugin project template — `dotnet new bowire-plugin`](#issue-kuestenlogik-bowire-templates-3) | ⬜ Backlog | `area:plugin-sdk` |
 | [11](https://github.com/Kuestenlogik/Bowire.Protocol.Surgewave/issues/11) | Protocol.Surgewave | [Light up Surgewave protocol plugin](#issue-kuestenlogik-bowire-protocol-surgewave-11) | ⬜ Open |  |
 | [13](https://github.com/Kuestenlogik/Bowire.Samples/issues/13) | Samples | [SimpleGraphQLSubscriptions sample](#issue-kuestenlogik-bowire-samples-13) | ⬜ Backlog | `area:plugin-sdk` |
 | [34](https://github.com/Kuestenlogik/Bowire/issues/34) | Bowire | [AsyncAPI discovery source — remaining bindings + V2 overloads + YAML pre-normaliser](#issue-kuestenlogik-bowire-34) | ⬜ Backlog | `area:plugin-sdk` `track:protocols` |
-| [35](https://github.com/Kuestenlogik/Bowire/issues/35) | Bowire | [Nuclei template compat — OAST + non-HTTP transports (Phase 2f + 2g)](#issue-kuestenlogik-bowire-35) | ⬜ Backlog | `area:security` `track:security-tiers` |
 | [36](https://github.com/Kuestenlogik/Bowire/issues/36) | Bowire | [Replay-Mock — HTTPS MITM / record mode](#issue-kuestenlogik-bowire-36) | ⬜ Backlog | `area:mock` |
 | [37](https://github.com/Kuestenlogik/Bowire/issues/37) | Bowire | [Bowire.Mcp — remaining tools + adapter modes](#issue-kuestenlogik-bowire-37) | ⬜ Backlog | `area:mcp` |
-| [38](https://github.com/Kuestenlogik/Bowire/issues/38) | Bowire | [CLI — Phase 3 polish (completion + validators + error rendering)](#issue-kuestenlogik-bowire-38) | ⬜ Backlog | `area:cli` |
-| [39](https://github.com/Kuestenlogik/Bowire/issues/39) | Bowire | [HAR Import polish](#issue-kuestenlogik-bowire-39) | ⬜ Backlog | `area:workbench` |
 | [40](https://github.com/Kuestenlogik/Bowire/issues/40) | Bowire | [Freeform Request Builder](#issue-kuestenlogik-bowire-40) | ⬜ Backlog | `area:workbench` |
 | [41](https://github.com/Kuestenlogik/Bowire/issues/41) | Bowire | [First RC of the new versioning discipline](#issue-kuestenlogik-bowire-41) | ⬜ Backlog | `area:multi` |
 | [44](https://github.com/Kuestenlogik/Bowire/issues/44) | Bowire | [Sidecar packaging — Docker / Compose / Kubernetes](#issue-kuestenlogik-bowire-44) | ⬜ Backlog | `area:docs` |
@@ -164,7 +167,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [97](https://github.com/Kuestenlogik/Bowire/issues/97) | Bowire | [Multi-tenant Phase E — single-user → multi-tenant migration path](#issue-kuestenlogik-bowire-97) | ⬜ Open |  |
 | [98](https://github.com/Kuestenlogik/Bowire/issues/98) | Bowire | [Multi-tenant Phase F — user chip, scoped state copy, admin impersonation](#issue-kuestenlogik-bowire-98) | ⬜ Open |  |
 | [101](https://github.com/Kuestenlogik/Bowire/issues/101) | Bowire | [Tugboat — VS Code + JetBrains workbench extension](#issue-kuestenlogik-bowire-101) | ⬜ Open |  |
-| [102](https://github.com/Kuestenlogik/Bowire/issues/102) | Bowire | [Lighthouse — scheduled probes + alerting (Postman Monitors / Synthetics analog)](#issue-kuestenlogik-bowire-102) | ⬜ Open |  |
 | [103](https://github.com/Kuestenlogik/Bowire/issues/103) | Bowire | [Generate boat photos: submarine, ferry, tugboat, lighthouse](#issue-kuestenlogik-bowire-103) | ⬜ Open |  |
 | [104](https://github.com/Kuestenlogik/Bowire/issues/104) | Bowire | [AI security scan orchestration — one button chains threat-model → templates → fuzz → triage → report](#issue-kuestenlogik-bowire-104) | ⬜ Open |  |
 | [105](https://github.com/Kuestenlogik/Bowire/issues/105) | Bowire | [AI JWT analyzer — claim-by-claim verdict, algorithm flags, scope/audience cross-check](#issue-kuestenlogik-bowire-105) | ⬜ Open |  |
@@ -444,6 +446,12 @@ Today Bowire watches traffic in two narrow ways: - **Discover / Recording / Benc
 
 ### v2.2 — Test pillar: assertions, CI runner, regression coverage
 
+#### <a id="issue-kuestenlogik-bowire-38"></a>⬜ Backlog · [#38](https://github.com/Kuestenlogik/Bowire/issues/38) CLI — Phase 3 polish (completion + validators + error rendering)
+
+> `area:cli`
+
+- [ ] **Tab-completion via dotnet-suggest** — bash / PowerShell / zsh users get free completion. - [ ] **Per-option validators** — \`--port\` validated 1..65535, \`--recording\` validated as FileInfo that exists, \`--chaos\` parsed ahead of dispatch. - [ ] **Pretty-printed System.CommandLine errors* … [[more]](https://github.com/Kuestenlogik/Bowire/issues/38)
+
 #### <a id="issue-kuestenlogik-bowire-100"></a>⬜ Open · [#100](https://github.com/Kuestenlogik/Bowire/issues/100) Ferry — CI/CD runner (collection / recording → headless run + JUnit report)
 
 The five shipping boats (#28 Cruise ship preview included) cover *interactive* use — operator opens a workbench, looks at responses, decides what to do next. They don't cover the CI/CD shape: "every commit, run this collection of calls + assertions, fail the build if anything regresses." [[more]](https://github.com/Kuestenlogik/Bowire/issues/100)
@@ -470,6 +478,28 @@ Bowire is currently a UI tool. The "shift-left" / "build safer apps through cont
 
 ### v2.3 — Security pillar: shift-left scanner, OWASP coverage, auth recording
 
+#### <a id="issue-kuestenlogik-bowire-26"></a>🟡 In progress · [#26](https://github.com/Kuestenlogik/Bowire/issues/26) Security testing tool — remaining tiers
+
+> `area:security` · `track:security-tiers`
+
+ADR: [`docs/architecture/security-testing.md`](https://github.com/Kuestenlogik/Bowire/blob/main/docs/architecture/security-testing.md) [[more]](https://github.com/Kuestenlogik/Bowire/issues/26)
+
+#### <a id="issue-kuestenlogik-bowire-35"></a>⬜ Backlog · [#35](https://github.com/Kuestenlogik/Bowire/issues/35) Nuclei template compat — OAST + non-HTTP transports (Phase 2f + 2g)
+
+> `area:security` · `track:security-tiers`
+
+Phase 2a-2e shipped (reader + matcher translation + variable substitution + multi-path + ScanCommand integration). Optional follow-ups: [[more]](https://github.com/Kuestenlogik/Bowire/issues/35)
+
+#### <a id="issue-kuestenlogik-bowire-39"></a>⬜ Backlog · [#39](https://github.com/Kuestenlogik/Bowire/issues/39) HAR Import polish
+
+> `area:workbench`
+
+\`bowire import har <file.har>\` CLI shipped. Remaining: [[more]](https://github.com/Kuestenlogik/Bowire/issues/39)
+
+#### <a id="issue-kuestenlogik-bowire-102"></a>⬜ Open · [#102](https://github.com/Kuestenlogik/Bowire/issues/102) Lighthouse — scheduled probes + alerting (Postman Monitors / Synthetics analog)
+
+The five shipping boats + Submarine (#99) cover interactive use, embedded use, and proxied use. None of them cover the *passive* shape: "I don't want to invoke; I want to know if everything is healthy right now." [[more]](https://github.com/Kuestenlogik/Bowire/issues/102)
+
 #### <a id="issue-kuestenlogik-bowire-173"></a>⬜ Open · [#173](https://github.com/Kuestenlogik/Bowire/issues/173) OWASP API Security Top 10 — structured test suite
 
 Bowire's security scan is currently generic fuzz + a handful of templates. The de-facto industry baseline for "did you check the obvious API security mistakes?" is the OWASP API Security Top 10. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/173)
@@ -489,6 +519,14 @@ Same pattern as `bowire test` (v2.2): the workbench has Security primitives but 
 #### <a id="issue-kuestenlogik-bowire-184"></a>⬜ Open · [#184](https://github.com/Kuestenlogik/Bowire/issues/184) Protocol-specific security scanners — gRPC / GraphQL / WS / MQTT / SSE / MCP
 
 Each protocol Bowire speaks has its own class of vulnerabilities the HTTP-only DAST tools (ZAP, Burp) don't know about. Without protocol-specific scanners, the multi-protocol differentiation is just a feature; with them, it's the moat. [[more]](https://github.com/Kuestenlogik/Bowire/issues/184)
+
+#### <a id="issue-kuestenlogik-bowire-186"></a>⬜ Open · [#186](https://github.com/Kuestenlogik/Bowire/issues/186) HAR import — Chrome DevTools network tab as an input source
+
+Operators routinely have Chrome DevTools open watching their app's traffic. Today they have to read the URL out, copy it into Bowire, recreate the request manually. That's friction; that's lost coverage. HAR import is the industry-standard way of moving traffic from a browser/CLI/proxy into a testing tool. [[more]](https://github.com/Kuestenlogik/Bowire/issues/186)
+
+#### <a id="issue-kuestenlogik-bowire-187"></a>⬜ Open · [#187](https://github.com/Kuestenlogik/Bowire/issues/187) CVE lookup for discovered servers — fill Bowire.VulnDb
+
+Bowire knows what protocol it's talking to and often what server (Envoy, NGINX, Kestrel, gRPC-Go, fastify, &c) — that information leaks through banners, error messages, header values. What Bowire DOESN'T do is cross-reference that against a CVE database. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/187)
 
 ### v2.4 — Dev pillar: schema watch diff, mock-from-schema, side-by-side
 
@@ -520,12 +558,6 @@ Bowire runs locally on the developer's machine. When the developer pushes a PR, 
 
 ### Backlog (not yet scheduled)
 
-#### <a id="issue-kuestenlogik-bowire-26"></a>🟡 In progress · [#26](https://github.com/Kuestenlogik/Bowire/issues/26) Security testing tool — remaining tiers
-
-> `area:security` · `track:security-tiers`
-
-ADR: [`docs/architecture/security-testing.md`](https://github.com/Kuestenlogik/Bowire/blob/main/docs/architecture/security-testing.md) [[more]](https://github.com/Kuestenlogik/Bowire/issues/26)
-
 #### <a id="issue-kuestenlogik-bowire-28"></a>🟢 Next up · [#28](https://github.com/Kuestenlogik/Bowire/issues/28) Multi-tenant data model + SCIM (Phase B)
 
 > `area:workbench` · `track:auth`
@@ -554,12 +586,6 @@ Hand-rolled graphql-transport-ws server (or HotChocolate-based) so the GraphQL p
 
 AsyncAPI loader + most bindings shipped (MQTT / Kafka / WebSocket / HTTP / AMQP / NATS / MQTT5 + schema export). Open: [[more]](https://github.com/Kuestenlogik/Bowire/issues/34)
 
-#### <a id="issue-kuestenlogik-bowire-35"></a>⬜ Backlog · [#35](https://github.com/Kuestenlogik/Bowire/issues/35) Nuclei template compat — OAST + non-HTTP transports (Phase 2f + 2g)
-
-> `area:security` · `track:security-tiers`
-
-Phase 2a-2e shipped (reader + matcher translation + variable substitution + multi-path + ScanCommand integration). Optional follow-ups: [[more]](https://github.com/Kuestenlogik/Bowire/issues/35)
-
 #### <a id="issue-kuestenlogik-bowire-36"></a>⬜ Backlog · [#36](https://github.com/Kuestenlogik/Bowire/issues/36) Replay-Mock — HTTPS MITM / record mode
 
 > `area:mock`
@@ -571,18 +597,6 @@ WireMock-style transparent proxy that records real traffic. Deferred unless dema
 > `area:mcp`
 
 **Dependencies** - Related #56, #57 — Mock UI panel + request log will need MCP-tool counterparts (`bowire.mock.start/stop/list/requests`) from this set. - Related #43 — MCP SSE-transport support. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/37)
-
-#### <a id="issue-kuestenlogik-bowire-38"></a>⬜ Backlog · [#38](https://github.com/Kuestenlogik/Bowire/issues/38) CLI — Phase 3 polish (completion + validators + error rendering)
-
-> `area:cli`
-
-- [ ] **Tab-completion via dotnet-suggest** — bash / PowerShell / zsh users get free completion. - [ ] **Per-option validators** — \`--port\` validated 1..65535, \`--recording\` validated as FileInfo that exists, \`--chaos\` parsed ahead of dispatch. - [ ] **Pretty-printed System.CommandLine errors* … [[more]](https://github.com/Kuestenlogik/Bowire/issues/38)
-
-#### <a id="issue-kuestenlogik-bowire-39"></a>⬜ Backlog · [#39](https://github.com/Kuestenlogik/Bowire/issues/39) HAR Import polish
-
-> `area:workbench`
-
-\`bowire import har <file.har>\` CLI shipped. Remaining: [[more]](https://github.com/Kuestenlogik/Bowire/issues/39)
 
 #### <a id="issue-kuestenlogik-bowire-40"></a>⬜ Backlog · [#40](https://github.com/Kuestenlogik/Bowire/issues/40) Freeform Request Builder
 
@@ -667,10 +681,6 @@ Phase F of the multi-tenant rollout — the UI affordances that turn "multi-user
 #### <a id="issue-kuestenlogik-bowire-101"></a>⬜ Open · [#101](https://github.com/Kuestenlogik/Bowire/issues/101) Tugboat — VS Code + JetBrains workbench extension
 
 Thunder Client proved there's a real audience for "I want to test an API without leaving my IDE." It's REST-only and limited; the *category* it occupies is uncontested for multi-protocol. [[more]](https://github.com/Kuestenlogik/Bowire/issues/101)
-
-#### <a id="issue-kuestenlogik-bowire-102"></a>⬜ Open · [#102](https://github.com/Kuestenlogik/Bowire/issues/102) Lighthouse — scheduled probes + alerting (Postman Monitors / Synthetics analog)
-
-The five shipping boats + Submarine (#99) cover interactive use, embedded use, and proxied use. None of them cover the *passive* shape: "I don't want to invoke; I want to know if everything is healthy right now." [[more]](https://github.com/Kuestenlogik/Bowire/issues/102)
 
 #### <a id="issue-kuestenlogik-bowire-103"></a>⬜ Open · [#103](https://github.com/Kuestenlogik/Bowire/issues/103) Generate boat photos: submarine, ferry, tugboat, lighthouse
 
