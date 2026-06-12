@@ -12,29 +12,43 @@ The roadmap, in-flight work, and bug triage all live on the [Bowire Project boar
 | Field | Values | Used for |
 |---|---|---|
 | **Status** | `Backlog` · `Next up` · `In progress` · `In review` · `Done` | Kanban swim-lane |
-| **Milestone** *(built-in)* | `v1.x` · `v2.0` · *(unset)* | Version-targeting — the same Milestone the GitHub issue carries. Unset = backlog (rendered as "Later" in `ROADMAP.md`); no dedicated "Later" milestone, since it would be redundant with the unset state. |
+| **Milestone** *(built-in)* | `v2.0` · `v2.1` · `v2.2` · `v2.3` · `v2.4` · `v2.5` · *(unset)* | Version-targeting — the same Milestone the GitHub issue carries. Unset = unscheduled / no concrete release yet (rendered as "Backlog (not yet scheduled)" in `ROADMAP.md`). |
 | **Area** | `workbench` · `cli` · `security` · `mcp` · `plugin-sdk` · `mock` · `docs` · `site` · `bootcamp` · `multi` | Component filter |
-| **Track** | `auth` · `protocols` · `marketing-ia` · `observability` · `security-tiers` · `bootcamp-content` · `none` | Multi-phase initiatives that span releases |
+| **Track** | `auth` · `protocols` · `marketing-ia` · `observability` · `security-tiers` · `bootcamp-content` · `ai` · `none` | Multi-phase initiatives that span releases |
 | **Effort** | `XS` · `S` · `M` · `L` · `XL` | T-shirt estimate |
-| **Priority** | `P0` · `P1` · `P2` · `P3` | Triage |
-| **Kind** | `feature` · `bug` · `debt` · `docs` · `rfc` | What it is |
+| **Start date** *(date)* | — | When work actively began (set on `Next up` → `In progress` transition) |
+| **Target date** *(date)* | — | Soft commitment date; the milestone is the hard one |
+
+> Priority and Kind used to be Project fields. Both retired: **Priority** wasn't pulling its weight (the Milestone + Status combination already answered "should we do this now") and **Kind** is carried on the issue as a `kind:*` label, no need for a duplicate field on the board. See the [Labels](#labels) section below for the kind taxonomy.
+
+## Labels
+
+Labels live on the GitHub issue itself (not on the Project board). They're the searchable side of the same information the Project fields carry, so `is:open label:area:security` works from the standard issue list without having to crack open the Project view.
+
+| Label namespace | Purpose | Examples |
+|---|---|---|
+| **`area:*`** | Mirror of the Project's `Area` field | `area:workbench`, `area:security`, `area:cli`, `area:mcp`, `area:plugin-sdk`, `area:mock`, `area:docs`, `area:site`, `area:bootcamp`, `area:multi` |
+| **`track:*`** | Mirror of the Project's `Track` field | `track:auth`, `track:protocols`, `track:marketing-ia`, `track:observability`, `track:security-tiers`, `track:ai`, `track:bootcamp-content` |
+| **`kind:*`** | What kind of work, where `bug` / `feature` is the default unspoken kind | `kind:concept` (ADR / design discussion), `kind:debt` (refactor / cleanup), `kind:docs` (documentation work), `kind:bug` (bug to fix), `kind:feature` (new capability). `kind:rfc` is retired — use `kind:concept` instead, both meant the same thing. |
+| **`roadmap`** | Marks an issue as tracked on the Project board. Throwaway bug reports don't need it. | — |
+| **`community-vote`** | Feature requests where reactions are read as priority signal. Don't comment "+1" — react with 👍. | — |
 
 ## Recommended views
 
-The board ships with the default *All items* view. The four views below mirror how Akka.NET's [v1.6 project](https://github.com/orgs/akkadotnet/projects/11/views/1) is structured — they need ~30 seconds each to configure in the UI (clone the default view, change layout + grouping):
+The board ships with the default *All items* view. The four views below are the ones we keep returning to — they need ~30 seconds each to configure in the UI (clone the default view, change layout + grouping):
 
 ### 🗺 Roadmap
 
 - **Layout**: Roadmap
 - **Group by**: `Milestone`
 - **Filter**: `Status` ≠ `Done`
-- **Use for**: "What is targeted for v1.6?" — the public-facing release plan
+- **Use for**: "What is targeted for the next few releases?" — the public-facing release plan
 
 ### 📋 Board
 
 - **Layout**: Board
 - **Group by**: `Status`
-- **Filter**: `Milestone` = current (v1.5)
+- **Filter**: `Milestone` = current (the milestone we're actively shipping)
 - **Use for**: Operational kanban — what's currently moving
 
 ### 🧩 By Area
@@ -47,8 +61,8 @@ The board ships with the default *All items* view. The four views below mirror h
 ### 🐛 Bugs
 
 - **Layout**: Table
-- **Filter**: `Kind` = `bug`
-- **Sort by**: `Priority` ↑ then `Status` ↑
+- **Filter**: `label:kind:bug` (labels are queryable in the Project filter)
+- **Sort by**: `Status` ↑ then `Updated` ↓
 - **Use for**: Triage backlog, regardless of milestone
 
 ## Conventions
@@ -63,19 +77,21 @@ The board ships with the default *All items* view. The four views below mirror h
 
 - New issue created via *Convert from Markdown* (in the issue editor) or *Create issue* — the board adds it as `Backlog` by default.
 - Status transitions: `Backlog` → `Next up` → `In progress` → `In review` → `Done`. The last two are driven by PR state where possible.
-- Milestones are managed in [Settings → Issues → Milestones](https://github.com/Kuestenlogik/Bowire/milestones). When a milestone closes, its issues move out of the `Roadmap` view automatically.
+- Milestones are managed in [Settings → Issues → Milestones](https://github.com/Kuestenlogik/Bowire/milestones). When a milestone closes, its issues move out of the `Roadmap` view automatically and the milestone drops out of `ROADMAP.md` (whose changelog moves to GitHub Releases).
 
 ### Milestone title = release theme
 
 Every milestone's **title** carries the release headline directly: `vX.Y[.Z] — <theme>`. The theme is the same one that lands on the GitHub Release once the milestone tags, and it shows in the Project board's Roadmap view as the group heading (since Projects v2 reads the milestone title verbatim).
 
-Format examples that work well:
-- `v1.7 — new protocol plugins`
-- `v1.8 — AI workbench`
-- `v1.9 — AI for security`
-- `v1.10 — gRPC Connect`
+Current milestones (as of v2.0 RC prep):
+- `v2.0 — Re-architected workbench shell + workspace = project folder`
+- `v2.1 — Scripting, variable resolver, throughput surface`
+- `v2.2 — Test pillar: assertions, CI runner, regression coverage`
+- `v2.3 — Security pillar: shift-left scanner, OWASP coverage, auth recording`
+- `v2.4 — Dev pillar: schema watch diff, mock-from-schema, side-by-side`
+- `v2.5 — Continuous integration: PR bot, project file, org dashboard`
 
-**One concept per release.** Themes are 2-5 words, concrete enough that a reader knows what the cycle is about (`gRPC Connect` beats `protocol expansion`). Avoid `+`-joined dual themes — if a cycle is gathering two big buckets, split them into two milestones instead of bundling. Splitting forces a decision about which bucket is the actual focus; bundling defers it.
+**One concept per release.** Themes are 2-5 words, concrete enough that a reader knows what the cycle is about (`gRPC Connect` beats `protocol expansion`). Bundling two themes with `+` is allowed if both are equally weighted (v2.0 carries the shell refactor AND the workspace-as-project-folder pivot, both major) — but the default is one theme so the cycle has an obvious anchor.
 
 **Why pre-commit a theme at planning time:** the headline defines what the cycle is *about* — what we'd be embarrassed to ship without. It anchors the milestone discussion ("does this issue serve the theme?"), avoids the retrospective scramble of summarising whatever happened to land, and gives the team a one-line elevator pitch through the cycle. Mid-cycle pivots are fine — rename the milestone (GitHub keeps the audit trail).
 
@@ -121,13 +137,3 @@ Configure once in the Project UI — these aren't exposed via API yet, so they l
 4. **Auto-add to project** → leave **disabled** for `Kuestenlogik/Bowire` (the GitHub Action above handles that with the label filter). For sibling Bowire.* repos that don't carry the workflow file, enable Auto-add with filter `repo:Kuestenlogik/<RepoName> label:roadmap is:issue,pr`.
 
 Sibling-repo wiring options (Project-side vs Action-side vs back-fill) are documented separately in [`multi-repo-project-add.md`](multi-repo-project-add.md).
-
-## Migration from `ROADMAP.md`
-
-The pilot batch lives on the board now (6 items from *In progress* + *Next up*). `ROADMAP.md` is unchanged for the moment. Once the board's daily feel is validated, the plan is:
-
-1. Migrate the rest of `ROADMAP.md` to issues, one per `###` heading.
-2. Trim `ROADMAP.md` to a ~30-line index that points at the board and the **In progress** + **Next up** highlights, regenerated periodically from the board.
-3. The marketing site's `roadmap.html` pulls from the Project's GraphQL API (cached as `site/_data/roadmap.yml` via a GitHub Action) so visitors see live data without the page making a network call.
-
-Rollback plan: closing the issues and deleting the project + milestones restores the previous "ROADMAP.md is the only source" state. The labels stay — they're useful regardless.
