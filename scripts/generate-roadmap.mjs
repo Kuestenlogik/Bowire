@@ -294,16 +294,17 @@ function detailAnchorId(item) {
 
 // Overview table row — one per issue. Layout:
 //   | # | Project | Title | Status | Tags |
-// # cell links DOWN to the detail block inside the same file (so you
-// can jump to the body excerpt without leaving the page); Title cell
-// links OUT to the GitHub issue (so the title click matches the
-// usual "click the title to open" muscle memory).
+// # cell links OUT to the GitHub issue (matches the universal "click
+// the number to open the ticket" expectation), Title cell links DOWN
+// to the detail block inside the same file (jump within the doc to
+// read the excerpt without leaving the page). Two click targets per
+// row: one external, one internal.
 function fmtOverviewRow(item) {
     const c = item.content;
     const status = `${statusIcon(item)} ${statusLabel(item)}`;
-    const num = `[${c.number}](#${detailAnchorId(item)})`;
+    const num = `[${c.number}](${c.url})`;
     const project = shortProject(item);
-    const title = `[${tableCell(c.title)}](${c.url})`;
+    const title = `[${tableCell(c.title)}](#${detailAnchorId(item)})`;
     const tags = buildTags(item).join(" ");
     return `| ${num} | ${project} | ${title} | ${status} | ${tags} |`;
 }
@@ -332,12 +333,15 @@ function fmtDetailBlock(item) {
         lines.push("");
         lines.push(`> ${tags.join(" · ")}`);
     }
-    const excerpt = firstContentParagraph(c.body || "");
+    const { excerpt, truncated } = firstContentParagraph(c.body || "");
     if (excerpt) {
         lines.push("");
         // Collapse internal newlines so the paragraph reads as one
-        // markdown paragraph (issue bodies often soft-wrap).
-        lines.push(excerpt.replace(/\n+/g, " "));
+        // markdown paragraph (issue bodies often soft-wrap). When
+        // the excerpt was truncated, append a tail link to the full
+        // issue so the reader can jump straight to the source.
+        const tail = truncated ? ` [[more]](${c.url})` : "";
+        lines.push(excerpt.replace(/\n+/g, " ") + tail);
     }
     return lines.join("\n");
 }
@@ -345,33 +349,51 @@ function fmtDetailBlock(item) {
 // Extract the first "real" paragraph from an issue body. Skips
 // leading markdown headings ("## Problem", "### Why", etc.) and
 // horizontal rules so the excerpt is actual prose, not just the
-// section label. Soft-trims at ~300 chars on a sentence boundary.
+// section label. Soft-trims at ~300 chars on a sentence boundary;
+// also flags whether the issue body had MORE content beyond the
+// returned excerpt so the caller can append a "more" link.
 function firstContentParagraph(body) {
-    if (!body) return "";
+    if (!body) return { excerpt: "", truncated: false };
     const blocks = body.trim().split(/\n\s*\n/);
     let para = "";
-    for (const raw of blocks) {
-        const block = raw.trim();
+    let blockIdx = -1;
+    for (let i = 0; i < blocks.length; i++) {
+        const block = blocks[i].trim();
         if (!block) continue;
-        // Drop blocks that are ONLY headings or horizontal rules.
         if (/^#+\s/.test(block) && !/\n/.test(block)) continue;
         if (/^[-=*]{3,}$/.test(block)) continue;
-        // A block that starts with a heading line but has body
-        // content after it: strip the heading, keep the rest.
         if (/^#+\s/.test(block)) {
             const stripped = block.replace(/^#+\s.*?\n+/, "").trim();
-            if (stripped) { para = stripped; break; }
+            if (stripped) { para = stripped; blockIdx = i; break; }
             continue;
         }
         para = block;
+        blockIdx = i;
         break;
     }
-    if (!para) return "";
+    if (!para) return { excerpt: "", truncated: false };
+    let truncated = false;
     if (para.length > 320) {
         const cut = para.lastIndexOf(". ", 300);
         para = cut > 80 ? para.slice(0, cut + 1) + " …" : para.slice(0, 300).trim() + " …";
+        truncated = true;
     }
-    return para;
+    // If we picked block N out of M, there's more content past the
+    // excerpt — flag it so the caller can offer a "more" link even
+    // if the chosen paragraph itself fit under the soft-trim.
+    if (!truncated && blockIdx >= 0 && blockIdx < blocks.length - 1) {
+        // Treat trailing blank or heading-only blocks as no-content
+        // so a single-paragraph body doesn't get a "more" link.
+        for (let j = blockIdx + 1; j < blocks.length; j++) {
+            const next = blocks[j].trim();
+            if (!next) continue;
+            if (/^#+\s/.test(next) && !/\n/.test(next)) continue;
+            if (/^[-=*]{3,}$/.test(next)) continue;
+            truncated = true;
+            break;
+        }
+    }
+    return { excerpt: para, truncated };
 }
 
 function milestoneHeading(ms) {
