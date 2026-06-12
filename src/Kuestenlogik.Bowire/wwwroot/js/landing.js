@@ -146,70 +146,87 @@
     // ---- State 6: first-run ----
 
     function renderStateFirstRun(parent) {
-        var hero = el('div', { className: 'bowire-landing-hero' });
-
-        hero.appendChild(el('div', {
+        // #291 — first-run welcome moved to the Home rail mode. From
+        // Discover we now point the operator at Home so the
+        // onboarding stays consolidated on one surface. This keeps
+        // Discover focused on "browse / pick a method" without
+        // doubling as the new-user landing page.
+        var hint = el('div', { className: 'bowire-landing-hero' });
+        hint.appendChild(el('div', {
             className: 'bowire-landing-hero-logo',
             innerHTML: svgIcon('bowireLogo')
         }));
-        hero.appendChild(el('div', { className: 'bowire-landing-hero-headline', textContent: 'Welcome to Bowire' }));
+        hint.appendChild(el('div', { className: 'bowire-landing-hero-headline', textContent: 'Discover is empty' }));
+        hint.appendChild(el('div', { className: 'bowire-landing-hero-tagline',
+            textContent: 'Pick a workspace and add a URL or schema file from there — Home walks you through the first steps.' }));
+        var actions = el('div', { className: 'bowire-landing-cta-grid', style: 'grid-template-columns:1fr;max-width:360px;' });
+        actions.appendChild(el('button', {
+            className: 'bowire-landing-cta-primary',
+            textContent: '→ Open Home',
+            onClick: function () {
+                railMode = 'home';
+                try { localStorage.setItem('bowire_rail_mode', 'home'); } catch { /* ignore */ }
+                render();
+            }
+        }));
+        hint.appendChild(actions);
+        renderLandingHelpFooter(hint);
+        parent.appendChild(hint);
+    }
+
+    // #291 — Welcome hero rendered inside the Home rail mode when no
+    // URLs / uploads / services are configured. Same hero + tagline
+    // as the old Discover first-run, but the CTAs navigate into the
+    // workspace-detail pane (where #155 Phase 1 put URL + schema
+    // management) instead of Discover's retired source selector.
+    function renderHomeWelcomeHero(parent) {
+        var hero = el('div', { className: 'bowire-landing-hero' });
+        // #167 followup — logo + big "Welcome" headline removed per UX
+        // direction: Home is a portal to start a use case or resume
+        // recent work, not a billboard. A short subtitle is enough
+        // anchor for first-time operators; the action cards below carry
+        // the actual entry points.
         hero.appendChild(el('div', { className: 'bowire-landing-hero-tagline',
-            textContent: 'The multi-protocol API workbench — discover, test, record, and replay any gRPC, REST, GraphQL, SignalR, MCP, SSE or WebSocket service.' }));
+            textContent: 'Pick what you want to do — or jump back into recent activity below.' }));
 
         var grid = el('div', { className: 'bowire-landing-cta-grid' });
         grid.appendChild(renderFirstRunCard(
-            'globe',
-            'Connect to a server',
-            'Discover services automatically via reflection, OpenAPI, GraphQL introspection or MCP listing.',
-            'Add server URL',
+            'briefcase',
+            'Configure your workspace',
+            'A workspace is your project folder — URLs, environments, secrets, recordings all live in it. Open the workspace detail to add your first source.',
+            'Open workspace',
             function () {
-                // Switch to URL mode and let the existing source-selector
-                // render show its add-URL flow. The user lands on the
-                // URL list with focus on the new input.
-                if (typeof sourceMode !== 'undefined') {
-                    sourceMode = 'url';
-                    try { localStorage.setItem(SOURCE_MODE_KEY, 'url'); } catch { /* ignore */ }
+                railMode = 'workspaces';
+                try { localStorage.setItem('bowire_rail_mode', 'workspaces'); } catch { /* ignore */ }
+                if (typeof workspacesSelectedId !== 'undefined') {
+                    workspacesSelectedId = activeWorkspaceId;
                 }
-                serverUrls.push('');
                 render();
-                // Best-effort focus the new (empty) input on the next paint
-                requestAnimationFrame(function () {
-                    var inputs = document.querySelectorAll('.bowire-url-input');
-                    if (inputs.length > 0) inputs[inputs.length - 1].focus();
-                });
             }
         ));
         grid.appendChild(renderFirstRunCard(
-            'upload',
-            'Upload a schema',
-            'Drop a .proto file (gRPC), an OpenAPI / Swagger document (REST), or a GraphQL SDL.',
-            'Upload schema',
+            'compass',
+            'Browse Discover',
+            'Already pointed Bowire at a service? Jump straight into Discover to pick a method and send your first request.',
+            'Open Discover',
             function () {
-                if (typeof sourceMode !== 'undefined') {
-                    sourceMode = 'proto';
-                    try { localStorage.setItem(SOURCE_MODE_KEY, 'proto'); } catch { /* ignore */ }
-                }
+                railMode = 'discover';
+                try { localStorage.setItem('bowire_rail_mode', 'discover'); } catch { /* ignore */ }
+                sidebarView = 'services';
                 render();
-                // Bring the upload panel (sidebar drop-zone) into view +
-                // visually flash the Schema Files tab so the user sees
-                // where the click landed. Class names match the actual
-                // sidebar markup in render-sidebar.js: `.bowire-proto-panel`
-                // for the panel, `.bowire-source-tab` for the tab buttons.
-                requestAnimationFrame(function () {
-                    var panel = document.querySelector('.bowire-proto-panel, #bowire-proto-dropzone');
-                    if (panel) panel.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    var protoTab = document.getElementById('bowire-source-tab-proto');
-                    if (protoTab) {
-                        protoTab.classList.add('bowire-source-tab-flash');
-                        setTimeout(function () { protoTab.classList.remove('bowire-source-tab-flash'); }, 800);
-                    }
-                });
             }
         ));
         hero.appendChild(grid);
 
         renderLandingHelpFooter(hero);
         parent.appendChild(hero);
+    }
+
+    // Expose to other fragments (render-main.js's Home rail renders it
+    // when first-run state holds).
+    if (typeof window !== 'undefined') {
+        window.bowireRenderHomeWelcomeHero = renderHomeWelcomeHero;
+        window.bowireDetectLandingState = detectLandingState;
     }
 
     // ---- State 3: loading ----

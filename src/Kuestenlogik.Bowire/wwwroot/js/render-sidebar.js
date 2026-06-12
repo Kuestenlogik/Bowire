@@ -223,6 +223,138 @@
         return row;
     }
 
+    // #297 — Cross-feature state index. Walks the workspace's
+    // collections / recordings / benchmarks / presets ONCE per render
+    // and returns a Map keyed by 'service|method' so the sidebar's
+    // method rows can render at-a-glance indicators without paying
+    // per-row scan cost. Pills surface in renderMethodCrossFeatureBadges.
+    function buildCrossFeatureIndex() {
+        var idx = new Map();
+        function bump(svc, mth, field, delta) {
+            if (!svc || !mth) return;
+            var key = svc + '|' + mth;
+            var entry = idx.get(key);
+            if (!entry) { entry = { collections: 0, recordings: 0, benchmark: 0, presets: 0 }; idx.set(key, entry); }
+            entry[field] += (delta || 1);
+        }
+        // Collections: every saved item carries service + method.
+        try {
+            if (Array.isArray(collectionsList)) {
+                for (var ci = 0; ci < collectionsList.length; ci++) {
+                    var col = collectionsList[ci];
+                    if (!col || !Array.isArray(col.items)) continue;
+                    for (var ii = 0; ii < col.items.length; ii++) {
+                        var it = col.items[ii];
+                        if (it) bump(it.service, it.method, 'collections', 1);
+                    }
+                }
+            }
+        } catch { /* ignore */ }
+        // Recordings: count DISTINCT recordings that include the method
+        // (not raw step count — a recording with 50 repeats of the same
+        // call would otherwise drown out other lighter ones).
+        try {
+            if (Array.isArray(recordingsList)) {
+                for (var ri = 0; ri < recordingsList.length; ri++) {
+                    var rec = recordingsList[ri];
+                    if (!rec || !Array.isArray(rec.steps)) continue;
+                    var seen = new Set();
+                    for (var si = 0; si < rec.steps.length; si++) {
+                        var st = rec.steps[si];
+                        if (!st) continue;
+                        var k = (st.service || '') + '|' + (st.method || '');
+                        if (seen.has(k)) continue;
+                        seen.add(k);
+                        bump(st.service, st.method, 'recordings', 1);
+                    }
+                }
+            }
+        } catch { /* ignore */ }
+        // Benchmarks: one spec → one entry.
+        try {
+            if (Array.isArray(benchmarksList)) {
+                for (var bi = 0; bi < benchmarksList.length; bi++) {
+                    var bs = benchmarksList[bi];
+                    if (bs) bump(bs.service, bs.method, 'benchmark', 1);
+                }
+            }
+        } catch { /* ignore */ }
+        // Presets: scoped to 'discover' mode (where method-targeted
+        // presets land via #296). Each preset's config carries service
+        // + method via the snapshot. Other modes' presets aren't
+        // method-bound and stay out of the index.
+        try {
+            if (typeof loadPresets === 'function') {
+                var presetList = loadPresets('discover') || [];
+                for (var pi = 0; pi < presetList.length; pi++) {
+                    var pr = presetList[pi];
+                    if (pr && pr.config) bump(pr.config.service, pr.config.method, 'presets', 1);
+                }
+            }
+        } catch { /* ignore */ }
+        return idx;
+    }
+
+    // Builds the inline badge row that goes inside a method item. The
+    // strip stays empty (returns null) when no cross-feature artifacts
+    // exist for the method — keeping rows uncluttered for the bulk of
+    // methods that nothing has touched yet.
+    function renderMethodCrossFeatureBadges(xfIndex, svcName, methodName) {
+        if (!xfIndex) return null;
+        var entry = xfIndex.get(svcName + '|' + methodName);
+        if (!entry) return null;
+        if (!entry.collections && !entry.recordings && !entry.benchmark && !entry.presets) return null;
+        var strip = el('span', { className: 'bowire-method-xf-strip' });
+        function pill(letter, count, hue, title, onClick) {
+            var p = el('button', {
+                className: 'bowire-method-xf-pill bowire-method-xf-pill-' + hue,
+                title: title,
+                'aria-label': title,
+                onClick: function (e) {
+                    e.stopPropagation();
+                    if (typeof onClick === 'function') onClick();
+                }
+            },
+                el('span', { className: 'bowire-method-xf-letter', textContent: letter }),
+                count > 1 ? el('span', { className: 'bowire-method-xf-count', textContent: String(count) }) : null
+            );
+            strip.appendChild(p);
+        }
+        if (entry.collections) {
+            pill('C', entry.collections, 'collection',
+                entry.collections + ' collection' + (entry.collections === 1 ? '' : 's') + ' contain this method',
+                function () {
+                    railMode = 'collections';
+                    try { localStorage.setItem('bowire_rail_mode', 'collections'); } catch { /* ignore */ }
+                    render();
+                });
+        }
+        if (entry.recordings) {
+            pill('R', entry.recordings, 'recording',
+                entry.recordings + ' recording' + (entry.recordings === 1 ? '' : 's') + ' include this method',
+                function () {
+                    railMode = 'recordings';
+                    try { localStorage.setItem('bowire_rail_mode', 'recordings'); } catch { /* ignore */ }
+                    render();
+                });
+        }
+        if (entry.benchmark) {
+            pill('B', entry.benchmark, 'benchmark',
+                entry.benchmark + ' benchmark spec' + (entry.benchmark === 1 ? '' : 's') + ' target this method',
+                function () {
+                    railMode = 'benchmarks';
+                    try { localStorage.setItem('bowire_rail_mode', 'benchmarks'); } catch { /* ignore */ }
+                    render();
+                });
+        }
+        if (entry.presets) {
+            pill('P', entry.presets, 'preset',
+                entry.presets + ' preset' + (entry.presets === 1 ? '' : 's') + ' for this method',
+                null);
+        }
+        return strip;
+    }
+
     function renderProtoUploadPanel() {
         var panel = el('div', { className: 'bowire-proto-panel' });
 
@@ -297,66 +429,10 @@
         return panel;
     }
 
-    function renderSourceSelector() {
-        // Locked mode → no tabs, no upload, just the locked URL row.
-        if (config.lockServerUrl) {
-            return renderUrlBarRow(true);
-        }
-
-        var wrap = el('div', { id: 'bowire-sidebar-source-selector', className: 'bowire-source-selector' });
-
-        // Tab pills
-        var tabs = el('div', { className: 'bowire-source-tabs', role: 'tablist' });
-        var urlTab = el('button', {
-            id: 'bowire-source-tab-url',
-            className: 'bowire-source-tab' + (sourceMode === 'url' ? ' active' : ''),
-            role: 'tab',
-            onClick: function () {
-                if (sourceMode === 'url') return;
-                setSourceMode('url');
-                selectedMethod = null;
-                selectedService = null;
-                requestTabs = [];
-                activeTabId = null;
-                render();
-            }
-        },
-            el('span', { className: 'bowire-source-tab-icon', innerHTML: svgIcon('connect') }),
-            el('span', { textContent: 'Server URL' })
-        );
-        var protoTab = el('button', {
-            id: 'bowire-source-tab-proto',
-            className: 'bowire-source-tab' + (sourceMode === 'proto' ? ' active' : ''),
-            role: 'tab',
-            onClick: function () {
-                if (sourceMode === 'proto') return;
-                setSourceMode('proto');
-                selectedMethod = null;
-                selectedService = null;
-                requestTabs = [];
-                activeTabId = null;
-                render();
-            }
-        },
-            el('span', { className: 'bowire-source-tab-icon', innerHTML: svgIcon('upload') }),
-            el('span', { textContent: 'Schema Files' })
-        );
-        tabs.appendChild(urlTab);
-        tabs.appendChild(protoTab);
-        wrap.appendChild(tabs);
-
-        // Tab content — ID includes sourceMode so morphdom replaces the
-        // content when switching between URL and proto-upload views.
-        var content = el('div', { id: 'bowire-source-content-' + sourceMode, className: 'bowire-source-content' });
-        if (sourceMode === 'proto') {
-            content.appendChild(renderProtoUploadPanel());
-        } else {
-            content.appendChild(renderUrlBarRow(false));
-        }
-        wrap.appendChild(content);
-
-        return wrap;
-    }
+    // #294 — renderSourceSelector retired. URL bar + schema-files tabs
+    // moved to workspace-detail (#155 / #290). renderUrlBarRow and
+    // renderProtoUploadPanel live on as the helpers that workspace-
+    // detail mounts.
 
     // Renders the flat "Favorites" view into the given list container.
     // Each row: protocol badge → method type badge → service.method name
@@ -393,6 +469,8 @@
             rows.push({ fav: f, svc: svc || null, method: method || null });
         }
 
+        // #297 — cross-feature index shared across favorite rows.
+        var favXfIndex = buildCrossFeatureIndex();
         var favGroup = el('div', { className: 'bowire-service-group bowire-favorites-group' });
         for (var ri = 0; ri < rows.length; ri++) {
             (function (row) {
@@ -493,6 +571,15 @@
 
                 // Spacer pushes everything after this to the right
                 item.appendChild(el('span', { style: 'flex:1' }));
+
+                // #297 — cross-feature badges (C/R/B/P). null when no
+                // artifacts exist for this method, keeping favorites
+                // tidy for the common case.
+                if (available) {
+                    var favXfStrip = renderMethodCrossFeatureBadges(
+                        favXfIndex, row.svc.name, row.method.name);
+                    if (favXfStrip) item.appendChild(favXfStrip);
+                }
 
                 // Executing indicator (pulsing play icon, only when active)
                 var favExecuting = available && isJobActive(row.svc.name, row.method.name);
@@ -1853,34 +1940,13 @@
         // count + tour button.
         sidebar = el('div', { className: `bowire-sidebar ${sidebarCollapsed ? 'collapsed' : ''}` });
 
-        // Source selector — URL input (with reflection) or schema file upload.
-        // Hidden in pure embedded mode because neither control is useful
-        // there: the host has already exposed its services via the in-process
-        // EndpointDataSource, there's no remote URL to reflect against, and
-        // an uploaded schema wouldn't route anywhere.
-        //
-        //   pure embedded = not locked
-        //                 AND no URLs configured / added
-        //                 AND initial discovery already succeeded with ≥1 service
-        //
-        // The initial-loading guard matters: during the very first fetch the
-        // service list is empty, so without it the selector would briefly
-        // flash in before being hidden once the embedded discovery returns.
-        //
-        // Fallthrough cases that still show the selector:
-        //   - Locked mode (--url): renderSourceSelector() returns just the
-        //     locked URL row, no tabs — the user sees what's pinned.
-        //   - Standalone tool without --url: embedded discovery turns up
-        //     nothing, so services.length stays 0 and the user gets the URL
-        //     input to add their first target.
-        //   - Multi-URL setups: serverUrls.length > 0, selector stays.
-        // Source selector visibility is determined by the static uiMode
-        // (set once at boot from the host config) — no runtime heuristic,
-        // no flash of URL-bar-then-hide. In embedded mode the URL bar
-        // stays hidden because discovery runs in-process.
-        if (uiMode !== 'embedded') {
-            sidebar.appendChild(renderSourceSelector());
-        }
+        // #294 — Source selector (URL bar + schema-files tabs) retired
+        // from the sidebar. Discover / Flows / Proxy / Security used to
+        // mount it at the top of their sidebars, which duplicated the
+        // canonical source surface that now lives in workspace-detail
+        // (#155 / #290). Operators add a URL / upload a schema in
+        // Workspaces → <ws> → Sources; the sidebar focuses on the
+        // service tree it discovers.
 
         // (Environment selector moved to the topbar — see renderTopbar.)
 
@@ -2531,6 +2597,9 @@
             ).trim();
             const query = effectiveQueryStr.toLowerCase();
             const visibleServices = getFilteredServices();
+            // #297 — cross-feature index. One pass over collections /
+            // recordings / benchmarks / presets; rows look up by key.
+            const xfIndex = buildCrossFeatureIndex();
 
             // (The pinned "Favorites" group used to live here at the top of
             // the services list, but it now has its own view toggle — see
@@ -2716,6 +2785,7 @@
                                 }
                             });
                         })(svc.name, m.name),
+                        renderMethodCrossFeatureBadges(xfIndex, svc.name, m.name),
                         executing ? el('span', {
                             className: 'bowire-method-executing',
                             innerHTML: svgIcon('play'),

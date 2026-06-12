@@ -287,6 +287,16 @@
     // localStorage so the user's preference is sticky across reloads.
     let aiDrawerOpen = false;
     try { aiDrawerOpen = localStorage.getItem('bowire_ai_drawer_open') === '1'; } catch { /* ignore */ }
+    // #299 — unified right-side drawer. When Assistant + Help are
+    // both open, they share one chrome with a tab strip; this tracks
+    // which tab is active. Defaults to 'assistant'; flipped by the
+    // toggle handlers whenever the user opens (or clicks the tab of)
+    // a specific panel.
+    let rightDrawerActiveTab = 'assistant';
+    try {
+        var _rd = localStorage.getItem('bowire_right_drawer_active_tab');
+        if (_rd === 'assistant' || _rd === 'help') rightDrawerActiveTab = _rd;
+    } catch { /* ignore */ }
     // Security drawer (#111). Peer of the AI drawer, lives on the
     // right edge of the body with its own topbar toggle. Hosts the
     // threat-model + template-suggest surfaces that used to live
@@ -302,6 +312,10 @@
     let topbarOverflowOpen = false;
     // #116 workspace switcher menu — open/closed.
     let workspaceMenuOpen = false;
+    // #296 — "Add to…" menu in the method header. Anchored to the
+    // header button so clicking outside closes it. Stays as a single
+    // boolean because at most one method header is on screen at a time.
+    let methodAddToMenuOpen = false;
     // #116 — selected workspace in the rail-mode detail view.
     let workspacesSelectedId = null;
     // #152 — selected URL in the Sources rail-mode detail view.
@@ -772,6 +786,181 @@
         if (activeWorkspaceId === id) activeWorkspaceId = workspaces[0].id;
         persistWorkspaces();
         return true;
+    }
+
+    // ---- Workspace Export / Import (A1) ----
+    //
+    // A workspace is the project folder; export turns it into a
+    // portable .bowire.json blob the operator can move between
+    // machines or share with a teammate. Import has three modes:
+    //   'new'         — create a fresh workspace and load everything
+    //                   into its namespace
+    //   'merge-into'  — concat arrays / Object.assign maps into the
+    //                   target workspace's existing data
+    //   'replace'     — wipe target workspace's data and load
+    //                   payload's into it
+    //
+    // Secrets are intentionally NOT exported (session-only, would leak
+    // credentials in a shared file). Schemas uploaded server-side
+    // (/api/proto/upload) are also out of scope for v1 — they live on
+    // the server, not in workspace localStorage.
+
+    function _wsKeyFor(wsId, baseKey) {
+        if (!wsId) return baseKey;
+        return 'bowire_ws_' + wsId + '_'
+            + String(baseKey).replace(/^bowire_/, '');
+    }
+
+    // The set of per-workspace keys we round-trip. Add new keys here
+    // when new workspace-scoped state lands. Order doesn't matter.
+    var _WORKSPACE_DATA_KEYS = [
+        'bowire_server_urls',
+        'bowire_url_meta',
+        'bowire_collections',
+        'bowire_collections_trash',
+        'bowire_recordings',
+        'bowire_recordings_trash',
+        'bowire_favorites',
+        'bowire_benchmarks',
+        'bowire_flows'
+    ];
+    // Modes that store per-method presets via the presets framework.
+    // Each maps to a `bowire_presets_<mode>` key under wsKey().
+    var _WORKSPACE_PRESET_MODES = [
+        'discover', 'flows', 'benchmarks', 'mocks', 'proxy', 'security'
+    ];
+
+    function exportWorkspaceJson(wsId) {
+        var ws = workspaces.find(function (w) { return w.id === wsId; });
+        if (!ws) return null;
+        function readJson(key) {
+            try {
+                var raw = localStorage.getItem(_wsKeyFor(wsId, key));
+                return raw ? JSON.parse(raw) : null;
+            } catch { return null; }
+        }
+        var data = {};
+        _WORKSPACE_DATA_KEYS.forEach(function (k) {
+            var v = readJson(k);
+            if (v !== null && v !== undefined) data[k] = v;
+        });
+        var presets = {};
+        _WORKSPACE_PRESET_MODES.forEach(function (mode) {
+            var p = readJson('bowire_presets_' + mode);
+            if (Array.isArray(p) && p.length > 0) presets[mode] = p;
+        });
+        if (Object.keys(presets).length > 0) data.presets = presets;
+        return {
+            format: 'bowire-workspace',
+            version: 1,
+            exportedAt: new Date().toISOString(),
+            workspace: {
+                name: ws.name,
+                color: ws.color,
+                description: ws.description || '',
+                includeAllEnvironments: !!ws.includeAllEnvironments,
+                includedEnvironmentIds: Array.isArray(ws.includedEnvironmentIds)
+                    ? ws.includedEnvironmentIds.slice() : [],
+                recordingStorageMode: ws.recordingStorageMode || 'both'
+            },
+            data: data
+        };
+    }
+
+    function downloadWorkspaceExport(wsId) {
+        var payload = exportWorkspaceJson(wsId);
+        if (!payload) return false;
+        var ws = workspaces.find(function (w) { return w.id === wsId; });
+        var safeName = (ws && ws.name ? ws.name : wsId)
+            .replace(/[^a-zA-Z0-9_-]+/g, '-').replace(/^-+|-+$/g, '');
+        var fileName = 'bowire-workspace-' + (safeName || wsId) + '.bowire.json';
+        try {
+            var blob = new Blob([JSON.stringify(payload, null, 2)],
+                { type: 'application/json' });
+            var url = URL.createObjectURL(blob);
+            var a = document.createElement('a');
+            a.href = url; a.download = fileName;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            return true;
+        } catch (e) {
+            console.error('[workspace-export] failed', e);
+            return false;
+        }
+    }
+
+    function importWorkspaceJson(payload, opts) {
+        opts = opts || {};
+        if (!payload || typeof payload !== 'object'
+            || payload.format !== 'bowire-workspace') {
+            throw new Error('Not a Bowire workspace file (missing format marker)');
+        }
+        if (payload.version !== 1) {
+            throw new Error('Unsupported workspace format version: ' + payload.version);
+        }
+        var mode = opts.mode || 'new';
+        var wsMeta = payload.workspace || {};
+        var data = payload.data || {};
+
+        var targetId;
+        if (mode === 'new') {
+            var ws = createWorkspace(wsMeta.name || 'Imported',
+                wsMeta.color || '#6366f1');
+            ws.description = wsMeta.description || '';
+            ws.includeAllEnvironments = !!wsMeta.includeAllEnvironments;
+            ws.includedEnvironmentIds = Array.isArray(wsMeta.includedEnvironmentIds)
+                ? wsMeta.includedEnvironmentIds.slice() : [];
+            ws.recordingStorageMode = wsMeta.recordingStorageMode || 'both';
+            persistWorkspaces();
+            targetId = ws.id;
+        } else {
+            if (!opts.target) throw new Error('merge/replace requires opts.target');
+            if (!workspaces.find(function (w) { return w.id === opts.target; })) {
+                throw new Error('target workspace not found: ' + opts.target);
+            }
+            targetId = opts.target;
+        }
+
+        var isReplace = (mode === 'replace' || mode === 'new');
+
+        function writeKey(key, value) {
+            var k = _wsKeyFor(targetId, key);
+            if (isReplace) {
+                localStorage.setItem(k, JSON.stringify(value));
+                return;
+            }
+            // Merge: array → concat, object → assign keys (incoming wins),
+            // scalar → overwrite.
+            var existing = null;
+            try {
+                var raw = localStorage.getItem(k);
+                if (raw) existing = JSON.parse(raw);
+            } catch { /* ignore */ }
+            if (Array.isArray(value)) {
+                var merged = Array.isArray(existing)
+                    ? existing.concat(value) : value.slice();
+                localStorage.setItem(k, JSON.stringify(merged));
+            } else if (value && typeof value === 'object') {
+                var assigned = Object.assign({}, existing || {}, value);
+                localStorage.setItem(k, JSON.stringify(assigned));
+            } else {
+                localStorage.setItem(k, JSON.stringify(value));
+            }
+        }
+
+        _WORKSPACE_DATA_KEYS.forEach(function (k) {
+            if (Object.prototype.hasOwnProperty.call(data, k)) writeKey(k, data[k]);
+        });
+        if (data.presets && typeof data.presets === 'object') {
+            Object.keys(data.presets).forEach(function (m) {
+                if (Array.isArray(data.presets[m])) {
+                    writeKey('bowire_presets_' + m, data.presets[m]);
+                }
+            });
+        }
+        return targetId;
     }
 
     // #124 v2 — module-level slot for the omnibox palette DOM. The

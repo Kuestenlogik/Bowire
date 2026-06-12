@@ -1518,7 +1518,10 @@ not just
 
 /* #139 — Home mode. Cross-workflow launchpad: Favorites grid +
    Recent activity grid. */
-.bowire-main-home {
+/* Double class to beat .bowire-main (L1772) which sets
+   overflow:hidden — without specificity bump, that wins cascade order
+   and the Home pane stops scrolling. */
+.bowire-main.bowire-main-home {
     overflow-y: auto;
     overflow-x: hidden;
     /* Ensure the flex parent constraints don't collapse the
@@ -1528,11 +1531,185 @@ not just
     min-height: 0;
 }
 .bowire-home-wrap {
-    /* Same shape as the environment editor (.bowire-env-editor-main):
-       full-width with consistent 24 px padding. height: auto so the
-       wrap can grow taller than the viewport and the .bowire-main-home
-       parent's overflow-y: auto picks up the scroll. */
-    padding: 24px;
+    /* Portal home — every band stacks vertically with the same
+       horizontal gutter so the page reads as one column from top to
+       bottom. No max-width: wide viewports fill horizontally via the
+       auto-fill grids inside each band. */
+    padding: 18px 28px 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 22px;
+}
+.bowire-home-band {
+    /* Every band lives in the same content column. text-align:left
+       keeps the Continue tiles + Start cards aligned with the
+       Favorites + Recent headers below — the previous centered hero
+       + left-aligned grids underneath read as restless. */
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+.bowire-home-band-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--bowire-text-secondary);
+    margin-bottom: 2px;
+}
+.bowire-home-band-title-icon {
+    display: inline-flex;
+    width: 14px;
+    height: 14px;
+    color: var(--bowire-accent);
+}
+.bowire-home-band-title-icon svg { width: 14px; height: 14px; }
+.bowire-home-band-title-label {
+    color: var(--bowire-text);
+    letter-spacing: 0.06em;
+}
+.bowire-home-band-title-sub {
+    color: var(--bowire-text-tertiary);
+    text-transform: none;
+    letter-spacing: normal;
+    font-weight: 400;
+    font-size: 11px;
+    margin-left: 4px;
+}
+/* Continue tiles — 3 wide tiles. auto-fit + min 240 px so on
+   narrower viewports they reflow to 2 / 1 column gracefully. */
+.bowire-home-continue-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 12px;
+}
+.bowire-home-continue-tile {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    align-items: flex-start;
+    text-align: left;
+    padding: 14px 16px;
+    background: var(--bowire-surface);
+    border: 1px solid var(--bowire-border);
+    border-left: 3px solid var(--bowire-accent);
+    border-radius: var(--bowire-radius-md);
+    color: var(--bowire-text);
+    font: inherit;
+    cursor: pointer;
+    transition: background var(--bowire-transition), border-color var(--bowire-transition);
+}
+.bowire-home-continue-tile:hover {
+    background: var(--bowire-bg-elevated);
+    border-color: var(--bowire-accent);
+}
+.bowire-home-continue-tile-head {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--bowire-text-secondary);
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+.bowire-home-continue-tile-head svg { width: 12px; height: 12px; }
+.bowire-home-continue-tile-primary {
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1.3;
+    color: var(--bowire-text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    width: 100%;
+}
+.bowire-home-continue-tile-meta {
+    font-size: 11px;
+    color: var(--bowire-text-tertiary);
+}
+/* Start cards — 6 compact action cards. Same auto-fit pattern but
+   smaller minmax so all six sit on one row at desktop widths. */
+.bowire-home-start-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 10px;
+}
+.bowire-home-start-card {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    align-items: flex-start;
+    text-align: left;
+    padding: 12px 14px;
+    background: var(--bowire-surface);
+    border: 1px solid var(--bowire-border);
+    border-radius: var(--bowire-radius-md);
+    color: var(--bowire-text);
+    font: inherit;
+    cursor: pointer;
+    transition: background var(--bowire-transition), border-color var(--bowire-transition), transform var(--bowire-transition);
+}
+.bowire-home-start-card:hover {
+    background: var(--bowire-bg-elevated);
+    border-color: var(--bowire-accent);
+}
+.bowire-home-start-card-icon {
+    display: inline-flex;
+    width: 18px;
+    height: 18px;
+    color: var(--bowire-accent);
+    margin-bottom: 2px;
+}
+.bowire-home-start-card-icon svg { width: 18px; height: 18px; }
+.bowire-home-start-card-label {
+    font-size: 13px;
+    font-weight: 600;
+}
+.bowire-home-start-card-sub {
+    font-size: 11px;
+    color: var(--bowire-text-tertiary);
+}
+/* First-run band — same shape as Continue, but with a tagline above
+   the Start grid instead of three resume tiles. */
+.bowire-home-band-firstrun .bowire-home-firstrun-tagline {
+    margin: 0 0 6px;
+    font-size: 13px;
+    color: var(--bowire-text-secondary);
+}
+/* First-run hero slot — sits ABOVE Favorites + Recents so the
+   hero supplements (doesn't replace) the home structure. Compact
+   variant: smaller logo, tighter spacing, headline trimmed so the
+   sections below stay above the fold. */
+.bowire-home-hero-slot {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--bowire-border);
+}
+.bowire-home-hero-slot .bowire-landing-hero {
+    padding: 0 16px;
+    max-width: 720px;
+}
+.bowire-home-hero-slot .bowire-landing-hero-logo {
+    width: 84px;
+    margin-bottom: 8px;
+}
+.bowire-home-hero-slot .bowire-landing-hero-headline {
+    font-size: clamp(1.25rem, 2.2vw, 1.5rem);
+    margin-bottom: 4px;
+}
+.bowire-home-hero-slot .bowire-landing-hero-tagline {
+    font-size: 13px;
+    line-height: 1.45;
+    margin-bottom: 16px;
+}
+.bowire-home-hero-slot .bowire-landing-cta-grid {
+    margin-bottom: 0;
 }
 /* Side-by-side layout: Favorites + Recent live in a 2-column grid
    below the title strip. Collapses to a single column below 900 px
@@ -1552,19 +1729,19 @@ not just
     margin-bottom: 0; /* override the stacked default */
 }
 .bowire-home-title {
-    font-size: 24px;
+    font-size: 18px;
     font-weight: 700;
     letter-spacing: var(--bowire-heading-tracking);
-    margin: 0 0 4px;
+    margin: 0 0 2px;
     color: var(--bowire-text);
 }
 .bowire-home-subtitle {
-    margin: 0 0 32px;
-    font-size: 13px;
+    margin: 0 0 18px;
+    font-size: 12px;
     color: var(--bowire-text-secondary);
 }
 .bowire-home-section {
-    margin-bottom: 32px;
+    margin-bottom: 20px;
 }
 .bowire-home-section-title {
     display: flex;
@@ -1591,8 +1768,8 @@ not just
 }
 .bowire-home-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-    gap: 12px;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 10px;
 }
 .bowire-home-tile {
     --protocol-color: var(--bowire-protocol-default);
@@ -2026,6 +2203,83 @@ and future
     color: var(--bowire-text-tertiary);
     text-align: center;
     font-size: 12px;
+}
+
+/* #299 — Unified right-side drawer tab strip. Header replaces the
+   single-title row when more than one panel is open. Each tab carries
+   its label, an optional accessory (status dot / topic count) and a
+   per-tab close X — closing one tab leaves the other visible, matching
+   VS Code / JetBrains. The active tab gets the elevated background
+   that the drawer body already uses, so the active panel reads as a
+   continuation of the tab. */
+.bowire-right-drawer-tabs {
+    display: flex;
+    align-items: stretch;
+    background: var(--bowire-bg);
+    border-bottom: 1px solid var(--bowire-border);
+    flex-shrink: 0;
+}
+.bowire-right-drawer-tab {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 12px;
+    background: transparent;
+    border: none;
+    border-right: 1px solid var(--bowire-border);
+    color: var(--bowire-text-secondary);
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+    cursor: pointer;
+    transition: background var(--bowire-transition), color var(--bowire-transition);
+    position: relative;
+}
+.bowire-right-drawer-tab:hover {
+    background: var(--bowire-bg-elevated);
+    color: var(--bowire-text);
+}
+.bowire-right-drawer-tab.is-active {
+    background: var(--bowire-bg-elevated);
+    color: var(--bowire-text);
+    font-weight: 600;
+}
+.bowire-right-drawer-tab.is-active::after {
+    /* Bottom accent rule lines the active tab up with the panel body,
+       same idea as VS Code's editor tab indicator. */
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: -1px;
+    height: 2px;
+    background: var(--bowire-accent);
+}
+.bowire-right-drawer-tab-label {
+    line-height: 1;
+}
+.bowire-right-drawer-tab-close {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    padding: 0;
+    margin-left: 4px;
+    border: none;
+    border-radius: var(--bowire-radius-sm);
+    background: transparent;
+    color: var(--bowire-text-tertiary);
+    cursor: pointer;
+    transition: background var(--bowire-transition), color var(--bowire-transition);
+}
+.bowire-right-drawer-tab-close:hover {
+    background: var(--bowire-border);
+    color: var(--bowire-text);
+}
+.bowire-right-drawer-tab-close svg {
+    width: 11px;
+    height: 11px;
 }
 
 /* Topbar toggle button — small accent badge for the hint count */
@@ -2847,6 +3101,62 @@ channel open). */
 .bowire-favorites-group {
     padding-bottom: 4px;
 }
+
+/* #297 — Cross-feature state strip. Single-letter pills surface
+   what the current workspace holds for each method (C/R/B/P =
+   collection / recording / benchmark / preset). Subtle by default
+   so they don't compete with the method name; click jumps to the
+   relevant rail. Hidden when the row holds nothing for the method,
+   keeping the bulk of the service tree visually quiet. */
+.bowire-method-xf-strip {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    flex-shrink: 0;
+    margin-left: 4px;
+}
+.bowire-method-xf-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    height: 16px;
+    padding: 0 4px;
+    border: 1px solid var(--bowire-border);
+    border-radius: 4px;
+    background: var(--bowire-surface);
+    color: var(--bowire-text-tertiary);
+    font-size: 9px;
+    font-weight: 700;
+    line-height: 1;
+    letter-spacing: 0.04em;
+    cursor: pointer;
+    transition: background var(--bowire-transition), color var(--bowire-transition), border-color var(--bowire-transition);
+}
+.bowire-method-xf-pill:hover {
+    background: var(--bowire-bg-elevated);
+    color: var(--bowire-text);
+    border-color: var(--bowire-accent);
+}
+.bowire-method-xf-letter {
+    /* Letter alone — count is hidden when there's just one entry, so
+       the pill stays compact on the common "1 in 1 collection" case. */
+}
+.bowire-method-xf-count {
+    font-size: 9px;
+    font-weight: 600;
+    color: var(--bowire-text-secondary);
+}
+.bowire-method-xf-pill:hover .bowire-method-xf-count {
+    color: var(--bowire-text);
+}
+/* Per-feature accent colors — chosen to match the activity-rail
+   identity of each destination so the pill doubles as a hint about
+   where the click lands. Subtle by default; the hue strengthens on
+   hover so resting state stays calm. */
+.bowire-method-xf-pill-collection { color: var(--bowire-protocol-rest, #3b82f6); }
+.bowire-method-xf-pill-recording  { color: var(--bowire-danger, #ef4444); }
+.bowire-method-xf-pill-benchmark  { color: var(--bowire-warning, #f59e0b); }
+.bowire-method-xf-pill-preset     { color: var(--bowire-success, #22c55e); }
 
 /* ---------- Sidebar view switch (Services | Favorites) ---------- */
 /* MudBlazor-style tabs: no individual borders or pill backgrounds,
@@ -6128,6 +6438,110 @@ instead of having to
     height: 14px;
 }
 
+/* #296 — "Add to…" quick-action menu. Trigger sits next to the
+   favorite star; popup anchors to the trigger as an absolutely
+   positioned dropdown so the menu doesn't push the header layout.
+   Inherits the same icon-button chrome as fav-btn for visual
+   continuity. */
+.bowire-header-addto-wrap {
+    position: relative;
+    display: inline-flex;
+    margin-left: 2px;
+}
+.bowire-header-addto-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    padding: 0;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: var(--bowire-radius-sm);
+    color: var(--bowire-text-tertiary);
+    cursor: pointer;
+    transition: color var(--bowire-transition), background var(--bowire-transition), border-color var(--bowire-transition);
+}
+.bowire-header-addto-btn:hover,
+.bowire-header-addto-btn.active {
+    background: var(--bowire-surface-hover);
+    border-color: var(--bowire-border);
+    color: var(--bowire-text);
+}
+.bowire-header-addto-btn svg {
+    width: 14px;
+    height: 14px;
+}
+.bowire-header-addto-menu {
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0;
+    z-index: 60;
+    min-width: 240px;
+    max-width: 320px;
+    padding: 6px 0;
+    background: var(--bowire-bg-elevated);
+    border: 1px solid var(--bowire-border);
+    border-radius: var(--bowire-radius-md);
+    box-shadow: var(--bowire-shadow-lg);
+}
+.bowire-header-addto-section {
+    padding: 8px 12px 4px;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--bowire-text-tertiary);
+}
+.bowire-header-addto-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 8px 12px;
+    background: transparent;
+    border: none;
+    color: var(--bowire-text);
+    font-size: 12px;
+    text-align: left;
+    cursor: pointer;
+    transition: background var(--bowire-transition);
+}
+.bowire-header-addto-item:hover {
+    background: var(--bowire-surface-hover);
+}
+.bowire-header-addto-item-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    height: 16px;
+    color: var(--bowire-text-secondary);
+    flex-shrink: 0;
+}
+.bowire-header-addto-item-icon svg {
+    width: 14px;
+    height: 14px;
+}
+.bowire-header-addto-item-meta {
+    margin-left: auto;
+    font-size: 10px;
+    color: var(--bowire-text-tertiary);
+}
+.bowire-header-addto-item-create {
+    color: var(--bowire-accent);
+}
+.bowire-header-addto-item-create .bowire-header-addto-item-icon {
+    color: var(--bowire-accent);
+}
+.bowire-header-addto-item-disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+.bowire-header-addto-item-disabled:hover {
+    background: transparent;
+}
+
 /* #114 — inline hint chip at the method header. Small accent pill
    between the method badge and the copy-URL button. The hint count
    lives in the chip; the full hint texts are still listed in the
@@ -9095,6 +9509,24 @@ and offers the path to switch. */
     background: var(--bowire-surface);
     border-radius: var(--bowire-radius-md);
     padding: 12px 16px;
+    border: 1px solid transparent;
+    text-align: left;
+    font: inherit;
+    color: inherit;
+}
+/* #293 — Clickable variant: workspace-detail tile drills into the
+   matching rail mode. Hover lifts the border + accents the value so
+   the affordance is obvious without adding chrome. */
+button.bowire-ws-detail-stat-clickable {
+    cursor: pointer;
+    transition: border-color var(--bowire-transition), background var(--bowire-transition);
+}
+button.bowire-ws-detail-stat-clickable:hover {
+    background: var(--bowire-bg-elevated);
+    border-color: var(--bowire-accent);
+}
+button.bowire-ws-detail-stat-clickable:hover .bowire-ws-detail-stat-value {
+    color: var(--bowire-accent);
 }
 .bowire-ws-detail-stat-value {
     font-size: 24px;
