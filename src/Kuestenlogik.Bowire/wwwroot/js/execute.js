@@ -354,13 +354,10 @@
     }
 
     function renderConsolePanel(autoScroll) {
-        // Floating console panel retired (#164) — the legacy
-        // bowire-console-panel root is removed if it still exists from
-        // an older session. Console now lives as a tab in the unified
-        // right-side drawer; opening it means flipping consoleOpen +
-        // setting rightDrawerActiveTab='console' (handled at the
-        // call-sites that flip consoleOpen). Auto-scroll-on-new-entry
-        // is handled via a requestAnimationFrame after render().
+        // Legacy floating panel retired (#164 v2) — Console now mounts
+        // as a bottom-attached drawer below the main body. Clean up
+        // any stale floating root, then auto-scroll the bottom-drawer
+        // body when new entries arrived.
         var existing = document.querySelector('.bowire-console-panel');
         if (existing) existing.remove();
         if (consoleOpen && autoScroll) {
@@ -369,6 +366,88 @@
                 if (body) body.scrollTop = body.scrollHeight;
             });
         }
+    }
+
+    // #164 v2 — Bottom-attached console drawer. Renders directly inside
+    // bowire-app-middle as a sibling below the body. Reads
+    // consoleHeight (px) for the row height; a splitter at the top
+    // edge lets the operator drag-resize. Persisted height survives
+    // reloads via bowire_console_height.
+    function renderConsoleBottomDrawer() {
+        var drawer = el('div', {
+            id: 'bowire-bottom-drawer',
+            className: 'bowire-bottom-drawer',
+            role: 'complementary',
+            'aria-label': 'Console',
+            style: 'height:' + (typeof consoleHeight === 'number' ? consoleHeight : 240) + 'px'
+        });
+        // Top-edge splitter — drag to resize. Mousedown captures move
+        // until mouseup; we update consoleHeight live so the panel
+        // tracks the cursor. Clamps applied so the splitter can't
+        // shrink the drawer below 80 px or eat more than 70 % of the
+        // viewport.
+        var splitter = el('div', {
+            className: 'bowire-bottom-drawer-splitter',
+            role: 'separator',
+            'aria-orientation': 'horizontal',
+            'aria-label': 'Resize console',
+            title: 'Drag to resize the console'
+        });
+        splitter.addEventListener('mousedown', function (e) {
+            e.preventDefault();
+            var startY = e.clientY;
+            var startHeight = drawer.getBoundingClientRect().height;
+            var maxH = Math.floor(window.innerHeight * 0.7);
+            function onMove(ev) {
+                var dy = startY - ev.clientY;
+                var next = Math.min(maxH, Math.max(80, startHeight + dy));
+                drawer.style.height = next + 'px';
+                if (typeof consoleHeight !== 'undefined') consoleHeight = next;
+            }
+            function onUp() {
+                document.removeEventListener('mousemove', onMove);
+                document.removeEventListener('mouseup', onUp);
+                document.body.classList.remove('bowire-resizing-vertical');
+                if (typeof persistConsoleHeight === 'function') persistConsoleHeight();
+            }
+            document.body.classList.add('bowire-resizing-vertical');
+            document.addEventListener('mousemove', onMove);
+            document.addEventListener('mouseup', onUp);
+        });
+        drawer.appendChild(splitter);
+
+        var header = el('div', { className: 'bowire-bottom-drawer-header' });
+        header.appendChild(el('div', { className: 'bowire-bottom-drawer-title' },
+            el('span', { className: 'bowire-console-title-icon', innerHTML: svgIcon('clock') }),
+            el('span', { textContent: 'Console' }),
+            consoleLog.length > 0
+                ? el('span', { className: 'bowire-bottom-drawer-count', textContent: String(consoleLog.length) })
+                : null
+        ));
+        var headerActions = el('div', { className: 'bowire-bottom-drawer-actions' });
+        headerActions.appendChild(el('button', {
+            type: 'button',
+            className: 'bowire-console-clear',
+            textContent: 'Clear',
+            title: 'Clear all entries',
+            onClick: clearConsole
+        }));
+        headerActions.appendChild(el('button', {
+            type: 'button',
+            className: 'bowire-drawer-close bowire-bottom-drawer-close',
+            title: 'Close console',
+            'aria-label': 'Close console',
+            innerHTML: svgIcon('close'),
+            onClick: function () {
+                consoleOpen = false;
+                if (typeof render === 'function') render();
+            }
+        }));
+        header.appendChild(headerActions);
+        drawer.appendChild(header);
+
+        drawer.appendChild(_renderConsoleDrawerBody());
+        return drawer;
     }
 
     // ---- Guided Tour ----
