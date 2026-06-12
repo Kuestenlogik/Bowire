@@ -1113,8 +1113,23 @@
                         // the DOM before the CSS fade plays. The fade
                         // helper handles removal; the next natural
                         // render (e.g. sending a chat message) picks
-                        // up the new state.
+                        // up the new state. Confirm via a toast with a
+                        // deep-link into Settings so the operator can
+                        // re-toggle later without hunting the sidebar.
                         aiAllowInvoke = newVal;
+                        if (typeof toast === 'function') {
+                            var msg = newVal
+                                ? 'AI invocation enabled — session only, audited'
+                                : 'AI invocation disabled — observe-only mode';
+                            toast(msg, 'info', {
+                                action: {
+                                    label: 'Open Settings',
+                                    onClick: function () {
+                                        if (typeof openSettings === 'function') openSettings('ai');
+                                    }
+                                }
+                            });
+                        }
                     }
                 },
                 dismissKey: 'bowire_ai_invoke_alert_dismissed'

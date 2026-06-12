@@ -122,7 +122,16 @@
                 }
             }
         }
-        body.appendChild(renderMain());
+        // #160 — Workspace-context breadcrumb at the top of the main
+        // pane. Returns null when there's nothing actionable (single
+        // workspace, embedded mode); the main node renders as before
+        // in that case.
+        var mainNode = renderMain();
+        if (typeof renderWorkspaceBreadcrumb === 'function') {
+            var crumb = renderWorkspaceBreadcrumb();
+            if (crumb && mainNode) mainNode.insertBefore(crumb, mainNode.firstChild);
+        }
+        body.appendChild(mainNode);
 
         // #299 — Unified right-side drawer. Assistant (#90) and Help
         // (#154 Phase 3) share one drawer chrome on the right edge of

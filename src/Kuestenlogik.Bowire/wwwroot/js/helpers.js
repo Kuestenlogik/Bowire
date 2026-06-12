@@ -752,7 +752,17 @@
                     if (dot) dot.style.transform = iv ? 'translateX(16px)' : 'translateX(0)';
                     opts.inlineToggle.onChange(iv);
                     if (dismissOn !== undefined && iv === !!dismissOn) {
-                        _fadeOutAlertBar(bar);
+                        // The bar text described the OLD state ("X is
+                        // in mode Y"). Swap to the resolved-state
+                        // wording so the operator can read what just
+                        // happened during the fade. Brief delay before
+                        // the fade starts so the new text registers
+                        // before the banner disappears.
+                        var textEl = bar.querySelector('.bowire-alert-bar-text');
+                        if (textEl && opts.inlineToggle.dismissText) {
+                            textEl.textContent = opts.inlineToggle.dismissText;
+                        }
+                        setTimeout(function () { _fadeOutAlertBar(bar); }, 520);
                     }
                 }
             },
@@ -770,7 +780,14 @@
                 title: 'Hide for this session',
                 'aria-label': 'Hide for this session',
                 innerHTML: svgIcon('close'),
-                onClick: function () {
+                onClick: function (e) {
+                    // Stop the click from bubbling to any ancestor
+                    // handler that would re-render the panel — a
+                    // render() between the click and the CSS fade
+                    // would tear the bar out via morphdom diff
+                    // before the dismissing class transitions, and
+                    // the dismiss would look like a snap.
+                    if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
                     try { sessionStorage.setItem(opts.dismissKey, '1'); } catch { /* ignore */ }
                     _fadeOutAlertBar(bar);
                 }
@@ -794,7 +811,10 @@
             if (bar.parentNode) bar.parentNode.removeChild(bar);
         }
         bar.addEventListener('transitionend', finish);
-        setTimeout(finish, 600);
+        // Fallback timeout slightly longer than the CSS transition
+        // (520 ms) so a missing transitionend (reduced-motion, page
+        // backgrounded mid-fade, &c) still cleans up the node.
+        setTimeout(finish, 900);
     }
 
     function renderEmptyCard(opts) {
@@ -925,6 +945,21 @@
                 onClick: function (e) {
                     e.stopPropagation();
                     opts.undo();
+                    dismissToast(t);
+                }
+            }));
+        }
+        // Generic action slot — pass {action: {label, onClick}} for a
+        // toast that confirms a state change AND deep-links into the
+        // relevant settings or surface ("Invocation enabled" → "Open
+        // Settings").
+        if (opts.action && typeof opts.action.onClick === 'function') {
+            t.appendChild(el('button', {
+                className: 'bowire-toast-undo',
+                textContent: opts.action.label || 'Open',
+                onClick: function (e) {
+                    e.stopPropagation();
+                    opts.action.onClick();
                     dismissToast(t);
                 }
             }));
