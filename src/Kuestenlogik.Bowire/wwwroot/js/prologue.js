@@ -320,6 +320,80 @@
     // sheet is informational, no benefit in remembering it across
     // reloads.
     let shortcutSheetOpen = false;
+
+    // #169 — Hint dismiss store. Single localStorage key holds an
+    // object { hintId → { dismissedAt, scope: 'session'|'permanent',
+    // label? } }. Session-scoped entries are echoed to sessionStorage
+    // so they vanish on cold start; permanent ones survive until the
+    // operator re-enables them from Settings → General → "Hints and
+    // warnings". The store is the single source of truth for both
+    // renderAlertBar and renderEmptyCard so the Settings list can
+    // show every dismissed hint regardless of which surface dismissed
+    // it.
+    const BOWIRE_DISMISSED_HINTS_KEY = 'bowire_dismissed_hints';
+    let bowireDismissedHints = {};
+    try {
+        var rawDH = localStorage.getItem(BOWIRE_DISMISSED_HINTS_KEY);
+        if (rawDH) {
+            var parsedDH = JSON.parse(rawDH);
+            if (parsedDH && typeof parsedDH === 'object') bowireDismissedHints = parsedDH;
+        }
+    } catch { /* corrupt — start fresh */ }
+    function persistDismissedHints() {
+        try { localStorage.setItem(BOWIRE_DISMISSED_HINTS_KEY, JSON.stringify(bowireDismissedHints)); }
+        catch { /* quota / disabled storage — survive gracefully */ }
+    }
+    function isHintDismissed(hintId) {
+        if (!hintId) return false;
+        var entry = bowireDismissedHints[hintId];
+        if (entry && entry.scope === 'permanent') return true;
+        if (entry && entry.scope === 'session') {
+            try { return sessionStorage.getItem('bowire_hint_session_' + hintId) === '1'; }
+            catch { return true; }
+        }
+        return false;
+    }
+    function dismissHint(hintId, scope, label) {
+        if (!hintId) return;
+        var when = Date.now();
+        bowireDismissedHints[hintId] = {
+            dismissedAt: when,
+            scope: scope === 'permanent' ? 'permanent' : 'session',
+            label: label || bowireDismissedHints[hintId]?.label || hintId
+        };
+        persistDismissedHints();
+        if (scope === 'session') {
+            try { sessionStorage.setItem('bowire_hint_session_' + hintId, '1'); }
+            catch { /* ignore */ }
+        }
+    }
+    function undismissHint(hintId) {
+        if (!hintId) return;
+        delete bowireDismissedHints[hintId];
+        persistDismissedHints();
+        try { sessionStorage.removeItem('bowire_hint_session_' + hintId); }
+        catch { /* ignore */ }
+    }
+    function resetAllDismissedHints() {
+        var ids = Object.keys(bowireDismissedHints);
+        bowireDismissedHints = {};
+        persistDismissedHints();
+        for (var i = 0; i < ids.length; i++) {
+            try { sessionStorage.removeItem('bowire_hint_session_' + ids[i]); }
+            catch { /* ignore */ }
+        }
+    }
+    function listDismissedHints() {
+        return Object.keys(bowireDismissedHints).map(function (id) {
+            var e = bowireDismissedHints[id];
+            return {
+                id: id,
+                label: e.label || id,
+                scope: e.scope,
+                dismissedAt: e.dismissedAt
+            };
+        }).sort(function (a, b) { return (b.dismissedAt || 0) - (a.dismissedAt || 0); });
+    }
     // #116 — selected workspace in the rail-mode detail view.
     let workspacesSelectedId = null;
     // #152 — selected URL in the Sources rail-mode detail view.

@@ -256,7 +256,72 @@
             }
         ));
 
+        // #169 — Hints and warnings. Lists every banner / empty-card
+        // hint the operator has dismissed so they can bring any of
+        // them back. The state is read live from the central
+        // dismissed-hint store (prologue.js).
+        section.appendChild(renderHintsAndWarnings());
+
         return section;
+    }
+
+    // #169 — Settings row for restoring dismissed hints. Renders a
+    // light list of dismissed hint labels with a "Show again" link
+    // per row, plus a single "Reset all" link in the row header.
+    function renderHintsAndWarnings() {
+        var row = el('div', { className: 'bowire-settings-row bowire-settings-hints-row' });
+        row.appendChild(el('div', { className: 'bowire-settings-row-info' },
+            el('div', { className: 'bowire-settings-row-label', textContent: 'Hints and warnings' }),
+            el('div', {
+                className: 'bowire-settings-row-desc',
+                textContent: 'First-time hints and banners you’ve dismissed. Bring any of them back.'
+            })
+        ));
+
+        var listCol = el('div', { className: 'bowire-settings-row-control bowire-settings-hints-list' });
+        var hints = (typeof listDismissedHints === 'function') ? listDismissedHints() : [];
+        if (hints.length === 0) {
+            listCol.appendChild(el('div', {
+                className: 'bowire-settings-hints-empty',
+                textContent: 'No hints dismissed.'
+            }));
+        } else {
+            hints.forEach(function (h) {
+                var item = el('div', { className: 'bowire-settings-hints-item' });
+                item.appendChild(el('span', {
+                    className: 'bowire-settings-hints-label',
+                    textContent: h.label,
+                    title: h.id
+                }));
+                item.appendChild(el('span', {
+                    className: 'bowire-settings-hints-scope',
+                    textContent: h.scope === 'permanent' ? 'permanent' : 'this session'
+                }));
+                item.appendChild(el('button', {
+                    type: 'button',
+                    className: 'bowire-settings-hints-restore',
+                    textContent: 'Show again',
+                    onClick: function () {
+                        if (typeof undismissHint === 'function') undismissHint(h.id);
+                        render();
+                        renderSettingsDialog();
+                    }
+                }));
+                listCol.appendChild(item);
+            });
+            listCol.appendChild(el('button', {
+                type: 'button',
+                className: 'bowire-settings-hints-reset',
+                textContent: 'Reset all hints',
+                onClick: function () {
+                    if (typeof resetAllDismissedHints === 'function') resetAllDismissedHints();
+                    render();
+                    renderSettingsDialog();
+                }
+            }));
+        }
+        row.appendChild(listCol);
+        return row;
     }
 
     function renderMcpAdapterDisabled(statusBox) {

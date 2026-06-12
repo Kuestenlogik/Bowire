@@ -1132,7 +1132,9 @@
                         }
                     }
                 },
-                dismissKey: 'bowire_ai_invoke_alert_dismissed'
+                dismissKey: 'bowire_ai_invoke_alert_dismissed',
+                permanentDismissKey: 'bowire_ai_invoke_alert_permanent',
+                dismissLabel: 'AI observe-only banner'
             });
             if (alertBar) panel.appendChild(alertBar);
         }
@@ -1165,7 +1167,9 @@
                 var bar = renderAlertBar({
                     severity: severity,
                     text: h.text,
-                    dismissKey: 'bowire_ai_hint_' + h.id + '_dismissed'
+                    dismissKey: 'bowire_ai_hint_' + h.id + '_dismissed',
+                    permanentDismissKey: 'bowire_ai_hint_' + h.id + '_permanent',
+                    dismissLabel: 'Assistant hint: ' + (h.id || 'context')
                 });
                 if (bar) hintStack.appendChild(bar);
             });
