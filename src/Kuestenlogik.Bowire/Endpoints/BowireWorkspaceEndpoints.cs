@@ -15,26 +15,51 @@ namespace Kuestenlogik.Bowire.Endpoints;
 /// <summary>
 /// Workspace file support — loads and saves a <c>.blw</c> JSON file
 /// from the working directory. The workspace bundles environments,
-/// collections, and URL configuration so the whole setup is portable
-/// and shareable via version control.
+/// collections, recordings, flows, plugin pins, and URL configuration
+/// so the whole setup is portable and shareable via version control.
 ///
-/// File format:
+/// File format (#58 Phase 1):
 /// <code>
 /// {
+///   "workspaceFormatVersion": 1,
 ///   "urls": ["https://api.example.com"],
 ///   "environments": [ ... ],
 ///   "globals": { ... },
-///   "collections": [ ... ]
+///   "collections": [ ... ],
+///   "recordings": [ ... ],
+///   "flows": [ ... ],
+///   "pluginPins": { "grpc": "1.5.0", "mqtt": "1.5.0" }
 /// }
 /// </code>
 ///
 /// The file is read on startup and written back on every save. When
 /// no workspace file exists, the endpoints return empty defaults.
+/// Missing fields in older files deserialize to their empty default
+/// — adding a new field never breaks an existing .blw.
 /// </summary>
 internal static class BowireWorkspaceEndpoints
 {
+    // #58 — Current schema version. Increment when the .blw shape
+    // changes in a way an older reader would mis-handle; readers can
+    // gate behavior on the version field. Serialized as
+    // 'workspaceFormatVersion' on disk.
+    public const int CurrentFormatVersion = 1;
+
+    // PropertyNamingPolicy = CamelCase pins serialized keys to a
+    // stable, conventional shape (urls / environments / collections /
+    // recordings / flows / pluginPins / workspaceFormatVersion).
+    // PropertyNameCaseInsensitive stays on the read side so old files
+    // with PascalCase keys still parse. Records serialize properties
+    // in declaration order, giving deterministic key ordering so
+    // diffs stay clean across saves.
     private static readonly JsonSerializerOptions JsonOpts = new()
-    { WriteIndented = true, PropertyNameCaseInsensitive = true };
+    {
+        WriteIndented = true,
+        PropertyNameCaseInsensitive = true,
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+        DictionaryKeyPolicy = JsonNamingPolicy.CamelCase,
+        DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.Never,
+    };
 
     private static string WorkspacePath =>
         Path.Combine(Directory.GetCurrentDirectory(), ".blw");
@@ -215,11 +240,34 @@ internal static class BowireWorkspaceEndpoints
         Process.Start(psi);
     }
 
+    // #58 — Workspace file schema. Property declaration order doubles
+    // as the on-disk JSON key order; keep version first so a stale
+    // reader sees the format hint before anything else, then the
+    // existing fields in their historical order, then the new ones
+    // appended at the end. This minimises diff churn for workspaces
+    // that don't use the new fields yet.
     internal sealed record WorkspaceFile
     {
+        public int WorkspaceFormatVersion { get; init; } = CurrentFormatVersion;
         public List<string> Urls { get; init; } = [];
         public List<JsonElement> Environments { get; init; } = [];
         public Dictionary<string, string> Globals { get; init; } = new();
         public List<JsonElement> Collections { get; init; } = [];
+        // #58 — Recordings stored inline so a `git add .blw` captures
+        // the whole project setup in one file. Each entry is a raw
+        // JsonElement so the workbench's recording shape (steps,
+        // metadata, &c) can evolve without forcing a schema change
+        // here.
+        public List<JsonElement> Recordings { get; init; } = [];
+        // #58 — Flows live inline alongside recordings for the same
+        // reason — keep the whole "what we run + how we run it"
+        // bundle reviewable in one PR diff.
+        public List<JsonElement> Flows { get; init; } = [];
+        // #58 — Plugin pins: protocolId → semver string. Lets a
+        // workspace declare "this project expects MQTT 1.5.0+ + gRPC
+        // 1.5.0+"; the standalone host can warn on mismatch or offer
+        // to install missing protocols on open. Empty map = no
+        // requirement, current behavior preserved.
+        public Dictionary<string, string> PluginPins { get; init; } = new();
     }
 }

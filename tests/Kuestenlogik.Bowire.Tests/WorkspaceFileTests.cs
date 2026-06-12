@@ -114,4 +114,87 @@ public class WorkspaceFileTests
         Assert.Single(ws.Collections);
         Assert.Equal("col-1", ws.Collections[0].GetProperty("id").GetString());
     }
+
+    // #58 Phase 1 — New fields. workspaceFormatVersion + recordings +
+    // flows + pluginPins joined the schema; the next round of tests
+    // verifies defaults, round-trip, and backward compatibility so the
+    // existing .blw files from before the format extension keep
+    // working.
+
+    [Fact]
+    public void Default_Workspace_Reports_Current_Schema_Version()
+    {
+        var ws = new BowireWorkspaceEndpoints.WorkspaceFile();
+        Assert.Equal(BowireWorkspaceEndpoints.CurrentFormatVersion, ws.WorkspaceFormatVersion);
+    }
+
+    [Fact]
+    public void Default_Workspace_Has_Empty_Recordings_Flows_And_PluginPins()
+    {
+        var ws = new BowireWorkspaceEndpoints.WorkspaceFile();
+        Assert.NotNull(ws.Recordings);
+        Assert.Empty(ws.Recordings);
+        Assert.NotNull(ws.Flows);
+        Assert.Empty(ws.Flows);
+        Assert.NotNull(ws.PluginPins);
+        Assert.Empty(ws.PluginPins);
+    }
+
+    [Fact]
+    public void Workspace_Round_Trips_Recordings_Flows_And_PluginPins()
+    {
+        const string json = """
+            {
+              "workspaceFormatVersion": 1,
+              "recordings": [
+                { "id": "rec-1", "name": "Login flow", "steps": [ ] }
+              ],
+              "flows": [
+                { "id": "flow-1", "name": "Smoke" }
+              ],
+              "pluginPins": {
+                "grpc": "1.5.0",
+                "mqtt": "1.5.0"
+              }
+            }
+            """;
+
+        var ws = JsonSerializer.Deserialize<BowireWorkspaceEndpoints.WorkspaceFile>(json, JsonOpts);
+
+        Assert.NotNull(ws);
+        Assert.Equal(1, ws!.WorkspaceFormatVersion);
+        Assert.Single(ws.Recordings);
+        Assert.Equal("rec-1", ws.Recordings[0].GetProperty("id").GetString());
+        Assert.Single(ws.Flows);
+        Assert.Equal("flow-1", ws.Flows[0].GetProperty("id").GetString());
+        Assert.Equal(2, ws.PluginPins.Count);
+        Assert.Equal("1.5.0", ws.PluginPins["grpc"]);
+        Assert.Equal("1.5.0", ws.PluginPins["mqtt"]);
+    }
+
+    [Fact]
+    public void Workspace_Without_New_Fields_Stays_BackwardsCompatible()
+    {
+        // Old .blw — pre-#58. Reader should fill the new fields with
+        // their empty defaults so an existing checked-in file keeps
+        // working without a migration step.
+        const string json = """
+            {
+              "urls": ["https://api.example.com"],
+              "environments": [],
+              "globals": { "tier": "free" },
+              "collections": []
+            }
+            """;
+
+        var ws = JsonSerializer.Deserialize<BowireWorkspaceEndpoints.WorkspaceFile>(json, JsonOpts);
+
+        Assert.NotNull(ws);
+        Assert.Single(ws!.Urls);
+        // Old files have no version field — record default kicks in.
+        Assert.Equal(BowireWorkspaceEndpoints.CurrentFormatVersion, ws.WorkspaceFormatVersion);
+        Assert.Empty(ws.Recordings);
+        Assert.Empty(ws.Flows);
+        Assert.Empty(ws.PluginPins);
+    }
 }
