@@ -6,6 +6,102 @@
     var settingsOpen = false;
     var settingsTab = 'general';
 
+    // #192 — Build the settings nav tree. Top level: General /
+    // Shortcuts / Data / Assistant / Plugins. Plugins expands to one
+    // child per enabled-plugin-with-settings, plus a leading "All
+    // plugins" entry that lands on the legacy overview page (enable
+    // toggles + install hints).
+    function _buildSettingsTreeNodes() {
+        function leaf(id, label, icon) {
+            return {
+                id: 'settings:' + id,
+                label: label,
+                icon: icon,
+                selected: settingsTab === id,
+                onClick: function () {
+                    if (settingsTab === 'plugins' && id !== 'plugins') {
+                        pluginsTabFetchedThisOpen = false;
+                    }
+                    settingsTab = id;
+                    renderSettingsDialog();
+                }
+            };
+        }
+
+        var nodes = [
+            leaf('general', 'General', 'settings'),
+            leaf('shortcuts', 'Shortcuts', 'list'),
+            leaf('data', 'Data', 'trash'),
+            leaf('ai', 'Assistant', 'spark')
+        ];
+
+        var pluginChildren = [];
+        // "All plugins" entry lands on the existing overview page —
+        // useful when the operator wants the umbrella view (toggle a
+        // plugin on/off, see install hints) instead of a specific
+        // plugin's settings.
+        pluginChildren.push({
+            id: 'settings:plugins',
+            label: 'All plugins',
+            icon: 'layers',
+            selected: settingsTab === 'plugins',
+            onClick: function () {
+                settingsTab = 'plugins';
+                renderSettingsDialog();
+            }
+        });
+        for (var pi = 0; pi < protocols.length; pi++) {
+            var p = protocols[pi];
+            if (!isProtocolEnabled(p.id)) continue;
+            if (!p.settings || p.settings.length === 0) continue;
+            (function (pp) {
+                var tabId = 'plugin-' + pp.id;
+                pluginChildren.push({
+                    id: 'settings:' + tabId,
+                    label: pp.name,
+                    iconHtml: pp.icon || null,
+                    selected: settingsTab === tabId,
+                    onClick: function () {
+                        if (settingsTab === 'plugins') {
+                            pluginsTabFetchedThisOpen = false;
+                        }
+                        settingsTab = tabId;
+                        renderSettingsDialog();
+                    }
+                });
+            })(p);
+        }
+
+        // Plugins group is expandable. Default-open when the operator
+        // is already on a plugin tab so the active row is visible
+        // without an extra click.
+        var pluginsKey = 'plugins';
+        var pluginsActive = settingsTab === 'plugins' || settingsTab.indexOf('plugin-') === 0;
+        var pluginsExpanded = isSettingsTreeNodeExpanded(pluginsKey, pluginsActive);
+        // Count = enabled plugins that contribute settings.
+        var pluginsBadge = pluginChildren.length - 1; // minus the "All plugins" overview row
+        nodes.push({
+            id: 'settings:plugins-group',
+            label: 'Plugins',
+            icon: 'layers',
+            badge: pluginsBadge > 0 ? pluginsBadge : null,
+            expandable: true,
+            expanded: pluginsExpanded,
+            selected: false,
+            onClick: function () {
+                toggleSettingsTreeNode(pluginsKey, pluginsActive);
+                renderSettingsDialog();
+            },
+            onToggle: function () {
+                toggleSettingsTreeNode(pluginsKey, pluginsActive);
+                renderSettingsDialog();
+            },
+            children: pluginChildren
+        });
+
+        return nodes;
+    }
+
     function openSettings(targetTab) {
         settingsOpen = true;
         // Allow callers (e.g. the chat-pane invocation-status pill) to
@@ -24,74 +120,40 @@
         renderSettingsDialog();
     }
 
+    // #192 — Settings nav as a tree (MudBlazor NavMenu style). Plugins
+    // is now an expandable group with each enabled+settings-providing
+    // plugin as a child row, so MQTT / WebSocket / gRPC live under the
+    // umbrella instead of cluttering the top level. Persistence per
+    // group key so the operator's collapse choice survives a reload.
+    var settingsTreeExpanded = {};
+    try {
+        var rawSTE = localStorage.getItem('bowire_settings_tree_expanded');
+        if (rawSTE) {
+            var parsedSTE = JSON.parse(rawSTE);
+            if (parsedSTE && typeof parsedSTE === 'object') settingsTreeExpanded = parsedSTE;
+        }
+    } catch { /* ignore */ }
+    function persistSettingsTreeExpanded() {
+        try { localStorage.setItem('bowire_settings_tree_expanded', JSON.stringify(settingsTreeExpanded)); }
+        catch { /* ignore */ }
+    }
+    function isSettingsTreeNodeExpanded(key, defaultOpen) {
+        if (settingsTreeExpanded[key] === undefined) return !!defaultOpen;
+        return !!settingsTreeExpanded[key];
+    }
+    function toggleSettingsTreeNode(key, defaultOpen) {
+        settingsTreeExpanded[key] = !isSettingsTreeNodeExpanded(key, defaultOpen);
+        persistSettingsTreeExpanded();
+    }
+
     function renderSettingsDialog() {
         var existing = document.querySelector('.bowire-settings-overlay');
         if (existing) existing.remove();
         if (!settingsOpen) return;
 
-        // ---- Left sidebar: categories ----
-        // "About" lives in its own dedicated dialog (see openAbout / the
-        // ?-button in the topbar) — kept out of Settings so the panel
-        // stays focused on configuration rather than mixing config with
-        // marketing/credits.
-        var categories = [
-            { id: 'general', label: 'General', icon: 'settings' },
-            { id: 'shortcuts', label: 'Shortcuts', icon: 'list' },
-            { id: 'data', label: 'Data', icon: 'trash' },
-            // "AI" — provider / endpoint / model for the optional
-            // Kuestenlogik.Bowire.Ai package (#63). Always present; when
-            // the package isn't installed the section shows an install
-            // hint instead of the form, so the user discovers the
-            // capability without having to read the docs.
-            // Tab id stays 'ai' for back-compat with deep-links;
-            // user-visible label flips to Assistant per #134.
-            { id: 'ai', label: 'Assistant', icon: 'spark' },
-            // "Plugins" — per-plugin enable toggles. Always present, even
-            // when no plugin contributes its own settings, because the
-            // enable toggle itself doesn't need a plugin to opt in.
-            { id: 'plugins', label: 'Plugins', icon: 'layers' }
-        ];
-
-        // Add per-plugin settings categories only for plugins that are
-        // enabled AND contribute their own settings schema. Disabled
-        // plugins don't show their own sidebar entry — the user re-enables
-        // them from the Plugins page above first.
-        for (var pi = 0; pi < protocols.length; pi++) {
-            if (!isProtocolEnabled(protocols[pi].id)) continue;
-            if (protocols[pi].settings && protocols[pi].settings.length > 0) {
-                categories.push({
-                    id: 'plugin-' + protocols[pi].id,
-                    label: protocols[pi].name,
-                    icon: null,
-                    pluginIcon: protocols[pi].icon,
-                    pluginId: protocols[pi].id
-                });
-            }
-        }
-
+        // ---- Left sidebar: navigation tree ----
         var leftPanel = el('div', { className: 'bowire-settings-left' });
-        for (var ci = 0; ci < categories.length; ci++) {
-            (function (cat) {
-                leftPanel.appendChild(el('div', {
-                    id: 'bowire-settings-cat-' + cat.id,
-                    className: 'bowire-settings-cat' + (settingsTab === cat.id ? ' active' : ''),
-                    onClick: function () {
-                        // Reset the Plugins-tab fetch guard whenever the
-                        // user leaves the Plugins tab so re-entry triggers
-                        // a fresh fetch (matches the prior "refresh on
-                        // open" intent).
-                        if (settingsTab === 'plugins' && cat.id !== 'plugins') {
-                            pluginsTabFetchedThisOpen = false;
-                        }
-                        settingsTab = cat.id;
-                        renderSettingsDialog();
-                    }
-                },
-                    el('span', { className: 'bowire-settings-cat-icon', innerHTML: cat.pluginIcon || svgIcon(cat.icon) }),
-                    el('span', { textContent: cat.label })
-                ));
-            })(categories[ci]);
-        }
+        leftPanel.appendChild(renderTree(_buildSettingsTreeNodes(), { ariaLabel: 'Settings' }));
 
         // ---- Right panel: settings for selected category ----
         // ID includes the active tab so morphdom fully replaces the

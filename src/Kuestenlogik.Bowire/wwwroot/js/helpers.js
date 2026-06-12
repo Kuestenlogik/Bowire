@@ -1180,10 +1180,15 @@
             row.appendChild(el('span', { className: 'bowire-tree-toggle bowire-tree-toggle-spacer' }));
         }
 
-        // Leading glyph: either an svg icon or an accent dot. Lines up
-        // even when only some siblings have one.
+        // Leading glyph: an svg icon from the catalog (node.icon),
+        // raw inline SVG markup (node.iconHtml — for plugin icons),
+        // or an accent dot (node.accent). Lines up even when only
+        // some siblings have one.
         var glyph = el('span', { className: 'bowire-tree-glyph' });
-        if (node.icon) {
+        if (node.iconHtml) {
+            glyph.innerHTML = node.iconHtml;
+            glyph.classList.add('bowire-tree-glyph-icon');
+        } else if (node.icon) {
             glyph.innerHTML = svgIcon(node.icon);
             glyph.classList.add('bowire-tree-glyph-icon');
         } else if (node.accent) {
