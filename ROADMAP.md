@@ -12,7 +12,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.0 — UI refactor + breaking-change window
 
-**24/38 done** · 1 in progress · 13 backlog
+**24/37 done** · 1 in progress · 12 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -24,7 +24,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [124](https://github.com/Kuestenlogik/Bowire/issues/124) | Bowire | Cross-protocol omnibox (Cmd/Ctrl+K) | ⬜ Open |  |
 | [127](https://github.com/Kuestenlogik/Bowire/issues/127) | Bowire | Auto-save to workspace + live save-state pill | ⬜ Open |  |
 | [152](https://github.com/Kuestenlogik/Bowire/issues/152) | Bowire | Sources rail mode — centralise URL / schema-file management | ⬜ Open |  |
-| [153](https://github.com/Kuestenlogik/Bowire/issues/153) | Bowire | Bowire as transparent interceptor — embedded middleware + standalone reverse-proxy | ⬜ Open |  |
 | [154](https://github.com/Kuestenlogik/Bowire/issues/154) | Bowire | Help as optional NuGet package — `Kuestenlogik.Bowire.Help` | ⬜ Open |  |
 | [155](https://github.com/Kuestenlogik/Bowire/issues/155) | Bowire | Workspace = project folder — strictly per-workspace, sharing via copy actions | ⬜ Open |  |
 | [156](https://github.com/Kuestenlogik/Bowire/issues/156) | Bowire | Favorites as a connective UI element | ⬜ Open |  |
@@ -57,7 +56,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.1 — workspace v3 + protocol wave 3
 
-**0/14 done** · 14 backlog
+**0/15 done** · 15 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -75,6 +74,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [149](https://github.com/Kuestenlogik/Bowire/issues/149) | Bowire | Workspace CLI — bowire workspace init / export / import / migrate-format | ⬜ Open |  |
 | [150](https://github.com/Kuestenlogik/Bowire/issues/150) | Bowire | Filesystem-watch + reconcile UI for externally-edited workspace files | ⬜ Open |  |
 | [151](https://github.com/Kuestenlogik/Bowire/issues/151) | Bowire | Secret-file separation + workspace lock file for safe team-shared git workspaces | ⬜ Open |  |
+| [153](https://github.com/Kuestenlogik/Bowire/issues/153) | Bowire | Bowire as transparent interceptor — embedded middleware + standalone reverse-proxy | ⬜ Open |  |
 
 ### Backlog (not yet scheduled)
 
@@ -156,10 +156,6 @@ Remaining wave items after MQTT / Kafka / AMQP / SOAP / NATS / JSON-RPC / Pulsar
 ## Why
 
 #### ⬜ Open · [#152](https://github.com/Kuestenlogik/Bowire/issues/152) Sources rail mode — centralise URL / schema-file management
-
-## Why
-
-#### ⬜ Open · [#153](https://github.com/Kuestenlogik/Bowire/issues/153) Bowire as transparent interceptor — embedded middleware + standalone reverse-proxy
 
 ## Why
 
@@ -336,6 +332,10 @@ Remaining wave items after MQTT / Kafka / AMQP / SOAP / NATS / JSON-RPC / Pulsar
 ## Why
 
 #### ⬜ Open · [#151](https://github.com/Kuestenlogik/Bowire/issues/151) Secret-file separation + workspace lock file for safe team-shared git workspaces
+
+## Why
+
+#### ⬜ Open · [#153](https://github.com/Kuestenlogik/Bowire/issues/153) Bowire as transparent interceptor — embedded middleware + standalone reverse-proxy
 
 ## Why
 
