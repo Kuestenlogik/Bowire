@@ -2002,6 +2002,67 @@
             }
         }
 
+        // #124 — Collections (by name). Selecting one promotes the
+        // Workspaces rail with the matching collection focused inside
+        // the workspace tree's main pane — same place the operator
+        // manages collections day-to-day.
+        if (typeof collectionsList !== 'undefined' && Array.isArray(collectionsList)) {
+            var colMatches = 0;
+            for (var ci = 0; ci < collectionsList.length && colMatches < 5; ci++) {
+                (function (col) {
+                    if ((col.name || '').toLowerCase().indexOf(qLower) === -1) return;
+                    colMatches++;
+                    var items = Array.isArray(col.items) ? col.items.length : 0;
+                    out.push({
+                        group: 'Collections',
+                        label: col.name,
+                        sublabel: items + ' item' + (items === 1 ? '' : 's'),
+                        icon: svgIcon('folder'),
+                        onSelect: function () {
+                            if (typeof collectionManagerSelectedId !== 'undefined') {
+                                collectionManagerSelectedId = col.id;
+                            }
+                            var ws = (typeof activeWorkspace === 'function') ? activeWorkspace() : null;
+                            if (ws && typeof workspaceTreeSelection !== 'undefined') {
+                                workspacesSelectedId = ws.id;
+                                workspaceTreeSelection = { wsId: ws.id, kind: 'collection', value: col.id };
+                            }
+                            railMode = 'workspaces';
+                            try { localStorage.setItem('bowire_rail_mode', 'workspaces'); } catch { /* ignore */ }
+                            searchSuggestionsOpen = false;
+                            searchQuery = '';
+                            render();
+                        }
+                    });
+                })(collectionsList[ci]);
+            }
+        }
+
+        // #124 — Workspaces (switch active). Substring match on
+        // workspace name. The active workspace is skipped so the
+        // palette doesn't suggest "switch to the one you're already
+        // on". Selecting reloads via switchWorkspace, same as the
+        // topbar dropdown.
+        if (typeof workspaces !== 'undefined' && Array.isArray(workspaces)) {
+            for (var wi = 0; wi < workspaces.length; wi++) {
+                (function (ws) {
+                    if (ws.id === activeWorkspaceId) return;
+                    if ((ws.name || '').toLowerCase().indexOf(qLower) === -1) return;
+                    out.push({
+                        group: 'Workspaces',
+                        label: 'Switch to: ' + ws.name,
+                        sublabel: 'Workspace',
+                        icon: svgIcon('briefcase'),
+                        onSelect: function () {
+                            searchSuggestionsOpen = false;
+                            searchQuery = '';
+                            if (typeof switchWorkspace === 'function') switchWorkspace(ws.id);
+                        }
+                    });
+                })(workspaces[wi]);
+            }
+        }
+
         // #124 — Active mocks (by recording name + port).
         if (typeof mocksList !== 'undefined' && Array.isArray(mocksList)) {
             for (var moi = 0; moi < mocksList.length; moi++) {
@@ -2028,19 +2089,21 @@
 
         // #124 — Rail-mode jumps. Lets the operator type 'home',
         // 'security', 'bench' etc. to navigate without clicking the
-        // rail. Substring match on mode label + id.
+        // rail. Substring match on mode label + id. Collections,
+        // Environments, and Recordings dropped — they live inside
+        // the Workspaces tree now and have their own palette lanes
+        // above (search by entity name), so a "Go to" jump would
+        // navigate nowhere visible.
         var railJumps = [
             { id: 'home',         label: 'Home',              icon: 'house' },
             { id: 'discover',     label: 'Discover',          icon: 'compass' },
-            { id: 'collections',  label: 'Collections',       icon: 'list' },
-            { id: 'environments', label: 'Environments',      icon: 'globe' },
-            { id: 'recordings',   label: 'Recordings',        icon: 'recording' },
             { id: 'mocks',        label: 'Mocks',             icon: 'server' },
             { id: 'flows',        label: 'Flows',             icon: 'flow' },
             { id: 'proxy',        label: 'Proxy / MITM',      icon: 'disconnect' },
             { id: 'benchmarks',   label: 'Benchmarks',        icon: 'chart' },
             { id: 'parallel',     label: 'Parallel sessions', icon: 'lightning' },
             { id: 'security',     label: 'Security',          icon: 'shield' },
+            { id: 'workspaces',   label: 'Workspaces',        icon: 'briefcase' },
         ];
         for (var rj = 0; rj < railJumps.length; rj++) {
             (function (mode) {
@@ -2117,6 +2180,161 @@
                     }
                 });
             })(envs[ei]);
+        }
+
+        // #124 — Settings tabs. Both 'settings' as a keyword and the
+        // tab names (General / Shortcuts / Data / Assistant / Plugins)
+        // surface a jump. Selecting deep-links via openSettings(tab).
+        var settingsTabs = [
+            { id: null,        label: 'Open Settings',            keywords: ['settings', 'preferences', 'options'] },
+            { id: 'general',   label: 'Settings → General',       keywords: ['settings general'] },
+            { id: 'shortcuts', label: 'Settings → Shortcuts',     keywords: ['settings shortcuts', 'keymap', 'bindings'] },
+            { id: 'data',      label: 'Settings → Data',          keywords: ['settings data', 'reset', 'clear'] },
+            { id: 'ai',        label: 'Settings → Assistant',     keywords: ['settings ai', 'assistant', 'llm'] },
+            { id: 'plugins',   label: 'Settings → Plugins',       keywords: ['settings plugins'] }
+        ];
+        for (var sti = 0; sti < settingsTabs.length; sti++) {
+            (function (t) {
+                var hay = t.label.toLowerCase() + ' ' + t.keywords.join(' ');
+                if (hay.indexOf(qLower) === -1) return;
+                out.push({
+                    group: 'Settings',
+                    label: t.label,
+                    sublabel: 'Preferences',
+                    icon: svgIcon('settings'),
+                    onSelect: function () {
+                        searchSuggestionsOpen = false;
+                        searchQuery = '';
+                        if (typeof openSettings === 'function') openSettings(t.id || undefined);
+                    }
+                });
+            })(settingsTabs[sti]);
+        }
+
+        // #124 — Help. Opens the Help drawer, plus surfaces specific
+        // help topics matched against the loaded topic catalogue.
+        if (('help'.indexOf(qLower) !== -1) || ('docs'.indexOf(qLower) !== -1)) {
+            out.push({
+                group: 'Help',
+                label: 'Open Help drawer',
+                sublabel: 'Contextual + topic search',
+                icon: svgIcon('help'),
+                onSelect: function () {
+                    searchSuggestionsOpen = false;
+                    searchQuery = '';
+                    if (typeof helpOpenDrawer === 'function') helpOpenDrawer();
+                    else render();
+                }
+            });
+        }
+        if (typeof helpTopics !== 'undefined' && Array.isArray(helpTopics)) {
+            var topicMatches = 0;
+            for (var hi = 0; hi < helpTopics.length && topicMatches < 5; hi++) {
+                (function (t) {
+                    var hay = ((t.title || '') + ' ' + (t.id || '')).toLowerCase();
+                    if (hay.indexOf(qLower) === -1) return;
+                    topicMatches++;
+                    out.push({
+                        group: 'Help',
+                        label: t.title || t.id,
+                        sublabel: 'Help topic',
+                        icon: svgIcon('help'),
+                        onSelect: function () {
+                            searchSuggestionsOpen = false;
+                            searchQuery = '';
+                            if (typeof helpOpenDrawer === 'function') helpOpenDrawer(t.id);
+                            else render();
+                        }
+                    });
+                })(helpTopics[hi]);
+            }
+        }
+
+        // #124 — Workbench commands. Static built-ins plus a window-
+        // scoped extension hook so plugins can register their own
+        // entries via window.bowireRegisterPaletteCommand(...). Each
+        // command has { id, label, sublabel?, icon?, keywords?,
+        // when?, run }. when() returns false to suppress (e.g. "Stop
+        // all mocks" only when there are mocks running).
+        var builtinCommands = [
+            { id: 'cmd:start-recording', label: 'Start recording',     icon: 'recording',
+              keywords: 'record start capture',
+              when: function () { return typeof startRecording === 'function'; },
+              run: function () {
+                  if (typeof startRecording === 'function') startRecording();
+                  railMode = 'discover';
+                  try { localStorage.setItem('bowire_rail_mode', 'discover'); } catch { /* ignore */ }
+              } },
+            { id: 'cmd:stop-all-mocks', label: 'Stop all mocks',       icon: 'stop',
+              keywords: 'mock stop disable',
+              when: function () { return typeof mocksList !== 'undefined' && Array.isArray(mocksList) && mocksList.length > 0; },
+              run: function () {
+                  if (typeof stopAllMocks === 'function') stopAllMocks();
+                  else if (typeof mocksList !== 'undefined') mocksList.forEach(function (m) {
+                      if (typeof stopMock === 'function') stopMock(m.mockId);
+                  });
+              } },
+            { id: 'cmd:toggle-console', label: 'Toggle Console panel', icon: 'clock',
+              keywords: 'console log activity terminal',
+              run: function () { if (typeof toggleConsole === 'function') toggleConsole(); } },
+            { id: 'cmd:toggle-tests',   label: 'Toggle Tests drawer',  icon: 'beaker',
+              keywords: 'tests assertions',
+              run: function () {
+                  if (typeof testsDrawerOpen !== 'undefined') {
+                      testsDrawerOpen = !testsDrawerOpen;
+                      try { localStorage.setItem('bowire_tests_drawer_open', testsDrawerOpen ? '1' : '0'); }
+                      catch { /* ignore */ }
+                  }
+              } },
+            { id: 'cmd:toggle-assistant', label: 'Toggle Assistant drawer', icon: 'bot',
+              keywords: 'assistant ai chat',
+              run: function () {
+                  aiDrawerOpen = !aiDrawerOpen;
+                  try { localStorage.setItem('bowire_ai_drawer_open', aiDrawerOpen ? '1' : '0'); }
+                  catch { /* ignore */ }
+              } },
+            { id: 'cmd:toggle-sidebar',  label: 'Toggle sidebar',      icon: 'sidebar',
+              keywords: 'sidebar collapse expand',
+              run: function () {
+                  if (typeof toggleSidebarCollapsed === 'function') toggleSidebarCollapsed();
+              } },
+            { id: 'cmd:open-shortcuts',  label: 'Show keyboard shortcuts', icon: 'list',
+              keywords: 'shortcuts cheatsheet keybindings',
+              run: function () { if (typeof shortcutSheetOpen !== 'undefined') shortcutSheetOpen = true; } },
+            { id: 'cmd:reset-hints',     label: 'Reset all hints and warnings', icon: 'info',
+              keywords: 'hint banner notification reset clear',
+              when: function () {
+                  return typeof listDismissedHints === 'function' && listDismissedHints().length > 0;
+              },
+              run: function () {
+                  if (typeof resetAllDismissedHints === 'function') resetAllDismissedHints();
+              } }
+        ];
+        var pluginCommands = (typeof window !== 'undefined' && Array.isArray(window.__bowirePaletteCommands))
+            ? window.__bowirePaletteCommands : [];
+        var allCommands = builtinCommands.concat(pluginCommands);
+        for (var cmi = 0; cmi < allCommands.length; cmi++) {
+            (function (cmd) {
+                if (typeof cmd.when === 'function') {
+                    try { if (!cmd.when()) return; } catch { return; }
+                }
+                var hay = ((cmd.label || '') + ' ' + (cmd.keywords || '')).toLowerCase();
+                if (hay.indexOf(qLower) === -1) return;
+                out.push({
+                    group: 'Commands',
+                    label: cmd.label,
+                    sublabel: cmd.sublabel || 'Workbench command',
+                    icon: typeof cmd.icon === 'string'
+                        ? svgIcon(cmd.icon) : (cmd.icon || svgIcon('lightning')),
+                    onSelect: function () {
+                        searchSuggestionsOpen = false;
+                        searchQuery = '';
+                        try { cmd.run(); }
+                        catch (e) { console.warn('[palette] command failed', cmd.id, e); }
+                        if (typeof render === 'function') render();
+                    }
+                });
+            })(allCommands[cmi]);
         }
 
         return out;

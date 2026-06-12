@@ -1,3 +1,42 @@
+    // #124 — Palette command extension API. Plugins / external scripts
+    // register their own command-palette entries via this global so
+    // the omnibox surfaces them under the "Commands" group. Each call
+    // pushes onto a window-scoped array the suggestion builder reads
+    // at search time.
+    //
+    // Shape:
+    //   bowireRegisterPaletteCommand({
+    //       id:       'myplugin:do-thing',          // stable for dedup / debug
+    //       label:    'Do the thing',
+    //       sublabel: 'Run myplugin.doThing()',     // optional
+    //       icon:     'lightning',                  // catalog id, or raw SVG via { html }
+    //       keywords: 'thing run myplugin',          // optional substring match haystack
+    //       when:     function () { return ready; }, // optional guard
+    //       run:      function () { /* … */ }
+    //   })
+    //
+    // Idempotent on id: re-registering an id overwrites the prior
+    // entry so a plugin hot-reload doesn't stack duplicates in the
+    // palette.
+    if (typeof window !== 'undefined') {
+        if (!Array.isArray(window.__bowirePaletteCommands)) window.__bowirePaletteCommands = [];
+        window.bowireRegisterPaletteCommand = function (cmd) {
+            if (!cmd || typeof cmd.run !== 'function' || !cmd.label) return;
+            var list = window.__bowirePaletteCommands;
+            if (cmd.id) {
+                var idx = list.findIndex(function (e) { return e.id === cmd.id; });
+                if (idx >= 0) { list[idx] = cmd; return; }
+            }
+            list.push(cmd);
+        };
+        window.bowireUnregisterPaletteCommand = function (id) {
+            var list = window.__bowirePaletteCommands;
+            if (!Array.isArray(list) || !id) return;
+            var idx = list.findIndex(function (e) { return e.id === id; });
+            if (idx >= 0) list.splice(idx, 1);
+        };
+    }
+
     // ---- Init ----
     function init() {
         // #115 — check the app-version marker first so a major-bump
