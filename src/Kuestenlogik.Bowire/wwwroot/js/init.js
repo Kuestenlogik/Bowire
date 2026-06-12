@@ -150,6 +150,42 @@
                 return;
             }
 
+            // #168 — Ctrl/Cmd+Z and Ctrl/Cmd+Shift+Z: workbench-wide
+            // undo / redo across rails. Skip when focus is in a text-
+            // edit context so the browser's per-input undo keeps
+            // working unmolested.
+            if ((e.ctrlKey || e.metaKey) && !e.altKey
+                && (e.key === 'z' || e.key === 'Z')) {
+                var tgt = e.target;
+                var tag = tgt && tgt.tagName ? tgt.tagName : '';
+                var isEditable = tag === 'INPUT' || tag === 'TEXTAREA'
+                    || tag === 'SELECT' || (tgt && tgt.isContentEditable);
+                if (isEditable) return;
+                e.preventDefault();
+                if (e.shiftKey) {
+                    if (typeof redoLastAction === 'function') {
+                        var r = redoLastAction();
+                        if (r) {
+                            if (typeof toast === 'function') toast('Redone: ' + r.title, 'info');
+                            render();
+                        } else if (typeof toast === 'function') {
+                            toast('Nothing to redo', 'info');
+                        }
+                    }
+                } else {
+                    if (typeof undoLastAction === 'function') {
+                        var u = undoLastAction();
+                        if (u) {
+                            if (typeof toast === 'function') toast('Undone: ' + u.title, 'info');
+                            render();
+                        } else if (typeof toast === 'function') {
+                            toast('Nothing to undo', 'info');
+                        }
+                    }
+                }
+                return;
+            }
+
             // #192 (B) — Ctrl/Cmd+Shift+U: quick-add a URL or schema
             // reference to the active workspace without navigating
             // the Workspaces rail / Sources rail / hunting for a +
