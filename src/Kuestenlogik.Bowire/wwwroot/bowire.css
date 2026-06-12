@@ -767,6 +767,50 @@ no decoration. */
     color: var(--bowire-text-tertiary);
     text-align: center;
 }
+/* #164 — Tests drawer-tab accessory. Same shape as the help-topic
+   count chip; pass/fail variants tint the chip green / red so the
+   operator can see the last run's outcome without switching to the
+   tab. */
+.bowire-tests-tab-accessory {
+    display: inline-block;
+    min-width: 22px;
+    padding: 0 6px;
+    background: var(--bowire-bg-elevated);
+    border-radius: 9px;
+    font-size: 10px;
+    color: var(--bowire-text-tertiary);
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+}
+.bowire-tests-tab-accessory-pass {
+    background: rgba(52, 211, 153, 0.15);
+    color: var(--bowire-success, #10b981);
+}
+.bowire-tests-tab-accessory-fail {
+    background: rgba(239, 68, 68, 0.15);
+    color: var(--bowire-error, #ef4444);
+}
+/* Console + Tests tab body wrappers — fill the drawer content area
+   and keep their own scroll surface so streaming entries don't
+   push the tab strip out of view. */
+.bowire-console-tab-wrap {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    flex: 1;
+}
+.bowire-console-drawer-actions {
+    flex-shrink: 0;
+    padding: 6px 12px;
+    border-bottom: 1px solid var(--bowire-border-subtle);
+    display: flex;
+    gap: 8px;
+}
+.bowire-console-drawer-body {
+    flex: 1;
+    overflow-y: auto;
+    min-height: 0;
+}
 .bowire-help-content {
     flex: 1;
     overflow-y: auto;
