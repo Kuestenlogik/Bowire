@@ -7363,11 +7363,23 @@ and chip row */
     min-height: 0;
 }
 .bowire-settings-left {
-    width: 160px;
+    width: 200px;
     border-right: 1px solid var(--bowire-border);
-    padding: 8px 0;
+    padding: 4px 4px 8px;
     flex-shrink: 0;
     overflow-y: auto;
+}
+/* #192 — Settings tree variant. The generic .bowire-tree-row selected
+   state uses an accent-tinted background; in Settings we mirror the
+   legacy left-rail look (accent-tinted text + sidebar-active bg) so
+   the nav reads as the same surface, just tree-structured. */
+.bowire-settings-left .bowire-tree-row.selected {
+    background: var(--bowire-sidebar-active);
+    color: var(--bowire-accent);
+    font-weight: 600;
+}
+.bowire-settings-left .bowire-tree-row.selected .bowire-tree-glyph {
+    color: var(--bowire-accent);
 }
 .bowire-settings-cat {
     display: flex;
