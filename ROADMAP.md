@@ -12,7 +12,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.0 — UI refactor + breaking-change window
 
-**24/46 done** · 1 in progress · 21 backlog
+**24/43 done** · 1 in progress · 18 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -23,9 +23,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [116](https://github.com/Kuestenlogik/Bowire/issues/116) | Bowire | Workspaces — named, switchable contexts that bundle URLs / envs / collections / AI config | ⬜ Open |  |
 | [124](https://github.com/Kuestenlogik/Bowire/issues/124) | Bowire | Cross-protocol omnibox (Cmd/Ctrl+K) | ⬜ Open |  |
 | [127](https://github.com/Kuestenlogik/Bowire/issues/127) | Bowire | Auto-save to workspace + live save-state pill | ⬜ Open |  |
-| [140](https://github.com/Kuestenlogik/Bowire/issues/140) | Bowire | Per-mode 'Saved Configs' / Presets (distinct from cross-workflow favorites) | ⬜ Open |  |
-| [144](https://github.com/Kuestenlogik/Bowire/issues/144) | Bowire | Large-recording capture/replay — chunked disk layout, lazy step-load, GB-scale | ⬜ Open |  |
-| [145](https://github.com/Kuestenlogik/Bowire/issues/145) | Bowire | Deprecate ${name} in favour of {{name}} (multi-phase migration) | ⬜ Open |  |
 | [147](https://github.com/Kuestenlogik/Bowire/issues/147) | Bowire | Git-backed workspace storage — composes with #144 storage modes + #58 | ⬜ Open |  |
 | [148](https://github.com/Kuestenlogik/Bowire/issues/148) | Bowire | Per-entity file storage format for git-backed workspaces (envs / collections / scripts) | ⬜ Open |  |
 | [149](https://github.com/Kuestenlogik/Bowire/issues/149) | Bowire | Workspace CLI — bowire workspace init / export / import / migrate-format | ⬜ Open |  |
@@ -65,7 +62,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.1 — workspace v3 + protocol wave 3
 
-**0/6 done** · 6 backlog
+**0/9 done** · 9 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -75,6 +72,9 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [131](https://github.com/Kuestenlogik/Bowire/issues/131) | Bowire | Benchmarks: first-class surface (single / collection / recording / random / scheduled) | ⬜ Open |  |
 | [132](https://github.com/Kuestenlogik/Bowire/issues/132) | Bowire | Parallel sessions for recordings / collections (phase 1 local, phase 2 distributed) | ⬜ Open |  |
 | [136](https://github.com/Kuestenlogik/Bowire/issues/136) | Bowire | URL / service catalogue providers (local / http / consul / kubernetes / agent) | ⬜ Open |  |
+| [140](https://github.com/Kuestenlogik/Bowire/issues/140) | Bowire | Per-mode 'Saved Configs' / Presets (distinct from cross-workflow favorites) | ⬜ Open |  |
+| [144](https://github.com/Kuestenlogik/Bowire/issues/144) | Bowire | Large-recording capture/replay — chunked disk layout, lazy step-load, GB-scale | ⬜ Open |  |
+| [145](https://github.com/Kuestenlogik/Bowire/issues/145) | Bowire | Deprecate ${name} in favour of {{name}} (multi-phase migration) | ⬜ Open |  |
 
 ### Backlog (not yet scheduled)
 
@@ -152,18 +152,6 @@ Remaining wave items after MQTT / Kafka / AMQP / SOAP / NATS / JSON-RPC / Pulsar
 ## Why
 
 #### ⬜ Open · [#127](https://github.com/Kuestenlogik/Bowire/issues/127) Auto-save to workspace + live save-state pill
-
-## Why
-
-#### ⬜ Open · [#140](https://github.com/Kuestenlogik/Bowire/issues/140) Per-mode 'Saved Configs' / Presets (distinct from cross-workflow favorites)
-
-## Why
-
-#### ⬜ Open · [#144](https://github.com/Kuestenlogik/Bowire/issues/144) Large-recording capture/replay — chunked disk layout, lazy step-load, GB-scale
-
-## Why
-
-#### ⬜ Open · [#145](https://github.com/Kuestenlogik/Bowire/issues/145) Deprecate ${name} in favour of {{name}} (multi-phase migration)
 
 ## Why
 
@@ -336,6 +324,18 @@ Remaining wave items after MQTT / Kafka / AMQP / SOAP / NATS / JSON-RPC / Pulsar
 ## Why
 
 #### ⬜ Open · [#136](https://github.com/Kuestenlogik/Bowire/issues/136) URL / service catalogue providers (local / http / consul / kubernetes / agent)
+
+## Why
+
+#### ⬜ Open · [#140](https://github.com/Kuestenlogik/Bowire/issues/140) Per-mode 'Saved Configs' / Presets (distinct from cross-workflow favorites)
+
+## Why
+
+#### ⬜ Open · [#144](https://github.com/Kuestenlogik/Bowire/issues/144) Large-recording capture/replay — chunked disk layout, lazy step-load, GB-scale
+
+## Why
+
+#### ⬜ Open · [#145](https://github.com/Kuestenlogik/Bowire/issues/145) Deprecate ${name} in favour of {{name}} (multi-phase migration)
 
 ## Why
 
