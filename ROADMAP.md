@@ -12,14 +12,11 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.0 — Re-architected workbench shell + workspace = project folder
 
-**49/55 done** · 6 backlog
+**52/55 done** · 3 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
 | [115](https://github.com/Kuestenlogik/Bowire/issues/115) | Bowire | [v2.0 — UI refactor: re-architect the workbench shell](#issue-kuestenlogik-bowire-115) | ⬜ Open |  |
-| [147](https://github.com/Kuestenlogik/Bowire/issues/147) | Bowire | [Git-backed workspace storage — composes with #144 storage modes + #58](#issue-kuestenlogik-bowire-147) | ⬜ Open |  |
-| [148](https://github.com/Kuestenlogik/Bowire/issues/148) | Bowire | [Per-entity file storage format for git-backed workspaces (envs / collections / scripts)](#issue-kuestenlogik-bowire-148) | ⬜ Open |  |
-| [149](https://github.com/Kuestenlogik/Bowire/issues/149) | Bowire | [Workspace CLI — bowire workspace init / export / import / migrate-format](#issue-kuestenlogik-bowire-149) | ⬜ Open |  |
 | [150](https://github.com/Kuestenlogik/Bowire/issues/150) | Bowire | [Filesystem-watch + reconcile UI for externally-edited workspace files](#issue-kuestenlogik-bowire-150) | ⬜ Open |  |
 | [151](https://github.com/Kuestenlogik/Bowire/issues/151) | Bowire | [Secret-file separation + workspace lock file for safe team-shared git workspaces](#issue-kuestenlogik-bowire-151) | ⬜ Open |  |
 | [25](https://github.com/Kuestenlogik/Bowire/issues/25) | Bowire | [AI side-panel integration](#issue-kuestenlogik-bowire-25) | ✅ Done | `area:workbench` |
@@ -53,6 +50,9 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [142](https://github.com/Kuestenlogik/Bowire/issues/142) | Bowire | [Sharper radii — straighter visual style across tabs / cards / drawers](#issue-kuestenlogik-bowire-142) | ✅ Done |  |
 | [143](https://github.com/Kuestenlogik/Bowire/issues/143) | Bowire | [Uniform delete affordances on every list sidebar (single / multi-select / all)](#issue-kuestenlogik-bowire-143) | ✅ Done |  |
 | [146](https://github.com/Kuestenlogik/Bowire/issues/146) | Bowire | [Workspace-side environment inclusion list (shared envs + per-workspace selection)](#issue-kuestenlogik-bowire-146) | ✅ Done |  |
+| [147](https://github.com/Kuestenlogik/Bowire/issues/147) | Bowire | [Git-backed workspace storage — composes with #144 storage modes + #58](#issue-kuestenlogik-bowire-147) | ✅ Done |  |
+| [148](https://github.com/Kuestenlogik/Bowire/issues/148) | Bowire | [Per-entity file storage format for git-backed workspaces (envs / collections / scripts)](#issue-kuestenlogik-bowire-148) | ✅ Done |  |
+| [149](https://github.com/Kuestenlogik/Bowire/issues/149) | Bowire | [Workspace CLI — bowire workspace init / export / import / migrate-format](#issue-kuestenlogik-bowire-149) | ✅ Done |  |
 | [152](https://github.com/Kuestenlogik/Bowire/issues/152) | Bowire | [Sources rail mode — centralise URL / schema-file management](#issue-kuestenlogik-bowire-152) | ✅ Done |  |
 | [154](https://github.com/Kuestenlogik/Bowire/issues/154) | Bowire | [Help as optional NuGet package — `Kuestenlogik.Bowire.Help`](#issue-kuestenlogik-bowire-154) | ✅ Done |  |
 | [155](https://github.com/Kuestenlogik/Bowire/issues/155) | Bowire | [Workspace = project folder — strictly per-workspace, sharing via copy actions](#issue-kuestenlogik-bowire-155) | ✅ Done |  |
@@ -193,18 +193,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 > **Status:** Phase 1 — Shell-Refactor abgeschlossen (Juni 2026). Die strukturelle Neuordnung der Workbench ist durch; was in v2.0 noch landet, sind Feature-Streams plus die echten Breaking-Change-Cleanups. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/115)
 
-#### <a id="issue-kuestenlogik-bowire-147"></a>⬜ Open · [#147](https://github.com/Kuestenlogik/Bowire/issues/147) Git-backed workspace storage — composes with #144 storage modes + #58
-
-#58 ("Git-native workspace") sits as a roadmap goal — a workspace's state (URLs, envs, collections, recordings, scripts, AI config overrides) should be checkable into a git repo so a team can `git push` / `git pull` their context. [[more]](https://github.com/Kuestenlogik/Bowire/issues/147)
-
-#### <a id="issue-kuestenlogik-bowire-148"></a>⬜ Open · [#148](https://github.com/Kuestenlogik/Bowire/issues/148) Per-entity file storage format for git-backed workspaces (envs / collections / scripts)
-
-For #58 + #147 to deliver real "git-native workspace" parity with Bruno, the workspace state needs to live as **per-entity files**, not as opaque bundles. Today: [[more]](https://github.com/Kuestenlogik/Bowire/issues/148)
-
-#### <a id="issue-kuestenlogik-bowire-149"></a>⬜ Open · [#149](https://github.com/Kuestenlogik/Bowire/issues/149) Workspace CLI — bowire workspace init / export / import / migrate-format
-
-Bruno's CLI runs the same `.bru` files the GUI edits — `bruno run collections/payments/Login.bru` works straight out of a checked-out repo. Bowire's CLI today reads from `~/.bowire/` hard-wired through `BowireUserContext`. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/149)
-
 #### <a id="issue-kuestenlogik-bowire-150"></a>⬜ Open · [#150](https://github.com/Kuestenlogik/Bowire/issues/150) Filesystem-watch + reconcile UI for externally-edited workspace files
 
 In a git-backed workspace (#147) the operator will frequently: - Run `git pull` to get the team's latest envs / collections / recordings. - Edit a `.req.json` or `.js` file in their editor (faster than the workbench schema-form for some operations). - Switch git branches while the workbench is open. [[more]](https://github.com/Kuestenlogik/Bowire/issues/150)
@@ -342,6 +330,18 @@ Every rail-mode sidebar that lists user-created entries (Recordings, Mocks, Coll
 #### <a id="issue-kuestenlogik-bowire-146"></a>✅ Done · [#146](https://github.com/Kuestenlogik/Bowire/issues/146) Workspace-side environment inclusion list (shared envs + per-workspace selection)
 
 #116 Phase 2 made environments fully workspace-scoped — switch a workspace, get a fresh empty environments list. That's correct for workspace-owned envs (per-project credentials) but wrong for shared ones (the "staging credentials" set used across every project). [[more]](https://github.com/Kuestenlogik/Bowire/issues/146)
+
+#### <a id="issue-kuestenlogik-bowire-147"></a>✅ Done · [#147](https://github.com/Kuestenlogik/Bowire/issues/147) Git-backed workspace storage — composes with #144 storage modes + #58
+
+#58 ("Git-native workspace") sits as a roadmap goal — a workspace's state (URLs, envs, collections, recordings, scripts, AI config overrides) should be checkable into a git repo so a team can `git push` / `git pull` their context. [[more]](https://github.com/Kuestenlogik/Bowire/issues/147)
+
+#### <a id="issue-kuestenlogik-bowire-148"></a>✅ Done · [#148](https://github.com/Kuestenlogik/Bowire/issues/148) Per-entity file storage format for git-backed workspaces (envs / collections / scripts)
+
+For #58 + #147 to deliver real "git-native workspace" parity with Bruno, the workspace state needs to live as **per-entity files**, not as opaque bundles. Today: [[more]](https://github.com/Kuestenlogik/Bowire/issues/148)
+
+#### <a id="issue-kuestenlogik-bowire-149"></a>✅ Done · [#149](https://github.com/Kuestenlogik/Bowire/issues/149) Workspace CLI — bowire workspace init / export / import / migrate-format
+
+Bruno's CLI runs the same `.bru` files the GUI edits — `bruno run collections/payments/Login.bru` works straight out of a checked-out repo. Bowire's CLI today reads from `~/.bowire/` hard-wired through `BowireUserContext`. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/149)
 
 #### <a id="issue-kuestenlogik-bowire-152"></a>✅ Done · [#152](https://github.com/Kuestenlogik/Bowire/issues/152) Sources rail mode — centralise URL / schema-file management
 
