@@ -577,7 +577,7 @@
         })
             .then(function (r) { return r.json().then(function (b) { return { ok: r.ok, status: r.status, body: b }; }); })
             .catch(function (err) {
-                return { ok: false, status: 0, body: { error: 'Network error: ' + (err && err.message ? err.message : err) } };
+                return { ok: false, status: 0, body: { title: 'Network error: ' + (err && err.message ? err.message : err) } };
             });
     }
 
@@ -586,7 +586,7 @@
         if (!result.ok) {
             host.appendChild(el('div', {
                 className: 'bowire-ai-template-error',
-                textContent: '⚠ ' + ((result.body && result.body.error) || 'request failed')
+                textContent: '⚠ ' + problemTitle(result.body, 'request failed')
             }));
             return;
         }
@@ -631,7 +631,7 @@
                                 saveBtn.textContent = 'Save to ~/.bowire/templates';
                             }, 3000);
                         } else {
-                            saveBtn.textContent = '⚠ ' + (resp.body.error || 'save failed');
+                            saveBtn.textContent = '⚠ ' + problemTitle(resp.body, 'save failed');
                         }
                     })
                     .catch(function (err) {
@@ -701,7 +701,7 @@
                 threatState.running = false;
                 if (threatTickHandle) { clearInterval(threatTickHandle); threatTickHandle = null; }
                 if (!resp.ok) {
-                    threatState.error = (resp.body && resp.body.error) || ('Request failed (HTTP ' + resp.status + ').');
+                    threatState.error = problemTitle(resp.body, 'Request failed (HTTP ' + resp.status + ').');
                     threatState.ranked = null;
                     return threatState;
                 }

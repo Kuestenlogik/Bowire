@@ -396,7 +396,7 @@
             var fullName = selectedService.name + '/' + selectedMethod.name;
 
             var result = await resp.json();
-            if (result.error || result.title) {
+            if (result.title) {
                 var msg = problemTitle(result);
                 channelError = msg;
                 addConsoleEntry({ type: 'error', method: fullName, status: 'Channel open failed', body: msg });
@@ -620,7 +620,7 @@
             });
 
             var result = await resp.json();
-            if (result.error || result.title) {
+            if (result.title) {
                 var msg = problemTitle(result);
                 addConsoleEntry({ type: 'error', method: sendFullName, status: 'Send failed', body: msg });
                 toast('Send failed: ' + msg, 'error');

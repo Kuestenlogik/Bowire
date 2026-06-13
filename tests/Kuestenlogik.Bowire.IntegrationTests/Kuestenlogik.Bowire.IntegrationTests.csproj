@@ -47,6 +47,14 @@
     <ProjectReference Include="..\..\src\Kuestenlogik.Bowire.Protocol.SocketIo\Kuestenlogik.Bowire.Protocol.SocketIo.csproj" />
     <ProjectReference Include="..\..\src\Kuestenlogik.Bowire.Protocol.OData\Kuestenlogik.Bowire.Protocol.OData.csproj" />
     <ProjectReference Include="..\..\src\Kuestenlogik.Bowire.Protocol.Rest\Kuestenlogik.Bowire.Protocol.Rest.csproj" />
+    <!-- OpenApi3 adapter — the REST plugin's OpenAPI seam was extracted
+         in 14ac0d1 into per-version adapter packages. The integration
+         suite's discover-from-swagger-json tests need an adapter loaded,
+         otherwise BowireOpenApiAdapterRegistry.TryGet() returns null and
+         discovery quietly produces an empty service list. OpenApi3
+         keeps the existing test fixtures (`info.version: 3.0.x`) working
+         without forcing them to the 2.x grammar. -->
+    <ProjectReference Include="..\..\src\Kuestenlogik.Bowire.Protocol.Rest.OpenApi3\Kuestenlogik.Bowire.Protocol.Rest.OpenApi3.csproj" />
     <!-- Optional Ai package — referenced for the #61 triage endpoint
          in-process tests. The endpoint itself ships in the package;
          the integration suite exercises it via TestServer. -->

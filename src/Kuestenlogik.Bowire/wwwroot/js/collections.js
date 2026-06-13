@@ -91,13 +91,13 @@
             body: JSON.stringify(body)
         }).then(function (resp) {
             return resp.json().then(function (json) {
-                var ok = resp.ok && !json.error;
+                var ok = resp.ok && !json.title;
                 return {
                     pass: ok,
                     status: json.status || (ok ? 'OK' : 'Error'),
                     durationMs: json.duration_ms || 0,
                     response: json.response,
-                    error: json.error || null
+                    error: json.title || null
                 };
             });
         });
