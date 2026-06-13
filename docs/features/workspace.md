@@ -62,6 +62,78 @@ The picked template is remembered as the default for the next workspace you crea
 
 Templates write directly to the new workspace's per-workspace localStorage bucket. The workbench reloads once after applying a non-empty template so the in-memory state hydrates from the freshly seeded buckets.
 
+## Git-backed workspace (per-entity files)
+
+Beyond the single-file `.blw` bundle, Bowire supports a per-entity directory layout designed for review under version control. `bowire workspace init <path>` materialises this shape at any directory:
+
+```
+my-workspace/
+  workspace.json                   manifest (id / name / color / schema version / plugin pins)
+  .gitignore                       excludes secrets + cache files
+  environments/
+    staging.json                   non-secret vars (committed)
+    staging.secrets.json           secret overlay — gitignored
+    staging.example.json           template for the team (committed)
+    production.json
+  globals.json                     workspace globals (single file)
+  collections/
+    payments/
+      collection.json              collection metadata
+      Login.req.json               one file per request
+      RefundFlow.req.json
+      pre-request.js               collection-scope pre-script
+      post-response.js
+  recordings/
+    login-flow.json                recording manifest
+    bodies/                        large captured payloads (gitignored)
+  scripts/
+    Auth.Login.pre.js              service.method pre-script
+    Pets.GetById.post.js
+    Pets.GetById.assert.js
+  flows/
+    smoke.json
+  secrets/                         workspace-wide secret values
+    GH_TOKEN                       one file per named secret (gitignored body)
+    DB_PASSWORD
+```
+
+The directory layout decouples the workspace state into reviewable units — renaming an environment touches one file, editing a script's JavaScript is a normal `.js` diff, adding a request creates a new file rather than mutating a bundle.
+
+### Secret separation (#151)
+
+Two complementary surfaces keep secrets out of git:
+
+- `environments/<env>.secrets.json` — per-environment overlay. Merged with `<env>.json` at read time so `{{API_KEY}}` resolves whether the value lives in either file. The non-secret file is committed; the secret overlay is gitignored.
+- `secrets/<NAME>` — workspace-wide named secret. Resolved through the reserved `secret.<NAME>` source prefix. One file per secret name; the directory structure is committed (so the team sees which secret names are expected), the file bodies are gitignored.
+
+### `bowire workspace init`
+
+```bash
+$ bowire workspace init ./payments-team
+Initialised workspace at /Users/me/work/payments-team
+  → workspace.json (manifest, schema v1)
+  → .gitignore (secrets + cache excluded)
+  → environments/ collections/ recordings/ scripts/ flows/ secrets/ (empty)
+  → git init done — first commit pending
+
+Next: cd payments-team && git add . && git commit -m "Initial workspace"
+```
+
+Flags:
+- `--name <display name>` — workspace name written into `workspace.json`. Defaults to the directory's basename.
+- `--color <hex>` — accent color (e.g. `#22c55e`). Defaults to `#6366f1`.
+- `--no-git` — skip the trailing `git init`. Useful when initialising inside an existing repository.
+
+### Storage root resolution
+
+A workspace's `storageRoot` field (when set) points at a directory like the one above. The workbench and CLI route per-workspace reads + writes through that path instead of the per-user `~/.bowire/workspaces/<id>/` default. The two storage modes compose orthogonally with the storage-mode setting (`both` / `browser-only` / `disk-only`) introduced for chunked recording storage.
+
+When `storageRoot` is unset, every per-workspace file lands under `~/.bowire/workspaces/<id>/` — the legacy single-user layout, preserved exactly.
+
+### Phase 2
+
+The runtime workbench still routes existing workspaces through the legacy `~/.bowire/` per-user store; full read/write at `storageRoot` (including the filesystem watcher that reflects external edits back into the live workbench) lands in v2.1. The CLI's `init` produces the directory shape today so teams can stage their workspace under git and migrate when the workbench-side wiring ships.
+
 ## File location
 
 The workspace file is read from and written to the **working directory** where Bowire was launched. The file is always named `.blw` (no base name, just the extension).
