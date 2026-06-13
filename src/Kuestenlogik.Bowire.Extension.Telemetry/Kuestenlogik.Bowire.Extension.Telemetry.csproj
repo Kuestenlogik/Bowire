@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Description>OpenTelemetry integration for Bowire — wires the OpenTelemetry SDK against the canonical Bowire ActivitySource + Meter (Kuestenlogik.Bowire), enables the OTLP exporter, and adds the ASP.NET Core + HttpClient instrumentation packages. Ships as a standalone NuGet so installs that don't need self-observability don't pull the OpenTelemetry transitive weight. Same opt-in shape as the protocol plugins + Kuestenlogik.Bowire.Ai.</Description>
+    <PackageId>Kuestenlogik.Bowire.Extension.Telemetry</PackageId>
+    <PackageTags>bowire;opentelemetry;otlp;observability;telemetry;metrics;tracing;developer-tools;aspnet</PackageTags>
+    <IsPackable>true</IsPackable>
+  </PropertyGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="Kuestenlogik.Bowire.Tests" />
+  </ItemGroup>
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Kuestenlogik.Bowire\Kuestenlogik.Bowire.csproj" />
+    <PackageReference Include="OpenTelemetry" />
+    <PackageReference Include="OpenTelemetry.Extensions.Hosting" />
+    <PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" />
+    <PackageReference Include="OpenTelemetry.Instrumentation.AspNetCore" />
+    <PackageReference Include="OpenTelemetry.Instrumentation.Http" />
+  </ItemGroup>
+</Project>

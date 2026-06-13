@@ -31,6 +31,11 @@
          AddBowireHelp registration. Same opt-in shape as the Ai
          package above. -->
     <ProjectReference Include="..\..\src\Kuestenlogik.Bowire.Help\Kuestenlogik.Bowire.Help.csproj" />
+    <!-- Optional Telemetry package (#29 v2): AddBowireTelemetry +
+         the OpenTelemetry SDK pipeline live here so embedded hosts
+         that don't want the OTel transitive weight aren't forced to
+         pull it via core. -->
+    <ProjectReference Include="..\..\src\Kuestenlogik.Bowire.Extension.Telemetry\Kuestenlogik.Bowire.Extension.Telemetry.csproj" />
     <!-- Tiny fake sidecar executable used by the sidecar plugin
          integration tests. ReferenceOutputAssembly=false because the
          tests only need its built EXE on disk (located via
