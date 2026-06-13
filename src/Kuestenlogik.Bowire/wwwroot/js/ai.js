@@ -1323,7 +1323,7 @@
             footer.replaceChildren();
             if (aiStatus && aiStatus.hasClient) {
                 // Connection state now lives as a status dot in the
-                // drawer chrome header (renderAiDrawer in
+                // Assistant tab accessory (renderUnifiedRightDrawer in
                 // render-env-auth.js) with hover tooltip for the
                 // provider / model details. Footer skips the long
                 // 'Connected: …' string here so the info shows once,
