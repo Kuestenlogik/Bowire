@@ -12,17 +12,82 @@ text; re-run the generator to refresh the mirror.
 ---
 ## v2.0.0 — draft — package renames + extracted optional packages
 
-> _Draft release — body subject to change before publication. Source: https://github.com/Kuestenlogik/Bowire/releases/tag/untagged-9f5b3c1e9dd393108a6e_
+> _Draft release — body subject to change before publication. Source: https://github.com/Kuestenlogik/Bowire/releases/tag/untagged-4c246521667773a75d74_
 
-The 2.0 release lines up Bowire's optional-feature packages on a single naming convention before the major-version cut:
+v2.0 is the cut where every optional surface gets pulled out of the core, the workbench shell gets re-architected end-to-end, and a couple of API-level decisions get unwound now that they have stable replacements. Embedded hosts that vendored `Kuestenlogik.Bowire` directly will need a small set of explicit changes — see **Breaking changes** at the bottom.
 
-- **`Kuestenlogik.Bowire.Extension.MapLibre` → `Kuestenlogik.Bowire.Map`** — the v1.3.0-rc.1 of the MapLibre extension will be deprecated + unlisted on nuget.org after 2.0 ships (tracked in #197); consumers should swap the package reference (`<PackageReference Include="Kuestenlogik.Bowire.Map" />`).
-- **OpenTelemetry extracted from core into `Kuestenlogik.Bowire.Telemetry`** — embedded ASP.NET hosts that don't want self-observability no longer pull the OTel transitive weight. The standalone `bowire` CLI keeps `--telemetry` working out of the box because the executable transitively references the package.
-- Core `Kuestenlogik.Bowire` now ships with **zero `PackageReference` entries** — only the `Microsoft.AspNetCore.App` framework reference. Embedded hosts add optional packages explicitly (`.Ai`, `.Help`, `.Telemetry`, `.Map`, future `Workspace.Git`) when they want the surface.
+## Headlines
 
-Naming convention going forward — optional first-party packages = `Kuestenlogik.Bowire.<feature>` (e.g. `.Ai`, `.Help`, `.Telemetry`, `.Map`) or `Kuestenlogik.Bowire.<area>.<backend>` (e.g. the planned `Workspace.Git`). The legacy `.Extension.*` prefix isn't used for new packages.
+### Workbench shell re-architected (#115)
 
-Beyond the package work, v2.0 also brings the workbench shell rewrite (#115), the Cmd/Cmd+K omnibox across protocols (#124 / #162), the workspace-as-project-folder rework with `bowire workspace init` (#147–#149, #151), per-entity layout + secret separation, the action log with Ctrl+Z (#168), the hint dismiss pattern (#169), the Workspaces tree (#192), and per-plugin DisplayName in Settings (#167).
+The workbench surface that ships in `bowire` and embedded hosts was redrawn from the structural level up — Topbar carries identity + workspace context, the left rail holds mode switching, the sidebar holds per-mode lists, the main pane holds the editor, the new statusbar holds system state. Tabs cohere visually into their panes, empty-states are uniform across every surface, and a shared `renderDrawer` primitive backs Assistant / Help / Tests / Activity / future Inspector — drawer chrome is no longer hand-rolled per surface. Single-Accent + Protocol-Glyph is the only colour encoding; sharper radii (2/4/6 px) come from CSS custom properties. Sidebar means navigation; URL/Schema-Files/AI-Settings became their own surfaces.
+
+### Workspace = project folder (#147–#151)
+
+`bowire workspace init / export / import / migrate-format` makes a workspace a real directory you can commit. Per-entity files (one JSON per request / environment / collection / recording) survive merges; secrets live in a sibling `secrets/` tree that's `.gitignore`d by default. A workspace-lock file gates concurrent edits across two open Bowire instances.
+
+### Optional packages live outside core
+
+Core `Kuestenlogik.Bowire` ships with **zero `PackageReference` entries** — only the `Microsoft.AspNetCore.App` framework reference. Embedded hosts add only what they actually use:
+
+- **`Kuestenlogik.Bowire.Extension.MapLibre` → `Kuestenlogik.Bowire.Map`** — the v1.3.0-rc.1 of the MapLibre extension will be deprecated + unlisted on nuget.org after 2.0 ships (#197).
+- **OpenTelemetry extracted into `Kuestenlogik.Bowire.Telemetry`** — embedded hosts that don't want self-observability no longer pull the OTel transitive weight. The standalone CLI keeps `--telemetry` working because the tool transitively references it.
+- **`.Ai`, `.Help`** stay opt-in as before. Standalone `bowire` bundles them.
+
+Naming convention going forward — optional first-party packages are `Kuestenlogik.Bowire.<feature>` (`.Ai`, `.Help`, `.Telemetry`, `.Map`) or `Kuestenlogik.Bowire.<area>.<backend>` (the planned `Workspace.Git`). The legacy `.Extension.*` prefix isn't used for new packages.
+
+### OpenAPI library decoupled via adapter packages
+
+REST plugin no longer takes a hard dependency on `Microsoft.OpenApi`. A new `IBowireOpenApiAdapter` seam in `Kuestenlogik.Bowire.Protocol.Rest` lets the consumer pick the library version:
+
+- **`Kuestenlogik.Bowire.Protocol.Rest.OpenApi2`** — pins `Microsoft.OpenApi` 2.x, matches what ASP.NET Core 10's `AddOpenApi()` transitively pulls. Standalone `bowire` bundles this one.
+- **`Kuestenlogik.Bowire.Protocol.Rest.OpenApi3`** — pins `Microsoft.OpenApi` 3.x for hosts that want the modern grammar.
+
+Both can be loaded side-by-side; the adapter registry auto-picks the one matching the runtime's `Microsoft.OpenApi` major. Resolves the OpenAPI-DLL-version conflict reported on .NET 10 hosts running side-by-side with ASP.NET's bundled discovery.
+
+### Across-the-pane omnibox (#124 / #162)
+
+Cmd/Ctrl+K opens a single search line that ranks methods, recordings, collections, settings, and `?`-prefixed AI prompts uniformly. Replaces the per-surface searches that used to live in the sidebar, drawer, and method picker.
+
+### Action log + Ctrl+Z (#168) and hint dismiss (#169)
+
+Every destructive action (delete recording, delete collection, delete workspace, swap environment scope) is reversible from the Activity drawer or via Ctrl+Z. Hints carry a permanent dismiss key that lands them in **Settings → Hints and warnings** so the user can restore one without restarting.
+
+### Workspaces tree + per-plugin DisplayName (#192 / #167)
+
+Sources, collections, recordings, and environments all live as nodes under the Workspaces tree on the left rail. Plugin Settings reads each plugin's `DisplayName` from its registration so the row labels match what the plugin author calls itself (no more raw assembly-name fallback).
+
+## Breaking changes
+
+Each change has been on a back-compat ramp through v1.9.x and is removed in 2.0.
+
+### Wire format: `application/problem+json` drops the `{ error }` shim (#88 follow-up)
+
+Every Bowire endpoint that returns a problem+json body has emitted both the RFC 7807 `title` + a legacy `error` field set to the same string. v2.0 drops the `error` field on the wire. Clients reading the response body should switch to `body.title` (RFC 7807) / `body.detail`. The shim is gone server-side; the JS workbench bundled with the CLI was updated in lock-step. OAuth callbacks keep their `error` field — that's RFC 6749 from the IdP, unrelated.
+
+### `Microsoft.OpenApi` is no longer a transitive of `Kuestenlogik.Bowire.Protocol.Rest`
+
+Hosts that referenced REST + called the discovery helpers directly must now also reference one of `Kuestenlogik.Bowire.Protocol.Rest.OpenApi2` or `.OpenApi3`. The standalone CLI bundles OpenApi2 (matches the .NET 10 ASP.NET ecosystem); embedded hosts pick whichever matches the rest of their stack.
+
+### `Kuestenlogik.Bowire.Extension.MapLibre` → `Kuestenlogik.Bowire.Map`
+
+Old package will be deprecated + unlisted on nuget.org after this release (#197). Swap the `<PackageReference>` to the new name; no API surface change.
+
+### OpenTelemetry moved into `Kuestenlogik.Bowire.Telemetry`
+
+Embedded hosts that want self-observability add a `<PackageReference Include="Kuestenlogik.Bowire.Telemetry" />`. Standalone CLI users see no behaviour change.
+
+### `localStorage` cosmetic-state reset on major bump
+
+Persistent data (workspaces, environments, recordings, collections, history, favorites) and persistent user choices (theme, watch interval) are preserved across the v1.x → v2.0 upgrade. Cosmetic UI state (active rail mode, open drawer, expanded services, filter chips, split mode) is reset to v2.0 defaults on first boot so the new shell isn't fighting a stale layout. A toast announces the reset; data is untouched.
+
+### Workbench CSS surface
+
+Several `bowire-ai-*` and helper classes were renamed or removed as part of the shell refactor (`.bowire-ai-empty` → `.bowire-pane-empty`, legacy `.bowire-ai-drawer*` chrome classes dropped, dead-class audit removed 20 unused rules). External CSS that hard-targeted these internal classes will need to update; no JS / HTML API surface is affected.
+
+## Acknowledgements
+
+Closes 55 issues across the milestone — the full list is on the [v2.0 milestone page](https://github.com/Kuestenlogik/Bowire/milestone/8?closed=1). Special thanks to everyone who exercised the rc series and reported off-by-one drawer behaviour, single-tab vs multi-tab edge cases, and `.bowire-ai-*` class targeting in downstream CSS — every one of those reports landed as a concrete fix above.
 
 ---
 ## v1.9.0 — 2026-06-08 — AI for security
