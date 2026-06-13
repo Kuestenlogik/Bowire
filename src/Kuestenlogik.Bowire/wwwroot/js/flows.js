@@ -386,15 +386,12 @@
         }).then(function (resp) {
             return resp.json().then(function (json) {
                 var baseStatus = json.status || (resp.ok ? 'OK' : 'Error');
-                var baseOk = resp.ok && !json.error;
-                // Evaluate inline assertions against an envelope that
-                // carries both the response body AND the call metadata
-                // (status / durationMs / error), so a request-node can
-                // assert on either without an extra Condition-node.
+                var baseOk = resp.ok && !json.title;
+                var errorTitle = json.title || null;
                 var envelope = {
                     status: baseStatus,
                     durationMs: json.duration_ms || 0,
-                    error: json.error || null,
+                    error: errorTitle,
                     response: tryParseAsJson(json.response),
                 };
                 var assertionResults = evaluateAssertions(node.assertions || [], envelope);
@@ -406,7 +403,7 @@
                         : baseStatus + ' · ' + assertionResults.filter(function (a) { return a.pass; }).length + '/' + assertionResults.length + ' assertions',
                     durationMs: json.duration_ms || 0,
                     response: json.response,
-                    error: json.error || null,
+                    error: errorTitle,
                     assertions: assertionResults,
                 };
             });

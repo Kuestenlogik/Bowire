@@ -1749,7 +1749,7 @@
                     : {
                         ok: false,
                         summary: 'Failed to ' + verb + ' ' + packageId,
-                        detail: (result.data && (result.data.error || result.data.output)) || ''
+                        detail: (result.data && (result.data.detail || result.data.stdout || result.data.output)) || ''
                     };
                 fetchInstalledPlugins();
             })

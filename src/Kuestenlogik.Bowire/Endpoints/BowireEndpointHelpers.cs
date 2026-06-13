@@ -246,12 +246,6 @@ internal static class BowireEndpointHelpers
     /// carries typed payload the UI can act on (model name, endpoint,
     /// links to settings pages).
     /// </para>
-    /// <para>
-    /// We keep the body backward-compatible with the legacy
-    /// <c>{ error: "..." }</c> shape by also emitting an
-    /// <c>error</c> field set to the title — older frontend renderers
-    /// that haven't been updated still surface something readable.
-    /// </para>
     /// </summary>
     public static IResult Problem(
         string type,
@@ -269,17 +263,12 @@ internal static class BowireEndpointHelpers
         };
         if (!string.IsNullOrEmpty(detail)) body["detail"] = detail;
         if (!string.IsNullOrEmpty(instance)) body["instance"] = instance;
-        // Legacy fallback — old `{ error }` consumers still get a string.
-        // Drop this once every frontend reader has switched to the
-        // ProblemDetails renderer (tracked under #88's follow-ups).
-        body["error"] = title;
         if (extensions is not null)
         {
             foreach (var kv in extensions)
             {
-                // Reserved keys can't be overwritten by extensions.
                 if (kv.Key is "type" or "title" or "status" or "detail"
-                    or "instance" or "error") continue;
+                    or "instance") continue;
                 body[kv.Key] = kv.Value;
             }
         }

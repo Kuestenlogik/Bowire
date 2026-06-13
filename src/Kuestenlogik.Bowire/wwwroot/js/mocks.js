@@ -53,8 +53,8 @@
             })
         }).then(function (r) {
             if (!r.ok) {
-                return r.json().catch(function () { return { error: 'Mock start failed (' + r.status + ')' }; })
-                    .then(function (err) { throw new Error(err && err.error || 'Mock start failed'); });
+                return r.json().catch(function () { return { title: 'Mock start failed (' + r.status + ')' }; })
+                    .then(function (err) { throw new Error(problemTitle(err, 'Mock start failed')); });
             }
             return r.json();
         }).then(function (summary) {

@@ -291,8 +291,7 @@
                 })
             });
             var result = await resp.json();
-            // #91 — accept both legacy { error } and RFC 7807 shapes.
-            if (result.error || result.title) {
+            if (result.title) {
                 responseError = result;
                 statusInfo = { status: 'Error', durationMs: result.duration_ms || 0 };
                 addConsoleEntry({ type: 'error', method: fullName, status: 'Error', body: problemTitle(result) });

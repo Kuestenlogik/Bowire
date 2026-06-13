@@ -519,7 +519,6 @@
      * (#88). Accepts:
      *
      *   - RFC 7807 problem+json: { type, title, status, detail, instance, ... }
-     *   - Legacy ad-hoc shape:   { error, type?, ...extensions }
      *   - Plain string:          surfaced as the title
      *   - null/undefined:        a generic fallback
      *
@@ -536,54 +535,32 @@
         }
         if (typeof body !== 'object') return null;
 
-        // problem+json: title is always present in a 7807 body.
-        if (typeof body.title === 'string' && body.title) {
-            var extensions = {};
-            for (var k in body) {
-                if (!Object.prototype.hasOwnProperty.call(body, k)) continue;
-                if (k === 'type' || k === 'title' || k === 'status' ||
-                    k === 'detail' || k === 'instance' || k === 'error' ||
-                    k === 'links') continue;
-                extensions[k] = body[k];
-            }
-            return {
-                type: body.type || null,
-                title: body.title,
-                detail: body.detail || null,
-                status: body.status || null,
-                instance: body.instance || null,
-                links: Array.isArray(body.links) ? body.links : [],
-                extensions: extensions,
-            };
-        }
+        if (typeof body.title !== 'string' || !body.title) return null;
 
-        // Legacy shape: { error: "...", type?: "...", ...extensions }
-        if (typeof body.error === 'string' && body.error) {
-            var extensions2 = {};
-            for (var k2 in body) {
-                if (!Object.prototype.hasOwnProperty.call(body, k2)) continue;
-                if (k2 === 'error' || k2 === 'type') continue;
-                extensions2[k2] = body[k2];
-            }
-            return {
-                type: body.type || null,
-                title: body.error,
-                detail: null,
-                links: [],
-                extensions: extensions2,
-            };
+        var extensions = {};
+        for (var k in body) {
+            if (!Object.prototype.hasOwnProperty.call(body, k)) continue;
+            if (k === 'type' || k === 'title' || k === 'status' ||
+                k === 'detail' || k === 'instance' || k === 'links') continue;
+            extensions[k] = body[k];
         }
-
-        return null;
+        return {
+            type: body.type || null,
+            title: body.title,
+            detail: body.detail || null,
+            status: body.status || null,
+            instance: body.instance || null,
+            links: Array.isArray(body.links) ? body.links : [],
+            extensions: extensions,
+        };
     }
 
     /**
      * One-line helper for toast / button-text / inline-text error
      * contexts (#91). Returns just the title of a problem+json body
-     * (or the legacy `error` string, or a generic fallback) — no DOM,
-     * no card. Use for cases where a single string is all that fits;
-     * use renderProblem when you have room for the full structured
-     * card. Defensive: never throws, always returns a string.
+     * (or a generic fallback) — no DOM, no card. Use for cases where a
+     * single string is all that fits; use renderProblem when you have
+     * room for the full structured card. Defensive: never throws.
      */
     function problemTitle(body, fallback) {
         if (typeof body === 'string' && body) return body;

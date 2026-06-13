@@ -207,7 +207,15 @@ internal static class BowirePluginEndpoints
             catch (Exception ex)
             {
                 ctx.Response.StatusCode = 502;
-                await ctx.Response.WriteAsync(JsonSerializer.Serialize(new { error = ex.Message }));
+                ctx.Response.ContentType = "application/problem+json";
+                await ctx.Response.WriteAsync(JsonSerializer.Serialize(new
+                {
+                    type = "urn:bowire:plugin:search-failed",
+                    title = "Plugin feed search failed",
+                    status = 502,
+                    detail = ex.Message,
+                    instance = "/api/plugins/search"
+                }));
             }
         }).ExcludeFromDescription();
 

@@ -2517,7 +2517,7 @@
                     });
                     var elapsed = performance.now() - t0;
                     var result = await resp.json();
-                    if (result.error || result.title) {
+                    if (result.title) {
                         benchmark.failure++;
                         benchmark.statusCounts['Error'] = (benchmark.statusCounts['Error'] || 0) + 1;
                     } else {
