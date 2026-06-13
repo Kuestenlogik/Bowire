@@ -827,7 +827,7 @@
         if (!ws) {
             var emptyMain = el('div', { id: 'bowire-main-workspaces', className: 'bowire-main bowire-main-workspaces' });
             emptyMain.appendChild(el('p', {
-                className: 'bowire-ai-empty bowire-main-pad',
+                className: 'bowire-pane-empty bowire-main-pad',
                 textContent: 'No workspace selected. Pick one in the sidebar or create a new one.'
             }));
             return emptyMain;
@@ -852,7 +852,7 @@
         var main = el('div', { id: 'bowire-main-workspaces', className: 'bowire-main bowire-main-workspaces' });
         if (!ws) {
             main.appendChild(el('p', {
-                className: 'bowire-ai-empty bowire-main-pad',
+                className: 'bowire-pane-empty bowire-main-pad',
                 textContent: 'No workspace selected. Pick one in the sidebar or create a new one.'
             }));
             return main;
@@ -1534,7 +1534,7 @@
             // could land here without that. Show a quick hint instead
             // of silently editing the wrong workspace's data.
             main.appendChild(el('p', {
-                className: 'bowire-ai-empty bowire-main-pad',
+                className: 'bowire-pane-empty bowire-main-pad',
                 textContent: 'Switch to ' + ws.name + ' to edit this collection.'
             }));
             main.appendChild(el('button', {
@@ -1641,7 +1641,7 @@
         var isActive = ws.id === activeWorkspaceId;
         if (!isActive) {
             main.appendChild(el('p', {
-                className: 'bowire-ai-empty bowire-main-pad',
+                className: 'bowire-pane-empty bowire-main-pad',
                 textContent: 'Switch to ' + ws.name + ' to open this recording.'
             }));
             main.appendChild(el('button', {
@@ -1770,7 +1770,7 @@
         var isActive = ws.id === activeWorkspaceId;
         if (!isActive) {
             main.appendChild(el('p', {
-                className: 'bowire-ai-empty bowire-main-pad',
+                className: 'bowire-pane-empty bowire-main-pad',
                 textContent: 'Switch to ' + ws.name + ' to edit this environment.'
             }));
             main.appendChild(el('button', {
@@ -1844,7 +1844,7 @@
 
         if (!serverUrls || serverUrls.length === 0) {
             main.appendChild(el('p', {
-                className: 'bowire-ai-empty bowire-main-pad',
+                className: 'bowire-pane-empty bowire-main-pad',
                 textContent: 'No URLs configured yet. Add one via the + button in the sidebar to start discovery.'
             }));
             return main;
@@ -2739,7 +2739,7 @@
                 secMain.appendChild(window.__bowireAi.renderSecurityPanel());
             } else {
                 secMain.appendChild(el('p', {
-                    className: 'bowire-ai-empty bowire-main-pad',
+                    className: 'bowire-pane-empty bowire-main-pad',
                     textContent: 'Security tools need Kuestenlogik.Bowire.Ai installed in the workbench process. Install the package + restart, or switch back to Discover via the rail.'
                 }));
             }
