@@ -70,21 +70,21 @@ public sealed class ExtensionBootstrapJsContractTests
     public void Placeholder_Card_Renders_For_Coordinate_Kinds_When_Unregistered()
     {
         // The kind→package-id table maps the well-known coordinate kinds
-        // to Kuestenlogik.Bowire.Extension.MapLibre — that's the
+        // to Kuestenlogik.Bowire.Map — that's the
         // ground-truth recommendation when the auto-detector writes
         // coordinate.latitude / coordinate.longitude but no map widget
         // is installed.
         var bundle = JsBundle.Value;
         Assert.Contains(
-            "'coordinate.wgs84': 'Kuestenlogik.Bowire.Extension.MapLibre'",
+            "'coordinate.wgs84': 'Kuestenlogik.Bowire.Map'",
             bundle,
             StringComparison.Ordinal);
         Assert.Contains(
-            "'coordinate.latitude': 'Kuestenlogik.Bowire.Extension.MapLibre'",
+            "'coordinate.latitude': 'Kuestenlogik.Bowire.Map'",
             bundle,
             StringComparison.Ordinal);
         Assert.Contains(
-            "'coordinate.longitude': 'Kuestenlogik.Bowire.Extension.MapLibre'",
+            "'coordinate.longitude': 'Kuestenlogik.Bowire.Map'",
             bundle,
             StringComparison.Ordinal);
     }
@@ -134,7 +134,7 @@ public sealed class ExtensionBootstrapJsContractTests
     public void Placeholder_Dedupes_By_Suggestion_Id()
     {
         // The latitude + longitude both map to the SAME package
-        // (Kuestenlogik.Bowire.Extension.MapLibre); without a dedupe
+        // (Kuestenlogik.Bowire.Map); without a dedupe
         // pass the workbench would render two identical "Install …"
         // cards next to each other.
         Assert.Contains(

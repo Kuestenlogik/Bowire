@@ -418,14 +418,14 @@ gets classified the first time it shows up, not at initial subscribe.
 ## Map widget — the first viewer/editor
 
 The framework's first concrete consumer. Ships in its own NuGet package
-**`Kuestenlogik.Bowire.Extension.MapLibre`** (Phase 3-R — extracted out
+**`Kuestenlogik.Bowire.Map`** (Phase 3-R — extracted out
 of core in the v1.3.0 pre-release refactor so users who never invoke a
 coordinate-carrying method don't pay the ~870 KB bundle cost). The
 package follows the standard extension model — `[BowireExtension]`
 descriptor + embedded JS/CSS/vendor assets — and is the dogfood proof
 that the same shape third parties write against is the shape Bowire's
 own widgets use. Install via `dotnet add package
-Kuestenlogik.Bowire.Extension.MapLibre`; the workbench's
+Kuestenlogik.Bowire.Map`; the workbench's
 `/api/ui/extensions` enumeration auto-discovers it at boot, dynamic-
 loads the bundle via `bowireLoadExternalExtensions`, and registers the
 viewer + editor against `coordinate.wgs84`. Implementation choices:
@@ -488,7 +488,7 @@ without re-running detection.
 Bowire's no-network guarantee survives:
 
 - MapLibre JS + CSS ship as embedded resources of the
-  `Kuestenlogik.Bowire.Extension.MapLibre` NuGet package
+  `Kuestenlogik.Bowire.Map` NuGet package
   (Phase 3-R — moved out of core for the bandwidth win). Same-origin
   served via `/api/ui/extensions/kuestenlogik.maplibre/{name}`. Users
   who install the package pay the ~870 KB asset cost once at first
@@ -648,7 +648,7 @@ get the same model — only a different package type.
 
 ```
 NuGet package
-└── Kuestenlogik.Bowire.Extension.MapLibre
+└── Kuestenlogik.Bowire.Map
     ├── csproj with <PackageType>BowireExtension</PackageType>
     ├── BowireMapLibreExtension.cs        — C# registration + metadata
     └── EmbeddedResource: bundle.js + bundle.css
@@ -683,9 +683,9 @@ immediately during Bowire's own development.
 **Placeholder tab for unregistered kinds (Phase 3-R).** When the
 workbench sees an annotation kind for which no extension has registered
 — for example `coordinate.latitude` from the auto-detector but
-`Kuestenlogik.Bowire.Extension.MapLibre` is not installed — the
+`Kuestenlogik.Bowire.Map` is not installed — the
 framework mounts a generic placeholder card in the viewer slot:
-`Install Kuestenlogik.Bowire.Extension.MapLibre to render
+`Install Kuestenlogik.Bowire.Map to render
 \`coordinate.latitude\` annotations on a map.` The package id is
 copy-to-clipboard-able next to the message; Bowire core cannot install
 NuGet packages from the workbench, so the card is informational only.

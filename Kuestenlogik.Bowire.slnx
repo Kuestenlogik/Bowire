@@ -2,7 +2,7 @@
   <Folder Name="/src/">
     <Project Path="src/Kuestenlogik.Bowire/Kuestenlogik.Bowire.csproj" />
     <Project Path="src/Kuestenlogik.Bowire.Cli/Kuestenlogik.Bowire.Cli.csproj" />
-    <Project Path="src/Kuestenlogik.Bowire.Extension.MapLibre/Kuestenlogik.Bowire.Extension.MapLibre.csproj" />
+    <Project Path="src/Kuestenlogik.Bowire.Map/Kuestenlogik.Bowire.Map.csproj" />
     <Project Path="src/Kuestenlogik.Bowire.Protocol.Grpc/Kuestenlogik.Bowire.Protocol.Grpc.csproj" />
     <Project Path="src/Kuestenlogik.Bowire.Protocol.SignalR/Kuestenlogik.Bowire.Protocol.SignalR.csproj" />
     <Project Path="src/Kuestenlogik.Bowire.Protocol.Mcp/Kuestenlogik.Bowire.Protocol.Mcp.csproj" />
@@ -35,7 +35,7 @@
     <Project Path="tests/Kuestenlogik.Bowire.Mock.Tests/Kuestenlogik.Bowire.Mock.Tests.csproj" />
     <Project Path="tests/Kuestenlogik.Bowire.AsyncApi.Tests/Kuestenlogik.Bowire.AsyncApi.Tests.csproj" />
     <Project Path="tests/Kuestenlogik.Bowire.Security.Templates.Nuclei.Tests/Kuestenlogik.Bowire.Security.Templates.Nuclei.Tests.csproj" />
-    <Project Path="tests/Kuestenlogik.Bowire.Extension.MapLibre.Tests/Kuestenlogik.Bowire.Extension.MapLibre.Tests.csproj" />
+    <Project Path="tests/Kuestenlogik.Bowire.Map.Tests/Kuestenlogik.Bowire.Map.Tests.csproj" />
     <Project Path="tests/Kuestenlogik.Bowire.Protocol.Nats.Tests/Kuestenlogik.Bowire.Protocol.Nats.Tests.csproj" />
     <Project Path="tests/Kuestenlogik.Bowire.Protocol.Soap.Tests/Kuestenlogik.Bowire.Protocol.Soap.Tests.csproj" />
     <Project Path="tests/Kuestenlogik.Bowire.Protocol.JsonRpc.Tests/Kuestenlogik.Bowire.Protocol.JsonRpc.Tests.csproj" />

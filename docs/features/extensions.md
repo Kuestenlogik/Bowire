@@ -12,7 +12,7 @@ Both ship as NuGet packages and install through the same paths. The split exists
 
 | Extension | Package | What it does |
 |-----------|---------|--------------|
-| MapLibre | `Kuestenlogik.Bowire.Extension.MapLibre` | Renders fields tagged with `coordinate.wgs84` (latitude/longitude pairs, GeoJSON geometries) as a MapLibre GL JS map. Read-only viewer + drag-to-edit pin for request fields. Bundles MapLibre + a default basemap. |
+| MapLibre | `Kuestenlogik.Bowire.Map` | Renders fields tagged with `coordinate.wgs84` (latitude/longitude pairs, GeoJSON geometries) as a MapLibre GL JS map. Read-only viewer + drag-to-edit pin for request fields. Bundles MapLibre + a default basemap. |
 
 More extensions are planned (image viewer, audio player, time-series chart, JSON-tree differ) — each one targeting a different `semantic kind` from the [frame-semantics framework](../architecture/frame-semantics-framework.md).
 
@@ -23,19 +23,19 @@ More extensions are planned (image viewer, audio player, time-series chart, JSON
 Same `bowire plugin install` subcommand the protocol plugins use:
 
 ```bash
-bowire plugin install Kuestenlogik.Bowire.Extension.MapLibre
+bowire plugin install Kuestenlogik.Bowire.Map
 ```
 
 The package lands in `~/.bowire/plugins/`. On the next workbench load, Bowire registers the extension with the UI extension framework; the map widget mounts automatically the next time a payload with a matching semantic shows up.
 
-To remove it, drop in `bowire plugin uninstall Kuestenlogik.Bowire.Extension.MapLibre`. To see which extensions are installed, `bowire plugin list` covers both protocol plugins and extensions (the `PackageType` column distinguishes `BowirePlugin` from `BowireExtension`).
+To remove it, drop in `bowire plugin uninstall Kuestenlogik.Bowire.Map`. To see which extensions are installed, `bowire plugin list` covers both protocol plugins and extensions (the `PackageType` column distinguishes `BowirePlugin` from `BowireExtension`).
 
 ### Embedded ASP.NET
 
 Same `dotnet add package` path the protocol plugins use:
 
 ```bash
-dotnet add package Kuestenlogik.Bowire.Extension.MapLibre
+dotnet add package Kuestenlogik.Bowire.Map
 ```
 
 No host-side wiring needed beyond `AddBowire()` + `MapBowire()` — the extension assembly is picked up by the same plugin scanner and its registration runs on the first workbench request.
@@ -47,7 +47,7 @@ The container image ships the same `bowire plugin install` subcommand. Use the h
 ```bash
 docker run --rm -v ~/.bowire:/home/app/.bowire \
     ghcr.io/kuestenlogik/bowire:latest \
-    plugin install Kuestenlogik.Bowire.Extension.MapLibre
+    plugin install Kuestenlogik.Bowire.Map
 ```
 
 ## How activation works

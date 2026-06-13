@@ -546,9 +546,19 @@ internal static class BowirePluginEndpoints
     /// </summary>
     private static bool IsBowirePluginAssemblyName(string assemblyName) =>
         assemblyName.StartsWith("Kuestenlogik.Bowire.Protocol.", StringComparison.OrdinalIgnoreCase) ||
+        // Legacy .Extension.* prefix kept for 3rd-party / pre-v2.0
+        // packages (e.g. Extension.MapLibre 1.3.0-rc.1) until they
+        // re-publish under the simpler name.
         assemblyName.StartsWith("Kuestenlogik.Bowire.Extension.", StringComparison.OrdinalIgnoreCase) ||
         string.Equals(assemblyName, "Kuestenlogik.Bowire.AsyncApi", StringComparison.OrdinalIgnoreCase) ||
         string.Equals(assemblyName, "Kuestenlogik.Bowire.Mcp", StringComparison.OrdinalIgnoreCase) ||
         string.Equals(assemblyName, "Kuestenlogik.Bowire.Mock", StringComparison.OrdinalIgnoreCase) ||
-        string.Equals(assemblyName, "Kuestenlogik.Bowire.Security.Scanner", StringComparison.OrdinalIgnoreCase);
+        string.Equals(assemblyName, "Kuestenlogik.Bowire.Security.Scanner", StringComparison.OrdinalIgnoreCase) ||
+        // First-party optional packages without the .Extension. prefix
+        // (Ai / Help / Telemetry / Map). All ship as separate NuGets the
+        // embedded host pulls in explicitly.
+        string.Equals(assemblyName, "Kuestenlogik.Bowire.Map", StringComparison.OrdinalIgnoreCase) ||
+        string.Equals(assemblyName, "Kuestenlogik.Bowire.Ai", StringComparison.OrdinalIgnoreCase) ||
+        string.Equals(assemblyName, "Kuestenlogik.Bowire.Help", StringComparison.OrdinalIgnoreCase) ||
+        string.Equals(assemblyName, "Kuestenlogik.Bowire.Telemetry", StringComparison.OrdinalIgnoreCase);
 }

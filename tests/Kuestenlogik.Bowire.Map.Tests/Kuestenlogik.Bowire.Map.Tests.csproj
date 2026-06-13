@@ -12,6 +12,6 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\Kuestenlogik.Bowire\Kuestenlogik.Bowire.csproj" />
-    <ProjectReference Include="..\..\src\Kuestenlogik.Bowire.Extension.MapLibre\Kuestenlogik.Bowire.Extension.MapLibre.csproj" />
+    <ProjectReference Include="..\..\src\Kuestenlogik.Bowire.Map\Kuestenlogik.Bowire.Map.csproj" />
   </ItemGroup>
 </Project>

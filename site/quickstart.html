@@ -251,7 +251,7 @@ bowire plugin download Kuestenlogik.Bowire.Protocol.Kafka --output ./bundle/
 bowire plugin install --file ./bundle/kl.bowire.protocol.kafka.0.9.4.nupkg \
                        --source ./bundle/</code></pre>
 
-      <p><strong>UI extensions go through the same channel.</strong> The MapLibre extension (geographic visualisation for fields tagged <code>coordinate.wgs84</code>) and other payload-semantic widgets install with the exact same <code>bowire plugin install</code> subcommand &mdash; e.g. <code>bowire plugin install Kuestenlogik.Bowire.Extension.MapLibre</code>.</p>
+      <p><strong>UI extensions go through the same channel.</strong> The MapLibre extension (geographic visualisation for fields tagged <code>coordinate.wgs84</code>) and other payload-semantic widgets install with the exact same <code>bowire plugin install</code> subcommand &mdash; e.g. <code>bowire plugin install Kuestenlogik.Bowire.Map</code>.</p>
 
       <p class="quickstart-page-step-links">
         <a class="features-block-docs-link" href="{{ '/docs/features/plugin-system.html' | relative_url }}">Plugin system docs &rarr;</a>
@@ -518,7 +518,7 @@ bowire plugin install --file ./bundle/kl.bowire.protocol.kafka.0.9.4.nupkg \
 dotnet add package Kuestenlogik.Bowire</code></pre>
 
       <p>Every first-party protocol (gRPC, REST, GraphQL, SignalR, WebSocket, SSE, MQTT, Socket.IO, OData, MCP) is its own package &mdash; same versioning, same release cadence. Sibling plugins from separate repositories (Surgewave, Kafka, DIS, UDP) are in the same picker; tick them and they appear as <code>dotnet add package</code> lines too. The plugin host loads each package into its own <code>AssemblyLoadContext</code>, so transitive-dependency conflicts between plugins can't reach your app.</p>
-      <p>UI extensions like the MapLibre map widget (for fields tagged <code>coordinate.wgs84</code>) install through the same path &mdash; <code>dotnet add package Kuestenlogik.Bowire.Extension.MapLibre</code> &mdash; and activate automatically when the workbench sees a matching semantic kind.</p>
+      <p>UI extensions like the MapLibre map widget (for fields tagged <code>coordinate.wgs84</code>) install through the same path &mdash; <code>dotnet add package Kuestenlogik.Bowire.Map</code> &mdash; and activate automatically when the workbench sees a matching semantic kind.</p>
       <p class="quickstart-page-step-links">
         <a class="features-block-docs-link" href="{{ '/downloads.html' | relative_url }}">Every package on the downloads page &rarr;</a>
         <a class="features-block-docs-link" href="{{ '/docs/setup/embedded.html' | relative_url }}">Configuration options (mount path, theme, auth) &rarr;</a>

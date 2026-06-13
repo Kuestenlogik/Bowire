@@ -157,7 +157,7 @@ First-party implementations: `KafkaMockEmitter` (Confluent producer against a co
 
 ## IBowireUiExtension
 
-UI-widget extension point — adds new visualisers / editors to the workbench. Lives under `Kuestenlogik.Bowire.Semantics.Extensions` in the core; `BowireExtensionRegistry.Discover()` mirrors the same assembly-scan shape as the protocol registry. The MapLibre extension (`Kuestenlogik.Bowire.Extension.MapLibre`) is the reference implementation: it claims any frame whose semantics include a WGS84 coordinate pair and renders it on a live MapLibre map alongside the streaming-frames pane.
+UI-widget extension point — adds new visualisers / editors to the workbench. Lives under `Kuestenlogik.Bowire.Semantics.Extensions` in the core; `BowireExtensionRegistry.Discover()` mirrors the same assembly-scan shape as the protocol registry. The MapLibre extension (`Kuestenlogik.Bowire.Map`) is the reference implementation: it claims any frame whose semantics include a WGS84 coordinate pair and renders it on a live MapLibre map alongside the streaming-frames pane.
 
 See [Frame Semantics Framework](frame-semantics-framework.md) for the annotation seam UI extensions hook into.
 

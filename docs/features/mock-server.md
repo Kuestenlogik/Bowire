@@ -727,10 +727,10 @@ dotnet TacticalApi.TestClient.dll --observesituation
 To visualise the symbols on a map while the walkthrough runs, install the optional MapLibre extension on the Bowire workbench host:
 
 ```bash
-dotnet add package Kuestenlogik.Bowire.Extension.MapLibre
+dotnet add package Kuestenlogik.Bowire.Map
 ```
 
-The map widget mounts automatically against any annotation pair the frame-semantics framework resolves to `coordinate.wgs84` (the latitude/longitude on each symbol). When the package is absent the workbench shows a "Install `Kuestenlogik.Bowire.Extension.MapLibre`" placeholder card next to the streaming-frames pane &mdash; the data still flows, the map just isn't rendered.
+The map widget mounts automatically against any annotation pair the frame-semantics framework resolves to `coordinate.wgs84` (the latitude/longitude on each symbol). When the package is absent the workbench shows a "Install `Kuestenlogik.Bowire.Map`" placeholder card next to the streaming-frames pane &mdash; the data still flows, the map just isn't rendered.
 
 Each step crosses a different mock surface: stateful storage (sendsymbol persists for printsituation), server-streaming replay (observesituation), GUID generation (sendsymbol allocates), and &mdash; if the test client is configured for port 4268 instead of 4267 &mdash; **gRPC-Web** framing on top of HTTP/1.1, which a wire-level bug would expose immediately.
 

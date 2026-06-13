@@ -116,7 +116,7 @@ MCP-server adapter — exposes Bowire's discovered protocol methods as MCP tools
 
 Vulnerability scanner — the engine behind `bowire scan`. Reads JSON templates (built-in passive checks + the `Bowire.VulnDb` baseline + Nuclei templates via `--nuclei`), runs them against a target URL through the discovered protocol plugins, emits SARIF 2.1.0. References `Kuestenlogik.Bowire.Cli` so its `ScanCliCommand` lands in the auto-discovery loop. Optional — embedded hosts that don't need scanning leave it out.
 
-### `Kuestenlogik.Bowire.Extension.MapLibre`
+### `Kuestenlogik.Bowire.Map`
 
 UI extension — adds the live-map widget to the workbench. Implements `IBowireUiExtension`. Ships separately because the MapLibre runtime (~870 KB of JS + CSS) doesn't belong in every install.
 

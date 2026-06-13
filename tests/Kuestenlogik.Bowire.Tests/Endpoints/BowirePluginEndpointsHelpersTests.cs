@@ -87,7 +87,11 @@ public sealed class BowirePluginEndpointsHelpersTests
     [InlineData("Kuestenlogik.Bowire.Protocol.Grpc", true)]
     [InlineData("Kuestenlogik.Bowire.Protocol.Amqp", true)]
     [InlineData("Kuestenlogik.Bowire.Protocol.TacticalApi", true)]
-    [InlineData("Kuestenlogik.Bowire.Extension.MapLibre", true)]
+    [InlineData("Kuestenlogik.Bowire.Extension.MapLibre", true)] // legacy .Extension.* prefix still recognised
+    [InlineData("Kuestenlogik.Bowire.Map", true)]                 // v2.0 rename
+    [InlineData("Kuestenlogik.Bowire.Ai", true)]
+    [InlineData("Kuestenlogik.Bowire.Help", true)]
+    [InlineData("Kuestenlogik.Bowire.Telemetry", true)]
     [InlineData("Kuestenlogik.Bowire.AsyncApi", true)]
     [InlineData("Kuestenlogik.Bowire.Mcp", true)]
     [InlineData("Kuestenlogik.Bowire.Mock", true)]
