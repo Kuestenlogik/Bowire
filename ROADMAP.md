@@ -12,13 +12,11 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.0 — Re-architected workbench shell + workspace = project folder
 
-**52/55 done** · 3 backlog
+**54/55 done** · 1 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
 | [115](https://github.com/Kuestenlogik/Bowire/issues/115) | Bowire | [v2.0 — UI refactor: re-architect the workbench shell](#issue-kuestenlogik-bowire-115) | ⬜ Open |  |
-| [150](https://github.com/Kuestenlogik/Bowire/issues/150) | Bowire | [Filesystem-watch + reconcile UI for externally-edited workspace files](#issue-kuestenlogik-bowire-150) | ⬜ Open |  |
-| [151](https://github.com/Kuestenlogik/Bowire/issues/151) | Bowire | [Secret-file separation + workspace lock file for safe team-shared git workspaces](#issue-kuestenlogik-bowire-151) | ⬜ Open |  |
 | [25](https://github.com/Kuestenlogik/Bowire/issues/25) | Bowire | [AI side-panel integration](#issue-kuestenlogik-bowire-25) | ✅ Done | `area:workbench` |
 | [33](https://github.com/Kuestenlogik/Bowire/issues/33) | Bowire | [Protocol plugins — Connect Phase 1+3 + OTLP](#issue-kuestenlogik-bowire-33) | ✅ Done | `area:plugin-sdk` |
 | [43](https://github.com/Kuestenlogik/Bowire/issues/43) | Bowire | [MCP SSE-transport support](#issue-kuestenlogik-bowire-43) | ✅ Done | `area:mcp` |
@@ -53,6 +51,8 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [147](https://github.com/Kuestenlogik/Bowire/issues/147) | Bowire | [Git-backed workspace storage — composes with #144 storage modes + #58](#issue-kuestenlogik-bowire-147) | ✅ Done |  |
 | [148](https://github.com/Kuestenlogik/Bowire/issues/148) | Bowire | [Per-entity file storage format for git-backed workspaces (envs / collections / scripts)](#issue-kuestenlogik-bowire-148) | ✅ Done |  |
 | [149](https://github.com/Kuestenlogik/Bowire/issues/149) | Bowire | [Workspace CLI — bowire workspace init / export / import / migrate-format](#issue-kuestenlogik-bowire-149) | ✅ Done |  |
+| [150](https://github.com/Kuestenlogik/Bowire/issues/150) | Bowire | [Filesystem-watch + reconcile UI for externally-edited workspace files](#issue-kuestenlogik-bowire-150) | ✅ Done |  |
+| [151](https://github.com/Kuestenlogik/Bowire/issues/151) | Bowire | [Secret-file separation + workspace lock file for safe team-shared git workspaces](#issue-kuestenlogik-bowire-151) | ✅ Done |  |
 | [152](https://github.com/Kuestenlogik/Bowire/issues/152) | Bowire | [Sources rail mode — centralise URL / schema-file management](#issue-kuestenlogik-bowire-152) | ✅ Done |  |
 | [154](https://github.com/Kuestenlogik/Bowire/issues/154) | Bowire | [Help as optional NuGet package — `Kuestenlogik.Bowire.Help`](#issue-kuestenlogik-bowire-154) | ✅ Done |  |
 | [155](https://github.com/Kuestenlogik/Bowire/issues/155) | Bowire | [Workspace = project folder — strictly per-workspace, sharing via copy actions](#issue-kuestenlogik-bowire-155) | ✅ Done |  |
@@ -192,14 +192,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 #### <a id="issue-kuestenlogik-bowire-115"></a>⬜ Open · [#115](https://github.com/Kuestenlogik/Bowire/issues/115) v2.0 — UI refactor: re-architect the workbench shell
 
 > **Status:** Phase 1 — Shell-Refactor abgeschlossen (Juni 2026). Die strukturelle Neuordnung der Workbench ist durch; was in v2.0 noch landet, sind Feature-Streams plus die echten Breaking-Change-Cleanups. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/115)
-
-#### <a id="issue-kuestenlogik-bowire-150"></a>⬜ Open · [#150](https://github.com/Kuestenlogik/Bowire/issues/150) Filesystem-watch + reconcile UI for externally-edited workspace files
-
-In a git-backed workspace (#147) the operator will frequently: - Run `git pull` to get the team's latest envs / collections / recordings. - Edit a `.req.json` or `.js` file in their editor (faster than the workbench schema-form for some operations). - Switch git branches while the workbench is open. [[more]](https://github.com/Kuestenlogik/Bowire/issues/150)
-
-#### <a id="issue-kuestenlogik-bowire-151"></a>⬜ Open · [#151](https://github.com/Kuestenlogik/Bowire/issues/151) Secret-file separation + workspace lock file for safe team-shared git workspaces
-
-Two related concerns for a git-backed workspace (#147) that aren't covered yet: [[more]](https://github.com/Kuestenlogik/Bowire/issues/151)
 
 #### <a id="issue-kuestenlogik-bowire-25"></a>✅ Done · [#25](https://github.com/Kuestenlogik/Bowire/issues/25) AI side-panel integration
 
@@ -342,6 +334,14 @@ For #58 + #147 to deliver real "git-native workspace" parity with Bruno, the wor
 #### <a id="issue-kuestenlogik-bowire-149"></a>✅ Done · [#149](https://github.com/Kuestenlogik/Bowire/issues/149) Workspace CLI — bowire workspace init / export / import / migrate-format
 
 Bruno's CLI runs the same `.bru` files the GUI edits — `bruno run collections/payments/Login.bru` works straight out of a checked-out repo. Bowire's CLI today reads from `~/.bowire/` hard-wired through `BowireUserContext`. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/149)
+
+#### <a id="issue-kuestenlogik-bowire-150"></a>✅ Done · [#150](https://github.com/Kuestenlogik/Bowire/issues/150) Filesystem-watch + reconcile UI for externally-edited workspace files
+
+In a git-backed workspace (#147) the operator will frequently: - Run `git pull` to get the team's latest envs / collections / recordings. - Edit a `.req.json` or `.js` file in their editor (faster than the workbench schema-form for some operations). - Switch git branches while the workbench is open. [[more]](https://github.com/Kuestenlogik/Bowire/issues/150)
+
+#### <a id="issue-kuestenlogik-bowire-151"></a>✅ Done · [#151](https://github.com/Kuestenlogik/Bowire/issues/151) Secret-file separation + workspace lock file for safe team-shared git workspaces
+
+Two related concerns for a git-backed workspace (#147) that aren't covered yet: [[more]](https://github.com/Kuestenlogik/Bowire/issues/151)
 
 #### <a id="issue-kuestenlogik-bowire-152"></a>✅ Done · [#152](https://github.com/Kuestenlogik/Bowire/issues/152) Sources rail mode — centralise URL / schema-file management
 
