@@ -21,6 +21,7 @@
     <Project Path="src/Kuestenlogik.Bowire.Auth.Oidc/Kuestenlogik.Bowire.Auth.Oidc.csproj" />
     <Project Path="src/Kuestenlogik.Bowire.Ai/Kuestenlogik.Bowire.Ai.csproj" />
     <Project Path="src/Kuestenlogik.Bowire.Telemetry/Kuestenlogik.Bowire.Telemetry.csproj" />
+    <Project Path="src/Kuestenlogik.Bowire.Protocol.Rest.OpenApi3/Kuestenlogik.Bowire.Protocol.Rest.OpenApi3.csproj" />
     <Project Path="src/Kuestenlogik.Bowire.Help/Kuestenlogik.Bowire.Help.csproj" />
     <Project Path="src/Kuestenlogik.Bowire.Security.Scanner/Kuestenlogik.Bowire.Security.Scanner.csproj" />
     <Project Path="src/Kuestenlogik.Bowire.Security.Templates.Nuclei/Kuestenlogik.Bowire.Security.Templates.Nuclei.csproj" />

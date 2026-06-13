@@ -560,5 +560,11 @@ internal static class BowirePluginEndpoints
         string.Equals(assemblyName, "Kuestenlogik.Bowire.Map", StringComparison.OrdinalIgnoreCase) ||
         string.Equals(assemblyName, "Kuestenlogik.Bowire.Ai", StringComparison.OrdinalIgnoreCase) ||
         string.Equals(assemblyName, "Kuestenlogik.Bowire.Help", StringComparison.OrdinalIgnoreCase) ||
-        string.Equals(assemblyName, "Kuestenlogik.Bowire.Telemetry", StringComparison.OrdinalIgnoreCase);
+        string.Equals(assemblyName, "Kuestenlogik.Bowire.Telemetry", StringComparison.OrdinalIgnoreCase) ||
+        // Per-version OpenAPI adapter packages — the REST plugin's
+        // Microsoft.OpenApi seam (IBowireOpenApiAdapter). Embedded hosts
+        // pick the line that matches their app's other OpenAPI
+        // consumers; standalone CLI bundles one of these transitively.
+        string.Equals(assemblyName, "Kuestenlogik.Bowire.Protocol.Rest.OpenApi2", StringComparison.OrdinalIgnoreCase) ||
+        string.Equals(assemblyName, "Kuestenlogik.Bowire.Protocol.Rest.OpenApi3", StringComparison.OrdinalIgnoreCase);
 }

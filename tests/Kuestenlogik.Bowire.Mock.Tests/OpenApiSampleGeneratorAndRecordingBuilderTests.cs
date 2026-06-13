@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 using System.Text.Json;
+using Kuestenlogik.Bowire.Protocol.Rest.OpenApi3;
 using Microsoft.OpenApi;
 using Microsoft.OpenApi.Reader;
 

@@ -36,6 +36,9 @@
          that don't want the OTel transitive weight aren't forced to
          pull it via core. -->
     <ProjectReference Include="..\..\src\Kuestenlogik.Bowire.Telemetry\Kuestenlogik.Bowire.Telemetry.csproj" />
+    <!-- OpenApi3 adapter — needed by Cli/ExportCommandTests which still
+         exercises the OpenAPI emitter helpers directly. -->
+    <ProjectReference Include="..\..\src\Kuestenlogik.Bowire.Protocol.Rest.OpenApi3\Kuestenlogik.Bowire.Protocol.Rest.OpenApi3.csproj" />
     <!-- Tiny fake sidecar executable used by the sidecar plugin
          integration tests. ReferenceOutputAssembly=false because the
          tests only need its built EXE on disk (located via

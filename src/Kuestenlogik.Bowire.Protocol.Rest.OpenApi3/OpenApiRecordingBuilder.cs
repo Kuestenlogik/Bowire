@@ -6,7 +6,7 @@ using Microsoft.OpenApi;
 using Microsoft.OpenApi.Reader;
 using Microsoft.OpenApi.YamlReader;
 
-namespace Kuestenlogik.Bowire.Protocol.Rest.Mock;
+namespace Kuestenlogik.Bowire.Protocol.Rest.OpenApi3;
 
 /// <summary>
 /// Phase 3d: turns a parsed OpenAPI document into a synthetic
