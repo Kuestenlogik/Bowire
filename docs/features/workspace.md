@@ -134,6 +134,14 @@ When `storageRoot` is unset, every per-workspace file lands under `~/.bowire/wor
 
 The runtime workbench still routes existing workspaces through the legacy `~/.bowire/` per-user store; full read/write at `storageRoot` (including the filesystem watcher that reflects external edits back into the live workbench) lands in v2.1. The CLI's `init` produces the directory shape today so teams can stage their workspace under git and migrate when the workbench-side wiring ships.
 
+### Package boundary
+
+The Phase 2 runtime (per-entity reader/writer, `FileSystemWatcher`, secret-overlay merge, workspace lockfile, SSE producer) ships as a **separate optional NuGet package** — `Kuestenlogik.Bowire.Extension.GitWorkspace` — and is NOT in core `Kuestenlogik.Bowire`. This keeps embedded ASP.NET hosts free of file-IO machinery they didn't ask for: a stock `app.MapBowire(...)` call without the extension package referenced sees the legacy per-user storage path and runs no background watcher.
+
+Standalone `Kuestenlogik.Bowire.Tool` carries the extension transitively so `bowire` from the command line gets the full git-workspace surface out of the box. Embedded hosts opt in with an explicit package reference when they want it.
+
+Phase 1's `BowireUserContext.GetWorkspacePath` seam ships in core because it's a pure path resolver with zero new dependencies — the extension package plugs into it via the seam without touching the host's dependency graph.
+
 ## File location
 
 The workspace file is read from and written to the **working directory** where Bowire was launched. The file is always named `.blw` (no base name, just the extension).
