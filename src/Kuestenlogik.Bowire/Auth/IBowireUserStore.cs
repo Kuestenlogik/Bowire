@@ -106,4 +106,45 @@ public static class BowireUserContext
     /// participating in the user-scoping seam.
     /// </summary>
     public static string GetUserPath(string filename) => _current.GetUserPath(filename);
+
+    /// <summary>
+    /// #147 — resolve a per-workspace path. When <paramref name="storageRoot"/>
+    /// is set (git-backed workspace, the operator points the workspace
+    /// at a checked-out folder), the resolver returns
+    /// <c>&lt;storageRoot&gt;/&lt;relativePath&gt;</c>. Otherwise falls
+    /// back to the legacy per-user layout under
+    /// <c>~/.bowire/workspaces/&lt;workspaceId&gt;/&lt;relativePath&gt;</c>.
+    /// Stores call this to participate in the git-workspace seam
+    /// without having to thread storageRoot through every method.
+    /// </summary>
+    /// <param name="workspaceId">
+    /// Workspace identifier. Used as a path segment in the default-
+    /// folder fallback path; ignored when <paramref name="storageRoot"/>
+    /// is set.
+    /// </param>
+    /// <param name="storageRoot">
+    /// Optional absolute path to a git-backed workspace's root.
+    /// </param>
+    /// <param name="relativePath">
+    /// Path relative to the workspace root — e.g. "environments/staging.json",
+    /// "recordings/login.json".
+    /// </param>
+    public static string GetWorkspacePath(string workspaceId, string? storageRoot, string relativePath)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(relativePath);
+        if (!string.IsNullOrWhiteSpace(storageRoot))
+        {
+            // Anchor everything under the operator's checked-out folder
+            // so per-entity files land in the working tree the team
+            // ships in git. Trust the operator's path verbatim — they
+            // explicitly opted into this storage root.
+            return Path.Combine(storageRoot, relativePath);
+        }
+        // Default-folder layout — preserved exactly so installs that
+        // haven't opted in see zero behavioural change.
+        var legacy = string.IsNullOrEmpty(workspaceId)
+            ? Path.Combine("workspaces", relativePath)
+            : Path.Combine("workspaces", workspaceId, relativePath);
+        return _current.GetUserPath(legacy);
+    }
 }
