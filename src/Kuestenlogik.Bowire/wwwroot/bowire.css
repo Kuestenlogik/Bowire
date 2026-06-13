@@ -711,12 +711,6 @@ not eight buttons" intent. */
     padding-right: 10px;
     border-radius: var(--bowire-radius-sm);
 }
-.bowire-overflow-glyph {
-    font-size: 18px;
-    line-height: 1;
-    font-weight: 700;
-    letter-spacing: -0.05em;
-}
 .bowire-topbar-overflow-btn.active {
     color: var(--bowire-text);
     background: var(--bowire-surface-hover);
@@ -759,10 +753,6 @@ no decoration. */
    (#115); these rules only style the inner panes. Wider than the
    Assistant drawer's content because rendered markdown reads better
    with more horizontal room. */
-.bowire-help-drawer {
-    width: 520px;
-    max-width: 60vw;
-}
 .bowire-help-body {
     display: flex;
     height: 100%;
@@ -978,15 +968,6 @@ no decoration. */
 .bowire-tests-tab-accessory-fail {
     background: rgba(239, 68, 68, 0.15);
     color: var(--bowire-error, #ef4444);
-}
-/* Console + Tests tab body wrappers — fill the drawer content area
-   and keep their own scroll surface so streaming entries don't
-   push the tab strip out of view. */
-.bowire-console-tab-wrap {
-    display: flex;
-    flex-direction: column;
-    min-height: 0;
-    flex: 1;
 }
 .bowire-console-drawer-actions {
     flex-shrink: 0;
@@ -2156,42 +2137,6 @@ not just
     padding-top: 0;
     border-top: 0;
 }
-.bowire-home-band-firstrun .bowire-home-firstrun-tagline {
-    margin: 0 0 6px;
-    font-size: 13px;
-    color: var(--bowire-text-secondary);
-}
-/* First-run hero slot — sits ABOVE Favorites + Recents so the
-   hero supplements (doesn't replace) the home structure. Compact
-   variant: smaller logo, tighter spacing, headline trimmed so the
-   sections below stay above the fold. */
-.bowire-home-hero-slot {
-    display: flex;
-    justify-content: center;
-    margin-bottom: 16px;
-    padding-bottom: 12px;
-    border-bottom: 1px solid var(--bowire-border);
-}
-.bowire-home-hero-slot .bowire-landing-hero {
-    padding: 0 16px;
-    max-width: 720px;
-}
-.bowire-home-hero-slot .bowire-landing-hero-logo {
-    width: 84px;
-    margin-bottom: 8px;
-}
-.bowire-home-hero-slot .bowire-landing-hero-headline {
-    font-size: clamp(1.25rem, 2.2vw, 1.5rem);
-    margin-bottom: 4px;
-}
-.bowire-home-hero-slot .bowire-landing-hero-tagline {
-    font-size: 13px;
-    line-height: 1.45;
-    margin-bottom: 16px;
-}
-.bowire-home-hero-slot .bowire-landing-cta-grid {
-    margin-bottom: 0;
-}
 /* Side-by-side layout: Favorites + Recent live in a 2-column grid
    below the title strip. Collapses to a single column below 900 px
    so narrow viewports don't squeeze each tile too tight. */
@@ -2208,18 +2153,6 @@ not just
 }
 .bowire-home-section {
     margin-bottom: 0; /* override the stacked default */
-}
-.bowire-home-title {
-    font-size: 18px;
-    font-weight: 700;
-    letter-spacing: var(--bowire-heading-tracking);
-    margin: 0 0 2px;
-    color: var(--bowire-text);
-}
-.bowire-home-subtitle {
-    margin: 0 0 18px;
-    font-size: 12px;
-    color: var(--bowire-text-secondary);
 }
 .bowire-home-section {
     margin-bottom: 20px;
@@ -4282,26 +4215,6 @@ only an accent-coloured underline under the active tab. The whole
     background: var(--bowire-bg-elevated);
     flex-shrink: 0;
     min-height: 60px;
-}
-
-.bowire-toggle-sidebar {
-    width: 32px;
-    height: 32px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: var(--bowire-surface);
-    border: 1px solid var(--bowire-border);
-    border-radius: var(--bowire-radius-sm);
-    color: var(--bowire-text-secondary);
-    cursor: pointer;
-    transition: all var(--bowire-transition);
-    flex-shrink: 0;
-}
-
-.bowire-toggle-sidebar:hover {
-    background: var(--bowire-surface-hover);
-    color: var(--bowire-text);
 }
 
 .bowire-header-info {
@@ -7764,20 +7677,6 @@ and chip row */
 .bowire-settings-left .bowire-tree-row.selected .bowire-tree-glyph {
     color: var(--bowire-accent);
 }
-.bowire-settings-cat {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 8px 16px;
-    cursor: pointer;
-    font-size: 13px;
-    color: var(--bowire-text-secondary);
-    transition: all var(--bowire-transition);
-}
-.bowire-settings-cat:hover { background: var(--bowire-surface-hover); color: var(--bowire-text); }
-.bowire-settings-cat.active { background: var(--bowire-sidebar-active); color: var(--bowire-accent); font-weight: 600; }
-.bowire-settings-cat-icon { display: flex; width: 14px; height: 14px; flex-shrink: 0; }
-.bowire-settings-cat-icon svg { width: 100%; height: 100%; }
 .bowire-settings-right {
     flex: 1;
     padding: 20px;
@@ -10821,15 +10720,6 @@ subtler
     to { transform: translateY(0); }
 }
 
-.bowire-console-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 8px 14px;
-    border-bottom: 1px solid var(--bowire-border);
-    flex-shrink: 0;
-}
-
 .bowire-console-title {
     display: flex;
     align-items: center;
@@ -10874,8 +10764,7 @@ subtler
     gap: 6px;
 }
 
-.bowire-console-clear,
-.bowire-console-close {
+.bowire-console-clear {
     height: 24px;
     padding: 0 10px;
     background: transparent;
@@ -10891,18 +10780,7 @@ subtler
     justify-content: center;
 }
 
-.bowire-console-close {
-    width: 24px;
-    padding: 0;
-}
-
-.bowire-console-close svg {
-    width: 12px;
-    height: 12px;
-}
-
-.bowire-console-clear:hover,
-.bowire-console-close:hover {
+.bowire-console-clear:hover {
     background: var(--bowire-sidebar-hover);
     color: var(--bowire-text);
     border-color: var(--bowire-accent);
@@ -13508,33 +13386,6 @@ full accent for user-pinned
     flex-direction: column;
     gap: 8px;
 }
-.bowire-ai-hint {
-    display: flex;
-    gap: 10px;
-    align-items: flex-start;
-    padding: 10px 12px;
-    border-radius: var(--bowire-radius-lg);
-    background: var(--bowire-bg-elevated, rgba(255, 255, 255, 0.04));
-    border: 1px solid var(--bowire-border);
-    font-size: 13px;
-    line-height: 1.55;
-}
-.bowire-ai-hint-warn {
-    border-color: rgba(255, 173, 51, 0.4);
-    background: rgba(255, 173, 51, 0.06);
-}
-.bowire-ai-hint-tip {
-    border-color: rgba(95, 178, 255, 0.35);
-    background: rgba(95, 178, 255, 0.05);
-}
-.bowire-ai-hint-icon {
-    flex-shrink: 0;
-    font-size: 14px;
-    margin-top: 1px;
-}
-.bowire-ai-hint-text {
-    color: var(--bowire-text);
-}
 .bowire-ai-footer {
     border-top: 1px solid var(--bowire-border);
     padding-top: 10px;
@@ -13609,31 +13460,6 @@ full accent for user-pinned
     color: var(--bowire-error);
 }
 
-/* AllowInvoke toggle (#109 Phase 3) — visible header line above the
-   chat transcript. Lo-fi label-with-checkbox; the surrounding chrome
-   stays light because the toggle controls a session-only opt-in that
-   should be unobtrusive when off. */
-.bowire-ai-chat-toggle {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    padding: 6px 8px 8px;
-    font-size: 11px;
-    color: var(--bowire-text-secondary);
-    border-bottom: 1px solid var(--bowire-border);
-    margin-bottom: 6px;
-    cursor: pointer;
-    user-select: none;
-}
-.bowire-ai-chat-toggle input[type="checkbox"] {
-    accent-color: var(--bowire-accent);
-    cursor: pointer;
-}
-.bowire-ai-chat-toggle-hint {
-    margin-left: auto;
-    color: var(--bowire-text-tertiary);
-    font-size: 10px;
-}
 /* Generic alert bar — three severities + optional dismiss X.
    Full-width strip that mounts at the top of a pane / drawer body
    so it reads as a status banner under the local header. Background
