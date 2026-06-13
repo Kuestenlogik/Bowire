@@ -18,11 +18,11 @@
          on HTTP/1.1. Not pulled in by the plugin itself. -->
     <PackageVersion Include="Grpc.AspNetCore.Web" Version="2.80.0" />
     <PackageVersion Include="Google.Protobuf" Version="3.35.0" />
-    <PackageVersion Include="Microsoft.AspNetCore.Mvc.Testing" Version="10.0.8" />
-    <PackageVersion Include="Microsoft.AspNetCore.TestHost" Version="10.0.8" />
+    <PackageVersion Include="Microsoft.AspNetCore.Mvc.Testing" Version="10.0.9" />
+    <PackageVersion Include="Microsoft.AspNetCore.TestHost" Version="10.0.9" />
     <PackageVersion Include="Grpc.AspNetCore" Version="2.80.0" />
     <PackageVersion Include="Grpc.Tools" Version="2.81.0" />
-    <PackageVersion Include="Microsoft.AspNetCore.SignalR.Client" Version="10.0.8" />
+    <PackageVersion Include="Microsoft.AspNetCore.SignalR.Client" Version="10.0.9" />
     <PackageVersion Include="Microsoft.Identity.Web" Version="4.10.0" />
     <PackageVersion Include="Microsoft.OpenApi" Version="3.6.0" />
     <PackageVersion Include="Microsoft.OpenApi.YamlReader" Version="3.6.0" />
@@ -83,7 +83,7 @@
          HotChocolate.Language; 15.1 ships the fix. -->
     <PackageVersion Include="HotChocolate.AspNetCore" Version="15.1.10" />
     <PackageVersion Include="SocketIOClient" Version="4.0.4" />
-    <PackageVersion Include="Microsoft.AspNetCore.OpenApi" Version="10.0.7" />
+    <PackageVersion Include="Microsoft.AspNetCore.OpenApi" Version="10.0.9" />
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.6.0" />
     <PackageVersion Include="xunit.v3" Version="3.2.2" />
     <PackageVersion Include="xunit.runner.visualstudio" Version="3.1.5" />
