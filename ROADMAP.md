@@ -91,7 +91,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [193](https://github.com/Kuestenlogik/Bowire/issues/193) | Bowire | [Workspace .blw Phase 2 — UI wiring + plugin-pin check + scope split](#issue-kuestenlogik-bowire-193) | ⬜ Open |  |
 | [194](https://github.com/Kuestenlogik/Bowire/issues/194) | Bowire | [Action log Phase 2 — remaining mutation sites + cross-reload undo + soft-delete workspaces](#issue-kuestenlogik-bowire-194) | ⬜ Open |  |
 | [195](https://github.com/Kuestenlogik/Bowire/issues/195) | Bowire | [Protocol plugin — OTLP passive listener (Kuestenlogik.Bowire.Protocol.Otlp)](#issue-kuestenlogik-bowire-195) | ⬜ Open |  |
-| [196](https://github.com/Kuestenlogik/Bowire/issues/196) | Bowire | [Git-backed workspaces Phase 2 — runtime wiring, FS-watch, secret merge, lockfile](#issue-kuestenlogik-bowire-196) | ⬜ Open |  |
+| [196](https://github.com/Kuestenlogik/Bowire/issues/196) | Bowire | [Git-backed workspaces Phase 2 — Kuestenlogik.Bowire.Workspace.Git runtime + FS-watch + secret merge](#issue-kuestenlogik-bowire-196) | ⬜ Open |  |
 
 ### v2.2 — Test pillar: assertions, CI runner, regression coverage
 
@@ -469,7 +469,7 @@ Phase 1 shipped in e084bc3 — central `actionLog`, Statusbar pill, Activity dra
 
 Bowire's multi-protocol coverage is wide — REST / gRPC / GraphQL / MQTT / Kafka / SignalR / Connect / WebSocket / SSE / MCP / SOAP / NATS / JSON-RPC / Pulsar / DIS / UDP — but the observability lane has no first-class entry. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/195)
 
-#### <a id="issue-kuestenlogik-bowire-196"></a>⬜ Open · [#196](https://github.com/Kuestenlogik/Bowire/issues/196) Git-backed workspaces Phase 2 — runtime wiring, FS-watch, secret merge, lockfile
+#### <a id="issue-kuestenlogik-bowire-196"></a>⬜ Open · [#196](https://github.com/Kuestenlogik/Bowire/issues/196) Git-backed workspaces Phase 2 — Kuestenlogik.Bowire.Workspace.Git runtime + FS-watch + secret merge
 
 Phase 1 (#147-#149-#151) shipped in eb2bf1c: `BowireUserContext.GetWorkspacePath(workspaceId, storageRoot?, relative)` resolver, `bowire workspace init <path>` CLI, per-entity layout + `.gitignore` template with the secret-separation convention. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/196)
 
