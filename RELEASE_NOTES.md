@@ -1,42 +1,30 @@
 # Bowire Release Notes
 
-Hand-curated highlights per release. The full commit list is auto-generated
-by GitHub on the release page; this file is the editorial layer above it.
+**This file is generated.** Edit the release body on GitHub instead:
+https://github.com/Kuestenlogik/Bowire/releases
 
-Format per version: `## <version> — <date>` heading, free-form prose +
-bullets summarising what shipped, why it matters, and any breaking changes.
-The release workflow extracts the most-recent matching block at tag time
-and uses it as the GitHub Release body.
-
----
-
-## v2.0.0 (in flight) — package renames
-
-The 2.0 release lines up Bowire's optional-feature packages on a single
-naming convention before the major-version cut:
-
-- **`Kuestenlogik.Bowire.Extension.MapLibre` → `Kuestenlogik.Bowire.Map`** —
-  the v1.3.0-rc.1 of the MapLibre extension will be deprecated + unlisted
-  on nuget.org after 2.0 ships; consumers should swap the package
-  reference (`<PackageReference Include="Kuestenlogik.Bowire.Map" />`).
-- **`Kuestenlogik.Bowire.Extension.Telemetry` (briefly named in dev) →
-  `Kuestenlogik.Bowire.Telemetry`** — first publish lands under the
-  short name.
-
-OpenTelemetry was moved out of core into
-`Kuestenlogik.Bowire.Telemetry`; embedded hosts that don't want
-self-observability no longer pull the OTel transitive weight. The
-standalone CLI keeps `--telemetry` working out of the box because the
-`bowire` executable transitively references the package.
-
-Naming convention going forward — optional first-party packages =
-`Kuestenlogik.Bowire.<feature>` (e.g. `.Ai`, `.Help`, `.Telemetry`,
-`.Map`) or `Kuestenlogik.Bowire.<area>.<backend>` (e.g. the planned
-`Workspace.Git`). The legacy `.Extension.*` prefix isn't used for new
-packages.
+The script `scripts/generate-release-notes.mjs` pulls every published
+release (and optionally drafts via `--include-drafts`) and writes
+the body out here so the notes are readable offline. Use the
+GitHub Release UI or `gh release edit <tag>` to change the editorial
+text; re-run the generator to refresh the mirror.
 
 ---
+## v2.0.0 — draft — package renames + extracted optional packages
 
+> _Draft release — body subject to change before publication. Source: https://github.com/Kuestenlogik/Bowire/releases/tag/untagged-9f5b3c1e9dd393108a6e_
+
+The 2.0 release lines up Bowire's optional-feature packages on a single naming convention before the major-version cut:
+
+- **`Kuestenlogik.Bowire.Extension.MapLibre` → `Kuestenlogik.Bowire.Map`** — the v1.3.0-rc.1 of the MapLibre extension will be deprecated + unlisted on nuget.org after 2.0 ships (tracked in #197); consumers should swap the package reference (`<PackageReference Include="Kuestenlogik.Bowire.Map" />`).
+- **OpenTelemetry extracted from core into `Kuestenlogik.Bowire.Telemetry`** — embedded ASP.NET hosts that don't want self-observability no longer pull the OTel transitive weight. The standalone `bowire` CLI keeps `--telemetry` working out of the box because the executable transitively references the package.
+- Core `Kuestenlogik.Bowire` now ships with **zero `PackageReference` entries** — only the `Microsoft.AspNetCore.App` framework reference. Embedded hosts add optional packages explicitly (`.Ai`, `.Help`, `.Telemetry`, `.Map`, future `Workspace.Git`) when they want the surface.
+
+Naming convention going forward — optional first-party packages = `Kuestenlogik.Bowire.<feature>` (e.g. `.Ai`, `.Help`, `.Telemetry`, `.Map`) or `Kuestenlogik.Bowire.<area>.<backend>` (e.g. the planned `Workspace.Git`). The legacy `.Extension.*` prefix isn't used for new packages.
+
+Beyond the package work, v2.0 also brings the workbench shell rewrite (#115), the Cmd/Cmd+K omnibox across protocols (#124 / #162), the workspace-as-project-folder rework with `bowire workspace init` (#147–#149, #151), per-entity layout + secret separation, the action log with Ctrl+Z (#168), the hint dismiss pattern (#169), the Workspaces tree (#192), and per-plugin DisplayName in Settings (#167).
+
+---
 ## v1.9.0 — 2026-06-08 — AI for security
 
 ### Highlights — Tier 4 of the security roadmap lands
@@ -100,6 +88,275 @@ The 94 commits since v1.8.0 carry a lot more than the marquee. Highlights of the
 - AI tool calling (#108 / #109): the chat side panel sends the workbench context with every request automatically. The `bowire_invoke` write-side tool is gated on the new drawer toggle ("Allow AI to invoke methods") — off by default; flip per session to let the AI dispatch real calls.
 
 ---
+## v1.8.0 — 2026-06-06 — AI workbench
+
+## Highlights
+
+**AI side-panel (#25 — Phase 1 + Phase 2)**
+The workbench learned to think. Phase 1 ships a deterministic hint engine that runs entirely without an LLM — fifteen rules that read live workbench state (selected method, last response, recordings, protocol, mock count) and surface contextual hints in a new side-panel slot. Phase 2 ships the optional [`Kuestenlogik.Bowire.Ai`](https://www.nuget.org/packages/Kuestenlogik.Bowire.Ai) NuGet: a `Microsoft.Extensions.AI` `IChatClient` seam backed by OllamaSharp, auto-detect for Ollama on `127.0.0.1:11434` + LM Studio on `:1234`, three endpoints (`GET /api/ai/probe-local`, `GET /api/ai/status`, `POST /api/ai/chat`), and CLI flags `--ai-provider` / `--ai-endpoint` / `--ai-model`. The standalone `bowire` CLI bundles the package; embedded hosts opt in by adding it. **AI Settings UI (#63)** lands the in-workbench picker for provider / endpoint / model — switching providers no longer needs a restart, persistence rides on `IBowireUserStore`, and embedded hosts that supply their own `IChatClient` win cleanly with a "host-managed" status badge. **Findings triage (#61)** adds a `?` button next to every Vulnerable row in the fuzz panel that asks the model "is this real, and how do I fix it?" — colour-coded confidence score, suggested fix, in-memory cache. Outbound calls stay opt-in (probe only touches loopback, chat only goes where you point it).
+
+**Workbench mocks (#56 + #57)**
+Mocks finally have a UI. The new `MockRegistry` + `/api/mocks` surface lets the workbench start mocks from any recording with one click, list them in the sidebar, and stop them without dropping to a terminal. **#57** adds a per-mock request log: every inbound call lands in a bounded ring buffer that the workbench tails live, so you can see exactly which step matched which incoming request and which ones missed. Backed by an `IMockRequestObserver` SPI so external observers (metrics emitters, tracers) can plug in.
+
+**Auth seam (#28 Phase A + #28 Phase B + #31 + #32)**
+The first real multi-user foundation. **#31** adds the `IBowireAuthProvider` SPI so plugins can wire authentication schemes + a default authorization policy, and adds a `Configure(IApplicationBuilder)` hook + the `UseBowireAuth()` middleware so providers can mount callback paths / claims-transformation. **#32** ships the OIDC plugin's required-claim filter and session-token forwarding for downstream service calls. **#28 Phase A + B** introduce the `IBowireUserStore` seam and migrate every per-user store onto it (`EnvironmentStore`, `RecordingStore`, `CollectionStore`, `FlowStore`, `PluginManager`, `PluginUpdateCheckService`, schema-hints, the new AI config file) — single-user installs keep the legacy flat `~/.bowire/` layout, multi-tenant deployments swap in a per-identity resolver once SCIM lands.
+
+**Self-telemetry (#29 — Phase 1 + Phase 2)**
+Bowire can now observe itself. Phase 1 ships the `BowireTelemetry` seam — a canonical `ActivitySource` + `Meter` on `Kuestenlogik.Bowire` with pre-declared instruments (`bowire.invoke.count`, `bowire.invoke.duration`, `bowire.discover.count`, `bowire.plugin.load`, `bowire.mock.requests`) — plus an opt-in `AddBowireTelemetry()` that wires OpenTelemetry against them. Phase 2 plumbs the instruments through the discovery loop (per-protocol probe counts + outcomes), the plugin scan (loaded vs disabled), and the mock pipeline (per-request counter with method / outcome / status tags). Operators opt in via `--telemetry` / `Bowire:Telemetry:Enabled=true`; OTLP endpoint / headers come from standard `OTEL_EXPORTER_OTLP_*` env vars. **Bowire.Samples** ships a Grafana 11 dashboard (`Bowire.Samples/dashboards/bowire-overview.json`) that reads non-zero panels from day one.
+
+**Collections (#30)**
+Postman-style named groups of saved requests, sequenced against the active environment. Backend persistence routes through the new `CollectionStore` (single-user installs land at `~/.bowire/collections.json`, multi-tenant routes per identity via `IBowireUserStore`), and the new flow-to-collection export turns any saved flow into a runnable test suite.
+
+**Plugin lifecycle in the workbench (#27)**
+The plugins panel got an Inspect button + modal so you can see version, metadata, and recent activity for any installed plugin from the workbench instead of running `bowire plugin list` in a terminal. Pre-release support flows through the daily update check + the install path.
+
+**Multi-repo release cascade**
+The release pipeline now discovers sibling repos dynamically by querying the Kuestenlogik org for repos carrying the `bowire-cascade` GitHub topic — adding a new sibling to the cascade is now opt-in via that repo's own Settings → Topics, no PR against the main release workflow required. Cascade templates live in `.github/sibling-templates/`. Auto-PR + auto-merge use the org's rebase-only convention.
+
+---
+
+## Maintenance
+
+- New `post-release-floor-bump.yml` workflow auto-bumps `Directory.Build.props` to `<just-released>-dev` after every successful release, opens a PR, no hand edit required.
+- Coverlet runsettings extended with `GeneratedRegex` on `ExcludeByAttribute` so the source-generator-emitted Regex partials no longer drag the line-coverage denominator.
+- 1209 new unit + integration tests added across the v1.8 cycle: solution-wide line coverage at 92.7 %, branch 79.2 %, method 95.4 % (up from 90.9 / 78.1 / 93.2 at v1.7.0). Notable jumps: CollectionStore, MockRequestLog, MockRegistry, EnvironmentStore, AsyncApi binding resolvers, BowireAiRuntime — all now ≥ 95 % line.
+- CodeQL `cs/log-forging` alert closed (#40) — defensive CR/LF scrub before logging mock IDs / recording display names.
+- Marketing site (bowire.io): sharper headings across 5 solution pages, fixed an invisible `<code>` in the dev-loop-debugging hero, fixed the protocol-search input stacking the tag prefix, refreshed stale "planned" marks on the MCP comparison.
+- Roadmap-sync workflow consolidated onto `BOWIRE_DISPATCH_TOKEN`.
+
+---
+
+**Full Changelog**: https://github.com/Kuestenlogik/Bowire/compare/v1.7.0...v1.8.0
+
+---
+## v1.7.0 — 2026-06-03 — new protocol plugins
+
+## Highlights
+
+**Four new protocol plugins**
+- [`Kuestenlogik.Bowire.Protocol.Nats`](https://www.nuget.org/packages/Kuestenlogik.Bowire.Protocol.Nats) — pub/sub + req/reply (Phase 1) + JetStream + Services API (Phase 2). Sits on the official NATS.Net 2.x client.
+- [`Kuestenlogik.Bowire.Protocol.JsonRpc`](https://www.nuget.org/packages/Kuestenlogik.Bowire.Protocol.JsonRpc) — JSON-RPC 2.0 over HTTP and WebSocket.
+- [`Kuestenlogik.Bowire.Protocol.Pulsar`](https://www.nuget.org/packages/Kuestenlogik.Bowire.Protocol.Pulsar) — Apache Pulsar producer / consumer / reader.
+- [`Kuestenlogik.Bowire.Protocol.Soap`](https://www.nuget.org/packages/Kuestenlogik.Bowire.Protocol.Soap) — WSDL discovery + envelope construction.
+
+**gRPC: Connect Phase 2**
+Server-streaming over `application/connect+proto` is in. Connect-Web clients now talk to a Connect-mode Bowire workbench for streaming methods, not just unary.
+
+**Mock-as-stand-in**
+Recordings now carry the source schema verbatim. `bowire mock --recording <file>` re-emits `/openapi.json` (REST) and `/asyncapi.yaml` (messaging) so peer Bowires pointed at the mock discover the *full* original contract, not just the replayed slice. `bowire export ... --recording <file>` annotates each operation with `x-bowire-coverage: { recorded, stepCount }` so consumers see the replay gap explicitly.
+
+**`bowire export` CLI**
+New `openapi` / `asyncapi` subcommands that materialise the discovered contract as a YAML / JSON file on disk — useful for diff-against-prod and contract-test pipelines, especially for messaging protocols where hosts don't render an `/asyncapi.yaml` themselves.
+
+**AsyncAPI**
+`AsyncApiDocumentBuilder` emits AsyncAPI 3.0 from any discovery result. `NatsBindingResolver` dispatches `bindings.nats` operations to the NATS wire plugin.
+
+**Tool I/O refactor (Phases 1-3 complete)**
+Every CLI command path now flows through the `BowireCliIo` type instead of direct `Console.Out` writes. Output is structured, testable, and pipe-friendly — `bowire scan --json | jq` works the way you'd expect on every subcommand.
+
+**Bootcamp launched on bowire.io**
+The [Bowire Bootcamp](https://bowire.io/bootcamp/) — six units plus a capstone — is wired into bowire.io. Two parallel setup tracks (CLI / Embedded), then shared lessons on recording / mocking / MCP / plugin authoring / CI. The capstone weaves the lot into a single end-to-end Harbor-Tour scenario.
+
+---
+
+## Maintenance
+
+## What's Changed
+* chore(deps): Bump the xunit group with 1 update by @dependabot[bot] in https://github.com/Kuestenlogik/Bowire/pull/20
+* chore(deps): Bump the maplibre group with 2 updates by @dependabot[bot] in https://github.com/Kuestenlogik/Bowire/pull/21
+* chore(deps): Bump NATS.Net from 2.8.0 to 2.8.1 by @dependabot[bot] in https://github.com/Kuestenlogik/Bowire/pull/24
+* chore(deps): Bump Microsoft.Identity.Web from 3.13.1 to 4.10.0 by @dependabot[bot] in https://github.com/Kuestenlogik/Bowire/pull/23
+* chore(deps): Bump DotPulsar from 3.5.0 to 5.3.1 by @dependabot[bot] in https://github.com/Kuestenlogik/Bowire/pull/22
+
+
+**Full Changelog**: https://github.com/Kuestenlogik/Bowire/compare/v1.6.1...v1.7.0
+
+---
+## v1.6.1 — 2026-05-25 — OIDC auth + MCP resources/prompts
+
+## Highlights
+
+- **OIDC auth plugin.** New `IBowireAuthProvider` SPI plus an OIDC provider implementation (roadmap "Up next #1").
+- **MCP resources + prompts.** Both halves of the MCP adapter now expose resources and prompts, with `BowireMcpResources` and `BowireMcpPrompts` implementations and matching coverage.
+- **Opt-in update check.** Background plugin-update check with a sidebar badge — disabled by default, opt-in only.
+- **Docs refresh.** New "Updating Bowire and its plugins" setup page; docs aligned with the v1.5/1.6 CLI split, mock-emit, and lifecycle UI; PDF cover-page polish.
+
+## Notes
+
+The plugin-update check is opt-in: outbound network calls remain off until you flip the setting on. Auth-provider plugins implement the new `IBowireAuthProvider` SPI; the bundled OIDC provider is the reference implementation.
+
+**Full Changelog**: https://github.com/Kuestenlogik/Bowire/compare/v1.6.0...v1.6.1
+
+---
+## v1.6.0 — 2026-05-25 — plugin lifecycle in the workbench
+
+## Highlights
+
+- **Plugin lifecycle in the workbench.** New manage panel lists bundled and external plugins, with REST endpoints for update / uninstall / latest-version checks. Bundled plugins are shown with their lifecycle disabled.
+- **`--prerelease` on plugin install/update.** Opt into RC plugin versions explicitly from the CLI.
+- **Plugin compatibility matrix.** New docs page lists every shipped first-party plugin's tested Bowire range plus a SemVer contract for plugin authors.
+- **Security fix.** Closed `cs/command-line-injection` (#39) in the plugin REST endpoints.
+- **Downloads page consistency.** All tiles use a uniform three-line layout (title, identifier, description); NuGet tiles collapsed to two lines; AMQP mark redrawn.
+
+## Notes
+
+If you author a Bowire plugin, please review the new compatibility matrix and the SemVer contract — first-party plugins now publish a tested Bowire-version range, and lifecycle endpoints assume that contract.
+
+**Full Changelog**: https://github.com/Kuestenlogik/Bowire/compare/v1.5.1...v1.6.0
+
+---
+## v1.5.1 — 2026-05-24 — restores bowire scan CLI discovery in Release builds
+
+## v1.5.1
+
+_See the auto-generated change list below._
+
+---
+
+_The full commit list, contributors, and compare-URL diff are auto-generated below._
+
+
+
+## What's Changed
+* chore(deps): Bump the grpc group with 1 update by @dependabot[bot] in https://github.com/Kuestenlogik/Bowire/pull/16
+* chore(deps): Bump the xunit group with 1 update by @dependabot[bot] in https://github.com/Kuestenlogik/Bowire/pull/17
+* chore(deps): Bump SocketIOClient from 4.0.3 to 4.0.4 by @dependabot[bot] in https://github.com/Kuestenlogik/Bowire/pull/18
+* chore(deps): Bump YamlDotNet from 16.3.0 to 18.0.0 by @dependabot[bot] in https://github.com/Kuestenlogik/Bowire/pull/19
+* chore(actions): bump dependabot/fetch-metadata from 2 to 3 by @dependabot[bot] in https://github.com/Kuestenlogik/Bowire/pull/12
+* chore(actions): bump docker/login-action from 3 to 4 by @dependabot[bot] in https://github.com/Kuestenlogik/Bowire/pull/14
+* chore(actions): bump actions/upload-pages-artifact from 4 to 5 by @dependabot[bot] in https://github.com/Kuestenlogik/Bowire/pull/15
+* chore(actions): bump codecov/codecov-action from 5 to 6 by @dependabot[bot] in https://github.com/Kuestenlogik/Bowire/pull/13
+* chore(actions): bump actions/setup-node from 5 to 6 by @dependabot[bot] in https://github.com/Kuestenlogik/Bowire/pull/11
+
+
+**Full Changelog**: https://github.com/Kuestenlogik/Bowire/compare/v1.5.0...v1.5.1
+
+---
+## v1.5.0 — 2026-05-20 — AsyncAPI discovery source + Nuclei template runner
+
+## Highlights
+
+- **AsyncAPI discovery.** Maps AsyncAPI 2.x and 3.x documents, with binding-detail extraction (QoS, retain, channel publish/subscribe routing), per-message overloads for V3, MQTT binding resolver, and a YAML pre-normaliser for unquoted enum scalars. Reads HTTP-served docs as raw bytes with explicit UTF-8 decoding.
+- **`bowire scan --nuclei`.** Nuclei template runner — variable substitution, matcher → AttackPredicate translation, multi-path / payload matrices, end-to-end `--nuclei <dir>` flag. `--corpus` renamed to `--templates`.
+- **Security scanner extracted.** `bowire scan` lives in its own project; CLI commands are now discovered via the `IBowireCliCommand` plugin SPI.
+- **Launch UX overhaul.** Marketing-site quickstart split into role-axis (workflow) vs topology-axis (vessel), protocol-hint dropdown, MCP add-on toggle, container card refactor, photographed boat cards, and an in-tree masters set under `images/launch/`.
+- **2026 visual refresh.** Token pass + glass topbar + sidebar polish across the workbench UI.
+
+## Notes
+
+`--corpus` has been renamed to `--templates` on `bowire scan` — update any existing scripts. The security scanner is now its own assembly and CLI commands are loaded through the new `IBowireCliCommand` SPI, so third-party CLI extensions are possible.
+
+**Full Changelog**: https://github.com/Kuestenlogik/Bowire/compare/v1.4.4...v1.5.0
+
+---
+## v1.4.4 — 2026-05-17 — bowire scan exits 0 on findings, fail only on tool error
+
+## v1.4.4
+
+_See the auto-generated change list below._
+
+---
+
+_The full commit list, contributors, and compare-URL diff are auto-generated below._
+
+
+
+## What's Changed
+* chore(actions): Bump github/codeql-action from 3 to 4 by @dependabot[bot] in https://github.com/Kuestenlogik/Bowire/pull/6
+* chore(actions): Bump actions/setup-dotnet from 4 to 5 by @dependabot[bot] in https://github.com/Kuestenlogik/Bowire/pull/3
+* chore(actions): Bump actions/upload-artifact from 4 to 7 by @dependabot[bot] in https://github.com/Kuestenlogik/Bowire/pull/2
+
+
+**Full Changelog**: https://github.com/Kuestenlogik/Bowire/compare/v1.4.3...v1.4.4
+
+---
+## v1.4.3 — 2026-05-17 — SARIF physicalLocation fix for Code Scanning upload
+
+## Highlights
+
+- **Scan SARIF physical location.** `bowire scan` SARIF output now includes a physical location alongside the logical one, so GitHub code scanning and other SARIF consumers attach findings to a file.
+
+**Full Changelog**: https://github.com/Kuestenlogik/Bowire/compare/v1.4.2...v1.4.3
+
+---
+## v1.4.2 — 2026-05-17 — DAST-shaped SARIF + bundled NuGet ZIP asset
+
+## v1.4.2
+
+_See the auto-generated change list below._
+
+---
+
+_The full commit list, contributors, and compare-URL diff are auto-generated below._
+
+
+
+## What's Changed
+* chore(deps): Bump Microsoft.SourceLink.GitHub from 10.0.203 to 10.0.300 by @dependabot[bot] in https://github.com/Kuestenlogik/Bowire/pull/8
+* chore(deps): Bump NuGet.Protocol from 7.3.1 to 7.6.0 by @dependabot[bot] in https://github.com/Kuestenlogik/Bowire/pull/9
+* chore(deps): Bump System.CommandLine from 2.0.7 to 2.0.8 by @dependabot[bot] in https://github.com/Kuestenlogik/Bowire/pull/10
+
+
+**Full Changelog**: https://github.com/Kuestenlogik/Bowire/compare/v1.4.1...v1.4.2
+
+---
+## v1.4.1 — 2026-05-17 — SARIF security-severity as numeric string
+
+## v1.4.1
+
+_See the auto-generated change list below._
+
+---
+
+_The full commit list, contributors, and compare-URL diff are auto-generated below._
+
+
+
+## What's Changed
+* chore(npm): bump @playwright/test from 1.59.1 to 1.60.0 by @dependabot[bot] in https://github.com/Kuestenlogik/Bowire/pull/5
+* chore(actions): bump actions/download-artifact from 4 to 8 by @dependabot[bot] in https://github.com/Kuestenlogik/Bowire/pull/1
+* chore(actions): bump softprops/action-gh-release from 2 to 3 by @dependabot[bot] in https://github.com/Kuestenlogik/Bowire/pull/4
+* chore(deps): Bump the aspnetcore group with 3 updates by @dependabot[bot] in https://github.com/Kuestenlogik/Bowire/pull/7
+
+
+**Full Changelog**: https://github.com/Kuestenlogik/Bowire/compare/v1.4.0...v1.4.1
+
+---
+## v1.4.0 — 2026-05-17 — security-testing Tier 1–3 + flow-editor enhancements
+
+## Highlights
+
+Promotes v1.4.0-rc.1 to stable with no further changes.
+
+- **Security testing tiers 1-3.** Recording-as-attack-replay + `bowire scan`, schema-aware fuzzing, plain-HTTP and HTTPS-MITM proxy with captured-flow store and workbench Proxy tab.
+- **Flow editor.** Recording → Flow conversion, schema-aware Service/Method picker, Variable-Watch panel + `${var}` autocomplete, Foreach loops, inline assertions on Request nodes.
+- **Map widget.** MIL-2525C tactical symbols from frame SIDC, ESRI satellite basemap option, maximize button, allowlisted offline basemaps, configurable default basemap via `Bowire:MapBasemap`.
+- **Plugin loader hardening.** AssemblyDependencyResolver + pre-load contract check + structured PluginLoadResult, surfaced via `/api/plugins/health` and the Settings → Plugins tab.
+- **UI + marketing refresh.** 2026 visual token pass with glass topbar + sidebar polish, deployment-modes section with animated vessel cards, license corrected to Apache 2.0.
+
+**Full Changelog**: https://github.com/Kuestenlogik/Bowire/compare/v1.4.0-rc.1...v1.4.0
+
+---
+## v1.4.0-rc.1 — 2026-05-17 — preview of security-testing Tier 1–3
+
+## Highlights
+
+Preview of v1.4.0's security-testing tiers, flow editor, and map-widget upgrades.
+
+- **Security testing tiers 1-3.** Recording-as-attack-replay + `bowire scan` subcommand (Tier 1), schema-aware + scope-aware fuzzing with workbench right-click integration (Tier 2), plain-HTTP and HTTPS-MITM proxy with on-the-fly leaf-cert minting, captured-flow store, and workbench Proxy tab (Tier 3). Plus a JWT toolkit, built-in passive TLS/banner/verbose-error checks, and a reusable GitHub Action.
+- **Flow editor.** Recording → Flow conversion, schema-aware Service/Method picker, Variable-Watch panel + `${var}` autocomplete, Foreach loops, inline assertions on Request nodes.
+- **Map widget upgrades.** MIL-2525C tactical symbols from frame SIDC, ESRI satellite basemap option, maximize button, allowlisted offline basemaps, configurable default basemap via `Bowire:MapBasemap`, mounting on unary responses too.
+- **Plugin loader hardening.** AssemblyDependencyResolver + pre-load contract check + structured PluginLoadResult, surfaced via `/api/plugins/health` and the Settings → Plugins tab; fixed dual-loading of `Kuestenlogik.Bowire` into the plugin ALC.
+- **UI + marketing refresh.** 2026 visual token pass with glass topbar + sidebar polish, animated deployment-modes section, license corrected to Apache 2.0 in five places, separated Solutions / Workflows / Features axes.
+
+## Notes
+
+Tier-3 HTTPS MITM mints leaf certs on the fly against a Bowire-owned CA — install it deliberately into the trust store you want to intercept. Captured proxy flows live in a workbench-managed store with explicit handoff into the recording pipeline.
+
+**Full Changelog**: https://github.com/Kuestenlogik/Bowire/compare/v1.3.0...v1.4.0-rc.1
+
+---
+## v1.3.0 — 2026-05-12 — Frame-semantics framework (content-driven viewers)
 
 ## 1.3.0 — 2026-05-12
 
@@ -244,6 +501,32 @@ suites couldn't have caught — all fixed before the release tag:
 
 ---
 
+_The full commit list, contributors, and compare-URL diff are auto-generated below._
+
+
+
+**Full Changelog**: https://github.com/Kuestenlogik/Bowire/compare/v1.2.0...v1.3.0
+
+---
+## v1.3.0-rc.1 — 2026-05-12 — preview of the frame-semantics framework
+
+## Highlights
+
+Preview of v1.3.0's frame-semantics framework, MapLibre extension, and recording determinism.
+
+- **Frame-semantics framework.** Phase 1 data model + storage + resolver, Phase 2 built-in detectors + frame prober, Phase 3 MapLibre map viewer + split-pane layout, Phase 4 manual override UI + companion-field suggestion, Phase 5 recording interpretations + replay determinism.
+- **MapLibre extension package.** Map widget extracted into its own NuGet package, with offline-mode glyph/sprite egress locked down.
+- **Workbench polish.** Fixed streaming-toolbar wrap, placeholder cards without registered extensions, mid-streaming badges on the stream-detail tree, WGS84 detector accepting "lon" as a longitude alias.
+
+## Notes
+
+The MapLibre map widget now ships as a separate NuGet package and is loaded as an extension. Recording replay is now deterministic across the resolved frame-semantics interpretations.
+
+**Full Changelog**: https://github.com/Kuestenlogik/Bowire/compare/v1.2.0...v1.3.0-rc.1
+
+---
+## v1.2.0 — 2026-05-11 — gRPC-Web transport in the gRPC plugin
+
 ## 1.2.0 — 2026-05-11
 
 ### Highlights
@@ -303,6 +586,28 @@ suites couldn't have caught — all fixed before the release tag:
   added that demonstrates the new transport.
 
 ---
+
+_The full commit list, contributors, and compare-URL diff are auto-generated below._
+
+
+
+**Full Changelog**: https://github.com/Kuestenlogik/Bowire/compare/v1.1.0...v1.2.0
+
+---
+## v1.2.0-rc.1 — 2026-05-11 — preview of gRPC-Web transport
+
+## Highlights
+
+Preview of v1.2.0's gRPC-Web transport + TacticalAPI plugin.
+
+- **gRPC-Web transport.** Opt-in alongside the native HTTP/2 path on `Protocol.Grpc`, with serialised integration tests against Kestrel.
+- **TacticalAPI plugin (preview).** New sibling plugin entry surfaced in docs and on the marketing site.
+- **Brand OG card.** Refreshed social-card banner with the real Bowire mark and Surgewave instead of Storm.
+
+**Full Changelog**: https://github.com/Kuestenlogik/Bowire/compare/v1.1.0...v1.2.0-rc.1
+
+---
+## v1.1.0 — 2026-05-11 — workbench mounts at / (breaking)
 
 ## 1.1.0 — 2026-05-11
 
@@ -378,6 +683,47 @@ it has no host app sharing the route table.
 
 ---
 
+_The full commit list, contributors, and compare-URL diff are auto-generated below._
+
+
+
+**Full Changelog**: https://github.com/Kuestenlogik/Bowire/compare/v1.0.12...v1.1.0
+
+---
+## v1.1.0-rc.4 — 2026-05-11 — preview of workbench-at-root
+
+## Highlights
+
+Preview of v1.1.0's RC-publishing pipeline.
+
+- **RC packages on nuget.org.** RC tags now also publish to nuget.org alongside GitHub Packages.
+- **RC packages on GitHub Packages.** Push RC nupkgs into the GitHub Packages feed.
+- **DocFX xref links.** Use `xref:` links so DocFX resolves namespace pages cleanly.
+
+**Full Changelog**: https://github.com/Kuestenlogik/Bowire/compare/v1.1.0-rc.3...v1.1.0-rc.4
+
+---
+## v1.1.0-rc.3 — 2026-05-11 — preview of workbench-at-root
+
+## Highlights
+
+Preview of v1.1.0's Storm-to-Surgewave rebrand, HAR import, and large coverage push.
+
+- **Storm to Surgewave rebrand.** Renamed the in-tree Storm plugin, brand assets, and docs to Surgewave across the main repo, marketing site, and packaging.
+- **Standalone workbench at "/".** Standalone mode now mounts the UI at the root path; the old "/bowire" prefix is gone.
+- **HAR 1.2 import.** New `bowire import har` CLI command maps HAR captures into `.bwr` recordings.
+- **Coverage push across the stack.** Tool, Mcp, REST, GraphQL, gRPC, MQTT, Socket.IO, Mock, and SignalR channel coverage raised — most plugins now land between 90% and 100%.
+- **Marketing + docs polish.** New Why-Bowire deep dive, About-name section with pronunciation, contact form via web3forms, refreshed UI screenshots, footer + outline + hero tweaks.
+
+## Notes
+
+This RC begins the Storm → Surgewave rename. Existing `KL.Storm` package and asset references continue to work, but new builds reference `Kuestenlogik.Surgewave`.
+
+**Full Changelog**: https://github.com/Kuestenlogik/Bowire/compare/v1.0.12...v1.1.0-rc.3
+
+---
+## v1.0.12 — 2026-05-06 — custom domain bowire.io + tag-driven release pipeline
+
 ## 1.0.12 — 2026-05-06
 
 ### Highlights
@@ -400,7 +746,7 @@ it has no host app sharing the route table.
   reference apps from `Kuestenlogik.Bowire.Samples` — one per protocol plus
   the Combined showcase that runs five protocols against the same
   `HarborStore`.
-- **Marketing-site polish.** Real Surgewave / Apache Kafka marks on the
+- **Marketing-site polish.** Real Storm / Apache Kafka marks on the
   downloads page, Akka.NET card added, native-installer links wired up to
   `releases/latest/download/`, copy-button layout fixed for long package
   names without widening the cards.
@@ -430,21 +776,126 @@ along the way:
 
 ---
 
-## 1.0.11 — 2026-05-05
+_The full commit list, contributors, and compare-URL diff are auto-generated below._
 
-Socket.IO namespace selection (`X-Bowire-SocketIo-Namespace` header), plus
-the rolling site/screenshot refresh from the 1.0.10 method-detail header
-layout fix.
 
----
 
-## 1.0.10 — 2026-05-05
-
-Method-detail header layout fix in the workbench UI.
+**Full Changelog**: https://github.com/Kuestenlogik/Bowire/compare/v1.0.11...v1.0.12
 
 ---
+## v1.0.12-rc.3 — 2026-05-06 — preview of the bowire.io + release-pipeline cut
 
-## Older releases
+## Highlights
 
-For 1.0.9 and earlier, see the auto-generated entries on
-<https://github.com/Kuestenlogik/Bowire/releases>.
+Preview of v1.0.12's release-pipeline overhaul and downloads-page polish.
+
+- **Release pipeline rebuild.** Split into linux + windows-msi + release jobs, pinned WiX to v5, dynamic nfpm resolution, multi-RID pre-restore before container publish.
+- **Winget + container publishing.** Auto-PR gated on stable tags only, container docs updated for GHCR + Docker Hub.
+- **Downloads page polish.** Proper Storm/UDP/DIS marks, Akka card, wired native installers, full Kafka SVG, layout fixes.
+- **bowire.io domain.** Marketing site switched to the bowire.io custom domain.
+
+**Full Changelog**: https://github.com/Kuestenlogik/Bowire/compare/v1.0.11...v1.0.12-rc.3
+
+---
+## v1.0.11 — 2026-05-05 — Socket.IO namespace selection
+
+## Highlights
+
+- **Socket.IO namespace selection.** Workbench can now target a specific Socket.IO namespace instead of the default one.
+- **Refreshed marketing screenshots.** Batch-refreshed both the protocol cards and the sibling-plugin cards against the new v1.0.10 layout.
+
+**Full Changelog**: https://github.com/Kuestenlogik/Bowire/compare/v1.0.10...v1.0.11
+
+---
+## v1.0.10 — 2026-05-04 — method-detail header layout fix
+
+## Highlights
+
+- **Method-detail header layout fix.** Restores a clean header on the method-detail pane after recent UI changes broke the layout.
+
+**Full Changelog**: https://github.com/Kuestenlogik/Bowire/compare/v1.0.9...v1.0.10
+
+---
+## v1.0.9 — 2026-05-04 — gRPC client factory + cert-trust unification
+
+## Highlights
+
+- **gRPC HttpClient factory.** Routes gRPC through the shared HttpClient factory so dev-cert trust is consistent with the other HTTP-based plugins.
+- **Socket.IO payload extraction.** Pulls the event payload out of the v4 envelope for readable streaming output (promoted from rc.2).
+- **Shared HttpClient factory.** REST, GraphQL, and streaming plugins all share dev-cert handling (promoted from rc.1).
+
+**Full Changelog**: https://github.com/Kuestenlogik/Bowire/compare/v1.0.8...v1.0.9
+
+---
+## v1.0.9-rc.2 — 2026-05-04 — preview of Socket.IO payload extraction
+
+## Highlights
+
+Preview of v1.0.9's Socket.IO improvements.
+
+- **Socket.IO payload extraction.** Pulls the event payload out of the v4 envelope so the stream pane shows the actual message.
+- **Dedicated Socket.IO screenshot.** Marketing-site protocol card now shows a Socket.IO capture instead of a generic shot.
+
+**Full Changelog**: https://github.com/Kuestenlogik/Bowire/compare/v1.0.9-rc.1...v1.0.9-rc.2
+
+---
+## v1.0.9-rc.1 — 2026-05-04 — preview of shared HttpClient factory
+
+## Highlights
+
+Preview of v1.0.9's HTTP plumbing work.
+
+- **Shared HttpClient factory.** Centralises dev-cert trust handling across the REST, GraphQL, and streaming plugins.
+
+**Full Changelog**: https://github.com/Kuestenlogik/Bowire/compare/v1.0.8...v1.0.9-rc.1
+
+---
+## v1.0.8 — 2026-05-04 — readable JSON in stream pane
+
+## Highlights
+
+- **Readable JSON in the stream pane.** Streaming payloads now render pretty-printed instead of as a single-line blob.
+
+**Full Changelog**: https://github.com/Kuestenlogik/Bowire/compare/v1.0.7...v1.0.8
+
+---
+## v1.0.7 — 2026-05-04 — GraphQL/SSE streaming fixes + protocol screenshots
+
+## Highlights
+
+- **GraphQL/SSE streaming fixes.** Stabilised GraphQL subscription and Server-Sent Events handling in the workbench.
+- **Protocol screenshots.** Refreshed the protocol-card screenshots used across the marketing site.
+
+**Full Changelog**: https://github.com/Kuestenlogik/Bowire/compare/v1.0.6...v1.0.7
+
+---
+## v1.0.6 — 2026-05-04 — plugin hint URLs + --disable-plugin flag
+
+**Full Changelog**: https://github.com/Kuestenlogik/Bowire/compare/v1.0.5...v1.0.6
+
+---
+## v1.0.5 — 2026-05-04 — SignalR no-arg streaming + hub-URL resolution fix
+
+**Full Changelog**: https://github.com/Kuestenlogik/Bowire/compare/v1.0.4...v1.0.5
+
+---
+## v1.0.3 — 2026-05-04 — global localhost-cert trust + WebSocket plugin
+
+**Full Changelog**: https://github.com/Kuestenlogik/Bowire/compare/v1.0.2...v1.0.3
+
+---
+## v1.0.2 — 2026-05-04 — mobile-site polish + protocol-card screenshots
+
+**Full Changelog**: https://github.com/Kuestenlogik/Bowire/compare/v1.0.1...v1.0.2
+
+---
+## v1.0.1 — 2026-05-04 — discovery short-circuit on first run + UDP/Akka cards
+
+**Full Changelog**: https://github.com/Kuestenlogik/Bowire/compare/v1.0.0...v1.0.1
+
+---
+## v1.0.0 — 2026-05-03 — initial public release
+
+**Full Changelog**: https://github.com/Kuestenlogik/Bowire/commits/v1.0.0
+
+---
