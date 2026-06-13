@@ -15,8 +15,12 @@
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Microsoft.OpenApi" />
-    <PackageReference Include="Microsoft.OpenApi.YamlReader" />
+    <!-- Microsoft.OpenApi extracted into per-version adapter packages
+         (Kuestenlogik.Bowire.Protocol.Rest.OpenApi2 vs .OpenApi3) so
+         embedded ASP.NET hosts can pin the version that matches their
+         own AddOpenApi() pipeline. Bowire.Protocol.Rest itself goes
+         through IBowireOpenApiAdapter at runtime — see
+         BowireOpenApiAdapterRegistry. -->
     <!-- YAML serialisation for the OpenAPI exporter + the mock-host
          JSON↔YAML format converter behind /openapi.{json,yaml}. Same
          dependency the AsyncApi project already ships. -->

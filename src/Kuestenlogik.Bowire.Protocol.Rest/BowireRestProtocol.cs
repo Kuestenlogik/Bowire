@@ -95,15 +95,17 @@ public sealed class BowireRestProtocol : IBowireProtocol, IInlineHttpInvoker
     {
         var docs = OpenApiUploadStore.GetAll();
         if (docs.Count == 0) return [];
+        var adapter = BowireOpenApiAdapterRegistry.TryGet();
+        if (adapter is null) return [];
 
         var all = new List<BowireServiceInfo>();
         foreach (var doc in docs)
         {
-            var parsed = await OpenApiDiscovery.ParseRawAsync(doc.Content, ct).ConfigureAwait(false);
-            if (parsed?.Document is null) continue;
+            var parsed = await adapter.ParseAndDiscoverAsync(doc.Content, doc.SourceName, ct).ConfigureAwait(false);
+            if (parsed is null) continue;
 
-            var apiBaseUrl = OpenApiDiscovery.GetFirstServerUrl(parsed.Document) ?? string.Empty;
-            var services = OpenApiDiscovery.BuildServices(parsed.Document);
+            var apiBaseUrl = parsed.ApiBaseUrl ?? string.Empty;
+            var services = parsed.Services;
             foreach (var svc in services)
             {
                 svc.OriginUrl = doc.SourceName;
@@ -142,8 +144,10 @@ public sealed class BowireRestProtocol : IBowireProtocol, IInlineHttpInvoker
     private async Task<List<BowireServiceInfo>> DiscoverInternalAsync(string docUrl, CancellationToken ct)
     {
         if (string.IsNullOrEmpty(docUrl)) return [];
+        var adapter = BowireOpenApiAdapterRegistry.TryGet();
+        if (adapter is null) return [];
 
-        var discovered = await OpenApiDiscovery.FetchAndParseAsync(docUrl, _http, ct).ConfigureAwait(false);
+        var discovered = await adapter.FetchAndDiscoverAsync(docUrl, _http, ct).ConfigureAwait(false);
         if (discovered is null)
         {
             // The URL is not an OpenAPI document — drop any cache entry and let
@@ -155,9 +159,9 @@ public sealed class BowireRestProtocol : IBowireProtocol, IInlineHttpInvoker
         // Compute the actual API base URL — preferred source is OpenAPI's
         // servers[0]. When that's missing or relative, fall back to the doc
         // URL's origin (scheme + host + port).
-        var apiBaseUrl = ResolveApiBaseUrl(docUrl, discovered.Document);
+        var apiBaseUrl = ResolveApiBaseUrl(docUrl, discovered.ApiBaseUrl);
 
-        var services = OpenApiDiscovery.BuildServices(discovered.Document);
+        var services = discovered.Services;
 
         // Tag each service with its origin doc URL so the multi-URL future
         // (and the embedded discovery path) can route invocations correctly.
@@ -184,12 +188,12 @@ public sealed class BowireRestProtocol : IBowireProtocol, IInlineHttpInvoker
     /// <summary>
     /// Determines the URL Bowire will fire HTTP requests at when invoking a
     /// REST method. Priority:
-    /// 1. <c>servers[0].url</c> from the OpenAPI document (most reliable)
+    /// 1. <c>servers[0].url</c> from the OpenAPI document (most reliable;
+    ///    pre-resolved by the adapter, passed in as <paramref name="fromSpec"/>)
     /// 2. The origin (scheme://host:port) of the document URL itself
     /// </summary>
-    private static string ResolveApiBaseUrl(string docUrl, Microsoft.OpenApi.OpenApiDocument doc)
+    private static string ResolveApiBaseUrl(string docUrl, string? fromSpec)
     {
-        var fromSpec = OpenApiDiscovery.GetFirstServerUrl(doc);
         if (!string.IsNullOrEmpty(fromSpec))
         {
             if (Uri.IsWellFormedUriString(fromSpec, UriKind.Absolute))

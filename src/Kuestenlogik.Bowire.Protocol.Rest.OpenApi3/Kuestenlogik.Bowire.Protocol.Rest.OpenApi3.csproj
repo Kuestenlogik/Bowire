@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Description>OpenAPI 3.x adapter for Bowire's REST protocol plugin. Implements IBowireOpenApiAdapter against Microsoft.OpenApi 3.x — the modern library line. Embedded ASP.NET hosts that mix Bowire's REST plugin with ASP.NET Core 10's built-in AddOpenApi() (which still pins Microsoft.OpenApi 2.x) should reference the sibling Kuestenlogik.Bowire.Protocol.Rest.OpenApi2 package instead to avoid a single-DLL collision. Standalone bowire CLI bundles this adapter so the laptop happy-path keeps working out of the box.</Description>
+    <PackageId>Kuestenlogik.Bowire.Protocol.Rest.OpenApi3</PackageId>
+    <PackageTags>bowire;openapi;openapi3;rest;swagger;developer-tools;aspnet</PackageTags>
+    <IsPackable>true</IsPackable>
+    <PackageType>BowireExtension</PackageType>
+  </PropertyGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="Kuestenlogik.Bowire.Tests" />
+    <InternalsVisibleTo Include="Kuestenlogik.Bowire.IntegrationTests" />
+  </ItemGroup>
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Kuestenlogik.Bowire\Kuestenlogik.Bowire.csproj" />
+    <ProjectReference Include="..\Kuestenlogik.Bowire.Protocol.Rest\Kuestenlogik.Bowire.Protocol.Rest.csproj" />
+    <PackageReference Include="Microsoft.OpenApi" />
+    <PackageReference Include="Microsoft.OpenApi.YamlReader" />
+  </ItemGroup>
+</Project>

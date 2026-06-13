@@ -7,7 +7,7 @@ using Kuestenlogik.Bowire.Models;
 using Microsoft.OpenApi;
 using Microsoft.OpenApi.Reader;
 
-namespace Kuestenlogik.Bowire.Protocol.Rest;
+namespace Kuestenlogik.Bowire.Protocol.Rest.OpenApi3;
 
 /// <summary>
 /// Discovers REST endpoints by fetching an OpenAPI 3 document from the user's
@@ -20,7 +20,7 @@ namespace Kuestenlogik.Bowire.Protocol.Rest;
 /// instead of strings, and example/default values are <see cref="JsonNode"/>
 /// instances rather than the v1 <c>IOpenApiAny</c> wrapper.
 /// </summary>
-internal static class OpenApiDiscovery
+public static class OpenApiDiscovery
 {
     /// <summary>
     /// Fetch the OpenAPI document from the EXACT URL the user provided.
@@ -67,7 +67,7 @@ internal static class OpenApiDiscovery
                 Content: rawText,
                 SourceUrl: docUrl));
 
-            return new DiscoveredApi(docUrl, readResult.Document, readResult.Diagnostic);
+            return new DiscoveredApi(docUrl, readResult.Document, readResult.Diagnostic, rawText);
         }
         catch
         {
@@ -91,7 +91,7 @@ internal static class OpenApiDiscovery
             var readResult = await OpenApiDocument.LoadAsync(stream, format: null, settings: null, ct).ConfigureAwait(false);
             if (readResult?.Document is null) return null;
             if (readResult.Document.Paths is null || readResult.Document.Paths.Count == 0) return null;
-            return new DiscoveredApi("uploaded", readResult.Document, readResult.Diagnostic);
+            return new DiscoveredApi("uploaded", readResult.Document, readResult.Diagnostic, content);
         }
         catch
         {
@@ -165,7 +165,13 @@ internal static class OpenApiDiscovery
     /// Used to override the discovery URL with the actual API base when the
     /// OpenAPI doc is hosted somewhere different from where the API runs.
     /// </summary>
+    // CA1055 wants Uri-typed return values for public API, but server URLs
+    // in OpenAPI documents can carry {variable} placeholders that aren't
+    // valid URIs until substituted — callers consume the string verbatim
+    // and only validate after their own resolution pass.
+#pragma warning disable CA1055
     public static string? GetFirstServerUrl(OpenApiDocument doc)
+#pragma warning restore CA1055
     {
         if (doc.Servers is null || doc.Servers.Count == 0) return null;
         var raw = doc.Servers[0].Url;
@@ -563,7 +569,8 @@ internal static class OpenApiDiscovery
 /// Output of a successful discovery — keeps the parsed document around so the
 /// REST plugin can re-walk it during invocation without re-fetching.
 /// </summary>
-internal sealed record DiscoveredApi(
+public sealed record DiscoveredApi(
     string ServerUrl,
     OpenApiDocument Document,
-    OpenApiDiagnostic? Diagnostic);
+    OpenApiDiagnostic? Diagnostic,
+    string? RawText = null);

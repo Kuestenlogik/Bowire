@@ -1,6 +1,7 @@
 // Copyright 2026 Küstenlogik
 // SPDX-License-Identifier: Apache-2.0
 
+using Kuestenlogik.Bowire.Protocol.Rest.OpenApi3;
 using Kuestenlogik.Bowire.Models;
 using Kuestenlogik.Bowire.Protocol.Rest;
 

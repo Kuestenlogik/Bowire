@@ -5,7 +5,7 @@ using System.Text;
 using System.Text.Json.Nodes;
 using Microsoft.OpenApi;
 
-namespace Kuestenlogik.Bowire.Protocol.Rest.Mock;
+namespace Kuestenlogik.Bowire.Protocol.Rest.OpenApi3;
 
 /// <summary>
 /// Phase 3d: generates a plausible JSON sample from an OpenAPI response

@@ -9,7 +9,7 @@ using YamlDotNet.Serialization.NamingConventions;
 namespace Kuestenlogik.Bowire.Protocol.Rest;
 
 /// <summary>
-/// Inverse of <see cref="Kuestenlogik.Bowire.Protocol.Rest.OpenApiDiscovery"/>:
+/// Inverse of the <see cref="IBowireOpenApiAdapter"/>'s discovery path:
 /// emit an OpenAPI 3.0 document from a Bowire discovery result. Sibling to
 /// <c>AsyncApiDocumentBuilder</c> — same pure-builder shape, no IO, no
 /// wire-plugin lookup. Lets the workbench, the CLI, or a future MCP tool
