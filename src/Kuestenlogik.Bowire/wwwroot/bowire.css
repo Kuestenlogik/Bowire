@@ -2792,16 +2792,10 @@ formerly the AI drawer). Cross-cutting
    companion panel — visible alongside any rail mode. Anchors to
    the right edge of the body so it doesn't shift main-pane focus
    left every time the operator opens chat. */
-/* #115 Drawer-Primitive — shared chrome for AI,
-Security,
-and future
-   workbench drawers. Both the new generic .bowire-drawer* classes
-   (emitted by renderDrawer in helpers.js) and the legacy
-   .bowire-ai-drawer* classes (still present as the root className
-   on the AI drawer for back-compat) map to the same rules via the
-   selector list. Future drawers should use only .bowire-drawer*. */
-.bowire-drawer,
-.bowire-ai-drawer {
+/* #115 Drawer-Primitive — shared chrome for Assistant, Help, Tests,
+   Activity, future workbench drawers. All emitted by renderDrawer in
+   helpers.js. */
+.bowire-drawer {
     width: 360px;
     min-width: 280px;
     max-width: 50vw;
@@ -2815,8 +2809,7 @@ and future
 }
 
 @media (max-width: 1400px) {
-    .bowire-drawer,
-    .bowire-ai-drawer {
+    .bowire-drawer {
         position: fixed;
         top: var(--bowire-topbar-height, 56px);
         right: 0;
@@ -2829,8 +2822,7 @@ and future
     }
 }
 
-.bowire-drawer-header,
-.bowire-ai-drawer-header {
+.bowire-drawer-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -2840,16 +2832,14 @@ and future
     flex-shrink: 0;
 }
 
-.bowire-drawer-title,
-.bowire-ai-drawer-title {
+.bowire-drawer-title {
     font-size: 12px;
     font-weight: 600;
     letter-spacing: 0.02em;
     color: var(--bowire-text);
 }
 
-.bowire-drawer-close,
-.bowire-ai-drawer-close {
+.bowire-drawer-close {
     background: transparent;
     border: none;
     cursor: pointer;
@@ -2861,20 +2851,17 @@ and future
     transition: background var(--bowire-transition), color var(--bowire-transition);
 }
 
-.bowire-drawer-close:hover,
-.bowire-ai-drawer-close:hover {
+.bowire-drawer-close:hover {
     background: var(--bowire-bg);
     color: var(--bowire-text);
 }
 
-.bowire-drawer-close svg,
-.bowire-ai-drawer-close svg {
+.bowire-drawer-close svg {
     width: 14px;
     height: 14px;
 }
 
-.bowire-drawer-content,
-.bowire-ai-drawer-content {
+.bowire-drawer-content {
     flex: 1;
     overflow: auto;
     /* Inner padding so hints, chat input, status text don't hug
@@ -2884,8 +2871,7 @@ and future
     padding: 12px 16px;
 }
 
-.bowire-drawer-empty,
-.bowire-ai-drawer-empty {
+.bowire-drawer-empty {
     padding: 20px;
     color: var(--bowire-text-tertiary);
     text-align: center;
@@ -2975,13 +2961,11 @@ distinct active-state tint so the two are visually
     color: var(--bowire-text);
     border-color: var(--bowire-text-tertiary);
 }
-/* Security drawer body — inherits .bowire-ai-drawer baseline since
-   it has identical chrome (column,
-header,
-content). Only added
-   here so future per-drawer tweaks have a hook. */
+/* Security drawer body — inherits .bowire-drawer baseline since
+   it has identical chrome (column, header, content). Only here so
+   future per-drawer tweaks have a hook. */
 .bowire-security-drawer {
-    /* All baseline styling inherited from .bowire-ai-drawer. */
+    /* All baseline styling inherited from .bowire-drawer. */
 }
 
 .bowire-ai-drawer-badge {
@@ -13485,8 +13469,7 @@ full accent for user-pinned
    status dot today; future drawers can put their own accessories
    like badge counters here). Same selector list pattern as the
    other drawer chrome rules. */
-.bowire-drawer-title-row,
-.bowire-ai-drawer-title-row {
+.bowire-drawer-title-row {
     display: inline-flex;
     align-items: center;
     gap: 8px;
@@ -13509,7 +13492,9 @@ full accent for user-pinned
     background: var(--bowire-warning);
     box-shadow: 0 0 0 2px rgba(251, 191, 36, 0.18);
 }
-.bowire-ai-empty {
+/* Generic empty-state copy for panes and the AI hint list — was
+   .bowire-ai-empty back when the class was AI-specific (#115). */
+.bowire-pane-empty {
     font-size: 13px;
     color: var(--bowire-text-secondary);
     line-height: 1.55;

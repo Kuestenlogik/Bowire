@@ -1157,7 +1157,7 @@
         var hints = evaluateHints();
         if (hints.length === 0) {
             panel.appendChild(el('p', {
-                className: 'bowire-ai-empty',
+                className: 'bowire-pane-empty',
                 textContent: 'No hints fire from the current workbench state. Pick a method, fire a request, or open a recording — the panel surfaces context-aware suggestions as you go.'
             }));
         } else if (typeof renderAlertBar === 'function') {
