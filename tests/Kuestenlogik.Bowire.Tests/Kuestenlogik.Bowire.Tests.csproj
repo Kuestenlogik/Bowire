@@ -35,7 +35,7 @@
          the OpenTelemetry SDK pipeline live here so embedded hosts
          that don't want the OTel transitive weight aren't forced to
          pull it via core. -->
-    <ProjectReference Include="..\..\src\Kuestenlogik.Bowire.Extension.Telemetry\Kuestenlogik.Bowire.Extension.Telemetry.csproj" />
+    <ProjectReference Include="..\..\src\Kuestenlogik.Bowire.Telemetry\Kuestenlogik.Bowire.Telemetry.csproj" />
     <!-- Tiny fake sidecar executable used by the sidecar plugin
          integration tests. ReferenceOutputAssembly=false because the
          tests only need its built EXE on disk (located via

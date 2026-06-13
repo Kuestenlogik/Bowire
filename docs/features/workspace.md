@@ -136,9 +136,9 @@ The runtime workbench still routes existing workspaces through the legacy `~/.bo
 
 ### Package boundary
 
-The Phase 2 runtime (per-entity reader/writer, `FileSystemWatcher`, secret-overlay merge, workspace lockfile, SSE producer) ships as a **separate optional NuGet package** — `Kuestenlogik.Bowire.Extension.GitWorkspace` — and is NOT in core `Kuestenlogik.Bowire`. This keeps embedded ASP.NET hosts free of file-IO machinery they didn't ask for: a stock `app.MapBowire(...)` call without the extension package referenced sees the legacy per-user storage path and runs no background watcher.
+The Phase 2 runtime (per-entity reader/writer, `FileSystemWatcher`, secret-overlay merge, workspace lockfile, SSE producer) ships as a **separate optional NuGet package** — `Kuestenlogik.Bowire.Workspace.Git` — and is NOT in core `Kuestenlogik.Bowire`. The `Workspace.<backend>` namespace leaves room for future storage backends (`Workspace.S3`, `Workspace.Sql`, …) under the same shape. This keeps embedded ASP.NET hosts free of file-IO machinery they didn't ask for: a stock `app.MapBowire(...)` call without the extension package referenced sees the legacy per-user storage path and runs no background watcher.
 
-Standalone `Kuestenlogik.Bowire.Tool` carries the extension transitively so `bowire` from the command line gets the full git-workspace surface out of the box. Embedded hosts opt in with an explicit package reference when they want it.
+Standalone `Kuestenlogik.Bowire.Tool` carries the package transitively so `bowire` from the command line gets the full git-workspace surface out of the box. Embedded hosts opt in with an explicit package reference when they want it.
 
 Phase 1's `BowireUserContext.GetWorkspacePath` seam ships in core because it's a pure path resolver with zero new dependencies — the extension package plugs into it via the seam without touching the host's dependency graph.
 
