@@ -1035,7 +1035,7 @@
 
     /**
      * Map from semantic-kind → suggested package id. Used to render
-     * helpful "Install Kuestenlogik.Bowire.Extension.MapLibre" messages
+     * helpful "Install Kuestenlogik.Bowire.Map" messages
      * when an annotation exists but no extension has registered against
      * the kind. Generic across kinds — the kind name is the lookup key,
      * the package id is the recommendation text.
@@ -1044,14 +1044,14 @@
         // Direct umbrella-kind hits — when an annotation explicitly
         // carries `coordinate.wgs84` (rather than the per-axis latitude
         // / longitude companions the auto-detector produces).
-        'coordinate.wgs84': 'Kuestenlogik.Bowire.Extension.MapLibre',
+        'coordinate.wgs84': 'Kuestenlogik.Bowire.Map',
         // Companion-kind hits — the auto-detector writes
         // `coordinate.latitude` + `coordinate.longitude` annotations;
         // the umbrella kind never lands in the store. Suggest the map
         // extension as soon as EITHER companion shows up so the user
         // discovers the package on day one.
-        'coordinate.latitude': 'Kuestenlogik.Bowire.Extension.MapLibre',
-        'coordinate.longitude': 'Kuestenlogik.Bowire.Extension.MapLibre'
+        'coordinate.latitude': 'Kuestenlogik.Bowire.Map',
+        'coordinate.longitude': 'Kuestenlogik.Bowire.Map'
     };
 
     /**

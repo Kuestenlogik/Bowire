@@ -61,7 +61,7 @@ public sealed class SelectionModeJsContractTests
     }
 
     // Phase 3-R — `Map_Viewer_Opts_Into_Multi_Map_Editor_Stays_Single`
-    // moved to the Kuestenlogik.Bowire.Extension.MapLibre.Tests project
+    // moved to the Kuestenlogik.Bowire.Map.Tests project
     // alongside the rest of the MapLibre descriptor tests. The
     // selectionMode contract for the framework's pure-filter functions
     // is core, but the map widget's registration shape rides with the

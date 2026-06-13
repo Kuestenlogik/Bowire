@@ -10,6 +10,33 @@ and uses it as the GitHub Release body.
 
 ---
 
+## v2.0.0 (in flight) — package renames
+
+The 2.0 release lines up Bowire's optional-feature packages on a single
+naming convention before the major-version cut:
+
+- **`Kuestenlogik.Bowire.Extension.MapLibre` → `Kuestenlogik.Bowire.Map`** —
+  the v1.3.0-rc.1 of the MapLibre extension will be deprecated + unlisted
+  on nuget.org after 2.0 ships; consumers should swap the package
+  reference (`<PackageReference Include="Kuestenlogik.Bowire.Map" />`).
+- **`Kuestenlogik.Bowire.Extension.Telemetry` (briefly named in dev) →
+  `Kuestenlogik.Bowire.Telemetry`** — first publish lands under the
+  short name.
+
+OpenTelemetry was moved out of core into
+`Kuestenlogik.Bowire.Telemetry`; embedded hosts that don't want
+self-observability no longer pull the OTel transitive weight. The
+standalone CLI keeps `--telemetry` working out of the box because the
+`bowire` executable transitively references the package.
+
+Naming convention going forward — optional first-party packages =
+`Kuestenlogik.Bowire.<feature>` (e.g. `.Ai`, `.Help`, `.Telemetry`,
+`.Map`) or `Kuestenlogik.Bowire.<area>.<backend>` (e.g. the planned
+`Workspace.Git`). The legacy `.Extension.*` prefix isn't used for new
+packages.
+
+---
+
 ## v1.9.0 — 2026-06-08 — AI for security
 
 ### Highlights — Tier 4 of the security roadmap lands

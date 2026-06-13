@@ -5,7 +5,7 @@ using System.Reflection;
 using System.Text.RegularExpressions;
 using Kuestenlogik.Bowire.Semantics.Extensions;
 
-namespace Kuestenlogik.Bowire.Extension.MapLibre.Tests;
+namespace Kuestenlogik.Bowire.Map.Tests;
 
 /// <summary>
 /// Sanity tests for the built-in MapLibre extension descriptor.
@@ -398,11 +398,11 @@ public sealed class MapLibreOfflineLockdownTests
         // assembly — same shape as the core's bowire.js. Use the dotted
         // form MSBuild's default <EmbeddedResource> naming emits.
         var assembly = typeof(MapLibreExtension).Assembly;
-        const string resourceName = "Kuestenlogik.Bowire.Extension.MapLibre.wwwroot.js.widgets.map.js";
+        const string resourceName = "Kuestenlogik.Bowire.Map.wwwroot.js.widgets.map.js";
         using var stream = assembly.GetManifestResourceStream(resourceName)
             ?? throw new InvalidOperationException(
                 $"Embedded resource not found: {resourceName}. " +
-                "Try a clean rebuild of Kuestenlogik.Bowire.Extension.MapLibre.");
+                "Try a clean rebuild of Kuestenlogik.Bowire.Map.");
         using var reader = new StreamReader(stream);
         return reader.ReadToEnd();
     }

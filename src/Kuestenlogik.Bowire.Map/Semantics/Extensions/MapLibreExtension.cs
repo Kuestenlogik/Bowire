@@ -6,7 +6,7 @@ namespace Kuestenlogik.Bowire.Semantics.Extensions;
 /// <summary>
 /// Bowire UI extension that mounts the MapLibre GL JS map widget on the
 /// <c>coordinate.wgs84</c> semantic kind. Lives in the
-/// <c>Kuestenlogik.Bowire.Extension.MapLibre</c> NuGet package — the first
+/// <c>Kuestenlogik.Bowire.Map</c> NuGet package — the first
 /// concrete consumer of the extension API the ADR pins under "Extension
 /// framework", and the dogfood proof that the same shape third parties use
 /// is the shape Bowire's own widgets use.
@@ -60,7 +60,7 @@ public sealed class MapLibreExtension : IBowireUiExtension
     /// <inheritdoc/>
     /// <remarks>
     /// Shipped as an embedded resource on the
-    /// <c>Kuestenlogik.Bowire.Extension.MapLibre</c> assembly. Served to
+    /// <c>Kuestenlogik.Bowire.Map</c> assembly. Served to
     /// the workbench at <c>/api/ui/extensions/kuestenlogik.maplibre/map.js</c>
     /// — the workbench's extension loader dynamic-imports it on first
     /// mount of a <c>coordinate.wgs84</c> annotation.

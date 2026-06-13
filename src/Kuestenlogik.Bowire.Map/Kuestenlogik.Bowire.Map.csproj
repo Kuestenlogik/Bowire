@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <Description>Bowire UI extension — MapLibre GL JS map widget for the coordinate.wgs84 semantic kind. Ships the WebGL map viewer + editor as a separate package so users who never need geographic rendering don't pay the ~870 KB JS/CSS cost on every workbench load.</Description>
-    <PackageId>Kuestenlogik.Bowire.Extension.MapLibre</PackageId>
+    <PackageId>Kuestenlogik.Bowire.Map</PackageId>
     <PackageTags>bowire;bowire-extension;maplibre;map;geospatial;wgs84;developer-tools</PackageTags>
     <IsPackable>true</IsPackable>
     <!-- Bowire's plugin / extension marker for the in-UI marketplace +
@@ -10,7 +10,7 @@
     <PackageType>BowireExtension</PackageType>
   </PropertyGroup>
   <ItemGroup>
-    <InternalsVisibleTo Include="Kuestenlogik.Bowire.Extension.MapLibre.Tests" />
+    <InternalsVisibleTo Include="Kuestenlogik.Bowire.Map.Tests" />
     <InternalsVisibleTo Include="Kuestenlogik.Bowire.IntegrationTests" />
   </ItemGroup>
   <ItemGroup>
@@ -27,12 +27,12 @@
       lazily when the first map widget mounts.
     -->
     <EmbeddedResource Include="wwwroot\js\widgets\map.js"
-                      LogicalName="Kuestenlogik.Bowire.Extension.MapLibre.wwwroot.js.widgets.map.js" />
+                      LogicalName="Kuestenlogik.Bowire.Map.wwwroot.js.widgets.map.js" />
     <EmbeddedResource Include="wwwroot\maplibre\maplibre-gl.js"
-                      LogicalName="Kuestenlogik.Bowire.Extension.MapLibre.wwwroot.maplibre.maplibre-gl.js" />
+                      LogicalName="Kuestenlogik.Bowire.Map.wwwroot.maplibre.maplibre-gl.js" />
     <EmbeddedResource Include="wwwroot\maplibre\maplibre-gl.css"
-                      LogicalName="Kuestenlogik.Bowire.Extension.MapLibre.wwwroot.maplibre.maplibre-gl.css" />
+                      LogicalName="Kuestenlogik.Bowire.Map.wwwroot.maplibre.maplibre-gl.css" />
     <EmbeddedResource Include="wwwroot\maplibre\LICENSE"
-                      LogicalName="Kuestenlogik.Bowire.Extension.MapLibre.wwwroot.maplibre.LICENSE" />
+                      LogicalName="Kuestenlogik.Bowire.Map.wwwroot.maplibre.LICENSE" />
   </ItemGroup>
 </Project>

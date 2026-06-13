@@ -41,7 +41,7 @@
     <EmbeddedResource Include="wwwroot\kuestenlogik_lockup.svg" LogicalName="Kuestenlogik.Bowire.wwwroot.kuestenlogik_lockup.svg" />
     <!--
       Phase 3-R — the MapLibre map widget moved to a separate package
-      (Kuestenlogik.Bowire.Extension.MapLibre). Its JS bundle + vendor
+      (Kuestenlogik.Bowire.Map). Its JS bundle + vendor
       assets ship as EmbeddedResources on that assembly and are served
       through the same /api/ui/extensions/{id}/{name} endpoint via
       EmbeddedExtensionAsset's manifest-resource loader. Core no longer
@@ -166,7 +166,7 @@
     <BowireJsFragment Include="wwwroot\js\extensions.js" />
     <!--
       Phase 3-R — widgets/map.js no longer ships inside core. It rides
-      its own extension assembly (Kuestenlogik.Bowire.Extension.MapLibre)
+      its own extension assembly (Kuestenlogik.Bowire.Map)
       and the workbench dynamic-loads it from the asset endpoint on boot
       via `bowireLoadExternalExtensions` in extensions.js. The
       <Watch> glob below keeps wwwroot/js/**/*.js coverage so a future

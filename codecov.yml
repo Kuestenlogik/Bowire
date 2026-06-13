@@ -92,7 +92,7 @@ component_management:
     - component_id: extension-maplibre
       name: Extension (MapLibre)
       paths:
-        - src/Kuestenlogik.Bowire.Extension.MapLibre/**
+        - src/Kuestenlogik.Bowire.Map/**
     # ----- one entry per protocol plugin (mirrors the per-plugin
     # ----- test-project split so each plugin's coverage shows up
     # ----- alongside the matching .Tests assembly):
