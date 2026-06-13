@@ -125,13 +125,12 @@
          transitively pulling the package; embedded hosts that want
          self-observability add the package explicitly. -->
     <ProjectReference Include="..\Kuestenlogik.Bowire.Telemetry\Kuestenlogik.Bowire.Telemetry.csproj" />
-    <!-- OpenApi3 adapter — standalone bowire CLI bundles this for now.
-         The .NET 10 ecosystem default is the Microsoft.OpenApi 2.x line
-         (ASP.NET's AddOpenApi() pins it); the planned OpenApi2 adapter
-         will replace this once it's built so standalone aligns with
-         the ecosystem and embedded hosts that mix in AddOpenApi() see
-         zero DLL conflicts. -->
-    <ProjectReference Include="..\Kuestenlogik.Bowire.Protocol.Rest.OpenApi3\Kuestenlogik.Bowire.Protocol.Rest.OpenApi3.csproj" />
+    <!-- OpenApi2 adapter — standalone bowire CLI bundles the .NET 10
+         ecosystem default (ASP.NET Core 10's AddOpenApi() pins
+         Microsoft.OpenApi 2.x). Embedded hosts that want the modern
+         3.x library can reference Kuestenlogik.Bowire.Protocol.Rest.OpenApi3
+         instead; the registry's auto-detect picks whichever is loaded. -->
+    <ProjectReference Include="..\Kuestenlogik.Bowire.Protocol.Rest.OpenApi2\Kuestenlogik.Bowire.Protocol.Rest.OpenApi2.csproj" />
     <PackageReference Include="System.CommandLine" />
   </ItemGroup>
 </Project>
