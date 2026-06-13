@@ -20,18 +20,15 @@
   <ItemGroup>
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
   </ItemGroup>
-  <!-- OpenTelemetry stack for the self-telemetry seam (#29). The OTLP
-       exporter is wired by default when Bowire:Telemetry:Enabled is true;
-       embedded hosts that already run their own pipeline skip
-       AddBowireTelemetry and just AddSource/AddMeter the canonical
-       Kuestenlogik.Bowire name into their existing setup. -->
-  <ItemGroup>
-    <PackageReference Include="OpenTelemetry" />
-    <PackageReference Include="OpenTelemetry.Extensions.Hosting" />
-    <PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" />
-    <PackageReference Include="OpenTelemetry.Instrumentation.AspNetCore" />
-    <PackageReference Include="OpenTelemetry.Instrumentation.Http" />
-  </ItemGroup>
+  <!-- OpenTelemetry stack moved to Kuestenlogik.Bowire.Extension.Telemetry
+       (#29 v2). Core keeps just the static ActivitySource + Meter
+       (System.Diagnostics, BCL, zero deps); installs that want the
+       OTLP exporter + ASP.NET / HttpClient instrumentation + the OTel
+       SDK pipeline add the extension package explicitly. Same opt-in
+       shape as Kuestenlogik.Bowire.Ai and the protocol plugins —
+       embedded hosts that don't need self-observability stay free of
+       OTel's transitive weight. -->
+
   <!-- System.CommandLine moved out of core (v1.6.0). IBowireCliCommand +
        BowireCliCommandRegistry now live in Kuestenlogik.Bowire.Cli;
        embedded hosts that don't ship a CLI surface no longer pull in

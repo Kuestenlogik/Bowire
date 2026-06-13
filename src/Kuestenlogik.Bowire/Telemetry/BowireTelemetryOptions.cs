@@ -5,9 +5,10 @@ namespace Kuestenlogik.Bowire.Telemetry;
 
 /// <summary>
 /// Configuration knobs for Bowire's self-telemetry seam (#29). Bound
-/// from <c>Bowire:Telemetry</c> by
-/// <see cref="BowireTelemetryServiceCollectionExtensions.AddBowireTelemetry"/>;
-/// the CLI's <c>--telemetry</c> / <c>--telemetry-strip-method-labels</c>
+/// from <c>Bowire:Telemetry</c> by the optional
+/// <c>AddBowireTelemetry</c> helper in
+/// <c>Kuestenlogik.Bowire.Extension.Telemetry</c>; the CLI's
+/// <c>--telemetry</c> / <c>--telemetry-strip-method-labels</c>
 /// flags feed the same keys via an in-memory configuration overlay.
 /// </summary>
 /// <remarks>

@@ -119,6 +119,12 @@
          no extra setup step. Embedded hosts opt in via
          builder.AddBowireHelp() the same way they add AI. -->
     <ProjectReference Include="..\Kuestenlogik.Bowire.Help\Kuestenlogik.Bowire.Help.csproj" />
+    <!-- #29 v2 — OpenTelemetry exporter + SDK wiring extracted from
+         core into Kuestenlogik.Bowire.Extension.Telemetry. The
+         standalone CLI keeps the telemetry flag working out of the box
+         by transitively pulling the extension; embedded hosts that
+         want self-observability add the package explicitly. -->
+    <ProjectReference Include="..\Kuestenlogik.Bowire.Extension.Telemetry\Kuestenlogik.Bowire.Extension.Telemetry.csproj" />
     <PackageReference Include="System.CommandLine" />
   </ItemGroup>
 </Project>
