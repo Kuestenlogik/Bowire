@@ -249,35 +249,6 @@
         return out.join('\n');
     }
 
-    // ---- Drawer renderer ----
-    //
-    // Built on the renderDrawer primitive (#115) so the chrome
-    // matches Assistant + Security. Topic count lives in the
-    // titleAccessory slot. Body is a two-pane split: navigation +
-    // search on the left, content on the right.
-    function renderHelpDrawer() {
-        if (!helpAvailable) return null;
-
-        var topicCount = helpTopics ? helpTopics.length : 0;
-        var titleAccessory = el('span', {
-            className: 'bowire-help-topic-count',
-            title: topicCount + ' topic' + (topicCount === 1 ? '' : 's') + ' loaded',
-            textContent: topicCount > 0 ? String(topicCount) : ''
-        });
-
-        return renderDrawer({
-            id: 'bowire-help-drawer',
-            className: 'bowire-help-drawer',
-            title: 'Help',
-            titleAccessory: titleAccessory,
-            closeTitle: 'Close (Esc)',
-            closeAriaLabel: 'Close Help drawer',
-            ariaLabel: 'In-app help',
-            onClose: helpCloseDrawer,
-            content: _renderHelpDrawerContent
-        });
-    }
-
     function _renderHelpDrawerContent() {
         var wrap = el('div', { className: 'bowire-help-body' });
 

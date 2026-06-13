@@ -5786,8 +5786,8 @@
         }
         // AI moved out of the response-pane tab strip into a workbench-
         // wide drawer (#90). The drawer renders alongside the workbench
-        // body, not under the response tabs — see renderAiDrawer in
-        // render-env-auth.js. Toggle button lives in the topbar.
+        // body, not under the response tabs — see renderUnifiedRightDrawer
+        // in render-env-auth.js. Toggle button lives in the topbar.
         pane.appendChild(tabs);
 
         // #114 Phase 2 — inline hint banners at the response surface.

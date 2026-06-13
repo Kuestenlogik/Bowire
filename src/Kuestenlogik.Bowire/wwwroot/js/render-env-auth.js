@@ -142,7 +142,7 @@
         // the old "newest open wins, the other is silently hidden"
         // behavior — both can now coexist without competing.
         var helpUsable = helpDrawerOpen && helpAvailable
-            && typeof renderHelpDrawer === 'function';
+            && typeof _renderHelpDrawerContent === 'function';
         var testsUsable = (typeof testsDrawerOpen !== 'undefined') && testsDrawerOpen;
         var activityUsable = (typeof activityDrawerOpen !== 'undefined') && activityDrawerOpen;
         if (aiDrawerOpen || helpUsable || testsUsable || activityUsable) {
@@ -714,93 +714,96 @@
         }
         var activeTab = tabs.find(function (t) { return t.id === activeId; });
 
+        // Single-tab path: delegate the whole shape to the renderDrawer
+        // primitive (#115). A single open tab is visually identical to
+        // a standalone drawer (title + accessory + close + content), so
+        // there's no reason to hand-roll the chrome here. The multi-tab
+        // path below stays inline because the header is a tab strip,
+        // not a single title row — renderDrawer doesn't model that.
+        if (tabs.length <= 1) {
+            if (!activeTab) {
+                return el('div', {
+                    id: 'bowire-right-drawer',
+                    className: 'bowire-drawer bowire-right-drawer',
+                    role: 'complementary',
+                    'aria-label': 'Drawer'
+                });
+            }
+            return renderDrawer({
+                id: 'bowire-right-drawer',
+                className: 'bowire-right-drawer',
+                title: activeTab.label,
+                titleAccessory: activeTab.accessory,
+                closeTitle: activeTab.closeTitle,
+                closeAriaLabel: activeTab.closeTitle || ('Close ' + activeTab.label),
+                ariaLabel: activeTab.label,
+                onClose: activeTab.onClose,
+                content: activeTab.renderContent
+            });
+        }
+
         var drawer = el('div', {
             id: 'bowire-right-drawer',
-            className: 'bowire-drawer bowire-right-drawer'
-                + (tabs.length > 1 ? ' bowire-right-drawer-tabbed' : ''),
+            className: 'bowire-drawer bowire-right-drawer bowire-right-drawer-tabbed',
             role: 'complementary',
             'aria-label': activeTab ? activeTab.label : 'Drawer'
         });
 
-        if (tabs.length > 1) {
-            // Tab strip header — VS Code / JetBrains style. Each tab
-            // is a button with its accessory next to the label and an
-            // X on the right that closes JUST that tab (so the other
-            // stays accessible).
-            var tabStrip = el('div', {
-                className: 'bowire-right-drawer-tabs',
-                role: 'tablist'
+        // Tab strip header — VS Code / JetBrains style. Each tab
+        // is a button with its accessory next to the label, and a
+        // single drawer-level X on the right closes JUST the active
+        // tab so the others stay accessible.
+        var tabStrip = el('div', {
+            className: 'bowire-right-drawer-tabs',
+            role: 'tablist'
+        });
+        tabs.forEach(function (t) {
+            var isActive = t.id === activeId;
+            // Stable id per tab — morphdom keyed-matches the button
+            // to its previous node, otherwise the OLD click listener
+            // stays attached to the now-wrong tab when the tab list
+            // gets re-rendered with a different active tab (the
+            // listener was a closure over the previous render's `t`).
+            var tabBtn = el('button', {
+                id: 'bowire-right-drawer-tab-' + t.id,
+                type: 'button',
+                className: 'bowire-right-drawer-tab'
+                    + (isActive ? ' is-active' : ''),
+                role: 'tab',
+                'aria-selected': isActive ? 'true' : 'false',
+                onClick: function () {
+                    rightDrawerActiveTab = t.id;
+                    try { localStorage.setItem('bowire_right_drawer_active_tab', t.id); }
+                    catch { /* ignore */ }
+                    render();
+                }
             });
-            tabs.forEach(function (t) {
-                var isActive = t.id === activeId;
-                // Stable id per tab — morphdom keyed-matches the button
-                // to its previous node, otherwise the OLD click listener
-                // stays attached to the now-wrong tab when the tab list
-                // gets re-rendered with a different active tab (the
-                // listener was a closure over the previous render's `t`).
-                var tabBtn = el('button', {
-                    id: 'bowire-right-drawer-tab-' + t.id,
-                    type: 'button',
-                    className: 'bowire-right-drawer-tab'
-                        + (isActive ? ' is-active' : ''),
-                    role: 'tab',
-                    'aria-selected': isActive ? 'true' : 'false',
-                    onClick: function () {
-                        rightDrawerActiveTab = t.id;
-                        try { localStorage.setItem('bowire_right_drawer_active_tab', t.id); }
-                        catch { /* ignore */ }
-                        render();
-                    }
-                });
-                tabBtn.appendChild(el('span', {
-                    className: 'bowire-right-drawer-tab-label',
-                    textContent: t.label
-                }));
-                if (t.accessory) tabBtn.appendChild(t.accessory);
-                tabStrip.appendChild(tabBtn);
-            });
-            // Single drawer-level close on the right — closes only the
-            // ACTIVE tab. Per-tab Xs caused operators to misclick and
-            // dismiss the panel they meant to switch to; VS Code uses
-            // the same single-close convention on its right-side tool
-            // strip. The remaining tab stays accessible.
-            tabStrip.appendChild(el('span', { style: 'flex:1' }));
-            if (activeTab) {
-                tabStrip.appendChild(el('button', {
-                    id: 'bowire-right-drawer-close',
-                    type: 'button',
-                    className: 'bowire-drawer-close bowire-right-drawer-close',
-                    title: activeTab.closeTitle || 'Close',
-                    'aria-label': activeTab.closeTitle || ('Close ' + activeTab.label),
-                    innerHTML: svgIcon('close'),
-                    onClick: function () {
-                        if (typeof activeTab.onClose === 'function') activeTab.onClose();
-                    }
-                }));
-            }
-            drawer.appendChild(tabStrip);
-        } else if (activeTab) {
-            // Single-panel mode: header mirrors the legacy drawer
-            // (title + accessory + close button) so the visual stays
-            // identical when only one panel is open.
-            var titleRow = el('div', { className: 'bowire-drawer-title-row' },
-                el('span', { className: 'bowire-drawer-title', textContent: activeTab.label }),
-                activeTab.accessory || null
-            );
-            var header = el('div', { className: 'bowire-drawer-header' },
-                titleRow,
-                el('button', {
-                    className: 'bowire-drawer-close',
-                    title: activeTab.closeTitle || 'Close',
-                    'aria-label': activeTab.closeTitle || ('Close ' + activeTab.label),
-                    innerHTML: svgIcon('close'),
-                    onClick: function () {
-                        if (typeof activeTab.onClose === 'function') activeTab.onClose();
-                    }
-                })
-            );
-            drawer.appendChild(header);
+            tabBtn.appendChild(el('span', {
+                className: 'bowire-right-drawer-tab-label',
+                textContent: t.label
+            }));
+            if (t.accessory) tabBtn.appendChild(t.accessory);
+            tabStrip.appendChild(tabBtn);
+        });
+        // Single drawer-level close on the right — Per-tab Xs caused
+        // operators to misclick and dismiss the panel they meant to
+        // switch to. VS Code uses the same single-close convention on
+        // its right-side tool strip.
+        tabStrip.appendChild(el('span', { style: 'flex:1' }));
+        if (activeTab) {
+            tabStrip.appendChild(el('button', {
+                id: 'bowire-right-drawer-close',
+                type: 'button',
+                className: 'bowire-drawer-close bowire-right-drawer-close',
+                title: activeTab.closeTitle || 'Close',
+                'aria-label': activeTab.closeTitle || ('Close ' + activeTab.label),
+                innerHTML: svgIcon('close'),
+                onClick: function () {
+                    if (typeof activeTab.onClose === 'function') activeTab.onClose();
+                }
+            }));
         }
+        drawer.appendChild(tabStrip);
 
         var contentWrap = el('div', { className: 'bowire-drawer-content' });
         if (activeTab) {
@@ -817,63 +820,6 @@
         }
         drawer.appendChild(contentWrap);
         return drawer;
-    }
-
-    // ---- AI drawer (#90) ----
-    // Sits at the right edge of the workbench body next to the main pane.
-    // Rendered only when aiDrawerOpen is true; the topbar toggle button
-    // flips the state + persists it to localStorage. Contains the same
-    // AI panel that used to live as a response-pane tab — no logic
-    // duplication; we just call window.__bowireAi.renderPanel().
-    function renderAiDrawer() {
-        // Live status dot — three states, all carrying a hover
-        // tooltip with the detail string. Connected (green) is the
-        // common case; idle (grey) means no model; missing (amber)
-        // means the AI package isn't installed. Lives in the drawer's
-        // titleAccessory slot — same shape every drawer surface uses
-        // through the renderDrawer primitive.
-        var aiSt = (typeof window.__bowireAi === 'object' && window.__bowireAi)
-            ? window.__bowireAi.getStatus()
-            : null;
-        var statusClass, statusTitle;
-        if (aiSt && aiSt.hasClient) {
-            statusClass = 'bowire-ai-status-dot bowire-ai-status-dot-connected';
-            statusTitle = 'Connected · ' + (aiSt.providerId || 'unknown') + ' · ' + (aiSt.model || '(default model)');
-        } else if (aiSt === null) {
-            statusClass = 'bowire-ai-status-dot bowire-ai-status-dot-missing';
-            statusTitle = 'AI package not installed — chat unavailable. Hints still work.';
-        } else {
-            statusClass = 'bowire-ai-status-dot bowire-ai-status-dot-idle';
-            statusTitle = 'No model configured — open Settings → Assistant to connect one.';
-        }
-        var statusDot = el('span', {
-            className: statusClass,
-            title: statusTitle,
-            'aria-label': statusTitle
-        });
-
-        return renderDrawer({
-            id: 'bowire-ai-drawer',
-            className: 'bowire-ai-drawer',
-            title: 'Assistant',
-            titleAccessory: statusDot,
-            closeTitle: 'Close (Ctrl+Shift+A)',
-            closeAriaLabel: 'Close AI drawer',
-            ariaLabel: 'Assistant',
-            onClose: function () {
-                aiDrawerOpen = false;
-                try { localStorage.setItem('bowire_ai_drawer_open', '0'); } catch { /* ignore */ }
-                render();
-            },
-            content: function () {
-                return window.__bowireAi
-                    ? window.__bowireAi.renderPanel()
-                    : el('p', {
-                        className: 'bowire-drawer-empty',
-                        textContent: 'AI module not loaded.'
-                    });
-            }
-        });
     }
 
     // ---- Connection pill (#93) ----
@@ -1253,36 +1199,6 @@
         bar.appendChild(right);
 
         return bar;
-    }
-
-    // ---- Security drawer (#111) ----
-    // Mirror of renderAiDrawer for the Security surface. Same chrome
-    // (header + close button + content area), different host call
-    // (window.__bowireAi.renderSecurityPanel) and different toggle
-    // wiring (securityDrawerOpen + bowire_security_drawer_open
-    // localStorage key).
-    function renderSecurityDrawer() {
-        return renderDrawer({
-            id: 'bowire-security-drawer',
-            className: 'bowire-security-drawer',
-            title: 'Security',
-            closeTitle: 'Close Security drawer',
-            closeAriaLabel: 'Close Security drawer',
-            ariaLabel: 'Security tools',
-            onClose: function () {
-                securityDrawerOpen = false;
-                try { localStorage.setItem('bowire_security_drawer_open', '0'); } catch { /* ignore */ }
-                render();
-            },
-            content: function () {
-                return (window.__bowireAi && typeof window.__bowireAi.renderSecurityPanel === 'function')
-                    ? window.__bowireAi.renderSecurityPanel()
-                    : el('p', {
-                        className: 'bowire-drawer-empty',
-                        textContent: 'AI module not loaded — Security panel needs Kuestenlogik.Bowire.Ai.'
-                    });
-            }
-        });
     }
 
     // ---- Topbar (brand + command palette + env + theme) ----

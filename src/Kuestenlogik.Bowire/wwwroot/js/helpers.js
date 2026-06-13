@@ -598,13 +598,11 @@
      */
     // ---- #115 Drawer-Primitive ----
     //
-    // Shared widget for every right-side workbench drawer (AI,
-    // Security, future Inspector, …). Replaces the two hand-built
-    // drawers (renderAiDrawer + renderSecurityDrawer) that each
-    // duplicated their own root + header + close button. Standardised
-    // chrome means every drawer reads the same to operators, and
-    // adding a new drawer is one renderDrawer({...}) call instead of
-    // a copy-paste-and-rename.
+    // Shared widget for every right-side workbench drawer (Assistant,
+    // Help, Tests, Activity, future Inspector, …). renderUnifiedRightDrawer
+    // (render-env-auth.js) delegates here for the single-tab path; new
+    // drawer surfaces are one renderDrawer({...}) call instead of a
+    // copy-paste-and-rename of the chrome.
     //
     // Options:
     //   id          — root element id (required for morphdom keying)
