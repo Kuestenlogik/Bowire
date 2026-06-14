@@ -2325,10 +2325,19 @@
         var leafChildren = envs.map(function (e) {
             var leafSelected = sel.wsId === w.id && sel.kind === 'env' && sel.value === e.id;
             var varCount = e.vars ? Object.keys(e.vars).length : 0;
+            // Filled-globe glyph in the env's chosen colour — matches
+            // the topbar env-dropdown idiom so the env's identity reads
+            // consistently in both pick surfaces.
+            var envColor = e.color || 'var(--bowire-text-tertiary)';
+            var envGlyph = '<svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" width="14" height="14">'
+                + '<circle cx="12" cy="12" r="10" fill="' + envColor + '"/>'
+                + '<line x1="2" y1="12" x2="22" y2="12" fill="none"/>'
+                + '<path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z" fill="none"/>'
+                + '</svg>';
             return {
                 id: 'ws:' + w.id + ':env:' + e.id,
                 label: e.name || '(unnamed)',
-                icon: 'globe',
+                iconHtml: envGlyph,
                 badge: varCount > 0 ? varCount : null,
                 selected: leafSelected,
                 title: e.name || e.id,

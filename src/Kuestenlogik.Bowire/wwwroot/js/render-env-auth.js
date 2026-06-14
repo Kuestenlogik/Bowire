@@ -2590,6 +2590,35 @@
                         })
                     );
                     if (env) {
+                        // Per-row pencil → bowirePrompt rename, persisted
+                        // via updateEnvironment. Mirrors the workspace
+                        // dropdown's pencil affordance — pencil first
+                        // because rename is the most common per-row tweak.
+                        tools.appendChild(el('button', {
+                            type: 'button',
+                            className: 'bowire-env-dropdown-item-rename',
+                            title: 'Rename environment',
+                            'aria-label': 'Rename environment',
+                            innerHTML: svgIcon('pencil'),
+                            onClick: function (ev) {
+                                ev.stopPropagation();
+                                var envId = env.id;
+                                var oldName = env.name || '';
+                                menu.remove();
+                                bowirePrompt('Rename environment', {
+                                    title: 'Rename',
+                                    defaultValue: oldName,
+                                    confirmText: 'Rename',
+                                }).then(function (renamed) {
+                                    if (renamed) {
+                                        if (typeof updateEnvironment === 'function') {
+                                            updateEnvironment(envId, { name: renamed });
+                                        }
+                                        render();
+                                    }
+                                });
+                            }
+                        }));
                         // Per-row gear → jump straight to the env's editor
                         // in the Workspaces rail (mirrors the workspace
                         // chip's per-row "edit settings" affordance).

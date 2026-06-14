@@ -3996,6 +3996,25 @@ only an accent-coloured underline under the active tab. The whole
     color: var(--bowire-text-tertiary);
     flex-basis: 100%;
 }
+/* Env-editor header dot — matches the workspace settings detail dot
+   (24×24 round) so the two surfaces share the same identity-glyph
+   shape next to the in-place editable name. */
+.bowire-env-editor-dot {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+.bowire-env-editor-color-section {
+    margin-bottom: 20px;
+}
+.bowire-env-editor-section-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--bowire-text-tertiary);
+    margin-bottom: 8px;
+}
 .bowire-env-editor-name-input {
     background: transparent;
     border: none;
@@ -7512,7 +7531,8 @@ and chip row */
     border-color: var(--bowire-text);
     box-shadow: 0 0 0 1px var(--bowire-bg);
 }
-.bowire-env-color-picker {
+.bowire-env-color-picker,
+.bowire-ws-detail-color-picker {
     width: 28px;
     height: 28px;
     border: none;
@@ -7521,8 +7541,10 @@ and chip row */
     padding: 0;
     background: none;
 }
-.bowire-env-color-picker::-webkit-color-swatch-wrapper { padding: 2px; }
-.bowire-env-color-picker::-webkit-color-swatch { border-radius: var(--bowire-radius-sm); border: 1px solid var(--bowire-border); }
+.bowire-env-color-picker::-webkit-color-swatch-wrapper,
+.bowire-ws-detail-color-picker::-webkit-color-swatch-wrapper { padding: 2px; }
+.bowire-env-color-picker::-webkit-color-swatch,
+.bowire-ws-detail-color-picker::-webkit-color-swatch { border-radius: var(--bowire-radius-sm); border: 1px solid var(--bowire-border); }
 
 /* Custom env dropdown in topbar */
 .bowire-env-dropdown-wrapper { position: relative; }
@@ -7630,6 +7652,7 @@ and chip row */
     visibility: hidden;
 }
 .bowire-env-dropdown-item-check.is-active { visibility: visible; }
+.bowire-env-dropdown-item-rename,
 .bowire-env-dropdown-item-edit,
 .bowire-env-dropdown-item-trash {
     width: 22px;
@@ -7646,10 +7669,12 @@ and chip row */
     cursor: pointer;
     transition: background var(--bowire-transition), color var(--bowire-transition);
 }
+.bowire-env-dropdown-item:hover .bowire-env-dropdown-item-rename,
 .bowire-env-dropdown-item:hover .bowire-env-dropdown-item-edit,
 .bowire-env-dropdown-item:hover .bowire-env-dropdown-item-trash {
     display: inline-flex;
 }
+.bowire-env-dropdown-item-rename:hover,
 .bowire-env-dropdown-item-edit:hover {
     background: var(--bowire-surface);
     color: var(--bowire-text);
@@ -7658,6 +7683,7 @@ and chip row */
     background: var(--bowire-surface);
     color: var(--bowire-error);
 }
+.bowire-env-dropdown-item-rename svg,
 .bowire-env-dropdown-item-edit svg,
 .bowire-env-dropdown-item-trash svg { width: 12px; height: 12px; }
 .bowire-env-dropdown-divider {
