@@ -2541,18 +2541,23 @@
             ? activeEnv.color : 'var(--bowire-text-tertiary)';
         var envBtnWrapper = el('div', { className: 'bowire-env-dropdown-wrapper' });
 
-        // Lucide 'globe' with the env's chosen colour applied to the
-        // outer circle stroke — analogous to the workspace dropdown's
-        // layers-glyph-with-top-leaf-colored pattern. Meridian + horizon
-        // lines keep currentColor so the glyph still reads against light
-        // / dark themes without per-colour calibration. When no env is
-        // active the circle falls back to tertiary text so the chip
-        // reads as "empty / pick".
+        // Lucide 'globe' filled with the env's chosen colour. The full
+        // outer circle takes the colour as both stroke + fill, so the
+        // glyph reads as a coloured planet at a glance; the meridian
+        // + horizon lines render on top in currentColor so the
+        // latitude / longitude marks remain visible (and adapt to
+        // theme + hover state). When no env is active the fill falls
+        // back to tertiary text so the chip reads as "empty / pick".
         function _envGlyph(color) {
-            return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">'
-                + '<circle cx="12" cy="12" r="10" stroke="' + color + '"/>'
-                + '<line x1="2" y1="12" x2="22" y2="12"/>'
-                + '<path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/>'
+            // Outer circle: filled with the env's colour, outline drawn
+            // in currentColor so the planet still reads as a globe (with
+            // a visible silhouette) instead of a flat coloured disc.
+            // Meridian + horizon also currentColor → all three "globe
+            // lines" share the same stroke and pop against the fill.
+            return '<svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" width="14" height="14">'
+                + '<circle cx="12" cy="12" r="10" fill="' + color + '"/>'
+                + '<line x1="2" y1="12" x2="22" y2="12" fill="none"/>'
+                + '<path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z" fill="none"/>'
                 + '</svg>';
         }
 
@@ -2564,6 +2569,16 @@
                 e.stopPropagation();
                 var existing = envBtnWrapper.querySelector('.bowire-env-dropdown-menu');
                 if (existing) { existing.remove(); return; }
+                // Re-read every piece of state at click time. morphdom
+                // can preserve the trigger button across renders; its old
+                // onClick closure would otherwise capture the previous
+                // render's `activeId` / `envs` and the freshly-opened
+                // dropdown would build with stale data — check ends up on
+                // the wrong row, list misses newly-created envs, etc.
+                // See feedback-morphdom-stale-handler-pitfall for the
+                // general recipe.
+                var envs = getEnvironments();
+                var activeId = getActiveEnvId();
                 var menu = el('div', { className: 'bowire-env-dropdown-menu' });
 
                 function _envRow(env, isActive, label, color, onPick) {
@@ -2635,7 +2650,12 @@
                     );
                 }
 
-                menu.appendChild(_envRow(null, !activeId, 'No environment',
+                // Renamed from "No environment" — the empty-env state
+                // doesn't disable variables, it just turns off the env
+                // override layer. Globals + workspace defaults still
+                // resolve (see getMergedVars in history-env.js). The
+                // label reflects what's actually active.
+                menu.appendChild(_envRow(null, !activeId, 'Workspace defaults',
                     'var(--bowire-text-tertiary)',
                     function () { setActiveEnvId(''); menu.remove(); render(); }
                 ));
@@ -2683,7 +2703,7 @@
                 className: 'bowire-env-btn-glyph',
                 innerHTML: _envGlyph(activeColor)
             }),
-            el('span', { className: 'bowire-env-btn-text', textContent: activeEnv ? activeEnv.name : 'No environment' }),
+            el('span', { className: 'bowire-env-btn-text', textContent: activeEnv ? activeEnv.name : 'Workspace defaults' }),
             el('span', { className: 'bowire-env-btn-chevron', innerHTML: svgIcon('chevronDown') })
         );
         envBtnWrapper.appendChild(envBtn);
