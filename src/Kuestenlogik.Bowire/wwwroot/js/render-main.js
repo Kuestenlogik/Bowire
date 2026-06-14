@@ -459,9 +459,11 @@
                     className: 'bowire-env-editor-create-btn',
                     textContent: '+ Create Environment',
                     onClick: function () {
-                        var env = createEnvironment('New Environment');
-                        envSidebarSelectedId = env.id;
-                        render();
+                        if (typeof openCreateEnvironmentDialog !== 'function') return;
+                        openCreateEnvironmentDialog(function (env) {
+                            envSidebarSelectedId = env.id;
+                            render();
+                        });
                     }
                 })
             ));
@@ -1920,13 +1922,14 @@
             textContent: '+ New environment',
             onClick: function () {
                 if (ws.id !== activeWorkspaceId) switchWorkspace(ws.id);
-                if (typeof createEnvironment !== 'function') return;
-                var env = createEnvironment('New Environment');
-                if (typeof envSidebarSelectedId !== 'undefined') {
-                    envSidebarSelectedId = env.id;
-                }
-                workspaceTreeSelection = { wsId: ws.id, kind: 'env', value: env.id };
-                render();
+                if (typeof openCreateEnvironmentDialog !== 'function') return;
+                openCreateEnvironmentDialog(function (env) {
+                    if (typeof envSidebarSelectedId !== 'undefined') {
+                        envSidebarSelectedId = env.id;
+                    }
+                    workspaceTreeSelection = { wsId: ws.id, kind: 'env', value: env.id };
+                    render();
+                });
             }
         }));
         main.appendChild(section);
