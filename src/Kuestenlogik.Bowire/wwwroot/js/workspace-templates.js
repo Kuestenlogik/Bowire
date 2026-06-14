@@ -216,8 +216,18 @@
                 setTimeout(function () { nameInput.classList.remove('bowire-prompt-input-error'); }, 600);
                 return;
             }
-            overlay.remove();
+            // createWorkspace returns null when the operator-typed
+            // name collides with an existing workspace. Keep the
+            // dialog open + flash the input so they can edit the name
+            // — the createWorkspace path already toasted the reason.
             var ws = createWorkspace(name);
+            if (!ws) {
+                nameInput.focus();
+                nameInput.classList.add('bowire-prompt-input-error');
+                setTimeout(function () { nameInput.classList.remove('bowire-prompt-input-error'); }, 600);
+                return;
+            }
+            overlay.remove();
             var tpl = getWorkspaceTemplate(selectedTemplateId);
             _persistLastTemplate(selectedTemplateId);
             try { tpl.apply(ws.id); } catch { /* template seed should never crash creation */ }
