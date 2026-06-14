@@ -254,20 +254,74 @@
             }
         ));
 
-        // Workspace identity band — 2px accent strip under the topbar in
-        // the active workspace's colour. Off by default because the
-        // signal is redundant with the chip when the operator is paying
-        // attention to it; opt-in for users who want the peripheral
-        // identity cue. Reads on every render() so flipping the toggle
-        // is reflected as soon as the next render runs.
-        var showIdentityBand = localStorage.getItem('bowire_show_workspace_identity_band') === 'true';
+        // Workspace identity cue — opt-in peripheral indicator of the
+        // active workspace's colour. Split into a bool (on/off) and
+        // a variant (which presentation) so the operator can flip
+        // between presentations without dropping back to 'off'.
+        //
+        // localStorage keys:
+        //   bowire_workspace_identity_enabled  ('true' / 'false')
+        //   bowire_workspace_identity_variant  ('top-strip' / 'rail-tint')
+        // Variant default = 'top-strip' (the original presentation).
+        //
+        // Back-compat: the older `bowire_workspace_identity_mode` key
+        // packed both into one value. Migrate on first read so existing
+        // opt-ins don't regress to off.
+        (function _migrateIdentityKeys() {
+            try {
+                var legacy = localStorage.getItem('bowire_workspace_identity_mode');
+                if (legacy != null) {
+                    if (localStorage.getItem('bowire_workspace_identity_enabled') == null) {
+                        localStorage.setItem('bowire_workspace_identity_enabled', legacy === 'none' ? 'false' : 'true');
+                    }
+                    if (localStorage.getItem('bowire_workspace_identity_variant') == null
+                        && (legacy === 'top-strip' || legacy === 'rail-tint')) {
+                        localStorage.setItem('bowire_workspace_identity_variant', legacy);
+                    }
+                    localStorage.removeItem('bowire_workspace_identity_mode');
+                }
+                // Even older boolean from the very first iteration.
+                var older = localStorage.getItem('bowire_show_workspace_identity_band');
+                if (older != null) {
+                    if (localStorage.getItem('bowire_workspace_identity_enabled') == null) {
+                        localStorage.setItem('bowire_workspace_identity_enabled', older === 'true' ? 'true' : 'false');
+                    }
+                    localStorage.removeItem('bowire_show_workspace_identity_band');
+                }
+            } catch { /* ignore */ }
+        })();
+        var identityEnabled = localStorage.getItem('bowire_workspace_identity_enabled') === 'true';
+        var identityVariant = localStorage.getItem('bowire_workspace_identity_variant') || 'top-strip';
         section.appendChild(renderSettingsToggle(
-            'Workspace identity band',
-            'Show a 2 px coloured strip directly under the topbar in the active workspace’s colour. Useful as a peripheral "which workspace am I in" cue when you switch a lot.',
-            showIdentityBand,
+            'Workspace identity cue',
+            'Show a peripheral indicator in the active workspace’s colour.',
+            identityEnabled,
             function (val) {
-                localStorage.setItem('bowire_show_workspace_identity_band', val ? 'true' : 'false');
+                localStorage.setItem('bowire_workspace_identity_enabled', val ? 'true' : 'false');
                 render();
+            }
+        ));
+        section.appendChild(renderSettingsRow(
+            'Identity cue style',
+            'Presentation used when the identity cue is on.',
+            function () {
+                var select = el('select', {
+                    className: 'bowire-settings-select',
+                    onChange: function (e) {
+                        localStorage.setItem('bowire_workspace_identity_variant', e.target.value);
+                        render();
+                    }
+                });
+                var opts = [
+                    { value: 'top-strip', label: 'Top strip' },
+                    { value: 'rail-tint', label: 'Rail tint' }
+                ];
+                for (var ii = 0; ii < opts.length; ii++) {
+                    var opt = el('option', { value: opts[ii].value, textContent: opts[ii].label });
+                    if (opts[ii].value === identityVariant) opt.selected = true;
+                    select.appendChild(opt);
+                }
+                return select;
             }
         ));
 

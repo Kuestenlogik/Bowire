@@ -903,7 +903,30 @@
         // are reached via the Workspaces tree.
         var modes = _railModes.filter(function (m) { return !m.hideFromRail; });
 
-        var rail = el('div', { id: 'bowire-activity-rail', className: 'bowire-activity-rail' });
+        // Workspace identity cue — rail-tint variant. When the operator
+        // turned the cue on AND picked "Rail tint" in Settings → General,
+        // soften-blend the rail's surface with the active workspace's
+        // colour. color-mix keeps the tint subtle (workspace hue at
+        // ~18%) so the rail still reads as chrome rather than a full-
+        // saturated colour block — readable in both themes without
+        // per-colour calibration. The 'top-strip' variant is rendered
+        // separately in render-env-auth.js's render().
+        var _railTintStyle = '';
+        try {
+            var on = localStorage.getItem('bowire_workspace_identity_enabled') === 'true';
+            var variant = localStorage.getItem('bowire_workspace_identity_variant') || 'top-strip';
+            if (on && variant === 'rail-tint' && typeof activeWorkspace === 'function') {
+                var aw = activeWorkspace();
+                if (aw && aw.color) {
+                    _railTintStyle = 'background: color-mix(in srgb, var(--bowire-sidebar-bg) 82%, ' + aw.color + ' 18%);';
+                }
+            }
+        } catch { /* ignore */ }
+        var rail = el('div', {
+            id: 'bowire-activity-rail',
+            className: 'bowire-activity-rail',
+            style: _railTintStyle || undefined
+        });
 
         // Cache the catalogue order so the post-mount layout pass can
         // build the overflow popover from the SAME list, in display
@@ -1629,11 +1652,91 @@
         _activeWorkspaceContextMenu = null;
         m.close();
     }
+    // w === null is the "empty tree area" case — only the "+ New
+    // workspace…" item is rendered. Used by the Workspaces rail
+    // sidebar's right-click-on-empty-space hook so the operator can
+    // create a new workspace without finding a row to click on first.
+    // Generic floating context menu for tree sub-items in the Workspaces
+    // rail (Sources / Environments / Variables / Collections / Recordings
+    // / Settings rows). Same CSS chrome as openWorkspaceContextMenu so
+    // the right-click experience reads consistent across every row. The
+    // caller passes a flat item list; each item: { icon, label, danger?,
+    // disabled?, onClick }. null entries are skipped so callers can use
+    // inline conditional items.
+    function openTreeSubContextMenu(e, items) {
+        if (!e || !Array.isArray(items)) return;
+        _closeWorkspaceContextMenu();
+        var menu = document.createElement('div');
+        menu.className = 'bowire-workspace-menu bowire-workspace-context-menu';
+        menu.setAttribute('role', 'menu');
+        menu.style.position = 'fixed';
+        menu.style.left = (e.clientX || 0) + 'px';
+        menu.style.top = (e.clientY || 0) + 'px';
+        menu.style.zIndex = '10000';
+
+        var sawAny = false;
+        items.forEach(function (it) {
+            if (!it) return;
+            if (it === 'divider') {
+                var d = document.createElement('div');
+                d.className = 'bowire-workspace-menu-divider';
+                menu.appendChild(d);
+                return;
+            }
+            sawAny = true;
+            var item = document.createElement('div');
+            item.className = 'bowire-workspace-menu-item bowire-workspace-menu-item-action'
+                + (it.danger ? ' bowire-workspace-menu-item-danger' : '')
+                + (it.disabled ? ' is-disabled' : '');
+            item.setAttribute('role', 'menuitem');
+            var icon = document.createElement('span');
+            icon.className = 'bowire-workspace-menu-item-icon';
+            icon.textContent = it.icon || '';
+            item.appendChild(icon);
+            var label = document.createElement('span');
+            label.textContent = it.label;
+            item.appendChild(label);
+            if (!it.disabled) {
+                item.addEventListener('click', function (ev) {
+                    ev.stopPropagation();
+                    _closeWorkspaceContextMenu();
+                    try { it.onClick(); } catch (err) { console.error('[bowire-tree-ctx] action threw', err); }
+                });
+            }
+            menu.appendChild(item);
+        });
+        if (!sawAny) return;
+
+        document.body.appendChild(menu);
+        var vw = window.innerWidth, vh = window.innerHeight;
+        var rect = menu.getBoundingClientRect();
+        if (rect.right > vw) menu.style.left = Math.max(8, vw - rect.width - 8) + 'px';
+        if (rect.bottom > vh) menu.style.top = Math.max(8, vh - rect.height - 8) + 'px';
+
+        function onKeyDown(ev) {
+            if (ev.key === 'Escape') { ev.preventDefault(); _closeWorkspaceContextMenu(); }
+        }
+        function onDocClick(ev) {
+            if (!menu.contains(ev.target)) _closeWorkspaceContextMenu();
+        }
+        document.addEventListener('keydown', onKeyDown);
+        setTimeout(function () { document.addEventListener('click', onDocClick); }, 0);
+
+        _activeWorkspaceContextMenu = {
+            element: menu,
+            close: function () {
+                document.removeEventListener('keydown', onKeyDown);
+                document.removeEventListener('click', onDocClick);
+                if (menu.parentNode) menu.parentNode.removeChild(menu);
+            }
+        };
+    }
+
     function openWorkspaceContextMenu(w, e) {
-        if (!w || !e) return;
+        if (!e) return;
         _closeWorkspaceContextMenu();
 
-        var isActive = w.id === activeWorkspaceId;
+        var isActive = w && w.id === activeWorkspaceId;
         var menu = document.createElement('div');
         menu.className = 'bowire-workspace-menu bowire-workspace-context-menu';
         menu.setAttribute('role', 'menu');
@@ -1674,57 +1777,59 @@
             menu.appendChild(d);
         }
 
-        addItem({
-            icon: isActive ? '✓' : '→',
-            label: isActive ? 'Active workspace' : 'Switch to this workspace',
-            disabled: isActive,
-            onClick: function () { switchWorkspace(w.id); }
-        });
-        addItem({
-            icon: '✎',
-            label: 'Rename…',
-            onClick: function () {
-                bowirePrompt('Rename workspace', {
-                    title: 'Rename',
-                    defaultValue: w.name,
-                    confirmText: 'Rename',
-                }).then(function (renamed) {
-                    if (renamed) {
-                        renameWorkspace(w.id, renamed);
-                        render();
-                    }
-                });
-            }
-        });
-        addItem({
-            icon: '⚙',
-            label: 'Edit settings',
-            onClick: function () {
-                workspacesSelectedId = w.id;
-                workspaceTreeSelection = { wsId: w.id, kind: 'workspace' };
-                railMode = 'workspaces';
-                try { localStorage.setItem('bowire_rail_mode', 'workspaces'); }
-                catch { /* ignore */ }
-                render();
-            }
-        });
-        addItem({
-            icon: '🗑',
-            label: 'Delete',
-            danger: true,
-            onClick: function () {
-                var isLast = workspaces.length === 1;
-                var msg = isLast
-                    ? 'Delete the last workspace "' + w.name + '"? You will return to the empty no-workspace state — the underlying URLs / envs / recordings for this workspace are removed.'
-                    : 'Delete workspace "' + w.name + '"? The underlying URLs / envs / recordings for this workspace are removed.';
-                bowireConfirm(
-                    msg,
-                    function () { deleteWorkspace(w.id); render(); },
-                    { title: 'Delete workspace', confirmText: 'Delete', danger: true }
-                );
-            }
-        });
-        addDivider();
+        if (w) {
+            addItem({
+                icon: isActive ? '✓' : '→',
+                label: isActive ? 'Active workspace' : 'Switch to this workspace',
+                disabled: isActive,
+                onClick: function () { switchWorkspace(w.id); }
+            });
+            addItem({
+                icon: '✎',
+                label: 'Rename…',
+                onClick: function () {
+                    bowirePrompt('Rename workspace', {
+                        title: 'Rename',
+                        defaultValue: w.name,
+                        confirmText: 'Rename',
+                    }).then(function (renamed) {
+                        if (renamed) {
+                            renameWorkspace(w.id, renamed);
+                            render();
+                        }
+                    });
+                }
+            });
+            addItem({
+                icon: '⚙',
+                label: 'Edit settings',
+                onClick: function () {
+                    workspacesSelectedId = w.id;
+                    workspaceTreeSelection = { wsId: w.id, kind: 'workspace' };
+                    railMode = 'workspaces';
+                    try { localStorage.setItem('bowire_rail_mode', 'workspaces'); }
+                    catch { /* ignore */ }
+                    render();
+                }
+            });
+            addItem({
+                icon: '🗑',
+                label: 'Delete',
+                danger: true,
+                onClick: function () {
+                    var isLast = workspaces.length === 1;
+                    var msg = isLast
+                        ? 'Delete the last workspace "' + w.name + '"? You will return to the empty no-workspace state — the underlying URLs / envs / recordings for this workspace are removed.'
+                        : 'Delete workspace "' + w.name + '"? The underlying URLs / envs / recordings for this workspace are removed.';
+                    bowireConfirm(
+                        msg,
+                        function () { deleteWorkspace(w.id); render(); },
+                        { title: 'Delete workspace', confirmText: 'Delete', danger: true }
+                    );
+                }
+            });
+            addDivider();
+        }
         addItem({
             icon: '+',
             label: 'New workspace…',
@@ -1787,7 +1892,21 @@
     // that node's editor. Expansion state is persisted per node so
     // collapse survives a reload.
     function renderWorkspacesSidebar() {
-        var sidebar = el('div', { id: 'bowire-sidebar', className: 'bowire-sidebar bowire-sidebar-mode' });
+        var sidebar = el('div', {
+            id: 'bowire-sidebar',
+            className: 'bowire-sidebar bowire-sidebar-mode',
+            // Right-click on the empty area of the rail (anywhere not
+            // covered by a tree row) opens a minimal context menu with
+            // just "+ New workspace…" — so the operator doesn't need to
+            // find a row to click on before they can create one.
+            onContextMenu: function (e) {
+                if (e.target && e.target.closest && e.target.closest('.bowire-tree-row')) return;
+                e.preventDefault();
+                if (typeof openWorkspaceContextMenu === 'function') {
+                    openWorkspaceContextMenu(null, e);
+                }
+            }
+        });
 
         sidebar.appendChild(renderSidebarHeader({
             title: 'Workspaces',
@@ -1840,9 +1959,22 @@
         children.push(_buildSimpleChildNode(w, 'settings', 'settings',
             'Settings', null));
 
+        // Same Lucide 'layers' glyph as the topbar chip + dropdown rows
+        // — top "leaf" picks up the workspace's chosen colour, lower
+        // two layers inherit currentColor. Reads as "this is a
+        // workspace, identified by its colour" across all three
+        // workspace-pick surfaces.
+        var wsColor = w.color || 'var(--bowire-accent)';
+        var wsGlyph = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14">'
+            + '<polygon points="12 2 2 7 12 12 22 7 12 2" fill="' + wsColor + '" stroke="' + wsColor + '"/>'
+            + '<polyline points="2 17 12 22 22 17"/>'
+            + '<polyline points="2 12 12 17 22 12"/>'
+            + '</svg>';
+
         return {
             id: wsExpandKey,
             label: w.name,
+            iconHtml: wsGlyph,
             accent: w.color || 'var(--bowire-accent)',
             active: isActive,
             selected: wsSelected,
@@ -1922,6 +2054,24 @@
                 _quickAddUrlToWorkspace(w);
             },
             addTitle: 'Add URL or schema',
+            onContext: function (ev) {
+                openTreeSubContextMenu(ev, [
+                    {
+                        icon: '→',
+                        label: 'Open Sources',
+                        onClick: function () {
+                            workspacesSelectedId = w.id;
+                            workspaceTreeSelection = { wsId: w.id, kind: 'sources' };
+                            render();
+                        }
+                    },
+                    {
+                        icon: '+',
+                        label: 'Add URL or schema',
+                        onClick: function () { _quickAddUrlToWorkspace(w); }
+                    }
+                ]);
+            },
             onDrop: function (dt) { _handleWorkspaceDrop(w, dt); },
             children: urlChildren
         };
@@ -1991,6 +2141,35 @@
                 render();
             },
             addTitle: 'New collection',
+            onContext: function (ev) {
+                openTreeSubContextMenu(ev, [
+                    {
+                        icon: '→',
+                        label: 'Open Collections',
+                        onClick: function () {
+                            workspacesSelectedId = w.id;
+                            workspaceTreeSelection = { wsId: w.id, kind: 'collections' };
+                            render();
+                        }
+                    },
+                    {
+                        icon: '+',
+                        label: 'New collection',
+                        onClick: function () {
+                            if (w.id !== activeWorkspaceId) switchWorkspace(w.id);
+                            if (typeof createCollection !== 'function') return;
+                            var col = createCollection();
+                            if (typeof collectionManagerSelectedId !== 'undefined') {
+                                collectionManagerSelectedId = col.id;
+                            }
+                            workspaceTreeSelection = { wsId: w.id, kind: 'collection', value: col.id };
+                            workspaceTreeExpanded[key] = true;
+                            persistWorkspaceTreeExpanded();
+                            render();
+                        }
+                    }
+                ]);
+            },
             children: leafChildren
         };
     }
@@ -2055,6 +2234,32 @@
                 }
             },
             addTitle: 'Start recording',
+            onContext: function (ev) {
+                openTreeSubContextMenu(ev, [
+                    {
+                        icon: '→',
+                        label: 'Open Recordings',
+                        onClick: function () {
+                            workspacesSelectedId = w.id;
+                            workspaceTreeSelection = { wsId: w.id, kind: 'recordings' };
+                            render();
+                        }
+                    },
+                    {
+                        icon: '●',
+                        label: 'Start recording',
+                        onClick: function () {
+                            if (w.id !== activeWorkspaceId) switchWorkspace(w.id);
+                            if (typeof startRecording === 'function') {
+                                startRecording();
+                                railMode = 'discover';
+                                try { localStorage.setItem('bowire_rail_mode', 'discover'); } catch { /* ignore */ }
+                                render();
+                            }
+                        }
+                    }
+                ]);
+            },
             children: leafChildren
         };
     }
@@ -2129,6 +2334,35 @@
                 render();
             },
             addTitle: 'New environment',
+            onContext: function (ev) {
+                openTreeSubContextMenu(ev, [
+                    {
+                        icon: '→',
+                        label: 'Open Environments',
+                        onClick: function () {
+                            workspacesSelectedId = w.id;
+                            workspaceTreeSelection = { wsId: w.id, kind: 'environments' };
+                            render();
+                        }
+                    },
+                    {
+                        icon: '+',
+                        label: 'New environment',
+                        onClick: function () {
+                            if (w.id !== activeWorkspaceId) switchWorkspace(w.id);
+                            if (typeof createEnvironment !== 'function') return;
+                            var env = createEnvironment('New Environment');
+                            if (typeof envSidebarSelectedId !== 'undefined') {
+                                envSidebarSelectedId = env.id;
+                            }
+                            workspaceTreeSelection = { wsId: w.id, kind: 'env', value: env.id };
+                            workspaceTreeExpanded[key] = true;
+                            persistWorkspaceTreeExpanded();
+                            render();
+                        }
+                    }
+                ]);
+            },
             children: leafChildren
         };
     }
@@ -2146,6 +2380,19 @@
                 workspacesSelectedId = w.id;
                 workspaceTreeSelection = { wsId: w.id, kind: kind };
                 render();
+            },
+            onContext: function (ev) {
+                openTreeSubContextMenu(ev, [
+                    {
+                        icon: '→',
+                        label: 'Open ' + label,
+                        onClick: function () {
+                            workspacesSelectedId = w.id;
+                            workspaceTreeSelection = { wsId: w.id, kind: kind };
+                            render();
+                        }
+                    }
+                ]);
             }
         };
     }
