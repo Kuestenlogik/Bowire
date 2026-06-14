@@ -4765,26 +4765,7 @@ response below.
     border-bottom: 1px solid var(--bowire-border);
     background: var(--bowire-bg-elevated);
 }
-.bowire-ws-frame-btn {
-    padding: 4px 12px;
-    border: 1px solid var(--bowire-border);
-    background: var(--bowire-bg);
-    color: var(--bowire-text-muted);
-    font-size: 11px;
-    font-weight: 600;
-    border-radius: var(--bowire-radius-md);
-    cursor: pointer;
-    margin-left: 4px;
-}
-.bowire-ws-frame-btn:hover {
-    background: var(--bowire-sidebar-hover);
-    color: var(--bowire-text);
-}
-.bowire-ws-frame-btn.active {
-    background: var(--bowire-accent-subtle);
-    color: var(--bowire-accent-text);
-    border-color: var(--bowire-accent);
-}
+/* .bowire-ws-frame-btn retired in favour of .bowire-toggle-btn. */
 .bowire-ws-file-row {
     display: flex;
     flex-direction: column;
@@ -7478,21 +7459,30 @@ and chip row */
 
 /* Custom env dropdown in topbar */
 .bowire-env-dropdown-wrapper { position: relative; }
+/* Env-switcher uses the same chip shape as the workspace switcher
+   sitting next to it in the topbar — the two are paired as the
+   editor-context group, so they read as one control strip rather
+   than two unrelated dropdowns with different heights, paddings,
+   and border-on-hover behaviour. */
 .bowire-env-dropdown-btn {
-    display: flex;
+    display: inline-flex;
     align-items: center;
     gap: 6px;
-    background: none;
-    border: none;
+    height: 30px;
+    padding: 0 10px;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: var(--bowire-radius-sm);
     color: var(--bowire-text);
     cursor: pointer;
-    padding: 4px 8px;
-    border-radius: var(--bowire-radius-sm);
     font-size: 12px;
     font-family: var(--bowire-font-sans);
-    transition: background var(--bowire-transition);
+    transition: background var(--bowire-transition), border-color var(--bowire-transition);
 }
-.bowire-env-dropdown-btn:hover { background: var(--bowire-surface-hover); }
+.bowire-env-dropdown-btn:hover {
+    background: var(--bowire-surface-hover);
+    border-color: var(--bowire-border);
+}
 .bowire-env-btn-text {
     max-width: 120px;
     overflow: hidden;
@@ -8129,7 +8119,11 @@ fade-in) but
 .bowire-flow-canvas {
     flex: 1;
     overflow-y: auto;
-    padding: 24px 32px;
+    /* Use the shared main-gutter token so the flow canvas reads with
+       the same horizontal inset as Discover, Mocks, Recordings,
+       Collections — used to ship 24px×32px which made the empty card
+       sit ~8 px further right than every other rail. */
+    padding: var(--bowire-main-gutter);
     display: flex;
     flex-direction: column;
 }
@@ -10147,6 +10141,59 @@ and offers the path to switch. */
     border-radius: 50%;
     flex-shrink: 0;
 }
+
+/* Workspace breadcrumb — sits at the top of every workspace sub-view
+   (Sources / Collections / Environments / Recordings, plus their
+   per-item detail panes). First crumb carries the workspace identity
+   (color dot + name) and links back to the workspace settings card;
+   intermediate crumbs link back to the parent section; the last crumb
+   is the active page and reads as the page title. Renders large
+   enough that operators with the workspace tree collapsed still see
+   exactly where they are. */
+.bowire-ws-breadcrumb {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
+    font-size: 18px;
+    line-height: 1.3;
+}
+.bowire-ws-breadcrumb-crumb {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: transparent;
+    border: 1px solid transparent;
+    color: var(--bowire-text-secondary);
+    padding: 4px 8px;
+    border-radius: var(--bowire-radius-md);
+    font: inherit;
+    cursor: pointer;
+    transition: background var(--bowire-transition), color var(--bowire-transition), border-color var(--bowire-transition);
+}
+.bowire-ws-breadcrumb-crumb:hover,
+.bowire-ws-breadcrumb-crumb:focus-visible {
+    background: var(--bowire-surface);
+    color: var(--bowire-text);
+    border-color: var(--bowire-border);
+    outline: none;
+}
+.bowire-ws-breadcrumb-dot {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+.bowire-ws-breadcrumb-sep {
+    color: var(--bowire-text-tertiary);
+    user-select: none;
+    font-size: 16px;
+}
+.bowire-ws-breadcrumb-current {
+    color: var(--bowire-text);
+    font-weight: 600;
+    padding: 4px 8px;
+}
 .bowire-ws-detail-name {
     flex: 1;
     font-size: 20px;
@@ -10282,6 +10329,50 @@ button.bowire-ws-detail-stat-clickable:hover .bowire-ws-detail-stat-value {
 .bowire-ws-detail-danger {
     border-top: 1px solid var(--bowire-border-subtle);
     padding-top: 16px;
+}
+/* Workspace sub-view action buttons (+ New environment, + Start
+   recording, + New collection, Switch to <ws>, Remove URL). Used to
+   render with browser-default chrome because the class had no rule
+   body — uses the same outlined-button shape as the Recordings
+   toolbar so the workspace surfaces read as part of the app. The
+   .bowire-ws-detail-danger modifier on this button (separate from the
+   "Danger zone" container above) tints the hover state red so a
+   Remove / Delete affordance reads distinctly. */
+button.bowire-ws-detail-action {
+    display: inline-flex;
+    align-items: center;
+    /* Containers like .bowire-ws-detail-section are flex-column with
+       align-items: stretch (default), which would otherwise stretch
+       the button to the container's full width. align-self pins it
+       to its natural width so "+ New environment" reads as a small
+       inline affordance, not a banner. */
+    align-self: flex-start;
+    gap: 6px;
+    height: 28px;
+    padding: 0 12px;
+    background: transparent;
+    border: 1px solid var(--bowire-border);
+    border-radius: var(--bowire-radius-sm);
+    color: var(--bowire-text-secondary);
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: var(--bowire-font-sans);
+    transition: background var(--bowire-transition), color var(--bowire-transition), border-color var(--bowire-transition);
+}
+button.bowire-ws-detail-action:hover:not(:disabled) {
+    background: var(--bowire-sidebar-hover);
+    color: var(--bowire-text);
+    border-color: var(--bowire-accent);
+}
+button.bowire-ws-detail-action:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+button.bowire-ws-detail-action.bowire-ws-detail-danger:hover:not(:disabled) {
+    border-color: #ef4444;
+    color: #ef4444;
+    background: transparent;
 }
 .bowire-ws-detail-delete-btn {
     background: var(--bowire-error-bg);
@@ -11163,42 +11254,45 @@ subtler
     font-size: 12px;
 }
 
-/* ---------- Transcoding mode toggle (gRPC vs HTTP) ---------- */
-.bowire-transcoding-toggle {
+/* ---------- Shared toggle group ---------- */
+/* Two-/three-button segmented toggle. Used wherever the operator picks
+   one option of a small mutually-exclusive set: Security tier
+   (Heuristic | AI-assisted), gRPC transcoding (gRPC | HTTP), WebSocket
+   frame type (Text | Binary). Replaces .bowire-transcoding-toggle/-btn,
+   .bowire-ai-threat-tier(row), and .bowire-ws-frame-btn which all
+   shipped their own bespoke chrome. */
+.bowire-toggle-group {
     display: inline-flex;
     height: 28px;
     border: 1px solid var(--bowire-border);
     border-radius: var(--bowire-radius-sm);
     overflow: hidden;
-    margin-left: 8px;
 }
-
-.bowire-transcoding-btn {
+.bowire-toggle-btn {
     height: 100%;
     padding: 0 12px;
     background: transparent;
     border: none;
-    color: var(--bowire-text-tertiary);
+    color: var(--bowire-text-secondary);
     font-size: 11px;
     font-weight: 600;
     cursor: pointer;
     font-family: var(--bowire-font-sans);
-    transition: all var(--bowire-transition);
+    transition: background var(--bowire-transition), color var(--bowire-transition);
     border-right: 1px solid var(--bowire-border);
 }
-
-.bowire-transcoding-btn:last-child {
-    border-right: none;
-}
-
-.bowire-transcoding-btn:hover {
+.bowire-toggle-btn:last-child { border-right: none; }
+.bowire-toggle-btn:hover:not(.is-active):not(:disabled) {
     background: var(--bowire-sidebar-hover);
     color: var(--bowire-text);
 }
-
-.bowire-transcoding-btn.active {
-    background: var(--bowire-accent);
-    color: white;
+.bowire-toggle-btn.is-active {
+    background: var(--bowire-accent-subtle);
+    color: var(--bowire-accent-text);
+}
+.bowire-toggle-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
 }
 
 /* Read-only info badge shown when method is transcoded but REST plugin
@@ -11781,7 +11875,10 @@ plus a footer with the
 }
 /* Empty-card inside landing-card pulls its built-in margin since
    landing-card sets its own gap. */
-.bowire-landing-card > .bowire-empty-card { margin: 0; padding-inline: 0; }
+/* Landing card wraps the empty-card; let the empty-card keep its
+   stock padding so Discover's headline + body align with the same
+   left inset as Mocks, Flows, and every other rail's empty card. */
+.bowire-landing-card > .bowire-empty-card { margin: 0; }
 
 /* Hero shell — used by first-run only. Wider,
 with the big logo. */
@@ -13717,39 +13814,9 @@ full accent for user-pinned
 .bowire-ai-threat-section { display: flex; flex-direction: column; gap: 6px; }
 .bowire-ai-threat-title { margin: 0; font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--bowire-text-tertiary); }
 .bowire-ai-threat-help { font-size: 11px; margin: 0; color: var(--bowire-text-secondary); line-height: 1.4; }
-/* Tier toggle (#112) — pair of pill buttons that switch between
-   heuristic + AI ranking. Active gets a filled bg; disabled (no AI
-   client) renders muted. */
-.bowire-ai-threat-tierrow {
-    display: flex;
-    gap: 4px;
-    margin: 4px 0 8px;
-}
-.bowire-ai-threat-tier {
-    flex: 1;
-    background: transparent;
-    border: 1px solid var(--bowire-border);
-    border-radius: var(--bowire-radius-sm);
-    color: var(--bowire-text-secondary);
-    cursor: pointer;
-    font-size: 11px;
-    padding: 4px 10px;
-    transition: background var(--bowire-transition), color var(--bowire-transition), border-color var(--bowire-transition);
-}
-.bowire-ai-threat-tier:hover:not(:disabled) {
-    color: var(--bowire-text);
-    border-color: var(--bowire-text-tertiary);
-}
-.bowire-ai-threat-tier.active {
-    background: var(--bowire-accent-subtle);
-    border-color: var(--bowire-accent);
-    color: var(--bowire-accent-text);
-    font-weight: 500;
-}
-.bowire-ai-threat-tier:disabled {
-    cursor: not-allowed;
-    opacity: 0.5;
-}
+/* Tier toggle (#112): heuristic vs AI-assisted ranking. Uses the
+   shared .bowire-toggle-group / .bowire-toggle-btn family — the
+   bespoke .bowire-ai-threat-tier(row) classes were retired. */
 /* Rule trace under each heuristic-ranked row. Indented + smaller
    than the row body so it reads as supporting context,
 not as the

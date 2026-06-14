@@ -834,8 +834,10 @@
         { id: 'flows',        icon: 'flow',      label: 'Flows',             group: 'scenarios', sidebar: { kind: 'flows' } },
         { id: 'proxy',        icon: 'disconnect',label: 'Proxy / MITM',      group: 'quality',   sidebar: { kind: 'proxy' } },
         { id: 'benchmarks',   icon: 'chart',     label: 'Benchmarks',        group: 'quality',   sidebar: { kind: 'benchmarks' } },
-        { id: 'parallel',     icon: 'lightning', label: 'Parallel sessions', group: 'quality',   sidebar: { kind: 'none' } },
-        { id: 'security',     icon: 'shield',    label: 'Security',          group: 'hardening', sidebar: { kind: 'services' } },
+        // Parallel sessions: launched directly from a recording or
+        // collection toolbar (#132 minimal). No standalone rail mode —
+        // the result lands inline under the source that started it.
+        { id: 'security',     icon: 'shield',    label: 'Security',          group: 'hardening', sidebar: { kind: 'security' } },
         { id: 'workspaces',   icon: 'layers',    label: 'Workspaces',        group: 'hardening', sidebar: { kind: 'workspaces' } },
     ];
     function _railModeById(id) {
@@ -880,8 +882,11 @@
                 }
                 return 0;
             case 'workspaces':
-                return (typeof workspaces !== 'undefined' && Array.isArray(workspaces))
-                    ? workspaces.length : 0;
+                // Workspace count on the rail icon read like an unread-
+                // message badge — visually loud for a number that just
+                // says "you have N folders configured". No meaningful
+                // signal to surface, so the badge is suppressed.
+                return null;
             case 'proxy':
                 return (typeof proxyFlows !== 'undefined' && Array.isArray(proxyFlows))
                     ? proxyFlows.length : 0;
@@ -1266,119 +1271,64 @@
                 })
             );
         } else {
-            // Normal header — same shape as the recordings modal's
-            // left header: title + start/stop record button.
-            header = el('div', { className: 'bowire-env-list-header' },
-                el('span', { textContent: 'Recordings' }),
-                el('button', {
-                    className: 'bowire-env-add-btn',
-                    title: isRecording() ? 'Stop the current recording' : 'Start a new recording',
-                    'aria-label': isRecording() ? 'Stop recording' : 'Start recording',
-                    innerHTML: svgIcon(isRecording() ? 'square' : 'record'),
-                    onClick: function () {
-                        if (isRecording()) {
-                            stopRecording();
-                        } else {
-                            startRecording();
+            // Normal header — title + start/stop record button + overflow.
+            header = renderSidebarHeader({
+                title: 'Recordings',
+                actions: [
+                    {
+                        title: isRecording() ? 'Stop the current recording' : 'Start a new recording',
+                        ariaLabel: isRecording() ? 'Stop recording' : 'Start recording',
+                        icon: isRecording() ? 'square' : 'record',
+                        onClick: function () {
+                            if (isRecording()) stopRecording();
+                            else startRecording();
+                            if (recordingActiveId) recordingManagerSelectedId = recordingActiveId;
+                            render();
                         }
-                        if (recordingActiveId) recordingManagerSelectedId = recordingActiveId;
-                        render();
-                    }
-                }),
-                // ⋮ overflow with 'Delete all' when list non-empty.
-                recordingsList.length > 0 ? el('button', {
-                    className: 'bowire-env-add-btn',
-                    title: 'More actions',
-                    'aria-label': 'More actions',
-                    textContent: '⋮',
-                    onClick: function () {
-                        var n = recordingsList.length;
-                        bowireConfirm(
-                            'Move all ' + n + ' recordings to trash?',
-                            function () {
-                                // Same bulk-move path as the selection
-                                // Delete action, but over the full list.
-                                var removed = recordingsList.map(function (r, idx) {
-                                    return { entry: r, originalIdx: idx, deletedAt: Date.now() };
-                                });
-                                recordingsList.length = 0;
-                                recordingManagerSelectedId = null;
-                                recordingActiveId = null;
-                                for (var k = removed.length - 1; k >= 0; k--) recordingsTrash.unshift(removed[k]);
-                                persistRecordings();
-                                persistRecordingsTrash();
-                                toast(removed.length + ' recordings moved to trash', 'success');
-                                render();
-                            },
-                            { title: 'Move all to trash', confirmText: 'Move ' + n, danger: true }
-                        );
-                    }
-                }) : null
-            );
+                    },
+                    recordingsList.length > 0 ? {
+                        title: 'More actions', ariaLabel: 'More actions', label: '⋮',
+                        onClick: function () {
+                            var n = recordingsList.length;
+                            bowireConfirm(
+                                'Move all ' + n + ' recordings to trash?',
+                                function () {
+                                    var removed = recordingsList.map(function (r, idx) {
+                                        return { entry: r, originalIdx: idx, deletedAt: Date.now() };
+                                    });
+                                    recordingsList.length = 0;
+                                    recordingManagerSelectedId = null;
+                                    recordingActiveId = null;
+                                    for (var k = removed.length - 1; k >= 0; k--) recordingsTrash.unshift(removed[k]);
+                                    persistRecordings();
+                                    persistRecordingsTrash();
+                                    toast(removed.length + ' recordings moved to trash', 'success');
+                                    render();
+                                },
+                                { title: 'Move all to trash', confirmText: 'Move ' + n, danger: true }
+                            );
+                        }
+                    } : null
+                ]
+            });
         }
         sidebar.appendChild(header);
 
         // List
         if (recordingsList.length === 0) {
-            var emptyHost = el('div', { className: 'bowire-recordings-sidebar-empty', style: 'padding:12px' });
-            emptyHost.appendChild(renderEmptyCard({
-                icon: 'recording',
-                headline: 'No recordings yet',
-                body: 'Recordings capture a sequence of calls verbatim. Start one to begin.',
-                actions: [
-                    {
-                        label: 'Start recording',
-                        primary: true,
-                        onClick: function () { startRecording(); render(); }
-                    }
-                ]
+            // Sidebar shows the empty state as a single low-noise hint;
+            // the full call-to-action lives in the main pane so the
+            // operator doesn't read "No recordings yet · Start recording"
+            // twice — once on the left, once in the middle.
+            sidebar.appendChild(el('div', {
+                className: 'bowire-pane-empty',
+                style: 'padding:12px 14px',
+                textContent: 'No recordings yet.'
             }));
-            sidebar.appendChild(emptyHost);
         } else {
             var list = el('div', { id: 'bowire-recordings-list', className: 'bowire-env-list' });
             var recIds = recordingsList.map(function (r) { return r.id; });
             recordingsList.forEach(function (rec, idx) {
-                var isActive = recordingManagerSelectedId === rec.id;
-                var isSelected = recordingsSelected.has(rec.id);
-                // Stable per-recording id so morphdom keys the row by
-                // recording instead of by position. Without the id,
-                // the topmost row was inheriting a stale onClick
-                // closure from a previous render (or a previous
-                // mode's first list item) and the click went nowhere.
-                var row = el('div', {
-                    id: 'bowire-rec-row-' + rec.id,
-                    className: 'bowire-env-list-item'
-                        + (isActive ? ' active' : '')
-                        + (isSelected ? ' selected' : ''),
-                    onClick: function (e) {
-                        // #143 Phase 3 — modifier-aware click handling.
-                        // Shift / Ctrl / Cmd modify the multi-select
-                        // set; plain click acts as single-row select
-                        // (clears any in-progress multi-select).
-                        var isMod = applyListSelectionClick(recordingsSelected, recordingsSelectionAnchor, recIds, idx, e);
-                        if (isMod) {
-                            recordingsSelectionAnchor = idx;
-                        } else {
-                            recordingsSelected.clear();
-                            recordingsSelectionAnchor = idx;
-                            recordingManagerSelectedId = rec.id;
-                            // #144 Phase 1.8 — when this workspace
-                            // loaded manifest-only, fetch the step
-                            // bodies for the just-selected recording
-                            // so the detail pane has something to
-                            // render. Idempotent on already-hydrated
-                            // entries.
-                            if (typeof hydrateRecording === 'function'
-                                && (!Array.isArray(rec.steps) || rec.steps.length === 0)
-                                && Array.isArray(rec.stepsManifest)
-                                && rec.stepsManifest.length > 0) {
-                                hydrateRecording(rec).then(function () { render(); });
-                            }
-                        }
-                        render();
-                    }
-                });
-                row.appendChild(el('div', { className: 'bowire-env-list-item-name', textContent: rec.name }));
                 // #144 Phase 1.8 — for manifest-only recordings the
                 // steps[] array is empty until hydration; read step
                 // count from stepCount (written by the backend) or
@@ -1387,36 +1337,48 @@
                 if (rec.steps && rec.steps.length) stepN = rec.steps.length;
                 else if (typeof rec.stepCount === 'number') stepN = rec.stepCount;
                 else if (Array.isArray(rec.stepsManifest)) stepN = rec.stepsManifest.length;
-                row.appendChild(el('div', {
-                    className: 'bowire-env-list-item-meta',
-                    textContent: stepN + ' step' + (stepN === 1 ? '' : 's')
-                        + (rec.id === recordingActiveId ? ' · ● recording' : '')
-                }));
-                // #143 — per-row delete with undo toast.
-                row.appendChild(el('button', {
-                    type: 'button',
-                    className: 'bowire-list-row-delete',
-                    title: 'Delete recording',
-                    'aria-label': 'Delete recording',
-                    innerHTML: svgIcon('trash'),
+
+                list.appendChild(renderSidebarListItem({
+                    id: 'bowire-rec-row-' + rec.id,
+                    name: rec.name,
+                    meta: stepN + ' step' + (stepN === 1 ? '' : 's')
+                        + (rec.id === recordingActiveId ? ' · ● recording' : ''),
+                    active: recordingManagerSelectedId === rec.id,
+                    selected: recordingsSelected.has(rec.id),
                     onClick: function (e) {
-                        e.stopPropagation();
-                        var idx = recordingsList.indexOf(rec);
-                        if (idx < 0) return;
-                        var backup = recordingsList[idx];
-                        recordingsList.splice(idx, 1);
+                        // #143 Phase 3 — modifier-aware click handling.
+                        var isMod = applyListSelectionClick(recordingsSelected, recordingsSelectionAnchor, recIds, idx, e);
+                        if (isMod) {
+                            recordingsSelectionAnchor = idx;
+                        } else {
+                            recordingsSelected.clear();
+                            recordingsSelectionAnchor = idx;
+                            recordingManagerSelectedId = rec.id;
+                            if (typeof hydrateRecording === 'function'
+                                && (!Array.isArray(rec.steps) || rec.steps.length === 0)
+                                && Array.isArray(rec.stepsManifest)
+                                && rec.stepsManifest.length > 0) {
+                                hydrateRecording(rec).then(function () { render(); });
+                            }
+                        }
+                        render();
+                    },
+                    deleteTitle: 'Delete recording',
+                    onDelete: function () {
+                        var dIdx = recordingsList.indexOf(rec);
+                        if (dIdx < 0) return;
+                        var backup = recordingsList[dIdx];
+                        recordingsList.splice(dIdx, 1);
                         if (recordingManagerSelectedId === rec.id) recordingManagerSelectedId = null;
                         if (recordingActiveId === rec.id) recordingActiveId = null;
-                        // #143 Phase 2 — move to trash (recoverable
-                        // for 30 days) instead of immediate purge.
-                        recordingsTrash.unshift({ entry: backup, deletedAt: Date.now(), originalIdx: idx });
+                        recordingsTrash.unshift({ entry: backup, deletedAt: Date.now(), originalIdx: dIdx });
                         persistRecordings();
                         persistRecordingsTrash();
                         toast('Recording moved to trash', 'success', {
                             undo: function () {
                                 var t = recordingsTrash.shift();
                                 if (t) {
-                                    recordingsList.splice(Math.min(idx, recordingsList.length), 0, t.entry);
+                                    recordingsList.splice(Math.min(dIdx, recordingsList.length), 0, t.entry);
                                     persistRecordings();
                                     persistRecordingsTrash();
                                     render();
@@ -1426,7 +1388,6 @@
                         render();
                     }
                 }));
-                list.appendChild(row);
             });
             sidebar.appendChild(list);
         }
@@ -1482,33 +1443,13 @@
         sidebar.appendChild(header);
 
         if (!serverUrls || serverUrls.length === 0) {
-            var emptyHost = el('div', { style: 'padding:12px' });
-            emptyHost.appendChild(renderEmptyCard({
-                icon: 'plug',
-                headline: 'No URLs yet',
-                body: 'Add a discovery URL to start exploring. Prefix with rest@, graphql@, grpc@ if the protocol isn’t obvious from the host.',
-                actions: !config.lockServerUrl ? [
-                    {
-                        label: 'Add URL',
-                        primary: true,
-                        onClick: function () {
-                            bowirePrompt('Add discovery URL', {
-                                title: 'New source',
-                                placeholder: 'rest@https://… / graphql@…',
-                                confirmText: 'Add',
-                            }).then(function (raw) {
-                                if (!raw) return;
-                                if (typeof addServerUrl === 'function') addServerUrl(raw);
-                                else { serverUrls.push(raw); if (typeof persistServerUrls === 'function') persistServerUrls(); }
-                                sourcesSelectedUrl = raw;
-                                if (typeof onServerUrlChanged === 'function') onServerUrlChanged();
-                                render();
-                            });
-                        }
-                    }
-                ] : null
+            // Empty-state copy + "Add URL" call-to-action live in the
+            // main pane so the sidebar doesn't shout the same thing.
+            sidebar.appendChild(el('div', {
+                className: 'bowire-pane-empty',
+                style: 'padding:12px 14px',
+                textContent: 'No URLs yet.'
             }));
-            sidebar.appendChild(emptyHost);
             return sidebar;
         }
 
@@ -1735,6 +1676,8 @@
         var children = [];
         children.push(_buildSourcesTreeNode(w));
         children.push(_buildEnvironmentsTreeNode(w));
+        children.push(_buildSimpleChildNode(w, 'variables', 'lock',
+            'Variables', null));
         children.push(_buildCollectionsTreeNode(w));
         children.push(_buildRecordingsTreeNode(w));
         children.push(_buildSimpleChildNode(w, 'settings', 'settings',
@@ -1799,7 +1742,11 @@
         return {
             id: sourcesKey,
             label: 'Sources',
-            icon: 'globe',
+            // server (rack) glyph for the backend-endpoint side — sources
+            // are "what backends does this workspace talk to". Used to be
+            // `globe`, which collided with Environments (deployment
+            // contexts / stages) in the tree.
+            icon: 'server',
             badge: urls.length || null,
             selected: sourcesSelected,
             expandable: true,
@@ -2206,102 +2153,61 @@
                 })
             );
         } else {
-            header = el('div', { className: 'bowire-env-list-header' },
-                el('span', { textContent: 'Collections' }),
-                el('button', {
-                    className: 'bowire-env-add-btn',
-                    title: 'Create new collection',
-                    'aria-label': 'Create new collection',
-                    innerHTML: svgIcon('plus'),
-                    onClick: function () {
-                        var col = createCollection();
-                        collectionManagerSelectedId = col.id;
-                        render();
-                    }
-                }),
-                collectionsList && collectionsList.length > 0 ? el('button', {
-                    className: 'bowire-env-add-btn',
-                    title: 'More actions',
-                    'aria-label': 'More actions',
-                    textContent: '⋮',
-                    onClick: function () {
-                        var n = collectionsList.length;
-                        bowireConfirm(
-                            'Move all ' + n + ' collections to trash?',
-                            function () {
-                                var removed = collectionsList.map(function (c, idx) {
-                                    return { entry: c, originalIdx: idx, deletedAt: Date.now() };
-                                });
-                                collectionsList.length = 0;
-                                collectionManagerSelectedId = null;
-                                for (var k = removed.length - 1; k >= 0; k--) collectionsTrash.unshift(removed[k]);
-                                persistCollections();
-                                persistCollectionsTrash();
-                                toast(removed.length + ' collections moved to trash', 'success');
-                                render();
-                            },
-                            { title: 'Move all to trash', confirmText: 'Move ' + n, danger: true }
-                        );
-                    }
-                }) : null
-            );
-        }
-        sidebar.appendChild(header);
-
-        if (!collectionsList || collectionsList.length === 0) {
-            var emptyHost = el('div', { style: 'padding:12px' });
-            emptyHost.appendChild(renderEmptyCard({
-                icon: 'list',
-                headline: 'No collections yet',
-                body: 'Collections group requests you want to keep. Start a fresh one, or import a Postman collection.',
-                hintKey: 'bowire_empty_collections_hint',
+            header = renderSidebarHeader({
+                title: 'Collections',
                 actions: [
                     {
-                        label: 'New collection',
-                        primary: true,
+                        title: 'Create new collection', ariaLabel: 'Create new collection', icon: 'plus',
                         onClick: function () {
                             var col = createCollection();
                             collectionManagerSelectedId = col.id;
                             render();
                         }
                     },
-                    {
-                        label: 'Import Postman',
+                    (collectionsList && collectionsList.length > 0) ? {
+                        title: 'More actions', ariaLabel: 'More actions', label: '⋮',
                         onClick: function () {
-                            var input = document.createElement('input');
-                            input.type = 'file';
-                            input.accept = '.json,application/json';
-                            input.onchange = async function () {
-                                if (!input.files || !input.files[0]) return;
-                                try {
-                                    var text = await input.files[0].text();
-                                    var imported = importPostmanCollection(text);
-                                    if (imported) {
-                                        toast('Imported "' + imported.name + '" (' + imported.items.length + ' items)', 'success');
-                                        render();
-                                    }
-                                } catch (e) { toast('Import failed: ' + e.message, 'error'); }
-                            };
-                            input.click();
+                            var n = collectionsList.length;
+                            bowireConfirm(
+                                'Move all ' + n + ' collections to trash?',
+                                function () {
+                                    var removed = collectionsList.map(function (c, idx) {
+                                        return { entry: c, originalIdx: idx, deletedAt: Date.now() };
+                                    });
+                                    collectionsList.length = 0;
+                                    collectionManagerSelectedId = null;
+                                    for (var k = removed.length - 1; k >= 0; k--) collectionsTrash.unshift(removed[k]);
+                                    persistCollections();
+                                    persistCollectionsTrash();
+                                    toast(removed.length + ' collections moved to trash', 'success');
+                                    render();
+                                },
+                                { title: 'Move all to trash', confirmText: 'Move ' + n, danger: true }
+                            );
                         }
-                    },
+                    } : null
                 ]
+            });
+        }
+        sidebar.appendChild(header);
+
+        if (!collectionsList || collectionsList.length === 0) {
+            sidebar.appendChild(el('div', {
+                className: 'bowire-pane-empty',
+                style: 'padding:12px 14px',
+                textContent: 'No collections yet.'
             }));
-            sidebar.appendChild(emptyHost);
         } else {
             var list = el('div', { id: 'bowire-collections-list', className: 'bowire-env-list' });
             var colIds = collectionsList.map(function (c) { return c.id; });
             collectionsList.forEach(function (col, idx) {
-                var isActive = collectionManagerSelectedId === col.id;
-                var isSelected = collectionsSelected.has(col.id);
-                // Stable per-collection id so morphdom keys by entry
-                // instead of position (otherwise the first row can
-                // inherit a stale onClick from a previous render).
-                var row = el('div', {
+                var itemCount = (col.items ? col.items.length : 0);
+                list.appendChild(renderSidebarListItem({
                     id: 'bowire-col-row-' + col.id,
-                    className: 'bowire-env-list-item'
-                        + (isActive ? ' active' : '')
-                        + (isSelected ? ' selected' : ''),
+                    name: col.name,
+                    meta: itemCount + ' item' + (itemCount === 1 ? '' : 's'),
+                    active: collectionManagerSelectedId === col.id,
+                    selected: collectionsSelected.has(col.id),
                     onClick: function (e) {
                         var isMod = applyListSelectionClick(collectionsSelected, collectionsSelectionAnchor, colIds, idx, e);
                         if (isMod) {
@@ -2312,35 +2218,22 @@
                             collectionManagerSelectedId = col.id;
                         }
                         render();
-                    }
-                });
-                row.appendChild(el('div', { className: 'bowire-env-list-item-name', textContent: col.name }));
-                row.appendChild(el('div', {
-                    className: 'bowire-env-list-item-meta',
-                    textContent: (col.items ? col.items.length : 0) + ' item' + ((col.items && col.items.length === 1) ? '' : 's')
-                }));
-                row.appendChild(el('button', {
-                    type: 'button',
-                    className: 'bowire-list-row-delete',
-                    title: 'Delete collection',
-                    'aria-label': 'Delete collection',
-                    innerHTML: svgIcon('trash'),
-                    onClick: function (e) {
-                        e.stopPropagation();
-                        var idx = collectionsList.indexOf(col);
-                        if (idx < 0) return;
-                        var backup = collectionsList[idx];
-                        collectionsList.splice(idx, 1);
+                    },
+                    deleteTitle: 'Delete collection',
+                    onDelete: function () {
+                        var dIdx = collectionsList.indexOf(col);
+                        if (dIdx < 0) return;
+                        var backup = collectionsList[dIdx];
+                        collectionsList.splice(dIdx, 1);
                         if (collectionManagerSelectedId === col.id) collectionManagerSelectedId = null;
-                        // Move to trash so a missed toast isn't fatal.
-                        collectionsTrash.unshift({ entry: backup, deletedAt: Date.now(), originalIdx: idx });
+                        collectionsTrash.unshift({ entry: backup, deletedAt: Date.now(), originalIdx: dIdx });
                         persistCollections();
                         persistCollectionsTrash();
                         toast('Collection moved to trash', 'success', {
                             undo: function () {
                                 var t = collectionsTrash.shift();
                                 if (t) {
-                                    collectionsList.splice(Math.min(idx, collectionsList.length), 0, t.entry);
+                                    collectionsList.splice(Math.min(dIdx, collectionsList.length), 0, t.entry);
                                     persistCollections();
                                     persistCollectionsTrash();
                                     render();
@@ -2350,7 +2243,6 @@
                         render();
                     }
                 }));
-                list.appendChild(row);
             });
             sidebar.appendChild(list);
         }
@@ -2457,80 +2349,72 @@
     // (URL, log toggle, stop action). Refresh button at the top
     // re-fetches /api/mock/hosts so externally-started mocks land
     // in the list without page reload.
+    // Security rail sidebar — the Security pane lives entirely in the
+    // main pane (threat-model + fuzz + nuclei). The sidebar carries
+    // just the rail-mode label + a one-line orientation hint so the
+    // operator sees what surface they're on. Used to fall through to
+    // the legacy services tree, which then dispatched on sidebarView
+    // and, if sidebarView happened to be 'proxy', rendered the
+    // "Proxy not reachable" empty card — surprise content from a
+    // sibling rail mode leaking into Security.
+    function renderSecuritySidebar() {
+        var sidebar = el('div', { id: 'bowire-sidebar', className: 'bowire-sidebar bowire-sidebar-mode' });
+        sidebar.appendChild(el('div', { className: 'bowire-env-list-header' },
+            el('span', { textContent: 'Security' })
+        ));
+        sidebar.appendChild(el('div', {
+            className: 'bowire-pane-empty',
+            style: 'padding:12px 14px',
+            textContent: 'Threat model, fuzz, and Nuclei templates sit in the main pane. Discovered endpoints are pulled automatically from the active workspace.'
+        }));
+        return sidebar;
+    }
+
     function renderMocksSidebar() {
         var sidebar = el('div', { id: 'bowire-sidebar', className: 'bowire-sidebar bowire-sidebar-mode' });
 
-        var header = el('div', { className: 'bowire-env-list-header' },
-            el('span', { textContent: 'Running mocks' }),
-            el('button', {
-                className: 'bowire-env-add-btn',
-                title: 'Refresh the list of running mocks',
-                'aria-label': 'Refresh mocks',
-                innerHTML: svgIcon('replay'),
-                onClick: function () {
-                    if (typeof fetchMocks === 'function') {
-                        fetchMocks().then(function () { render(); });
-                    }
-                }
-            })
-        );
-        sidebar.appendChild(header);
-
-        if (!mocksList || mocksList.length === 0) {
-            var emptyHost = el('div', { style: 'padding:12px' });
-            emptyHost.appendChild(renderEmptyCard({
-                icon: 'server',
-                headline: 'No mocks running',
-                body: 'Mocks spin up from a recording. Switch to the Recordings mode, pick a session, and use "Run as mock".',
-                actions: [
-                    {
-                        label: 'Go to Recordings',
-                        primary: true,
-                        onClick: function () {
-                            railMode = 'recordings';
-                            try { localStorage.setItem('bowire_rail_mode', 'recordings'); } catch { /* ignore */ }
-                            render();
+        sidebar.appendChild(renderSidebarHeader({
+            title: 'Running mocks',
+            actions: [
+                {
+                    title: 'Refresh the list of running mocks', ariaLabel: 'Refresh mocks', icon: 'replay',
+                    onClick: function () {
+                        if (typeof fetchMocks === 'function') {
+                            fetchMocks().then(function () { render(); });
                         }
                     }
-                ]
+                }
+            ]
+        }));
+
+        if (!mocksList || mocksList.length === 0) {
+            sidebar.appendChild(el('div', {
+                className: 'bowire-pane-empty',
+                style: 'padding:12px 14px',
+                textContent: 'No mocks running.'
             }));
-            sidebar.appendChild(emptyHost);
         } else {
             var list = el('div', { id: 'bowire-mocks-list', className: 'bowire-env-list' });
             mocksList.forEach(function (m) {
-                var isActive = mockSelectedId === m.mockId;
-                // Stable per-mock id so morphdom keys by mock entry
-                // instead of position.
-                var row = el('div', {
+                list.appendChild(renderSidebarListItem({
                     id: 'bowire-mock-row-' + m.mockId,
-                    className: 'bowire-env-list-item' + (isActive ? ' active' : ''),
+                    name: m.recordingName || ('mock-' + m.port),
+                    meta: 'port ' + m.port,
+                    selected: mockSelectedId === m.mockId,
                     onClick: function () {
                         mockSelectedId = m.mockId;
                         render();
-                    }
-                });
-                row.appendChild(el('div', { className: 'bowire-env-list-item-name', textContent: m.recordingName || ('mock-' + m.port) }));
-                row.appendChild(el('div', {
-                    className: 'bowire-env-list-item-meta',
-                    textContent: 'port ' + m.port
-                }));
-                // Mocks delete = stop the host. No undo (the port +
-                // process are released; can't bring them back).
-                row.appendChild(el('button', {
-                    type: 'button',
-                    className: 'bowire-list-row-delete',
-                    title: 'Stop mock host',
-                    'aria-label': 'Stop mock host',
-                    innerHTML: svgIcon('trash'),
-                    onClick: function (e) {
-                        e.stopPropagation();
+                    },
+                    // Mocks delete = stop the host. No undo (the port +
+                    // process are released; can't bring them back).
+                    deleteTitle: 'Stop mock host',
+                    onDelete: function () {
                         if (typeof stopMock === 'function') {
                             stopMock(m.mockId);
                             if (mockSelectedId === m.mockId) mockSelectedId = null;
                         }
                     }
                 }));
-                list.appendChild(row);
             });
             sidebar.appendChild(list);
         }
@@ -2554,6 +2438,7 @@
             case 'workspaces':   sidebar = renderWorkspacesSidebar(); break;
             case 'sources':      sidebar = renderSourcesSidebar(); break;
             case 'benchmarks':   sidebar = renderBenchmarksSidebar(); break;
+            case 'security':     sidebar = renderSecuritySidebar(); break;
         }
         if (sidebar) return sidebar;
         // 'flows', 'proxy', 'services' fall through to the legacy
@@ -3222,15 +3107,22 @@
         } else if (sidebarView === 'favorites') {
             renderFavoritesListInto(list);
         } else if (services.length === 0) {
-            // Spinner only while discovery is in flight; once
-            // discovery has resolved, an empty service list means the
-            // landing card on the right is showing the proper empty
-            // state and the sidebar should match it (no spinner).
+            // Spinner while discovery is in flight; otherwise a one-line
+            // hint that matches the other rails' sidebars (Mocks, Flows,
+            // Recordings, Sources, Collections, Benchmarks all show a
+            // short "No … yet." on the same .bowire-pane-empty shape).
+            // The full empty-card call-to-action lives in the main pane.
             if (isLoadingServices) {
                 list.appendChild(el('div', { className: 'bowire-loading' },
                     el('div', { className: 'bowire-spinner' }),
                     el('span', { className: 'bowire-loading-text', textContent: 'Loading services...' })
                 ));
+            } else {
+                list.appendChild(el('div', {
+                    className: 'bowire-pane-empty',
+                    style: 'padding:12px 14px',
+                    textContent: 'No services discovered yet.'
+                }));
             }
         } else {
             // Effective query combines the transient topbar search with the

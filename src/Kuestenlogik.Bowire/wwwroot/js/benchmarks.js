@@ -55,19 +55,39 @@
 
     function createBenchmarkSpec(seed) {
         loadBenchmarks();
+        seed = seed || {};
+        var kind = seed.kind || 'single';
+        var defaultName = kind === 'collection' ? 'Benchmark collection'
+                        : kind === 'recording' ? 'Benchmark recording'
+                        : 'New benchmark';
         var spec = {
             id: makeBenchmarkId(),
-            name: (seed && seed.name) || 'New benchmark',
-            kind: 'single',
-            service: (seed && seed.service) || (selectedService ? selectedService.name : ''),
-            method: (seed && seed.method) || (selectedMethod ? selectedMethod.name : ''),
-            protocol: (seed && seed.protocol)
+            name: seed.name || defaultName,
+            // Shape of what's under test. 'single' (existing) repeats one
+            // unary call N×K. 'collection' replays a saved Collection's
+            // items N times. 'recording' replays a Recording's steps N
+            // times. Discover, Collection-Detail and Recording-Detail
+            // each have a "Benchmark this …" button that prefills the
+            // matching kind so the operator never has to type a target
+            // by hand. Phase 1: kind drives execution dispatch in
+            // runBenchmarkSpec; collection / recording stay sequential
+            // within one session (parallel sessions land via the
+            // separate Recording/Collection "Run in parallel sessions"
+            // surface).
+            kind: kind,
+            // single-shape targets
+            service: seed.service || (selectedService ? selectedService.name : ''),
+            method: seed.method || (selectedMethod ? selectedMethod.name : ''),
+            protocol: seed.protocol
                 || (selectedService ? (selectedService.source || selectedProtocol) : null),
-            serverUrl: null, // resolved at run-time from current selectedService when empty
-            body: (seed && seed.body) || '{}',
-            metadata: (seed && seed.metadata) || {},
-            n: (seed && seed.n) || 100,
-            concurrency: (seed && seed.concurrency) || 4,
+            body: seed.body || '{}',
+            metadata: seed.metadata || {},
+            // collection-/recording-shape target — id of the source
+            // collection or recording inside the active workspace.
+            sourceId: seed.sourceId || null,
+            serverUrl: null, // resolved at run-time
+            n: seed.n || 100,
+            concurrency: seed.concurrency || 4,
             createdAt: 0,
             lastRun: null
         };
@@ -100,6 +120,16 @@
     // global render() throttle.
     async function runBenchmarkSpec(spec, onProgress) {
         if (!spec || benchmark.running) return null;
+
+        // Shape dispatch (#131). 'single' (default) repeats one unary
+        // call N×K — the existing path below. 'collection' replays a
+        // saved Collection N times with K concurrent sessions; same for
+        // 'recording'. Both shape branches reuse _runCollectionSession /
+        // _runRecordingSession from collections.js so the per-session
+        // semantics match the standalone Parallel-Sessions button.
+        if (spec.kind === 'collection' || spec.kind === 'recording') {
+            return _runBenchmarkSequenceShape(spec, onProgress);
+        }
 
         // Resolve the target service so we know which URL to hit. If
         // the spec captured a service that's no longer in the current
@@ -253,37 +283,143 @@
         return spec.lastRun;
     }
 
+    // Shape=collection / shape=recording runner. N sessions across K
+    // concurrent workers; each session replays the whole sequence in
+    // its own context. Aggregates per-session pass/fail + per-call
+    // durations so the existing percentile / status-distribution
+    // chart keeps working without a separate code path.
+    async function _runBenchmarkSequenceShape(spec, onProgress) {
+        var sourceList = spec.kind === 'collection'
+            ? (typeof collectionsList !== 'undefined' ? collectionsList : [])
+            : (typeof recordingsList !== 'undefined' ? recordingsList : []);
+        var source = sourceList.find(function (s) { return s.id === spec.sourceId; });
+        if (!source) {
+            addConsoleEntry({
+                type: 'response',
+                method: spec.name,
+                status: 'Benchmark error',
+                body: 'Source ' + spec.kind + ' "' + spec.sourceId + '" not in current workspace'
+            });
+            return null;
+        }
+        var sessionRunner = spec.kind === 'collection' ? _runCollectionSession : _runRecordingSession;
+        if (typeof sessionRunner !== 'function') {
+            addConsoleEntry({
+                type: 'response',
+                method: spec.name,
+                status: 'Benchmark error',
+                body: 'Session runner not loaded for shape=' + spec.kind
+            });
+            return null;
+        }
+        var n = Math.max(1, parseInt(spec.n, 10) || 1);
+        var concurrency = Math.max(1, Math.min(parseInt(spec.concurrency, 10) || 1, 20));
+
+        resetBenchmark({ n: n, concurrency: concurrency });
+        benchmark.running = true;
+        benchmark.startTime = performance.now();
+        benchmarkActiveSpecId = spec.id;
+        addConsoleEntry({
+            type: 'request',
+            method: spec.name,
+            status: 'Benchmark',
+            body: 'Starting ' + n + ' ' + spec.kind + ' sessions (concurrency ' + concurrency + ')'
+        });
+        if (typeof onProgress === 'function') onProgress();
+
+        var nextIndex = 0;
+        async function worker() {
+            while (true) {
+                if (benchmark.cancelled) return;
+                var idx = nextIndex++;
+                if (idx >= n) return;
+                var t0 = performance.now();
+                try {
+                    var sessionResult = await sessionRunner(source);
+                    var elapsed = performance.now() - t0;
+                    if (sessionResult.pass) {
+                        benchmark.success++;
+                        benchmark.durations.push(elapsed);
+                        benchmark.statusCounts['OK'] = (benchmark.statusCounts['OK'] || 0) + 1;
+                    } else {
+                        benchmark.failure++;
+                        benchmark.statusCounts['Error'] = (benchmark.statusCounts['Error'] || 0) + 1;
+                    }
+                } catch (e) {
+                    benchmark.failure++;
+                    benchmark.statusCounts['NetworkError'] = (benchmark.statusCounts['NetworkError'] || 0) + 1;
+                }
+                benchmark.completed++;
+                if (typeof onProgress === 'function' &&
+                    (benchmark.completed % Math.max(1, Math.floor(n / 50)) === 0
+                        || benchmark.completed === n)) {
+                    onProgress();
+                }
+            }
+        }
+
+        var workers = [];
+        for (var w = 0; w < concurrency; w++) workers.push(worker());
+        await Promise.all(workers);
+
+        benchmark.endTime = performance.now();
+        benchmark.running = false;
+        benchmarkActiveSpecId = null;
+        var totalMs = benchmark.endTime - benchmark.startTime;
+        addConsoleEntry({
+            type: 'response',
+            method: spec.name,
+            status: benchmark.cancelled ? 'Cancelled' : 'Benchmark complete',
+            durationMs: Math.round(totalMs),
+            body: benchmark.success + ' sessions passed / ' + benchmark.failure + ' failed'
+        });
+        var stats = computeBenchmarkStats();
+        spec.lastRun = {
+            ranAt: benchmark.startTime,
+            durations: benchmark.durations.slice(),
+            statusCounts: Object.assign({}, benchmark.statusCounts),
+            success: benchmark.success,
+            failure: benchmark.failure,
+            total: n,
+            startTimeMs: benchmark.startTime,
+            endTimeMs: benchmark.endTime,
+            cancelled: benchmark.cancelled,
+            stats: stats
+        };
+        persistBenchmarks();
+        if (typeof onProgress === 'function') onProgress();
+        return spec.lastRun;
+    }
+
     // ---- Sidebar: list of saved benchmark specs ----
 
     function renderBenchmarksSidebar() {
         var sidebar = el('div', { id: 'bowire-sidebar', className: 'bowire-sidebar bowire-sidebar-mode' });
         loadBenchmarks();
 
-        var header = el('div', { className: 'bowire-env-list-header' },
-            el('span', { textContent: 'Benchmarks' }),
-            el('button', {
-                className: 'bowire-env-add-btn',
-                title: 'New benchmark',
-                'aria-label': 'New benchmark',
-                innerHTML: svgIcon('plus'),
-                onClick: function () {
-                    var spec = createBenchmarkSpec();
-                    benchmarksSelectedId = spec.id;
-                    render();
+        sidebar.appendChild(renderSidebarHeader({
+            title: 'Benchmarks',
+            actions: [
+                {
+                    title: 'New benchmark', ariaLabel: 'New benchmark', icon: 'plus',
+                    onClick: function () {
+                        var spec = createBenchmarkSpec();
+                        benchmarksSelectedId = spec.id;
+                        render();
+                    }
                 }
-            })
-        );
-        sidebar.appendChild(header);
+            ]
+        }));
 
         var list = el('div', { id: 'bowire-benchmarks-list', className: 'bowire-env-list' });
         if (benchmarksList.length === 0) {
             list.appendChild(el('div', {
-                className: 'bowire-sidebar-empty',
-                textContent: 'No benchmarks yet. Add one to probe latency under load.'
+                className: 'bowire-pane-empty',
+                style: 'padding:12px 14px',
+                textContent: 'No benchmarks yet.'
             }));
         } else {
             benchmarksList.forEach(function (spec) {
-                var isSelected = spec.id === benchmarksSelectedId;
                 var isRunning = spec.id === benchmarkActiveSpecId && benchmark.running;
                 var meta;
                 if (isRunning) {
@@ -293,23 +429,17 @@
                 } else {
                     meta = spec.n + '×';
                 }
-                var row = el('div', {
+                list.appendChild(renderSidebarListItem({
                     id: 'bowire-bench-row-' + spec.id,
-                    className: 'bowire-env-list-item' + (isSelected ? ' selected' : ''),
+                    accent: isRunning ? 'var(--bowire-warning)' : 'var(--bowire-accent)',
+                    name: spec.name,
+                    meta: meta,
+                    selected: spec.id === benchmarksSelectedId,
                     onClick: function () {
                         benchmarksSelectedId = spec.id;
                         render();
                     }
-                },
-                    el('span', {
-                        className: 'bowire-env-color-dot',
-                        style: 'background:' + (isRunning ? 'var(--bowire-warning)' : 'var(--bowire-accent)')
-                    }),
-                    el('span', { className: 'bowire-env-list-item-name', textContent: spec.name }),
-                    el('span', { style: 'flex:1' }),
-                    el('span', { className: 'bowire-env-list-item-meta', textContent: meta })
-                );
-                list.appendChild(row);
+                }));
             });
         }
         sidebar.appendChild(list);
@@ -333,8 +463,8 @@
                 icon: 'chart',
                 headline: hasAny ? 'Pick a benchmark' : 'No benchmarks yet',
                 body: hasAny
-                    ? 'Pick one in the sidebar to see its config and last run, or add a new one.'
-                    : 'Benchmarks repeat a single call N times under K concurrency and report latency percentiles + status distribution. Phase 1 ships the single-method shape; collection / recording / random / scheduled probes are tracked on #131.',
+                    ? 'Pick one in the sidebar to see its config and last run, or start a new benchmark from a method, collection or recording.'
+                    : 'A benchmark repeats N runs at K concurrency and reports latency percentiles + status distribution. Three shapes: single method (one unary call), collection (replay every item), recording (replay every step). Each source has a Benchmark button that prefills the right shape — start there, or create an empty spec.',
                 actions: hasAny ? [{
                     label: 'New benchmark',
                     primary: true,
@@ -354,10 +484,26 @@
                         }
                     },
                     {
-                        label: 'Pick a method first',
+                        label: 'Pick a method',
                         onClick: function () {
                             railMode = 'discover';
                             try { localStorage.setItem('bowire_rail_mode', 'discover'); } catch { /* ignore */ }
+                            render();
+                        }
+                    },
+                    {
+                        label: 'Pick a collection',
+                        onClick: function () {
+                            railMode = 'collections';
+                            try { localStorage.setItem('bowire_rail_mode', 'collections'); } catch { /* ignore */ }
+                            render();
+                        }
+                    },
+                    {
+                        label: 'Pick a recording',
+                        onClick: function () {
+                            railMode = 'recordings';
+                            try { localStorage.setItem('bowire_rail_mode', 'recordings'); } catch { /* ignore */ }
                             render();
                         }
                     }
@@ -434,7 +580,141 @@
             } catch (e) { console.warn('[benchmarks] presets bar failed', e); }
         }
 
-        // ---- Target: service / method ----
+        // Shape banner — surfaces what's under test so the operator
+        // doesn't have to read the title to figure out the kind. Plus a
+        // unified label for the Source field below.
+        var shapeLabel = spec.kind === 'collection' ? 'Collection'
+                       : spec.kind === 'recording' ? 'Recording'
+                       : 'Single method';
+        main.appendChild(el('div', {
+            className: 'bowire-ws-detail-stat-hint',
+            textContent: 'Shape: ' + shapeLabel
+                + (spec.kind === 'single'
+                    ? ' — one unary call repeated N times at K concurrency.'
+                    : ' — each session replays the whole sequence; N sessions run at K concurrency.')
+        }));
+
+        // Shape-specific source picker. single-method shape keeps the
+        // service + method dropdowns; collection / recording shapes
+        // show their source label + an Open-in-source-rail shortcut.
+        if (spec.kind === 'collection' || spec.kind === 'recording') {
+            var sourceList = spec.kind === 'collection'
+                ? (typeof collectionsList !== 'undefined' ? collectionsList : [])
+                : (typeof recordingsList !== 'undefined' ? recordingsList : []);
+            var source = sourceList.find(function (s) { return s.id === spec.sourceId; });
+            var sourceSection = el('div', { className: 'bowire-ws-detail-section' });
+            sourceSection.appendChild(el('div', { className: 'bowire-ws-detail-section-label', textContent: 'Source' }));
+            if (source) {
+                sourceSection.appendChild(el('div', { style: 'display:flex;align-items:center;gap:8px' },
+                    el('span', { innerHTML: svgIcon(spec.kind === 'collection' ? 'folder' : 'recording'), style: 'width:14px;height:14px;display:inline-flex' }),
+                    el('span', { style: 'flex:1', textContent: source.name || '(unnamed)' }),
+                    el('button', {
+                        className: 'bowire-recording-action-btn',
+                        textContent: 'Open',
+                        onClick: function () {
+                            railMode = spec.kind === 'collection' ? 'collections' : 'recordings';
+                            try { localStorage.setItem('bowire_rail_mode', railMode); } catch { /* ignore */ }
+                            if (spec.kind === 'collection' && typeof collectionManagerSelectedId !== 'undefined') {
+                                collectionManagerSelectedId = source.id;
+                            } else if (spec.kind === 'recording' && typeof recordingManagerSelectedId !== 'undefined') {
+                                recordingManagerSelectedId = source.id;
+                            }
+                            render();
+                        }
+                    })
+                ));
+            } else {
+                sourceSection.appendChild(el('p', {
+                    className: 'bowire-ws-detail-stat-hint',
+                    textContent: 'Source ' + spec.kind + ' is not in the current workspace. Open the source rail to pick another.'
+                }));
+            }
+            main.appendChild(sourceSection);
+
+            // collection / recording shapes don't need the per-call
+            // body / metadata templates — each item or step carries its
+            // own. Render the load knobs + Run button inline (smaller
+            // surface than the single-method path which also has body
+            // / auth pickers).
+            main.appendChild(el('div', { className: 'bowire-ws-detail-section' },
+                el('div', { className: 'bowire-ws-detail-section-label', textContent: 'Load' }),
+                el('div', { className: 'bowire-ws-detail-storage-row', style: 'gap:16px' },
+                    el('label', { className: 'bowire-ws-detail-storage-option', style: 'flex:1' },
+                        el('div', { textContent: 'Iterations (N)', style: 'font-weight:500;margin-bottom:4px' }),
+                        el('input', {
+                            type: 'number', min: '1', max: '10000',
+                            value: String(spec.n),
+                            style: 'width:100%;padding:6px 8px',
+                            onChange: function (e) {
+                                spec.n = Math.max(1, parseInt(e.target.value, 10) || 1);
+                                persistBenchmarks();
+                                render();
+                            }
+                        })
+                    ),
+                    el('label', { className: 'bowire-ws-detail-storage-option', style: 'flex:1' },
+                        el('div', { textContent: 'Concurrency', style: 'font-weight:500;margin-bottom:4px' }),
+                        el('input', {
+                            type: 'number', min: '1', max: '20',
+                            value: String(spec.concurrency),
+                            style: 'width:100%;padding:6px 8px',
+                            onChange: function (e) {
+                                spec.concurrency = Math.max(1, Math.min(20, parseInt(e.target.value, 10) || 1));
+                                persistBenchmarks();
+                                render();
+                            }
+                        })
+                    )
+                )
+            ));
+
+            var seqRunning = benchmark.running && benchmarkActiveSpecId === spec.id;
+            var seqCanRun = !!source;
+            main.appendChild(el('div', { className: 'bowire-ws-detail-section', style: 'display:flex;align-items:center;gap:12px' },
+                el('button', {
+                    className: 'bowire-ws-detail-switch-btn',
+                    style: 'background:' + (seqRunning ? 'var(--bowire-danger)' : 'var(--bowire-accent)') + ';color:#fff',
+                    disabled: (!seqCanRun && !seqRunning) ? 'disabled' : null,
+                    textContent: seqRunning ? 'Stop' : 'Run benchmark',
+                    onClick: function () {
+                        if (seqRunning) { stopBenchmark(); return; }
+                        runBenchmarkSpec(spec, function () { render(); });
+                    }
+                }),
+                seqRunning
+                    ? el('span', {
+                        className: 'bowire-ws-detail-stat-hint',
+                        textContent: benchmark.completed + ' / ' + benchmark.total + ' sessions'
+                    })
+                    : null
+            ));
+
+            if (spec.lastRun && spec.lastRun.stats) {
+                var ls = spec.lastRun;
+                var lsStats = ls.stats;
+                function _ms(v) { return Math.round(v * 10) / 10 + ' ms'; }
+                main.appendChild(el('div', { className: 'bowire-ws-detail-section' },
+                    el('div', { className: 'bowire-ws-detail-section-label', textContent: 'Session latency (last run)' }),
+                    el('div', { className: 'bowire-ws-detail-stats' },
+                        el('div', { className: 'bowire-ws-detail-stat' },
+                            el('div', { className: 'bowire-ws-detail-stat-value', textContent: _ms(lsStats.p50) }),
+                            el('div', { className: 'bowire-ws-detail-stat-label', textContent: 'p50' })
+                        ),
+                        el('div', { className: 'bowire-ws-detail-stat' },
+                            el('div', { className: 'bowire-ws-detail-stat-value', textContent: _ms(lsStats.p95) }),
+                            el('div', { className: 'bowire-ws-detail-stat-label', textContent: 'p95' })
+                        ),
+                        el('div', { className: 'bowire-ws-detail-stat' },
+                            el('div', { className: 'bowire-ws-detail-stat-value', textContent: ls.success + ' / ' + ls.total }),
+                            el('div', { className: 'bowire-ws-detail-stat-label', textContent: 'sessions passed' })
+                        )
+                    )
+                ));
+            }
+            return main;
+        }
+
+        // ---- Target: service / method (single-method shape) ----
         // Drop-downs sourced from the current workspace's discovered
         // services. If the spec captures a name that's no longer in
         // discovery the input shows the captured value with a warning

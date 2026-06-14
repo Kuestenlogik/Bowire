@@ -1079,6 +1079,88 @@
      *
      * Returns a DOM node the caller appendChilds into the sidebar.
      */
+    // Shared header row for the mode-sidebars (Mocks, Benchmarks,
+    // Flows, etc.). One title on the left + N action buttons on the
+    // right. Every action renders with the .bowire-env-add-btn shape
+    // so the rail-mode sidebars all carry an identical control strip
+    // instead of each surface hand-rolling its own header.
+    //
+    // opts.title: string shown left
+    // opts.actions: [{ title, ariaLabel, icon, label, onClick }, …]
+    //   icon → svg glyph, label → text (use either, not both). Null
+    //   entries are skipped so callers can express conditional actions
+    //   inline (`condition ? {…} : null`).
+    function renderSidebarHeader(opts) {
+        opts = opts || {};
+        var row = el('div', { className: 'bowire-env-list-header' });
+        row.appendChild(el('span', { textContent: opts.title || '' }));
+        (opts.actions || []).forEach(function (a) {
+            if (!a) return;
+            var attrs = {
+                className: 'bowire-env-add-btn',
+                title: a.title,
+                'aria-label': a.ariaLabel || a.title,
+                onClick: a.onClick
+            };
+            if (a.icon) attrs.innerHTML = svgIcon(a.icon);
+            else if (a.label) attrs.textContent = a.label;
+            row.appendChild(el('button', attrs));
+        });
+        return row;
+    }
+
+    // Shared list-item shape for the mode-sidebars. accent dot or icon
+    // up front, name in the middle, optional meta on the right, optional
+    // hover-delete affordance after that. Click selects the row;
+    // onDelete (if given) fires without bubbling to the row click.
+    //
+    // opts.id: stable DOM id so morphdom keys by entity, not position
+    // opts.icon: glyph for the lead slot (mutually exclusive with accent)
+    // opts.accent: CSS color for the dot in the lead slot
+    // opts.name: row label
+    // opts.meta: short trailing meta string
+    // opts.selected: boolean → adds the .selected modifier
+    // opts.onClick: row-level click handler
+    // opts.onDelete: optional delete handler — renders a trash button
+    // opts.deleteTitle: tooltip + aria-label for the delete button
+    function renderSidebarListItem(opts) {
+        opts = opts || {};
+        var row = el('div', {
+            id: opts.id,
+            className: 'bowire-env-list-item'
+                + (opts.active ? ' active' : '')
+                + (opts.selected ? ' selected' : ''),
+            onClick: opts.onClick
+        });
+        if (opts.icon) {
+            row.appendChild(el('span', { className: 'bowire-env-sidebar-icon', innerHTML: svgIcon(opts.icon) }));
+        } else if (opts.accent) {
+            row.appendChild(el('span', {
+                className: 'bowire-env-color-dot',
+                style: 'background:' + opts.accent
+            }));
+        }
+        row.appendChild(el('span', { className: 'bowire-env-list-item-name', textContent: opts.name || '' }));
+        row.appendChild(el('span', { style: 'flex:1' }));
+        if (opts.meta) {
+            row.appendChild(el('span', { className: 'bowire-env-list-item-meta', textContent: opts.meta }));
+        }
+        if (typeof opts.onDelete === 'function') {
+            row.appendChild(el('button', {
+                type: 'button',
+                className: 'bowire-list-row-delete',
+                title: opts.deleteTitle || 'Delete',
+                'aria-label': opts.deleteTitle || 'Delete',
+                innerHTML: svgIcon('trash'),
+                onClick: function (e) {
+                    e.stopPropagation();
+                    opts.onDelete(e);
+                }
+            }));
+        }
+        return row;
+    }
+
     function renderTree(nodes, opts) {
         opts = opts || {};
         var tree = el('div', {

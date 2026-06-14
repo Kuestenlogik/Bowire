@@ -1117,6 +1117,45 @@
             el('span', { textContent: isReplaying ? 'Replaying…' : 'Replay' })
         ));
 
+        // #132 minimal — fire N parallel sessions of this recording.
+        // Each session runs the steps sequentially in its own context.
+        toolbar.appendChild(el('button', {
+            className: 'bowire-recording-action-btn',
+            disabled: rec.steps.length === 0,
+            title: 'Replay this recording in N parallel sessions at once',
+            onClick: function () { _promptAndRunParallel('recording', rec.id, rec.name); }
+        },
+            el('span', { innerHTML: svgIcon('repeat') }),
+            el('span', { textContent: 'Parallel sessions' })
+        ));
+
+        // #131 — Benchmark this recording. Creates a benchmark spec
+        // with kind=recording, then jumps to the Benchmarks pane.
+        if (typeof createBenchmarkSpec === 'function') {
+            toolbar.appendChild(el('button', {
+                className: 'bowire-recording-action-btn',
+                disabled: rec.steps.length === 0,
+                title: 'Create a benchmark that replays this recording N times',
+                onClick: function () {
+                    var spec = createBenchmarkSpec({
+                        name: 'Benchmark: ' + (rec.name || 'recording'),
+                        kind: 'recording',
+                        sourceId: rec.id
+                    });
+                    if (typeof benchmarksSelectedId !== 'undefined' && spec) {
+                        benchmarksSelectedId = spec.id;
+                    }
+                    railMode = 'benchmarks';
+                    try { localStorage.setItem('bowire_rail_mode', 'benchmarks'); } catch { /* ignore */ }
+                    toast('Benchmark created', 'success');
+                    render();
+                }
+            },
+                el('span', { innerHTML: svgIcon('lightning') }),
+                el('span', { textContent: 'Benchmark' })
+            ));
+        }
+
         toolbar.appendChild(el('button', {
             className: 'bowire-recording-action-btn',
             disabled: rec.steps.length === 0,
