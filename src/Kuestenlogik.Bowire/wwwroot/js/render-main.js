@@ -471,54 +471,27 @@
         // ---- Header: name + action buttons ----
         var headerRow = el('div', { className: 'bowire-env-editor-header' });
 
+        var envColor = !isGlobals ? (selectedEnv.color || '#6366f1') : null;
         if (isGlobals) {
             headerRow.appendChild(el('span', { className: 'bowire-env-editor-icon', innerHTML: svgIcon('globe') }));
             headerRow.appendChild(el('h2', { className: 'bowire-env-editor-title', textContent: 'Global Variables' }));
         } else {
-            // Color picker
-            // Quick color swatches + custom picker
-            var envColor = selectedEnv.color || '#6366f1';
-            var swatchColors = [
-                { color: '#6366f1', label: 'Default' },
-                { color: '#10b981', label: 'Green' },
-                { color: '#f59e0b', label: 'Yellow' },
-                { color: '#ef4444', label: 'Red' },
-                { color: '#3b82f6', label: 'Blue' },
-                { color: '#8b5cf6', label: 'Purple' },
-                { color: '#78716c', label: 'Brown' },
-                { color: '#000000', label: 'Black' }
-            ];
-            var colorRow = el('div', { className: 'bowire-env-color-row' });
-            for (var sci = 0; sci < swatchColors.length; sci++) {
-                (function (sw) {
-                    colorRow.appendChild(el('button', {
-                        id: 'bowire-env-swatch-' + sw.label.toLowerCase(),
-                        className: 'bowire-env-color-swatch' + (envColor === sw.color ? ' active' : ''),
-                        style: 'background:' + sw.color,
-                        title: sw.label,
-                        onClick: function () {
-                            updateEnvironment(envSidebarSelectedId, { color: sw.color });
-                            render();
-                        }
-                    }));
-                })(swatchColors[sci]);
-            }
-            // Custom color picker at the end
-            var colorInput = el('input', {
-                id: 'bowire-env-color-picker',
-                type: 'color',
-                className: 'bowire-env-color-picker',
-                value: envColor,
-                title: 'Custom color',
-                onInput: function (e) { updateEnvironment(envSidebarSelectedId, { color: e.target.value }); }
-            });
-            colorRow.appendChild(colorInput);
-            headerRow.appendChild(colorRow);
+            // Header mirrors the workspace settings detail: small colour
+            // dot leads, name input as the in-place editable title, then
+            // action buttons. The colour picker itself moved out of the
+            // header into its own labelled section below — same IA the
+            // workspace settings surface uses, so the two pick surfaces
+            // read as variants of one pattern instead of two.
+            headerRow.appendChild(el('span', {
+                className: 'bowire-env-editor-dot',
+                style: 'background:' + envColor
+            }));
             headerRow.appendChild(el('input', {
                 id: 'bowire-env-name-input',
                 type: 'text',
                 className: 'bowire-env-editor-name-input',
                 value: selectedEnv.name,
+                'aria-label': 'Environment name',
                 onChange: function (e) { updateEnvironment(envSidebarSelectedId, { name: e.target.value }); }
             }));
         }
@@ -600,6 +573,49 @@
             }));
         }
         pane.appendChild(headerRow);
+
+        // ---- Color section — mirrors the workspace settings detail
+        // layout (palette swatches + native colour picker in a labelled
+        // section below the header instead of inline next to the name).
+        // Same swatch palette as the env editor used to inline. ----
+        if (!isGlobals) {
+            var envSwatchColors = [
+                { color: '#6366f1', label: 'Default' },
+                { color: '#10b981', label: 'Green' },
+                { color: '#f59e0b', label: 'Yellow' },
+                { color: '#ef4444', label: 'Red' },
+                { color: '#3b82f6', label: 'Blue' },
+                { color: '#8b5cf6', label: 'Purple' },
+                { color: '#78716c', label: 'Brown' },
+                { color: '#000000', label: 'Black' }
+            ];
+            var envColorRowInner = el('div', { className: 'bowire-env-color-row' });
+            envSwatchColors.forEach(function (sw) {
+                envColorRowInner.appendChild(el('button', {
+                    id: 'bowire-env-swatch-' + sw.label.toLowerCase(),
+                    className: 'bowire-env-color-swatch' + (envColor === sw.color ? ' active' : ''),
+                    style: 'background:' + sw.color,
+                    title: sw.label,
+                    onClick: function () {
+                        updateEnvironment(envSidebarSelectedId, { color: sw.color });
+                        render();
+                    }
+                }));
+            });
+            envColorRowInner.appendChild(el('input', {
+                id: 'bowire-env-color-picker',
+                type: 'color',
+                className: 'bowire-env-color-picker',
+                value: envColor,
+                title: 'Custom colour',
+                'aria-label': 'Custom environment colour',
+                onInput: function (e) { updateEnvironment(envSidebarSelectedId, { color: e.target.value }); render(); }
+            }));
+            pane.appendChild(el('div', { className: 'bowire-env-editor-color-section' },
+                el('div', { className: 'bowire-env-editor-section-label', textContent: 'Color' }),
+                envColorRowInner
+            ));
+        }
 
         // ---- Tabs: Variables | Auth | Compare ----
         // Globals only have Variables; named envs get all three.
@@ -695,9 +711,30 @@
             el('span')
         ));
 
-        function commitAll() {
+        function commitAll(eventOrEl) {
+            // Resolve the live table at event time instead of relying on
+            // the `table` captured at render-time. After a save+render,
+            // morphdom preserves the original table DOM node and APPENDS
+            // the new render's freshly-built rows into it — physically
+            // moving them out of the next render's temporary table div.
+            // The listeners attached to those appended rows still close
+            // over the now-empty next-render table, so a closure-based
+            // querySelectorAll returns zero rows → newVars = {} → every
+            // variable in the env gets wiped on the next change.
+            //
+            // Accept either a DOM Event or an Element so the Remove
+            // button (which calls us after detaching the row) can pass
+            // the table directly. Walking up from the source via
+            // closest() always lands on whichever table actually
+            // contains the row in the live DOM.
+            var anchor = eventOrEl && (eventOrEl.target || eventOrEl);
+            var liveTable = (anchor && anchor.closest)
+                ? anchor.closest('.bowire-env-editor-table')
+                : null;
+            if (!liveTable) liveTable = table;
+            if (!liveTable) { setVars({}); return; }
             var newVars = {};
-            var rows = table.querySelectorAll('.bowire-env-editor-row:not(.bowire-env-editor-col-header)');
+            var rows = liveTable.querySelectorAll('.bowire-env-editor-row:not(.bowire-env-editor-col-header)');
             for (var ri = 0; ri < rows.length; ri++) {
                 var k = rows[ri].querySelector('.bowire-env-editor-key');
                 var v = rows[ri].querySelector('.bowire-env-editor-val');
@@ -737,7 +774,14 @@
                 className: 'bowire-env-editor-remove',
                 title: 'Remove variable',
                 textContent: '\u00d7',
-                onClick: function () { row.remove(); commitAll(); }
+                onClick: function () {
+                    // Capture the live table before detaching the row \u2014
+                    // after row.remove() the row has no parent, so we
+                    // can't walk back up to it to find the table.
+                    var liveTable = row.closest('.bowire-env-editor-table');
+                    row.remove();
+                    commitAll(liveTable);
+                }
             }));
             table.appendChild(row);
             requestAnimationFrame(autoResize);
@@ -1019,28 +1063,51 @@
         );
         main.appendChild(header);
 
-        // Color picker — predefined palette so the dots stay distinct
-        // at a glance. Custom-color UI can land later.
+        // Color picker — predefined palette + native colour input for
+        // custom picks, mirrors the env editor's pattern so the two
+        // surfaces share the same affordance.
         var palette = ['#6366f1', '#22c55e', '#f59e0b', '#ec4899', '#06b6d4', '#a855f7', '#ef4444', '#64748b'];
+        var colorRowInner = el('div', { className: 'bowire-ws-detail-color-row' },
+            palette.map(function (c) {
+                return el('button', {
+                    className: 'bowire-ws-detail-color-swatch' + (ws.color === c ? ' selected' : ''),
+                    style: 'background:' + c,
+                    title: c,
+                    onClick: function () {
+                        var t = _liveWs();
+                        if (t) {
+                            t.color = c;
+                            persistWorkspaces();
+                            render();
+                        }
+                    }
+                });
+            })
+        );
+        // Native colour input — onInput fires continuously as the user
+        // drags the picker so the workspace colour previews live across
+        // every surface that paints with it (chip glyph, identity band,
+        // rail tint). Skip render() per input event because the inline
+        // background style already updates; commit happens on dialog
+        // close (which fires no further events).
+        colorRowInner.appendChild(el('input', {
+            type: 'color',
+            className: 'bowire-ws-detail-color-picker',
+            value: ws.color || '#6366f1',
+            title: 'Custom colour',
+            'aria-label': 'Custom workspace colour',
+            onInput: function (e) {
+                var t = _liveWs();
+                if (t) {
+                    t.color = e.target.value;
+                    persistWorkspaces();
+                    render();
+                }
+            }
+        }));
         var colorRow = el('div', { className: 'bowire-ws-detail-section' },
             el('div', { className: 'bowire-ws-detail-section-label', textContent: 'Color' }),
-            el('div', { className: 'bowire-ws-detail-color-row' },
-                palette.map(function (c) {
-                    return el('button', {
-                        className: 'bowire-ws-detail-color-swatch' + (ws.color === c ? ' selected' : ''),
-                        style: 'background:' + c,
-                        title: c,
-                        onClick: function () {
-                            var t = _liveWs();
-                            if (t) {
-                                t.color = c;
-                                persistWorkspaces();
-                                render();
-                            }
-                        }
-                    });
-                })
-            )
+            colorRowInner
         );
         main.appendChild(colorRow);
 
