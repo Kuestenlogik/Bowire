@@ -1615,6 +1615,167 @@
         return 'plug';
     }
 
+    // Right-click context menu on a workspace tree row. Renders a
+    // floating, pointer-anchored menu with the same shape as the topbar
+    // chip dropdown — Switch / Rename / Edit / Delete / New — so the
+    // operator gets the same actions from either entry point. Closes on
+    // Esc, outside-click, or an action firing. Single global pointer:
+    // a second right-click replaces the previous menu instead of
+    // stacking N copies on top of each other.
+    var _activeWorkspaceContextMenu = null;
+    function _closeWorkspaceContextMenu() {
+        if (!_activeWorkspaceContextMenu) return;
+        var m = _activeWorkspaceContextMenu;
+        _activeWorkspaceContextMenu = null;
+        m.close();
+    }
+    function openWorkspaceContextMenu(w, e) {
+        if (!w || !e) return;
+        _closeWorkspaceContextMenu();
+
+        var isActive = w.id === activeWorkspaceId;
+        var menu = document.createElement('div');
+        menu.className = 'bowire-workspace-menu bowire-workspace-context-menu';
+        menu.setAttribute('role', 'menu');
+        menu.style.position = 'fixed';
+        menu.style.left = (e.clientX || 0) + 'px';
+        menu.style.top = (e.clientY || 0) + 'px';
+        menu.style.zIndex = '10000';
+        // The chip dropdown's positioning relies on the topbar group's
+        // position:relative; the rail context-menu floats on document.body
+        // so the topbar's offset doesn't matter. Pin top/left explicitly.
+        menu.style.removeProperty('right');
+
+        function addItem(opts) {
+            var item = document.createElement('div');
+            item.className = 'bowire-workspace-menu-item bowire-workspace-menu-item-action'
+                + (opts.danger ? ' bowire-workspace-menu-item-danger' : '')
+                + (opts.disabled ? ' is-disabled' : '');
+            item.setAttribute('role', 'menuitem');
+            var icon = document.createElement('span');
+            icon.className = 'bowire-workspace-menu-item-icon';
+            icon.textContent = opts.icon || '';
+            item.appendChild(icon);
+            var label = document.createElement('span');
+            label.textContent = opts.label;
+            item.appendChild(label);
+            if (!opts.disabled) {
+                item.addEventListener('click', function (ev) {
+                    ev.stopPropagation();
+                    _closeWorkspaceContextMenu();
+                    try { opts.onClick(); } catch (err) { console.error('[bowire-workspace-ctx] action threw', err); }
+                });
+            }
+            menu.appendChild(item);
+        }
+        function addDivider() {
+            var d = document.createElement('div');
+            d.className = 'bowire-workspace-menu-divider';
+            menu.appendChild(d);
+        }
+
+        addItem({
+            icon: isActive ? '✓' : '→',
+            label: isActive ? 'Active workspace' : 'Switch to this workspace',
+            disabled: isActive,
+            onClick: function () { switchWorkspace(w.id); }
+        });
+        addItem({
+            icon: '✎',
+            label: 'Rename…',
+            onClick: function () {
+                bowirePrompt('Rename workspace', {
+                    title: 'Rename',
+                    defaultValue: w.name,
+                    confirmText: 'Rename',
+                }).then(function (renamed) {
+                    if (renamed) {
+                        renameWorkspace(w.id, renamed);
+                        render();
+                    }
+                });
+            }
+        });
+        addItem({
+            icon: '⚙',
+            label: 'Edit settings',
+            onClick: function () {
+                workspacesSelectedId = w.id;
+                workspaceTreeSelection = { wsId: w.id, kind: 'workspace' };
+                railMode = 'workspaces';
+                try { localStorage.setItem('bowire_rail_mode', 'workspaces'); }
+                catch { /* ignore */ }
+                render();
+            }
+        });
+        addItem({
+            icon: '🗑',
+            label: 'Delete',
+            danger: true,
+            onClick: function () {
+                var isLast = workspaces.length === 1;
+                var msg = isLast
+                    ? 'Delete the last workspace "' + w.name + '"? You will return to the empty no-workspace state — the underlying URLs / envs / recordings for this workspace are removed.'
+                    : 'Delete workspace "' + w.name + '"? The underlying URLs / envs / recordings for this workspace are removed.';
+                bowireConfirm(
+                    msg,
+                    function () { deleteWorkspace(w.id); render(); },
+                    { title: 'Delete workspace', confirmText: 'Delete', danger: true }
+                );
+            }
+        });
+        addDivider();
+        addItem({
+            icon: '+',
+            label: 'New workspace…',
+            onClick: function () {
+                openCreateWorkspaceDialog(function (created) {
+                    if (created) {
+                        workspacesSelectedId = created.id;
+                        workspaceTreeSelection = { wsId: created.id, kind: 'workspace' };
+                        render();
+                    }
+                });
+            }
+        });
+
+        document.body.appendChild(menu);
+
+        // Viewport-clamp the menu so it doesn't paint past the right/bottom
+        // edge. Mirrors the same shift the browser uses for its own menus.
+        var vw = window.innerWidth, vh = window.innerHeight;
+        var rect = menu.getBoundingClientRect();
+        if (rect.right > vw) {
+            menu.style.left = Math.max(8, vw - rect.width - 8) + 'px';
+        }
+        if (rect.bottom > vh) {
+            menu.style.top = Math.max(8, vh - rect.height - 8) + 'px';
+        }
+
+        function onKeyDown(ev) {
+            if (ev.key === 'Escape') {
+                ev.preventDefault();
+                _closeWorkspaceContextMenu();
+            }
+        }
+        function onDocClick(ev) {
+            if (!menu.contains(ev.target)) _closeWorkspaceContextMenu();
+        }
+        document.addEventListener('keydown', onKeyDown);
+        // Defer the outside-click binding by one tick so the originating
+        // contextmenu event doesn't close the menu on its own opening tick.
+        setTimeout(function () { document.addEventListener('click', onDocClick); }, 0);
+
+        _activeWorkspaceContextMenu = {
+            element: menu,
+            close: function () {
+                document.removeEventListener('keydown', onKeyDown);
+                document.removeEventListener('click', onDocClick);
+                if (menu.parentNode) menu.parentNode.removeChild(menu);
+            }
+        };
+    }
+
     // #116 — Workspaces rail mode sidebar. Lists every workspace as
     // a clickable row; clicking selects (right pane shows detail);
     // double-click switches. Header has the same '+' new-workspace

@@ -1097,14 +1097,16 @@
         persistWorkspaces();
     }
     function deleteWorkspace(id) {
-        // Personal is the seed — keep at least one workspace; refuse
-        // to delete the last one. Otherwise drop the entry and
-        // re-point active to whatever's left.
-        if (workspaces.length <= 1) return false;
+        // Drop the entry and re-point active. When the last workspace
+        // goes, activeWorkspaceId returns to null and the topbar chip
+        // falls back to the empty "no workspace" state — the operator
+        // creates a new one via the dropdown's "+ New workspace…" item.
         var idx = workspaces.findIndex(function (w) { return w.id === id; });
         if (idx < 0) return false;
         workspaces.splice(idx, 1);
-        if (activeWorkspaceId === id) activeWorkspaceId = workspaces[0].id;
+        if (activeWorkspaceId === id) {
+            activeWorkspaceId = workspaces.length > 0 ? workspaces[0].id : null;
+        }
         persistWorkspaces();
         return true;
     }
