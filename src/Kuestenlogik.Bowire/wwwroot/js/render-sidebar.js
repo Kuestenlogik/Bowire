@@ -2083,6 +2083,11 @@
                         icon: '+',
                         label: 'Add URL or schema',
                         onClick: function () { _quickAddUrlToWorkspace(w); }
+                    },
+                    {
+                        icon: '⬆',
+                        label: 'Upload schema files…',
+                        onClick: function () { _uploadSchemaFilesForWorkspace(w); }
                     }
                 ]);
             },
@@ -2513,7 +2518,8 @@
             if (!raw) return;
             raw = String(raw).trim();
             if (!raw) return;
-            if (serverUrls.indexOf(raw) === -1) {
+            var wasNew = serverUrls.indexOf(raw) === -1;
+            if (wasNew) {
                 serverUrls.push(raw);
                 if (typeof persistServerUrls === 'function') persistServerUrls();
             }
@@ -2521,7 +2527,58 @@
             sourcesSelectedUrl = raw;
             sidebarView = 'sources';
             render();
+            // Kick off discovery immediately so the operator lands on
+            // populated services instead of an empty Discover rail.
+            // fetchServices fans out across every configured URL; the
+            // newly-added one ends up in `services` once the discovery
+            // round trip returns. Only fire when we actually added it
+            // — re-clicking an existing URL shouldn't re-discover.
+            if (wasNew && typeof fetchServices === 'function') {
+                fetchServices();
+            }
         });
+    }
+
+    // Shortcut to upload schema files (.proto / .json / .yaml / .yml)
+    // straight from the Sources context menu without first navigating to
+    // the Sources detail dropzone. POSTs to the same /api/proto/upload
+    // and /api/openapi/upload endpoints the dropzone uses; switches to
+    // the owning workspace first so the uploaded schemas land in the
+    // right per-workspace store.
+    function _uploadSchemaFilesForWorkspace(w) {
+        if (w && w.id !== activeWorkspaceId) switchWorkspace(w.id);
+        var input = document.createElement('input');
+        input.type = 'file';
+        input.accept = '.proto,.json,.yaml,.yml';
+        input.multiple = true;
+        input.onchange = async function () {
+            if (!input.files || input.files.length === 0) return;
+            var protoCount = 0, openapiCount = 0;
+            try {
+                for (var file of input.files) {
+                    var content = await file.text();
+                    var lower = file.name.toLowerCase();
+                    var endpoint;
+                    if (lower.endsWith('.proto')) {
+                        endpoint = '/api/proto/upload';
+                        protoCount++;
+                    } else {
+                        endpoint = '/api/openapi/upload?name=' + encodeURIComponent(file.name);
+                        openapiCount++;
+                    }
+                    await fetch(config.prefix + endpoint, { method: 'POST', body: content });
+                }
+                var parts = [];
+                if (protoCount > 0) parts.push(protoCount + ' .proto');
+                if (openapiCount > 0) parts.push(openapiCount + ' OpenAPI');
+                if (typeof toast === 'function') toast(parts.join(' + ') + ' imported', 'success');
+                if (typeof fetchServices === 'function') fetchServices();
+            } catch (err) {
+                console.error('[bowire-sources-ctx] schema upload failed', err);
+                if (typeof toast === 'function') toast('Schema upload failed — see console', 'error');
+            }
+        };
+        input.click();
     }
 
     // #133 Phase 2 — Environments rail mode sidebar. Reuses the
