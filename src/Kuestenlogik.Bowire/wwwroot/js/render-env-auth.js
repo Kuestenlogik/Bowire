@@ -50,6 +50,23 @@
         // keeps the old horizontal layout unchanged otherwise.
         next.appendChild(renderTopbar());
 
+        // Workspace identity band — a 2px accent strip directly under the
+        // topbar, in the active workspace's chosen colour. Spans the full
+        // app width so the operator can see at a glance which workspace
+        // they're in without scanning the topbar chip. Hidden in embedded
+        // mode (the host already owns workspace context) and when there's
+        // no active workspace (nothing to advertise).
+        var _identityWs = (typeof activeWorkspace === 'function') ? activeWorkspace() : null;
+        if (uiMode !== 'embedded' && _identityWs && _identityWs.color) {
+            next.appendChild(el('div', {
+                id: 'bowire-workspace-identity-band',
+                className: 'bowire-workspace-identity-band',
+                style: 'background:' + _identityWs.color,
+                'aria-hidden': 'true',
+                title: 'Workspace: ' + _identityWs.name
+            }));
+        }
+
         var body = el('div', { id: 'bowire-app-body', className: 'bowire-app-body' });
 
         // Mobile backdrop when sidebar is open — lives inside the body so
@@ -1642,15 +1659,25 @@
                 render();
             }
         },
-            el('span', {
-                className: 'bowire-workspace-chip-dot',
-                style: 'background:' + (ws ? (ws.color || 'var(--bowire-accent)') : 'var(--bowire-text-tertiary)')
-            }),
+            (function () {
+                // Same Lucide 'layers' glyph as the dropdown rows — the
+                // top "leaf" picks up the active workspace's chosen
+                // colour, the lower two layers inherit currentColor.
+                // When there's no active workspace, the top layer falls
+                // back to tertiary so the chip reads as "empty / pick".
+                var chipColor = ws ? (ws.color || 'var(--bowire-accent)') : 'var(--bowire-text-tertiary)';
+                var chipGlyph = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14">'
+                    + '<polygon points="12 2 2 7 12 12 22 7 12 2" fill="' + chipColor + '" stroke="' + chipColor + '"/>'
+                    + '<polyline points="2 17 12 22 22 17"/>'
+                    + '<polyline points="2 12 12 17 22 12"/>'
+                    + '</svg>';
+                return el('span', { className: 'bowire-workspace-chip-dot', innerHTML: chipGlyph });
+            })(),
             el('span', {
                 className: 'bowire-workspace-chip-name',
                 textContent: ws ? ws.name : 'No workspace'
             }),
-            el('span', { className: 'bowire-workspace-chip-caret', textContent: '▾' })
+            el('span', { className: 'bowire-workspace-chip-caret', innerHTML: svgIcon('chevronDown') })
         );
 
         var right = el('div', { id: 'bowire-topbar-right', className: 'bowire-topbar-right' },
@@ -1665,57 +1692,132 @@
                 },
                     el('div', { className: 'bowire-workspace-menu-section' },
                         workspaces.map(function (w) {
-                            // #146 — workspace env-count label. Shows
-                            // 'all' when the workspace includes every
-                            // shared env, else the explicit count
-                            // from the inclusion list.
-                            var envLabel = '';
-                            try {
-                                if (w.includeAllEnvironments) {
-                                    var all = (typeof getAllSharedEnvironments === 'function') ? getAllSharedEnvironments() : [];
-                                    envLabel = 'all (' + all.length + ')';
-                                } else {
-                                    var n = Array.isArray(w.includedEnvironmentIds) ? w.includedEnvironmentIds.length : 0;
-                                    envLabel = n + ' env' + (n === 1 ? '' : 's');
-                                }
-                            } catch { /* ignore */ }
+                            var isActive = w.id === activeWorkspaceId;
+                            // Per-row leading glyph: the Workspaces rail icon
+                            // (Lucide 'layers') with the top "leaf" filled in
+                            // the workspace's chosen colour and the lower two
+                            // layers inheriting currentColor. Reads as "this
+                            // is a workspace, identified by its colour" — more
+                            // contextual than a plain coloured dot, and the
+                            // top-layer-only colouring keeps the layered
+                            // metaphor recognisable instead of flooding the
+                            // whole glyph with the accent.
+                            var wsColor = w.color || 'var(--bowire-accent)';
+                            var glyph = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14">'
+                                + '<polygon points="12 2 2 7 12 12 22 7 12 2" fill="' + wsColor + '" stroke="' + wsColor + '"/>'
+                                + '<polyline points="2 17 12 22 22 17"/>'
+                                + '<polyline points="2 12 12 17 22 12"/>'
+                                + '</svg>';
+                            // Right-cluster layout: [check] [edit] [delete].
+                            // The check leads (active-state indicator) and
+                            // always reserves its slot via visibility-toggle
+                            // so the cluster anchors identically on every
+                            // row regardless of active state. Edit + delete
+                            // are display:none until row-hover — they pop in
+                            // as a transient tools strip, no reserved-flow
+                            // slot in the display state. The per-row meta
+                            // chip (#146 env-count label) was retired here
+                            // because the count doesn't aid the switching
+                            // decision — env-scope management lives in the
+                            // Workspaces rail. See feedback memory
+                            // `feedback-dropdown-meta-chip-pattern` for the
+                            // visual idiom should a future surface need it.
                             return el('div', {
-                                className: 'bowire-workspace-menu-item' + (w.id === activeWorkspaceId ? ' active' : ''),
+                                className: 'bowire-workspace-menu-item' + (isActive ? ' active' : ''),
                                 onClick: function () {
-                                    if (w.id !== activeWorkspaceId) switchWorkspace(w.id);
+                                    if (!isActive) switchWorkspace(w.id);
                                     workspaceMenuOpen = false;
                                     render();
                                 }
                             },
-                                el('span', { className: 'bowire-workspace-menu-item-dot', style: 'background:' + (w.color || 'var(--bowire-accent)') }),
+                                el('span', { className: 'bowire-workspace-menu-item-glyph', innerHTML: glyph }),
                                 el('span', { className: 'bowire-workspace-menu-item-name', textContent: w.name }),
-                                el('span', { className: 'bowire-workspace-menu-item-envcount', textContent: envLabel }),
-                                // #192 (C) — per-row "edit" affordance: jumps
-                                // straight into the Workspaces rail with this
-                                // workspace + Settings selected, without
-                                // going via rail-switch → list pick.
-                                el('button', {
-                                    type: 'button',
-                                    className: 'bowire-workspace-menu-item-edit',
-                                    title: 'Edit workspace',
-                                    'aria-label': 'Edit workspace',
-                                    innerHTML: svgIcon('settings'),
-                                    onClick: function (e) {
-                                        e.stopPropagation();
-                                        workspaceMenuOpen = false;
-                                        workspacesSelectedId = w.id;
-                                        if (typeof workspaceTreeSelection !== 'undefined') {
-                                            workspaceTreeSelection = { wsId: w.id, kind: 'workspace' };
+                                el('div', { className: 'bowire-workspace-menu-item-tools' },
+                                    el('span', {
+                                        className: 'bowire-workspace-menu-item-check' + (isActive ? ' is-active' : ''),
+                                        textContent: '✓',
+                                        'aria-hidden': isActive ? 'false' : 'true'
+                                    }),
+                                    // Per-row rename — opens the bowirePrompt
+                                    // sheet for this workspace. Pencil leads
+                                    // the action buttons because rename is
+                                    // the most common per-row tweak.
+                                    el('button', {
+                                        type: 'button',
+                                        className: 'bowire-workspace-menu-item-rename',
+                                        title: 'Rename workspace',
+                                        'aria-label': 'Rename workspace',
+                                        innerHTML: svgIcon('pencil'),
+                                        onClick: function (e) {
+                                            e.stopPropagation();
+                                            var oldName = w.name;
+                                            var wsId = w.id;
+                                            workspaceMenuOpen = false;
+                                            render();
+                                            bowirePrompt('Rename workspace', {
+                                                title: 'Rename',
+                                                defaultValue: oldName,
+                                                confirmText: 'Rename',
+                                            }).then(function (renamed) {
+                                                if (renamed) {
+                                                    renameWorkspace(wsId, renamed);
+                                                    render();
+                                                }
+                                            });
                                         }
-                                        railMode = 'workspaces';
-                                        try { localStorage.setItem('bowire_rail_mode', 'workspaces'); }
-                                        catch { /* ignore */ }
-                                        render();
-                                    }
-                                }),
-                                w.id === activeWorkspaceId
-                                    ? el('span', { className: 'bowire-workspace-menu-item-check', textContent: '✓' })
-                                    : null
+                                    }),
+                                    // #192 (C) — per-row "edit" affordance: jumps
+                                    // straight into the Workspaces rail with this
+                                    // workspace + Settings selected, without
+                                    // going via rail-switch → list pick.
+                                    el('button', {
+                                        type: 'button',
+                                        className: 'bowire-workspace-menu-item-edit',
+                                        title: 'Edit workspace',
+                                        'aria-label': 'Edit workspace',
+                                        innerHTML: svgIcon('settings'),
+                                        onClick: function (e) {
+                                            e.stopPropagation();
+                                            workspaceMenuOpen = false;
+                                            workspacesSelectedId = w.id;
+                                            if (typeof workspaceTreeSelection !== 'undefined') {
+                                                workspaceTreeSelection = { wsId: w.id, kind: 'workspace' };
+                                            }
+                                            railMode = 'workspaces';
+                                            try { localStorage.setItem('bowire_rail_mode', 'workspaces'); }
+                                            catch { /* ignore */ }
+                                            render();
+                                        }
+                                    }),
+                                    // Per-row delete — works for every workspace
+                                    // in the list, not just the active one. Drops
+                                    // the old "Delete current" bottom item; the
+                                    // confirm prompt switches copy when this is
+                                    // the last workspace.
+                                    el('button', {
+                                        type: 'button',
+                                        className: 'bowire-workspace-menu-item-trash',
+                                        title: 'Delete workspace',
+                                        'aria-label': 'Delete workspace',
+                                        innerHTML: svgIcon('trash'),
+                                        onClick: function (e) {
+                                            e.stopPropagation();
+                                            var wsName = w.name;
+                                            var wsId = w.id;
+                                            var isLast = workspaces.length === 1;
+                                            workspaceMenuOpen = false;
+                                            render();
+                                            var msg = isLast
+                                                ? 'Delete the last workspace "' + wsName + '"? You will return to the empty no-workspace state — the underlying URLs / envs / recordings for this workspace are removed.'
+                                                : 'Delete workspace "' + wsName + '"? The underlying URLs / envs / recordings for this workspace are removed.';
+                                            bowireConfirm(
+                                                msg,
+                                                function () { deleteWorkspace(wsId); render(); },
+                                                { title: 'Delete workspace', confirmText: 'Delete', danger: true }
+                                            );
+                                        }
+                                    })
+                                )
                             );
                         })
                     ),
@@ -1730,54 +1832,11 @@
                     },
                         el('span', { className: 'bowire-workspace-menu-item-icon', textContent: '+' }),
                         el('span', { textContent: 'New workspace…' })
-                    ),
-                    ws ? el('div', {
-                        className: 'bowire-workspace-menu-item bowire-workspace-menu-item-action',
-                        onClick: function () {
-                            var oldName = ws.name;
-                            var wsId = ws.id;
-                            workspaceMenuOpen = false;
-                            render();
-                            bowirePrompt('Rename workspace', {
-                                title: 'Rename',
-                                defaultValue: oldName,
-                                confirmText: 'Rename',
-                            }).then(function (renamed) {
-                                if (renamed) {
-                                    renameWorkspace(wsId, renamed);
-                                    render();
-                                }
-                            });
-                        }
-                    },
-                        el('span', { className: 'bowire-workspace-menu-item-icon', textContent: '✎' }),
-                        el('span', { textContent: 'Rename current…' })
-                    ) : null,
-                    // Delete is allowed even on the last workspace — the
-                    // operator drops back to the no-workspace empty state
-                    // and creates a new one from the chip dropdown. Guard
-                    // is only on `ws` being present (something to delete).
-                    ws ? el('div', {
-                        className: 'bowire-workspace-menu-item bowire-workspace-menu-item-action bowire-workspace-menu-item-danger',
-                        onClick: function () {
-                            var wsName = ws.name;
-                            var wsId = ws.id;
-                            var isLast = workspaces.length === 1;
-                            workspaceMenuOpen = false;
-                            render();
-                            var msg = isLast
-                                ? 'Delete the last workspace "' + wsName + '"? You will return to the empty no-workspace state — the underlying URLs / envs / recordings for this workspace are removed.'
-                                : 'Delete workspace "' + wsName + '"? The underlying URLs / envs / recordings for this workspace are removed.';
-                            bowireConfirm(
-                                msg,
-                                function () { deleteWorkspace(wsId); render(); },
-                                { title: 'Delete workspace', confirmText: 'Delete', danger: true }
-                            );
-                        }
-                    },
-                        el('span', { className: 'bowire-workspace-menu-item-icon', textContent: '🗑' }),
-                        el('span', { textContent: 'Delete current' })
-                    ) : null
+                    )
+                    // Bottom "Rename current…" / "Edit current…" / "Delete
+                    // current" items retired — per-row pencil / gear / trash
+                    // cover every workspace including the active one, so a
+                    // duplicate bottom block would just be noise.
                 ) : null,
                 renderEnvSelector(),
             ),
@@ -2507,7 +2566,7 @@
         },
             activeColor ? el('span', { className: 'bowire-env-color-dot', style: 'background:' + activeColor }) : el('span', { className: 'bowire-env-label', innerHTML: svgIcon('globe') }),
             el('span', { className: 'bowire-env-btn-text', textContent: activeEnv ? activeEnv.name : 'No environment' }),
-            el('span', { className: 'bowire-env-btn-chevron', textContent: '\u25BE' })
+            el('span', { className: 'bowire-env-btn-chevron', innerHTML: svgIcon('chevronDown') })
         );
         envBtnWrapper.appendChild(envBtn);
         bar.appendChild(envBtnWrapper);
