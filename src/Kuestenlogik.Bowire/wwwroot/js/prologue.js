@@ -1025,11 +1025,44 @@
         if (hit) return hit;
         return workspaces.length > 0 ? workspaces[0] : null;
     }
+    // Workspace names must be unique. Case-insensitive trim-compared so
+    // "Staging" / "staging " / "STAGING" don't sneak past as duplicates.
+    function _isWorkspaceNameTaken(name, excludeId) {
+        var norm = String(name || '').trim().toLowerCase();
+        if (!norm) return false;
+        return workspaces.some(function (w) {
+            return w.id !== excludeId
+                && String(w.name || '').trim().toLowerCase() === norm;
+        });
+    }
+    // Picks the next free "Workspace N" — used only when the caller
+    // didn't supply an explicit name (e.g. quick-create flows). For
+    // user-supplied names we reject duplicates rather than silently
+    // suffixing; consistency with renameWorkspace's behaviour.
+    function _nextDefaultWorkspaceName() {
+        var n = workspaces.length + 1;
+        while (_isWorkspaceNameTaken('Workspace ' + n)) n++;
+        return 'Workspace ' + n;
+    }
+    // Returns the new workspace on success, or null if the explicit
+    // name was already taken. Callers should toast on null so the
+    // operator sees why their create attempt didn't land.
     function createWorkspace(name, color) {
+        var requested = String(name || '').trim();
+        if (requested) {
+            if (_isWorkspaceNameTaken(requested)) {
+                if (typeof toast === 'function') {
+                    toast('A workspace named "' + requested + '" already exists.', 'error');
+                }
+                return null;
+            }
+        } else {
+            requested = _nextDefaultWorkspaceName();
+        }
         var id = 'ws_' + Math.random().toString(36).slice(2, 10);
         var ws = {
             id: id,
-            name: name || ('Workspace ' + (workspaces.length + 1)),
+            name: requested,
             color: color || '#6366f1',
             createdAt: Date.now(),
             lastOpenedAt: Date.now(),
@@ -1098,9 +1131,18 @@
 
     function renameWorkspace(id, name) {
         var ws = workspaces.find(function (w) { return w.id === id; });
-        if (!ws) return;
-        ws.name = name;
+        if (!ws) return false;
+        var trimmed = String(name || '').trim();
+        if (!trimmed) return false;
+        if (_isWorkspaceNameTaken(trimmed, id)) {
+            if (typeof toast === 'function') {
+                toast('A workspace named "' + trimmed + '" already exists.', 'error');
+            }
+            return false;
+        }
+        ws.name = trimmed;
         persistWorkspaces();
+        return true;
     }
     function deleteWorkspace(id) {
         // Drop the entry and re-point active. When the last workspace

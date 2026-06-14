@@ -724,11 +724,53 @@
     var envColorPalette = ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#3b82f6', '#ec4899', '#14b8a6'];
     var envColorIndex = 0;
 
+    // Environment names must be unique across the shared store.
+    // Case-insensitive trim-compared so "Staging" / "staging " /
+    // "STAGING" don't sneak past as duplicates.
+    function _isEnvironmentNameTaken(name, excludeId) {
+        var norm = String(name || '').trim().toLowerCase();
+        if (!norm) return false;
+        var all = (typeof getAllSharedEnvironments === 'function')
+            ? getAllSharedEnvironments() : getEnvironments();
+        return all.some(function (e) {
+            return e.id !== excludeId
+                && String(e.name || '').trim().toLowerCase() === norm;
+        });
+    }
+    // Picks the next free "<base> N" — used only when the caller's
+    // intent is a quick-create with the auto-default ("New Environment").
+    // Explicit names from the operator get the same reject-on-collision
+    // treatment as updateEnvironment.
+    function _nextDefaultEnvironmentName(base) {
+        var stem = String(base || '').trim() || 'New Environment';
+        if (!_isEnvironmentNameTaken(stem)) return stem;
+        var n = 2;
+        while (_isEnvironmentNameTaken(stem + ' ' + n)) n++;
+        return stem + ' ' + n;
+    }
+    // Returns the new env on success, or null if the explicit name was
+    // already taken. Callers passing a user-typed name should toast on
+    // null; callers passing the default ('New Environment') will land
+    // on '... 2' / '... 3' instead.
     function createEnvironment(name) {
+        var trimmed = String(name || '').trim();
+        var isDefault = !trimmed || trimmed === 'New Environment';
+        if (!isDefault && _isEnvironmentNameTaken(trimmed)) {
+            if (typeof toast === 'function') {
+                toast('An environment named "' + trimmed + '" already exists.', 'error');
+            }
+            return null;
+        }
+        var finalName = isDefault ? _nextDefaultEnvironmentName('New Environment') : trimmed;
         var envs = getEnvironments();
         var color = envColorPalette[envColorIndex % envColorPalette.length];
         envColorIndex++;
-        var env = { id: genEnvId(), name: name || 'New Environment', vars: {}, color: color };
+        var env = {
+            id: genEnvId(),
+            name: finalName,
+            vars: {},
+            color: color
+        };
         envs.push(env);
         // #146 — saveEnvironments updates the workspace inclusion
         // list with whatever the saved list contains, so pushing
@@ -755,9 +797,24 @@
     function updateEnvironment(id, patch) {
         var envs = getEnvironments();
         var idx = envs.findIndex(function (e) { return e.id === id; });
-        if (idx < 0) return;
+        if (idx < 0) return false;
+        // Name change goes through the uniqueness gate. Reject the
+        // patch (and toast) on duplicate instead of silently letting two
+        // envs share a name; other patch fields apply normally.
+        if (patch && Object.prototype.hasOwnProperty.call(patch, 'name')) {
+            var trimmed = String(patch.name || '').trim();
+            if (!trimmed) return false;
+            if (_isEnvironmentNameTaken(trimmed, id)) {
+                if (typeof toast === 'function') {
+                    toast('An environment named "' + trimmed + '" already exists.', 'error');
+                }
+                return false;
+            }
+            patch = Object.assign({}, patch, { name: trimmed });
+        }
         envs[idx] = Object.assign({}, envs[idx], patch);
         saveEnvironments(envs);
+        return true;
     }
 
     function exportEnvironments() {
