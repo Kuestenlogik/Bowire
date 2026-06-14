@@ -286,6 +286,17 @@ body {
     overflow: hidden;
 }
 
+/* Workspace identity band — a 2px accent strip between the topbar and
+   the body content, painted in the active workspace's colour. Doesn't
+   compete with content (no height beyond the strip), reads as a
+   persistent "this is workspace X" marker that the operator catches
+   peripherally without needing to look up at the chip. */
+.bowire-workspace-identity-band {
+    height: 2px;
+    width: 100%;
+    flex-shrink: 0;
+}
+
 /* Middle wrapper (#164 v2): stacks the body row + an optional
    bottom-attached console panel vertically so the bottom drawer can
    dock beneath sidebar + main without overlapping the right drawer
@@ -1856,11 +1867,14 @@ not just
     border-color: var(--bowire-border);
 }
 .bowire-workspace-chip-dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
+    width: 14px;
+    height: 14px;
     flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
 }
+.bowire-workspace-chip-dot svg { width: 14px; height: 14px; }
 .bowire-workspace-chip-name {
     max-width: 160px;
     overflow: hidden;
@@ -1868,11 +1882,16 @@ not just
     white-space: nowrap;
 }
 .bowire-workspace-chip-caret {
-    color: var(--bowire-text-secondary);
-    font-size: 14px;
-    line-height: 1;
+    width: 12px;
+    height: 12px;
     margin-left: 2px;
+    color: var(--bowire-text-secondary);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
 }
+.bowire-workspace-chip-caret svg { width: 12px; height: 12px; display: block; }
 
 .bowire-workspace-menu {
     position: absolute;
@@ -1921,17 +1940,22 @@ not just
     background: var(--bowire-accent-subtle);
     color: var(--bowire-accent-text);
 }
-.bowire-workspace-menu-item-dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
+/* Per-row glyph — Lucide 'layers' (same icon as the Workspaces
+   activity rail), with the top "leaf" filled in the workspace's
+   chosen colour. Replaces the old plain colour-dot leader. The
+   container's 14×14 box matches the inner SVG so the row's
+   text-baseline lands consistently. */
+.bowire-workspace-menu-item-glyph {
+    width: 14px;
+    height: 14px;
     flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
 }
+.bowire-workspace-menu-item-glyph svg { width: 14px; height: 14px; }
 .bowire-workspace-menu-item-name {
     flex: 1;
-}
-.bowire-workspace-menu-item-check {
-    color: var(--bowire-accent);
 }
 .bowire-workspace-menu-item-icon {
     width: 14px;
@@ -1939,16 +1963,37 @@ not just
     justify-content: center;
     color: var(--bowire-text-secondary);
 }
-/* #192 (C) — per-row "edit" affordance in the workspace dropdown.
-   Hover-revealed so the dropdown still reads as "pick a workspace"
-   primarily and the secondary "edit this one" action stays out of
-   the way until the operator hovers a row. */
-.bowire-workspace-menu-item-edit {
+/* Per-row right cluster: [check] [edit] [trash].
+   The check leads as the always-reserved active-state slot
+   (visibility-toggle keeps its width stable on every row so
+   envCount + cluster anchor identically regardless of active
+   state). Edit + trash are display:none until row-hover —
+   they pop in as a transient tools strip, no reserved-flow
+   slot in the display state so the row stays visually quiet.
+   Hover-reveal also matches the workspace-rail right-click
+   menu's affordances (Switch / Rename / Edit / Delete). */
+.bowire-workspace-menu-item-tools {
     margin-left: auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    flex-shrink: 0;
+}
+.bowire-workspace-menu-item-check {
+    width: 14px;
+    flex-shrink: 0;
+    text-align: center;
+    color: var(--bowire-accent);
+    visibility: hidden;
+}
+.bowire-workspace-menu-item-check.is-active { visibility: visible; }
+.bowire-workspace-menu-item-rename,
+.bowire-workspace-menu-item-edit,
+.bowire-workspace-menu-item-trash {
     width: 22px;
     height: 22px;
     flex-shrink: 0;
-    display: inline-flex;
+    display: none;
     align-items: center;
     justify-content: center;
     padding: 0;
@@ -1957,19 +2002,25 @@ not just
     background: transparent;
     color: var(--bowire-text-tertiary);
     cursor: pointer;
-    opacity: 0;
-    transition: opacity var(--bowire-transition), background var(--bowire-transition), color var(--bowire-transition);
+    transition: background var(--bowire-transition), color var(--bowire-transition);
 }
-.bowire-workspace-menu-item:hover .bowire-workspace-menu-item-edit { opacity: 1; }
+.bowire-workspace-menu-item:hover .bowire-workspace-menu-item-rename,
+.bowire-workspace-menu-item:hover .bowire-workspace-menu-item-edit,
+.bowire-workspace-menu-item:hover .bowire-workspace-menu-item-trash {
+    display: inline-flex;
+}
+.bowire-workspace-menu-item-rename:hover,
 .bowire-workspace-menu-item-edit:hover {
     background: var(--bowire-surface);
     color: var(--bowire-text);
 }
-.bowire-workspace-menu-item-edit svg { width: 12px; height: 12px; }
-/* The check sits at margin-left:auto today; with the edit button now
-   absorbing the auto-margin, pin the check to the end so the layout
-   stays "name … envCount edit check". */
-.bowire-workspace-menu-item-check { margin-left: 4px; }
+.bowire-workspace-menu-item-trash:hover {
+    background: var(--bowire-surface);
+    color: var(--bowire-error);
+}
+.bowire-workspace-menu-item-rename svg,
+.bowire-workspace-menu-item-edit svg,
+.bowire-workspace-menu-item-trash svg { width: 12px; height: 12px; }
 .bowire-workspace-menu-divider {
     height: 1px;
     margin: 4px 0;
@@ -2590,9 +2641,27 @@ not just
     width: 14px;
     height: 14px;
     flex-shrink: 0;
-    color: var(--bowire-text-tertiary);
+    /* Default colour matches the other statusbar entries
+       (.bowire-theme-toggle-btn → --bowire-text-secondary) so the
+       pill doesn't read as dimmer than the console / activity /
+       tests buttons sitting next to it. State-specific overrides
+       below (connected / error / connecting / partial / first-run)
+       continue to drive the dot colour by aggregate status. */
+    color: var(--bowire-text-secondary);
+    overflow: visible;
 }
-.bowire-conn-pill-dot svg { width: 14px; height: 14px; }
+/* Plug glyph's visible content occupies ~58% of its 24×24 viewBox
+   horizontally — at 14×14 that reads visibly smaller than the
+   clock / beaker / history icons next to it (their stroked shapes
+   fill 80%+ of their viewBox). Scale the inner SVG up so the
+   visual mass matches the rest of the statusbar without bumping
+   the dot's outer box and shifting the pill geometry. */
+.bowire-conn-pill-dot svg {
+    width: 14px;
+    height: 14px;
+    transform: scale(1.25);
+    transform-origin: center;
+}
 
 .bowire-conn-pill-connected .bowire-conn-pill-dot { color: #22c55e; }
 .bowire-conn-pill-error     .bowire-conn-pill-dot { color: var(--bowire-error); }
@@ -7481,7 +7550,17 @@ and chip row */
     text-overflow: ellipsis;
     white-space: nowrap;
 }
-.bowire-env-btn-chevron { font-size: 14px; color: var(--bowire-text-secondary); margin-left: 2px; }
+.bowire-env-btn-chevron {
+    width: 12px;
+    height: 12px;
+    margin-left: 2px;
+    color: var(--bowire-text-secondary);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+.bowire-env-btn-chevron svg { width: 12px; height: 12px; display: block; }
 .bowire-env-dropdown-menu {
     position: absolute;
     top: 100%;
@@ -10075,7 +10154,7 @@ and offers the path to switch. */
 }
 
 /* #146 — Environments rail-mode includeAll toggle + per-env
-   inclusion checkboxes + workspace-switcher env-count label. */
+   inclusion checkboxes. */
 .bowire-env-sidebar-includeall {
     display: flex;
     flex-direction: column;
@@ -10108,14 +10187,6 @@ and offers the path to switch. */
 .bowire-env-sidebar-item-excluded .bowire-env-color-dot {
     filter: grayscale(0.6);
 }
-.bowire-workspace-menu-item-envcount {
-    font-size: 10px;
-    color: var(--bowire-text-tertiary);
-    padding: 1px 6px;
-    border-radius: var(--bowire-radius-pill);
-    background: var(--bowire-surface);
-}
-
 /* #116 — Workspaces rail-mode detail pane. */
 .bowire-main-workspaces {
     padding: var(--bowire-main-gutter);

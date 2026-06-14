@@ -960,6 +960,21 @@
             return main;
         }
 
+        // Live-lookup helper — every mutating handler in this pane reads
+        // the currently-selected workspace at click time instead of the
+        // `ws` reference captured at render time. Reason: morphdom
+        // preserves DOM nodes (buttons / inputs) across renders when the
+        // structure matches, and the old node keeps its old listener.
+        // Switching from workspace A's detail to workspace B's detail
+        // (via the topbar dropdown's cogwheel or the sidebar tree) would
+        // otherwise route B's clicks back into A's stale closures and
+        // mutate the wrong workspace. workspacesSelectedId is module-
+        // scoped and always current at call time, so even a reused button
+        // resolves the right target.
+        function _liveWs() {
+            return workspaces.find(function (x) { return x.id === workspacesSelectedId; });
+        }
+
         var isActive = ws.id === activeWorkspaceId;
         var allEnvs = (typeof getAllSharedEnvironments === 'function') ? getAllSharedEnvironments() : [];
         var envCount = ws.includeAllEnvironments
@@ -978,7 +993,8 @@
                 'aria-label': 'Workspace name',
                 onChange: function (e) {
                     var v = String(e.target.value || '').trim();
-                    if (v) { renameWorkspace(ws.id, v); render(); }
+                    var t = _liveWs();
+                    if (v && t) { renameWorkspace(t.id, v); render(); }
                 }
             }),
             isActive
@@ -986,7 +1002,10 @@
                 : el('button', {
                     className: 'bowire-ws-detail-switch-btn',
                     textContent: 'Switch to this workspace',
-                    onClick: function () { switchWorkspace(ws.id); }
+                    onClick: function () {
+                        var t = _liveWs();
+                        if (t) switchWorkspace(t.id);
+                    }
                 })
         );
         main.appendChild(header);
@@ -1003,9 +1022,12 @@
                         style: 'background:' + c,
                         title: c,
                         onClick: function () {
-                            ws.color = c;
-                            persistWorkspaces();
-                            render();
+                            var t = _liveWs();
+                            if (t) {
+                                t.color = c;
+                                persistWorkspaces();
+                                render();
+                            }
                         }
                     });
                 })
@@ -1021,8 +1043,11 @@
                 placeholder: 'Notes — what this workspace is for, who shares it, …',
                 rows: '3',
                 onChange: function (e) {
-                    ws.description = String(e.target.value || '').trim();
-                    persistWorkspaces();
+                    var t = _liveWs();
+                    if (t) {
+                        t.description = String(e.target.value || '').trim();
+                        persistWorkspaces();
+                    }
                 }
             })
         );
@@ -1112,8 +1137,9 @@
                         name: 'ws-rec-storage-' + ws.id,
                         checked: storageMode === 'both',
                         onChange: function () {
-                            if (typeof setWorkspaceRecordingStorageMode === 'function') {
-                                setWorkspaceRecordingStorageMode(ws.id, 'both');
+                            var t = _liveWs();
+                            if (t && typeof setWorkspaceRecordingStorageMode === 'function') {
+                                setWorkspaceRecordingStorageMode(t.id, 'both');
                                 render();
                             }
                         }
@@ -1129,8 +1155,9 @@
                         name: 'ws-rec-storage-' + ws.id,
                         checked: storageMode === 'browser-only',
                         onChange: function () {
-                            if (typeof setWorkspaceRecordingStorageMode === 'function') {
-                                setWorkspaceRecordingStorageMode(ws.id, 'browser-only');
+                            var t = _liveWs();
+                            if (t && typeof setWorkspaceRecordingStorageMode === 'function') {
+                                setWorkspaceRecordingStorageMode(t.id, 'browser-only');
                                 render();
                             }
                         }
@@ -1146,8 +1173,9 @@
                         name: 'ws-rec-storage-' + ws.id,
                         checked: storageMode === 'disk-only',
                         onChange: function () {
-                            if (typeof setWorkspaceRecordingStorageMode === 'function') {
-                                setWorkspaceRecordingStorageMode(ws.id, 'disk-only');
+                            var t = _liveWs();
+                            if (t && typeof setWorkspaceRecordingStorageMode === 'function') {
+                                setWorkspaceRecordingStorageMode(t.id, 'disk-only');
                                 render();
                             }
                         }
@@ -1199,7 +1227,9 @@
             className: 'bowire-presets-btn',
             textContent: 'Export workspace…',
             onClick: function () {
-                if (!downloadWorkspaceExport(ws.id)) {
+                var t = _liveWs();
+                if (!t) return;
+                if (!downloadWorkspaceExport(t.id)) {
                     toast('Export failed — see console', 'error');
                     return;
                 }
@@ -1224,7 +1254,8 @@
                             toast('Could not parse the file as JSON', 'error');
                             return;
                         }
-                        _showWorkspaceImportDialog(payload, ws);
+                        var t = _liveWs();
+                        if (t) _showWorkspaceImportDialog(payload, t);
                     };
                     reader.readAsText(file);
                 };
@@ -1234,30 +1265,35 @@
         shareSection.appendChild(shareRow);
         main.appendChild(shareSection);
 
-        // Danger zone — delete button. Only render when more than one
-        // workspace exists (can't delete the last one).
-        if (workspaces.length > 1) {
-            main.appendChild(el('div', { className: 'bowire-ws-detail-section bowire-ws-detail-danger' },
-                el('div', { className: 'bowire-ws-detail-section-label', textContent: 'Danger zone' }),
-                el('button', {
-                    className: 'bowire-settings-action-btn bowire-ws-detail-delete-btn',
-                    textContent: 'Delete this workspace',
-                    onClick: function () {
-                        var wsName = ws.name;
-                        var wsId = ws.id;
-                        bowireConfirm(
-                            'Delete workspace "' + wsName + '"? URLs / envs / recordings scoped to this workspace are removed.',
-                            function () {
-                                deleteWorkspace(wsId);
-                                workspacesSelectedId = activeWorkspaceId;
-                                render();
-                            },
-                            { title: 'Delete workspace', confirmText: 'Delete', danger: true }
-                        );
-                    }
-                })
-            ));
-        }
+        // Danger zone — delete button. Allowed even on the last workspace
+        // (deleteWorkspace falls back to the empty no-workspace state); the
+        // confirm copy spells out the consequence when this is the last one.
+        main.appendChild(el('div', { className: 'bowire-ws-detail-section bowire-ws-detail-danger' },
+            el('div', { className: 'bowire-ws-detail-section-label', textContent: 'Danger zone' }),
+            el('button', {
+                className: 'bowire-settings-action-btn bowire-ws-detail-delete-btn',
+                textContent: 'Delete this workspace',
+                onClick: function () {
+                    var t = _liveWs();
+                    if (!t) return;
+                    var wsName = t.name;
+                    var wsId = t.id;
+                    var isLast = workspaces.length === 1;
+                    var msg = isLast
+                        ? 'Delete the last workspace "' + wsName + '"? You will return to the empty no-workspace state — URLs / envs / recordings scoped to this workspace are removed.'
+                        : 'Delete workspace "' + wsName + '"? URLs / envs / recordings scoped to this workspace are removed.';
+                    bowireConfirm(
+                        msg,
+                        function () {
+                            deleteWorkspace(wsId);
+                            workspacesSelectedId = activeWorkspaceId;
+                            render();
+                        },
+                        { title: 'Delete workspace', confirmText: 'Delete', danger: true }
+                    );
+                }
+            })
+        ));
 
         return main;
     }
