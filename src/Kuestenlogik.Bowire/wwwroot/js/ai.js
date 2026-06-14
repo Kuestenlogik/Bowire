@@ -1412,10 +1412,10 @@
             // #112 — tier toggle. Default heuristic; opt in to AI.
             // AI option is disabled when no IChatClient is registered.
             var hasAi = !!(aiStatus && aiStatus.hasClient);
-            var tierRow = el('div', { className: 'bowire-ai-threat-tierrow' });
+            var tierRow = el('div', { className: 'bowire-toggle-group' });
             var heurBtn = el('button', {
                 type: 'button',
-                className: 'bowire-ai-threat-tier' + (!threatUseAi ? ' active' : ''),
+                className: 'bowire-toggle-btn' + (!threatUseAi ? ' is-active' : ''),
                 textContent: 'Heuristic',
                 title: 'Deterministic rule engine — sub-millisecond, no model required',
                 onClick: function () {
@@ -1426,7 +1426,7 @@
             });
             var aiBtn = el('button', {
                 type: 'button',
-                className: 'bowire-ai-threat-tier' + (threatUseAi ? ' active' : ''),
+                className: 'bowire-toggle-btn' + (threatUseAi ? ' is-active' : ''),
                 textContent: 'AI-assisted',
                 title: hasAi
                     ? 'Send to the configured AI for semantic ranking on top of the heuristic rules'

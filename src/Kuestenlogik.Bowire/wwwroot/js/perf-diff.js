@@ -535,10 +535,10 @@
         if (methodSupportsTranscoding(selectedMethod)) {
             if (isHttpInvocationAvailable()) {
                 var currentMode = getTranscodingMode(selectedService.name, selectedMethod.name);
-                bar.appendChild(el('div', { className: 'bowire-transcoding-toggle' },
+                bar.appendChild(el('div', { className: 'bowire-toggle-group', style: 'margin-left:8px' },
                     el('button', {
                         id: 'bowire-transcoding-grpc-btn',
-                        className: 'bowire-transcoding-btn' + (currentMode === 'grpc' ? ' active' : ''),
+                        className: 'bowire-toggle-btn' + (currentMode === 'grpc' ? ' is-active' : ''),
                         title: 'Invoke via gRPC (native binary protocol)',
                         onClick: function () {
                             setTranscodingMode(selectedService.name, selectedMethod.name, 'grpc');
@@ -548,7 +548,7 @@
                     }),
                     el('button', {
                         id: 'bowire-transcoding-http-btn',
-                        className: 'bowire-transcoding-btn' + (currentMode === 'http' ? ' active' : ''),
+                        className: 'bowire-toggle-btn' + (currentMode === 'http' ? ' is-active' : ''),
                         title: 'Invoke via HTTP transcoding (' + selectedMethod.httpMethod + ' ' + selectedMethod.httpPath + ')',
                         onClick: function () {
                             setTranscodingMode(selectedService.name, selectedMethod.name, 'http');

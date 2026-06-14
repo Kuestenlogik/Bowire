@@ -1,3 +1,124 @@
+    // ---- Parallel Sessions (#132 minimal) ----
+    //
+    // Live state for the most recently launched parallel-sessions run.
+    // Surfaced as a toast at start + finish; per-session rows render
+    // under the source toolbar while a run is in flight. The state
+    // object is shared between collection + recording sessions because
+    // the only fields that differ are `kind` ('collection'/'recording')
+    // and `sourceName`; the per-session shape is identical.
+    var parallelSessionsState = null;
+
+    function _promptAndRunParallel(kind, sourceId, sourceName) {
+        bowirePrompt('How many parallel sessions?', {
+            title: 'Run in parallel sessions',
+            placeholder: 'e.g. 5',
+            confirmText: 'Run'
+        }).then(function (raw) {
+            if (raw == null) return;
+            var n = parseInt(String(raw).trim(), 10);
+            if (!n || n < 1) return;
+            if (n > 50) n = 50; // safety cap for the browser-side runner
+            _runParallelSessions(kind, sourceId, sourceName, n);
+        });
+    }
+
+    async function _runParallelSessions(kind, sourceId, sourceName, sessionCount) {
+        var sessions = [];
+        for (var i = 0; i < sessionCount; i++) {
+            sessions.push({ index: i, status: 'running', pass: null, durationMs: 0, error: null });
+        }
+        parallelSessionsState = {
+            kind: kind,
+            sourceId: sourceId,
+            sourceName: sourceName,
+            sessionCount: sessionCount,
+            sessions: sessions,
+            startedAt: 0,  // wallclock unavailable in the JS bundle's
+                           // sandbox; the toast carries 'just now' instead
+            status: 'running'
+        };
+        render();
+        toast('Starting ' + sessionCount + ' parallel sessions on ' + sourceName, 'info');
+
+        var runner = (kind === 'collection') ? _runCollectionSession : _runRecordingSession;
+        var source = (kind === 'collection')
+            ? collectionsList.find(function (c) { return c.id === sourceId; })
+            : recordingsList.find(function (r) { return r.id === sourceId; });
+        if (!source) {
+            toast('Source ' + kind + ' not found', 'error');
+            parallelSessionsState = null;
+            render();
+            return;
+        }
+
+        var startMs = performance.now();
+        var promises = sessions.map(function (s) {
+            return runner(source).then(function (result) {
+                s.status = 'done';
+                s.pass = !!result.pass;
+                s.durationMs = result.durationMs;
+                s.results = result.results;
+                render();
+                return result;
+            }, function (err) {
+                s.status = 'done';
+                s.pass = false;
+                s.error = (err && err.message) || String(err);
+                render();
+                return { pass: false };
+            });
+        });
+        await Promise.all(promises);
+        parallelSessionsState.status = 'done';
+        parallelSessionsState.durationMs = performance.now() - startMs;
+
+        var passed = sessions.filter(function (s) { return s.pass; }).length;
+        var failed = sessionCount - passed;
+        toast(
+            sessionCount + ' sessions finished — ' + passed + ' passed, ' + failed + ' failed'
+            + ' in ' + Math.round(parallelSessionsState.durationMs) + ' ms',
+            failed === 0 ? 'success' : 'error'
+        );
+        render();
+    }
+
+    // One isolated collection session — sequential through its items.
+    // Stateless: takes the collection object, returns aggregate result.
+    async function _runCollectionSession(col) {
+        var startMs = performance.now();
+        var results = [];
+        var allPass = true;
+        for (var i = 0; i < col.items.length; i++) {
+            try {
+                var r = await runCollectionItem(col.items[i]);
+                results.push(r);
+                if (!r.pass) allPass = false;
+            } catch (e) {
+                allPass = false;
+                results.push({ pass: false, status: 'NetworkError', error: e.message });
+            }
+        }
+        return { pass: allPass, results: results, durationMs: performance.now() - startMs };
+    }
+
+    // One isolated recording session — sequential through its steps.
+    async function _runRecordingSession(rec) {
+        var startMs = performance.now();
+        var results = [];
+        var allPass = true;
+        for (var i = 0; i < rec.steps.length; i++) {
+            try {
+                var r = await replaySingleStep(rec.steps[i]);
+                results.push(r);
+                if (!r.pass) allPass = false;
+            } catch (e) {
+                allPass = false;
+                results.push({ pass: false, status: 'NetworkError', error: e.message });
+            }
+        }
+        return { pass: allPass, results: results, durationMs: performance.now() - startMs };
+    }
+
     // ---- Collection Runner ----
     // Executes all items in a collection sequentially against the
     // current environment. Variable substitution runs per-item via
@@ -139,6 +260,48 @@
             el('span', { innerHTML: svgIcon('play') }),
             el('span', { textContent: isRunning ? 'Running\u2026' : 'Run All' })
         ));
+
+        // #132 minimal \u2014 fire N parallel sessions of this collection.
+        // Each session runs the items sequentially in its own context.
+        // No per-session env policy yet (single shared env); phase 2
+        // adds per-session env slot, stagger, failure policy.
+        toolbar.appendChild(el('button', {
+            className: 'bowire-recording-action-btn',
+            disabled: col.items.length === 0,
+            title: 'Run this collection in N parallel sessions at once',
+            onClick: function () { _promptAndRunParallel('collection', col.id, col.name); }
+        },
+            el('span', { innerHTML: svgIcon('repeat') }),
+            el('span', { textContent: 'Parallel sessions' })
+        ));
+
+        // #131 \u2014 Benchmark this collection. Creates a benchmark spec
+        // with kind=collection, then jumps to the Benchmarks pane so
+        // the operator can pick n + concurrency and run.
+        if (typeof createBenchmarkSpec === 'function') {
+            toolbar.appendChild(el('button', {
+                className: 'bowire-recording-action-btn',
+                disabled: col.items.length === 0,
+                title: 'Create a benchmark that replays this collection N times',
+                onClick: function () {
+                    var spec = createBenchmarkSpec({
+                        name: 'Benchmark: ' + (col.name || 'collection'),
+                        kind: 'collection',
+                        sourceId: col.id
+                    });
+                    if (typeof benchmarksSelectedId !== 'undefined' && spec) {
+                        benchmarksSelectedId = spec.id;
+                    }
+                    railMode = 'benchmarks';
+                    try { localStorage.setItem('bowire_rail_mode', 'benchmarks'); } catch { /* ignore */ }
+                    toast('Benchmark created', 'success');
+                    render();
+                }
+            },
+                el('span', { innerHTML: svgIcon('lightning') }),
+                el('span', { textContent: 'Benchmark' })
+            ));
+        }
 
         toolbar.appendChild(el('button', {
             className: 'bowire-recording-action-btn',

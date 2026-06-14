@@ -585,6 +585,7 @@
             var tabs = el('div', { className: 'bowire-env-editor-tabs' });
             var tabDefs = [
                 { id: 'variables', label: 'Variables' },
+                { id: 'secrets', label: 'Secrets' },
                 { id: 'auth', label: 'Auth' },
                 { id: 'compare', label: 'Compare' }
             ];
@@ -612,8 +613,30 @@
                     : function (v) { updateEnvironment(envSidebarSelectedId, { vars: v }); },
                 isGlobals
                     ? 'Available in every environment. Override per-environment with the same key name.'
-                    : 'Use ${name} in request body, metadata or server URL.'
+                    : 'Use {{name}} in request body, metadata or server URL. Workspace defaults under Workspace › Variables apply when this environment has no override.'
             ));
+        } else if (activeTab === 'secrets' && selectedEnv) {
+            var envSecretsMap = (typeof getEnvSecrets === 'function') ? getEnvSecrets(selectedEnv.id) : {};
+            var secWrap = el('div', { className: 'bowire-env-editor-vars' });
+            secWrap.appendChild(el('div', {
+                className: 'bowire-env-editor-subtitle',
+                textContent: 'Reference as {{secret.NAME}} in any input. Session-only — cleared on reload. Workspace defaults under Workspace › Variables apply when this environment has no override; Phase 5 wraps an OS keyring.'
+            }));
+            secWrap.appendChild(_renderKvSection('Secrets', envSecretsMap, function (next) {
+                var oldNames = Object.keys(envSecretsMap);
+                var newNames = Object.keys(next);
+                oldNames.forEach(function (n) {
+                    if (newNames.indexOf(n) < 0 && typeof setEnvSecret === 'function') {
+                        setEnvSecret(selectedEnv.id, n, null);
+                    }
+                });
+                newNames.forEach(function (n) {
+                    if (next[n] !== envSecretsMap[n] && typeof setEnvSecret === 'function') {
+                        setEnvSecret(selectedEnv.id, n, next[n]);
+                    }
+                });
+            }, true));
+            pane.appendChild(secWrap);
         } else if (activeTab === 'auth' && selectedEnv) {
             var freshAuth = function () {
                 var e = getEnvironments().find(function (e) { return e.id === envSidebarSelectedId; });
@@ -821,6 +844,62 @@
     // workspace settings card. Keeping the dispatch here means the
     // operator stays in the Workspaces rail while drilling in — the
     // rail is the workspace navigator, the main pane is the editor.
+    // Breadcrumb for the workspace sub-views (Sources / Collections /
+    // Environments / Recordings, and their per-item detail panes). The
+    // tree on the left names the same thing, but operators routinely
+    // collapse it; without a breadcrumb here the only thing on screen
+    // was the workspace name (rendered like a page title even though
+    // we're on a sub-view), and the current section showed only as a
+    // small grey "› Environments" hint that didn't read as "you are
+    // here". The first crumb is the workspace itself — clickable back
+    // to its settings card; intermediate crumbs are clickable back to
+    // the parent section; the final crumb is the active page.
+    function _renderWorkspaceBreadcrumb(ws, segments) {
+        var nav = el('nav', {
+            className: 'bowire-ws-breadcrumb',
+            'aria-label': 'Workspace navigation'
+        });
+        var wsCrumb = el('button', {
+            type: 'button',
+            className: 'bowire-ws-breadcrumb-crumb bowire-ws-breadcrumb-workspace',
+            title: 'Open ' + ws.name + ' settings',
+            onClick: function () {
+                workspaceTreeSelection = { wsId: ws.id, kind: 'workspace' };
+                render();
+            }
+        },
+            el('span', {
+                className: 'bowire-ws-breadcrumb-dot',
+                style: 'background:' + (ws.color || 'var(--bowire-accent)')
+            }),
+            el('span', { textContent: ws.name })
+        );
+        nav.appendChild(wsCrumb);
+        segments.forEach(function (seg, idx) {
+            nav.appendChild(el('span', {
+                className: 'bowire-ws-breadcrumb-sep',
+                'aria-hidden': 'true',
+                textContent: '›'
+            }));
+            var isLast = idx === segments.length - 1;
+            if (isLast || typeof seg.onClick !== 'function') {
+                nav.appendChild(el('span', {
+                    className: 'bowire-ws-breadcrumb-current',
+                    'aria-current': isLast ? 'page' : null,
+                    textContent: seg.label
+                }));
+            } else {
+                nav.appendChild(el('button', {
+                    type: 'button',
+                    className: 'bowire-ws-breadcrumb-crumb',
+                    textContent: seg.label,
+                    onClick: seg.onClick
+                }));
+            }
+        });
+        return nav;
+    }
+
     function renderWorkspaceDetailMain() {
         var ws = workspaces.find(function (w) { return w.id === workspacesSelectedId; })
                  || activeWorkspace();
@@ -840,6 +919,7 @@
         if (kind === 'collection' && sel.value) return _renderWorkspaceCollectionDetail(ws, sel.value);
         if (kind === 'environments') return _renderWorkspaceEnvironmentsOverview(ws);
         if (kind === 'env' && sel.value) return _renderWorkspaceEnvironmentDetail(ws, sel.value);
+        if (kind === 'variables') return _renderWorkspaceVariablesDetail(ws);
         if (kind === 'recordings') return _renderWorkspaceRecordingsOverview(ws);
         if (kind === 'recording' && sel.value) return _renderWorkspaceRecordingDetail(ws, sel.value);
         return _renderWorkspaceSettingsDetail(ws);
@@ -1074,189 +1154,12 @@
             )
         ));
 
-        // Sources section (#155 Phase 1) — URLs + Schema-Files for the
-        // active workspace. The Sources rail mode was retired in
-        // favour of this in-workspace surface: a workspace is the
-        // project folder, sources are an integral part of it.
-        // Only render for the ACTIVE workspace, because URL state
-        // (serverUrls / connectionStatuses / services) is the live
-        // discovery state of the active workspace only. Non-active
-        // workspaces show a hint instead.
-        var sourcesSection = el('div', { className: 'bowire-ws-detail-section' },
-            el('div', { className: 'bowire-ws-detail-section-label', textContent: 'Sources' })
-        );
-        if (!isActive) {
-            sourcesSection.appendChild(el('p', {
-                className: 'bowire-ws-detail-stat-hint',
-                textContent: 'Switch to this workspace to manage its URLs and schema files.'
-            }));
-        } else {
-            // URL list — one row per URL with status + name + service
-            // count + a Remove + Open-in-Discover action.
-            var urls = (typeof serverUrls !== 'undefined' && Array.isArray(serverUrls)) ? serverUrls : [];
-            if (urls.length === 0) {
-                sourcesSection.appendChild(el('p', {
-                    className: 'bowire-ws-detail-stat-hint',
-                    style: 'margin-bottom:8px',
-                    textContent: 'No URLs yet. Add one below to start discovery.'
-                }));
-            } else {
-                var srcList = el('div', { style: 'display:flex;flex-direction:column;gap:4px;margin-bottom:8px' });
-                urls.forEach(function (u) {
-                    var st = (typeof connectionStatuses === 'object' && connectionStatuses)
-                        ? (connectionStatuses[u] || 'disconnected') : 'disconnected';
-                    var meta = (typeof getUrlMeta === 'function') ? getUrlMeta(u) : {};
-                    var name = meta.name || (typeof _stripUrlPrefix === 'function' ? _stripUrlPrefix(u) : u);
-                    var svcN = (typeof services !== 'undefined')
-                        ? services.filter(function (s) {
-                            return typeof urlMatchesService === 'function'
-                                ? urlMatchesService(u, s) : s.originUrl === u;
-                        }).length : 0;
-                    srcList.appendChild(el('div', {
-                        style: 'display:flex;align-items:center;gap:8px;padding:6px 8px;background:var(--bowire-surface);border:1px solid var(--bowire-border-subtle);border-radius:var(--bowire-radius-sm)'
-                    },
-                        el('span', {
-                            className: 'bowire-conn-pill-dot bowire-conn-pill-dot-' + st,
-                            style: 'width:10px;height:10px;border-radius:50%;flex-shrink:0;background:'
-                                + (st === 'connected' ? 'var(--bowire-success)'
-                                    : st === 'error' ? 'var(--bowire-danger)'
-                                    : st === 'discovering' ? 'var(--bowire-warning)'
-                                    : 'var(--bowire-text-tertiary)')
-                        }),
-                        el('span', { style: 'flex:1;font-size:12px;font-family:var(--bowire-mono);overflow:hidden;text-overflow:ellipsis;white-space:nowrap', textContent: name, title: u }),
-                        el('span', { style: 'font-size:11px;color:var(--bowire-text-tertiary);flex-shrink:0', textContent: svcN + ' svc' + (svcN === 1 ? '' : 's') }),
-                        el('button', {
-                            className: 'bowire-presets-btn',
-                            style: 'height:22px;padding:0 8px;font-size:11px',
-                            title: 'Open this URL in Discover',
-                            textContent: 'Discover',
-                            onClick: function () {
-                                railMode = 'discover';
-                                sidebarView = 'services';
-                                try { localStorage.setItem('bowire_rail_mode', 'discover'); } catch { /* ignore */ }
-                                render();
-                            }
-                        }),
-                        el('button', {
-                            className: 'bowire-presets-btn',
-                            style: 'height:22px;padding:0 8px;font-size:11px;color:var(--bowire-danger)',
-                            title: 'Remove this URL from the workspace',
-                            textContent: 'Remove',
-                            onClick: function () {
-                                bowireConfirm('Remove URL "' + name + '"?', {
-                                    confirmText: 'Remove',
-                                    danger: true
-                                }).then(function (ok) {
-                                    if (!ok) return;
-                                    var idx = serverUrls.indexOf(u);
-                                    if (idx >= 0) serverUrls.splice(idx, 1);
-                                    if (typeof persistServerUrls === 'function') persistServerUrls();
-                                    render();
-                                });
-                            }
-                        })
-                    ));
-                });
-                sourcesSection.appendChild(srcList);
-            }
-            // Add URL input row.
-            sourcesSection.appendChild(el('button', {
-                className: 'bowire-presets-btn',
-                textContent: '+ Add URL',
-                onClick: function () {
-                    bowirePrompt('Server URL', {
-                        title: 'Add URL',
-                        placeholder: 'e.g. https://petstore3.swagger.io/api/v3/openapi.json',
-                        confirmText: 'Add'
-                    }).then(function (raw) {
-                        if (!raw) return;
-                        var trimmed = String(raw).trim();
-                        if (!trimmed) return;
-                        if (serverUrls.indexOf(trimmed) < 0) {
-                            serverUrls.push(trimmed);
-                            if (typeof persistServerUrls === 'function') persistServerUrls();
-                            // Trigger discovery for the new URL.
-                            if (typeof fetchServices === 'function') fetchServices();
-                        }
-                        render();
-                    });
-                }
-            }));
-            // Schema files — drop-zone for .proto / .openapi.json /
-            // .yaml. Lives here because uploaded schemas are part of
-            // what the workspace knows about; the legacy sidebar
-            // selector (Discover/Flows/Proxy/Security) was retired in
-            // #294 so workspace-detail is the only mount site now.
-            sourcesSection.appendChild(el('div', { className: 'bowire-ws-detail-section-label', style: 'margin-top:14px', textContent: 'Schema files' }));
-            if (typeof renderProtoUploadPanel === 'function') {
-                sourcesSection.appendChild(renderProtoUploadPanel());
-            }
-        }
-        main.appendChild(sourcesSection);
-
-        // #125 Phase 4 — Secrets section. Session-only in-memory
-        // store (cleared on reload); Phase 5 wraps an OS keyring.
-        // Values are masked in the table; the resolver still hands
-        // the real value to the request pipeline so the upstream
-        // gets the bearer token / API key. Recording / export
-        // sanitisers replace the value with '***' before it leaves
-        // the workbench.
-        var secretsBag = (typeof getWorkspaceSecrets === 'function')
-            ? getWorkspaceSecrets(ws.id) : {};
-        var secretsSection = el('div', { className: 'bowire-ws-detail-section' },
-            el('div', { className: 'bowire-ws-detail-section-label', textContent: 'Secrets' }),
-            el('div', {
-                className: 'bowire-ws-detail-stat-hint',
-                style: 'margin-bottom:8px',
-                textContent: 'Reference as {{secret.NAME}} in any input. Session-only — cleared on reload. Phase 5 wraps the OS keyring.'
-            })
-        );
-        var secretNames = (typeof listWorkspaceSecrets === 'function')
-            ? listWorkspaceSecrets(ws.id) : [];
-        if (secretNames.length > 0) {
-            var secretsList = el('div', { style: 'display:flex;flex-direction:column;gap:4px;margin-bottom:8px' });
-            secretNames.forEach(function (name) {
-                secretsList.appendChild(el('div', {
-                    style: 'display:flex;align-items:center;gap:8px;font-size:12px;padding:4px 8px;background:var(--bowire-surface);border:1px solid var(--bowire-border-subtle);border-radius:var(--bowire-radius-sm)'
-                },
-                    el('span', { style: 'flex:1;font-family:var(--bowire-mono)', textContent: name }),
-                    el('span', { style: 'font-family:var(--bowire-mono);color:var(--bowire-text-tertiary)', textContent: '••••••••' }),
-                    el('button', {
-                        className: 'bowire-presets-btn',
-                        style: 'height:22px;padding:0 8px',
-                        textContent: 'Remove',
-                        onClick: function () {
-                            setWorkspaceSecret(name, null, ws.id);
-                            render();
-                        }
-                    })
-                ));
-            });
-            secretsSection.appendChild(secretsList);
-        }
-        secretsSection.appendChild(el('button', {
-            className: 'bowire-presets-btn',
-            textContent: '+ Add secret',
-            onClick: function () {
-                bowirePrompt('Secret name', {
-                    title: 'Add secret',
-                    placeholder: 'e.g. GH_TOKEN',
-                    confirmText: 'Next'
-                }).then(function (name) {
-                    if (!name) return;
-                    bowirePrompt('Value for ' + name, {
-                        title: 'Add secret value',
-                        placeholder: '(value is not stored on disk)',
-                        confirmText: 'Save'
-                    }).then(function (value) {
-                        if (!value) return;
-                        setWorkspaceSecret(name, value, ws.id);
-                        render();
-                    });
-                });
-            }
-        }));
-        main.appendChild(secretsSection);
+        // Sources, Schema-Files and Secrets sections used to live here.
+        // They were moved out: Sources + Schema-Files now belong to the
+        // dedicated Workspace › Sources tree node; Variables + Secrets
+        // were promoted to a workspace-globals editor at Workspace ›
+        // Variables, where they also serve as the fallback layer
+        // beneath each Environment's own variables + secrets.
 
         // Share / portability — Export this workspace as a .bowire JSON
         // bundle, or import another. Secrets are intentionally excluded
@@ -1345,12 +1248,13 @@
     function _renderWorkspaceUrlDetail(ws, url) {
         var main = el('div', { id: 'bowire-main-workspaces', className: 'bowire-main bowire-main-workspaces' });
         var isActive = ws.id === activeWorkspaceId;
-        var header = el('div', { className: 'bowire-ws-detail-header' },
-            el('span', { className: 'bowire-ws-detail-dot', style: 'background:' + (ws.color || 'var(--bowire-accent)') }),
-            el('span', { className: 'bowire-ws-detail-name', style: 'font-weight:600', textContent: ws.name }),
-            el('span', { className: 'bowire-ws-detail-stat-hint', textContent: '› Sources › ' + url })
-        );
-        main.appendChild(header);
+        main.appendChild(_renderWorkspaceBreadcrumb(ws, [
+            { label: 'Sources', onClick: function () {
+                workspaceTreeSelection = { wsId: ws.id, kind: 'sources' };
+                render();
+            } },
+            { label: url }
+        ]));
 
         var section = el('div', { className: 'bowire-ws-detail-section' });
         section.appendChild(el('div', { className: 'bowire-ws-detail-section-label', textContent: 'URL' }));
@@ -1410,48 +1314,256 @@
     function _renderWorkspaceSourcesDetail(ws) {
         var main = el('div', { id: 'bowire-main-workspaces', className: 'bowire-main bowire-main-workspaces' });
         var isActive = ws.id === activeWorkspaceId;
-        var urls = isActive
-            ? ((typeof serverUrls !== 'undefined' && Array.isArray(serverUrls)) ? serverUrls : [])
-            : (typeof readWorkspaceUrls === 'function' ? readWorkspaceUrls(ws.id) : []);
 
-        main.appendChild(el('div', { className: 'bowire-ws-detail-header' },
-            el('span', { className: 'bowire-ws-detail-dot', style: 'background:' + (ws.color || 'var(--bowire-accent)') }),
-            el('span', { className: 'bowire-ws-detail-name', style: 'font-weight:600', textContent: ws.name }),
-            el('span', { className: 'bowire-ws-detail-stat-hint', textContent: '› Sources' })
-        ));
+        main.appendChild(_renderWorkspaceBreadcrumb(ws, [
+            { label: 'Sources' }
+        ]));
 
         var section = el('div', { className: 'bowire-ws-detail-section' });
-        section.appendChild(el('div', { className: 'bowire-ws-detail-section-label', textContent: 'URLs (' + urls.length + ')' }));
+        section.appendChild(el('div', { className: 'bowire-ws-detail-section-label', textContent: 'URLs' }));
+
+        if (!isActive) {
+            section.appendChild(el('p', {
+                className: 'bowire-ws-detail-stat-hint',
+                textContent: 'Switch to this workspace to manage its URLs and schema files.'
+            }));
+            main.appendChild(section);
+            return main;
+        }
+
+        // Live URL list with discovery status, service count, and
+        // Discover / Remove actions. Mirrors the source-of-truth on the
+        // active workspace — non-active workspaces fell through above.
+        var urls = (typeof serverUrls !== 'undefined' && Array.isArray(serverUrls)) ? serverUrls : [];
         if (urls.length === 0) {
             section.appendChild(el('p', {
                 className: 'bowire-ws-detail-stat-hint',
-                textContent: 'No URLs yet. Use the + on the Sources node in the sidebar, or Ctrl/Cmd+Shift+U.'
+                style: 'margin-bottom:8px',
+                textContent: 'No URLs yet. Add one below to start discovery.'
             }));
         } else {
-            var list = el('div', { style: 'display:flex;flex-direction:column;gap:4px;margin-top:6px' });
+            var srcList = el('div', { style: 'display:flex;flex-direction:column;gap:4px;margin-bottom:8px' });
             urls.forEach(function (u) {
-                list.appendChild(el('div', {
-                    className: 'bowire-ws-detail-stat-hint',
-                    style: 'cursor:pointer;padding:4px 6px;border-radius:var(--bowire-radius-sm)',
-                    textContent: u,
-                    onClick: function () {
-                        workspaceTreeSelection = { wsId: ws.id, kind: 'url', value: u };
-                        render();
-                    }
-                }));
+                var st = (typeof connectionStatuses === 'object' && connectionStatuses)
+                    ? (connectionStatuses[u] || 'disconnected') : 'disconnected';
+                var meta = (typeof getUrlMeta === 'function') ? getUrlMeta(u) : {};
+                var name = meta.name || (typeof _stripUrlPrefix === 'function' ? _stripUrlPrefix(u) : u);
+                var svcN = (typeof services !== 'undefined')
+                    ? services.filter(function (s) {
+                        return typeof urlMatchesService === 'function'
+                            ? urlMatchesService(u, s) : s.originUrl === u;
+                    }).length : 0;
+                srcList.appendChild(el('div', {
+                    style: 'display:flex;align-items:center;gap:8px;padding:6px 8px;background:var(--bowire-surface);border:1px solid var(--bowire-border-subtle);border-radius:var(--bowire-radius-sm)'
+                },
+                    el('span', {
+                        className: 'bowire-conn-pill-dot bowire-conn-pill-dot-' + st,
+                        style: 'width:10px;height:10px;border-radius:50%;flex-shrink:0;background:'
+                            + (st === 'connected' ? 'var(--bowire-success)'
+                                : st === 'error' ? 'var(--bowire-danger)'
+                                : st === 'discovering' ? 'var(--bowire-warning)'
+                                : 'var(--bowire-text-tertiary)')
+                    }),
+                    el('span', {
+                        style: 'flex:1;font-size:12px;font-family:var(--bowire-mono);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer',
+                        textContent: name,
+                        title: u,
+                        onClick: function () {
+                            workspaceTreeSelection = { wsId: ws.id, kind: 'url', value: u };
+                            render();
+                        }
+                    }),
+                    el('span', { style: 'font-size:11px;color:var(--bowire-text-tertiary);flex-shrink:0', textContent: svcN + ' svc' + (svcN === 1 ? '' : 's') }),
+                    el('button', {
+                        className: 'bowire-ws-detail-action',
+                        title: 'Open this URL in Discover',
+                        textContent: 'Discover',
+                        onClick: function () {
+                            railMode = 'discover';
+                            sidebarView = 'services';
+                            try { localStorage.setItem('bowire_rail_mode', 'discover'); } catch { /* ignore */ }
+                            render();
+                        }
+                    }),
+                    el('button', {
+                        className: 'bowire-ws-detail-action bowire-ws-detail-danger',
+                        title: 'Remove this URL from the workspace',
+                        textContent: 'Remove',
+                        onClick: function () {
+                            bowireConfirm('Remove URL "' + name + '"?', {
+                                confirmText: 'Remove',
+                                danger: true
+                            }).then(function (ok) {
+                                if (!ok) return;
+                                var idx = serverUrls.indexOf(u);
+                                if (idx >= 0) serverUrls.splice(idx, 1);
+                                if (typeof persistServerUrls === 'function') persistServerUrls();
+                                render();
+                            });
+                        }
+                    })
+                ));
             });
-            section.appendChild(list);
+            section.appendChild(srcList);
         }
         section.appendChild(el('button', {
             className: 'bowire-ws-detail-action',
-            style: 'margin-top:8px',
-            textContent: '+ Add URL or schema',
+            style: 'margin-top:4px',
+            textContent: '+ Add URL',
             onClick: function () {
-                if (typeof _quickAddUrlToWorkspace === 'function') _quickAddUrlToWorkspace(ws);
+                bowirePrompt('Server URL', {
+                    title: 'Add URL',
+                    placeholder: 'e.g. https://petstore3.swagger.io/api/v3/openapi.json',
+                    confirmText: 'Add'
+                }).then(function (raw) {
+                    if (!raw) return;
+                    var trimmed = String(raw).trim();
+                    if (!trimmed) return;
+                    if (serverUrls.indexOf(trimmed) < 0) {
+                        serverUrls.push(trimmed);
+                        if (typeof persistServerUrls === 'function') persistServerUrls();
+                        if (typeof fetchServices === 'function') fetchServices();
+                    }
+                    render();
+                });
             }
         }));
+
+        // Schema files — drop-zone for .proto / .openapi.json / .yaml.
+        // Used to live in Workspace > Settings; moved here so Sources
+        // is the single mount site for everything that introduces a
+        // service catalogue into the workspace (URLs + schema files).
+        section.appendChild(el('div', {
+            className: 'bowire-ws-detail-section-label',
+            style: 'margin-top:14px',
+            textContent: 'Schema files'
+        }));
+        if (typeof renderProtoUploadPanel === 'function') {
+            section.appendChild(renderProtoUploadPanel());
+        }
         main.appendChild(section);
         return main;
+    }
+
+    // Workspace › Variables — workspace-globale Variables + Secrets.
+    // Two sections, both editable as key/value pairs. Acts as the
+    // fallback layer beneath every Environment in this workspace:
+    // a variable defined here resolves whenever no active Environment
+    // overrides it (GitHub-style layered config). Secrets section
+    // is masked + session-only; Phase 5 wraps an OS keyring.
+    function _renderWorkspaceVariablesDetail(ws) {
+        var main = el('div', { id: 'bowire-main-workspaces', className: 'bowire-main bowire-main-workspaces' });
+        main.appendChild(_renderWorkspaceBreadcrumb(ws, [{ label: 'Variables' }]));
+
+        main.appendChild(el('p', {
+            className: 'bowire-ws-detail-stat-hint',
+            textContent: 'Workspace defaults that every Environment in this workspace inherits. An Environment can add its own or override these. Reference as {{NAME}} (variables) or {{secret.NAME}} (secrets).'
+        }));
+
+        var vars = ws.vars || {};
+        main.appendChild(_renderKvSection('Variables', vars, function (next) {
+            ws.vars = next;
+            if (typeof persistWorkspaces === 'function') persistWorkspaces();
+        }, false));
+
+        var secrets = (typeof getWorkspaceSecrets === 'function') ? getWorkspaceSecrets(ws.id) : {};
+        main.appendChild(_renderKvSection('Secrets', secrets, function (next) {
+            var oldNames = Object.keys(secrets);
+            var newNames = Object.keys(next);
+            oldNames.forEach(function (n) {
+                if (newNames.indexOf(n) < 0 && typeof setWorkspaceSecret === 'function') {
+                    setWorkspaceSecret(n, null, ws.id);
+                }
+            });
+            newNames.forEach(function (n) {
+                if (next[n] !== secrets[n] && typeof setWorkspaceSecret === 'function') {
+                    setWorkspaceSecret(n, next[n], ws.id);
+                }
+            });
+        }, true));
+
+        return main;
+    }
+
+    // Shared key/value table renderer for Variables + Secrets sections.
+    // `masked` switches the value input to type=password and changes
+    // the empty-state + placeholder copy. `onChange(nextMap)` is the
+    // persist callback: it gets the new map after add / edit / remove.
+    function _renderKvSection(title, map, onChange, masked) {
+        var section = el('div', { className: 'bowire-ws-detail-section' });
+        section.appendChild(el('div', { className: 'bowire-ws-detail-section-label', textContent: title }));
+
+        var keys = Object.keys(map).sort();
+        if (keys.length > 0) {
+            var list = el('div', { style: 'display:flex;flex-direction:column;gap:4px;margin-bottom:8px' });
+            keys.forEach(function (k) {
+                list.appendChild(el('div', {
+                    style: 'display:flex;align-items:center;gap:8px;padding:6px 8px;background:var(--bowire-surface);border:1px solid var(--bowire-border-subtle);border-radius:var(--bowire-radius-sm)'
+                },
+                    el('span', { style: 'flex:0 0 30%;font-family:var(--bowire-mono);font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap', textContent: k, title: k }),
+                    el('input', {
+                        type: masked ? 'password' : 'text',
+                        value: map[k] || '',
+                        placeholder: masked ? '(secret)' : 'value',
+                        style: 'flex:1;min-width:0;font-family:var(--bowire-mono);font-size:12px;background:transparent;border:1px solid var(--bowire-border);border-radius:var(--bowire-radius-sm);padding:4px 6px;color:var(--bowire-text)',
+                        onChange: function (e) {
+                            var next = Object.assign({}, map);
+                            next[k] = e.target.value;
+                            onChange(next);
+                        }
+                    }),
+                    el('button', {
+                        className: 'bowire-ws-detail-action bowire-ws-detail-danger',
+                        title: 'Remove ' + k,
+                        textContent: 'Remove',
+                        onClick: function () {
+                            var next = Object.assign({}, map);
+                            delete next[k];
+                            onChange(next);
+                            render();
+                        }
+                    })
+                ));
+            });
+            section.appendChild(list);
+        } else {
+            section.appendChild(el('p', {
+                className: 'bowire-ws-detail-stat-hint',
+                style: 'margin-bottom:8px',
+                textContent: masked
+                    ? 'No secrets yet. Secrets are session-only — Phase 5 wraps an OS keyring.'
+                    : 'No variables yet.'
+            }));
+        }
+
+        section.appendChild(el('button', {
+            className: 'bowire-ws-detail-action',
+            textContent: '+ Add ' + (masked ? 'secret' : 'variable'),
+            onClick: function () {
+                bowirePrompt(masked ? 'Secret name' : 'Variable name', {
+                    title: masked ? 'Add secret' : 'Add variable',
+                    placeholder: masked ? 'e.g. GH_TOKEN' : 'e.g. baseUrl',
+                    confirmText: 'Next'
+                }).then(function (name) {
+                    if (!name) return;
+                    var trimmed = String(name).trim();
+                    if (!trimmed) return;
+                    bowirePrompt('Value for ' + trimmed, {
+                        title: masked ? 'Set secret value' : 'Set variable value',
+                        placeholder: masked ? '(value is not stored on disk)' : 'value',
+                        confirmText: 'Save'
+                    }).then(function (value) {
+                        if (value == null) return;
+                        var next = Object.assign({}, map);
+                        next[trimmed] = String(value);
+                        onChange(next);
+                        render();
+                    });
+                });
+            }
+        }));
+
+        return section;
     }
 
     // #164 v4 — Collections + Environments now render INSIDE the
@@ -1467,11 +1579,9 @@
             ? ((typeof collectionsList !== 'undefined' && Array.isArray(collectionsList)) ? collectionsList : [])
             : (typeof readWorkspaceJsonList === 'function' ? readWorkspaceJsonList(ws.id, COLLECTIONS_KEY) : []);
 
-        main.appendChild(el('div', { className: 'bowire-ws-detail-header' },
-            el('span', { className: 'bowire-ws-detail-dot', style: 'background:' + (ws.color || 'var(--bowire-accent)') }),
-            el('span', { className: 'bowire-ws-detail-name', style: 'font-weight:600', textContent: ws.name }),
-            el('span', { className: 'bowire-ws-detail-stat-hint', textContent: '› Collections' })
-        ));
+        main.appendChild(_renderWorkspaceBreadcrumb(ws, [
+            { label: 'Collections' }
+        ]));
 
         var section = el('div', { className: 'bowire-ws-detail-section' });
         section.appendChild(el('div', { className: 'bowire-ws-detail-section-label',
@@ -1552,19 +1662,13 @@
             workspaceTreeSelection = { wsId: ws.id, kind: 'collections' };
             return _renderWorkspaceCollectionsOverview(ws);
         }
-        main.appendChild(el('div', { className: 'bowire-ws-detail-header' },
-            el('span', { className: 'bowire-ws-detail-dot', style: 'background:' + (ws.color || 'var(--bowire-accent)') }),
-            el('span', { className: 'bowire-ws-detail-name', style: 'font-weight:600', textContent: ws.name }),
-            el('span', { className: 'bowire-ws-detail-stat-hint',
-                style: 'cursor:pointer',
-                textContent: '› Collections ›',
-                onClick: function () {
-                    workspaceTreeSelection = { wsId: ws.id, kind: 'collections' };
-                    render();
-                }
-            }),
-            el('span', { className: 'bowire-ws-detail-stat-hint', textContent: col.name || '(unnamed)' })
-        ));
+        main.appendChild(_renderWorkspaceBreadcrumb(ws, [
+            { label: 'Collections', onClick: function () {
+                workspaceTreeSelection = { wsId: ws.id, kind: 'collections' };
+                render();
+            } },
+            { label: col.name || '(unnamed)' }
+        ]));
         if (typeof collectionManagerSelectedId !== 'undefined') {
             collectionManagerSelectedId = col.id;
         }
@@ -1581,11 +1685,9 @@
             ? ((typeof recordingsList !== 'undefined' && Array.isArray(recordingsList)) ? recordingsList : [])
             : (typeof readWorkspaceJsonList === 'function' ? readWorkspaceJsonList(ws.id, RECORDINGS_KEY) : []);
 
-        main.appendChild(el('div', { className: 'bowire-ws-detail-header' },
-            el('span', { className: 'bowire-ws-detail-dot', style: 'background:' + (ws.color || 'var(--bowire-accent)') }),
-            el('span', { className: 'bowire-ws-detail-name', style: 'font-weight:600', textContent: ws.name }),
-            el('span', { className: 'bowire-ws-detail-stat-hint', textContent: '› Recordings' })
-        ));
+        main.appendChild(_renderWorkspaceBreadcrumb(ws, [
+            { label: 'Recordings' }
+        ]));
 
         var section = el('div', { className: 'bowire-ws-detail-section' });
         section.appendChild(el('div', { className: 'bowire-ws-detail-section-label',
@@ -1659,19 +1761,13 @@
             workspaceTreeSelection = { wsId: ws.id, kind: 'recordings' };
             return _renderWorkspaceRecordingsOverview(ws);
         }
-        main.appendChild(el('div', { className: 'bowire-ws-detail-header' },
-            el('span', { className: 'bowire-ws-detail-dot', style: 'background:' + (ws.color || 'var(--bowire-accent)') }),
-            el('span', { className: 'bowire-ws-detail-name', style: 'font-weight:600', textContent: ws.name }),
-            el('span', { className: 'bowire-ws-detail-stat-hint',
-                style: 'cursor:pointer',
-                textContent: '› Recordings ›',
-                onClick: function () {
-                    workspaceTreeSelection = { wsId: ws.id, kind: 'recordings' };
-                    render();
-                }
-            }),
-            el('span', { className: 'bowire-ws-detail-stat-hint', textContent: rec.name || '(unnamed)' })
-        ));
+        main.appendChild(_renderWorkspaceBreadcrumb(ws, [
+            { label: 'Recordings', onClick: function () {
+                workspaceTreeSelection = { wsId: ws.id, kind: 'recordings' };
+                render();
+            } },
+            { label: rec.name || '(unnamed)' }
+        ]));
         if (typeof recordingManagerSelectedId !== 'undefined') {
             recordingManagerSelectedId = rec.id;
         }
@@ -1688,11 +1784,9 @@
             ? allEnvs.map(function (e) { return e.id; })
             : (Array.isArray(ws.includedEnvironmentIds) ? ws.includedEnvironmentIds : []);
 
-        main.appendChild(el('div', { className: 'bowire-ws-detail-header' },
-            el('span', { className: 'bowire-ws-detail-dot', style: 'background:' + (ws.color || 'var(--bowire-accent)') }),
-            el('span', { className: 'bowire-ws-detail-name', style: 'font-weight:600', textContent: ws.name }),
-            el('span', { className: 'bowire-ws-detail-stat-hint', textContent: '› Environments' })
-        ));
+        main.appendChild(_renderWorkspaceBreadcrumb(ws, [
+            { label: 'Environments' }
+        ]));
 
         var section = el('div', { className: 'bowire-ws-detail-section' });
         section.appendChild(el('div', { className: 'bowire-ws-detail-section-label',
@@ -1787,19 +1881,13 @@
             workspaceTreeSelection = { wsId: ws.id, kind: 'environments' };
             return _renderWorkspaceEnvironmentsOverview(ws);
         }
-        main.appendChild(el('div', { className: 'bowire-ws-detail-header' },
-            el('span', { className: 'bowire-ws-detail-dot', style: 'background:' + (ws.color || 'var(--bowire-accent)') }),
-            el('span', { className: 'bowire-ws-detail-name', style: 'font-weight:600', textContent: ws.name }),
-            el('span', { className: 'bowire-ws-detail-stat-hint',
-                style: 'cursor:pointer',
-                textContent: '› Environments ›',
-                onClick: function () {
-                    workspaceTreeSelection = { wsId: ws.id, kind: 'environments' };
-                    render();
-                }
-            }),
-            el('span', { className: 'bowire-ws-detail-stat-hint', textContent: env.name || '(unnamed)' })
-        ));
+        main.appendChild(_renderWorkspaceBreadcrumb(ws, [
+            { label: 'Environments', onClick: function () {
+                workspaceTreeSelection = { wsId: ws.id, kind: 'environments' };
+                render();
+            } },
+            { label: env.name || '(unnamed)' }
+        ]));
         if (typeof envSidebarSelectedId !== 'undefined') {
             envSidebarSelectedId = env.id;
         }
@@ -1811,11 +1899,9 @@
 
     function _renderWorkspaceJumpDetail(ws, kind, icon, label, jumpLabel, body) {
         var main = el('div', { id: 'bowire-main-workspaces', className: 'bowire-main bowire-main-workspaces' });
-        main.appendChild(el('div', { className: 'bowire-ws-detail-header' },
-            el('span', { className: 'bowire-ws-detail-dot', style: 'background:' + (ws.color || 'var(--bowire-accent)') }),
-            el('span', { className: 'bowire-ws-detail-name', style: 'font-weight:600', textContent: ws.name }),
-            el('span', { className: 'bowire-ws-detail-stat-hint', textContent: '› ' + label })
-        ));
+        main.appendChild(_renderWorkspaceBreadcrumb(ws, [
+            { label: label }
+        ]));
         var section = el('div', { className: 'bowire-ws-detail-section' });
         section.appendChild(el('div', { className: 'bowire-ws-detail-section-label', textContent: label }));
         section.appendChild(el('p', { className: 'bowire-ws-detail-stat-hint', textContent: body }));
@@ -2333,14 +2419,14 @@
                 // — without it the cards row floats labelless above
                 // Favorites / Recent, which the operator reads as a
                 // missing section title.
-                firstRunBand.appendChild(_renderHomeBandTitle('rocket', 'Start','Pick what you want to do'));
+                firstRunBand.appendChild(_renderHomeBandTitle('rocket', 'Start'));
                 firstRunBand.appendChild(_renderHomeStartGrid(true));
                 homeWrap.appendChild(firstRunBand);
             } else {
                 var hasContinueItems = recent.length > 0 || collections.length > 0 || recordings.length > 0;
                 if (hasContinueItems) {
                     var continueBand = el('div', { className: 'bowire-home-band' });
-                    continueBand.appendChild(_renderHomeBandTitle('replay', 'Continue', 'Pick up where you left off'));
+                    continueBand.appendChild(_renderHomeBandTitle('replay', 'Continue'));
                     var continueGrid = el('div', { className: 'bowire-home-continue-grid' });
                     if (recent.length > 0) {
                         continueGrid.appendChild(_renderContinueTile(
@@ -2391,7 +2477,7 @@
 
                 // ---- Band 2: Start ----
                 var startBand = el('div', { className: 'bowire-home-band' });
-                startBand.appendChild(_renderHomeBandTitle('rocket', 'Start','Kick off a new use case'));
+                startBand.appendChild(_renderHomeBandTitle('rocket', 'Start'));
                 startBand.appendChild(_renderHomeStartGrid(false));
                 homeWrap.appendChild(startBand);
             }
@@ -2468,27 +2554,9 @@
             return renderBenchmarksDetailMain();
         }
 
-        // #132 — Parallel sessions still a preview shell until phase 1
-        // lands. Empty card links to the tracking issue so operators
-        // see what's coming without falling into a dead end.
-        if (railMode === 'parallel') {
-            var stubMain = el('div', { id: 'bowire-main-parallel', className: 'bowire-main bowire-main-stub' });
-            var stubWrap = el('div', { className: 'bowire-main-pad' });
-            stubWrap.appendChild(renderEmptyCard({
-                icon: 'lightning',
-                headline: 'Parallel sessions (preview)',
-                body: 'Multi-session execution for recordings + collections. Phase 1 runs N concurrent sessions locally with per-session env slots; phase 2 distributes across linked Bowire nodes for geographic load or coordinated stress. Full implementation tracked in #132.',
-                actions: [{
-                    label: 'Open Parallel spec (#132)',
-                    primary: true,
-                    onClick: function () {
-                        window.open('https://github.com/Kuestenlogik/Bowire/issues/132', '_blank', 'noopener');
-                    }
-                }]
-            }));
-            stubMain.appendChild(stubWrap);
-            return stubMain;
-        }
+        // #132 — Parallel sessions are launched directly from the
+        // Recording / Collection detail toolbars; the result lands
+        // inline under the source. No standalone rail mode any more.
 
         // #133 Phase 2 — Collections rail mode. Sidebar lists every
         // saved collection; main pane shows the selected collection's
@@ -3659,18 +3727,20 @@
             var wsHeader = el('div', { className: 'bowire-pane-header' },
                 el('span', { className: 'bowire-pane-title', textContent: 'Frame type' }),
                 el('div', { className: 'bowire-pane-actions' },
-                    el('button', {
-                        id: 'bowire-ws-frame-text-btn',
-                        className: 'bowire-ws-frame-btn' + (websocketFrameType === 'text' ? ' active' : ''),
-                        textContent: 'Text',
-                        onClick: function () { websocketFrameType = 'text'; websocketPendingBinary = null; render(); }
-                    }),
-                    el('button', {
-                        id: 'bowire-ws-frame-binary-btn',
-                        className: 'bowire-ws-frame-btn' + (websocketFrameType === 'binary' ? ' active' : ''),
-                        textContent: 'Binary',
-                        onClick: function () { websocketFrameType = 'binary'; render(); }
-                    })
+                    el('div', { className: 'bowire-toggle-group' },
+                        el('button', {
+                            id: 'bowire-ws-frame-text-btn',
+                            className: 'bowire-toggle-btn' + (websocketFrameType === 'text' ? ' is-active' : ''),
+                            textContent: 'Text',
+                            onClick: function () { websocketFrameType = 'text'; websocketPendingBinary = null; render(); }
+                        }),
+                        el('button', {
+                            id: 'bowire-ws-frame-binary-btn',
+                            className: 'bowire-toggle-btn' + (websocketFrameType === 'binary' ? ' is-active' : ''),
+                            textContent: 'Binary',
+                            onClick: function () { websocketFrameType = 'binary'; render(); }
+                        })
+                    )
                 )
             );
             var wsBox = el('div', { className: 'bowire-ws-frame-pane' }, wsHeader);

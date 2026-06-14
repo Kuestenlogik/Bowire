@@ -613,19 +613,15 @@
     // ---- Flow Sidebar List ----
     function renderFlowsListInto(container) {
         if (flowsList.length === 0) {
-            container.appendChild(renderEmptyCard({
-                icon: 'flow',
-                headline: 'No flows yet',
-                body: 'Chain multiple API calls — each step’s response feeds the next.',
-                actions: [{
-                    label: 'Create flow',
-                    primary: true,
-                    onClick: function () {
-                        var flow = createFlow();
-                        flowEditorSelectedId = flow.id;
-                        render();
-                    }
-                }]
+            // Empty-state copy + call-to-action live in the main pane
+            // (renderFlowCanvas's empty branch). Sidebar shows a
+            // single low-noise hint so the operator doesn't read
+            // "No flows yet · Create flow" twice — once on the left,
+            // once in the middle.
+            container.appendChild(el('div', {
+                className: 'bowire-pane-empty',
+                style: 'padding:12px 14px',
+                textContent: 'No flows yet.'
             }));
             return;
         }

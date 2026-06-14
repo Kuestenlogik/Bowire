@@ -297,9 +297,20 @@
         return getEnvironments().find(function (e) { return e.id === id; }) || null;
     }
 
-    /** Merged variable map: global vars first, active env overrides. */
+    /**
+     * Merged variable map. Layers, lowest-precedence first:
+     *   1. cross-workspace globals (getGlobalVars)
+     *   2. workspace defaults (activeWorkspace().vars) — workspace-level
+     *      vars that every Environment in this workspace inherits
+     *   3. active environment overrides (env.vars)
+     * Same precedence shape GitHub Actions uses for env / repo / org
+     * variables — the closer you are to the call site, the more
+     * specific the override.
+     */
     function getMergedVars() {
         var merged = Object.assign({}, getGlobalVars());
+        var ws = (typeof activeWorkspace === 'function') ? activeWorkspace() : null;
+        if (ws && ws.vars) Object.assign(merged, ws.vars);
         var env = getActiveEnv();
         if (env && env.vars) Object.assign(merged, env.vars);
         return merged;

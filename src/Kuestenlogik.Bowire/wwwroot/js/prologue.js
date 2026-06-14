@@ -2609,6 +2609,7 @@
     // writes the cache. substituteVars then returns the cached value
     // synchronously the same way it does for env vars.
     var _workspaceSecrets = {};      // workspaceId → { name → value }
+    var _envSecrets = {};            // envId → { name → value } (session-only, per Environment)
     var _aiVarsCache = {};           // 'ai.NAME' → resolved value (string)
     var _aiVarsInflight = {};        // 'ai.NAME' → Promise (dedup concurrent prefetches)
 
@@ -2625,9 +2626,32 @@
     function listWorkspaceSecrets(workspaceId) {
         return Object.keys(getWorkspaceSecrets(workspaceId));
     }
+    // Per-Environment secrets. Same shape as workspace secrets (session-
+    // only Map, masked in UI, sanitised on export) but keyed by env id.
+    // Resolver looks here first (active env), then falls through to the
+    // workspace-level bag so a workspace secret stays the baseline and
+    // the env can override or add its own.
+    function getEnvSecrets(envId) {
+        if (!envId) return {};
+        return _envSecrets[envId] || (_envSecrets[envId] = {});
+    }
+    function setEnvSecret(envId, name, value) {
+        if (!envId) return;
+        var bag = getEnvSecrets(envId);
+        if (value === null || value === undefined || value === '') delete bag[name];
+        else bag[name] = String(value);
+    }
+    function listEnvSecrets(envId) {
+        return Object.keys(getEnvSecrets(envId));
+    }
     function resolveSecret(name) {
-        var bag = getWorkspaceSecrets();
-        return Object.prototype.hasOwnProperty.call(bag, name) ? bag[name] : null;
+        var envId = (typeof getActiveEnvId === 'function') ? getActiveEnvId() : null;
+        if (envId) {
+            var envBag = getEnvSecrets(envId);
+            if (Object.prototype.hasOwnProperty.call(envBag, name)) return envBag[name];
+        }
+        var wsBag = getWorkspaceSecrets();
+        return Object.prototype.hasOwnProperty.call(wsBag, name) ? wsBag[name] : null;
     }
     function resolveAiVar(key) {
         // key is the full prefix-stripped name, e.g. 'next_pet_id'.

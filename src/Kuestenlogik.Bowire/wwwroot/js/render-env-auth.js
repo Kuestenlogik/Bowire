@@ -2200,7 +2200,6 @@
             { id: 'flows',        label: 'Flows',             icon: 'flow' },
             { id: 'proxy',        label: 'Proxy / MITM',      icon: 'disconnect' },
             { id: 'benchmarks',   label: 'Benchmarks',        icon: 'chart' },
-            { id: 'parallel',     label: 'Parallel sessions', icon: 'lightning' },
             { id: 'security',     label: 'Security',          icon: 'shield' },
             { id: 'workspaces',   label: 'Workspaces',        icon: 'layers' },
         ];
