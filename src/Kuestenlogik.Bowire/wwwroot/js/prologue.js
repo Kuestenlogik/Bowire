@@ -1038,6 +1038,12 @@
             // belong here. Personal is the one default-catchall.
             includeAllEnvironments: false,
             includedEnvironmentIds: [],
+            // Recording-storage default — disk + browser cache. Lets
+            // the operator switch to browser-only / disk-only later
+            // via Workspace Settings → Recording storage. Persisted
+            // on creation so the UI's radio reflects the real value
+            // immediately rather than relying on the implicit fallback.
+            recordingStorageMode: 'both',
         };
         workspaces.push(ws);
         activeWorkspaceId = id;

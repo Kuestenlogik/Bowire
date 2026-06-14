@@ -935,7 +935,16 @@
         }
         var sel = (typeof workspaceTreeSelection !== 'undefined' && workspaceTreeSelection) || {};
         var kind = (sel.wsId === ws.id) ? sel.kind : 'workspace';
-        if (kind === 'url' && sel.value) return _renderWorkspaceUrlDetail(ws, sel.value);
+        if (kind === 'url' && sel.value) {
+            // URL leaf no longer routes to the bare-bones "Open in Sources
+            // rail" stub — that screen was a dead-end (Sources rail itself
+            // was retired). Point the rich URL editor (renderSourcesDetailMain)
+            // at this URL and reuse it: the operator gets Refresh discovery,
+            // the URL/name/color editor, headers, status — everything the
+            // legacy path eventually surfaced — without an extra hop.
+            sourcesSelectedUrl = sel.value;
+            return renderSourcesDetailMain();
+        }
         if (kind === 'sources') return _renderWorkspaceSourcesDetail(ws);
         if (kind === 'collections') return _renderWorkspaceCollectionsOverview(ws);
         if (kind === 'collection' && sel.value) return _renderWorkspaceCollectionDetail(ws, sel.value);
@@ -1135,7 +1144,7 @@
                     el('input', {
                         type: 'radio',
                         name: 'ws-rec-storage-' + ws.id,
-                        checked: storageMode === 'both',
+                        checked: storageMode === 'both' ? 'checked' : null,
                         onChange: function () {
                             var t = _liveWs();
                             if (t && typeof setWorkspaceRecordingStorageMode === 'function') {
@@ -1153,7 +1162,7 @@
                     el('input', {
                         type: 'radio',
                         name: 'ws-rec-storage-' + ws.id,
-                        checked: storageMode === 'browser-only',
+                        checked: storageMode === 'browser-only' ? 'checked' : null,
                         onChange: function () {
                             var t = _liveWs();
                             if (t && typeof setWorkspaceRecordingStorageMode === 'function') {
@@ -1171,7 +1180,7 @@
                     el('input', {
                         type: 'radio',
                         name: 'ws-rec-storage-' + ws.id,
-                        checked: storageMode === 'disk-only',
+                        checked: storageMode === 'disk-only' ? 'checked' : null,
                         onChange: function () {
                             var t = _liveWs();
                             if (t && typeof setWorkspaceRecordingStorageMode === 'function') {
@@ -1303,71 +1312,11 @@
     // Sources rail but rooted in the picked workspace; Environments /
     // Collections / Recordings show a "switch rail" jump card because
     // the full editors already live in their dedicated rails.
-    function _renderWorkspaceUrlDetail(ws, url) {
-        var main = el('div', { id: 'bowire-main-workspaces', className: 'bowire-main bowire-main-workspaces' });
-        var isActive = ws.id === activeWorkspaceId;
-        main.appendChild(_renderWorkspaceBreadcrumb(ws, [
-            { label: 'Sources', onClick: function () {
-                workspaceTreeSelection = { wsId: ws.id, kind: 'sources' };
-                render();
-            } },
-            { label: url }
-        ]));
-
-        var section = el('div', { className: 'bowire-ws-detail-section' });
-        section.appendChild(el('div', { className: 'bowire-ws-detail-section-label', textContent: 'URL' }));
-        section.appendChild(el('p', { className: 'bowire-ws-detail-stat-hint', textContent: url }));
-
-        if (isActive) {
-            var st = (typeof connectionStatuses === 'object' && connectionStatuses)
-                ? (connectionStatuses[url] || 'disconnected') : 'disconnected';
-            section.appendChild(el('p', { className: 'bowire-ws-detail-stat-hint', textContent: 'Status: ' + st }));
-            section.appendChild(el('div', { style: 'display:flex;gap:8px;margin-top:8px' },
-                el('button', {
-                    className: 'bowire-ws-detail-action',
-                    textContent: 'Open in Sources rail',
-                    onClick: function () {
-                        sourcesSelectedUrl = url;
-                        railMode = null;
-                        sidebarView = 'sources';
-                        try { localStorage.setItem('bowire_rail_mode', ''); } catch { /* ignore */ }
-                        render();
-                    }
-                }),
-                el('button', {
-                    className: 'bowire-ws-detail-action bowire-ws-detail-danger',
-                    textContent: 'Remove URL',
-                    onClick: function () {
-                        bowireConfirm('Remove ' + url + ' from this workspace?', {
-                            title: 'Remove URL', confirmText: 'Remove', danger: true
-                        }).then(function (ok) {
-                            if (!ok) return;
-                            var idx = serverUrls.indexOf(url);
-                            if (idx >= 0) {
-                                serverUrls.splice(idx, 1);
-                                if (typeof persistServerUrls === 'function') persistServerUrls();
-                            }
-                            workspaceTreeSelection = { wsId: ws.id, kind: 'sources' };
-                            render();
-                        });
-                    }
-                })
-            ));
-        } else {
-            section.appendChild(el('p', {
-                className: 'bowire-ws-detail-stat-hint',
-                textContent: 'Switch to this workspace to manage its URLs.'
-            }));
-            section.appendChild(el('button', {
-                className: 'bowire-ws-detail-action',
-                style: 'margin-top:8px',
-                textContent: 'Switch to ' + ws.name,
-                onClick: function () { switchWorkspace(ws.id); }
-            }));
-        }
-        main.appendChild(section);
-        return main;
-    }
+    // _renderWorkspaceUrlDetail retired — its dead-end "Open in Sources
+    // rail" / "Remove URL" view was replaced by routing URL leaf clicks
+    // directly into renderSourcesDetailMain (the rich URL editor) in
+    // renderWorkspaceDetailMain. Remove URL still works via the URL-leaf
+    // right-click context menu added in the workspace-polish pass.
 
     function _renderWorkspaceSourcesDetail(ws) {
         var main = el('div', { id: 'bowire-main-workspaces', className: 'bowire-main bowire-main-workspaces' });
@@ -2116,8 +2065,13 @@
                     className: 'bowire-settings-action-btn',
                     textContent: 'Refresh discovery',
                     onClick: function () {
-                        if (typeof refreshServices === 'function') refreshServices(u);
-                        else if (typeof onServerUrlChanged === 'function') onServerUrlChanged();
+                        // refreshServices() / onServerUrlChanged() never
+                        // existed (legacy hook names). fetchServices() is
+                        // the real entry point — fans out across every
+                        // configured URL, repopulates `services`, and
+                        // renders. Triggered the same way the schema-
+                        // watch loop drives re-discovery.
+                        if (typeof fetchServices === 'function') fetchServices();
                     }
                 }),
                 el('button', {

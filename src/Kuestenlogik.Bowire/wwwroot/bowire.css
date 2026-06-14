@@ -7567,7 +7567,7 @@ and chip row */
     right: 0;
     margin-top: 4px;
     z-index: 1000;
-    min-width: 180px;
+    min-width: 240px;
     background: var(--bowire-bg-elevated);
     border: 1px solid var(--bowire-border);
     border-radius: var(--bowire-radius-md);
@@ -7588,6 +7588,91 @@ and chip row */
 }
 .bowire-env-dropdown-item:hover { background: var(--bowire-surface-hover); }
 .bowire-env-dropdown-item.active { font-weight: 600; color: var(--bowire-accent); }
+
+/* Per-row layout — analogous to the workspace dropdown.
+   [glyph] [name flex:1] [tools cluster]
+   tools cluster: [check (always-reserved slot)] [edit (hover only)] [trash (hover only)]
+   check uses visibility-toggle so its slot width is reserved on every row;
+   edit + trash are display:none until row-hover so the display state stays
+   visually quiet — matches feedback-hover-reveal-row-tools. */
+.bowire-env-dropdown-item-glyph {
+    width: 14px;
+    height: 14px;
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+.bowire-env-dropdown-item-glyph svg { width: 14px; height: 14px; }
+.bowire-env-dropdown-item-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bowire-env-dropdown-item-tools {
+    margin-left: auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    flex-shrink: 0;
+}
+.bowire-env-dropdown-item-check {
+    width: 14px;
+    flex-shrink: 0;
+    text-align: center;
+    color: var(--bowire-accent);
+    visibility: hidden;
+}
+.bowire-env-dropdown-item-check.is-active { visibility: visible; }
+.bowire-env-dropdown-item-edit,
+.bowire-env-dropdown-item-trash {
+    width: 22px;
+    height: 22px;
+    flex-shrink: 0;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    border: 0;
+    border-radius: var(--bowire-radius-sm);
+    background: transparent;
+    color: var(--bowire-text-tertiary);
+    cursor: pointer;
+    transition: background var(--bowire-transition), color var(--bowire-transition);
+}
+.bowire-env-dropdown-item:hover .bowire-env-dropdown-item-edit,
+.bowire-env-dropdown-item:hover .bowire-env-dropdown-item-trash {
+    display: inline-flex;
+}
+.bowire-env-dropdown-item-edit:hover {
+    background: var(--bowire-surface);
+    color: var(--bowire-text);
+}
+.bowire-env-dropdown-item-trash:hover {
+    background: var(--bowire-surface);
+    color: var(--bowire-error);
+}
+.bowire-env-dropdown-item-edit svg,
+.bowire-env-dropdown-item-trash svg { width: 12px; height: 12px; }
+.bowire-env-dropdown-divider {
+    height: 1px;
+    margin: 4px 0;
+    background: var(--bowire-border-subtle);
+}
+.bowire-env-dropdown-item-icon {
+    width: 14px;
+    display: inline-flex;
+    justify-content: center;
+    color: var(--bowire-text-secondary);
+}
+/* Trigger button glyph — same 14×14 box as the dropdown rows so the
+   chip's leading mark anchors at the same baseline as the rows it
+   opens. */
+.bowire-env-btn-glyph {
+    width: 14px;
+    height: 14px;
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+.bowire-env-btn-glyph svg { width: 14px; height: 14px; }
 
 /* "+" New button — Postman-style dropdown */
 .bowire-new-btn-wrapper {

@@ -2537,9 +2537,25 @@
         var envs = getEnvironments();
         var activeId = getActiveEnvId();
         var activeEnv = envs.find(function (e) { return e.id === activeId; });
-        // Custom env dropdown with color dots
-        var activeColor = activeEnv && activeEnv.color ? activeEnv.color : '';
+        var activeColor = activeEnv && activeEnv.color
+            ? activeEnv.color : 'var(--bowire-text-tertiary)';
         var envBtnWrapper = el('div', { className: 'bowire-env-dropdown-wrapper' });
+
+        // Lucide 'globe' with the env's chosen colour applied to the
+        // outer circle stroke — analogous to the workspace dropdown's
+        // layers-glyph-with-top-leaf-colored pattern. Meridian + horizon
+        // lines keep currentColor so the glyph still reads against light
+        // / dark themes without per-colour calibration. When no env is
+        // active the circle falls back to tertiary text so the chip
+        // reads as "empty / pick".
+        function _envGlyph(color) {
+            return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">'
+                + '<circle cx="12" cy="12" r="10" stroke="' + color + '"/>'
+                + '<line x1="2" y1="12" x2="22" y2="12"/>'
+                + '<path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/>'
+                + '</svg>';
+        }
+
         var envBtn = el('button', {
             id: 'bowire-env-dropdown-btn',
             className: 'bowire-env-dropdown-btn',
@@ -2549,31 +2565,124 @@
                 var existing = envBtnWrapper.querySelector('.bowire-env-dropdown-menu');
                 if (existing) { existing.remove(); return; }
                 var menu = el('div', { className: 'bowire-env-dropdown-menu' });
-                menu.appendChild(el('div', {
-                    className: 'bowire-env-dropdown-item' + (!activeId ? ' active' : ''),
-                    onClick: function () { setActiveEnvId(''); menu.remove(); render(); }
-                },
-                    el('span', { className: 'bowire-env-color-dot', style: 'background:#666' }),
-                    el('span', { textContent: 'No environment' })
+
+                function _envRow(env, isActive, label, color, onPick) {
+                    var tools = el('div', { className: 'bowire-env-dropdown-item-tools' },
+                        el('span', {
+                            className: 'bowire-env-dropdown-item-check' + (isActive ? ' is-active' : ''),
+                            textContent: '✓',
+                            'aria-hidden': isActive ? 'false' : 'true'
+                        })
+                    );
+                    if (env) {
+                        // Per-row gear → jump straight to the env's editor
+                        // in the Workspaces rail (mirrors the workspace
+                        // chip's per-row "edit settings" affordance).
+                        tools.appendChild(el('button', {
+                            type: 'button',
+                            className: 'bowire-env-dropdown-item-edit',
+                            title: 'Edit environment',
+                            'aria-label': 'Edit environment',
+                            innerHTML: svgIcon('settings'),
+                            onClick: function (ev) {
+                                ev.stopPropagation();
+                                menu.remove();
+                                if (typeof envSidebarSelectedId !== 'undefined') {
+                                    envSidebarSelectedId = env.id;
+                                }
+                                workspacesSelectedId = activeWorkspaceId;
+                                workspaceTreeSelection = { wsId: activeWorkspaceId, kind: 'env', value: env.id };
+                                railMode = 'workspaces';
+                                try { localStorage.setItem('bowire_rail_mode', 'workspaces'); }
+                                catch { /* ignore */ }
+                                render();
+                            }
+                        }));
+                        // Per-row trash. Mirrors the workspace dropdown
+                        // pattern — delete is one hover away on every row.
+                        tools.appendChild(el('button', {
+                            type: 'button',
+                            className: 'bowire-env-dropdown-item-trash',
+                            title: 'Delete environment',
+                            'aria-label': 'Delete environment',
+                            innerHTML: svgIcon('trash'),
+                            onClick: function (ev) {
+                                ev.stopPropagation();
+                                var envId = env.id;
+                                var envName = env.name || '(unnamed)';
+                                menu.remove();
+                                bowireConfirm(
+                                    'Delete environment "' + envName + '"? Variables stored in this environment are removed.',
+                                    function () {
+                                        if (typeof deleteEnvironment === 'function') deleteEnvironment(envId);
+                                        render();
+                                    },
+                                    { title: 'Delete environment', confirmText: 'Delete', danger: true }
+                                );
+                            }
+                        }));
+                    }
+                    return el('div', {
+                        className: 'bowire-env-dropdown-item' + (isActive ? ' active' : ''),
+                        onClick: onPick
+                    },
+                        el('span', {
+                            className: 'bowire-env-dropdown-item-glyph',
+                            innerHTML: _envGlyph(color)
+                        }),
+                        el('span', { className: 'bowire-env-dropdown-item-name', textContent: label }),
+                        tools
+                    );
+                }
+
+                menu.appendChild(_envRow(null, !activeId, 'No environment',
+                    'var(--bowire-text-tertiary)',
+                    function () { setActiveEnvId(''); menu.remove(); render(); }
                 ));
                 for (var di = 0; di < envs.length; di++) {
                     (function (env) {
-                        menu.appendChild(el('div', {
-                            className: 'bowire-env-dropdown-item' + (env.id === activeId ? ' active' : ''),
-                            onClick: function () { setActiveEnvId(env.id); menu.remove(); render(); }
-                        },
-                            el('span', { className: 'bowire-env-color-dot', style: 'background:' + (env.color || '#6366f1') }),
-                            el('span', { textContent: env.name })
+                        menu.appendChild(_envRow(env, env.id === activeId, env.name,
+                            env.color || 'var(--bowire-accent)',
+                            function () { setActiveEnvId(env.id); menu.remove(); render(); }
                         ));
                     })(envs[di]);
                 }
+
+                menu.appendChild(el('div', { className: 'bowire-env-dropdown-divider' }));
+                menu.appendChild(el('div', {
+                    className: 'bowire-env-dropdown-item bowire-env-dropdown-item-action',
+                    onClick: function () {
+                        menu.remove();
+                        if (typeof createEnvironment !== 'function') return;
+                        var env = createEnvironment('New Environment');
+                        if (typeof envSidebarSelectedId !== 'undefined') {
+                            envSidebarSelectedId = env.id;
+                        }
+                        if (typeof setActiveEnvId === 'function') setActiveEnvId(env.id);
+                        // Jump operator straight into the new env's editor
+                        // so naming + variables happen in one flow.
+                        workspacesSelectedId = activeWorkspaceId;
+                        workspaceTreeSelection = { wsId: activeWorkspaceId, kind: 'env', value: env.id };
+                        railMode = 'workspaces';
+                        try { localStorage.setItem('bowire_rail_mode', 'workspaces'); }
+                        catch { /* ignore */ }
+                        render();
+                    }
+                },
+                    el('span', { className: 'bowire-env-dropdown-item-icon', textContent: '+' }),
+                    el('span', { textContent: 'New environment…' })
+                ));
+
                 envBtnWrapper.appendChild(menu);
                 setTimeout(function () {
                     document.addEventListener('click', function h() { menu.remove(); document.removeEventListener('click', h); }, { once: true });
                 }, 0);
             }
         },
-            activeColor ? el('span', { className: 'bowire-env-color-dot', style: 'background:' + activeColor }) : el('span', { className: 'bowire-env-label', innerHTML: svgIcon('globe') }),
+            el('span', {
+                className: 'bowire-env-btn-glyph',
+                innerHTML: _envGlyph(activeColor)
+            }),
             el('span', { className: 'bowire-env-btn-text', textContent: activeEnv ? activeEnv.name : 'No environment' }),
             el('span', { className: 'bowire-env-btn-chevron', innerHTML: svgIcon('chevronDown') })
         );
