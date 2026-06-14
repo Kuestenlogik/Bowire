@@ -22,7 +22,17 @@
         var protoSelect = el('select', {
             id: 'bowire-freeform-protocol-select',
             className: 'bowire-freeform-select',
-            onChange: function (e) { fr.protocol = e.target.value; }
+            onChange: function (e) {
+                fr.protocol = e.target.value;
+                // Snap methodType to the first shape the new protocol
+                // supports — otherwise the picker would carry forward
+                // an unsupported value (e.g. ClientStreaming after
+                // switching from gRPC to REST) and silently fail at
+                // invoke time.
+                var supported = getSupportedMethodTypes(fr.protocol);
+                if (supported.indexOf(fr.methodType) < 0) fr.methodType = supported[0];
+                render();
+            }
         });
         var protoOptions = protocols.length > 0
             ? protocols
@@ -35,20 +45,32 @@
         }
         protoRow.appendChild(protoSelect);
 
-        // Method type
-        var typeSelect = el('select', {
-            id: 'bowire-freeform-type-select',
-            className: 'bowire-freeform-select',
-            style: 'margin-left:8px;width:auto',
-            onChange: function (e) { fr.methodType = e.target.value; }
-        });
-        var types = ['Unary', 'ServerStreaming', 'ClientStreaming', 'Duplex'];
-        for (var ti = 0; ti < types.length; ti++) {
-            var topt = el('option', { value: types[ti], textContent: types[ti] });
-            if (types[ti] === fr.methodType) topt.selected = true;
-            typeSelect.appendChild(topt);
+        // Method type — filtered to what the selected protocol can do.
+        var supportedTypes = getSupportedMethodTypes(fr.protocol);
+        if (supportedTypes.length > 1) {
+            var typeSelect = el('select', {
+                id: 'bowire-freeform-type-select',
+                className: 'bowire-freeform-select',
+                style: 'margin-left:8px;width:auto',
+                onChange: function (e) { fr.methodType = e.target.value; }
+            });
+            for (var ti = 0; ti < supportedTypes.length; ti++) {
+                var topt = el('option', { value: supportedTypes[ti], textContent: supportedTypes[ti] });
+                if (supportedTypes[ti] === fr.methodType) topt.selected = true;
+                typeSelect.appendChild(topt);
+            }
+            protoRow.appendChild(typeSelect);
+        } else {
+            // Single-shape protocol (REST = Unary only, MQTT = Duplex
+            // only, …). Render as a read-only chip so the operator
+            // sees what shape the call is, without a picker that has
+            // exactly one option.
+            protoRow.appendChild(el('span', {
+                className: 'bowire-freeform-type-chip',
+                style: 'margin-left:8px;padding:6px 10px;font-size:12px;color:var(--bowire-text-secondary);background:var(--bowire-surface);border:1px solid var(--bowire-border);border-radius:var(--bowire-radius-sm)',
+                textContent: supportedTypes[0]
+            }));
         }
-        protoRow.appendChild(typeSelect);
         pane.appendChild(protoRow);
 
         // Server URL
@@ -2344,41 +2366,11 @@
     // chip — single source of truth). Hides when only one workspace
     // exists (no value adding chrome the operator can't act on),
     // hides in embedded mode (the host owns workspace context).
-    function renderWorkspaceBreadcrumb() {
-        if (typeof workspaces === 'undefined' || !Array.isArray(workspaces) || workspaces.length < 2) {
-            return null;
-        }
-        if (typeof uiMode !== 'undefined' && uiMode === 'embedded') return null;
-        var ws = (typeof activeWorkspace === 'function') ? activeWorkspace() : null;
-        if (!ws) return null;
-        var rail = (typeof _railModeById === 'function') ? _railModeById(railMode) : null;
-        var railLabel = rail ? rail.label : '';
-        var bar = el('div', { className: 'bowire-main-breadcrumb' });
-        bar.appendChild(el('button', {
-            type: 'button',
-            className: 'bowire-main-breadcrumb-ws',
-            title: 'Switch workspace',
-            onClick: function (e) {
-                e.stopPropagation();
-                if (typeof workspaceMenuOpen !== 'undefined') {
-                    workspaceMenuOpen = !workspaceMenuOpen;
-                    render();
-                }
-            }
-        },
-            el('span', {
-                className: 'bowire-main-breadcrumb-dot',
-                style: 'background:' + (ws.color || 'var(--bowire-accent)')
-            }),
-            el('span', { className: 'bowire-main-breadcrumb-name', textContent: ws.name }),
-            el('span', { className: 'bowire-main-breadcrumb-caret', textContent: '▾' })
-        ));
-        if (railLabel) {
-            bar.appendChild(el('span', { className: 'bowire-main-breadcrumb-sep', textContent: '/' }));
-            bar.appendChild(el('span', { className: 'bowire-main-breadcrumb-rail', textContent: railLabel }));
-        }
-        return bar;
-    }
+    // renderWorkspaceBreadcrumb (top-of-main page-header version)
+    // retired in favour of the per-sub-view _renderWorkspaceBreadcrumb
+    // below. The topbar workspace chip plus the sub-view breadcrumb
+    // together cover the "which workspace + which section + which
+    // item am I on" question without doubling the chrome.
 
     function renderMain() {
         // #139 — Home rail mode. Default landing for first-time
@@ -2390,6 +2382,39 @@
         if (railMode === 'home') {
             var homeMain = el('div', { id: 'bowire-main-home', className: 'bowire-main bowire-main-home' });
             var homeWrap = el('div', { className: 'bowire-home-wrap' });
+
+            // No-workspace state. v2.0 default ships the workspace list
+            // empty (Settings → General → "Auto-create initial workspace"
+            // brings the old seed-on-first-run behaviour back). Home
+            // shows a single guided CTA explaining what a workspace is
+            // and letting the operator name + colour their first one.
+            // Once they create one, the regular home bands take over on
+            // the next render.
+            if (typeof workspaces !== 'undefined' && Array.isArray(workspaces) && workspaces.length === 0) {
+                var noWsBand = el('div', { className: 'bowire-home-band bowire-home-band-firstrun' });
+                noWsBand.appendChild(renderEmptyCard({
+                    icon: 'layers',
+                    headline: 'Create your first workspace',
+                    body: 'A workspace is your project folder — it holds the URLs you discover, the environments + variables + secrets you reference, and the collections / recordings / benchmarks you build. Most operators name them after the project ("Petstore Staging", "Internal CMS"). You can switch + add more from the workspace chip in the topbar later.',
+                    actions: [
+                        {
+                            label: 'Create workspace',
+                            primary: true,
+                            onClick: function () {
+                                if (typeof openCreateWorkspaceDialog === 'function') {
+                                    openCreateWorkspaceDialog(function (ws) {
+                                        if (ws) activeWorkspaceId = ws.id;
+                                        render();
+                                    });
+                                }
+                            }
+                        }
+                    ]
+                }));
+                homeWrap.appendChild(noWsBand);
+                homeMain.appendChild(homeWrap);
+                return homeMain;
+            }
 
             // Portal home (3 bands, left-aligned, consistent gutter):
             //   1. Continue — last method / collection / recording (3 tiles)
@@ -2804,7 +2829,12 @@
         if (railMode === 'security') {
             var secMain = el('div', { id: 'bowire-main-security', className: 'bowire-main bowire-main-security' });
             if (window.__bowireAi && typeof window.__bowireAi.renderSecurityPanel === 'function') {
-                secMain.appendChild(window.__bowireAi.renderSecurityPanel());
+                // Wrap in the shared main-pad gutter so the security
+                // surface aligns with every other rail's left/right
+                // inset instead of sitting at the pane edge.
+                var secWrap = el('div', { className: 'bowire-main-pad' });
+                secWrap.appendChild(window.__bowireAi.renderSecurityPanel());
+                secMain.appendChild(secWrap);
             } else {
                 secMain.appendChild(el('p', {
                     className: 'bowire-pane-empty bowire-main-pad',

@@ -127,11 +127,12 @@
         // pane. Returns null when there's nothing actionable (single
         // workspace, embedded mode); the main node renders as before
         // in that case.
+        // Top-level workspace breadcrumb retired — Workspaces sub-views
+        // render their own _renderWorkspaceBreadcrumb (workspace ▾ /
+        // section / item) at the top of their main pane, and other rails
+        // show the active workspace via the topbar chip. Two breadcrumbs
+        // for the same workspace name read as duplicated chrome.
         var mainNode = renderMain();
-        if (typeof renderWorkspaceBreadcrumb === 'function') {
-            var crumb = renderWorkspaceBreadcrumb();
-            if (crumb && mainNode) mainNode.insertBefore(crumb, mainNode.firstChild);
-        }
         body.appendChild(mainNode);
 
         // #299 — Unified right-side drawer. Assistant (#90) and Help
@@ -890,7 +891,10 @@
         // just the lamp. Long URLs in the inline text didn't help
         // anyway — they were truncated and didn't fit the name.
         pill.setAttribute('title', summary);
-        var dot = el('span', { className: 'bowire-conn-pill-dot' });
+        // Plug glyph rather than a bare 4-px coloured dot — readable
+        // at a glance, sits on the same 14-px icon baseline as the
+        // env-selector globe + the status-bar entries beside it.
+        var dot = el('span', { className: 'bowire-conn-pill-dot', innerHTML: svgIcon('plug') });
         pill.appendChild(dot);
 
         // ---- Hover popover ----
@@ -1621,7 +1625,34 @@
         // Click opens a small menu with every workspace + a
         // 'New workspace…' action.
         var ws = activeWorkspace();
-        var wsChip = el('button', {
+        var wsChip;
+        if (!ws) {
+            // v2.0 no-workspace state: chip becomes a guided
+            // "Create workspace" CTA instead of trying to render
+            // a switcher over an empty list. The rest of the
+            // topbar (env selector, theme, drawers, …) still
+            // renders so the operator has the chrome they need.
+            wsChip = el('button', {
+                id: 'bowire-workspace-chip',
+                type: 'button',
+                className: 'bowire-workspace-chip',
+                title: 'Create your first workspace',
+                'aria-label': 'Create your first workspace',
+                onClick: function (e) {
+                    e.stopPropagation();
+                    if (typeof openCreateWorkspaceDialog === 'function') {
+                        openCreateWorkspaceDialog(function (created) {
+                            if (created) activeWorkspaceId = created.id;
+                            render();
+                        });
+                    }
+                }
+            },
+                el('span', { className: 'bowire-workspace-chip-dot', style: 'background:var(--bowire-text-tertiary)' }),
+                el('span', { className: 'bowire-workspace-chip-name', textContent: 'Create workspace' })
+            );
+        } else {
+        wsChip = el('button', {
             id: 'bowire-workspace-chip',
             type: 'button',
             className: 'bowire-workspace-chip' + (workspaceMenuOpen ? ' active' : ''),
@@ -1637,6 +1668,7 @@
             el('span', { className: 'bowire-workspace-chip-name', textContent: ws.name }),
             el('span', { className: 'bowire-workspace-chip-caret', textContent: '▾' })
         );
+        }
 
         var right = el('div', { id: 'bowire-topbar-right', className: 'bowire-topbar-right' },
             // #116 workspace + #138 env selector form the editor-

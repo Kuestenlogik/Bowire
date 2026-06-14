@@ -237,6 +237,23 @@
             }
         ));
 
+        // Auto-create initial workspace. Per-browser opt-in; the host
+        // can also force this on via appsettings (Bowire:
+        // AutoCreateInitialWorkspace) or --auto-create-initial-workspace.
+        var autoCreateInitial = localStorage.getItem('bowire_auto_create_initial_workspace') === 'true';
+        var hostForced = !!(config && config.autoCreateInitialWorkspace === true);
+        section.appendChild(renderSettingsToggle(
+            'Auto-create initial workspace',
+            hostForced
+                ? 'Forced on by the host (appsettings / CLI). New installs boot straight into a "Personal" workspace.'
+                : 'Seed a default "Personal" workspace on first run instead of showing the empty Home + Create-Workspace CTA. Takes effect after a reload of a fresh install.',
+            hostForced || autoCreateInitial,
+            function (val) {
+                if (hostForced) return; // host forces value, browser can't override
+                localStorage.setItem('bowire_auto_create_initial_workspace', val ? 'true' : 'false');
+            }
+        ));
+
         // Schema Watch interval
         section.appendChild(renderSettingsRow(
             'Schema Watch interval',

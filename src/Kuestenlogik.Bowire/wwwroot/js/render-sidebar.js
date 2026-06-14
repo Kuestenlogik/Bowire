@@ -1414,33 +1414,31 @@
     function renderSourcesSidebar() {
         var sidebar = el('div', { id: 'bowire-sidebar', className: 'bowire-sidebar bowire-sidebar-mode' });
 
-        var header = el('div', { className: 'bowire-env-list-header' },
-            el('span', { textContent: 'Sources' }),
-            !config.lockServerUrl ? el('button', {
-                className: 'bowire-env-add-btn',
-                title: 'Add a discovery URL',
-                'aria-label': 'Add URL',
-                innerHTML: svgIcon('plus'),
-                onClick: function () {
-                    bowirePrompt('Add discovery URL', {
-                        title: 'New source',
-                        placeholder: 'rest@https://… / graphql@…  or plain https://…',
-                        confirmText: 'Add',
-                    }).then(function (raw) {
-                        if (!raw) return;
-                        if (typeof addServerUrl === 'function') addServerUrl(raw);
-                        else if (typeof serverUrls !== 'undefined' && serverUrls.indexOf(raw) < 0) {
-                            serverUrls.push(raw);
-                            if (typeof persistServerUrls === 'function') persistServerUrls();
-                        }
-                        sourcesSelectedUrl = raw;
-                        if (typeof onServerUrlChanged === 'function') onServerUrlChanged();
-                        render();
-                    });
-                }
-            }) : null
-        );
-        sidebar.appendChild(header);
+        sidebar.appendChild(renderSidebarHeader({
+            title: 'Sources',
+            actions: [
+                !config.lockServerUrl ? {
+                    title: 'Add a discovery URL', ariaLabel: 'Add URL', icon: 'plus',
+                    onClick: function () {
+                        bowirePrompt('Add discovery URL', {
+                            title: 'New source',
+                            placeholder: 'rest@https://… / graphql@…  or plain https://…',
+                            confirmText: 'Add',
+                        }).then(function (raw) {
+                            if (!raw) return;
+                            if (typeof addServerUrl === 'function') addServerUrl(raw);
+                            else if (typeof serverUrls !== 'undefined' && serverUrls.indexOf(raw) < 0) {
+                                serverUrls.push(raw);
+                                if (typeof persistServerUrls === 'function') persistServerUrls();
+                            }
+                            sourcesSelectedUrl = raw;
+                            if (typeof onServerUrlChanged === 'function') onServerUrlChanged();
+                            render();
+                        });
+                    }
+                } : null
+            ]
+        }));
 
         if (!serverUrls || serverUrls.length === 0) {
             // Empty-state copy + "Add URL" call-to-action live in the
@@ -1630,22 +1628,20 @@
     function renderWorkspacesSidebar() {
         var sidebar = el('div', { id: 'bowire-sidebar', className: 'bowire-sidebar bowire-sidebar-mode' });
 
-        var header = el('div', { className: 'bowire-env-list-header' },
-            el('span', { textContent: 'Workspaces' }),
-            el('button', {
-                className: 'bowire-env-add-btn',
-                title: 'Create new workspace',
-                'aria-label': 'Create new workspace',
-                innerHTML: svgIcon('plus'),
-                onClick: function () {
-                    openCreateWorkspaceDialog(function (ws) {
-                        workspacesSelectedId = ws.id;
-                        workspaceTreeSelection = { wsId: ws.id, kind: 'workspace' };
-                    });
+        sidebar.appendChild(renderSidebarHeader({
+            title: 'Workspaces',
+            actions: [
+                {
+                    title: 'Create new workspace', ariaLabel: 'Create new workspace', icon: 'plus',
+                    onClick: function () {
+                        openCreateWorkspaceDialog(function (ws) {
+                            workspacesSelectedId = ws.id;
+                            workspaceTreeSelection = { wsId: ws.id, kind: 'workspace' };
+                        });
+                    }
                 }
-            })
-        );
-        sidebar.appendChild(header);
+            ]
+        }));
 
         var wsIds = workspaces.map(function (w) { return w.id; });
         if (!workspacesSelectedId || wsIds.indexOf(workspacesSelectedId) < 0) {
@@ -2524,7 +2520,28 @@
                 if (menu) { menu.remove(); return; }
                 var dropdown = el('div', { className: 'bowire-new-dropdown' });
 
-                // Protocol-specific new request entries
+                // Protocol-specific new request entries. Fallback uses
+                // built-in glyphs so the icon column never reads blank
+                // when the backend's IconSvg is empty for a protocol.
+                function _protoFallbackIcon(id) {
+                    switch (id) {
+                        case 'grpc':      return svgIcon('connect');
+                        case 'rest':      return svgIcon('plug');
+                        case 'graphql':   return svgIcon('flow');
+                        case 'mqtt':      return svgIcon('server');
+                        case 'websocket': return svgIcon('repeat');
+                        case 'socketio':  return svgIcon('repeat');
+                        case 'sse':       return svgIcon('send');
+                        case 'mcp':       return svgIcon('boxes');
+                        case 'odata':     return svgIcon('chart');
+                        case 'signalr':   return svgIcon('lightning');
+                        case 'soap':      return svgIcon('briefcase');
+                        case 'jsonrpc':   return svgIcon('flow');
+                        case 'nats':      return svgIcon('server');
+                        case 'pulsar':    return svgIcon('server');
+                        default:          return svgIcon('plug');
+                    }
+                }
                 var protoList = protocols.length > 0 ? protocols : [
                     { id: 'grpc', name: 'gRPC' }, { id: 'rest', name: 'REST' },
                     { id: 'graphql', name: 'GraphQL' }, { id: 'mqtt', name: 'MQTT' },
@@ -2535,11 +2552,19 @@
                         dropdown.appendChild(el('div', {
                             className: 'bowire-new-dropdown-item',
                             onClick: function () {
+                                // Default methodType to whatever shape
+                                // the picked protocol can actually do
+                                // (REST/OData = Unary, MQTT/WS = Duplex,
+                                // SSE = ServerStreaming, …) so the
+                                // builder doesn't open with an unsupported
+                                // shape preselected.
+                                var supported = (typeof getSupportedMethodTypes === 'function')
+                                    ? getSupportedMethodTypes(p.id) : ['Unary'];
                                 freeformRequest = {
                                     protocol: p.id,
                                     serverUrl: serverUrls.length > 0 ? serverUrls[0] : '',
                                     service: '', method: '', body: '{}', metadata: {},
-                                    methodType: 'Unary',
+                                    methodType: supported[0] || 'Unary',
                                     mockResponse: '', mockStatus: 'OK'
                                 };
                                 selectedMethod = null;
@@ -2559,7 +2584,7 @@
                                 render();
                             }
                         },
-                            p.icon ? el('span', { className: 'bowire-new-dropdown-icon', innerHTML: p.icon }) : null,
+                            el('span', { className: 'bowire-new-dropdown-icon', innerHTML: p.icon || _protoFallbackIcon(p.id) }),
                             el('span', { textContent: p.name })
                         ));
                     })(protoList[pi]);

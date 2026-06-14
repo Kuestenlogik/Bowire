@@ -797,26 +797,51 @@
         }
         activeWorkspaceId = localStorage.getItem('bowire_active_workspace') || null;
     } catch { /* ignore */ }
-    // First-run seed: every install gets a Personal workspace so
-    // the switcher has at least one entry.
-    if (workspaces.length === 0) {
+    // First-run behaviour. Default leaves the workspace list empty so
+    // the operator sees the "Create your first workspace" Home CTA
+    // and understands the concept up front instead of finding a
+    // pre-seeded "Personal" they didn't ask for.
+    //
+    // The legacy auto-seed path is still available via the
+    // bowire_auto_create_initial_workspace toggle (Settings → General).
+    // Users who relied on the old "boot straight into Personal" flow
+    // can flip it on once and stop seeing the empty home.
+    // Resolution order, highest-precedence first:
+    //   1. Host-side config (appsettings.json: Bowire.AutoCreateInitialWorkspace,
+    //      CLI flag --auto-create-initial-workspace, env var
+    //      Bowire__AutoCreateInitialWorkspace). Lets the admin/host
+    //      enforce a baseline for every operator.
+    //   2. Per-browser localStorage toggle (Settings → General).
+    //      Lets an individual user opt in/out on their own machine.
+    //   3. Default false — empty workspace list on first run.
+    var autoCreateInitial = false;
+    if (config && config.autoCreateInitialWorkspace === true) {
+        autoCreateInitial = true;
+    } else {
+        try {
+            autoCreateInitial = localStorage.getItem('bowire_auto_create_initial_workspace') === 'true';
+        } catch { /* ignore */ }
+    }
+    if (workspaces.length === 0 && autoCreateInitial) {
         workspaces.push({
             id: 'personal',
             name: 'Personal',
             color: '#6366f1',
             createdAt: Date.now(),
             lastOpenedAt: Date.now(),
-            // #146 — Personal defaults to 'include every shared
-            // environment automatically' so the new user landing in
-            // Personal sees every env they create without curating.
-            // Operators creating a second workspace decide
-            // explicitly via the rail-mode toggle.
             includeAllEnvironments: true,
             includedEnvironmentIds: [],
         });
         activeWorkspaceId = 'personal';
     }
-    if (!activeWorkspaceId || !workspaces.find(function (w) { return w.id === activeWorkspaceId; })) {
+    if (workspaces.length === 0) {
+        // No workspaces at all (first-run, auto-create off). Leave
+        // activeWorkspaceId null so wsKey() falls through to its
+        // base-key shape and downstream code that gates on
+        // `activeWorkspace()` doesn't crash. Home renders the
+        // "Create your first workspace" CTA in this state.
+        activeWorkspaceId = null;
+    } else if (!activeWorkspaceId || !workspaces.find(function (w) { return w.id === activeWorkspaceId; })) {
         activeWorkspaceId = workspaces[0].id;
     }
     // #116 Phase 2 — wraps a flat storage key into a workspace-
@@ -996,7 +1021,9 @@
         } catch (e) { markSaveFailed('workspace', e); }
     }
     function activeWorkspace() {
-        return workspaces.find(function (w) { return w.id === activeWorkspaceId; }) || workspaces[0];
+        var hit = workspaces.find(function (w) { return w.id === activeWorkspaceId; });
+        if (hit) return hit;
+        return workspaces.length > 0 ? workspaces[0] : null;
     }
     function createWorkspace(name, color) {
         var id = 'ws_' + Math.random().toString(36).slice(2, 10);

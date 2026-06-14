@@ -215,6 +215,7 @@ internal static class BowireHtmlGenerator
                            serverUrls: {{serverUrlsJson}},
                            lockServerUrl: {{lockServerUrl}},
                            embeddedMode: {{(options.Mode == BowireMode.Embedded ? "true" : "false")}},
+                           autoCreateInitialWorkspace: {{(options.AutoCreateInitialWorkspace ? "true" : "false")}},
                            mapBasemap: {{mapBasemap}},
                            logoIcon: "{{FaviconDataUrl.Value}}",
                            logoIconMono: "{{FaviconMonoDataUrl.Value}}",
