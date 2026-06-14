@@ -291,6 +291,39 @@ document.querySelectorAll('.copy-btn').forEach(btn => {
     });
 });
 
+// Test-endpoints filter pills — toggles row visibility on the
+// endpoints table via data-protocol matches. "all" pill removes the
+// filter. Hidden rows pick up .is-hidden so the CSS hover + zebra
+// continues to read cleanly on the visible subset.
+(function () {
+    const pills = document.querySelectorAll('.endpoints-filter-pill');
+    if (pills.length === 0) return;
+    const table = document.querySelector('.endpoints-table');
+    if (!table) return;
+    const rows = table.querySelectorAll('tbody tr[data-protocol]');
+    const empty = document.querySelector('.endpoints-empty');
+
+    function applyFilter(value) {
+        let visible = 0;
+        rows.forEach(row => {
+            const match = value === 'all' || row.dataset.protocol === value;
+            row.classList.toggle('is-hidden', !match);
+            if (match) visible++;
+        });
+        if (empty) empty.hidden = visible !== 0;
+        pills.forEach(p => {
+            const active = p.dataset.endpointFilter === value;
+            p.classList.toggle('is-active', active);
+            p.setAttribute('aria-pressed', active ? 'true' : 'false');
+        });
+        table.dataset.endpointFilter = value;
+    }
+
+    pills.forEach(p => {
+        p.addEventListener('click', () => applyFilter(p.dataset.endpointFilter));
+    });
+})();
+
 // Screenshot carousel — auto-drift, prev/next buttons, dot indicators,
 // click-to-jump. Auto-drift is JS-driven (not CSS keyframe) so pause /
 // resume is seamless: the current scroll position stays put, the drift

@@ -8884,3 +8884,173 @@ html[data-theme="light"] {
     }
 }
 
+/* ================================================================== */
+/* Test-endpoints table — site/test-endpoints.html                     */
+/* A single sortable, filter-pill-driven table replaces the previous   */
+/* per-protocol card grids (uneven card counts read as "noisy").       */
+/* ================================================================== */
+.endpoints-controls {
+    max-width: 1100px;
+    margin: 0 auto 18px;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px 14px;
+}
+.endpoints-controls-label {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+}
+.endpoints-filter-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+.endpoints-filter-pill {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--text-secondary);
+    font: 600 0.78rem/1 var(--font-sans);
+    padding: 7px 12px;
+    border-radius: 999px;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+.endpoints-filter-pill:hover {
+    color: var(--text);
+    border-color: var(--text-secondary);
+}
+.endpoints-filter-pill.is-active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+}
+
+.endpoints-table-wrap {
+    max-width: 1100px;
+    margin: 0 auto;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    background: var(--bg);
+    overflow: hidden;
+    box-shadow: 0 20px 48px rgba(0, 0, 0, 0.18);
+}
+.endpoints-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    font-size: 0.875rem;
+}
+.endpoints-table thead th {
+    color: var(--text-secondary);
+    font-weight: 600;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    background: var(--bg-elevated);
+    padding: 12px 14px;
+    text-align: left;
+    white-space: nowrap;
+    border-bottom: 1px solid var(--border);
+}
+.endpoints-table tbody td {
+    padding: 12px 14px;
+    border-top: 1px solid var(--border);
+    color: var(--text);
+    vertical-align: top;
+}
+.endpoints-table tbody tr:first-child td {
+    border-top: none;
+}
+.endpoints-table tbody tr:hover td {
+    background: rgba(99, 102, 241, 0.04);
+}
+.endpoints-table tbody tr.is-hidden {
+    display: none;
+}
+
+.endpoints-proto {
+    display: inline-block;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    color: var(--text-secondary);
+    font: 700 0.7rem/1 var(--font-mono);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 5px 8px;
+    border-radius: 5px;
+    white-space: nowrap;
+}
+
+.endpoints-url-cell {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+}
+.endpoints-url {
+    flex: 1 1 auto;
+    min-width: 0;
+    font-family: var(--font-mono);
+    font-size: 0.8125rem;
+    color: var(--text);
+    background: transparent;
+    padding: 0;
+    overflow-x: auto;
+    white-space: nowrap;
+    scrollbar-width: none;
+}
+.endpoints-url::-webkit-scrollbar { display: none; }
+.endpoints-copy {
+    flex-shrink: 0;
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 4px;
+    transition: color 0.15s, background 0.15s;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+.endpoints-copy:hover {
+    color: var(--accent);
+    background: rgba(99, 102, 241, 0.1);
+}
+
+.endpoints-desc {
+    color: var(--text);
+}
+.endpoints-notes {
+    color: var(--text-secondary);
+    font-size: 0.8125rem;
+}
+
+.endpoints-empty {
+    padding: 28px 16px;
+    text-align: center;
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+}
+
+@media (max-width: 720px) {
+    /* On phone widths the Notes column wraps under the description;
+       protocol cell stays as a pill. Description + notes share one cell
+       via the data-mobile-notes attribute below. */
+    .endpoints-table thead th:nth-child(4),
+    .endpoints-table tbody td:nth-child(4) {
+        display: none;
+    }
+    .endpoints-table tbody td[data-mobile-notes]::after {
+        content: attr(data-mobile-notes);
+        display: block;
+        margin-top: 4px;
+        color: var(--text-secondary);
+        font-size: 0.78rem;
+    }
+}
+
