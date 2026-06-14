@@ -1886,6 +1886,18 @@ not just
     z-index: 100;
     padding: 4px;
 }
+/* Floating context-menu variant (right-click on a workspace tree row).
+   Position + top/left are set inline at the pointer; clear the chip
+   dropdown's top: 100% / margin-top defaults so the menu lands exactly
+   where the cursor is. */
+.bowire-workspace-context-menu {
+    margin-top: 0;
+}
+.bowire-workspace-menu-item.is-disabled {
+    opacity: 0.55;
+    cursor: default;
+    pointer-events: none;
+}
 .bowire-workspace-menu-section {
     display: flex;
     flex-direction: column;

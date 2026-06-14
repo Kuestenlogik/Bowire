@@ -1625,50 +1625,33 @@
         // Click opens a small menu with every workspace + a
         // 'New workspace…' action.
         var ws = activeWorkspace();
-        var wsChip;
-        if (!ws) {
-            // v2.0 no-workspace state: chip becomes a guided
-            // "Create workspace" CTA instead of trying to render
-            // a switcher over an empty list. The rest of the
-            // topbar (env selector, theme, drawers, …) still
-            // renders so the operator has the chrome they need.
-            wsChip = el('button', {
-                id: 'bowire-workspace-chip',
-                type: 'button',
-                className: 'bowire-workspace-chip',
-                title: 'Create your first workspace',
-                'aria-label': 'Create your first workspace',
-                onClick: function (e) {
-                    e.stopPropagation();
-                    if (typeof openCreateWorkspaceDialog === 'function') {
-                        openCreateWorkspaceDialog(function (created) {
-                            if (created) activeWorkspaceId = created.id;
-                            render();
-                        });
-                    }
-                }
-            },
-                el('span', { className: 'bowire-workspace-chip-dot', style: 'background:var(--bowire-text-tertiary)' }),
-                el('span', { className: 'bowire-workspace-chip-name', textContent: 'Create workspace' })
-            );
-        } else {
-        wsChip = el('button', {
+        // Chip is always a dropdown trigger — even with zero workspaces
+        // the operator clicks the chip and sees a menu. The menu carries
+        // the "+ New workspace…" action so the empty state is one click
+        // (chip) → one click (item) instead of a direct dialog. Keeps
+        // the affordance discoverable + uniform across the two states.
+        var wsChip = el('button', {
             id: 'bowire-workspace-chip',
             type: 'button',
             className: 'bowire-workspace-chip' + (workspaceMenuOpen ? ' active' : ''),
-            title: 'Workspace: ' + ws.name,
-            'aria-label': 'Switch workspace',
+            title: ws ? ('Workspace: ' + ws.name) : 'No workspace — click to create one',
+            'aria-label': ws ? 'Switch workspace' : 'Create workspace',
             onClick: function (e) {
                 e.stopPropagation();
                 workspaceMenuOpen = !workspaceMenuOpen;
                 render();
             }
         },
-            el('span', { className: 'bowire-workspace-chip-dot', style: 'background:' + (ws.color || 'var(--bowire-accent)') }),
-            el('span', { className: 'bowire-workspace-chip-name', textContent: ws.name }),
+            el('span', {
+                className: 'bowire-workspace-chip-dot',
+                style: 'background:' + (ws ? (ws.color || 'var(--bowire-accent)') : 'var(--bowire-text-tertiary)')
+            }),
+            el('span', {
+                className: 'bowire-workspace-chip-name',
+                textContent: ws ? ws.name : 'No workspace'
+            }),
             el('span', { className: 'bowire-workspace-chip-caret', textContent: '▾' })
         );
-        }
 
         var right = el('div', { id: 'bowire-topbar-right', className: 'bowire-topbar-right' },
             // #116 workspace + #138 env selector form the editor-
@@ -1736,7 +1719,7 @@
                             );
                         })
                     ),
-                    el('div', { className: 'bowire-workspace-menu-divider' }),
+                    workspaces.length > 0 ? el('div', { className: 'bowire-workspace-menu-divider' }) : null,
                     el('div', {
                         className: 'bowire-workspace-menu-item bowire-workspace-menu-item-action',
                         onClick: function () {
@@ -1748,7 +1731,7 @@
                         el('span', { className: 'bowire-workspace-menu-item-icon', textContent: '+' }),
                         el('span', { textContent: 'New workspace…' })
                     ),
-                    el('div', {
+                    ws ? el('div', {
                         className: 'bowire-workspace-menu-item bowire-workspace-menu-item-action',
                         onClick: function () {
                             var oldName = ws.name;
@@ -1769,16 +1752,24 @@
                     },
                         el('span', { className: 'bowire-workspace-menu-item-icon', textContent: '✎' }),
                         el('span', { textContent: 'Rename current…' })
-                    ),
-                    workspaces.length > 1 ? el('div', {
+                    ) : null,
+                    // Delete is allowed even on the last workspace — the
+                    // operator drops back to the no-workspace empty state
+                    // and creates a new one from the chip dropdown. Guard
+                    // is only on `ws` being present (something to delete).
+                    ws ? el('div', {
                         className: 'bowire-workspace-menu-item bowire-workspace-menu-item-action bowire-workspace-menu-item-danger',
                         onClick: function () {
                             var wsName = ws.name;
                             var wsId = ws.id;
+                            var isLast = workspaces.length === 1;
                             workspaceMenuOpen = false;
                             render();
+                            var msg = isLast
+                                ? 'Delete the last workspace "' + wsName + '"? You will return to the empty no-workspace state — the underlying URLs / envs / recordings for this workspace are removed.'
+                                : 'Delete workspace "' + wsName + '"? The underlying URLs / envs / recordings for this workspace are removed.';
                             bowireConfirm(
-                                'Delete workspace "' + wsName + '"? The underlying URLs / envs / recordings for this workspace are removed.',
+                                msg,
                                 function () { deleteWorkspace(wsId); render(); },
                                 { title: 'Delete workspace', confirmText: 'Delete', danger: true }
                             );
