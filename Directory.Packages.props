@@ -114,7 +114,7 @@
          subcommand tree (list/describe/call/mock/mcp/plugin/test) and
          get auto-generated help, validation, and tab-completion in one
          place instead of hand-rolled args.Contains() across files. -->
-    <PackageVersion Include="System.CommandLine" Version="2.0.8" />
+    <PackageVersion Include="System.CommandLine" Version="2.0.9" />
     <!-- OpenTelemetry stack for the self-telemetry seam (#29). The
          core SDK + hosting bits stay light; the OTLP exporter ships
          the wire format the OTEL_EXPORTER_OTLP_* env vars consume,
