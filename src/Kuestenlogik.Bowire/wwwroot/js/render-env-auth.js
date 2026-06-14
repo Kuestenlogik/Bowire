@@ -50,14 +50,19 @@
         // keeps the old horizontal layout unchanged otherwise.
         next.appendChild(renderTopbar());
 
-        // Workspace identity band — a 2px accent strip directly under the
-        // topbar, in the active workspace's chosen colour. Spans the full
-        // app width so the operator can see at a glance which workspace
-        // they're in without scanning the topbar chip. Hidden in embedded
-        // mode (the host already owns workspace context) and when there's
-        // no active workspace (nothing to advertise).
-        var _identityWs = (typeof activeWorkspace === 'function') ? activeWorkspace() : null;
-        if (uiMode !== 'embedded' && _identityWs && _identityWs.color) {
+        // Workspace identity band — opt-in 2px accent strip directly
+        // under the topbar, in the active workspace's chosen colour.
+        // Off by default; the operator turns it on via Settings →
+        // General → "Workspace identity band" when they want the
+        // peripheral cue. Hidden in embedded mode (the host already
+        // owns workspace context) and when there's no active workspace
+        // (nothing to advertise).
+        var _identityBandOn = false;
+        try { _identityBandOn = localStorage.getItem('bowire_show_workspace_identity_band') === 'true'; }
+        catch { /* ignore */ }
+        var _identityWs = _identityBandOn && (typeof activeWorkspace === 'function')
+            ? activeWorkspace() : null;
+        if (_identityBandOn && uiMode !== 'embedded' && _identityWs && _identityWs.color) {
             next.appendChild(el('div', {
                 id: 'bowire-workspace-identity-band',
                 className: 'bowire-workspace-identity-band',
