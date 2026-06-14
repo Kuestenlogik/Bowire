@@ -14,183 +14,311 @@ description: Public, third-party sample APIs you can point Bowire at right now â
 </section>
 
 <!-- ================================================================ -->
-<!-- REST / OpenAPI                                                    -->
-<!-- ================================================================ -->
-<section class="community-section community-section-alt">
-  <header class="community-section-header">
-    <h2>REST / OpenAPI</h2>
-    <p class="community-section-lede">Each URL is an OpenAPI document or a service root Bowire can probe.</p>
-  </header>
-  <ul class="community-perks">
-    <li class="community-perk">
-      <strong class="community-perk-title">Swagger Petstore</strong>
-      <p class="community-perk-desc">Classic CRUD playground, full OpenAPI 3.</p>
-      <code class="protocol-install"><span class="protocol-install-prompt">URL</span> https://petstore3.swagger.io/api/v3/openapi.json</code>
-    </li>
-    <li class="community-perk">
-      <strong class="community-perk-title">RESTful API</strong>
-      <p class="community-perk-desc">GET / POST / PUT / DELETE on generic objects.</p>
-      <code class="protocol-install"><span class="protocol-install-prompt">URL</span> https://api.restful-api.dev/objects</code>
-    </li>
-    <li class="community-perk">
-      <strong class="community-perk-title">JSONPlaceholder</strong>
-      <p class="community-perk-desc">Posts, comments, users &mdash; read-only.</p>
-      <code class="protocol-install"><span class="protocol-install-prompt">URL</span> https://jsonplaceholder.typicode.com</code>
-    </li>
-    <li class="community-perk">
-      <strong class="community-perk-title">Postman Echo</strong>
-      <p class="community-perk-desc">Echoes requests back, useful for headers / auth.</p>
-      <code class="protocol-install"><span class="protocol-install-prompt">URL</span> https://postman-echo.com</code>
-    </li>
-  </ul>
-</section>
-
-<!-- ================================================================ -->
-<!-- gRPC                                                              -->
+<!-- Filter pills + table                                              -->
 <!-- ================================================================ -->
 <section class="community-section">
-  <header class="community-section-header">
-    <h2>gRPC</h2>
-    <p class="community-section-lede">Reflection-enabled endpoint Bowire can discover without a <code>.proto</code> upload.</p>
-  </header>
-  <ul class="community-perks">
-    <li class="community-perk">
-      <strong class="community-perk-title">Postman gRPC Echo</strong>
-      <p class="community-perk-desc">Unary + streaming, TLS.</p>
-      <code class="protocol-install"><span class="protocol-install-prompt">URL</span> grpc.postman-echo.com:443</code>
-    </li>
-    <li class="community-perk">
-      <strong class="community-perk-title">Local <code>.proto</code></strong>
-      <p class="community-perk-desc">Upload via Workspace &rarr; Sources. Bowire's <code>samples/proto/echo.proto</code> works offline.</p>
-    </li>
-  </ul>
-</section>
+  <div class="endpoints-controls">
+    <span class="endpoints-controls-label">Filter</span>
+    <div class="endpoints-filter-pills" role="tablist" aria-label="Filter endpoints by protocol">
+      <button type="button" class="endpoints-filter-pill is-active" data-endpoint-filter="all" aria-pressed="true">All</button>
+      <button type="button" class="endpoints-filter-pill" data-endpoint-filter="rest" aria-pressed="false">REST</button>
+      <button type="button" class="endpoints-filter-pill" data-endpoint-filter="grpc" aria-pressed="false">gRPC</button>
+      <button type="button" class="endpoints-filter-pill" data-endpoint-filter="graphql" aria-pressed="false">GraphQL</button>
+      <button type="button" class="endpoints-filter-pill" data-endpoint-filter="websocket" aria-pressed="false">WebSocket</button>
+      <button type="button" class="endpoints-filter-pill" data-endpoint-filter="sse" aria-pressed="false">SSE</button>
+      <button type="button" class="endpoints-filter-pill" data-endpoint-filter="mqtt" aria-pressed="false">MQTT</button>
+      <button type="button" class="endpoints-filter-pill" data-endpoint-filter="kafka" aria-pressed="false">Kafka</button>
+      <button type="button" class="endpoints-filter-pill" data-endpoint-filter="mcp" aria-pressed="false">MCP</button>
+      <button type="button" class="endpoints-filter-pill" data-endpoint-filter="auth" aria-pressed="false">Auth</button>
+    </div>
+  </div>
 
-<!-- ================================================================ -->
-<!-- GraphQL                                                           -->
-<!-- ================================================================ -->
-<section class="community-section community-section-alt">
-  <header class="community-section-header">
-    <h2>GraphQL</h2>
-    <p class="community-section-lede">Introspection-enabled endpoints Bowire can pull the schema from on connect.</p>
-  </header>
-  <ul class="community-perks">
-    <li class="community-perk">
-      <strong class="community-perk-title">Countries</strong>
-      <p class="community-perk-desc">Queries about countries / continents.</p>
-      <code class="protocol-install"><span class="protocol-install-prompt">URL</span> https://countries.trevorblades.com/graphql</code>
-    </li>
-    <li class="community-perk">
-      <strong class="community-perk-title">Rick and Morty</strong>
-      <p class="community-perk-desc">Schema with relations + pagination.</p>
-      <code class="protocol-install"><span class="protocol-install-prompt">URL</span> https://rickandmortyapi.com/graphql</code>
-    </li>
-  </ul>
-</section>
+  {% comment %}
+    Copy-button SVG is the same 14Ã—14 outline used everywhere else on
+    the marketing site (.protocol-install-copy / .copy-btn). Pulled
+    into a capture so the row markup stays readable.
+  {% endcomment %}
+  {% capture copyIcon %}<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>{% endcapture %}
 
-<!-- ================================================================ -->
-<!-- WebSocket                                                         -->
-<!-- ================================================================ -->
-<section class="community-section">
-  <header class="community-section-header">
-    <h2>WebSocket</h2>
-    <p class="community-section-lede">Echo services for round-trip frame testing.</p>
-  </header>
-  <ul class="community-perks">
-    <li class="community-perk">
-      <strong class="community-perk-title">websocket.events</strong>
-      <p class="community-perk-desc">Echo server.</p>
-      <code class="protocol-install"><span class="protocol-install-prompt">URL</span> wss://echo.websocket.events</code>
-    </li>
-    <li class="community-perk">
-      <strong class="community-perk-title">Postman echo</strong>
-      <p class="community-perk-desc">Echo server with <code>/raw</code> and <code>/socketio</code> endpoints.</p>
-      <code class="protocol-install"><span class="protocol-install-prompt">URL</span> wss://ws.postman-echo.com/raw</code>
-    </li>
-  </ul>
-</section>
+  <div class="endpoints-table-wrap">
+    <table class="endpoints-table" data-endpoint-filter="all">
+      <thead>
+        <tr>
+          <th scope="col">Protocol</th>
+          <th scope="col">URL</th>
+          <th scope="col">Description</th>
+          <th scope="col">Notes</th>
+        </tr>
+      </thead>
+      <tbody>
 
-<!-- ================================================================ -->
-<!-- Server-Sent Events                                                -->
-<!-- ================================================================ -->
-<section class="community-section community-section-alt">
-  <header class="community-section-header">
-    <h2>Server-Sent Events (SSE)</h2>
-    <p class="community-section-lede">A continuous tick stream &mdash; useful to confirm Bowire's SSE pane re-renders on every frame.</p>
-  </header>
-  <ul class="community-perks">
-    <li class="community-perk">
-      <strong class="community-perk-title">sse.dev</strong>
-      <p class="community-perk-desc">Continuous tick stream.</p>
-      <code class="protocol-install"><span class="protocol-install-prompt">URL</span> https://sse.dev/test</code>
-    </li>
-  </ul>
-</section>
+        <!-- ============================ REST ============================ -->
+        <tr data-protocol="rest">
+          <td><span class="endpoints-proto">REST</span></td>
+          <td>
+            <div class="endpoints-url-cell">
+              <code class="endpoints-url">https://petstore3.swagger.io/api/v3/openapi.json</code>
+              <button type="button" class="copy-btn endpoints-copy" data-copy="https://petstore3.swagger.io/api/v3/openapi.json" aria-label="Copy Swagger Petstore URL">{{ copyIcon }}</button>
+            </div>
+          </td>
+          <td class="endpoints-desc" data-mobile-notes="No auth. OpenAPI 3.">Swagger Petstore &mdash; classic CRUD playground.</td>
+          <td class="endpoints-notes">No auth. OpenAPI 3.</td>
+        </tr>
+        <tr data-protocol="rest">
+          <td><span class="endpoints-proto">REST</span></td>
+          <td>
+            <div class="endpoints-url-cell">
+              <code class="endpoints-url">https://api.restful-api.dev/objects</code>
+              <button type="button" class="copy-btn endpoints-copy" data-copy="https://api.restful-api.dev/objects" aria-label="Copy RESTful API URL">{{ copyIcon }}</button>
+            </div>
+          </td>
+          <td class="endpoints-desc" data-mobile-notes="No auth. Full CRUD.">GET / POST / PUT / DELETE on generic objects.</td>
+          <td class="endpoints-notes">No auth. Full CRUD.</td>
+        </tr>
+        <tr data-protocol="rest">
+          <td><span class="endpoints-proto">REST</span></td>
+          <td>
+            <div class="endpoints-url-cell">
+              <code class="endpoints-url">https://jsonplaceholder.typicode.com</code>
+              <button type="button" class="copy-btn endpoints-copy" data-copy="https://jsonplaceholder.typicode.com" aria-label="Copy JSONPlaceholder URL">{{ copyIcon }}</button>
+            </div>
+          </td>
+          <td class="endpoints-desc" data-mobile-notes="Read-only. No auth.">Posts, comments, users &mdash; the classic fake API.</td>
+          <td class="endpoints-notes">Read-only. No auth.</td>
+        </tr>
+        <tr data-protocol="rest">
+          <td><span class="endpoints-proto">REST</span></td>
+          <td>
+            <div class="endpoints-url-cell">
+              <code class="endpoints-url">https://postman-echo.com</code>
+              <button type="button" class="copy-btn endpoints-copy" data-copy="https://postman-echo.com" aria-label="Copy Postman Echo URL">{{ copyIcon }}</button>
+            </div>
+          </td>
+          <td class="endpoints-desc" data-mobile-notes="Useful for header / auth testing.">Echoes requests back &mdash; headers, query, body, all of it.</td>
+          <td class="endpoints-notes">Useful for header / auth testing.</td>
+        </tr>
+        <tr data-protocol="rest">
+          <td><span class="endpoints-proto">REST</span></td>
+          <td>
+            <div class="endpoints-url-cell">
+              <code class="endpoints-url">https://httpbin.org</code>
+              <button type="button" class="copy-btn endpoints-copy" data-copy="https://httpbin.org" aria-label="Copy httpbin URL">{{ copyIcon }}</button>
+            </div>
+          </td>
+          <td class="endpoints-desc" data-mobile-notes="No OpenAPI doc &mdash; works via Discover heuristics.">HTTP request &amp; response service &mdash; status codes, redirects, encodings.</td>
+          <td class="endpoints-notes">No OpenAPI doc &mdash; works via Discover heuristics.</td>
+        </tr>
 
-<!-- ================================================================ -->
-<!-- MQTT                                                              -->
-<!-- ================================================================ -->
-<section class="community-section">
-  <header class="community-section-header">
-    <h2>MQTT</h2>
-    <p class="community-section-lede">Public test brokers. They throttle aggressive load &mdash; for stress testing run the <a href="{{ '/samples.html' | relative_url }}">Bowire MQTT sample</a> locally instead.</p>
-  </header>
-  <ul class="community-perks">
-    <li class="community-perk">
-      <strong class="community-perk-title">HiveMQ public broker (TCP)</strong>
-      <p class="community-perk-desc">No auth.</p>
-      <code class="protocol-install"><span class="protocol-install-prompt">URL</span> mqtt://broker.hivemq.com:1883</code>
-    </li>
-    <li class="community-perk">
-      <strong class="community-perk-title">HiveMQ public broker (WSS)</strong>
-      <p class="community-perk-desc">TLS + WebSocket.</p>
-      <code class="protocol-install"><span class="protocol-install-prompt">URL</span> wss://broker.hivemq.com:8884/mqtt</code>
-    </li>
-    <li class="community-perk">
-      <strong class="community-perk-title">EMQX public broker</strong>
-      <p class="community-perk-desc">Alternative when HiveMQ throttles.</p>
-      <code class="protocol-install"><span class="protocol-install-prompt">URL</span> mqtt://broker.emqx.io:1883</code>
-    </li>
-  </ul>
-</section>
+        <!-- ============================ gRPC ============================ -->
+        <tr data-protocol="grpc">
+          <td><span class="endpoints-proto">gRPC</span></td>
+          <td>
+            <div class="endpoints-url-cell">
+              <code class="endpoints-url">grpc.postman-echo.com:443</code>
+              <button type="button" class="copy-btn endpoints-copy" data-copy="grpc.postman-echo.com:443" aria-label="Copy Postman gRPC Echo URL">{{ copyIcon }}</button>
+            </div>
+          </td>
+          <td class="endpoints-desc" data-mobile-notes="TLS. Reflection enabled.">Postman gRPC Echo &mdash; unary + streaming.</td>
+          <td class="endpoints-notes">TLS. Reflection enabled &mdash; no <code>.proto</code> upload needed.</td>
+        </tr>
 
-<!-- ================================================================ -->
-<!-- MCP                                                               -->
-<!-- ================================================================ -->
-<section class="community-section community-section-alt">
-  <header class="community-section-header">
-    <h2>MCP</h2>
-    <p class="community-section-lede">MCP is a local-only protocol. Use Bowire's own MCP adapter for a self-contained test target.</p>
-  </header>
-  <div class="community-quickstart">
-    <pre class="community-quickstart-code"><code>bowire mcp serve
-# &rarr; point Discover at the printed URL (default http://localhost:5000/mcp)</code></pre>
+        <!-- ============================ GraphQL ========================== -->
+        <tr data-protocol="graphql">
+          <td><span class="endpoints-proto">GraphQL</span></td>
+          <td>
+            <div class="endpoints-url-cell">
+              <code class="endpoints-url">https://countries.trevorblades.com/graphql</code>
+              <button type="button" class="copy-btn endpoints-copy" data-copy="https://countries.trevorblades.com/graphql" aria-label="Copy Countries GraphQL URL">{{ copyIcon }}</button>
+            </div>
+          </td>
+          <td class="endpoints-desc" data-mobile-notes="Introspection enabled.">Countries / continents queries.</td>
+          <td class="endpoints-notes">Introspection enabled.</td>
+        </tr>
+        <tr data-protocol="graphql">
+          <td><span class="endpoints-proto">GraphQL</span></td>
+          <td>
+            <div class="endpoints-url-cell">
+              <code class="endpoints-url">https://rickandmortyapi.com/graphql</code>
+              <button type="button" class="copy-btn endpoints-copy" data-copy="https://rickandmortyapi.com/graphql" aria-label="Copy Rick and Morty GraphQL URL">{{ copyIcon }}</button>
+            </div>
+          </td>
+          <td class="endpoints-desc" data-mobile-notes="Introspection enabled.">Schema with relations + pagination.</td>
+          <td class="endpoints-notes">Introspection enabled.</td>
+        </tr>
+        <tr data-protocol="graphql">
+          <td><span class="endpoints-proto">GraphQL</span></td>
+          <td>
+            <div class="endpoints-url-cell">
+              <code class="endpoints-url">https://spacex-production.up.railway.app/</code>
+              <button type="button" class="copy-btn endpoints-copy" data-copy="https://spacex-production.up.railway.app/" aria-label="Copy SpaceX GraphQL URL">{{ copyIcon }}</button>
+            </div>
+          </td>
+          <td class="endpoints-desc" data-mobile-notes="Introspection enabled. Read-only.">SpaceX launches, rockets, ships, capsules.</td>
+          <td class="endpoints-notes">Introspection enabled. Read-only.</td>
+        </tr>
+
+        <!-- ============================ WebSocket ======================== -->
+        <tr data-protocol="websocket">
+          <td><span class="endpoints-proto">WebSocket</span></td>
+          <td>
+            <div class="endpoints-url-cell">
+              <code class="endpoints-url">wss://echo.websocket.events</code>
+              <button type="button" class="copy-btn endpoints-copy" data-copy="wss://echo.websocket.events" aria-label="Copy websocket.events URL">{{ copyIcon }}</button>
+            </div>
+          </td>
+          <td class="endpoints-desc" data-mobile-notes="TLS. No auth.">Echo server &mdash; round-trip frame testing.</td>
+          <td class="endpoints-notes">TLS. No auth.</td>
+        </tr>
+        <tr data-protocol="websocket">
+          <td><span class="endpoints-proto">WebSocket</span></td>
+          <td>
+            <div class="endpoints-url-cell">
+              <code class="endpoints-url">wss://ws.postman-echo.com/raw</code>
+              <button type="button" class="copy-btn endpoints-copy" data-copy="wss://ws.postman-echo.com/raw" aria-label="Copy Postman WebSocket Echo URL">{{ copyIcon }}</button>
+            </div>
+          </td>
+          <td class="endpoints-desc" data-mobile-notes="Also offers /socketio."><code>/raw</code> echo server.</td>
+          <td class="endpoints-notes">Also offers <code>/socketio</code>.</td>
+        </tr>
+
+        <!-- ============================ SSE ============================== -->
+        <tr data-protocol="sse">
+          <td><span class="endpoints-proto">SSE</span></td>
+          <td>
+            <div class="endpoints-url-cell">
+              <code class="endpoints-url">https://sse.dev/test</code>
+              <button type="button" class="copy-btn endpoints-copy" data-copy="https://sse.dev/test" aria-label="Copy sse.dev URL">{{ copyIcon }}</button>
+            </div>
+          </td>
+          <td class="endpoints-desc" data-mobile-notes="No auth.">Continuous tick stream &mdash; one event every few seconds.</td>
+          <td class="endpoints-notes">No auth.</td>
+        </tr>
+
+        <!-- ============================ MQTT ============================= -->
+        <tr data-protocol="mqtt">
+          <td><span class="endpoints-proto">MQTT</span></td>
+          <td>
+            <div class="endpoints-url-cell">
+              <code class="endpoints-url">mqtt://broker.hivemq.com:1883</code>
+              <button type="button" class="copy-btn endpoints-copy" data-copy="mqtt://broker.hivemq.com:1883" aria-label="Copy HiveMQ TCP URL">{{ copyIcon }}</button>
+            </div>
+          </td>
+          <td class="endpoints-desc" data-mobile-notes="Throttles aggressive load.">HiveMQ public broker (TCP) &mdash; no auth.</td>
+          <td class="endpoints-notes">Throttles aggressive load.</td>
+        </tr>
+        <tr data-protocol="mqtt">
+          <td><span class="endpoints-proto">MQTT</span></td>
+          <td>
+            <div class="endpoints-url-cell">
+              <code class="endpoints-url">wss://broker.hivemq.com:8884/mqtt</code>
+              <button type="button" class="copy-btn endpoints-copy" data-copy="wss://broker.hivemq.com:8884/mqtt" aria-label="Copy HiveMQ WSS URL">{{ copyIcon }}</button>
+            </div>
+          </td>
+          <td class="endpoints-desc" data-mobile-notes="Throttles aggressive load.">HiveMQ public broker (TLS + WebSocket).</td>
+          <td class="endpoints-notes">Throttles aggressive load.</td>
+        </tr>
+        <tr data-protocol="mqtt">
+          <td><span class="endpoints-proto">MQTT</span></td>
+          <td>
+            <div class="endpoints-url-cell">
+              <code class="endpoints-url">mqtt://broker.emqx.io:1883</code>
+              <button type="button" class="copy-btn endpoints-copy" data-copy="mqtt://broker.emqx.io:1883" aria-label="Copy EMQX URL">{{ copyIcon }}</button>
+            </div>
+          </td>
+          <td class="endpoints-desc" data-mobile-notes="Throttles aggressive load.">EMQX public broker &mdash; HiveMQ alternative.</td>
+          <td class="endpoints-notes">Throttles aggressive load.</td>
+        </tr>
+
+        <!-- ============================ Kafka ============================ -->
+        <tr data-protocol="kafka">
+          <td><span class="endpoints-proto">Kafka</span></td>
+          <td>
+            <div class="endpoints-url-cell">
+              <code class="endpoints-url">docker run -p 9092:9092 apache/kafka:latest</code>
+              <button type="button" class="copy-btn endpoints-copy" data-copy="docker run -p 9092:9092 apache/kafka:latest" aria-label="Copy Kafka docker command">{{ copyIcon }}</button>
+            </div>
+          </td>
+          <td class="endpoints-desc" data-mobile-notes="No public broker exists. Cloud playgrounds (Confluent, Aiven, Redpanda) require sign-up.">No public test broker exists &mdash; run one locally via Docker.</td>
+          <td class="endpoints-notes">No public broker exists. Cloud playgrounds (Confluent, Aiven, Redpanda) require sign-up.</td>
+        </tr>
+
+        <!-- ============================ MCP ============================== -->
+        <tr data-protocol="mcp">
+          <td><span class="endpoints-proto">MCP</span></td>
+          <td>
+            <div class="endpoints-url-cell">
+              <code class="endpoints-url">bowire mcp serve</code>
+              <button type="button" class="copy-btn endpoints-copy" data-copy="bowire mcp serve" aria-label="Copy bowire mcp serve command">{{ copyIcon }}</button>
+            </div>
+          </td>
+          <td class="endpoints-desc" data-mobile-notes="MCP is local-only. Point Discover at the printed URL.">Bowire's own MCP adapter &mdash; self-contained test target.</td>
+          <td class="endpoints-notes">MCP is local-only. Point Discover at the printed URL.</td>
+        </tr>
+
+        <!-- ============================ Auth ============================= -->
+        <tr data-protocol="auth">
+          <td><span class="endpoints-proto">Auth</span></td>
+          <td>
+            <div class="endpoints-url-cell">
+              <code class="endpoints-url">https://httpbin.org/basic-auth/user/passwd</code>
+              <button type="button" class="copy-btn endpoints-copy" data-copy="https://httpbin.org/basic-auth/user/passwd" aria-label="Copy httpbin Basic Auth URL">{{ copyIcon }}</button>
+            </div>
+          </td>
+          <td class="endpoints-desc" data-mobile-notes="Basic auth. Credentials: user / passwd.">httpbin Basic Auth &mdash; returns 401 unless <code>user:passwd</code> is present.</td>
+          <td class="endpoints-notes">Basic auth. Credentials: user / passwd.</td>
+        </tr>
+        <tr data-protocol="auth">
+          <td><span class="endpoints-proto">Auth</span></td>
+          <td>
+            <div class="endpoints-url-cell">
+              <code class="endpoints-url">https://httpbin.org/bearer</code>
+              <button type="button" class="copy-btn endpoints-copy" data-copy="https://httpbin.org/bearer" aria-label="Copy httpbin Bearer URL">{{ copyIcon }}</button>
+            </div>
+          </td>
+          <td class="endpoints-desc" data-mobile-notes="Bearer token (any non-empty value works).">httpbin Bearer &mdash; expects <code>Authorization: Bearer ...</code>.</td>
+          <td class="endpoints-notes">Bearer token (any non-empty value works).</td>
+        </tr>
+        <tr data-protocol="auth">
+          <td><span class="endpoints-proto">Auth</span></td>
+          <td>
+            <div class="endpoints-url-cell">
+              <code class="endpoints-url">https://httpbin.org/digest-auth/auth/user/passwd</code>
+              <button type="button" class="copy-btn endpoints-copy" data-copy="https://httpbin.org/digest-auth/auth/user/passwd" aria-label="Copy httpbin Digest URL">{{ copyIcon }}</button>
+            </div>
+          </td>
+          <td class="endpoints-desc" data-mobile-notes="Digest auth. Credentials: user / passwd.">httpbin Digest &mdash; digest auth demo.</td>
+          <td class="endpoints-notes">Digest auth. Credentials: user / passwd.</td>
+        </tr>
+
+      </tbody>
+    </table>
+    <div class="endpoints-empty" hidden>No endpoints match the current filter.</div>
   </div>
 </section>
 
 <!-- ================================================================ -->
-<!-- Auth playgrounds                                                  -->
+<!-- More â€” pointer at the community awesome lists                     -->
 <!-- ================================================================ -->
-<section class="community-section">
+<section class="community-section community-section-alt">
   <header class="community-section-header">
-    <h2>Auth playgrounds</h2>
-    <p class="community-section-lede">httpbin endpoints that expect the named auth scheme &mdash; useful for wiring + testing Bowire's environment auth pickers.</p>
+    <h2>Want more?</h2>
+    <p class="community-section-lede">The list above covers one or two URLs per protocol &mdash; enough to confirm Bowire reaches them. For wider testing, point at one of the community-maintained awesome lists.</p>
   </header>
   <ul class="community-perks">
     <li class="community-perk">
-      <strong class="community-perk-title">httpbin Basic Auth</strong>
-      <p class="community-perk-desc">Returns 401 unless <code>user:passwd</code> is present.</p>
-      <code class="protocol-install"><span class="protocol-install-prompt">URL</span> https://httpbin.org/basic-auth/user/passwd</code>
+      <strong class="community-perk-title">public-apis / public-apis</strong>
+      <p class="community-perk-desc">The original "awesome" list &mdash; thousands of free public APIs by category.</p>
+      <code class="protocol-install"><span class="protocol-install-prompt">URL</span> <a href="https://github.com/public-apis/public-apis" target="_blank" rel="noopener">github.com/public-apis/public-apis</a></code>
     </li>
     <li class="community-perk">
-      <strong class="community-perk-title">httpbin Bearer</strong>
-      <p class="community-perk-desc">Expects <code>Authorization: Bearer ...</code>.</p>
-      <code class="protocol-install"><span class="protocol-install-prompt">URL</span> https://httpbin.org/bearer</code>
+      <strong class="community-perk-title">public-api-lists</strong>
+      <p class="community-perk-desc">48 categories, searchable, with its own JSON API.</p>
+      <code class="protocol-install"><span class="protocol-install-prompt">URL</span> <a href="https://github.com/public-api-lists/public-api-lists" target="_blank" rel="noopener">github.com/public-api-lists/public-api-lists</a></code>
     </li>
     <li class="community-perk">
-      <strong class="community-perk-title">httpbin Digest</strong>
-      <p class="community-perk-desc">Digest auth demo.</p>
-      <code class="protocol-install"><span class="protocol-install-prompt">URL</span> https://httpbin.org/digest-auth/auth/user/passwd</code>
+      <strong class="community-perk-title">Free Public APIs</strong>
+      <p class="community-perk-desc">Browsable directory &mdash; curated, searchable, no sign-up.</p>
+      <code class="protocol-install"><span class="protocol-install-prompt">URL</span> <a href="https://www.freepublicapis.com/" target="_blank" rel="noopener">freepublicapis.com</a></code>
     </li>
   </ul>
 </section>
@@ -198,7 +326,7 @@ description: Public, third-party sample APIs you can point Bowire at right now â
 <!-- ================================================================ -->
 <!-- Closing CTA                                                       -->
 <!-- ================================================================ -->
-<section class="community-section community-section-alt">
+<section class="community-section">
   <header class="community-section-header">
     <h2>Want a runnable sample, not a third-party URL?</h2>
     <p class="community-section-lede">Bowire ships its own reference apps &mdash; one per protocol, all built on the same Harbor Control Center domain so protocol differences read at a glance.</p>
