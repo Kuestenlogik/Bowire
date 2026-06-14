@@ -964,6 +964,14 @@
             if (done) return;
             done = true;
             if (bar.parentNode) bar.parentNode.removeChild(bar);
+            // After the fade completes, re-render so badges and
+            // counters that reflect dismissable state (topbar AI
+            // hint badge, &c) pick up the new count. Done AFTER
+            // the fade so the dismissing-class transition runs to
+            // completion before morphdom touches the subtree.
+            if (typeof render === 'function') {
+                try { render(); } catch { /* ignore */ }
+            }
         }
         bar.addEventListener('transitionend', finish);
         // Fallback timeout slightly longer than the CSS transition
@@ -1159,6 +1167,31 @@
             }));
         }
         return row;
+    }
+
+    // Per-protocol method-type capability table. Used by the freeform
+    // request builder + the "+" new-request menu so the type dropdown
+    // only offers shapes the protocol actually supports — e.g. picking
+    // REST doesn't surface ClientStreaming, picking MQTT only offers
+    // the Duplex channel shape, etc. Order = sensible default first.
+    function getSupportedMethodTypes(protocolId) {
+        switch ((protocolId || '').toLowerCase()) {
+            case 'grpc':       return ['Unary', 'ServerStreaming', 'ClientStreaming', 'Duplex'];
+            case 'rest':       return ['Unary'];
+            case 'graphql':    return ['Unary', 'ServerStreaming'];
+            case 'signalr':    return ['Unary', 'ServerStreaming', 'Duplex'];
+            case 'mqtt':       return ['Duplex'];
+            case 'websocket':  return ['Duplex'];
+            case 'sse':        return ['ServerStreaming'];
+            case 'socketio':   return ['Duplex'];
+            case 'mcp':        return ['Unary', 'ServerStreaming'];
+            case 'odata':      return ['Unary'];
+            case 'soap':       return ['Unary'];
+            case 'jsonrpc':    return ['Unary', 'ServerStreaming'];
+            case 'nats':       return ['Unary', 'Duplex'];
+            case 'pulsar':     return ['Duplex'];
+            default:           return ['Unary', 'ServerStreaming', 'ClientStreaming', 'Duplex'];
+        }
     }
 
     function renderTree(nodes, opts) {

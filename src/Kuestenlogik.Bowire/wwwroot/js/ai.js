@@ -1567,7 +1567,14 @@
         renderPanel: renderAiPanel,
         renderSecurityPanel: renderSecurityPanel,
         evaluateHints: evaluateHints,
-        hintCount: function () { return evaluateHints().length; },
+        hintCount: function () {
+            var fired = evaluateHints();
+            if (typeof isHintDismissed !== 'function') return fired.length;
+            return fired.filter(function (h) {
+                return !isHintDismissed('bowire_ai_hint_' + h.id + '_dismissed')
+                    && !isHintDismissed('bowire_ai_hint_' + h.id + '_permanent');
+            }).length;
+        },
         // Phase 2 surface. Lets render layers (and tests) read or reset
         // the status / probe / chat cache without touching internals.
         getStatus: function () { return aiStatus; },

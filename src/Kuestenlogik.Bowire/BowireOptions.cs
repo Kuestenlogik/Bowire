@@ -121,6 +121,18 @@ public sealed class BowireOptions
     public bool ShowInternalServices { get; set; }
 
     /// <summary>
+    /// When <c>true</c>, the workbench seeds a default "Personal" workspace
+    /// for first-run users so they boot straight into a usable shell.
+    /// When <c>false</c> (the v2.0 default), the workbench starts with no
+    /// workspace and the Home page shows a "Create your first workspace"
+    /// CTA so the operator learns the concept up front. End-users can
+    /// override per-browser via Settings → General; this option is the
+    /// host-side baseline (appsettings.json or
+    /// <c>--auto-create-initial-workspace</c> CLI flag).
+    /// </summary>
+    public bool AutoCreateInitialWorkspace { get; set; }
+
+    /// <summary>
     /// UI operating mode — controls whether the URL bar is shown and whether
     /// service discovery runs in-process or against remote URLs.
     /// </summary>

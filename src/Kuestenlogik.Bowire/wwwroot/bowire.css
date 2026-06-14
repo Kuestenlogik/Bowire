@@ -1845,15 +1845,15 @@ not just
     color: var(--bowire-text);
     cursor: pointer;
     font-size: 12px;
-    transition: background var(--bowire-transition), border-color var(--bowire-transition);
+    /* Use the linear-ease fast transition for color changes — the
+       default spring-easing (cubic-bezier with y > 1) overshoots
+       and produces a visible flicker on background/border interp. */
+    transition: background var(--bowire-transition-fast), border-color var(--bowire-transition-fast);
 }
-.bowire-workspace-chip:hover {
+.bowire-workspace-chip:hover,
+.bowire-workspace-chip.active {
     background: var(--bowire-surface-hover);
     border-color: var(--bowire-border);
-}
-.bowire-workspace-chip.active {
-    background: var(--bowire-accent-subtle);
-    border-color: var(--bowire-accent);
 }
 .bowire-workspace-chip-dot {
     width: 8px;
@@ -1868,9 +1868,10 @@ not just
     white-space: nowrap;
 }
 .bowire-workspace-chip-caret {
-    color: var(--bowire-text-tertiary);
-    font-size: 10px;
+    color: var(--bowire-text-secondary);
+    font-size: 14px;
     line-height: 1;
+    margin-left: 2px;
 }
 
 .bowire-workspace-menu {
@@ -2571,18 +2572,21 @@ not just
 }
 
 .bowire-conn-pill-dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 14px;
+    height: 14px;
     flex-shrink: 0;
-    background: var(--bowire-text-tertiary);
+    color: var(--bowire-text-tertiary);
 }
+.bowire-conn-pill-dot svg { width: 14px; height: 14px; }
 
-.bowire-conn-pill-connected .bowire-conn-pill-dot { background: #22c55e; }
-.bowire-conn-pill-error     .bowire-conn-pill-dot { background: var(--bowire-error); }
+.bowire-conn-pill-connected .bowire-conn-pill-dot { color: #22c55e; }
+.bowire-conn-pill-error     .bowire-conn-pill-dot { color: var(--bowire-error); }
 .bowire-conn-pill-connecting .bowire-conn-pill-dot,
-.bowire-conn-pill-partial    .bowire-conn-pill-dot { background: #f59e0b; }
-.bowire-conn-pill-first-run  .bowire-conn-pill-dot { background: var(--bowire-text-tertiary); }
+.bowire-conn-pill-partial    .bowire-conn-pill-dot { color: #f59e0b; }
+.bowire-conn-pill-first-run  .bowire-conn-pill-dot { color: var(--bowire-text-tertiary); }
 
 .bowire-conn-pill-connecting .bowire-conn-pill-dot {
     animation: bowire-conn-pulse 1.2s ease-in-out infinite;
@@ -3921,27 +3925,10 @@ only an accent-coloured underline under the active tab. The whole
     outline: none;
     border-bottom-color: var(--bowire-accent);
 }
-.bowire-env-editor-action-btn {
-    background: transparent;
-    border: 1px solid var(--bowire-border);
-    color: var(--bowire-text-secondary);
-    padding: 4px 12px;
-    border-radius: var(--bowire-radius-sm);
-    font-size: 12px;
-    cursor: pointer;
-    transition: all var(--bowire-transition);
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-}
-.bowire-env-editor-action-btn:hover {
-    border-color: var(--bowire-accent);
-    color: var(--bowire-accent);
-}
-.bowire-env-editor-danger:hover {
-    border-color: var(--bowire-error);
-    color: var(--bowire-error);
-}
+/* .bowire-env-editor-action-btn + .bowire-env-editor-danger are aliases
+   on the shared .bowire-btn / .bowire-btn--danger family — see the
+   selector list at the top of the Outline-button block. The 14×14 svg
+   keeps the per-context icon override the env-editor used to ship. */
 .bowire-env-editor-danger svg { width: 14px; height: 14px; }
 .bowire-env-editor-active-badge {
     font-size: 11px;
@@ -4458,7 +4445,14 @@ lives at the right of the
     align-items: flex-start;
     gap: 8px;
     padding: 22px 24px;
-    margin: 18px 0;
+    /* No outer margin — every wrapping pane (bowire-landing-card,
+       bowire-mocks-wrap, bowire-flow-canvas, bowire-main-pad, …)
+       already ships the shared --bowire-main-gutter on its outside.
+       The previous 18px stacked on top of the gutter, which made the
+       Discover landing read 18 px higher than Mocks/Flows because a
+       Discover-only override was zeroing this margin and the others
+       weren't. */
+    margin: 0;
     max-width: 640px;
     text-align: left;
     color: var(--bowire-text-secondary);
@@ -4509,8 +4503,12 @@ lives at the right of the
     gap: 8px;
     margin-top: 6px;
 }
+/* Secondary action used to ship transparent → it read as 'disabled'
+   next to the filled primary. Give it a quiet surface fill so the
+   two siblings read as paired siblings, not "primary CTA + greyed-
+   out fallback". */
 .bowire-empty-card-action {
-    background: transparent;
+    background: var(--bowire-surface);
     border: 1px solid var(--bowire-border);
     border-radius: var(--bowire-radius-sm);
     color: var(--bowire-text);
@@ -4518,11 +4516,11 @@ lives at the right of the
     font-size: 13px;
     font-weight: 500;
     padding: 8px 16px;
-    transition: background var(--bowire-transition), border-color var(--bowire-transition);
+    transition: background var(--bowire-transition-fast), border-color var(--bowire-transition-fast), color var(--bowire-transition-fast);
 }
 .bowire-empty-card-action:hover {
     background: var(--bowire-surface-hover);
-    border-color: var(--bowire-text-tertiary);
+    border-color: var(--bowire-accent);
 }
 .bowire-empty-card-action-primary {
     background: var(--bowire-accent-subtle);
@@ -4609,23 +4607,8 @@ response below.
     gap: 6px;
 }
 
-.bowire-pane-btn {
-    padding: 4px 8px;
-    background: transparent;
-    border: 1px solid var(--bowire-border);
-    border-radius: var(--bowire-radius-sm);
-    color: var(--bowire-text-secondary);
-    font-size: 11px;
-    cursor: pointer;
-    transition: all var(--bowire-transition);
-    font-family: var(--bowire-font-sans);
-}
-
-.bowire-pane-btn:hover {
-    background: var(--bowire-surface-hover);
-    color: var(--bowire-text);
-    border-color: var(--bowire-accent);
-}
+/* .bowire-pane-btn shares the .bowire-btn outline-button shape — see
+   the selector list at the top of the Outline-button block. */
 
 .bowire-dropdown-wrapper {
     position: relative;
@@ -4666,11 +4649,8 @@ response below.
     color: var(--bowire-accent-text);
 }
 
-.bowire-pane-btn.active {
-    background: var(--bowire-accent-subtle);
-    color: var(--bowire-accent-text);
-    border-color: var(--bowire-accent);
-}
+/* .bowire-pane-btn.active — moved into the shared .bowire-btn--active
+   block at the top of the Outline-button family. */
 
 /* ---- GraphQL Selection-Set Picker ---- */
 .bowire-graphql-selection-pane {
@@ -7477,7 +7457,7 @@ and chip row */
     cursor: pointer;
     font-size: 12px;
     font-family: var(--bowire-font-sans);
-    transition: background var(--bowire-transition), border-color var(--bowire-transition);
+    transition: background var(--bowire-transition-fast), border-color var(--bowire-transition-fast);
 }
 .bowire-env-dropdown-btn:hover {
     background: var(--bowire-surface-hover);
@@ -7489,7 +7469,7 @@ and chip row */
     text-overflow: ellipsis;
     white-space: nowrap;
 }
-.bowire-env-btn-chevron { font-size: 10px; opacity: 0.5; }
+.bowire-env-btn-chevron { font-size: 14px; color: var(--bowire-text-secondary); margin-left: 2px; }
 .bowire-env-dropdown-menu {
     position: absolute;
     top: 100%;
@@ -7906,19 +7886,9 @@ and chip row */
     left: 2px;
     transition: transform var(--bowire-transition);
 }
-.bowire-settings-action-btn {
-    background: transparent;
-    border: 1px solid var(--bowire-border);
-    color: var(--bowire-text-secondary);
-    padding: 4px 12px;
-    border-radius: var(--bowire-radius-sm);
-    font-size: 12px;
-    cursor: pointer;
-    transition: all var(--bowire-transition);
-}
-.bowire-settings-action-btn:hover { border-color: var(--bowire-accent); color: var(--bowire-accent); }
-.bowire-settings-action-btn[disabled] { opacity: 0.5; cursor: progress; }
-.bowire-settings-action-btn.danger:hover { border-color: var(--bowire-error); color: var(--bowire-error); }
+/* .bowire-settings-action-btn + .bowire-settings-action-btn.danger
+   share the shared .bowire-btn family — see the selector list at the
+   top of the Outline-button block. */
 /* AI tab (#63) — status badge,
 save row,
 model picker wrap */
@@ -9822,25 +9792,37 @@ so the user sees where the
     font-weight: 500;
     flex: 1;
 }
+/* Selection-mode action buttons sit on the same header as the normal
+   add-button, so they reuse the same outlined shape — same border,
+   same hover-fills-accent feel — instead of rendering as borderless
+   text buttons that read like a different control family. */
 .bowire-selection-action {
     background: transparent;
-    border: 0;
+    border: 1px solid var(--bowire-border);
     color: var(--bowire-text-secondary);
     cursor: pointer;
-    padding: 4px 8px;
+    padding: 2px 8px;
+    height: 22px;
     border-radius: var(--bowire-radius-sm);
-    font-size: 13px;
+    font-size: 11px;
     display: inline-flex;
     align-items: center;
     gap: 4px;
+    transition: background var(--bowire-transition), color var(--bowire-transition), border-color var(--bowire-transition);
 }
 .bowire-selection-action:hover {
-    background: var(--bowire-surface-hover);
-    color: var(--bowire-text);
+    background: var(--bowire-accent);
+    border-color: var(--bowire-accent);
+    color: white;
 }
 .bowire-selection-action-danger:hover {
     background: var(--bowire-error-bg);
+    border-color: var(--bowire-error);
     color: var(--bowire-error);
+}
+.bowire-selection-action svg {
+    width: 12px;
+    height: 12px;
 }
 
 /* #125 Phase 2 — vars-autocomplete dropdown. Floating popover
@@ -10128,7 +10110,9 @@ and offers the path to switch. */
     overflow-y: auto;
     display: flex;
     flex-direction: column;
-    gap: 20px;
+    /* Match the home portal + every other rail's section spacing so
+       Workspaces sub-views read with the same vertical rhythm. */
+    gap: 22px;
 }
 .bowire-ws-detail-header {
     display: flex;
@@ -10198,16 +10182,26 @@ and offers the path to switch. */
     flex: 1;
     font-size: 20px;
     font-weight: 600;
+    font-family: inherit;
     background: transparent;
     border: 1px solid transparent;
+    /* Explicit theme-aware text + caret colour. Used to inherit the
+       browser's user-agent input style — in dark theme the UA fill
+       sometimes painted near-black on the elevated surface, in light
+       it rendered near-white. Pin both so the active typing cursor
+       stays legible at all times. */
     color: var(--bowire-text);
+    -webkit-text-fill-color: var(--bowire-text);
+    caret-color: var(--bowire-text);
     padding: 4px 8px;
     border-radius: var(--bowire-radius-md);
 }
 .bowire-ws-detail-name:hover,
 .bowire-ws-detail-name:focus {
     border-color: var(--bowire-border);
-    background: var(--bowire-surface);
+    background: var(--bowire-bg-elevated);
+    color: var(--bowire-text);
+    -webkit-text-fill-color: var(--bowire-text);
     outline: none;
 }
 .bowire-ws-detail-badge {
@@ -10338,41 +10332,13 @@ button.bowire-ws-detail-stat-clickable:hover .bowire-ws-detail-stat-value {
    .bowire-ws-detail-danger modifier on this button (separate from the
    "Danger zone" container above) tints the hover state red so a
    Remove / Delete affordance reads distinctly. */
+/* See the shared .bowire-btn family above for the actual button
+   styling. ws-detail-action lives inside a .bowire-ws-detail-section
+   which is flex-column with align-items: stretch, so it needs to
+   opt out of stretching ("+ New environment" reads as a small inline
+   affordance, not a banner). */
 button.bowire-ws-detail-action {
-    display: inline-flex;
-    align-items: center;
-    /* Containers like .bowire-ws-detail-section are flex-column with
-       align-items: stretch (default), which would otherwise stretch
-       the button to the container's full width. align-self pins it
-       to its natural width so "+ New environment" reads as a small
-       inline affordance, not a banner. */
     align-self: flex-start;
-    gap: 6px;
-    height: 28px;
-    padding: 0 12px;
-    background: transparent;
-    border: 1px solid var(--bowire-border);
-    border-radius: var(--bowire-radius-sm);
-    color: var(--bowire-text-secondary);
-    font-size: 11px;
-    font-weight: 600;
-    cursor: pointer;
-    font-family: var(--bowire-font-sans);
-    transition: background var(--bowire-transition), color var(--bowire-transition), border-color var(--bowire-transition);
-}
-button.bowire-ws-detail-action:hover:not(:disabled) {
-    background: var(--bowire-sidebar-hover);
-    color: var(--bowire-text);
-    border-color: var(--bowire-accent);
-}
-button.bowire-ws-detail-action:disabled {
-    opacity: 0.4;
-    cursor: not-allowed;
-}
-button.bowire-ws-detail-action.bowire-ws-detail-danger:hover:not(:disabled) {
-    border-color: #ef4444;
-    color: #ef4444;
-    background: transparent;
 }
 .bowire-ws-detail-delete-btn {
     background: var(--bowire-error-bg);
@@ -11700,10 +11666,32 @@ the action toolbar {
     flex-wrap: wrap;
     gap: 6px;
 }
-.bowire-recording-action-btn {
+/* ---------------------------------------------------------------- *
+ * Shared outline-button family.
+ *
+ * One canonical class — .bowire-btn — and legacy aliases that share
+ * the exact same shape. The aliases stay in the selector lists so the
+ * thousand-plus existing JS call sites that hand-roll className strings
+ * keep rendering correctly; new code uses .bowire-btn. When an alias's
+ * last JS use is gone, it can drop out of the list.
+ *
+ * Modifiers:
+ *   .bowire-btn--danger  →  red border + colour on hover
+ *
+ * Special cases that need per-context overrides (sit below this block):
+ *   button.bowire-ws-detail-action → align-self: flex-start
+ *     (parent flex-column with align-items:stretch would otherwise
+ *      stretch the button to the container's full width).
+ * ---------------------------------------------------------------- */
+.bowire-btn,
+.bowire-recording-action-btn,
+.bowire-env-editor-action-btn,
+.bowire-pane-btn,
+.bowire-settings-action-btn,
+button.bowire-ws-detail-action {
     display: inline-flex;
     align-items: center;
-    gap: 5px;
+    gap: 6px;
     height: 28px;
     padding: 0 12px;
     background: transparent;
@@ -11714,27 +11702,52 @@ the action toolbar {
     font-weight: 600;
     cursor: pointer;
     font-family: var(--bowire-font-sans);
-    transition: all var(--bowire-transition);
+    transition: background var(--bowire-transition-fast),
+                color var(--bowire-transition-fast),
+                border-color var(--bowire-transition-fast);
 }
-.bowire-recording-action-btn:hover:not(:disabled) {
+.bowire-btn:hover:not(:disabled),
+.bowire-recording-action-btn:hover:not(:disabled),
+.bowire-env-editor-action-btn:hover:not(:disabled),
+.bowire-pane-btn:hover:not(:disabled),
+.bowire-settings-action-btn:hover:not(:disabled),
+button.bowire-ws-detail-action:hover:not(:disabled) {
     background: var(--bowire-sidebar-hover);
     color: var(--bowire-text);
     border-color: var(--bowire-accent);
 }
-.bowire-recording-action-btn:disabled {
+.bowire-btn:disabled,
+.bowire-recording-action-btn:disabled,
+.bowire-env-editor-action-btn:disabled,
+.bowire-pane-btn:disabled,
+.bowire-settings-action-btn[disabled],
+.bowire-settings-action-btn:disabled,
+button.bowire-ws-detail-action:disabled {
     opacity: 0.4;
     cursor: not-allowed;
 }
-.bowire-recording-action-btn span svg {
+.bowire-btn svg,
+.bowire-recording-action-btn svg,
+.bowire-env-editor-action-btn svg,
+.bowire-pane-btn svg,
+.bowire-settings-action-btn svg,
+button.bowire-ws-detail-action svg {
     width: 12px;
     height: 12px;
     display: block;
 }
-.bowire-recording-action-danger:hover:not(:disabled) {
-    border-color: #ef4444;
-    color: #ef4444;
+.bowire-btn--danger:hover:not(:disabled),
+.bowire-recording-action-danger:hover:not(:disabled),
+.bowire-env-editor-danger:hover:not(:disabled),
+.bowire-settings-action-btn.danger:hover:not(:disabled),
+button.bowire-ws-detail-action.bowire-ws-detail-danger:hover:not(:disabled) {
+    border-color: var(--bowire-error);
+    color: var(--bowire-error);
+    background: transparent;
 }
-
+/* Active-state modifier shared by .pane-btn (response-pane mode
+   chips) and any other outline button that needs a "selected" look. */
+.bowire-btn--active,
 .bowire-recording-steps {
     display: flex;
     flex-direction: column;
@@ -13419,6 +13432,25 @@ full accent for user-pinned
     gap: 14px;
     max-width: 720px;
 }
+/* Heading family used by the AI + Security panes. Used to ship at
+   drawer scale (14 px h3, 12 px uppercase h4) because the panes were
+   designed for the right-side drawer. The Security pane now lives in
+   the main pane too — main-pane scope overrides nudge the headings
+   up to the workbench's main-pane scale so Security reads like a
+   first-class surface, not a drawer projected into the main pane. */
+.bowire-security-panel .bowire-ai-header { padding-bottom: 12px; margin-bottom: 16px; }
+.bowire-security-panel .bowire-ai-header h3 { font-size: 20px; font-weight: 600; }
+.bowire-security-panel .bowire-ai-threat-title {
+    font-size: 14px;
+    text-transform: none;
+    letter-spacing: 0;
+    color: var(--bowire-text);
+    font-weight: 600;
+    margin-bottom: 4px;
+}
+.bowire-security-panel .bowire-ai-threat-help { font-size: 13px; line-height: 1.55; }
+.bowire-security-panel .bowire-ai-threat-section { gap: 12px; margin-bottom: 24px; }
+
 .bowire-ai-header {
     display: flex;
     align-items: baseline;
