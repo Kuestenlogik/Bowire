@@ -1529,6 +1529,23 @@
 
             function commit() {
                 var val = String(input.value || '').trim();
+                // opts.validator(value) → falsy (null/undefined/empty) means
+                // accept; a string return is treated as the rejection reason.
+                // The dialog stays open, the input flashes red, and the
+                // caller's toast (if any) tells the operator what went
+                // wrong. Pattern mirrors the workspace create dialog's
+                // duplicate-name handling.
+                if (typeof opts.validator === 'function') {
+                    var err = opts.validator(val);
+                    if (err) {
+                        input.focus();
+                        input.classList.add('bowire-prompt-input-error');
+                        setTimeout(function () {
+                            input.classList.remove('bowire-prompt-input-error');
+                        }, 600);
+                        return;
+                    }
+                }
                 overlay.remove();
                 resolve(val || null);
             }

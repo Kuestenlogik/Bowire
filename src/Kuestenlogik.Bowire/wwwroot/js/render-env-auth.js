@@ -1767,6 +1767,19 @@
                                                 title: 'Rename',
                                                 defaultValue: oldName,
                                                 confirmText: 'Rename',
+                                                validator: function (val) {
+                                                    var trimmed = String(val || '').trim();
+                                                    if (!trimmed) return 'Name required';
+                                                    if (trimmed.toLowerCase() === String(oldName || '').trim().toLowerCase()) return null;
+                                                    if (typeof _isWorkspaceNameTaken === 'function'
+                                                        && _isWorkspaceNameTaken(trimmed, wsId)) {
+                                                        if (typeof toast === 'function') {
+                                                            toast('A workspace named "' + trimmed + '" already exists.', 'error');
+                                                        }
+                                                        return 'Duplicate';
+                                                    }
+                                                    return null;
+                                                }
                                             }).then(function (renamed) {
                                                 if (renamed) {
                                                     renameWorkspace(wsId, renamed);
@@ -2609,6 +2622,19 @@
                                     title: 'Rename',
                                     defaultValue: oldName,
                                     confirmText: 'Rename',
+                                    validator: function (val) {
+                                        var trimmed = String(val || '').trim();
+                                        if (!trimmed) return 'Name required';
+                                        if (trimmed.toLowerCase() === String(oldName || '').trim().toLowerCase()) return null;
+                                        if (typeof _isEnvironmentNameTaken === 'function'
+                                            && _isEnvironmentNameTaken(trimmed, envId)) {
+                                            if (typeof toast === 'function') {
+                                                toast('An environment named "' + trimmed + '" already exists.', 'error');
+                                            }
+                                            return 'Duplicate';
+                                        }
+                                        return null;
+                                    }
                                 }).then(function (renamed) {
                                     if (renamed) {
                                         if (typeof updateEnvironment === 'function') {
@@ -2702,20 +2728,21 @@
                     className: 'bowire-env-dropdown-item bowire-env-dropdown-item-action',
                     onClick: function () {
                         menu.remove();
-                        if (typeof createEnvironment !== 'function') return;
-                        var env = createEnvironment('New Environment');
-                        if (typeof envSidebarSelectedId !== 'undefined') {
-                            envSidebarSelectedId = env.id;
-                        }
-                        if (typeof setActiveEnvId === 'function') setActiveEnvId(env.id);
-                        // Jump operator straight into the new env's editor
-                        // so naming + variables happen in one flow.
-                        workspacesSelectedId = activeWorkspaceId;
-                        workspaceTreeSelection = { wsId: activeWorkspaceId, kind: 'env', value: env.id };
-                        railMode = 'workspaces';
-                        try { localStorage.setItem('bowire_rail_mode', 'workspaces'); }
-                        catch { /* ignore */ }
-                        render();
+                        if (typeof openCreateEnvironmentDialog !== 'function') return;
+                        openCreateEnvironmentDialog(function (env) {
+                            if (typeof envSidebarSelectedId !== 'undefined') {
+                                envSidebarSelectedId = env.id;
+                            }
+                            if (typeof setActiveEnvId === 'function') setActiveEnvId(env.id);
+                            // Jump operator straight into the new env's editor
+                            // so editing the variables happens in one flow.
+                            workspacesSelectedId = activeWorkspaceId;
+                            workspaceTreeSelection = { wsId: activeWorkspaceId, kind: 'env', value: env.id };
+                            railMode = 'workspaces';
+                            try { localStorage.setItem('bowire_rail_mode', 'workspaces'); }
+                            catch { /* ignore */ }
+                            render();
+                        });
                     }
                 },
                     el('span', { className: 'bowire-env-dropdown-item-icon', textContent: '+' }),

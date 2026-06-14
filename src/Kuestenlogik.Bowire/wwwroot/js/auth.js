@@ -782,6 +782,39 @@
         return env;
     }
 
+    // Prompt the operator for an env name + create when accepted.
+    // Mirrors the workspace flow (openCreateWorkspaceDialog) so the
+    // two surfaces share the same "type a name" UX instead of envs
+    // landing on an auto-generated default. Duplicate names are
+    // rejected up front via the prompt's validator; the dialog stays
+    // open + flashes the input so the operator can edit and retry.
+    // The success callback receives the new env so the caller can
+    // hook follow-up state (envSidebarSelectedId, tree selection,
+    // setActiveEnvId, render).
+    function openCreateEnvironmentDialog(onCreated) {
+        if (typeof bowirePrompt !== 'function') return;
+        bowirePrompt('Name your new environment', {
+            title: 'New environment',
+            placeholder: 'e.g. staging',
+            confirmText: 'Create',
+            validator: function (val) {
+                var trimmed = String(val || '').trim();
+                if (!trimmed) return 'Name required';
+                if (_isEnvironmentNameTaken(trimmed)) {
+                    if (typeof toast === 'function') {
+                        toast('An environment named "' + trimmed + '" already exists.', 'error');
+                    }
+                    return 'Duplicate';
+                }
+                return null;
+            }
+        }).then(function (name) {
+            if (!name) return;
+            var env = createEnvironment(name);
+            if (env && typeof onCreated === 'function') onCreated(env);
+        });
+    }
+
     function deleteEnvironment(id) {
         var envs = getEnvironments().filter(function (e) { return e.id !== id; });
         saveEnvironments(envs);

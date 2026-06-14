@@ -649,9 +649,11 @@
                     'aria-label': 'Create new environment',
                     innerHTML: svgIcon('plus'),
                     onClick: function () {
-                        var env = createEnvironment('New Environment');
-                        envSidebarSelectedId = env.id;
-                        render();
+                        if (typeof openCreateEnvironmentDialog !== 'function') return;
+                        openCreateEnvironmentDialog(function (env) {
+                            envSidebarSelectedId = env.id;
+                            render();
+                        });
                     }
                 })
             )
@@ -1788,10 +1790,24 @@
                 icon: '✎',
                 label: 'Rename…',
                 onClick: function () {
+                    var oldName = w.name;
                     bowirePrompt('Rename workspace', {
                         title: 'Rename',
-                        defaultValue: w.name,
+                        defaultValue: oldName,
                         confirmText: 'Rename',
+                        validator: function (val) {
+                            var trimmed = String(val || '').trim();
+                            if (!trimmed) return 'Name required';
+                            if (trimmed.toLowerCase() === String(oldName || '').trim().toLowerCase()) return null;
+                            if (typeof _isWorkspaceNameTaken === 'function'
+                                && _isWorkspaceNameTaken(trimmed, w.id)) {
+                                if (typeof toast === 'function') {
+                                    toast('A workspace named "' + trimmed + '" already exists.', 'error');
+                                }
+                                return 'Duplicate';
+                            }
+                            return null;
+                        }
                     }).then(function (renamed) {
                         if (renamed) {
                             renameWorkspace(w.id, renamed);
@@ -2393,15 +2409,16 @@
             },
             onAdd: function () {
                 if (w.id !== activeWorkspaceId) switchWorkspace(w.id);
-                if (typeof createEnvironment !== 'function') return;
-                var env = createEnvironment('New Environment');
-                if (typeof envSidebarSelectedId !== 'undefined') {
-                    envSidebarSelectedId = env.id;
-                }
-                workspaceTreeSelection = { wsId: w.id, kind: 'env', value: env.id };
-                workspaceTreeExpanded[key] = true;
-                persistWorkspaceTreeExpanded();
-                render();
+                if (typeof openCreateEnvironmentDialog !== 'function') return;
+                openCreateEnvironmentDialog(function (env) {
+                    if (typeof envSidebarSelectedId !== 'undefined') {
+                        envSidebarSelectedId = env.id;
+                    }
+                    workspaceTreeSelection = { wsId: w.id, kind: 'env', value: env.id };
+                    workspaceTreeExpanded[key] = true;
+                    persistWorkspaceTreeExpanded();
+                    render();
+                });
             },
             addTitle: 'New environment',
             onContext: function (ev) {
@@ -2411,15 +2428,16 @@
                         label: 'New environment',
                         onClick: function () {
                             if (w.id !== activeWorkspaceId) switchWorkspace(w.id);
-                            if (typeof createEnvironment !== 'function') return;
-                            var env = createEnvironment('New Environment');
-                            if (typeof envSidebarSelectedId !== 'undefined') {
-                                envSidebarSelectedId = env.id;
-                            }
-                            workspaceTreeSelection = { wsId: w.id, kind: 'env', value: env.id };
-                            workspaceTreeExpanded[key] = true;
-                            persistWorkspaceTreeExpanded();
-                            render();
+                            if (typeof openCreateEnvironmentDialog !== 'function') return;
+                            openCreateEnvironmentDialog(function (env) {
+                                if (typeof envSidebarSelectedId !== 'undefined') {
+                                    envSidebarSelectedId = env.id;
+                                }
+                                workspaceTreeSelection = { wsId: w.id, kind: 'env', value: env.id };
+                                workspaceTreeExpanded[key] = true;
+                                persistWorkspaceTreeExpanded();
+                                render();
+                            });
                         }
                     }
                 ]);
@@ -3125,11 +3143,13 @@
                 dropdown.appendChild(el('div', {
                     className: 'bowire-new-dropdown-item',
                     onClick: function () {
-                        var env = createEnvironment('New Environment');
-                        envSidebarSelectedId = env.id;
-                        setSidebarView('environments');
                         dropdown.remove();
-                        render();
+                        if (typeof openCreateEnvironmentDialog !== 'function') return;
+                        openCreateEnvironmentDialog(function (env) {
+                            envSidebarSelectedId = env.id;
+                            setSidebarView('environments');
+                            render();
+                        });
                     }
                 }, el('span', { textContent: 'Environment' })));
 
