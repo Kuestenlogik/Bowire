@@ -1978,6 +1978,12 @@ not just
     align-items: center;
     gap: 2px;
     flex-shrink: 0;
+    /* Reserve the height of the hover-revealed action buttons so the
+       row doesn't grow taller when edit / trash pop in (display: none
+       → inline-flex). Without this the cluster collapses to the 14px
+       check slot on idle and jumps up to ~22px on hover, producing a
+       visible vertical flicker as the cursor slides across rows. */
+    min-height: 22px;
 }
 .bowire-workspace-menu-item-check {
     width: 14px;
@@ -7611,6 +7617,10 @@ and chip row */
     align-items: center;
     gap: 2px;
     flex-shrink: 0;
+    /* Reserve the hover-button height so the row doesn't grow taller
+       when edit / trash become visible on hover. See the matching
+       .bowire-workspace-menu-item-tools rule for the rationale. */
+    min-height: 22px;
 }
 .bowire-env-dropdown-item-check {
     width: 14px;
