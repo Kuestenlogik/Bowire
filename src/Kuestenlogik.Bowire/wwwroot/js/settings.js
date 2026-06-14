@@ -254,6 +254,23 @@
             }
         ));
 
+        // Workspace identity band — 2px accent strip under the topbar in
+        // the active workspace's colour. Off by default because the
+        // signal is redundant with the chip when the operator is paying
+        // attention to it; opt-in for users who want the peripheral
+        // identity cue. Reads on every render() so flipping the toggle
+        // is reflected as soon as the next render runs.
+        var showIdentityBand = localStorage.getItem('bowire_show_workspace_identity_band') === 'true';
+        section.appendChild(renderSettingsToggle(
+            'Workspace identity band',
+            'Show a 2 px coloured strip directly under the topbar in the active workspace’s colour. Useful as a peripheral "which workspace am I in" cue when you switch a lot.',
+            showIdentityBand,
+            function (val) {
+                localStorage.setItem('bowire_show_workspace_identity_band', val ? 'true' : 'false');
+                render();
+            }
+        ));
+
         // Schema Watch interval
         section.appendChild(renderSettingsRow(
             'Schema Watch interval',
