@@ -1,0 +1,214 @@
+---
+layout: page
+title: Test endpoints — Bowire
+description: Public, third-party sample APIs you can point Bowire at right now — one per protocol (REST, gRPC, GraphQL, WebSocket, SSE, MQTT) plus a small set of auth playgrounds. No setup, no clone, just paste the URL into Discover and hit go.
+---
+
+<!-- ================================================================ -->
+<!-- Hero                                                              -->
+<!-- ================================================================ -->
+<section class="community-hero">
+  <h1>Test endpoints</h1>
+  <p class="community-hero-tagline">Public sample APIs you can point Bowire at <strong>right now</strong>. One URL per protocol, no clone required &mdash; great for "does this thing actually work on my machine?"</p>
+  <p class="community-section-lede" style="margin-top:18px;">Endpoints belong to third parties. They go up and down without notice. If a sample stops responding, swap it for any equivalent service &mdash; the URL is just a target.</p>
+</section>
+
+<!-- ================================================================ -->
+<!-- REST / OpenAPI                                                    -->
+<!-- ================================================================ -->
+<section class="community-section community-section-alt">
+  <header class="community-section-header">
+    <h2>REST / OpenAPI</h2>
+    <p class="community-section-lede">Each URL is an OpenAPI document or a service root Bowire can probe.</p>
+  </header>
+  <ul class="community-perks">
+    <li class="community-perk">
+      <strong class="community-perk-title">Swagger Petstore</strong>
+      <p class="community-perk-desc">Classic CRUD playground, full OpenAPI 3.</p>
+      <code class="protocol-install"><span class="protocol-install-prompt">URL</span> https://petstore3.swagger.io/api/v3/openapi.json</code>
+    </li>
+    <li class="community-perk">
+      <strong class="community-perk-title">RESTful API</strong>
+      <p class="community-perk-desc">GET / POST / PUT / DELETE on generic objects.</p>
+      <code class="protocol-install"><span class="protocol-install-prompt">URL</span> https://api.restful-api.dev/objects</code>
+    </li>
+    <li class="community-perk">
+      <strong class="community-perk-title">JSONPlaceholder</strong>
+      <p class="community-perk-desc">Posts, comments, users &mdash; read-only.</p>
+      <code class="protocol-install"><span class="protocol-install-prompt">URL</span> https://jsonplaceholder.typicode.com</code>
+    </li>
+    <li class="community-perk">
+      <strong class="community-perk-title">Postman Echo</strong>
+      <p class="community-perk-desc">Echoes requests back, useful for headers / auth.</p>
+      <code class="protocol-install"><span class="protocol-install-prompt">URL</span> https://postman-echo.com</code>
+    </li>
+  </ul>
+</section>
+
+<!-- ================================================================ -->
+<!-- gRPC                                                              -->
+<!-- ================================================================ -->
+<section class="community-section">
+  <header class="community-section-header">
+    <h2>gRPC</h2>
+    <p class="community-section-lede">Reflection-enabled endpoint Bowire can discover without a <code>.proto</code> upload.</p>
+  </header>
+  <ul class="community-perks">
+    <li class="community-perk">
+      <strong class="community-perk-title">Postman gRPC Echo</strong>
+      <p class="community-perk-desc">Unary + streaming, TLS.</p>
+      <code class="protocol-install"><span class="protocol-install-prompt">URL</span> grpc.postman-echo.com:443</code>
+    </li>
+    <li class="community-perk">
+      <strong class="community-perk-title">Local <code>.proto</code></strong>
+      <p class="community-perk-desc">Upload via Workspace &rarr; Sources. Bowire's <code>samples/proto/echo.proto</code> works offline.</p>
+    </li>
+  </ul>
+</section>
+
+<!-- ================================================================ -->
+<!-- GraphQL                                                           -->
+<!-- ================================================================ -->
+<section class="community-section community-section-alt">
+  <header class="community-section-header">
+    <h2>GraphQL</h2>
+    <p class="community-section-lede">Introspection-enabled endpoints Bowire can pull the schema from on connect.</p>
+  </header>
+  <ul class="community-perks">
+    <li class="community-perk">
+      <strong class="community-perk-title">Countries</strong>
+      <p class="community-perk-desc">Queries about countries / continents.</p>
+      <code class="protocol-install"><span class="protocol-install-prompt">URL</span> https://countries.trevorblades.com/graphql</code>
+    </li>
+    <li class="community-perk">
+      <strong class="community-perk-title">Rick and Morty</strong>
+      <p class="community-perk-desc">Schema with relations + pagination.</p>
+      <code class="protocol-install"><span class="protocol-install-prompt">URL</span> https://rickandmortyapi.com/graphql</code>
+    </li>
+  </ul>
+</section>
+
+<!-- ================================================================ -->
+<!-- WebSocket                                                         -->
+<!-- ================================================================ -->
+<section class="community-section">
+  <header class="community-section-header">
+    <h2>WebSocket</h2>
+    <p class="community-section-lede">Echo services for round-trip frame testing.</p>
+  </header>
+  <ul class="community-perks">
+    <li class="community-perk">
+      <strong class="community-perk-title">websocket.events</strong>
+      <p class="community-perk-desc">Echo server.</p>
+      <code class="protocol-install"><span class="protocol-install-prompt">URL</span> wss://echo.websocket.events</code>
+    </li>
+    <li class="community-perk">
+      <strong class="community-perk-title">Postman echo</strong>
+      <p class="community-perk-desc">Echo server with <code>/raw</code> and <code>/socketio</code> endpoints.</p>
+      <code class="protocol-install"><span class="protocol-install-prompt">URL</span> wss://ws.postman-echo.com/raw</code>
+    </li>
+  </ul>
+</section>
+
+<!-- ================================================================ -->
+<!-- Server-Sent Events                                                -->
+<!-- ================================================================ -->
+<section class="community-section community-section-alt">
+  <header class="community-section-header">
+    <h2>Server-Sent Events (SSE)</h2>
+    <p class="community-section-lede">A continuous tick stream &mdash; useful to confirm Bowire's SSE pane re-renders on every frame.</p>
+  </header>
+  <ul class="community-perks">
+    <li class="community-perk">
+      <strong class="community-perk-title">sse.dev</strong>
+      <p class="community-perk-desc">Continuous tick stream.</p>
+      <code class="protocol-install"><span class="protocol-install-prompt">URL</span> https://sse.dev/test</code>
+    </li>
+  </ul>
+</section>
+
+<!-- ================================================================ -->
+<!-- MQTT                                                              -->
+<!-- ================================================================ -->
+<section class="community-section">
+  <header class="community-section-header">
+    <h2>MQTT</h2>
+    <p class="community-section-lede">Public test brokers. They throttle aggressive load &mdash; for stress testing run the <a href="{{ '/samples.html' | relative_url }}">Bowire MQTT sample</a> locally instead.</p>
+  </header>
+  <ul class="community-perks">
+    <li class="community-perk">
+      <strong class="community-perk-title">HiveMQ public broker (TCP)</strong>
+      <p class="community-perk-desc">No auth.</p>
+      <code class="protocol-install"><span class="protocol-install-prompt">URL</span> mqtt://broker.hivemq.com:1883</code>
+    </li>
+    <li class="community-perk">
+      <strong class="community-perk-title">HiveMQ public broker (WSS)</strong>
+      <p class="community-perk-desc">TLS + WebSocket.</p>
+      <code class="protocol-install"><span class="protocol-install-prompt">URL</span> wss://broker.hivemq.com:8884/mqtt</code>
+    </li>
+    <li class="community-perk">
+      <strong class="community-perk-title">EMQX public broker</strong>
+      <p class="community-perk-desc">Alternative when HiveMQ throttles.</p>
+      <code class="protocol-install"><span class="protocol-install-prompt">URL</span> mqtt://broker.emqx.io:1883</code>
+    </li>
+  </ul>
+</section>
+
+<!-- ================================================================ -->
+<!-- MCP                                                               -->
+<!-- ================================================================ -->
+<section class="community-section community-section-alt">
+  <header class="community-section-header">
+    <h2>MCP</h2>
+    <p class="community-section-lede">MCP is a local-only protocol. Use Bowire's own MCP adapter for a self-contained test target.</p>
+  </header>
+  <div class="community-quickstart">
+    <pre class="community-quickstart-code"><code>bowire mcp serve
+# &rarr; point Discover at the printed URL (default http://localhost:5000/mcp)</code></pre>
+  </div>
+</section>
+
+<!-- ================================================================ -->
+<!-- Auth playgrounds                                                  -->
+<!-- ================================================================ -->
+<section class="community-section">
+  <header class="community-section-header">
+    <h2>Auth playgrounds</h2>
+    <p class="community-section-lede">httpbin endpoints that expect the named auth scheme &mdash; useful for wiring + testing Bowire's environment auth pickers.</p>
+  </header>
+  <ul class="community-perks">
+    <li class="community-perk">
+      <strong class="community-perk-title">httpbin Basic Auth</strong>
+      <p class="community-perk-desc">Returns 401 unless <code>user:passwd</code> is present.</p>
+      <code class="protocol-install"><span class="protocol-install-prompt">URL</span> https://httpbin.org/basic-auth/user/passwd</code>
+    </li>
+    <li class="community-perk">
+      <strong class="community-perk-title">httpbin Bearer</strong>
+      <p class="community-perk-desc">Expects <code>Authorization: Bearer ...</code>.</p>
+      <code class="protocol-install"><span class="protocol-install-prompt">URL</span> https://httpbin.org/bearer</code>
+    </li>
+    <li class="community-perk">
+      <strong class="community-perk-title">httpbin Digest</strong>
+      <p class="community-perk-desc">Digest auth demo.</p>
+      <code class="protocol-install"><span class="protocol-install-prompt">URL</span> https://httpbin.org/digest-auth/auth/user/passwd</code>
+    </li>
+  </ul>
+</section>
+
+<!-- ================================================================ -->
+<!-- Closing CTA                                                       -->
+<!-- ================================================================ -->
+<section class="community-section community-section-alt">
+  <header class="community-section-header">
+    <h2>Want a runnable sample, not a third-party URL?</h2>
+    <p class="community-section-lede">Bowire ships its own reference apps &mdash; one per protocol, all built on the same Harbor Control Center domain so protocol differences read at a glance.</p>
+  </header>
+  <div class="community-cta-grid">
+    <a class="btn btn-primary" href="{{ '/samples.html' | relative_url }}">
+      Bowire reference samples
+    </a>
+    <a class="btn btn-secondary" href="{{ '/quickstart.html' | relative_url }}">
+      Five-minute Quickstart
+    </a>
+  </div>
+</section>
