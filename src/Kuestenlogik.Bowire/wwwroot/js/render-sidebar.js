@@ -1949,6 +1949,11 @@
         var wsExpanded = isWorkspaceTreeNodeExpanded(wsExpandKey, isActive);
         var wsSelected = sel.wsId === w.id && sel.kind === 'workspace';
 
+        // No 'Settings' sub-node — clicking the workspace row itself
+        // already renders _renderWorkspaceSettingsDetail (the default
+        // case in renderWorkspaceDetailMain). A duplicate Settings
+        // child would just confuse the operator (the workspace IS the
+        // settings entry-point) without aiding discovery.
         var children = [];
         children.push(_buildSourcesTreeNode(w));
         children.push(_buildEnvironmentsTreeNode(w));
@@ -1956,8 +1961,6 @@
             'Variables', null));
         children.push(_buildCollectionsTreeNode(w));
         children.push(_buildRecordingsTreeNode(w));
-        children.push(_buildSimpleChildNode(w, 'settings', 'settings',
-            'Settings', null));
 
         // Same Lucide 'layers' glyph as the topbar chip + dropdown rows
         // — top "leaf" picks up the workspace's chosen colour, lower
@@ -2024,6 +2027,26 @@
                     workspacesSelectedId = w.id;
                     workspaceTreeSelection = { wsId: w.id, kind: 'url', value: u };
                     render();
+                },
+                onContext: function (ev) {
+                    openTreeSubContextMenu(ev, [
+                        {
+                            icon: '🗑',
+                            label: 'Remove URL',
+                            danger: true,
+                            onClick: function () {
+                                bowireConfirm(
+                                    'Remove URL "' + u + '" from this workspace? Stored headers + cached schema for this source are dropped.',
+                                    function () {
+                                        if (w.id !== activeWorkspaceId) switchWorkspace(w.id);
+                                        if (typeof removeServerUrl === 'function') removeServerUrl(u);
+                                        render();
+                                    },
+                                    { title: 'Remove URL', confirmText: 'Remove', danger: true }
+                                );
+                            }
+                        }
+                    ]);
                 }
             };
         });
@@ -2056,15 +2079,6 @@
             addTitle: 'Add URL or schema',
             onContext: function (ev) {
                 openTreeSubContextMenu(ev, [
-                    {
-                        icon: '→',
-                        label: 'Open Sources',
-                        onClick: function () {
-                            workspacesSelectedId = w.id;
-                            workspaceTreeSelection = { wsId: w.id, kind: 'sources' };
-                            render();
-                        }
-                    },
                     {
                         icon: '+',
                         label: 'Add URL or schema',
@@ -2106,6 +2120,26 @@
                         collectionManagerSelectedId = c.id;
                     }
                     render();
+                },
+                onContext: function (ev) {
+                    openTreeSubContextMenu(ev, [
+                        {
+                            icon: '🗑',
+                            label: 'Delete collection',
+                            danger: true,
+                            onClick: function () {
+                                bowireConfirm(
+                                    'Delete collection "' + (c.name || c.id) + '"? Items stored in this collection are removed.',
+                                    function () {
+                                        if (w.id !== activeWorkspaceId) switchWorkspace(w.id);
+                                        if (typeof deleteCollection === 'function') deleteCollection(c.id);
+                                        render();
+                                    },
+                                    { title: 'Delete collection', confirmText: 'Delete', danger: true }
+                                );
+                            }
+                        }
+                    ]);
                 }
             };
         });
@@ -2143,15 +2177,6 @@
             addTitle: 'New collection',
             onContext: function (ev) {
                 openTreeSubContextMenu(ev, [
-                    {
-                        icon: '→',
-                        label: 'Open Collections',
-                        onClick: function () {
-                            workspacesSelectedId = w.id;
-                            workspaceTreeSelection = { wsId: w.id, kind: 'collections' };
-                            render();
-                        }
-                    },
                     {
                         icon: '+',
                         label: 'New collection',
@@ -2202,6 +2227,26 @@
                         recordingManagerSelectedId = r.id;
                     }
                     render();
+                },
+                onContext: function (ev) {
+                    openTreeSubContextMenu(ev, [
+                        {
+                            icon: '🗑',
+                            label: 'Delete recording',
+                            danger: true,
+                            onClick: function () {
+                                bowireConfirm(
+                                    'Delete recording "' + (r.name || r.id) + '"? Captured steps are removed.',
+                                    function () {
+                                        if (w.id !== activeWorkspaceId) switchWorkspace(w.id);
+                                        if (typeof deleteRecording === 'function') deleteRecording(r.id);
+                                        render();
+                                    },
+                                    { title: 'Delete recording', confirmText: 'Delete', danger: true }
+                                );
+                            }
+                        }
+                    ]);
                 }
             };
         });
@@ -2236,15 +2281,6 @@
             addTitle: 'Start recording',
             onContext: function (ev) {
                 openTreeSubContextMenu(ev, [
-                    {
-                        icon: '→',
-                        label: 'Open Recordings',
-                        onClick: function () {
-                            workspacesSelectedId = w.id;
-                            workspaceTreeSelection = { wsId: w.id, kind: 'recordings' };
-                            render();
-                        }
-                    },
                     {
                         icon: '●',
                         label: 'Start recording',
@@ -2299,6 +2335,26 @@
                         envSidebarSelectedId = e.id;
                     }
                     render();
+                },
+                onContext: function (ev) {
+                    openTreeSubContextMenu(ev, [
+                        {
+                            icon: '🗑',
+                            label: 'Delete environment',
+                            danger: true,
+                            onClick: function () {
+                                bowireConfirm(
+                                    'Delete environment "' + (e.name || e.id) + '"? Variables stored in this environment are removed.',
+                                    function () {
+                                        if (w.id !== activeWorkspaceId) switchWorkspace(w.id);
+                                        if (typeof deleteEnvironment === 'function') deleteEnvironment(e.id);
+                                        render();
+                                    },
+                                    { title: 'Delete environment', confirmText: 'Delete', danger: true }
+                                );
+                            }
+                        }
+                    ]);
                 }
             };
         });
@@ -2337,15 +2393,6 @@
             onContext: function (ev) {
                 openTreeSubContextMenu(ev, [
                     {
-                        icon: '→',
-                        label: 'Open Environments',
-                        onClick: function () {
-                            workspacesSelectedId = w.id;
-                            workspaceTreeSelection = { wsId: w.id, kind: 'environments' };
-                            render();
-                        }
-                    },
-                    {
                         icon: '+',
                         label: 'New environment',
                         onClick: function () {
@@ -2370,6 +2417,12 @@
     function _buildSimpleChildNode(w, kind, icon, label, badge) {
         var sel = workspaceTreeSelection || {};
         var selected = sel.wsId === w.id && sel.kind === kind;
+        // Variables + Settings are navigation-only nodes — no add/delete
+        // action applies at the category level, and clicking the row
+        // already opens the view, so a context menu would only offer a
+        // redundant "Open" item. Skip onContext entirely so the right-
+        // click falls through to the rail's empty-area handler (which
+        // surfaces "+ New workspace…").
         return {
             id: 'ws:' + w.id + ':' + kind,
             label: label,
@@ -2380,19 +2433,6 @@
                 workspacesSelectedId = w.id;
                 workspaceTreeSelection = { wsId: w.id, kind: kind };
                 render();
-            },
-            onContext: function (ev) {
-                openTreeSubContextMenu(ev, [
-                    {
-                        icon: '→',
-                        label: 'Open ' + label,
-                        onClick: function () {
-                            workspacesSelectedId = w.id;
-                            workspaceTreeSelection = { wsId: w.id, kind: kind };
-                            render();
-                        }
-                    }
-                ]);
             }
         };
     }
