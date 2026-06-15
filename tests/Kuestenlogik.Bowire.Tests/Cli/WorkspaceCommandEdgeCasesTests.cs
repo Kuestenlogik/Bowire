@@ -112,7 +112,7 @@ public sealed class WorkspaceCommandEdgeCasesTests : IDisposable
         //   pr.GetValue(pathArg/nameOpt/colorOpt/noGitOpt) + lambda
         // glue between the Command tree and RunInitAsync.
         var workspace = WorkspaceCommand.Build();
-        var path = Path.Combine(_tempRoot, "via-parse");
+        var path = SafePath.Combine(_tempRoot, "via-parse");
         using var stdout = new StringWriter();
         using var stderr = new StringWriter();
 
@@ -127,7 +127,7 @@ public sealed class WorkspaceCommandEdgeCasesTests : IDisposable
         Assert.Empty(stderr.ToString());
         Assert.Contains("Initialised workspace at", stdout.ToString());
 
-        var json = await File.ReadAllTextAsync(Path.Combine(path, "workspace.json"),
+        var json = await File.ReadAllTextAsync(SafePath.Combine(path, "workspace.json"),
             TestContext.Current.CancellationToken);
         using var doc = JsonDocument.Parse(json);
         Assert.Equal("Parsed", doc.RootElement.GetProperty("name").GetString());
@@ -148,7 +148,7 @@ public sealed class WorkspaceCommandEdgeCasesTests : IDisposable
         // anchor.
         using var stdout = new StringWriter();
         using var stderr = new StringWriter();
-        var path = Path.Combine(_tempRoot, "diag");
+        var path = SafePath.Combine(_tempRoot, "diag");
 
         var rc = await WorkspaceCommand.RunInitAsync(path, displayName: null, color: null,
             noGit: true, stdout, stderr, TestContext.Current.CancellationToken);
@@ -172,7 +172,7 @@ public sealed class WorkspaceCommandEdgeCasesTests : IDisposable
         // by their flag rather than by an environment problem.
         using var stdout = new StringWriter();
         using var stderr = new StringWriter();
-        var path = Path.Combine(_tempRoot, "skip-git");
+        var path = SafePath.Combine(_tempRoot, "skip-git");
 
         var rc = await WorkspaceCommand.RunInitAsync(path, displayName: null, color: null,
             noGit: true, stdout, stderr, TestContext.Current.CancellationToken);
@@ -194,7 +194,7 @@ public sealed class WorkspaceCommandEdgeCasesTests : IDisposable
     {
         using var stdout = new StringWriter();
         using var stderr = new StringWriter();
-        var path = Path.Combine(_tempRoot, "with-git");
+        var path = SafePath.Combine(_tempRoot, "with-git");
 
         var rc = await WorkspaceCommand.RunInitAsync(path, displayName: null, color: null,
             noGit: false, stdout, stderr, TestContext.Current.CancellationToken);
@@ -205,7 +205,7 @@ public sealed class WorkspaceCommandEdgeCasesTests : IDisposable
         // an actual .git/ dir created in the workspace.
         // Returns false → "git init unavailable" stdout, no .git/.
         // Either branch is fine; the test exercises the dispatch.
-        var gitDir = Path.Combine(path, ".git");
+        var gitDir = SafePath.Combine(path, ".git");
         if (Directory.Exists(gitDir))
         {
             Assert.Contains("git init done", output);
@@ -236,13 +236,13 @@ public sealed class WorkspaceCommandEdgeCasesTests : IDisposable
         // would land "" or "   " as the workspace name.
         using var stdout = new StringWriter();
         using var stderr = new StringWriter();
-        var path = Path.Combine(_tempRoot, "ws-fallback-name");
+        var path = SafePath.Combine(_tempRoot, "ws-fallback-name");
 
         var rc = await WorkspaceCommand.RunInitAsync(path, displayName: "   ", color: null,
             noGit: true, stdout, stderr, TestContext.Current.CancellationToken);
 
         Assert.Equal(0, rc);
-        var json = await File.ReadAllTextAsync(Path.Combine(path, "workspace.json"),
+        var json = await File.ReadAllTextAsync(SafePath.Combine(path, "workspace.json"),
             TestContext.Current.CancellationToken);
         using var doc = JsonDocument.Parse(json);
         Assert.Equal("ws-fallback-name", doc.RootElement.GetProperty("name").GetString());
@@ -253,13 +253,13 @@ public sealed class WorkspaceCommandEdgeCasesTests : IDisposable
     {
         using var stdout = new StringWriter();
         using var stderr = new StringWriter();
-        var path = Path.Combine(_tempRoot, "ws-default-color");
+        var path = SafePath.Combine(_tempRoot, "ws-default-color");
 
         var rc = await WorkspaceCommand.RunInitAsync(path, displayName: null, color: "  \t  ",
             noGit: true, stdout, stderr, TestContext.Current.CancellationToken);
 
         Assert.Equal(0, rc);
-        var json = await File.ReadAllTextAsync(Path.Combine(path, "workspace.json"),
+        var json = await File.ReadAllTextAsync(SafePath.Combine(path, "workspace.json"),
             TestContext.Current.CancellationToken);
         using var doc = JsonDocument.Parse(json);
         // Default accent color from the spec — Indigo 500 / #6366f1.
@@ -274,14 +274,14 @@ public sealed class WorkspaceCommandEdgeCasesTests : IDisposable
         // without padding.
         using var stdout = new StringWriter();
         using var stderr = new StringWriter();
-        var path = Path.Combine(_tempRoot, "ws-trimmed");
+        var path = SafePath.Combine(_tempRoot, "ws-trimmed");
 
         var rc = await WorkspaceCommand.RunInitAsync(path,
             displayName: "   Payments   ", color: "  #22c55e  ",
             noGit: true, stdout, stderr, TestContext.Current.CancellationToken);
 
         Assert.Equal(0, rc);
-        var json = await File.ReadAllTextAsync(Path.Combine(path, "workspace.json"),
+        var json = await File.ReadAllTextAsync(SafePath.Combine(path, "workspace.json"),
             TestContext.Current.CancellationToken);
         using var doc = JsonDocument.Parse(json);
         Assert.Equal("Payments", doc.RootElement.GetProperty("name").GetString());
@@ -320,10 +320,10 @@ public sealed class WorkspaceCommandEdgeCasesTests : IDisposable
         // a file with the same name already exists"). That's the
         // realistic shape of the catch branch — exit 73 + stderr
         // diagnostic, no workspace.json materialised.
-        var blocker = Path.Combine(_tempRoot, "blocker-file");
+        var blocker = SafePath.Combine(_tempRoot, "blocker-file");
         await File.WriteAllTextAsync(blocker, "I am a file, not a dir",
             TestContext.Current.CancellationToken);
-        var wanted = Path.Combine(blocker, "would-be-workspace");
+        var wanted = SafePath.Combine(blocker, "would-be-workspace");
 
         using var stdout = new StringWriter();
         using var stderr = new StringWriter();
@@ -353,8 +353,8 @@ public sealed class WorkspaceCommandEdgeCasesTests : IDisposable
         using var stdout = new StringWriter();
         using var stderr = new StringWriter();
 
-        var a = Path.Combine(_tempRoot, "id-a");
-        var b = Path.Combine(_tempRoot, "id-b");
+        var a = SafePath.Combine(_tempRoot, "id-a");
+        var b = SafePath.Combine(_tempRoot, "id-b");
 
         await WorkspaceCommand.RunInitAsync(a, null, null, noGit: true, stdout, stderr,
             TestContext.Current.CancellationToken);
@@ -362,10 +362,10 @@ public sealed class WorkspaceCommandEdgeCasesTests : IDisposable
             TestContext.Current.CancellationToken);
 
         using var docA = JsonDocument.Parse(
-            await File.ReadAllTextAsync(Path.Combine(a, "workspace.json"),
+            await File.ReadAllTextAsync(SafePath.Combine(a, "workspace.json"),
                 TestContext.Current.CancellationToken));
         using var docB = JsonDocument.Parse(
-            await File.ReadAllTextAsync(Path.Combine(b, "workspace.json"),
+            await File.ReadAllTextAsync(SafePath.Combine(b, "workspace.json"),
                 TestContext.Current.CancellationToken));
 
         var idA = docA.RootElement.GetProperty("id").GetString();
@@ -386,7 +386,7 @@ public sealed class WorkspaceCommandEdgeCasesTests : IDisposable
         // CreateDirectory is a no-op on an existing empty dir;
         // EnumerateFileSystemEntries returns nothing → init proceeds.
         // Exercises the "user pre-created the dir" muscle-memory flow.
-        var path = Path.Combine(_tempRoot, "preexisting-empty");
+        var path = SafePath.Combine(_tempRoot, "preexisting-empty");
         Directory.CreateDirectory(path);
 
         using var stdout = new StringWriter();
@@ -397,7 +397,7 @@ public sealed class WorkspaceCommandEdgeCasesTests : IDisposable
 
         Assert.Equal(0, rc);
         Assert.Empty(stderr.ToString());
-        Assert.True(File.Exists(Path.Combine(path, "workspace.json")));
+        Assert.True(File.Exists(SafePath.Combine(path, "workspace.json")));
     }
 
     [Fact]
@@ -409,7 +409,7 @@ public sealed class WorkspaceCommandEdgeCasesTests : IDisposable
         // ISO-8601 or zeros it out fails this test.
         using var stdout = new StringWriter();
         using var stderr = new StringWriter();
-        var path = Path.Combine(_tempRoot, "ws-timestamp");
+        var path = SafePath.Combine(_tempRoot, "ws-timestamp");
 
         var before = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
         var rc = await WorkspaceCommand.RunInitAsync(path, null, null, noGit: true,
@@ -417,7 +417,7 @@ public sealed class WorkspaceCommandEdgeCasesTests : IDisposable
         var after = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
 
         Assert.Equal(0, rc);
-        var json = await File.ReadAllTextAsync(Path.Combine(path, "workspace.json"),
+        var json = await File.ReadAllTextAsync(SafePath.Combine(path, "workspace.json"),
             TestContext.Current.CancellationToken);
         using var doc = JsonDocument.Parse(json);
         var createdAt = doc.RootElement.GetProperty("createdAt").GetInt64();
@@ -434,12 +434,12 @@ public sealed class WorkspaceCommandEdgeCasesTests : IDisposable
         // workbench's deserialiser, which expects the keys to exist.
         using var stdout = new StringWriter();
         using var stderr = new StringWriter();
-        var path = Path.Combine(_tempRoot, "ws-containers");
+        var path = SafePath.Combine(_tempRoot, "ws-containers");
 
         await WorkspaceCommand.RunInitAsync(path, null, null, noGit: true,
             stdout, stderr, TestContext.Current.CancellationToken);
 
-        var json = await File.ReadAllTextAsync(Path.Combine(path, "workspace.json"),
+        var json = await File.ReadAllTextAsync(SafePath.Combine(path, "workspace.json"),
             TestContext.Current.CancellationToken);
         using var doc = JsonDocument.Parse(json);
         var ids = doc.RootElement.GetProperty("includedEnvironmentIds");
@@ -459,12 +459,12 @@ public sealed class WorkspaceCommandEdgeCasesTests : IDisposable
         // explicit assert the copy can drift silently.
         using var stdout = new StringWriter();
         using var stderr = new StringWriter();
-        var path = Path.Combine(_tempRoot, "ws-banner");
+        var path = SafePath.Combine(_tempRoot, "ws-banner");
 
         await WorkspaceCommand.RunInitAsync(path, null, null, noGit: true,
             stdout, stderr, TestContext.Current.CancellationToken);
 
-        var gitignore = await File.ReadAllTextAsync(Path.Combine(path, ".gitignore"),
+        var gitignore = await File.ReadAllTextAsync(SafePath.Combine(path, ".gitignore"),
             TestContext.Current.CancellationToken);
         Assert.Contains("Phase 1", gitignore);
         Assert.Contains("#151", gitignore);
@@ -493,8 +493,8 @@ public sealed class WorkspaceCommandEdgeCasesTests : IDisposable
                 stdout, stderr, TestContext.Current.CancellationToken);
 
             Assert.Equal(0, rc);
-            var resolved = Path.Combine(_tempRoot, "relative-init");
-            Assert.True(File.Exists(Path.Combine(resolved, "workspace.json")));
+            var resolved = SafePath.Combine(_tempRoot, "relative-init");
+            Assert.True(File.Exists(SafePath.Combine(resolved, "workspace.json")));
             // The diagnostic should print the resolved full path —
             // not the literal "./relative-init" the user typed.
             Assert.Contains(Path.GetFullPath(resolved), stdout.ToString());
