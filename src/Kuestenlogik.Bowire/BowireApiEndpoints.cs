@@ -61,8 +61,13 @@ internal static class BowireApiEndpoints
             // warning on a no-op endpoint.
             if (options.Mode == BowireMode.Embedded && protocol is IBowireProtocolServices setup)
             {
+                // Plugin MapDiscoveryEndpoints calls into 3rd-party
+                // wiring — unbounded failure surface. A single bad plugin
+                // must not abort host startup; log and continue.
+#pragma warning disable CA1031 // Do not catch general exception types
                 try { setup.MapDiscoveryEndpoints(endpoints); }
                 catch (Exception ex)
+#pragma warning restore CA1031
                 {
                     startupLogger.LogWarning(ex,
                         "Protocol plugin {Plugin} failed to map discovery endpoints",

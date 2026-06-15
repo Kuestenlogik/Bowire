@@ -135,8 +135,12 @@ public sealed record MtlsConfig(
             error = null;
             return new MtlsCertificatePair(clientCert, caCert);
         }
-        catch (Exception ex)
+        catch (Exception ex) when (ex is System.Security.Cryptography.CryptographicException or ArgumentException or FormatException or IOException)
         {
+            // PEM/PKCS#12 parsing surface: CryptographicException for
+            // malformed key material or wrong passphrase, ArgumentException
+            // / FormatException for the PEM string format, IOException
+            // for the Windows PKCS#12 round-trip's temp-store backing.
             clientCert?.Dispose();
             caCert?.Dispose();
             error = "mTLS configuration invalid: " + ex.Message;

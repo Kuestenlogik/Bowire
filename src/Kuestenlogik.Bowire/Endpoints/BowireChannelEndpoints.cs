@@ -98,7 +98,12 @@ internal static class BowireChannelEndpoints
                     subProtocol = channel.NegotiatedSubProtocol
                 }, BowireEndpointHelpers.JsonOptions);
             }
+            // Plugin OpenChannelAsync calls into 3rd-party transports
+            // (gRPC, MQTT, SignalR, WebSocket, ...) — failure surface is
+            // unbounded. Report as 502 with exception type for client triage.
+#pragma warning disable CA1031 // Do not catch general exception types
             catch (Exception ex)
+#pragma warning restore CA1031
             {
                 BowireEndpointHelpers.GetLogger(ctx).LogWarning(ex,
                     "Channel open failed for {Protocol} {Service}/{Method} at {ServerUrl}",
@@ -155,7 +160,11 @@ internal static class BowireChannelEndpoints
                 var sent = await channel.SendAsync(body.Message, ctx.RequestAborted);
                 return Results.Json(new { sent, sequence = channel.SentCount }, BowireEndpointHelpers.JsonOptions);
             }
+            // Plugin SendAsync calls into 3rd-party transports —
+            // unbounded failure surface. See open-channel catch above.
+#pragma warning disable CA1031 // Do not catch general exception types
             catch (Exception ex)
+#pragma warning restore CA1031
             {
                 BowireEndpointHelpers.GetLogger(ctx).LogWarning(ex,
                     "Channel send failed for channel {ChannelId}", BowireEndpointHelpers.SafeLog(id));
@@ -245,7 +254,13 @@ internal static class BowireChannelEndpoints
             {
                 // Client disconnected
             }
+            // Plugin ReadResponsesAsync + Response.WriteAsync surface:
+            // unbounded plugin failures + SSE write failures. Logged +
+            // serialised back to the client as an error event before
+            // the stream closes; must absorb literally anything.
+#pragma warning disable CA1031 // Do not catch general exception types
             catch (Exception ex)
+#pragma warning restore CA1031
             {
                 BowireEndpointHelpers.GetLogger(ctx).LogWarning(ex,
                     "Channel response stream failed for channel {ChannelId}", BowireEndpointHelpers.SafeLog(id));

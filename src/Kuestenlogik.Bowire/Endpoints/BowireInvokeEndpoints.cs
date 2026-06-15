@@ -127,7 +127,12 @@ internal static class BowireInvokeEndpoints
                         metadata = httpResult.Metadata
                     }, BowireEndpointHelpers.JsonOptions);
                 }
+                // REST plugin's InvokeHttpAsync surface: HTTP transport
+                // errors, malformed transcoded path, JSON marshaling
+                // failures — plugin-author-defined types possible.
+#pragma warning disable CA1031 // Do not catch general exception types
                 catch (Exception ex)
+#pragma warning restore CA1031
                 {
                     BowireEndpointHelpers.GetLogger(ctx).LogWarning(ex,
                         "Transcoded HTTP invoke failed for {Service}/{Method} at {ServerUrl}",
@@ -220,7 +225,11 @@ internal static class BowireInvokeEndpoints
                     interpretations,
                 }, BowireEndpointHelpers.JsonOptions);
             }
+            // Plugin InvokeAsync surface: 3rd-party transport, plugin-author
+            // defined types possible. See transcoded path above.
+#pragma warning disable CA1031 // Do not catch general exception types
             catch (Exception ex)
+#pragma warning restore CA1031
             {
                 outcome = ex is OperationCanceledException ? "canceled" : "error";
                 activity?.SetStatus(ActivityStatusCode.Error, ex.Message);
@@ -284,8 +293,9 @@ internal static class BowireInvokeEndpoints
                     ? ["{}"]
                     : JsonSerializer.Deserialize<List<string>>(messagesJson, BowireEndpointHelpers.JsonOptions) ?? ["{}"];
             }
-            catch
+            catch (JsonException)
             {
+                // Treat malformed messages query param as "no messages"
                 messages = ["{}"];
             }
 
@@ -296,7 +306,7 @@ internal static class BowireInvokeEndpoints
                 {
                     metadata = JsonSerializer.Deserialize<Dictionary<string, string>>(metadataJson, BowireEndpointHelpers.JsonOptions);
                 }
-                catch
+                catch (JsonException)
                 {
                     // Invalid metadata JSON — ignore and proceed without
                 }
@@ -423,7 +433,11 @@ internal static class BowireInvokeEndpoints
             {
                 // Client disconnected — normal for streaming
             }
+            // Plugin streaming surface + SSE write surface: 3rd-party
+            // transport plus IOException for client disconnect.
+#pragma warning disable CA1031 // Do not catch general exception types
             catch (Exception ex)
+#pragma warning restore CA1031
             {
                 BowireEndpointHelpers.GetLogger(ctx).LogWarning(ex,
                     "Streaming invoke failed for {Protocol} {Service}/{Method} at {ServerUrl}",
