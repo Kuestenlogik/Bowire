@@ -23,7 +23,7 @@ public sealed class TestRunnerTests : IDisposable
 
     public TestRunnerTests()
     {
-        _tempDir = Path.Combine(Path.GetTempPath(), "bowire-tr-" + Guid.NewGuid().ToString("N"));
+        _tempDir = SafePath.Combine(Path.GetTempPath(), "bowire-tr-" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(_tempDir);
     }
 
@@ -56,7 +56,7 @@ public sealed class TestRunnerTests : IDisposable
     [Fact]
     public async Task RunAsync_MissingFile_ReturnsUsageExit()
     {
-        var path = Path.Combine(_tempDir, "absent.json");
+        var path = SafePath.Combine(_tempDir, "absent.json");
         var rc = await TestRunner.RunAsync(new TestCliOptions { CollectionPath = path }, TextWriter.Null, TextWriter.Null);
         Assert.Equal(2, rc);
     }
@@ -64,7 +64,7 @@ public sealed class TestRunnerTests : IDisposable
     [Fact]
     public async Task RunAsync_MalformedJson_ReturnsUsageExit()
     {
-        var path = Path.Combine(_tempDir, "broken.json");
+        var path = SafePath.Combine(_tempDir, "broken.json");
         await File.WriteAllTextAsync(path, "{ this is not json", TestContext.Current.CancellationToken);
         var rc = await TestRunner.RunAsync(new TestCliOptions { CollectionPath = path }, TextWriter.Null, TextWriter.Null);
         Assert.Equal(2, rc);
@@ -73,7 +73,7 @@ public sealed class TestRunnerTests : IDisposable
     [Fact]
     public async Task RunAsync_EmptyTestsArray_ReturnsUsageExit()
     {
-        var path = Path.Combine(_tempDir, "empty.json");
+        var path = SafePath.Combine(_tempDir, "empty.json");
         await File.WriteAllTextAsync(path, """{ "name": "x", "tests": [] }""", TestContext.Current.CancellationToken);
         var rc = await TestRunner.RunAsync(new TestCliOptions { CollectionPath = path }, TextWriter.Null, TextWriter.Null);
         Assert.Equal(2, rc);
@@ -85,7 +85,7 @@ public sealed class TestRunnerTests : IDisposable
         // tests: null deserialises to a null List<TestEntry>, the runner
         // surfaces the same "no tests" diagnostic as an explicit empty
         // array.
-        var path = Path.Combine(_tempDir, "null-tests.json");
+        var path = SafePath.Combine(_tempDir, "null-tests.json");
         await File.WriteAllTextAsync(path, """{ "name": "x", "tests": null }""", TestContext.Current.CancellationToken);
         var rc = await TestRunner.RunAsync(new TestCliOptions { CollectionPath = path }, TextWriter.Null, TextWriter.Null);
         Assert.Equal(2, rc);
@@ -97,7 +97,7 @@ public sealed class TestRunnerTests : IDisposable
         // Test entry has a name + method but no service → RunTestAsync
         // sets result.Error before any protocol call. Whole run is a
         // single failed test → exit 1.
-        var path = Path.Combine(_tempDir, "no-service.json");
+        var path = SafePath.Combine(_tempDir, "no-service.json");
         await File.WriteAllTextAsync(path, """
             {
               "name": "x",
@@ -118,7 +118,7 @@ public sealed class TestRunnerTests : IDisposable
         // "Protocol '...' not registered". Exercises the env merge +
         // ${var} substitution path (both feed into the message
         // pipeline before the protocol check).
-        var path = Path.Combine(_tempDir, "unknown-proto.json");
+        var path = SafePath.Combine(_tempDir, "unknown-proto.json");
         await File.WriteAllTextAsync(path, """
             {
               "name": "env-merge-coverage",
@@ -148,9 +148,9 @@ public sealed class TestRunnerTests : IDisposable
         // Unknown protocol → guaranteed "Protocol not registered" failure
         // (no network race). Verifies both --report and --junit files
         // are written, exercising those branches in RunAsync proper.
-        var coll = Path.Combine(_tempDir, "with-reports.json");
-        var report = Path.Combine(_tempDir, "report.html");
-        var junit = Path.Combine(_tempDir, "junit.xml");
+        var coll = SafePath.Combine(_tempDir, "with-reports.json");
+        var report = SafePath.Combine(_tempDir, "report.html");
+        var junit = SafePath.Combine(_tempDir, "junit.xml");
         await File.WriteAllTextAsync(coll, """
             {
               "name": "rep",
@@ -184,7 +184,7 @@ public sealed class TestRunnerTests : IDisposable
         // Symmetric companion to the missing-service case — only service
         // is set, no method. Hits the same early-return guard via the
         // other half of the predicate.
-        var path = Path.Combine(_tempDir, "no-method.json");
+        var path = SafePath.Combine(_tempDir, "no-method.json");
         await File.WriteAllTextAsync(path, """
             {
               "name": "x",
@@ -205,7 +205,7 @@ public sealed class TestRunnerTests : IDisposable
         // for display + report rendering. We hit that branch via the
         // unknown-protocol error path so the deterministic exit-1 is
         // reached without a network call.
-        var coll = Path.Combine(_tempDir, "no-name.json");
+        var coll = SafePath.Combine(_tempDir, "no-name.json");
         await File.WriteAllTextAsync(coll, """
             {
               "name": "no-name-coll",
@@ -228,7 +228,7 @@ public sealed class TestRunnerTests : IDisposable
         // file used as a parent) → the report write throws, the runner
         // catches and reports "Failed to write report" but keeps going.
         // Exit code still reflects the underlying test outcome.
-        var coll = Path.Combine(_tempDir, "blocked.json");
+        var coll = SafePath.Combine(_tempDir, "blocked.json");
         await File.WriteAllTextAsync(coll, """
             {
               "name": "blocked-report",
@@ -242,10 +242,10 @@ public sealed class TestRunnerTests : IDisposable
 
         // Use a regular file as the "parent" so File.WriteAllTextAsync
         // fails when it tries to create the report under it.
-        var blockingFile = Path.Combine(_tempDir, "as-parent");
+        var blockingFile = SafePath.Combine(_tempDir, "as-parent");
         await File.WriteAllTextAsync(blockingFile, "x", TestContext.Current.CancellationToken);
-        var report = Path.Combine(blockingFile, "report.html");
-        var junit = Path.Combine(blockingFile, "junit.xml");
+        var report = SafePath.Combine(blockingFile, "report.html");
+        var junit = SafePath.Combine(blockingFile, "junit.xml");
 
         var rc = await TestRunner.RunAsync(new TestCliOptions
         {
