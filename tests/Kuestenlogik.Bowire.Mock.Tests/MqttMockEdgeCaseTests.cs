@@ -18,7 +18,7 @@ public sealed class MqttMockEdgeCaseTests : IDisposable
 
     public MqttMockEdgeCaseTests()
     {
-        _tempDir = Path.Combine(Path.GetTempPath(), "bowire-mqtt-edge-" + Guid.NewGuid().ToString("N"));
+        _tempDir = SafePath.Combine(Path.GetTempPath(), "bowire-mqtt-edge-" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(_tempDir);
     }
 
@@ -63,7 +63,7 @@ public sealed class MqttMockEdgeCaseTests : IDisposable
             }
         };
 
-        var path = Path.Combine(_tempDir, "qos.json");
+        var path = SafePath.Combine(_tempDir, "qos.json");
         await File.WriteAllTextAsync(path, JsonSerializer.Serialize(recording), TestContext.Current.CancellationToken);
 
         await using var server = await MockServer.StartAsync(
@@ -156,7 +156,7 @@ public sealed class MqttMockEdgeCaseTests : IDisposable
             }
         };
 
-        var path = Path.Combine(_tempDir, "empty.json");
+        var path = SafePath.Combine(_tempDir, "empty.json");
         await File.WriteAllTextAsync(path, JsonSerializer.Serialize(recording), TestContext.Current.CancellationToken);
 
         await using var server = await MockServer.StartAsync(
@@ -229,7 +229,7 @@ public sealed class MqttMockEdgeCaseTests : IDisposable
             }
         };
 
-        var path = Path.Combine(_tempDir, "corr.json");
+        var path = SafePath.Combine(_tempDir, "corr.json");
         await File.WriteAllTextAsync(path, JsonSerializer.Serialize(recording), TestContext.Current.CancellationToken);
 
         await using var server = await MockServer.StartAsync(
@@ -317,7 +317,7 @@ public sealed class MqttMockEdgeCaseTests : IDisposable
             }
         };
 
-        var path = Path.Combine(_tempDir, "qos-int.json");
+        var path = SafePath.Combine(_tempDir, "qos-int.json");
         await File.WriteAllTextAsync(path, JsonSerializer.Serialize(recording), TestContext.Current.CancellationToken);
 
         await using var server = await MockServer.StartAsync(
@@ -398,7 +398,7 @@ public sealed class MqttMockEdgeCaseTests : IDisposable
             }
         };
 
-        var path = Path.Combine(_tempDir, "silent.json");
+        var path = SafePath.Combine(_tempDir, "silent.json");
         await File.WriteAllTextAsync(path, JsonSerializer.Serialize(recording), TestContext.Current.CancellationToken);
 
         await using var server = await MockServer.StartAsync(
