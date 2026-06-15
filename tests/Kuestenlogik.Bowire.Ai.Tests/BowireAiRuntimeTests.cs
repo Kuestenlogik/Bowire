@@ -33,14 +33,14 @@ public sealed class BowireAiRuntimeTests
     [Fact]
     public void Update_NullNext_Throws()
     {
-        var rt = new BowireAiRuntime(new BowireAiOptions());
+        using var rt = new BowireAiRuntime(new BowireAiOptions());
         Assert.Throws<ArgumentNullException>(() => rt.Update(null!));
     }
 
     [Fact]
     public void Options_ReturnsDefensiveCopy_CallerCannotMutateLive()
     {
-        var rt = new BowireAiRuntime(new BowireAiOptions
+        using var rt = new BowireAiRuntime(new BowireAiOptions
         {
             ProviderId = "ollama",
             Model = "original:1b",
@@ -60,7 +60,7 @@ public sealed class BowireAiRuntimeTests
         // Initial options passed to the ctor are cloned, so the
         // caller's later mutations don't bleed into the runtime.
         var initial = new BowireAiOptions { Model = "before:1b" };
-        var rt = new BowireAiRuntime(initial);
+        using var rt = new BowireAiRuntime(initial);
         initial.Model = "mutated-after-ctor:7b";
 
         Assert.Equal("before:1b", rt.Options.Model);
@@ -72,7 +72,7 @@ public sealed class BowireAiRuntimeTests
         // openai is a Phase 3 provider id — until that lands, unknown
         // provider ids must produce a null client so the host can
         // start (UI renders "no client" state) instead of throwing.
-        var rt = new BowireAiRuntime(new BowireAiOptions { ProviderId = "openai" });
+        using var rt = new BowireAiRuntime(new BowireAiOptions { ProviderId = "openai" });
         Assert.Null(rt.Current);
     }
 
@@ -89,7 +89,7 @@ public sealed class BowireAiRuntimeTests
         // the provider id; pin both supported ids in every case
         // variant so a future ToLowerInvariant refactor doesn't
         // narrow the surface accidentally.
-        var rt = new BowireAiRuntime(new BowireAiOptions
+        using var rt = new BowireAiRuntime(new BowireAiOptions
         {
             ProviderId = providerId,
             Endpoint = "http://localhost:11434",
@@ -107,7 +107,7 @@ public sealed class BowireAiRuntimeTests
     [InlineData("")]
     public void Constructor_NonOllamaShapeProviders_ParkCurrentAtNull(string providerId)
     {
-        var rt = new BowireAiRuntime(new BowireAiOptions { ProviderId = providerId });
+        using var rt = new BowireAiRuntime(new BowireAiOptions { ProviderId = providerId });
         Assert.Null(rt.Current);
     }
 
@@ -117,7 +117,7 @@ public sealed class BowireAiRuntimeTests
         // The build path treats an empty endpoint as "use the
         // provider's local default" rather than failing — this lets
         // a config that only specifies the provider id still come up.
-        var rt = new BowireAiRuntime(new BowireAiOptions
+        using var rt = new BowireAiRuntime(new BowireAiOptions
         {
             ProviderId = "ollama",
             Endpoint = "",
@@ -130,7 +130,7 @@ public sealed class BowireAiRuntimeTests
     [Fact]
     public void Update_ReturnsSnapshot_ThatIsNotTheSameInstanceAsInput()
     {
-        var rt = new BowireAiRuntime(new BowireAiOptions { ProviderId = "ollama" });
+        using var rt = new BowireAiRuntime(new BowireAiOptions { ProviderId = "ollama" });
         var input = new BowireAiOptions
         {
             ProviderId = "ollama",
@@ -149,7 +149,7 @@ public sealed class BowireAiRuntimeTests
     [Fact]
     public void Update_SwapsCurrentClient_BuiltFromNextOptions()
     {
-        var rt = new BowireAiRuntime(new BowireAiOptions { ProviderId = "ollama" });
+        using var rt = new BowireAiRuntime(new BowireAiOptions { ProviderId = "ollama" });
         var first = rt.Current;
         Assert.NotNull(first);
 
@@ -168,7 +168,7 @@ public sealed class BowireAiRuntimeTests
     {
         // ollama → openai swap: the runtime should null the client so
         // MutableChatClient's null-check kicks in on the next call.
-        var rt = new BowireAiRuntime(new BowireAiOptions { ProviderId = "ollama" });
+        using var rt = new BowireAiRuntime(new BowireAiOptions { ProviderId = "ollama" });
         Assert.NotNull(rt.Current);
 
         rt.Update(new BowireAiOptions { ProviderId = "openai" });
@@ -183,7 +183,7 @@ public sealed class BowireAiRuntimeTests
         // The reverse hot-swap: a user lands on Settings → AI, fills
         // in a working ollama endpoint, hits save → the previously
         // null client becomes a live one without a host restart.
-        var rt = new BowireAiRuntime(new BowireAiOptions { ProviderId = "openai" });
+        using var rt = new BowireAiRuntime(new BowireAiOptions { ProviderId = "openai" });
         Assert.Null(rt.Current);
 
         rt.Update(new BowireAiOptions
@@ -209,7 +209,7 @@ public sealed class BowireAiRuntimeTests
         // after the swap. The lifetime contract sits in the BowireAiRuntime
         // source comment; the cross-cutting "no Dispose race" pin sits
         // in BowireAiRuntimeTests's swap test.
-        var rt = new BowireAiRuntime(new BowireAiOptions { ProviderId = "ollama" });
+        using var rt = new BowireAiRuntime(new BowireAiOptions { ProviderId = "ollama" });
 
         for (var i = 0; i < 5; i++)
         {
@@ -231,7 +231,7 @@ public sealed class BowireAiRuntimeTests
         // Update clones the incoming options. The caller can keep
         // mutating their copy without affecting the runtime — same
         // defensive-copy contract as the ctor.
-        var rt = new BowireAiRuntime(new BowireAiOptions { ProviderId = "ollama" });
+        using var rt = new BowireAiRuntime(new BowireAiOptions { ProviderId = "ollama" });
         var next = new BowireAiOptions
         {
             ProviderId = "ollama",

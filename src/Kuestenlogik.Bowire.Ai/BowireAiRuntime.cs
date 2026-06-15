@@ -18,18 +18,32 @@ namespace Kuestenlogik.Bowire.Ai;
 /// against <see cref="Update"/> intentionally — the worst-case is a
 /// single in-flight chat call landing on the previous client, which is
 /// safer than locking the chat path for the duration of a request.
+/// <para>
+/// Implements <see cref="IDisposable"/> so the DI container disposes
+/// the active provider client (and the underlying OllamaSharp
+/// <see cref="OllamaApiClient"/> that owns the HTTP socket pool) on
+/// host shutdown. <see cref="Update"/> already disposes the prior pair
+/// on hot-swap; <see cref="Dispose"/> covers the final shutdown leg.
+/// </para>
 /// </remarks>
-public sealed class BowireAiRuntime
+public sealed class BowireAiRuntime : IDisposable
 {
     private readonly object _lock = new();
     private BowireAiOptions _options;
     private IChatClient? _client;
+    // The raw provider client that backs _client. ChatClientBuilder's
+    // wrapper forwards Dispose, but we keep the inner reference so the
+    // runtime owns the OllamaSharp socket pool's lifetime directly —
+    // documented ownership > implicit forwarding through a third-party
+    // builder. Both get disposed on hot-swap (Update) + shutdown (Dispose).
+    private IDisposable? _innerClient;
+    private bool _disposed;
 
     public BowireAiRuntime(BowireAiOptions initialOptions)
     {
         ArgumentNullException.ThrowIfNull(initialOptions);
         _options = Clone(initialOptions);
-        _client = Build(_options);
+        (_client, _innerClient) = Build(_options);
     }
 
     /// <summary>Snapshot of the current options. Returned copy — callers can't mutate the live record.</summary>
@@ -59,26 +73,52 @@ public sealed class BowireAiRuntime
     {
         ArgumentNullException.ThrowIfNull(next);
         var snapshot = Clone(next);
-        IChatClient? built = Build(snapshot);
-        IChatClient? toDispose;
+        var (builtClient, builtInner) = Build(snapshot);
+        IChatClient? clientToDispose;
+        IDisposable? innerToDispose;
         lock (_lock)
         {
-            toDispose = _client;
+            clientToDispose = _client;
+            innerToDispose = _innerClient;
             _options = snapshot;
-            _client = built;
+            _client = builtClient;
+            _innerClient = builtInner;
         }
-        toDispose?.Dispose();
+        // Dispose the wrapper first; it cooperatively forwards Dispose to
+        // the inner client. Then dispose the inner reference explicitly
+        // in case a future wrapper variant stops forwarding — Dispose is
+        // documented idempotent on OllamaApiClient so the double-call is
+        // a no-op on the second hit.
+        clientToDispose?.Dispose();
+        innerToDispose?.Dispose();
         return Clone(snapshot);
     }
 
-    private static IChatClient? Build(BowireAiOptions opts)
+    public void Dispose()
+    {
+        IChatClient? clientToDispose;
+        IDisposable? innerToDispose;
+        lock (_lock)
+        {
+            if (_disposed) return;
+            _disposed = true;
+            clientToDispose = _client;
+            innerToDispose = _innerClient;
+            _client = null;
+            _innerClient = null;
+        }
+        clientToDispose?.Dispose();
+        innerToDispose?.Dispose();
+    }
+
+    private static (IChatClient? Client, IDisposable? Inner) Build(BowireAiOptions opts)
     {
         // Phase 2 covers Ollama + LM Studio — both speak Ollama's wire
         // shape on the same OllamaSharp client. Phase 3 widens the
         // switch to cloud connectors; until then unknown provider ids
         // produce a null client and /api/ai/chat returns 503 with a
         // "no client" message rather than a confusing dispatch error.
-        if (!IsOllamaShape(opts.ProviderId)) return null;
+        if (!IsOllamaShape(opts.ProviderId)) return (null, null);
         var endpoint = string.IsNullOrEmpty(opts.Endpoint)
             ? "http://localhost:11434"
             : opts.Endpoint;
@@ -90,15 +130,17 @@ public sealed class BowireAiRuntime
         // the result back to the model, and repeats until the model
         // produces final text content.
         //
-        // CA2000 doesn't apply here: ChatClientBuilder transfers ownership
-        // of `inner` to the returned wrapper, which is itself disposed by
-        // Update() when the runtime swaps clients.
-#pragma warning disable CA2000
+        // The runtime holds both the wrapper (returned as _client) and
+        // the raw OllamaApiClient (held as _innerClient) so Dispose +
+        // Update have an explicit handle on the socket-owning resource
+        // rather than relying on ChatClientBuilder to forward Dispose
+        // correctly — that's our IDisposable contract pinning #25's
+        // "no socket pool leak across Settings-UI saves" requirement.
         var inner = new OllamaApiClient(new Uri(endpoint), opts.Model);
-#pragma warning restore CA2000
-        return new ChatClientBuilder(inner)
+        var client = new ChatClientBuilder(inner)
             .UseFunctionInvocation()
             .Build();
+        return (client, inner);
     }
 
     private static bool IsOllamaShape(string providerId) =>

@@ -36,7 +36,7 @@ public sealed class MutableChatClientTests
         // surface a discoverable "Bowire AI: ..." error so the
         // Settings UI can render its "no client" affordance instead
         // of bubbling an opaque NullReferenceException.
-        var rt = new BowireAiRuntime(new BowireAiOptions { ProviderId = "openai" });
+        using var rt = new BowireAiRuntime(new BowireAiOptions { ProviderId = "openai" });
         using var proxy = new MutableChatClient(rt);
 
         var ex = Assert.Throws<InvalidOperationException>(() =>
@@ -53,7 +53,7 @@ public sealed class MutableChatClientTests
         // separately because IAsyncEnumerable surfaces the exception
         // on enumeration, not on the call. The proxy throws
         // synchronously before returning the enumerable.
-        var rt = new BowireAiRuntime(new BowireAiOptions { ProviderId = "openai" });
+        using var rt = new BowireAiRuntime(new BowireAiOptions { ProviderId = "openai" });
         using var proxy = new MutableChatClient(rt);
 
         var ex = Assert.Throws<InvalidOperationException>(() =>
@@ -70,7 +70,7 @@ public sealed class MutableChatClientTests
         // OllamaSharp client wrapper that would try to hit localhost on
         // first call. Swap the inner client via Update() to a stub we
         // can observe; the proxy must dispatch to the new instance.
-        var rt = new BowireAiRuntime(new BowireAiOptions { ProviderId = "ollama" });
+        using var rt = new BowireAiRuntime(new BowireAiOptions { ProviderId = "ollama" });
 
         // Override the runtime's inner client by injecting a stub
         // directly. Update() rebuilds the client from options; we
@@ -81,7 +81,7 @@ public sealed class MutableChatClientTests
         // The cleanest path is to use a StubRuntime + StubChatClient
         // together — both seams the production code already trusts.
         var stub = new StubChatClient("from-stub");
-        var stubRuntime = new StubRuntime(stub);
+        using var stubRuntime = new StubRuntime(stub);
         using var proxy = new MutableChatClient(stubRuntime);
 
         var resp = await proxy.GetResponseAsync(
@@ -98,7 +98,7 @@ public sealed class MutableChatClientTests
     public async Task GetResponseAsync_Forwards_ChatOptions()
     {
         var stub = new StubChatClient("ok");
-        var stubRuntime = new StubRuntime(stub);
+        using var stubRuntime = new StubRuntime(stub);
         using var proxy = new MutableChatClient(stubRuntime);
 
         var opts = new ChatOptions { ModelId = "qwen2.5:7b" };
@@ -114,7 +114,7 @@ public sealed class MutableChatClientTests
     public async Task GetStreamingResponseAsync_Forwards_And_Enumerates()
     {
         var stub = new StubChatClient("streamed");
-        var stubRuntime = new StubRuntime(stub);
+        using var stubRuntime = new StubRuntime(stub);
         using var proxy = new MutableChatClient(stubRuntime);
 
         var updates = new List<ChatResponseUpdate>();
@@ -138,7 +138,7 @@ public sealed class MutableChatClientTests
         // one didn't).
         using var first = new StubChatClient("first");
         using var second = new StubChatClient("second");
-        var stubRuntime = new StubRuntime(first);
+        using var stubRuntime = new StubRuntime(first);
         using var proxy = new MutableChatClient(stubRuntime);
 
         var r1 = await proxy.GetResponseAsync(
@@ -167,7 +167,7 @@ public sealed class MutableChatClientTests
         {
             ServiceFor = (t, _) => t == typeof(string) ? "from-stub-service" : null,
         };
-        var stubRuntime = new StubRuntime(stub);
+        using var stubRuntime = new StubRuntime(stub);
         using var proxy = new MutableChatClient(stubRuntime);
 
         Assert.Equal("from-stub-service", proxy.GetService(typeof(string)));
@@ -177,7 +177,7 @@ public sealed class MutableChatClientTests
     [Fact]
     public void GetService_ReturnsNull_WhenRuntimeHasNoClient()
     {
-        var rt = new BowireAiRuntime(new BowireAiOptions { ProviderId = "openai" });
+        using var rt = new BowireAiRuntime(new BowireAiOptions { ProviderId = "openai" });
         using var proxy = new MutableChatClient(rt);
 
         Assert.Null(proxy.GetService(typeof(string)));
@@ -192,7 +192,7 @@ public sealed class MutableChatClientTests
         // proxy twice + invoking the proxy after dispose must still
         // dispatch to the inner.
         var stub = new StubChatClient("alive");
-        var stubRuntime = new StubRuntime(stub);
+        using var stubRuntime = new StubRuntime(stub);
         var proxy = new MutableChatClient(stubRuntime);
 
         proxy.Dispose();
@@ -244,7 +244,7 @@ public sealed class MutableChatClientTests
     /// but reflection assigns it directly. Wrapping that here so the
     /// tests above stay readable.
     /// </summary>
-    private sealed class StubRuntime
+    private sealed class StubRuntime : IDisposable
     {
         private readonly BowireAiRuntime _real;
         private IChatClient _current;
@@ -267,6 +267,8 @@ public sealed class MutableChatClientTests
         public IChatClient Current => _current;
 
         public static implicit operator BowireAiRuntime(StubRuntime stub) => stub._real;
+
+        public void Dispose() => _real.Dispose();
 
         private static void ReplaceRuntimeClient(BowireAiRuntime rt, IChatClient client)
         {
