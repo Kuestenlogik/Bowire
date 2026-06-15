@@ -550,7 +550,7 @@ public sealed class BowireRestProtocolEndToEndTests
 
         try
         {
-            var protocol = new BowireRestProtocol();
+            using var protocol = new BowireRestProtocol();
             var services = await protocol.DiscoverAsync(
                 url + "/swagger/v1/swagger.json", showInternalServices: false, TestContext.Current.CancellationToken);
 
@@ -629,7 +629,7 @@ public sealed class BowireRestProtocolEndToEndTests
 
         try
         {
-            var protocol = new BowireRestProtocol();
+            using var protocol = new BowireRestProtocol();
             var result = await protocol.InvokeAsync(
                 serverUrl: url,
                 service: "Anything",
@@ -671,7 +671,7 @@ public sealed class BowireRestProtocolEndToEndTests
                     new Microsoft.Extensions.Configuration.ConfigurationBuilder().Build())
                 .BuildServiceProvider();
 
-            var protocol = new BowireRestProtocol();
+            using var protocol = new BowireRestProtocol();
             protocol.Initialize(sp);
 
             // No throw + DiscoverAsync still works with the new HttpClient.
@@ -741,7 +741,7 @@ public sealed class BowireRestProtocolEndToEndTests
         OpenApiUploadStore.Add(uploaded, "uploaded.json");
         try
         {
-            var protocol = new BowireRestProtocol();
+            using var protocol = new BowireRestProtocol();
             var services = await protocol.DiscoverAsync(
                 url + "/openapi.json", showInternalServices: false, TestContext.Current.CancellationToken);
 
@@ -775,7 +775,7 @@ public sealed class BowireRestProtocolEndToEndTests
 
         try
         {
-            var protocol = new BowireRestProtocol();
+            using var protocol = new BowireRestProtocol();
             var services = await protocol.DiscoverAsync(
                 url + "/openapi.json",
                 showInternalServices: false,
