@@ -347,8 +347,18 @@ internal static class TestRunner
         var actualText = FormatActual(actual);
         var expectedText = expected.ToString() ?? string.Empty;
 
-        // Numeric coercion
-        if (TryNumber(actual, out var a) && TryNumber(expected, out var e)) return a == e;
+        // Numeric coercion — precision-tolerant compare. Both sides
+        // come from arbitrary user-supplied JSON / spec strings, so a
+        // value like 0.1 + 0.2 vs 0.3 must still match the operator's
+        // "loose equals" intent. Uses a hybrid absolute+relative
+        // epsilon so integer-valued doubles and tiny fractional ones
+        // both fall in tolerance (closes cs/equality-on-floats).
+        if (TryNumber(actual, out var a) && TryNumber(expected, out var e))
+        {
+            var diff = Math.Abs(a - e);
+            var scale = Math.Max(Math.Abs(a), Math.Abs(e));
+            return diff <= Math.Max(1e-9, scale * 1e-9);
+        }
 
         // Boolean coercion
         if (string.Equals(expectedText, "true", StringComparison.OrdinalIgnoreCase)
