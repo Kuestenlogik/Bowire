@@ -142,11 +142,14 @@ internal static class ExportCommand
         }
 
         List<BowireServiceInfo> services;
+        // Plugin DiscoverAsync: 3rd-party transport surface.
+#pragma warning disable CA1031 // Do not catch general exception types
         try
         {
             services = await protocol.DiscoverAsync(url, showInternalServices: true, ct).ConfigureAwait(false);
         }
         catch (Exception ex)
+#pragma warning restore CA1031
         {
             await errW.WriteLineAsync($"Discovery failed for {url}: {ex.Message}").ConfigureAwait(false);
             return 1;
@@ -195,11 +198,14 @@ internal static class ExportCommand
         }
 
         List<BowireServiceInfo> services;
+        // Plugin DiscoverAsync: 3rd-party transport surface.
+#pragma warning disable CA1031 // Do not catch general exception types
         try
         {
             services = await protocol.DiscoverAsync(url, showInternalServices: true, ct).ConfigureAwait(false);
         }
         catch (Exception ex)
+#pragma warning restore CA1031
         {
             await errW.WriteLineAsync($"Discovery failed for {url}: {ex.Message}").ConfigureAwait(false);
             return 1;
@@ -267,10 +273,11 @@ internal static class ExportCommand
             // Bare-recording shape:
             return JsonSerializer.Deserialize<BowireRecording>(text);
         }
-        catch (Exception)
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException or InvalidOperationException or NotSupportedException)
         {
             // Bad recording file shouldn't kill the export — the
             // coverage block is informational, not required.
+            _ = ex;
             return null;
         }
     }

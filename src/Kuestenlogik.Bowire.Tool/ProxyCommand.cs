@@ -59,7 +59,7 @@ internal static class ProxyCommand
             {
                 ca = BowireProxyCertificateAuthority.LoadOrCreate(options.CaDir);
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or System.Security.Cryptography.CryptographicException)
             {
                 await io.Err.WriteLineAsync($"bowire proxy: could not initialise CA: {ex.Message}").ConfigureAwait(false);
                 return 1;
@@ -72,7 +72,7 @@ internal static class ProxyCommand
         {
             await proxy.StartAsync(cancellationToken).ConfigureAwait(false);
         }
-        catch (Exception ex)
+        catch (Exception ex) when (ex is System.Net.Sockets.SocketException or IOException or InvalidOperationException)
         {
             await io.Err.WriteLineAsync($"bowire proxy: could not bind proxy port {options.Port}: {ex.Message}").ConfigureAwait(false);
             ca?.Dispose();
@@ -96,7 +96,7 @@ internal static class ProxyCommand
         {
             await api.StartAsync(cancellationToken).ConfigureAwait(false);
         }
-        catch (Exception ex)
+        catch (Exception ex) when (ex is System.Net.Sockets.SocketException or IOException or InvalidOperationException)
         {
             await io.Err.WriteLineAsync($"bowire proxy: could not bind workbench-API port {options.ApiPort}: {ex.Message}").ConfigureAwait(false);
             await proxy.StopAsync(CancellationToken.None).ConfigureAwait(false);

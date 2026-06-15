@@ -69,7 +69,7 @@ internal static class TestRunner
             var json = await File.ReadAllTextAsync(cli.CollectionPath);
             collection = JsonSerializer.Deserialize<TestCollection>(json, JsonOptions);
         }
-        catch (Exception ex)
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException or NotSupportedException)
         {
             await WriteErrorAsync(stderr, $"Failed to parse collection: {ex.Message}").ConfigureAwait(false);
             return 2;
@@ -142,7 +142,7 @@ internal static class TestRunner
                 await stdout.WriteLineAsync($"  HTML report written to {cli.ReportPath}").ConfigureAwait(false);
                 await stdout.WriteLineAsync().ConfigureAwait(false);
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or NotSupportedException or PathTooLongException)
             {
                 await WriteErrorAsync(stderr, $"Failed to write report: {ex.Message}").ConfigureAwait(false);
             }
@@ -156,7 +156,7 @@ internal static class TestRunner
                 await stdout.WriteLineAsync($"  JUnit XML written to {cli.JUnitPath}").ConfigureAwait(false);
                 await stdout.WriteLineAsync().ConfigureAwait(false);
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or NotSupportedException or PathTooLongException)
             {
                 await WriteErrorAsync(stderr, $"Failed to write JUnit report: {ex.Message}").ConfigureAwait(false);
             }
@@ -208,11 +208,15 @@ internal static class TestRunner
         }
 
         // Discover services so the plugin's internal cache is primed
+        // Plugin DiscoverAsync: 3rd-party transport; report failure +
+        // continue to next test rather than aborting the run.
+#pragma warning disable CA1031 // Do not catch general exception types
         try
         {
             await protocol.DiscoverAsync(serverUrl, showInternalServices: false);
         }
         catch (Exception ex)
+#pragma warning restore CA1031
         {
             result.Error = $"Discovery failed: {ex.Message}";
             return result;
@@ -221,11 +225,14 @@ internal static class TestRunner
         // Invoke
         var sw = Stopwatch.StartNew();
         InvokeResult? invocation;
+        // Plugin InvokeAsync: 3rd-party transport surface as above.
+#pragma warning disable CA1031 // Do not catch general exception types
         try
         {
             invocation = await protocol.InvokeAsync(serverUrl, test.Service, test.Method, messages, false, metadata);
         }
         catch (Exception ex)
+#pragma warning restore CA1031
         {
             sw.Stop();
             result.DurationMs = sw.ElapsedMilliseconds;
@@ -307,8 +314,12 @@ internal static class TestRunner
                 _           => false
             };
         }
-        catch (Exception ex)
+        catch (Exception ex) when (ex is FormatException or ArgumentException or System.Text.RegularExpressions.RegexMatchTimeoutException or InvalidCastException or InvalidOperationException)
         {
+            // Assertion-evaluation surface: regex compile (ArgumentException
+            // / RegexMatchTimeoutException), number conversion (FormatException),
+            // type coercion (InvalidCastException / InvalidOperationException
+            // from JsonNode access).
             rendered.Passed = false;
             rendered.Error = ex.Message;
         }

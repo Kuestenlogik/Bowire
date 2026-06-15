@@ -160,7 +160,11 @@ internal static class MockCommand
         {
             return 0;
         }
+        // Mock host run: WebApplication build + plugin transport starts —
+        // unbounded failure surface. CLI semantics: report + exit 1.
+#pragma warning disable CA1031 // Do not catch general exception types
         catch (Exception ex)
+#pragma warning restore CA1031
         {
             await io.Err.WriteLineAsync("bowire mock: " + ex.Message).ConfigureAwait(false);
             return 1;
