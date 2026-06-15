@@ -2300,7 +2300,14 @@
     let envManagerTab = 'env';        // 'env' or 'global'
     let envManagerDiffTargetId = null; // when set, the right panel shows a diff
                                        // against this env instead of the editor
-    let envEditorTab = 'variables';    // 'variables' | 'auth' | 'compare'
+    let envEditorTab = 'variables';    // 'variables' | 'secrets' | 'auth' | 'compare'
+    // Active tab inside the workspace settings pane. Mirrors the env
+    // editor's tab idiom so the two settings surfaces share one shape:
+    // General (name + color + description + danger zone + …), Variables
+    // (workspace-scope `{{vars}}`), Secrets (workspace-scope
+    // `{{secret.X}}`). Module-scoped so a render() preserves the
+    // active tab across re-renders.
+    let workspaceSettingsTab = 'general'; // 'general' | 'variables' | 'secrets'
 
     // ---- Recordings State ----
     // A recording is a named, ordered sequence of captured invocations that
