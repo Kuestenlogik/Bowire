@@ -1214,6 +1214,37 @@
         persistWorkspaces();
     }
 
+    // #196 Phase 2.3 — per-workspace storage root override. When set
+    // (typically by the operator pointing the workspace at a checked-
+    // out git folder), backend stores resolve under it via
+    // BowireUserContext.GetWorkspacePath(workspaceId, storageRoot, …)
+    // instead of the legacy ~/.bowire/workspaces/<id>/ layout. Only
+    // meaningful for storage === 'disk'; the value is persisted but
+    // ignored for 'browser-only'. Empty string clears the override.
+    function getWorkspaceStorageRoot(ws) {
+        var target = ws || (typeof activeWorkspace === 'function' ? activeWorkspace() : null);
+        if (!target) return null;
+        var raw = target.storageRoot;
+        if (typeof raw !== 'string') return null;
+        var trimmed = raw.trim();
+        return trimmed.length > 0 ? trimmed : null;
+    }
+    function setWorkspaceStorageRoot(id, path) {
+        var ws = workspaces.find(function (w) { return w.id === id; });
+        if (!ws) return;
+        var trimmed = (typeof path === 'string') ? path.trim() : '';
+        if (trimmed.length === 0) {
+            // Clear → drop the field so the workspace JSON stays clean
+            // for installs that never opted in. delete is fine on a
+            // plain workspace object; persistWorkspaces serialises
+            // whatever shape is left.
+            delete ws.storageRoot;
+        } else {
+            ws.storageRoot = trimmed;
+        }
+        persistWorkspaces();
+    }
+
     // Back-compat aliases — recording.js + any other caller still
     // imports these names. Both delegate to the workspace-level
     // helpers. Drop these once every call site has migrated.
