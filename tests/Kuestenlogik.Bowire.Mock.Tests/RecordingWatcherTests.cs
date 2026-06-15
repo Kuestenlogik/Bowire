@@ -63,7 +63,7 @@ public sealed class RecordingWatcherTests : IDisposable
         using var watcher = new RecordingWatcher(
             path,
             select: null,
-            onReload: r => { updates.Add(r); fired.TrySetResult(r); },
+            onReload: r => { lock (updates) updates.Add(r); fired.TrySetResult(r); },
             logger: null,
             debounce: TimeSpan.FromMilliseconds(50));
 
@@ -76,6 +76,15 @@ public sealed class RecordingWatcherTests : IDisposable
         var reload = await fired.Task.WaitAsync(TimeSpan.FromSeconds(5), TestContext.Current.CancellationToken);
         Assert.Single(reload.Steps);
         Assert.Equal("second", reload.Steps[0].Response);
+
+        // Pin the at-least-one-invocation guarantee from the updates
+        // list too — closes cs/unused-collection and asserts the
+        // callback actually appended on the same invocation that
+        // completed `fired`.
+        List<BowireRecording> snapshot;
+        lock (updates) snapshot = [.. updates];
+        Assert.NotEmpty(snapshot);
+        Assert.Same(reload, snapshot[^1]);
     }
 
     [Fact]
