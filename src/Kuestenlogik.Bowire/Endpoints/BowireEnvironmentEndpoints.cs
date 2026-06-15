@@ -28,7 +28,8 @@ internal static class BowireEnvironmentEndpoints
 
         endpoints.MapPut($"{basePath}/api/environments", async (HttpContext ctx) =>
         {
-            var json = await new StreamReader(ctx.Request.Body).ReadToEndAsync(ctx.RequestAborted);
+            using var reader = new StreamReader(ctx.Request.Body);
+            var json = await reader.ReadToEndAsync(ctx.RequestAborted);
             try
             {
                 EnvironmentStore.Save(json);

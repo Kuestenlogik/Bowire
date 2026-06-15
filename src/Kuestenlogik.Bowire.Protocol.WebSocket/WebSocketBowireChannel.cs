@@ -187,7 +187,7 @@ internal sealed class WebSocketBowireChannel : IBowireChannel
     private async Task ReceiveLoopAsync()
     {
         var buffer = new byte[16 * 1024];
-        var ms = new MemoryStream();
+        using var ms = new MemoryStream();
         var token = _cts.Token;
 
         try

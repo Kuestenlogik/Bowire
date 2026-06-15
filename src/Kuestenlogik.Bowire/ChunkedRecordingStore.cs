@@ -75,8 +75,33 @@ internal static class ChunkedRecordingStore
     /// the legacy root applies — that path is still used by hosts that
     /// haven't adopted workspaces yet.
     /// </summary>
-    internal static string ResolveRootPath(string? workspaceId)
+    /// <remarks>
+    /// #196 Phase 2.3 — when <paramref name="storageRoot"/> is set on
+    /// the workspace (operator pointed it at a checked-out git folder),
+    /// recordings live under <c>&lt;storageRoot&gt;/recordings/</c>
+    /// instead of the per-user folder. Routed through
+    /// <see cref="BowireUserContext.GetWorkspacePath"/> so the resolver
+    /// owns the policy in one place.
+    /// </remarks>
+    internal static string ResolveRootPath(string? workspaceId, string? storageRoot = null)
     {
+        // Workspace-scoped path with an explicit storageRoot: anchor
+        // under the operator's checked-out folder. The test root
+        // override stays disabled here — once an operator has pointed
+        // the workspace at a real path, smuggling a test override
+        // would land bytes outside that path, which is exactly the
+        // surprise the override is meant to prevent.
+        if (!string.IsNullOrWhiteSpace(storageRoot))
+        {
+            // GetWorkspacePath ignores the workspaceId segment when
+            // storageRoot is present, which is the contract we want
+            // here (the storageRoot already identifies the workspace
+            // on disk via its folder).
+            return BowireUserContext.GetWorkspacePath(
+                workspaceId: workspaceId ?? string.Empty,
+                storageRoot: storageRoot,
+                relativePath: "recordings");
+        }
         if (string.IsNullOrWhiteSpace(workspaceId)) return RootPath;
         var sanitised = SanitiseId(workspaceId!);
         if (string.IsNullOrEmpty(sanitised)) return RootPath;
@@ -98,14 +123,14 @@ internal static class ChunkedRecordingStore
     /// frontend already consumes. Returns an empty shape when no
     /// recordings exist or the directory is unreadable.
     /// </summary>
-    public static string LoadAll(string? workspaceId = null, bool manifestOnly = false)
+    public static string LoadAll(string? workspaceId = null, bool manifestOnly = false, string? storageRoot = null)
     {
         lock (DiskLock)
         {
             MigrateFromLegacyIfNeeded();
             try
             {
-                var root = ResolveRootPath(workspaceId);
+                var root = ResolveRootPath(workspaceId, storageRoot);
                 var recordings = new List<JsonElement>();
                 if (Directory.Exists(root))
                 {
@@ -157,7 +182,7 @@ internal static class ChunkedRecordingStore
     /// document are removed from disk so the operator's UI delete
     /// propagates.
     /// </summary>
-    public static void SaveAll(string json, string? workspaceId = null)
+    public static void SaveAll(string json, string? workspaceId = null, string? storageRoot = null)
     {
         lock (DiskLock)
         {
@@ -168,7 +193,7 @@ internal static class ChunkedRecordingStore
                 throw new JsonException("Top-level object must carry a 'recordings' array.");
             }
 
-            var rootPath = ResolveRootPath(workspaceId);
+            var rootPath = ResolveRootPath(workspaceId, storageRoot);
             Directory.CreateDirectory(rootPath);
             var seenIds = new HashSet<string>(StringComparer.Ordinal);
 
@@ -202,11 +227,11 @@ internal static class ChunkedRecordingStore
     /// Convenience wrapper for the wire-compat <c>DELETE /api/recordings</c>
     /// — wipes every recording from disk.
     /// </summary>
-    public static void DeleteAll(string? workspaceId = null)
+    public static void DeleteAll(string? workspaceId = null, string? storageRoot = null)
     {
         lock (DiskLock)
         {
-            var root = ResolveRootPath(workspaceId);
+            var root = ResolveRootPath(workspaceId, storageRoot);
             if (!Directory.Exists(root)) return;
             foreach (var dir in Directory.EnumerateDirectories(root))
             {
@@ -222,7 +247,7 @@ internal static class ChunkedRecordingStore
     /// the top-level fields when that happens. Used by capture so a
     /// single step write doesn't have to round-trip the whole document.
     /// </summary>
-    public static int AppendStep(string recordingId, JsonObject step, JsonObject? recordingMetadata, string? workspaceId = null)
+    public static int AppendStep(string recordingId, JsonObject step, JsonObject? recordingMetadata, string? workspaceId = null, string? storageRoot = null)
     {
         ArgumentException.ThrowIfNullOrEmpty(recordingId);
         ArgumentNullException.ThrowIfNull(step);
@@ -233,7 +258,7 @@ internal static class ChunkedRecordingStore
         lock (DiskLock)
         {
             MigrateFromLegacyIfNeeded();
-            var rootPath = ResolveRootPath(workspaceId);
+            var rootPath = ResolveRootPath(workspaceId, storageRoot);
             var dir = Path.Combine(rootPath, id);
             Directory.CreateDirectory(dir);
             var stepsDir = Path.Combine(dir, StepsDirectory);
@@ -320,14 +345,14 @@ internal static class ChunkedRecordingStore
     /// into a specific step. Returns null when the recording doesn't
     /// exist.
     /// </summary>
-    public static string? LoadManifest(string recordingId, string? workspaceId = null)
+    public static string? LoadManifest(string recordingId, string? workspaceId = null, string? storageRoot = null)
     {
         ArgumentException.ThrowIfNullOrEmpty(recordingId);
         var id = SanitiseId(recordingId);
         if (string.IsNullOrEmpty(id)) return null;
         lock (DiskLock)
         {
-            var path = Path.Combine(ResolveRootPath(workspaceId), id, RecordingMetadataFile);
+            var path = Path.Combine(ResolveRootPath(workspaceId, storageRoot), id, RecordingMetadataFile);
             if (!File.Exists(path)) return null;
             return File.ReadAllText(path);
         }
@@ -339,7 +364,7 @@ internal static class ChunkedRecordingStore
     /// detail view + streaming replay. Returns null when the step
     /// file doesn't exist or can't be parsed.
     /// </summary>
-    public static string? LoadStep(string recordingId, int stepIndex, string? workspaceId = null)
+    public static string? LoadStep(string recordingId, int stepIndex, string? workspaceId = null, string? storageRoot = null)
     {
         ArgumentException.ThrowIfNullOrEmpty(recordingId);
         if (stepIndex < 0) return null;
@@ -347,7 +372,7 @@ internal static class ChunkedRecordingStore
         if (string.IsNullOrEmpty(id)) return null;
         lock (DiskLock)
         {
-            var rootPath = ResolveRootPath(workspaceId);
+            var rootPath = ResolveRootPath(workspaceId, storageRoot);
             var stepPath = Path.Combine(rootPath, id, StepsDirectory, $"{stepIndex:D4}.json");
             if (!File.Exists(stepPath)) return null;
             JsonNode? stepNode;

@@ -29,8 +29,8 @@ internal static class BowireCollectionEndpoints
 
         endpoints.MapPut($"{basePath}/api/collections", async (HttpContext ctx) =>
         {
-            var json = await new StreamReader(ctx.Request.Body)
-                .ReadToEndAsync(ctx.RequestAborted);
+            using var reader = new StreamReader(ctx.Request.Body);
+            var json = await reader.ReadToEndAsync(ctx.RequestAborted);
             try
             {
                 CollectionStore.Save(json);

@@ -86,7 +86,8 @@ internal static partial class BowireWorkspaceEndpoints
 
         endpoints.MapPut($"{basePath}/api/workspace", async (HttpContext ctx) =>
         {
-            var body = await new StreamReader(ctx.Request.Body).ReadToEndAsync();
+            using var reader = new StreamReader(ctx.Request.Body);
+            var body = await reader.ReadToEndAsync(ctx.RequestAborted);
             try
             {
                 var ws = JsonSerializer.Deserialize<WorkspaceFile>(body, JsonOpts);

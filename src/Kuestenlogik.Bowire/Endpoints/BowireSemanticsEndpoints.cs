@@ -340,9 +340,8 @@ internal static class BowireSemanticsEndpoints
             using var stream = EmbeddedExtensionAsset.OpenRead(assembly, ext, resourceName);
             if (stream is null) return Results.NotFound();
 
-            var ms = new MemoryStream();
+            using var ms = new MemoryStream();
             stream.CopyTo(ms);
-            ms.Position = 0;
             return Results.File(
                 fileContents: ms.ToArray(),
                 contentType: EmbeddedExtensionAsset.GuessContentType(name));
