@@ -501,10 +501,9 @@ internal sealed class ConnectInvoker : IDisposable
             }
         }, ct);
 
-        HttpResponseMessage? resp = null;
         try
         {
-            resp = await _http.SendAsync(req, HttpCompletionOption.ResponseHeadersRead, ct)
+            using var resp = await _http.SendAsync(req, HttpCompletionOption.ResponseHeadersRead, ct)
                 .ConfigureAwait(false);
 
             if (!resp.IsSuccessStatusCode)
@@ -533,11 +532,12 @@ internal sealed class ConnectInvoker : IDisposable
         }
         finally
         {
-            resp?.Dispose();
-            // The producer is normally already done by the time we get
-            // here (it completed alongside the response). Await it so
-            // any exception inside the producer surfaces — the pipe
-            // writer would otherwise swallow it silently.
+            // resp is disposed by the using-declaration above at try-block
+            // exit (normal, yield-break, or exception). The producer is
+            // normally already done by the time we get here (it completed
+            // alongside the response). Await it so any exception inside
+            // the producer surfaces — the pipe writer would otherwise
+            // swallow it silently.
             try { await producer.ConfigureAwait(false); }
             catch (OperationCanceledException) { /* expected on caller-cancel */ }
         }
