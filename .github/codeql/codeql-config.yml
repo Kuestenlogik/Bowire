@@ -8,6 +8,18 @@
 
 name: "Bowire CodeQL config"
 
+# Default init queries only the security suite — the code-quality
+# suite (which surfaces findings like unused usings, dead code,
+# useless casts, etc. — `cs/useless-using-directive` &c) is NOT
+# included unless we explicitly ask for it. Without this line our
+# pushed Advanced-Setup workflow misses everything GitHub's managed
+# "Code Quality" category would have surfaced, with no fallback
+# anywhere — alerts neither in Security → Code scanning nor in PR
+# annotations. `security-and-quality` is the standard combined
+# suite that covers both.
+queries:
+  - uses: security-and-quality
+
 # These two files are build-time fragments for a concatenated JS
 # bundle, not standalone scripts:
 #
