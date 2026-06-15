@@ -168,7 +168,7 @@ public sealed class PulsarDiscoveryHttpFakeTests
         // The plugin defaults to namespaces="public/default" via
         // the Settings list — DiscoverAsync must read that default
         // through GetSetting and pass it to ListTopicsAsync.
-        var plugin = new BowirePulsarProtocol();
+        using var plugin = new BowirePulsarProtocol();
         var calls = new List<string>();
         // `using` so an assertion-throw between SwapHttp and the
         // trailing Dispose still releases the fake HttpClient handle
@@ -199,7 +199,7 @@ public sealed class PulsarDiscoveryHttpFakeTests
         // resolver keeps the non-default port for the admin base.
         // Pin that the discovery request lands on the same port the
         // user supplied — not the 8080 default.
-        var plugin = new BowirePulsarProtocol();
+        using var plugin = new BowirePulsarProtocol();
         var calls = new List<string>();
         // `using` for the same reason as DiscoverAsync_DefaultNamespaceSetting…
         // — assertion-throw between SwapHttp and the trailing Dispose
@@ -276,7 +276,7 @@ public sealed class PulsarDiscoveryHttpFakeTests
         // "subscribeFromLatest" defaults to bool true → ToString()
         // gives "True" (the case the stream uses for the
         // OrdinalIgnoreCase compare in InvokeStreamAsync).
-        var plugin = new BowirePulsarProtocol();
+        using var plugin = new BowirePulsarProtocol();
         var val = InvokePrivateString(plugin, "GetSetting", "subscribeFromLatest", "fallback-not-used");
         Assert.Equal("True", val);
     }
@@ -284,7 +284,7 @@ public sealed class PulsarDiscoveryHttpFakeTests
     [Fact]
     public void GetSetting_UnknownKey_FallsBackToProvidedDefault()
     {
-        var plugin = new BowirePulsarProtocol();
+        using var plugin = new BowirePulsarProtocol();
         var val = InvokePrivateString(plugin, "GetSetting", "missing-key", "fb");
         Assert.Equal("fb", val);
     }
@@ -295,7 +295,7 @@ public sealed class PulsarDiscoveryHttpFakeTests
         // The default GetSetting("namespaces", "...") result drives
         // ParseNamespaces — make sure the round-trip yields the
         // single public/default entry the workbench expects.
-        var plugin = new BowirePulsarProtocol();
+        using var plugin = new BowirePulsarProtocol();
         var val = InvokePrivateString(plugin, "GetSetting", "namespaces", "fb");
         Assert.Equal("public/default", val);
         Assert.Equal(["public/default"], BowirePulsarProtocol.ParseNamespaces(val));
@@ -309,7 +309,7 @@ public sealed class PulsarDiscoveryHttpFakeTests
         // The router-error envelope must be self-consistent: Response
         // null, Status carries the error, Metadata empty, Duration
         // zero (timer hasn't started yet).
-        var plugin = new BowirePulsarProtocol();
+        using var plugin = new BowirePulsarProtocol();
         var r = await plugin.InvokeAsync(
             "pulsar://localhost:6650",
             service: "x",
@@ -330,7 +330,7 @@ public sealed class PulsarDiscoveryHttpFakeTests
     public async Task InvokeAsync_InvalidUrl_ZeroDurationAndEmptyMetadata()
     {
         // Same self-consistency check on the URL-error envelope.
-        var plugin = new BowirePulsarProtocol();
+        using var plugin = new BowirePulsarProtocol();
         var r = await plugin.InvokeAsync(
             "ftp://nope",
             service: "x",
@@ -357,7 +357,7 @@ public sealed class PulsarDiscoveryHttpFakeTests
         // on the cancellation token. The catch block returns the
         // exception message + non-null DurationMs (stopwatch was
         // started before the try).
-        var plugin = new BowirePulsarProtocol();
+        using var plugin = new BowirePulsarProtocol();
         using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(2));
 
         InvokeResult result;
@@ -399,7 +399,7 @@ public sealed class PulsarDiscoveryHttpFakeTests
         // loop. Even when the broker is unreachable we must reach
         // those reads; the await-foreach surfaces the broker error
         // as an exception once enumeration begins.
-        var plugin = new BowirePulsarProtocol();
+        using var plugin = new BowirePulsarProtocol();
         using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(2));
         var collected = new List<string>();
         Exception? caught = null;
@@ -443,7 +443,7 @@ public sealed class PulsarDiscoveryHttpFakeTests
         // client. After that, hitting an unresolvable host must still
         // produce the empty list — the broad catch in
         // ListNamespaceTopicsAsync absorbs the DNS error.
-        var plugin = new BowirePulsarProtocol();
+        using var plugin = new BowirePulsarProtocol();
         // Empty provider — GetService<IConfiguration> returns null,
         // which Create() handles by skipping the relaxed callback.
         plugin.Initialize(new EmptyServiceProvider());

@@ -22,7 +22,7 @@ public sealed class PulsarCoverageGapsTests
         // and subscribe is server-streaming. OpenChannelAsync must
         // return null so the workbench routes invokes through the
         // proper path instead of opening a channel.
-        var p = new BowirePulsarProtocol();
+        using var p = new BowirePulsarProtocol();
         var ch = await p.OpenChannelAsync(
             "pulsar://localhost:6650",
             service: "x",
@@ -36,7 +36,7 @@ public sealed class PulsarCoverageGapsTests
     [Fact]
     public async Task InvokeAsync_InvalidUrl_Returns_StructuredValidationError()
     {
-        var p = new BowirePulsarProtocol();
+        using var p = new BowirePulsarProtocol();
         var result = await p.InvokeAsync(
             "",
             service: "x",
@@ -56,7 +56,7 @@ public sealed class PulsarCoverageGapsTests
         // subscribe is server-streaming — the unary InvokeAsync path
         // rejects it with the "Unknown Pulsar route" message because
         // subscribe isn't in the allowed-ops set for InvokeAsync.
-        var p = new BowirePulsarProtocol();
+        using var p = new BowirePulsarProtocol();
         var result = await p.InvokeAsync(
             "pulsar://localhost:6650",
             service: "x",
@@ -72,7 +72,7 @@ public sealed class PulsarCoverageGapsTests
     [Fact]
     public async Task InvokeStreamAsync_InvalidUrl_YieldsNothing()
     {
-        var p = new BowirePulsarProtocol();
+        using var p = new BowirePulsarProtocol();
         var collected = new List<string>();
         await foreach (var msg in p.InvokeStreamAsync(
             "",
@@ -93,7 +93,7 @@ public sealed class PulsarCoverageGapsTests
     {
         // InvokeStreamAsync gates on Op == "subscribe" — feeding it a
         // produce route makes it yield-break immediately.
-        var p = new BowirePulsarProtocol();
+        using var p = new BowirePulsarProtocol();
         var collected = new List<string>();
         await foreach (var msg in p.InvokeStreamAsync(
             "pulsar://localhost:6650",
@@ -112,7 +112,7 @@ public sealed class PulsarCoverageGapsTests
     [Fact]
     public async Task InvokeStreamAsync_MalformedRoute_YieldsNothing()
     {
-        var p = new BowirePulsarProtocol();
+        using var p = new BowirePulsarProtocol();
         var collected = new List<string>();
         await foreach (var msg in p.InvokeStreamAsync(
             "pulsar://localhost:6650",
@@ -134,7 +134,7 @@ public sealed class PulsarCoverageGapsTests
         // Pulsar deliberately doesn't ship autoInterpretJson (Schema.String
         // ships strings raw). Pin this so a future "every plugin should
         // have it" refactor doesn't silently add the wrong default.
-        var p = new BowirePulsarProtocol();
+        using var p = new BowirePulsarProtocol();
         Assert.DoesNotContain(p.Settings, s => s.Key == "autoInterpretJson");
     }
 
@@ -143,7 +143,7 @@ public sealed class PulsarCoverageGapsTests
     {
         // Description is the sidebar tooltip — pin the user-facing
         // verbs so renames flag in code review.
-        var p = new BowirePulsarProtocol();
+        using var p = new BowirePulsarProtocol();
         Assert.Contains("Pulsar", p.Description, StringComparison.Ordinal);
         Assert.Contains("publish", p.Description, StringComparison.Ordinal);
         Assert.Contains("consume", p.Description, StringComparison.Ordinal);
@@ -152,7 +152,7 @@ public sealed class PulsarCoverageGapsTests
     [Fact]
     public void Initialize_Null_ServiceProvider_DoesNotThrow()
     {
-        var p = new BowirePulsarProtocol();
+        using var p = new BowirePulsarProtocol();
         p.Initialize(null);
     }
 }

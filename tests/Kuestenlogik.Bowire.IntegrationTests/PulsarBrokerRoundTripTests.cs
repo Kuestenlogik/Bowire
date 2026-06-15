@@ -69,7 +69,7 @@ public sealed class PulsarBrokerRoundTripTests : IAsyncLifetime
     [Fact]
     public async Task InvokeAsync_Returns_PostSend_Envelope_With_Topic_MessageId_And_Byte_Count()
     {
-        var plugin = new BowirePulsarProtocol();
+        using var plugin = new BowirePulsarProtocol();
         var topic = "persistent://public/default/bowire-envelope-"
             + Guid.NewGuid().ToString("N")[..8];
         const string payload = "hello-envelope";
@@ -109,7 +109,7 @@ public sealed class PulsarBrokerRoundTripTests : IAsyncLifetime
     [Fact]
     public async Task InvokeStreamAsync_Replays_Backlog_From_Earliest_In_Production_Order()
     {
-        var plugin = new BowirePulsarProtocol();
+        using var plugin = new BowirePulsarProtocol();
         var topic = "persistent://public/default/bowire-backlog-"
             + Guid.NewGuid().ToString("N")[..8];
 
@@ -183,7 +183,7 @@ public sealed class PulsarBrokerRoundTripTests : IAsyncLifetime
     [Fact]
     public async Task DiscoverAsync_Hits_Live_Admin_Surface_And_Surfaces_Produced_Topic()
     {
-        var plugin = new BowirePulsarProtocol();
+        using var plugin = new BowirePulsarProtocol();
         // Use a deterministic leaf name so we can find it in the
         // service list without grep-by-prefix.
         var leaf = "bowire-discover-" + Guid.NewGuid().ToString("N")[..8];

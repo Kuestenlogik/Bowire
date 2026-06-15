@@ -32,10 +32,7 @@ namespace Kuestenlogik.Bowire.Protocol.Pulsar;
 /// state would leak across browser sessions).
 /// </para>
 /// </remarks>
-// CA1001: _http belongs to the protocol registry's lifetime.
-#pragma warning disable CA1001
-public sealed class BowirePulsarProtocol : IBowireProtocol
-#pragma warning restore CA1001
+public sealed class BowirePulsarProtocol : IBowireProtocol, IDisposable
 {
     private HttpClient _http = new() { Timeout = TimeSpan.FromSeconds(15) };
 
@@ -62,6 +59,16 @@ public sealed class BowirePulsarProtocol : IBowireProtocol
     {
         var config = serviceProvider?.GetService<IConfiguration>();
         _http = BowireHttpClientFactory.Create(config, Id, TimeSpan.FromSeconds(15));
+    }
+
+    /// <summary>
+    /// Dispose the admin-API <see cref="HttpClient"/>. The binary Pulsar
+    /// connection (DotPulsar) is opened per-call inside Invoke /
+    /// InvokeStream and disposed there.
+    /// </summary>
+    public void Dispose()
+    {
+        _http.Dispose();
     }
 
     public async Task<List<BowireServiceInfo>> DiscoverAsync(
