@@ -99,7 +99,7 @@ dotnet TacticalApi.TestClient.dll --sendsymbol 53.6 10.05
 #    pins land on a MapLibre canvas next to the streaming-frames pane.
 #    (Skip this step if you only want the raw JSON view — Bowire still
 #    auto-detects the lat/lon fields, it just falls back to a
-#    "Install …Extension.MapLibre" placeholder card instead of a map.)
+#    "Install Kuestenlogik.Bowire.Map" placeholder card instead of a map.)
 dotnet add package Kuestenlogik.Bowire.Map
 
 # 4. Point Bowire at the same server — native HTTP/2 transport
