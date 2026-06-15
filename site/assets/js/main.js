@@ -1178,7 +1178,7 @@ var BOWIRE_PROTOCOLS = [
         docUrl: 'https://github.com/Kuestenlogik/Bowire#jsonrpc'
     },
     {
-        id: 'pulsar', label: 'Apache Pulsar',
+        id: 'pulsar', label: 'Pulsar',
         hint: 'Topic discovery via HTTP admin',
         packageId: 'Kuestenlogik.Bowire.Protocol.Pulsar',
         urlPlaceholder: 'pulsar://broker.example:6650',
