@@ -24,6 +24,17 @@
          runs it as a subprocess, so that suite runs Docker-free on CI. -->
     <PackageReference Include="Testcontainers" />
     <PackageReference Include="Testcontainers.Pulsar" />
+    <!-- Testcontainers.Nats — Docker-managed nats:2-alpine for the
+         broker-side JetStream / Services round-trip suite added in the
+         coverage push. The NatsServerFixture subprocess covers the
+         Docker-free CI lane; this Testcontainers fixture covers the
+         Docker dev box and lets us exercise the async-iterator state
+         machines (NatsJetStreamDiscovery.ListAsync,
+         NatsServicesDiscovery.ListAsync, NatsDiscovery.ScanSubjectsAsync,
+         StreamJetStreamConsumerAsync) against a real broker. The new
+         tests carry [Trait("Category","Docker")] so the default CI
+         filter skips them. -->
+    <PackageReference Include="Testcontainers.Nats" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\Kuestenlogik.Bowire\Kuestenlogik.Bowire.csproj" />
