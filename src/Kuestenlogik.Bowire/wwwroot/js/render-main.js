@@ -1676,7 +1676,7 @@
         var storageMode = (typeof getWorkspaceStorageMode === 'function')
             ? getWorkspaceStorageMode(ws) : 'disk';
         var browserOnly = storageMode === 'browser-only';
-        main.appendChild(el('div', { className: 'bowire-ws-detail-section' },
+        var storageSection = el('div', { className: 'bowire-ws-detail-section' },
             el('div', { className: 'bowire-ws-detail-section-label', textContent: 'Storage' }),
             el('label', { className: 'bowire-ws-detail-storage-toggle' },
                 el('input', {
@@ -1697,7 +1697,44 @@
                         ? 'localStorage is the only store. Browser clear = data loss; ~5-10 MB quota.'
                         : 'Default: ~/.bowire/workspaces/' + ws.id + '/. Browser cache as best-effort, survives quota errors.' })
             )
-        ));
+        );
+
+        // #196 Phase 2.3 — per-workspace storage-root override. Only
+        // meaningful when the workspace stores on disk; the field stays
+        // hidden for browser-only because storageRoot is a filesystem
+        // pointer that has no analogue in localStorage. Trim on blur so
+        // a trailing space the operator pasted doesn't smuggle into the
+        // path resolver. Empty string clears the override → backend
+        // falls back to ~/.bowire/workspaces/<id>/.
+        if (!browserOnly) {
+            var currentRoot = (typeof getWorkspaceStorageRoot === 'function')
+                ? getWorkspaceStorageRoot(ws) : null;
+            storageSection.appendChild(el('div', { className: 'bowire-ws-detail-storage-root' },
+                el('label', { className: 'bowire-ws-detail-storage-root-label',
+                    textContent: 'Storage root' }),
+                el('input', {
+                    type: 'text',
+                    className: 'bowire-ws-detail-storage-root-input',
+                    value: currentRoot || '',
+                    placeholder: 'Default: ~/.bowire/workspaces/' + ws.id + '/',
+                    onBlur: function (e) {
+                        var t = _liveWs();
+                        if (!t || typeof setWorkspaceStorageRoot !== 'function') return;
+                        var raw = String(e.target.value == null ? '' : e.target.value);
+                        var trimmed = raw.trim();
+                        var prior = (typeof getWorkspaceStorageRoot === 'function')
+                            ? (getWorkspaceStorageRoot(t) || '') : '';
+                        if (trimmed === prior) return;
+                        setWorkspaceStorageRoot(t.id, trimmed);
+                        render();
+                    }
+                }),
+                el('span', { className: 'bowire-ws-detail-storage-toggle-hint',
+                    textContent: 'Absolute path to a workspace folder on disk (e.g. a checked-out git repo). Leave empty for the default per-user location.' })
+            ));
+        }
+
+        main.appendChild(storageSection);
 
         // Metadata strip — IDs / timestamps so the operator can see
         // creation / last-opened for audit / debugging.
