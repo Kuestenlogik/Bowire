@@ -71,7 +71,7 @@ public sealed class BowireProxyCertificateAuthorityTests
         var dir = FreshTempDir();
         try
         {
-            using (var first = BowireProxyCertificateAuthority.LoadOrCreate(dir)) { /* generate */ }
+            using (BowireProxyCertificateAuthority.LoadOrCreate(dir)) { /* generate */ }
             File.Delete(Path.Combine(dir, "proxy-ca.crt"));
             using var second = BowireProxyCertificateAuthority.LoadOrCreate(dir);
             Assert.True(File.Exists(Path.Combine(dir, "proxy-ca.crt")));
