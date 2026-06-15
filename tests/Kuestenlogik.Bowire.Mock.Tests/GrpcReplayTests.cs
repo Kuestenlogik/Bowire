@@ -31,7 +31,7 @@ public sealed class GrpcReplayTests : IDisposable
 
     public GrpcReplayTests()
     {
-        _tempDir = Path.Combine(Path.GetTempPath(), "bowire-mock-grpc-" + Guid.NewGuid().ToString("N"));
+        _tempDir = SafePath.Combine(Path.GetTempPath(), "bowire-mock-grpc-" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(_tempDir);
     }
 
@@ -78,7 +78,7 @@ public sealed class GrpcReplayTests : IDisposable
             }
         };
 
-        var path = Path.Combine(_tempDir, "recording.json");
+        var path = SafePath.Combine(_tempDir, "recording.json");
         File.WriteAllText(path, JsonSerializer.Serialize(recording));
         return path;
     }
@@ -147,7 +147,7 @@ public sealed class GrpcReplayTests : IDisposable
             }
         };
 
-        var path = Path.Combine(_tempDir, "stream.json");
+        var path = SafePath.Combine(_tempDir, "stream.json");
         await File.WriteAllTextAsync(path, JsonSerializer.Serialize(recording), TestContext.Current.CancellationToken);
 
         await using var server = await MockServer.StartAsync(
@@ -208,7 +208,7 @@ public sealed class GrpcReplayTests : IDisposable
             }
         };
 
-        var path = Path.Combine(_tempDir, "client-stream.json");
+        var path = SafePath.Combine(_tempDir, "client-stream.json");
         await File.WriteAllTextAsync(path, JsonSerializer.Serialize(recording), TestContext.Current.CancellationToken);
 
         await using var server = await MockServer.StartAsync(
@@ -277,7 +277,7 @@ public sealed class GrpcReplayTests : IDisposable
             }
         };
 
-        var path = Path.Combine(_tempDir, "bidi.json");
+        var path = SafePath.Combine(_tempDir, "bidi.json");
         await File.WriteAllTextAsync(path, JsonSerializer.Serialize(recording), TestContext.Current.CancellationToken);
 
         await using var server = await MockServer.StartAsync(
@@ -332,7 +332,7 @@ public sealed class GrpcReplayTests : IDisposable
         // client invokes via Grpc.Net.Client, mock persists a step with
         // service/method split out and requestBinary base64-encoded.
         var path = WriteRecording("world", "echo.Echoer", "Echo");
-        var capturePath = Path.Combine(_tempDir, "misses.json");
+        var capturePath = SafePath.Combine(_tempDir, "misses.json");
 
         await using var server = await MockServer.StartAsync(
             new MockServerOptions
