@@ -9,10 +9,20 @@
     <PackageReference Include="xunit.v3" />
     <PackageReference Include="xunit.runner.visualstudio" />
     <PackageReference Include="coverlet.collector"><PrivateAssets>all</PrivateAssets><IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets></PackageReference>
+    <!-- Grpc.AspNetCore + Grpc.Tools let the additional-gap tests host a
+         real Greeter gRPC service in-process to drive the unary +
+         streaming end-to-end paths of GrpcInvoker / GrpcBowireChannel
+         that the static + ConnectInvoker-only tests can't reach. -->
+    <PackageReference Include="Grpc.AspNetCore" />
+    <PackageReference Include="Grpc.AspNetCore.Server.Reflection" />
+    <PackageReference Include="Grpc.Tools" PrivateAssets="All" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\Kuestenlogik.Bowire\Kuestenlogik.Bowire.csproj" />
     <ProjectReference Include="..\..\src\Kuestenlogik.Bowire.Protocol.Grpc\Kuestenlogik.Bowire.Protocol.Grpc.csproj" />
     <ProjectReference Include="..\Kuestenlogik.Bowire.Testing\Kuestenlogik.Bowire.Testing.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <Protobuf Include="Protos/*.proto" GrpcServices="Both" />
   </ItemGroup>
 </Project>

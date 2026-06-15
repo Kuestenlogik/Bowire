@@ -1,0 +1,24 @@
+syntax = "proto3";
+option csharp_namespace = "Kuestenlogik.Bowire.Protocol.Grpc.Tests.Proto";
+package gaptest;
+
+// Distinct package + name so it doesn't collide with the integration
+// suite's Greeter (`test.Greeter`) — keeping them separate is what lets
+// both test projects host their own copies of the service without
+// dragging in cross-references.
+service GapGreeter {
+  rpc Hi (HiReq) returns (HiRes);
+  rpc HiStream (HiReq) returns (stream HiRes);
+  rpc CollectHi (stream HiReq) returns (HiRes);
+  rpc ChatHi (stream HiReq) returns (stream HiRes);
+}
+
+message HiReq {
+  string name = 1;
+  int32 count = 2;
+}
+
+message HiRes {
+  string message = 1;
+  int32 sequence = 2;
+}
