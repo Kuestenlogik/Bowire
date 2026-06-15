@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+    <OutputType>Exe</OutputType>
+    <!--
+      Coverage for the OIDC auth provider — verifies the
+      IBowireAuthProvider contract (Id/Name/AddAuthentication/
+      BuildDefaultPolicy), the Bowire:Auth:Oidc config layering,
+      and the RequiredClaim AND-policy composition.
+    -->
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit.v3" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+    <PackageReference Include="coverlet.collector"><PrivateAssets>all</PrivateAssets><IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets></PackageReference>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Kuestenlogik.Bowire\Kuestenlogik.Bowire.csproj" />
+    <ProjectReference Include="..\..\src\Kuestenlogik.Bowire.Auth.Oidc\Kuestenlogik.Bowire.Auth.Oidc.csproj" />
+  </ItemGroup>
+</Project>
