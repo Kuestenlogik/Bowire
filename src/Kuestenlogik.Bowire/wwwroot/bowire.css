@@ -4208,6 +4208,24 @@ only an accent-coloured underline under the active tab. The whole
     cursor: pointer;
     font-family: var(--bowire-font-sans);
     transition: all var(--bowire-transition);
+    /* Icon + label sit side-by-side; the icon fills a 14×14 box so
+       the strokes stay legible at the tab's 13 px font size. */
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+.bowire-env-editor-tab-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 14px;
+    height: 14px;
+    flex-shrink: 0;
+    opacity: 0.85;
+}
+.bowire-env-editor-tab-icon svg {
+    width: 14px;
+    height: 14px;
 }
 .bowire-env-editor-tab:hover {
     color: var(--bowire-text);
@@ -4216,6 +4234,9 @@ only an accent-coloured underline under the active tab. The whole
     color: var(--bowire-accent);
     border-bottom-color: var(--bowire-accent);
     font-weight: 600;
+}
+.bowire-env-editor-tab.active .bowire-env-editor-tab-icon {
+    opacity: 1;
 }
 .bowire-env-editor-vars .bowire-env-editor-subtitle {
     font-size: 12px;

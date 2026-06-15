@@ -645,24 +645,39 @@
             ));
         }
 
-        // ---- Tabs: Variables | Auth | Compare ----
-        // Globals only have Variables; named envs get all three.
+        // ---- Tabs: Variables | Secrets | Auth | Compare ----
+        // Globals only have Variables; named envs get all four. Each
+        // tab carries a glyph in front of the label so the operator
+        // scans by shape, not just by text. Icons stay consistent with
+        // the rest of the surface: braces for Variables (data type),
+        // key for Secrets (the "thing the lock takes"), lock for Auth
+        // (same convention as the workspace's Auth section + the
+        // sidebar lock-server-url affordance), diff for Compare.
         if (!isGlobals) {
             var tabs = el('div', { className: 'bowire-env-editor-tabs' });
             var tabDefs = [
-                { id: 'variables', label: 'Variables' },
-                { id: 'secrets', label: 'Secrets' },
-                { id: 'auth', label: 'Auth' },
-                { id: 'compare', label: 'Compare' }
+                { id: 'variables', label: 'Variables', icon: 'braces' },
+                { id: 'secrets', label: 'Secrets', icon: 'key' },
+                { id: 'auth', label: 'Auth', icon: 'lock' },
+                { id: 'compare', label: 'Compare', icon: 'diff' }
             ];
             for (var ti = 0; ti < tabDefs.length; ti++) {
                 (function (td) {
-                    tabs.appendChild(el('button', {
+                    var btn = el('button', {
                         id: 'bowire-env-tab-' + td.id,
                         className: 'bowire-env-editor-tab' + (envEditorTab === td.id ? ' active' : ''),
-                        textContent: td.label,
                         onClick: function () { envEditorTab = td.id; render(); }
+                    });
+                    btn.appendChild(el('span', {
+                        className: 'bowire-env-editor-tab-icon',
+                        innerHTML: svgIcon(td.icon),
+                        'aria-hidden': 'true'
                     }));
+                    btn.appendChild(el('span', {
+                        className: 'bowire-env-editor-tab-label',
+                        textContent: td.label
+                    }));
+                    tabs.appendChild(btn);
                 })(tabDefs[ti]);
             }
             pane.appendChild(tabs);
@@ -1183,7 +1198,14 @@
         if (kind === 'collection' && sel.value) return _renderWorkspaceCollectionDetail(ws, sel.value);
         if (kind === 'environments') return _renderWorkspaceEnvironmentsOverview(ws);
         if (kind === 'env' && sel.value) return _renderWorkspaceEnvironmentDetail(ws, sel.value);
-        if (kind === 'variables') return _renderWorkspaceVariablesDetail(ws);
+        // Variables leaf retired in favour of a Variables tab inside
+        // workspace settings. The route stays as a back-compat alias:
+        // any persisted tree-selection from before the change opens
+        // the settings pane with the Variables tab already active.
+        if (kind === 'variables') {
+            workspaceSettingsTab = 'variables';
+            return _renderWorkspaceSettingsDetail(ws);
+        }
         if (kind === 'recordings') return _renderWorkspaceRecordingsOverview(ws);
         if (kind === 'recording' && sel.value) return _renderWorkspaceRecordingDetail(ws, sel.value);
         return _renderWorkspaceSettingsDetail(ws);
@@ -1433,6 +1455,82 @@
         );
         main.appendChild(header);
 
+        // ---- Tabs: General | Variables | Secrets ----
+        // Mirrors the env editor's tab pattern + icon convention so
+        // both settings surfaces read as one shape. Single-table data
+        // (workspace vars + workspace secrets) lives behind tabs here
+        // instead of as separate tree leaves — the tree is for entity
+        // LISTS (sources / envs / collections / recordings), not for
+        // settings of the workspace itself.
+        var wsTabsBar = el('div', { className: 'bowire-env-editor-tabs' });
+        var wsTabDefs = [
+            { id: 'general',   label: 'General',   icon: 'settings' },
+            { id: 'variables', label: 'Variables', icon: 'braces' },
+            { id: 'secrets',   label: 'Secrets',   icon: 'key' }
+        ];
+        wsTabDefs.forEach(function (td) {
+            var btn = el('button', {
+                className: 'bowire-env-editor-tab' + (workspaceSettingsTab === td.id ? ' active' : ''),
+                onClick: function () { workspaceSettingsTab = td.id; render(); }
+            });
+            btn.appendChild(el('span', {
+                className: 'bowire-env-editor-tab-icon',
+                innerHTML: svgIcon(td.icon),
+                'aria-hidden': 'true'
+            }));
+            btn.appendChild(el('span', {
+                className: 'bowire-env-editor-tab-label',
+                textContent: td.label
+            }));
+            wsTabsBar.appendChild(btn);
+        });
+        main.appendChild(wsTabsBar);
+
+        // ---- Variables tab ----
+        if (workspaceSettingsTab === 'variables') {
+            main.appendChild(el('p', {
+                className: 'bowire-ws-detail-stat-hint',
+                style: 'margin:8px 0',
+                textContent: 'Workspace defaults that every Environment in this workspace inherits. An Environment can add its own or override these. Reference as {{NAME}}.'
+            }));
+            var liveWsForVars = _liveWs() || ws;
+            var varsMap = liveWsForVars.vars || {};
+            main.appendChild(_renderKvSection('Variables', varsMap, function (next) {
+                var t = _liveWs();
+                if (t) {
+                    t.vars = next;
+                    if (typeof persistWorkspaces === 'function') persistWorkspaces();
+                }
+            }, false));
+            return main;
+        }
+
+        // ---- Secrets tab ----
+        if (workspaceSettingsTab === 'secrets') {
+            main.appendChild(el('p', {
+                className: 'bowire-ws-detail-stat-hint',
+                style: 'margin:8px 0',
+                textContent: 'Session-only secrets — pass-through values for {{secret.NAME}} resolutions. Never written to disk, never exported. Phase 5 wraps an OS keyring (#208).'
+            }));
+            var secretsMap = (typeof getWorkspaceSecrets === 'function') ? getWorkspaceSecrets(ws.id) : {};
+            main.appendChild(_renderKvSection('Secrets', secretsMap, function (next) {
+                var oldNames = Object.keys(secretsMap);
+                var newNames = Object.keys(next);
+                oldNames.forEach(function (n) {
+                    if (newNames.indexOf(n) < 0 && typeof setWorkspaceSecret === 'function') {
+                        setWorkspaceSecret(n, null, ws.id);
+                    }
+                });
+                newNames.forEach(function (n) {
+                    if (next[n] !== secretsMap[n] && typeof setWorkspaceSecret === 'function') {
+                        setWorkspaceSecret(n, next[n], ws.id);
+                    }
+                });
+            }, true));
+            return main;
+        }
+
+        // ---- General tab (default) ----
         // Color picker — predefined palette + native colour input for
         // custom picks, mirrors the env editor's pattern so the two
         // surfaces share the same affordance.
@@ -1889,45 +1987,11 @@
         return main;
     }
 
-    // Workspace › Variables — workspace-globale Variables + Secrets.
-    // Two sections, both editable as key/value pairs. Acts as the
-    // fallback layer beneath every Environment in this workspace:
-    // a variable defined here resolves whenever no active Environment
-    // overrides it (GitHub-style layered config). Secrets section
-    // is masked + session-only; Phase 5 wraps an OS keyring.
-    function _renderWorkspaceVariablesDetail(ws) {
-        var main = el('div', { id: 'bowire-main-workspaces', className: 'bowire-main bowire-main-workspaces' });
-        main.appendChild(_renderWorkspaceBreadcrumb(ws, [{ label: 'Variables' }]));
-
-        main.appendChild(el('p', {
-            className: 'bowire-ws-detail-stat-hint',
-            textContent: 'Workspace defaults that every Environment in this workspace inherits. An Environment can add its own or override these. Reference as {{NAME}} (variables) or {{secret.NAME}} (secrets).'
-        }));
-
-        var vars = ws.vars || {};
-        main.appendChild(_renderKvSection('Variables', vars, function (next) {
-            ws.vars = next;
-            if (typeof persistWorkspaces === 'function') persistWorkspaces();
-        }, false));
-
-        var secrets = (typeof getWorkspaceSecrets === 'function') ? getWorkspaceSecrets(ws.id) : {};
-        main.appendChild(_renderKvSection('Secrets', secrets, function (next) {
-            var oldNames = Object.keys(secrets);
-            var newNames = Object.keys(next);
-            oldNames.forEach(function (n) {
-                if (newNames.indexOf(n) < 0 && typeof setWorkspaceSecret === 'function') {
-                    setWorkspaceSecret(n, null, ws.id);
-                }
-            });
-            newNames.forEach(function (n) {
-                if (next[n] !== secrets[n] && typeof setWorkspaceSecret === 'function') {
-                    setWorkspaceSecret(n, next[n], ws.id);
-                }
-            });
-        }, true));
-
-        return main;
-    }
+    // _renderWorkspaceVariablesDetail retired — workspace-scope
+    // variables + secrets moved into the Workspace settings pane as
+    // the Variables + Secrets tabs (see _renderWorkspaceSettingsDetail).
+    // Tree leaf removed alongside; the kind === 'variables' route
+    // keeps working as a back-compat alias.
 
     // Shared key/value table renderer for Variables + Secrets sections.
     // `masked` switches the value input to type=password and changes

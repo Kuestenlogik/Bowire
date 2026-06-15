@@ -1930,8 +1930,11 @@
         var children = [];
         children.push(_buildSourcesTreeNode(w));
         children.push(_buildEnvironmentsTreeNode(w));
-        children.push(_buildSimpleChildNode(w, 'variables', 'lock',
-            'Variables', null));
+        // Variables-leaf retired — workspace-scope variables + secrets
+        // moved into tabs inside the workspace settings pane (General
+        // / Variables / Secrets). Single-table data fits a tab, not a
+        // tree leaf (the leaves are for entity LISTS like
+        // sources/envs/collections/recordings).
         children.push(_buildCollectionsTreeNode(w));
         children.push(_buildRecordingsTreeNode(w));
 
