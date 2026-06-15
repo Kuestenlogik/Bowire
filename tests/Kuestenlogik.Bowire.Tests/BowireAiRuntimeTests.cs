@@ -41,7 +41,7 @@ public sealed class BowireAiRuntimeTests : IDisposable
     [Fact]
     public void Runtime_Update_Replaces_Options_And_Client()
     {
-        var rt = new BowireAiRuntime(new BowireAiOptions
+        using var rt = new BowireAiRuntime(new BowireAiOptions
         {
             ProviderId = "ollama",
             Endpoint = "http://localhost:11434",
@@ -73,7 +73,7 @@ public sealed class BowireAiRuntimeTests : IDisposable
         // id should park Current at null instead of throwing during
         // host startup, so the workbench can render its "no client" UI
         // and the user can fix it via Settings → AI.
-        var rt = new BowireAiRuntime(new BowireAiOptions { ProviderId = "openai" });
+        using var rt = new BowireAiRuntime(new BowireAiOptions { ProviderId = "openai" });
         Assert.Null(rt.Current);
         Assert.Equal("openai", rt.Options.ProviderId);
     }
@@ -81,7 +81,7 @@ public sealed class BowireAiRuntimeTests : IDisposable
     [Fact]
     public void Mutable_Chat_Client_Throws_Clear_Error_When_Runtime_Has_No_Client()
     {
-        var rt = new BowireAiRuntime(new BowireAiOptions { ProviderId = "openai" });
+        using var rt = new BowireAiRuntime(new BowireAiOptions { ProviderId = "openai" });
         using var proxy = new MutableChatClient(rt);
 
         var ex = Assert.Throws<InvalidOperationException>(() =>
