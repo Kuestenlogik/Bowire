@@ -31,12 +31,7 @@ namespace Kuestenlogik.Bowire.Protocol.Soap;
 /// streams + null channels accordingly.
 /// </para>
 /// </remarks>
-// CA1001: _http lives as long as the protocol registry (process lifetime).
-// Adding IDisposable to IBowireProtocol just to clean up a singleton at
-// shutdown isn't worth the ripple through every plugin.
-#pragma warning disable CA1001
-public sealed class BowireSoapProtocol : IBowireProtocol
-#pragma warning restore CA1001
+public sealed class BowireSoapProtocol : IBowireProtocol, IDisposable
 {
     private HttpClient _http = new() { Timeout = TimeSpan.FromSeconds(30) };
 
@@ -48,6 +43,15 @@ public sealed class BowireSoapProtocol : IBowireProtocol
     {
         var config = serviceProvider?.GetService<IConfiguration>();
         _http = BowireHttpClientFactory.Create(config, Id, TimeSpan.FromSeconds(30));
+    }
+
+    /// <summary>
+    /// Dispose the lazily-built <see cref="HttpClient"/>. Owners (registry
+    /// or test 'using var') release the handler at scope exit.
+    /// </summary>
+    public void Dispose()
+    {
+        _http.Dispose();
     }
 
     // Generic SOAP mark — envelope outline with the "SOAP" word inside,

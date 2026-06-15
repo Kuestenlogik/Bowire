@@ -19,7 +19,7 @@ public class SoapPluginTests
     [Fact]
     public void Plugin_Identity_Is_Stable()
     {
-        var p = new BowireSoapProtocol();
+        using var p = new BowireSoapProtocol();
         Assert.Equal("SOAP", p.Name);
         Assert.Equal("soap", p.Id);
         Assert.False(string.IsNullOrWhiteSpace(p.IconSvg));
@@ -221,7 +221,7 @@ public class SoapPluginTests
     [Fact]
     public void Plugin_Settings_Expose_Default_Soap_Version()
     {
-        var p = new BowireSoapProtocol();
+        using var p = new BowireSoapProtocol();
         var s = Assert.Single(p.Settings);
         Assert.Equal("defaultSoapVersion", s.Key);
     }

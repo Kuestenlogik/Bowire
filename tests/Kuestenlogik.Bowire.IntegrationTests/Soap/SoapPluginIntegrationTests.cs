@@ -100,7 +100,7 @@ public sealed class SoapPluginIntegrationTests : IAsyncLifetime
     [Fact]
     public async Task DiscoverAsync_Fetches_Wsdl_And_Surfaces_Operations()
     {
-        var p = new BowireSoapProtocol();
+        using var p = new BowireSoapProtocol();
         var services = await p.DiscoverAsync(_baseUrl, showInternalServices: false,
             TestContext.Current.CancellationToken);
 
@@ -113,7 +113,7 @@ public sealed class SoapPluginIntegrationTests : IAsyncLifetime
     [Fact]
     public async Task DiscoverAsync_Returns_Empty_For_404()
     {
-        var p = new BowireSoapProtocol();
+        using var p = new BowireSoapProtocol();
         // Hit a path the fixture doesn't serve — _baseUrl ends in /svc,
         // this points at /missing which returns the default 404.
         var bad = _baseUrl.Replace("/svc", "/missing", StringComparison.Ordinal);
@@ -125,7 +125,7 @@ public sealed class SoapPluginIntegrationTests : IAsyncLifetime
     [Fact]
     public async Task DiscoverAsync_Returns_Empty_For_Unreachable_Host()
     {
-        var p = new BowireSoapProtocol();
+        using var p = new BowireSoapProtocol();
         var services = await p.DiscoverAsync(
             "http://127.0.0.1:1/svc", showInternalServices: false,
             TestContext.Current.CancellationToken);
@@ -142,7 +142,7 @@ public sealed class SoapPluginIntegrationTests : IAsyncLifetime
             ctx.Response.ContentType = "text/xml";
             await ctx.Response.WriteAsync("not xml at all");
         });
-        var p = new BowireSoapProtocol();
+        using var p = new BowireSoapProtocol();
         var bad = _baseUrl.Replace("/svc", "/garbage?wsdl", StringComparison.Ordinal);
         var services = await p.DiscoverAsync(bad, showInternalServices: false,
             TestContext.Current.CancellationToken);
@@ -152,7 +152,7 @@ public sealed class SoapPluginIntegrationTests : IAsyncLifetime
     [Fact]
     public async Task InvokeAsync_Roundtrips_Echo_Operation()
     {
-        var p = new BowireSoapProtocol();
+        using var p = new BowireSoapProtocol();
         var result = await p.InvokeAsync(
             serverUrl: _baseUrl,
             service: "Echo",
@@ -175,7 +175,7 @@ public sealed class SoapPluginIntegrationTests : IAsyncLifetime
     [Fact]
     public async Task InvokeAsync_Surfaces_Fault_With_Fault_Status()
     {
-        var p = new BowireSoapProtocol();
+        using var p = new BowireSoapProtocol();
         var result = await p.InvokeAsync(
             serverUrl: _baseUrl,
             service: "Echo",
@@ -191,7 +191,7 @@ public sealed class SoapPluginIntegrationTests : IAsyncLifetime
     [Fact]
     public async Task InvokeAsync_Honours_Endpoint_Url_Metadata_Override()
     {
-        var p = new BowireSoapProtocol();
+        using var p = new BowireSoapProtocol();
         // Discovery URL points elsewhere; the override redirects the
         // POST back to our fixture so the result still round-trips.
         var result = await p.InvokeAsync(
@@ -226,7 +226,7 @@ public sealed class SoapPluginIntegrationTests : IAsyncLifetime
                 </soap:Envelope>
                 """);
         });
-        var p = new BowireSoapProtocol();
+        using var p = new BowireSoapProtocol();
         var url12 = _baseUrl.Replace("/svc", "/svc12", StringComparison.Ordinal);
         await p.InvokeAsync(
             serverUrl: url12,
@@ -248,7 +248,7 @@ public sealed class SoapPluginIntegrationTests : IAsyncLifetime
     [Fact]
     public async Task InvokeAsync_Returns_Parse_Error_For_Bad_Server_Url()
     {
-        var p = new BowireSoapProtocol();
+        using var p = new BowireSoapProtocol();
         var result = await p.InvokeAsync(
             serverUrl: "", service: "x", method: "x/y",
             jsonMessages: ["<a/>"], showInternalServices: false, metadata: null,
@@ -260,7 +260,7 @@ public sealed class SoapPluginIntegrationTests : IAsyncLifetime
     [Fact]
     public async Task InvokeAsync_Returns_Exception_Message_For_Unreachable_Host()
     {
-        var p = new BowireSoapProtocol();
+        using var p = new BowireSoapProtocol();
         var result = await p.InvokeAsync(
             serverUrl: "http://127.0.0.1:1/svc",
             service: "x", method: "x/y",
@@ -276,7 +276,7 @@ public sealed class SoapPluginIntegrationTests : IAsyncLifetime
     [Fact]
     public async Task InvokeStreamAsync_Returns_Empty_Stream()
     {
-        var p = new BowireSoapProtocol();
+        using var p = new BowireSoapProtocol();
         var any = false;
         await foreach (var _ in p.InvokeStreamAsync(_baseUrl, "x", "x/y", [],
             showInternalServices: false, metadata: null,
@@ -290,7 +290,7 @@ public sealed class SoapPluginIntegrationTests : IAsyncLifetime
     [Fact]
     public async Task OpenChannelAsync_Returns_Null()
     {
-        var p = new BowireSoapProtocol();
+        using var p = new BowireSoapProtocol();
         var ch = await p.OpenChannelAsync(_baseUrl, "x", "x/y",
             showInternalServices: false, metadata: null,
             ct: TestContext.Current.CancellationToken);
@@ -300,7 +300,7 @@ public sealed class SoapPluginIntegrationTests : IAsyncLifetime
     [Fact]
     public void Initialize_With_Null_Service_Provider_Is_Safe()
     {
-        var p = new BowireSoapProtocol();
+        using var p = new BowireSoapProtocol();
         p.Initialize(null);
         // Defaulted HttpClient is still usable; Settings still returns
         // the default-soap-version entry.
