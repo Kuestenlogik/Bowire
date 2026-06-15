@@ -201,7 +201,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 #### <a id="issue-kuestenlogik-bowire-193"></a>⬜ Open · [#193](https://github.com/Kuestenlogik/Bowire/issues/193) Workspace .blw Phase 2 — UI wiring + plugin-pin check + scope split
 
-`.blw` schema extension (Phase 1) shipped in 2f80024 — `workspaceFormatVersion`, `recordings`, `flows`, and `pluginPins` are now part of the on-disk shape with backwards-compatible deserialization and stable camelCase serialization. The workbench doesn't yet read or write the new fields; that's Phase 2. [[more]](https://github.com/Kuestenlogik/Bowire/issues/193)
+`.bwr` schema extension (Phase 1) shipped in 2f80024 — `workspaceFormatVersion`, `recordings`, `flows`, and `pluginPins` are now part of the on-disk shape with backwards-compatible deserialization and stable camelCase serialization. The workbench doesn't yet read or write the new fields; that's Phase 2. [[more]](https://github.com/Kuestenlogik/Bowire/issues/193)
 
 #### <a id="issue-kuestenlogik-bowire-195"></a>⬜ Open · [#195](https://github.com/Kuestenlogik/Bowire/issues/195) Protocol plugin — OTLP passive listener (Kuestenlogik.Bowire.Protocol.Otlp)
 
