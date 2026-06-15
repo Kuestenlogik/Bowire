@@ -64,7 +64,7 @@ public sealed class ScanCommandTests
 
     private static async Task<string> WriteAsync(BowireRecording rec, CancellationToken ct)
     {
-        var path = Path.Combine(Path.GetTempPath(), $"bowire-scan-test-{Guid.NewGuid():N}.json");
+        var path = SafePath.Combine(Path.GetTempPath(), $"bowire-scan-test-{Guid.NewGuid():N}.json");
         await File.WriteAllTextAsync(path, JsonSerializer.Serialize(rec), ct);
         return path;
     }
@@ -342,14 +342,14 @@ public sealed class ScanCommandTests
         var ct = TestContext.Current.CancellationToken;
         await using var upstream = await StartUpstreamAsync(ct);
 
-        var corpusDir = Path.Combine(Path.GetTempPath(), $"bowire-corpus-{Guid.NewGuid():N}");
+        var corpusDir = SafePath.Combine(Path.GetTempPath(), $"bowire-corpus-{Guid.NewGuid():N}");
         Directory.CreateDirectory(corpusDir);
         try
         {
             var rec1 = AttackRecording(expectedStatus: 200);
             var rec2 = AttackRecording(expectedStatus: 418);
-            await File.WriteAllTextAsync(Path.Combine(corpusDir, "a.json"), JsonSerializer.Serialize(rec1), ct);
-            await File.WriteAllTextAsync(Path.Combine(corpusDir, "b.json"), JsonSerializer.Serialize(rec2), ct);
+            await File.WriteAllTextAsync(SafePath.Combine(corpusDir, "a.json"), JsonSerializer.Serialize(rec1), ct);
+            await File.WriteAllTextAsync(SafePath.Combine(corpusDir, "b.json"), JsonSerializer.Serialize(rec2), ct);
 
             var (code, stdout, _) = Capture((@out, err) => ScanCommand.RunAsync(new ScanOptions
             {
@@ -371,7 +371,7 @@ public sealed class ScanCommandTests
         var ct = TestContext.Current.CancellationToken;
         await using var upstream = await StartUpstreamAsync(ct);
         var template = await WriteAsync(AttackRecording(), ct);
-        var sarifPath = Path.Combine(Path.GetTempPath(), $"bowire-scan-{Guid.NewGuid():N}.sarif");
+        var sarifPath = SafePath.Combine(Path.GetTempPath(), $"bowire-scan-{Guid.NewGuid():N}.sarif");
         try
         {
             var (code, _, _) = Capture((@out, err) => ScanCommand.RunAsync(new ScanOptions
@@ -401,13 +401,13 @@ public sealed class ScanCommandTests
         var ct = TestContext.Current.CancellationToken;
         await using var upstream = await StartUpstreamAsync(ct);
 
-        var corpusDir = Path.Combine(Path.GetTempPath(), $"bowire-corpus-corrupt-{Guid.NewGuid():N}");
+        var corpusDir = SafePath.Combine(Path.GetTempPath(), $"bowire-corpus-corrupt-{Guid.NewGuid():N}");
         Directory.CreateDirectory(corpusDir);
         try
         {
             // One usable template + one corrupt JSON.
-            await File.WriteAllTextAsync(Path.Combine(corpusDir, "good.json"), JsonSerializer.Serialize(AttackRecording()), ct);
-            await File.WriteAllTextAsync(Path.Combine(corpusDir, "bad.json"), "{not json", ct);
+            await File.WriteAllTextAsync(SafePath.Combine(corpusDir, "good.json"), JsonSerializer.Serialize(AttackRecording()), ct);
+            await File.WriteAllTextAsync(SafePath.Combine(corpusDir, "bad.json"), "{not json", ct);
 
             var (code, _, stderr) = Capture((@out, err) => ScanCommand.RunAsync(new ScanOptions
             {
@@ -466,11 +466,11 @@ public sealed class ScanCommandTests
         // default response (status 200 + body contains "hello").
         // Hits the full pipeline: YAML parse → matcher translation
         // → variable substitution → scanner probe execution.
-        var nucleiDir = Path.Combine(Path.GetTempPath(), $"bowire-nuclei-{Guid.NewGuid():N}");
+        var nucleiDir = SafePath.Combine(Path.GetTempPath(), $"bowire-nuclei-{Guid.NewGuid():N}");
         Directory.CreateDirectory(nucleiDir);
         try
         {
-            await File.WriteAllTextAsync(Path.Combine(nucleiDir, "hello.yaml"), """
+            await File.WriteAllTextAsync(SafePath.Combine(nucleiDir, "hello.yaml"), """
                 id: nuclei-hello-test
                 info:
                   name: Hello probe
@@ -513,11 +513,11 @@ public sealed class ScanCommandTests
         var ct = TestContext.Current.CancellationToken;
         await using var upstream = await StartUpstreamAsync(ct);
 
-        var nucleiDir = Path.Combine(Path.GetTempPath(), $"bowire-nuclei-{Guid.NewGuid():N}");
+        var nucleiDir = SafePath.Combine(Path.GetTempPath(), $"bowire-nuclei-{Guid.NewGuid():N}");
         Directory.CreateDirectory(nucleiDir);
         try
         {
-            await File.WriteAllTextAsync(Path.Combine(nucleiDir, "multipath.yaml"), """
+            await File.WriteAllTextAsync(SafePath.Combine(nucleiDir, "multipath.yaml"), """
                 id: nuclei-multipath-test
                 info:
                   name: Multi-path probe
