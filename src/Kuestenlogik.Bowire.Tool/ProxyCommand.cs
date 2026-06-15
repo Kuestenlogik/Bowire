@@ -86,7 +86,10 @@ internal static class ProxyCommand
         {
             o.Listen(IPAddress.Loopback, options.ApiPort, l => l.Protocols = HttpProtocols.Http1);
         });
-        var api = apiBuilder.Build();
+        // `await using` so a throw between Build() and the graceful
+        // shutdown path below still releases Kestrel + DI container
+        // (cs/dispose-not-called-on-throw).
+        await using var api = apiBuilder.Build();
         api.MapBowireProxyEndpoints("", store);
 
         try
