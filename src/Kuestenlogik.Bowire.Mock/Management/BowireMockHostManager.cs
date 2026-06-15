@@ -64,27 +64,34 @@ public sealed class BowireMockHostManager : IAsyncDisposable
                 $"No free TCP port found in the range {BasePort}..{BasePort + MaxProbes - 1}; close some mock hosts and try again.");
         }
 
-        // CA2000: MockServer ownership transfers into the dictionary
-        // entry below; DisposeAsync on StopAsync / disposal hook
-        // tears it down. Suppress the false positive.
-#pragma warning disable CA2000
         var server = await MockServer.StartAsync(new MockServerOptions
         {
             RecordingPath = tempPath,
             Port = port,
         }, ct).ConfigureAwait(false);
-#pragma warning restore CA2000
+        try
+        {
+            var handle = new MockHostHandle(
+                MockId: mockId,
+                RecordingId: recordingId,
+                Label: label,
+                Port: server.Port,
+                Url: $"http://127.0.0.1:{server.Port}",
+                StartedAtUtc: DateTime.UtcNow);
 
-        var handle = new MockHostHandle(
-            MockId: mockId,
-            RecordingId: recordingId,
-            Label: label,
-            Port: server.Port,
-            Url: $"http://127.0.0.1:{server.Port}",
-            StartedAtUtc: DateTime.UtcNow);
-
-        _entries[mockId] = new MockHostEntry(handle, server, tempPath);
-        return handle;
+            _entries[mockId] = new MockHostEntry(handle, server, tempPath);
+            return handle;
+        }
+        catch
+        {
+            // Handle ctor / dictionary write threw before ownership of
+            // `server` reached _entries — tear it down here so the
+            // socket / file handle doesn't leak. Success path leaves
+            // ownership with MockHostEntry, disposed via StopAsync or
+            // DisposeAsync.
+            try { await server.DisposeAsync().ConfigureAwait(false); } catch (ObjectDisposedException) { }
+            throw;
+        }
     }
 
     public async Task<bool> StopAsync(string mockId, CancellationToken ct)
