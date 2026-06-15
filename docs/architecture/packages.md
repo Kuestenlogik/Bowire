@@ -170,7 +170,7 @@ Provides both:
 
 ## Versioning
 
-Packages **inside the Bowire repo** (`Kuestenlogik.Bowire`, `.Cli`, `.Tool`, `.AsyncApi`, `.Mock`, `.Mcp`, `.Security.Scanner`, `.Extension.MapLibre`, all in-tree `Protocol.*` plugins) share the same version number and release together. The version follows [SemVer 2.0](https://semver.org/).
+Packages **inside the Bowire repo** (`Kuestenlogik.Bowire`, `.Cli`, `.Tool`, `.Ai`, `.AsyncApi`, `.Auth.Oidc`, `.Help`, `.Map`, `.Mock`, `.Mcp`, `.Security.Scanner`, `.Telemetry`, `.Testing`, all in-tree `Protocol.*` plugins) share the same version number and release together. The version follows [SemVer 2.0](https://semver.org/).
 
 Packages **in sibling repos** carry their own version number — each plugin matures on its own schedule. The compatibility contract (which sibling-version × Bowire-host pair works together) is documented in [Plugin Compatibility](compatibility.md); the short version is "plugin built against `Kuestenlogik.Bowire X.Y.Z` runs in any Bowire host within the same major".
 
