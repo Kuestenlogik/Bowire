@@ -39,10 +39,14 @@ public static class BowireHttpClientFactory
     /// <param name="timeout">Optional client timeout. Default: <c>HttpClient</c> default (100 s).</param>
     public static HttpClient Create(IConfiguration? config, string pluginId, TimeSpan? timeout = null)
     {
-        // Ownership of the handler transfers to HttpClient via
-        // disposeHandler:true — Dispose runs through to the handler when
-        // the caller disposes the client. CA2000 can't follow that
-        // ownership transfer across the constructor.
+        // CA2000: handler ownership transfers to HttpClient via
+        // disposeHandler:true. HttpClient's ctor never throws for a non-
+        // null handler, and the only follow-up statement (`client.Timeout =
+        // ...`) executes after ownership has moved into the client — so
+        // no leak path exists. A try/catch null-out dance just trades the
+        // warning for CA1508 ("variable is always null") because the
+        // analyzer also can't model that ownership transfer. Pragma is
+        // the honest answer.
 #pragma warning disable CA2000
         var handler = CreateHandler(config, pluginId);
 #pragma warning restore CA2000
