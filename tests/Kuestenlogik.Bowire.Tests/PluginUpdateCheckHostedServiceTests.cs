@@ -183,13 +183,39 @@ public sealed class PluginUpdateCheckHostedServiceTests : IDisposable
     /// should fire. If one does, the test would silently hit the real
     /// network; this handler trips a 500 so the test fails loudly.
     /// </summary>
+    /// <remarks>
+    /// Tracks every emitted response so they're disposed when the owning
+    /// HttpClient is -- closes the cs/local-not-disposed loop the
+    /// analyzer can't see across the handler -> HttpClient boundary.
+    /// HttpResponseMessage.Dispose is idempotent, so production code's
+    /// own response-disposal doesn't conflict if it ever fires.
+    /// </remarks>
     private sealed class BlockNetworkHandler : HttpMessageHandler
     {
+        private readonly List<HttpResponseMessage> _emitted = new();
+
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
-            => Task.FromResult(new HttpResponseMessage(HttpStatusCode.InternalServerError)
+        {
+            var resp = new HttpResponseMessage(HttpStatusCode.InternalServerError)
             {
                 ReasonPhrase = "test fake: no HTTP calls expected",
-            });
+            };
+            lock (_emitted) _emitted.Add(resp);
+            return Task.FromResult(resp);
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                lock (_emitted)
+                {
+                    foreach (var r in _emitted) r.Dispose();
+                    _emitted.Clear();
+                }
+            }
+            base.Dispose(disposing);
+        }
     }
 
     private sealed class TempStore(string root) : IBowireUserStore

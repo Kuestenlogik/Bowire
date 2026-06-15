@@ -15,10 +15,14 @@ namespace Kuestenlogik.Bowire.Protocol.Rest.OpenApi2.Tests;
 /// the parsing branches (path/query/header buckets, body schemas, enums,
 /// arrays, server URL composition) light up without any HTTP fetch.
 /// </summary>
-// CA1861 (inline array allocs) and CA2000 / CA2025 (handler lifetime in
-// short test methods) are noisy here: the inline expected arrays are
-// fixture-local and live for one Assert, and HttpClient takes ownership
-// of the stub handler before its `using` block disposes both together.
+// CA1861 (inline array allocs) is noisy here: the inline expected arrays
+// are fixture-local and live for one Assert. CA2000 / CA2025 cover the
+// stub-handler -> HttpClient -> production-code lifetime: production
+// callers dispose via using var resp = await http.GetAsync(...) and
+// StubHandler tracks every emitted response for a belt-and-braces
+// dispose on handler-disposal (HttpResponseMessage.Dispose is idempotent).
+// CA2000 on the handler itself is a known false positive -- HttpClient
+// owns and disposes its inner handler.
 #pragma warning disable CA1861, CA2000, CA2025
 public sealed class OpenApiDiscoveryTests
 {
@@ -1012,12 +1016,37 @@ public sealed class OpenApiDiscoveryTests
         Assert.Null(result);
     }
 
+    /// <summary>
+    /// Test message handler that tracks every emitted response so they're
+    /// disposed when the owning HttpClient is -- closes the
+    /// cs/local-not-disposed loop the analyzer can't see across the
+    /// handler -> HttpClient -> production-code boundary.
+    /// HttpResponseMessage.Dispose is idempotent, so production code's
+    /// own using var resp = ... doesn't conflict.
+    /// </summary>
     private sealed class StubHandler : HttpMessageHandler
     {
         private readonly Func<HttpRequestMessage, CancellationToken, Task<HttpResponseMessage>> _f;
+        private readonly List<HttpResponseMessage> _emitted = new();
         public StubHandler(Func<HttpRequestMessage, CancellationToken, Task<HttpResponseMessage>> f) => _f = f;
-        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
-            => _f(request, cancellationToken);
+        protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            var resp = await _f(request, cancellationToken).ConfigureAwait(false);
+            lock (_emitted) _emitted.Add(resp);
+            return resp;
+        }
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                lock (_emitted)
+                {
+                    foreach (var r in _emitted) r.Dispose();
+                    _emitted.Clear();
+                }
+            }
+            base.Dispose(disposing);
+        }
     }
 }
 #pragma warning restore CA1861, CA2000, CA2025

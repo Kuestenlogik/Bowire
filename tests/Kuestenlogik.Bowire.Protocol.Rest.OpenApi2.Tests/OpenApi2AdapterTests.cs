@@ -15,8 +15,13 @@ namespace Kuestenlogik.Bowire.Protocol.Rest.OpenApi2.Tests;
 /// builder. Each test asserts the adapter wires the underlying
 /// OpenApiDiscovery / OpenApiRecordingBuilder helpers correctly.
 /// </summary>
-// CA2000 / CA2025: HttpClient takes ownership of the StubHandler; both
-// dispose together via the `using` block.
+// CA2000 / CA2025: response-message lifetime spans the stub-handler ->
+// HttpClient boundary; production callers use using var resp = await
+// http.GetAsync(...) to dispose, and StubHandler also tracks emitted
+// responses for a belt-and-braces dispose on handler-disposal
+// (HttpResponseMessage.Dispose is idempotent, so the double-call is a
+// no-op). CA2000 on the handler itself is a known false positive --
+// HttpClient owns and disposes its inner handler.
 #pragma warning disable CA2000, CA2025
 public sealed class OpenApi2AdapterTests
 {
@@ -285,12 +290,37 @@ public sealed class OpenApi2AdapterTests
             adapter.BuildMockRecordingFromFileAsync(path, TestContext.Current.CancellationToken));
     }
 
+    /// <summary>
+    /// Test message handler that tracks every emitted response so they're
+    /// disposed when the owning HttpClient is -- closes the
+    /// cs/local-not-disposed loop the analyzer can't see across the
+    /// handler -> HttpClient -> production-code boundary.
+    /// HttpResponseMessage.Dispose is idempotent, so production code's
+    /// own using var resp = ... doesn't conflict.
+    /// </summary>
     private sealed class StubHandler : HttpMessageHandler
     {
         private readonly Func<HttpRequestMessage, CancellationToken, Task<HttpResponseMessage>> _f;
+        private readonly List<HttpResponseMessage> _emitted = new();
         public StubHandler(Func<HttpRequestMessage, CancellationToken, Task<HttpResponseMessage>> f) => _f = f;
-        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
-            => _f(request, cancellationToken);
+        protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            var resp = await _f(request, cancellationToken).ConfigureAwait(false);
+            lock (_emitted) _emitted.Add(resp);
+            return resp;
+        }
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                lock (_emitted)
+                {
+                    foreach (var r in _emitted) r.Dispose();
+                    _emitted.Clear();
+                }
+            }
+            base.Dispose(disposing);
+        }
     }
 }
 #pragma warning restore CA2000, CA2025
