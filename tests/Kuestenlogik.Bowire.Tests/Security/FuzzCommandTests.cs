@@ -213,7 +213,7 @@ public sealed class FuzzCommandTests
         builder.Logging.ClearProviders();
         builder.WebHost.ConfigureKestrel(o => o.Listen(IPAddress.Loopback, 0, l => l.Protocols = HttpProtocols.Http1));
         var upstream = builder.Build();
-        ((IApplicationBuilder)upstream).Run(async ctx =>
+        upstream.Run(async ctx =>
         {
             ctx.Response.StatusCode = 200;
             ctx.Response.ContentType = "application/json";
@@ -247,7 +247,7 @@ public sealed class FuzzCommandTests
         builder.Logging.ClearProviders();
         builder.WebHost.ConfigureKestrel(o => o.Listen(IPAddress.Loopback, 0, l => l.Protocols = HttpProtocols.Http1));
         var upstream = builder.Build();
-        ((IApplicationBuilder)upstream).Run(async ctx =>
+        upstream.Run(async ctx =>
         {
             ctx.Response.StatusCode = 500;
             ctx.Response.ContentType = "text/plain";
@@ -304,7 +304,7 @@ public sealed class FuzzCommandTests
         builder.Logging.ClearProviders();
         builder.WebHost.ConfigureKestrel(o => o.Listen(IPAddress.Loopback, 0, l => l.Protocols = HttpProtocols.Http1));
         var upstream = builder.Build();
-        ((IApplicationBuilder)upstream).Run(async ctx =>
+        upstream.Run(async ctx =>
         {
             ctx.Response.StatusCode = 200;
             await ctx.Response.WriteAsync("{}", ctx.RequestAborted);
@@ -365,7 +365,7 @@ public sealed class FuzzCommandTests
         builder.Logging.ClearProviders();
         builder.WebHost.ConfigureKestrel(o => o.Listen(IPAddress.Loopback, 0, l => l.Protocols = HttpProtocols.Http1));
         var upstream = builder.Build();
-        ((IApplicationBuilder)upstream).Run(async ctx =>
+        upstream.Run(async ctx =>
         {
             ctx.Response.StatusCode = 200;
             await ctx.Response.WriteAsync("{}", ctx.RequestAborted);
@@ -415,7 +415,7 @@ public sealed class FuzzCommandTests
         builder.Logging.ClearProviders();
         builder.WebHost.ConfigureKestrel(o => o.Listen(IPAddress.Loopback, 0, l => l.Protocols = HttpProtocols.Http1));
         var upstream = builder.Build();
-        ((IApplicationBuilder)upstream).Run(async ctx =>
+        upstream.Run(async ctx =>
         {
             ctx.Response.StatusCode = 200;
             await ctx.Response.WriteAsync("{}", ctx.RequestAborted);
