@@ -22,7 +22,7 @@ public sealed class MissCaptureEdgeCaseTests : IDisposable
 
     public MissCaptureEdgeCaseTests()
     {
-        _tempDir = Path.Combine(Path.GetTempPath(), "bowire-miss-edge-" + Guid.NewGuid().ToString("N"));
+        _tempDir = SafePath.Combine(Path.GetTempPath(), "bowire-miss-edge-" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(_tempDir);
     }
 
@@ -44,7 +44,7 @@ public sealed class MissCaptureEdgeCaseTests : IDisposable
         // Whitespace-only files happen when the user `touch`es the path
         // before pointing the mock at it. The writer should treat the
         // file as a blank canvas rather than failing to deserialise.
-        var path = Path.Combine(_tempDir, "empty.json");
+        var path = SafePath.Combine(_tempDir, "empty.json");
         await File.WriteAllTextAsync(path, "   \n  ", TestContext.Current.CancellationToken);
 
         var ctx = new DefaultHttpContext();
@@ -64,7 +64,7 @@ public sealed class MissCaptureEdgeCaseTests : IDisposable
         // The writer rejects files that deserialise to a null recording so
         // it never overwrites unrelated user data. The exception is caught
         // by CaptureAsync and logged; the file is left untouched.
-        var path = Path.Combine(_tempDir, "null-recording.json");
+        var path = SafePath.Combine(_tempDir, "null-recording.json");
         var literal = "null";
         await File.WriteAllTextAsync(path, literal, TestContext.Current.CancellationToken);
 
@@ -81,7 +81,7 @@ public sealed class MissCaptureEdgeCaseTests : IDisposable
     [Fact]
     public async Task RestRequest_StripsHopByHopHeaders_FromCapturedMetadata()
     {
-        var path = Path.Combine(_tempDir, "hop.json");
+        var path = SafePath.Combine(_tempDir, "hop.json");
         var ctx = new DefaultHttpContext();
         ctx.Request.Method = "GET";
         ctx.Request.Path = "/x";
@@ -114,7 +114,7 @@ public sealed class MissCaptureEdgeCaseTests : IDisposable
     [Fact]
     public async Task RestRequest_BodyExceeds1MiB_TruncatesWithMarker()
     {
-        var path = Path.Combine(_tempDir, "big.json");
+        var path = SafePath.Combine(_tempDir, "big.json");
         var ctx = new DefaultHttpContext();
         ctx.Request.Method = "POST";
         ctx.Request.Path = "/big";
@@ -135,7 +135,7 @@ public sealed class MissCaptureEdgeCaseTests : IDisposable
     public async Task GrpcRequest_EmptyZeroLengthFrame_CapturesEmptyPayload()
     {
         // 5-byte envelope: compression=0, length=0, no payload bytes.
-        var path = Path.Combine(_tempDir, "grpc-empty.json");
+        var path = SafePath.Combine(_tempDir, "grpc-empty.json");
         var emptyFrame = new byte[5];
         emptyFrame[0] = 0; // no compression
         // length bytes already zero
@@ -159,7 +159,7 @@ public sealed class MissCaptureEdgeCaseTests : IDisposable
     public async Task GrpcRequest_ShortBody_AppendsStepWithoutRequestBinary()
     {
         // Path has only the service segment — method falls back to "Unknown".
-        var path = Path.Combine(_tempDir, "grpc-short-path.json");
+        var path = SafePath.Combine(_tempDir, "grpc-short-path.json");
         var ctx = new DefaultHttpContext();
         ctx.Request.Method = "POST";
         ctx.Request.Path = "/onlyservice";
@@ -181,7 +181,7 @@ public sealed class MissCaptureEdgeCaseTests : IDisposable
         // and seekable — non-seekable streams (the default for ASP.NET
         // requests when the caller hasn't enabled buffering) skip the
         // body-read branch entirely.
-        var path = Path.Combine(_tempDir, "nonseek.json");
+        var path = SafePath.Combine(_tempDir, "nonseek.json");
         var ctx = new DefaultHttpContext();
         ctx.Request.Method = "POST";
         ctx.Request.Path = "/no-buffering";
