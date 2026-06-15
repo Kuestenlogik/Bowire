@@ -37,7 +37,7 @@ public sealed class TestRunnerEndToEndTests : IDisposable
     [Fact]
     public async Task RunAsync_StubProtocol_HappyAssertion_ReturnsZero()
     {
-        var path = Path.Combine(_tempDir, "happy.json");
+        var path = SafePath.Combine(_tempDir, "happy.json");
         await File.WriteAllTextAsync(path, """
             {
               "name": "stub-coll",
@@ -68,7 +68,7 @@ public sealed class TestRunnerEndToEndTests : IDisposable
         // Same stub responds with status="OK" + echo=1; assert demands
         // echo=999 → assertion fails → exit 1 (every assertion failure
         // counts the test as failed).
-        var path = Path.Combine(_tempDir, "miss.json");
+        var path = SafePath.Combine(_tempDir, "miss.json");
         await File.WriteAllTextAsync(path, """
             {
               "name": "stub-miss",
@@ -98,7 +98,7 @@ public sealed class TestRunnerEndToEndTests : IDisposable
         // serverUrl = "discovery-fail" makes the stub throw inside
         // DiscoverAsync. RunTestAsync catches the exception, sets
         // result.Error, the test counts as failed → exit 1.
-        var path = Path.Combine(_tempDir, "disc-fail.json");
+        var path = SafePath.Combine(_tempDir, "disc-fail.json");
         await File.WriteAllTextAsync(path, """
             {
               "name": "disc-fail",
@@ -119,7 +119,7 @@ public sealed class TestRunnerEndToEndTests : IDisposable
     {
         // Service "throw" makes the stub throw inside InvokeAsync,
         // exercising the second try/catch branch in RunTestAsync.
-        var path = Path.Combine(_tempDir, "invoke-fail.json");
+        var path = SafePath.Combine(_tempDir, "invoke-fail.json");
         await File.WriteAllTextAsync(path, """
             {
               "name": "invoke-fail",
@@ -143,7 +143,7 @@ public sealed class TestRunnerEndToEndTests : IDisposable
         // and the stub is registered, we confirm the no-op fallback
         // returns a real protocol rather than null. We assert that
         // the run ends successfully (any assertion-less test passes).
-        var path = Path.Combine(_tempDir, "no-proto.json");
+        var path = SafePath.Combine(_tempDir, "no-proto.json");
         await File.WriteAllTextAsync(path, """
             {
               "name": "no-proto-coll",
@@ -168,7 +168,7 @@ public sealed class TestRunnerEndToEndTests : IDisposable
         // is `{ "echo": "<id-as-string>", "items": [10, 20], "ts": 1.5 }`,
         // so each op below resolves a different actual value and a
         // different code path inside EvaluateAssertion.
-        var path = Path.Combine(_tempDir, "ops.json");
+        var path = SafePath.Combine(_tempDir, "ops.json");
         await File.WriteAllTextAsync(path, """
             {
               "name": "ops",
@@ -207,7 +207,7 @@ public sealed class TestRunnerEndToEndTests : IDisposable
         // JsonNode.Parse can't handle → the catch around the parse
         // attempt (TestRunner line ~224) runs; assertions on the raw
         // body fall through to string compare.
-        var path = Path.Combine(_tempDir, "non-json.json");
+        var path = SafePath.Combine(_tempDir, "non-json.json");
         await File.WriteAllTextAsync(path, """
             {
               "name": "nj",
@@ -237,7 +237,7 @@ public sealed class TestRunnerEndToEndTests : IDisposable
         // value as a pattern. A pattern with an unmatched group throws
         // → EvaluateAssertion's catch sets rendered.Error → the
         // PrintTestResult branch at line 457 ("error: …") runs.
-        var path = Path.Combine(_tempDir, "regex-err.json");
+        var path = SafePath.Combine(_tempDir, "regex-err.json");
         await File.WriteAllTextAsync(path, """
             {
               "name": "rx",
