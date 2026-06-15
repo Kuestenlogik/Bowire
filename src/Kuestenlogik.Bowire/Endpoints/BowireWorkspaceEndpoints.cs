@@ -279,29 +279,26 @@ internal static partial class BowireWorkspaceEndpoints
             fileName = "xdg-open";
         }
 
+        // Use `ArgumentList.Add` instead of the string `Arguments`
+        // property — each entry goes into argv as a discrete element,
+        // so the OS process loader never tokenises the resolved path
+        // through any shell parser. This is the canonical CodeQL-
+        // recognised pattern (csharp-CommandLineInjection.qll) for
+        // closing the taint flow from user input → Process.Start;
+        // the previous QuoteArg-on-Arguments-string shape still flagged
+        // because CodeQL treats the Arguments setter as a single-line
+        // sink that can carry shell metacharacters regardless of the
+        // sanitiser applied to the value. ArgumentList sidesteps that
+        // entirely: no string concatenation, no quoting concerns, no
+        // shell tokenisation.
         var psi = new ProcessStartInfo
         {
             FileName        = fileName,
-            Arguments       = QuoteArg(resolved),
             UseShellExecute = false,
         };
+        psi.ArgumentList.Add(resolved);
         Process.Start(psi);
     }
-
-    /// <summary>
-    /// Defensive argument quoting — wraps the value in <c>"..."</c>
-    /// and escapes embedded <c>"</c> as <c>\"</c>. CodeQL's
-    /// csharp-CommandLineInjection.qll recognises this idiom as a
-    /// sanitiser barrier when applied to a
-    /// <see cref="ProcessStartInfo.Arguments"/> value, so it closes
-    /// the taint flow from user-input → <c>Process.Start</c>.
-    /// Combined with the earlier path-traversal + allow-list guards
-    /// this means a hostile workspaceId would have failed three
-    /// successive checks before it could influence the spawned
-    /// process's command line.
-    /// </summary>
-    internal static string QuoteArg(string value) =>
-        "\"" + value.Replace("\"", "\\\"", StringComparison.Ordinal) + "\"";
 
     // #58 — Workspace file schema. Property declaration order doubles
     // as the on-disk JSON key order; keep version first so a stale
