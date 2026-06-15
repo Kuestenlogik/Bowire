@@ -21,7 +21,7 @@ public sealed class BrowserUiOptionsTests : IDisposable
     public BrowserUiOptionsTests()
     {
         _cwdBackup = Directory.GetCurrentDirectory();
-        _tempDir = Path.Combine(Path.GetTempPath(), "bowire-uiopts-" + Guid.NewGuid().ToString("N"));
+        _tempDir = SafePath.Combine(Path.GetTempPath(), "bowire-uiopts-" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(_tempDir);
         Directory.SetCurrentDirectory(_tempDir);
     }
@@ -51,7 +51,7 @@ public sealed class BrowserUiOptionsTests : IDisposable
     [Fact]
     public void AppSettings_ProvidesAllDefaults()
     {
-        File.WriteAllText(Path.Combine(_tempDir, "appsettings.json"),
+        File.WriteAllText(SafePath.Combine(_tempDir, "appsettings.json"),
             """
             {
               "Bowire": {
@@ -77,7 +77,7 @@ public sealed class BrowserUiOptionsTests : IDisposable
     [Fact]
     public void CliFlag_Port_OverridesAppSettings()
     {
-        File.WriteAllText(Path.Combine(_tempDir, "appsettings.json"),
+        File.WriteAllText(SafePath.Combine(_tempDir, "appsettings.json"),
             """{ "Bowire": { "Port": 7070 } }""");
 
         var args = new[] { "--port", "8080" };
@@ -165,7 +165,7 @@ public sealed class BrowserUiOptionsTests : IDisposable
     [Fact]
     public void UrlArray_InAppSettings_PopulatesServerUrls()
     {
-        File.WriteAllText(Path.Combine(_tempDir, "appsettings.json"),
+        File.WriteAllText(SafePath.Combine(_tempDir, "appsettings.json"),
             """
             {
               "Bowire": {
@@ -185,7 +185,7 @@ public sealed class BrowserUiOptionsTests : IDisposable
     [Fact]
     public void MultipleUrls_CliOverrides_AppSettingsArray()
     {
-        File.WriteAllText(Path.Combine(_tempDir, "appsettings.json"),
+        File.WriteAllText(SafePath.Combine(_tempDir, "appsettings.json"),
             """
             { "Bowire": { "ServerUrls": ["http://from-json"] } }
             """);
@@ -201,7 +201,7 @@ public sealed class BrowserUiOptionsTests : IDisposable
     [Fact]
     public void PluginDir_FlowsThroughToOptions()
     {
-        var target = Path.Combine(_tempDir, "pd-check");
+        var target = SafePath.Combine(_tempDir, "pd-check");
         var args = new[] { "--plugin-dir", target };
         var config = BowireConfiguration.Build(args);
         var ui = BowireConfiguration.BuildBrowserUiOptions(config, args);
