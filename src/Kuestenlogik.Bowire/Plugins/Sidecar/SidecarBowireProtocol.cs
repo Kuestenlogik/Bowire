@@ -249,7 +249,14 @@ public sealed class SidecarBowireProtocol : IBowireProtocol
             // If a previous run died, dispose it before respawning.
             if (_transport is not null)
             {
-                try { await _transport.DisposeAsync().ConfigureAwait(false); } catch { }
+                try { await _transport.DisposeAsync().ConfigureAwait(false); }
+                catch (Exception ex)
+                {
+                    // Old transport already dead -- disposal is best-
+                    // effort. We're about to spawn a fresh one anyway,
+                    // so a clean-up failure here doesn't block recovery.
+                    _ = ex;
+                }
                 _transport = null;
                 _initResult = null;
             }
