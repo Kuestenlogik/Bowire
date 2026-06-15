@@ -36,13 +36,7 @@ namespace Kuestenlogik.Bowire.Protocol.JsonRpc;
 ///   freeform request form.</item>
 /// </list>
 /// </remarks>
-// CA1001: _http lives for the lifetime of the protocol registry, which is
-// the lifetime of the host process. Adding IDisposable to IBowireProtocol
-// just to dispose a singleton at shutdown would ripple through every plugin
-// without payoff (same trade-off the other HTTP-based plugins take).
-#pragma warning disable CA1001
-public sealed class BowireJsonRpcProtocol : IBowireProtocol
-#pragma warning restore CA1001
+public sealed class BowireJsonRpcProtocol : IBowireProtocol, IDisposable
 {
     private static readonly JsonSerializerOptions s_indented = new() { WriteIndented = true };
 
@@ -59,6 +53,16 @@ public sealed class BowireJsonRpcProtocol : IBowireProtocol
     {
         var config = serviceProvider?.GetService<IConfiguration>();
         _http = BowireHttpClientFactory.Create(config, Id, TimeSpan.FromSeconds(30));
+    }
+
+    /// <summary>
+    /// Dispose the lazily-built <see cref="HttpClient"/>. Same lifecycle
+    /// contract as the other HTTP-based plugins — owners (registry or
+    /// test 'using var') release the handler at scope exit.
+    /// </summary>
+    public void Dispose()
+    {
+        _http.Dispose();
     }
 
     // Generic JSON-RPC mark — three call-and-response arrows over a

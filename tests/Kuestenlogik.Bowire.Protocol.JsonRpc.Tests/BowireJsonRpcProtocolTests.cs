@@ -18,7 +18,7 @@ public sealed class BowireJsonRpcProtocolTests
     [Fact]
     public void Identity_Pins_Id_Name_And_Icon()
     {
-        var p = new BowireJsonRpcProtocol();
+        using var p = new BowireJsonRpcProtocol();
         Assert.Equal("jsonrpc", p.Id);
         Assert.Equal("JSON-RPC", p.Name);
         Assert.False(string.IsNullOrEmpty(p.IconSvg));
@@ -26,19 +26,22 @@ public sealed class BowireJsonRpcProtocolTests
 
     [Fact]
     public void Implements_IBowireProtocol()
-        => Assert.IsAssignableFrom<IBowireProtocol>(new BowireJsonRpcProtocol());
+    {
+        using var p = new BowireJsonRpcProtocol();
+        Assert.IsAssignableFrom<IBowireProtocol>(p);
+    }
 
     [Fact]
     public async Task DiscoverAsync_Empty_Url_Returns_Empty()
     {
-        var p = new BowireJsonRpcProtocol();
+        using var p = new BowireJsonRpcProtocol();
         Assert.Empty(await p.DiscoverAsync("", false, TestContext.Current.CancellationToken));
     }
 
     [Fact]
     public async Task DiscoverAsync_Whitespace_Url_Returns_Empty()
     {
-        var p = new BowireJsonRpcProtocol();
+        using var p = new BowireJsonRpcProtocol();
         Assert.Empty(await p.DiscoverAsync("   ", false, TestContext.Current.CancellationToken));
     }
 
@@ -47,7 +50,7 @@ public sealed class BowireJsonRpcProtocolTests
     {
         // Only http:// / https:// are accepted — every other plugin's
         // scheme (ws://, mqtt://, kafka://, ...) must be passed through.
-        var p = new BowireJsonRpcProtocol();
+        using var p = new BowireJsonRpcProtocol();
         Assert.Empty(await p.DiscoverAsync("ws://example.com", false, TestContext.Current.CancellationToken));
         Assert.Empty(await p.DiscoverAsync("ftp://example.com", false, TestContext.Current.CancellationToken));
     }
@@ -58,7 +61,7 @@ public sealed class BowireJsonRpcProtocolTests
         // Port 1 is reserved and never listens; transport-level failure
         // returns an empty service tree so Bowire's dispatcher can try
         // the next plugin.
-        var p = new BowireJsonRpcProtocol();
+        using var p = new BowireJsonRpcProtocol();
         p.Initialize(null);
         var result = await p.DiscoverAsync("http://127.0.0.1:1", false, TestContext.Current.CancellationToken);
         Assert.Empty(result);
@@ -67,7 +70,7 @@ public sealed class BowireJsonRpcProtocolTests
     [Fact]
     public async Task InvokeAsync_Unreachable_Endpoint_Returns_Error_Status()
     {
-        var p = new BowireJsonRpcProtocol();
+        using var p = new BowireJsonRpcProtocol();
         p.Initialize(null);
         var result = await p.InvokeAsync(
             "http://127.0.0.1:1",
@@ -83,7 +86,7 @@ public sealed class BowireJsonRpcProtocolTests
     [Fact]
     public async Task InvokeAsync_Invalid_Url_Surfaces_Parse_Status()
     {
-        var p = new BowireJsonRpcProtocol();
+        using var p = new BowireJsonRpcProtocol();
         p.Initialize(null);
         var result = await p.InvokeAsync(
             "not a url at all",
@@ -99,7 +102,7 @@ public sealed class BowireJsonRpcProtocolTests
     public async Task InvokeStreamAsync_Yields_Nothing()
     {
         // JSON-RPC 2.0 has no streaming primitive — explicit doc.
-        var p = new BowireJsonRpcProtocol();
+        using var p = new BowireJsonRpcProtocol();
         var count = 0;
         await foreach (var _ in p.InvokeStreamAsync(
             "http://example.com",
@@ -117,7 +120,7 @@ public sealed class BowireJsonRpcProtocolTests
     [Fact]
     public async Task OpenChannelAsync_Returns_Null()
     {
-        var p = new BowireJsonRpcProtocol();
+        using var p = new BowireJsonRpcProtocol();
         var ch = await p.OpenChannelAsync(
             "http://example.com",
             "Methods", "anything",
