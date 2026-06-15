@@ -117,7 +117,7 @@ public sealed class FileEntityStoreTests : IDisposable
         await sut.SaveAsync(kind, "env_alpha", """{"id":"env_alpha","name":"Alpha"}""",
             TestContext.Current.CancellationToken);
 
-        var file = Path.Combine(_root, kind, "env_alpha.json");
+        var file = SafePath.Combine(_root, kind, "env_alpha.json");
         Assert.True(File.Exists(file));
         var written = await File.ReadAllTextAsync(file, TestContext.Current.CancellationToken);
         // Indented format with the bundle store's shape.
@@ -206,7 +206,7 @@ public sealed class FileEntityStoreTests : IDisposable
             sut.SaveAsync("environments", "bad", "{ not json",
                 TestContext.Current.CancellationToken));
         // Nothing on disk for the rejected write.
-        Assert.False(File.Exists(Path.Combine(_root, "environments", "bad.json")));
+        Assert.False(File.Exists(SafePath.Combine(_root, "environments", "bad.json")));
     }
 
     [Fact]
@@ -237,7 +237,7 @@ public sealed class FileEntityStoreTests : IDisposable
             TestContext.Current.CancellationToken);
 
         var written = await File.ReadAllTextAsync(
-            Path.Combine(_root, "environments", "e.json"),
+            SafePath.Combine(_root, "environments", "e.json"),
             TestContext.Current.CancellationToken);
         Assert.Contains("\"camelCased\"", written);
         Assert.Contains("\"nestedKey\"", written);
@@ -266,10 +266,10 @@ public sealed class FileEntityStoreTests : IDisposable
         await sut.SaveAsync("collections", "col_payments", collection,
             TestContext.Current.CancellationToken);
 
-        var dir = Path.Combine(_root, "collections", "col_payments");
+        var dir = SafePath.Combine(_root, "collections", "col_payments");
         Assert.True(Directory.Exists(dir));
 
-        var container = Path.Combine(dir, "col_payments.json");
+        var container = SafePath.Combine(dir, "col_payments.json");
         Assert.True(File.Exists(container));
         using (var doc = JsonDocument.Parse(
             await File.ReadAllTextAsync(container, TestContext.Current.CancellationToken)))
@@ -278,7 +278,7 @@ public sealed class FileEntityStoreTests : IDisposable
             Assert.Equal(2, doc.RootElement.GetProperty("requests").GetArrayLength());
         }
 
-        var listReq = Path.Combine(dir, "req_list.req.json");
+        var listReq = SafePath.Combine(dir, "req_list.req.json");
         Assert.True(File.Exists(listReq));
         using (var doc = JsonDocument.Parse(
             await File.ReadAllTextAsync(listReq, TestContext.Current.CancellationToken)))
@@ -287,7 +287,7 @@ public sealed class FileEntityStoreTests : IDisposable
             Assert.Equal("/payments", doc.RootElement.GetProperty("path").GetString());
         }
 
-        var createReq = Path.Combine(dir, "req_create.req.json");
+        var createReq = SafePath.Combine(dir, "req_create.req.json");
         Assert.True(File.Exists(createReq));
         using (var doc = JsonDocument.Parse(
             await File.ReadAllTextAsync(createReq, TestContext.Current.CancellationToken)))
@@ -306,9 +306,9 @@ public sealed class FileEntityStoreTests : IDisposable
             """{"id":"col_empty","name":"Empty"}""",
             TestContext.Current.CancellationToken);
 
-        var dir = Path.Combine(_root, "collections", "col_empty");
+        var dir = SafePath.Combine(_root, "collections", "col_empty");
         Assert.True(Directory.Exists(dir));
-        Assert.True(File.Exists(Path.Combine(dir, "col_empty.json")));
+        Assert.True(File.Exists(SafePath.Combine(dir, "col_empty.json")));
         Assert.Empty(Directory.EnumerateFiles(dir, "*.req.json"));
 
         var loaded = await sut.LoadAsync("collections", "col_empty",
@@ -332,17 +332,17 @@ public sealed class FileEntityStoreTests : IDisposable
         ]}
         """, TestContext.Current.CancellationToken);
 
-        var dir = Path.Combine(_root, "collections", "col_x");
-        Assert.True(File.Exists(Path.Combine(dir, "req_a.req.json")));
-        Assert.True(File.Exists(Path.Combine(dir, "req_b.req.json")));
+        var dir = SafePath.Combine(_root, "collections", "col_x");
+        Assert.True(File.Exists(SafePath.Combine(dir, "req_a.req.json")));
+        Assert.True(File.Exists(SafePath.Combine(dir, "req_b.req.json")));
 
         // Resync with req_a removed.
         await sut.SaveAsync("collections", "col_x", """
         {"id":"col_x","requests":[{"id":"req_b"}]}
         """, TestContext.Current.CancellationToken);
 
-        Assert.False(File.Exists(Path.Combine(dir, "req_a.req.json")));
-        Assert.True(File.Exists(Path.Combine(dir, "req_b.req.json")));
+        Assert.False(File.Exists(SafePath.Combine(dir, "req_a.req.json")));
+        Assert.True(File.Exists(SafePath.Combine(dir, "req_b.req.json")));
     }
 
     [Fact]
@@ -371,13 +371,13 @@ public sealed class FileEntityStoreTests : IDisposable
         // Simulate a legacy top-level-file collection that hasn't been
         // re-saved through the new layout yet — the delete should pick
         // it up too.
-        var topLevel = Path.Combine(_root, "collections", "col_legacy.json");
+        var topLevel = SafePath.Combine(_root, "collections", "col_legacy.json");
         Directory.CreateDirectory(Path.GetDirectoryName(topLevel)!);
         await File.WriteAllTextAsync(topLevel, """{"id":"col_legacy"}""",
             TestContext.Current.CancellationToken);
 
         await sut.DeleteAsync("collections", "col_full", TestContext.Current.CancellationToken);
-        Assert.False(Directory.Exists(Path.Combine(_root, "collections", "col_full")));
+        Assert.False(Directory.Exists(SafePath.Combine(_root, "collections", "col_full")));
 
         await sut.DeleteAsync("collections", "col_legacy", TestContext.Current.CancellationToken);
         Assert.False(File.Exists(topLevel));
@@ -413,10 +413,10 @@ public sealed class FileEntityStoreTests : IDisposable
         // The store can target a not-yet-materialised path so the
         // workbench's "save environment" path doesn't have to scaffold
         // the layout first.
-        var nested = Path.Combine(_root, "nested", "ws_root");
+        var nested = SafePath.Combine(_root, "nested", "ws_root");
         var sut = new FileEntityStore(nested);
         await sut.SaveAsync("environments", "e", """{"id":"e"}""",
             TestContext.Current.CancellationToken);
-        Assert.True(File.Exists(Path.Combine(nested, "environments", "e.json")));
+        Assert.True(File.Exists(SafePath.Combine(nested, "environments", "e.json")));
     }
 }
