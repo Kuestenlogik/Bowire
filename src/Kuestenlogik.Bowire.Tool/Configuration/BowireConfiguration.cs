@@ -226,10 +226,12 @@ internal static class BowireConfiguration
         var cliDisabled = ExtractRepeatedTokens(args, "--disable-plugin");
         foreach (var raw in cliDisabled)
         {
-            foreach (var part in raw.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+            var fresh = raw
+                .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .Where(part => !options.DisabledPlugins.Contains(part, StringComparer.OrdinalIgnoreCase));
+            foreach (var part in fresh)
             {
-                if (!options.DisabledPlugins.Contains(part, StringComparer.OrdinalIgnoreCase))
-                    options.DisabledPlugins.Add(part);
+                options.DisabledPlugins.Add(part);
             }
         }
 
@@ -309,17 +311,15 @@ internal static class BowireConfiguration
         var needsExpansion = false;
         for (var i = 0; i < args.Length; i++)
         {
-            if (booleanFlags.Contains(args[i]))
+            // Only expand when the flag is truly bare — if the next arg
+            // already looks like a value (not starting with '-'), the
+            // user's intent is ambiguous, so leave the pair alone and
+            // let AddCommandLine interpret it.
+            if (booleanFlags.Contains(args[i]) &&
+                (i + 1 >= args.Length || args[i + 1].StartsWith('-')))
             {
-                // Only expand when the flag is truly bare — if the next
-                // arg already looks like a value (not starting with '-'),
-                // the user's intent is ambiguous, so leave the pair alone
-                // and let AddCommandLine interpret it.
-                if (i + 1 >= args.Length || args[i + 1].StartsWith('-'))
-                {
-                    needsExpansion = true;
-                    break;
-                }
+                needsExpansion = true;
+                break;
             }
         }
         if (!needsExpansion) return args;
