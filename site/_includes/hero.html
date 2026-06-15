@@ -29,7 +29,10 @@
     <p class="hero-slogan">The multi-protocol API workbench. Discover, invoke, record, replay, mock, scan.<br>All across 20+ protocols out of the box, and any custom one you ship.<br>Embedded or Standalone. UI, CLI or AI agent.<br>No cloud, no account, free and open source.<br>Built for API testing with even more swag than Swagger.</p>
     <div class="hero-actions">
       <a href="{{ '/docs/' | relative_url }}" class="btn btn-secondary">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="12 2 19 21 12 17 5 21 12 2"/></svg>
+        <!-- Star — fill only. The earlier 2.25 stroke gave the star a
+             halo that read ~15% larger than the cap + octocat next to
+             it; the trio now balances on path geometry alone. -->
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><polygon points="12 2 19 21 12 17 5 21 12 2"/></svg>
         Get Started
       </a>
       {%- comment -%}
@@ -39,8 +42,16 @@
       directly to the Bowire.Bootcamp GitHub repo as a soft fallback
       via the rewrite rule in _config.yml. {%- endcomment -%}
       <a href="{{ '/bootcamp/' | relative_url }}" class="btn btn-secondary">
+        <!-- Graduation cap — the underlying glyph leaves ~12% padding
+             inside the 24×24 viewBox (bbox is roughly 1,3 → 21,21),
+             so beside the star + octocat (both edge-to-edge) it
+             reads visibly smaller. Scale 1.15× around the viewBox
+             centre via a wrap-group so the path keeps its proportions
+             but its painted area matches the other two. -->
         <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-          <path d="M5 13.18v4L12 21l7-3.82v-4L12 17l-7-3.82zM12 3 1 9l11 6 9-4.91V17h2V9z"/>
+          <g transform="translate(12 12) scale(1.15) translate(-12 -12)">
+            <path d="M5 13.18v4L12 21l7-3.82v-4L12 17l-7-3.82zM12 3 1 9l11 6 9-4.91V17h2V9z"/>
+          </g>
         </svg>
         Bootcamp
       </a>
