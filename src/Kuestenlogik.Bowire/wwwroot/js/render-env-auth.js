@@ -385,10 +385,18 @@
                     _enterDragMode();
                 }
                 // Compute sidebar width relative to the app container's
-                // left edge. getBoundingClientRect is re-read every move
-                // so we stay correct under viewport changes mid-drag.
+                // left edge. The activity rail (48 px fixed) sits BEFORE
+                // the sidebar, so its width has to be subtracted from
+                // the cursor's app-relative X to get the sidebar's right
+                // edge — without it the sidebar lands 48 px too wide
+                // and the splitter visibly jumps right of the cursor on
+                // the first move. getBoundingClientRect on the rail
+                // catches future width changes; .width is 0 when the
+                // rail isn't in the DOM (collapsed / embedded mode).
                 var rect = app.getBoundingClientRect();
-                var raw = Math.round(ev.clientX - rect.left - grabOffsetX);
+                var rail = document.getElementById('bowire-activity-rail');
+                var railWidth = rail ? rail.getBoundingClientRect().width : 0;
+                var raw = Math.round(ev.clientX - rect.left - railWidth - grabOffsetX);
                 inCollapseZone = raw < COLLAPSE_THRESHOLD;
                 if (sidebarEl) sidebarEl.classList.toggle('bowire-sidebar-collapse-preview', inCollapseZone);
 
