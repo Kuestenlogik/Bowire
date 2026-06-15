@@ -145,12 +145,19 @@ internal static class PluginManager
                 $"({result.FilesWritten} file(s), {result.PackagesResolved} package(s)) -> {result.TargetDir}");
             return 0;
         }
+        // NuGet install pipeline: HTTP fetch, archive extract, manifest
+        // probe, dependency resolution — any of which can throw any
+        // type from NuGet.Client. CLI semantics: report + exit 1.
+#pragma warning disable CA1031 // Do not catch general exception types
         catch (Exception ex)
+#pragma warning restore CA1031
         {
             // Failed halfway — drop the partially-written plugin dir
             // so the next attempt isn't blocked by the "already
             // installed" check.
-            try { Directory.Delete(pluginSubDir, recursive: true); } catch { /* best-effort */ }
+#pragma warning disable CA1031 // Do not catch general exception types
+            try { Directory.Delete(pluginSubDir, recursive: true); } catch (Exception cleanupEx) { _ = cleanupEx; }
+#pragma warning restore CA1031
             io.OutLine($"  Failed to install {packageId}: {ex.Message}");
             return 1;
         }
@@ -201,8 +208,10 @@ internal static class PluginManager
             using var peekArchive = new NuGet.Packaging.PackageArchiveReader(peekStream);
             peekedId = peekArchive.GetIdentity().Id;
         }
-        catch (Exception ex)
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidDataException or NuGet.Packaging.Core.PackagingException)
         {
+            // Local nupkg probe: file read + zip archive parse +
+            // NuGet manifest extraction.
             io.OutLine($"  Failed to read {nupkgPath}: {ex.Message}");
             return 1;
         }
@@ -264,12 +273,19 @@ internal static class PluginManager
 
             return 0;
         }
+        // NuGet local install: archive extract + manifest probe — any
+        // NuGet.Client type can throw, plus IOException for the
+        // half-written target.
+#pragma warning disable CA1031 // Do not catch general exception types
         catch (Exception ex)
+#pragma warning restore CA1031
         {
             // Failed halfway — drop the partially-written plugin dir
             // so the next attempt isn't blocked by the "already
             // installed" check.
-            try { Directory.Delete(pluginSubDir, recursive: true); } catch { /* best-effort */ }
+#pragma warning disable CA1031 // Do not catch general exception types
+            try { Directory.Delete(pluginSubDir, recursive: true); } catch (Exception cleanupEx) { _ = cleanupEx; }
+#pragma warning restore CA1031
             io.OutLine($"  Failed to install from {nupkgPath}: {ex.Message}");
             return 1;
         }
@@ -321,8 +337,10 @@ internal static class PluginManager
                 io.OutLine($"  Pulling {zipSource} from OCI registry...");
                 await OciArtifactFetcher.FetchToFileAsync(zipSource, tempDownload, ct).ConfigureAwait(false);
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is HttpRequestException or IOException or InvalidOperationException or TaskCanceledException or System.Text.Json.JsonException or UriFormatException)
             {
+                // OCI fetch surface: HTTP transport, manifest JSON parse,
+                // disk write, malformed registry URL.
                 TryDelete(tempDownload);
                 io.OutLine($"  Failed to pull {zipSource}: {ex.Message}");
                 return 1;
@@ -340,8 +358,10 @@ internal static class PluginManager
                 await using var dst = File.Create(tempDownload);
                 await src.CopyToAsync(dst, ct).ConfigureAwait(false);
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is HttpRequestException or IOException or TaskCanceledException or UnauthorizedAccessException)
             {
+                // HTTP download surface: transport, timeout, local file
+                // write, ACL on tempDownload.
                 TryDelete(tempDownload);
                 io.OutLine($"  Failed to download {zipSource}: {ex.Message}");
                 return 1;
@@ -425,8 +445,11 @@ internal static class PluginManager
                         File.SetUnixFileMode(exePath,
                             mode | UnixFileMode.UserExecute | UnixFileMode.GroupExecute | UnixFileMode.OtherExecute);
                     }
-                    catch (Exception ex)
+                    catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or PlatformNotSupportedException)
                     {
+                        // Unix mode set: filesystem can refuse on Windows
+                        // (PlatformNotSupportedException) or ACL on Unix
+                        // (UnauthorizedAccessException).
                         io.OutLine($"  warning: couldn't set +x on {manifest.Executable}: {ex.Message}");
                     }
                 }
@@ -439,7 +462,11 @@ internal static class PluginManager
                 $" (protocol '{manifest.Protocol.Id}', {fileCount} file(s)) -> {pluginSubDir}");
             return 0;
         }
+        // Sidecar install: archive extract, manifest parse, file copy,
+        // optional Unix mode change — broad failure surface, report + exit.
+#pragma warning disable CA1031 // Do not catch general exception types
         catch (Exception ex)
+#pragma warning restore CA1031
         {
             io.OutLine($"  Failed to install sidecar from {zipSource}: {ex.Message}");
             return 1;
@@ -514,7 +541,11 @@ internal static class PluginManager
             io.OutLine($"    bowire plugin install --file <root>.nupkg --source <outputDir>");
             return 0;
         }
+        // NuGet bundle download for offline install: same wide surface
+        // as install — HTTP, archive, dependency resolution.
+#pragma warning disable CA1031 // Do not catch general exception types
         catch (Exception ex)
+#pragma warning restore CA1031
         {
             io.OutLine($"  Failed to download {packageId}: {ex.Message}");
             return 1;
@@ -731,7 +762,7 @@ internal static class PluginManager
         // the new copy. Fine to reuse InstallAsync here — the "already
         // installed" guard sees a clean slate.
         try { Directory.Delete(pluginSubDir, recursive: true); }
-        catch (Exception ex)
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or DirectoryNotFoundException)
         {
             io.OutLine($"  Failed to remove {pluginSubDir}: {ex.Message}");
             return 1;
@@ -863,11 +894,16 @@ internal static class PluginManager
         // cheaper than asking the GC to collect it.
         var host = new BowirePluginHost();
         BowirePluginLoadContext ctx;
+        // Plugin load surface: ALC creation, assembly load — any
+        // FileLoadException, BadImageFormatException, or plugin-author
+        // static-ctor failure.
+#pragma warning disable CA1031 // Do not catch general exception types
         try
         {
             ctx = host.Load(pluginSubDir);
         }
         catch (Exception ex)
+#pragma warning restore CA1031
         {
             io.OutLine($"  Failed to load plugin '{packageId}': {ex.Message}");
             return 1;
@@ -1055,8 +1091,12 @@ internal static class PluginManager
             }
 
             BowirePluginLoadContext ctx;
+            // ALC ctor surface: any IO/argument failure on the plugin
+            // dir; one bad ALC must not block remaining plugins.
+#pragma warning disable CA1031 // Do not catch general exception types
             try { ctx = new BowirePluginLoadContext(subDir); }
             catch (Exception ex)
+#pragma warning restore CA1031
             {
                 s_loadedSubdirs.Remove(normalised);
                 results.Add(new PluginLoadResult(packageId, normalised,
@@ -1075,6 +1115,10 @@ internal static class PluginManager
             // everything else from the plugin folder (preferring
             // AssemblyDependencyResolver when a `.deps.json` is
             // present, falling back to filename lookup otherwise).
+            // Assembly.LoadFromAssemblyPath surface: FileLoadException,
+            // BadImageFormatException, plus any plugin-author static
+            // ctor failure.
+#pragma warning disable CA1031 // Do not catch general exception types
             try
             {
                 ctx.LoadFromAssemblyPath(Path.GetFullPath(manifest));
@@ -1082,6 +1126,7 @@ internal static class PluginManager
                     PluginLoadStatus.Loaded, null));
             }
             catch (Exception ex)
+#pragma warning restore CA1031
             {
                 // Don't remove from s_loadedSubdirs — the ALC was
                 // created and is in s_pluginContexts; a retry would
@@ -1160,6 +1205,10 @@ internal static class PluginManager
                     if (type is null) continue;
                     if (type.IsAbstract || type.IsInterface) continue;
                     if (!contract.IsAssignableFrom(type)) continue;
+                    // Plugin instantiation: parameterless ctor of a
+                    // 3rd-party type — anything can come out of its
+                    // static field initialisers.
+#pragma warning disable CA1031 // Do not catch general exception types
                     try
                     {
                         if (Activator.CreateInstance(type) is T instance)
@@ -1168,6 +1217,7 @@ internal static class PluginManager
                         }
                     }
                     catch (Exception ex)
+#pragma warning restore CA1031
                     {
                         // Runtime plugin-discovery diagnostic — no CLI IO
                         // context to thread through, so stays on the

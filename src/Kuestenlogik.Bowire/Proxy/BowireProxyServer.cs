@@ -135,7 +135,11 @@ public sealed class BowireProxyServer : IAsyncDisposable
         }
         catch (OperationCanceledException) { /* shutdown */ }
         catch (IOException) { /* peer reset */ }
+        // Connection-handler must absorb anything — a single malformed
+        // peer request shouldn't kill the proxy listen loop. Log + drop.
+#pragma warning disable CA1031 // Do not catch general exception types
         catch (Exception ex)
+#pragma warning restore CA1031
         {
             _logger?.LogWarning(ex, "bowire.proxy: connection handler failed");
         }
@@ -191,7 +195,12 @@ public sealed class BowireProxyServer : IAsyncDisposable
 
             await WriteHttpResponseAsync(clientStream, status, respHdrs, respBytes, ct).ConfigureAwait(false);
         }
+        // Plain HTTP proxy path — upstream HttpClient + body read can throw
+        // anything; we report 502 to the client and record the flow with
+        // the error message either way.
+#pragma warning disable CA1031 // Do not catch general exception types
         catch (Exception ex)
+#pragma warning restore CA1031
         {
             error = ex.Message;
             try { await WriteStatusLineAsync(clientStream, 502, "Bad Gateway", ct).ConfigureAwait(false); }
@@ -244,8 +253,10 @@ public sealed class BowireProxyServer : IAsyncDisposable
 
         X509Certificate2 leaf;
         try { leaf = _ca.GetOrMintLeaf(host); }
-        catch (Exception ex)
+        catch (Exception ex) when (ex is System.Security.Cryptography.CryptographicException or ArgumentException or InvalidOperationException or PlatformNotSupportedException)
         {
+            // X509 minting surface: malformed host, key store rejection,
+            // platform unsupported (linux without OpenSSL hooks).
             _logger?.LogWarning(ex, "bowire.proxy: leaf-cert mint failed for {Host}", host);
             return;
         }
@@ -319,7 +330,11 @@ public sealed class BowireProxyServer : IAsyncDisposable
 
             await WriteHttpResponseAsync(tlsClient, status, respHdrs, respBytes, ct).ConfigureAwait(false);
         }
+        // TLS-tunneled proxy path — same surface as plain HTTP plus TLS
+        // failures from the upstream auth. Always report 502 + record.
+#pragma warning disable CA1031 // Do not catch general exception types
         catch (Exception ex)
+#pragma warning restore CA1031
         {
             error = ex.Message;
             try { await WriteStatusLineAsync(tlsClient, 502, "Bad Gateway", ct).ConfigureAwait(false); }
