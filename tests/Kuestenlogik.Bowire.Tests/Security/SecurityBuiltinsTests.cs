@@ -182,7 +182,7 @@ public sealed class SecurityBuiltinsTests
             l.UseHttps(new Microsoft.AspNetCore.Server.Kestrel.Https.HttpsConnectionAdapterOptions { ServerCertificate = cert });
         }));
         var app = builder.Build();
-        ((IApplicationBuilder)app).Run(handler);
+        app.Run(handler);
         await app.StartAsync(ct);
         return app;
     }
@@ -193,7 +193,7 @@ public sealed class SecurityBuiltinsTests
         builder.Logging.ClearProviders();
         builder.WebHost.ConfigureKestrel(o => o.Listen(IPAddress.Loopback, 0, l => l.Protocols = HttpProtocols.Http1));
         var app = builder.Build();
-        ((IApplicationBuilder)app).Run(handler);
+        app.Run(handler);
         await app.StartAsync(ct);
         return app;
     }
