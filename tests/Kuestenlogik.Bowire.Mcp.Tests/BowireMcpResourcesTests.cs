@@ -21,8 +21,8 @@ public sealed class BowireMcpResourcesTests : IDisposable
 
     public BowireMcpResourcesTests()
     {
-        _homeDir = Path.Combine(Path.GetTempPath(), "bowire-resources-" + Guid.NewGuid().ToString("N")[..8]);
-        _bowireDir = Path.Combine(_homeDir, ".bowire");
+        _homeDir = SafePath.Combine(Path.GetTempPath(), "bowire-resources-" + Guid.NewGuid().ToString("N")[..8]);
+        _bowireDir = SafePath.Combine(_homeDir, ".bowire");
         Directory.CreateDirectory(_bowireDir);
 
         _originalOverride = BowireMcpTools.HomeDirOverride;
@@ -36,7 +36,7 @@ public sealed class BowireMcpResourcesTests : IDisposable
     }
 
     private void WriteFile(string filename, string content)
-        => File.WriteAllText(Path.Combine(_bowireDir, filename), content);
+        => File.WriteAllText(SafePath.Combine(_bowireDir, filename), content);
 
     [Fact]
     public void Environments_MissingFile_ReturnsEmptyList()
@@ -186,16 +186,16 @@ public sealed class BowireMcpResourcesTests : IDisposable
     [Fact]
     public void Plugins_ListsValidEntries_SkipsBrokenManifests()
     {
-        var pluginRoot = Path.Combine(_bowireDir, "plugins");
-        var goodDir = Path.Combine(pluginRoot, "Acme.Plugin.Good");
-        var badDir = Path.Combine(pluginRoot, "Acme.Plugin.Broken");
-        var noManifestDir = Path.Combine(pluginRoot, "Acme.Plugin.NoManifest");
+        var pluginRoot = SafePath.Combine(_bowireDir, "plugins");
+        var goodDir = SafePath.Combine(pluginRoot, "Acme.Plugin.Good");
+        var badDir = SafePath.Combine(pluginRoot, "Acme.Plugin.Broken");
+        var noManifestDir = SafePath.Combine(pluginRoot, "Acme.Plugin.NoManifest");
         Directory.CreateDirectory(goodDir);
         Directory.CreateDirectory(badDir);
         Directory.CreateDirectory(noManifestDir);
-        File.WriteAllText(Path.Combine(goodDir, "plugin.json"),
+        File.WriteAllText(SafePath.Combine(goodDir, "plugin.json"),
             """{"packageId":"Acme.Plugin.Good","version":"1.2.3"}""");
-        File.WriteAllText(Path.Combine(badDir, "plugin.json"),
+        File.WriteAllText(SafePath.Combine(badDir, "plugin.json"),
             "{ not valid json");
 
         var resource = BowireMcpResources.Plugins();
