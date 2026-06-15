@@ -41,9 +41,11 @@ internal static class TestAssemblyInit
         if (string.IsNullOrEmpty(baseDir) || !Directory.Exists(baseDir)) return;
 
         var loaded = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        foreach (var asm in AppDomain.CurrentDomain.GetAssemblies())
+        foreach (var n in AppDomain.CurrentDomain.GetAssemblies()
+            .Select(a => a.GetName().Name)
+            .Where(n => n is not null))
         {
-            if (asm.GetName().Name is { } n) loaded.Add(n);
+            loaded.Add(n!);
         }
 
         foreach (var dll in Directory.EnumerateFiles(baseDir, "Kuestenlogik.Bowire*.dll"))
