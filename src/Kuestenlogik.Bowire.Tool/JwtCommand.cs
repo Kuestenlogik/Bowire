@@ -142,16 +142,13 @@ internal static class JwtCommand
         }
 
         // Re-sign or strip signature.
-        string newAlg;
-        string signatureSegOut;
         if (!string.IsNullOrEmpty(hmacSecret))
         {
-            newAlg = "HS256";
-            headerObj["alg"] = JsonElement(newAlg);
+            headerObj["alg"] = JsonElement("HS256");
             headerObj["typ"] = JsonElement("JWT");
             var newHeaderSeg = Base64Url(SerializeObject(headerObj));
             var newPayloadSeg = Base64Url(SerializeObject(payloadObj));
-            signatureSegOut = HmacSign(newHeaderSeg + "." + newPayloadSeg, hmacSecret);
+            var signatureSegOut = HmacSign(newHeaderSeg + "." + newPayloadSeg, hmacSecret);
             io.OutLine();
             io.OutLine(newHeaderSeg + "." + newPayloadSeg + "." + signatureSegOut);
             io.OutLine();
@@ -159,12 +156,11 @@ internal static class JwtCommand
         }
         else if (algNone)
         {
-            newAlg = "none";
-            headerObj["alg"] = JsonElement(newAlg);
+            headerObj["alg"] = JsonElement("none");
             headerObj["typ"] = JsonElement("JWT");
             var newHeaderSeg = Base64Url(SerializeObject(headerObj));
             var newPayloadSeg = Base64Url(SerializeObject(payloadObj));
-            signatureSegOut = ""; // alg:none ⇒ empty signature
+            // alg:none ⇒ empty signature (no signatureSegOut needed).
             io.OutLine();
             io.OutLine(newHeaderSeg + "." + newPayloadSeg + ".");
             io.OutLine();
