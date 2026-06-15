@@ -270,55 +270,19 @@ internal static class RestInvoker
         // Allocation cost is negligible compared to the TLS handshake
         // itself, and a dev tool isn't on the hot path of a production
         // server anyway.
-        HttpClient? perCallClient = null;
-        MtlsHandlerOwner? mtlsOwner = null;
-        HttpClientHandler? cookieHandler = null;
-        HttpClient effectiveClient = http;
         var sw = Stopwatch.StartNew();
+        using var perCall = BuildPerCallHttpClient(mtlsConfig, cookieEnvId, http, out var perCallError);
+        if (perCallError is not null)
+        {
+            return new InvokeResult(
+                Response: null,
+                DurationMs: 0,
+                Status: "Error",
+                Metadata: new Dictionary<string, string> { ["error"] = perCallError });
+        }
+        var effectiveClient = perCall.EffectiveClient ?? http;
         try
         {
-            if (mtlsConfig is not null)
-            {
-                mtlsOwner = MtlsHandlerOwner.CreateHttpClientHandler(mtlsConfig, out var mtlsError);
-                if (mtlsOwner is null)
-                {
-                    return new InvokeResult(
-                        Response: null,
-                        DurationMs: 0,
-                        Status: "Error",
-                        Metadata: new Dictionary<string, string> { ["error"] = mtlsError ?? "mTLS configuration invalid" });
-                }
-                // mTLS + cookie-jar can compose: attach the per-env
-                // CookieContainer to the existing mTLS HttpClientHandler.
-                if (cookieEnvId is not null && mtlsOwner.Handler is HttpClientHandler mtlsHandler)
-                {
-                    mtlsHandler.UseCookies = true;
-                    mtlsHandler.CookieContainer = CookieJar.GetOrCreate(cookieEnvId);
-                }
-                // disposeHandler=false — the MtlsHandlerOwner owns the handler
-                // (and the X509 resources alongside it) and disposes everything
-                // in one place in the finally block below. CA5400 suppressed:
-                // CRL checks default off (see MtlsHandlerOwner for the rationale).
-#pragma warning disable CA5400
-                perCallClient = new HttpClient(mtlsOwner.Handler, disposeHandler: false) { Timeout = http.Timeout };
-#pragma warning restore CA5400
-                effectiveClient = perCallClient;
-            }
-            else if (cookieEnvId is not null)
-            {
-                cookieHandler = new HttpClientHandler
-                {
-                    UseCookies = true,
-                    CookieContainer = CookieJar.GetOrCreate(cookieEnvId)
-                };
-#pragma warning disable CA5399, CA5400
-                // CRL checks intentionally off — same rationale as the
-                // mTLS path. Cookie-jar mode is a dev-tool convenience.
-                perCallClient = new HttpClient(cookieHandler, disposeHandler: false) { Timeout = http.Timeout };
-#pragma warning restore CA5399, CA5400
-                effectiveClient = perCallClient;
-            }
-
             using var resp = await effectiveClient.SendAsync(request, ct).ConfigureAwait(false);
             sw.Stop();
 
@@ -362,11 +326,152 @@ internal static class RestInvoker
                 Status: "NetworkError",
                 Metadata: new Dictionary<string, string> { ["error"] = ex.Message });
         }
-        finally
+        // perCall is disposed by its using-declaration at end-of-method
+        // — handler + cert resources + per-call HttpClient all torn down
+        // in correct order whether SendAsync succeeded, threw, or we
+        // returned early on an mTLS-parse failure.
+    }
+
+    /// <summary>
+    /// Build the per-call HTTP client bundle for the invocation, or
+    /// return a null bundle (with <paramref name="error"/> set) when
+    /// mTLS config fails to parse. Bundle wraps the optional
+    /// <see cref="MtlsHandlerOwner"/>, optional bespoke
+    /// <see cref="HttpClientHandler"/> (cookie-jar mode without mTLS),
+    /// and the optional dedicated <see cref="HttpClient"/> that drives
+    /// the request. Disposing the bundle tears them down in the right
+    /// order: HttpClient first (its disposeHandler=false), then handler,
+    /// then the cert owner. When the bundle's
+    /// <see cref="PerCallHttpClient.EffectiveClient"/> is null the
+    /// caller falls back to the shared client.
+    /// </summary>
+    private static PerCallHttpClient BuildPerCallHttpClient(
+        MtlsConfig? mtlsConfig,
+        string? cookieEnvId,
+        HttpClient sharedHttp,
+        out string? error)
+    {
+        error = null;
+        if (mtlsConfig is null && cookieEnvId is null)
         {
-            perCallClient?.Dispose();
-            mtlsOwner?.Dispose();
-            cookieHandler?.Dispose();
+            return PerCallHttpClient.Empty;
+        }
+
+        if (mtlsConfig is not null)
+        {
+            return BuildMtlsBundle(mtlsConfig, cookieEnvId, sharedHttp, out error);
+        }
+
+        return BuildCookieJarBundle(cookieEnvId!, sharedHttp);
+    }
+
+    private static PerCallHttpClient BuildMtlsBundle(
+        MtlsConfig mtlsConfig,
+        string? cookieEnvId,
+        HttpClient sharedHttp,
+        out string? error)
+    {
+#pragma warning disable CA2000
+        // mtlsOwner ownership moves into the PerCallHttpClient bundle
+        // below — its Dispose tears the handler + cert pair down. On
+        // the HttpClient-ctor failure path the catch block disposes it
+        // explicitly. Roslyn can't follow the ownership transfer.
+        var mtlsOwner = MtlsHandlerOwner.CreateHttpClientHandler(mtlsConfig, out var mtlsError);
+#pragma warning restore CA2000
+        if (mtlsOwner is null)
+        {
+            error = mtlsError ?? "mTLS configuration invalid";
+            return PerCallHttpClient.Empty;
+        }
+
+        // mTLS + cookie-jar can compose: attach the per-env
+        // CookieContainer to the existing mTLS HttpClientHandler.
+        if (cookieEnvId is not null && mtlsOwner.Handler is HttpClientHandler mtlsHandler)
+        {
+            mtlsHandler.UseCookies = true;
+            mtlsHandler.CookieContainer = CookieJar.GetOrCreate(cookieEnvId);
+        }
+
+        try
+        {
+            // disposeHandler=false — PerCallHttpClient owns both the
+            // handler (via mtlsOwner) and the HttpClient and disposes
+            // them in the right order. CA5400 suppressed: CRL checks
+            // default off (see MtlsHandlerOwner for the rationale).
+#pragma warning disable CA5400
+            var client = new HttpClient(mtlsOwner.Handler, disposeHandler: false) { Timeout = sharedHttp.Timeout };
+#pragma warning restore CA5400
+            error = null;
+            return new PerCallHttpClient(client, mtlsOwner, cookieHandler: null);
+        }
+        catch
+        {
+            // HttpClient ctor doesn't normally throw, but if it does we
+            // must not leak the mtlsOwner — caller wouldn't see it.
+            mtlsOwner.Dispose();
+            throw;
+        }
+    }
+
+    private static PerCallHttpClient BuildCookieJarBundle(string cookieEnvId, HttpClient sharedHttp)
+    {
+#pragma warning disable CA2000
+        // cookieHandler ownership moves into the PerCallHttpClient
+        // bundle below — its Dispose tears the handler down. Roslyn
+        // can't follow the ownership transfer through the ctor.
+        var cookieHandler = new HttpClientHandler
+        {
+            UseCookies = true,
+            CookieContainer = CookieJar.GetOrCreate(cookieEnvId)
+        };
+#pragma warning restore CA2000
+        try
+        {
+#pragma warning disable CA5399, CA5400
+            // CRL checks intentionally off — same rationale as the
+            // mTLS path. Cookie-jar mode is a dev-tool convenience.
+            var client = new HttpClient(cookieHandler, disposeHandler: false) { Timeout = sharedHttp.Timeout };
+#pragma warning restore CA5399, CA5400
+            return new PerCallHttpClient(client, mtlsOwner: null, cookieHandler);
+        }
+        catch
+        {
+            cookieHandler.Dispose();
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Disposable bundle of the optional per-call HTTP resources used by
+    /// <see cref="BuildPerCallHttpClient"/>. Holds them as a unit so the
+    /// invoker's `using` declaration tears everything down in one place
+    /// (and in the right order: client first, then handler, then the cert
+    /// owner). When <see cref="EffectiveClient"/> is null the bundle is a
+    /// no-op sentinel and the caller falls back to the shared HttpClient.
+    /// </summary>
+    private sealed class PerCallHttpClient : IDisposable
+    {
+        public static PerCallHttpClient Empty { get; } = new(null, null, null);
+
+        public HttpClient? EffectiveClient { get; }
+        private readonly MtlsHandlerOwner? _mtlsOwner;
+        private readonly HttpClientHandler? _cookieHandler;
+        private bool _disposed;
+
+        public PerCallHttpClient(HttpClient? client, MtlsHandlerOwner? mtlsOwner, HttpClientHandler? cookieHandler)
+        {
+            EffectiveClient = client;
+            _mtlsOwner = mtlsOwner;
+            _cookieHandler = cookieHandler;
+        }
+
+        public void Dispose()
+        {
+            if (_disposed) return;
+            _disposed = true;
+            EffectiveClient?.Dispose();
+            _mtlsOwner?.Dispose();
+            _cookieHandler?.Dispose();
         }
     }
 
