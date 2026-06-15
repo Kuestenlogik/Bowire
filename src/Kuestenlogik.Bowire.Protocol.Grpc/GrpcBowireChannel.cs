@@ -272,7 +272,11 @@ internal sealed class GrpcBowireChannel : IBowireChannel
                     await call.RequestStream.WriteAsync(msg);
                 await call.RequestStream.CompleteAsync();
             }
-            catch (OperationCanceledException) { }
+            catch (OperationCanceledException ex)
+            {
+                // Caller closed the channel -- expected exit path.
+                _ = ex;
+            }
         }, token);
 
         await foreach (var responseBytes in call.ResponseStream.ReadAllAsync(token))

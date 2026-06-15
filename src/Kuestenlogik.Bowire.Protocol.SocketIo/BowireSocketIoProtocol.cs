@@ -60,7 +60,13 @@ public sealed class BowireSocketIoProtocol : IBowireProtocol
             client.OnAny((name, _) => { detectedEvents.Add(name); return Task.CompletedTask; });
 
             await client.ConnectAsync();
-            try { await Task.Delay(2000, ct); } catch (OperationCanceledException) { }
+            try { await Task.Delay(2000, ct); }
+            catch (OperationCanceledException ex)
+            {
+                // Discovery probe cut short -- we still want the
+                // disconnect call below, so swallow rather than throw.
+                _ = ex;
+            }
             await client.DisconnectAsync();
 
             if (!connected) return [];

@@ -251,7 +251,13 @@ internal sealed class SidecarJsonRpcTransport : ISidecarTransport
             catch { /* swallow — we're killing the process anyway */ }
 
             try { _process.StandardInput.Close(); }
-            catch { }
+            catch (Exception ex)
+            {
+                // Process may already be gone (stream closed, disposed,
+                // or kernel reaped it) -- stdin-close is just a polite
+                // EOF signal, not a correctness requirement.
+                _ = ex;
+            }
 
             try
             {
@@ -270,7 +276,14 @@ internal sealed class SidecarJsonRpcTransport : ISidecarTransport
 
         if (_readLoop is not null)
         {
-            try { await _readLoop.ConfigureAwait(false); } catch { }
+            try { await _readLoop.ConfigureAwait(false); }
+            catch (Exception ex)
+            {
+                // Read loop normally exits cleanly when the process
+                // closes stdout; if it didn't (cancel race, pipe error),
+                // we're already in disposal so propagating doesn't help.
+                _ = ex;
+            }
         }
         _process.Dispose();
     }

@@ -185,7 +185,14 @@ internal sealed class SidecarHttpTransport : ISidecarTransport
         await _lifetime.CancelAsync().ConfigureAwait(false);
         if (_sseLoop is not null)
         {
-            try { await _sseLoop.ConfigureAwait(false); } catch { }
+            try { await _sseLoop.ConfigureAwait(false); }
+            catch (Exception ex)
+            {
+                // Best-effort wait for the SSE loop to observe our
+                // cancellation; the loop is already torn down, so any
+                // exception (cancel, network reset, &c) is irrelevant.
+                _ = ex;
+            }
         }
         _lifetime.Dispose();
         _http.Dispose();
