@@ -84,7 +84,7 @@ public static class BowireMockHostEndpoints
 
             string? recordingJson;
             try { recordingJson = lookup.TryGetRecordingJson(req.RecordingId); }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or System.Text.Json.JsonException or InvalidOperationException)
             {
                 return ProblemResult("urn:bowire:mock:recording-lookup-failed",
                     "Couldn't read the recording", 500, ex.Message, ctx.Request.Path);
@@ -120,7 +120,11 @@ public static class BowireMockHostEndpoints
                 return ProblemResult("urn:bowire:mock:no-free-port",
                     "No free local port for a new mock host", 503, ex.Message, ctx.Request.Path);
             }
+            // Mock host start: ASP.NET host startup + plugin transports.
+            // Unbounded failure surface as in the management endpoint.
+#pragma warning disable CA1031 // Do not catch general exception types
             catch (Exception ex)
+#pragma warning restore CA1031
             {
                 return ProblemResult("urn:bowire:mock:start-failed",
                     "Couldn't start the mock host", 500, ex.Message, ctx.Request.Path,

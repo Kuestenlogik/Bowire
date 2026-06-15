@@ -88,12 +88,16 @@ public static class BowireMockManagementEndpoints
             var displayName = string.IsNullOrWhiteSpace(req.Name) ? "unnamed" : req.Name;
             var port = req.Port ?? 0; // 0 = OS-assigned; resolved via MockServer.Port
 
+            // Mock registry start: spawns ASP.NET host, runs plugin
+            // emitters / transports — unbounded failure surface.
+#pragma warning disable CA1031 // Do not catch general exception types
             try
             {
                 var inst = await registry.StartAsync(req.Recording, displayName, port, ctx.RequestAborted);
                 return Results.Json(MockSummary.From(inst), JsonOptions, statusCode: 201);
             }
             catch (Exception ex)
+#pragma warning restore CA1031
             {
                 ctx.RequestServices.GetService<ILoggerFactory>()
                     ?.CreateLogger("BowireMockManagement")
