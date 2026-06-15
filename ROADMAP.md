@@ -78,12 +78,11 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.1 — Scripting, variable resolver, throughput surface
 
-**0/11 done** · 11 backlog
+**1/11 done** · 10 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
 | [117](https://github.com/Kuestenlogik/Bowire/issues/117) | Bowire | [i18n — extract every UI string; ship DE + EN catalogues](#issue-kuestenlogik-bowire-117) | ⬜ Open |  |
-| [125](https://github.com/Kuestenlogik/Bowire/issues/125) | Bowire | [Multi-source {{...}} variable resolver](#issue-kuestenlogik-bowire-125) | ⬜ Open |  |
 | [126](https://github.com/Kuestenlogik/Bowire/issues/126) | Bowire | [Pre-/post-scripts with a protocol-typed sandbox](#issue-kuestenlogik-bowire-126) | ⬜ Open |  |
 | [131](https://github.com/Kuestenlogik/Bowire/issues/131) | Bowire | [Benchmarks: first-class surface (single / collection / recording / random / scheduled)](#issue-kuestenlogik-bowire-131) | ⬜ Open |  |
 | [132](https://github.com/Kuestenlogik/Bowire/issues/132) | Bowire | [Parallel sessions for recordings / collections (phase 1 local, phase 2 distributed)](#issue-kuestenlogik-bowire-132) | ⬜ Open |  |
@@ -93,6 +92,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [145](https://github.com/Kuestenlogik/Bowire/issues/145) | Bowire | [Deprecate ${name} in favour of {{name}} (multi-phase migration)](#issue-kuestenlogik-bowire-145) | ⬜ Open |  |
 | [153](https://github.com/Kuestenlogik/Bowire/issues/153) | Bowire | [Bowire as transparent interceptor — embedded middleware + standalone reverse-proxy](#issue-kuestenlogik-bowire-153) | ⬜ Open |  |
 | [194](https://github.com/Kuestenlogik/Bowire/issues/194) | Bowire | [Action log Phase 2 — remaining mutation sites + cross-reload undo + soft-delete workspaces](#issue-kuestenlogik-bowire-194) | ⬜ Open |  |
+| [125](https://github.com/Kuestenlogik/Bowire/issues/125) | Bowire | [Multi-source {{...}} variable resolver](#issue-kuestenlogik-bowire-125) | ✅ Done |  |
 
 ### v2.2 — Test pillar: assertions, CI runner, regression coverage
 
@@ -439,10 +439,6 @@ Workspace-related navigation is slow and indirect today: [[more]](https://github
 
 Bowire's UI is English-only today. Every label, every button, every tooltip, every empty-state copy is a hard-coded literal in the JS source. [[more]](https://github.com/Kuestenlogik/Bowire/issues/117)
 
-#### <a id="issue-kuestenlogik-bowire-125"></a>⬜ Open · [#125](https://github.com/Kuestenlogik/Bowire/issues/125) Multi-source {{...}} variable resolver
-
-Real API testing chains requests. The token from POST /auth gets used in the next 12 calls. The pet id from POST /pet feeds into GET /pet/{id}. The timestamp from one webhook becomes the input to another. Today the operator copy-pastes by hand between request panes. [[more]](https://github.com/Kuestenlogik/Bowire/issues/125)
-
 #### <a id="issue-kuestenlogik-bowire-126"></a>⬜ Open · [#126](https://github.com/Kuestenlogik/Bowire/issues/126) Pre-/post-scripts with a protocol-typed sandbox
 
 Real testing workflows have steps that are too dynamic for a static template: sign the body with a per-request HMAC, refresh an access token if it's about to expire, capture a value from one response into a header on the next, encode a binary blob, assert on a complex shape after send. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/126)
@@ -478,6 +474,10 @@ Today Bowire watches traffic in two narrow ways: - **Discover / Recording / Benc
 #### <a id="issue-kuestenlogik-bowire-194"></a>⬜ Open · [#194](https://github.com/Kuestenlogik/Bowire/issues/194) Action log Phase 2 — remaining mutation sites + cross-reload undo + soft-delete workspaces
 
 Phase 1 shipped in e084bc3 — central `actionLog`, Statusbar pill, Activity drawer tab, Ctrl/Cmd+Z / Ctrl/Cmd+Shift+Z global shortcuts, `toast({undo, logAction})` helper. The first five mutation sites (collection-delete, flow-delete, env-delete, history-clear, favorites-clear) write to the log. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/194)
+
+#### <a id="issue-kuestenlogik-bowire-125"></a>✅ Done · [#125](https://github.com/Kuestenlogik/Bowire/issues/125) Multi-source {{...}} variable resolver
+
+Real API testing chains requests. The token from POST /auth gets used in the next 12 calls. The pet id from POST /pet feeds into GET /pet/{id}. The timestamp from one webhook becomes the input to another. Today the operator copy-pastes by hand between request panes. [[more]](https://github.com/Kuestenlogik/Bowire/issues/125)
 
 ### v2.2 — Test pillar: assertions, CI runner, regression coverage
 
