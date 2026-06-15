@@ -13,7 +13,7 @@ using Microsoft.Extensions.Options;
 namespace Kuestenlogik.Bowire.Endpoints;
 
 /// <summary>
-/// Workspace file support — loads and saves a <c>.blw</c> JSON file
+/// Workspace file support — loads and saves a <c>.bww</c> JSON file
 /// from the working directory. The workspace bundles environments,
 /// collections, recordings, flows, plugin pins, and URL configuration
 /// so the whole setup is portable and shareable via version control.
@@ -35,11 +35,11 @@ namespace Kuestenlogik.Bowire.Endpoints;
 /// The file is read on startup and written back on every save. When
 /// no workspace file exists, the endpoints return empty defaults.
 /// Missing fields in older files deserialize to their empty default
-/// — adding a new field never breaks an existing .blw.
+/// — adding a new field never breaks an existing .bww.
 /// </summary>
 internal static class BowireWorkspaceEndpoints
 {
-    // #58 — Current schema version. Increment when the .blw shape
+    // #58 — Current schema version. Increment when the .bww shape
     // changes in a way an older reader would mis-handle; readers can
     // gate behavior on the version field. Serialized as
     // 'workspaceFormatVersion' on disk.
@@ -62,7 +62,7 @@ internal static class BowireWorkspaceEndpoints
     };
 
     private static string WorkspacePath =>
-        Path.Combine(Directory.GetCurrentDirectory(), ".blw");
+        Path.Combine(Directory.GetCurrentDirectory(), ".bww");
 
     public static IEndpointRouteBuilder MapBowireWorkspaceEndpoints(
         this IEndpointRouteBuilder endpoints, string basePath)
@@ -253,7 +253,7 @@ internal static class BowireWorkspaceEndpoints
         public List<JsonElement> Environments { get; init; } = [];
         public Dictionary<string, string> Globals { get; init; } = new();
         public List<JsonElement> Collections { get; init; } = [];
-        // #58 — Recordings stored inline so a `git add .blw` captures
+        // #58 — Recordings stored inline so a `git add .bww` captures
         // the whole project setup in one file. Each entry is a raw
         // JsonElement so the workbench's recording shape (steps,
         // metadata, &c) can evolve without forcing a schema change

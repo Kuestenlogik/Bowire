@@ -157,7 +157,7 @@ internal static class WorkspaceCommand
             await File.WriteAllTextAsync(Path.Combine(subPath, ".gitkeep"), string.Empty, ct).ConfigureAwait(false);
         }
 
-        // workspace.json manifest. Schema version mirrors the .blw file
+        // workspace.json manifest. Schema version mirrors the .bww file
         // version (#58 Phase 1) so the two formats stay in lockstep.
         var resolvedName = string.IsNullOrWhiteSpace(displayName)
             ? new DirectoryInfo(fullPath).Name

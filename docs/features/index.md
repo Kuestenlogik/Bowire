@@ -39,7 +39,7 @@ For the UI layout itself &mdash; panes, action bar, sidebar, theme &mdash; see t
 - [Environments & variables](environments.md) &mdash; per-environment `${var}` substitution + auth
 - [Collections](collections.md) &mdash; group related requests for sharing and review
 - [Favorites & history](favorites-history.md) &mdash; star methods, replay previous invocations
-- [Workspace files (`.blw`)](workspace.md) &mdash; the on-disk format for collections, flows, and environments
+- [Workspace files (`.bww`)](workspace.md) &mdash; the on-disk format for collections, flows, and environments
 - [Export & import](export-import.md) &mdash; HAR / cURL / Postman interchange
 
 ## UI & productivity

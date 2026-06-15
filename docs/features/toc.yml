@@ -49,7 +49,7 @@
       href: collections.md
     - name: Favorites & history
       href: favorites-history.md
-    - name: Workspace files (.blw)
+    - name: Workspace files (.bww)
       href: workspace.md
     - name: Export & import
       href: export-import.md

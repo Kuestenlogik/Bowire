@@ -2,11 +2,11 @@
 summary: "A workspace file bundles Bowire's connection and configuration state into a single JSON file that you can commit to version control, share with teammates, or load on a different m"
 ---
 
-# Workspace Files (.blw)
+# Workspace Files (.bww)
 
 A workspace file bundles Bowire's connection and configuration state into a single JSON file that you can commit to version control, share with teammates, or load on a different machine to reproduce the same setup.
 
-## What a .blw file contains
+## What a .bww file contains
 
 | Field | Type | Description |
 |-------|------|-------------|
@@ -64,7 +64,7 @@ Templates write directly to the new workspace's per-workspace localStorage bucke
 
 ## Git-backed workspace (per-entity files)
 
-Beyond the single-file `.blw` bundle, Bowire supports a per-entity directory layout designed for review under version control. `bowire workspace init <path>` materialises this shape at any directory:
+Beyond the single-file `.bww` bundle, Bowire supports a per-entity directory layout designed for review under version control. `bowire workspace init <path>` materialises this shape at any directory:
 
 ```
 my-workspace/
@@ -144,16 +144,16 @@ Phase 1's `BowireUserContext.GetWorkspacePath` seam ships in core because it's a
 
 ## File location
 
-The workspace file is read from and written to the **working directory** where Bowire was launched. The file is always named `.blw` (no base name, just the extension).
+The workspace file is read from and written to the **working directory** where Bowire was launched. The file is always named `.bww` (no base name, just the extension).
 
 ```
 my-project/
-  .blw              <-- workspace file
+  .bww              <-- workspace file
   src/
   tests/
 ```
 
-When no `.blw` file exists, the workspace endpoints return empty defaults and the UI operates normally without workspace-driven configuration.
+When no `.bww` file exists, the workspace endpoints return empty defaults and the UI operates normally without workspace-driven configuration.
 
 ## Loading and saving
 
@@ -170,7 +170,7 @@ The PUT endpoint validates the incoming JSON and writes it to disk with pretty-p
 
 ## Version control
 
-The `.blw` file is designed to be version-control friendly:
+The `.bww` file is designed to be version-control friendly:
 
 - **Human-readable JSON** -- the file is written with `WriteIndented = true`, so diffs are clean and reviewable.
 - **No secrets by default** -- URLs and environment names are safe to commit. Tokens and API keys can be stored in environment variables, but consider using `.gitignore` for workspaces that contain sensitive values.
@@ -182,18 +182,18 @@ If your workspace contains sensitive environment variables, add the file to `.gi
 
 ```
 # Bowire workspace (contains tokens)
-.blw
+.bww
 ```
 
 Alternatively, keep the workspace committed but move secrets into a separate file or system environment variables.
 
 ## Team sharing
 
-A committed `.blw` file gives every team member the same starting configuration:
+A committed `.bww` file gives every team member the same starting configuration:
 
 1. Clone the repository.
 2. Run `bowire` from the project root.
-3. Bowire loads the `.blw` file and pre-populates server URLs, environments, globals, and collections.
+3. Bowire loads the `.bww` file and pre-populates server URLs, environments, globals, and collections.
 
 This eliminates the "how do I connect to the API?" onboarding question. New team members get a working setup immediately.
 
@@ -205,7 +205,7 @@ bowire --url https://api.staging.example.com
 # (configure environments, save collections, etc.)
 # The UI writes the workspace via PUT /bowire/api/workspace
 
-git add .blw
+git add .bww
 git commit -m "Add Bowire workspace with staging config"
 
 # Developer B clones and runs
@@ -221,7 +221,7 @@ The workspace file's `environments` and `globals` fields follow the same schema 
 
 This means you can have:
 
-- **Project-level** environments in `.blw` -- shared across the team
+- **Project-level** environments in `.bww` -- shared across the team
 - **Personal** environments in `~/.bowire/environments.json` -- private tokens, local overrides
 
 ## Combining with collections
@@ -230,7 +230,7 @@ Collections stored in the workspace file are loaded alongside any user-level col
 
 ## Empty workspace
 
-When the `.blw` file does not exist or is empty/corrupt, the workspace endpoints return:
+When the `.bww` file does not exist or is empty/corrupt, the workspace endpoints return:
 
 ```json
 {
@@ -246,8 +246,8 @@ Bowire operates normally in this case -- all configuration comes from user-level
 ## Tips
 
 - Use workspaces to **standardize your team's API testing setup** -- everyone gets the same URLs, environments, and starter collections.
-- Keep the `.blw` file next to your project's source code so it travels with the repo.
-- For open-source projects, include a `.blw` file with example URLs and placeholder tokens so contributors can get started quickly.
+- Keep the `.bww` file next to your project's source code so it travels with the repo.
+- For open-source projects, include a `.bww` file with example URLs and placeholder tokens so contributors can get started quickly.
 - The workspace is a snapshot -- it does not auto-sync with the UI. Save explicitly when you want to update the committed file.
 
 See also: [Environments & Variables](environments.md), [Collections](collections.md)

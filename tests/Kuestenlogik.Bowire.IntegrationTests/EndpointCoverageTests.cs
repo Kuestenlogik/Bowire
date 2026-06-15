@@ -366,7 +366,7 @@ public sealed class EndpointCoverageTests : IClassFixture<BowireTestFixture>
     [Fact]
     public async Task Workspace_Get_NoFile_ReturnsEmptyDefaults()
     {
-        // The fixture's working directory typically has no .blw — Get
+        // The fixture's working directory typically has no .bww — Get
         // should respond with the empty WorkspaceFile shape rather than
         // 404'ing or throwing.
         var resp = await _client.GetAsync(
