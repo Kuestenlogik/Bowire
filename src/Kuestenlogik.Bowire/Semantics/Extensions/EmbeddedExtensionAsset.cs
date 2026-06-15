@@ -72,10 +72,12 @@ public static class EmbeddedExtensionAsset
                 }
             }
         }
-        catch (Exception)
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or NotSupportedException or ArgumentException)
         {
             // Single-file-published assemblies have an empty Location;
-            // the on-disk fallback simply skips in that case.
+            // the on-disk fallback simply skips in that case. Also tolerate
+            // I/O / ACL failures against the bin directory.
+            _ = ex;
         }
 
         return null;
