@@ -206,7 +206,13 @@ public sealed class JsonFileAnnotationLayerTests : IDisposable
         }
         finally
         {
-            try { if (Directory.Exists(dir)) Directory.Delete(dir, recursive: true); } catch { }
+            try { if (Directory.Exists(dir)) Directory.Delete(dir, recursive: true); }
+            catch (Exception ex)
+            {
+                // Best-effort temp-directory cleanup: another handle (AV,
+                // indexer, file-watcher) can briefly keep the dir live.
+                _ = ex;
+            }
         }
     }
 

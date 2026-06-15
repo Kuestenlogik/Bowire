@@ -203,8 +203,20 @@ public sealed class LayeredAnnotationStoreTests
         }
         finally
         {
-            try { if (File.Exists(tempUser)) File.Delete(tempUser); } catch { }
-            try { if (File.Exists(tempProject)) File.Delete(tempProject); } catch { }
+            try { if (File.Exists(tempUser)) File.Delete(tempUser); }
+            catch (Exception ex)
+            {
+                // Best-effort temp-file cleanup; OS may briefly hold the
+                // handle from the layer's atomic-rename swap.
+                _ = ex;
+            }
+            try { if (File.Exists(tempProject)) File.Delete(tempProject); }
+            catch (Exception ex)
+            {
+                // Best-effort temp-file cleanup; OS may briefly hold the
+                // handle from the layer's atomic-rename swap.
+                _ = ex;
+            }
         }
     }
 
