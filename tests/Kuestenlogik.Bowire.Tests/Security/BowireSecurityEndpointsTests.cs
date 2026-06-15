@@ -43,7 +43,7 @@ public sealed class BowireSecurityEndpointsTests
         upstreamBuilder.Logging.ClearProviders();
         upstreamBuilder.WebHost.ConfigureKestrel(o => o.Listen(IPAddress.Loopback, 0, l => l.Protocols = HttpProtocols.Http1));
         var upstream = upstreamBuilder.Build();
-        ((IApplicationBuilder)upstream).Run(upstreamHandler ?? (async ctx =>
+        upstream.Run(upstreamHandler ?? (async ctx =>
         {
             ctx.Response.StatusCode = 200;
             ctx.Response.ContentType = "application/json";
