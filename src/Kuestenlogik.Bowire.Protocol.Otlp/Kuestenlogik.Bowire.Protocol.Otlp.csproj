@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Description>Bowire OTLP protocol plugin — passive listener for OpenTelemetry traces / metrics / logs. SUTs export via OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:&lt;port&gt;; the workbench surfaces each received envelope channel-style for inspection. Phase 1 receives both JSON and protobuf content-types; JSON is forwarded as-is, protobuf is captured as base64 with the spec-level metadata so an upstream consumer can decode it. Phase 2 wires the canonical proto descriptors and decodes protobuf inline.</Description>
+    <PackageId>Kuestenlogik.Bowire.Protocol.Otlp</PackageId>
+    <PackageTags>bowire;bowire-plugin;otlp;opentelemetry;tracing;observability</PackageTags>
+    <IsPackable>true</IsPackable>
+    <RootNamespace>Kuestenlogik.Bowire.Protocol.Otlp</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="bowire" />
+    <InternalsVisibleTo Include="Kuestenlogik.Bowire.Tests" />
+    <InternalsVisibleTo Include="Kuestenlogik.Bowire.Protocol.Otlp.Tests" />
+    <InternalsVisibleTo Include="Kuestenlogik.Bowire.IntegrationTests" />
+  </ItemGroup>
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Kuestenlogik.Bowire\Kuestenlogik.Bowire.csproj" />
+  </ItemGroup>
+</Project>
