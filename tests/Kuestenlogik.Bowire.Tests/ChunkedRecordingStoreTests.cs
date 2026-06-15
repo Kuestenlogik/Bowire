@@ -129,13 +129,13 @@ public sealed class ChunkedRecordingStoreTests : IDisposable
         ChunkedRecordingStore.SaveAll(input);
 
         // On-disk layout: numbered step files under steps/.
-        var stepsDir = Path.Combine(_tempRoot, "r1", "steps");
+        var stepsDir = SafePath.Combine(_tempRoot, "r1", "steps");
         Assert.True(Directory.Exists(stepsDir));
-        Assert.True(File.Exists(Path.Combine(stepsDir, "0000.json")));
-        Assert.True(File.Exists(Path.Combine(stepsDir, "0001.json")));
+        Assert.True(File.Exists(SafePath.Combine(stepsDir, "0000.json")));
+        Assert.True(File.Exists(SafePath.Combine(stepsDir, "0001.json")));
 
         // The metadata file carries the manifest, not inlined steps.
-        var metaPath = Path.Combine(_tempRoot, "r1", "recording.json");
+        var metaPath = SafePath.Combine(_tempRoot, "r1", "recording.json");
         Assert.True(File.Exists(metaPath));
         var meta = JsonDocument.Parse(File.ReadAllText(metaPath)).RootElement;
         var manifest = meta.GetProperty("stepsManifest");
@@ -182,7 +182,7 @@ public sealed class ChunkedRecordingStoreTests : IDisposable
         ChunkedRecordingStore.SaveAll(input);
 
         // bodies/<sha256-uppercase> should hold the payload.
-        var bodiesDir = Path.Combine(_tempRoot, "big", "bodies");
+        var bodiesDir = SafePath.Combine(_tempRoot, "big", "bodies");
         Assert.True(Directory.Exists(bodiesDir));
         var bodyFiles = Directory.GetFiles(bodiesDir);
         Assert.Single(bodyFiles);
@@ -193,7 +193,7 @@ public sealed class ChunkedRecordingStoreTests : IDisposable
         Assert.Equal(bigBody, File.ReadAllText(bodyFiles[0]));
 
         // The step file references the body by hash, not inline.
-        var stepText = File.ReadAllText(Path.Combine(_tempRoot, "big", "steps", "0000.json"));
+        var stepText = File.ReadAllText(SafePath.Combine(_tempRoot, Path.Combine("big", "steps", "0000.json")));
         var stepObj = JsonNode.Parse(stepText)!.AsObject();
         Assert.Equal(expectedHash, (string?)stepObj["responseRef"]);
         Assert.False(stepObj.ContainsKey("response"));
@@ -226,7 +226,7 @@ public sealed class ChunkedRecordingStoreTests : IDisposable
 
         ChunkedRecordingStore.SaveAll(input);
 
-        var bodiesDir = Path.Combine(_tempRoot, "dup", "bodies");
+        var bodiesDir = SafePath.Combine(_tempRoot, "dup", "bodies");
         Assert.Single(Directory.GetFiles(bodiesDir));
     }
 
@@ -236,13 +236,13 @@ public sealed class ChunkedRecordingStoreTests : IDisposable
         // Seed two recordings, then re-save with only one — the dropped
         // one's directory should be removed (operator-delete propagation).
         ChunkedRecordingStore.SaveAll("""{"recordings":[{"id":"keep","name":"K"},{"id":"drop","name":"D"}]}""");
-        Assert.True(Directory.Exists(Path.Combine(_tempRoot, "keep")));
-        Assert.True(Directory.Exists(Path.Combine(_tempRoot, "drop")));
+        Assert.True(Directory.Exists(SafePath.Combine(_tempRoot, "keep")));
+        Assert.True(Directory.Exists(SafePath.Combine(_tempRoot, "drop")));
 
         ChunkedRecordingStore.SaveAll("""{"recordings":[{"id":"keep","name":"K"}]}""");
 
-        Assert.True(Directory.Exists(Path.Combine(_tempRoot, "keep")));
-        Assert.False(Directory.Exists(Path.Combine(_tempRoot, "drop")));
+        Assert.True(Directory.Exists(SafePath.Combine(_tempRoot, "keep")));
+        Assert.False(Directory.Exists(SafePath.Combine(_tempRoot, "drop")));
     }
 
     [Fact]
@@ -281,9 +281,9 @@ public sealed class ChunkedRecordingStoreTests : IDisposable
         ChunkedRecordingStore.SaveAll("""{"recordings":[{"id":"../escape","name":"Bad"}]}""");
 
         var parent = Directory.GetParent(_tempRoot)!.FullName;
-        Assert.False(Directory.Exists(Path.Combine(parent, "escape")),
+        Assert.False(Directory.Exists(SafePath.Combine(parent, "escape")),
             "Sanitiser must not let an id traverse out of the recordings root");
-        Assert.True(Directory.Exists(Path.Combine(_tempRoot, "escape")));
+        Assert.True(Directory.Exists(SafePath.Combine(_tempRoot, "escape")));
     }
 
     [Fact]
@@ -332,12 +332,12 @@ public sealed class ChunkedRecordingStoreTests : IDisposable
         Assert.Equal(1, idx1);
 
         // Step files were written under steps/ with the manifest naming.
-        var stepsDir = Path.Combine(_tempRoot, "live", "steps");
-        Assert.True(File.Exists(Path.Combine(stepsDir, "0000.json")));
-        Assert.True(File.Exists(Path.Combine(stepsDir, "0001.json")));
+        var stepsDir = SafePath.Combine(_tempRoot, "live", "steps");
+        Assert.True(File.Exists(SafePath.Combine(stepsDir, "0000.json")));
+        Assert.True(File.Exists(SafePath.Combine(stepsDir, "0001.json")));
 
         // Metadata seed survived; id was forced to the sanitised value.
-        var metaPath = Path.Combine(_tempRoot, "live", "recording.json");
+        var metaPath = SafePath.Combine(_tempRoot, "live", "recording.json");
         var meta = JsonNode.Parse(File.ReadAllText(metaPath))!.AsObject();
         Assert.Equal("live", (string?)meta["id"]);
         Assert.Equal("live-capture", (string?)meta["name"]);
@@ -365,13 +365,13 @@ public sealed class ChunkedRecordingStoreTests : IDisposable
 
         ChunkedRecordingStore.AppendStep("rec", step, recordingMetadata: null);
 
-        var bodiesDir = Path.Combine(_tempRoot, "rec", "bodies");
+        var bodiesDir = SafePath.Combine(_tempRoot, "rec", "bodies");
         Assert.True(Directory.Exists(bodiesDir));
         Assert.Single(Directory.GetFiles(bodiesDir));
 
         // Step file references the hash, not inlines the body.
         var stepObj = JsonNode.Parse(File.ReadAllText(
-            Path.Combine(_tempRoot, "rec", "steps", "0000.json")))!.AsObject();
+            SafePath.Combine(_tempRoot, Path.Combine("rec", "steps", "0000.json"))))!.AsObject();
         Assert.NotNull(stepObj["responseRef"]);
         Assert.Null(stepObj["response"]);
     }
@@ -400,7 +400,7 @@ public sealed class ChunkedRecordingStoreTests : IDisposable
             "///", new JsonObject { ["response"] = "hi" }, null);
 
         Assert.Equal(0, idx);
-        Assert.True(Directory.Exists(Path.Combine(_tempRoot, "anon")));
+        Assert.True(Directory.Exists(SafePath.Combine(_tempRoot, "anon")));
     }
 
     [Fact]
@@ -553,7 +553,7 @@ public sealed class ChunkedRecordingStoreTests : IDisposable
     {
         // Point at a path that doesn't exist yet — the cap-call must
         // not throw, just early-return.
-        var ghost = Path.Combine(_tempRoot, "does-not-exist");
+        var ghost = SafePath.Combine(_tempRoot, "does-not-exist");
         ChunkedRecordingStore.RootPath = ghost;
         ChunkedRecordingStore.DeleteAll();
         Assert.False(Directory.Exists(ghost));
@@ -568,13 +568,13 @@ public sealed class ChunkedRecordingStoreTests : IDisposable
             """{"recordings":[{"id":"r1","name":"ws-bound"}]}""",
             workspaceId: "alpha");
 
-        var wsDir = Path.Combine(_tempRoot, "workspaces", "alpha", "recordings", "r1");
+        var wsDir = SafePath.Combine(_tempRoot, Path.Combine("workspaces", "alpha", "recordings", "r1"));
         Assert.True(Directory.Exists(wsDir));
-        Assert.True(File.Exists(Path.Combine(wsDir, "recording.json")));
+        Assert.True(File.Exists(SafePath.Combine(wsDir, "recording.json")));
 
         // The legacy un-scoped root stays empty — workspaces are
         // isolated on disk.
-        Assert.False(Directory.Exists(Path.Combine(_tempRoot, "r1")));
+        Assert.False(Directory.Exists(SafePath.Combine(_tempRoot, "r1")));
     }
 
     [Fact]
@@ -610,8 +610,8 @@ public sealed class ChunkedRecordingStoreTests : IDisposable
 
         // Whitespace-only workspace id → root path; the recording lives
         // directly under the test root, not under workspaces/.
-        Assert.True(Directory.Exists(Path.Combine(_tempRoot, "r1")));
-        Assert.False(Directory.Exists(Path.Combine(_tempRoot, "workspaces")));
+        Assert.True(Directory.Exists(SafePath.Combine(_tempRoot, "r1")));
+        Assert.False(Directory.Exists(SafePath.Combine(_tempRoot, "workspaces")));
     }
 
     [Fact]
@@ -649,7 +649,7 @@ public sealed class ChunkedRecordingStoreTests : IDisposable
         // Drop an empty directory directly into the root — it has no
         // recording.json. LoadAll should silently skip it rather than
         // surfacing a fake entry.
-        Directory.CreateDirectory(Path.Combine(_tempRoot, "orphan"));
+        Directory.CreateDirectory(SafePath.Combine(_tempRoot, "orphan"));
         ChunkedRecordingStore.SaveAll("""{"recordings":[{"id":"good","name":"G"}]}""");
 
         using var doc = JsonDocument.Parse(ChunkedRecordingStore.LoadAll());
@@ -661,8 +661,8 @@ public sealed class ChunkedRecordingStoreTests : IDisposable
     [Fact]
     public void LoadAll_Skips_Corrupt_Metadata_File()
     {
-        Directory.CreateDirectory(Path.Combine(_tempRoot, "corrupt"));
-        File.WriteAllText(Path.Combine(_tempRoot, "corrupt", "recording.json"),
+        Directory.CreateDirectory(SafePath.Combine(_tempRoot, "corrupt"));
+        File.WriteAllText(SafePath.Combine(_tempRoot, "corrupt", "recording.json"),
             "{ not valid json");
         ChunkedRecordingStore.SaveAll("""{"recordings":[{"id":"good","name":"G"}]}""");
 
@@ -733,7 +733,7 @@ public sealed class ChunkedRecordingStoreTests : IDisposable
 
         ChunkedRecordingStore.SaveAll(input);
 
-        var stepsDir = Path.Combine(_tempRoot, "r", "steps");
+        var stepsDir = SafePath.Combine(_tempRoot, "r", "steps");
         // Only the two object entries become files (indices 0 and 2 —
         // null entry is skipped but the counter advances so the
         // surviving entries land at 0000 + 0002).
