@@ -214,10 +214,7 @@ internal static class BowireWorkspaceEndpoints
         // Defence-in-depth: the caller already routes path through
         // SanitiseWorkspaceId + BowireUserContext.GetUserPath, but we
         // re-assert here that the resolved absolute path lands under
-        // the user root before handing it to the OS. The check
-        // doubles as the closure CodeQL needs to drop the
-        // cs/command-line-injection finding: an explicit guard on the
-        // value before it reaches Process.Start.
+        // the user root before handing it to the OS.
         var userRoot = Path.GetFullPath(BowireUserContext.GetUserPath(""));
         var resolved = Path.GetFullPath(path);
         if (!resolved.StartsWith(userRoot, StringComparison.Ordinal))
@@ -226,11 +223,33 @@ internal static class BowireWorkspaceEndpoints
                 $"Refusing to open '{path}': resolved path escapes the user root.");
         }
 
+        // Stronger sanitiser at the sink — every character of the
+        // segment past the user root must be in a known-safe class
+        // (alnum, '-', '_', '.', or the OS path separator). The
+        // earlier SanitiseWorkspaceId pass already enforces alnum +
+        // '-' + '_' on the id; the assertion here is the inline,
+        // sink-adjacent character-class check that CodeQL's taint
+        // tracker recognises as the sanitiser for
+        // cs/command-line-injection — the earlier StartsWith guard
+        // alone wasn't enough to drop the finding (#46).
+        var relative = resolved[userRoot.Length..];
+        foreach (var c in relative)
+        {
+            if (!char.IsLetterOrDigit(c)
+                && c != '-' && c != '_' && c != '.'
+                && c != Path.DirectorySeparatorChar
+                && c != Path.AltDirectorySeparatorChar)
+            {
+                throw new InvalidOperationException(
+                    $"Refusing to open '{path}': resolved path contains a disallowed character ('{c}').");
+            }
+        }
+
         // ProcessStartInfo.FileName with UseShellExecute=true asks the
         // OS shell to open the document at the resolved path —
         // Explorer on Windows, Finder on macOS, xdg-open on Linux. No
         // command-line argument string is constructed, so there is no
-        // injection surface beyond what the guard above already
+        // injection surface beyond what the guards above already
         // covered.
         var psi = new ProcessStartInfo
         {
