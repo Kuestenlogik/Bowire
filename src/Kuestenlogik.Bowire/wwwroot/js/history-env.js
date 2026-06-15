@@ -206,6 +206,12 @@
 
     function scheduleDiskSync() {
         if (diskSyncSuspended) return;
+        // #212 Phase 0 — workspace-level storage gate. Browser-only
+        // workspaces skip every disk write across every entity store,
+        // not just recordings. localStorage is the only source of
+        // truth; the backend never sees the env data.
+        if (typeof getWorkspaceStorageMode === 'function'
+            && getWorkspaceStorageMode() === 'browser-only') return;
         if (diskSyncTimer) clearTimeout(diskSyncTimer);
         diskSyncTimer = setTimeout(function () {
             diskSyncTimer = null;

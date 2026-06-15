@@ -44,36 +44,29 @@
     // back to empty when the prologue hasn't loaded the workspace
     // yet (very early bootstrap) so the legacy unscoped path
     // applies.
-    // #144 Phase 1.7+ — read the active workspace's recording-
-    // storage mode at the disk-touch points.
-    //   'both'         → localStorage + disk
-    //   'browser-only' → localStorage only; disk calls skipped
-    //   'disk-only'    → disk only; localStorage cache skipped,
-    //                    manifest-only fetch on init.
+    // #212 Phase 0 — workspace-level storage decision drives every
+    // disk-touch point. Two modes: 'disk' (default, source of truth
+    // on disk + best-effort localStorage cache) and 'browser-only'
+    // (localStorage only). The retired 'disk-only' mode's value
+    // (skip localStorage to avoid quota errors) folds into the
+    // default disk mode automatically — every localStorage write is
+    // already wrapped in try/catch so quota errors degrade silently.
     function _recordingsModeAllowsDisk() {
         try {
+            if (typeof getWorkspaceStorageMode === 'function') {
+                return getWorkspaceStorageMode() !== 'browser-only';
+            }
             if (typeof getRecordingStorageMode === 'function') {
                 return getRecordingStorageMode() !== 'browser-only';
             }
         } catch { /* fall through */ }
         return true;
     }
-    function _recordingsModeAllowsLocalStorage() {
-        try {
-            if (typeof getRecordingStorageMode === 'function') {
-                return getRecordingStorageMode() !== 'disk-only';
-            }
-        } catch { /* fall through */ }
-        return true;
-    }
-    function _recordingsModeIsDiskOnly() {
-        try {
-            if (typeof getRecordingStorageMode === 'function') {
-                return getRecordingStorageMode() === 'disk-only';
-            }
-        } catch { /* fall through */ }
-        return false;
-    }
+    // Always true now — localStorage is best-effort in disk mode and
+    // the source of truth in browser-only mode, so every callsite
+    // can write through and let the try/catch around the write
+    // handle quota / disabled-storage failure.
+    function _recordingsModeAllowsLocalStorage() { return true; }
 
     // #144 Phase 1.8 — lazy-fetch step bodies for a manifest-only
     // recording. Called when the operator opens a recording's
@@ -186,27 +179,21 @@
             catch { recordingsList = []; }
             return Promise.resolve();
         }
-        // #144 Phase 1.8 — disk-only mode loads the manifest-only
-        // shape so the initial paint is light. Step bodies fetch
-        // on demand via hydrateRecording().
+        // #212 Phase 0 — disk mode unified. Initial fetch grabs the
+        // recordings from /api/recordings; localStorage write is
+        // best-effort (try/catch). The old 'disk-only' manifest-only
+        // optimisation moves to #144 Phase 2 — there it stays as an
+        // internal optimisation triggered by recordings size, not as
+        // a user-facing mode.
         var url = config.prefix + '/api/recordings' + _recordingsWsParam();
-        if (_recordingsModeIsDiskOnly()) {
-            url += (url.indexOf('?') >= 0 ? '&' : '?') + 'manifestOnly=1';
-        }
         return fetch(url)
             .then(function (r) { return r.ok ? r.json() : null; })
             .then(function (data) {
                 if (data && Array.isArray(data.recordings)) {
                     recordingsList = data.recordings;
-                    // Skip the localStorage write for disk-only
-                    // workspaces — the cache shape would carry only
-                    // manifests and risks confusing the next session
-                    // if the operator switches modes.
-                    if (_recordingsModeAllowsLocalStorage()) {
-                        try { localStorage.setItem(wsKey(RECORDINGS_KEY), JSON.stringify(recordingsList)); } catch { /* ignore */ }
-                    }
+                    try { localStorage.setItem(wsKey(RECORDINGS_KEY), JSON.stringify(recordingsList)); } catch { /* quota / disabled — fall through */ }
                 } else {
-                    recordingsList = _recordingsModeAllowsLocalStorage() ? loadRecordings() : [];
+                    recordingsList = loadRecordings();
                 }
             })
             .catch(function () {

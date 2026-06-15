@@ -829,7 +829,7 @@
             color: '#6366f1',
             createdAt: Date.now(),
             lastOpenedAt: Date.now(),
-            recordingStorageMode: 'both'
+            storage: 'disk'
         });
         activeWorkspaceId = 'personal';
     }
@@ -1138,12 +1138,12 @@
             // start empty; the operator creates envs via the env
             // dropdown's "+ New environment…" item or via the env
             // overview's "+ New environment" button.
-            // Recording-storage default — disk + browser cache. Lets
-            // the operator switch to browser-only / disk-only later
-            // via Workspace Settings → Recording storage. Persisted
-            // on creation so the UI's radio reflects the real value
-            // immediately rather than relying on the implicit fallback.
-            recordingStorageMode: 'both',
+            // #212 Phase 0 — workspace storage mode. Drives every
+            // entity store (recordings, env-sync, future collections /
+            // flows). Default 'disk' (~/.bowire/workspaces/<id>/);
+            // operator can opt into 'browser-only' via Settings →
+            // General → Storage.
+            storage: 'disk',
         };
         workspaces.push(ws);
         activeWorkspaceId = id;
@@ -1167,25 +1167,82 @@
         try { window.location.reload(); } catch { /* embedded host */ }
     }
     // #146 — workspace-level switch: include all shared environments
-    // automatically. When on, no per-env curation needed. Flipping
-    // #144 Phase 1.7+ — recording storage mode per workspace.
-    //   'both'         (default) → write to localStorage AND user-folder via /api/recordings.
-    //   'browser-only'           → write to localStorage ONLY; disk sync skipped entirely.
-    //   'disk-only'    (Phase 1.8) → no localStorage cache; manifest-only fetch on init,
-    //                                step bodies lazy-fetched on demand.
-    function getRecordingStorageMode(ws) {
+    // #212 Phase 0 — workspace-level storage decision. One toggle per
+    // workspace drives every entity store (recordings, env-sync,
+    // future collections / flows). Replaces the per-subsystem
+    // recordingStorageMode field (kept as a legacy alias for
+    // back-compat in case any caller still reads it).
+    //
+    //   'disk'         (default) → ~/.bowire/workspaces/<id>/ is the
+    //                              source of truth. localStorage acts
+    //                              as a best-effort cache and silently
+    //                              degrades on quota errors (so a huge
+    //                              recording doesn't blow the tab).
+    //                              Recordings initial-load is manifest-
+    //                              only; step bodies hydrate on demand.
+    //   'browser-only'           → localStorage is the only store;
+    //                              no disk writes for ANY entity.
+    //                              Subject to the ~5-10 MB browser
+    //                              quota; useful for sandbox / privacy
+    //                              workflows.
+    //
+    // #196 will add a 'git' value (workspace lives as a checked-out
+    // folder); browser-only is rejected on a git workspace.
+    function getWorkspaceStorageMode(ws) {
         var target = ws || (typeof activeWorkspace === 'function' ? activeWorkspace() : null);
-        if (!target) return 'both';
-        var m = target.recordingStorageMode;
-        if (m === 'browser-only' || m === 'disk-only') return m;
-        return 'both';
+        if (!target) return 'disk';
+        var s = target.storage;
+        if (s === 'browser-only') return 'browser-only';
+        if (s === 'disk') return 'disk';
+        // Fallback to the retired recordingStorageMode for workspaces
+        // that haven't been migrated yet (migration runs once on
+        // boot, but a freshly-imported pre-#212 workspace can land
+        // here mid-session).
+        var legacy = target.recordingStorageMode;
+        if (legacy === 'browser-only') return 'browser-only';
+        return 'disk';
     }
-    function setWorkspaceRecordingStorageMode(id, mode) {
+    function setWorkspaceStorageMode(id, mode) {
         var ws = workspaces.find(function (w) { return w.id === id; });
         if (!ws) return;
-        ws.recordingStorageMode = (mode === 'browser-only' || mode === 'disk-only') ? mode : 'both';
+        ws.storage = (mode === 'browser-only') ? 'browser-only' : 'disk';
+        // Mirror onto the legacy field so any old caller still sees
+        // the same answer. Recordings code reads through
+        // getRecordingStorageMode → getWorkspaceStorageMode, so this
+        // mirror is just defensive.
+        ws.recordingStorageMode = ws.storage;
         persistWorkspaces();
     }
+
+    // Back-compat aliases — recording.js + any other caller still
+    // imports these names. Both delegate to the workspace-level
+    // helpers. Drop these once every call site has migrated.
+    function getRecordingStorageMode(ws) { return getWorkspaceStorageMode(ws); }
+    function setWorkspaceRecordingStorageMode(id, mode) { setWorkspaceStorageMode(id, mode); }
+
+    // One-shot migration: derive workspace.storage from the legacy
+    // recordingStorageMode for every existing workspace. Stamps a
+    // marker so subsequent boots skip the walk. Runs before any UI
+    // reads workspace.storage so the toggle reflects the migrated
+    // value on first render.
+    function migrateWorkspaceStorage() {
+        var marker = 'bowire_workspace_storage_v1';
+        try {
+            if (localStorage.getItem(marker) === 'done') return;
+        } catch { /* ignore */ }
+        var dirty = false;
+        for (var i = 0; i < workspaces.length; i++) {
+            var w = workspaces[i];
+            if (w.storage === 'disk' || w.storage === 'browser-only') continue;
+            // 'both' / 'disk-only' / undefined all collapse to 'disk'.
+            // 'browser-only' carries through.
+            w.storage = (w.recordingStorageMode === 'browser-only') ? 'browser-only' : 'disk';
+            dirty = true;
+        }
+        if (dirty) persistWorkspaces();
+        try { localStorage.setItem(marker, 'done'); } catch { /* ignore */ }
+    }
+    try { migrateWorkspaceStorage(); } catch { /* ignore */ }
 
     // Retired with the self-contained workspaces refactor (#A) — envs
     // are workspace-owned, not subscribed-to. Stub stays for any
@@ -1301,6 +1358,13 @@
                 // Inclusion fields retired with #A — envs are workspace-
                 // owned now, the workspace export carries the env list
                 // itself under data.bowire_environments.
+                // #212 Phase 0 — workspace-level storage decision.
+                // Exported so a recipient sees the same disk-vs-browser
+                // posture the source workspace was running with.
+                storage: ws.storage || 'disk',
+                // Legacy field mirrored on export for pre-#212
+                // importers; new importers prefer `storage` and fall
+                // back to this if absent.
                 recordingStorageMode: ws.recordingStorageMode || 'both'
             },
             data: data
@@ -1349,6 +1413,16 @@
             var ws = createWorkspace(wsMeta.name || 'Imported',
                 wsMeta.color || '#6366f1');
             ws.description = wsMeta.description || '';
+            // #212 Phase 0 — prefer the workspace-level storage
+            // field; fall back to the legacy recordingStorageMode
+            // value if the export came from a pre-#212 workspace.
+            if (wsMeta.storage === 'browser-only' || wsMeta.storage === 'disk') {
+                ws.storage = wsMeta.storage;
+            } else if (wsMeta.recordingStorageMode === 'browser-only') {
+                ws.storage = 'browser-only';
+            } else {
+                ws.storage = 'disk';
+            }
             ws.recordingStorageMode = wsMeta.recordingStorageMode || 'both';
             persistWorkspaces();
             targetId = ws.id;
