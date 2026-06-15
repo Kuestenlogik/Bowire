@@ -65,9 +65,9 @@ public class BowireServiceCollectionExtensionsTests
         // each subdir, the plugin host gets registered so embedded hosts
         // can later hot-reload from disk. The TryLoadPlugin call inside
         // each subdir swallows failures, so empty subdirs are tolerated.
-        var temp = Path.Combine(Path.GetTempPath(),
+        var temp = SafePath.Combine(Path.GetTempPath(),
             "bowire-plugin-test-" + Guid.NewGuid().ToString("N"));
-        var sub = Path.Combine(temp, "package-a");
+        var sub = SafePath.Combine(temp, "package-a");
         Directory.CreateDirectory(sub);
         try
         {
@@ -94,10 +94,10 @@ public class BowireServiceCollectionExtensionsTests
         // descriptor before allocating a fresh host so a second
         // AddBowirePlugins call (e.g. from a different config root) doesn't
         // shadow the first one's loaded contexts.
-        var temp = Path.Combine(Path.GetTempPath(),
+        var temp = SafePath.Combine(Path.GetTempPath(),
             "bowire-plugin-test-" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(Path.Combine(temp, "first"));
-        Directory.CreateDirectory(Path.Combine(temp, "second"));
+        Directory.CreateDirectory(SafePath.Combine(temp, "first"));
+        Directory.CreateDirectory(SafePath.Combine(temp, "second"));
         try
         {
             var services = new ServiceCollection();
@@ -163,12 +163,12 @@ public class BowireServiceCollectionExtensionsTests
         // itself; the DLL fails to load because it's not a real assembly,
         // but TryLoadPlugin swallows that and returns the registered
         // BowirePluginHost.
-        var temp = Path.Combine(Path.GetTempPath(),
+        var temp = SafePath.Combine(Path.GetTempPath(),
             "bowire-plugin-root-" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(temp);
         // Bytes that look like a PE header but aren't a real assembly —
         // load fails, host catches, contract holds.
-        File.WriteAllBytes(Path.Combine(temp, "Fake.dll"), new byte[] { 0x4D, 0x5A, 0x00, 0x00 });
+        File.WriteAllBytes(SafePath.Combine(temp, "Fake.dll"), new byte[] { 0x4D, 0x5A, 0x00, 0x00 });
         try
         {
             var services = new ServiceCollection();
@@ -185,9 +185,9 @@ public class BowireServiceCollectionExtensionsTests
     [Fact]
     public void AddBowirePlugins_IConfiguration_With_Bound_PluginDir_Registers_Host()
     {
-        var temp = Path.Combine(Path.GetTempPath(),
+        var temp = SafePath.Combine(Path.GetTempPath(),
             "bowire-plugin-config-" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(Path.Combine(temp, "package-x"));
+        Directory.CreateDirectory(SafePath.Combine(temp, "package-x"));
         try
         {
             var config = new ConfigurationBuilder()
