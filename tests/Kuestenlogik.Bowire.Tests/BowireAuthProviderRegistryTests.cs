@@ -70,7 +70,6 @@ public sealed class BowireAuthProviderRegistryTests
     [Fact]
     public void ApplyAuthentication_Wires_Selected_Provider()
     {
-        TestStubAuthProvider.AddAuthCalled = 0;
         var services = new ServiceCollection();
         services.AddLogging();
         var cfg = new ConfigurationBuilder().Build();
@@ -80,7 +79,9 @@ public sealed class BowireAuthProviderRegistryTests
 
         Assert.NotNull(result);
         Assert.Equal(TestStubAuthProvider.IdConst, result!.Id);
-        Assert.Equal(1, TestStubAuthProvider.AddAuthCalled);
+        // Verify via the resolved instance — the call count is per-stub
+        // so parallel test runs don't fight over shared state.
+        Assert.Equal(1, ((TestStubAuthProvider)result).AddAuthCalled);
 
         // The provider should land as a singleton so the rest of the
         // pipeline (UseBowireAuth middleware, &c.) can resolve it.
@@ -116,20 +117,20 @@ internal sealed class TestStubAuthProvider : IBowireAuthProvider
 {
     internal const string IdConst = "test-stub";
 
-    private static int s_addAuthCalled;
+    // Per-instance counter — closes cs/static-field-written-by-instance.
+    // Each registry-discovered TestStubAuthProvider gets its own call
+    // count so parallel test runs (and concurrent assemblies that
+    // reflect over this same internal type) can't trample one another.
+    private int _addAuthCalled;
 
-    internal static int AddAuthCalled
-    {
-        get => Volatile.Read(ref s_addAuthCalled);
-        set => Volatile.Write(ref s_addAuthCalled, value);
-    }
+    internal int AddAuthCalled => Volatile.Read(ref _addAuthCalled);
 
     public string Id => IdConst;
     public string Name => "Test Stub Provider";
 
     public void AddAuthentication(IServiceCollection services, IConfiguration configuration)
     {
-        Interlocked.Increment(ref s_addAuthCalled);
+        Interlocked.Increment(ref _addAuthCalled);
         // Minimal authentication wiring so AddAuthorization downstream
         // has the dependency graph it expects.
         services.AddAuthentication("Test").AddCookie("Test");
