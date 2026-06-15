@@ -167,7 +167,16 @@ internal static class BowireDiscoveryEndpoints
                         discoveredCount++;
                     }
                 }
+                // Plugin DiscoverAsync calls into third-party transports
+                // (HTTP, gRPC reflection, MQTT broker connect, ...) and
+                // can throw anything from HttpRequestException to
+                // SocketException to plugin-author-defined types. The
+                // probe fanout MUST tolerate any one plugin's failure
+                // and report it via discoveryErrors instead of poisoning
+                // the whole result.
+#pragma warning disable CA1031 // Do not catch general exception types
                 catch (Exception ex)
+#pragma warning restore CA1031
                 {
                     discoverOutcome = ex is OperationCanceledException ? "canceled" : "error";
                     logger.LogWarning(ex,

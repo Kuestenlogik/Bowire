@@ -160,8 +160,11 @@ internal static class BowireRecordingEndpoints
             {
                 body = await new StreamReader(ctx.Request.Body).ReadToEndAsync(ctx.RequestAborted);
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is IOException or InvalidOperationException or Microsoft.AspNetCore.Http.BadHttpRequestException)
             {
+                // Request body stream failures: client disconnect mid-upload
+                // (IOException), connection reset, malformed chunked
+                // framing (BadHttpRequestException). Treat all as 400.
                 return BowireEndpointHelpers.Problem(
                     type: "urn:bowire:invalid-input",
                     title: "Failed to read request body",
