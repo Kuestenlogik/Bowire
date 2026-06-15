@@ -29,7 +29,7 @@ public sealed class BowireConfigurationTests : IDisposable
     public BowireConfigurationTests()
     {
         _cwdBackup = Directory.GetCurrentDirectory();
-        _tempDir = Path.Combine(Path.GetTempPath(), "bowire-config-" + Guid.NewGuid().ToString("N"));
+        _tempDir = SafePath.Combine(Path.GetTempPath(), "bowire-config-" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(_tempDir);
         Directory.SetCurrentDirectory(_tempDir);
 
@@ -71,7 +71,7 @@ public sealed class BowireConfigurationTests : IDisposable
     [Fact]
     public void LegacyEnvVar_BindsToConfigKey()
     {
-        var expected = Path.Combine(_tempDir, "env-plugins");
+        var expected = SafePath.Combine(_tempDir, "env-plugins");
         Environment.SetEnvironmentVariable("BOWIRE_PLUGIN_DIR", expected);
         try
         {
@@ -88,7 +88,7 @@ public sealed class BowireConfigurationTests : IDisposable
     [Fact]
     public void AppSettings_Json_ProvidesDefault()
     {
-        File.WriteAllText(Path.Combine(_tempDir, "appsettings.json"),
+        File.WriteAllText(SafePath.Combine(_tempDir, "appsettings.json"),
             """{ "Bowire": { "PluginDir": "from-appsettings" } }""");
 
         var config = BowireConfiguration.Build([]);
@@ -100,22 +100,22 @@ public sealed class BowireConfigurationTests : IDisposable
     public void CliFlag_Overrides_EnvVar_Overrides_AppSettings()
     {
         // appsettings.json → env → CLI: CLI wins.
-        File.WriteAllText(Path.Combine(_tempDir, "appsettings.json"),
+        File.WriteAllText(SafePath.Combine(_tempDir, "appsettings.json"),
             """{ "Bowire": { "PluginDir": "from-json" } }""");
         Environment.SetEnvironmentVariable("BOWIRE_PLUGIN_DIR",
-            Path.Combine(_tempDir, "from-env"));
+            SafePath.Combine(_tempDir, "from-env"));
 
         try
         {
             // With only JSON + env set, env wins.
             var envOnly = BowireConfiguration.Build([]);
-            Assert.Equal(Path.GetFullPath(Path.Combine(_tempDir, "from-env")),
+            Assert.Equal(Path.GetFullPath(SafePath.Combine(_tempDir, "from-env")),
                 BowireConfiguration.PluginDir(envOnly));
 
             // Add a CLI flag: CLI wins over env and over JSON.
             var cliOverrides = BowireConfiguration.Build(
-                ["--plugin-dir", Path.Combine(_tempDir, "from-cli")]);
-            Assert.Equal(Path.GetFullPath(Path.Combine(_tempDir, "from-cli")),
+                ["--plugin-dir", SafePath.Combine(_tempDir, "from-cli")]);
+            Assert.Equal(Path.GetFullPath(SafePath.Combine(_tempDir, "from-cli")),
                 BowireConfiguration.PluginDir(cliOverrides));
         }
         finally
@@ -129,7 +129,7 @@ public sealed class BowireConfigurationTests : IDisposable
     {
         // Verifies the documented config convention — plugins bind their
         // section via IConfiguration.GetSection("Bowire:Plugins:<name>").
-        File.WriteAllText(Path.Combine(_tempDir, "appsettings.json"),
+        File.WriteAllText(SafePath.Combine(_tempDir, "appsettings.json"),
             """
             {
               "Bowire": {
@@ -198,7 +198,7 @@ public sealed class BowireConfigurationTests : IDisposable
     {
         // An empty but valid directory — the extension is a no-op since
         // there are no DLLs, but it must NOT throw on a configured path.
-        var configDir = Path.Combine(_tempDir, "plugins");
+        var configDir = SafePath.Combine(_tempDir, "plugins");
         Directory.CreateDirectory(configDir);
 
         var config = new ConfigurationBuilder()
