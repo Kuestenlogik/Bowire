@@ -55,14 +55,7 @@ public sealed class BowireExtensionRegistry
     public IBowireUiExtension? GetUiExtension(string extensionId)
     {
         ArgumentNullException.ThrowIfNull(extensionId);
-        foreach (var ext in _uiExtensions)
-        {
-            if (string.Equals(ext.Id, extensionId, StringComparison.Ordinal))
-            {
-                return ext;
-            }
-        }
-        return null;
+        return _uiExtensions.FirstOrDefault(ext => string.Equals(ext.Id, extensionId, StringComparison.Ordinal));
     }
 
     /// <summary>
@@ -75,10 +68,9 @@ public sealed class BowireExtensionRegistry
     {
         var registry = new BowireExtensionRegistry();
 
-        foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
+        foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies()
+            .Where(a => a.FullName?.Contains("Bowire", StringComparison.Ordinal) == true))
         {
-            if (assembly.FullName?.Contains("Bowire", StringComparison.Ordinal) != true) continue;
-
             Type[] types;
             try { types = assembly.GetTypes(); }
             catch (ReflectionTypeLoadException ex)
@@ -93,11 +85,9 @@ public sealed class BowireExtensionRegistry
                 continue;
             }
 
-            foreach (var type in types)
+            foreach (var type in types
+                .Where(t => !t.IsAbstract && !t.IsInterface && t.GetCustomAttribute<BowireExtensionAttribute>() is not null))
             {
-                if (type.IsAbstract || type.IsInterface) continue;
-                if (type.GetCustomAttribute<BowireExtensionAttribute>() is null) continue;
-
                 if (typeof(IBowireUiExtension).IsAssignableFrom(type))
                 {
                     try
