@@ -7,6 +7,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using Kuestenlogik.Bowire.Help;
 using Markdig;
+using Markdig.Helpers;
 using Markdig.Syntax;
 using Markdig.Syntax.Inlines;
 
@@ -44,10 +45,8 @@ public sealed class MarkdownHelpProvider : IBowireHelpProvider
         var topics = new Dictionary<string, HelpTopic>(StringComparer.OrdinalIgnoreCase);
         var index = new ConcurrentDictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
 
-        foreach (var name in source.GetManifestResourceNames())
+        foreach (var name in source.GetManifestResourceNames().Where(n => n.StartsWith(ResourcePrefix, StringComparison.Ordinal)))
         {
-            if (!name.StartsWith(ResourcePrefix, StringComparison.Ordinal)) continue;
-
             using var stream = source.GetManifestResourceStream(name);
             if (stream is null) continue;
             using var reader = new StreamReader(stream, Encoding.UTF8);
@@ -103,13 +102,10 @@ public sealed class MarkdownHelpProvider : IBowireHelpProvider
         foreach (var (id, topic) in _topics)
         {
             // Title-word bonus.
-            foreach (var term in terms)
+            foreach (var term in terms.Where(t => topic.Title.Contains(t, StringComparison.OrdinalIgnoreCase)))
             {
-                if (topic.Title.Contains(term, StringComparison.OrdinalIgnoreCase))
-                {
-                    scores.TryGetValue(id, out var s);
-                    scores[id] = s + 1;
-                }
+                scores.TryGetValue(id, out var s);
+                scores[id] = s + 1;
             }
         }
 
@@ -174,9 +170,8 @@ public sealed class MarkdownHelpProvider : IBowireHelpProvider
 
     private static string? SummaryFromFrontmatter(string fm)
     {
-        foreach (var line in fm.Split('\n', StringSplitOptions.RemoveEmptyEntries))
+        foreach (var trimmed in fm.Split('\n', StringSplitOptions.RemoveEmptyEntries).Select(line => line.TrimStart()))
         {
-            var trimmed = line.TrimStart();
             if (!trimmed.StartsWith("summary:", StringComparison.OrdinalIgnoreCase)) continue;
             var v = trimmed["summary:".Length..].Trim().Trim('\'', '"');
             return v.Length > 0 ? v : null;
@@ -187,9 +182,8 @@ public sealed class MarkdownHelpProvider : IBowireHelpProvider
     /// <summary>First markdown H1 (line starting with <c># </c>), or null.</summary>
     private static string? FirstHeading(string body)
     {
-        foreach (var line in body.Split('\n'))
+        foreach (var t in body.Split('\n').Select(line => line.TrimStart()))
         {
-            var t = line.TrimStart();
             if (t.StartsWith("# ", StringComparison.Ordinal)) return t[2..].Trim();
         }
         return null;
@@ -237,7 +231,7 @@ public sealed class MarkdownHelpProvider : IBowireHelpProvider
     {
         if (node is LiteralInline lit)
         {
-            sb.Append(lit.Content.ToString()).Append(' ');
+            sb.Append(lit.Content).Append(' ');
             return;
         }
         if (node is CodeInline code)
@@ -254,7 +248,7 @@ public sealed class MarkdownHelpProvider : IBowireHelpProvider
         {
             if (child is LiteralInline li)
             {
-                sb.Append(li.Content.ToString()).Append(' ');
+                sb.Append(li.Content).Append(' ');
             }
             else if (child is CodeInline ci)
             {
