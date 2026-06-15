@@ -102,8 +102,13 @@ internal static class BowireAuthEndpoints
                 // Pass the token endpoint's JSON body straight through
                 return Results.Content(responseBody, "application/json");
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or OperationCanceledException or InvalidOperationException or IOException)
             {
+                // Token-endpoint upstream surface: network failure
+                // (HttpRequestException / IOException), HttpClient timeout
+                // (TaskCanceledException), client disconnect
+                // (OperationCanceledException), or DI/HttpClient misuse
+                // (InvalidOperationException).
                 BowireEndpointHelpers.GetLogger(ctx).LogWarning(ex,
                     "OAuth client_credentials proxy failed for {TokenUrl}", body.TokenUrl);
                 return BowireEndpointHelpers.Problem(
@@ -186,8 +191,9 @@ internal static class BowireAuthEndpoints
                 }
                 return Results.Content(responseBody, "application/json");
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or OperationCanceledException or InvalidOperationException or IOException)
             {
+                // Same upstream surface as client_credentials above.
                 BowireEndpointHelpers.GetLogger(ctx).LogWarning(ex,
                     "OAuth authorization_code proxy failed for {TokenUrl}", body.TokenUrl);
                 return BowireEndpointHelpers.Problem(
@@ -267,8 +273,9 @@ internal static class BowireAuthEndpoints
                 }
                 return Results.Content(responseBody, "application/json");
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or OperationCanceledException or InvalidOperationException or IOException)
             {
+                // Same upstream surface as client_credentials above.
                 BowireEndpointHelpers.GetLogger(ctx).LogWarning(ex,
                     "OAuth refresh_token proxy failed for {TokenUrl}", body.TokenUrl);
                 return BowireEndpointHelpers.Problem(
@@ -353,8 +360,11 @@ internal static class BowireAuthEndpoints
 
                 return Results.Content(responseBody, resp.Content.Headers.ContentType?.MediaType ?? "application/json");
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or OperationCanceledException or InvalidOperationException or IOException or FormatException)
             {
+                // Same upstream surface as client_credentials above, plus
+                // FormatException for the caller-supplied custom HTTP method
+                // that gets fed into new HttpMethod(...).
                 BowireEndpointHelpers.GetLogger(ctx).LogWarning(ex,
                     "Custom token proxy failed for {Url}", body.Url);
                 return BowireEndpointHelpers.Problem(

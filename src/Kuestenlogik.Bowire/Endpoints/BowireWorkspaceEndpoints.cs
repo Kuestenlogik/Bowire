@@ -78,8 +78,13 @@ internal static partial class BowireWorkspaceEndpoints
                     ?? new WorkspaceFile();
                 return Results.Ok(ws);
             }
-            catch
+            catch (Exception ex) when (ex is JsonException or IOException or UnauthorizedAccessException or NotSupportedException)
             {
+                // Treat parse/IO failure as "no workspace yet" — the
+                // workbench falls back to defaults and the operator can
+                // re-save. Anything else (OOM, async cancellation, …)
+                // bubbles.
+                _ = ex;
                 return Results.Ok(new WorkspaceFile());
             }
         }).ExcludeFromDescription();
@@ -98,8 +103,11 @@ internal static partial class BowireWorkspaceEndpoints
                 }
                 return Results.Ok(new { saved = true });
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is JsonException or IOException or UnauthorizedAccessException or NotSupportedException)
             {
+                // Parse failures (JsonException) and disk failures
+                // (IOException / UnauthorizedAccessException) both surface
+                // as 400 with the inner message for triage.
                 return BowireEndpointHelpers.Problem(
                     type: "urn:bowire:workspace:save-failed",
                     title: "Couldn't save workspace",
@@ -167,8 +175,10 @@ internal static partial class BowireWorkspaceEndpoints
 
                 Directory.CreateDirectory(target);
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException or PathTooLongException or NotSupportedException)
             {
+                // Directory.CreateDirectory and BowireUserContext path
+                // resolution: file-system errors and malformed paths.
                 return BowireEndpointHelpers.Problem(
                     type: "urn:bowire:workspace:open-folder-resolve-failed",
                     title: "Couldn't resolve workspace folder",
@@ -182,8 +192,13 @@ internal static partial class BowireWorkspaceEndpoints
                 LaunchPlatformFileManager(target);
                 return Results.Ok(new { opened = true, path = target });
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is System.ComponentModel.Win32Exception or InvalidOperationException or System.PlatformNotSupportedException or FileNotFoundException)
             {
+                // Process.Start surface: Win32Exception (explorer.exe
+                // / xdg-open missing or refused), InvalidOperationException
+                // (sanitiser guard tripped), PlatformNotSupportedException
+                // (headless container), FileNotFoundException (binary
+                // absent on PATH).
                 return BowireEndpointHelpers.Problem(
                     type: "urn:bowire:workspace:open-folder-failed",
                     title: "Couldn't launch file manager",
