@@ -12,7 +12,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.0 — Re-architected workbench shell + workspace = project folder
 
-**54/60 done** · 6 backlog
+**54/62 done** · 8 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -21,6 +21,8 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [195](https://github.com/Kuestenlogik/Bowire/issues/195) | Bowire | [Protocol plugin — OTLP passive listener (Kuestenlogik.Bowire.Protocol.Otlp)](#issue-kuestenlogik-bowire-195) | ⬜ Open |  |
 | [196](https://github.com/Kuestenlogik/Bowire/issues/196) | Bowire | [Git-backed workspaces Phase 2 — Kuestenlogik.Bowire.Workspace.Git runtime + FS-watch + secret merge](#issue-kuestenlogik-bowire-196) | ⬜ Open |  |
 | [197](https://github.com/Kuestenlogik/Bowire/issues/197) | Bowire | [Deprecate + unlist Kuestenlogik.Bowire.Extension.MapLibre on nuget.org after v2.0 ships](#issue-kuestenlogik-bowire-197) | ⬜ Open |  |
+| [209](https://github.com/Kuestenlogik/Bowire/issues/209) | Bowire | [Workspace file extension: rename .blw → .bww](#issue-kuestenlogik-bowire-209) | ⬜ Open |  |
+| [210](https://github.com/Kuestenlogik/Bowire/issues/210) | Bowire | [Standalone recording format .bwr — self-contained, workspace-agnostic](#issue-kuestenlogik-bowire-210) | ⬜ Open |  |
 | [211](https://github.com/Kuestenlogik/Bowire/issues/211) | Bowire | [bowire mock <recording.bwr> — HTTP replay server from a recording](#issue-kuestenlogik-bowire-211) | ⬜ Open |  |
 | [25](https://github.com/Kuestenlogik/Bowire/issues/25) | Bowire | [AI side-panel integration](#issue-kuestenlogik-bowire-25) | ✅ Done | `area:workbench` |
 | [33](https://github.com/Kuestenlogik/Bowire/issues/33) | Bowire | [Protocol plugins — Connect Phase 1+3 + OTLP](#issue-kuestenlogik-bowire-33) | ✅ Done | `area:plugin-sdk` |
@@ -211,6 +213,14 @@ Phase 1 (#147-#149-#151) shipped in eb2bf1c: `BowireUserContext.GetWorkspacePath
 #### <a id="issue-kuestenlogik-bowire-197"></a>⬜ Open · [#197](https://github.com/Kuestenlogik/Bowire/issues/197) Deprecate + unlist Kuestenlogik.Bowire.Extension.MapLibre on nuget.org after v2.0 ships
 
 `Kuestenlogik.Bowire.Extension.MapLibre` 1.3.0-rc.1 was renamed to `Kuestenlogik.Bowire.Map` ahead of v2.0 (commit 75c8d1f). … [[more]](https://github.com/Kuestenlogik/Bowire/issues/197)
+
+#### <a id="issue-kuestenlogik-bowire-209"></a>⬜ Open · [#209](https://github.com/Kuestenlogik/Bowire/issues/209) Workspace file extension: rename .blw → .bww
+
+@-
+
+#### <a id="issue-kuestenlogik-bowire-210"></a>⬜ Open · [#210](https://github.com/Kuestenlogik/Bowire/issues/210) Standalone recording format .bwr — self-contained, workspace-agnostic
+
+@-
 
 #### <a id="issue-kuestenlogik-bowire-211"></a>⬜ Open · [#211](https://github.com/Kuestenlogik/Bowire/issues/211) bowire mock <recording.bwr> — HTTP replay server from a recording
 
