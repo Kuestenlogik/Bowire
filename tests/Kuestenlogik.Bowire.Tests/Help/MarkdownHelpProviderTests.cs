@@ -101,9 +101,8 @@ public sealed class MarkdownHelpProviderTests
         // the term (case-insensitive). We can't pin on a specific
         // file id without baking content assumptions, but the term
         // should surface somewhere.
-        foreach (var hit in hits)
+        foreach (var combined in hits.Select(h => h.Id + " " + h.Title + " " + h.Excerpt))
         {
-            var combined = hit.Id + " " + hit.Title + " " + hit.Excerpt;
             Assert.Contains("recording", combined, StringComparison.OrdinalIgnoreCase);
         }
     }
