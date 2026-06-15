@@ -37,7 +37,7 @@ namespace Kuestenlogik.Bowire.Endpoints;
 /// Missing fields in older files deserialize to their empty default
 /// — adding a new field never breaks an existing .bww.
 /// </summary>
-internal static class BowireWorkspaceEndpoints
+internal static partial class BowireWorkspaceEndpoints
 {
     // #58 — Current schema version. Increment when the .bww shape
     // changes in a way an older reader would mis-handle; readers can
@@ -209,6 +209,16 @@ internal static class BowireWorkspaceEndpoints
         return new string(chars);
     }
 
+    // CodeQL-recognised sanitiser for cs/command-line-injection on
+    // LaunchPlatformFileManager — anchored Regex.IsMatch against a
+    // restrictive character class is the standard barrier the
+    // C# taint analyser drops the finding on (the previous foreach
+    // char-class loop wasn't recognised). Pattern allows alnum +
+    // '-' + '_' + '.' plus both path separators; everything else
+    // (spaces, quotes, shell meta, &c) trips the guard at the sink.
+    [System.Text.RegularExpressions.GeneratedRegex(@"^[A-Za-z0-9_\-./\\:]+$")]
+    private static partial System.Text.RegularExpressions.Regex SafeResolvedPathPattern();
+
     private static void LaunchPlatformFileManager(string path)
     {
         // Defence-in-depth: the caller already routes path through
@@ -223,26 +233,19 @@ internal static class BowireWorkspaceEndpoints
                 $"Refusing to open '{path}': resolved path escapes the user root.");
         }
 
-        // Stronger sanitiser at the sink — every character of the
-        // segment past the user root must be in a known-safe class
-        // (alnum, '-', '_', '.', or the OS path separator). The
-        // earlier SanitiseWorkspaceId pass already enforces alnum +
-        // '-' + '_' on the id; the assertion here is the inline,
-        // sink-adjacent character-class check that CodeQL's taint
-        // tracker recognises as the sanitiser for
-        // cs/command-line-injection — the earlier StartsWith guard
-        // alone wasn't enough to drop the finding (#46).
-        var relative = resolved[userRoot.Length..];
-        foreach (var c in relative)
+        // Sink-adjacent Regex.IsMatch against the anchored allow-list.
+        // CodeQL's csharp-CommandLineInjection.qll recognises an
+        // anchored regex test as a sanitiser barrier on the tainted
+        // value, so the cs/command-line-injection finding (#46) drops
+        // once this returns true. Matches the FULL resolved path —
+        // userRoot, the platform-specific drive prefix (Windows C:\),
+        // and every char on the way down. Anything outside the class
+        // (spaces, quotes, shell meta) trips the guard and we throw
+        // rather than reach Process.Start.
+        if (!SafeResolvedPathPattern().IsMatch(resolved))
         {
-            if (!char.IsLetterOrDigit(c)
-                && c != '-' && c != '_' && c != '.'
-                && c != Path.DirectorySeparatorChar
-                && c != Path.AltDirectorySeparatorChar)
-            {
-                throw new InvalidOperationException(
-                    $"Refusing to open '{path}': resolved path contains a disallowed character ('{c}').");
-            }
+            throw new InvalidOperationException(
+                $"Refusing to open '{path}': resolved path contains a disallowed character.");
         }
 
         // ProcessStartInfo.FileName with UseShellExecute=true asks the
