@@ -517,7 +517,13 @@ public sealed class BranchCoverageGapsTests
             Id = 9002,
             CapturedAt = DateTimeOffset.FromUnixTimeMilliseconds(1234567890),
             Method = "POST",
-            Url = "/relative-only/no-scheme",
+            // No leading slash + no scheme: forces Uri.TryCreate(...,
+            // UriKind.Absolute) to return false on every OS. A leading
+            // "/" on Linux gets resolved to a file:// URI (POSIX path
+            // semantics in System.Uri) which makes the "parsed is null"
+            // branch unreachable on linux-arm64 CI runners — the test
+            // failed for exactly this on commit 2347e7e.
+            Url = "relative-only/no-scheme",
             ResponseStatus = 0, // network error
             LatencyMs = 0,
             RequestHeaders = new[]
@@ -546,7 +552,7 @@ public sealed class BranchCoverageGapsTests
 
         // parsed is null -> ServerUrl stays null, httpPath = flow.Url
         Assert.Null(step.ServerUrl);
-        Assert.Equal("/relative-only/no-scheme", step.HttpPath);
+        Assert.Equal("relative-only/no-scheme", step.HttpPath);
         // parsed?.Host ?? "" -> Service ""
         Assert.Equal("", step.Service);
         // ResponseStatus == 0 -> "Error"
