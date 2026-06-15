@@ -983,6 +983,73 @@
         } catch { /* never crash boot over a migration */ }
     })();
 
+    // #A — Self-contained workspaces. Reverses the #146 (Phase 2)
+    // collapse: for every workspace, copy the envs it was including
+    // out of the global shared store back into its own per-workspace
+    // bucket (wsKey(ENVIRONMENTS_KEY) → bowire_ws_<id>_environments).
+    // The shared store stays put — leaving it behind is the rollback
+    // path if this migration ever needs to be reverted. After this
+    // ran once, getEnvironments / saveEnvironments only see the
+    // workspace's own list.
+    //
+    // The migration also strips includeAllEnvironments +
+    // includedEnvironmentIds from the workspace meta so the new code
+    // doesn't have to special-case the legacy shape.
+    //
+    // Marker bowire_envs_workspace_owned_v1 prevents re-running.
+    (function migrateEnvsToWorkspaceOwned() {
+        try {
+            if (localStorage.getItem('bowire_envs_workspace_owned_v1') === '1') return;
+            if (!Array.isArray(workspaces) || workspaces.length === 0) {
+                localStorage.setItem('bowire_envs_workspace_owned_v1', '1');
+                return;
+            }
+            var shared = [];
+            try {
+                var rawShared = localStorage.getItem('bowire_environments_shared');
+                if (rawShared) {
+                    var parsed = JSON.parse(rawShared);
+                    if (Array.isArray(parsed)) shared = parsed;
+                }
+            } catch { /* ignore */ }
+            for (var wi = 0; wi < workspaces.length; wi++) {
+                var w = workspaces[wi];
+                var includedIds;
+                if (w.includeAllEnvironments) {
+                    includedIds = shared.map(function (e) { return e.id; });
+                } else if (Array.isArray(w.includedEnvironmentIds)) {
+                    includedIds = w.includedEnvironmentIds;
+                } else {
+                    // Workspace had no explicit inclusion meta — give
+                    // it everything. Empty workspaces stay empty.
+                    includedIds = shared.map(function (e) { return e.id; });
+                }
+                var includedSet = new Set(includedIds);
+                var workspaceEnvs = shared.filter(function (e) { return includedSet.has(e.id); });
+                // Deep-clone so two workspaces that both included the
+                // same env don't end up sharing references to the same
+                // vars object — mutating one would otherwise leak into
+                // the other.
+                var copies;
+                try { copies = JSON.parse(JSON.stringify(workspaceEnvs)); }
+                catch { copies = workspaceEnvs.slice(); }
+                try {
+                    localStorage.setItem(
+                        'bowire_ws_' + w.id + '_environments',
+                        JSON.stringify(copies)
+                    );
+                } catch { /* skip on quota / SecurityError */ }
+                // Drop inclusion meta — workspace is self-contained now.
+                delete w.includeAllEnvironments;
+                delete w.includedEnvironmentIds;
+            }
+            try {
+                localStorage.setItem('bowire_workspaces', JSON.stringify(workspaces));
+                localStorage.setItem('bowire_envs_workspace_owned_v1', '1');
+            } catch { /* ignore */ }
+        } catch { /* never crash boot over a migration */ }
+    })();
+
     // #116 Phase 2 — one-shot migration. On first boot with the
     // workspace-prefixed storage layout, copy the existing flat
     // keys into the active workspace's namespace so the operator's
@@ -1066,11 +1133,12 @@
             color: color || '#6366f1',
             createdAt: Date.now(),
             lastOpenedAt: Date.now(),
-            // #146 — new workspaces start CURATED (per-env opt-in)
-            // so the operator decides explicitly which shared envs
-            // belong here. Personal is the one default-catchall.
-            includeAllEnvironments: false,
-            includedEnvironmentIds: [],
+            // Self-contained workspaces (#A): envs live under
+            // wsKey(ENVIRONMENTS_KEY), not in a cross-workspace shared
+            // pool, so there's no inclusion list to track. Workspaces
+            // start empty; the operator creates envs via the env
+            // dropdown's "+ New environment…" item or via the env
+            // overview's "+ New environment" button.
             // Recording-storage default — disk + browser cache. Lets
             // the operator switch to browser-only / disk-only later
             // via Workspace Settings → Recording storage. Persisted
