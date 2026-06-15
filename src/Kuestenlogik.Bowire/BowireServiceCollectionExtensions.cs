@@ -437,11 +437,12 @@ public static class BowireServiceCollectionExtensions
         {
             return Path.Combine(Environment.CurrentDirectory, "bowire.schema-hints.json");
         }
-        catch (Exception)
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or DirectoryNotFoundException)
         {
             // Environment.CurrentDirectory can throw on platforms where
             // the CWD has been deleted out from under the process.
             // Treat that as "no project file."
+            _ = ex;
             return null;
         }
     }

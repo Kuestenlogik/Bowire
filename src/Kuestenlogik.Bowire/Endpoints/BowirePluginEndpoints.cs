@@ -92,9 +92,13 @@ internal static class BowirePluginEndpoints
                             dict = meta.EnumerateObject()
                                 .ToDictionary(p => p.Name, p => (object?)p.Value);
                         }
-                        catch
+                        catch (Exception ex) when (ex is JsonException or IOException or UnauthorizedAccessException)
                         {
-                            continue; /* skip broken */
+                            // Skip plugin directories with corrupt / unreadable
+                            // plugin.json — the next iteration picks up the
+                            // healthy ones.
+                            _ = ex;
+                            continue;
                         }
                         siblingPackageId = dict.TryGetValue("packageId", out var sidVal) && sidVal is JsonElement se
                             ? se.GetString() ?? Path.GetFileName(dir)
@@ -204,8 +208,10 @@ internal static class BowirePluginEndpoints
                 ctx.Response.ContentType = "application/json";
                 await ctx.Response.WriteAsync(resp);
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or OperationCanceledException or IOException)
             {
+                // NuGet search-feed transport: HTTP failure, timeout,
+                // client disconnect.
                 ctx.Response.StatusCode = 502;
                 ctx.Response.ContentType = "application/problem+json";
                 await ctx.Response.WriteAsync(JsonSerializer.Serialize(new
@@ -372,8 +378,12 @@ internal static class BowirePluginEndpoints
                         extensions: new Dictionary<string, object?> { ["packageId"] = packageId })
                     : Results.Ok(new { packageId, latest, prerelease });
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or OperationCanceledException or JsonException or KeyNotFoundException or IOException)
             {
+                // NuGet flatcontainer transport (HttpRequestException /
+                // IOException), timeout (TaskCanceledException),
+                // malformed response (JsonException), missing 'versions'
+                // property (KeyNotFoundException from GetProperty).
                 return BowireEndpointHelpers.Problem(
                     type: "urn:bowire:plugin:registry-error",
                     title: $"Couldn't reach the plugin registry for {packageId}",
@@ -402,8 +412,10 @@ internal static class BowirePluginEndpoints
                     .ConfigureAwait(false);
                 return Results.Ok(snapshot);
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or OperationCanceledException or JsonException or IOException)
             {
+                // PluginUpdateCheckService.CheckAsync wraps NuGet calls;
+                // see the registry endpoint above for the surface.
                 return BowireEndpointHelpers.Problem(
                     type: "urn:bowire:plugin:check-failed",
                     title: "Plugin update check failed",
@@ -532,8 +544,13 @@ internal static class BowirePluginEndpoints
                         ["stdout"] = output,
                     });
         }
-        catch (Exception ex)
+        catch (Exception ex) when (ex is System.ComponentModel.Win32Exception or InvalidOperationException or IOException or FileNotFoundException or PlatformNotSupportedException)
         {
+            // Process.Start surface: Win32Exception (bowire CLI missing
+            // / refused), InvalidOperationException (psi misconfigured),
+            // IOException (stdout / stderr pipe failure),
+            // FileNotFoundException (binary not on PATH),
+            // PlatformNotSupportedException (sandbox).
             return BowireEndpointHelpers.Problem(
                 type: "urn:bowire:plugin:cli-error",
                 title: $"Couldn't run `bowire plugin {verb}`",
