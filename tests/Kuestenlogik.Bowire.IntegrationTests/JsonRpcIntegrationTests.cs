@@ -26,7 +26,7 @@ public sealed class JsonRpcIntegrationTests
     public async Task DiscoverAsync_Picks_Up_OpenRpc_Methods()
     {
         await using var host = await StartStubAsync(supportsDiscover: true);
-        var p = new BowireJsonRpcProtocol();
+        using var p = new BowireJsonRpcProtocol();
         p.Initialize(null);
 
         var services = await p.DiscoverAsync(
@@ -47,7 +47,7 @@ public sealed class JsonRpcIntegrationTests
         // still belongs to this plugin — Bowire returns a placeholder
         // Methods service so the user can invoke by name.
         await using var host = await StartStubAsync(supportsDiscover: false);
-        var p = new BowireJsonRpcProtocol();
+        using var p = new BowireJsonRpcProtocol();
         p.Initialize(null);
 
         var services = await p.DiscoverAsync(
@@ -63,7 +63,7 @@ public sealed class JsonRpcIntegrationTests
     public async Task InvokeAsync_RoundTrips_Named_Params_And_Result()
     {
         await using var host = await StartStubAsync(supportsDiscover: true);
-        var p = new BowireJsonRpcProtocol();
+        using var p = new BowireJsonRpcProtocol();
         p.Initialize(null);
 
         var result = await p.InvokeAsync(
@@ -82,7 +82,7 @@ public sealed class JsonRpcIntegrationTests
     public async Task InvokeAsync_RoundTrips_Positional_Params()
     {
         await using var host = await StartStubAsync(supportsDiscover: true);
-        var p = new BowireJsonRpcProtocol();
+        using var p = new BowireJsonRpcProtocol();
         p.Initialize(null);
 
         var result = await p.InvokeAsync(
@@ -100,7 +100,7 @@ public sealed class JsonRpcIntegrationTests
     public async Task InvokeAsync_Server_Error_Envelope_Surfaces_jsonrpc_Prefix()
     {
         await using var host = await StartStubAsync(supportsDiscover: true);
-        var p = new BowireJsonRpcProtocol();
+        using var p = new BowireJsonRpcProtocol();
         p.Initialize(null);
 
         var result = await p.InvokeAsync(
@@ -118,7 +118,7 @@ public sealed class JsonRpcIntegrationTests
     public async Task InvokeAsync_Forwards_Metadata_As_Headers()
     {
         await using var host = await StartStubAsync(supportsDiscover: true);
-        var p = new BowireJsonRpcProtocol();
+        using var p = new BowireJsonRpcProtocol();
         p.Initialize(null);
 
         var meta = new Dictionary<string, string>(StringComparer.Ordinal)
