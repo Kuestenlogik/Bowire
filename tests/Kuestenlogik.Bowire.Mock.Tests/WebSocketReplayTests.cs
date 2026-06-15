@@ -19,7 +19,7 @@ public sealed class WebSocketReplayTests : IDisposable
 
     public WebSocketReplayTests()
     {
-        _tempDir = Path.Combine(Path.GetTempPath(), "bowire-mock-ws-" + Guid.NewGuid().ToString("N"));
+        _tempDir = SafePath.Combine(Path.GetTempPath(), "bowire-mock-ws-" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(_tempDir);
     }
 
@@ -63,7 +63,7 @@ public sealed class WebSocketReplayTests : IDisposable
             }
         };
 
-        var path = Path.Combine(_tempDir, "rec.json");
+        var path = SafePath.Combine(_tempDir, "rec.json");
         await File.WriteAllTextAsync(path, JsonSerializer.Serialize(recording), TestContext.Current.CancellationToken);
 
         await using var server = await MockServer.StartAsync(
@@ -113,7 +113,7 @@ public sealed class WebSocketReplayTests : IDisposable
             }
         };
 
-        var path = Path.Combine(_tempDir, "bin.json");
+        var path = SafePath.Combine(_tempDir, "bin.json");
         await File.WriteAllTextAsync(path, JsonSerializer.Serialize(recording), TestContext.Current.CancellationToken);
 
         await using var server = await MockServer.StartAsync(
@@ -166,7 +166,7 @@ public sealed class WebSocketReplayTests : IDisposable
             }
         };
 
-        var path = Path.Combine(_tempDir, "sub.json");
+        var path = SafePath.Combine(_tempDir, "sub.json");
         await File.WriteAllTextAsync(path, JsonSerializer.Serialize(recording), TestContext.Current.CancellationToken);
 
         await using var server = await MockServer.StartAsync(
@@ -215,7 +215,7 @@ public sealed class WebSocketReplayTests : IDisposable
             }
         };
 
-        var path = Path.Combine(_tempDir, "unreq.json");
+        var path = SafePath.Combine(_tempDir, "unreq.json");
         await File.WriteAllTextAsync(path, JsonSerializer.Serialize(recording), TestContext.Current.CancellationToken);
 
         await using var server = await MockServer.StartAsync(
@@ -269,7 +269,7 @@ public sealed class WebSocketReplayTests : IDisposable
             }
         };
 
-        var path = Path.Combine(_tempDir, "gate.json");
+        var path = SafePath.Combine(_tempDir, "gate.json");
         await File.WriteAllTextAsync(path, JsonSerializer.Serialize(recording), TestContext.Current.CancellationToken);
 
         await using var server = await MockServer.StartAsync(
@@ -334,7 +334,7 @@ public sealed class WebSocketReplayTests : IDisposable
             }
         };
 
-        var path = Path.Combine(_tempDir, "nogate.json");
+        var path = SafePath.Combine(_tempDir, "nogate.json");
         await File.WriteAllTextAsync(path, JsonSerializer.Serialize(recording), TestContext.Current.CancellationToken);
 
         await using var server = await MockServer.StartAsync(
@@ -389,7 +389,7 @@ public sealed class WebSocketReplayTests : IDisposable
             }
         };
 
-        var path = Path.Combine(_tempDir, "multi.json");
+        var path = SafePath.Combine(_tempDir, "multi.json");
         await File.WriteAllTextAsync(path, JsonSerializer.Serialize(recording), TestContext.Current.CancellationToken);
 
         await using var server = await MockServer.StartAsync(
