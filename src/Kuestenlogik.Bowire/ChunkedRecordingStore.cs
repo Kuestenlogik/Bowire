@@ -106,7 +106,7 @@ internal static class ChunkedRecordingStore
         var sanitised = SanitiseId(workspaceId!);
         if (string.IsNullOrEmpty(sanitised)) return RootPath;
         return _testRootOverride is not null
-            ? Path.Combine(_testRootOverride, "workspaces", sanitised, "recordings")
+            ? SafePath.Combine(_testRootOverride, Path.Combine("workspaces", sanitised, "recordings"))
             : BowireUserContext.GetUserPath(Path.Combine("workspaces", sanitised, "recordings"));
     }
 
@@ -260,7 +260,7 @@ internal static class ChunkedRecordingStore
         {
             MigrateFromLegacyIfNeeded();
             var rootPath = ResolveRootPath(workspaceId, storageRoot);
-            var dir = Path.Combine(rootPath, id);
+            var dir = SafePath.Combine(rootPath, id);
             Directory.CreateDirectory(dir);
             var stepsDir = Path.Combine(dir, StepsDirectory);
             Directory.CreateDirectory(stepsDir);
@@ -299,7 +299,7 @@ internal static class ChunkedRecordingStore
                 && responseText is { Length: > InlineBodyThreshold })
             {
                 var hash = Sha256(responseText);
-                var bodyPath = Path.Combine(bodiesDir, hash);
+                var bodyPath = SafePath.Combine(bodiesDir, hash);
                 if (!File.Exists(bodyPath)) File.WriteAllText(bodyPath, responseText);
                 stepBytes = responseText.Length;
                 stepObjForDisk["responseRef"] = hash;
@@ -320,7 +320,7 @@ internal static class ChunkedRecordingStore
             }
 
             var stepJson = stepObjForDisk.ToJsonString(JsonOptions);
-            File.WriteAllText(Path.Combine(stepsDir, stepFile), stepJson);
+            File.WriteAllText(SafePath.Combine(stepsDir, stepFile), stepJson);
 
             manifest.Add(new JsonObject
             {
@@ -353,7 +353,7 @@ internal static class ChunkedRecordingStore
         if (string.IsNullOrEmpty(id)) return null;
         lock (DiskLock)
         {
-            var path = Path.Combine(ResolveRootPath(workspaceId, storageRoot), id, RecordingMetadataFile);
+            var path = Path.Combine(SafePath.Combine(ResolveRootPath(workspaceId, storageRoot), id), RecordingMetadataFile);
             if (!File.Exists(path)) return null;
             return File.ReadAllText(path);
         }
@@ -374,7 +374,7 @@ internal static class ChunkedRecordingStore
         lock (DiskLock)
         {
             var rootPath = ResolveRootPath(workspaceId, storageRoot);
-            var stepPath = Path.Combine(rootPath, id, StepsDirectory, $"{stepIndex:D4}.json");
+            var stepPath = Path.Combine(SafePath.Combine(rootPath, id), StepsDirectory, $"{stepIndex:D4}.json");
             if (!File.Exists(stepPath)) return null;
             JsonNode? stepNode;
             try { stepNode = JsonNode.Parse(File.ReadAllText(stepPath)); }
@@ -384,7 +384,7 @@ internal static class ChunkedRecordingStore
                 var hash = (string?)refVal;
                 if (!string.IsNullOrEmpty(hash))
                 {
-                    var bodyPath = Path.Combine(rootPath, id, BodiesDirectory, hash);
+                    var bodyPath = SafePath.Combine(Path.Combine(SafePath.Combine(rootPath, id), BodiesDirectory), hash);
                     if (File.Exists(bodyPath))
                     {
                         obj["response"] = File.ReadAllText(bodyPath);
@@ -427,8 +427,10 @@ internal static class ChunkedRecordingStore
                 JsonNode? stepNode = null;
                 if (!string.IsNullOrEmpty(stepFile))
                 {
-                    var path = Path.Combine(stepsDir, stepFile);
-                    if (File.Exists(path))
+                    string? path = null;
+                    try { path = SafePath.Combine(stepsDir, stepFile); }
+                    catch (ArgumentException) { /* manifest entry tried to escape steps/; skip body */ }
+                    if (path is not null && File.Exists(path))
                     {
                         try { stepNode = JsonNode.Parse(File.ReadAllText(path)); }
                         catch { /* corrupt step file; skip body but keep metadata */ }
@@ -440,7 +442,7 @@ internal static class ChunkedRecordingStore
                     var hash = (string?)refVal;
                     if (!string.IsNullOrEmpty(hash))
                     {
-                        var bodyPath = Path.Combine(recordingDir, BodiesDirectory, hash);
+                        var bodyPath = SafePath.Combine(Path.Combine(recordingDir, BodiesDirectory), hash);
                         if (File.Exists(bodyPath))
                         {
                             stepObj["response"] = File.ReadAllText(bodyPath);
@@ -458,7 +460,7 @@ internal static class ChunkedRecordingStore
 
     private static void WriteOneRecording(string rootPath, string id, JsonElement rec)
     {
-        var dir = Path.Combine(rootPath, id);
+        var dir = SafePath.Combine(rootPath, id);
         Directory.CreateDirectory(dir);
         var stepsDir = Path.Combine(dir, StepsDirectory);
         Directory.CreateDirectory(stepsDir);
@@ -487,7 +489,7 @@ internal static class ChunkedRecordingStore
                 if (stepObjForDisk["response"] is JsonValue v && v.TryGetValue<string>(out var responseText) && responseText is { Length: > InlineBodyThreshold })
                 {
                     var hash = Sha256(responseText);
-                    var bodyPath = Path.Combine(bodiesDir, hash);
+                    var bodyPath = SafePath.Combine(bodiesDir, hash);
                     if (!File.Exists(bodyPath) && seenBodies.Add(hash))
                     {
                         File.WriteAllText(bodyPath, responseText);
@@ -507,7 +509,7 @@ internal static class ChunkedRecordingStore
                     throw new InvalidOperationException(
                         $"Recording '{id}' would exceed the {MaxBytesPerRecording:N0}-byte cap; reject.");
                 }
-                File.WriteAllText(Path.Combine(stepsDir, stepFile), stepJson);
+                File.WriteAllText(SafePath.Combine(stepsDir, stepFile), stepJson);
 
                 // Manifest entry — addressable metadata that stays on
                 // the recording.json document.
