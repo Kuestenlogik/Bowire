@@ -52,12 +52,12 @@ public sealed class NuGetPackageInstallerTests
     public async Task InstallFromFileAsync_NoDeps_ExtractsLibAndReturnsResult()
     {
         using var dir = new TempDir();
-        var nupkg = Path.Combine(dir.Path, "MyCo.Plugin.1.0.0.nupkg");
+        var nupkg = SafePath.Combine(dir.Path, "MyCo.Plugin.1.0.0.nupkg");
         await File.WriteAllBytesAsync(nupkg,
             BuildMinimalNupkg("MyCo.Plugin", "1.0.0"),
             TestContext.Current.CancellationToken);
 
-        var pluginDir = Path.Combine(dir.Path, "plugins");
+        var pluginDir = SafePath.Combine(dir.Path, "plugins");
         var result = await NuGetPackageInstaller.InstallFromFileAsync(
             nupkg, pluginDir, sources: [], NullLogger.Instance,
             TestContext.Current.CancellationToken);
@@ -66,20 +66,20 @@ public sealed class NuGetPackageInstallerTests
         Assert.Equal("1.0.0", result.ResolvedVersion);
         Assert.Equal(1, result.FilesWritten);
         Assert.Empty(result.UnmetDependencies);
-        Assert.True(File.Exists(Path.Combine(pluginDir, "MyCo.Plugin", "Stub.dll")));
+        Assert.True(File.Exists(SafePath.Combine(pluginDir, "MyCo.Plugin", "Stub.dll")));
     }
 
     [Fact]
     public async Task InstallFromFileAsync_WithUnknownDep_ReportsUnmet()
     {
         using var dir = new TempDir();
-        var nupkg = Path.Combine(dir.Path, "MyCo.Plugin.1.0.0.nupkg");
+        var nupkg = SafePath.Combine(dir.Path, "MyCo.Plugin.1.0.0.nupkg");
         await File.WriteAllBytesAsync(nupkg,
             BuildMinimalNupkg("MyCo.Plugin", "1.0.0",
                 dependencyId: "ThirdParty.Lib", dependencyVersion: "2.5.0"),
             TestContext.Current.CancellationToken);
 
-        var pluginDir = Path.Combine(dir.Path, "plugins");
+        var pluginDir = SafePath.Combine(dir.Path, "plugins");
         var result = await NuGetPackageInstaller.InstallFromFileAsync(
             nupkg, pluginDir, sources: [], NullLogger.Instance,
             TestContext.Current.CancellationToken);
@@ -95,13 +95,13 @@ public sealed class NuGetPackageInstallerTests
     public async Task InstallFromFileAsync_WithUnpinnedDep_ReportsBareIdInUnmet()
     {
         using var dir = new TempDir();
-        var nupkg = Path.Combine(dir.Path, "MyCo.Plugin.1.0.0.nupkg");
+        var nupkg = SafePath.Combine(dir.Path, "MyCo.Plugin.1.0.0.nupkg");
         await File.WriteAllBytesAsync(nupkg,
             BuildMinimalNupkg("MyCo.Plugin", "1.0.0",
                 dependencyId: "Floating.Lib", dependencyVersion: null),
             TestContext.Current.CancellationToken);
 
-        var pluginDir = Path.Combine(dir.Path, "plugins");
+        var pluginDir = SafePath.Combine(dir.Path, "plugins");
         var result = await NuGetPackageInstaller.InstallFromFileAsync(
             nupkg, pluginDir, sources: [], NullLogger.Instance,
             TestContext.Current.CancellationToken);
@@ -116,7 +116,7 @@ public sealed class NuGetPackageInstallerTests
     public async Task InstallFromFileAsync_WithHostProvidedDep_FiltersItOut()
     {
         using var dir = new TempDir();
-        var nupkg = Path.Combine(dir.Path, "MyCo.Plugin.1.0.0.nupkg");
+        var nupkg = SafePath.Combine(dir.Path, "MyCo.Plugin.1.0.0.nupkg");
         // Microsoft.Extensions.Logging is "host-provided" — the
         // installer's filter drops it from UnmetDependencies because it
         // ships with the runtime.
@@ -125,7 +125,7 @@ public sealed class NuGetPackageInstallerTests
                 dependencyId: "Microsoft.Extensions.Logging", dependencyVersion: "9.0.0"),
             TestContext.Current.CancellationToken);
 
-        var pluginDir = Path.Combine(dir.Path, "plugins");
+        var pluginDir = SafePath.Combine(dir.Path, "plugins");
         var result = await NuGetPackageInstaller.InstallFromFileAsync(
             nupkg, pluginDir, sources: [], NullLogger.Instance,
             TestContext.Current.CancellationToken);
@@ -137,12 +137,12 @@ public sealed class NuGetPackageInstallerTests
     public async Task InstallFromFileAsync_NoLibDir_LeavesPluginDirEmpty()
     {
         using var dir = new TempDir();
-        var nupkg = Path.Combine(dir.Path, "Empty.Plugin.1.0.0.nupkg");
+        var nupkg = SafePath.Combine(dir.Path, "Empty.Plugin.1.0.0.nupkg");
         await File.WriteAllBytesAsync(nupkg,
             BuildMinimalNupkg("Empty.Plugin", "1.0.0", includeLibDll: false),
             TestContext.Current.CancellationToken);
 
-        var pluginDir = Path.Combine(dir.Path, "plugins");
+        var pluginDir = SafePath.Combine(dir.Path, "plugins");
         var result = await NuGetPackageInstaller.InstallFromFileAsync(
             nupkg, pluginDir, sources: [], NullLogger.Instance,
             TestContext.Current.CancellationToken);
@@ -179,7 +179,7 @@ public sealed class NuGetPackageInstallerTests
     public async Task InstallFromFileAsync_MissingFile_Throws()
     {
         using var dir = new TempDir();
-        var bogus = Path.Combine(dir.Path, "absent.nupkg");
+        var bogus = SafePath.Combine(dir.Path, "absent.nupkg");
 
         await Assert.ThrowsAsync<FileNotFoundException>(() =>
             NuGetPackageInstaller.InstallFromFileAsync(
@@ -324,21 +324,21 @@ public sealed class NuGetPackageInstallerTests
     public async Task InstallAsync_LocalFeed_SucceedsAndWritesLib()
     {
         using var dir = new TempDir();
-        var feed = Path.Combine(dir.Path, "feed");
+        var feed = SafePath.Combine(dir.Path, "feed");
         Directory.CreateDirectory(feed);
         await File.WriteAllBytesAsync(
-            Path.Combine(feed, "alpha.test.1.0.0.nupkg"),
+            SafePath.Combine(feed, "alpha.test.1.0.0.nupkg"),
             NuGetPackageInstallerTests_NupkgFactory.NoDeps("Alpha.Test", "1.0.0"),
             TestContext.Current.CancellationToken);
 
-        var pluginDir = Path.Combine(dir.Path, "plugins");
+        var pluginDir = SafePath.Combine(dir.Path, "plugins");
         var result = await NuGetPackageInstaller.InstallAsync(
             "Alpha.Test", "1.0.0", pluginDir, [feed],
             NullLogger.Instance, TestContext.Current.CancellationToken);
 
         Assert.Equal("Alpha.Test", result.PackageId);
         Assert.Equal("1.0.0", result.ResolvedVersion);
-        Assert.True(File.Exists(Path.Combine(pluginDir, "Alpha.Test", "Stub.dll")));
+        Assert.True(File.Exists(SafePath.Combine(pluginDir, "Alpha.Test", "Stub.dll")));
     }
 
     [Fact]
@@ -349,18 +349,18 @@ public sealed class NuGetPackageInstallerTests
         // different lib path so we can confirm it was the resolved
         // candidate.
         using var dir = new TempDir();
-        var feed = Path.Combine(dir.Path, "feed");
+        var feed = SafePath.Combine(dir.Path, "feed");
         Directory.CreateDirectory(feed);
         await File.WriteAllBytesAsync(
-            Path.Combine(feed, "multi.test.1.0.0.nupkg"),
+            SafePath.Combine(feed, "multi.test.1.0.0.nupkg"),
             NuGetPackageInstallerTests_NupkgFactory.NoDeps("Multi.Test", "1.0.0"),
             TestContext.Current.CancellationToken);
         await File.WriteAllBytesAsync(
-            Path.Combine(feed, "multi.test.2.0.0.nupkg"),
+            SafePath.Combine(feed, "multi.test.2.0.0.nupkg"),
             NuGetPackageInstallerTests_NupkgFactory.NoDeps("Multi.Test", "2.0.0"),
             TestContext.Current.CancellationToken);
 
-        var pluginDir = Path.Combine(dir.Path, "plugins");
+        var pluginDir = SafePath.Combine(dir.Path, "plugins");
         var result = await NuGetPackageInstaller.InstallAsync(
             "Multi.Test", version: null, pluginDir, [feed],
             NullLogger.Instance, TestContext.Current.CancellationToken);
@@ -374,18 +374,18 @@ public sealed class NuGetPackageInstallerTests
         // ResolveVersionAsync's exact-match branch — pin to a version
         // that does exist; result.ResolvedVersion equals the pin.
         using var dir = new TempDir();
-        var feed = Path.Combine(dir.Path, "feed");
+        var feed = SafePath.Combine(dir.Path, "feed");
         Directory.CreateDirectory(feed);
         await File.WriteAllBytesAsync(
-            Path.Combine(feed, "pin.test.1.0.0.nupkg"),
+            SafePath.Combine(feed, "pin.test.1.0.0.nupkg"),
             NuGetPackageInstallerTests_NupkgFactory.NoDeps("Pin.Test", "1.0.0"),
             TestContext.Current.CancellationToken);
         await File.WriteAllBytesAsync(
-            Path.Combine(feed, "pin.test.2.0.0.nupkg"),
+            SafePath.Combine(feed, "pin.test.2.0.0.nupkg"),
             NuGetPackageInstallerTests_NupkgFactory.NoDeps("Pin.Test", "2.0.0"),
             TestContext.Current.CancellationToken);
 
-        var pluginDir = Path.Combine(dir.Path, "plugins");
+        var pluginDir = SafePath.Combine(dir.Path, "plugins");
         var result = await NuGetPackageInstaller.InstallAsync(
             "Pin.Test", "1.0.0", pluginDir, [feed],
             NullLogger.Instance, TestContext.Current.CancellationToken);
@@ -399,14 +399,14 @@ public sealed class NuGetPackageInstallerTests
         // Pinned version not in the feed → the inner ResolveVersion
         // continues across repos, the outer "not found" diagnostic fires.
         using var dir = new TempDir();
-        var feed = Path.Combine(dir.Path, "feed");
+        var feed = SafePath.Combine(dir.Path, "feed");
         Directory.CreateDirectory(feed);
         await File.WriteAllBytesAsync(
-            Path.Combine(feed, "ghost.1.0.0.nupkg"),
+            SafePath.Combine(feed, "ghost.1.0.0.nupkg"),
             NuGetPackageInstallerTests_NupkgFactory.NoDeps("Ghost", "1.0.0"),
             TestContext.Current.CancellationToken);
 
-        var pluginDir = Path.Combine(dir.Path, "plugins");
+        var pluginDir = SafePath.Combine(dir.Path, "plugins");
         await Assert.ThrowsAsync<InvalidOperationException>(() =>
             NuGetPackageInstaller.InstallAsync(
                 "Ghost", "9.9.9", pluginDir, [feed],
@@ -419,18 +419,18 @@ public sealed class NuGetPackageInstallerTests
         // Root pkg depends on Dep.Test 1.0.0; both .nupkgs are in the
         // same flat feed, so the recursive walker lands the lib of both.
         using var dir = new TempDir();
-        var feed = Path.Combine(dir.Path, "feed");
+        var feed = SafePath.Combine(dir.Path, "feed");
         Directory.CreateDirectory(feed);
         await File.WriteAllBytesAsync(
-            Path.Combine(feed, "rooted.1.0.0.nupkg"),
+            SafePath.Combine(feed, "rooted.1.0.0.nupkg"),
             NuGetPackageInstallerTests_NupkgFactory.WithDep("Rooted", "1.0.0", "Dep.Test", "1.0.0"),
             TestContext.Current.CancellationToken);
         await File.WriteAllBytesAsync(
-            Path.Combine(feed, "dep.test.1.0.0.nupkg"),
+            SafePath.Combine(feed, "dep.test.1.0.0.nupkg"),
             NuGetPackageInstallerTests_NupkgFactory.NoDeps("Dep.Test", "1.0.0"),
             TestContext.Current.CancellationToken);
 
-        var pluginDir = Path.Combine(dir.Path, "plugins");
+        var pluginDir = SafePath.Combine(dir.Path, "plugins");
         var result = await NuGetPackageInstaller.InstallAsync(
             "Rooted", "1.0.0", pluginDir, [feed],
             NullLogger.Instance, TestContext.Current.CancellationToken);
@@ -449,10 +449,10 @@ public sealed class NuGetPackageInstallerTests
         // Pure metadata path — no extraction, no install. Returns the
         // ResolvedPackageInfo with id, version, source URL.
         using var dir = new TempDir();
-        var feed = Path.Combine(dir.Path, "feed");
+        var feed = SafePath.Combine(dir.Path, "feed");
         Directory.CreateDirectory(feed);
         await File.WriteAllBytesAsync(
-            Path.Combine(feed, "lookup.1.2.3.nupkg"),
+            SafePath.Combine(feed, "lookup.1.2.3.nupkg"),
             NuGetPackageInstallerTests_NupkgFactory.NoDeps("Lookup", "1.2.3"),
             TestContext.Current.CancellationToken);
 
@@ -469,7 +469,7 @@ public sealed class NuGetPackageInstallerTests
     public async Task ResolveAsync_LocalFeed_NoMatch_ReturnsNull()
     {
         using var dir = new TempDir();
-        var feed = Path.Combine(dir.Path, "feed");
+        var feed = SafePath.Combine(dir.Path, "feed");
         Directory.CreateDirectory(feed);
 
         var info = await NuGetPackageInstaller.ResolveAsync(
@@ -486,14 +486,14 @@ public sealed class NuGetPackageInstallerTests
         // rather than extracting libs. Expected file name follows
         // NuGet's lowercased flat-feed convention.
         using var dir = new TempDir();
-        var feed = Path.Combine(dir.Path, "feed");
+        var feed = SafePath.Combine(dir.Path, "feed");
         Directory.CreateDirectory(feed);
         await File.WriteAllBytesAsync(
-            Path.Combine(feed, "bundle.me.0.9.0.nupkg"),
+            SafePath.Combine(feed, "bundle.me.0.9.0.nupkg"),
             NuGetPackageInstallerTests_NupkgFactory.NoDeps("Bundle.Me", "0.9.0"),
             TestContext.Current.CancellationToken);
 
-        var output = Path.Combine(dir.Path, "out");
+        var output = SafePath.Combine(dir.Path, "out");
         var result = await NuGetPackageInstaller.DownloadAsync(
             "Bundle.Me", "0.9.0", output, [feed], NullLogger.Instance,
             TestContext.Current.CancellationToken);
@@ -501,25 +501,25 @@ public sealed class NuGetPackageInstallerTests
         Assert.Equal("Bundle.Me", result.RootPackageId);
         Assert.Single(result.Packages);
         Assert.Equal("Bundle.Me", result.Packages[0].PackageId);
-        Assert.True(File.Exists(Path.Combine(output, "bundle.me.0.9.0.nupkg")));
+        Assert.True(File.Exists(SafePath.Combine(output, "bundle.me.0.9.0.nupkg")));
     }
 
     [Fact]
     public async Task DownloadAsync_LocalFeed_WithDep_BundlesBoth()
     {
         using var dir = new TempDir();
-        var feed = Path.Combine(dir.Path, "feed");
+        var feed = SafePath.Combine(dir.Path, "feed");
         Directory.CreateDirectory(feed);
         await File.WriteAllBytesAsync(
-            Path.Combine(feed, "rt.1.0.0.nupkg"),
+            SafePath.Combine(feed, "rt.1.0.0.nupkg"),
             NuGetPackageInstallerTests_NupkgFactory.WithDep("Rt", "1.0.0", "Sub", "1.0.0"),
             TestContext.Current.CancellationToken);
         await File.WriteAllBytesAsync(
-            Path.Combine(feed, "sub.1.0.0.nupkg"),
+            SafePath.Combine(feed, "sub.1.0.0.nupkg"),
             NuGetPackageInstallerTests_NupkgFactory.NoDeps("Sub", "1.0.0"),
             TestContext.Current.CancellationToken);
 
-        var output = Path.Combine(dir.Path, "bundle");
+        var output = SafePath.Combine(dir.Path, "bundle");
         var result = await NuGetPackageInstaller.DownloadAsync(
             "Rt", "1.0.0", output, [feed], NullLogger.Instance,
             TestContext.Current.CancellationToken);
