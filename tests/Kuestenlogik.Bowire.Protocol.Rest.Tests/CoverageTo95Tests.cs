@@ -91,7 +91,7 @@ public sealed class CoverageTo95Tests
         // URL discovery. Embedded discovery returns false because no
         // IApiDescriptionGroupCollectionProvider is in the (null) SP.
         // Result: an empty list, not a throw.
-        var protocol = new BowireRestProtocol();
+        using var protocol = new BowireRestProtocol();
         var services = await protocol.DiscoverAsync(
             serverUrl: string.Empty,
             showInternalServices: false,
@@ -106,7 +106,7 @@ public sealed class CoverageTo95Tests
         // bidirectional invocation). OpenChannelAsync must return null
         // so callers fall through to the InvokeAsync unary path. The
         // existing tests cover Discover + Invoke but not this contract.
-        var protocol = new BowireRestProtocol();
+        using var protocol = new BowireRestProtocol();
         var channel = await protocol.OpenChannelAsync(
             serverUrl: "http://localhost:5000",
             service: "S",
@@ -125,7 +125,7 @@ public sealed class CoverageTo95Tests
         // but it must surface a "streaming not supported" signal rather
         // than silently hanging. Drains the IAsyncEnumerable to prove
         // it yields at least one informational frame.
-        var protocol = new BowireRestProtocol();
+        using var protocol = new BowireRestProtocol();
         var frames = new List<string>();
         await foreach (var f in protocol.InvokeStreamAsync(
             serverUrl: "http://localhost:1",

@@ -31,7 +31,7 @@ public sealed class BowireRestProtocolTests
     [Fact]
     public void Identity_Properties_Are_Stable()
     {
-        var protocol = new BowireRestProtocol();
+        using var protocol = new BowireRestProtocol();
 
         Assert.Equal("REST", protocol.Name);
         Assert.Equal("rest", protocol.Id);
@@ -42,7 +42,7 @@ public sealed class BowireRestProtocolTests
     [Fact]
     public void Implements_Protocol_And_Inline_Http_Invoker_Surfaces()
     {
-        var protocol = new BowireRestProtocol();
+        using var protocol = new BowireRestProtocol();
 
         Assert.IsAssignableFrom<IBowireProtocol>(protocol);
         Assert.IsAssignableFrom<IInlineHttpInvoker>(protocol);
@@ -51,7 +51,7 @@ public sealed class BowireRestProtocolTests
     [Fact]
     public void Initialize_Accepts_Null_Service_Provider()
     {
-        var protocol = new BowireRestProtocol();
+        using var protocol = new BowireRestProtocol();
 
         protocol.Initialize(null);
     }
@@ -59,7 +59,7 @@ public sealed class BowireRestProtocolTests
     [Fact]
     public async Task DiscoverAsync_Empty_Url_And_No_Uploads_Returns_Empty()
     {
-        var protocol = new BowireRestProtocol();
+        using var protocol = new BowireRestProtocol();
 
         var services = await protocol.DiscoverAsync(
             "", showInternalServices: false, TestContext.Current.CancellationToken);
@@ -91,7 +91,7 @@ public sealed class BowireRestProtocolTests
         OpenApiUploadStore.Add(petsDoc, "pets.json");
         try
         {
-            var protocol = new BowireRestProtocol();
+            using var protocol = new BowireRestProtocol();
 
             var services = await protocol.DiscoverAsync(
                 "", showInternalServices: false, TestContext.Current.CancellationToken);
@@ -117,7 +117,7 @@ public sealed class BowireRestProtocolTests
         // Empty server URL means: cold cache + no embedded provider + no
         // upload registered. Discovery falls through, the cache lookup
         // misses, and the plugin returns a structured error.
-        var protocol = new BowireRestProtocol();
+        using var protocol = new BowireRestProtocol();
 
         var result = await protocol.InvokeAsync(
             serverUrl: "http://127.0.0.2:1",
@@ -135,7 +135,7 @@ public sealed class BowireRestProtocolTests
     [Fact]
     public async Task InvokeStreamAsync_Yields_No_Items_Because_Rest_Is_Unary()
     {
-        var protocol = new BowireRestProtocol();
+        using var protocol = new BowireRestProtocol();
 
         var collected = new List<string>();
         await foreach (var item in protocol.InvokeStreamAsync(
@@ -150,7 +150,7 @@ public sealed class BowireRestProtocolTests
     [Fact]
     public async Task OpenChannelAsync_Returns_Null_Because_Rest_Is_Stateless()
     {
-        var protocol = new BowireRestProtocol();
+        using var protocol = new BowireRestProtocol();
 
         var channel = await protocol.OpenChannelAsync(
             "http://localhost:5000", "X", "Y", false, null, TestContext.Current.CancellationToken);
