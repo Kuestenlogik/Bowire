@@ -97,9 +97,8 @@ internal static class JUnitReport
         {
             // Each failed assertion → one <failure>. Multiple failures per
             // testcase are valid per the schema and many tools render them.
-            foreach (var a in test.Assertions)
+            foreach (var a in test.Assertions.Where(a => !a.Passed))
             {
-                if (a.Passed) continue;
                 var msg = $"{a.Path} {a.Op} {Truncate(a.Expected, 80)}";
                 w.WriteStartElement("failure");
                 w.WriteAttributeString("message", msg);
