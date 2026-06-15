@@ -25,14 +25,14 @@ public sealed class PluginUpdateCheckHostedServiceTests : IDisposable
 
     public PluginUpdateCheckHostedServiceTests()
     {
-        _sandbox = Path.Combine(Path.GetTempPath(), $"bowire-pluginupd-host-{Guid.NewGuid():N}");
-        Directory.CreateDirectory(Path.Combine(_sandbox, "plugins"));
-        Directory.CreateDirectory(Path.Combine(_sandbox, "userstore"));
+        _sandbox = SafePath.Combine(Path.GetTempPath(), $"bowire-pluginupd-host-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(SafePath.Combine(_sandbox, "plugins"));
+        Directory.CreateDirectory(SafePath.Combine(_sandbox, "userstore"));
 
         _originalPluginDir = PluginUpdateCheckService.PluginDir;
         _originalUserStore = BowireUserContext.Current;
-        PluginUpdateCheckService.PluginDir = Path.Combine(_sandbox, "plugins");
-        BowireUserContext.Current = new TempStore(Path.Combine(_sandbox, "userstore"));
+        PluginUpdateCheckService.PluginDir = SafePath.Combine(_sandbox, "plugins");
+        BowireUserContext.Current = new TempStore(SafePath.Combine(_sandbox, "userstore"));
     }
 
     public void Dispose()
@@ -220,6 +220,6 @@ public sealed class PluginUpdateCheckHostedServiceTests : IDisposable
 
     private sealed class TempStore(string root) : IBowireUserStore
     {
-        public string GetUserPath(string filename) => Path.Combine(root, filename);
+        public string GetUserPath(string filename) => SafePath.Combine(root, filename);
     }
 }
