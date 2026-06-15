@@ -160,16 +160,8 @@ public static class BowireAiEndpoints
                     JsonOpts, statusCode: 500);
             }
 
-            BowireAiOptions applied;
-            if (hostManaged)
-            {
-                // Persisted for next start; live client owned by the host.
-                applied = next;
-            }
-            else
-            {
-                applied = runtime.Update(next);
-            }
+            // Host-managed: persisted for next start; live client owned by the host.
+            var applied = hostManaged ? next : runtime.Update(next);
 
             return Results.Json(new
             {
@@ -1160,9 +1152,9 @@ public static class BowireAiEndpoints
                 return new ThreatModelRanking([]);
 
             var rows = new List<ThreatModelRow>(Math.Min(rankedEl.GetArrayLength(), topN));
-            foreach (var rowEl in rankedEl.EnumerateArray())
+            foreach (var rowEl in rankedEl.EnumerateArray()
+                .Where(r => r.ValueKind == JsonValueKind.Object))
             {
-                if (rowEl.ValueKind != JsonValueKind.Object) continue;
                 var id = rowEl.TryGetProperty("endpointId", out var idEl) ? idEl.GetString() : null;
                 if (string.IsNullOrEmpty(id)) continue;
                 var risk = rowEl.TryGetProperty("risk", out var riskEl) && riskEl.ValueKind == JsonValueKind.Number
@@ -1174,9 +1166,10 @@ public static class BowireAiEndpoints
                     && tplEl.ValueKind == JsonValueKind.Array)
                 {
                     var list = new List<string>(tplEl.GetArrayLength());
-                    foreach (var t in tplEl.EnumerateArray())
+                    foreach (var t in tplEl.EnumerateArray()
+                        .Where(e => e.ValueKind == JsonValueKind.String))
                     {
-                        if (t.ValueKind == JsonValueKind.String && t.GetString() is { Length: > 0 } s)
+                        if (t.GetString() is { Length: > 0 } s)
                             list.Add(s);
                     }
                     templates = list.ToArray();
@@ -1401,9 +1394,9 @@ public static class BowireAiEndpoints
                 return [];
 
             var rows = new List<FuzzValue>(Math.Min(valuesEl.GetArrayLength(), 20));
-            foreach (var rowEl in valuesEl.EnumerateArray())
+            foreach (var rowEl in valuesEl.EnumerateArray()
+                .Where(r => r.ValueKind == JsonValueKind.Object))
             {
-                if (rowEl.ValueKind != JsonValueKind.Object) continue;
                 if (!rowEl.TryGetProperty("value", out var valueEl)) continue;
                 var why = rowEl.TryGetProperty("why", out var whyEl) ? whyEl.GetString() ?? "" : "";
                 var rawSeverity = rowEl.TryGetProperty("severity", out var sevEl) ? sevEl.GetString() ?? "" : "";
