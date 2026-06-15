@@ -38,7 +38,7 @@ internal static class FrameProbingMiddleware
         if (prober is null) return;
         if (string.IsNullOrEmpty(frameJson)) return;
 
-        JsonDocument? doc;
+        JsonDocument doc;
         try
         {
             doc = JsonDocument.Parse(frameJson);
@@ -52,7 +52,7 @@ internal static class FrameProbingMiddleware
             return;
         }
 
-        try
+        using (doc)
         {
             var ctx = new DetectionContext(
                 ServiceId: service,
@@ -60,10 +60,6 @@ internal static class FrameProbingMiddleware
                 MessageType: AnnotationKey.Wildcard,
                 Frame: doc.RootElement);
             prober.ObserveFrame(in ctx);
-        }
-        finally
-        {
-            doc.Dispose();
         }
     }
 }
