@@ -17,11 +17,15 @@ Concrete values live on the [Project board's field configuration](https://github
 | **Milestone** *(built-in)* | Version-targeting — the same Milestone the GitHub issue carries. Unset = unscheduled / no concrete release yet (rendered as "Backlog (not yet scheduled)" in `ROADMAP.md`). |
 | **Area** | Which component an issue belongs to (the workbench UI, the CLI, the security surface, …). Use it as the *primary* axis for "show me everything affecting X". Stable enough that the value list barely changes between releases. |
 | **Track** | Groups a multi-release initiative that spans several milestones. Use when an issue is part of a long-running theme — examples that have lived as tracks: the auth-provider rebuild, the protocol-plugin wave, the security-tier ladder, the AI integration. Leave blank when the issue is one-shot. New tracks get added when a new long-running theme starts; tracks close when the theme ships. |
-| **Effort** | T-shirt estimate. Used to spot oversized issues (XL = split it before starting) and to right-size milestones. Not a commitment, just a sanity check. |
-| **Start date** | When work actively began (typically set on the `Next up` → `In progress` transition). Drives the Roadmap layout's left edge. |
-| **Target date** | Soft commitment date. The Milestone is the hard one; Target date is the "we'd like it by" that drives the Roadmap layout's right edge. |
+| **Effort** *(actual)* | `Low` / `Medium` / `High`. Same scale as the org-level `Issue.Effort` so the Project mirror carries the *actual* size of the work next to the *plan*. Used to spot oversized issues (`High` = consider splitting before starting) and to right-size milestones. Not a commitment, just a sanity check. |
+| **Start date** *(actual)* | First commit referencing `#N`. Backfilled by the roadmap-sync job from git history. Drives the Roadmap layout's left edge. |
+| **Target date** *(actual)* | Issue's `closedAt`. Backfilled by the roadmap-sync job. Drives the Roadmap layout's right edge. |
 
-> Priority and Kind used to be Project fields. Both retired: **Priority** wasn't pulling its weight (the Milestone + Status combination already answered "should we do this now") and **Kind** is carried on the issue as a `kind:*` label, no need for a duplicate field on the board. See the [Labels](#labels) section below for the kind taxonomy.
+> **Priority** lives on the org-level **Issue** field (`Urgent` / `High` / `Medium` / `Low`), not on the Project board — it travels with the issue across every project that picks it up. Set it on the issue itself (right sidebar → Fields → Priority).
+>
+> **Kind** is carried on the issue as a `kind:*` label rather than a duplicate Project field. See the [Labels](#labels) section below for the kind taxonomy.
+>
+> The `Start date`, `Target date`, and `Effort` Project fields are **mirrored** by org-level Issue fields with the *same scale*. Issue-layer carries the **plan** (estimate / planned start / planned ship); Project-layer carries the **actual** (when work began, when it shipped, what size it turned out to be). Plan-vs-actual divergence is visible per issue.
 
 ## Labels
 
