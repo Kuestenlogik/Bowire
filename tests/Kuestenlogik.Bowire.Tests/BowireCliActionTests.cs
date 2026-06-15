@@ -104,7 +104,7 @@ public sealed class BowireCliActionTests : IDisposable
         // every line of the MockCliOptions builder branch executes
         // before MockCommand.RunAsync returns 2 for the chaos parse
         // failure.
-        var bogusSchema = Path.Combine(_tempDir, "anything.yaml");
+        var bogusSchema = SafePath.Combine(_tempDir, "anything.yaml");
         await File.WriteAllTextAsync(bogusSchema, "openapi: 3.0.0", TestContext.Current.CancellationToken);
 
         var rc = await BowireCli.RunAsync(
@@ -113,7 +113,7 @@ public sealed class BowireCliActionTests : IDisposable
                 "--host", "127.0.0.1",
                 "--port", "0",
                 "--chaos", "garbage-spec",
-                "--capture-miss", Path.Combine(_tempDir, "miss.json"),
+                "--capture-miss", SafePath.Combine(_tempDir, "miss.json"),
                 "--control-token", "tok",
                 "--stateful",
                 "--no-watch",
@@ -143,9 +143,9 @@ public sealed class BowireCliActionTests : IDisposable
         // Hand the action lambda a real collection path so the
         // TestCliOptions build wires every property; the runner then
         // surfaces the missing-protocol failure and writes the report.
-        var coll = Path.Combine(_tempDir, "coll.json");
-        var report = Path.Combine(_tempDir, "out.html");
-        var junit = Path.Combine(_tempDir, "out.xml");
+        var coll = SafePath.Combine(_tempDir, "coll.json");
+        var report = SafePath.Combine(_tempDir, "out.html");
+        var junit = SafePath.Combine(_tempDir, "out.xml");
         await File.WriteAllTextAsync(coll, """
             {
               "name": "x",
@@ -193,7 +193,7 @@ public sealed class BowireCliActionTests : IDisposable
     {
         // install action lambda — file branch since --file is supplied.
         var rc = await BowireCli.RunAsync(
-            ["plugin", "install", "any-id", "--file", Path.Combine(_tempDir, "absent.nupkg")],
+            ["plugin", "install", "any-id", "--file", SafePath.Combine(_tempDir, "absent.nupkg")],
             EmptyConfig(),
             pluginDir: _tempDir);
         Assert.Equal(1, rc);
@@ -207,7 +207,7 @@ public sealed class BowireCliActionTests : IDisposable
         // without network. The action closure (the !string.IsNullOrEmpty
         // ternary that picks Install vs InstallFromFile) is the line we
         // care about.
-        var feed = Path.Combine(_tempDir, "empty-feed");
+        var feed = SafePath.Combine(_tempDir, "empty-feed");
         Directory.CreateDirectory(feed);
         var rc = await BowireCli.RunAsync(
             ["plugin", "install", "Ghost.Pkg", "--source", feed],
@@ -223,8 +223,8 @@ public sealed class BowireCliActionTests : IDisposable
         // fallback (Directory.GetCurrentDirectory()) when --output is
         // omitted. We supply --output so the failure surfaces from the
         // resolver instead, but either way the action's body runs.
-        var bundle = Path.Combine(_tempDir, "bundle");
-        var feed = Path.Combine(_tempDir, "empty-feed");
+        var bundle = SafePath.Combine(_tempDir, "bundle");
+        var feed = SafePath.Combine(_tempDir, "empty-feed");
         Directory.CreateDirectory(feed);
         var rc = await BowireCli.RunAsync(
             ["plugin", "download", "Ghost.Pkg",
@@ -274,7 +274,7 @@ public sealed class BowireCliActionTests : IDisposable
     {
         // Drives the har import action — including the default-output
         // path that derives the .bwr file name from the HAR basename.
-        var har = Path.Combine(_tempDir, "trace.har");
+        var har = SafePath.Combine(_tempDir, "trace.har");
         await File.WriteAllTextAsync(har, """
             {
               "log": {
@@ -307,8 +307,8 @@ public sealed class BowireCliActionTests : IDisposable
     {
         // --out supplied → the default-output branch is skipped; the
         // explicit path lands the .bwr exactly where the user asked.
-        var har = Path.Combine(_tempDir, "trace2.har");
-        var explicitOut = Path.Combine(_tempDir, "result.bwr");
+        var har = SafePath.Combine(_tempDir, "trace2.har");
+        var explicitOut = SafePath.Combine(_tempDir, "result.bwr");
         await File.WriteAllTextAsync(har, """
             { "log": { "version": "1.2", "creator": { "name": "t", "version": "1" }, "entries": [] } }
             """, TestContext.Current.CancellationToken);
