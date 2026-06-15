@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+    <OutputType>Exe</OutputType>
+    <!--
+      Dedicated coverage for the Kuestenlogik.Bowire.Ai package — the
+      runtime hot-swap contract, the user-config store's workspace
+      override layer, the MutableChatClient proxy seam, the
+      AddBowireAi DI overlay precedence, the BowireAiOptions defaults,
+      and the minimal-API surface (route registration + ProblemDetails
+      shape on error paths). Sits alongside the broader
+      Kuestenlogik.Bowire.Tests pins so the Ai package can rev / ship
+      its tests independently when it eventually moves out of the
+      monorepo.
+    -->
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit.v3" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+    <PackageReference Include="coverlet.collector"><PrivateAssets>all</PrivateAssets><IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets></PackageReference>
+    <PackageReference Include="Microsoft.Extensions.AI" />
+    <PackageReference Include="Microsoft.AspNetCore.TestHost" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Kuestenlogik.Bowire\Kuestenlogik.Bowire.csproj" />
+    <ProjectReference Include="..\..\src\Kuestenlogik.Bowire.Ai\Kuestenlogik.Bowire.Ai.csproj" />
+  </ItemGroup>
+</Project>
