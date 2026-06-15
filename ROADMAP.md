@@ -209,12 +209,19 @@ Phase 1 (#147-#149-#151) shipped in eb2bf1c: `BowireUserContext.GetWorkspacePath
 
 Phase 2.1 (4a93b34) landed the `Kuestenlogik.Bowire.Workspace.Git` package skeleton + `AddBowireGitWorkspace()` DI hook + `BowireGitWorkspaceExtension` activation marker.
 
-Phase 2.2 (this commit) — per-entity reader/writer + migrate-format CLI:
+Phase 2.2 (33bd4e7) — per-entity reader/writer + migrate-format CLI:
 - `IBowireEntityStore` interface — list / load / save / delete by `(entityKind, id)`.
 - `FileEntityStore` — concrete file-backed implementation. One `.json` per entity under `<storageRoot>/<entityKind>/`; collections fan out per-request `.req.json` siblings so OpenAPI-shaped collections diff cleanly in PR review.
 - `BowireGitWorkspaceMigrator` — converts the legacy single-bundle layout (`<entityKind>.json`) to per-entity files; idempotent re-run; legacy bundles parked as `*.legacy`.
 - `bowire workspace migrate-format <path>` subcommand — wraps the migrator, reports per-entity counts.
-- Phase 2.3 (workspace-level `storageRoot` field + UI surface) lands separately; Phase 2.4 (FS-watch SSE producer) and Phase 2.5 (lockfile) still pending. [[more]](https://github.com/Kuestenlogik/Bowire/issues/196)
+
+Phase 2.3 (this commit) — workspace-level `storageRoot` field + UI surface + recording-endpoint wiring:
+- `workspace.storageRoot` optional string on the JS workspace model + `getWorkspaceStorageRoot` / `setWorkspaceStorageRoot` helpers in `prologue.js` (persisted via `persistWorkspaces`).
+- Workspace settings → Storage section surfaces an editable "Storage root" text field beneath the existing browser-only toggle (hidden for browser-only workspaces; trim on blur; empty string clears the override).
+- `ChunkedRecordingStore.ResolveRootPath` + `LoadAll` / `SaveAll` / `DeleteAll` / `LoadManifest` / `LoadStep` / `AppendStep` take an optional `storageRoot` argument and route through `BowireUserContext.GetWorkspacePath` when present.
+- Recording endpoints (`GET/PUT/DELETE /api/recordings` + `/manifest` + `/step/{n}` + `POST /step`) forward `?storageRoot=` from the workbench so per-step / per-manifest reads honour the override.
+
+Phase 2.4 (FS-watch SSE producer) and Phase 2.5 (lockfile) still pending. [[more]](https://github.com/Kuestenlogik/Bowire/issues/196)
 
 #### <a id="issue-kuestenlogik-bowire-197"></a>⬜ Open · [#197](https://github.com/Kuestenlogik/Bowire/issues/197) Deprecate + unlist Kuestenlogik.Bowire.Extension.MapLibre on nuget.org after v2.0 ships
 
