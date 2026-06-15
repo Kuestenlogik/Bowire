@@ -76,11 +76,19 @@ internal static class BrowserUiHost
         if (!noBrowser)
         {
             var browserUrl = $"http://localhost:{ui.Port}/";
+            // Capture the static delegate locally so a swap-back after
+            // RunAsync returns (test seams, hot-reload) cannot redirect
+            // the launch into a different implementation. The Task.Run
+            // body reads the static at execution time, not scheduling
+            // time -- without this capture a test that restores the
+            // real DefaultOpenBrowser in its finally races us and ends
+            // up spawning a real `xdg-open` on the CI runner.
+            var openBrowser = OpenBrowserAsync;
             _ = Task.Run(async () =>
             {
                 try
                 {
-                    await OpenBrowserAsync(browserUrl, ct).ConfigureAwait(false);
+                    await openBrowser(browserUrl, ct).ConfigureAwait(false);
                 }
                 catch
                 {
