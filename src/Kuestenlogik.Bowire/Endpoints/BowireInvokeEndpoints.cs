@@ -550,14 +550,10 @@ internal static class BowireInvokeEndpoints
             return null;
         }
 
-        try
+        using (doc)
         {
             return RecordingInterpretationBuilder.Build(
                 store, service, method, AnnotationKey.Wildcard, doc.RootElement);
-        }
-        finally
-        {
-            doc.Dispose();
         }
     }
 }
