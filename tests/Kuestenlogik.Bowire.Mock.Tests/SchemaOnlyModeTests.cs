@@ -3,6 +3,7 @@
 
 using System.Net;
 using System.Text.Json;
+using Kuestenlogik.Bowire.Protocol.Rest;
 
 namespace Kuestenlogik.Bowire.Mock.Tests;
 
@@ -17,6 +18,25 @@ public sealed class SchemaOnlyModeTests
 {
     private static string FixturePath =>
         Path.Combine(AppContext.BaseDirectory, "Fixtures", "weather.openapi.yaml");
+
+    /// <summary>
+    /// Force-register the OpenApi3 adapter before any test runs. Without
+    /// this, <see cref="BowireOpenApiAdapterRegistry.TryGet"/> falls back
+    /// to an AppDomain assembly scan — and the OpenApi3 assembly only
+    /// loads when something inside it is referenced first. xUnit runs
+    /// tests in a discovery-determined order; if no earlier test in this
+    /// run touched an OpenApi3 type, the scan finds nothing and the
+    /// schema-only mock throws "No IBowireOpenApiAdapter is registered."
+    /// (observed as the SchemaOnly_ComposesWithChaos_FailRate1Returns503
+    /// flake on commit 408134a, #352). An explicit Register here is the
+    /// belt: the scan stays as the suspenders for hosts that don't
+    /// reference an adapter package directly.
+    /// </summary>
+    static SchemaOnlyModeTests()
+    {
+        BowireOpenApiAdapterRegistry.Register(
+            new Kuestenlogik.Bowire.Protocol.Rest.OpenApi3.OpenApi3Adapter());
+    }
 
     [Fact]
     public async Task SchemaOnly_ServesObjectResponseFromResolvedRef()
