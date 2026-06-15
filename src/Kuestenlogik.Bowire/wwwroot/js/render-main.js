@@ -494,6 +494,8 @@
                 className: 'bowire-env-editor-name-input',
                 value: selectedEnv.name,
                 'aria-label': 'Environment name',
+                'data-bowire-no-vars-chip': '1',
+                'data-bowire-no-vars-ac': '1',
                 onChange: function (e) { updateEnvironment(envSidebarSelectedId, { name: e.target.value }); }
             }));
         }
@@ -747,18 +749,21 @@
             setVars(newVars);
         }
 
-        function addVarRow(key, value) {
+        function addVarRow(key, value, intoTable) {
+            var targetTable = intoTable || table;
             var row = el('div', { className: 'bowire-env-editor-row' });
             var keyInput = el('input', {
                 type: 'text',
                 className: 'bowire-env-editor-key',
                 value: key,
                 placeholder: 'variable name',
-                spellcheck: 'false'
+                spellcheck: 'false',
+                'data-bowire-no-vars-chip': '1',
+                'data-bowire-no-vars-ac': '1'
             });
             var valInput = el('textarea', {
                 className: 'bowire-env-editor-val',
-                placeholder: 'value (multi-line, JSON, etc.)',
+                placeholder: 'value (Ctrl+Enter for multi-line)',
                 spellcheck: 'false',
                 rows: '1'
             });
@@ -767,15 +772,82 @@
                 valInput.style.height = 'auto';
                 valInput.style.height = Math.max(28, valInput.scrollHeight) + 'px';
             }
+            // Tab / Enter on the value field: commit + advance to the
+            // next row's key. When the operator is already on the last
+            // row, instead append a fresh empty row and focus its key.
+            // Shift+Tab and Tab on non-last rows fall through to the
+            // browser's default nav (val → next row's key, with the
+            // tabIndex=-1 remove button skipped) so back-navigation
+            // and mid-table moves don't need any custom handling.
+            function advanceFromVal(e) {
+                e.preventDefault();
+                commitAll(e);
+                var liveTable = e.target && e.target.closest
+                    ? e.target.closest('.bowire-env-editor-table')
+                    : null;
+                if (!liveTable) return;
+                var thisRow = e.target.closest('.bowire-env-editor-row');
+                var rows = liveTable.querySelectorAll('.bowire-env-editor-row:not(.bowire-env-editor-col-header)');
+                var idx = -1;
+                for (var ri = 0; ri < rows.length; ri++) {
+                    if (rows[ri] === thisRow) { idx = ri; break; }
+                }
+                if (idx >= 0 && idx + 1 < rows.length) {
+                    var nextKey = rows[idx + 1].querySelector('.bowire-env-editor-key');
+                    if (nextKey) nextKey.focus();
+                    return;
+                }
+                addVarRow('', '', liveTable);
+                var freshRows = liveTable.querySelectorAll('.bowire-env-editor-row:not(.bowire-env-editor-col-header)');
+                var newRow = freshRows[freshRows.length - 1];
+                if (newRow) {
+                    var newKey = newRow.querySelector('.bowire-env-editor-key');
+                    if (newKey) newKey.focus();
+                }
+            }
             keyInput.addEventListener('change', commitAll);
             valInput.addEventListener('change', commitAll);
             valInput.addEventListener('input', autoResize);
+            // Enter on the key field jumps to the same row's value
+            // field — keyboard-only operators don't need the mouse
+            // to commit the name.
+            keyInput.addEventListener('keydown', function (e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    valInput.focus();
+                }
+            });
+            valInput.addEventListener('keydown', function (e) {
+                if (e.key === 'Enter' && !e.ctrlKey && !e.metaKey && !e.shiftKey) {
+                    advanceFromVal(e);
+                    return;
+                }
+                if (e.key === 'Tab' && !e.shiftKey) {
+                    // Only intercept when at the last row so a fresh row
+                    // gets appended; mid-table Tabs fall through to the
+                    // browser's default cell-to-cell navigation.
+                    var liveTable = e.target && e.target.closest
+                        ? e.target.closest('.bowire-env-editor-table')
+                        : null;
+                    var thisRow = e.target.closest('.bowire-env-editor-row');
+                    if (!liveTable || !thisRow) return;
+                    var rows = liveTable.querySelectorAll('.bowire-env-editor-row:not(.bowire-env-editor-col-header)');
+                    if (rows[rows.length - 1] === thisRow) {
+                        advanceFromVal(e);
+                    }
+                }
+            });
             row.appendChild(keyInput);
             row.appendChild(valInput);
             row.appendChild(el('button', {
                 className: 'bowire-env-editor-remove',
                 title: 'Remove variable',
                 textContent: '\u00d7',
+                // Skip the Remove button in tab order \u2014 the operator's
+                // Tab walks key \u2192 value \u2192 next row's key \u2192 next row's
+                // value seamlessly, without a detour through the remove
+                // affordance. Click stays available via mouse.
+                tabIndex: '-1',
                 onClick: function () {
                     // Capture the live table before detaching the row \u2014
                     // after row.remove() the row has no parent, so we
@@ -785,21 +857,50 @@
                     commitAll(liveTable);
                 }
             }));
-            table.appendChild(row);
+            targetTable.appendChild(row);
             requestAnimationFrame(autoResize);
         }
 
         for (var ki = 0; ki < keys.length; ki++) {
             addVarRow(keys[ki], String(vars[keys[ki]]));
         }
-        addVarRow('', '');
+        // Show ONE empty row for initial discoverability when the env
+        // has no vars yet — gives the operator somewhere to type into
+        // without having to find the + Add button first. For non-empty
+        // envs the keyboard nav (Tab / Enter on the last row's value)
+        // adds a new row on demand, so we don't pre-render a trailing
+        // empty row that the operator would otherwise tab through.
+        if (keys.length === 0) {
+            addVarRow('', '');
+        }
         frag.appendChild(table);
 
         frag.appendChild(el('button', {
             id: 'bowire-env-add-variable-btn',
-            className: 'bowire-env-editor-add-btn',
+            className: 'bowire-ws-detail-action',
+            style: 'margin-top:8px',
             textContent: '+ Add variable',
-            onClick: function () { addVarRow('', ''); }
+            onClick: function (e) {
+                // Walk up to the live table from the clicked button so
+                // morphdom-preserved-table reuse stays correct (the
+                // closure 'table' may be the next-render's discarded
+                // table after a commit-driven re-render).
+                var host = e && e.target && e.target.closest
+                    ? e.target.closest('.bowire-env-editor-vars')
+                    : null;
+                var liveTable = host ? host.querySelector('.bowire-env-editor-table') : null;
+                addVarRow('', '', liveTable || undefined);
+                // Drop focus into the new row's key field — mouse-driven
+                // operators get the same "edit mode of the new cell"
+                // contract as the keyboard-driven Tab/Enter path.
+                var finalTable = liveTable || table;
+                var rows = finalTable.querySelectorAll('.bowire-env-editor-row:not(.bowire-env-editor-col-header)');
+                var newRow = rows[rows.length - 1];
+                if (newRow) {
+                    var newKey = newRow.querySelector('.bowire-env-editor-key');
+                    if (newKey) newKey.focus();
+                }
+            }
         }));
 
         return frag;
@@ -1046,6 +1147,13 @@
                 className: 'bowire-ws-detail-name',
                 value: ws.name,
                 'aria-label': 'Workspace name',
+                // Opt out of the {{var}} chip overlay (which paints the
+                // input transparent + draws coloured chips on top). Pure
+                // name fields don't take {{var}} refs, so the overlay
+                // just makes the text unreadable on focus. Same opt-out
+                // bowirePrompt + workspace-create dialog already use.
+                'data-bowire-no-vars-chip': '1',
+                'data-bowire-no-vars-ac': '1',
                 onChange: function (e) {
                     var v = String(e.target.value || '').trim();
                     var t = _liveWs();
@@ -1878,15 +1986,25 @@
                 textContent: 'No environments defined yet. Create one to share secrets / URLs across workspaces.'
             }));
         } else {
-            var list = el('div', { style: 'display:flex;flex-direction:column;gap:4px;margin-top:6px' });
+            var activeEnvIdNow = (typeof getActiveEnvId === 'function') ? getActiveEnvId() : null;
+            var list = el('div', { className: 'bowire-env-overview-list' });
             allEnvs.forEach(function (e) {
                 var included = includedIds.indexOf(e.id) !== -1;
                 var varCount = e.vars ? Object.keys(e.vars).length : 0;
-                var row = el('div', {
-                    style: 'display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:var(--bowire-radius-sm);background:var(--bowire-bg)'
-                });
+                var isActive = e.id === activeEnvIdNow;
+                var envColor = e.color || 'var(--bowire-text-tertiary)';
+                // Same filled-globe glyph as the topbar env dropdown +
+                // the workspace tree env leaf — env identity reads
+                // consistently across every pick surface.
+                var envGlyph = '<svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" width="14" height="14">'
+                    + '<circle cx="12" cy="12" r="10" fill="' + envColor + '"/>'
+                    + '<line x1="2" y1="12" x2="22" y2="12" fill="none"/>'
+                    + '<path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z" fill="none"/>'
+                    + '</svg>';
+                var row = el('div', { className: 'bowire-env-overview-row' });
                 row.appendChild(el('input', {
                     type: 'checkbox',
+                    className: 'bowire-env-overview-include',
                     checked: included ? 'checked' : null,
                     title: included ? 'Included in ' + ws.name : 'Not included',
                     onChange: function (ev) {
@@ -1898,10 +2016,15 @@
                         }
                     }
                 }));
-                row.appendChild(el('span', { innerHTML: svgIcon('globe'), style: 'width:14px;height:14px;display:inline-flex;flex-shrink:0;opacity:0.7' }));
                 row.appendChild(el('span', {
-                    style: 'flex:1;cursor:pointer',
+                    className: 'bowire-env-overview-glyph',
+                    innerHTML: envGlyph
+                }));
+                row.appendChild(el('button', {
+                    type: 'button',
+                    className: 'bowire-env-overview-name',
                     textContent: e.name || '(unnamed)',
+                    title: 'Open env editor',
                     onClick: function () {
                         if (ws.id !== activeWorkspaceId) switchWorkspace(ws.id);
                         workspaceTreeSelection = { wsId: ws.id, kind: 'env', value: e.id };
@@ -1911,7 +2034,89 @@
                         render();
                     }
                 }));
-                row.appendChild(el('span', { style: 'opacity:0.6;font-size:11px', textContent: varCount + (varCount === 1 ? ' var' : ' vars') }));
+                row.appendChild(el('span', {
+                    className: 'bowire-env-overview-meta',
+                    textContent: varCount + (varCount === 1 ? ' var' : ' vars')
+                }));
+                if (isActive) {
+                    row.appendChild(el('span', {
+                        className: 'bowire-env-overview-active-badge',
+                        textContent: 'Active'
+                    }));
+                }
+                // Hover-revealed tools cluster: Set active (if not active)
+                // + Rename + Delete. Same pattern as the topbar env
+                // dropdown so editing options live in the same shape
+                // wherever envs are picked.
+                var tools = el('div', { className: 'bowire-env-overview-tools' });
+                if (!isActive) {
+                    tools.appendChild(el('button', {
+                        type: 'button',
+                        className: 'bowire-env-overview-tool',
+                        title: 'Set as active environment',
+                        'aria-label': 'Set as active environment',
+                        textContent: 'Set active',
+                        onClick: function () {
+                            if (ws.id !== activeWorkspaceId) switchWorkspace(ws.id);
+                            if (typeof setActiveEnvId === 'function') setActiveEnvId(e.id);
+                            render();
+                        }
+                    }));
+                }
+                tools.appendChild(el('button', {
+                    type: 'button',
+                    className: 'bowire-env-overview-tool',
+                    title: 'Rename environment',
+                    'aria-label': 'Rename environment',
+                    innerHTML: svgIcon('pencil'),
+                    onClick: function () {
+                        var envId = e.id;
+                        var oldName = e.name || '';
+                        bowirePrompt('Rename environment', {
+                            title: 'Rename',
+                            defaultValue: oldName,
+                            confirmText: 'Rename',
+                            validator: function (val) {
+                                var trimmed = String(val || '').trim();
+                                if (!trimmed) return 'Name required';
+                                if (trimmed.toLowerCase() === String(oldName || '').trim().toLowerCase()) return null;
+                                if (typeof _isEnvironmentNameTaken === 'function'
+                                    && _isEnvironmentNameTaken(trimmed, envId)) {
+                                    if (typeof toast === 'function') {
+                                        toast('An environment named "' + trimmed + '" already exists.', 'error');
+                                    }
+                                    return 'Duplicate';
+                                }
+                                return null;
+                            }
+                        }).then(function (renamed) {
+                            if (renamed && typeof updateEnvironment === 'function') {
+                                updateEnvironment(envId, { name: renamed });
+                                render();
+                            }
+                        });
+                    }
+                }));
+                tools.appendChild(el('button', {
+                    type: 'button',
+                    className: 'bowire-env-overview-tool bowire-env-overview-tool-danger',
+                    title: 'Delete environment',
+                    'aria-label': 'Delete environment',
+                    innerHTML: svgIcon('trash'),
+                    onClick: function () {
+                        var envId = e.id;
+                        var envName = e.name || '(unnamed)';
+                        bowireConfirm(
+                            'Delete environment "' + envName + '"? Variables stored in this environment are removed.',
+                            function () {
+                                if (typeof deleteEnvironment === 'function') deleteEnvironment(envId);
+                                render();
+                            },
+                            { title: 'Delete environment', confirmText: 'Delete', danger: true }
+                        );
+                    }
+                }));
+                row.appendChild(tools);
                 list.appendChild(row);
             });
             section.appendChild(list);
@@ -1958,12 +2163,16 @@
             workspaceTreeSelection = { wsId: ws.id, kind: 'environments' };
             return _renderWorkspaceEnvironmentsOverview(ws);
         }
+        // No env name in the breadcrumb's last crumb — the env editor's
+        // own header already carries the editable name input; repeating
+        // it as a read-only crumb above just looks like a duplicate the
+        // operator can't edit. Breadcrumb stays navigational
+        // (workspace › Environments) so context is still visible.
         main.appendChild(_renderWorkspaceBreadcrumb(ws, [
             { label: 'Environments', onClick: function () {
                 workspaceTreeSelection = { wsId: ws.id, kind: 'environments' };
                 render();
-            } },
-            { label: env.name || '(unnamed)' }
+            } }
         ]));
         if (typeof envSidebarSelectedId !== 'undefined') {
             envSidebarSelectedId = env.id;
@@ -2044,6 +2253,8 @@
                 value: meta.name || _stripUrlPrefix(u),
                 placeholder: 'Optional display name (defaults to host)',
                 'aria-label': 'Display name',
+                'data-bowire-no-vars-chip': '1',
+                'data-bowire-no-vars-ac': '1',
                 onChange: function (e) {
                     var v = String(e.target.value || '').trim();
                     setUrlMeta(u, { name: v || null });
