@@ -203,12 +203,10 @@ internal static class OciArtifactFetcher
             if (!root.TryGetProperty("manifests", out var manifests)
                 || manifests.ValueKind != JsonValueKind.Array || manifests.GetArrayLength() == 0)
                 return null;
-            foreach (var m in manifests.EnumerateArray())
-            {
-                if (m.TryGetProperty("digest", out var d) && d.GetString() is { Length: > 0 } digest)
-                    return digest;
-            }
-            return null;
+            var firstDigest = manifests.EnumerateArray()
+                .Select(m => m.TryGetProperty("digest", out var d) ? d.GetString() : null)
+                .FirstOrDefault(d => d is { Length: > 0 });
+            return firstDigest;
         }
         catch (JsonException)
         {
