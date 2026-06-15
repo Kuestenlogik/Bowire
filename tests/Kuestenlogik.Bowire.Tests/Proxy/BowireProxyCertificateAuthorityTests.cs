@@ -16,7 +16,7 @@ public sealed class BowireProxyCertificateAuthorityTests
 {
     private static string FreshTempDir()
     {
-        var path = Path.Combine(Path.GetTempPath(), $"bowire-ca-test-{Guid.NewGuid():N}");
+        var path = SafePath.Combine(Path.GetTempPath(), $"bowire-ca-test-{Guid.NewGuid():N}");
         Directory.CreateDirectory(path);
         return path;
     }
@@ -28,8 +28,8 @@ public sealed class BowireProxyCertificateAuthorityTests
         try
         {
             using var ca = BowireProxyCertificateAuthority.LoadOrCreate(dir);
-            Assert.True(File.Exists(Path.Combine(dir, "proxy-ca.pfx")));
-            Assert.True(File.Exists(Path.Combine(dir, "proxy-ca.crt")));
+            Assert.True(File.Exists(SafePath.Combine(dir, "proxy-ca.pfx")));
+            Assert.True(File.Exists(SafePath.Combine(dir, "proxy-ca.crt")));
             Assert.True(ca.Certificate.HasPrivateKey);
             Assert.Contains("Bowire Proxy CA", ca.Certificate.Subject, StringComparison.Ordinal);
         }
@@ -58,7 +58,7 @@ public sealed class BowireProxyCertificateAuthorityTests
         var dir = FreshTempDir();
         try
         {
-            File.WriteAllBytes(Path.Combine(dir, "proxy-ca.pfx"), new byte[] { 0xDE, 0xAD, 0xBE, 0xEF });
+            File.WriteAllBytes(SafePath.Combine(dir, "proxy-ca.pfx"), new byte[] { 0xDE, 0xAD, 0xBE, 0xEF });
             using var ca = BowireProxyCertificateAuthority.LoadOrCreate(dir);
             Assert.True(ca.Certificate.HasPrivateKey);
         }
@@ -72,9 +72,9 @@ public sealed class BowireProxyCertificateAuthorityTests
         try
         {
             using (BowireProxyCertificateAuthority.LoadOrCreate(dir)) { /* generate */ }
-            File.Delete(Path.Combine(dir, "proxy-ca.crt"));
+            File.Delete(SafePath.Combine(dir, "proxy-ca.crt"));
             using var second = BowireProxyCertificateAuthority.LoadOrCreate(dir);
-            Assert.True(File.Exists(Path.Combine(dir, "proxy-ca.crt")));
+            Assert.True(File.Exists(SafePath.Combine(dir, "proxy-ca.crt")));
         }
         finally { Directory.Delete(dir, recursive: true); }
     }
@@ -204,7 +204,7 @@ public sealed class BowireProxyCertificateAuthorityTests
         try
         {
             using var ca = BowireProxyCertificateAuthority.LoadOrCreate(dir);
-            var exportPath = Path.Combine(dir, "exported", "bowire-ca.crt");
+            var exportPath = SafePath.Combine(dir, "exported", "bowire-ca.crt");
             ca.ExportPublicCertificate(exportPath);
             Assert.True(File.Exists(exportPath));
 
