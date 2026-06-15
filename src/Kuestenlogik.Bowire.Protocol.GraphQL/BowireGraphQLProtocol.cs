@@ -18,13 +18,7 @@ namespace Kuestenlogik.Bowire.Protocol.GraphQL;
 /// invokes them by building a parameterised operation string with
 /// <see cref="GraphQLQueryBuilder"/>.
 /// </summary>
-// CA1001: _http lives for the lifetime of the protocol registry, which is
-// the lifetime of the host process. Adding IDisposable to IBowireProtocol
-// just to dispose a singleton at shutdown would ripple through every plugin
-// without payoff.
-#pragma warning disable CA1001
-public sealed class BowireGraphQLProtocol : IBowireProtocol
-#pragma warning restore CA1001
+public sealed class BowireGraphQLProtocol : IBowireProtocol, IDisposable
 {
     // Built lazily from BowireHttpClientFactory in Initialize() so the
     // localhost-cert opt-in (Bowire:TrustLocalhostCert) reaches the
@@ -65,6 +59,16 @@ public sealed class BowireGraphQLProtocol : IBowireProtocol
     {
         var config = serviceProvider?.GetService<IConfiguration>();
         _http = BowireHttpClientFactory.Create(config, Id, TimeSpan.FromSeconds(30));
+    }
+
+    /// <summary>
+    /// Dispose the lazily-built <see cref="HttpClient"/>. Same lifecycle
+    /// contract as the REST plugin — the registry that owns the plugin
+    /// instance disposes it at host shutdown.
+    /// </summary>
+    public void Dispose()
+    {
+        _http.Dispose();
     }
 
     public async Task<List<BowireServiceInfo>> DiscoverAsync(

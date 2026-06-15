@@ -25,7 +25,7 @@ public sealed class GraphQLHelperTests
     [Fact]
     public void Identity_Properties_Are_Stable()
     {
-        var protocol = new BowireGraphQLProtocol();
+        using var protocol = new BowireGraphQLProtocol();
 
         Assert.Equal("GraphQL", protocol.Name);
         Assert.Equal("graphql", protocol.Id);
@@ -43,7 +43,7 @@ public sealed class GraphQLHelperTests
     [Fact]
     public void Initialize_Accepts_Null_ServiceProvider()
     {
-        var protocol = new BowireGraphQLProtocol();
+        using var protocol = new BowireGraphQLProtocol();
 
         protocol.Initialize(null);
     }
@@ -53,7 +53,7 @@ public sealed class GraphQLHelperTests
     [Fact]
     public async Task DiscoverAsync_Empty_Url_Returns_Empty()
     {
-        var protocol = new BowireGraphQLProtocol();
+        using var protocol = new BowireGraphQLProtocol();
 
         var services = await protocol.DiscoverAsync(
             "", showInternalServices: false, TestContext.Current.CancellationToken);
@@ -66,7 +66,7 @@ public sealed class GraphQLHelperTests
     {
         // GraphQL plugin always streams through InvokeStreamAsync; the
         // channel API is intentionally inert.
-        var protocol = new BowireGraphQLProtocol();
+        using var protocol = new BowireGraphQLProtocol();
 
         var channel = await protocol.OpenChannelAsync(
             "http://example.com/graphql", "Query", "user",

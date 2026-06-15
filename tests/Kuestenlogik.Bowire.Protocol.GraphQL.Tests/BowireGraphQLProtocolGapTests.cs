@@ -35,7 +35,7 @@ public sealed class BowireGraphQLProtocolGapTests
         BowireGraphQLProtocol.RegistryFactory = () => emptyRegistry;
         try
         {
-            var protocol = new BowireGraphQLProtocol();
+            using var protocol = new BowireGraphQLProtocol();
             var frames = new List<string>();
             await foreach (var frame in protocol.InvokeStreamAsync(
                 serverUrl: "http://localhost/graphql",
@@ -83,7 +83,7 @@ public sealed class BowireGraphQLProtocolGapTests
         BowireGraphQLProtocol.RegistryFactory = () => registry;
         try
         {
-            var protocol = new BowireGraphQLProtocol();
+            using var protocol = new BowireGraphQLProtocol();
             var frames = new List<string>();
             await foreach (var frame in protocol.InvokeStreamAsync(
                 serverUrl: "http://localhost/graphql",
@@ -153,7 +153,7 @@ public sealed class BowireGraphQLProtocolGapTests
         using var cts = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
         var firstFrameSeen = new TaskCompletionSource();
 
-        var protocol = new BowireGraphQLProtocol();
+        using var protocol = new BowireGraphQLProtocol();
         var consumerTask = Task.Run(async () =>
         {
             var frames = new List<string>();
