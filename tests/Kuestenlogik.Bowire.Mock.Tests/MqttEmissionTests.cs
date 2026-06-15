@@ -232,23 +232,34 @@ public sealed class MqttEmissionTests : IDisposable
         Assert.All(snapshot, t => Assert.True(t == "loop/a" || t == "loop/b",
             $"Unexpected topic '{t}'; the recording only declares 'loop/a' and 'loop/b'."));
 
-        // Loop semantics: after the first 'loop/b' the emitter must
-        // wrap back to 'loop/a' — otherwise it ran the recording once
-        // and stopped. We assert against this wrap rather than against
-        // the absolute order [a, b, a, b, ...] because, on fast Linux
-        // loopback, the subscriber's SUBSCRIBE handshake can complete
-        // after the very first frame, so the early sequence may start
-        // at 'loop/b' instead of 'loop/a'. The Linux-vs-Windows split
-        // is an artefact of the broker's grace period; the property
-        // we actually want to verify is "the emitter wraps", not
-        // "the subscriber catches the first frame".
-        var firstB = snapshot.IndexOf("loop/b");
-        Assert.True(firstB >= 0,
-            $"Subscriber never received 'loop/b'. Received: [{string.Join(", ", snapshot)}]");
-        var aAfterB = snapshot.IndexOf("loop/a", firstB + 1);
-        Assert.True(aAfterB >= 0,
-            $"Loop didn't wrap: after 'loop/b' at index {firstB}, no 'loop/a' follows. " +
-            $"Received: [{string.Join(", ", snapshot)}]");
+        // Loop semantics: the emitter's RunAsync does
+        //
+        //   do { foreach (step in [a, b]) Emit(step); } while (loop)
+        //
+        // so a single foreach pass fires exactly one 'a' followed by one
+        // 'b'. ANY topic appearing more than once is therefore proof the
+        // foreach ran at least twice — which is the property the test
+        // name promises ("RepeatsRecordingWhileMockRuns").
+        //
+        // Previously the assertion required a 'loop/a' AFTER the first
+        // 'loop/b' inside the same 5-message snapshot. That's stricter
+        // than the actual loop semantic: MQTTnet keeps a per-topic
+        // delivery queue, and under CI load one topic's queue can outrun
+        // the other by several frames — landing a snapshot like
+        // [a, a, a, a, b] which is consistent with the emitter looping
+        // 4+ times but skipped from the broker's POV. The new check
+        // ("at least one topic seen twice") is invariant to per-topic
+        // skew, so it stays green on Linux CI runs that previously
+        // flaked.
+        var aCount = snapshot.Count(t => t == "loop/a");
+        var bCount = snapshot.Count(t => t == "loop/b");
+        Assert.True(aCount + bCount >= 5,
+            $"Snapshot smaller than expected: received only {aCount + bCount}. " +
+            $"Snapshot: [{string.Join(", ", snapshot)}]");
+        Assert.True(aCount >= 2 || bCount >= 2,
+            $"Loop didn't repeat: each topic seen at most once " +
+            $"({aCount} × 'loop/a', {bCount} × 'loop/b'). " +
+            $"Snapshot: [{string.Join(", ", snapshot)}]");
 
         await subscriber.DisconnectAsync(cancellationToken: TestContext.Current.CancellationToken);
     }
