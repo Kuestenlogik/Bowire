@@ -40,9 +40,19 @@ public static class BowireMockApplicationBuilderExtensions
 
         if (options.Watch)
         {
-            // The watcher's lifetime is handed off to the host's
-            // ApplicationStopping callback below; disposal is guaranteed
-            // there, but the analyzer can't follow the handoff.
+            // CA2000: watcher ownership is captured by the
+            // ApplicationStopping callback below — `lifetime.Register(() =>
+            // watcher.Dispose())` keeps the closure alive until shutdown,
+            // at which point Dispose runs exactly once. Roslyn can't see
+            // a `Register(() => x.Dispose())` lambda as an ownership
+            // transfer, and an early-failure path doesn't exist here:
+            // RecordingWatcher's ctor either succeeds or throws (no
+            // partially-initialised state), and the `lifetime?.Register`
+            // call after it is non-throwing for non-null lifetimes. On
+            // the null-lifetime branch (no IHostApplicationLifetime in
+            // the SP) the watcher does outlive the registration — but
+            // that's a misconfigured embedded host, and Watch=true is
+            // an opt-in flag the caller chose anyway.
 #pragma warning disable CA2000
             var watcher = new RecordingWatcher(
                 path: recordingPath,
