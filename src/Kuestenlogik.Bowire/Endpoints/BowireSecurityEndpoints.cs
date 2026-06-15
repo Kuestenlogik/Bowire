@@ -150,8 +150,16 @@ internal static class BowireSecurityEndpoints
                     }).ToArray(),
                 });
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or OperationCanceledException or InvalidOperationException or UriFormatException or IOException)
             {
+                // FuzzExecutor calls HttpClient against the operator's
+                // target. Failures realistically come from the HTTP
+                // transport (HttpRequestException, IOException), the
+                // timeout (TaskCanceledException with TimeoutException
+                // inner), client disconnect (OperationCanceledException),
+                // or a malformed target URL (UriFormatException /
+                // InvalidOperationException). Surface as 500 with the
+                // exception type for client-side triage.
                 return BowireEndpointHelpers.Problem(
                     type: "urn:bowire:security:fuzz-error",
                     title: "Fuzz execution failed",
