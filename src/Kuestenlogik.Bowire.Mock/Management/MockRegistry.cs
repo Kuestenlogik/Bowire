@@ -43,11 +43,21 @@ internal sealed class MockRegistry : IAsyncDisposable
             : s.Replace('\r', '_').Replace('\n', '_');
 
     public MockRegistry(ILogger<MockRegistry> logger)
+        : this(logger, Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
+            ".bowire", "mocks"))
+    {
+    }
+
+    // Test-only overload — lets a fixture point the registry at a
+    // per-test temp directory so parallel tests don't trip over each
+    // other's leftover .bwr files in the shared ~/.bowire/mocks. The
+    // ctor stays internal; production code constructs through the
+    // public overload above. Behaviour is identical otherwise.
+    internal MockRegistry(ILogger<MockRegistry> logger, string mocksDir)
     {
         _logger = logger;
-        _mocksDir = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
-            ".bowire", "mocks");
+        _mocksDir = mocksDir;
     }
 
     /// <summary>
