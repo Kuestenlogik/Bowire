@@ -89,9 +89,9 @@ public sealed class NucleiTemplateReaderTests
             """;
         var template = NucleiTemplateReader.ReadText(yaml);
         var http = Assert.Single(template.Http);
-        Assert.True(http.Payloads.ContainsKey("file"));
-        Assert.Equal(3, http.Payloads["file"].Count);
-        Assert.Contains(".env", http.Payloads["file"]);
+        Assert.True(http.Payloads.TryGetValue("file", out var filePayloads));
+        Assert.Equal(3, filePayloads!.Count);
+        Assert.Contains(".env", filePayloads);
     }
 
     [Fact]
