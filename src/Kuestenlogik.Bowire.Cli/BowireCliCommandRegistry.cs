@@ -38,15 +38,18 @@ public sealed class BowireCliCommandRegistry
             : new HashSet<string>(disabledCommandIds, StringComparer.OrdinalIgnoreCase);
 
         var registry = new BowireCliCommandRegistry();
-        foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
+        var bowireAssemblies = AppDomain.CurrentDomain
+            .GetAssemblies()
+            .Where(a => a.FullName?.Contains("Bowire") == true);
+        foreach (var assembly in bowireAssemblies)
         {
-            if (assembly.FullName?.Contains("Bowire") != true) continue;
             try
             {
-                foreach (var type in assembly.GetTypes())
+                var commandTypes = assembly.GetTypes()
+                    .Where(t => !t.IsAbstract && !t.IsInterface)
+                    .Where(typeof(IBowireCliCommand).IsAssignableFrom);
+                foreach (var type in commandTypes)
                 {
-                    if (type.IsAbstract || type.IsInterface) continue;
-                    if (!typeof(IBowireCliCommand).IsAssignableFrom(type)) continue;
                     if (Activator.CreateInstance(type) is IBowireCliCommand command)
                     {
                         if (disabled.Contains(command.Id))
