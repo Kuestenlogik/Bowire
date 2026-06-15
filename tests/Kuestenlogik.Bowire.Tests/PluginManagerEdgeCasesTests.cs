@@ -55,7 +55,7 @@ public sealed class PluginManagerEdgeCasesTests : IDisposable
     /// cheapest way to exercise the LoadFromAssemblyPath success branch.
     /// </summary>
     private static string ProbePluginDll =>
-        Path.Combine(TestBin, "Kuestenlogik.Bowire.Protocol.OData.dll");
+        SafePath.Combine(TestBin, "Kuestenlogik.Bowire.Protocol.OData.dll");
 
     [Fact]
     public void LoadPlugins_SecondCallOnSameDir_ReportsAlreadyLoaded()
@@ -66,13 +66,13 @@ public sealed class PluginManagerEdgeCasesTests : IDisposable
         // Guards against the duplicate-context regression where every
         // subsequent embedded-host startup would double-register every
         // protocol.
-        var pluginSub = Path.Combine(_tempDir, "Already.Loaded.Edge");
+        var pluginSub = SafePath.Combine(_tempDir, "Already.Loaded.Edge");
         Directory.CreateDirectory(pluginSub);
         // No manifest dll — first call reports ManifestMissing, but the
         // subdir is *not* added to s_loadedSubdirs in that path (the
         // ManifestMissing branch removes it). So we need an actual
         // manifest to land in s_loadedSubdirs.
-        File.Copy(ProbePluginDll, Path.Combine(pluginSub, "Already.Loaded.Edge.dll"));
+        File.Copy(ProbePluginDll, SafePath.Combine(pluginSub, "Already.Loaded.Edge.dll"));
 
         var first = PluginManager.LoadPlugins(_tempDir);
         var firstEntry = Assert.Single(first, r => r.PackageId == "Already.Loaded.Edge");
@@ -93,9 +93,9 @@ public sealed class PluginManagerEdgeCasesTests : IDisposable
         // as "wrong major". The loader must NOT call LoadFromAssemblyPath
         // — it must short-circuit with PluginLoadStatus.ContractMajorMismatch
         // and surface an actionable error mentioning the plugin id.
-        var pluginSub = Path.Combine(_tempDir, "Bad.Major.Plug");
+        var pluginSub = SafePath.Combine(_tempDir, "Bad.Major.Plug");
         Directory.CreateDirectory(pluginSub);
-        File.Copy(ProbePluginDll, Path.Combine(pluginSub, "Bad.Major.Plug.dll"));
+        File.Copy(ProbePluginDll, SafePath.Combine(pluginSub, "Bad.Major.Plug.dll"));
 
         var originalOverride = PluginManifestProbe.HostVersionOverride;
         try
@@ -127,9 +127,9 @@ public sealed class PluginManagerEdgeCasesTests : IDisposable
         // — which throws BadImageFormatException. The catch must surface
         // PluginLoadStatus.AssemblyLoadFailed with a message naming the
         // failing manifest file.
-        var pluginSub = Path.Combine(_tempDir, "Corrupt.Manifest");
+        var pluginSub = SafePath.Combine(_tempDir, "Corrupt.Manifest");
         Directory.CreateDirectory(pluginSub);
-        var manifest = Path.Combine(pluginSub, "Corrupt.Manifest.dll");
+        var manifest = SafePath.Combine(pluginSub, "Corrupt.Manifest.dll");
         // Bytes that fail every PE-header check.
         File.WriteAllBytes(manifest, [0x00, 0x01, 0x02, 0x03, 0x04, 0x05]);
 
@@ -148,7 +148,7 @@ public sealed class PluginManagerEdgeCasesTests : IDisposable
         // PluginManager.LastLoadResults — it has to match whatever
         // LoadPlugins last returned so the panel doesn't drift from the
         // loader's view.
-        var pluginSub = Path.Combine(_tempDir, "LastLoad.Snapshot");
+        var pluginSub = SafePath.Combine(_tempDir, "LastLoad.Snapshot");
         Directory.CreateDirectory(pluginSub);
         // No manifest dll — ManifestMissing path produces a record.
         var returned = PluginManager.LoadPlugins(_tempDir);
@@ -170,10 +170,10 @@ public sealed class PluginManagerEdgeCasesTests : IDisposable
         // and FindImplementationsOf<IBowireProtocol> walks the loaded
         // types, finds the concrete BowireODataProtocol, and the print
         // loop (lines 918-925) fires.
-        var pluginSub = Path.Combine(_tempDir, "OData");
+        var pluginSub = SafePath.Combine(_tempDir, "OData");
         Directory.CreateDirectory(pluginSub);
-        File.Copy(ProbePluginDll, Path.Combine(pluginSub, "OData.dll"));
-        File.WriteAllText(Path.Combine(pluginSub, "plugin.json"),
+        File.Copy(ProbePluginDll, SafePath.Combine(pluginSub, "OData.dll"));
+        File.WriteAllText(SafePath.Combine(pluginSub, "plugin.json"),
             """
             {
               "packageId": "OData",
@@ -210,9 +210,9 @@ public sealed class PluginManagerEdgeCasesTests : IDisposable
         // BowireODataProtocol : IBowireProtocol, so the
         // Activator.CreateInstance + Add branch (lines 1165-1167)
         // executes.
-        var pluginSub = Path.Combine(_tempDir, "Enum.OData");
+        var pluginSub = SafePath.Combine(_tempDir, "Enum.OData");
         Directory.CreateDirectory(pluginSub);
-        File.Copy(ProbePluginDll, Path.Combine(pluginSub, "Enum.OData.dll"));
+        File.Copy(ProbePluginDll, SafePath.Combine(pluginSub, "Enum.OData.dll"));
 
         PluginManager.LoadPlugins(_tempDir);
 
@@ -237,9 +237,9 @@ public sealed class PluginManagerEdgeCasesTests : IDisposable
         // Direct test for the PluginLoadStatus.Loaded path — separate
         // from Inspect so a failure here points squarely at LoadPlugins
         // instead of at the inspect-side enumeration.
-        var pluginSub = Path.Combine(_tempDir, "Success.Load");
+        var pluginSub = SafePath.Combine(_tempDir, "Success.Load");
         Directory.CreateDirectory(pluginSub);
-        File.Copy(ProbePluginDll, Path.Combine(pluginSub, "Success.Load.dll"));
+        File.Copy(ProbePluginDll, SafePath.Combine(pluginSub, "Success.Load.dll"));
 
         var results = PluginManager.LoadPlugins(_tempDir);
         var entry = Assert.Single(results, r => r.PackageId == "Success.Load");
@@ -259,7 +259,7 @@ public sealed class PluginManagerEdgeCasesTests : IDisposable
     /// </summary>
     private async Task<string> MakeSidecarZipAsync(string manifestJson, string? executableName = "fake-sidecar.sh")
     {
-        var zipPath = Path.Combine(_tempDir, "sidecar-" + Guid.NewGuid().ToString("N") + ".zip");
+        var zipPath = SafePath.Combine(_tempDir, "sidecar-" + Guid.NewGuid().ToString("N") + ".zip");
         await using var fs = File.Create(zipPath);
         using (var archive = new ZipArchive(fs, ZipArchiveMode.Create, leaveOpen: false))
         {
@@ -297,7 +297,7 @@ public sealed class PluginManagerEdgeCasesTests : IDisposable
     public async Task InstallSidecarFromZipAsync_LocalFileMissing_ReturnsErrorExit()
     {
         var rc = await PluginManager.InstallSidecarFromZipAsync(
-            Path.Combine(_tempDir, "no-such.zip"),
+            SafePath.Combine(_tempDir, "no-such.zip"),
             pluginDir: _tempDir,
             ct: TestContext.Current.CancellationToken);
         Assert.Equal(1, rc);
@@ -309,7 +309,7 @@ public sealed class PluginManagerEdgeCasesTests : IDisposable
         // The peek-manifest branch wraps the read in a try/catch that
         // catches InvalidDataException — exercises the "not a valid zip"
         // diagnostic line.
-        var bogus = Path.Combine(_tempDir, "bogus.zip");
+        var bogus = SafePath.Combine(_tempDir, "bogus.zip");
         await File.WriteAllTextAsync(bogus, "definitely not a zip",
             TestContext.Current.CancellationToken);
 
@@ -331,7 +331,7 @@ public sealed class PluginManagerEdgeCasesTests : IDisposable
         // the manifest-less zip via MakeSidecarZip with a null manifest
         // and a placeholder executable so the assertion holds even on a
         // future analyzer rule that flags the bare ZipArchive ctor.
-        var zipPath = Path.Combine(_tempDir, "manifest-less-" + Guid.NewGuid().ToString("N") + ".zip");
+        var zipPath = SafePath.Combine(_tempDir, "manifest-less-" + Guid.NewGuid().ToString("N") + ".zip");
         await using (var fs = File.Create(zipPath))
         {
             using var archive = new ZipArchive(fs, ZipArchiveMode.Create, leaveOpen: false);
@@ -382,7 +382,7 @@ public sealed class PluginManagerEdgeCasesTests : IDisposable
         // installed" guard fires AFTER the manifest peek but BEFORE the
         // extract. Pins both the order of operations and the user-facing
         // hint that points at `bowire plugin uninstall`.
-        Directory.CreateDirectory(Path.Combine(_tempDir, "Sidecar.Dupe"));
+        Directory.CreateDirectory(SafePath.Combine(_tempDir, "Sidecar.Dupe"));
         var zipPath = await MakeSidecarZipAsync(
             """
             {
@@ -435,9 +435,9 @@ public sealed class PluginManagerEdgeCasesTests : IDisposable
         Assert.Contains("protocol 'happy-proto'", output, StringComparison.Ordinal);
 
         // Files on disk match what the zip carried.
-        var pluginDir = Path.Combine(_tempDir, "Acme.Happy.Sidecar");
-        Assert.True(File.Exists(Path.Combine(pluginDir, "sidecar.json")));
-        Assert.True(File.Exists(Path.Combine(pluginDir, "fake-sidecar.sh")));
+        var pluginDir = SafePath.Combine(_tempDir, "Acme.Happy.Sidecar");
+        Assert.True(File.Exists(SafePath.Combine(pluginDir, "sidecar.json")));
+        Assert.True(File.Exists(SafePath.Combine(pluginDir, "fake-sidecar.sh")));
     }
 
     [Fact]
@@ -503,9 +503,9 @@ public sealed class PluginManagerEdgeCasesTests : IDisposable
         // id, name, executable, and a comma-joined relative-file listing.
         // No existing test hits this branch — List_Tags_Sidecar_And_Nuget_Kinds
         // covers the non-verbose path only.
-        var pluginSub = Path.Combine(_tempDir, "Acme.Verbose.Sidecar");
+        var pluginSub = SafePath.Combine(_tempDir, "Acme.Verbose.Sidecar");
         Directory.CreateDirectory(pluginSub);
-        File.WriteAllText(Path.Combine(pluginSub, "sidecar.json"),
+        File.WriteAllText(SafePath.Combine(pluginSub, "sidecar.json"),
             """
             {
               "packageId": "Acme.Verbose.Sidecar",
@@ -515,8 +515,8 @@ public sealed class PluginManagerEdgeCasesTests : IDisposable
             }
             """);
         // Two extra files so the file-list line has interesting content.
-        File.WriteAllText(Path.Combine(pluginSub, "fake-sidecar.sh"), "#!/bin/sh");
-        File.WriteAllText(Path.Combine(pluginSub, "README.md"), "stub");
+        File.WriteAllText(SafePath.Combine(pluginSub, "fake-sidecar.sh"), "#!/bin/sh");
+        File.WriteAllText(SafePath.Combine(pluginSub, "README.md"), "stub");
 
         using var sw = new StringWriter();
         var rc = PluginManager.List(_tempDir, verbose: true, stdout: sw, stderr: TextWriter.Null);
@@ -538,9 +538,9 @@ public sealed class PluginManagerEdgeCasesTests : IDisposable
         // Sidecar without a version field → the formatter substitutes a
         // U+2014 em-dash so the column stays aligned. Drives the
         // ternary in the verbose-sidecar branch.
-        var pluginSub = Path.Combine(_tempDir, "NoVer.Sidecar");
+        var pluginSub = SafePath.Combine(_tempDir, "NoVer.Sidecar");
         Directory.CreateDirectory(pluginSub);
-        File.WriteAllText(Path.Combine(pluginSub, "sidecar.json"),
+        File.WriteAllText(SafePath.Combine(pluginSub, "sidecar.json"),
             """
             {
               "packageId": "NoVer.Sidecar",
@@ -610,8 +610,8 @@ public sealed class PluginManagerEdgeCasesTests : IDisposable
             Assert.Contains("Downloading " + prefix + "sidecar.zip", output, StringComparison.Ordinal);
             Assert.Contains("Installed sidecar Acme.Http.Sidecar 2.0.0", output, StringComparison.Ordinal);
             // The extracted plugin dir must exist with the manifest + exe.
-            var pluginDir = Path.Combine(_tempDir, "Acme.Http.Sidecar");
-            Assert.True(File.Exists(Path.Combine(pluginDir, "sidecar.json")));
+            var pluginDir = SafePath.Combine(_tempDir, "Acme.Http.Sidecar");
+            Assert.True(File.Exists(SafePath.Combine(pluginDir, "sidecar.json")));
         }
         finally
         {
