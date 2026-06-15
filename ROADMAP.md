@@ -12,7 +12,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.0 — Re-architected workbench shell + workspace = project folder
 
-**54/63 done** · 9 backlog
+**55/63 done** · 8 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -21,7 +21,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [195](https://github.com/Kuestenlogik/Bowire/issues/195) | Bowire | [Protocol plugin — OTLP passive listener (Kuestenlogik.Bowire.Protocol.Otlp)](#issue-kuestenlogik-bowire-195) | ⬜ Open |  |
 | [196](https://github.com/Kuestenlogik/Bowire/issues/196) | Bowire | [Git-backed workspaces Phase 2 — Kuestenlogik.Bowire.Workspace.Git runtime + FS-watch + secret merge](#issue-kuestenlogik-bowire-196) | ⬜ Open |  |
 | [197](https://github.com/Kuestenlogik/Bowire/issues/197) | Bowire | [Deprecate + unlist Kuestenlogik.Bowire.Extension.MapLibre on nuget.org after v2.0 ships](#issue-kuestenlogik-bowire-197) | ⬜ Open |  |
-| [209](https://github.com/Kuestenlogik/Bowire/issues/209) | Bowire | [Workspace file extension: rename .blw → .bww](#issue-kuestenlogik-bowire-209) | ⬜ Open |  |
 | [210](https://github.com/Kuestenlogik/Bowire/issues/210) | Bowire | [Standalone recording format .bwr — self-contained, workspace-agnostic](#issue-kuestenlogik-bowire-210) | ⬜ Open |  |
 | [211](https://github.com/Kuestenlogik/Bowire/issues/211) | Bowire | [bowire mock <recording.bwr> — HTTP replay server from a recording](#issue-kuestenlogik-bowire-211) | ⬜ Open |  |
 | [212](https://github.com/Kuestenlogik/Bowire/issues/212) | Bowire | [Workspace storage mode — workspace-level field (precursor to #196)](#issue-kuestenlogik-bowire-212) | ⬜ Open |  |
@@ -79,6 +78,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [168](https://github.com/Kuestenlogik/Bowire/issues/168) | Bowire | [Workbench-wide action log with undo / redo (Ctrl+Z)](#issue-kuestenlogik-bowire-168) | ✅ Done |  |
 | [169](https://github.com/Kuestenlogik/Bowire/issues/169) | Bowire | [Hint dismiss pattern — "Don't show again" + Settings restore](#issue-kuestenlogik-bowire-169) | ✅ Done |  |
 | [192](https://github.com/Kuestenlogik/Bowire/issues/192) | Bowire | [Workspace + Settings: sidebar tree navigation (MudBlazor TreeView / NavMenu style)](#issue-kuestenlogik-bowire-192) | ✅ Done |  |
+| [209](https://github.com/Kuestenlogik/Bowire/issues/209) | Bowire | [Workspace file extension: rename .blw → .bww](#issue-kuestenlogik-bowire-209) | ✅ Done |  |
 
 ### v2.1 — Scripting, variable resolver, throughput surface
 
@@ -214,10 +214,6 @@ Phase 1 (#147-#149-#151) shipped in eb2bf1c: `BowireUserContext.GetWorkspacePath
 #### <a id="issue-kuestenlogik-bowire-197"></a>⬜ Open · [#197](https://github.com/Kuestenlogik/Bowire/issues/197) Deprecate + unlist Kuestenlogik.Bowire.Extension.MapLibre on nuget.org after v2.0 ships
 
 `Kuestenlogik.Bowire.Extension.MapLibre` 1.3.0-rc.1 was renamed to `Kuestenlogik.Bowire.Map` ahead of v2.0 (commit 75c8d1f). … [[more]](https://github.com/Kuestenlogik/Bowire/issues/197)
-
-#### <a id="issue-kuestenlogik-bowire-209"></a>⬜ Open · [#209](https://github.com/Kuestenlogik/Bowire/issues/209) Workspace file extension: rename .blw → .bww
-
-@-
 
 #### <a id="issue-kuestenlogik-bowire-210"></a>⬜ Open · [#210](https://github.com/Kuestenlogik/Bowire/issues/210) Standalone recording format .bwr — self-contained, workspace-agnostic
 
@@ -452,6 +448,10 @@ The workbench has several "this is a hint / warning" surfaces, each with its own
 #### <a id="issue-kuestenlogik-bowire-192"></a>✅ Done · [#192](https://github.com/Kuestenlogik/Bowire/issues/192) Workspace + Settings: sidebar tree navigation (MudBlazor TreeView / NavMenu style)
 
 Workspace-related navigation is slow and indirect today: [[more]](https://github.com/Kuestenlogik/Bowire/issues/192)
+
+#### <a id="issue-kuestenlogik-bowire-209"></a>✅ Done · [#209](https://github.com/Kuestenlogik/Bowire/issues/209) Workspace file extension: rename .blw → .bww
+
+@-
 
 ### v2.1 — Scripting, variable resolver, throughput surface
 
