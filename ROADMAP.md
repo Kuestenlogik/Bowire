@@ -10,9 +10,9 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ## Overview
 
-### v2.0 — Re-architected workbench shell + workspace = project folder
+### v2.0 — Re-architected workbench shell + workspace = project folder *(due 2026-06-19)*
 
-**55/63 done** · 8 backlog
+**56/64 done** · 8 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -44,6 +44,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [122](https://github.com/Kuestenlogik/Bowire/issues/122) | Bowire | [Direction-color + protocol-glyph (two-axis encoding)](#issue-kuestenlogik-bowire-122) | ✅ Done |  |
 | [123](https://github.com/Kuestenlogik/Bowire/issues/123) | Bowire | [Workbench tabs that carry protocol-typed state](#issue-kuestenlogik-bowire-123) | ✅ Done |  |
 | [124](https://github.com/Kuestenlogik/Bowire/issues/124) | Bowire | [Cross-protocol omnibox (Cmd/Ctrl+K)](#issue-kuestenlogik-bowire-124) | ✅ Done |  |
+| [125](https://github.com/Kuestenlogik/Bowire/issues/125) | Bowire | [Multi-source {{...}} variable resolver](#issue-kuestenlogik-bowire-125) | ✅ Done |  |
 | [127](https://github.com/Kuestenlogik/Bowire/issues/127) | Bowire | [Auto-save to workspace + live save-state pill](#issue-kuestenlogik-bowire-127) | ✅ Done |  |
 | [129](https://github.com/Kuestenlogik/Bowire/issues/129) | Bowire | [Layout cleanup — top bar, sidebar, main pane, drawers (left-sidebar model stays)](#issue-kuestenlogik-bowire-129) | ✅ Done |  |
 | [133](https://github.com/Kuestenlogik/Bowire/issues/133) | Bowire | [Activity rail (left) — switch workbench focus by use case (dev / security / perf / mocks / …)](#issue-kuestenlogik-bowire-133) | ✅ Done |  |
@@ -80,9 +81,9 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [192](https://github.com/Kuestenlogik/Bowire/issues/192) | Bowire | [Workspace + Settings: sidebar tree navigation (MudBlazor TreeView / NavMenu style)](#issue-kuestenlogik-bowire-192) | ✅ Done |  |
 | [209](https://github.com/Kuestenlogik/Bowire/issues/209) | Bowire | [Workspace file extension: rename .blw → .bww](#issue-kuestenlogik-bowire-209) | ✅ Done |  |
 
-### v2.1 — Scripting, variable resolver, throughput surface
+### v2.1 — Scripting, variable resolver, throughput surface *(due 2026-06-30)*
 
-**1/11 done** · 10 backlog
+**0/10 done** · 10 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -96,9 +97,8 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [145](https://github.com/Kuestenlogik/Bowire/issues/145) | Bowire | [Deprecate ${name} in favour of {{name}} (multi-phase migration)](#issue-kuestenlogik-bowire-145) | ⬜ Open |  |
 | [153](https://github.com/Kuestenlogik/Bowire/issues/153) | Bowire | [Bowire as transparent interceptor — embedded middleware + standalone reverse-proxy](#issue-kuestenlogik-bowire-153) | ⬜ Open |  |
 | [194](https://github.com/Kuestenlogik/Bowire/issues/194) | Bowire | [Action log Phase 2 — remaining mutation sites + cross-reload undo + soft-delete workspaces](#issue-kuestenlogik-bowire-194) | ⬜ Open |  |
-| [125](https://github.com/Kuestenlogik/Bowire/issues/125) | Bowire | [Multi-source {{...}} variable resolver](#issue-kuestenlogik-bowire-125) | ✅ Done |  |
 
-### v2.2 — Test pillar: assertions, CI runner, regression coverage
+### v2.2 — Test pillar: assertions, CI runner, regression coverage *(due 2026-07-10)*
 
 **0/9 done** · 9 backlog
 
@@ -114,7 +114,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [191](https://github.com/Kuestenlogik/Bowire/issues/191) | Bowire | [Contract testing — Pact-style publish / verify CLI](#issue-kuestenlogik-bowire-191) | ⬜ Open |  |
 | [208](https://github.com/Kuestenlogik/Bowire/issues/208) | Bowire | [Variable resolver — Phase 5: OS keyring + AI re-roll + streaming](#issue-kuestenlogik-bowire-208) | ⬜ Open |  |
 
-### v2.3 — Security pillar: shift-left scanner, OWASP coverage, auth recording
+### v2.3 — Security pillar: shift-left scanner, OWASP coverage, auth recording *(due 2026-07-24)*
 
 **0/16 done** · 1 in progress · 15 backlog
 
@@ -137,7 +137,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [187](https://github.com/Kuestenlogik/Bowire/issues/187) | Bowire | [CVE lookup for discovered servers — fill Bowire.VulnDb](#issue-kuestenlogik-bowire-187) | ⬜ Open |  |
 | [190](https://github.com/Kuestenlogik/Bowire/issues/190) | Bowire | [Authentication session recording + token reuse](#issue-kuestenlogik-bowire-190) | ⬜ Open |  |
 
-### v2.4 — Dev pillar: schema watch diff, mock-from-schema, side-by-side
+### v2.4 — Dev pillar: schema watch diff, mock-from-schema, side-by-side *(due 2026-08-03)*
 
 **0/9 done** · 9 backlog
 
@@ -153,7 +153,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [185](https://github.com/Kuestenlogik/Bowire/issues/185) | Bowire | [Schema-watch diff view — show what changed since last visit](#issue-kuestenlogik-bowire-185) | ⬜ Open |  |
 | [189](https://github.com/Kuestenlogik/Bowire/issues/189) | Bowire | [API design-time validation — typed rule engine over schemas](#issue-kuestenlogik-bowire-189) | ⬜ Open |  |
 
-### v2.5 — Continuous integration: PR bot, project file, org dashboard
+### v2.5 — Continuous integration: PR bot, project file, org dashboard *(due 2026-08-12)*
 
 **0/4 done** · 4 backlog
 
@@ -193,7 +193,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ## Details
 
-### v2.0 — Re-architected workbench shell + workspace = project folder
+### v2.0 — Re-architected workbench shell + workspace = project folder *(due 2026-06-19)*
 
 #### <a id="issue-kuestenlogik-bowire-115"></a>⬜ Open · [#115](https://github.com/Kuestenlogik/Bowire/issues/115) v2.0 — UI refactor: re-architect the workbench shell
 
@@ -312,6 +312,10 @@ Today the workbench holds one active method at a time. Switching from "the REST 
 #### <a id="issue-kuestenlogik-bowire-124"></a>✅ Done · [#124](https://github.com/Kuestenlogik/Bowire/issues/124) Cross-protocol omnibox (Cmd/Ctrl+K)
 
 Bowire connects to several discovery URLs at once. Each one exposes many services. Each service has many methods. Then there are recordings, active mocks, plugin actions. Navigating between them today means: scroll the sidebar, find the service, expand it, scan for the method, click. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/124)
+
+#### <a id="issue-kuestenlogik-bowire-125"></a>✅ Done · [#125](https://github.com/Kuestenlogik/Bowire/issues/125) Multi-source {{...}} variable resolver
+
+Real API testing chains requests. The token from POST /auth gets used in the next 12 calls. The pet id from POST /pet feeds into GET /pet/{id}. The timestamp from one webhook becomes the input to another. Today the operator copy-pastes by hand between request panes. [[more]](https://github.com/Kuestenlogik/Bowire/issues/125)
 
 #### <a id="issue-kuestenlogik-bowire-127"></a>✅ Done · [#127](https://github.com/Kuestenlogik/Bowire/issues/127) Auto-save to workspace + live save-state pill
 
@@ -453,7 +457,7 @@ Workspace-related navigation is slow and indirect today: [[more]](https://github
 
 @-
 
-### v2.1 — Scripting, variable resolver, throughput surface
+### v2.1 — Scripting, variable resolver, throughput surface *(due 2026-06-30)*
 
 #### <a id="issue-kuestenlogik-bowire-117"></a>⬜ Open · [#117](https://github.com/Kuestenlogik/Bowire/issues/117) i18n — extract every UI string; ship DE + EN catalogues
 
@@ -495,11 +499,7 @@ Today Bowire watches traffic in two narrow ways: - **Discover / Recording / Benc
 
 Phase 1 shipped in e084bc3 — central `actionLog`, Statusbar pill, Activity drawer tab, Ctrl/Cmd+Z / Ctrl/Cmd+Shift+Z global shortcuts, `toast({undo, logAction})` helper. The first five mutation sites (collection-delete, flow-delete, env-delete, history-clear, favorites-clear) write to the log. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/194)
 
-#### <a id="issue-kuestenlogik-bowire-125"></a>✅ Done · [#125](https://github.com/Kuestenlogik/Bowire/issues/125) Multi-source {{...}} variable resolver
-
-Real API testing chains requests. The token from POST /auth gets used in the next 12 calls. The pet id from POST /pet feeds into GET /pet/{id}. The timestamp from one webhook becomes the input to another. Today the operator copy-pastes by hand between request panes. [[more]](https://github.com/Kuestenlogik/Bowire/issues/125)
-
-### v2.2 — Test pillar: assertions, CI runner, regression coverage
+### v2.2 — Test pillar: assertions, CI runner, regression coverage *(due 2026-07-10)*
 
 #### <a id="issue-kuestenlogik-bowire-38"></a>⬜ Backlog · [#38](https://github.com/Kuestenlogik/Bowire/issues/38) CLI — Phase 3 polish (completion + validators + error rendering)
 
@@ -539,7 +539,7 @@ Microservice teams break each other when one team changes an API without consult
 
 @-
 
-### v2.3 — Security pillar: shift-left scanner, OWASP coverage, auth recording
+### v2.3 — Security pillar: shift-left scanner, OWASP coverage, auth recording *(due 2026-07-24)*
 
 #### <a id="issue-kuestenlogik-bowire-26"></a>🟡 In progress · [#26](https://github.com/Kuestenlogik/Bowire/issues/26) Security testing tool — remaining tiers
 
@@ -611,7 +611,7 @@ Bowire knows what protocol it's talking to and often what server (Envoy, NGINX, 
 
 Modern API auth is multi-step: hit `/login`, get a session cookie, hit `/refresh`, get a JWT, use the JWT on every subsequent call. Today Bowire has Auth-Configuration (mTLS, basic, bearer-static) but no understanding of FLOWS. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/190)
 
-### v2.4 — Dev pillar: schema watch diff, mock-from-schema, side-by-side
+### v2.4 — Dev pillar: schema watch diff, mock-from-schema, side-by-side *(due 2026-08-03)*
 
 #### <a id="issue-kuestenlogik-bowire-34"></a>⬜ Backlog · [#34](https://github.com/Kuestenlogik/Bowire/issues/34) AsyncAPI discovery source — remaining bindings + V2 overloads + YAML pre-normaliser
 
@@ -657,7 +657,7 @@ Bowire already has Schema-Watch (#138) that re-runs discovery on a configurable 
 
 Most API design issues — inconsistent naming, returning passwords, returning unbounded result lists, missing pagination, missing versioning — are caught by code review IF the reviewer is sharp. They scale exactly with reviewer attention, which doesn't scale. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/189)
 
-### v2.5 — Continuous integration: PR bot, project file, org dashboard
+### v2.5 — Continuous integration: PR bot, project file, org dashboard *(due 2026-08-12)*
 
 #### <a id="issue-kuestenlogik-bowire-101"></a>⬜ Open · [#101](https://github.com/Kuestenlogik/Bowire/issues/101) Tugboat — VS Code + JetBrains workbench extension
 
