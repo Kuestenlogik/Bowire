@@ -41,13 +41,13 @@ public sealed class PluginManagerAdditionalCoverageTests : IDisposable
         // version != resolvedVersion → the "requested:/resolved:" diff
         // branch runs. files=[..] → the DLL-list line at the end of the
         // foreach body runs too.
-        var pluginSub = Path.Combine(_tempDir, "diff-plugin");
+        var pluginSub = SafePath.Combine(_tempDir, "diff-plugin");
         Directory.CreateDirectory(pluginSub);
         // Write a minimal "DLL" placeholder so the GetFiles("*.dll") walk
         // returns something — Directory.GetFiles doesn't read the file
         // contents, so a single-byte PE-shaped placeholder is enough.
-        File.WriteAllBytes(Path.Combine(pluginSub, "Stub.dll"), [0x4D, 0x5A]);
-        File.WriteAllText(Path.Combine(pluginSub, "plugin.json"),
+        File.WriteAllBytes(SafePath.Combine(pluginSub, "Stub.dll"), [0x4D, 0x5A]);
+        File.WriteAllText(SafePath.Combine(pluginSub, "plugin.json"),
             """
             {
               "packageId": "diff-plugin",
@@ -68,9 +68,9 @@ public sealed class PluginManagerAdditionalCoverageTests : IDisposable
         // Metadata only carries `version` (older installer); the diff
         // branch is gated on a non-empty ResolvedVersion so it's skipped.
         // Confirms the fallback in DisplayVersion + Sources empty path.
-        var pluginSub = Path.Combine(_tempDir, "no-resolved");
+        var pluginSub = SafePath.Combine(_tempDir, "no-resolved");
         Directory.CreateDirectory(pluginSub);
-        File.WriteAllText(Path.Combine(pluginSub, "plugin.json"),
+        File.WriteAllText(SafePath.Combine(pluginSub, "plugin.json"),
             """
             {
               "packageId": "no-resolved",
@@ -88,9 +88,9 @@ public sealed class PluginManagerAdditionalCoverageTests : IDisposable
         // 1.1.0 → ResolveAsync returns the newer version → diff vs.
         // installed triggers the "Updating … -> …" path → directory
         // delete + InstallAsync writes the new copy → exit 0.
-        var pluginSub = Path.Combine(_tempDir, "Up.Plugin");
+        var pluginSub = SafePath.Combine(_tempDir, "Up.Plugin");
         Directory.CreateDirectory(pluginSub);
-        await File.WriteAllTextAsync(Path.Combine(pluginSub, "plugin.json"),
+        await File.WriteAllTextAsync(SafePath.Combine(pluginSub, "plugin.json"),
             """
             {
               "packageId": "Up.Plugin",
@@ -101,14 +101,14 @@ public sealed class PluginManagerAdditionalCoverageTests : IDisposable
             """,
             TestContext.Current.CancellationToken);
 
-        var feedDir = Path.Combine(_tempDir, "feed");
+        var feedDir = SafePath.Combine(_tempDir, "feed");
         Directory.CreateDirectory(feedDir);
         await File.WriteAllBytesAsync(
-            Path.Combine(feedDir, "up.plugin.1.0.0.nupkg"),
+            SafePath.Combine(feedDir, "up.plugin.1.0.0.nupkg"),
             NuGetPackageInstallerTests_NupkgFactory.NoDeps("Up.Plugin", "1.0.0"),
             TestContext.Current.CancellationToken);
         await File.WriteAllBytesAsync(
-            Path.Combine(feedDir, "up.plugin.1.1.0.nupkg"),
+            SafePath.Combine(feedDir, "up.plugin.1.1.0.nupkg"),
             NuGetPackageInstallerTests_NupkgFactory.NoDeps("Up.Plugin", "1.1.0"),
             TestContext.Current.CancellationToken);
 
@@ -119,7 +119,7 @@ public sealed class PluginManagerAdditionalCoverageTests : IDisposable
         Assert.Equal(0, rc);
 
         // After the update the plugin.json should reflect 1.1.0.
-        var meta = await File.ReadAllTextAsync(Path.Combine(pluginSub, "plugin.json"),
+        var meta = await File.ReadAllTextAsync(SafePath.Combine(pluginSub, "plugin.json"),
             TestContext.Current.CancellationToken);
         Assert.Contains("1.1.0", meta, StringComparison.Ordinal);
     }
@@ -133,22 +133,22 @@ public sealed class PluginManagerAdditionalCoverageTests : IDisposable
         // installed version. Tolerate either exit (0 or 1) — the
         // important thing is the foreach + ResolveAsync path runs for
         // every subdir.
-        var feedDir = Path.Combine(_tempDir, "feed-all");
+        var feedDir = SafePath.Combine(_tempDir, "feed-all");
         Directory.CreateDirectory(feedDir);
         await File.WriteAllBytesAsync(
-            Path.Combine(feedDir, "alpha.1.0.0.nupkg"),
+            SafePath.Combine(feedDir, "alpha.1.0.0.nupkg"),
             NuGetPackageInstallerTests_NupkgFactory.NoDeps("Alpha", "1.0.0"),
             TestContext.Current.CancellationToken);
         await File.WriteAllBytesAsync(
-            Path.Combine(feedDir, "beta.2.0.0.nupkg"),
+            SafePath.Combine(feedDir, "beta.2.0.0.nupkg"),
             NuGetPackageInstallerTests_NupkgFactory.NoDeps("Beta", "2.0.0"),
             TestContext.Current.CancellationToken);
 
         foreach (var (id, ver) in new[] { ("Alpha", "1.0.0"), ("Beta", "2.0.0") })
         {
-            var dir = Path.Combine(_tempDir, id);
+            var dir = SafePath.Combine(_tempDir, id);
             Directory.CreateDirectory(dir);
-            await File.WriteAllTextAsync(Path.Combine(dir, "plugin.json"),
+            await File.WriteAllTextAsync(SafePath.Combine(dir, "plugin.json"),
                 $$"""
                 {
                   "packageId": "{{id}}",
@@ -173,9 +173,9 @@ public sealed class PluginManagerAdditionalCoverageTests : IDisposable
         // Drop a .dll-named file that's not a real PE. ALC.LoadFromAssemblyPath
         // throws BadImageFormatException → the per-DLL catch swallows it,
         // LoadPlugins keeps going for the next file / subdir.
-        var pluginSub = Path.Combine(_tempDir, "garbage");
+        var pluginSub = SafePath.Combine(_tempDir, "garbage");
         Directory.CreateDirectory(pluginSub);
-        File.WriteAllText(Path.Combine(pluginSub, "NotAnAssembly.dll"), "this is not a PE");
+        File.WriteAllText(SafePath.Combine(pluginSub, "NotAnAssembly.dll"), "this is not a PE");
 
         PluginManager.LoadPlugins(_tempDir);
     }
@@ -186,10 +186,10 @@ public sealed class PluginManagerAdditionalCoverageTests : IDisposable
         // Two subdirs: one empty, one with garbage. Both produce a load
         // context (BowirePluginLoadContext ctor takes a directory path)
         // but the second one's DLL fails to load and gets swallowed.
-        Directory.CreateDirectory(Path.Combine(_tempDir, "empty-plug"));
-        var withGarbage = Path.Combine(_tempDir, "garbage-plug");
+        Directory.CreateDirectory(SafePath.Combine(_tempDir, "empty-plug"));
+        var withGarbage = SafePath.Combine(_tempDir, "garbage-plug");
         Directory.CreateDirectory(withGarbage);
-        File.WriteAllBytes(Path.Combine(withGarbage, "Junk.dll"), [0x00, 0x01, 0x02]);
+        File.WriteAllBytes(SafePath.Combine(withGarbage, "Junk.dll"), [0x00, 0x01, 0x02]);
 
         PluginManager.LoadPlugins(_tempDir);
     }
@@ -201,10 +201,10 @@ public sealed class PluginManagerAdditionalCoverageTests : IDisposable
         // context still constructs, FindImplementationsOf catches
         // ReflectionTypeLoadException on the bad assembly via its
         // try/catch, exits with the "no Bowire contracts" message.
-        var pluginSub = Path.Combine(_tempDir, "inspect-garbage");
+        var pluginSub = SafePath.Combine(_tempDir, "inspect-garbage");
         Directory.CreateDirectory(pluginSub);
-        File.WriteAllBytes(Path.Combine(pluginSub, "Junk.dll"), [0x00, 0x01, 0x02]);
-        File.WriteAllText(Path.Combine(pluginSub, "plugin.json"),
+        File.WriteAllBytes(SafePath.Combine(pluginSub, "Junk.dll"), [0x00, 0x01, 0x02]);
+        File.WriteAllText(SafePath.Combine(pluginSub, "plugin.json"),
             """
             {
               "packageId": "inspect-garbage",
@@ -227,20 +227,20 @@ public sealed class PluginManagerAdditionalCoverageTests : IDisposable
         // throws → PluginManager.InstallFromFileAsync's catch deletes
         // the half-written plugin dir + prints "Failed to install …" +
         // returns 1.
-        var feed = Path.Combine(_tempDir, "feed-missing-dep");
+        var feed = SafePath.Combine(_tempDir, "feed-missing-dep");
         Directory.CreateDirectory(feed);
         await File.WriteAllBytesAsync(
-            Path.Combine(feed, "broken.root.1.0.0.nupkg"),
+            SafePath.Combine(feed, "broken.root.1.0.0.nupkg"),
             NuGetPackageInstallerTests_NupkgFactory.WithDep(
                 "Broken.Root", "1.0.0", "Ghost.Dep", "1.0.0"),
             TestContext.Current.CancellationToken);
-        var nupkg = Path.Combine(feed, "broken.root.1.0.0.nupkg");
+        var nupkg = SafePath.Combine(feed, "broken.root.1.0.0.nupkg");
 
         var rc = await PluginManager.InstallFromFileAsync(
             nupkg, pluginDir: _tempDir, sources: [feed],
             ct: TestContext.Current.CancellationToken);
         Assert.Equal(1, rc);
-        Assert.False(Directory.Exists(Path.Combine(_tempDir, "Broken.Root")));
+        Assert.False(Directory.Exists(SafePath.Combine(_tempDir, "Broken.Root")));
     }
 
     [Fact]
@@ -249,9 +249,9 @@ public sealed class PluginManagerAdditionalCoverageTests : IDisposable
         // plugin.json missing resolvedVersion → ReadResolvedVersion
         // falls through to the `version` branch; "latest" is filtered
         // out, a concrete pin survives.
-        var pluginSub = Path.Combine(_tempDir, "Fallback.Plug");
+        var pluginSub = SafePath.Combine(_tempDir, "Fallback.Plug");
         Directory.CreateDirectory(pluginSub);
-        await File.WriteAllTextAsync(Path.Combine(pluginSub, "plugin.json"),
+        await File.WriteAllTextAsync(SafePath.Combine(pluginSub, "plugin.json"),
             """
             {
               "packageId": "Fallback.Plug",
@@ -260,10 +260,10 @@ public sealed class PluginManagerAdditionalCoverageTests : IDisposable
             """,
             TestContext.Current.CancellationToken);
 
-        var feedDir = Path.Combine(_tempDir, "fallback-feed");
+        var feedDir = SafePath.Combine(_tempDir, "fallback-feed");
         Directory.CreateDirectory(feedDir);
         await File.WriteAllBytesAsync(
-            Path.Combine(feedDir, "fallback.plug.0.9.0.nupkg"),
+            SafePath.Combine(feedDir, "fallback.plug.0.9.0.nupkg"),
             NuGetPackageInstallerTests_NupkgFactory.NoDeps("Fallback.Plug", "0.9.0"),
             TestContext.Current.CancellationToken);
 
@@ -283,9 +283,9 @@ public sealed class PluginManagerAdditionalCoverageTests : IDisposable
         // method falls through to `version`. Even though the test
         // doesn't assert which branch ran, both lines execute on the
         // way to the install path.
-        var pluginSub = Path.Combine(_tempDir, "Unknown.Plug");
+        var pluginSub = SafePath.Combine(_tempDir, "Unknown.Plug");
         Directory.CreateDirectory(pluginSub);
-        await File.WriteAllTextAsync(Path.Combine(pluginSub, "plugin.json"),
+        await File.WriteAllTextAsync(SafePath.Combine(pluginSub, "plugin.json"),
             """
             {
               "packageId": "Unknown.Plug",
@@ -295,10 +295,10 @@ public sealed class PluginManagerAdditionalCoverageTests : IDisposable
             """,
             TestContext.Current.CancellationToken);
 
-        var feedDir = Path.Combine(_tempDir, "unknown-feed");
+        var feedDir = SafePath.Combine(_tempDir, "unknown-feed");
         Directory.CreateDirectory(feedDir);
         await File.WriteAllBytesAsync(
-            Path.Combine(feedDir, "unknown.plug.1.0.0.nupkg"),
+            SafePath.Combine(feedDir, "unknown.plug.1.0.0.nupkg"),
             NuGetPackageInstallerTests_NupkgFactory.NoDeps("Unknown.Plug", "1.0.0"),
             TestContext.Current.CancellationToken);
 
@@ -317,9 +317,9 @@ public sealed class PluginManagerAdditionalCoverageTests : IDisposable
         // returns null, the diff check treats installedVersion=null
         // as a fresh install → directory delete + reinstall via
         // InstallAsync.
-        var pluginSub = Path.Combine(_tempDir, "Latest.Plug");
+        var pluginSub = SafePath.Combine(_tempDir, "Latest.Plug");
         Directory.CreateDirectory(pluginSub);
-        await File.WriteAllTextAsync(Path.Combine(pluginSub, "plugin.json"),
+        await File.WriteAllTextAsync(SafePath.Combine(pluginSub, "plugin.json"),
             """
             {
               "packageId": "Latest.Plug",
@@ -328,10 +328,10 @@ public sealed class PluginManagerAdditionalCoverageTests : IDisposable
             """,
             TestContext.Current.CancellationToken);
 
-        var feedDir = Path.Combine(_tempDir, "latest-feed");
+        var feedDir = SafePath.Combine(_tempDir, "latest-feed");
         Directory.CreateDirectory(feedDir);
         await File.WriteAllBytesAsync(
-            Path.Combine(feedDir, "latest.plug.1.0.0.nupkg"),
+            SafePath.Combine(feedDir, "latest.plug.1.0.0.nupkg"),
             NuGetPackageInstallerTests_NupkgFactory.NoDeps("Latest.Plug", "1.0.0"),
             TestContext.Current.CancellationToken);
 
@@ -349,14 +349,14 @@ public sealed class PluginManagerAdditionalCoverageTests : IDisposable
         // BowireGrpcProtocol : IBowireProtocol) into a fake plugin
         // subdir. Inspect's FindImplementationsOf walk finds the
         // implementation and prints the "IBowireProtocol …" line.
-        var pluginSub = Path.Combine(_tempDir, "stub-with-impl");
+        var pluginSub = SafePath.Combine(_tempDir, "stub-with-impl");
         Directory.CreateDirectory(pluginSub);
         // Source DLL lives next to the test assembly so reading it
         // works regardless of the test runner's CWD.
         var here = Path.GetDirectoryName(typeof(PluginManagerAdditionalCoverageTests).Assembly.Location)!;
-        var src = Path.Combine(here, "Kuestenlogik.Bowire.Protocol.Grpc.dll");
-        File.Copy(src, Path.Combine(pluginSub, "Kuestenlogik.Bowire.Protocol.Grpc.dll"));
-        File.WriteAllText(Path.Combine(pluginSub, "plugin.json"),
+        var src = SafePath.Combine(here, "Kuestenlogik.Bowire.Protocol.Grpc.dll");
+        File.Copy(src, SafePath.Combine(pluginSub, "Kuestenlogik.Bowire.Protocol.Grpc.dll"));
+        File.WriteAllText(SafePath.Combine(pluginSub, "plugin.json"),
             """
             {
               "packageId": "stub-with-impl",
@@ -381,12 +381,12 @@ public sealed class PluginManagerAdditionalCoverageTests : IDisposable
         // enumerate against IBowireProtocol so the plugin contributes
         // a result the production EnumeratePluginServices walker can
         // observe.
-        var pluginSub = Path.Combine(_tempDir, "real-impl");
+        var pluginSub = SafePath.Combine(_tempDir, "real-impl");
         Directory.CreateDirectory(pluginSub);
         var here = Path.GetDirectoryName(typeof(PluginManagerAdditionalCoverageTests).Assembly.Location)!;
         File.Copy(
-            Path.Combine(here, "Kuestenlogik.Bowire.Protocol.Grpc.dll"),
-            Path.Combine(pluginSub, "Kuestenlogik.Bowire.Protocol.Grpc.dll"));
+            SafePath.Combine(here, "Kuestenlogik.Bowire.Protocol.Grpc.dll"),
+            SafePath.Combine(pluginSub, "Kuestenlogik.Bowire.Protocol.Grpc.dll"));
 
         PluginManager.LoadPlugins(_tempDir);
 
@@ -404,9 +404,9 @@ public sealed class PluginManagerAdditionalCoverageTests : IDisposable
         // Sources list populated → the "Sources:" line under the
         // load-context header fires; exercises the small foreach over
         // meta.Sources without needing a real load.
-        var pluginSub = Path.Combine(_tempDir, "with-sources");
+        var pluginSub = SafePath.Combine(_tempDir, "with-sources");
         Directory.CreateDirectory(pluginSub);
-        File.WriteAllText(Path.Combine(pluginSub, "plugin.json"),
+        File.WriteAllText(SafePath.Combine(pluginSub, "plugin.json"),
             """
             {
               "packageId": "with-sources",
