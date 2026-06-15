@@ -78,7 +78,7 @@ public class SidecarPluginManifestTests
     public void TryLoadFromFile_Returns_Null_For_Missing_File()
     {
         Assert.Null(SidecarPluginManifest.TryLoadFromFile(
-            Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"))));
+            SafePath.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"))));
     }
 
     [Fact]
@@ -96,15 +96,15 @@ public class SidecarPluginManifestTests
     [Fact]
     public void Discover_Returns_Empty_For_Missing_Root()
     {
-        var nonexistent = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
+        var nonexistent = SafePath.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
         Assert.Empty(SidecarPluginDiscovery.Discover(nonexistent));
     }
 
     [Fact]
     public void Discover_Skips_Subdirs_Without_Plugin_Json()
     {
-        var root = Path.Combine(Path.GetTempPath(), "bowire-sidecar-test-" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(Path.Combine(root, "no-manifest"));
+        var root = SafePath.Combine(Path.GetTempPath(), "bowire-sidecar-test-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(SafePath.Combine(root, "no-manifest"));
         try
         {
             Assert.Empty(SidecarPluginDiscovery.Discover(root));
@@ -115,12 +115,12 @@ public class SidecarPluginManifestTests
     [Fact]
     public void Discover_Skips_Manifest_Missing_Executable()
     {
-        var root = Path.Combine(Path.GetTempPath(), "bowire-sidecar-test-" + Guid.NewGuid().ToString("N"));
-        var sub = Path.Combine(root, "broken");
+        var root = SafePath.Combine(Path.GetTempPath(), "bowire-sidecar-test-" + Guid.NewGuid().ToString("N"));
+        var sub = SafePath.Combine(root, "broken");
         Directory.CreateDirectory(sub);
         try
         {
-            File.WriteAllText(Path.Combine(sub, "sidecar.json"),
+            File.WriteAllText(SafePath.Combine(sub, "sidecar.json"),
                 """{ "packageId":"X", "protocol":{"id":"x","name":"X"}, "executable":"" }""");
             Assert.Empty(SidecarPluginDiscovery.Discover(root));
         }
@@ -130,12 +130,12 @@ public class SidecarPluginManifestTests
     [Fact]
     public void Discover_Honours_Disabled_Set()
     {
-        var root = Path.Combine(Path.GetTempPath(), "bowire-sidecar-test-" + Guid.NewGuid().ToString("N"));
-        var sub = Path.Combine(root, "zenoh");
+        var root = SafePath.Combine(Path.GetTempPath(), "bowire-sidecar-test-" + Guid.NewGuid().ToString("N"));
+        var sub = SafePath.Combine(root, "zenoh");
         Directory.CreateDirectory(sub);
         try
         {
-            File.WriteAllText(Path.Combine(sub, "sidecar.json"),
+            File.WriteAllText(SafePath.Combine(sub, "sidecar.json"),
                 """{ "packageId":"X", "protocol":{"id":"zenoh","name":"Zenoh"}, "executable":"x" }""");
 
             var disabled = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "zenoh" };
@@ -147,16 +147,16 @@ public class SidecarPluginManifestTests
     [Fact]
     public void Discover_Surfaces_One_Sidecar_Per_Valid_Manifest()
     {
-        var root = Path.Combine(Path.GetTempPath(), "bowire-sidecar-test-" + Guid.NewGuid().ToString("N"));
-        var subA = Path.Combine(root, "plugin-a");
-        var subB = Path.Combine(root, "plugin-b");
+        var root = SafePath.Combine(Path.GetTempPath(), "bowire-sidecar-test-" + Guid.NewGuid().ToString("N"));
+        var subA = SafePath.Combine(root, "plugin-a");
+        var subB = SafePath.Combine(root, "plugin-b");
         Directory.CreateDirectory(subA);
         Directory.CreateDirectory(subB);
         try
         {
-            File.WriteAllText(Path.Combine(subA, "sidecar.json"),
+            File.WriteAllText(SafePath.Combine(subA, "sidecar.json"),
                 """{ "packageId":"A", "protocol":{"id":"a","name":"A"}, "executable":"a.exe" }""");
-            File.WriteAllText(Path.Combine(subB, "sidecar.json"),
+            File.WriteAllText(SafePath.Combine(subB, "sidecar.json"),
                 """{ "packageId":"B", "protocol":{"id":"b","name":"B"}, "executable":"b.exe" }""");
 
             var sidecars = SidecarPluginDiscovery.Discover(root);
