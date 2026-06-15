@@ -181,25 +181,28 @@ internal sealed class SidecarHttpTransport : ISidecarTransport
     public async ValueTask DisposeAsync()
     {
         // Best-effort tell the service we're leaving — it may ignore
-        // this (a shared service keeps running for other hosts).
+        // this (a shared service keeps running for other hosts). The
+        // sidecar shutdown is a best-effort hint; any failure (network
+        // error, timeout, refusal) is irrelevant during DisposeAsync.
+#pragma warning disable CA1031 // Do not catch general exception types
         try
         {
             using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(2));
             await RequestAsync("shutdown", null, cts.Token).ConfigureAwait(false);
         }
-        catch { /* swallow */ }
+        catch (Exception ex) { _ = ex; /* swallow */ }
+#pragma warning restore CA1031
 
         await _lifetime.CancelAsync().ConfigureAwait(false);
         if (_sseLoop is not null)
         {
+            // Best-effort wait for the SSE loop to observe our
+            // cancellation; the loop is already torn down, so any
+            // exception (cancel, network reset, &c) is irrelevant.
+#pragma warning disable CA1031 // Do not catch general exception types
             try { await _sseLoop.ConfigureAwait(false); }
-            catch (Exception ex)
-            {
-                // Best-effort wait for the SSE loop to observe our
-                // cancellation; the loop is already torn down, so any
-                // exception (cancel, network reset, &c) is irrelevant.
-                _ = ex;
-            }
+            catch (Exception ex) { _ = ex; }
+#pragma warning restore CA1031
         }
         _lifetime.Dispose();
         _http.Dispose();

@@ -100,11 +100,18 @@ public sealed class SidecarBowireProtocol : IBowireProtocol
     {
         var sw = System.Diagnostics.Stopwatch.StartNew();
         ISidecarTransport transport;
+        // Sidecar spawn surface: Process.Start (Win32Exception),
+        // child-process initialise RPC (JSON, IO, timeout), or any
+        // 3rd-party exception bubbling out of EnsureStartedAsync.
+        // Wrap them all into a result-object error since the caller
+        // expects an InvokeResult either way.
+#pragma warning disable CA1031 // Do not catch general exception types
         try
         {
             transport = await EnsureStartedAsync(ct).ConfigureAwait(false);
         }
-        catch (Exception ex)
+        catch (Exception ex) when (ex is not OperationCanceledException)
+#pragma warning restore CA1031
         {
             sw.Stop();
             return new InvokeResult(null, sw.ElapsedMilliseconds, "Sidecar spawn failed: " + ex.Message, new());
@@ -130,7 +137,12 @@ public sealed class SidecarBowireProtocol : IBowireProtocol
             sw.Stop();
             return new InvokeResult(ex.RawError, sw.ElapsedMilliseconds, "sidecar:" + ex.Code, new());
         }
+        // Sidecar transport surface: any plugin-author defined type
+        // can come through. Propagate cancellation but report
+        // everything else as an error result.
+#pragma warning disable CA1031 // Do not catch general exception types
         catch (Exception ex) when (ex is not OperationCanceledException)
+#pragma warning restore CA1031
         {
             sw.Stop();
             return new InvokeResult(null, sw.ElapsedMilliseconds, ex.Message, new());
@@ -210,8 +222,13 @@ public sealed class SidecarBowireProtocol : IBowireProtocol
                 metadata,
             }, ct).ConfigureAwait(false);
         }
-        catch
+        // Sidecar openChannel rejection — any RPC error / transport
+        // failure means we can't return a usable channel.
+#pragma warning disable CA1031 // Do not catch general exception types
+        catch (Exception ex)
+#pragma warning restore CA1031
         {
+            _ = ex;
             transport.Unsubscribe(channelId);
             return null;
         }
@@ -249,14 +266,13 @@ public sealed class SidecarBowireProtocol : IBowireProtocol
             // If a previous run died, dispose it before respawning.
             if (_transport is not null)
             {
+                // Old transport already dead -- disposal is best-
+                // effort. We're about to spawn a fresh one anyway, so a
+                // clean-up failure here doesn't block recovery.
+#pragma warning disable CA1031 // Do not catch general exception types
                 try { await _transport.DisposeAsync().ConfigureAwait(false); }
-                catch (Exception ex)
-                {
-                    // Old transport already dead -- disposal is best-
-                    // effort. We're about to spawn a fresh one anyway,
-                    // so a clean-up failure here doesn't block recovery.
-                    _ = ex;
-                }
+                catch (Exception ex) { _ = ex; }
+#pragma warning restore CA1031
                 _transport = null;
                 _initResult = null;
             }
