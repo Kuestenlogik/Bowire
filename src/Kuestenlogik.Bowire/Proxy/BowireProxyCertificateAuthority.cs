@@ -178,12 +178,13 @@ public sealed class BowireProxyCertificateAuthority : IDisposable
         var notAfter = notBefore.AddDays(90);
 
         using var unsignedLeaf = req.Create(Certificate, notBefore, notAfter, serial);
-        var signedLeaf = unsignedLeaf.CopyWithPrivateKey(rsa);
         // Round-trip through PFX export so the private key is bound for
         // SslStream consumption on all platforms (Windows in particular
         // requires this when the source cert is constructed in-memory).
+        // `using` so an Export() throw still releases the unmanaged
+        // handle the with-private-key copy holds (cs/dispose-not-called-on-throw).
+        using var signedLeaf = unsignedLeaf.CopyWithPrivateKey(rsa);
         var pfxBytes = signedLeaf.Export(X509ContentType.Pkcs12);
-        signedLeaf.Dispose();
         return X509CertificateLoader.LoadPkcs12(pfxBytes, password: null, keyStorageFlags: X509KeyStorageFlags.Exportable);
     }
 

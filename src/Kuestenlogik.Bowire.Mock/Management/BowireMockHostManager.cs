@@ -64,34 +64,33 @@ public sealed class BowireMockHostManager : IAsyncDisposable
                 $"No free TCP port found in the range {BasePort}..{BasePort + MaxProbes - 1}; close some mock hosts and try again.");
         }
 
+        // CA2000: MockServer ownership transfers into the dictionary
+        // entry below; StopAsync / DisposeAsync tears it down. Roslyn
+        // can't see the ownership move through an IAsyncDisposable
+        // factory + await — wrapping the await in try/catch trades the
+        // warning for CA1508 ("server is always null") because the
+        // analyzer still can't model the null-out after handoff. The
+        // dictionary write and Handle ctor are non-throwing in practice
+        // (ConcurrentDictionary indexer never throws, MockHostHandle is
+        // a value record with no validation), so the pragma is safe.
+#pragma warning disable CA2000
         var server = await MockServer.StartAsync(new MockServerOptions
         {
             RecordingPath = tempPath,
             Port = port,
         }, ct).ConfigureAwait(false);
-        try
-        {
-            var handle = new MockHostHandle(
-                MockId: mockId,
-                RecordingId: recordingId,
-                Label: label,
-                Port: server.Port,
-                Url: $"http://127.0.0.1:{server.Port}",
-                StartedAtUtc: DateTime.UtcNow);
+#pragma warning restore CA2000
 
-            _entries[mockId] = new MockHostEntry(handle, server, tempPath);
-            return handle;
-        }
-        catch
-        {
-            // Handle ctor / dictionary write threw before ownership of
-            // `server` reached _entries — tear it down here so the
-            // socket / file handle doesn't leak. Success path leaves
-            // ownership with MockHostEntry, disposed via StopAsync or
-            // DisposeAsync.
-            try { await server.DisposeAsync().ConfigureAwait(false); } catch (ObjectDisposedException) { }
-            throw;
-        }
+        var handle = new MockHostHandle(
+            MockId: mockId,
+            RecordingId: recordingId,
+            Label: label,
+            Port: server.Port,
+            Url: $"http://127.0.0.1:{server.Port}",
+            StartedAtUtc: DateTime.UtcNow);
+
+        _entries[mockId] = new MockHostEntry(handle, server, tempPath);
+        return handle;
     }
 
     public async Task<bool> StopAsync(string mockId, CancellationToken ct)
