@@ -49,7 +49,7 @@ public sealed class AiCoverageGapsTests : IDisposable
     public AiCoverageGapsTests()
     {
         _originalStore = BowireUserContext.Current;
-        _tempRoot = Path.Combine(
+        _tempRoot = SafePath.Combine(
             Path.GetTempPath(),
             $"bowire-ai-gaps-test-{Guid.NewGuid():N}");
         Directory.CreateDirectory(_tempRoot);
@@ -1933,7 +1933,7 @@ public sealed class AiCoverageGapsTests : IDisposable
         Assert.Equal("{\"id\":1}", fakeProtocol.LastMessages![0]);
 
         // Audit log file landed in the temp user store.
-        var auditPath = Path.Combine(_tempRoot, ".ai-actions.jsonl");
+        var auditPath = SafePath.Combine(_tempRoot, ".ai-actions.jsonl");
         Assert.True(File.Exists(auditPath));
         var line = (await File.ReadAllTextAsync(auditPath, TestContext.Current.CancellationToken)).Trim();
         Assert.Contains("\"service\":\"pets\"", line, StringComparison.Ordinal);
@@ -2040,7 +2040,7 @@ public sealed class AiCoverageGapsTests : IDisposable
         Assert.Equal("http://fallback:9000", fakeProtocol.LastServerUrl);
 
         // Audit log records the error entry too.
-        var auditPath = Path.Combine(_tempRoot, ".ai-actions.jsonl");
+        var auditPath = SafePath.Combine(_tempRoot, ".ai-actions.jsonl");
         Assert.True(File.Exists(auditPath));
         var logContents = await File.ReadAllTextAsync(auditPath, TestContext.Current.CancellationToken);
         Assert.Contains("simulated invoke failure", logContents, StringComparison.Ordinal);
@@ -2052,7 +2052,7 @@ public sealed class AiCoverageGapsTests : IDisposable
         // Pre-create .ai-actions.jsonl as a DIRECTORY so File.AppendAllText
         // throws — exercises the swallow-the-audit-failure catch block in
         // AppendAuditLog. The invoke result should still come back OK.
-        Directory.CreateDirectory(Path.Combine(_tempRoot, ".ai-actions.jsonl"));
+        Directory.CreateDirectory(SafePath.Combine(_tempRoot, ".ai-actions.jsonl"));
 
         var fakeProtocol = new FakeProtocol("rest", okResponse: "{\"ok\":true}");
         var registry = new BowireProtocolRegistry();
@@ -2304,7 +2304,7 @@ public sealed class AiCoverageGapsTests : IDisposable
         // But the runtime didn't actually swap — host owns the client.
         Assert.Equal(modelBefore, runtimeBefore.Options.Model);
         // The file landed on disk.
-        Assert.True(File.Exists(Path.Combine(_tempRoot, "ai-config.json")));
+        Assert.True(File.Exists(SafePath.Combine(_tempRoot, "ai-config.json")));
     }
 
     [Fact]
@@ -2333,7 +2333,7 @@ public sealed class AiCoverageGapsTests : IDisposable
         // The persisted global config (model=global-disk:1b) wins over the
         // runtime defaults because the resolver TryLoad returns non-null.
         Assert.Equal("global-disk:1b", body.GetProperty("model").GetString());
-        Assert.False(File.Exists(Path.Combine(_tempRoot, "ai-config.personal.json")));
+        Assert.False(File.Exists(SafePath.Combine(_tempRoot, "ai-config.personal.json")));
     }
 
     [Fact]
@@ -2556,7 +2556,7 @@ public sealed class AiCoverageGapsTests : IDisposable
 
     private sealed class TempUserStore(string root) : IBowireUserStore
     {
-        public string GetUserPath(string filename) => Path.Combine(root, filename);
+        public string GetUserPath(string filename) => SafePath.Combine(root, filename);
     }
 
     private sealed class ThrowingUserStore : IBowireUserStore
