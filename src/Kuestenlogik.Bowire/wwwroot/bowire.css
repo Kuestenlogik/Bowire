@@ -10819,43 +10819,40 @@ button.bowire-ws-detail-action {
 /* Per-workspace recording-storage-mode radio cards. Two
    selectable cards stacked vertically — radio + title +
    description meta. */
-.bowire-ws-detail-storage-row {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-}
-.bowire-ws-detail-storage-option {
-    display: flex;
-    align-items: flex-start;
-    gap: 12px;
-    padding: 12px 14px;
+/* #212 Phase 0 — compact workspace storage toggle. Replaces the
+   verbose three-radio recording-storage block. Single line under
+   General → Storage with a checkbox, a label, and a meta hint
+   that swaps text based on the toggle state. */
+.bowire-ws-detail-storage-toggle {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    column-gap: 10px;
+    row-gap: 2px;
+    align-items: center;
+    padding: 8px 10px;
     background: var(--bowire-surface);
     border: 1px solid var(--bowire-border);
     border-radius: var(--bowire-radius-md);
     cursor: pointer;
 }
-.bowire-ws-detail-storage-option.selected {
-    background: var(--bowire-accent-subtle);
-    border-color: var(--bowire-accent);
+.bowire-ws-detail-storage-toggle input[type="checkbox"] {
+    margin: 0;
+    grid-row: 1 / span 2;
+    align-self: center;
 }
-.bowire-ws-detail-storage-option input[type="radio"] {
-    margin: 4px 0 0;
-    flex-shrink: 0;
-}
-.bowire-ws-detail-storage-text {
-    flex: 1;
-    min-width: 0;
-}
-.bowire-ws-detail-storage-title {
+.bowire-ws-detail-storage-toggle-label {
     font-size: 13px;
     font-weight: 500;
     color: var(--bowire-text);
+    grid-column: 2;
+    grid-row: 1;
 }
-.bowire-ws-detail-storage-meta {
+.bowire-ws-detail-storage-toggle-hint {
     font-size: 11px;
     color: var(--bowire-text-tertiary);
-    margin-top: 4px;
     line-height: 1.4;
+    grid-column: 2;
+    grid-row: 2;
 }
 
 /* #152 v2 — per-URL headers editor in the Sources rail-mode
