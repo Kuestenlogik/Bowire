@@ -32,14 +32,19 @@ public sealed class CoverageTo95Tests
         // Junk payload: MockServer reads the file as JSON, fails to
         // deserialise, throws inside StartAsync. The catch in MockRegistry
         // must run, delete the temp file, and rethrow.
-        var registry = new MockRegistry(NullLogger<MockRegistry>.Instance);
+        //
+        // Point the registry at a per-test temp dir rather than the
+        // shared ~/.bowire/mocks so parallel xUnit workers can't leak
+        // each other's .bwr files into our before/after diff -- the CI
+        // run on 0a4df07 failed because another worker's leftover
+        // 567ea19e08df.bwr was sitting in the shared dir when this
+        // test snapshotted.
+        var mocksDir = Path.Combine(Path.GetTempPath(), "bowire-test-mocks-" + Guid.NewGuid().ToString("N"));
+        var registry = new MockRegistry(NullLogger<MockRegistry>.Instance, mocksDir);
         await using (registry)
         {
             // Snapshot the mocks dir contents before the call so we can
             // prove the failed start didn't leave a stale .bwr behind.
-            var mocksDir = Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
-                ".bowire", "mocks");
             var before = Directory.Exists(mocksDir)
                 ? Directory.GetFiles(mocksDir, "*.bwr").ToHashSet()
                 : [];
