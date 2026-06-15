@@ -71,7 +71,7 @@ public sealed class NewProtocolDiscoveryTests
     [Fact]
     public void ODataProtocol_HasCorrectMetadata()
     {
-        var proto = new BowireODataProtocol();
+        using var proto = new BowireODataProtocol();
         Assert.Equal("OData", proto.Name);
         Assert.Equal("odata", proto.Id);
         Assert.NotEmpty(proto.IconSvg);
@@ -80,7 +80,7 @@ public sealed class NewProtocolDiscoveryTests
     [Fact]
     public async Task ODataProtocol_EmptyUrl_ReturnsEmpty()
     {
-        var proto = new BowireODataProtocol();
+        using var proto = new BowireODataProtocol();
         var result = await proto.DiscoverAsync("", false, TestContext.Current.CancellationToken);
         Assert.Empty(result);
     }
@@ -88,7 +88,7 @@ public sealed class NewProtocolDiscoveryTests
     [Fact]
     public async Task ODataProtocol_NonODataUrl_ReturnsEmpty()
     {
-        var proto = new BowireODataProtocol();
+        using var proto = new BowireODataProtocol();
         // Non-HTTP URL should return empty
         var result = await proto.DiscoverAsync("mqtt://localhost:1883", false, TestContext.Current.CancellationToken);
         Assert.Empty(result);
