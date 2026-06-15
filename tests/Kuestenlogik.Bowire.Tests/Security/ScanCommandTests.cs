@@ -555,7 +555,7 @@ public sealed class ScanCommandTests
         builder.Logging.ClearProviders();
         builder.WebHost.ConfigureKestrel(o => o.Listen(IPAddress.Loopback, 0, l => l.Protocols = HttpProtocols.Http1));
         var app = builder.Build();
-        ((IApplicationBuilder)app).Run(async ctx =>
+        app.Run(async ctx =>
         {
             ctx.Response.StatusCode = 200;
             ctx.Response.ContentType = "application/json";
