@@ -31,6 +31,8 @@
     <Project Path="tests/Kuestenlogik.Bowire.Testing.Tests/Kuestenlogik.Bowire.Testing.Tests.csproj" />
     <Project Path="src/Kuestenlogik.Bowire.Protocol.Otlp/Kuestenlogik.Bowire.Protocol.Otlp.csproj" />
     <Project Path="tests/Kuestenlogik.Bowire.Protocol.Otlp.Tests/Kuestenlogik.Bowire.Protocol.Otlp.Tests.csproj" />
+    <Project Path="src/Kuestenlogik.Bowire.Workspace.Git/Kuestenlogik.Bowire.Workspace.Git.csproj" />
+    <Project Path="tests/Kuestenlogik.Bowire.Workspace.Git.Tests/Kuestenlogik.Bowire.Workspace.Git.Tests.csproj" />
     <Project Path="src/Kuestenlogik.Bowire.Help/Kuestenlogik.Bowire.Help.csproj" />
     <Project Path="src/Kuestenlogik.Bowire.Security.Scanner/Kuestenlogik.Bowire.Security.Scanner.csproj" />
     <Project Path="src/Kuestenlogik.Bowire.Security.Templates.Nuclei/Kuestenlogik.Bowire.Security.Templates.Nuclei.csproj" />

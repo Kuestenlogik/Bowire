@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Description>Git-backed workspace runtime for Bowire — per-entity file reader/writer, FileSystemWatcher → SSE producer, workspace lockfile for concurrent-writer guard, secret-overlay merge. Opt-in via NuGet reference; the workbench discovers the runtime when present and falls back to the legacy per-user bundle store when absent. Embedded ASP.NET hosts can pin or omit; standalone Kuestenlogik.Bowire.Tool ships it bundled.</Description>
+    <PackageId>Kuestenlogik.Bowire.Workspace.Git</PackageId>
+    <PackageTags>bowire;bowire-extension;workspace;git;filesystemwatcher</PackageTags>
+    <IsPackable>true</IsPackable>
+    <RootNamespace>Kuestenlogik.Bowire.Workspace.Git</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="bowire" />
+    <InternalsVisibleTo Include="Kuestenlogik.Bowire.Tests" />
+    <InternalsVisibleTo Include="Kuestenlogik.Bowire.Workspace.Git.Tests" />
+    <InternalsVisibleTo Include="Kuestenlogik.Bowire.IntegrationTests" />
+  </ItemGroup>
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Kuestenlogik.Bowire\Kuestenlogik.Bowire.csproj" />
+  </ItemGroup>
+</Project>
