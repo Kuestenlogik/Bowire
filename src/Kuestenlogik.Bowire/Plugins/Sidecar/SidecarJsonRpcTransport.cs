@@ -243,22 +243,29 @@ internal sealed class SidecarJsonRpcTransport : ISidecarTransport
             // Best-effort graceful shutdown — send the JSON-RPC
             // `shutdown` request, wait briefly for the process to exit,
             // then kill.
+            // Best-effort graceful-shutdown RPC. We're about to kill the
+            // process anyway, so any failure is irrelevant.
+#pragma warning disable CA1031 // Do not catch general exception types
             try
             {
                 using var cts = new CancellationTokenSource(TimeSpan.FromMilliseconds(_shutdownTimeoutMs));
                 await RequestAsync("shutdown", null, cts.Token).ConfigureAwait(false);
             }
-            catch { /* swallow — we're killing the process anyway */ }
+            catch (Exception ex) { _ = ex; }
+#pragma warning restore CA1031
 
+            // Process may already be gone (stream closed, disposed, or
+            // kernel reaped it) -- stdin-close is just a polite EOF
+            // signal, not a correctness requirement.
+#pragma warning disable CA1031 // Do not catch general exception types
             try { _process.StandardInput.Close(); }
-            catch (Exception ex)
-            {
-                // Process may already be gone (stream closed, disposed,
-                // or kernel reaped it) -- stdin-close is just a polite
-                // EOF signal, not a correctness requirement.
-                _ = ex;
-            }
+            catch (Exception ex) { _ = ex; }
+#pragma warning restore CA1031
 
+            // Race with the OS reaping the process: WaitForExitAsync
+            // can throw InvalidOperationException, Kill can throw
+            // Win32Exception. Either way we're in disposal.
+#pragma warning disable CA1031 // Do not catch general exception types
             try
             {
                 using var waitCts = new CancellationTokenSource(_shutdownTimeoutMs);
@@ -271,19 +278,19 @@ internal sealed class SidecarJsonRpcTransport : ISidecarTransport
                     _process.Kill(entireProcessTree: true);
                 }
             }
-            catch { /* race with the OS reaping the process */ }
+            catch (Exception ex) { _ = ex; }
+#pragma warning restore CA1031
         }
 
         if (_readLoop is not null)
         {
+            // Read loop normally exits cleanly when the process closes
+            // stdout; if it didn't (cancel race, pipe error), we're
+            // already in disposal so propagating doesn't help.
+#pragma warning disable CA1031 // Do not catch general exception types
             try { await _readLoop.ConfigureAwait(false); }
-            catch (Exception ex)
-            {
-                // Read loop normally exits cleanly when the process
-                // closes stdout; if it didn't (cancel race, pipe error),
-                // we're already in disposal so propagating doesn't help.
-                _ = ex;
-            }
+            catch (Exception ex) { _ = ex; }
+#pragma warning restore CA1031
         }
         _process.Dispose();
     }

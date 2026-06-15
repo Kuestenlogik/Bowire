@@ -103,8 +103,11 @@ public class PluginUpdateCheckService
                         && !string.Equals(latest, installedVersion, StringComparison.OrdinalIgnoreCase),
                     Error: null));
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or System.Text.Json.JsonException or IOException or InvalidOperationException)
             {
+                // FetchLatestAsync wraps NuGet flatcontainer HTTP calls.
+                // OperationCanceledException intentionally NOT in the
+                // filter — cancellation propagates up to the caller.
                 results.Add(new PluginUpdateCheckResult(
                     packageId, installedVersion, Latest: null, UpdateAvailable: false, Error: ex.Message));
             }

@@ -79,9 +79,10 @@ public sealed class BowireExtensionRegistry
                 // keep the partial list and skip nulls.
                 types = [.. ex.Types.Where(t => t is not null).Cast<Type>()];
             }
-            catch (Exception)
+            catch (Exception ex) when (ex is TypeLoadException or FileLoadException or FileNotFoundException or BadImageFormatException)
             {
                 // Anything else — skip the whole assembly silently.
+                _ = ex;
                 continue;
             }
 
@@ -90,6 +91,10 @@ public sealed class BowireExtensionRegistry
             {
                 if (typeof(IBowireUiExtension).IsAssignableFrom(type))
                 {
+                    // 3rd-party extension's parameterless ctor can throw
+                    // any type from its static field initialiser; one
+                    // bad extension must not block the rest.
+#pragma warning disable CA1031 // Do not catch general exception types
                     try
                     {
                         if (Activator.CreateInstance(type) is IBowireUiExtension ext)
@@ -98,11 +103,13 @@ public sealed class BowireExtensionRegistry
                             registry._declaringAssemblies[ext.Id] = type.Assembly;
                         }
                     }
-                    catch (Exception)
+                    catch (Exception ex)
+#pragma warning restore CA1031
                     {
                         // Skip extensions whose constructor throws —
                         // matches BowireProtocolRegistry's behaviour for
                         // plugins that fail to instantiate.
+                        _ = ex;
                     }
                 }
             }

@@ -51,8 +51,10 @@ public static class BowireAuthProviderRegistry
 
             Type[] types;
             try { types = assembly.GetTypes(); }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is System.Reflection.ReflectionTypeLoadException or TypeLoadException or FileLoadException or FileNotFoundException or BadImageFormatException)
             {
+                // Reflection-only assembly walk: a missing transitive
+                // ref or a corrupt embedded type lights up here.
                 if (logger is not null) AuthProviderLog.EnumerateTypesFailed(logger, name, ex);
                 continue;
             }
@@ -61,6 +63,10 @@ public static class BowireAuthProviderRegistry
             {
                 if (type.IsAbstract || type.IsInterface) continue;
                 if (!typeof(IBowireAuthProvider).IsAssignableFrom(type)) continue;
+                // 3rd-party provider's parameterless ctor can throw any
+                // type from its static field initialiser; one bad
+                // provider must not prevent the others from registering.
+#pragma warning disable CA1031 // Do not catch general exception types
                 try
                 {
                     if (Activator.CreateInstance(type) is IBowireAuthProvider provider
@@ -70,6 +76,7 @@ public static class BowireAuthProviderRegistry
                     }
                 }
                 catch (Exception ex)
+#pragma warning restore CA1031
                 {
                     if (logger is not null)
                         AuthProviderLog.InstantiationFailed(logger, type.FullName ?? "(unknown)", name, ex);

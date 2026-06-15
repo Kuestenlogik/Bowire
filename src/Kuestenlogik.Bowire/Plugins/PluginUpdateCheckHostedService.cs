@@ -70,7 +70,13 @@ public sealed class PluginUpdateCheckHostedService : BackgroundService
             {
                 break;
             }
+            // Background hosted-service loop must absorb any failure to
+            // keep iterating across intervals — letting the exception
+            // escape would terminate the whole service for the lifetime
+            // of the host process.
+#pragma warning disable CA1031 // Do not catch general exception types
             catch (Exception ex)
+#pragma warning restore CA1031
             {
                 _logger.LogWarning(ex, "Plugin update check failed — will retry at next interval.");
             }
