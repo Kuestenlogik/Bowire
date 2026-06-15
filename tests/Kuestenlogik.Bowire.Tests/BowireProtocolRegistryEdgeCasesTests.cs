@@ -49,7 +49,7 @@ public sealed class BowireProtocolRegistryEdgeCasesTests
         // picks it up, but the rest of the AppDomain hasn't already
         // loaded an assembly by that simple name.
         var bogusName = "Kuestenlogik.Bowire.EdgeCaseBogus_" + Guid.NewGuid().ToString("N");
-        var bogusPath = Path.Combine(entryDir, bogusName + ".dll");
+        var bogusPath = SafePath.Combine(entryDir, bogusName + ".dll");
         File.WriteAllBytes(bogusPath, [0x00, 0x01, 0x02, 0x03]);
 
         var logger = new CapturingLogger();
@@ -94,9 +94,9 @@ public sealed class BowireProtocolRegistryEdgeCasesTests
         var defaultRoot = SidecarPluginDiscovery.DefaultPluginRoot;
         Directory.CreateDirectory(defaultRoot);
         var pluginId = "bowire-sidecar-edge-" + Guid.NewGuid().ToString("N");
-        var pluginDir = Path.Combine(defaultRoot, pluginId);
+        var pluginDir = SafePath.Combine(defaultRoot, pluginId);
         Directory.CreateDirectory(pluginDir);
-        var manifestPath = Path.Combine(pluginDir, SidecarPluginManifest.FileName);
+        var manifestPath = SafePath.Combine(pluginDir, SidecarPluginManifest.FileName);
         File.WriteAllText(manifestPath,
             $$"""
             {
@@ -136,9 +136,9 @@ public sealed class BowireProtocolRegistryEdgeCasesTests
         var defaultRoot = SidecarPluginDiscovery.DefaultPluginRoot;
         Directory.CreateDirectory(defaultRoot);
         var pluginId = "bowire-sidecar-disabled-" + Guid.NewGuid().ToString("N");
-        var pluginDir = Path.Combine(defaultRoot, pluginId);
+        var pluginDir = SafePath.Combine(defaultRoot, pluginId);
         Directory.CreateDirectory(pluginDir);
-        var manifestPath = Path.Combine(pluginDir, SidecarPluginManifest.FileName);
+        var manifestPath = SafePath.Combine(pluginDir, SidecarPluginManifest.FileName);
         File.WriteAllText(manifestPath,
             $$"""
             {
