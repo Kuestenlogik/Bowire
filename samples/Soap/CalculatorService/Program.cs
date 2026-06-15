@@ -74,8 +74,10 @@ app.MapPost(EndpointPath, async (HttpContext ctx) =>
             _ => throw new InvalidOperationException("unknown operation " + op.Name.LocalName),
         };
     }
-    catch (Exception ex)
+    catch (Exception ex) when (ex is InvalidOperationException or ArithmeticException or OverflowException)
     {
+        // Sample SOAP dispatcher: switch arms throw InvalidOperationException;
+        // a + b / a * b can overflow with int32. Anything else escapes.
         ctx.Response.ContentType = "text/xml; charset=utf-8";
         ctx.Response.StatusCode = StatusCodes.Status500InternalServerError;
         await ctx.Response.WriteAsync(BuildFault(ex.Message));

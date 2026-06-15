@@ -35,8 +35,10 @@ app.MapPost("/rpc", async (HttpContext ctx) =>
             _ => throw new InvalidOperationException("method not found"),
         };
     }
-    catch (Exception ex)
+    catch (Exception ex) when (ex is ArgumentException or InvalidOperationException or FormatException)
     {
+        // Sample JSON-RPC dispatcher: the switch arms throw exactly
+        // these three; anything else escapes to ASP.NET's default handler.
         error = new { code = -32601, message = ex.Message };
         result = null;
     }
