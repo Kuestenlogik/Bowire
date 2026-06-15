@@ -324,7 +324,7 @@ public sealed class OpenApiSampleGeneratorTests
             .GetAwaiter().GetResult();
 #pragma warning restore CA2025
         var schemas = result.Document!.Components!.Schemas!;
-        var component = (IOpenApiSchema)schemas[componentName];
+        var component = schemas[componentName];
         return component.Properties![propertyName];
     }
 }
