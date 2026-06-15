@@ -19,7 +19,7 @@ public sealed class BowirePluginLoadContextTests : IDisposable
 
     public BowirePluginLoadContextTests()
     {
-        _tempDir = Path.Combine(Path.GetTempPath(), "bowire-alc-" + Guid.NewGuid().ToString("N"));
+        _tempDir = SafePath.Combine(Path.GetTempPath(), "bowire-alc-" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(_tempDir);
     }
 
@@ -39,7 +39,7 @@ public sealed class BowirePluginLoadContextTests : IDisposable
     [Fact]
     public void ContextName_IncludesPluginDirectoryLeaf()
     {
-        var pluginDir = Path.Combine(_tempDir, "MyCompany.Plugin");
+        var pluginDir = SafePath.Combine(_tempDir, "MyCompany.Plugin");
         Directory.CreateDirectory(pluginDir);
 
         var ctx = new BowirePluginLoadContext(pluginDir);
@@ -101,7 +101,7 @@ public sealed class BowirePluginLoadContextTests : IDisposable
     [Fact]
     public void PluginDirectory_AbsolutePath_Preserved()
     {
-        var pluginDir = Path.Combine(_tempDir, "absdir");
+        var pluginDir = SafePath.Combine(_tempDir, "absdir");
         Directory.CreateDirectory(pluginDir);
 
         var ctx = new BowirePluginLoadContext(pluginDir);
@@ -117,10 +117,10 @@ public sealed class BowirePluginLoadContextTests : IDisposable
         // named "Kuestenlogik.Bowire.Tests" — wait, that IS shared). Use the
         // xunit runtime assembly instead.
         var xunitDll = typeof(FactAttribute).Assembly.Location;
-        var stagingDir = Path.Combine(_tempDir, "stage");
+        var stagingDir = SafePath.Combine(_tempDir, "stage");
         Directory.CreateDirectory(stagingDir);
 
-        var stagedPath = Path.Combine(stagingDir, Path.GetFileName(xunitDll));
+        var stagedPath = SafePath.Combine(stagingDir, Path.GetFileName(xunitDll));
         File.Copy(xunitDll, stagedPath);
 
         var ctx = new BowirePluginLoadContext(stagingDir);
