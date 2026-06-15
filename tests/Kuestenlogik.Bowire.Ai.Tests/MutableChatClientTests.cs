@@ -66,20 +66,10 @@ public sealed class MutableChatClientTests
     [Fact]
     public async Task GetResponseAsync_Delegates_To_Runtime_Current_Client_AfterSwap()
     {
-        // Start with the default ollama provider — Build() returns an
-        // OllamaSharp client wrapper that would try to hit localhost on
-        // first call. Swap the inner client via Update() to a stub we
-        // can observe; the proxy must dispatch to the new instance.
-        using var rt = new BowireAiRuntime(new BowireAiOptions { ProviderId = "ollama" });
-
-        // Override the runtime's inner client by injecting a stub
-        // directly. Update() rebuilds the client from options; we
-        // need a stub we control, so we go through Reflection-free
-        // means: install a stub-providing options set. Cheat: skip
-        // the Update path and replace the runtime with one whose
-        // initial Build returns our stub instead.
         // The cleanest path is to use a StubRuntime + StubChatClient
         // together — both seams the production code already trusts.
+        // The proxy must dispatch to whichever client the runtime
+        // currently exposes.
         var stub = new StubChatClient("from-stub");
         using var stubRuntime = new StubRuntime(stub);
         using var proxy = new MutableChatClient(stubRuntime);
