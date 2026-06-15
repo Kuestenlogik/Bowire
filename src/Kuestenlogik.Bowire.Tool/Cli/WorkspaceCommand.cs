@@ -5,6 +5,7 @@ using System.CommandLine;
 using System.CommandLine.Parsing;
 using System.Diagnostics;
 using System.Text.Json;
+using Kuestenlogik.Bowire.Workspace.Git;
 
 namespace Kuestenlogik.Bowire.App.Cli;
 
@@ -67,9 +68,90 @@ internal static class WorkspaceCommand
     public static Command Build()
     {
         var workspace = new Command("workspace",
-            "Manage Bowire workspaces — init a git-backed workspace directory (#147 / #149).");
+            "Manage Bowire workspaces — init a git-backed workspace directory (#147 / #149), migrate a legacy bundle-shaped workspace to the per-entity file layout (#196 Phase 2.2).");
         workspace.Add(BuildInitCommand());
+        workspace.Add(BuildMigrateFormatCommand());
         return workspace;
+    }
+
+    private static Command BuildMigrateFormatCommand()
+    {
+        var migrate = new Command("migrate-format",
+            "Convert a workspace from the legacy bundle layout (one <entityKind>.json per kind) into the per-entity file layout the git-backed runtime reads through. Idempotent: re-running on an already-migrated workspace is a no-op. The original bundle files are renamed to .legacy so an operator can verify the per-entity files before deleting them.");
+
+        var pathArg = new Argument<string>("path")
+        {
+            Description = "Directory containing the workspace to migrate. Existing per-entity files are preserved; only legacy <entityKind>.json bundles are converted."
+        };
+        migrate.Add(pathArg);
+
+        migrate.SetAction((pr, ct) =>
+        {
+            var path = pr.GetValue(pathArg)!;
+            return RunMigrateFormatAsync(path,
+                pr.InvocationConfiguration.Output, pr.InvocationConfiguration.Error, ct);
+        });
+
+        return migrate;
+    }
+
+    // Internal so unit tests can exercise the migration pipeline
+    // without spinning up System.CommandLine.
+    internal static async Task<int> RunMigrateFormatAsync(
+        string path,
+        TextWriter stdout,
+        TextWriter stderr,
+        CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(path))
+        {
+            await stderr.WriteLineAsync("workspace migrate-format: path argument is required.").ConfigureAwait(false);
+            return 64;
+        }
+
+        var fullPath = Path.GetFullPath(path);
+        if (!Directory.Exists(fullPath))
+        {
+            await stderr.WriteLineAsync($"workspace migrate-format: directory '{fullPath}' does not exist.").ConfigureAwait(false);
+            return 66;
+        }
+
+        BowireGitWorkspaceMigrationReport report;
+        try
+        {
+            report = await BowireGitWorkspaceMigrator.MigrateAsync(fullPath, ct).ConfigureAwait(false);
+        }
+        catch (JsonException ex)
+        {
+            await stderr.WriteLineAsync($"workspace migrate-format: a legacy bundle is not valid JSON: {ex.Message}").ConfigureAwait(false);
+            return 65;
+        }
+        catch (Exception ex)
+        {
+            await stderr.WriteLineAsync($"workspace migrate-format: migration failed: {ex.Message}").ConfigureAwait(false);
+            return 70;
+        }
+
+        if (!report.AnyMigrated)
+        {
+            await stdout.WriteLineAsync($"workspace migrate-format: nothing to do at {fullPath} (already per-entity layout).").ConfigureAwait(false);
+            return 0;
+        }
+
+        await stdout.WriteLineAsync($"Migrated workspace at {fullPath}").ConfigureAwait(false);
+        foreach (var kind in report.Kinds)
+        {
+            if (!kind.LegacyFound)
+            {
+                await stdout.WriteLineAsync($"  · {kind.EntityKind}: skipped (no legacy bundle)").ConfigureAwait(false);
+                continue;
+            }
+            await stdout.WriteLineAsync($"  → {kind.EntityKind}: {kind.Migrated} entity(ies) → {kind.EntityKind}/*.json").ConfigureAwait(false);
+        }
+        await stdout.WriteLineAsync($"  → {report.TotalEntities} entity(ies) migrated total").ConfigureAwait(false);
+        await stdout.WriteLineAsync("  → legacy bundles renamed to *.legacy; remove after verifying the per-entity files.").ConfigureAwait(false);
+
+        return 0;
     }
 
     private static Command BuildInitCommand()

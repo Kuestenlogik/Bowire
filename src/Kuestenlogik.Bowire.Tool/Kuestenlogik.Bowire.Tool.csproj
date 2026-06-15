@@ -131,6 +131,12 @@
          3.x library can reference Kuestenlogik.Bowire.Protocol.Rest.OpenApi3
          instead; the registry's auto-detect picks whichever is loaded. -->
     <ProjectReference Include="..\Kuestenlogik.Bowire.Protocol.Rest.OpenApi2\Kuestenlogik.Bowire.Protocol.Rest.OpenApi2.csproj" />
+    <!-- #196 Phase 2.2 — Git-backed workspace runtime. Standalone CLI
+         needs the package for the `bowire workspace migrate-format`
+         subcommand (BowireGitWorkspaceMigrator). Embedded hosts opt in
+         by referencing Kuestenlogik.Bowire.Workspace.Git themselves +
+         calling AddBowireGitWorkspace(). -->
+    <ProjectReference Include="..\Kuestenlogik.Bowire.Workspace.Git\Kuestenlogik.Bowire.Workspace.Git.csproj" />
     <PackageReference Include="System.CommandLine" />
   </ItemGroup>
 </Project>

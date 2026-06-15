@@ -64,18 +64,21 @@ public sealed class WorkspaceCommandEdgeCasesTests : IDisposable
     // ---------------------------------------------------------------
 
     [Fact]
-    public void Build_returns_workspace_command_with_init_subcommand()
+    public void Build_returns_workspace_command_with_init_and_migrate_format_subcommands()
     {
         // Pins the parent-command shape: name, description hint, and
-        // single `init` subcommand. If a Phase 2 follow-up adds export
-        // / import / migrate-format the assertion on Subcommands count
-        // will need to grow, which is the intended forcing function.
+        // the two known subcommands as of #196 Phase 2.2 (init +
+        // migrate-format). When the next phase adds export / import,
+        // this assertion is the intended forcing function for an
+        // updated subcommand inventory.
         var workspace = WorkspaceCommand.Build();
 
         Assert.Equal("workspace", workspace.Name);
         Assert.Contains("git-backed", workspace.Description, StringComparison.OrdinalIgnoreCase);
-        Assert.Single(workspace.Subcommands);
-        Assert.Equal("init", workspace.Subcommands[0].Name);
+        var names = workspace.Subcommands.Select(s => s.Name).ToHashSet();
+        Assert.Contains("init", names);
+        Assert.Contains("migrate-format", names);
+        Assert.Equal(2, workspace.Subcommands.Count);
     }
 
     [Fact]
