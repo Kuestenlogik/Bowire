@@ -138,8 +138,12 @@ public static class AttackPredicateEvaluator
 
         var matches = ResolvePath(root, clause.Path);
 
-        if (clause.Exists is true) return matches.Count > 0;
-        if (clause.Exists is false) return matches.Count == 0;
+        // Collapse the exists branch so CodeQL's constant-condition
+        // analyzer doesn't flag the second `is` test as redundant
+        // (cs/constant-condition). When Exists carries a value, that
+        // value alone decides the outcome; null falls through to the
+        // operator-specific clauses below.
+        if (clause.Exists is bool wantExists) return wantExists ? matches.Count > 0 : matches.Count == 0;
 
         if (matches.Count == 0) return false;
 
