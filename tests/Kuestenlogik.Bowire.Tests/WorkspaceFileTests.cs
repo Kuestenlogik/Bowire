@@ -8,7 +8,7 @@ namespace Kuestenlogik.Bowire.Tests;
 
 /// <summary>
 /// Wire-shape tests for the internal <see cref="BowireWorkspaceEndpoints.WorkspaceFile"/>
-/// record — the on-disk container the <c>.blw</c> workspace endpoint
+/// record — the on-disk container the <c>.bww</c> workspace endpoint
 /// reads and writes. Camel-cased property names are required so the
 /// JS client can serialise / deserialise the file with idiomatic field
 /// names; these tests pin both the default shape and the serializer
@@ -118,7 +118,7 @@ public class WorkspaceFileTests
     // #58 Phase 1 — New fields. workspaceFormatVersion + recordings +
     // flows + pluginPins joined the schema; the next round of tests
     // verifies defaults, round-trip, and backward compatibility so the
-    // existing .blw files from before the format extension keep
+    // existing .bww files from before the format extension keep
     // working.
 
     [Fact]
@@ -175,7 +175,7 @@ public class WorkspaceFileTests
     [Fact]
     public void Workspace_Without_New_Fields_Stays_BackwardsCompatible()
     {
-        // Old .blw — pre-#58. Reader should fill the new fields with
+        // Old .bww — pre-#58. Reader should fill the new fields with
         // their empty defaults so an existing checked-in file keeps
         // working without a migration step.
         const string json = """
