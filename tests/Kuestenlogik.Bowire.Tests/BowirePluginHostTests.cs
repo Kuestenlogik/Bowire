@@ -38,8 +38,8 @@ public sealed class BowirePluginHostTests : IDisposable
         var host = new BowirePluginHost();
         var ctx = host.Load(pluginDir);
 
-        Assert.True(host.LoadedPlugins.ContainsKey("Sample.Plugin"));
-        Assert.Same(ctx, host.LoadedPlugins["Sample.Plugin"]);
+        Assert.True(host.LoadedPlugins.TryGetValue("Sample.Plugin", out var loadedCtx));
+        Assert.Same(ctx, loadedCtx);
         Assert.True(ctx.IsCollectible, "Plugin ALCs must be collectible to enable hot-reload.");
     }
 
