@@ -342,6 +342,10 @@ public sealed class MockServer : IAsyncDisposable
                 };
                 foreach (var emitter in _options.Emitters)
                 {
+                    // Plugin emitter StartAsync: 3rd-party transport
+                    // (MQTT broker connect, Pulsar producer create, ...).
+                    // One bad emitter must not abort the rest.
+#pragma warning disable CA1031 // Do not catch general exception types
                     try
                     {
                         if (!emitter.CanEmit(recording)) continue;
@@ -350,6 +354,7 @@ public sealed class MockServer : IAsyncDisposable
                         logger.LogInformation("mock-emitter started: {EmitterId}", emitter.Id);
                     }
                     catch (Exception ex)
+#pragma warning restore CA1031
                     {
                         logger.LogWarning(ex, "mock-emitter '{EmitterId}' failed to start; skipping.", emitter.Id);
                     }
@@ -404,7 +409,12 @@ public sealed class MockServer : IAsyncDisposable
                     logger.LogInformation(
                         "mock-transport started: id={Id} port={Port}", host.Id, bound);
                 }
+                // Plugin transport host StartAsync: 3rd-party socket bind,
+                // protocol-specific handshake. Same isolation rule as
+                // emitter starts above.
+#pragma warning disable CA1031 // Do not catch general exception types
                 catch (Exception ex)
+#pragma warning restore CA1031
                 {
                     logger.LogWarning(ex,
                         "mock-transport '{Id}' failed to start; mock continues without it.", host.Id);

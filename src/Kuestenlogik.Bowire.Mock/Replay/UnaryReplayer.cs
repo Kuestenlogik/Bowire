@@ -731,7 +731,12 @@ public static class UnaryReplayer
                 count++;
             }
         }
+        // Drain best-effort: gRPC framing errors / client disconnect
+        // surface here. Whatever the cause, stop draining and report
+        // the count we got.
+#pragma warning disable CA1031 // Do not catch general exception types
         catch (Exception ex)
+#pragma warning restore CA1031
         {
             logger.LogDebug(ex, "gRPC request-stream drain ended with an error — treating as end-of-stream.");
         }
@@ -1135,7 +1140,12 @@ public static class UnaryReplayer
                 cancellationToken: ct);
             return true;
         }
+        // WebSocket SendAsync surface: WebSocketException for state
+        // race + IOException for socket reset + InvalidOperationException
+        // for closed connection. Best-effort: skip the frame.
+#pragma warning disable CA1031 // Do not catch general exception types
         catch (Exception ex)
+#pragma warning restore CA1031
         {
             logger.LogWarning(ex, "Failed to send WebSocket frame {Index}; skipping.", frame.Index);
             return false;
@@ -1395,7 +1405,12 @@ public static class UnaryReplayer
 
             return RewriteProtocolFrame(protocolFrame, subId);
         }
+        // Frame rewrite parses recorded JSON and walks it — JsonException
+        // and KeyNotFoundException are realistic but recorded data is
+        // operator-supplied so author types are possible.
+#pragma warning disable CA1031 // Do not catch general exception types
         catch (Exception ex)
+#pragma warning restore CA1031
         {
             logger.LogWarning(ex, "Failed to rewrite graphql subscription frame {Index}; skipping.", frame.Index);
             return null;
@@ -2153,8 +2168,12 @@ public static class UnaryReplayer
                             ackId.ToString(System.Globalization.CultureInfo.InvariantCulture) +
                             ackPayload;
                         ackFrame = ResponseBodySubstitutor.Substitute(ackFrame);
+                        // socket.io ack emit: WebSocket transport surface.
+                        // Best-effort — drop and continue.
+#pragma warning disable CA1031 // Do not catch general exception types
                         try { await SendSocketIoTextAsync(socket, ackFrame, loopCts.Token); }
                         catch (Exception ex)
+#pragma warning restore CA1031
                         {
                             logger.LogWarning(ex, "socket.io-ack emit failed for ack id {AckId}", ackId);
                         }
@@ -2201,7 +2220,11 @@ public static class UnaryReplayer
                             endOfMessage: true,
                             ct);
                     }
+                    // socket.io binary emit: same WebSocket transport
+                    // surface. Best-effort.
+#pragma warning disable CA1031 // Do not catch general exception types
                     catch (Exception ex)
+#pragma warning restore CA1031
                     {
                         logger.LogWarning(ex, "socket.io-binary emit failed for frame {Index} of step {StepId}", frame.Index, step.Id);
                     }
@@ -2212,8 +2235,12 @@ public static class UnaryReplayer
                 if (string.IsNullOrEmpty(wireText)) continue;
 
                 wireText = ResponseBodySubstitutor.Substitute(wireText);
+                // socket.io text emit: same WebSocket transport surface.
+                // Best-effort.
+#pragma warning disable CA1031 // Do not catch general exception types
                 try { await SendSocketIoTextAsync(socket, wireText, ct); }
                 catch (Exception ex)
+#pragma warning restore CA1031
                 {
                     logger.LogWarning(ex, "socket.io-emit failed for frame {Index} of step {StepId}", frame.Index, step.Id);
                 }

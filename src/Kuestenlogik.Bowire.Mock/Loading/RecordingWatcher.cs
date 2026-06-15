@@ -79,7 +79,12 @@ public sealed class RecordingWatcher : IDisposable
             {
                 // Superseded by a later write — ignore, the later reload will run.
             }
+            // Reload-from-disk must not crash the watcher loop. Json
+            // and IO are the realistic shapes, but the recording schema
+            // can carry plugin-author types.
+#pragma warning disable CA1031 // Do not catch general exception types
             catch (Exception ex)
+#pragma warning restore CA1031
             {
                 _logger?.LogError(ex,
                     "Failed to reload recording from {Path}; keeping previous version in memory.",

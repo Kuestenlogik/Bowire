@@ -82,8 +82,11 @@ internal static class MissCaptureWriter
                 "miss-capture: appended {StepId} ({Protocol} {Verb} {Path}) to {File}",
                 step.Id, step.Protocol, Safe(step.HttpVerb), Safe(step.HttpPath ?? ("/" + step.Service + "/" + step.Method)), path);
         }
-        catch (Exception ex)
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or System.Text.Json.JsonException or InvalidOperationException)
         {
+            // Miss-capture persistence is best-effort; the next miss will
+            // try again. JSON parse failure means the file was hand-edited
+            // into a bad shape; surface but keep serving.
             logger.LogWarning(ex, "miss-capture: failed to persist miss for {Path} to {File}",
                 Safe(ctx.Request.Path.Value), path);
         }
@@ -116,8 +119,10 @@ internal static class MissCaptureWriter
                 ctx.Request.Body.Position = 0; // rewind for any downstream middleware
             }
         }
-        catch (Exception ex)
+        catch (Exception ex) when (ex is IOException or InvalidOperationException or Microsoft.AspNetCore.Http.BadHttpRequestException)
         {
+            // Best-effort body read: client disconnect mid-upload + chunked
+            // framing errors are normal; capture proceeds without body.
             logger.LogWarning(ex, "miss-capture: failed to read REST request body for {Path}", Safe(ctx.Request.Path.Value));
         }
 
@@ -162,8 +167,9 @@ internal static class MissCaptureWriter
                 ctx.Request.Body.Position = 0;
             }
         }
-        catch (Exception ex)
+        catch (Exception ex) when (ex is IOException or InvalidOperationException or Microsoft.AspNetCore.Http.BadHttpRequestException)
         {
+            // gRPC frame read: same shape as REST body read above.
             logger.LogWarning(ex, "miss-capture: failed to read gRPC request frame for {Path}", Safe(ctx.Request.Path.Value));
         }
 
