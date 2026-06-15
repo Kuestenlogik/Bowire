@@ -68,7 +68,7 @@ public sealed class BowireProxyHttpsMitmTests
             l.UseHttps(new HttpsConnectionAdapterOptions { ServerCertificate = cert });
         }));
         var app = builder.Build();
-        ((IApplicationBuilder)app).Run(handler);
+        app.Run(handler);
         await app.StartAsync(ct);
         return app;
     }
@@ -111,10 +111,8 @@ public sealed class BowireProxyHttpsMitmTests
                 {
                     // Accept the leaf when the chain links up to the Bowire CA.
                     if (chain is null) return false;
-                    foreach (var el in chain.ChainElements)
-                    {
-                        if (el.Certificate.Thumbprint == ca.Certificate.Thumbprint) return true;
-                    }
+                    if (chain.ChainElements.Any(el => el.Certificate.Thumbprint == ca.Certificate.Thumbprint))
+                        return true;
                     // Test convenience: also accept when the leaf itself
                     // was issued by the CA's subject (chain-build may
                     // not include the CA when it isn't in the trust store).
