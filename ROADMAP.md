@@ -12,18 +12,16 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.0 — Re-architected workbench shell + workspace = project folder *(due 2026-06-19)*
 
-**56/64 done** · 8 backlog
+**58/64 done** · 6 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
 | [115](https://github.com/Kuestenlogik/Bowire/issues/115) | Bowire | [v2.0 — UI refactor: re-architect the workbench shell](#issue-kuestenlogik-bowire-115) | ⬜ Open |  |
 | [193](https://github.com/Kuestenlogik/Bowire/issues/193) | Bowire | [Workspace .bww Phase 2 — UI wiring + plugin-pin check + scope split](#issue-kuestenlogik-bowire-193) | ⬜ Open |  |
-| [195](https://github.com/Kuestenlogik/Bowire/issues/195) | Bowire | [Protocol plugin — OTLP passive listener (Kuestenlogik.Bowire.Protocol.Otlp)](#issue-kuestenlogik-bowire-195) | ⬜ Open |  |
 | [196](https://github.com/Kuestenlogik/Bowire/issues/196) | Bowire | [Git-backed workspaces Phase 2 — Kuestenlogik.Bowire.Workspace.Git runtime + FS-watch + secret merge](#issue-kuestenlogik-bowire-196) | ⬜ Open |  |
 | [197](https://github.com/Kuestenlogik/Bowire/issues/197) | Bowire | [Deprecate + unlist Kuestenlogik.Bowire.Extension.MapLibre on nuget.org after v2.0 ships](#issue-kuestenlogik-bowire-197) | ⬜ Open |  |
 | [210](https://github.com/Kuestenlogik/Bowire/issues/210) | Bowire | [Standalone recording format .bwr — self-contained, workspace-agnostic](#issue-kuestenlogik-bowire-210) | ⬜ Open |  |
 | [211](https://github.com/Kuestenlogik/Bowire/issues/211) | Bowire | [bowire mock <recording.bwr> — HTTP replay server from a recording](#issue-kuestenlogik-bowire-211) | ⬜ Open |  |
-| [212](https://github.com/Kuestenlogik/Bowire/issues/212) | Bowire | [Workspace storage mode — workspace-level field (precursor to #196)](#issue-kuestenlogik-bowire-212) | ⬜ Open |  |
 | [25](https://github.com/Kuestenlogik/Bowire/issues/25) | Bowire | [AI side-panel integration](#issue-kuestenlogik-bowire-25) | ✅ Done | `area:workbench` |
 | [33](https://github.com/Kuestenlogik/Bowire/issues/33) | Bowire | [Protocol plugins — Connect Phase 1+3 + OTLP](#issue-kuestenlogik-bowire-33) | ✅ Done | `area:plugin-sdk` |
 | [43](https://github.com/Kuestenlogik/Bowire/issues/43) | Bowire | [MCP SSE-transport support](#issue-kuestenlogik-bowire-43) | ✅ Done | `area:mcp` |
@@ -79,7 +77,9 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [168](https://github.com/Kuestenlogik/Bowire/issues/168) | Bowire | [Workbench-wide action log with undo / redo (Ctrl+Z)](#issue-kuestenlogik-bowire-168) | ✅ Done |  |
 | [169](https://github.com/Kuestenlogik/Bowire/issues/169) | Bowire | [Hint dismiss pattern — "Don't show again" + Settings restore](#issue-kuestenlogik-bowire-169) | ✅ Done |  |
 | [192](https://github.com/Kuestenlogik/Bowire/issues/192) | Bowire | [Workspace + Settings: sidebar tree navigation (MudBlazor TreeView / NavMenu style)](#issue-kuestenlogik-bowire-192) | ✅ Done |  |
+| [195](https://github.com/Kuestenlogik/Bowire/issues/195) | Bowire | [Protocol plugin — OTLP passive listener (Kuestenlogik.Bowire.Protocol.Otlp)](#issue-kuestenlogik-bowire-195) | ✅ Done |  |
 | [209](https://github.com/Kuestenlogik/Bowire/issues/209) | Bowire | [Workspace file extension: rename .blw → .bww](#issue-kuestenlogik-bowire-209) | ✅ Done |  |
+| [212](https://github.com/Kuestenlogik/Bowire/issues/212) | Bowire | [Workspace storage mode — workspace-level field (precursor to #196)](#issue-kuestenlogik-bowire-212) | ✅ Done |  |
 
 ### v2.1 — Scripting, variable resolver, throughput surface *(due 2026-06-30)*
 
@@ -203,10 +203,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 `.bww` schema extension (Phase 1) shipped in 2f80024 — `workspaceFormatVersion`, `recordings`, `flows`, and `pluginPins` are now part of the on-disk shape with backwards-compatible deserialization and stable camelCase serialization. The workbench doesn't yet read or write the new fields; that's Phase 2. [[more]](https://github.com/Kuestenlogik/Bowire/issues/193)
 
-#### <a id="issue-kuestenlogik-bowire-195"></a>⬜ Open · [#195](https://github.com/Kuestenlogik/Bowire/issues/195) Protocol plugin — OTLP passive listener (Kuestenlogik.Bowire.Protocol.Otlp)
-
-Bowire's multi-protocol coverage is wide — REST / gRPC / GraphQL / MQTT / Kafka / SignalR / Connect / WebSocket / SSE / MCP / SOAP / NATS / JSON-RPC / Pulsar / DIS / UDP — but the observability lane has no first-class entry. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/195)
-
 #### <a id="issue-kuestenlogik-bowire-196"></a>⬜ Open · [#196](https://github.com/Kuestenlogik/Bowire/issues/196) Git-backed workspaces Phase 2 — Kuestenlogik.Bowire.Workspace.Git runtime + FS-watch + secret merge
 
 Phase 1 (#147-#149-#151) shipped in eb2bf1c: `BowireUserContext.GetWorkspacePath(workspaceId, storageRoot?, relative)` resolver, `bowire workspace init <path>` CLI, per-entity layout + `.gitignore` template with the secret-separation convention. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/196)
@@ -220,10 +216,6 @@ Phase 1 (#147-#149-#151) shipped in eb2bf1c: `BowireUserContext.GetWorkspacePath
 @-
 
 #### <a id="issue-kuestenlogik-bowire-211"></a>⬜ Open · [#211](https://github.com/Kuestenlogik/Bowire/issues/211) bowire mock <recording.bwr> — HTTP replay server from a recording
-
-@-
-
-#### <a id="issue-kuestenlogik-bowire-212"></a>⬜ Open · [#212](https://github.com/Kuestenlogik/Bowire/issues/212) Workspace storage mode — workspace-level field (precursor to #196)
 
 @-
 
@@ -453,7 +445,15 @@ The workbench has several "this is a hint / warning" surfaces, each with its own
 
 Workspace-related navigation is slow and indirect today: [[more]](https://github.com/Kuestenlogik/Bowire/issues/192)
 
+#### <a id="issue-kuestenlogik-bowire-195"></a>✅ Done · [#195](https://github.com/Kuestenlogik/Bowire/issues/195) Protocol plugin — OTLP passive listener (Kuestenlogik.Bowire.Protocol.Otlp)
+
+Bowire's multi-protocol coverage is wide — REST / gRPC / GraphQL / MQTT / Kafka / SignalR / Connect / WebSocket / SSE / MCP / SOAP / NATS / JSON-RPC / Pulsar / DIS / UDP — but the observability lane has no first-class entry. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/195)
+
 #### <a id="issue-kuestenlogik-bowire-209"></a>✅ Done · [#209](https://github.com/Kuestenlogik/Bowire/issues/209) Workspace file extension: rename .blw → .bww
+
+@-
+
+#### <a id="issue-kuestenlogik-bowire-212"></a>✅ Done · [#212](https://github.com/Kuestenlogik/Bowire/issues/212) Workspace storage mode — workspace-level field (precursor to #196)
 
 @-
 
