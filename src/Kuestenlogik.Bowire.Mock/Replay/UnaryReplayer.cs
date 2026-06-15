@@ -1119,18 +1119,12 @@ public static class UnaryReplayer
             // inner text value (which may itself be a JSON object — preserve
             // it as the compact JSON string it represents). Anything else
             // gets sent as its raw JSON form.
-            string payload;
-            if (string.Equals(type, "text", StringComparison.OrdinalIgnoreCase) &&
-                root.TryGetProperty("text", out var textEl))
-            {
-                payload = textEl.ValueKind == System.Text.Json.JsonValueKind.String
+            var payload = string.Equals(type, "text", StringComparison.OrdinalIgnoreCase) &&
+                          root.TryGetProperty("text", out var textEl)
+                ? (textEl.ValueKind == System.Text.Json.JsonValueKind.String
                     ? textEl.GetString() ?? string.Empty
-                    : textEl.GetRawText();
-            }
-            else
-            {
-                payload = raw;
-            }
+                    : textEl.GetRawText())
+                : raw;
 
             payload = ResponseBodySubstitutor.Substitute(payload);
             var bytesText = Encoding.UTF8.GetBytes(payload);
@@ -1702,9 +1696,8 @@ public static class UnaryReplayer
 
         // Index received frames by invocationId for O(1) lookup.
         var receivedById = new Dictionary<string, List<System.Text.Json.JsonElement>>(StringComparer.Ordinal);
-        foreach (var rec in step.ReceivedMessages)
+        foreach (var rec in step.ReceivedMessages.Where(r => r.Data is not null))
         {
-            if (rec.Data is null) continue;
             try
             {
                 var raw = System.Text.Json.JsonSerializer.Serialize(rec.Data);
@@ -1740,9 +1733,8 @@ public static class UnaryReplayer
         }
 
         // Now walk sent invocations, pair each by its invocationId+target.
-        foreach (var sent in step.SentMessages)
+        foreach (var sent in step.SentMessages.Where(s => s.Data is not null))
         {
-            if (sent.Data is null) continue;
             try
             {
                 var raw = System.Text.Json.JsonSerializer.Serialize(sent.Data);
@@ -1875,9 +1867,9 @@ public static class UnaryReplayer
         // responseSet is a list of frames — iterate and emit each with
         // invocationId rewritten. For type=1/4 Invocation (no such
         // thing as a server-returned invocation for this target), skip.
-        foreach (var frame in EnumerateFrames(responseSet))
+        foreach (var frame in EnumerateFrames(responseSet)
+            .Where(f => f.ValueKind == System.Text.Json.JsonValueKind.Object))
         {
-            if (frame.ValueKind != System.Text.Json.JsonValueKind.Object) continue;
             var payload = RewriteInvocationId(frame, clientId);
             await SendSignalRFrameAsync(socket, payload, ct);
         }
@@ -2485,16 +2477,10 @@ public static class UnaryReplayer
             // placeholder is the only arg.
             var namespacePart = namespaceName is null ? "" : namespaceName + ",";
             var eventJson = System.Text.Json.JsonSerializer.Serialize(eventName);
-            string argsBody;
-            if (doc.RootElement.TryGetProperty("data", out var dataEl) &&
-                dataEl.ValueKind != System.Text.Json.JsonValueKind.Null)
-            {
-                argsBody = "[" + eventJson + "," + dataEl.GetRawText() + ",{\"_placeholder\":true,\"num\":0}]";
-            }
-            else
-            {
-                argsBody = "[" + eventJson + ",{\"_placeholder\":true,\"num\":0}]";
-            }
+            var argsBody = doc.RootElement.TryGetProperty("data", out var dataEl) &&
+                           dataEl.ValueKind != System.Text.Json.JsonValueKind.Null
+                ? "[" + eventJson + "," + dataEl.GetRawText() + ",{\"_placeholder\":true,\"num\":0}]"
+                : "[" + eventJson + ",{\"_placeholder\":true,\"num\":0}]";
 
             header = "51-" + namespacePart + argsBody;
             return true;
