@@ -483,9 +483,7 @@ public sealed class WebSocketAdditionalGapsTests
         public async ValueTask DisposeAsync()
         {
             await _cts.CancelAsync();
-            try { _listener.Stop(); } catch { }
-            try { _listener.Close(); } catch { }
-            try { await _loop; } catch { }
+            await BestEffortShutdown(_listener, _loop);
             _cts.Dispose();
         }
     }
@@ -535,7 +533,11 @@ public sealed class WebSocketAdditionalGapsTests
                     _ = Task.Run(() => HandleAsync(ctx));
                 }
             }
-            catch { }
+            catch (Exception ex)
+            {
+                // Accept loop unwinding on teardown — test peer, no recovery.
+                _ = ex;
+            }
         }
 
         private static async Task HandleAsync(HttpListenerContext ctx)
@@ -567,9 +569,7 @@ public sealed class WebSocketAdditionalGapsTests
         public async ValueTask DisposeAsync()
         {
             await _cts.CancelAsync();
-            try { _listener.Stop(); } catch { }
-            try { _listener.Close(); } catch { }
-            try { await _loop; } catch { }
+            await BestEffortShutdown(_listener, _loop);
             _cts.Dispose();
         }
     }
@@ -623,7 +623,11 @@ public sealed class WebSocketAdditionalGapsTests
                     _ = Task.Run(() => HandleAsync(ctx, status, description));
                 }
             }
-            catch { }
+            catch (Exception ex)
+            {
+                // Accept loop unwinding on teardown — test peer, no recovery.
+                _ = ex;
+            }
         }
 
         private static async Task HandleAsync(HttpListenerContext ctx,
@@ -638,15 +642,19 @@ public sealed class WebSocketAdditionalGapsTests
             {
                 await ws.CloseAsync(status, description, CancellationToken.None);
             }
-            catch { }
+            catch (Exception ex)
+            {
+                // Client may have already dropped before the server-initiated
+                // close handshake completes; whole point of this peer is to
+                // start the close, not negotiate a clean one.
+                _ = ex;
+            }
         }
 
         public async ValueTask DisposeAsync()
         {
             await _cts.CancelAsync();
-            try { _listener.Stop(); } catch { }
-            try { _listener.Close(); } catch { }
-            try { await _loop; } catch { }
+            await BestEffortShutdown(_listener, _loop);
             _cts.Dispose();
         }
     }
@@ -674,6 +682,35 @@ public sealed class WebSocketAdditionalGapsTests
             ct: ct);
 
         return channel ?? throw new InvalidOperationException("OpenChannelAsync returned null");
+    }
+
+    /// <summary>
+    /// Tear down a self-hosted listener + its accept loop, swallowing
+    /// each step's expected teardown exceptions (already-stopped
+    /// listener, observed accept-loop fault). Shared by every fixture
+    /// peer in this file so the catches are typed in exactly one place.
+    /// </summary>
+    private static async Task BestEffortShutdown(HttpListener listener, Task loop)
+    {
+        try { listener.Stop(); }
+        catch (Exception ex)
+        {
+            // Already stopped or disposed — fine during teardown.
+            _ = ex;
+        }
+        try { listener.Close(); }
+        catch (Exception ex)
+        {
+            // Same: idempotent close on the test fixture.
+            _ = ex;
+        }
+        try { await loop; }
+        catch (Exception ex)
+        {
+            // The accept loop unwinds via the stop/close above; observing
+            // its fault is the whole point of awaiting it here.
+            _ = ex;
+        }
     }
 
     private static class ListenerHelpers
