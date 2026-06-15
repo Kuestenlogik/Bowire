@@ -134,12 +134,13 @@ internal static class ChunkedRecordingStore
                 var recordings = new List<JsonElement>();
                 if (Directory.Exists(root))
                 {
-                    foreach (var dir in Directory.EnumerateDirectories(root))
-                    {
-                        var doc = manifestOnly
+                    foreach (var doc in Directory.EnumerateDirectories(root)
+                        .Select(dir => manifestOnly
                             ? TryReadRecordingMetadataOnly(dir)
-                            : TryAssembleRecording(dir);
-                        if (doc.HasValue) recordings.Add(doc.Value);
+                            : TryAssembleRecording(dir))
+                        .Where(d => d.HasValue))
+                    {
+                        recordings.Add(doc!.Value);
                     }
                 }
                 var wrapper = new { recordings };
@@ -420,9 +421,8 @@ internal static class ChunkedRecordingStore
         {
             var stepsOut = new JsonArray();
             var stepsDir = Path.Combine(recordingDir, StepsDirectory);
-            foreach (var entry in manifest)
+            foreach (var entryObj in manifest.OfType<JsonObject>())
             {
-                if (entry is not JsonObject entryObj) continue;
                 var stepFile = (string?)entryObj["file"];
                 JsonNode? stepNode = null;
                 if (!string.IsNullOrEmpty(stepFile))
@@ -563,9 +563,9 @@ internal static class ChunkedRecordingStore
         // Recording ids are short slugs; defensive sanitisation in case
         // a malicious client tries '../' or absolute paths.
         var sb = new StringBuilder(id.Length);
-        foreach (var c in id)
+        foreach (var c in id.Where(ch => char.IsLetterOrDigit(ch) || ch == '_' || ch == '-' || ch == '.'))
         {
-            if (char.IsLetterOrDigit(c) || c == '_' || c == '-' || c == '.') sb.Append(c);
+            sb.Append(c);
         }
         var result = sb.ToString().TrimStart('.').TrimEnd('.');
         return string.IsNullOrEmpty(result) ? "anon" : result;
