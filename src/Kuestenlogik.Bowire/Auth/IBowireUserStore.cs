@@ -69,7 +69,13 @@ public sealed class DefaultBowireUserStore : IBowireUserStore
     public string GetUserPath(string filename)
     {
         ArgumentException.ThrowIfNullOrEmpty(filename);
-        return Path.Combine(Root, filename);
+        // SafePath.Combine rejects rooted filenames (so a caller can't
+        // sneak an absolute path that would silently drop Root via
+        // Path.Combine's documented behaviour) and verifies the result
+        // still lives under Root after normalisation. Callers pass
+        // multi-segment relatives like "workspaces/<id>/recordings"
+        // through here too — SafePath handles them the same way.
+        return SafePath.Combine(Root, filename);
     }
 }
 
@@ -132,16 +138,40 @@ public static class BowireUserContext
     public static string GetWorkspacePath(string workspaceId, string? storageRoot, string relativePath)
     {
         ArgumentException.ThrowIfNullOrEmpty(relativePath);
+        // Upfront rejection of absolute relativePath / workspaceId so
+        // every downstream Path.Combine in this method is safe — the
+        // BCL would silently drop earlier segments otherwise (the
+        // cs/path-combine footgun). storageRoot itself is the operator's
+        // chosen root in both branches; we trust that one.
+        if (Path.IsPathRooted(relativePath))
+        {
+            throw new ArgumentException(
+                "Expected a relative path; got an absolute path: " + relativePath,
+                nameof(relativePath));
+        }
+        if (!string.IsNullOrEmpty(workspaceId) && Path.IsPathRooted(workspaceId))
+        {
+            throw new ArgumentException(
+                "Expected a relative workspace id; got an absolute path: " + workspaceId,
+                nameof(workspaceId));
+        }
+
         if (!string.IsNullOrWhiteSpace(storageRoot))
         {
             // Anchor everything under the operator's checked-out folder
             // so per-entity files land in the working tree the team
-            // ships in git. Trust the operator's path verbatim — they
-            // explicitly opted into this storage root.
-            return Path.Combine(storageRoot, relativePath);
+            // ships in git. SafePath verifies the combined path stays
+            // under storageRoot after normalisation — blocks ../
+            // escapes the operator's relativePath could otherwise smuggle.
+            return SafePath.Combine(storageRoot, relativePath);
         }
         // Default-folder layout — preserved exactly so installs that
-        // haven't opted in see zero behavioural change.
+        // haven't opted in see zero behavioural change. The IsPathRooted
+        // guards above mean each Path.Combine here just concatenates
+        // segments under the (relative) "workspaces" anchor; the
+        // ../-escape check happens one level down when the legacy
+        // string flows into DefaultBowireUserStore.GetUserPath →
+        // SafePath.Combine.
         var legacy = string.IsNullOrEmpty(workspaceId)
             ? Path.Combine("workspaces", relativePath)
             : Path.Combine("workspaces", workspaceId, relativePath);
