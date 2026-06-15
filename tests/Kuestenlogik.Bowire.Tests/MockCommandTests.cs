@@ -106,7 +106,7 @@ public sealed class MockCommandTests
         // PrintMissingPlugins helper emits, so we assert on the
         // diagnostic content too — not just the exit code.
         var dir = Directory.CreateTempSubdirectory("bowire-mock-").FullName;
-        var rec = Path.Combine(dir, "rec.json");
+        var rec = SafePath.Combine(dir, "rec.json");
         try
         {
             await File.WriteAllTextAsync(rec, MakeRecordingJson("nonexistent-proto-x"),
@@ -141,7 +141,7 @@ public sealed class MockCommandTests
         // PrintMissingPlugins fails this test instead of slipping
         // through on the exit-code match alone.
         var dir = Directory.CreateTempSubdirectory("bowire-mock-pmp-").FullName;
-        var rec = Path.Combine(dir, "rec.json");
+        var rec = SafePath.Combine(dir, "rec.json");
         try
         {
             await File.WriteAllTextAsync(rec, MakeRecordingJson("kafka"),
@@ -174,7 +174,7 @@ public sealed class MockCommandTests
         // PluginPackageMap → TryAutoInstallAsync immediately bails
         // because there's no NuGet id to install. Exit 1.
         var dir = Directory.CreateTempSubdirectory("bowire-mock-").FullName;
-        var rec = Path.Combine(dir, "rec.json");
+        var rec = SafePath.Combine(dir, "rec.json");
         try
         {
             await File.WriteAllTextAsync(rec, MakeRecordingJson("totally-made-up-zzz"),
@@ -211,7 +211,7 @@ public sealed class MockCommandTests
             using var stderr = new StringWriter();
             var cli = new MockCliOptions
             {
-                RecordingPath = Path.Combine(dir, "absent.bwr"),
+                RecordingPath = SafePath.Combine(dir, "absent.bwr"),
             };
             var rc = await MockCommand.RunAsync(cli, stdout, stderr, TestContext.Current.CancellationToken);
             Assert.Equal(1, rc);
@@ -229,7 +229,7 @@ public sealed class MockCommandTests
         // Recording exists but is not valid JSON → load throws → catch
         // path returns 1.
         var dir = Directory.CreateTempSubdirectory("bowire-mock-").FullName;
-        var rec = Path.Combine(dir, "broken.bwr");
+        var rec = SafePath.Combine(dir, "broken.bwr");
         try
         {
             await File.WriteAllTextAsync(rec, "{ not json", TestContext.Current.CancellationToken);
@@ -262,7 +262,7 @@ public sealed class MockCommandTests
             using var stderr = new StringWriter();
             var cli = new MockCliOptions
             {
-                SchemaPath = Path.Combine(dir, "missing-openapi.yml"),
+                SchemaPath = SafePath.Combine(dir, "missing-openapi.yml"),
             };
             var rc = await MockCommand.RunAsync(cli, stdout, stderr, TestContext.Current.CancellationToken);
             Assert.Equal(1, rc);
@@ -289,7 +289,7 @@ public sealed class MockCommandTests
         {
             var cli = new MockCliOptions
             {
-                SchemaPath = Path.Combine(dir, "anything.yml"),
+                SchemaPath = SafePath.Combine(dir, "anything.yml"),
             };
             using var cts = new CancellationTokenSource();
             await cts.CancelAsync();
