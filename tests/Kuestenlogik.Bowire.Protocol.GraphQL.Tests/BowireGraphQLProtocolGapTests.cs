@@ -203,12 +203,10 @@ public sealed class BowireGraphQLProtocolGapTests
     private static int GetFreePort()
     {
         // Reserve a TCP port by binding loopback to port 0; the OS picks
-        // an unused ephemeral port. Stopping the listener releases it for
-        // HttpListener to reuse. CA2000 can't see that Stop() effectively
-        // disposes the socket on this code path.
-#pragma warning disable CA2000
-        var l = new TcpListener(IPAddress.Loopback, 0);
-#pragma warning restore CA2000
+        // an unused ephemeral port. TcpListener implements IDisposable
+        // (release the underlying socket) -- using makes the lifetime
+        // explicit rather than relying on Stop() for the cleanup.
+        using var l = new TcpListener(IPAddress.Loopback, 0);
         l.Start();
         var port = ((IPEndPoint)l.LocalEndpoint).Port;
         l.Stop();
