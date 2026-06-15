@@ -35,7 +35,7 @@ public sealed class PluginEmitterTests : IDisposable
         var probe = new ProbeEmitter(claim: true);
         var path = await WriteRestRecordingAsync("probe.json");
 
-        await using (var server = await MockServer.StartAsync(
+        await using (await MockServer.StartAsync(
             new MockServerOptions
             {
                 RecordingPath = path,
