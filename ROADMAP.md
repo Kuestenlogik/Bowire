@@ -12,7 +12,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.0 — Re-architected workbench shell + workspace = project folder
 
-**54/62 done** · 8 backlog
+**54/63 done** · 9 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -24,6 +24,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [209](https://github.com/Kuestenlogik/Bowire/issues/209) | Bowire | [Workspace file extension: rename .blw → .bww](#issue-kuestenlogik-bowire-209) | ⬜ Open |  |
 | [210](https://github.com/Kuestenlogik/Bowire/issues/210) | Bowire | [Standalone recording format .bwr — self-contained, workspace-agnostic](#issue-kuestenlogik-bowire-210) | ⬜ Open |  |
 | [211](https://github.com/Kuestenlogik/Bowire/issues/211) | Bowire | [bowire mock <recording.bwr> — HTTP replay server from a recording](#issue-kuestenlogik-bowire-211) | ⬜ Open |  |
+| [212](https://github.com/Kuestenlogik/Bowire/issues/212) | Bowire | [Workspace storage mode — workspace-level field (precursor to #196)](#issue-kuestenlogik-bowire-212) | ⬜ Open |  |
 | [25](https://github.com/Kuestenlogik/Bowire/issues/25) | Bowire | [AI side-panel integration](#issue-kuestenlogik-bowire-25) | ✅ Done | `area:workbench` |
 | [33](https://github.com/Kuestenlogik/Bowire/issues/33) | Bowire | [Protocol plugins — Connect Phase 1+3 + OTLP](#issue-kuestenlogik-bowire-33) | ✅ Done | `area:plugin-sdk` |
 | [43](https://github.com/Kuestenlogik/Bowire/issues/43) | Bowire | [MCP SSE-transport support](#issue-kuestenlogik-bowire-43) | ✅ Done | `area:mcp` |
@@ -223,6 +224,10 @@ Phase 1 (#147-#149-#151) shipped in eb2bf1c: `BowireUserContext.GetWorkspacePath
 @-
 
 #### <a id="issue-kuestenlogik-bowire-211"></a>⬜ Open · [#211](https://github.com/Kuestenlogik/Bowire/issues/211) bowire mock <recording.bwr> — HTTP replay server from a recording
+
+@-
+
+#### <a id="issue-kuestenlogik-bowire-212"></a>⬜ Open · [#212](https://github.com/Kuestenlogik/Bowire/issues/212) Workspace storage mode — workspace-level field (precursor to #196)
 
 @-
 
