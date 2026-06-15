@@ -431,8 +431,23 @@ public sealed class BowireSocketIoProtocolIntegrationTests : IAsyncDisposable
                 else if (ctx.Request.HttpMethod == "POST") await HandlePostAsync(ctx, session);
                 else ctx.Response.StatusCode = 405;
             }
-            catch { /* connection died: nothing to do */ }
-            finally { try { ctx.Response.OutputStream.Close(); } catch { } }
+            catch (Exception ex)
+            {
+                // Connection died (client hung up, listener stopped, or the
+                // response stream was already closed). Nothing the test
+                // server can do — surfacing would just spam logs.
+                _ = ex;
+            }
+            finally
+            {
+                try { ctx.Response.OutputStream.Close(); }
+                catch (Exception ex)
+                {
+                    // Best-effort close on teardown: the stream may already
+                    // be disposed or the underlying socket gone.
+                    _ = ex;
+                }
+            }
         }
 
         private async Task HandleHandshakeAsync(HttpListenerContext ctx)
