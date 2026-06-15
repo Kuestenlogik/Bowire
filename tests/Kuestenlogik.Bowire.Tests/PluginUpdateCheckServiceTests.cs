@@ -25,9 +25,9 @@ public sealed class PluginUpdateCheckServiceTests : IDisposable
 
     public PluginUpdateCheckServiceTests()
     {
-        var sandbox = Path.Combine(Path.GetTempPath(), $"bowire-pluginupd-{Guid.NewGuid():N}");
-        _pluginDir = Path.Combine(sandbox, "plugins");
-        _userStoreRoot = Path.Combine(sandbox, "userstore");
+        var sandbox = SafePath.Combine(Path.GetTempPath(), $"bowire-pluginupd-{Guid.NewGuid():N}");
+        _pluginDir = SafePath.Combine(sandbox, "plugins");
+        _userStoreRoot = SafePath.Combine(sandbox, "userstore");
         Directory.CreateDirectory(_pluginDir);
         Directory.CreateDirectory(_userStoreRoot);
 
@@ -159,7 +159,7 @@ public sealed class PluginUpdateCheckServiceTests : IDisposable
         // A directory under plugins/ without a plugin.json is ignored
         // rather than crashing the scan (e.g. half-written install
         // mid-extraction).
-        Directory.CreateDirectory(Path.Combine(_pluginDir, "Kuestenlogik.Bowire.Protocol.Demo"));
+        Directory.CreateDirectory(SafePath.Combine(_pluginDir, "Kuestenlogik.Bowire.Protocol.Demo"));
 
         using var http = NewHttpClient(_ => throw new InvalidOperationException("no HTTP expected"));
         var service = new PluginUpdateCheckService(http);
@@ -171,9 +171,9 @@ public sealed class PluginUpdateCheckServiceTests : IDisposable
     [Fact]
     public async Task CheckAsync_Skips_Plugin_With_Corrupted_Manifest()
     {
-        var dir = Path.Combine(_pluginDir, "Kuestenlogik.Bowire.Protocol.Demo");
+        var dir = SafePath.Combine(_pluginDir, "Kuestenlogik.Bowire.Protocol.Demo");
         Directory.CreateDirectory(dir);
-        await File.WriteAllTextAsync(Path.Combine(dir, "plugin.json"), "{not valid json", TestContext.Current.CancellationToken);
+        await File.WriteAllTextAsync(SafePath.Combine(dir, "plugin.json"), "{not valid json", TestContext.Current.CancellationToken);
 
         using var http = NewHttpClient(_ => throw new InvalidOperationException("no HTTP expected"));
         var service = new PluginUpdateCheckService(http);
@@ -193,7 +193,7 @@ public sealed class PluginUpdateCheckServiceTests : IDisposable
     {
         var dir = BowireUserContext.GetUserPath("state");
         Directory.CreateDirectory(dir);
-        File.WriteAllText(Path.Combine(dir, "update-check.json"), "{not json");
+        File.WriteAllText(SafePath.Combine(dir, "update-check.json"), "{not json");
 
         Assert.Null(PluginUpdateCheckService.ReadCached());
     }
@@ -216,10 +216,10 @@ public sealed class PluginUpdateCheckServiceTests : IDisposable
 
     private async Task WritePluginManifestAsync(string packageId, string version)
     {
-        var dir = Path.Combine(_pluginDir, packageId);
+        var dir = SafePath.Combine(_pluginDir, packageId);
         Directory.CreateDirectory(dir);
         var manifest = JsonSerializer.Serialize(new { packageId, version });
-        await File.WriteAllTextAsync(Path.Combine(dir, "plugin.json"), manifest, TestContext.Current.CancellationToken);
+        await File.WriteAllTextAsync(SafePath.Combine(dir, "plugin.json"), manifest, TestContext.Current.CancellationToken);
     }
 
     private static HttpClient NewHttpClient(Func<string, HttpResponseMessage> handler)
@@ -249,6 +249,6 @@ public sealed class PluginUpdateCheckServiceTests : IDisposable
 
     private sealed class TempStore(string root) : IBowireUserStore
     {
-        public string GetUserPath(string filename) => Path.Combine(root, filename);
+        public string GetUserPath(string filename) => SafePath.Combine(root, filename);
     }
 }
