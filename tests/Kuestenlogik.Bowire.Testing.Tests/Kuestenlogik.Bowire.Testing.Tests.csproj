@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+    <OutputType>Exe</OutputType>
+    <!--
+      Coverage for the Kuestenlogik.Bowire.Testing fixture library —
+      the shared CapturingBowireProtocol fake that upstream resolver
+      tests use to capture InvokeAsync arguments without spinning up a
+      real wire-plugin (Kafka broker, NATS server, AMQP connection,
+      &c). Pins the captured-arg shape, the defensive-copy semantics,
+      the InvokeResult return shape, and the no-op DiscoverAsync /
+      InvokeStreamAsync / OpenChannelAsync defaults.
+    -->
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit.v3" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+    <PackageReference Include="coverlet.collector"><PrivateAssets>all</PrivateAssets><IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets></PackageReference>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Kuestenlogik.Bowire\Kuestenlogik.Bowire.csproj" />
+    <ProjectReference Include="..\Kuestenlogik.Bowire.Testing\Kuestenlogik.Bowire.Testing.csproj" />
+  </ItemGroup>
+</Project>
