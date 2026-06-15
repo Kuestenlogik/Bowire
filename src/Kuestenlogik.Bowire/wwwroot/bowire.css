@@ -1940,6 +1940,103 @@ not just
     background: var(--bowire-accent-subtle);
     color: var(--bowire-accent-text);
 }
+/* Env overview list — workspace-tree → Environments parent node.
+   Each row carries [include-checkbox] [colour-globe] [name button]
+   [vars meta] [optional Active badge] [hover tools]. Mirrors the
+   topbar env dropdown's row shape so the two pick surfaces read
+   as variants of one pattern. */
+.bowire-env-overview-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-top: 6px;
+}
+.bowire-env-overview-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 12px;
+    border-radius: var(--bowire-radius-sm);
+    background: var(--bowire-surface);
+    border: 1px solid var(--bowire-border-subtle);
+    transition: background var(--bowire-transition-fast);
+}
+.bowire-env-overview-row:hover { background: var(--bowire-surface-hover); }
+.bowire-env-overview-include { flex-shrink: 0; cursor: pointer; }
+.bowire-env-overview-glyph {
+    width: 14px;
+    height: 14px;
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+.bowire-env-overview-glyph svg { width: 14px; height: 14px; }
+.bowire-env-overview-name {
+    flex: 1;
+    min-width: 0;
+    background: transparent;
+    border: none;
+    color: var(--bowire-text);
+    text-align: left;
+    font-size: 13px;
+    cursor: pointer;
+    padding: 4px 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.bowire-env-overview-name:hover { color: var(--bowire-accent); }
+.bowire-env-overview-meta {
+    font-size: 11px;
+    color: var(--bowire-text-tertiary);
+    flex-shrink: 0;
+    font-family: var(--bowire-font-mono);
+}
+.bowire-env-overview-active-badge {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--bowire-accent);
+    background: var(--bowire-accent-subtle);
+    padding: 2px 6px;
+    border-radius: var(--bowire-radius-pill);
+    flex-shrink: 0;
+}
+.bowire-env-overview-tools {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    flex-shrink: 0;
+    min-height: 22px;
+}
+.bowire-env-overview-tool {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    height: 22px;
+    min-width: 22px;
+    padding: 0 6px;
+    border: 0;
+    border-radius: var(--bowire-radius-sm);
+    background: transparent;
+    color: var(--bowire-text-tertiary);
+    cursor: pointer;
+    font-size: 11px;
+    font-weight: 500;
+    transition: background var(--bowire-transition), color var(--bowire-transition);
+}
+.bowire-env-overview-row:hover .bowire-env-overview-tool {
+    display: inline-flex;
+}
+.bowire-env-overview-tool:hover {
+    background: var(--bowire-bg-elevated);
+    color: var(--bowire-text);
+}
+.bowire-env-overview-tool-danger:hover { color: var(--bowire-error); }
+.bowire-env-overview-tool svg { width: 12px; height: 12px; }
+
 /* Per-row glyph — Lucide 'layers' (same icon as the Workspaces
    activity rail), with the top "leaf" filled in the workspace's
    chosen colour. Replaces the old plain colour-dot leader. The
@@ -6549,8 +6646,15 @@ they're a way
     border-color: var(--bowire-accent);
     box-shadow: 0 0 0 2px var(--bowire-accent-subtle);
 }
-.bowire-prompt-input-error {
+.bowire-prompt-input-error,
+.bowire-prompt-input-error:focus {
+    /* Error wins over the :focus accent border. Without the second
+       selector the focused error state inherits border-color from
+       :focus (declared later in source order) and the red border
+       only flashes for the unfocused frame — which is rare since
+       the validator path focuses the input before adding the class. */
     border-color: var(--bowire-error, #ef4444);
+    box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.25);
     animation: bowire-prompt-shake 0.4s ease;
 }
 @keyframes bowire-prompt-shake {
