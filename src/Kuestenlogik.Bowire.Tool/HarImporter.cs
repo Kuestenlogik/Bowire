@@ -33,6 +33,9 @@ internal static class HarImporter
 {
     private static readonly JsonSerializerOptions IndentedJson = new() { WriteIndented = true };
 
+    private static readonly string[] TimingPhaseKeys =
+        ["blocked", "dns", "connect", "send", "wait", "receive", "ssl"];
+
     /// <summary>
     /// Parse a HAR document and return a fresh <see cref="BowireRecording"/>.
     /// Throws <see cref="HarImportException"/> with a user-facing message on
@@ -75,10 +78,9 @@ internal static class HarImporter
         };
 
         var index = 0;
-        foreach (var entry in entries)
+        foreach (var entry in entries.Where(e => e is not null))
         {
-            if (entry is null) continue;
-            var step = MapEntry(entry, index++);
+            var step = MapEntry(entry!, index++);
             if (step is not null) recording.Steps.Add(step);
         }
 
@@ -315,12 +317,10 @@ internal static class HarImporter
 
         if (entry["timings"] is JsonObject timings)
         {
-            double sum = 0;
-            foreach (var key in new[] { "blocked", "dns", "connect", "send", "wait", "receive", "ssl" })
-            {
-                var v = timings[key]?.GetValue<double?>() ?? 0;
-                if (v > 0) sum += v;
-            }
+            var sum = TimingPhaseKeys
+                .Select(key => timings[key]?.GetValue<double?>() ?? 0)
+                .Where(v => v > 0)
+                .Sum();
             return (long)Math.Round(sum);
         }
         return 0;
