@@ -144,15 +144,14 @@ public static class BowireServiceCollectionExtensions
             BowireHttpClientFactory.CreateHandler(
                 sp.GetService<IConfiguration>(), "oauth"));
 
-        foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
+        foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies()
+            .Where(a => a.FullName?.Contains("Bowire") == true))
         {
-            if (assembly.FullName?.Contains("Bowire") != true) continue;
             try
             {
-                foreach (var type in assembly.GetTypes())
+                foreach (var type in assembly.GetTypes()
+                    .Where(t => !t.IsAbstract && !t.IsInterface && typeof(IBowireProtocolServices).IsAssignableFrom(t)))
                 {
-                    if (type.IsAbstract || type.IsInterface) continue;
-                    if (!typeof(IBowireProtocolServices).IsAssignableFrom(type)) continue;
                     if (Activator.CreateInstance(type) is IBowireProtocolServices setup)
                     {
                         setup.ConfigureServices(services);
@@ -326,12 +325,10 @@ public static class BowireServiceCollectionExtensions
             {
                 var registry = sp.GetService<BowireProtocolRegistry>();
                 if (registry is null) yield break;
-                foreach (var protocol in registry.Protocols)
+                foreach (var hints in registry.Protocols.OfType<IBowireSchemaHints>())
                 {
-                    if (protocol is not IBowireSchemaHints hints) continue;
-                    foreach (var annotation in hints.GetSchemaHints(serviceId, methodId))
+                    foreach (var annotation in hints.GetSchemaHints(serviceId, methodId).Where(a => a is not null))
                     {
-                        if (annotation is null) continue;
                         yield return annotation;
                     }
                 }
@@ -460,9 +457,11 @@ public static class BowireServiceCollectionExtensions
         if (string.IsNullOrEmpty(baseDir) || !Directory.Exists(baseDir)) return;
 
         var loaded = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        foreach (var asm in AppDomain.CurrentDomain.GetAssemblies())
+        foreach (var name in AppDomain.CurrentDomain.GetAssemblies()
+            .Select(a => a.FullName)
+            .Where(n => n is not null))
         {
-            if (asm.FullName is { } name) loaded.Add(name.Split(',')[0].Trim());
+            loaded.Add(name!.Split(',')[0].Trim());
         }
 
         foreach (var dll in Directory.EnumerateFiles(baseDir, "Kuestenlogik.Bowire*.dll"))
