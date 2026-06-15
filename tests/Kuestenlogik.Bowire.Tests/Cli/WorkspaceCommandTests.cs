@@ -20,7 +20,7 @@ public sealed class WorkspaceCommandTests : IDisposable
 
     public WorkspaceCommandTests()
     {
-        _tempRoot = Path.Combine(Path.GetTempPath(),
+        _tempRoot = SafePath.Combine(Path.GetTempPath(),
             "bowire-ws-init-" + Guid.NewGuid().ToString("N")[..10]);
     }
 
@@ -36,7 +36,7 @@ public sealed class WorkspaceCommandTests : IDisposable
         using var stdout = new StringWriter();
         using var stderr = new StringWriter();
 
-        var path = Path.Combine(_tempRoot, "fresh");
+        var path = SafePath.Combine(_tempRoot, "fresh");
         var rc = await WorkspaceCommand.RunInitAsync(path, displayName: null, color: null,
             noGit: true, stdout, stderr, TestContext.Current.CancellationToken);
 
@@ -45,9 +45,9 @@ public sealed class WorkspaceCommandTests : IDisposable
 
         foreach (var sub in new[] { "environments", "collections", "recordings", "scripts", "flows", "secrets" })
         {
-            var subPath = Path.Combine(path, sub);
+            var subPath = SafePath.Combine(path, sub);
             Assert.True(Directory.Exists(subPath), $"subdir missing: {sub}");
-            Assert.True(File.Exists(Path.Combine(subPath, ".gitkeep")), $".gitkeep missing in {sub}");
+            Assert.True(File.Exists(SafePath.Combine(subPath, ".gitkeep")), $".gitkeep missing in {sub}");
         }
     }
 
@@ -56,13 +56,13 @@ public sealed class WorkspaceCommandTests : IDisposable
     {
         using var stdout = new StringWriter();
         using var stderr = new StringWriter();
-        var path = Path.Combine(_tempRoot, "payments-team");
+        var path = SafePath.Combine(_tempRoot, "payments-team");
 
         var rc = await WorkspaceCommand.RunInitAsync(path, displayName: null, color: null,
             noGit: true, stdout, stderr, TestContext.Current.CancellationToken);
 
         Assert.Equal(0, rc);
-        var manifestPath = Path.Combine(path, "workspace.json");
+        var manifestPath = SafePath.Combine(path, "workspace.json");
         Assert.True(File.Exists(manifestPath));
 
         var json = await File.ReadAllTextAsync(manifestPath, TestContext.Current.CancellationToken);
@@ -81,14 +81,14 @@ public sealed class WorkspaceCommandTests : IDisposable
     {
         using var stdout = new StringWriter();
         using var stderr = new StringWriter();
-        var path = Path.Combine(_tempRoot, "with-flags");
+        var path = SafePath.Combine(_tempRoot, "with-flags");
 
         var rc = await WorkspaceCommand.RunInitAsync(path,
             displayName: "Payments — staging", color: "#22c55e",
             noGit: true, stdout, stderr, TestContext.Current.CancellationToken);
 
         Assert.Equal(0, rc);
-        var json = await File.ReadAllTextAsync(Path.Combine(path, "workspace.json"),
+        var json = await File.ReadAllTextAsync(SafePath.Combine(path, "workspace.json"),
             TestContext.Current.CancellationToken);
         using var doc = JsonDocument.Parse(json);
         Assert.Equal("Payments — staging", doc.RootElement.GetProperty("name").GetString());
@@ -100,11 +100,11 @@ public sealed class WorkspaceCommandTests : IDisposable
     {
         using var stdout = new StringWriter();
         using var stderr = new StringWriter();
-        var path = Path.Combine(_tempRoot, "gitignore");
+        var path = SafePath.Combine(_tempRoot, "gitignore");
         await WorkspaceCommand.RunInitAsync(path, null, null, noGit: true,
             stdout, stderr, TestContext.Current.CancellationToken);
 
-        var gitignore = await File.ReadAllTextAsync(Path.Combine(path, ".gitignore"),
+        var gitignore = await File.ReadAllTextAsync(SafePath.Combine(path, ".gitignore"),
             TestContext.Current.CancellationToken);
 
         Assert.Contains("environments/*.secrets.json", gitignore);
@@ -120,9 +120,9 @@ public sealed class WorkspaceCommandTests : IDisposable
     {
         using var stdout = new StringWriter();
         using var stderr = new StringWriter();
-        var path = Path.Combine(_tempRoot, "non-empty");
+        var path = SafePath.Combine(_tempRoot, "non-empty");
         Directory.CreateDirectory(path);
-        await File.WriteAllTextAsync(Path.Combine(path, "existing.txt"), "do not touch",
+        await File.WriteAllTextAsync(SafePath.Combine(path, "existing.txt"), "do not touch",
             TestContext.Current.CancellationToken);
 
         var rc = await WorkspaceCommand.RunInitAsync(path, null, null, noGit: true,
@@ -132,9 +132,9 @@ public sealed class WorkspaceCommandTests : IDisposable
         Assert.Contains("not empty", stderr.ToString());
         // The pre-existing file is untouched.
         Assert.Equal("do not touch",
-            await File.ReadAllTextAsync(Path.Combine(path, "existing.txt"), TestContext.Current.CancellationToken));
+            await File.ReadAllTextAsync(SafePath.Combine(path, "existing.txt"), TestContext.Current.CancellationToken));
         // No workspace.json was written.
-        Assert.False(File.Exists(Path.Combine(path, "workspace.json")));
+        Assert.False(File.Exists(SafePath.Combine(path, "workspace.json")));
     }
 
     [Fact]
