@@ -12,12 +12,11 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.0 — Re-architected workbench shell + workspace = project folder
 
-**54/60 done** · 6 backlog
+**54/59 done** · 5 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
 | [115](https://github.com/Kuestenlogik/Bowire/issues/115) | Bowire | [v2.0 — UI refactor: re-architect the workbench shell](#issue-kuestenlogik-bowire-115) | ⬜ Open |  |
-| [145](https://github.com/Kuestenlogik/Bowire/issues/145) | Bowire | [Deprecate ${name} in favour of {{name}} (multi-phase migration)](#issue-kuestenlogik-bowire-145) | ⬜ Open |  |
 | [193](https://github.com/Kuestenlogik/Bowire/issues/193) | Bowire | [Workspace .blw Phase 2 — UI wiring + plugin-pin check + scope split](#issue-kuestenlogik-bowire-193) | ⬜ Open |  |
 | [195](https://github.com/Kuestenlogik/Bowire/issues/195) | Bowire | [Protocol plugin — OTLP passive listener (Kuestenlogik.Bowire.Protocol.Otlp)](#issue-kuestenlogik-bowire-195) | ⬜ Open |  |
 | [196](https://github.com/Kuestenlogik/Bowire/issues/196) | Bowire | [Git-backed workspaces Phase 2 — Kuestenlogik.Bowire.Workspace.Git runtime + FS-watch + secret merge](#issue-kuestenlogik-bowire-196) | ⬜ Open |  |
@@ -79,7 +78,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.1 — Scripting, variable resolver, throughput surface
 
-**0/10 done** · 10 backlog
+**0/11 done** · 11 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -91,6 +90,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [136](https://github.com/Kuestenlogik/Bowire/issues/136) | Bowire | [URL / service catalogue providers (local / http / consul / kubernetes / agent)](#issue-kuestenlogik-bowire-136) | ⬜ Open |  |
 | [140](https://github.com/Kuestenlogik/Bowire/issues/140) | Bowire | [Per-mode 'Saved Configs' / Presets (distinct from cross-workflow favorites)](#issue-kuestenlogik-bowire-140) | ⬜ Open |  |
 | [144](https://github.com/Kuestenlogik/Bowire/issues/144) | Bowire | [Large-recording capture/replay — chunked disk layout, lazy step-load, GB-scale](#issue-kuestenlogik-bowire-144) | ⬜ Open |  |
+| [145](https://github.com/Kuestenlogik/Bowire/issues/145) | Bowire | [Deprecate ${name} in favour of {{name}} (multi-phase migration)](#issue-kuestenlogik-bowire-145) | ⬜ Open |  |
 | [153](https://github.com/Kuestenlogik/Bowire/issues/153) | Bowire | [Bowire as transparent interceptor — embedded middleware + standalone reverse-proxy](#issue-kuestenlogik-bowire-153) | ⬜ Open |  |
 | [194](https://github.com/Kuestenlogik/Bowire/issues/194) | Bowire | [Action log Phase 2 — remaining mutation sites + cross-reload undo + soft-delete workspaces](#issue-kuestenlogik-bowire-194) | ⬜ Open |  |
 
@@ -193,10 +193,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 #### <a id="issue-kuestenlogik-bowire-115"></a>⬜ Open · [#115](https://github.com/Kuestenlogik/Bowire/issues/115) v2.0 — UI refactor: re-architect the workbench shell
 
 > **Status:** Phase 1 — Shell-Refactor abgeschlossen (Juni 2026). Die strukturelle Neuordnung der Workbench ist durch; was in v2.0 noch landet, sind Feature-Streams plus die echten Breaking-Change-Cleanups. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/115)
-
-#### <a id="issue-kuestenlogik-bowire-145"></a>⬜ Open · [#145](https://github.com/Kuestenlogik/Bowire/issues/145) Deprecate ${name} in favour of {{name}} (multi-phase migration)
-
-After #125 v1 landed, Bowire has two interpolation syntaxes that resolve identically: - `${name}` — Bowire's original Bash-style syntax (escape: `$${name}`) - `{{name}}` — Postman / Mustache convention (escape: `{{{{name}}}}`) [[more]](https://github.com/Kuestenlogik/Bowire/issues/145)
 
 #### <a id="issue-kuestenlogik-bowire-193"></a>⬜ Open · [#193](https://github.com/Kuestenlogik/Bowire/issues/193) Workspace .blw Phase 2 — UI wiring + plugin-pin check + scope split
 
@@ -469,6 +465,10 @@ Two concepts have been conflated under "favorites" in the workbench's evolution:
 #### <a id="issue-kuestenlogik-bowire-144"></a>⬜ Open · [#144](https://github.com/Kuestenlogik/Bowire/issues/144) Large-recording capture/replay — chunked disk layout, lazy step-load, GB-scale
 
 Recordings today scale to KB-to-single-digit-MB before the architecture pushes back: [[more]](https://github.com/Kuestenlogik/Bowire/issues/144)
+
+#### <a id="issue-kuestenlogik-bowire-145"></a>⬜ Open · [#145](https://github.com/Kuestenlogik/Bowire/issues/145) Deprecate ${name} in favour of {{name}} (multi-phase migration)
+
+After #125 v1 landed, Bowire has two interpolation syntaxes that resolve identically: - `${name}` — Bowire's original Bash-style syntax (escape: `$${name}`) - `{{name}}` — Postman / Mustache convention (escape: `{{{{name}}}}`) [[more]](https://github.com/Kuestenlogik/Bowire/issues/145)
 
 #### <a id="issue-kuestenlogik-bowire-153"></a>⬜ Open · [#153](https://github.com/Kuestenlogik/Bowire/issues/153) Bowire as transparent interceptor — embedded middleware + standalone reverse-proxy
 
