@@ -36,12 +36,18 @@ internal static class BowireRecordingEndpoints
             // but with stepsManifest in place of inlined step
             // bodies. Frontend's 'disk-only' storage mode reads this
             // on init + lazy-fetches step bodies on demand.
+            //
+            // #196 Phase 2.3 — storageRoot, when present, anchors the
+            // recordings folder under the operator's checked-out
+            // workspace path instead of ~/.bowire/workspaces/<id>/.
             var wsId = ctx.Request.Query["workspaceId"].ToString();
             var manifestOnly = ctx.Request.Query["manifestOnly"].ToString() == "1";
+            var storageRoot = ctx.Request.Query["storageRoot"].ToString();
             return Results.Content(
                 ChunkedRecordingStore.LoadAll(
                     string.IsNullOrEmpty(wsId) ? null : wsId,
-                    manifestOnly),
+                    manifestOnly,
+                    string.IsNullOrEmpty(storageRoot) ? null : storageRoot),
                 "application/json");
         }).ExcludeFromDescription();
 
@@ -59,7 +65,11 @@ internal static class BowireRecordingEndpoints
                 // a parse hiccup never blocks a save.
                 var enriched = TryEnrichWithSourceSchema(json) ?? json;
                 var wsId = ctx.Request.Query["workspaceId"].ToString();
-                ChunkedRecordingStore.SaveAll(enriched, string.IsNullOrEmpty(wsId) ? null : wsId);
+                var storageRoot = ctx.Request.Query["storageRoot"].ToString();
+                ChunkedRecordingStore.SaveAll(
+                    enriched,
+                    string.IsNullOrEmpty(wsId) ? null : wsId,
+                    string.IsNullOrEmpty(storageRoot) ? null : storageRoot);
                 return Results.Json(new { saved = true }, BowireEndpointHelpers.JsonOptions);
             }
             catch (JsonException ex)

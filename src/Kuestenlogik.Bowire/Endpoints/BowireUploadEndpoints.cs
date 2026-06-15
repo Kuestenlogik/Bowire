@@ -23,7 +23,8 @@ internal static class BowireUploadEndpoints
         // Upload .proto file content (standalone mode)
         endpoints.MapPost($"{basePath}/api/proto/upload", async (HttpContext ctx) =>
         {
-            var body = await new StreamReader(ctx.Request.Body).ReadToEndAsync(ctx.RequestAborted);
+            using var reader = new StreamReader(ctx.Request.Body);
+            var body = await reader.ReadToEndAsync(ctx.RequestAborted);
 
             if (string.IsNullOrWhiteSpace(body))
                 return BowireEndpointHelpers.Problem(
@@ -53,7 +54,8 @@ internal static class BowireUploadEndpoints
         // reader dependency lives in the core assembly.
         endpoints.MapPost($"{basePath}/api/openapi/upload", async (HttpContext ctx) =>
         {
-            var body = await new StreamReader(ctx.Request.Body).ReadToEndAsync(ctx.RequestAborted);
+            using var reader = new StreamReader(ctx.Request.Body);
+            var body = await reader.ReadToEndAsync(ctx.RequestAborted);
 
             if (string.IsNullOrWhiteSpace(body))
                 return BowireEndpointHelpers.Problem(

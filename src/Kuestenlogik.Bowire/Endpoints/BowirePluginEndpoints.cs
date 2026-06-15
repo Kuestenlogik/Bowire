@@ -264,7 +264,8 @@ internal static class BowirePluginEndpoints
 
         endpoints.MapPost($"{basePath}/api/plugins/install", async (HttpContext ctx) =>
         {
-            var body = await new StreamReader(ctx.Request.Body).ReadToEndAsync();
+            using var reader = new StreamReader(ctx.Request.Body);
+            var body = await reader.ReadToEndAsync(ctx.RequestAborted);
             var req = JsonSerializer.Deserialize<JsonElement>(body);
             var packageId = req.TryGetProperty("packageId", out var pid) ? pid.GetString() : null;
             var version = req.TryGetProperty("version", out var ver) ? ver.GetString() : null;
@@ -287,7 +288,8 @@ internal static class BowirePluginEndpoints
             var prerelease = false;
             if (ctx.Request.ContentLength is > 0)
             {
-                var body = await new StreamReader(ctx.Request.Body).ReadToEndAsync();
+                using var reader = new StreamReader(ctx.Request.Body);
+                var body = await reader.ReadToEndAsync(ctx.RequestAborted);
                 if (!string.IsNullOrWhiteSpace(body))
                 {
                     var req = JsonSerializer.Deserialize<JsonElement>(body);
