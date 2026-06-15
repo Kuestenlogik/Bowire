@@ -1,6 +1,7 @@
 // Copyright 2026 Küstenlogik
 // SPDX-License-Identifier: Apache-2.0
 
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.Loader;
@@ -85,18 +86,35 @@ public sealed class BowirePluginHostTests : IDisposable
 
         Assert.True(host.Unload("Collect"));
 
-        // Collectible ALCs unload over several GC cycles in the CLR.
-        // 10 cycles with a waitForPendingFinalizers is the idiomatic
-        // loop for unload-verification tests in the .NET docs.
-        for (var i = 0; i < 10 && !host.IsUnloaded("Collect"); i++)
-        {
-            GC.Collect();
-            GC.WaitForPendingFinalizers();
-        }
+        ForceAlcUnloadCycle(host, "Collect");
 
         Assert.True(host.IsUnloaded("Collect"),
             "Plugin ALC should have unloaded after dropping references; " +
             "if this fails the host is accidentally pinning the context.");
+    }
+
+    // Collectible ALCs unload over several GC cycles in the CLR.
+    // 10 cycles with a waitForPendingFinalizers is the idiomatic loop
+    // for unload-verification tests in the .NET docs:
+    //   https://learn.microsoft.com/en-us/dotnet/standard/assembly/unloadability
+    //
+    // CodeQL fires cs/call-to-gc on the GC.Collect() inside; that's a
+    // genuine false-positive for ALC-unload verification (the rule
+    // exists to catch GC abuse in production paths, not in tests that
+    // assert collectibility). Concentrating the GC-dance to one helper
+    // pins the rule's mention to a single site and lets reviewers see
+    // the .NET-docs justification right next to it.
+    [SuppressMessage(
+        "Microsoft.Reliability",
+        "cs/call-to-gc",
+        Justification = "Documented .NET idiom for AssemblyLoadContext unload verification; see https://learn.microsoft.com/en-us/dotnet/standard/assembly/unloadability")]
+    private static void ForceAlcUnloadCycle(BowirePluginHost host, string label, int maxIterations = 10)
+    {
+        for (var i = 0; i < maxIterations && !host.IsUnloaded(label); i++)
+        {
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+        }
     }
 
     // NoInlining + scope isolation so the JIT can't extend the lifetime
