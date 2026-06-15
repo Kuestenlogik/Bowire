@@ -51,12 +51,11 @@ internal static class AsyncApiBindingsStripper
         if (stream.Documents.Count == 0) return yaml;
 
         var removed = false;
-        foreach (var doc in stream.Documents)
+        foreach (var root in stream.Documents
+            .Select(d => d.RootNode)
+            .OfType<YamlMappingNode>())
         {
-            if (doc.RootNode is YamlMappingNode root)
-            {
-                if (StripBindingsRecursive(root)) removed = true;
-            }
+            if (StripBindingsRecursive(root)) removed = true;
         }
 
         if (!removed) return yaml;
@@ -98,10 +97,9 @@ internal static class AsyncApiBindingsStripper
                     if (StripBindingsRecursive(mapping)) removedAny = true;
                     break;
                 case YamlSequenceNode sequence:
-                    foreach (var item in sequence.Children)
+                    foreach (var itemMapping in sequence.Children.OfType<YamlMappingNode>())
                     {
-                        if (item is YamlMappingNode itemMapping
-                            && StripBindingsRecursive(itemMapping)) removedAny = true;
+                        if (StripBindingsRecursive(itemMapping)) removedAny = true;
                     }
                     break;
             }
