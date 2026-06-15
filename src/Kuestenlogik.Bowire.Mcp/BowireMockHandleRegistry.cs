@@ -78,13 +78,19 @@ public sealed class BowireMockHandleRegistry : IAsyncDisposable
     {
         foreach (var kvp in _handles.ToArray())
         {
-            // CA2000 false-positive: this *is* the dispose path.
+            // CA2000 false-positive: this *is* the dispose path. Roslyn
+            // doesn't recognise `await server.DisposeAsync()` as the
+            // disposal it asks for (it pattern-matches `IDisposable.Dispose`
+            // only, not the async overload), and a structural rewrite to
+            // a try/finally just re-fires the same warning because the
+            // analyzer wants the same shape it can't follow. The handle
+            // table contract is documented: ownership *is* released here.
 #pragma warning disable CA2000
             if (_handles.TryRemove(kvp.Key, out var server))
 #pragma warning restore CA2000
             {
                 try { await server.DisposeAsync().ConfigureAwait(false); }
-                catch { /* best-effort shutdown; agent is going away */ }
+                catch (Exception) { /* best-effort shutdown; agent is going away */ }
             }
         }
     }
