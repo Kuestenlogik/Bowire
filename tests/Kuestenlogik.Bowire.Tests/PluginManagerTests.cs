@@ -24,7 +24,7 @@ public sealed class PluginManagerTests : IDisposable
 
     public PluginManagerTests()
     {
-        _tempDir = Path.Combine(Path.GetTempPath(), "bowire-pm-" + Guid.NewGuid().ToString("N"));
+        _tempDir = SafePath.Combine(Path.GetTempPath(), "bowire-pm-" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(_tempDir);
         _envBackup = Environment.GetEnvironmentVariable(PluginManager.PluginDirEnvVar);
         Environment.SetEnvironmentVariable(PluginManager.PluginDirEnvVar, null);
@@ -55,7 +55,7 @@ public sealed class PluginManagerTests : IDisposable
     [Fact]
     public void ResolvePluginDir_EnvVar_UsedWhenNoExplicitArg()
     {
-        var target = Path.Combine(_tempDir, "env-dir");
+        var target = SafePath.Combine(_tempDir, "env-dir");
         Environment.SetEnvironmentVariable(PluginManager.PluginDirEnvVar, target);
         try
         {
@@ -86,7 +86,7 @@ public sealed class PluginManagerTests : IDisposable
     [Fact]
     public void List_NonExistentDir_ReturnsZero()
     {
-        var missing = Path.Combine(_tempDir, "nope");
+        var missing = SafePath.Combine(_tempDir, "nope");
         var rc = PluginManager.List(missing, verbose: false);
         Assert.Equal(0, rc);
     }
@@ -104,9 +104,9 @@ public sealed class PluginManagerTests : IDisposable
         // Create a fake plugin with a plugin.json but no DLLs — exercises
         // the metadata-read + DLL-count branch without spinning up a
         // real load context.
-        var pluginSub = Path.Combine(_tempDir, "stub-plugin");
+        var pluginSub = SafePath.Combine(_tempDir, "stub-plugin");
         Directory.CreateDirectory(pluginSub);
-        File.WriteAllText(Path.Combine(pluginSub, "plugin.json"),
+        File.WriteAllText(SafePath.Combine(pluginSub, "plugin.json"),
             """
             {
               "packageId": "stub-plugin",
@@ -128,7 +128,7 @@ public sealed class PluginManagerTests : IDisposable
     {
         // No plugin.json — ReadPluginMetadata returns the empty-record
         // fallback, DisplayVersion shows "unknown", List still succeeds.
-        Directory.CreateDirectory(Path.Combine(_tempDir, "no-meta"));
+        Directory.CreateDirectory(SafePath.Combine(_tempDir, "no-meta"));
         Assert.Equal(0, PluginManager.List(_tempDir, verbose: true));
     }
 
@@ -137,9 +137,9 @@ public sealed class PluginManagerTests : IDisposable
     {
         // Truncated plugin.json — ReadPluginMetadata catches the parse
         // error and returns the fallback, List should still return 0.
-        var pluginSub = Path.Combine(_tempDir, "broken");
+        var pluginSub = SafePath.Combine(_tempDir, "broken");
         Directory.CreateDirectory(pluginSub);
-        File.WriteAllText(Path.Combine(pluginSub, "plugin.json"), "{ this is not json");
+        File.WriteAllText(SafePath.Combine(pluginSub, "plugin.json"), "{ this is not json");
 
         Assert.Equal(0, PluginManager.List(_tempDir, verbose: true));
     }
@@ -160,9 +160,9 @@ public sealed class PluginManagerTests : IDisposable
     [Fact]
     public void Uninstall_ExistingPlugin_DeletesAndReturnsZero()
     {
-        var pluginSub = Path.Combine(_tempDir, "victim");
+        var pluginSub = SafePath.Combine(_tempDir, "victim");
         Directory.CreateDirectory(pluginSub);
-        File.WriteAllText(Path.Combine(pluginSub, "marker.txt"), "x");
+        File.WriteAllText(SafePath.Combine(pluginSub, "marker.txt"), "x");
 
         var rc = PluginManager.Uninstall("victim", _tempDir);
         Assert.Equal(0, rc);
@@ -183,7 +183,7 @@ public sealed class PluginManagerTests : IDisposable
     {
         // Pre-create the destination so the "already installed" guard
         // fires before any network call is attempted.
-        var pluginSub = Path.Combine(_tempDir, "dupe-pkg");
+        var pluginSub = SafePath.Combine(_tempDir, "dupe-pkg");
         Directory.CreateDirectory(pluginSub);
 
         var rc = await PluginManager.InstallAsync(
@@ -198,14 +198,14 @@ public sealed class PluginManagerTests : IDisposable
         // Local-folder source containing a hand-rolled .nupkg → resolves
         // offline through NuGet.Protocol's flat-feed implementation,
         // then InstallAsync writes plugin.json + ResolvedVersion.
-        var feedDir = Path.Combine(_tempDir, "local-feed");
+        var feedDir = SafePath.Combine(_tempDir, "local-feed");
         Directory.CreateDirectory(feedDir);
-        var nupkgPath = Path.Combine(feedDir, "local.test.plugin.2.3.4.nupkg");
+        var nupkgPath = SafePath.Combine(feedDir, "local.test.plugin.2.3.4.nupkg");
         await File.WriteAllBytesAsync(nupkgPath,
             NuGetPackageInstallerTests_NupkgFactory.NoDeps("Local.Test.Plugin", "2.3.4"),
             TestContext.Current.CancellationToken);
 
-        var pluginsDir = Path.Combine(_tempDir, "plugins");
+        var pluginsDir = SafePath.Combine(_tempDir, "plugins");
         var rc = await PluginManager.InstallAsync(
             "Local.Test.Plugin", version: "2.3.4",
             pluginDir: pluginsDir, sources: [feedDir],
@@ -213,7 +213,7 @@ public sealed class PluginManagerTests : IDisposable
         Assert.Equal(0, rc);
 
         var meta = await File.ReadAllTextAsync(
-            Path.Combine(pluginsDir, "Local.Test.Plugin", "plugin.json"),
+            SafePath.Combine(pluginsDir, "Local.Test.Plugin", "plugin.json"),
             TestContext.Current.CancellationToken);
         Assert.Contains("\"resolvedVersion\": \"2.3.4\"", meta, StringComparison.Ordinal);
     }
@@ -224,17 +224,17 @@ public sealed class PluginManagerTests : IDisposable
         // Local feed exists but doesn't carry the requested package →
         // NuGetPackageInstaller throws "not found"; PluginManager
         // catches, deletes the partial dir, returns 1.
-        var feedDir = Path.Combine(_tempDir, "empty-feed-2");
+        var feedDir = SafePath.Combine(_tempDir, "empty-feed-2");
         Directory.CreateDirectory(feedDir);
 
-        var pluginsDir = Path.Combine(_tempDir, "plugins-fail");
+        var pluginsDir = SafePath.Combine(_tempDir, "plugins-fail");
         var rc = await PluginManager.InstallAsync(
             "No.Such.Package", version: "1.0.0",
             pluginDir: pluginsDir, sources: [feedDir],
             ct: TestContext.Current.CancellationToken);
         Assert.Equal(1, rc);
         // Cleanup branch ran — the per-package subdir got removed.
-        Assert.False(Directory.Exists(Path.Combine(pluginsDir, "No.Such.Package")));
+        Assert.False(Directory.Exists(SafePath.Combine(pluginsDir, "No.Such.Package")));
     }
 
     [Fact]
@@ -244,20 +244,20 @@ public sealed class PluginManagerTests : IDisposable
         // same flat-feed protocol works against a local folder, so we
         // can hit the success path without network. Output file gets
         // written with the lowercased-flat-feed name convention.
-        var feedDir = Path.Combine(_tempDir, "feed-dl");
+        var feedDir = SafePath.Combine(_tempDir, "feed-dl");
         Directory.CreateDirectory(feedDir);
         await File.WriteAllBytesAsync(
-            Path.Combine(feedDir, "downloadable.test.1.5.0.nupkg"),
+            SafePath.Combine(feedDir, "downloadable.test.1.5.0.nupkg"),
             NuGetPackageInstallerTests_NupkgFactory.NoDeps("Downloadable.Test", "1.5.0"),
             TestContext.Current.CancellationToken);
 
-        var outputDir = Path.Combine(_tempDir, "bundle");
+        var outputDir = SafePath.Combine(_tempDir, "bundle");
         var rc = await PluginManager.DownloadAsync(
             "Downloadable.Test", version: "1.5.0",
             outputDir: outputDir, sources: [feedDir],
             ct: TestContext.Current.CancellationToken);
         Assert.Equal(0, rc);
-        Assert.True(File.Exists(Path.Combine(outputDir, "downloadable.test.1.5.0.nupkg")));
+        Assert.True(File.Exists(SafePath.Combine(outputDir, "downloadable.test.1.5.0.nupkg")));
     }
 
     [Fact]
@@ -265,12 +265,12 @@ public sealed class PluginManagerTests : IDisposable
     {
         // No package in the configured local feed → DownloadAsync
         // throws inside the recursive walker; the catch path returns 1.
-        var feedDir = Path.Combine(_tempDir, "nothing");
+        var feedDir = SafePath.Combine(_tempDir, "nothing");
         Directory.CreateDirectory(feedDir);
 
         var rc = await PluginManager.DownloadAsync(
             "Ghost.Pkg", version: "1.0.0",
-            outputDir: Path.Combine(_tempDir, "drop"), sources: [feedDir],
+            outputDir: SafePath.Combine(_tempDir, "drop"), sources: [feedDir],
             ct: TestContext.Current.CancellationToken);
         Assert.Equal(1, rc);
     }
@@ -279,7 +279,7 @@ public sealed class PluginManagerTests : IDisposable
     public async Task InstallFromFileAsync_MissingPath_ReturnsOne()
     {
         var rc = await PluginManager.InstallFromFileAsync(
-            Path.Combine(_tempDir, "does-not-exist.nupkg"),
+            SafePath.Combine(_tempDir, "does-not-exist.nupkg"),
             pluginDir: _tempDir, sources: null,
             ct: TestContext.Current.CancellationToken);
         Assert.Equal(1, rc);
@@ -299,7 +299,7 @@ public sealed class PluginManagerTests : IDisposable
     {
         // Non-zip bytes at the path → the peek-archive branch catches
         // the read failure, prints "Failed to read", returns 1.
-        var bogus = Path.Combine(_tempDir, "bogus.nupkg");
+        var bogus = SafePath.Combine(_tempDir, "bogus.nupkg");
         await File.WriteAllTextAsync(bogus, "not a zip", TestContext.Current.CancellationToken);
 
         var rc = await PluginManager.InstallFromFileAsync(
@@ -314,7 +314,7 @@ public sealed class PluginManagerTests : IDisposable
         // Hand-rolled .nupkg with no deps → exercises the post-extract
         // success path: plugin.json gets written, exit 0.
         var nupkgBytes = NuGetPackageInstallerTests_NupkgFactory.NoDeps("Sample.Plug", "1.0.0");
-        var nupkg = Path.Combine(_tempDir, "Sample.Plug.1.0.0.nupkg");
+        var nupkg = SafePath.Combine(_tempDir, "Sample.Plug.1.0.0.nupkg");
         await File.WriteAllBytesAsync(nupkg, nupkgBytes, TestContext.Current.CancellationToken);
 
         var rc = await PluginManager.InstallFromFileAsync(
@@ -322,7 +322,7 @@ public sealed class PluginManagerTests : IDisposable
             ct: TestContext.Current.CancellationToken);
         Assert.Equal(0, rc);
 
-        var metaPath = Path.Combine(_tempDir, "Sample.Plug", "plugin.json");
+        var metaPath = SafePath.Combine(_tempDir, "Sample.Plug", "plugin.json");
         Assert.True(File.Exists(metaPath));
         var meta = await File.ReadAllTextAsync(metaPath, TestContext.Current.CancellationToken);
         Assert.Contains("Sample.Plug", meta, StringComparison.Ordinal);
@@ -334,8 +334,8 @@ public sealed class PluginManagerTests : IDisposable
     {
         // Pre-create the plugin subdir → "already installed" guard fires
         // after the peek-id step, returns 1 without extracting.
-        Directory.CreateDirectory(Path.Combine(_tempDir, "Already.Installed"));
-        var nupkg = Path.Combine(_tempDir, "Already.Installed.1.0.0.nupkg");
+        Directory.CreateDirectory(SafePath.Combine(_tempDir, "Already.Installed"));
+        var nupkg = SafePath.Combine(_tempDir, "Already.Installed.1.0.0.nupkg");
         await File.WriteAllBytesAsync(nupkg,
             NuGetPackageInstallerTests_NupkgFactory.NoDeps("Already.Installed", "1.0.0"),
             TestContext.Current.CancellationToken);
@@ -354,7 +354,7 @@ public sealed class PluginManagerTests : IDisposable
         // is still 0 because the root install succeeded.
         var nupkgBytes = NuGetPackageInstallerTests_NupkgFactory.WithDep(
             "MyCo.Plug", "1.0.0", "Floating.Lib", "2.0.0");
-        var nupkg = Path.Combine(_tempDir, "MyCo.Plug.1.0.0.nupkg");
+        var nupkg = SafePath.Combine(_tempDir, "MyCo.Plug.1.0.0.nupkg");
         await File.WriteAllBytesAsync(nupkg, nupkgBytes, TestContext.Current.CancellationToken);
 
         var rc = await PluginManager.InstallFromFileAsync(
@@ -405,9 +405,9 @@ public sealed class PluginManagerTests : IDisposable
         // Plugin exists on disk → past the "not installed" guard;
         // sources points at an empty local folder → ResolveAsync returns
         // null → the "Failed to resolve…" branch returns 1.
-        var pluginSub = Path.Combine(_tempDir, "ghost-with-meta");
+        var pluginSub = SafePath.Combine(_tempDir, "ghost-with-meta");
         Directory.CreateDirectory(pluginSub);
-        await File.WriteAllTextAsync(Path.Combine(pluginSub, "plugin.json"),
+        await File.WriteAllTextAsync(SafePath.Combine(pluginSub, "plugin.json"),
             """
             {
               "packageId": "ghost-with-meta",
@@ -418,7 +418,7 @@ public sealed class PluginManagerTests : IDisposable
             }
             """,
             TestContext.Current.CancellationToken);
-        var emptyFeed = Path.Combine(_tempDir, "empty-feed");
+        var emptyFeed = SafePath.Combine(_tempDir, "empty-feed");
         Directory.CreateDirectory(emptyFeed);
 
         var rc = await PluginManager.UpdateAsync(
@@ -438,9 +438,9 @@ public sealed class PluginManagerTests : IDisposable
         // resolve happens against a local folder feed that contains the
         // same .nupkg → resolved.Version matches installed.Version →
         // "already at" branch returns 0.
-        var pluginSub = Path.Combine(_tempDir, "Pin.Lock");
+        var pluginSub = SafePath.Combine(_tempDir, "Pin.Lock");
         Directory.CreateDirectory(pluginSub);
-        await File.WriteAllTextAsync(Path.Combine(pluginSub, "plugin.json"),
+        await File.WriteAllTextAsync(SafePath.Combine(pluginSub, "plugin.json"),
             """
             {
               "packageId": "Pin.Lock",
@@ -452,10 +452,10 @@ public sealed class PluginManagerTests : IDisposable
             """,
             TestContext.Current.CancellationToken);
 
-        var feedDir = Path.Combine(_tempDir, "feed");
+        var feedDir = SafePath.Combine(_tempDir, "feed");
         Directory.CreateDirectory(feedDir);
         // Flat-feed convention: lower-case id.version.nupkg
-        var nupkgPath = Path.Combine(feedDir, "pin.lock.1.0.0.nupkg");
+        var nupkgPath = SafePath.Combine(feedDir, "pin.lock.1.0.0.nupkg");
         await File.WriteAllBytesAsync(nupkgPath,
             NuGetPackageInstallerTests_NupkgFactory.NoDeps("Pin.Lock", "1.0.0"),
             TestContext.Current.CancellationToken);
@@ -473,9 +473,9 @@ public sealed class PluginManagerTests : IDisposable
         // Two plugin subdirs → UpdateAllAsync iterates both, each calls
         // UpdateAsync → ResolveAsync → returns null (empty local feed)
         // → returns 1. UpdateAllAsync surfaces the first non-zero.
-        Directory.CreateDirectory(Path.Combine(_tempDir, "plugin-a"));
-        Directory.CreateDirectory(Path.Combine(_tempDir, "plugin-b"));
-        var emptyFeed = Path.Combine(_tempDir, "empty");
+        Directory.CreateDirectory(SafePath.Combine(_tempDir, "plugin-a"));
+        Directory.CreateDirectory(SafePath.Combine(_tempDir, "plugin-b"));
+        var emptyFeed = SafePath.Combine(_tempDir, "empty");
         Directory.CreateDirectory(emptyFeed);
 
         var rc = await PluginManager.UpdateAllAsync(
@@ -488,7 +488,7 @@ public sealed class PluginManagerTests : IDisposable
     public async Task UpdateAllAsync_EmptyPluginDir_ReturnsZero()
     {
         var rc = await PluginManager.UpdateAllAsync(
-            pluginDir: Path.Combine(_tempDir, "missing"), sources: null,
+            pluginDir: SafePath.Combine(_tempDir, "missing"), sources: null,
             ct: TestContext.Current.CancellationToken);
         Assert.Equal(0, rc);
     }
@@ -531,7 +531,7 @@ public sealed class PluginManagerTests : IDisposable
     {
         // Should silently return — exercised here so the early-out
         // branch is covered without any side-effects.
-        var results = PluginManager.LoadPlugins(Path.Combine(_tempDir, "nope"));
+        var results = PluginManager.LoadPlugins(SafePath.Combine(_tempDir, "nope"));
         Assert.Empty(results);
     }
 
@@ -551,7 +551,7 @@ public sealed class PluginManagerTests : IDisposable
         // empty install with a clear status code instead of just
         // "service not discovered". Regression guard for the silent-
         // skip behaviour the loader used to have.
-        var subDir = Path.Combine(_tempDir, "Empty.Plugin");
+        var subDir = SafePath.Combine(_tempDir, "Empty.Plugin");
         Directory.CreateDirectory(subDir);
 
         var results = PluginManager.LoadPlugins(_tempDir);
@@ -567,7 +567,7 @@ public sealed class PluginManagerTests : IDisposable
     {
         // A subdirectory with no DLLs creates a load context but loads
         // nothing — exercises the for-each-DLL branch with zero entries.
-        Directory.CreateDirectory(Path.Combine(_tempDir, "stub"));
+        Directory.CreateDirectory(SafePath.Combine(_tempDir, "stub"));
         PluginManager.LoadPlugins(_tempDir);
         // EnumeratePluginServices over an arbitrary contract returns
         // an empty list when no plugin contributes one — confirms the
@@ -585,12 +585,12 @@ public sealed class PluginManagerTests : IDisposable
         // up non-empty so the foreach-and-print branch runs, plus
         // FindImplementationsOf walks every type — exercises the real
         // discovery path without needing a third-party plugin .nupkg.
-        var pluginSub = Path.Combine(_tempDir, "stub-real");
+        var pluginSub = SafePath.Combine(_tempDir, "stub-real");
         Directory.CreateDirectory(pluginSub);
         var hostBowire = typeof(IBowireProtocol).Assembly.Location;
         Assert.NotEqual(string.Empty, hostBowire);
-        File.Copy(hostBowire, Path.Combine(pluginSub, "Kuestenlogik.Bowire.dll"));
-        File.WriteAllText(Path.Combine(pluginSub, "plugin.json"),
+        File.Copy(hostBowire, SafePath.Combine(pluginSub, "Kuestenlogik.Bowire.dll"));
+        File.WriteAllText(SafePath.Combine(pluginSub, "plugin.json"),
             """
             {
               "packageId": "stub-real",
@@ -613,9 +613,9 @@ public sealed class PluginManagerTests : IDisposable
         // contracts found" diagnostic without needing a real plugin
         // assembly. We don't redirect Console.Out — that's process-wide
         // and races with parallel tests in other classes.
-        var pluginSub = Path.Combine(_tempDir, "stub-inspect");
+        var pluginSub = SafePath.Combine(_tempDir, "stub-inspect");
         Directory.CreateDirectory(pluginSub);
-        File.WriteAllText(Path.Combine(pluginSub, "plugin.json"),
+        File.WriteAllText(SafePath.Combine(pluginSub, "plugin.json"),
             """
             {
               "packageId": "stub-inspect",
