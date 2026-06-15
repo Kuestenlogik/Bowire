@@ -7,6 +7,65 @@ using System.Security.Cryptography.X509Certificates;
 namespace Kuestenlogik.Bowire.Auth;
 
 /// <summary>
+/// Disposable wrapper for the client- and (optional) CA-certificate pair
+/// produced by <see cref="MtlsConfig.TryLoadCertificates"/>. Callers use
+/// a <c>using</c> declaration so the analyzer can see disposal on every
+/// exit path; once ownership of the inner X509 resources has been handed
+/// off to a long-lived owner (<see cref="MtlsHandlerOwner"/>,
+/// <see cref="MtlsCertOwner"/>), <see cref="Release"/> turns the wrapper's
+/// own Dispose into a no-op so the certificates aren't torn down with the
+/// pair going out of scope. Cleaner than three <c>out</c> parameters plus
+/// a CA2000 suppression at every call site.
+/// </summary>
+public sealed class MtlsCertificatePair : IDisposable
+{
+    private X509Certificate2? _clientCert;
+    private X509Certificate2? _caCert;
+    private bool _disposed;
+
+    internal MtlsCertificatePair(X509Certificate2 clientCert, X509Certificate2? caCert)
+    {
+        _clientCert = clientCert;
+        _caCert = caCert;
+    }
+
+    /// <summary>
+    /// The PEM-decoded client certificate. Non-null until <see cref="Release"/>
+    /// or <see cref="Dispose"/> runs.
+    /// </summary>
+    public X509Certificate2 ClientCert => _clientCert
+        ?? throw new ObjectDisposedException(nameof(MtlsCertificatePair));
+
+    /// <summary>
+    /// The PEM-decoded CA certificate when <see cref="MtlsConfig.CaCertificatePem"/>
+    /// was supplied, otherwise null.
+    /// </summary>
+    public X509Certificate2? CaCert => _caCert;
+
+    /// <summary>
+    /// Hand ownership of the inner X509 resources to the caller — disposing
+    /// the pair afterwards is a no-op. Invoked from
+    /// <see cref="MtlsHandlerOwner"/> + <see cref="MtlsCertOwner"/> factories
+    /// once the long-lived owner has taken responsibility for the certs.
+    /// </summary>
+    public void Release()
+    {
+        _clientCert = null;
+        _caCert = null;
+    }
+
+    public void Dispose()
+    {
+        if (_disposed) return;
+        _disposed = true;
+        _clientCert?.Dispose();
+        _caCert?.Dispose();
+        _clientCert = null;
+        _caCert = null;
+    }
+}
+
+/// <summary>
 /// Bundles a pre-configured <see cref="HttpMessageHandler"/> with the X509
 /// resources whose lifetime must match it. Disposing the owner disposes
 /// the handler and every cert it holds — caller places this in the
@@ -42,51 +101,35 @@ public sealed class MtlsHandlerOwner : IDisposable
     /// </summary>
     public static MtlsHandlerOwner? CreateHttpClientHandler(MtlsConfig config, out string? error)
     {
-#pragma warning disable CA2000
-        // Ownership of clientCert + caCert is transferred to the
-        // MtlsHandlerOwner on the success path (variables nulled out
-        // before return); the finally block disposes whatever's left
-        // if handler construction itself throws. Roslyn can't follow
-        // the `out` + ownership-transfer flow here.
-        if (!config.TryLoadCertificates(out var clientCert, out var caCert, out error))
-        {
-            return null;
-        }
-#pragma warning restore CA2000
+        ArgumentNullException.ThrowIfNull(config);
+        using var pair = config.TryLoadCertificates(out error);
+        if (pair is null) return null;
 
-        // From here on the owner takes responsibility for both certs;
-        // if the handler-construction throws we still need to clean up.
-        try
-        {
 #pragma warning disable CA5400
-            // CRL checks default off: most internal PKIs that mTLS tools target
-            // (corporate CAs, dev-only roots) don't publish a CRL distribution
-            // point, so flipping this on would block every connection.
-            var handler = new HttpClientHandler
-            {
-                ClientCertificateOptions = ClientCertificateOption.Manual,
-                CheckCertificateRevocationList = false
-            };
-#pragma warning restore CA5400
-            handler.ClientCertificates.Add(clientCert!);
-
-            var validator = config.BuildServerValidator(caCert);
-            if (validator is not null)
-            {
-                handler.ServerCertificateCustomValidationCallback = (req, cert, chain, errs) =>
-                    validator(req, cert, chain, errs);
-            }
-
-            var owner = new MtlsHandlerOwner(handler, clientCert!, caCert);
-            clientCert = null;
-            caCert = null;
-            return owner;
-        }
-        finally
+        // CRL checks default off: most internal PKIs that mTLS tools target
+        // (corporate CAs, dev-only roots) don't publish a CRL distribution
+        // point, so flipping this on would block every connection.
+        var handler = new HttpClientHandler
         {
-            clientCert?.Dispose();
-            caCert?.Dispose();
+            ClientCertificateOptions = ClientCertificateOption.Manual,
+            CheckCertificateRevocationList = false
+        };
+#pragma warning restore CA5400
+        handler.ClientCertificates.Add(pair.ClientCert);
+
+        var validator = config.BuildServerValidator(pair.CaCert);
+        if (validator is not null)
+        {
+            handler.ServerCertificateCustomValidationCallback = (req, cert, chain, errs) =>
+                validator(req, cert, chain, errs);
         }
+
+        var owner = new MtlsHandlerOwner(handler, pair.ClientCert, pair.CaCert);
+        // Ownership of both certs has moved into `owner`; the pair's
+        // implicit Dispose at end-of-method becomes a no-op so we don't
+        // tear down the certs the handler is now using.
+        pair.Release();
+        return owner;
     }
 
     /// <summary>
@@ -99,49 +142,35 @@ public sealed class MtlsHandlerOwner : IDisposable
     /// </summary>
     public static MtlsHandlerOwner? CreateSocketsHttpHandler(MtlsConfig config, out string? error)
     {
-#pragma warning disable CA2000
-        // Ownership of clientCert + caCert is transferred to the
-        // MtlsHandlerOwner on the success path (variables nulled out
-        // before return); the finally block disposes whatever's left
-        // if handler construction itself throws. Roslyn can't follow
-        // the `out` + ownership-transfer flow here.
-        if (!config.TryLoadCertificates(out var clientCert, out var caCert, out error))
+        ArgumentNullException.ThrowIfNull(config);
+        using var pair = config.TryLoadCertificates(out error);
+        if (pair is null) return null;
+
+        var sslOptions = new SslClientAuthenticationOptions
         {
-            return null;
-        }
-#pragma warning restore CA2000
+            ClientCertificates = [pair.ClientCert]
+        };
 
-        try
+        var validator = config.BuildServerValidator(pair.CaCert);
+        if (validator is not null)
         {
-            var sslOptions = new SslClientAuthenticationOptions
-            {
-                ClientCertificates = [clientCert!]
-            };
-
-            var validator = config.BuildServerValidator(caCert);
-            if (validator is not null)
-            {
-                sslOptions.RemoteCertificateValidationCallback = (sender, cert, chain, errs) =>
-                    validator(sender, cert as X509Certificate2, chain, errs);
-            }
-
-            var handler = new SocketsHttpHandler
-            {
-                SslOptions = sslOptions,
-                EnableMultipleHttp2Connections = true,
-                ConnectTimeout = TimeSpan.FromSeconds(5)
-            };
-
-            var owner = new MtlsHandlerOwner(handler, clientCert!, caCert);
-            clientCert = null;
-            caCert = null;
-            return owner;
+            sslOptions.RemoteCertificateValidationCallback = (sender, cert, chain, errs) =>
+                validator(sender, cert as X509Certificate2, chain, errs);
         }
-        finally
+
+        var handler = new SocketsHttpHandler
         {
-            clientCert?.Dispose();
-            caCert?.Dispose();
-        }
+            SslOptions = sslOptions,
+            EnableMultipleHttp2Connections = true,
+            ConnectTimeout = TimeSpan.FromSeconds(5)
+        };
+
+        var owner = new MtlsHandlerOwner(handler, pair.ClientCert, pair.CaCert);
+        // Ownership of both certs has moved into `owner`; the pair's
+        // implicit Dispose at end-of-method becomes a no-op so we don't
+        // tear down the certs the handler is now using.
+        pair.Release();
+        return owner;
     }
 
     public void Dispose()
@@ -185,29 +214,17 @@ public sealed class MtlsCertOwner : IDisposable
     /// </summary>
     public static MtlsCertOwner? Load(MtlsConfig config, out string? error)
     {
-#pragma warning disable CA2000
-        // Ownership of clientCert + caCert moves into the MtlsCertOwner on
-        // the success path (variables nulled out before return); the finally
-        // block disposes whatever's left if the construction itself throws.
-        if (!config.TryLoadCertificates(out var clientCert, out var caCert, out error))
-        {
-            return null;
-        }
-#pragma warning restore CA2000
+        ArgumentNullException.ThrowIfNull(config);
+        using var pair = config.TryLoadCertificates(out error);
+        if (pair is null) return null;
 
-        try
-        {
-            var validator = config.BuildServerValidator(caCert);
-            var owner = new MtlsCertOwner(clientCert!, caCert, validator);
-            clientCert = null;
-            caCert = null;
-            return owner;
-        }
-        finally
-        {
-            clientCert?.Dispose();
-            caCert?.Dispose();
-        }
+        var validator = config.BuildServerValidator(pair.CaCert);
+        var owner = new MtlsCertOwner(pair.ClientCert, pair.CaCert, validator);
+        // Ownership of both certs has moved into `owner`; the pair's
+        // implicit Dispose at end-of-method becomes a no-op so we don't
+        // tear down the certs the owner is now using.
+        pair.Release();
+        return owner;
     }
 
     public void Dispose()
