@@ -430,14 +430,12 @@ internal static class NuGetPackageInstaller
         if (bestFramework is null) return;
 
         var bestGroup = libItemGroups.First(g => g.TargetFramework.Equals(bestFramework));
-        foreach (var relativePath in bestGroup.Items)
+        var pluginDlls = bestGroup.Items
+            .Where(p => p.EndsWith(".dll", StringComparison.OrdinalIgnoreCase))
+            .Where(p => !IsHostProvidedAssembly(Path.GetFileNameWithoutExtension(p)));
+        foreach (var relativePath in pluginDlls)
         {
-            if (!relativePath.EndsWith(".dll", StringComparison.OrdinalIgnoreCase)) continue;
-
             var fileName = Path.GetFileName(relativePath);
-            var assemblyName = Path.GetFileNameWithoutExtension(fileName);
-            if (IsHostProvidedAssembly(assemblyName)) continue;
-
             var outPath = Path.Combine(targetDir, fileName);
             await using (var entry = await archive.GetEntry(relativePath).OpenAsync(ct))
             await using (var outFile = File.Create(outPath))
@@ -656,12 +654,8 @@ internal static class NuGetPackageInstaller
         // assembly with that name instead of a blanket prefix skip.
         if (packageId.StartsWith("Kuestenlogik.Bowire", StringComparison.OrdinalIgnoreCase))
         {
-            foreach (var asm in AppDomain.CurrentDomain.GetAssemblies())
-            {
-                if (string.Equals(asm.GetName().Name, packageId, StringComparison.OrdinalIgnoreCase))
-                    return true;
-            }
-            return false;
+            return AppDomain.CurrentDomain.GetAssemblies()
+                .Any(asm => string.Equals(asm.GetName().Name, packageId, StringComparison.OrdinalIgnoreCase));
         }
 
         return false;
