@@ -96,7 +96,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.2 — Test pillar: assertions, CI runner, regression coverage
 
-**0/8 done** · 8 backlog
+**0/9 done** · 9 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -108,6 +108,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [180](https://github.com/Kuestenlogik/Bowire/issues/180) | Bowire | [Assertion DSL for collection / recording replay](#issue-kuestenlogik-bowire-180) | ⬜ Open |  |
 | [181](https://github.com/Kuestenlogik/Bowire/issues/181) | Bowire | [bowire test CLI runner with JUnit / SARIF / TTY output](#issue-kuestenlogik-bowire-181) | ⬜ Open |  |
 | [191](https://github.com/Kuestenlogik/Bowire/issues/191) | Bowire | [Contract testing — Pact-style publish / verify CLI](#issue-kuestenlogik-bowire-191) | ⬜ Open |  |
+| [208](https://github.com/Kuestenlogik/Bowire/issues/208) | Bowire | [Variable resolver — Phase 5: OS keyring + AI re-roll + streaming](#issue-kuestenlogik-bowire-208) | ⬜ Open |  |
 
 ### v2.3 — Security pillar: shift-left scanner, OWASP coverage, auth recording
 
@@ -513,6 +514,10 @@ Bowire is currently a UI tool. The "shift-left" / "build safer apps through cont
 #### <a id="issue-kuestenlogik-bowire-191"></a>⬜ Open · [#191](https://github.com/Kuestenlogik/Bowire/issues/191) Contract testing — Pact-style publish / verify CLI
 
 Microservice teams break each other when one team changes an API without consulting the consumers. Contract testing (Pact-style) catches that at build time: the consumer team declares "I expect these requests + responses", the provider's CI runs the contracts, fails the build if anything doesn't match. [[more]](https://github.com/Kuestenlogik/Bowire/issues/191)
+
+#### <a id="issue-kuestenlogik-bowire-208"></a>⬜ Open · [#208](https://github.com/Kuestenlogik/Bowire/issues/208) Variable resolver — Phase 5: OS keyring + AI re-roll + streaming
+
+@-
 
 ### v2.3 — Security pillar: shift-left scanner, OWASP coverage, auth recording
 
