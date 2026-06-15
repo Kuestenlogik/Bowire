@@ -372,12 +372,34 @@ pre > code {
     gap: 16px;
     justify-content: center;
     margin-bottom: 20px;
+    /* Match the .hero-terminal width below so the CTA row + the
+       terminal demo share the same left/right edge — they read as a
+       single composed block on the hero, not two free-floating
+       elements at different widths. */
+    max-width: 720px;
+    margin-left: auto;
+    margin-right: auto;
 }
 .hero-actions .btn {
-    /* Fixed width keeps the two CTAs visually identical regardless of
-       content length — matches the CTA block's button pair. */
-    width: 220px;
+    /* Equal-thirds layout — each button takes the same share of the
+       720px container so the three CTAs align on a clean grid. The
+       earlier fixed 220px width left ~28px of empty space inside the
+       720px container and made the trio look short of the terminal
+       below. */
+    flex: 1 1 0;
+    min-width: 0;
     justify-content: center;
+}
+@media (max-width: 700px) {
+    /* On narrow viewports drop the equal-thirds grid back to a
+       wrap-friendly column: three thirds of a sub-700px row would
+       crush each button below its label + icon width. */
+    .hero-actions {
+        flex-wrap: wrap;
+    }
+    .hero-actions .btn {
+        flex: 1 1 220px;
+    }
 }
 
 .hero-badges {
