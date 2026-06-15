@@ -22,7 +22,7 @@ public sealed class SidecarInstallTests : IDisposable
 
     public SidecarInstallTests()
     {
-        _pluginDir = Path.Combine(Path.GetTempPath(), "bowire-sidecar-install-" + Guid.NewGuid().ToString("N"));
+        _pluginDir = SafePath.Combine(Path.GetTempPath(), "bowire-sidecar-install-" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(_pluginDir);
     }
 
@@ -34,7 +34,7 @@ public sealed class SidecarInstallTests : IDisposable
 
     private static string MakeSidecarZip(string manifestJson, string exeName = "sidecar.bin")
     {
-        var zipPath = Path.Combine(Path.GetTempPath(), "bowire-sc-" + Guid.NewGuid().ToString("N") + ".zip");
+        var zipPath = SafePath.Combine(Path.GetTempPath(), "bowire-sc-" + Guid.NewGuid().ToString("N") + ".zip");
         using var zip = ZipFile.Open(zipPath, ZipArchiveMode.Create);
 
         var manifestEntry = zip.CreateEntry("sidecar.json");
@@ -60,10 +60,10 @@ public sealed class SidecarInstallTests : IDisposable
                 ct: TestContext.Current.CancellationToken);
             Assert.Equal(0, code);
 
-            var installed = Path.Combine(_pluginDir, "Acme.Bowire.Protocol.Zenoh");
+            var installed = SafePath.Combine(_pluginDir, "Acme.Bowire.Protocol.Zenoh");
             Assert.True(Directory.Exists(installed));
-            Assert.True(File.Exists(Path.Combine(installed, "sidecar.json")));
-            Assert.True(File.Exists(Path.Combine(installed, "sidecar.bin")));
+            Assert.True(File.Exists(SafePath.Combine(installed, "sidecar.json")));
+            Assert.True(File.Exists(SafePath.Combine(installed, "sidecar.bin")));
         }
         finally { File.Delete(zip); }
     }
@@ -88,7 +88,7 @@ public sealed class SidecarInstallTests : IDisposable
 
     private static string MakeZipWithoutManifest()
     {
-        var zipPath = Path.Combine(Path.GetTempPath(), "bowire-nomanifest-" + Guid.NewGuid().ToString("N") + ".zip");
+        var zipPath = SafePath.Combine(Path.GetTempPath(), "bowire-nomanifest-" + Guid.NewGuid().ToString("N") + ".zip");
         using var zip = ZipFile.Open(zipPath, ZipArchiveMode.Create);
         var e = zip.CreateEntry("readme.txt");
         using var w = new StreamWriter(e.Open());
@@ -128,7 +128,7 @@ public sealed class SidecarInstallTests : IDisposable
     public async Task InstallSidecarFromZip_Rejects_Missing_File()
     {
         var code = await PluginManager.InstallSidecarFromZipAsync(
-            Path.Combine(_pluginDir, "nope.zip"), _pluginDir, ct: TestContext.Current.CancellationToken);
+            SafePath.Combine(_pluginDir, "nope.zip"), _pluginDir, ct: TestContext.Current.CancellationToken);
         Assert.Equal(1, code);
     }
 
@@ -141,11 +141,11 @@ public sealed class SidecarInstallTests : IDisposable
               "executable":"sidecar.bin", "version":"0.9.0" }
             """);
         // ...and fake a NuGet-style plugin dir (DLL + plugin.json metadata).
-        var nugetDir = Path.Combine(_pluginDir, "Acme.Nuget");
+        var nugetDir = SafePath.Combine(_pluginDir, "Acme.Nuget");
         Directory.CreateDirectory(nugetDir);
-        await File.WriteAllTextAsync(Path.Combine(nugetDir, "Acme.Nuget.dll"), "MZ-stub",
+        await File.WriteAllTextAsync(SafePath.Combine(nugetDir, "Acme.Nuget.dll"), "MZ-stub",
             TestContext.Current.CancellationToken);
-        await File.WriteAllTextAsync(Path.Combine(nugetDir, "plugin.json"),
+        await File.WriteAllTextAsync(SafePath.Combine(nugetDir, "plugin.json"),
             """{ "packageId":"Acme.Nuget", "version":"2.0.0", "resolvedVersion":"2.0.0" }""",
             TestContext.Current.CancellationToken);
 
