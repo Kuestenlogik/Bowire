@@ -45,11 +45,11 @@ public sealed class NatsServerFixture : IAsyncLifetime
     {
         var exe = await EnsureBinaryAsync().ConfigureAwait(false);
 
-        _workDir = Path.Combine(Path.GetTempPath(), "bowire-nats-" + Guid.NewGuid().ToString("N"));
+        _workDir = SafePath.Combine(Path.GetTempPath(), "bowire-nats-" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(_workDir);
         var port = GetFreeTcpPort();
-        var jsDir = Path.Combine(_workDir, "js");
-        var logFile = Path.Combine(_workDir, "nats.log");
+        var jsDir = SafePath.Combine(_workDir, "js");
+        var logFile = SafePath.Combine(_workDir, "nats.log");
 
         var psi = new ProcessStartInfo
         {
@@ -103,13 +103,13 @@ public sealed class NatsServerFixture : IAsyncLifetime
         var assetStem = $"nats-server-v{Version}-{osToken}-{archToken}";
         var exeName = isWindows ? "nats-server.exe" : "nats-server";
 
-        var cacheRoot = Path.Combine(Path.GetTempPath(), "bowire-nats-server", Version, $"{osToken}-{archToken}");
-        var cachedExe = Path.Combine(cacheRoot, exeName);
+        var cacheRoot = SafePath.Combine(Path.GetTempPath(), Path.Combine("bowire-nats-server", Version, $"{osToken}-{archToken}"));
+        var cachedExe = SafePath.Combine(cacheRoot, exeName);
         if (File.Exists(cachedExe)) return cachedExe;
 
         Directory.CreateDirectory(cacheRoot);
         var url = $"https://github.com/nats-io/nats-server/releases/download/v{Version}/{assetStem}.{ext}";
-        var archivePath = Path.Combine(cacheRoot, $"{assetStem}.{ext}");
+        var archivePath = SafePath.Combine(cacheRoot, $"{assetStem}.{ext}");
 
         await DownloadWithRetryAsync(url, archivePath).ConfigureAwait(false);
 
