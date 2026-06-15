@@ -30,13 +30,7 @@ public sealed class BowireProtocolRegistry
     /// dependencies of its own — the REST plugin owns it.
     /// </summary>
     public IInlineHttpInvoker? FindHttpInvoker()
-    {
-        foreach (var p in _protocols)
-        {
-            if (p is IInlineHttpInvoker invoker) return invoker;
-        }
-        return null;
-    }
+        => _protocols.OfType<IInlineHttpInvoker>().FirstOrDefault();
 
     /// <summary>
     /// Returns the first registered protocol that also implements
@@ -47,13 +41,7 @@ public sealed class BowireProtocolRegistry
     /// uses it for graphql-sse subscriptions).
     /// </summary>
     public IInlineSseSubscriber? FindSseSubscriber()
-    {
-        foreach (var p in _protocols)
-        {
-            if (p is IInlineSseSubscriber sub) return sub;
-        }
-        return null;
-    }
+        => _protocols.OfType<IInlineSseSubscriber>().FirstOrDefault();
 
     /// <summary>
     /// Returns the first registered protocol that also implements
@@ -64,13 +52,7 @@ public sealed class BowireProtocolRegistry
     /// plugin uses this for graphql-transport-ws subscriptions.
     /// </summary>
     public IInlineWebSocketChannel? FindWebSocketChannel()
-    {
-        foreach (var p in _protocols)
-        {
-            if (p is IInlineWebSocketChannel ch) return ch;
-        }
-        return null;
-    }
+        => _protocols.OfType<IInlineWebSocketChannel>().FirstOrDefault();
 
     /// <summary>
     /// Auto-discover protocol plugins from loaded assemblies. Pass an
@@ -107,15 +89,14 @@ public sealed class BowireProtocolRegistry
             : new HashSet<string>(disabledPluginIds, StringComparer.OrdinalIgnoreCase);
 
         var registry = new BowireProtocolRegistry();
-        foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
+        foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies()
+            .Where(a => a.FullName?.Contains("Bowire") == true))
         {
-            if (assembly.FullName?.Contains("Bowire") != true) continue;
             try
             {
-                foreach (var type in assembly.GetTypes())
+                foreach (var type in assembly.GetTypes()
+                    .Where(t => !t.IsAbstract && !t.IsInterface && typeof(IBowireProtocol).IsAssignableFrom(t)))
                 {
-                    if (type.IsAbstract || type.IsInterface) continue;
-                    if (!typeof(IBowireProtocol).IsAssignableFrom(type)) continue;
                     if (Activator.CreateInstance(type) is IBowireProtocol protocol)
                     {
                         if (disabled.Contains(protocol.Id))
@@ -194,9 +175,11 @@ public sealed class BowireProtocolRegistry
         if (string.IsNullOrEmpty(baseDir) || !Directory.Exists(baseDir)) return;
 
         var loaded = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        foreach (var asm in AppDomain.CurrentDomain.GetAssemblies())
+        foreach (var name in AppDomain.CurrentDomain.GetAssemblies()
+            .Select(a => a.FullName)
+            .Where(n => n is not null))
         {
-            if (asm.FullName is { } name) loaded.Add(name.Split(',')[0].Trim());
+            loaded.Add(name!.Split(',')[0].Trim());
         }
 
         foreach (var dll in Directory.EnumerateFiles(baseDir, "Kuestenlogik.Bowire*.dll"))
