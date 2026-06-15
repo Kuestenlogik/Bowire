@@ -15,13 +15,7 @@ namespace Kuestenlogik.Bowire.Protocol.Rest;
 /// them via <see cref="RestInvoker"/>. Auto-discovered by
 /// <see cref="BowireProtocolRegistry"/>.
 /// </summary>
-// CA1001: _http lives for the lifetime of the protocol registry, which is
-// the lifetime of the host process. Adding IDisposable to IBowireProtocol
-// just to dispose a singleton at shutdown would ripple through every
-// plugin without payoff.
-#pragma warning disable CA1001
-public sealed class BowireRestProtocol : IBowireProtocol, IInlineHttpInvoker
-#pragma warning restore CA1001
+public sealed class BowireRestProtocol : IBowireProtocol, IInlineHttpInvoker, IDisposable
 {
     // One HttpClient for the lifetime of the plugin — fine for a dev tool.
     // 30s timeout matches the OAuth proxy timeout used elsewhere in Bowire.
@@ -286,6 +280,16 @@ public sealed class BowireRestProtocol : IBowireProtocol, IInlineHttpInvoker
         bool showInternalServices, Dictionary<string, string>? metadata = null,
         CancellationToken ct = default)
         => Task.FromResult<IBowireChannel?>(null);
+
+    /// <summary>
+    /// Dispose the lazily-built <see cref="HttpClient"/>. The registry that
+    /// owns the plugin instance disposes the plugin at host shutdown — same
+    /// pattern as other long-lived HTTP-based protocol plugins.
+    /// </summary>
+    public void Dispose()
+    {
+        _http.Dispose();
+    }
 
     /// <summary>
     /// <see cref="IInlineHttpInvoker"/> implementation. Lets the BowireApi

@@ -28,7 +28,7 @@ public sealed class RestCoverageGapsTests
     [Fact]
     public async Task InvokeAsync_NoCache_NoDoc_Returns_StructuredError()
     {
-        var p = new BowireRestProtocol();
+        using var p = new BowireRestProtocol();
         // No serverUrl with a real OpenAPI doc → DiscoverInternalAsync
         // returns empty + cache stays null → the error path fires.
         var result = await p.InvokeAsync(
@@ -48,7 +48,7 @@ public sealed class RestCoverageGapsTests
     [Fact]
     public async Task InvokeAsync_EmptyServerUrl_NoEmbeddedProvider_Returns_StructuredError()
     {
-        var p = new BowireRestProtocol();
+        using var p = new BowireRestProtocol();
         var result = await p.InvokeAsync(
             "",
             service: "X",
@@ -64,7 +64,7 @@ public sealed class RestCoverageGapsTests
     [Fact]
     public async Task InvokeStreamAsync_Always_YieldsEmpty()
     {
-        var p = new BowireRestProtocol();
+        using var p = new BowireRestProtocol();
         var collected = new List<string>();
         await foreach (var msg in p.InvokeStreamAsync(
             "http://example.com", "x", "y", [], false, null,
@@ -78,7 +78,7 @@ public sealed class RestCoverageGapsTests
     [Fact]
     public async Task OpenChannelAsync_Always_ReturnsNull()
     {
-        var p = new BowireRestProtocol();
+        using var p = new BowireRestProtocol();
         var ch = await p.OpenChannelAsync(
             "http://example.com", "x", "y", false, null,
             TestContext.Current.CancellationToken);
@@ -88,7 +88,7 @@ public sealed class RestCoverageGapsTests
     [Fact]
     public void Identity_And_Metadata_Are_Stable()
     {
-        var p = new BowireRestProtocol();
+        using var p = new BowireRestProtocol();
         Assert.Equal("rest", p.Id);
         Assert.Equal("REST", p.Name);
         Assert.Contains("<svg", p.IconSvg, StringComparison.Ordinal);
