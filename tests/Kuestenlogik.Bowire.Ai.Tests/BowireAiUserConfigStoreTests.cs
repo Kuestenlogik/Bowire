@@ -24,7 +24,7 @@ public sealed class BowireAiUserConfigStoreTests : IDisposable
     public BowireAiUserConfigStoreTests()
     {
         _originalStore = BowireUserContext.Current;
-        _tempRoot = Path.Combine(
+        _tempRoot = SafePath.Combine(
             Path.GetTempPath(),
             $"bowire-ai-store-test-{Guid.NewGuid():N}");
         Directory.CreateDirectory(_tempRoot);
@@ -84,7 +84,7 @@ public sealed class BowireAiUserConfigStoreTests : IDisposable
             AutoDetectLocal = true,
         });
 
-        var path = Path.Combine(_tempRoot, "ai-config.json");
+        var path = SafePath.Combine(_tempRoot, "ai-config.json");
         var json = File.ReadAllText(path);
 
         Assert.Contains("\"providerId\":", json, StringComparison.Ordinal);
@@ -103,7 +103,7 @@ public sealed class BowireAiUserConfigStoreTests : IDisposable
         // on startup. The store swallows the parse error and the
         // overlay falls back to the IConfiguration layer; the next save
         // rewrites the file with valid JSON.
-        var path = Path.Combine(_tempRoot, "ai-config.json");
+        var path = SafePath.Combine(_tempRoot, "ai-config.json");
         File.WriteAllText(path, "{not valid json");
 
         Assert.Null(BowireAiUserConfigStore.TryLoad());
@@ -115,7 +115,7 @@ public sealed class BowireAiUserConfigStoreTests : IDisposable
         // The persisted DTO uses nullable fields so an older on-disk
         // file (written before a property was added) still loads.
         // Each unset field falls back to its BowireAiOptions default.
-        var path = Path.Combine(_tempRoot, "ai-config.json");
+        var path = SafePath.Combine(_tempRoot, "ai-config.json");
         File.WriteAllText(path, """{"providerId":"ollama"}""");
 
         var loaded = BowireAiUserConfigStore.TryLoad();
@@ -133,13 +133,13 @@ public sealed class BowireAiUserConfigStoreTests : IDisposable
         // The store doesn't assume ~/.bowire/ exists — first save on a
         // fresh install needs to mkdir -p the parent. Re-target the
         // resolver at a path one level deeper so we can verify.
-        var deepRoot = Path.Combine(_tempRoot, "nested", "deeper");
+        var deepRoot = SafePath.Combine(_tempRoot, "nested", "deeper");
         BowireUserContext.Current = new TempUserStore(deepRoot);
 
         BowireAiUserConfigStore.Save(new BowireAiOptions { Model = "x" });
 
         Assert.True(Directory.Exists(deepRoot));
-        Assert.True(File.Exists(Path.Combine(deepRoot, "ai-config.json")));
+        Assert.True(File.Exists(SafePath.Combine(deepRoot, "ai-config.json")));
     }
 
     // ----- #116 Phase 3 per-workspace overrides --------------------
@@ -153,8 +153,8 @@ public sealed class BowireAiUserConfigStoreTests : IDisposable
 
         // Per-workspace override sits next to the global file under the
         // documented naming scheme: ai-config.<workspaceId>.json.
-        Assert.True(File.Exists(Path.Combine(_tempRoot, "ai-config.personal.json")));
-        Assert.False(File.Exists(Path.Combine(_tempRoot, "ai-config.json")));
+        Assert.True(File.Exists(SafePath.Combine(_tempRoot, "ai-config.personal.json")));
+        Assert.False(File.Exists(SafePath.Combine(_tempRoot, "ai-config.json")));
     }
 
     [Fact]
@@ -224,7 +224,7 @@ public sealed class BowireAiUserConfigStoreTests : IDisposable
         BowireAiUserConfigStore.RemoveOverride("personal");
 
         Assert.False(BowireAiUserConfigStore.HasOverride("personal"));
-        Assert.False(File.Exists(Path.Combine(_tempRoot, "ai-config.personal.json")));
+        Assert.False(File.Exists(SafePath.Combine(_tempRoot, "ai-config.personal.json")));
     }
 
     [Fact]
@@ -244,7 +244,7 @@ public sealed class BowireAiUserConfigStoreTests : IDisposable
         BowireAiUserConfigStore.RemoveOverride("   ");
         // Nothing on disk to assert against; the contract is just
         // "doesn't throw + doesn't touch the global file".
-        Assert.False(File.Exists(Path.Combine(_tempRoot, "ai-config.json")));
+        Assert.False(File.Exists(SafePath.Combine(_tempRoot, "ai-config.json")));
     }
 
     [Fact]
@@ -281,7 +281,7 @@ public sealed class BowireAiUserConfigStoreTests : IDisposable
             new BowireAiOptions { Model = "default-collapse:1b" },
             workspaceId: "/././/");
 
-        Assert.True(File.Exists(Path.Combine(_tempRoot, "ai-config.default.json")));
+        Assert.True(File.Exists(SafePath.Combine(_tempRoot, "ai-config.default.json")));
         Assert.True(BowireAiUserConfigStore.HasOverride("/././/"));
     }
 
@@ -294,7 +294,7 @@ public sealed class BowireAiUserConfigStoreTests : IDisposable
             new BowireAiOptions { Model = "ws-pick:1b" },
             workspaceId: "ws_personal-1");
 
-        Assert.True(File.Exists(Path.Combine(_tempRoot, "ai-config.ws_personal-1.json")));
+        Assert.True(File.Exists(SafePath.Combine(_tempRoot, "ai-config.ws_personal-1.json")));
     }
 
     [Fact]
@@ -305,11 +305,11 @@ public sealed class BowireAiUserConfigStoreTests : IDisposable
         BowireAiUserConfigStore.Save(
             new BowireAiOptions { Model = "ws-pick:7b" },
             workspaceId: "personal");
-        var beforeBytes = File.ReadAllBytes(Path.Combine(_tempRoot, "ai-config.personal.json"));
+        var beforeBytes = File.ReadAllBytes(SafePath.Combine(_tempRoot, "ai-config.personal.json"));
 
         BowireAiUserConfigStore.Save(new BowireAiOptions { Model = "global-pick:1b" });
 
-        var afterBytes = File.ReadAllBytes(Path.Combine(_tempRoot, "ai-config.personal.json"));
+        var afterBytes = File.ReadAllBytes(SafePath.Combine(_tempRoot, "ai-config.personal.json"));
         Assert.Equal(beforeBytes, afterBytes);
 
         // And the freshly-written global file is independent — picking
@@ -339,7 +339,7 @@ public sealed class BowireAiUserConfigStoreTests : IDisposable
             AutoDetectLocal = false,
         });
 
-        var json = File.ReadAllText(Path.Combine(_tempRoot, "ai-config.json"));
+        var json = File.ReadAllText(SafePath.Combine(_tempRoot, "ai-config.json"));
         using var doc = JsonDocument.Parse(json);
         var root = doc.RootElement;
 
@@ -351,6 +351,6 @@ public sealed class BowireAiUserConfigStoreTests : IDisposable
 
     private sealed class TempUserStore(string root) : IBowireUserStore
     {
-        public string GetUserPath(string filename) => Path.Combine(root, filename);
+        public string GetUserPath(string filename) => SafePath.Combine(root, filename);
     }
 }
