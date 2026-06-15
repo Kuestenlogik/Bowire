@@ -32,7 +32,7 @@ public sealed class UnaryReplayerGapFillTests : IDisposable
 
     public UnaryReplayerGapFillTests()
     {
-        _tempDir = Path.Combine(Path.GetTempPath(), "bowire-gapfill-" + Guid.NewGuid().ToString("N"));
+        _tempDir = SafePath.Combine(Path.GetTempPath(), "bowire-gapfill-" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(_tempDir);
     }
 
@@ -72,7 +72,7 @@ public sealed class UnaryReplayerGapFillTests : IDisposable
                 },
             },
         };
-        var path = Path.Combine(_tempDir, "empty.json");
+        var path = SafePath.Combine(_tempDir, "empty.json");
         await File.WriteAllTextAsync(path, JsonSerializer.Serialize(recording), TestContext.Current.CancellationToken);
 
         await using var server = await MockServer.StartAsync(
@@ -125,7 +125,7 @@ public sealed class UnaryReplayerGapFillTests : IDisposable
                 },
             },
         };
-        var path = Path.Combine(_tempDir, "grpc-stream.json");
+        var path = SafePath.Combine(_tempDir, "grpc-stream.json");
         await File.WriteAllTextAsync(path, JsonSerializer.Serialize(recording), TestContext.Current.CancellationToken);
 
         await using var server = await MockServer.StartAsync(
@@ -188,7 +188,7 @@ public sealed class UnaryReplayerGapFillTests : IDisposable
                 },
             },
         };
-        var path = Path.Combine(_tempDir, "grpc-paced.json");
+        var path = SafePath.Combine(_tempDir, "grpc-paced.json");
         await File.WriteAllTextAsync(path, JsonSerializer.Serialize(recording), TestContext.Current.CancellationToken);
 
         // ReplaySpeed = 1.0 (default) — the 50 ms inter-frame delay is honored.
@@ -254,7 +254,7 @@ public sealed class UnaryReplayerGapFillTests : IDisposable
                 },
             },
         };
-        var path = Path.Combine(_tempDir, "grpc-cstream.json");
+        var path = SafePath.Combine(_tempDir, "grpc-cstream.json");
         await File.WriteAllTextAsync(path, JsonSerializer.Serialize(recording), TestContext.Current.CancellationToken);
 
         await using var server = await MockServer.StartAsync(
