@@ -55,8 +55,8 @@ public sealed class BindingResolverStubTests
         Assert.Equal("Error", result.Status);
         Assert.NotNull(result.Metadata);
         Assert.True(result.Metadata!.ContainsKey("error"));
-        Assert.True(result.Metadata.ContainsKey("http.method"));
-        Assert.Equal("POST", result.Metadata["http.method"]);
+        Assert.True(result.Metadata.TryGetValue("http.method", out var httpMethod));
+        Assert.Equal("POST", httpMethod);
     }
 
     [Fact]
