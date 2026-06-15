@@ -117,7 +117,7 @@ internal static class FuzzCommand
             var raw = await File.ReadAllTextAsync(options.Template, ct).ConfigureAwait(false);
             recording = JsonSerializer.Deserialize<BowireRecording>(raw, s_jsonOpts);
         }
-        catch (Exception ex)
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException or NotSupportedException)
         {
             await io.Err.WriteLineAsync($"  Failed to parse {options.Template}: {ex.Message}").ConfigureAwait(false);
             return 1;
@@ -186,8 +186,11 @@ internal static class FuzzCommand
             baseline = await SendProbeAsync(http, options.Target, probe, probe.Body, options.AuthHeaders, ct).ConfigureAwait(false);
             io.OutLine($"  baseline: status={baseline.Status} body={baseline.Body.Length}B latency={baseline.LatencyMs}ms");
         }
-        catch (Exception ex)
+        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or OperationCanceledException or IOException or InvalidOperationException or UriFormatException)
         {
+            // Probe HTTP surface: transport, timeout, cancellation,
+            // malformed URL. Baseline-failure is non-fatal — fuzz
+            // continues without baseline-diff heuristics.
             io.OutLine($"  baseline FAILED: {ex.Message}");
         }
         io.OutLine();
@@ -215,8 +218,10 @@ internal static class FuzzCommand
                     io.OutLine($"  [{i + 1}/{payloads.Length}] [ok]  {Snip(payload)} → status={resp.Status} body={resp.Body.Length}B");
                 }
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or OperationCanceledException or IOException or InvalidOperationException or UriFormatException)
             {
+                // Same HTTP surface as baseline; per-payload failure
+                // is rendered as a row outcome.
                 io.OutLine($"  [{i + 1}/{payloads.Length}] [err] {Snip(payload)} → {ex.Message}");
             }
         }

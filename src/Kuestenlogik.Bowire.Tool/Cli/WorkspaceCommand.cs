@@ -126,7 +126,7 @@ internal static class WorkspaceCommand
             await stderr.WriteLineAsync($"workspace migrate-format: a legacy bundle is not valid JSON: {ex.Message}").ConfigureAwait(false);
             return 65;
         }
-        catch (Exception ex)
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or DirectoryNotFoundException or InvalidOperationException)
         {
             await stderr.WriteLineAsync($"workspace migrate-format: migration failed: {ex.Message}").ConfigureAwait(false);
             return 70;
@@ -216,7 +216,7 @@ internal static class WorkspaceCommand
         {
             Directory.CreateDirectory(fullPath);
         }
-        catch (Exception ex)
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or PathTooLongException or NotSupportedException)
         {
             await stderr.WriteLineAsync($"workspace init: couldn't create '{fullPath}': {ex.Message}").ConfigureAwait(false);
             return 73;

@@ -35,11 +35,16 @@ internal static class CliHandler
         Func<CliCommandOptions, CommandIo, Task<int>> impl)
     {
         ArgumentNullException.ThrowIfNull(cli);
+        // Top-level CLI error handler: anything thrown by an
+        // impl (gRPC reflection, transcoding, JSON parse, plugin
+        // call) gets rendered to stderr with exit 1.
+#pragma warning disable CA1031 // Do not catch general exception types
         try
         {
             return await impl(cli, io).ConfigureAwait(false);
         }
         catch (Exception ex)
+#pragma warning restore CA1031
         {
             WriteError(io, ex.Message);
             if (ex.InnerException is not null)
