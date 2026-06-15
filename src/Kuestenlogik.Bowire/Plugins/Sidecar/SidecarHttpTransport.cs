@@ -121,6 +121,14 @@ internal sealed class SidecarHttpTransport : ISidecarTransport
 
     private async Task SseReadLoopAsync(HttpResponseMessage resp, Stream stream)
     {
+        // Ownership of resp + stream was transferred in via Task.Run;
+        // explicit using declarations make their loop-bounded lifetime
+        // visible to CodeQL. The StreamReader below already wraps
+        // stream and will close it on dispose — the `using` on stream
+        // here is belt-and-suspenders so the analyzer sees ownership
+        // of both arguments at the top of the method.
+        using var _resp = resp;
+        using var _stream = stream;
         var data = new StringBuilder();
         try
         {
@@ -159,7 +167,6 @@ internal sealed class SidecarHttpTransport : ISidecarTransport
         {
             _sseEnded = true;
             _hub.CompleteAll();
-            resp.Dispose();
         }
     }
 
