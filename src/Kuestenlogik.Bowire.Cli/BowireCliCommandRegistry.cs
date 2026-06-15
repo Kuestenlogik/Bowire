@@ -51,11 +51,8 @@ public sealed class BowireCliCommandRegistry
                     {
                         if (disabled.Contains(command.Id))
                         {
-#pragma warning disable CA1873
-                            logger?.LogInformation(
-                                "Skipping disabled CLI command '{CommandId}' (--disable-cli-command).",
-                                command.Id);
-#pragma warning restore CA1873
+                            if (logger is not null)
+                                CliCommandRegistryLog.SkippingDisabledCommand(logger, command.Id);
                             continue;
                         }
                         registry.Register(command);
@@ -71,4 +68,19 @@ public sealed class BowireCliCommandRegistry
         }
         return registry;
     }
+}
+
+/// <summary>
+/// Source-generated logger wrappers for
+/// <see cref="BowireCliCommandRegistry"/>. Keeps CA1873 happy — the
+/// generator emits the <c>IsEnabled</c>-gated dispatch the analyzer
+/// wants in place of the suppressed runtime null-check.
+/// </summary>
+internal static partial class CliCommandRegistryLog
+{
+    [LoggerMessage(
+        EventId = 1,
+        Level = LogLevel.Information,
+        Message = "Skipping disabled CLI command '{CommandId}' (--disable-cli-command).")]
+    public static partial void SkippingDisabledCommand(ILogger logger, string commandId);
 }

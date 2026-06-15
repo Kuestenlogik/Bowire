@@ -55,32 +55,23 @@ public static class SidecarPluginDiscovery
             var manifest = SidecarPluginManifest.TryLoadFromFile(manifestPath);
             if (manifest is null)
             {
-#pragma warning disable CA1873
-                logger?.LogWarning(
-                    "Sidecar manifest at {Path} is missing or malformed; skipping.",
-                    manifestPath);
-#pragma warning restore CA1873
+                if (logger is not null)
+                    SidecarDiscoveryLog.ManifestMissingOrMalformed(logger, manifestPath);
                 continue;
             }
 
             if (string.IsNullOrEmpty(manifest.Protocol?.Id)
                 || string.IsNullOrEmpty(manifest.Executable))
             {
-#pragma warning disable CA1873
-                logger?.LogWarning(
-                    "Sidecar manifest at {Path} is missing protocol.id or executable; skipping.",
-                    manifestPath);
-#pragma warning restore CA1873
+                if (logger is not null)
+                    SidecarDiscoveryLog.ManifestMissingRequiredFields(logger, manifestPath);
                 continue;
             }
 
             if (disabled.Contains(manifest.Protocol.Id))
             {
-#pragma warning disable CA1873
-                logger?.LogInformation(
-                    "Skipping disabled sidecar plugin '{PluginId}' (Bowire:DisabledPlugins).",
-                    manifest.Protocol.Id);
-#pragma warning restore CA1873
+                if (logger is not null)
+                    SidecarDiscoveryLog.SkippingDisabledSidecar(logger, manifest.Protocol.Id);
                 continue;
             }
 
@@ -89,4 +80,31 @@ public static class SidecarPluginDiscovery
 
         return results;
     }
+}
+
+/// <summary>
+/// Source-generated logger wrappers for
+/// <see cref="SidecarPluginDiscovery"/>. Folds three CA1873 sites into
+/// one place; the generator emits <c>IsEnabled</c>-gated dispatch so
+/// the runtime null-check the analyzer flagged is gone.
+/// </summary>
+internal static partial class SidecarDiscoveryLog
+{
+    [LoggerMessage(
+        EventId = 1,
+        Level = LogLevel.Warning,
+        Message = "Sidecar manifest at {Path} is missing or malformed; skipping.")]
+    public static partial void ManifestMissingOrMalformed(ILogger logger, string path);
+
+    [LoggerMessage(
+        EventId = 2,
+        Level = LogLevel.Warning,
+        Message = "Sidecar manifest at {Path} is missing protocol.id or executable; skipping.")]
+    public static partial void ManifestMissingRequiredFields(ILogger logger, string path);
+
+    [LoggerMessage(
+        EventId = 3,
+        Level = LogLevel.Information,
+        Message = "Skipping disabled sidecar plugin '{PluginId}' (Bowire:DisabledPlugins).")]
+    public static partial void SkippingDisabledSidecar(ILogger logger, string pluginId);
 }

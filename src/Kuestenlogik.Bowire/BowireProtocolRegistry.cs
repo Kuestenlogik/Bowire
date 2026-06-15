@@ -120,11 +120,8 @@ public sealed class BowireProtocolRegistry
                     {
                         if (disabled.Contains(protocol.Id))
                         {
-#pragma warning disable CA1873 // logger is already null-checked
-                            logger?.LogInformation(
-                                "Skipping disabled protocol plugin '{PluginId}' (Bowire:DisabledPlugins).",
-                                protocol.Id);
-#pragma warning restore CA1873
+                            if (logger is not null)
+                                ProtocolRegistryLog.SkippingDisabledPlugin(logger, protocol.Id);
                             // #29 -- still record the load attempt so the
                             // 'skipped because disabled' branch shows up
                             // in the Grafana panel separately from
@@ -217,4 +214,20 @@ public sealed class BowireProtocolRegistry
             }
         }
     }
+}
+
+/// <summary>
+/// Source-generated logger wrappers for
+/// <see cref="BowireProtocolRegistry"/>. Spinning these out of the
+/// inline calls keeps CA1873 happy (the generator emits the
+/// <c>IsEnabled</c>-gated dispatch the analyzer wants and avoids
+/// boxing of the <c>{PluginId}</c> tag when the level isn't enabled).
+/// </summary>
+internal static partial class ProtocolRegistryLog
+{
+    [LoggerMessage(
+        EventId = 1,
+        Level = LogLevel.Information,
+        Message = "Skipping disabled protocol plugin '{PluginId}' (Bowire:DisabledPlugins).")]
+    public static partial void SkippingDisabledPlugin(ILogger logger, string pluginId);
 }
