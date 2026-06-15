@@ -1561,19 +1561,21 @@ public static class UnaryReplayer
         // can run uninterrupted; coordinate via a cancellation token
         // the receive loop owns and the emit loop can observe.
         //
-        // try/finally around the whole CTS lifetime so the analyzer
-        // sees the Dispose on every exit path and the task always has
-        // a live token while it's running.
-        var sessionCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
-        try
-        {
+        // `using var` disposes sessionCts at the end of the enclosing
+        // method scope — the await on receiveTask below happens BEFORE
+        // that boundary, so the token stays live for the task's whole
+        // lifetime. CodeQL now sees the Dispose on every exit path
+        // without the try/finally wrapper.
+        using var sessionCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+
         var pendingClientTasks = new List<Task>();
         var clientTaskLock = new object();
 
-        // CA2025: we DO await receiveTask before the outer finally
-        // disposes sessionCts, so the token is live for the task's
-        // whole lifetime. Analyzer can't trace the await-then-dispose
-        // sequence across the try/finally boundary.
+        // CA2025: the receive task captures sessionCts.Token; the analyzer
+        // can't follow the await-then-implicit-dispose order. We DO await
+        // receiveTask before the using-declaration's implicit Dispose runs
+        // (see end of method), so the token stays live for the task's
+        // whole lifetime.
 #pragma warning disable CA2025
         var receiveTask = Task.Run(async () =>
         {
@@ -1595,7 +1597,6 @@ public static class UnaryReplayer
             catch (OperationCanceledException) { /* shutdown */ }
             catch { /* socket errors — the emit loop will notice */ }
         }, sessionCts.Token);
-#pragma warning restore CA2025
 
         // ---- Server-push loop: recorded ReceivedMessages ----
         var frames2 = step.ReceivedMessages;
@@ -1679,17 +1680,13 @@ public static class UnaryReplayer
         }
 
         // Make sure the receive task has actually observed the CTS
-        // cancellation before the outer finally disposes it.
+        // cancellation before the using-declaration's implicit Dispose
+        // runs at the end of this method.
         try { await receiveTask; }
         catch (OperationCanceledException) { /* expected */ }
         catch { /* swallow */ }
 
         return 101;
-        }
-        finally
-        {
-            sessionCts.Dispose();
-        }
     }
 
     // Pair recorded SentMessages invocations with the ReceivedMessages
