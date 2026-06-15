@@ -1,8 +1,8 @@
 # Bowire
 
-> The multi-protocol API workbench. Auto-discovers gRPC, REST/OpenAPI, GraphQL, SignalR, WebSocket, SSE, MQTT, Socket.IO, OData, and MCP services from a running endpoint and gives you a single browser UI to inspect schemas, call methods, stream messages, mock backends, record/replay sessions, and assert on responses. Ships embedded as ASP.NET middleware (`MapBowire()`) or as a standalone .NET tool / container.
+> The multi-protocol API workbench. Auto-discovers gRPC, REST/OpenAPI, GraphQL, SignalR, WebSocket, SSE, MQTT, NATS, Pulsar, JSON-RPC, SOAP, Socket.IO, OData, MCP, and OTLP services from a running endpoint and gives you a single browser UI to inspect schemas, call methods, stream messages, receive telemetry, mock backends, record/replay sessions, and assert on responses. Ships embedded as ASP.NET middleware (`MapBowire()`) or as a standalone .NET tool / container.
 
-Bowire is plugin-based: each protocol is a separate NuGet package implementing `IBowireProtocol`, loaded out of `~/.bowire/plugins/` at startup. Sister repos extend the surface to wire-protocols (DIS, UDP) and event streams (Surgewave, Kafka). New plugins can be scaffolded with `dotnet new bowire-plugin`.
+Bowire is plugin-based: each protocol is a separate NuGet package implementing `IBowireProtocol`, loaded out of `~/.bowire/plugins/` at startup. Sister repos extend the surface to wire-protocols (DIS, UDP), event streams (Surgewave, Kafka, AMQP), actor-systems (Akka), and specialty/domain plugins (Tactical API). New plugins can be scaffolded with `dotnet new bowire-plugin`.
 
 Apache-2.0 licensed. Source at https://github.com/Kuestenlogik/Bowire. Distributed via nuget.org as `Kuestenlogik.Bowire.*` libraries and `Kuestenlogik.Bowire.Tool` for the CLI.
 
@@ -18,7 +18,7 @@ Apache-2.0 licensed. Source at https://github.com/Kuestenlogik/Bowire. Distribut
 - [Documentation home](https://bowire.io/docs/): full reference manual.
 - [Setup](https://bowire.io/docs/setup/): install paths — embedded middleware, standalone CLI, Docker sidecar, building from source.
 - [UI guide](https://bowire.io/docs/ui-guide/): every pane and action in the browser workbench, with screenshots.
-- [Protocol guides](https://bowire.io/docs/protocols/): per-plugin behaviour and configuration. Built-in: gRPC, REST, GraphQL, SignalR, WebSocket, SSE, MQTT, Socket.IO, OData, MCP. Sister-repo plugins: DIS, UDP, Surgewave, Kafka. Includes a guide for writing your own.
+- [Protocol guides](https://bowire.io/docs/protocols/): per-plugin behaviour and configuration. Built-in: gRPC, REST, GraphQL, SignalR, WebSocket, SSE, MQTT, NATS, Pulsar, JSON-RPC, SOAP, Socket.IO, OData, MCP, OTLP. Sister-repo plugins: DIS, UDP, Surgewave, Kafka, AMQP, Akka, Tactical API. Includes a guide for writing your own.
 - [Features reference](https://bowire.io/docs/features/): mock server, recording/replay, response chaining, test assertions, environments, flows, command palette, plugin system, performance graphs, freeform requests, multi-channel duplex.
 - [Architecture](https://bowire.io/docs/architecture/): plugin pipeline, package layout, extension points for embedding deeply.
 - [API reference](https://bowire.io/docs/api/Kuestenlogik.Bowire.html): types, methods, and extension points generated from the source.
@@ -47,4 +47,7 @@ Apache-2.0 licensed. Source at https://github.com/Kuestenlogik/Bowire. Distribut
 - [Bowire.Protocol.Udp](https://github.com/Kuestenlogik/Bowire.Protocol.Udp): generic UDP datagram inspection plugin.
 - [Bowire.Protocol.Surgewave](https://github.com/Kuestenlogik/Bowire.Protocol.Surgewave): Surgewave distribution-fabric tap stream plugin.
 - [Bowire.Protocol.Kafka](https://github.com/Kuestenlogik/Bowire.Protocol.Kafka): Apache Kafka producer / consumer plugin.
+- [Bowire.Protocol.Amqp](https://github.com/Kuestenlogik/Bowire.Protocol.Amqp): AMQP 0.9.1 + 1.0 plugin (RabbitMQ-tested).
+- [Bowire.Protocol.Akka](https://github.com/Kuestenlogik/Bowire.Protocol.Akka): Akka.NET remote actors plugin.
+- [Bowire.Protocol.TacticalApi](https://github.com/Kuestenlogik/Bowire.Protocol.TacticalApi): Rheinmetall situational-awareness gRPC plugin.
 - [llms.txt](https://llmstxt.org/): about this file format.

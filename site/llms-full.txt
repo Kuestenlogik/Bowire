@@ -1,6 +1,6 @@
 # Bowire — full reference for LLMs
 
-> The multi-protocol API workbench. Auto-discovers gRPC, REST/OpenAPI, GraphQL, SignalR, WebSocket, SSE, MQTT, Socket.IO, OData, and MCP services from a running endpoint and gives you a single browser UI to inspect schemas, call methods, stream messages, mock backends, record/replay sessions, and assert on responses. Ships embedded as ASP.NET middleware (`MapBowire()`) or as a standalone .NET tool / container.
+> The multi-protocol API workbench. Auto-discovers gRPC, REST/OpenAPI, GraphQL, SignalR, WebSocket, SSE, MQTT, NATS, Pulsar, JSON-RPC, SOAP, Socket.IO, OData, MCP, and OTLP services from a running endpoint and gives you a single browser UI to inspect schemas, call methods, stream messages, receive telemetry, mock backends, record/replay sessions, and assert on responses. Ships embedded as ASP.NET middleware (`MapBowire()`) or as a standalone .NET tool / container.
 
 This file is the verbose, AI-readable companion to `llms.txt`. It contains install commands, code snippets, the API surface, and answers to the most common questions in one self-contained document so an agent doesn't need to crawl the site to understand Bowire.
 
@@ -8,7 +8,7 @@ License: Apache-2.0. Source: https://github.com/Kuestenlogik/Bowire. Brand: Küs
 
 ## What problem Bowire solves
 
-Modern .NET services rarely speak only HTTP+JSON. A single product can ship gRPC for backend-to-backend, REST for the web frontend, SignalR for live updates, MQTT for IoT integration, GraphQL for partner APIs, and MCP for AI-agent access. Each protocol traditionally needs its own debugging tool — Postman for REST, grpcurl for gRPC, MQTT Explorer for MQTT, Insomnia for GraphQL — and each tool re-asks the developer for the same metadata (services, methods, schemas, headers, auth).
+Modern .NET services rarely speak only HTTP+JSON. A single product can ship gRPC for backend-to-backend, REST for the web frontend, SignalR for live updates, MQTT or NATS for IoT integration, Kafka or Pulsar for event streams, GraphQL for partner APIs, MCP for AI-agent access, and emit OTLP traces / metrics / logs for observability. Each protocol traditionally needs its own debugging tool — Postman for REST, grpcurl for gRPC, MQTT Explorer for MQTT, an OTLP collector for telemetry, Insomnia for GraphQL — and each tool re-asks the developer for the same metadata (services, methods, schemas, headers, auth).
 
 Bowire auto-discovers all of these from one running endpoint URL and renders them in one workbench. You point Bowire at `https://api.example.com` (or `app.MapBowire()` inside your own ASP.NET service) and get every callable method across every supported protocol, with the same UI for unary calls, server-streaming, client-streaming, and duplex channels.
 
@@ -73,7 +73,8 @@ Built-ins ship in the Bowire core repo:
 - `Kuestenlogik.Bowire.Protocol.Nats` — pub/sub, JetStream streams, Services API + queue groups (NATS.Net 2.x)
 - `Kuestenlogik.Bowire.Protocol.Soap` — WSDL 1.1 discovery, SOAP 1.1 + 1.2 envelopes, automatic Fault detection (no WCF)
 - `Kuestenlogik.Bowire.Protocol.JsonRpc` — JSON-RPC 2.0 over HTTP with OpenRPC `rpc.discover`
-- `Kuestenlogik.Bowire.Protocol.Pulsar` — Apache Pulsar topic discovery + produce/subscribe via DotPulsar 3.5.x
+- `Kuestenlogik.Bowire.Protocol.Pulsar` — Pulsar topic discovery + produce/subscribe via DotPulsar 3.5.x
+- `Kuestenlogik.Bowire.Protocol.Otlp` — OpenTelemetry Protocol **passive listener**: SUTs export traces / metrics / logs via `OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:&lt;port&gt;`; each received envelope surfaces channel-style for inspection. Phase 1 captures JSON content-types decoded + protobuf as base64 (Phase 2 inlines a decode via vendored opentelemetry-proto descriptors).
 
 Sister-repo plugins:
 
@@ -83,7 +84,7 @@ Sister-repo plugins:
 - `Kuestenlogik.Bowire.Protocol.Amqp` — AMQP 0.9.1 + 1.0 via URL scheme (RabbitMQ-tested)
 - `Kuestenlogik.Bowire.Protocol.TacticalApi` — Rheinmetall situational-awareness gRPC
 - `Kuestenlogik.Bowire.Protocol.Akka` — Akka.NET remote actors
-- `Kuestenlogik.Bowire.Protocol.Surgewave` — Küstenlogik Surgewave distribution-fabric tap (private)
+- `Kuestenlogik.Bowire.Protocol.Surgewave` — Küstenlogik Surgewave distribution-fabric tap (native wire + Kafka-compat mode)
 
 ## Writing your own plugin
 
