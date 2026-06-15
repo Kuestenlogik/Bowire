@@ -24,7 +24,7 @@ public sealed class GraphQLProtocolIntegrationTests
     public async Task Discover_Builds_Query_And_Mutation_Services_From_Introspection()
     {
         await using var host = await PluginTestHost.StartAsync(MapGraphQLEndpoint);
-        var protocol = new BowireGraphQLProtocol();
+        using var protocol = new BowireGraphQLProtocol();
 
         var services = await protocol.DiscoverAsync(host.BaseUrl + "/graphql", showInternalServices: false, TestContext.Current.CancellationToken);
 
@@ -45,7 +45,7 @@ public sealed class GraphQLProtocolIntegrationTests
     public async Task Invoke_VariablesOnly_BuildsAndSendsGeneratedQuery()
     {
         await using var host = await PluginTestHost.StartAsync(MapGraphQLEndpoint);
-        var protocol = new BowireGraphQLProtocol();
+        using var protocol = new BowireGraphQLProtocol();
 
         var result = await protocol.InvokeAsync(
             host.BaseUrl + "/graphql",
@@ -64,7 +64,7 @@ public sealed class GraphQLProtocolIntegrationTests
     public async Task Invoke_VerbatimQueryShape_PassesQueryThroughUnchanged()
     {
         await using var host = await PluginTestHost.StartAsync(MapGraphQLEndpoint);
-        var protocol = new BowireGraphQLProtocol();
+        using var protocol = new BowireGraphQLProtocol();
 
         // The "method" name is `ping`, but the body specifies a verbatim
         // `echo` mutation — the plugin must forward that operation literally

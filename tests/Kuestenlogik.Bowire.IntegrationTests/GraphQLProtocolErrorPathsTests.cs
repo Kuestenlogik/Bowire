@@ -17,7 +17,7 @@ public sealed class GraphQLProtocolErrorPathsTests
     [Fact]
     public async Task Discover_HttpRequestException_From_Unreachable_Endpoint_Returns_Empty()
     {
-        var protocol = new BowireGraphQLProtocol();
+        using var protocol = new BowireGraphQLProtocol();
 
         var services = await protocol.DiscoverAsync(
             "http://127.0.0.1:1/graphql",
@@ -39,7 +39,7 @@ public sealed class GraphQLProtocolErrorPathsTests
                 await ctx.Response.WriteAsync("definitely not json");
             }));
 
-        var protocol = new BowireGraphQLProtocol();
+        using var protocol = new BowireGraphQLProtocol();
         var services = await protocol.DiscoverAsync(
             host.BaseUrl + "/graphql",
             showInternalServices: false,
@@ -61,7 +61,7 @@ public sealed class GraphQLProtocolErrorPathsTests
                 await ctx.Response.WriteAsync("""{ "errors": [{ "message": "introspection disabled" }] }""");
             }));
 
-        var protocol = new BowireGraphQLProtocol();
+        using var protocol = new BowireGraphQLProtocol();
         var services = await protocol.DiscoverAsync(
             host.BaseUrl + "/graphql",
             showInternalServices: false,
@@ -77,7 +77,7 @@ public sealed class GraphQLProtocolErrorPathsTests
         // "Mutation". The fixture echoes the inbound query so we can prove
         // the kind made it onto the wire.
         await using var host = await PluginTestHost.StartAsync(EchoQueryEndpoint);
-        var protocol = new BowireGraphQLProtocol();
+        using var protocol = new BowireGraphQLProtocol();
 
         var result = await protocol.InvokeAsync(
             host.BaseUrl + "/graphql",
@@ -96,7 +96,7 @@ public sealed class GraphQLProtocolErrorPathsTests
     public async Task Invoke_RoutesSubscriptionKeyword()
     {
         await using var host = await PluginTestHost.StartAsync(EchoQueryEndpoint);
-        var protocol = new BowireGraphQLProtocol();
+        using var protocol = new BowireGraphQLProtocol();
 
         var result = await protocol.InvokeAsync(
             host.BaseUrl + "/graphql",
@@ -123,7 +123,7 @@ public sealed class GraphQLProtocolErrorPathsTests
                 return Task.CompletedTask;
             }));
 
-        var protocol = new BowireGraphQLProtocol();
+        using var protocol = new BowireGraphQLProtocol();
         var result = await protocol.InvokeAsync(
             host.BaseUrl + "/graphql",
             service: "Query",
@@ -146,7 +146,7 @@ public sealed class GraphQLProtocolErrorPathsTests
         // this exercises the foreach branch in SendOperationAsync that's otherwise
         // skipped when metadata is null.
         await using var host = await PluginTestHost.StartAsync(EchoQueryEndpoint);
-        var protocol = new BowireGraphQLProtocol();
+        using var protocol = new BowireGraphQLProtocol();
 
         var meta = new Dictionary<string, string>
         {

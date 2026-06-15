@@ -25,7 +25,7 @@ public sealed class GraphQLProtocolStreamingTests
     public async Task InvokeStream_ForcedSse_YieldsNextEventsAndStopsOnComplete()
     {
         await using var host = await PluginTestHost.StartAsync(MapSseSubscription);
-        var protocol = new BowireGraphQLProtocol();
+        using var protocol = new BowireGraphQLProtocol();
 
         var metadata = new Dictionary<string, string>
         {
@@ -54,7 +54,7 @@ public sealed class GraphQLProtocolStreamingTests
     public async Task InvokeStream_ForcedSse_TolaratesCommentsAndSkipsNonNextEvents()
     {
         await using var host = await PluginTestHost.StartAsync(MapSseSubscriptionWithKeepalive);
-        var protocol = new BowireGraphQLProtocol();
+        using var protocol = new BowireGraphQLProtocol();
 
         var metadata = new Dictionary<string, string>
         {
@@ -88,7 +88,7 @@ public sealed class GraphQLProtocolStreamingTests
                 ctx.Response.StatusCode = 500;
                 return Task.CompletedTask;
             }));
-        var protocol = new BowireGraphQLProtocol();
+        using var protocol = new BowireGraphQLProtocol();
 
         var metadata = new Dictionary<string, string>
         {
@@ -123,7 +123,7 @@ public sealed class GraphQLProtocolStreamingTests
         // finds it via the loaded-assembly scan in BowireProtocolRegistry.
         _ = new BowireWebSocketProtocol();
 
-        var protocol = new BowireGraphQLProtocol();
+        using var protocol = new BowireGraphQLProtocol();
         var metadata = new Dictionary<string, string>
         {
             [BowireGraphQLProtocol.SubscriptionTransportMetadataKey] = "ws"
@@ -153,7 +153,7 @@ public sealed class GraphQLProtocolStreamingTests
         await using var host = await PluginTestHost.StartAsync(MapTransportWsErrorSubscription);
         _ = new BowireWebSocketProtocol();
 
-        var protocol = new BowireGraphQLProtocol();
+        using var protocol = new BowireGraphQLProtocol();
         var metadata = new Dictionary<string, string>
         {
             [BowireGraphQLProtocol.SubscriptionTransportMetadataKey] = "ws"
@@ -200,7 +200,7 @@ public sealed class GraphQLProtocolStreamingTests
             }));
         _ = new BowireWebSocketProtocol();
 
-        var protocol = new BowireGraphQLProtocol();
+        using var protocol = new BowireGraphQLProtocol();
         var metadata = new Dictionary<string, string>
         {
             [BowireGraphQLProtocol.SubscriptionTransportMetadataKey] = "ws"
@@ -230,7 +230,7 @@ public sealed class GraphQLProtocolStreamingTests
         // the plugin should yield a single { error: ... } envelope.
         _ = new BowireWebSocketProtocol();
 
-        var protocol = new BowireGraphQLProtocol();
+        using var protocol = new BowireGraphQLProtocol();
         var metadata = new Dictionary<string, string>
         {
             [BowireGraphQLProtocol.SubscriptionTransportMetadataKey] = "ws"
@@ -263,7 +263,7 @@ public sealed class GraphQLProtocolStreamingTests
         // breaks cleanly instead of bubbling the cancellation up to
         // the caller.
         await using var host = await PluginTestHost.StartAsync(MapSseSubscriptionLongLived);
-        var protocol = new BowireGraphQLProtocol();
+        using var protocol = new BowireGraphQLProtocol();
 
         var metadata = new Dictionary<string, string>
         {
