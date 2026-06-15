@@ -109,18 +109,20 @@ public sealed record MtlsConfig(
         clientCert = null;
         caCert = null;
 
-        X509Certificate2? ephemeral = null;
         try
         {
-            ephemeral = string.IsNullOrEmpty(Passphrase)
-                ? X509Certificate2.CreateFromPem(CertificatePem, PrivateKeyPem)
-                : X509Certificate2.CreateFromEncryptedPem(CertificatePem, PrivateKeyPem, Passphrase);
-
             // X509Certificate2.CreateFromPem on Windows yields an ephemeral
             // key that some HttpClient versions can't use directly —
             // re-export and re-import as PKCS#12 so the handler picks up a
-            // persistable copy. No-op on non-Windows but harmless.
-            clientCert = X509CertificateLoader.LoadPkcs12(ephemeral.Export(X509ContentType.Pkcs12), null);
+            // persistable copy. The ephemeral lives only long enough to
+            // round-trip through Export/LoadPkcs12; a narrow `using`
+            // scopes its disposal to the lines that need it.
+            using (var ephemeral = string.IsNullOrEmpty(Passphrase)
+                ? X509Certificate2.CreateFromPem(CertificatePem, PrivateKeyPem)
+                : X509Certificate2.CreateFromEncryptedPem(CertificatePem, PrivateKeyPem, Passphrase))
+            {
+                clientCert = X509CertificateLoader.LoadPkcs12(ephemeral.Export(X509ContentType.Pkcs12), null);
+            }
 
             if (!string.IsNullOrEmpty(CaCertificatePem))
             {
@@ -138,10 +140,6 @@ public sealed record MtlsConfig(
             caCert = null;
             error = "mTLS configuration invalid: " + ex.Message;
             return false;
-        }
-        finally
-        {
-            ephemeral?.Dispose();
         }
     }
 
