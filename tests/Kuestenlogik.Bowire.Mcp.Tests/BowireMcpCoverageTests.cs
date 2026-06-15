@@ -66,7 +66,7 @@ public sealed class BowireMcpCoverageTests : IAsyncDisposable
 
     private string NewTempDir(string label)
     {
-        var dir = Path.Combine(Path.GetTempPath(), $"bowire-mcp-{label}-{Guid.NewGuid():N}");
+        var dir = SafePath.Combine(Path.GetTempPath(), $"bowire-mcp-{label}-{Guid.NewGuid():N}");
         Directory.CreateDirectory(dir);
         _tempDirs.Add(dir);
         return dir;
@@ -313,7 +313,7 @@ public sealed class BowireMcpCoverageTests : IAsyncDisposable
         var tools = BuildTools();
 
         var result = await tools.MockStart(
-            recording: Path.Combine(Path.GetTempPath(), $"does-not-exist-{Guid.NewGuid():N}.json"),
+            recording: SafePath.Combine(Path.GetTempPath(), $"does-not-exist-{Guid.NewGuid():N}.json"),
             ct: TestContext.Current.CancellationToken);
 
         Assert.StartsWith("bowire.mock.start failed:", result, StringComparison.Ordinal);
@@ -325,7 +325,7 @@ public sealed class BowireMcpCoverageTests : IAsyncDisposable
     public async Task MockStart_Then_List_Then_Stop_Roundtrip()
     {
         var dir = NewTempDir("mock");
-        var recordingPath = Path.Combine(dir, "rec.json");
+        var recordingPath = SafePath.Combine(dir, "rec.json");
         await File.WriteAllTextAsync(
             recordingPath,
             /*lang=json,strict*/ """
@@ -430,9 +430,9 @@ public sealed class BowireMcpCoverageTests : IAsyncDisposable
     private static void WithSwappedConfigFile(string filename, string newContents, Action action)
     {
         var previousOverride = BowireMcpTools.HomeDirOverride;
-        var tempHome = Path.Combine(Path.GetTempPath(), $"bowire-mcp-cfg-{Guid.NewGuid():N}");
-        Directory.CreateDirectory(Path.Combine(tempHome, ".bowire"));
-        File.WriteAllText(Path.Combine(tempHome, ".bowire", filename), newContents);
+        var tempHome = SafePath.Combine(Path.GetTempPath(), $"bowire-mcp-cfg-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(SafePath.Combine(tempHome, ".bowire"));
+        File.WriteAllText(SafePath.Combine(tempHome, ".bowire", filename), newContents);
         BowireMcpTools.HomeDirOverride = tempHome;
         try
         {
@@ -454,8 +454,8 @@ public sealed class BowireMcpCoverageTests : IAsyncDisposable
     {
         _ = filename; // kept for call-site readability — the file is absent by construction
         var previousOverride = BowireMcpTools.HomeDirOverride;
-        var tempHome = Path.Combine(Path.GetTempPath(), $"bowire-mcp-cfg-{Guid.NewGuid():N}");
-        Directory.CreateDirectory(Path.Combine(tempHome, ".bowire"));
+        var tempHome = SafePath.Combine(Path.GetTempPath(), $"bowire-mcp-cfg-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(SafePath.Combine(tempHome, ".bowire"));
         BowireMcpTools.HomeDirOverride = tempHome;
         try
         {
