@@ -232,9 +232,8 @@ internal static class WorkspaceCommand
         // file format (#148) reads from. Empty subdirectories are kept
         // discoverable by dropping a .gitkeep so `git add .` after init
         // commits them.
-        foreach (var sub in WorkspaceSubdirs)
+        foreach (var subPath in WorkspaceSubdirs.Select(sub => Path.Combine(fullPath, sub)))
         {
-            var subPath = Path.Combine(fullPath, sub);
             Directory.CreateDirectory(subPath);
             await File.WriteAllTextAsync(Path.Combine(subPath, ".gitkeep"), string.Empty, ct).ConfigureAwait(false);
         }
