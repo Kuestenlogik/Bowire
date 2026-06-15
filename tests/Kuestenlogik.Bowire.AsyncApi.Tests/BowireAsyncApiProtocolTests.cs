@@ -55,7 +55,7 @@ public sealed class BowireAsyncApiProtocolTests
     public async Task Discover_loads_minimal_sample()
     {
         var plugin = new BowireAsyncApiProtocol();
-        var sample = Path.Combine("TestData", "minimal.asyncapi.yaml");
+        var sample = SafePath.Combine("TestData", "minimal.asyncapi.yaml");
         var services = await plugin.DiscoverAsync(
             serverUrl: sample, showInternalServices: false,
             ct: TestContext.Current.CancellationToken)
@@ -73,7 +73,7 @@ public sealed class BowireAsyncApiProtocolTests
     public async Task Discover_emits_one_method_per_message_for_multi_message_operations()
     {
         var plugin = new BowireAsyncApiProtocol();
-        var sample = Path.Combine("TestData", "v3-multi-message.asyncapi.yaml");
+        var sample = SafePath.Combine("TestData", "v3-multi-message.asyncapi.yaml");
         var services = await plugin.DiscoverAsync(
             serverUrl: sample, showInternalServices: false,
             ct: TestContext.Current.CancellationToken)
@@ -103,7 +103,7 @@ public sealed class BowireAsyncApiProtocolTests
         // lookup itself succeeded (otherwise it would have been the
         // earlier "operation not found" error).
         var plugin = new BowireAsyncApiProtocol();
-        var sample = Path.Combine("TestData", "v3-multi-message.asyncapi.yaml");
+        var sample = SafePath.Combine("TestData", "v3-multi-message.asyncapi.yaml");
         _ = await plugin.DiscoverAsync(sample, false, TestContext.Current.CancellationToken)
             .ConfigureAwait(true);
 
@@ -129,7 +129,7 @@ public sealed class BowireAsyncApiProtocolTests
         // with the "no resolver" error rather than the
         // "not discovered" one. Proves the V2 dispatch landed.
         var plugin = new BowireAsyncApiProtocol();
-        var sample = Path.Combine("TestData", "v2-smart-home.asyncapi.yaml");
+        var sample = SafePath.Combine("TestData", "v2-smart-home.asyncapi.yaml");
         _ = await plugin.DiscoverAsync(sample, false, TestContext.Current.CancellationToken)
             .ConfigureAwait(true);
 
@@ -149,7 +149,7 @@ public sealed class BowireAsyncApiProtocolTests
     public async Task Invoke_rejects_v2_method_that_no_channel_slot_matches()
     {
         var plugin = new BowireAsyncApiProtocol();
-        var sample = Path.Combine("TestData", "v2-smart-home.asyncapi.yaml");
+        var sample = SafePath.Combine("TestData", "v2-smart-home.asyncapi.yaml");
         _ = await plugin.DiscoverAsync(sample, false, TestContext.Current.CancellationToken)
             .ConfigureAwait(true);
 
@@ -169,7 +169,7 @@ public sealed class BowireAsyncApiProtocolTests
     public async Task Discover_maps_v2_document_with_publish_and_subscribe()
     {
         var plugin = new BowireAsyncApiProtocol();
-        var sample = Path.Combine("TestData", "v2-smart-home.asyncapi.yaml");
+        var sample = SafePath.Combine("TestData", "v2-smart-home.asyncapi.yaml");
         var services = await plugin.DiscoverAsync(
             serverUrl: sample, showInternalServices: false,
             ct: TestContext.Current.CancellationToken)
@@ -204,7 +204,7 @@ public sealed class BowireAsyncApiProtocolTests
     public async Task Discover_preserves_utf8_em_dash_in_title()
     {
         var plugin = new BowireAsyncApiProtocol();
-        var sample = Path.Combine("TestData", "utf8-mojibake-probe.asyncapi.yaml");
+        var sample = SafePath.Combine("TestData", "utf8-mojibake-probe.asyncapi.yaml");
         var services = await plugin.DiscoverAsync(
             serverUrl: sample, showInternalServices: false,
             ct: TestContext.Current.CancellationToken)
@@ -222,7 +222,7 @@ public sealed class BowireAsyncApiProtocolTests
         // The sample has `asyncapi: 3.0.0` and `info.version: 1.2.3`
         // both unquoted; discover should still succeed.
         var plugin = new BowireAsyncApiProtocol();
-        var sample = Path.Combine("TestData", "unquoted-versions.asyncapi.yaml");
+        var sample = SafePath.Combine("TestData", "unquoted-versions.asyncapi.yaml");
         var services = await plugin.DiscoverAsync(
             serverUrl: sample, showInternalServices: false,
             ct: TestContext.Current.CancellationToken)
@@ -236,7 +236,7 @@ public sealed class BowireAsyncApiProtocolTests
     public async Task Discover_loads_smart_home_sample_with_operations_mapped()
     {
         var plugin = new BowireAsyncApiProtocol();
-        var sample = Path.Combine("TestData", "smart-home-mqtt.asyncapi.yaml");
+        var sample = SafePath.Combine("TestData", "smart-home-mqtt.asyncapi.yaml");
 
         var services = await plugin.DiscoverAsync(
             serverUrl: sample, showInternalServices: false,
@@ -293,7 +293,7 @@ public sealed class BowireAsyncApiProtocolTests
         // empty). Caller should get a clear "no resolver" message
         // pointing at the AsyncAPI roadmap.
         var plugin = new BowireAsyncApiProtocol();
-        var sample = Path.Combine("TestData", "smart-home-mqtt.asyncapi.yaml");
+        var sample = SafePath.Combine("TestData", "smart-home-mqtt.asyncapi.yaml");
         _ = await plugin.DiscoverAsync(sample, false, TestContext.Current.CancellationToken)
             .ConfigureAwait(true);
 
