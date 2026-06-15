@@ -25,7 +25,7 @@ public sealed class PulsarRoundTripE2ETests : IClassFixture<PulsarContainerFixtu
     [Fact]
     public async Task Produce_Then_Subscribe_Round_Trips_The_Payload()
     {
-        var plugin = new BowirePulsarProtocol();
+        using var plugin = new BowirePulsarProtocol();
         var topic = "persistent://public/default/bowire-rt-" + Guid.NewGuid().ToString("N")[..8];
 
         // Produce one message first; we'll subscribe from Earliest so
@@ -74,7 +74,7 @@ public sealed class PulsarRoundTripE2ETests : IClassFixture<PulsarContainerFixtu
     [Fact]
     public async Task InvokeAsync_With_Bad_Method_Returns_Routing_Error_Even_Against_Live_Broker()
     {
-        var plugin = new BowirePulsarProtocol();
+        using var plugin = new BowirePulsarProtocol();
         var result = await plugin.InvokeAsync(
             serverUrl: _broker.BrokerUrl,
             service: "ignored",
@@ -89,7 +89,7 @@ public sealed class PulsarRoundTripE2ETests : IClassFixture<PulsarContainerFixtu
     [Fact]
     public async Task Produce_Honours_Topic_Override_Metadata()
     {
-        var plugin = new BowirePulsarProtocol();
+        using var plugin = new BowirePulsarProtocol();
         var overrideTopic = "persistent://public/default/bowire-rt-override-"
             + Guid.NewGuid().ToString("N")[..8];
 

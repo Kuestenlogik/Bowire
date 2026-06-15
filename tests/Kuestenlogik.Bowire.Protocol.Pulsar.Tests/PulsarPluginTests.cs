@@ -19,7 +19,7 @@ public class PulsarPluginTests
     [Fact]
     public void Plugin_Identity_Is_Stable()
     {
-        var p = new BowirePulsarProtocol();
+        using var p = new BowirePulsarProtocol();
         Assert.Equal("Pulsar", p.Name);
         Assert.Equal("pulsar", p.Id);
         Assert.False(string.IsNullOrWhiteSpace(p.IconSvg));
@@ -134,7 +134,7 @@ public class PulsarPluginTests
     [Fact]
     public void Settings_Carry_Defaults_For_Namespaces_And_From_Latest()
     {
-        var p = new BowirePulsarProtocol();
+        using var p = new BowirePulsarProtocol();
         Assert.Equal(2, p.Settings.Count);
         Assert.Contains(p.Settings, s => s.Key == "namespaces");
         Assert.Contains(p.Settings, s => s.Key == "subscribeFromLatest");
@@ -143,7 +143,7 @@ public class PulsarPluginTests
     [Fact]
     public async Task DiscoverAsync_Returns_Empty_For_Unparseable_Url()
     {
-        var p = new BowirePulsarProtocol();
+        using var p = new BowirePulsarProtocol();
         var result = await p.DiscoverAsync("", showInternalServices: false, TestContext.Current.CancellationToken);
         Assert.Empty(result);
     }
@@ -151,7 +151,7 @@ public class PulsarPluginTests
     [Fact]
     public async Task InvokeAsync_Surfaces_Routing_Error_For_Bad_Method()
     {
-        var p = new BowirePulsarProtocol();
+        using var p = new BowirePulsarProtocol();
         var result = await p.InvokeAsync(
             "pulsar://localhost:6650",
             service: "ignored",

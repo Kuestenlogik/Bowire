@@ -69,7 +69,7 @@ public sealed class PulsarPluginIntegrationTests : IAsyncLifetime
     [Fact]
     public async Task DiscoverAsync_Surfaces_Topics_From_Admin_Api()
     {
-        var p = new BowirePulsarProtocol();
+        using var p = new BowirePulsarProtocol();
         // The plugin treats http://host:port as the admin URL.
         var services = await p.DiscoverAsync(_adminBase, showInternalServices: false,
             TestContext.Current.CancellationToken);
@@ -127,7 +127,7 @@ public sealed class PulsarPluginIntegrationTests : IAsyncLifetime
     [Fact]
     public async Task InvokeAsync_Surfaces_Connection_Error_For_Unreachable_Broker()
     {
-        var p = new BowirePulsarProtocol();
+        using var p = new BowirePulsarProtocol();
         // FullName valid; broker URL points at an unreachable port so
         // DotPulsar's connect attempt fails fast. The plugin should
         // catch the exception and return it as Status.
@@ -152,7 +152,7 @@ public sealed class PulsarPluginIntegrationTests : IAsyncLifetime
     [Fact]
     public async Task InvokeAsync_Returns_Routing_Error_For_Non_Produce_Op()
     {
-        var p = new BowirePulsarProtocol();
+        using var p = new BowirePulsarProtocol();
         var result = await p.InvokeAsync(
             serverUrl: "pulsar://127.0.0.1:6650",
             service: "x",
@@ -167,7 +167,7 @@ public sealed class PulsarPluginIntegrationTests : IAsyncLifetime
     [Fact]
     public async Task InvokeAsync_Honours_Topic_Metadata_Override()
     {
-        var p = new BowirePulsarProtocol();
+        using var p = new BowirePulsarProtocol();
         // Override the topic via metadata; broker is still unreachable
         // so we expect an error, but the route resolution itself must
         // succeed (i.e. we don't see the "Unknown route" sentinel).
@@ -193,7 +193,7 @@ public sealed class PulsarPluginIntegrationTests : IAsyncLifetime
     [Fact]
     public async Task OpenChannelAsync_Returns_Null()
     {
-        var p = new BowirePulsarProtocol();
+        using var p = new BowirePulsarProtocol();
         var ch = await p.OpenChannelAsync(
             "pulsar://localhost", "x", "x/y", showInternalServices: false,
             metadata: null, ct: TestContext.Current.CancellationToken);
@@ -203,7 +203,7 @@ public sealed class PulsarPluginIntegrationTests : IAsyncLifetime
     [Fact]
     public void Initialize_With_Null_Service_Provider_Is_Safe()
     {
-        var p = new BowirePulsarProtocol();
+        using var p = new BowirePulsarProtocol();
         p.Initialize(null);
         Assert.Equal(2, p.Settings.Count);
     }
@@ -211,7 +211,7 @@ public sealed class PulsarPluginIntegrationTests : IAsyncLifetime
     [Fact]
     public async Task InvokeStreamAsync_Yields_Nothing_For_Bad_Url()
     {
-        var p = new BowirePulsarProtocol();
+        using var p = new BowirePulsarProtocol();
         var any = false;
         await foreach (var _ in p.InvokeStreamAsync("", "x",
             "pulsar/topic/x/subscribe", [], showInternalServices: false,
@@ -225,7 +225,7 @@ public sealed class PulsarPluginIntegrationTests : IAsyncLifetime
     [Fact]
     public async Task InvokeStreamAsync_Yields_Nothing_For_Non_Subscribe_Op()
     {
-        var p = new BowirePulsarProtocol();
+        using var p = new BowirePulsarProtocol();
         var any = false;
         await foreach (var _ in p.InvokeStreamAsync("pulsar://localhost", "x",
             "pulsar/topic/x/produce", [], showInternalServices: false,
