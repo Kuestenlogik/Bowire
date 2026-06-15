@@ -24,14 +24,12 @@ internal sealed class WorkbenchRecordingJsonProvider : IRecordingJsonProvider
         {
             return null;
         }
-        foreach (var rec in arr.EnumerateArray())
+        foreach (var rec in arr.EnumerateArray()
+                     .Where(rec => rec.TryGetProperty("id", out var idProp) &&
+                                   idProp.ValueKind == JsonValueKind.String &&
+                                   string.Equals(idProp.GetString(), recordingId, StringComparison.Ordinal)))
         {
-            if (rec.TryGetProperty("id", out var idProp) &&
-                idProp.ValueKind == JsonValueKind.String &&
-                string.Equals(idProp.GetString(), recordingId, StringComparison.Ordinal))
-            {
-                return rec.GetRawText();
-            }
+            return rec.GetRawText();
         }
         return null;
     }
