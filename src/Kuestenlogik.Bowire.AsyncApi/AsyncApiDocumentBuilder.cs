@@ -103,10 +103,8 @@ public static class AsyncApiDocumentBuilder
     {
         var dict = new Dictionary<string, int>(StringComparer.Ordinal);
         if (recording?.Steps is null) return dict;
-        foreach (var step in recording.Steps)
+        foreach (var addr in recording.Steps.Select(s => s.Method).Where(a => !string.IsNullOrEmpty(a)))
         {
-            var addr = step.Method;
-            if (string.IsNullOrEmpty(addr)) continue;
             dict[addr] = dict.TryGetValue(addr, out var n) ? n + 1 : 1;
         }
         return dict;
@@ -244,13 +242,7 @@ public static class AsyncApiDocumentBuilder
         return method.ServerStreaming ? "receive" : "send";
 
         static bool EndsAny(string s, params string[] suffixes)
-        {
-            foreach (var suffix in suffixes)
-            {
-                if (s.EndsWith(suffix, StringComparison.OrdinalIgnoreCase)) return true;
-            }
-            return false;
-        }
+            => suffixes.Any(suffix => s.EndsWith(suffix, StringComparison.OrdinalIgnoreCase));
     }
 
     // ---- bindings --------------------------------------------------
@@ -360,9 +352,8 @@ public static class AsyncApiDocumentBuilder
         var required = new List<string>();
         if (info.Fields is { Count: > 0 })
         {
-            foreach (var field in info.Fields)
+            foreach (var field in info.Fields.Where(f => !string.IsNullOrEmpty(f.Name)))
             {
-                if (string.IsNullOrEmpty(field.Name)) continue;
                 props[field.Name] = MapFieldType(field.Type);
                 // Proto's "LABEL_OPTIONAL" treats fields as
                 // omissible, but every non-optional label is
