@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+    <OutputType>Exe</OutputType>
+    <!--
+      Coverage for the markdown-backed help provider — verifies the
+      IBowireHelpProvider contract (GetTopic / Search / ListTopics),
+      front-matter + first-H1 title resolution, category derivation
+      from the resource path, and the AddBowireHelp DI registration.
+      Uses a synthetic in-memory assembly via Reflection.Emit to feed
+      controllable resource names + bodies; default-ctor smoke tests
+      exercise the real embedded docs/ set the package ships.
+    -->
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit.v3" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+    <PackageReference Include="coverlet.collector"><PrivateAssets>all</PrivateAssets><IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets></PackageReference>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Kuestenlogik.Bowire\Kuestenlogik.Bowire.csproj" />
+    <ProjectReference Include="..\..\src\Kuestenlogik.Bowire.Help\Kuestenlogik.Bowire.Help.csproj" />
+  </ItemGroup>
+</Project>
