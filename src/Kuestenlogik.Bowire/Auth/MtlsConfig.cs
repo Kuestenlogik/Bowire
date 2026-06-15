@@ -99,15 +99,18 @@ public sealed record MtlsConfig(
     }
 
     /// <summary>
-    /// Decode the PEM material into ready-to-use X509 resources. Returns null
-    /// if anything fails to parse — caller surfaces a clean error to the user.
-    /// Caller owns disposal of the returned certificates (or wraps them in a
-    /// dedicated handler-owner — see <see cref="MtlsHandlerOwner"/>).
+    /// Decode the PEM material into a disposable cert-pair wrapper. Returns
+    /// null on PEM-parse failure with a human-readable <paramref name="error"/>.
+    /// Caller owns the returned pair (use a <c>using</c> declaration); after
+    /// transferring ownership of the inner X509 resources into a long-lived
+    /// owner like <see cref="MtlsHandlerOwner"/>, call
+    /// <see cref="MtlsCertificatePair.Release"/> on the pair so its own
+    /// disposal becomes a no-op.
     /// </summary>
-    public bool TryLoadCertificates(out X509Certificate2? clientCert, out X509Certificate2? caCert, out string? error)
+    public MtlsCertificatePair? TryLoadCertificates(out string? error)
     {
-        clientCert = null;
-        caCert = null;
+        X509Certificate2? clientCert = null;
+        X509Certificate2? caCert = null;
 
         try
         {
@@ -130,16 +133,14 @@ public sealed record MtlsConfig(
             }
 
             error = null;
-            return true;
+            return new MtlsCertificatePair(clientCert, caCert);
         }
         catch (Exception ex)
         {
             clientCert?.Dispose();
             caCert?.Dispose();
-            clientCert = null;
-            caCert = null;
             error = "mTLS configuration invalid: " + ex.Message;
-            return false;
+            return null;
         }
     }
 
