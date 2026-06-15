@@ -28,7 +28,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [25](https://github.com/Kuestenlogik/Bowire/issues/25) | Bowire | [AI side-panel integration](#issue-kuestenlogik-bowire-25) | ✅ Done | `area:workbench` |
 | [33](https://github.com/Kuestenlogik/Bowire/issues/33) | Bowire | [Protocol plugins — Connect Phase 1+3 + OTLP](#issue-kuestenlogik-bowire-33) | ✅ Done | `area:plugin-sdk` |
 | [43](https://github.com/Kuestenlogik/Bowire/issues/43) | Bowire | [MCP SSE-transport support](#issue-kuestenlogik-bowire-43) | ✅ Done | `area:mcp` |
-| [58](https://github.com/Kuestenlogik/Bowire/issues/58) | Bowire | [Workspace: complete the Git-native story (.blw file)](#issue-kuestenlogik-bowire-58) | ✅ Done |  |
+| [58](https://github.com/Kuestenlogik/Bowire/issues/58) | Bowire | [Workspace: complete the Git-native story (.bww file)](#issue-kuestenlogik-bowire-58) | ✅ Done |  |
 | [85](https://github.com/Kuestenlogik/Bowire/issues/85) | Bowire | [Request-pane Body: split stacked Form / Selection Set / Query into sub-tabs](#issue-kuestenlogik-bowire-85) | ✅ Done |  |
 | [90](https://github.com/Kuestenlogik/Bowire/issues/90) | Bowire | [AI panel: move from response-pane tab to a right-side drawer](#issue-kuestenlogik-bowire-90) | ✅ Done |  |
 | [91](https://github.com/Kuestenlogik/Bowire/issues/91) | Bowire | [Frontend ProblemDetails migration — adopt renderProblem() everywhere body.error is read](#issue-kuestenlogik-bowire-91) | ✅ Done |  |
@@ -249,7 +249,7 @@ Remaining wave items after MQTT / Kafka / AMQP / SOAP / NATS / JSON-RPC / Pulsar
 
 > **Status:** done via the MCP SDK migration. Architecture diverges from the original plan — body below reflects the as-shipped state; the historical plan stays in the issue history. [[more]](https://github.com/Kuestenlogik/Bowire/issues/43)
 
-#### <a id="issue-kuestenlogik-bowire-58"></a>✅ Done · [#58](https://github.com/Kuestenlogik/Bowire/issues/58) Workspace: complete the Git-native story (.blw file)
+#### <a id="issue-kuestenlogik-bowire-58"></a>✅ Done · [#58](https://github.com/Kuestenlogik/Bowire/issues/58) Workspace: complete the Git-native story (.bww file)
 
 **Dependencies** - Marketing promise on https://bowire.io / comparison table currently reads `Git-native workspace -> planned`. Bruno's `.bru` convention is the bar. [[more]](https://github.com/Kuestenlogik/Bowire/issues/58)
 
