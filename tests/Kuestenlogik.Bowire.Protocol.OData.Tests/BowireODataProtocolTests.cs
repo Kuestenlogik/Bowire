@@ -46,7 +46,7 @@ public sealed class BowireODataProtocolTests
     [Fact]
     public void Identity_Properties_Are_Stable()
     {
-        var protocol = new BowireODataProtocol();
+        using var protocol = new BowireODataProtocol();
 
         Assert.Equal("OData", protocol.Name);
         Assert.Equal("odata", protocol.Id);
@@ -57,7 +57,7 @@ public sealed class BowireODataProtocolTests
     [Fact]
     public void Implements_IBowireProtocol()
     {
-        var protocol = new BowireODataProtocol();
+        using var protocol = new BowireODataProtocol();
 
         Assert.IsAssignableFrom<IBowireProtocol>(protocol);
     }
@@ -65,7 +65,7 @@ public sealed class BowireODataProtocolTests
     [Fact]
     public void Initialize_Accepts_Null_Service_Provider()
     {
-        var protocol = new BowireODataProtocol();
+        using var protocol = new BowireODataProtocol();
 
         protocol.Initialize(null);
     }
@@ -73,7 +73,7 @@ public sealed class BowireODataProtocolTests
     [Fact]
     public async Task DiscoverAsync_Empty_Url_Returns_Empty()
     {
-        var protocol = new BowireODataProtocol();
+        using var protocol = new BowireODataProtocol();
 
         var services = await protocol.DiscoverAsync(
             "", showInternalServices: false, TestContext.Current.CancellationToken);
@@ -84,7 +84,7 @@ public sealed class BowireODataProtocolTests
     [Fact]
     public async Task DiscoverAsync_Whitespace_Url_Returns_Empty()
     {
-        var protocol = new BowireODataProtocol();
+        using var protocol = new BowireODataProtocol();
 
         var services = await protocol.DiscoverAsync(
             "   ", showInternalServices: false, TestContext.Current.CancellationToken);
@@ -95,7 +95,7 @@ public sealed class BowireODataProtocolTests
     [Fact]
     public async Task DiscoverAsync_Non_Http_Url_Returns_Empty()
     {
-        var protocol = new BowireODataProtocol();
+        using var protocol = new BowireODataProtocol();
 
         var services = await protocol.DiscoverAsync(
             "ftp://example.com/foo", showInternalServices: false, TestContext.Current.CancellationToken);
@@ -107,7 +107,7 @@ public sealed class BowireODataProtocolTests
     public async Task DiscoverAsync_Against_Stub_Returns_EntitySets_As_Services()
     {
         await using var stub = await StubServer.StartAsync(MetadataXml, "application/xml");
-        var protocol = new BowireODataProtocol();
+        using var protocol = new BowireODataProtocol();
 
         var services = await protocol.DiscoverAsync(
             stub.BaseUrl, showInternalServices: false, TestContext.Current.CancellationToken);
@@ -124,7 +124,7 @@ public sealed class BowireODataProtocolTests
     public async Task DiscoverAsync_Synthesises_All_Crud_Methods()
     {
         await using var stub = await StubServer.StartAsync(MetadataXml, "application/xml");
-        var protocol = new BowireODataProtocol();
+        using var protocol = new BowireODataProtocol();
 
         var services = await protocol.DiscoverAsync(
             stub.BaseUrl, showInternalServices: false, TestContext.Current.CancellationToken);
@@ -154,7 +154,7 @@ public sealed class BowireODataProtocolTests
     public async Task DiscoverAsync_Builds_Field_Schema_From_EntityType()
     {
         await using var stub = await StubServer.StartAsync(MetadataXml, "application/xml");
-        var protocol = new BowireODataProtocol();
+        using var protocol = new BowireODataProtocol();
 
         var services = await protocol.DiscoverAsync(
             stub.BaseUrl, showInternalServices: false, TestContext.Current.CancellationToken);
@@ -183,7 +183,7 @@ public sealed class BowireODataProtocolTests
     public async Task DiscoverAsync_GetByKey_Has_Required_Key_Field_Only()
     {
         await using var stub = await StubServer.StartAsync(MetadataXml, "application/xml");
-        var protocol = new BowireODataProtocol();
+        using var protocol = new BowireODataProtocol();
 
         var services = await protocol.DiscoverAsync(
             stub.BaseUrl, showInternalServices: false, TestContext.Current.CancellationToken);
@@ -200,7 +200,7 @@ public sealed class BowireODataProtocolTests
     public async Task DiscoverAsync_Url_Already_Ends_With_Metadata_Strips_From_Origin()
     {
         await using var stub = await StubServer.StartAsync(MetadataXml, "application/xml");
-        var protocol = new BowireODataProtocol();
+        using var protocol = new BowireODataProtocol();
 
         var services = await protocol.DiscoverAsync(
             stub.BaseUrl + "/$metadata",
@@ -217,7 +217,7 @@ public sealed class BowireODataProtocolTests
     {
         await using var stub = await StubServer.StartAsync(
             "<error/>", "application/xml", statusCode: 500);
-        var protocol = new BowireODataProtocol();
+        using var protocol = new BowireODataProtocol();
 
         var services = await protocol.DiscoverAsync(
             stub.BaseUrl, showInternalServices: false, TestContext.Current.CancellationToken);
@@ -230,7 +230,7 @@ public sealed class BowireODataProtocolTests
     {
         await using var stub = await StubServer.StartAsync(
             "not-valid-xml-at-all", "application/xml");
-        var protocol = new BowireODataProtocol();
+        using var protocol = new BowireODataProtocol();
 
         var services = await protocol.DiscoverAsync(
             stub.BaseUrl, showInternalServices: false, TestContext.Current.CancellationToken);
@@ -250,7 +250,7 @@ public sealed class BowireODataProtocolTests
             </edmx:Edmx>
             """;
         await using var stub = await StubServer.StartAsync(emptyMetadata, "application/xml");
-        var protocol = new BowireODataProtocol();
+        using var protocol = new BowireODataProtocol();
 
         var services = await protocol.DiscoverAsync(
             stub.BaseUrl, showInternalServices: false, TestContext.Current.CancellationToken);
@@ -263,7 +263,7 @@ public sealed class BowireODataProtocolTests
     {
         await using var stub = await StubServer.StartAsync(
             "{\"value\":[]}", "application/json");
-        var protocol = new BowireODataProtocol();
+        using var protocol = new BowireODataProtocol();
 
         var result = await protocol.InvokeAsync(
             stub.BaseUrl, service: "Products",
@@ -285,7 +285,7 @@ public sealed class BowireODataProtocolTests
     {
         await using var stub = await StubServer.StartAsync(
             "{}", "application/json");
-        var protocol = new BowireODataProtocol();
+        using var protocol = new BowireODataProtocol();
 
         var result = await protocol.InvokeAsync(
             stub.BaseUrl + "/$metadata", service: "Products",
@@ -304,7 +304,7 @@ public sealed class BowireODataProtocolTests
     {
         await using var stub = await StubServer.StartAsync(
             "{\"Id\":42}", "application/json");
-        var protocol = new BowireODataProtocol();
+        using var protocol = new BowireODataProtocol();
 
         var result = await protocol.InvokeAsync(
             stub.BaseUrl, service: "Products",
@@ -324,7 +324,7 @@ public sealed class BowireODataProtocolTests
     {
         await using var stub = await StubServer.StartAsync(
             "", "text/plain", statusCode: 204);
-        var protocol = new BowireODataProtocol();
+        using var protocol = new BowireODataProtocol();
 
         var result = await protocol.InvokeAsync(
             stub.BaseUrl, service: "Products",
@@ -344,7 +344,7 @@ public sealed class BowireODataProtocolTests
     {
         await using var stub = await StubServer.StartAsync(
             "{\"Id\":1}", "application/json", statusCode: 201);
-        var protocol = new BowireODataProtocol();
+        using var protocol = new BowireODataProtocol();
 
         var result = await protocol.InvokeAsync(
             stub.BaseUrl, service: "Products",
@@ -364,7 +364,7 @@ public sealed class BowireODataProtocolTests
     {
         await using var stub = await StubServer.StartAsync(
             "{}", "application/json");
-        var protocol = new BowireODataProtocol();
+        using var protocol = new BowireODataProtocol();
 
         var _ = await protocol.InvokeAsync(
             stub.BaseUrl, service: "Products",
@@ -383,7 +383,7 @@ public sealed class BowireODataProtocolTests
     {
         await using var stub = await StubServer.StartAsync(
             "{\"value\":[]}", "application/json");
-        var protocol = new BowireODataProtocol();
+        using var protocol = new BowireODataProtocol();
 
         var _ = await protocol.InvokeAsync(
             stub.BaseUrl, service: "Products",
@@ -404,7 +404,7 @@ public sealed class BowireODataProtocolTests
     {
         await using var stub = await StubServer.StartAsync(
             "{}", "application/json");
-        var protocol = new BowireODataProtocol();
+        using var protocol = new BowireODataProtocol();
 
         var result = await protocol.InvokeAsync(
             stub.BaseUrl, service: "Products",
@@ -425,7 +425,7 @@ public sealed class BowireODataProtocolTests
     {
         await using var stub = await StubServer.StartAsync(
             "boom", "text/plain", statusCode: 500);
-        var protocol = new BowireODataProtocol();
+        using var protocol = new BowireODataProtocol();
 
         var result = await protocol.InvokeAsync(
             stub.BaseUrl, service: "Products",
@@ -442,7 +442,7 @@ public sealed class BowireODataProtocolTests
     [Fact]
     public async Task InvokeStreamAsync_Returns_Empty_Sequence()
     {
-        var protocol = new BowireODataProtocol();
+        using var protocol = new BowireODataProtocol();
 
         var produced = new List<string>();
         await foreach (var item in protocol.InvokeStreamAsync(
@@ -463,7 +463,7 @@ public sealed class BowireODataProtocolTests
     [Fact]
     public async Task OpenChannelAsync_Returns_Null_Because_OData_Has_No_Duplex()
     {
-        var protocol = new BowireODataProtocol();
+        using var protocol = new BowireODataProtocol();
 
         var channel = await protocol.OpenChannelAsync(
             "http://example.com",
