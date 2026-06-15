@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+    <OutputType>Exe</OutputType>
+    <!--
+      Phase 2.1 smoke coverage for the git-backed workspace runtime
+      package — confirms DI activation marker is registered when the
+      package is referenced + retains its identity getters. The
+      per-entity reader/writer, FS-watch, secret-overlay, and
+      lockfile machinery land in subsequent phases on the same
+      #196 ticket; each gets its own test surface here.
+    -->
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit.v3" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+    <PackageReference Include="coverlet.collector"><PrivateAssets>all</PrivateAssets><IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets></PackageReference>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Kuestenlogik.Bowire\Kuestenlogik.Bowire.csproj" />
+    <ProjectReference Include="..\..\src\Kuestenlogik.Bowire.Workspace.Git\Kuestenlogik.Bowire.Workspace.Git.csproj" />
+  </ItemGroup>
+</Project>
