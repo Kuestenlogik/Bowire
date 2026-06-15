@@ -1101,7 +1101,21 @@
     function renderSidebarHeader(opts) {
         opts = opts || {};
         var row = el('div', { className: 'bowire-env-list-header' });
-        row.appendChild(el('span', { textContent: opts.title || '' }));
+        if (typeof opts.onTitleClick === 'function') {
+            // Title becomes a real button → operator can click the
+            // section heading to navigate to that section's overview
+            // (workspaces tree → Workspaces overview).
+            row.appendChild(el('button', {
+                type: 'button',
+                className: 'bowire-env-list-header-title-link',
+                title: opts.titleClickTitle || ('Open ' + (opts.title || '') + ' overview'),
+                'aria-label': opts.titleClickTitle || ('Open ' + (opts.title || '') + ' overview'),
+                textContent: opts.title || '',
+                onClick: opts.onTitleClick
+            }));
+        } else {
+            row.appendChild(el('span', { textContent: opts.title || '' }));
+        }
         (opts.actions || []).forEach(function (a) {
             if (!a) return;
             var attrs = {

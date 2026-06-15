@@ -829,8 +829,7 @@
             color: '#6366f1',
             createdAt: Date.now(),
             lastOpenedAt: Date.now(),
-            includeAllEnvironments: true,
-            includedEnvironmentIds: [],
+            recordingStorageMode: 'both'
         });
         activeWorkspaceId = 'personal';
     }
@@ -1188,14 +1187,10 @@
         persistWorkspaces();
     }
 
-    // the toggle persists immediately so a workspace switch reads
-    // the new state from disk.
-    function setWorkspaceIncludeAllEnvs(id, value) {
-        var ws = workspaces.find(function (w) { return w.id === id; });
-        if (!ws) return;
-        ws.includeAllEnvironments = !!value;
-        persistWorkspaces();
-    }
+    // Retired with the self-contained workspaces refactor (#A) — envs
+    // are workspace-owned, not subscribed-to. Stub stays for any
+    // straggler call sites; a follow-up sweep removes them.
+    function setWorkspaceIncludeAllEnvs(_id, _value) { /* no-op */ }
 
     function renameWorkspace(id, name) {
         var ws = workspaces.find(function (w) { return w.id === id; });
@@ -1261,7 +1256,13 @@
         'bowire_recordings_trash',
         'bowire_favorites',
         'bowire_benchmarks',
-        'bowire_flows'
+        'bowire_flows',
+        // #A — self-contained workspaces. Envs are workspace-owned, so
+        // the export must carry them with the workspace; otherwise an
+        // import would land an env-less workspace and the operator
+        // would have to re-create every staging / prod env by hand.
+        'bowire_environments',
+        'bowire_active_env'
     ];
     // Modes that store per-method presets via the presets framework.
     // Each maps to a `bowire_presets_<mode>` key under wsKey().
@@ -1297,9 +1298,9 @@
                 name: ws.name,
                 color: ws.color,
                 description: ws.description || '',
-                includeAllEnvironments: !!ws.includeAllEnvironments,
-                includedEnvironmentIds: Array.isArray(ws.includedEnvironmentIds)
-                    ? ws.includedEnvironmentIds.slice() : [],
+                // Inclusion fields retired with #A — envs are workspace-
+                // owned now, the workspace export carries the env list
+                // itself under data.bowire_environments.
                 recordingStorageMode: ws.recordingStorageMode || 'both'
             },
             data: data
@@ -1348,9 +1349,6 @@
             var ws = createWorkspace(wsMeta.name || 'Imported',
                 wsMeta.color || '#6366f1');
             ws.description = wsMeta.description || '';
-            ws.includeAllEnvironments = !!wsMeta.includeAllEnvironments;
-            ws.includedEnvironmentIds = Array.isArray(wsMeta.includedEnvironmentIds)
-                ? wsMeta.includedEnvironmentIds.slice() : [];
             ws.recordingStorageMode = wsMeta.recordingStorageMode || 'both';
             persistWorkspaces();
             targetId = ws.id;

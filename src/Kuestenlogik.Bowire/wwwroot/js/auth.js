@@ -730,8 +730,10 @@
     function _isEnvironmentNameTaken(name, excludeId) {
         var norm = String(name || '').trim().toLowerCase();
         if (!norm) return false;
-        var all = (typeof getAllSharedEnvironments === 'function')
-            ? getAllSharedEnvironments() : getEnvironments();
+        // Self-contained workspaces: scope uniqueness to the active
+        // workspace's own envs. Two different workspaces can each have
+        // a "Staging" — they're independent stores.
+        var all = getEnvironments();
         return all.some(function (e) {
             return e.id !== excludeId
                 && String(e.name || '').trim().toLowerCase() === norm;
