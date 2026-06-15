@@ -170,7 +170,10 @@ public sealed class PulsarDiscoveryHttpFakeTests
         // through GetSetting and pass it to ListTopicsAsync.
         var plugin = new BowirePulsarProtocol();
         var calls = new List<string>();
-        var fake = NewHttp((req, _) =>
+        // `using` so an assertion-throw between SwapHttp and the
+        // trailing Dispose still releases the fake HttpClient handle
+        // (cs/dispose-not-called-on-throw).
+        using var fake = NewHttp((req, _) =>
         {
             calls.Add(req.RequestUri!.ToString());
             return Respond(HttpStatusCode.OK, "[\"persistent://public/default/events\"]");
@@ -187,7 +190,6 @@ public sealed class PulsarDiscoveryHttpFakeTests
         Assert.Equal("pulsar://broker.local:6650", services[0].OriginUrl);
         Assert.Single(calls);
         Assert.Equal("http://broker.local:8080/admin/v2/persistent/public/default", calls[0]);
-        fake.Dispose();
     }
 
     [Fact]
@@ -199,7 +201,10 @@ public sealed class PulsarDiscoveryHttpFakeTests
         // user supplied — not the 8080 default.
         var plugin = new BowirePulsarProtocol();
         var calls = new List<string>();
-        var fake = NewHttp((req, _) =>
+        // `using` for the same reason as DiscoverAsync_DefaultNamespaceSetting…
+        // — assertion-throw between SwapHttp and the trailing Dispose
+        // would leak the fake HttpClient (cs/dispose-not-called-on-throw).
+        using var fake = NewHttp((req, _) =>
         {
             calls.Add(req.RequestUri!.ToString());
             return Respond(HttpStatusCode.OK, "[\"persistent://public/default/x\"]");
@@ -213,7 +218,6 @@ public sealed class PulsarDiscoveryHttpFakeTests
 
         Assert.Single(services);
         Assert.Equal("http://broker.local:18080/admin/v2/persistent/public/default", calls[0]);
-        fake.Dispose();
     }
 
     // ---- Private ResolveTopic via reflection ---------------------------
