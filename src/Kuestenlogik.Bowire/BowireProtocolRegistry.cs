@@ -124,7 +124,15 @@ public sealed class BowireProtocolRegistry
                     }
                 }
             }
+            // Plugin discovery has to tolerate anything a 3rd-party DLL
+            // throws from its static ctor or default ctor:
+            // ReflectionTypeLoadException, TypeInitializationException,
+            // MissingMethodException, BadImageFormatException,
+            // FileLoadException, plus whatever Activator wraps. A single
+            // bad plugin must not abort scanning the rest.
+#pragma warning disable CA1031 // Do not catch general exception types
             catch (Exception ex)
+#pragma warning restore CA1031
             {
                 logger?.LogWarning(ex,
                     "Skipped Bowire assembly during protocol scan: {Assembly}",
@@ -166,8 +174,11 @@ public sealed class BowireProtocolRegistry
 
         string? baseDir;
         try { baseDir = Path.GetDirectoryName(entry.Location); }
-        catch (Exception ex)
+        catch (Exception ex) when (ex is NotSupportedException or ArgumentException or PathTooLongException)
         {
+            // Single-file-published or bundled assemblies have an empty
+            // Location, or Path.GetDirectoryName rejects the format —
+            // skip the auto-load step in those cases.
             logger?.LogDebug(ex,
                 "Couldn't determine entry assembly directory; plugin auto-load skipped");
             return;
@@ -190,8 +201,11 @@ public sealed class BowireProtocolRegistry
             {
                 Assembly.LoadFrom(dll);
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is FileLoadException or BadImageFormatException or FileNotFoundException or IOException or UnauthorizedAccessException)
             {
+                // Common load failures for a sidecar DLL: corrupt assembly,
+                // missing transitive ref, locked file, ACL denial. Keep
+                // going so one bad DLL doesn't break the rest of the scan.
                 logger?.LogWarning(ex,
                     "Failed to auto-load Bowire plugin assembly: {Dll}", dll);
             }
