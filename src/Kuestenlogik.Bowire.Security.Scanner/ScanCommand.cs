@@ -108,10 +108,9 @@ public static class ScanCommand
                 try
                 {
                     var template = NucleiTemplates.NucleiTemplateReader.ReadFile(path);
-                    foreach (var rec in NucleiTemplates.NucleiTemplateConverter.ToBowireRecordings(template, nucleiContext))
+                    foreach (var rec in NucleiTemplates.NucleiTemplateConverter.ToBowireRecordings(template, nucleiContext)
+                        .Where(r => r.VulnerableWhen is not null && r.Steps.Count > 0))
                     {
-                        if (rec.VulnerableWhen is null) continue;
-                        if (rec.Steps.Count == 0) continue;
                         templates.Add(new LoadedTemplate(path, rec));
                         nucleiCount++;
                     }
@@ -332,9 +331,8 @@ public static class ScanCommand
         var patterns = new List<string>();
         if (scope is { Count: > 0 })
         {
-            foreach (var raw in scope)
+            foreach (var raw in scope.Where(r => !string.IsNullOrWhiteSpace(r)))
             {
-                if (string.IsNullOrWhiteSpace(raw)) continue;
                 // CLI flags may be comma-separated AND repeated — split each
                 // value on `,` so `--scope a.com,b.com` works alongside
                 // `--scope a.com --scope b.com`.
@@ -439,9 +437,8 @@ public static class ScanCommand
     public static void ApplyAuthHeaders(HttpRequestMessage req, IList<string> headers)
     {
         if (headers is null || headers.Count == 0) return;
-        foreach (var raw in headers)
+        foreach (var raw in headers.Where(h => !string.IsNullOrWhiteSpace(h)))
         {
-            if (string.IsNullOrWhiteSpace(raw)) continue;
             var colon = raw.IndexOf(':', StringComparison.Ordinal);
             if (colon <= 0) continue;
             var name = raw[..colon].Trim();
