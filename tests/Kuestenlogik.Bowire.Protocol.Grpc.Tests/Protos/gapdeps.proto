@@ -1,0 +1,22 @@
+syntax = "proto3";
+option csharp_namespace = "Kuestenlogik.Bowire.Protocol.Grpc.Tests.Proto";
+package gapdeps;
+
+import "google/protobuf/timestamp.proto";
+
+// Transitive-deps exercise: importing google.protobuf.Timestamp forces
+// GrpcReflectionClient.ResolveAllDescriptorsAsync to walk the BFS queue
+// for the timestamp.proto file descriptor. Without this proto, the test
+// suite never drives the queue-Dequeue loop.
+service GapDeps {
+  rpc Stamp (StampReq) returns (StampRes);
+}
+
+message StampReq {
+  google.protobuf.Timestamp ts = 1;
+}
+
+message StampRes {
+  google.protobuf.Timestamp ts = 1;
+  string note = 2;
+}
