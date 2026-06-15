@@ -72,6 +72,23 @@ public sealed class MapLibreExtensionTests
 /// </summary>
 public sealed class BowireExtensionRegistryTests
 {
+    /// <summary>
+    /// Force-reference a type from the MapLibre assembly so the
+    /// runtime loads it into AppDomain before
+    /// <see cref="BowireExtensionRegistry.Discover"/> walks the
+    /// loaded assemblies. Same trap as the SchemaOnly /
+    /// OpenApi3Adapter discovery race (#352) — Discover's
+    /// `AppDomain.CurrentDomain.GetAssemblies()` only sees what's
+    /// already been touched, and on Linux CI runners that ordering
+    /// is xUnit-discovery-determined. Without this, the test passes
+    /// on dev boxes (assembly warmed by previous runs) but fails on
+    /// fresh CI.
+    /// </summary>
+    static BowireExtensionRegistryTests()
+    {
+        _ = typeof(MapLibreExtension);
+    }
+
     [Fact]
     public void Discover_Finds_The_BuiltIn_MapLibre_Extension()
     {
