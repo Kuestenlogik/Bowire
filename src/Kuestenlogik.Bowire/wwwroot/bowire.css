@@ -1993,16 +1993,40 @@ not just
     flex-shrink: 0;
     font-family: var(--bowire-font-mono);
 }
-.bowire-env-overview-active-badge {
-    font-size: 10px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    color: var(--bowire-accent);
-    background: var(--bowire-accent-subtle);
-    padding: 2px 6px;
-    border-radius: var(--bowire-radius-pill);
+/* Active-env toggle. Same shape as the topbar env dropdown's per-row
+   check slot: always rendered, hidden by default for inactive rows
+   and rendered solid (accent) for the active one. Inactive rows
+   surface a ghosted check on row-hover so the toggle is discoverable
+   without making every non-active row noisy. Click activates that
+   env; clicking the active env's check clears the selection back to
+   "Workspace defaults". */
+.bowire-env-overview-check {
+    width: 20px;
+    height: 20px;
     flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    border: 0;
+    border-radius: var(--bowire-radius-sm);
+    background: transparent;
+    color: var(--bowire-accent);
+    cursor: pointer;
+    font-size: 14px;
+    line-height: 1;
+    visibility: hidden;
+    transition: background var(--bowire-transition), opacity var(--bowire-transition);
+}
+.bowire-env-overview-check.is-active { visibility: visible; }
+.bowire-env-overview-row:hover .bowire-env-overview-check {
+    visibility: visible;
+    opacity: 0.4;
+}
+.bowire-env-overview-row:hover .bowire-env-overview-check.is-active { opacity: 1; }
+.bowire-env-overview-check:hover {
+    background: var(--bowire-bg-elevated);
+    opacity: 1 !important;
 }
 .bowire-env-overview-tools {
     display: inline-flex;
@@ -9909,6 +9933,28 @@ so the user sees where the
     color: var(--bowire-text-tertiary);
     font-weight: 600;
 }
+/* Clickable variant of the section title — used by the workspaces
+   sidebar header to navigate to the Workspaces overview. Looks
+   like the static span at rest; hover hints that it's a target. */
+.bowire-env-list-header-title-link {
+    background: transparent;
+    border: 0;
+    padding: 2px 6px;
+    margin: -2px -6px;
+    border-radius: var(--bowire-radius-sm, 4px);
+    font: inherit;
+    color: inherit;
+    text-transform: inherit;
+    letter-spacing: inherit;
+    cursor: pointer;
+    transition: background var(--bowire-transition), color var(--bowire-transition);
+}
+.bowire-env-list-header-title-link:hover,
+.bowire-env-list-header-title-link:focus-visible {
+    background: var(--bowire-surface);
+    color: var(--bowire-text-secondary);
+    outline: none;
+}
 
 .bowire-env-add-btn {
     width: 22px;
@@ -10486,8 +10532,98 @@ and offers the path to switch. */
     font-weight: 600;
     padding: 4px 8px;
 }
+/* Header title stack — the editable item name on top with a small
+   breadcrumb-style trail underneath as the page's "where am I"
+   subtitle. Shared across workspace settings, env overview and env
+   detail so every workspaces-tree settings surface reads as one
+   pattern. */
+.bowire-ws-detail-title-stack {
+    flex: 0 1 auto;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+.bowire-ws-detail-trail {
+    /* Inline navigable trail underneath the editable title. Notion-
+       style pattern: shows only the PARENT path; the page title is
+       the leaf. Every crumb is a real button so the operator can
+       jump back up the tree without going through the sidebar. */
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 4px;
+    font-size: 11px;
+    color: var(--bowire-text-tertiary);
+    font-family: var(--bowire-font-mono);
+    line-height: 1.4;
+}
+.bowire-ws-detail-trail-link {
+    background: transparent;
+    border: 1px solid transparent;
+    color: var(--bowire-text-tertiary);
+    font: inherit;
+    padding: 1px 4px;
+    border-radius: var(--bowire-radius-sm, 4px);
+    cursor: pointer;
+    transition: background var(--bowire-transition), color var(--bowire-transition);
+}
+.bowire-ws-detail-trail-link:hover,
+.bowire-ws-detail-trail-link:focus-visible {
+    background: var(--bowire-surface);
+    color: var(--bowire-text);
+    outline: none;
+}
+.bowire-ws-detail-trail-sep {
+    color: var(--bowire-text-tertiary);
+    user-select: none;
+    opacity: 0.6;
+}
+.bowire-ws-detail-trail-current {
+    color: var(--bowire-text-secondary);
+    padding: 1px 4px;
+}
+/* Read-only title variant for surfaces that aren't inline-editable
+   (workspaces overview header, env overview header). Matches the
+   editable .bowire-ws-detail-name font weight / size so the two
+   header-title states sit visually identical. */
+.bowire-ws-detail-title-static {
+    flex: 0 1 auto;
+    min-width: 0;
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--bowire-text);
+    line-height: 1.3;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.bowire-ws-detail-glyph,
+.bowire-env-editor-glyph {
+    /* Same 24×24 box the old colour-dot occupied so the header's
+       vertical alignment stays stable; the inner SVG inherits the
+       size from its width/height attributes. Shared between the
+       workspace settings header (layers glyph) and the env editor
+       header (filled-globe glyph). */
+    width: 24px;
+    height: 24px;
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+.bowire-ws-detail-glyph svg,
+.bowire-env-editor-glyph svg { width: 24px; height: 24px; }
 .bowire-ws-detail-name {
-    flex: 1;
+    /* Sized to its content (with a comfortable min/max range)
+       instead of eating the entire header row. The dot sits to the
+       left, the action button slot (Active badge / Switch button /
+       per-env action toolbar) sits to the right; the spacer at the
+       end of the header gobbles up any leftover width so the right-
+       side controls anchor to the row's right edge. */
+    flex: 0 1 auto;
+    min-width: 200px;
+    max-width: 420px;
     font-size: 20px;
     font-weight: 600;
     font-family: inherit;

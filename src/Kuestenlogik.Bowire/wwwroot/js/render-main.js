@@ -432,15 +432,11 @@
         var activeId = getActiveEnvId();
         var isGlobals = envSidebarSelectedId === '__globals__';
         // Resolve from the SHARED env store (not the workspace-
-        // filtered subset) so excluded-but-selectable envs still
-        // render in the right pane when the operator picks one
-        // for inclusion via the checkbox. Falls back to the
-        // filtered list when the shared lookup isn't available.
-        var allEnvs = (typeof getAllSharedEnvironments === 'function') ? getAllSharedEnvironments() : envs;
+        // Self-contained workspaces: envs are the workspace's own set —
+        // no separate "shared store" to consult for fallback lookup.
         var selectedEnv = isGlobals
             ? null
-            : (allEnvs.find(function (e) { return e.id === envSidebarSelectedId; })
-               || envs.find(function (e) { return e.id === envSidebarSelectedId; }));
+            : envs.find(function (e) { return e.id === envSidebarSelectedId; });
         // ID includes the selected env AND the active tab so morphdom
         // fully replaces the editor when switching between environments
         // or tabs instead of reusing the old DOM with stale closures.
@@ -485,19 +481,47 @@
             // workspace settings surface uses, so the two pick surfaces
             // read as variants of one pattern instead of two.
             headerRow.appendChild(el('span', {
-                className: 'bowire-env-editor-dot',
-                style: 'background:' + envColor
+                className: 'bowire-env-editor-glyph',
+                // Same filled-globe glyph as the topbar env dropdown +
+                // workspace tree env leaf. Matches the workspace
+                // settings header's layers glyph in idiom (top "feature"
+                // of the icon picked up in the colour, lower lines stay
+                // currentColor), so the two settings surfaces read as
+                // variants of one pattern.
+                innerHTML: '<svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" width="24" height="24">'
+                    + '<circle cx="12" cy="12" r="10" fill="' + envColor + '"/>'
+                    + '<line x1="2" y1="12" x2="22" y2="12" fill="none"/>'
+                    + '<path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z" fill="none"/>'
+                    + '</svg>'
             }));
-            headerRow.appendChild(el('input', {
-                id: 'bowire-env-name-input',
-                type: 'text',
-                className: 'bowire-env-editor-name-input',
-                value: selectedEnv.name,
-                'aria-label': 'Environment name',
-                'data-bowire-no-vars-chip': '1',
-                'data-bowire-no-vars-ac': '1',
-                onChange: function (e) { updateEnvironment(envSidebarSelectedId, { name: e.target.value }); }
-            }));
+            // Title stack: editable env name on top, small navigable
+            // trail underneath as the "where am I" subtitle. Matches
+            // the workspace settings + env overview header pattern.
+            var envOwnerWs = (typeof workspaces !== 'undefined' && Array.isArray(workspaces))
+                ? (workspaces.find(function (w) { return w.id === activeWorkspaceId; }) || null)
+                : null;
+            var envOwnerWsId = envOwnerWs ? envOwnerWs.id : activeWorkspaceId;
+            var envOwnerWsName = envOwnerWs ? (envOwnerWs.name || '(unnamed)') : 'Workspace';
+            headerRow.appendChild(el('div', { className: 'bowire-ws-detail-title-stack' },
+                el('input', {
+                    id: 'bowire-env-name-input',
+                    type: 'text',
+                    // Reuse the workspace settings name input class so the
+                    // hover/focus border + max-width behaviour matches
+                    // across both surfaces.
+                    className: 'bowire-ws-detail-name',
+                    value: selectedEnv.name,
+                    'aria-label': 'Environment name',
+                    'data-bowire-no-vars-chip': '1',
+                    'data-bowire-no-vars-ac': '1',
+                    onChange: function (e) { updateEnvironment(envSidebarSelectedId, { name: e.target.value }); }
+                }),
+                _renderHeaderTrail([
+                    { label: 'Workspaces', onClick: _goToWorkspacesOverview },
+                    { label: envOwnerWsName, onClick: function () { _goToWorkspaceSettings(envOwnerWsId); } },
+                    { label: 'Environments', onClick: function () { _goToEnvironmentsOverview(envOwnerWsId); } }
+                ])
+            ));
         }
         headerRow.appendChild(el('span', { style: 'flex:1' }));
 
@@ -1023,6 +1047,62 @@
     // here". The first crumb is the workspace itself — clickable back
     // to its settings card; intermediate crumbs are clickable back to
     // the parent section; the final crumb is the active page.
+    // Small inline trail that sits underneath the editable title in
+    // every workspace-tree settings header (workspace settings, env
+    // overview, env detail). Pattern is Notion-style: the trail shows
+    // only the PARENT path; the leaf is the page title (and editable
+    // where appropriate). Every crumb is navigable unless an explicit
+    // `current: true` flag marks it as the current page (rendered as
+    // plain text). Pass items as { label, onClick } or { label, current }.
+    function _renderHeaderTrail(crumbs) {
+        var nav = el('nav', {
+            className: 'bowire-ws-detail-trail',
+            'aria-label': 'Breadcrumb'
+        });
+        crumbs.forEach(function (c, idx) {
+            if (idx > 0) {
+                nav.appendChild(el('span', {
+                    className: 'bowire-ws-detail-trail-sep',
+                    'aria-hidden': 'true',
+                    textContent: '›'
+                }));
+            }
+            if (c.current || typeof c.onClick !== 'function') {
+                nav.appendChild(el('span', {
+                    className: 'bowire-ws-detail-trail-current',
+                    'aria-current': c.current ? 'page' : null,
+                    textContent: c.label
+                }));
+            } else {
+                nav.appendChild(el('button', {
+                    type: 'button',
+                    className: 'bowire-ws-detail-trail-link',
+                    textContent: c.label,
+                    onClick: c.onClick
+                }));
+            }
+        });
+        return nav;
+    }
+
+    // Navigation helpers used by every header trail. Centralised so the
+    // workspace settings / env overview / env detail crumbs all route
+    // through one place and stay consistent.
+    function _goToWorkspacesOverview() {
+        workspaceTreeSelection = { kind: 'workspaces-overview' };
+        render();
+    }
+    function _goToWorkspaceSettings(wsId) {
+        workspacesSelectedId = wsId;
+        workspaceTreeSelection = { wsId: wsId, kind: 'workspace' };
+        render();
+    }
+    function _goToEnvironmentsOverview(wsId) {
+        workspacesSelectedId = wsId;
+        workspaceTreeSelection = { wsId: wsId, kind: 'environments' };
+        render();
+    }
+
     function _renderWorkspaceBreadcrumb(ws, segments) {
         var nav = el('nav', {
             className: 'bowire-ws-breadcrumb',
@@ -1070,6 +1150,12 @@
     }
 
     function renderWorkspaceDetailMain() {
+        var sel0 = (typeof workspaceTreeSelection !== 'undefined' && workspaceTreeSelection) || {};
+        // Workspaces overview is workspace-agnostic — render it before
+        // any single-workspace lookup so it works even when the active
+        // workspace is null (e.g. right after the last workspace was
+        // deleted).
+        if (sel0.kind === 'workspaces-overview') return _renderWorkspacesOverview();
         var ws = workspaces.find(function (w) { return w.id === workspacesSelectedId; })
                  || activeWorkspace();
         if (!ws) {
@@ -1080,7 +1166,7 @@
             }));
             return emptyMain;
         }
-        var sel = (typeof workspaceTreeSelection !== 'undefined' && workspaceTreeSelection) || {};
+        var sel = sel0;
         var kind = (sel.wsId === ws.id) ? sel.kind : 'workspace';
         if (kind === 'url' && sel.value) {
             // URL leaf no longer routes to the bare-bones "Open in Sources
@@ -1101,6 +1187,167 @@
         if (kind === 'recordings') return _renderWorkspaceRecordingsOverview(ws);
         if (kind === 'recording' && sel.value) return _renderWorkspaceRecordingDetail(ws, sel.value);
         return _renderWorkspaceSettingsDetail(ws);
+    }
+
+    // Workspaces overview — the root of the workspaces-tree settings
+    // surface. Mirrors the env overview pattern (header glyph + title
+    // + hover-revealed row tools) so the two listing surfaces read as
+    // variants of one shape. Sits one level above workspace settings;
+    // the trail in every nested header links back here.
+    function _renderWorkspacesOverview() {
+        var main = el('div', { id: 'bowire-main-workspaces', className: 'bowire-main bowire-main-workspaces' });
+
+        var headerGlyph = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="24" height="24">'
+            + '<polygon points="12 2 2 7 12 12 22 7 12 2"/>'
+            + '<polyline points="2 17 12 22 22 17"/>'
+            + '<polyline points="2 12 12 17 22 12"/>'
+            + '</svg>';
+        main.appendChild(el('div', { className: 'bowire-ws-detail-header' },
+            el('span', { className: 'bowire-ws-detail-glyph', innerHTML: headerGlyph }),
+            el('div', { className: 'bowire-ws-detail-title-stack' },
+                el('div', { className: 'bowire-ws-detail-title-static', textContent: 'Workspaces (' + workspaces.length + ')' })
+            )
+        ));
+
+        var section = el('div', { className: 'bowire-ws-detail-section' });
+        if (workspaces.length === 0) {
+            section.appendChild(el('p', {
+                className: 'bowire-ws-detail-stat-hint',
+                style: 'margin-top:8px',
+                textContent: 'No workspaces yet. Create one to start organising sources, environments and recordings.'
+            }));
+        } else {
+            var list = el('div', { className: 'bowire-env-overview-list' });
+            workspaces.forEach(function (w) {
+                var isActive = w.id === activeWorkspaceId;
+                var wsColor = w.color || 'var(--bowire-text-tertiary)';
+                // Same layers glyph idiom as the workspace settings
+                // header — top "feature" picks up the workspace colour,
+                // lower lines stay currentColor. Smaller (14px) to fit
+                // the row.
+                var rowGlyph = '<svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" width="14" height="14">'
+                    + '<polygon points="12 2 2 7 12 12 22 7 12 2" fill="' + wsColor + '" stroke="' + wsColor + '"/>'
+                    + '<polyline points="2 17 12 22 22 17"/>'
+                    + '<polyline points="2 12 12 17 22 12"/>'
+                    + '</svg>';
+                var envN = (typeof readWorkspaceEnvironments === 'function')
+                    ? readWorkspaceEnvironments(w.id).length
+                    : 0;
+                var meta = envN + (envN === 1 ? ' env' : ' envs');
+                var row = el('div', { className: 'bowire-env-overview-row' });
+                row.appendChild(el('span', {
+                    className: 'bowire-env-overview-glyph',
+                    innerHTML: rowGlyph
+                }));
+                row.appendChild(el('button', {
+                    type: 'button',
+                    className: 'bowire-env-overview-name',
+                    textContent: w.name || '(unnamed)',
+                    title: 'Open workspace settings',
+                    onClick: function () { _goToWorkspaceSettings(w.id); }
+                }));
+                row.appendChild(el('span', {
+                    className: 'bowire-env-overview-meta',
+                    textContent: meta
+                }));
+                // Click-to-activate checkmark — solid on the active
+                // workspace, ghosted-but-clickable on every other.
+                // Same idiom as the env overview's active toggle so
+                // the two listings share the affordance.
+                row.appendChild(el('button', {
+                    type: 'button',
+                    className: 'bowire-env-overview-check' + (isActive ? ' is-active' : ''),
+                    title: isActive ? 'Active workspace' : 'Switch to this workspace',
+                    'aria-label': isActive ? 'Active workspace' : 'Switch to this workspace',
+                    'aria-pressed': isActive ? 'true' : 'false',
+                    textContent: '✓',
+                    onClick: function (ev) {
+                        ev.stopPropagation();
+                        if (typeof switchWorkspace === 'function') switchWorkspace(w.id);
+                        render();
+                    }
+                }));
+                var tools = el('div', { className: 'bowire-env-overview-tools' });
+                tools.appendChild(el('button', {
+                    type: 'button',
+                    className: 'bowire-env-overview-tool',
+                    title: 'Rename workspace',
+                    'aria-label': 'Rename workspace',
+                    innerHTML: (typeof svgIcon === 'function') ? svgIcon('pencil') : '✎',
+                    onClick: function () {
+                        var wsId = w.id;
+                        var oldName = w.name || '';
+                        bowirePrompt('Rename workspace', {
+                            title: 'Rename',
+                            defaultValue: oldName,
+                            confirmText: 'Rename',
+                            validator: function (val) {
+                                var trimmed = String(val || '').trim();
+                                if (!trimmed) return 'Name required';
+                                if (trimmed.toLowerCase() === String(oldName || '').trim().toLowerCase()) return null;
+                                if (typeof _isWorkspaceNameTaken === 'function'
+                                    && _isWorkspaceNameTaken(trimmed, wsId)) {
+                                    if (typeof toast === 'function') {
+                                        toast('A workspace named "' + trimmed + '" already exists.', 'error');
+                                    }
+                                    return 'Duplicate';
+                                }
+                                return null;
+                            }
+                        }).then(function (renamed) {
+                            if (renamed && typeof renameWorkspace === 'function') {
+                                renameWorkspace(wsId, renamed);
+                                render();
+                            }
+                        });
+                    }
+                }));
+                tools.appendChild(el('button', {
+                    type: 'button',
+                    className: 'bowire-env-overview-tool bowire-env-overview-tool-danger',
+                    title: 'Delete workspace',
+                    'aria-label': 'Delete workspace',
+                    innerHTML: (typeof svgIcon === 'function') ? svgIcon('trash') : '🗑',
+                    onClick: function () {
+                        var wsId = w.id;
+                        var wsName = w.name || '(unnamed)';
+                        bowireConfirm(
+                            'Delete workspace "' + wsName + '"? Sources, environments, recordings and variables stored in this workspace are removed.',
+                            function () {
+                                if (typeof deleteWorkspace === 'function') deleteWorkspace(wsId);
+                                render();
+                            },
+                            { title: 'Delete workspace', confirmText: 'Delete', danger: true }
+                        );
+                    }
+                }));
+                row.appendChild(tools);
+                list.appendChild(row);
+            });
+            section.appendChild(list);
+        }
+
+        // + Create button at the bottom — same idiom as the env
+        // overview's "+ Add environment" so the create affordance
+        // sits in the same place across both lists.
+        section.appendChild(el('button', {
+            className: 'bowire-ws-detail-action',
+            style: 'margin-top:12px',
+            textContent: '+ Create workspace',
+            onClick: function () {
+                if (typeof openCreateWorkspaceDialog === 'function') {
+                    openCreateWorkspaceDialog(function (created) {
+                        if (created && created.id) {
+                            _goToWorkspaceSettings(created.id);
+                        } else {
+                            render();
+                        }
+                    });
+                }
+            }
+        }));
+        main.appendChild(section);
+        return main;
     }
 
     // The current workspace settings card — name, color, includeAllEnvironments,
@@ -1132,34 +1379,47 @@
         }
 
         var isActive = ws.id === activeWorkspaceId;
-        var allEnvs = (typeof getAllSharedEnvironments === 'function') ? getAllSharedEnvironments() : [];
-        var envCount = ws.includeAllEnvironments
-            ? allEnvs.length
-            : (Array.isArray(ws.includedEnvironmentIds) ? ws.includedEnvironmentIds.length : 0);
+        // Self-contained workspaces: env count = number of envs in
+        // this workspace's own bucket. Active workspace can use the
+        // live getEnvironments; non-active ones read from the wsKeyFor-
+        // prefixed key via readWorkspaceEnvironments.
+        var envCount = (ws.id === activeWorkspaceId)
+            ? ((typeof getEnvironments === 'function') ? getEnvironments().length : 0)
+            : ((typeof readWorkspaceEnvironments === 'function') ? readWorkspaceEnvironments(ws.id).length : 0);
 
+        var wsColor = ws.color || 'var(--bowire-accent)';
+        var wsGlyph = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="24" height="24">'
+            + '<polygon points="12 2 2 7 12 12 22 7 12 2" fill="' + wsColor + '" stroke="' + wsColor + '"/>'
+            + '<polyline points="2 17 12 22 22 17"/>'
+            + '<polyline points="2 12 12 17 22 12"/>'
+            + '</svg>';
         var header = el('div', { className: 'bowire-ws-detail-header' },
             el('span', {
-                className: 'bowire-ws-detail-dot',
-                style: 'background:' + (ws.color || 'var(--bowire-accent)')
+                className: 'bowire-ws-detail-glyph',
+                innerHTML: wsGlyph
             }),
-            el('input', {
-                type: 'text',
-                className: 'bowire-ws-detail-name',
-                value: ws.name,
-                'aria-label': 'Workspace name',
-                // Opt out of the {{var}} chip overlay (which paints the
-                // input transparent + draws coloured chips on top). Pure
-                // name fields don't take {{var}} refs, so the overlay
-                // just makes the text unreadable on focus. Same opt-out
-                // bowirePrompt + workspace-create dialog already use.
-                'data-bowire-no-vars-chip': '1',
-                'data-bowire-no-vars-ac': '1',
-                onChange: function (e) {
-                    var v = String(e.target.value || '').trim();
-                    var t = _liveWs();
-                    if (v && t) { renameWorkspace(t.id, v); render(); }
-                }
-            }),
+            // Title stack: editable name on top, small breadcrumb-style
+            // path below as the page's "where am I" subtitle. Pattern
+            // is reused on env detail + env overview headers so every
+            // workspaces-tree settings surface shares one shape.
+            el('div', { className: 'bowire-ws-detail-title-stack' },
+                el('input', {
+                    type: 'text',
+                    className: 'bowire-ws-detail-name',
+                    value: ws.name,
+                    'aria-label': 'Workspace name',
+                    'data-bowire-no-vars-chip': '1',
+                    'data-bowire-no-vars-ac': '1',
+                    onChange: function (e) {
+                        var v = String(e.target.value || '').trim();
+                        var t = _liveWs();
+                        if (v && t) { renameWorkspace(t.id, v); render(); }
+                    }
+                }),
+                _renderHeaderTrail([
+                    { label: 'Workspaces', onClick: _goToWorkspacesOverview }
+                ])
+            ),
             isActive
                 ? el('span', { className: 'bowire-ws-detail-badge', textContent: 'Active' })
                 : el('button', {
@@ -1290,7 +1550,7 @@
                         : 'switch to load',
                     isActive ? 'discover' : null),
                 statTile('Environments', envCount,
-                    ws.includeAllEnvironments ? 'all shared envs' : 'selected',
+                    envCount === 0 ? 'add one in the tree' : 'in this workspace',
                     isActive ? 'environments' : null),
                 statTile('Recordings', recordingCount,
                     isActive ? 'in this workspace' : 'switch to load',
@@ -1963,33 +2223,47 @@
 
     function _renderWorkspaceEnvironmentsOverview(ws) {
         var main = el('div', { id: 'bowire-main-workspaces', className: 'bowire-main bowire-main-workspaces' });
-        var allEnvs = (typeof getAllSharedEnvironments === 'function') ? getAllSharedEnvironments() : [];
-        var includedIds = ws.includeAllEnvironments
-            ? allEnvs.map(function (e) { return e.id; })
-            : (Array.isArray(ws.includedEnvironmentIds) ? ws.includedEnvironmentIds : []);
+        // Self-contained workspaces: envs are read from the workspace's
+        // own bucket. The previous "all shared envs" + inclusion-list
+        // model is retired — this overview is just "the envs in this
+        // workspace", not "the envs the workspace happens to subscribe
+        // to from a shared pool".
+        var envs = (ws.id === activeWorkspaceId)
+            ? ((typeof getEnvironments === 'function') ? getEnvironments() : [])
+            : ((typeof readWorkspaceEnvironments === 'function') ? readWorkspaceEnvironments(ws.id) : []);
 
-        main.appendChild(_renderWorkspaceBreadcrumb(ws, [
-            { label: 'Environments' }
-        ]));
+        // Header pattern shared with workspace settings + env detail:
+        // glyph + title-stack [page name on top, trail subtitle below]
+        // + right-side action slot. Standalone breadcrumb above the
+        // section retired — the trail under the title is the single
+        // "where am I" hint.
+        var envOverviewGlyph = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="24" height="24">'
+            + '<circle cx="12" cy="12" r="10"/>'
+            + '<line x1="2" y1="12" x2="22" y2="12"/>'
+            + '<path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/>'
+            + '</svg>';
+        main.appendChild(el('div', { className: 'bowire-ws-detail-header' },
+            el('span', { className: 'bowire-env-editor-glyph', innerHTML: envOverviewGlyph }),
+            el('div', { className: 'bowire-ws-detail-title-stack' },
+                el('div', { className: 'bowire-ws-detail-title-static', textContent: 'Environments (' + envs.length + ')' }),
+                _renderHeaderTrail([
+                    { label: 'Workspaces', onClick: _goToWorkspacesOverview },
+                    { label: ws.name || '(unnamed)', onClick: function () { _goToWorkspaceSettings(ws.id); } }
+                ])
+            )
+        ));
 
         var section = el('div', { className: 'bowire-ws-detail-section' });
-        section.appendChild(el('div', { className: 'bowire-ws-detail-section-label',
-            textContent: 'Included environments (' + includedIds.length + ' of ' + allEnvs.length + ')' }));
-        section.appendChild(el('p', {
-            className: 'bowire-ws-detail-stat-hint',
-            textContent: 'Environments are shared across the workbench; this workspace decides which ones are in scope. Toggle inclusion per env below, or open one to edit its variables.'
-        }));
-        if (allEnvs.length === 0) {
+        if (envs.length === 0) {
             section.appendChild(el('p', {
                 className: 'bowire-ws-detail-stat-hint',
                 style: 'margin-top:8px',
-                textContent: 'No environments defined yet. Create one to share secrets / URLs across workspaces.'
+                textContent: 'No environments in this workspace yet. Create one to scope variables / auth per deployment stage.'
             }));
         } else {
             var activeEnvIdNow = (typeof getActiveEnvId === 'function') ? getActiveEnvId() : null;
             var list = el('div', { className: 'bowire-env-overview-list' });
-            allEnvs.forEach(function (e) {
-                var included = includedIds.indexOf(e.id) !== -1;
+            envs.forEach(function (e) {
                 var varCount = e.vars ? Object.keys(e.vars).length : 0;
                 var isActive = e.id === activeEnvIdNow;
                 var envColor = e.color || 'var(--bowire-text-tertiary)';
@@ -2002,20 +2276,6 @@
                     + '<path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z" fill="none"/>'
                     + '</svg>';
                 var row = el('div', { className: 'bowire-env-overview-row' });
-                row.appendChild(el('input', {
-                    type: 'checkbox',
-                    className: 'bowire-env-overview-include',
-                    checked: included ? 'checked' : null,
-                    title: included ? 'Included in ' + ws.name : 'Not included',
-                    onChange: function (ev) {
-                        var on = !!ev.target.checked;
-                        if (ws.id !== activeWorkspaceId) switchWorkspace(ws.id);
-                        if (typeof setEnvIncludedInWorkspace === 'function') {
-                            setEnvIncludedInWorkspace(e.id, on);
-                            render();
-                        }
-                    }
-                }));
                 row.appendChild(el('span', {
                     className: 'bowire-env-overview-glyph',
                     innerHTML: envGlyph
@@ -2034,35 +2294,61 @@
                         render();
                     }
                 }));
+                // Hover tooltip on the vars-count chip: lists up to 10
+                // name=value pairs (values capped at 40 chars so a
+                // multi-line cert / long secret doesn't blow the
+                // tooltip up). Past the cap, append '…' so the operator
+                // sees there's more. Empty envs get no tooltip.
+                var varsTitle = '';
+                if (varCount > 0 && e.vars) {
+                    var entries = Object.keys(e.vars);
+                    var capN = 10;
+                    var shown = entries.slice(0, capN).map(function (k) {
+                        var raw = String(e.vars[k] == null ? '' : e.vars[k]);
+                        if (raw.length > 40) raw = raw.slice(0, 39) + '…';
+                        // Newlines in the original value would split the
+                        // line in the tooltip — collapse them to a glyph
+                        // so the entry stays one row.
+                        raw = raw.replace(/\r?\n/g, ' ⏎ ');
+                        return k + ' = ' + raw;
+                    }).join('\n');
+                    varsTitle = entries.length > capN
+                        ? shown + '\n… (' + (entries.length - capN) + ' more)'
+                        : shown;
+                }
                 row.appendChild(el('span', {
                     className: 'bowire-env-overview-meta',
+                    title: varsTitle || undefined,
                     textContent: varCount + (varCount === 1 ? ' var' : ' vars')
                 }));
-                if (isActive) {
-                    row.appendChild(el('span', {
-                        className: 'bowire-env-overview-active-badge',
-                        textContent: 'Active'
-                    }));
-                }
-                // Hover-revealed tools cluster: Set active (if not active)
-                // + Rename + Delete. Same pattern as the topbar env
-                // dropdown so editing options live in the same shape
-                // wherever envs are picked.
-                var tools = el('div', { className: 'bowire-env-overview-tools' });
-                if (!isActive) {
-                    tools.appendChild(el('button', {
-                        type: 'button',
-                        className: 'bowire-env-overview-tool',
-                        title: 'Set as active environment',
-                        'aria-label': 'Set as active environment',
-                        textContent: 'Set active',
-                        onClick: function () {
-                            if (ws.id !== activeWorkspaceId) switchWorkspace(ws.id);
-                            if (typeof setActiveEnvId === 'function') setActiveEnvId(e.id);
-                            render();
+                // Click-to-activate checkmark. Same idiom as the topbar
+                // env dropdown's row check — solid when this env is the
+                // workbench's active one, ghosted-but-clickable when it
+                // isn't. Replaces the separate "Active" badge + "Set
+                // active" button. Stops propagation so clicking the
+                // mark doesn't ALSO open the env editor (the row's
+                // name button is the open-affordance).
+                row.appendChild(el('button', {
+                    type: 'button',
+                    className: 'bowire-env-overview-check' + (isActive ? ' is-active' : ''),
+                    title: isActive ? 'Active environment' : 'Set as active environment',
+                    'aria-label': isActive ? 'Active environment' : 'Set as active environment',
+                    'aria-pressed': isActive ? 'true' : 'false',
+                    textContent: '✓',
+                    onClick: function (ev) {
+                        ev.stopPropagation();
+                        if (ws.id !== activeWorkspaceId) switchWorkspace(ws.id);
+                        if (typeof setActiveEnvId === 'function') {
+                            setActiveEnvId(isActive ? '' : e.id);
                         }
-                    }));
-                }
+                        render();
+                    }
+                }));
+                // Hover-revealed tools cluster: Rename + Delete. Active
+                // toggle moved out into its own always-rendered slot to
+                // the left so the row's "this is the active one" state
+                // doesn't depend on hover.
+                var tools = el('div', { className: 'bowire-env-overview-tools' });
                 tools.appendChild(el('button', {
                     type: 'button',
                     className: 'bowire-env-overview-tool',
@@ -2157,23 +2443,19 @@
             }));
             return main;
         }
-        var allEnvs = (typeof getAllSharedEnvironments === 'function') ? getAllSharedEnvironments() : [];
-        var env = allEnvs.find(function (e) { return e.id === envId; });
+        var envs = (typeof getEnvironments === 'function') ? getEnvironments() : [];
+        var env = envs.find(function (e) { return e.id === envId; });
         if (!env) {
             workspaceTreeSelection = { wsId: ws.id, kind: 'environments' };
             return _renderWorkspaceEnvironmentsOverview(ws);
         }
-        // No env name in the breadcrumb's last crumb — the env editor's
-        // own header already carries the editable name input; repeating
-        // it as a read-only crumb above just looks like a duplicate the
-        // operator can't edit. Breadcrumb stays navigational
-        // (workspace › Environments) so context is still visible.
-        main.appendChild(_renderWorkspaceBreadcrumb(ws, [
-            { label: 'Environments', onClick: function () {
-                workspaceTreeSelection = { wsId: ws.id, kind: 'environments' };
-                render();
-            } }
-        ]));
+        // No breadcrumb on env detail — the env editor's header carries
+        // the editable name input, and the workspace tree sidebar
+        // already shows the full path (workspace › Environments ›
+        // env-name) visually selected. A separate breadcrumb above the
+        // header read as a second place naming the env without being
+        // editable. Matches the workspace settings detail pattern,
+        // which also runs without a breadcrumb.
         if (typeof envSidebarSelectedId !== 'undefined') {
             envSidebarSelectedId = env.id;
         }
