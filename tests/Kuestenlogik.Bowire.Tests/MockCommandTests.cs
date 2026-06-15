@@ -27,25 +27,38 @@ public sealed class MockCommandTests
     {
         // No --recording / --schema / --grpc-schema / --graphql-schema
         // specified → exit code 2 with a usage hint on stderr.
-        var rc = await MockCommand.RunAsync(new MockCliOptions(), ct: TestContext.Current.CancellationToken);
+        using var stdout = new StringWriter();
+        using var stderr = new StringWriter();
+        var rc = await MockCommand.RunAsync(new MockCliOptions(), stdout, stderr, TestContext.Current.CancellationToken);
         Assert.Equal(2, rc);
+        // Concrete usage line — guards the "which flag is missing" copy
+        // so a future refactor that drops the hint blows the test
+        // instead of silently passing with rc=2 from elsewhere.
+        var err = stderr.ToString();
+        Assert.Contains("one of --recording", err);
+        Assert.Contains("--help", err);
     }
 
     [Fact]
     public async Task RunAsync_TwoSources_ReturnsUsageExit()
     {
+        using var stdout = new StringWriter();
+        using var stderr = new StringWriter();
         var cli = new MockCliOptions
         {
             RecordingPath = "rec.json",
             SchemaPath = "openapi.yml",
         };
-        var rc = await MockCommand.RunAsync(cli, ct: TestContext.Current.CancellationToken);
+        var rc = await MockCommand.RunAsync(cli, stdout, stderr, TestContext.Current.CancellationToken);
         Assert.Equal(2, rc);
+        Assert.Contains("mutually exclusive", stderr.ToString());
     }
 
     [Fact]
     public async Task RunAsync_AllFourSources_ReturnsUsageExit()
     {
+        using var stdout = new StringWriter();
+        using var stderr = new StringWriter();
         var cli = new MockCliOptions
         {
             RecordingPath = "rec.json",
@@ -53,8 +66,9 @@ public sealed class MockCommandTests
             GrpcSchemaPath = "fds.pb",
             GraphQlSchemaPath = "schema.graphql",
         };
-        var rc = await MockCommand.RunAsync(cli, ct: TestContext.Current.CancellationToken);
+        var rc = await MockCommand.RunAsync(cli, stdout, stderr, TestContext.Current.CancellationToken);
         Assert.Equal(2, rc);
+        Assert.Contains("mutually exclusive", stderr.ToString());
     }
 
     [Fact]
@@ -62,6 +76,8 @@ public sealed class MockCommandTests
     {
         // --chaos with garbage syntax → ChaosOptions.Parse throws
         // FormatException → exit 2 (usage), not 1 (runtime).
+        using var stdout = new StringWriter();
+        using var stderr = new StringWriter();
         var cli = new MockCliOptions
         {
             // A schema-only mock so the chaos parse runs before any
@@ -69,8 +85,14 @@ public sealed class MockCommandTests
             SchemaPath = "openapi.yml",
             Chaos = "this-is-not-valid-syntax-!@#$",
         };
-        var rc = await MockCommand.RunAsync(cli, ct: TestContext.Current.CancellationToken);
+        var rc = await MockCommand.RunAsync(cli, stdout, stderr, TestContext.Current.CancellationToken);
         Assert.Equal(2, rc);
+        // Asserts the chaos parser actually surfaces a parse error
+        // (rather than e.g. a generic "missing recording" failing to
+        // catch the bad flag at all).
+        var err = stderr.ToString();
+        Assert.Contains("bowire mock:", err);
+        Assert.Contains("--chaos", err);
     }
 
     [Fact]
@@ -78,10 +100,11 @@ public sealed class MockCommandTests
     {
         // No --auto-install → unknown protocol surfaces as "missing
         // plugin" diagnostic and exit 1. Exercises the detection +
-        // PrintMissingPlugins path without touching the network.
-        // Stderr is left at its default sink — capturing process-wide
-        // streams is racy under xUnit's parallel runner, so we assert
-        // on the exit code only.
+        // PrintMissingPlugins path without touching the network. The
+        // TextWriter overloads on MockCommand.RunAsync give us
+        // race-free per-test capture of the stderr lines that the
+        // PrintMissingPlugins helper emits, so we assert on the
+        // diagnostic content too — not just the exit code.
         var dir = Directory.CreateTempSubdirectory("bowire-mock-").FullName;
         var rec = Path.Combine(dir, "rec.json");
         try
@@ -89,10 +112,17 @@ public sealed class MockCommandTests
             await File.WriteAllTextAsync(rec, MakeRecordingJson("nonexistent-proto-x"),
                 TestContext.Current.CancellationToken);
 
+            using var stdout = new StringWriter();
+            using var stderr = new StringWriter();
             var cli = new MockCliOptions { RecordingPath = rec };
-            var rc = await MockCommand.RunAsync(cli, ct: TestContext.Current.CancellationToken);
+            var rc = await MockCommand.RunAsync(cli, stdout, stderr, TestContext.Current.CancellationToken);
 
             Assert.Equal(1, rc);
+            var err = stderr.ToString();
+            Assert.Contains("Recording references", err);
+            Assert.Contains("nonexistent-proto-x", err);
+            Assert.Contains("(unknown — third-party plugin?)", err);
+            Assert.Contains("not in Bowire's catalogue", err);
         }
         finally
         {
@@ -106,7 +136,10 @@ public sealed class MockCommandTests
         // Recording references "kafka" — mapped in PluginPackageMap but
         // not loaded in this host. Without --auto-install, MockCommand
         // calls PrintMissingPlugins which lists the suggested
-        // `bowire plugin install …` command, then returns 1.
+        // `bowire plugin install …` command, then returns 1. Asserts
+        // on the actual hint content so a future refactor that drops
+        // PrintMissingPlugins fails this test instead of slipping
+        // through on the exit-code match alone.
         var dir = Directory.CreateTempSubdirectory("bowire-mock-pmp-").FullName;
         var rec = Path.Combine(dir, "rec.json");
         try
@@ -114,10 +147,19 @@ public sealed class MockCommandTests
             await File.WriteAllTextAsync(rec, MakeRecordingJson("kafka"),
                 TestContext.Current.CancellationToken);
 
+            using var stdout = new StringWriter();
+            using var stderr = new StringWriter();
             var cli = new MockCliOptions { RecordingPath = rec };
-            var rc = await MockCommand.RunAsync(cli, ct: TestContext.Current.CancellationToken);
+            var rc = await MockCommand.RunAsync(cli, stdout, stderr, TestContext.Current.CancellationToken);
 
             Assert.Equal(1, rc);
+            var err = stderr.ToString();
+            Assert.Contains("Recording references", err);
+            Assert.Contains("kafka", err);
+            Assert.Contains("Kuestenlogik.Bowire.Protocol.Kafka", err);
+            Assert.Contains("Install with:", err);
+            Assert.Contains("bowire plugin install Kuestenlogik.Bowire.Protocol.Kafka", err);
+            Assert.Contains("--auto-install", err);
         }
         finally
         {
@@ -138,10 +180,18 @@ public sealed class MockCommandTests
             await File.WriteAllTextAsync(rec, MakeRecordingJson("totally-made-up-zzz"),
                 TestContext.Current.CancellationToken);
 
+            using var stdout = new StringWriter();
+            using var stderr = new StringWriter();
             var cli = new MockCliOptions { RecordingPath = rec, AutoInstall = true };
-            var rc = await MockCommand.RunAsync(cli, ct: TestContext.Current.CancellationToken);
+            var rc = await MockCommand.RunAsync(cli, stdout, stderr, TestContext.Current.CancellationToken);
 
             Assert.Equal(1, rc);
+            var err = stderr.ToString();
+            // Verifies the unresolvable-package diagnostic — distinct
+            // from the resolvable "Install with: bowire plugin install …"
+            // path so the two branches stay testable independently.
+            Assert.Contains("auto-install can't help", err);
+            Assert.Contains("totally-made-up-zzz", err);
         }
         finally
         {
@@ -157,12 +207,15 @@ public sealed class MockCommandTests
         var dir = Directory.CreateTempSubdirectory("bowire-mock-").FullName;
         try
         {
+            using var stdout = new StringWriter();
+            using var stderr = new StringWriter();
             var cli = new MockCliOptions
             {
                 RecordingPath = Path.Combine(dir, "absent.bwr"),
             };
-            var rc = await MockCommand.RunAsync(cli, ct: TestContext.Current.CancellationToken);
+            var rc = await MockCommand.RunAsync(cli, stdout, stderr, TestContext.Current.CancellationToken);
             Assert.Equal(1, rc);
+            Assert.Contains("bowire mock:", stderr.ToString());
         }
         finally
         {
@@ -180,9 +233,16 @@ public sealed class MockCommandTests
         try
         {
             await File.WriteAllTextAsync(rec, "{ not json", TestContext.Current.CancellationToken);
+            using var stdout = new StringWriter();
+            using var stderr = new StringWriter();
             var cli = new MockCliOptions { RecordingPath = rec };
-            var rc = await MockCommand.RunAsync(cli, ct: TestContext.Current.CancellationToken);
+            var rc = await MockCommand.RunAsync(cli, stdout, stderr, TestContext.Current.CancellationToken);
             Assert.Equal(1, rc);
+            // Confirms the failure is the JSON parser, not a downstream
+            // path that happens to also return 1.
+            var err = stderr.ToString();
+            Assert.Contains("bowire mock:", err);
+            Assert.Contains("invalid start of a property name", err);
         }
         finally
         {
@@ -198,12 +258,15 @@ public sealed class MockCommandTests
         var dir = Directory.CreateTempSubdirectory("bowire-mock-").FullName;
         try
         {
+            using var stdout = new StringWriter();
+            using var stderr = new StringWriter();
             var cli = new MockCliOptions
             {
                 SchemaPath = Path.Combine(dir, "missing-openapi.yml"),
             };
-            var rc = await MockCommand.RunAsync(cli, ct: TestContext.Current.CancellationToken);
+            var rc = await MockCommand.RunAsync(cli, stdout, stderr, TestContext.Current.CancellationToken);
             Assert.Equal(1, rc);
+            Assert.Contains("bowire mock:", stderr.ToString());
         }
         finally
         {
