@@ -142,7 +142,17 @@
     function _recordingsWsParam() {
         try {
             if (typeof activeWorkspaceId === 'string' && activeWorkspaceId) {
-                return '?workspaceId=' + encodeURIComponent(activeWorkspaceId);
+                var qs = '?workspaceId=' + encodeURIComponent(activeWorkspaceId);
+                // #196 Phase 2.3 — when the active workspace carries a
+                // storageRoot override (git-backed checked-out folder),
+                // forward it so the backend resolver routes recordings
+                // under <storageRoot>/recordings/ instead of the legacy
+                // ~/.bowire/workspaces/<id>/recordings/.
+                if (typeof getWorkspaceStorageRoot === 'function') {
+                    var root = getWorkspaceStorageRoot();
+                    if (root) qs += '&storageRoot=' + encodeURIComponent(root);
+                }
+                return qs;
             }
         } catch { /* ignore */ }
         return '';

@@ -102,7 +102,10 @@ internal static class BowireRecordingEndpoints
         endpoints.MapDelete($"{basePath}/api/recordings", (HttpContext ctx) =>
         {
             var wsId = ctx.Request.Query["workspaceId"].ToString();
-            ChunkedRecordingStore.DeleteAll(string.IsNullOrEmpty(wsId) ? null : wsId);
+            var storageRoot = ctx.Request.Query["storageRoot"].ToString();
+            ChunkedRecordingStore.DeleteAll(
+                string.IsNullOrEmpty(wsId) ? null : wsId,
+                string.IsNullOrEmpty(storageRoot) ? null : storageRoot);
             return Results.Json(new { cleared = true }, BowireEndpointHelpers.JsonOptions);
         }).ExcludeFromDescription();
 
@@ -113,7 +116,11 @@ internal static class BowireRecordingEndpoints
         endpoints.MapGet($"{basePath}/api/recordings/{{id}}/manifest", (string id, HttpContext ctx) =>
         {
             var wsId = ctx.Request.Query["workspaceId"].ToString();
-            var json = ChunkedRecordingStore.LoadManifest(id, string.IsNullOrEmpty(wsId) ? null : wsId);
+            var storageRoot = ctx.Request.Query["storageRoot"].ToString();
+            var json = ChunkedRecordingStore.LoadManifest(
+                id,
+                string.IsNullOrEmpty(wsId) ? null : wsId,
+                string.IsNullOrEmpty(storageRoot) ? null : storageRoot);
             if (json is null)
             {
                 return BowireEndpointHelpers.Problem(
@@ -129,7 +136,11 @@ internal static class BowireRecordingEndpoints
         endpoints.MapGet($"{basePath}/api/recordings/{{id}}/step/{{n:int}}", (string id, int n, HttpContext ctx) =>
         {
             var wsId = ctx.Request.Query["workspaceId"].ToString();
-            var json = ChunkedRecordingStore.LoadStep(id, n, string.IsNullOrEmpty(wsId) ? null : wsId);
+            var storageRoot = ctx.Request.Query["storageRoot"].ToString();
+            var json = ChunkedRecordingStore.LoadStep(
+                id, n,
+                string.IsNullOrEmpty(wsId) ? null : wsId,
+                string.IsNullOrEmpty(storageRoot) ? null : storageRoot);
             if (json is null)
             {
                 return BowireEndpointHelpers.Problem(
@@ -179,8 +190,10 @@ internal static class BowireRecordingEndpoints
                     step = doc;
                 }
                 var wsId = ctx.Request.Query["workspaceId"].ToString();
+                var storageRoot = ctx.Request.Query["storageRoot"].ToString();
                 var idx = ChunkedRecordingStore.AppendStep(id, step, metadata,
-                    string.IsNullOrEmpty(wsId) ? null : wsId);
+                    string.IsNullOrEmpty(wsId) ? null : wsId,
+                    string.IsNullOrEmpty(storageRoot) ? null : storageRoot);
                 return Results.Json(new { appended = true, stepIndex = idx },
                     BowireEndpointHelpers.JsonOptions);
             }
