@@ -21,7 +21,7 @@ public sealed class OciArtifactFetcherTests : IDisposable
 
     public OciArtifactFetcherTests()
     {
-        _tempDir = Path.Combine(Path.GetTempPath(), $"bowire-oci-test-{Guid.NewGuid():N}");
+        _tempDir = SafePath.Combine(Path.GetTempPath(), $"bowire-oci-test-{Guid.NewGuid():N}");
         Directory.CreateDirectory(_tempDir);
     }
 
@@ -244,7 +244,7 @@ public sealed class OciArtifactFetcherTests : IDisposable
             };
         });
 
-        var dest = Path.Combine(_tempDir, "out.zip");
+        var dest = SafePath.Combine(_tempDir, "out.zip");
         await OciArtifactFetcher.FetchToFileAsync(http, "ghcr.io/acme/zenoh-sidecar:1.0.0", dest, TestContext.Current.CancellationToken);
 
         Assert.True(File.Exists(dest));
@@ -269,7 +269,7 @@ public sealed class OciArtifactFetcherTests : IDisposable
             };
         });
 
-        var dest = Path.Combine(_tempDir, "out.zip");
+        var dest = SafePath.Combine(_tempDir, "out.zip");
         await OciArtifactFetcher.FetchToFileAsync(http, "ghcr.io/acme/repo:1.0.0", dest, TestContext.Current.CancellationToken);
 
         Assert.Equal("inner-blob", await File.ReadAllTextAsync(dest, TestContext.Current.CancellationToken));
@@ -308,7 +308,7 @@ public sealed class OciArtifactFetcherTests : IDisposable
             return NotFound();
         });
 
-        var dest = Path.Combine(_tempDir, "out.zip");
+        var dest = SafePath.Combine(_tempDir, "out.zip");
         await OciArtifactFetcher.FetchToFileAsync(http, "ghcr.io/acme/repo:1.0.0", dest, TestContext.Current.CancellationToken);
 
         Assert.Equal("authd-blob", await File.ReadAllTextAsync(dest, TestContext.Current.CancellationToken));
@@ -343,7 +343,7 @@ public sealed class OciArtifactFetcherTests : IDisposable
             return NotFound();
         });
 
-        var dest = Path.Combine(_tempDir, "out.zip");
+        var dest = SafePath.Combine(_tempDir, "out.zip");
         await OciArtifactFetcher.FetchToFileAsync(http, "ghcr.io/acme/repo:1.0.0", dest, TestContext.Current.CancellationToken);
         Assert.Equal("ok", await File.ReadAllTextAsync(dest, TestContext.Current.CancellationToken));
     }
@@ -356,7 +356,7 @@ public sealed class OciArtifactFetcherTests : IDisposable
         // CLI can render a "configure credentials" hint.
         using var http = NewHttpClient(_ => new HttpResponseMessage(HttpStatusCode.Unauthorized));
 
-        var dest = Path.Combine(_tempDir, "out.zip");
+        var dest = SafePath.Combine(_tempDir, "out.zip");
         await Assert.ThrowsAsync<InvalidOperationException>(() =>
             OciArtifactFetcher.FetchToFileAsync(http, "ghcr.io/acme/repo:1.0.0", dest, TestContext.Current.CancellationToken));
     }
@@ -369,7 +369,7 @@ public sealed class OciArtifactFetcherTests : IDisposable
         // usable layer" so the user knows the artifact isn't a sidecar.
         using var http = NewHttpClient(_ => Json("""{"layers":[]}"""));
 
-        var dest = Path.Combine(_tempDir, "out.zip");
+        var dest = SafePath.Combine(_tempDir, "out.zip");
         var ex = await Assert.ThrowsAsync<InvalidOperationException>(() =>
             OciArtifactFetcher.FetchToFileAsync(http, "ghcr.io/acme/repo:1.0.0", dest, TestContext.Current.CancellationToken));
         Assert.Contains("layer", ex.Message, StringComparison.OrdinalIgnoreCase);
