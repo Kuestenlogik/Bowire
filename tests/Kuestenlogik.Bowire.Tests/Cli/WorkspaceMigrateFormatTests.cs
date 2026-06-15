@@ -53,9 +53,9 @@ public sealed class WorkspaceMigrateFormatTests : IDisposable
     {
         // Drives the SetAction callback registered in
         // BuildMigrateFormatCommand through System.CommandLine.
-        var ws = Path.Combine(_tempRoot, "via-parse");
+        var ws = SafePath.Combine(_tempRoot, "via-parse");
         Directory.CreateDirectory(ws);
-        await File.WriteAllTextAsync(Path.Combine(ws, "environments.json"),
+        await File.WriteAllTextAsync(SafePath.Combine(ws, "environments.json"),
             """[{"id":"env_x","name":"X"}]""",
             TestContext.Current.CancellationToken);
 
@@ -75,7 +75,7 @@ public sealed class WorkspaceMigrateFormatTests : IDisposable
         var output = stdout.ToString();
         Assert.Contains("Migrated workspace at", output);
         Assert.Contains("environments: 1 entity", output);
-        Assert.True(File.Exists(Path.Combine(ws, "environments", "env_x.json")));
+        Assert.True(File.Exists(SafePath.Combine(ws, "environments", "env_x.json")));
     }
 
     // ----------------------------------------------------------------
@@ -113,7 +113,7 @@ public sealed class WorkspaceMigrateFormatTests : IDisposable
         using var stdout = new StringWriter();
         using var stderr = new StringWriter();
 
-        var missing = Path.Combine(_tempRoot, "never-existed");
+        var missing = SafePath.Combine(_tempRoot, "never-existed");
         var rc = await WorkspaceCommand.RunMigrateFormatAsync(missing,
             stdout, stderr, TestContext.Current.CancellationToken);
 
@@ -126,12 +126,12 @@ public sealed class WorkspaceMigrateFormatTests : IDisposable
     [Fact]
     public async Task RunMigrateFormatAsync_reports_per_entity_counts_on_success()
     {
-        var ws = Path.Combine(_tempRoot, "full-migrate");
+        var ws = SafePath.Combine(_tempRoot, "full-migrate");
         Directory.CreateDirectory(ws);
-        await File.WriteAllTextAsync(Path.Combine(ws, "environments.json"),
+        await File.WriteAllTextAsync(SafePath.Combine(ws, "environments.json"),
             """[{"id":"env_a"},{"id":"env_b"},{"id":"env_c"}]""",
             TestContext.Current.CancellationToken);
-        await File.WriteAllTextAsync(Path.Combine(ws, "scripts.json"),
+        await File.WriteAllTextAsync(SafePath.Combine(ws, "scripts.json"),
             """[{"id":"script_one"},{"id":"script_two"}]""",
             TestContext.Current.CancellationToken);
 
@@ -158,18 +158,18 @@ public sealed class WorkspaceMigrateFormatTests : IDisposable
         Assert.Contains(".legacy", output);
 
         // Per-entity files materialised, original bundles parked.
-        Assert.True(File.Exists(Path.Combine(ws, "environments", "env_a.json")));
-        Assert.True(File.Exists(Path.Combine(ws, "scripts", "script_two.json")));
-        Assert.True(File.Exists(Path.Combine(ws, "environments.json.legacy")));
-        Assert.True(File.Exists(Path.Combine(ws, "scripts.json.legacy")));
+        Assert.True(File.Exists(SafePath.Combine(ws, "environments", "env_a.json")));
+        Assert.True(File.Exists(SafePath.Combine(ws, "scripts", "script_two.json")));
+        Assert.True(File.Exists(SafePath.Combine(ws, "environments.json.legacy")));
+        Assert.True(File.Exists(SafePath.Combine(ws, "scripts.json.legacy")));
     }
 
     [Fact]
     public async Task RunMigrateFormatAsync_is_idempotent_on_already_migrated_workspace()
     {
-        var ws = Path.Combine(_tempRoot, "idempotent");
+        var ws = SafePath.Combine(_tempRoot, "idempotent");
         Directory.CreateDirectory(ws);
-        await File.WriteAllTextAsync(Path.Combine(ws, "environments.json"),
+        await File.WriteAllTextAsync(SafePath.Combine(ws, "environments.json"),
             """[{"id":"env_only"}]""",
             TestContext.Current.CancellationToken);
 
@@ -197,9 +197,9 @@ public sealed class WorkspaceMigrateFormatTests : IDisposable
     [Fact]
     public async Task RunMigrateFormatAsync_reports_invalid_json_with_ex_dataerr()
     {
-        var ws = Path.Combine(_tempRoot, "bad-json");
+        var ws = SafePath.Combine(_tempRoot, "bad-json");
         Directory.CreateDirectory(ws);
-        await File.WriteAllTextAsync(Path.Combine(ws, "environments.json"),
+        await File.WriteAllTextAsync(SafePath.Combine(ws, "environments.json"),
             "{ not json",
             TestContext.Current.CancellationToken);
 
@@ -217,9 +217,9 @@ public sealed class WorkspaceMigrateFormatTests : IDisposable
     [Fact]
     public async Task RunMigrateFormatAsync_preserves_legacy_bundle_under_dot_legacy_extension()
     {
-        var ws = Path.Combine(_tempRoot, "preserve");
+        var ws = SafePath.Combine(_tempRoot, "preserve");
         Directory.CreateDirectory(ws);
-        var legacy = Path.Combine(ws, "environments.json");
+        var legacy = SafePath.Combine(ws, "environments.json");
         var originalContent = """[{"id":"env_preserve","name":"Preserve"}]""";
         await File.WriteAllTextAsync(legacy, originalContent,
             TestContext.Current.CancellationToken);
@@ -241,9 +241,9 @@ public sealed class WorkspaceMigrateFormatTests : IDisposable
     [Fact]
     public async Task RunMigrateFormatAsync_collections_creates_per_request_files()
     {
-        var ws = Path.Combine(_tempRoot, "collections-fanout");
+        var ws = SafePath.Combine(_tempRoot, "collections-fanout");
         Directory.CreateDirectory(ws);
-        await File.WriteAllTextAsync(Path.Combine(ws, "collections.json"), """
+        await File.WriteAllTextAsync(SafePath.Combine(ws, "collections.json"), """
         [
             {
                 "id": "col_main",
@@ -263,15 +263,15 @@ public sealed class WorkspaceMigrateFormatTests : IDisposable
         Assert.Equal(0, rc);
 
         // Container + two .req.json siblings.
-        var colDir = Path.Combine(ws, "collections", "col_main");
-        Assert.True(File.Exists(Path.Combine(colDir, "col_main.json")));
-        Assert.True(File.Exists(Path.Combine(colDir, "req_alpha.req.json")));
-        Assert.True(File.Exists(Path.Combine(colDir, "req_beta.req.json")));
+        var colDir = SafePath.Combine(ws, "collections", "col_main");
+        Assert.True(File.Exists(SafePath.Combine(colDir, "col_main.json")));
+        Assert.True(File.Exists(SafePath.Combine(colDir, "req_alpha.req.json")));
+        Assert.True(File.Exists(SafePath.Combine(colDir, "req_beta.req.json")));
 
         // Container metadata round-trips intact through the migration
         // → re-serialisation path.
         using var doc = JsonDocument.Parse(
-            await File.ReadAllTextAsync(Path.Combine(colDir, "col_main.json"),
+            await File.ReadAllTextAsync(SafePath.Combine(colDir, "col_main.json"),
                 TestContext.Current.CancellationToken));
         Assert.Equal("Main", doc.RootElement.GetProperty("name").GetString());
     }
@@ -282,9 +282,9 @@ public sealed class WorkspaceMigrateFormatTests : IDisposable
         // EnvironmentStore's on-disk envelope ({globals, environments,
         // activeEnvId}) is the most common legacy shape — the CLI must
         // surface its count in the per-kind line.
-        var ws = Path.Combine(_tempRoot, "envelope");
+        var ws = SafePath.Combine(_tempRoot, "envelope");
         Directory.CreateDirectory(ws);
-        await File.WriteAllTextAsync(Path.Combine(ws, "environments.json"), """
+        await File.WriteAllTextAsync(SafePath.Combine(ws, "environments.json"), """
         {
             "globals": { "BASE": "https://api.local" },
             "environments": [
@@ -302,7 +302,7 @@ public sealed class WorkspaceMigrateFormatTests : IDisposable
 
         Assert.Equal(0, rc);
         Assert.Contains("environments: 2 entity", stdout.ToString());
-        Assert.True(File.Exists(Path.Combine(ws, "environments", "env_one.json")));
-        Assert.True(File.Exists(Path.Combine(ws, "environments", "env_two.json")));
+        Assert.True(File.Exists(SafePath.Combine(ws, "environments", "env_one.json")));
+        Assert.True(File.Exists(SafePath.Combine(ws, "environments", "env_two.json")));
     }
 }
