@@ -23,7 +23,7 @@ public sealed class MissCaptureTests : IDisposable
 
     public MissCaptureTests()
     {
-        _tempDir = Path.Combine(Path.GetTempPath(), "bowire-mock-capture-" + Guid.NewGuid().ToString("N"));
+        _tempDir = SafePath.Combine(Path.GetTempPath(), "bowire-mock-capture-" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(_tempDir);
     }
 
@@ -36,7 +36,7 @@ public sealed class MissCaptureTests : IDisposable
     [Fact]
     public async Task FirstMiss_CreatesRecordingWithOneStep()
     {
-        var capturePath = Path.Combine(_tempDir, "misses.json");
+        var capturePath = SafePath.Combine(_tempDir, "misses.json");
         using var host = BuildHost(EmptyRecording(), capturePath);
         var client = host.GetTestClient();
 
@@ -56,7 +56,7 @@ public sealed class MissCaptureTests : IDisposable
     [Fact]
     public async Task MultipleMisses_AppendSteps()
     {
-        var capturePath = Path.Combine(_tempDir, "misses.json");
+        var capturePath = SafePath.Combine(_tempDir, "misses.json");
         using var host = BuildHost(EmptyRecording(), capturePath);
         var client = host.GetTestClient();
 
@@ -76,7 +76,7 @@ public sealed class MissCaptureTests : IDisposable
     [Fact]
     public async Task Miss_PersistsHeadersAsMetadata()
     {
-        var capturePath = Path.Combine(_tempDir, "misses.json");
+        var capturePath = SafePath.Combine(_tempDir, "misses.json");
         using var host = BuildHost(EmptyRecording(), capturePath);
         var client = host.GetTestClient();
 
@@ -98,7 +98,7 @@ public sealed class MissCaptureTests : IDisposable
         // should split the :path into service/method, base64 the payload
         // into requestBinary (header stripped), and leave ResponseBinary
         // null for the user to fill in.
-        var capturePath = Path.Combine(_tempDir, "grpc-misses.json");
+        var capturePath = SafePath.Combine(_tempDir, "grpc-misses.json");
         var payload = new byte[] { 0x0A, 0x04, 0x74, 0x65, 0x73, 0x74 }; // a varint tag + "test"
         var framed = new byte[5 + payload.Length];
         framed[0] = 0; // no compression
@@ -146,7 +146,7 @@ public sealed class MissCaptureTests : IDisposable
         // Shorter than 5 bytes — no valid envelope. Writer should still
         // produce a step so the user knows the path was hit; the
         // RequestBinary ends up null.
-        var capturePath = Path.Combine(_tempDir, "malformed.json");
+        var capturePath = SafePath.Combine(_tempDir, "malformed.json");
         var ctx = new Microsoft.AspNetCore.Http.DefaultHttpContext();
         ctx.Request.Method = "POST";
         ctx.Request.Path = "/svc/op";
@@ -171,7 +171,7 @@ public sealed class MissCaptureTests : IDisposable
     {
         // A request that matches a recorded step shouldn't land in the
         // miss file — the capture is strictly for *misses*.
-        var capturePath = Path.Combine(_tempDir, "misses.json");
+        var capturePath = SafePath.Combine(_tempDir, "misses.json");
         var recording = new BowireRecording
         {
             Id = "rec_match",
