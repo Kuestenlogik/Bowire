@@ -84,7 +84,12 @@ public sealed class FileEntityStore : IBowireEntityStore
     public Task<IReadOnlyList<string>> ListAsync(string entityKind, CancellationToken ct = default)
     {
         ValidateEntityKind(entityKind);
-        var dir = Path.Combine(_storageRoot, entityKind);
+        // SafePath blocks the cs/path-combine footgun (entityKind is
+        // locked to the canonical bucket set above, but routing through
+        // SafePath keeps the rule satisfied + the containment check
+        // catches a future bucket-list typo that introduces an
+        // absolute path).
+        var dir = SafePath.Combine(_storageRoot, entityKind);
         if (!Directory.Exists(dir))
         {
             return Task.FromResult<IReadOnlyList<string>>(Array.Empty<string>());
@@ -180,12 +185,12 @@ public sealed class FileEntityStore : IBowireEntityStore
             // (with the container + every .req.json sibling) AND, for
             // the no-requests case, a top-level <id>.json at the bucket
             // root.
-            var subDir = Path.Combine(_storageRoot, entityKind, id);
+            var subDir = SafePath.Combine(_storageRoot, entityKind, id);
             if (Directory.Exists(subDir))
             {
                 Directory.Delete(subDir, recursive: true);
             }
-            var topLevel = Path.Combine(_storageRoot, entityKind, id + ".json");
+            var topLevel = SafePath.Combine(_storageRoot, entityKind, id + ".json");
             if (File.Exists(topLevel))
             {
                 File.Delete(topLevel);
@@ -209,13 +214,13 @@ public sealed class FileEntityStore : IBowireEntityStore
     private async Task SaveCollectionAsync(
         string collectionId, JsonDocument doc, string canonicalPretty, CancellationToken ct)
     {
-        var collectionDir = Path.Combine(_storageRoot, "collections", collectionId);
+        var collectionDir = SafePath.Combine(_storageRoot, "collections", collectionId);
         Directory.CreateDirectory(collectionDir);
 
         // The container always lands as <id>/<id>.json so the workbench
         // can read collection metadata + the request order without
         // walking the subdir. Trailing newline matches the bundle store.
-        var containerPath = Path.Combine(collectionDir, collectionId + ".json");
+        var containerPath = SafePath.Combine(collectionDir, collectionId + ".json");
         await File.WriteAllTextAsync(containerPath, canonicalPretty + Environment.NewLine, ct)
             .ConfigureAwait(false);
 
@@ -238,11 +243,28 @@ public sealed class FileEntityStore : IBowireEntityStore
                 if (reqId.ValueKind != JsonValueKind.String) continue;
                 var reqIdStr = reqId.GetString();
                 if (string.IsNullOrWhiteSpace(reqIdStr)) continue;
-
-                var reqPath = Path.Combine(collectionDir, reqIdStr + ".req.json");
-                var reqJson = JsonSerializer.Serialize(req, IndentedJsonOpts);
-                await File.WriteAllTextAsync(reqPath, reqJson + Environment.NewLine, ct)
-                    .ConfigureAwait(false);
+                // reqIdStr is sourced from the request body's JSON
+                // payload — a hostile client can put '../' or an
+                // absolute path here. ValidateEntityId is enforced at
+                // the SaveAsync entry point on the collection's id,
+                // but request ids inside the document don't pass
+                // through that gate. SafePath catches the escape
+                // before File.WriteAllText.
+                try
+                {
+                    var reqPath = SafePath.Combine(collectionDir, reqIdStr + ".req.json");
+                    var reqJson = JsonSerializer.Serialize(req, IndentedJsonOpts);
+                    await File.WriteAllTextAsync(reqPath, reqJson + Environment.NewLine, ct)
+                        .ConfigureAwait(false);
+                }
+                catch (ArgumentException)
+                {
+                    // Skip the per-request fan-out for any request whose
+                    // id would escape the collection dir; the canonical
+                    // <id>.json container still carries the full
+                    // requests array, so no data is lost.
+                    continue;
+                }
             }
         }
     }
@@ -258,13 +280,13 @@ public sealed class FileEntityStore : IBowireEntityStore
             // Prefer the per-collection subdir layout when it exists;
             // fall back to a top-level <id>.json so legacy single-file
             // collections (no requests, just metadata) still round-trip.
-            var subDir = Path.Combine(_storageRoot, entityKind, id);
-            var containerInSubDir = Path.Combine(subDir, id + ".json");
+            var subDir = SafePath.Combine(_storageRoot, entityKind, id);
+            var containerInSubDir = SafePath.Combine(subDir, id + ".json");
             if (Directory.Exists(subDir))
             {
                 return containerInSubDir;
             }
-            var topLevel = Path.Combine(_storageRoot, entityKind, id + ".json");
+            var topLevel = SafePath.Combine(_storageRoot, entityKind, id + ".json");
             if (File.Exists(topLevel))
             {
                 return topLevel;
@@ -276,7 +298,7 @@ public sealed class FileEntityStore : IBowireEntityStore
             return containerInSubDir;
         }
 
-        return Path.Combine(_storageRoot, entityKind, id + ".json");
+        return SafePath.Combine(_storageRoot, entityKind, id + ".json");
     }
 
     internal static void ValidateEntityKind(string entityKind)
