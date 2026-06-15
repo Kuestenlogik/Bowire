@@ -49,7 +49,7 @@ public sealed class BowireAiEndpointsTests : IDisposable
     public BowireAiEndpointsTests()
     {
         _originalStore = BowireUserContext.Current;
-        _tempRoot = Path.Combine(
+        _tempRoot = SafePath.Combine(
             Path.GetTempPath(),
             $"bowire-ai-endpoints-test-{Guid.NewGuid():N}");
         Directory.CreateDirectory(_tempRoot);
@@ -274,7 +274,7 @@ public sealed class BowireAiEndpointsTests : IDisposable
         Assert.Equal("saved-pick:7b", body.GetProperty("model").GetString());
 
         // The user-config file landed in the temp store.
-        Assert.True(File.Exists(Path.Combine(_tempRoot, "ai-config.json")));
+        Assert.True(File.Exists(SafePath.Combine(_tempRoot, "ai-config.json")));
         var persisted = BowireAiUserConfigStore.TryLoad();
         Assert.NotNull(persisted);
         Assert.Equal("saved-pick:7b", persisted!.Model);
@@ -302,8 +302,8 @@ public sealed class BowireAiEndpointsTests : IDisposable
         Assert.Equal(HttpStatusCode.OK, resp.StatusCode);
 
         // Per-workspace file landed; global stayed empty.
-        Assert.True(File.Exists(Path.Combine(_tempRoot, "ai-config.personal.json")));
-        Assert.False(File.Exists(Path.Combine(_tempRoot, "ai-config.json")));
+        Assert.True(File.Exists(SafePath.Combine(_tempRoot, "ai-config.personal.json")));
+        Assert.False(File.Exists(SafePath.Combine(_tempRoot, "ai-config.json")));
     }
 
     [Fact]
@@ -453,7 +453,7 @@ public sealed class BowireAiEndpointsTests : IDisposable
         Assert.Equal("global-after-revert:1b", body.GetProperty("model").GetString());
 
         // The override file is gone.
-        Assert.False(File.Exists(Path.Combine(_tempRoot, "ai-config.personal.json")));
+        Assert.False(File.Exists(SafePath.Combine(_tempRoot, "ai-config.personal.json")));
     }
 
     // ----- /api/ai/chat — ProblemDetails error paths ---------------
@@ -609,7 +609,7 @@ public sealed class BowireAiEndpointsTests : IDisposable
 
     private sealed class TempUserStore(string root) : IBowireUserStore
     {
-        public string GetUserPath(string filename) => Path.Combine(root, filename);
+        public string GetUserPath(string filename) => SafePath.Combine(root, filename);
     }
 
     private sealed class StubChatClient(string responseText) : IChatClient
