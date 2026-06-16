@@ -348,16 +348,10 @@ internal sealed class ConnectInvoker : IDisposable
         // length + 5 bytes header per frame). Avoids MemoryStream's
         // synchronous-Write CA1849 noise while keeping the call hot
         // path allocation-light.
-        var totalLen = 0;
-        var encoded = new List<byte[]>(requestJsons.Count);
-        foreach (var json in requestJsons)
-        {
-            var payload = JsonToProtobufBytes(json, inputType);
-            var frame = EncodeFrame(flags: 0x00, payload: payload);
-            encoded.Add(frame);
-            totalLen += frame.Length;
-        }
-        var requestBuffer = new byte[totalLen];
+        var encoded = requestJsons
+            .Select(json => EncodeFrame(flags: 0x00, payload: JsonToProtobufBytes(json, inputType)))
+            .ToList();
+        var requestBuffer = new byte[encoded.Sum(f => f.Length)];
         var offset = 0;
         foreach (var frame in encoded)
         {
