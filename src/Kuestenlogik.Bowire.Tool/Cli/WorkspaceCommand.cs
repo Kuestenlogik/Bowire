@@ -68,10 +68,276 @@ internal static class WorkspaceCommand
     public static Command Build()
     {
         var workspace = new Command("workspace",
-            "Manage Bowire workspaces — init a git-backed workspace directory (#147 / #149), migrate a legacy bundle-shaped workspace to the per-entity file layout (#196 Phase 2.2).");
+            "Manage Bowire workspaces — init a git-backed workspace directory (#147 / #149), migrate a legacy bundle-shaped workspace to the per-entity file layout (#196 Phase 2.2), or export/import the workspace state as a single JSON file (#149).");
         workspace.Add(BuildInitCommand());
         workspace.Add(BuildMigrateFormatCommand());
+        workspace.Add(BuildExportCommand());
+        workspace.Add(BuildImportCommand());
         return workspace;
+    }
+
+    // ---------- export / import (#149) ----------
+
+    /// <summary>
+    /// Format version for the export envelope. Bumped when the wire
+    /// shape changes in a way an older importer would mis-handle.
+    /// </summary>
+    public const int ExportFormatVersion = 1;
+
+    private static readonly string[] ExportEntityKinds =
+        ["environments", "collections", "recordings", "scripts", "flows"];
+
+    private static Command BuildExportCommand()
+    {
+        var export = new Command("export",
+            "Read every entity from a per-entity workspace directory and write a single self-contained JSON file. Round-trips through 'workspace import' without touching ~/.bowire/. Useful for CI / scripted setup, archiving, or shipping a workspace snapshot.");
+
+        var fromOpt = new Option<string?>("--from")
+        {
+            Description = "Workspace storage root to read from. When omitted, the current directory is used. The directory must contain at least one of the per-entity buckets (environments/, collections/, recordings/, scripts/, flows/)."
+        };
+        var outputArg = new Argument<string>("path")
+        {
+            Description = "Output file path. The exporter writes a single indented JSON document with workspaceFormatVersion + one array per entity kind."
+        };
+        export.Add(fromOpt);
+        export.Add(outputArg);
+
+        export.SetAction((pr, ct) =>
+        {
+            var output = pr.GetValue(outputArg)!;
+            var from = pr.GetValue(fromOpt);
+            return RunExportAsync(
+                from ?? Directory.GetCurrentDirectory(),
+                output,
+                pr.InvocationConfiguration.Output,
+                pr.InvocationConfiguration.Error,
+                ct);
+        });
+        return export;
+    }
+
+    private static Command BuildImportCommand()
+    {
+        var import = new Command("import",
+            "Materialise a workspace export (the single-JSON shape 'workspace export' produces) into a target directory as the per-entity layout. Existing entries with the same id are overwritten; entries the export doesn't carry are left alone.");
+
+        var toOpt = new Option<string?>("--to")
+        {
+            Description = "Target workspace directory to write into. When omitted, the current directory is used. Created if missing."
+        };
+        var inputArg = new Argument<string>("path")
+        {
+            Description = "Path to the .json export file produced by 'workspace export'."
+        };
+        import.Add(toOpt);
+        import.Add(inputArg);
+
+        import.SetAction((pr, ct) =>
+        {
+            var input = pr.GetValue(inputArg)!;
+            var to = pr.GetValue(toOpt);
+            return RunImportAsync(
+                input,
+                to ?? Directory.GetCurrentDirectory(),
+                pr.InvocationConfiguration.Output,
+                pr.InvocationConfiguration.Error,
+                ct);
+        });
+        return import;
+    }
+
+    // Internal so unit tests exercise the pipeline without spinning up
+    // System.CommandLine. Mirrors RunMigrateFormatAsync's sysexits-style
+    // exit codes — 0 success, 64 EX_USAGE, 65 EX_DATAERR, 66 EX_NOINPUT,
+    // 70 generic failure.
+    internal static async Task<int> RunExportAsync(
+        string sourceDir,
+        string outputPath,
+        TextWriter stdout,
+        TextWriter stderr,
+        CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(outputPath))
+        {
+            await stderr.WriteLineAsync("workspace export: output path is required.").ConfigureAwait(false);
+            return 64;
+        }
+
+        var fullSource = Path.GetFullPath(sourceDir);
+        if (!Directory.Exists(fullSource))
+        {
+            await stderr.WriteLineAsync($"workspace export: source directory '{fullSource}' does not exist.").ConfigureAwait(false);
+            return 66;
+        }
+
+        var store = new Kuestenlogik.Bowire.Workspace.Git.FileEntityStore(fullSource);
+        var root = new System.Text.Json.Nodes.JsonObject
+        {
+            ["workspaceFormatVersion"] = ExportFormatVersion,
+            ["exportedAt"] = DateTimeOffset.UtcNow.ToString("O", System.Globalization.CultureInfo.InvariantCulture),
+        };
+
+        var perKindCount = new Dictionary<string, int>(StringComparer.Ordinal);
+        try
+        {
+            foreach (var kind in ExportEntityKinds)
+            {
+                var ids = await store.ListAsync(kind, ct).ConfigureAwait(false);
+                var arr = new System.Text.Json.Nodes.JsonArray();
+                foreach (var id in ids)
+                {
+                    var json = await store.LoadAsync(kind, id, ct).ConfigureAwait(false);
+                    if (string.IsNullOrEmpty(json)) continue;
+                    arr.Add(System.Text.Json.Nodes.JsonNode.Parse(json));
+                }
+                root[kind] = arr;
+                perKindCount[kind] = arr.Count;
+            }
+        }
+        catch (JsonException ex)
+        {
+            await stderr.WriteLineAsync($"workspace export: a per-entity file is not valid JSON: {ex.Message}").ConfigureAwait(false);
+            return 65;
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or DirectoryNotFoundException or InvalidOperationException)
+        {
+            await stderr.WriteLineAsync($"workspace export: read failed: {ex.Message}").ConfigureAwait(false);
+            return 70;
+        }
+
+        var fullOutput = Path.GetFullPath(outputPath);
+        var outDir = Path.GetDirectoryName(fullOutput);
+        if (!string.IsNullOrEmpty(outDir)) Directory.CreateDirectory(outDir);
+        try
+        {
+            await File.WriteAllTextAsync(fullOutput,
+                root.ToJsonString(IndentedJsonOpts) + Environment.NewLine, ct).ConfigureAwait(false);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or DirectoryNotFoundException)
+        {
+            await stderr.WriteLineAsync($"workspace export: cannot write '{fullOutput}': {ex.Message}").ConfigureAwait(false);
+            return 70;
+        }
+
+        await stdout.WriteLineAsync($"Exported workspace at {fullSource} to {fullOutput}").ConfigureAwait(false);
+        var total = 0;
+        foreach (var kind in ExportEntityKinds)
+        {
+            var count = perKindCount.TryGetValue(kind, out var c) ? c : 0;
+            total += count;
+            if (count == 0)
+            {
+                await stdout.WriteLineAsync($"  · {kind}: 0").ConfigureAwait(false);
+            }
+            else
+            {
+                await stdout.WriteLineAsync($"  → {kind}: {count}").ConfigureAwait(false);
+            }
+        }
+        await stdout.WriteLineAsync($"  → {total} entity(ies) exported total.").ConfigureAwait(false);
+        return 0;
+    }
+
+    internal static async Task<int> RunImportAsync(
+        string inputPath,
+        string targetDir,
+        TextWriter stdout,
+        TextWriter stderr,
+        CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(inputPath))
+        {
+            await stderr.WriteLineAsync("workspace import: input path is required.").ConfigureAwait(false);
+            return 64;
+        }
+        var fullInput = Path.GetFullPath(inputPath);
+        if (!File.Exists(fullInput))
+        {
+            await stderr.WriteLineAsync($"workspace import: input file '{fullInput}' does not exist.").ConfigureAwait(false);
+            return 66;
+        }
+
+        System.Text.Json.Nodes.JsonObject root;
+        try
+        {
+            var raw = await File.ReadAllTextAsync(fullInput, ct).ConfigureAwait(false);
+            root = System.Text.Json.Nodes.JsonNode.Parse(raw) as System.Text.Json.Nodes.JsonObject
+                ?? throw new JsonException("Export root must be a JSON object.");
+        }
+        catch (JsonException ex)
+        {
+            await stderr.WriteLineAsync($"workspace import: '{fullInput}' is not a valid workspace export: {ex.Message}").ConfigureAwait(false);
+            return 65;
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            await stderr.WriteLineAsync($"workspace import: cannot read '{fullInput}': {ex.Message}").ConfigureAwait(false);
+            return 70;
+        }
+
+        // Refuse exports from a future format we don't understand. Same
+        // shape as RecordingFormatVersion's check elsewhere.
+        if (root["workspaceFormatVersion"] is System.Text.Json.Nodes.JsonValue v
+            && v.TryGetValue<int>(out var vers)
+            && vers > ExportFormatVersion)
+        {
+            await stderr.WriteLineAsync(
+                $"workspace import: export was written under format version {vers}, " +
+                $"this build supports up to {ExportFormatVersion}. Update Bowire and retry.").ConfigureAwait(false);
+            return 65;
+        }
+
+        var fullTarget = Path.GetFullPath(targetDir);
+        Directory.CreateDirectory(fullTarget);
+        var store = new Kuestenlogik.Bowire.Workspace.Git.FileEntityStore(fullTarget);
+
+        var perKindCount = new Dictionary<string, int>(StringComparer.Ordinal);
+        try
+        {
+            foreach (var kind in ExportEntityKinds)
+            {
+                if (root[kind] is not System.Text.Json.Nodes.JsonArray arr) continue;
+                var written = 0;
+                foreach (var entry in arr)
+                {
+                    if (entry is not System.Text.Json.Nodes.JsonObject obj) continue;
+                    var id = (string?)obj["id"];
+                    if (string.IsNullOrWhiteSpace(id)) continue;
+                    await store.SaveAsync(kind, id!, obj.ToJsonString(IndentedJsonOpts), ct).ConfigureAwait(false);
+                    written++;
+                }
+                perKindCount[kind] = written;
+            }
+        }
+        catch (JsonException ex)
+        {
+            await stderr.WriteLineAsync($"workspace import: per-entity JSON write failed: {ex.Message}").ConfigureAwait(false);
+            return 65;
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or DirectoryNotFoundException or InvalidOperationException)
+        {
+            await stderr.WriteLineAsync($"workspace import: write failed: {ex.Message}").ConfigureAwait(false);
+            return 70;
+        }
+
+        await stdout.WriteLineAsync($"Imported workspace from {fullInput} into {fullTarget}").ConfigureAwait(false);
+        var total = 0;
+        foreach (var kind in ExportEntityKinds)
+        {
+            var count = perKindCount.TryGetValue(kind, out var c) ? c : 0;
+            total += count;
+            if (count == 0)
+            {
+                await stdout.WriteLineAsync($"  · {kind}: 0").ConfigureAwait(false);
+            }
+            else
+            {
+                await stdout.WriteLineAsync($"  → {kind}: {count}").ConfigureAwait(false);
+            }
+        }
+        await stdout.WriteLineAsync($"  → {total} entity(ies) imported total.").ConfigureAwait(false);
+        return 0;
     }
 
     private static Command BuildMigrateFormatCommand()
