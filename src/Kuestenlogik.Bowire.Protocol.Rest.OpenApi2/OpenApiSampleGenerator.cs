@@ -61,10 +61,8 @@ public static class OpenApiSampleGenerator
         // mutate the schema-owned node.
         if (schema.Enum is { Count: > 0 } enumValues)
         {
-            foreach (var ev in enumValues)
-            {
-                if (ev is not null) return ev.DeepClone();
-            }
+            var firstNonNull = enumValues.FirstOrDefault(ev => ev is not null);
+            if (firstNonNull is not null) return firstNonNull.DeepClone();
         }
 
         var type = schema.Type ?? JsonSchemaType.String;
