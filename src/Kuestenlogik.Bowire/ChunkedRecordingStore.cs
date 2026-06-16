@@ -5,6 +5,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using System.Text.RegularExpressions;
 using Kuestenlogik.Bowire.Auth;
 
 namespace Kuestenlogik.Bowire;
@@ -38,8 +39,30 @@ namespace Kuestenlogik.Bowire;
 /// for true GB-scale recordings; this commit lays the structural
 /// groundwork without breaking the existing wire contract.
 /// </remarks>
-internal static class ChunkedRecordingStore
+internal static partial class ChunkedRecordingStore
 {
+    // CodeQL cs/path-injection sanitiser barriers. The taint analyser
+    // recognises an anchored Regex.IsMatch against a restrictive
+    // character class as a sanitiser on the tainted string, so any
+    // value that passes one of these regex checks before reaching a
+    // File.*/Directory.*/Path.* sink stops being flagged.
+    //
+    // SafeIdPattern guards recording / workspace / step ids that came
+    // from outside the assembly (HTTP body, JSON on disk, &c). The
+    // SanitiseId helper below funnels every id through this barrier
+    // before it lands in a combined path.
+    //
+    // SafeHashPattern guards content-addressed body file names — those
+    // are Sha256 hex digests in our own code, but CodeQL doesn't track
+    // that purity, and the hash also gets read back from disk via the
+    // step manifest's responseRef field, which the analyser treats as
+    // tainted on the way out.
+    [GeneratedRegex(@"^[A-Za-z0-9._-]+$")]
+    private static partial Regex SafeIdPattern();
+
+    [GeneratedRegex(@"^[A-Fa-f0-9]+$")]
+    private static partial Regex SafeHashPattern();
+
     private const string RecordingMetadataFile = "recording.json";
     private const string StepsDirectory = "steps";
     private const string BodiesDirectory = "bodies";
@@ -286,7 +309,11 @@ internal static class ChunkedRecordingStore
 
             var manifest = meta["stepsManifest"] as JsonArray ?? new JsonArray();
             int idx = manifest.Count;
-            var stepFile = $"{idx:D4}.json";
+            // Funnel the internally-minted file name through the
+            // step-file barrier too — idx comes from a manifest read
+            // off disk, so even though the format string is fixed, the
+            // analyser sees the value as flowing from a tainted source.
+            var stepFile = SanitiseStepFile($"{idx:D4}.json");
 
             var stepObjForDisk = (JsonObject)step.DeepClone();
 
@@ -298,7 +325,7 @@ internal static class ChunkedRecordingStore
                 && v.TryGetValue<string>(out var responseText)
                 && responseText is { Length: > InlineBodyThreshold })
             {
-                var hash = Sha256(responseText);
+                var hash = SanitiseHash(Sha256(responseText));
                 var bodyPath = SafePath.Combine(bodiesDir, hash);
                 if (!File.Exists(bodyPath)) File.WriteAllText(bodyPath, responseText);
                 stepBytes = responseText.Length;
@@ -384,8 +411,15 @@ internal static class ChunkedRecordingStore
                 var hash = (string?)refVal;
                 if (!string.IsNullOrEmpty(hash))
                 {
-                    var bodyPath = SafePath.Combine(Path.Combine(SafePath.Combine(rootPath, id), BodiesDirectory), hash);
-                    if (File.Exists(bodyPath))
+                    // The hash came off disk so it's tainted; route it
+                    // through the hex barrier before it becomes a path
+                    // segment. Tolerate a malformed manifest by skipping
+                    // the body resolve rather than throwing through the
+                    // public LoadStep API.
+                    string? bodyPath = null;
+                    try { bodyPath = SafePath.Combine(Path.Combine(SafePath.Combine(rootPath, id), BodiesDirectory), SanitiseHash(hash)); }
+                    catch (ArgumentException) { /* malformed responseRef on disk; drop body */ }
+                    if (bodyPath is not null && File.Exists(bodyPath))
                     {
                         obj["response"] = File.ReadAllText(bodyPath);
                         obj.Remove("responseRef");
@@ -428,7 +462,10 @@ internal static class ChunkedRecordingStore
                 if (!string.IsNullOrEmpty(stepFile))
                 {
                     string? path = null;
-                    try { path = SafePath.Combine(stepsDir, stepFile); }
+                    // SanitiseStepFile is the cs/path-injection barrier
+                    // on the disk-read file name; SafePath.Combine then
+                    // re-asserts containment under stepsDir.
+                    try { path = SafePath.Combine(stepsDir, SanitiseStepFile(stepFile)); }
                     catch (ArgumentException) { /* manifest entry tried to escape steps/; skip body */ }
                     if (path is not null && File.Exists(path))
                     {
@@ -442,8 +479,10 @@ internal static class ChunkedRecordingStore
                     var hash = (string?)refVal;
                     if (!string.IsNullOrEmpty(hash))
                     {
-                        var bodyPath = SafePath.Combine(Path.Combine(recordingDir, BodiesDirectory), hash);
-                        if (File.Exists(bodyPath))
+                        string? bodyPath = null;
+                        try { bodyPath = SafePath.Combine(Path.Combine(recordingDir, BodiesDirectory), SanitiseHash(hash)); }
+                        catch (ArgumentException) { /* malformed responseRef on disk; drop body */ }
+                        if (bodyPath is not null && File.Exists(bodyPath))
                         {
                             stepObj["response"] = File.ReadAllText(bodyPath);
                             stepObj.Remove("responseRef");
@@ -570,7 +609,62 @@ internal static class ChunkedRecordingStore
             sb.Append(c);
         }
         var result = sb.ToString().TrimStart('.').TrimEnd('.');
-        return string.IsNullOrEmpty(result) ? "anon" : result;
+        if (string.IsNullOrEmpty(result)) result = "anon";
+
+        // CodeQL cs/path-injection barrier — anchored Regex.IsMatch
+        // against the allow-list. By construction the cleaned slug
+        // always matches (we built it from the same character class),
+        // so this is a recognised sanitiser the analyser drops the
+        // taint on. Throw rather than silently substitute on a miss
+        // so a future change to the cleaning loop can't sneak past
+        // the barrier.
+        if (!SafeIdPattern().IsMatch(result))
+        {
+            throw new ArgumentException(
+                "Sanitised recording id failed the path-safety allow-list: " + id,
+                nameof(id));
+        }
+        return result;
+    }
+
+    /// <summary>
+    /// Validates that a content-addressed body file name is pure hex.
+    /// Sha256 hashes we generate locally always pass; values read back
+    /// from a step manifest's <c>responseRef</c> field carry on-disk
+    /// taint and need the barrier before they land in a path.
+    /// </summary>
+    private static string SanitiseHash(string hash)
+    {
+        // CodeQL cs/path-injection barrier on the content-address.
+        if (!SafeHashPattern().IsMatch(hash))
+        {
+            throw new ArgumentException(
+                "Body-store hash failed the hex allow-list: " + hash,
+                nameof(hash));
+        }
+        return hash;
+    }
+
+    /// <summary>
+    /// Validates a step file name pulled from a recording's manifest.
+    /// Step file names are minted internally as <c>NNNN.json</c>, but
+    /// they're read back from the on-disk manifest before being
+    /// combined with the steps directory, which is the path-injection
+    /// vector this barrier closes.
+    /// </summary>
+    private static string SanitiseStepFile(string stepFile)
+    {
+        // The allow-list mirrors what we ever write — four digits plus
+        // ".json". A wider class (alnum + '.') keeps the barrier
+        // recognisable as a generic anchored allow-list to CodeQL
+        // without forcing the digit-count check at runtime.
+        if (!SafeIdPattern().IsMatch(stepFile))
+        {
+            throw new ArgumentException(
+                "Step file name failed the path-safety allow-list: " + stepFile,
+                nameof(stepFile));
+        }
+        return stepFile;
     }
 
     private static string Sha256(string text)
