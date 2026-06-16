@@ -70,6 +70,12 @@
          in-process tests. The endpoint itself ships in the package;
          the integration suite exercises it via TestServer. -->
     <ProjectReference Include="..\..\src\Kuestenlogik.Bowire.Ai\Kuestenlogik.Bowire.Ai.csproj" />
+    <!-- Workspace.Git runtime — referenced for the #196 Phase 2.4
+         SSE-endpoint integration suite (FS-watch fanout via
+         MapBowireGitWorkspaceEvents) + the embedded-regression test
+         that proves the route surfaces 501 when AddBowireGitWorkspace
+         was NOT called (no watcher leaks into stock embedded hosts). -->
+    <ProjectReference Include="..\..\src\Kuestenlogik.Bowire.Workspace.Git\Kuestenlogik.Bowire.Workspace.Git.csproj" />
   </ItemGroup>
   <ItemGroup>
     <Protobuf Include="Protos/*.proto" GrpcServices="Both" />

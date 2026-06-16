@@ -30,6 +30,11 @@ public static class BowireGitWorkspaceServiceCollectionExtensions
         // Singleton so the watcher + lockfile coordinator have one
         // shared view of the active workspaces across every request.
         services.TryAddSingleton<BowireGitWorkspaceExtension>();
+        // Phase 2.4 — singleton WorkspaceWatcher fanout. One per
+        // process; per-root FileSystemWatchers spin up lazily on
+        // first subscribe + tear down with the last unsubscribe so
+        // a workspace switch doesn't leak watchers.
+        services.TryAddSingleton<WorkspaceWatcher>();
 
         return services;
     }
