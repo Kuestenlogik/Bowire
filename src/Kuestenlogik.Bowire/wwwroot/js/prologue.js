@@ -1442,6 +1442,69 @@
         render();
     }
 
+    // #196 Phase 2.4 — git-backed FS-watch SSE subscriber. Opens an
+    // EventSource against the standalone CLI's /api/workspace/events
+    // route and surfaces a sticky toast with a "Reload" action on any
+    // received event. The watcher debounces server-side at 300 ms, so
+    // the burst from an editor save lands as one or two events at most.
+    //
+    // Per-session state so a workspace switch (which triggers a full
+    // page reload) starts fresh, and so subsequent events within one
+    // session don't stack a second toast on top of an undismissed one
+    // — the existing toast is the operator's signal that "the disk
+    // moved since you last reloaded"; nagging twice is noise.
+    var _fsWatchSource = null;
+    var _fsWatchToast = null;
+    function startWorkspaceFsWatchSubscriber(storageRoot) {
+        if (!storageRoot || _fsWatchSource) return;
+        var url = config.prefix + '/api/workspace/events?storageRoot=' + encodeURIComponent(storageRoot);
+        try {
+            _fsWatchSource = new EventSource(url);
+        } catch (e) {
+            _fsWatchSource = null;
+            return;
+        }
+        _fsWatchSource.onmessage = function (evt) {
+            if (_fsWatchToast || typeof toast !== 'function') return;
+            var payload = null;
+            try { payload = JSON.parse(evt.data); } catch { /* tolerate */ }
+            var hint = (payload && payload.path)
+                ? '"' + payload.path + '" changed on disk.'
+                : 'Workspace files changed on disk.';
+            _fsWatchToast = toast(hint + ' Reload to pick up the new state?', 'info', {
+                duration: 0, // sticky — explicit dismiss only
+                action: {
+                    label: 'Reload',
+                    onClick: function () {
+                        try { window.location.reload(); }
+                        catch { /* embedded host */ }
+                    }
+                }
+            });
+            // Clear the deduplicating reference when the operator
+            // dismisses the toast (either via the close button or
+            // the action button — both pull the node out of the DOM).
+            // Poll on rAF so a future event can re-surface the toast
+            // without us needing to monkey-patch dismissToast.
+            var _watchDismissed = function () {
+                if (!_fsWatchToast || !_fsWatchToast.isConnected) {
+                    _fsWatchToast = null;
+                    return;
+                }
+                requestAnimationFrame(_watchDismissed);
+            };
+            requestAnimationFrame(_watchDismissed);
+        };
+        _fsWatchSource.onerror = function () {
+            // 501 from an embedded host without AddBowireGitWorkspace,
+            // 4xx from a bad storageRoot, or transient connection
+            // drop — close cleanly so a stale handle doesn't pin a
+            // connection. The next workspace open re-arms.
+            try { _fsWatchSource && _fsWatchSource.close(); } catch { /* ignore */ }
+            _fsWatchSource = null;
+        };
+    }
+
     // Back-compat aliases — recording.js + any other caller still
     // imports these names. Both delegate to the workspace-level
     // helpers. Drop these once every call site has migrated.
