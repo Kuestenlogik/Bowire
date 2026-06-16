@@ -131,11 +131,9 @@ public static class OpenApiDiscovery
                 string tag = "Default";
                 if (operation.Tags is { Count: > 0 } tags)
                 {
-                    // ISet in v2 — iterate to grab the first
-                    foreach (var t in tags)
-                    {
-                        if (t?.Name is { Length: > 0 } n) { tag = n; break; }
-                    }
+                    // ISet in v2 — grab the first non-empty Name
+                    var firstNamedTag = tags.FirstOrDefault(t => t?.Name is { Length: > 0 });
+                    if (firstNamedTag?.Name is { Length: > 0 } n) tag = n;
                 }
 
                 if (!services.TryGetValue(tag, out var list))
@@ -290,7 +288,7 @@ public static class OpenApiDiscovery
             // can edit the raw JSON in the JSON tab.
             fields.Add(new BowireFieldInfo(
                 Name: "body",
-                Number: fieldNumber++,
+                Number: fieldNumber,
                 Type: MapJsonType(bodySchema),
                 Label: bodyRequired ? "required" : "optional",
                 IsMap: false,
