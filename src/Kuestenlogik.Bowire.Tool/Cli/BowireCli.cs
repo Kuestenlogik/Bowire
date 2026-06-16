@@ -437,7 +437,11 @@ internal static class BowireCli
 
     // -------------------- mock --------------------
 
-    private static Command BuildMockCommand(IConfiguration cfg)
+    // internal so the tests in Kuestenlogik.Bowire.Tests can exercise
+    // the System.CommandLine wiring (the #211 positional shape +
+    // mutex against --recording / --schema) without booting a real
+    // mock server.
+    internal static Command BuildMockCommand(IConfiguration cfg)
     {
         var recording = new Option<string?>("--recording", "-r")
         {
@@ -515,19 +519,66 @@ internal static class BowireCli
             DefaultValueFactory = _ => cfg["Bowire:Mock:ControlToken"]
         };
 
-        var cmd = new Command("mock", "Replay a recording (or schema) as a local API endpoint.");
+        // #211 — positional shape `bowire mock foo.bwr`. The option form
+        // (--recording / -r) stays for back-compat + script flexibility;
+        // the positional is sugar that converges on the same MockServer
+        // path. Mutex against the option form + the schema-mock siblings
+        // is enforced in the action body — System.CommandLine can't
+        // express a positional-or-option-or-the-other-three constraint
+        // declaratively, so we surface the error after Parse with a
+        // 64 EX_USAGE exit so a CI step can branch on the failure mode.
+        var positionalPath = new Argument<string?>("path")
+        {
+            Description = "Path to a Bowire .bwr recording. Equivalent to --recording <path>; convenient for one-shot replay. See docs/recordings/bwr-format.md for the file format.",
+            Arity = ArgumentArity.ZeroOrOne,
+        };
+
+        var cmd = new Command("mock", "Replay a recording (or schema) as a local API endpoint. Pass a .bwr file as the positional argument for the common case, or use --schema / --grpc-schema / --graphql-schema for schema-only mocks.");
+        cmd.Add(positionalPath);
         cmd.Add(recording); cmd.Add(schema); cmd.Add(grpcSchema); cmd.Add(graphqlSchema);
         cmd.Add(port); cmd.Add(host); cmd.Add(select); cmd.Add(noWatch);
         cmd.Add(stateful); cmd.Add(statefulOnce); cmd.Add(loop); cmd.Add(autoInstall);
         cmd.Add(chaos); cmd.Add(captureMiss); cmd.Add(controlToken);
         cmd.SetAction(async (pr, ct) =>
         {
+            var positional = pr.GetValue(positionalPath);
+            var recordingOpt = pr.GetValue(recording);
+            var schemaOpt = pr.GetValue(schema);
+            var grpcSchemaOpt = pr.GetValue(grpcSchema);
+            var graphqlSchemaOpt = pr.GetValue(graphqlSchema);
+
+            // Mutex: the positional collapses to --recording, but only
+            // one of (positional, --recording) is allowed, AND the
+            // positional can't appear with a schema-mock flag because
+            // schema mocks don't take a recording. The existing
+            // recording-vs-schema mutex inside MockCommand.RunAsync
+            // covers the option-only side; this guard covers the
+            // positional-plus-X cases.
+            if (positional is not null)
+            {
+                if (recordingOpt is not null)
+                {
+                    await pr.InvocationConfiguration.Error
+                        .WriteLineAsync("bowire mock: pass the recording EITHER as the positional argument OR via --recording, not both.")
+                        .ConfigureAwait(false);
+                    return 64;
+                }
+                if (schemaOpt is not null || grpcSchemaOpt is not null || graphqlSchemaOpt is not null)
+                {
+                    await pr.InvocationConfiguration.Error
+                        .WriteLineAsync("bowire mock: pick one input — a recording file (positional or --recording) OR one of --schema / --grpc-schema / --graphql-schema.")
+                        .ConfigureAwait(false);
+                    return 64;
+                }
+                recordingOpt = positional;
+            }
+
             var options = new MockCliOptions
             {
-                RecordingPath = pr.GetValue(recording),
-                SchemaPath = pr.GetValue(schema),
-                GrpcSchemaPath = pr.GetValue(grpcSchema),
-                GraphQlSchemaPath = pr.GetValue(graphqlSchema),
+                RecordingPath = recordingOpt,
+                SchemaPath = schemaOpt,
+                GrpcSchemaPath = grpcSchemaOpt,
+                GraphQlSchemaPath = graphqlSchemaOpt,
                 Host = pr.GetValue(host) ?? "127.0.0.1",
                 Port = pr.GetValue(port),
                 Select = pr.GetValue(select),
