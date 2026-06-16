@@ -114,13 +114,10 @@ public static class BowireOpenApiAdapterRegistry
     /// </summary>
     private static int? TryReadLoadedOpenApiMajor()
     {
-        foreach (var asm in AppDomain.CurrentDomain.GetAssemblies())
-        {
-            var name = asm.GetName();
-            if (!string.Equals(name.Name, "Microsoft.OpenApi", StringComparison.OrdinalIgnoreCase)) continue;
-            return name.Version?.Major;
-        }
-        return null;
+        var loaded = AppDomain.CurrentDomain.GetAssemblies()
+            .Select(asm => asm.GetName())
+            .FirstOrDefault(name => string.Equals(name.Name, "Microsoft.OpenApi", StringComparison.OrdinalIgnoreCase));
+        return loaded?.Version?.Major;
     }
 
     /// <summary>Test helper — clears both the explicit registration and the scan cache.</summary>
