@@ -107,12 +107,9 @@ public sealed class BowireRestProtocol : IBowireProtocol, IInlineHttpInvoker, ID
             }
 
             // Index for invocation lookup, keyed by source name
-            var index = new Dictionary<string, BowireMethodInfo>(StringComparer.Ordinal);
-            foreach (var svc in services)
-            {
-                foreach (var m in svc.Methods)
-                    index[svc.Name + "::" + m.Name] = m;
-            }
+            var index = services
+                .SelectMany(svc => svc.Methods.Select(m => (key: svc.Name + "::" + m.Name, m)))
+                .ToDictionary(pair => pair.key, pair => pair.m, StringComparer.Ordinal);
             _cache[doc.SourceName] = new RestSchemaCache(services, index, apiBaseUrl);
 
             all.AddRange(services);
@@ -122,14 +119,9 @@ public sealed class BowireRestProtocol : IBowireProtocol, IInlineHttpInvoker, ID
 
     private void CacheEmbeddedSchemas(List<BowireServiceInfo> services)
     {
-        var index = new Dictionary<string, BowireMethodInfo>(StringComparer.Ordinal);
-        foreach (var svc in services)
-        {
-            foreach (var m in svc.Methods)
-            {
-                index[svc.Name + "::" + m.Name] = m;
-            }
-        }
+        var index = services
+            .SelectMany(svc => svc.Methods.Select(m => (key: svc.Name + "::" + m.Name, m)))
+            .ToDictionary(pair => pair.key, pair => pair.m, StringComparer.Ordinal);
         // Empty key marks "embedded mode" — invocation falls through to whatever
         // serverUrl the BowireApiEndpoints layer resolves from the request.
         _cache[string.Empty] = new RestSchemaCache(services, index, string.Empty);
@@ -165,14 +157,9 @@ public sealed class BowireRestProtocol : IBowireProtocol, IInlineHttpInvoker, ID
         }
 
         // Build a lookup index so InvokeAsync can find a method by (service, method)
-        var index = new Dictionary<string, BowireMethodInfo>(StringComparer.Ordinal);
-        foreach (var svc in services)
-        {
-            foreach (var m in svc.Methods)
-            {
-                index[svc.Name + "::" + m.Name] = m;
-            }
-        }
+        var index = services
+            .SelectMany(svc => svc.Methods.Select(m => (key: svc.Name + "::" + m.Name, m)))
+            .ToDictionary(pair => pair.key, pair => pair.m, StringComparer.Ordinal);
 
         _cache[docUrl] = new RestSchemaCache(services, index, apiBaseUrl);
 
