@@ -179,12 +179,9 @@ internal static class EmbeddedDiscovery
     private static bool IsDeprecated(ApiDescription api)
     {
         var endpointMetadata = api.ActionDescriptor?.EndpointMetadata;
-        if (endpointMetadata is not null)
+        if (endpointMetadata is not null && endpointMetadata.Any(item => item is ObsoleteAttribute))
         {
-            foreach (var item in endpointMetadata)
-            {
-                if (item is ObsoleteAttribute) return true;
-            }
+            return true;
         }
 
         // ControllerActionDescriptor exposes the underlying MethodInfo so we can
@@ -296,12 +293,7 @@ internal static class EmbeddedDiscovery
     private static T? ExtractMetadata<T>(ApiDescription api) where T : class
     {
         var endpointMetadata = api.ActionDescriptor?.EndpointMetadata;
-        if (endpointMetadata is null) return null;
-        foreach (var item in endpointMetadata)
-        {
-            if (item is T match) return match;
-        }
-        return null;
+        return endpointMetadata?.OfType<T>().FirstOrDefault();
     }
 
     private static string? MapBindingSource(BindingSource? source)
@@ -400,12 +392,10 @@ internal static class EmbeddedDiscovery
             if (args.Length == 1) return args[0];
         }
         // Walk implemented interfaces for IEnumerable<T>
-        foreach (var iface in collectionType.GetInterfaces())
-        {
-            if (iface.IsGenericType && iface.GetGenericTypeDefinition() == typeof(IEnumerable<>))
-                return iface.GetGenericArguments()[0];
-        }
-        return null;
+        var enumerableIface = collectionType.GetInterfaces()
+            .FirstOrDefault(iface => iface.IsGenericType
+                && iface.GetGenericTypeDefinition() == typeof(IEnumerable<>));
+        return enumerableIface?.GetGenericArguments()[0];
     }
 
     private static bool IsComplexType(Type type)
