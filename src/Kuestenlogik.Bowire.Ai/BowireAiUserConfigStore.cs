@@ -157,6 +157,7 @@ public static class BowireAiUserConfigStore
         public string? ProviderId { get; set; }
         public string? Endpoint { get; set; }
         public string? Model { get; set; }
+        public string? ApiKey { get; set; }
         public bool? AutoDetectLocal { get; set; }
 
         public static PersistedConfig From(BowireAiOptions opts) => new()
@@ -164,6 +165,7 @@ public static class BowireAiUserConfigStore
             ProviderId = opts.ProviderId,
             Endpoint = opts.Endpoint,
             Model = opts.Model,
+            ApiKey = opts.ApiKey,
             AutoDetectLocal = opts.AutoDetectLocal,
         };
 
@@ -175,6 +177,7 @@ public static class BowireAiUserConfigStore
                 ProviderId = ProviderId ?? defaults.ProviderId,
                 Endpoint = Endpoint ?? defaults.Endpoint,
                 Model = Model ?? defaults.Model,
+                ApiKey = ApiKey,
                 AutoDetectLocal = AutoDetectLocal ?? defaults.AutoDetectLocal,
             };
         }

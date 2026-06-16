@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Description>Anthropic Claude BYOK provider for Kuestenlogik.Bowire.Ai (#25 Phase 3). Registers an IBowireAiProviderFactory that wires the community-maintained Anthropic.SDK — its AnthropicClient.Messages property is itself an IChatClient from Microsoft.Extensions.AI, so no custom adapter is needed. Add via `AddBowireAiAnthropic()` after `AddBowireAi()`. Bowire core + Kuestenlogik.Bowire.Ai stay free of Anthropic.SDK's transitive weight; only installs that need Claude pay for it.</Description>
+    <PackageId>Kuestenlogik.Bowire.Ai.Anthropic</PackageId>
+    <PackageTags>bowire;ai;anthropic;claude;byok;chat;ichatclient;microsoft-extensions-ai</PackageTags>
+    <IsPackable>true</IsPackable>
+  </PropertyGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="Kuestenlogik.Bowire.Ai.Anthropic.Tests" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Kuestenlogik.Bowire.Ai\Kuestenlogik.Bowire.Ai.csproj" />
+    <PackageReference Include="Anthropic.SDK" />
+  </ItemGroup>
+</Project>

@@ -1,8 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <Description>AI integration for Bowire — registers a Microsoft.Extensions.AI IChatClient and exposes the workbench's chat / probe endpoints. Default connector is Ollama via OllamaSharp (auto-detect on 127.0.0.1:11434 + LM Studio on :1234); embedded hosts override with their own IChatClient registration so Bowire reuses whatever AI infrastructure the host already runs. Ships as a standalone NuGet so installs that don't want AI don't pull Microsoft.Extensions.AI's transitive weight. Same opt-in shape as the protocol plugins.</Description>
+    <Description>AI integration for Bowire — registers a Microsoft.Extensions.AI IChatClient and exposes the workbench's chat / probe endpoints. This core package ships only the seam + the default Ollama / LM Studio connector via OllamaSharp (auto-detect on 127.0.0.1:11434 / :1234). Cloud providers and the MCP-client-reversal seam ship as separate optional packages so embedded hosts only pay for what they install: Kuestenlogik.Bowire.Ai.OpenAi for OpenAI + OpenRouter, Kuestenlogik.Bowire.Ai.Anthropic for Claude, Kuestenlogik.Bowire.Ai.Mcp for MCP-as-gateway. Embedded hosts can also register their own IChatClient before AddBowireAi() to reuse existing AI infrastructure. Same opt-in shape as the protocol plugins.</Description>
     <PackageId>Kuestenlogik.Bowire.Ai</PackageId>
-    <PackageTags>bowire;ai;chat;ollama;lm-studio;openai;ichatclient;microsoft-extensions-ai;developer-tools</PackageTags>
+    <PackageTags>bowire;ai;chat;ollama;lm-studio;ichatclient;microsoft-extensions-ai;developer-tools</PackageTags>
     <IsPackable>true</IsPackable>
   </PropertyGroup>
   <ItemGroup>

@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 using Microsoft.Extensions.AI;
-using OllamaSharp;
 
 namespace Kuestenlogik.Bowire.Ai;
 
@@ -14,34 +13,53 @@ namespace Kuestenlogik.Bowire.Ai;
 /// dispatches to the current provider without restarting the host.
 /// </summary>
 /// <remarks>
+/// <para>
+/// <b>Provider dispatch is plugin-based.</b> The runtime never imports
+/// a provider SDK directly. Instead it receives the registered
+/// <see cref="IBowireAiProviderFactory"/> list from DI and asks them
+/// in order for a matching client. Embedded hosts that only install
+/// <c>Kuestenlogik.Bowire.Ai</c> get the Ollama factory; adding
+/// <c>.OpenAi</c> / <c>.Anthropic</c> / <c>.Mcp</c> registers each
+/// additional factory. Without a matching factory the active client
+/// stays <c>null</c> and <c>POST /api/ai/chat</c> returns 503 with
+/// a configurable error.
+/// </para>
+/// <para>
 /// Held as a singleton. Concurrent reads of <see cref="Current"/> race
 /// against <see cref="Update"/> intentionally — the worst-case is a
 /// single in-flight chat call landing on the previous client, which is
 /// safer than locking the chat path for the duration of a request.
+/// </para>
 /// <para>
 /// Implements <see cref="IDisposable"/> so the DI container disposes
-/// the active provider client (and the underlying OllamaSharp
-/// <see cref="OllamaApiClient"/> that owns the HTTP socket pool) on
-/// host shutdown. <see cref="Update"/> already disposes the prior pair
-/// on hot-swap; <see cref="Dispose"/> covers the final shutdown leg.
+/// the active provider client (and the inner socket-owning instance
+/// each factory hands back) on host shutdown. <see cref="Update"/>
+/// already disposes the prior pair on hot-swap; <see cref="Dispose"/>
+/// covers the final shutdown leg.
 /// </para>
 /// </remarks>
 public sealed class BowireAiRuntime : IDisposable
 {
     private readonly object _lock = new();
+    private readonly IBowireAiProviderFactory[] _factories;
     private BowireAiOptions _options;
     private IChatClient? _client;
-    // The raw provider client that backs _client. ChatClientBuilder's
-    // wrapper forwards Dispose, but we keep the inner reference so the
-    // runtime owns the OllamaSharp socket pool's lifetime directly —
-    // documented ownership > implicit forwarding through a third-party
-    // builder. Both get disposed on hot-swap (Update) + shutdown (Dispose).
     private IDisposable? _innerClient;
     private bool _disposed;
 
-    public BowireAiRuntime(BowireAiOptions initialOptions)
+    public BowireAiRuntime(BowireAiOptions initialOptions, IEnumerable<IBowireAiProviderFactory>? factories = null)
     {
         ArgumentNullException.ThrowIfNull(initialOptions);
+        // No factory list = bare-bones constructor path used by
+        // tests and small embedded hosts that just want the Ollama
+        // default. The DI extension (AddBowireAi) always feeds the
+        // resolved enumerable through, which already contains the
+        // Ollama factory + any additional provider packages — so
+        // production paths never fall through here.
+        var arr = factories?.ToArray() ?? [];
+        _factories = arr.Length == 0
+            ? [new OllamaChatProviderFactory()]
+            : arr;
         _options = Clone(initialOptions);
         (_client, _innerClient) = Build(_options);
     }
@@ -84,11 +102,11 @@ public sealed class BowireAiRuntime : IDisposable
             _client = builtClient;
             _innerClient = builtInner;
         }
-        // Dispose the wrapper first; it cooperatively forwards Dispose to
-        // the inner client. Then dispose the inner reference explicitly
-        // in case a future wrapper variant stops forwarding — Dispose is
-        // documented idempotent on OllamaApiClient so the double-call is
-        // a no-op on the second hit.
+        // Dispose the wrapper first; it cooperatively forwards Dispose
+        // to the inner client. Then dispose the inner reference
+        // explicitly in case a future wrapper variant stops forwarding —
+        // every factory documents Dispose as idempotent, so the double
+        // call is a no-op on the second hit.
         clientToDispose?.Dispose();
         innerToDispose?.Dispose();
         return Clone(snapshot);
@@ -111,47 +129,31 @@ public sealed class BowireAiRuntime : IDisposable
         innerToDispose?.Dispose();
     }
 
-    private static (IChatClient? Client, IDisposable? Inner) Build(BowireAiOptions opts)
+    /// <summary>
+    /// Iterate the registered provider factories and ask the first
+    /// match to build a client. Returns <c>(null, null)</c> when no
+    /// factory matches the configured provider id or the matching
+    /// factory rejects the options (missing API key, missing endpoint,
+    /// &amp;c.). The chat endpoint translates that into a 503 the
+    /// workbench renders as "configure your provider first".
+    /// </summary>
+    private (IChatClient? Client, IDisposable? Inner) Build(BowireAiOptions opts)
     {
-        // Phase 2 covers Ollama + LM Studio — both speak Ollama's wire
-        // shape on the same OllamaSharp client. Phase 3 widens the
-        // switch to cloud connectors; until then unknown provider ids
-        // produce a null client and /api/ai/chat returns 503 with a
-        // "no client" message rather than a confusing dispatch error.
-        if (!IsOllamaShape(opts.ProviderId)) return (null, null);
-        var endpoint = string.IsNullOrEmpty(opts.Endpoint)
-            ? "http://localhost:11434"
-            : opts.Endpoint;
-        // Wrap the raw OllamaApiClient with FunctionInvokingChatClient so
-        // tool calls (#108 Phase 2 + #109 Phase 3) actually round-trip:
-        // base IChatClient stops after the model emits a FunctionCallContent
-        // and never invokes the tool body. The MEAI extension reads the
-        // tool list from ChatOptions, invokes matching AIFunctions, feeds
-        // the result back to the model, and repeats until the model
-        // produces final text content.
-        //
-        // The runtime holds both the wrapper (returned as _client) and
-        // the raw OllamaApiClient (held as _innerClient) so Dispose +
-        // Update have an explicit handle on the socket-owning resource
-        // rather than relying on ChatClientBuilder to forward Dispose
-        // correctly — that's our IDisposable contract pinning #25's
-        // "no socket pool leak across Settings-UI saves" requirement.
-        var inner = new OllamaApiClient(new Uri(endpoint), opts.Model);
-        var client = new ChatClientBuilder(inner)
-            .UseFunctionInvocation()
-            .Build();
-        return (client, inner);
+        var providerId = opts.ProviderId ?? string.Empty;
+        foreach (var factory in _factories)
+        {
+            if (factory.Matches(providerId))
+                return factory.Build(opts);
+        }
+        return (null, null);
     }
-
-    private static bool IsOllamaShape(string providerId) =>
-        string.Equals(providerId, "ollama", StringComparison.OrdinalIgnoreCase)
-        || string.Equals(providerId, "lmstudio", StringComparison.OrdinalIgnoreCase);
 
     private static BowireAiOptions Clone(BowireAiOptions src) => new()
     {
         ProviderId = src.ProviderId,
         Endpoint = src.Endpoint,
         Model = src.Model,
+        ApiKey = src.ApiKey,
         AutoDetectLocal = src.AutoDetectLocal,
     };
 }
@@ -182,7 +184,7 @@ internal sealed class MutableChatClient : IChatClient
         var inner = _runtime.Current
             ?? throw new InvalidOperationException(
                 "Bowire AI: no provider client is registered for the current configuration. "
-                + "Check Settings → AI or set --ai-provider / --ai-endpoint.");
+                + "Check Settings → AI or set --ai-provider / --ai-endpoint / --ai-api-key.");
         return inner.GetResponseAsync(messages, options, cancellationToken);
     }
 

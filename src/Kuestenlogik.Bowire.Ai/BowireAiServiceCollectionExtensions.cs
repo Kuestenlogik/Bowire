@@ -70,16 +70,27 @@ public static class BowireAiServiceCollectionExtensions
             if (!string.IsNullOrEmpty(persisted.ProviderId)) opts.ProviderId = persisted.ProviderId;
             if (!string.IsNullOrEmpty(persisted.Endpoint)) opts.Endpoint = persisted.Endpoint;
             if (!string.IsNullOrEmpty(persisted.Model)) opts.Model = persisted.Model;
+            if (!string.IsNullOrEmpty(persisted.ApiKey)) opts.ApiKey = persisted.ApiKey;
             opts.AutoDetectLocal = persisted.AutoDetectLocal;
         }
 
         services.TryAddSingleton(opts);
 
+        // Register the default Ollama / LM Studio factory. Extra
+        // provider packages (Kuestenlogik.Bowire.Ai.OpenAi /
+        // .Anthropic / .Mcp) AddEnumerable themselves on top via
+        // their own AddBowireAi*() extensions, so the runtime sees
+        // the union without the core package pulling them in.
+        services.TryAddEnumerable(
+            ServiceDescriptor.Singleton<IBowireAiProviderFactory, OllamaChatProviderFactory>());
+
         // BowireAiRuntime owns the live IChatClient. POST /api/ai/config
         // calls Update on it to hot-swap; MutableChatClient proxies to
         // whichever client the runtime currently holds so the singleton
         // IChatClient registration stays valid across swaps.
-        services.TryAddSingleton(sp => new BowireAiRuntime(sp.GetRequiredService<BowireAiOptions>()));
+        services.TryAddSingleton(sp => new BowireAiRuntime(
+            sp.GetRequiredService<BowireAiOptions>(),
+            sp.GetServices<IBowireAiProviderFactory>()));
 
         // Host-supplied IChatClient wins by virtue of TryAdd — if the
         // host registered one before this call, our MutableChatClient

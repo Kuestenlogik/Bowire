@@ -20,6 +20,9 @@
     <Project Path="src/Kuestenlogik.Bowire.AsyncApi/Kuestenlogik.Bowire.AsyncApi.csproj" />
     <Project Path="src/Kuestenlogik.Bowire.Auth.Oidc/Kuestenlogik.Bowire.Auth.Oidc.csproj" />
     <Project Path="src/Kuestenlogik.Bowire.Ai/Kuestenlogik.Bowire.Ai.csproj" />
+    <Project Path="src/Kuestenlogik.Bowire.Ai.OpenAi/Kuestenlogik.Bowire.Ai.OpenAi.csproj" />
+    <Project Path="src/Kuestenlogik.Bowire.Ai.Anthropic/Kuestenlogik.Bowire.Ai.Anthropic.csproj" />
+    <Project Path="src/Kuestenlogik.Bowire.Ai.Mcp/Kuestenlogik.Bowire.Ai.Mcp.csproj" />
     <Project Path="src/Kuestenlogik.Bowire.Telemetry/Kuestenlogik.Bowire.Telemetry.csproj" />
     <Project Path="src/Kuestenlogik.Bowire.Protocol.Rest.OpenApi2/Kuestenlogik.Bowire.Protocol.Rest.OpenApi2.csproj" />
     <Project Path="src/Kuestenlogik.Bowire.Protocol.Rest.OpenApi3/Kuestenlogik.Bowire.Protocol.Rest.OpenApi3.csproj" />
@@ -27,6 +30,9 @@
     <Project Path="tests/Kuestenlogik.Bowire.Mock.OpenApi2.Tests/Kuestenlogik.Bowire.Mock.OpenApi2.Tests.csproj" />
     <Project Path="tests/Kuestenlogik.Bowire.Auth.Oidc.Tests/Kuestenlogik.Bowire.Auth.Oidc.Tests.csproj" />
     <Project Path="tests/Kuestenlogik.Bowire.Ai.Tests/Kuestenlogik.Bowire.Ai.Tests.csproj" />
+    <Project Path="tests/Kuestenlogik.Bowire.Ai.OpenAi.Tests/Kuestenlogik.Bowire.Ai.OpenAi.Tests.csproj" />
+    <Project Path="tests/Kuestenlogik.Bowire.Ai.Anthropic.Tests/Kuestenlogik.Bowire.Ai.Anthropic.Tests.csproj" />
+    <Project Path="tests/Kuestenlogik.Bowire.Ai.Mcp.Tests/Kuestenlogik.Bowire.Ai.Mcp.Tests.csproj" />
     <Project Path="tests/Kuestenlogik.Bowire.Help.Tests/Kuestenlogik.Bowire.Help.Tests.csproj" />
     <Project Path="tests/Kuestenlogik.Bowire.Testing.Tests/Kuestenlogik.Bowire.Testing.Tests.csproj" />
     <Project Path="src/Kuestenlogik.Bowire.Protocol.Otlp/Kuestenlogik.Bowire.Protocol.Otlp.csproj" />

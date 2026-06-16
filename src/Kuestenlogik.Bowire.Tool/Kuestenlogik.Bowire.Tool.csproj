@@ -110,10 +110,16 @@
     <ProjectReference Include="..\Kuestenlogik.Bowire.Mock\Kuestenlogik.Bowire.Mock.csproj" />
     <ProjectReference Include="..\Kuestenlogik.Bowire.Mcp\Kuestenlogik.Bowire.Mcp.csproj" />
     <!-- AI integration ships preloaded in the standalone CLI so
-         `bowire` users get the Phase-2 Ollama / LM-Studio probe plus
-         IChatClient registration out of the box. Embedded hosts opt
-         in by adding Kuestenlogik.Bowire.Ai themselves. -->
+         `bowire` users get every provider out of the box: Phase-2
+         Ollama / LM-Studio (core .Ai package), Phase-3 OpenAI /
+         OpenRouter / Anthropic (BYOK cloud), Phase-4 MCP-client
+         reversal. Embedded hosts opt in granularly — Bowire core +
+         every protocol plugin stay free of provider SDK weight; the
+         AI core package stays free of cloud-provider weight. -->
     <ProjectReference Include="..\Kuestenlogik.Bowire.Ai\Kuestenlogik.Bowire.Ai.csproj" />
+    <ProjectReference Include="..\Kuestenlogik.Bowire.Ai.OpenAi\Kuestenlogik.Bowire.Ai.OpenAi.csproj" />
+    <ProjectReference Include="..\Kuestenlogik.Bowire.Ai.Anthropic\Kuestenlogik.Bowire.Ai.Anthropic.csproj" />
+    <ProjectReference Include="..\Kuestenlogik.Bowire.Ai.Mcp\Kuestenlogik.Bowire.Ai.Mcp.csproj" />
     <!-- #154 Phase 4 — Help package transitively shipped with the
          standalone CLI + Docker image. CLI users expect in-app help;
          no extra setup step. Embedded hosts opt in via

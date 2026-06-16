@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Description>OpenAI + OpenAI-compatible BYOK provider for Kuestenlogik.Bowire.Ai (#25 Phase 3). Registers an IBowireAiProviderFactory that builds an IChatClient via Microsoft.Extensions.AI.OpenAI; covers `openai` (api.openai.com) and `openrouter` (openrouter.ai) by passing different Endpoint base URLs through the same SDK. Add via `AddBowireAiOpenAi()` after `AddBowireAi()`. Bowire core + Kuestenlogik.Bowire.Ai stay free of OpenAI's transitive weight; only installs that need this provider pay for it.</Description>
+    <PackageId>Kuestenlogik.Bowire.Ai.OpenAi</PackageId>
+    <PackageTags>bowire;ai;openai;openrouter;byok;chat;ichatclient;microsoft-extensions-ai</PackageTags>
+    <IsPackable>true</IsPackable>
+  </PropertyGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="Kuestenlogik.Bowire.Ai.OpenAi.Tests" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Kuestenlogik.Bowire.Ai\Kuestenlogik.Bowire.Ai.csproj" />
+    <PackageReference Include="Microsoft.Extensions.AI.OpenAI" />
+  </ItemGroup>
+</Project>
