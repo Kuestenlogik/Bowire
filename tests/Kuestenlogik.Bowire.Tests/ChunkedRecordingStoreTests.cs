@@ -740,4 +740,105 @@ public sealed class ChunkedRecordingStoreTests : IDisposable
         var files = Directory.GetFiles(stepsDir);
         Assert.Equal(2, files.Length);
     }
+
+    // ---------- Path-injection sanitiser barriers (CodeQL cs/path-injection) ----------
+
+    [Fact]
+    public void LoadStep_Malformed_ResponseRef_Hash_Drops_Body_Quietly()
+    {
+        // Build a recording where the responseRef on disk contains
+        // characters outside the hex allow-list — exactly the on-disk
+        // taint vector SanitiseHash defends against. The catch in
+        // LoadStep must swallow and return the step without the body
+        // instead of throwing through the public API.
+        var recordingDir = SafePath.Combine(_tempRoot, "rec_evil");
+        var stepsDir = SafePath.Combine(recordingDir, "steps");
+        Directory.CreateDirectory(stepsDir);
+        File.WriteAllText(
+            Path.Combine(recordingDir, "recording.json"),
+            """{"id":"rec_evil","name":"x","stepCount":1,"stepsManifest":[{"id":"a","file":"0000.json"}]}""");
+        File.WriteAllText(
+            Path.Combine(stepsDir, "0000.json"),
+            """{"id":"a","responseRef":"NOT_HEX!!"}""");
+
+        var step = ChunkedRecordingStore.LoadStep("rec_evil", 0);
+
+        Assert.NotNull(step);
+        using var doc = JsonDocument.Parse(step!);
+        // body resolve dropped — responseRef stays, response is absent.
+        Assert.True(doc.RootElement.TryGetProperty("responseRef", out _));
+        Assert.False(doc.RootElement.TryGetProperty("response", out _));
+    }
+
+    [Fact]
+    public void LoadAll_Manifest_With_Bad_StepFile_Name_Skips_Body_Quietly()
+    {
+        // SanitiseStepFile rejects a manifest 'file' field that tries to
+        // escape steps/ (anchored allow-list miss). The catch in
+        // TryAssembleRecording must swallow and emit the manifest entry
+        // metadata only, never throw or fall back to the raw name.
+        var recordingDir = SafePath.Combine(_tempRoot, "rec_escape");
+        var stepsDir = SafePath.Combine(recordingDir, "steps");
+        Directory.CreateDirectory(stepsDir);
+        File.WriteAllText(
+            Path.Combine(recordingDir, "recording.json"),
+            """{"id":"rec_escape","name":"x","stepCount":1,"stepsManifest":[{"id":"a","file":"../../etc/passwd","name":"surviving-meta"}]}""");
+        File.WriteAllText(Path.Combine(stepsDir, "0000.json"), """{"id":"a"}""");
+
+        var json = ChunkedRecordingStore.LoadAll();
+
+        using var doc = JsonDocument.Parse(json);
+        var rec = doc.RootElement.GetProperty("recordings")[0];
+        Assert.Equal("rec_escape", rec.GetProperty("id").GetString());
+        // The manifest metadata survives (still in the steps array) even
+        // though the body never resolved.
+        var steps = rec.GetProperty("steps");
+        Assert.Equal(1, steps.GetArrayLength());
+        Assert.Equal("surviving-meta", steps[0].GetProperty("name").GetString());
+    }
+
+    [Fact]
+    public void LoadAll_Manifest_With_Bad_ResponseRef_Hash_Drops_Body_Quietly()
+    {
+        // Mirrors the LoadStep test for the LoadAll path — bad hash on
+        // disk routes through SanitiseHash, gets rejected, the catch in
+        // TryAssembleRecording absorbs it and the recording assembles
+        // without the body field.
+        var recordingDir = SafePath.Combine(_tempRoot, "rec_hash_evil");
+        var stepsDir = SafePath.Combine(recordingDir, "steps");
+        Directory.CreateDirectory(stepsDir);
+        File.WriteAllText(
+            Path.Combine(recordingDir, "recording.json"),
+            """{"id":"rec_hash_evil","name":"x","stepCount":1,"stepsManifest":[{"id":"a","file":"0000.json"}]}""");
+        File.WriteAllText(
+            Path.Combine(stepsDir, "0000.json"),
+            """{"id":"a","responseRef":"ZZZ_definitely_not_hex"}""");
+
+        var json = ChunkedRecordingStore.LoadAll();
+
+        using var doc = JsonDocument.Parse(json);
+        var step = doc.RootElement.GetProperty("recordings")[0].GetProperty("steps")[0];
+        Assert.True(step.TryGetProperty("responseRef", out _));
+        Assert.False(step.TryGetProperty("response", out _));
+    }
+
+    [Fact]
+    public void SanitiseId_Allows_Conventional_Slugs_And_Cleans_Path_Traversal()
+    {
+        // Round-trip the public LoadAll path with a workspace id that
+        // contains forbidden characters. The cleaner strips them, then
+        // SanitiseId's regex barrier confirms the cleaned result still
+        // matches the allow-list and no exception fires.
+        ChunkedRecordingStore.SaveAll(
+            """{"recordings":[{"id":"rec_under","name":"ws-scoped"}]}""",
+            workspaceId: "ws/../bad");
+
+        // The path resolution lands the recording under the sanitised
+        // slug, not the literal traversal sequence.
+        var legalSlugDir = SafePath.Combine(_tempRoot, "workspaces");
+        Assert.True(Directory.Exists(legalSlugDir),
+            "workspaces directory should exist; sanitised id stripped the '/../' segment");
+        // No 'bad' or 'etc' subdir landed at the root.
+        Assert.False(Directory.Exists(SafePath.Combine(_tempRoot, "bad")));
+    }
 }
