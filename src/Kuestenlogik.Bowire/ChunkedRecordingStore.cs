@@ -543,7 +543,13 @@ internal static partial class ChunkedRecordingStore
 
     private static void WriteOneRecording(string rootPath, string id, JsonElement rec)
     {
-        var dir = SafePath.Combine(rootPath, id);
+        // Defensive cs/path-injection barrier on the id — the caller
+        // (SaveAll) already routes the id through SanitiseId, but
+        // CodeQL re-tags values across scopes so we repeat the barrier
+        // here to keep every File.* / Directory.* sink in this method
+        // clean from the analyser's point of view.
+        var safeId = SanitiseId(id);
+        var dir = SafePath.Combine(rootPath, safeId);
         Directory.CreateDirectory(dir);
         var stepsDir = Path.Combine(dir, StepsDirectory);
         Directory.CreateDirectory(stepsDir);
@@ -564,14 +570,20 @@ internal static partial class ChunkedRecordingStore
             foreach (var step in steps)
             {
                 if (step is not JsonObject stepObj) { idx++; continue; }
-                var stepFile = $"{idx:D4}.json";
+                // Route the synthesised step file name through the
+                // cs/path-injection barrier so it matches the
+                // manifest-read path's treatment in TryAssembleRecording.
+                var stepFile = SanitiseStepFile($"{idx:D4}.json");
                 var stepObjForDisk = (JsonObject)stepObj.DeepClone();
 
                 // Content-address large bodies into bodies/ — small ones
                 // stay inline on the step file.
                 if (stepObjForDisk["response"] is JsonValue v && v.TryGetValue<string>(out var responseText) && responseText is { Length: > InlineBodyThreshold })
                 {
-                    var hash = Sha256(responseText);
+                    // Sha256 output is hex by construction, but the
+                    // SanitiseHash barrier keeps the body-path sink
+                    // CodeQL-clean even if Sha256 ever changes.
+                    var hash = SanitiseHash(Sha256(responseText));
                     var bodyPath = SafePath.Combine(bodiesDir, hash);
                     if (!File.Exists(bodyPath) && seenBodies.Add(hash))
                     {
