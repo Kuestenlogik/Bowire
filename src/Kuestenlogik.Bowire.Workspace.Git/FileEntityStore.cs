@@ -1,6 +1,7 @@
 // Copyright 2026 Küstenlogik
 // SPDX-License-Identifier: Apache-2.0
 
+using System.Collections.Concurrent;
 using System.Text.Json;
 
 namespace Kuestenlogik.Bowire.Workspace.Git;
@@ -138,7 +139,35 @@ public sealed class FileEntityStore : IBowireEntityStore
         {
             return null;
         }
-        return await File.ReadAllTextAsync(path, ct).ConfigureAwait(false);
+        var baseJson = await File.ReadAllTextAsync(path, ct).ConfigureAwait(false);
+
+        // #151 Phase 2.5 — secret-overlay merge for environments. A
+        // sibling <id>.secrets.json (gitignored at workspace init)
+        // layers on top so {{API_KEY}} resolves from either file
+        // without forcing the operator to inline secrets into the
+        // reviewable env file. Non-env entity kinds skip the
+        // overlay — only environments carry the convention today.
+        if (string.Equals(entityKind, "environments", StringComparison.Ordinal))
+        {
+            var secretsPath = Path.Combine(Path.GetDirectoryName(path)!, id + ".secrets.json");
+            if (File.Exists(secretsPath))
+            {
+                var overlayJson = await File.ReadAllTextAsync(secretsPath, ct).ConfigureAwait(false);
+                try
+                {
+                    return SecretOverlayMerger.Merge(baseJson, overlayJson);
+                }
+                catch (System.Text.Json.JsonException)
+                {
+                    // Malformed overlay — return the base verbatim so a
+                    // hand-edited secrets file doesn't brick the whole
+                    // workspace. The CLI's validate path surfaces the
+                    // parse error separately.
+                    return baseJson;
+                }
+            }
+        }
+        return baseJson;
     }
 
     /// <inheritdoc />
@@ -158,6 +187,45 @@ public sealed class FileEntityStore : IBowireEntityStore
         var path = ResolveEntityPath(entityKind, id);
         var dir = Path.GetDirectoryName(path)!;
         Directory.CreateDirectory(dir);
+
+        // #151 Phase 2.5 — workspace lockfile. Two layers:
+        //
+        // 1. In-process: same-root concurrent SaveAsync calls would
+        //    race on FileMode.CreateNew of the lockfile and the
+        //    second-onwards would surface LockHeldException at OUR own
+        //    pid. Serialise via a per-root SemaphoreSlim so a
+        //    well-behaved process's workbench + background save can
+        //    cooperate without bouncing off each other.
+        //
+        // 2. Cross-process: WorkspaceLock.AcquireAsync writes the
+        //    .bowire.lock so a second process (workbench + 'bowire
+        //    run' in the same workspace) sees the holder + surfaces
+        //    a friendly LockHeldException up the stack.
+        var mutex = s_inProcessMutexes.GetOrAdd(
+            Path.GetFullPath(_storageRoot),
+            _ => new SemaphoreSlim(1, 1));
+        await mutex.WaitAsync(ct).ConfigureAwait(false);
+        try
+        {
+            await using var _ = await WorkspaceLock.AcquireAsync(_storageRoot, "FileEntityStore", ct).ConfigureAwait(false);
+            await SaveInternalAsync(entityKind, id, json, doc, pretty, path, ct).ConfigureAwait(false);
+        }
+        finally
+        {
+            mutex.Release();
+        }
+    }
+
+    // Per-process, per-root serialisation gate. Keyed by the
+    // normalised storageRoot path so multiple FileEntityStore
+    // instances pointing at the same disk folder share one
+    // semaphore. The map is process-scoped — across processes the
+    // .bowire.lock file is the source of truth.
+    private static readonly ConcurrentDictionary<string, SemaphoreSlim> s_inProcessMutexes = new(StringComparer.OrdinalIgnoreCase);
+
+    private async Task SaveInternalAsync(string entityKind, string id, string json, JsonDocument doc, string pretty, string path, CancellationToken ct)
+    {
+        _ = json;
 
         // Collections: write the canonical document AND fan out each
         // request into its own .req.json sibling so PR review sees one
