@@ -12,14 +12,13 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.0 — Re-architected workbench shell + workspace = project folder *(due 2026-06-19)*
 
-**58/63 done** · 5 backlog
+**59/63 done** · 4 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
 | [115](https://github.com/Kuestenlogik/Bowire/issues/115) | Bowire | [v2.0 — UI refactor: re-architect the workbench shell](#issue-kuestenlogik-bowire-115) | ⬜ Backlog |  |
 | [193](https://github.com/Kuestenlogik/Bowire/issues/193) | Bowire | [Workspace .bww Phase 2 — UI wiring + plugin-pin check + scope split](#issue-kuestenlogik-bowire-193) | ⬜ Backlog |  |
 | [196](https://github.com/Kuestenlogik/Bowire/issues/196) | Bowire | [Git-backed workspaces Phase 2 — Kuestenlogik.Bowire.Workspace.Git runtime + FS-watch + secret merge](#issue-kuestenlogik-bowire-196) | ⬜ Backlog |  |
-| [210](https://github.com/Kuestenlogik/Bowire/issues/210) | Bowire | [Standalone recording format .bwr — self-contained, workspace-agnostic](#issue-kuestenlogik-bowire-210) | ⬜ Backlog |  |
 | [211](https://github.com/Kuestenlogik/Bowire/issues/211) | Bowire | [bowire mock <recording.bwr> — HTTP replay server from a recording](#issue-kuestenlogik-bowire-211) | ⬜ Backlog |  |
 | [25](https://github.com/Kuestenlogik/Bowire/issues/25) | Bowire | [AI side-panel integration](#issue-kuestenlogik-bowire-25) | ✅ Done | `area:workbench` |
 | [33](https://github.com/Kuestenlogik/Bowire/issues/33) | Bowire | [Protocol plugins — Connect Phase 1+3 + OTLP](#issue-kuestenlogik-bowire-33) | ✅ Done | `area:plugin-sdk` |
@@ -78,6 +77,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [192](https://github.com/Kuestenlogik/Bowire/issues/192) | Bowire | [Workspace + Settings: sidebar tree navigation (MudBlazor TreeView / NavMenu style)](#issue-kuestenlogik-bowire-192) | ✅ Done |  |
 | [195](https://github.com/Kuestenlogik/Bowire/issues/195) | Bowire | [Protocol plugin — OTLP passive listener (Kuestenlogik.Bowire.Protocol.Otlp)](#issue-kuestenlogik-bowire-195) | ✅ Done |  |
 | [209](https://github.com/Kuestenlogik/Bowire/issues/209) | Bowire | [Workspace file extension: rename .blw → .bww](#issue-kuestenlogik-bowire-209) | ✅ Done |  |
+| [210](https://github.com/Kuestenlogik/Bowire/issues/210) | Bowire | [Standalone recording format .bwr — self-contained, workspace-agnostic](#issue-kuestenlogik-bowire-210) | ✅ Done |  |
 | [212](https://github.com/Kuestenlogik/Bowire/issues/212) | Bowire | [Workspace storage mode — workspace-level field (precursor to #196)](#issue-kuestenlogik-bowire-212) | ✅ Done |  |
 
 ### v2.1 — Scripting, variable resolver, throughput surface *(due 2026-06-30)*
@@ -206,10 +206,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 #### <a id="issue-kuestenlogik-bowire-196"></a>⬜ Backlog · [#196](https://github.com/Kuestenlogik/Bowire/issues/196) Git-backed workspaces Phase 2 — Kuestenlogik.Bowire.Workspace.Git runtime + FS-watch + secret merge
 
 Phase 1 (#147-#149-#151) shipped in eb2bf1c: `BowireUserContext.GetWorkspacePath(workspaceId, storageRoot?, relative)` resolver, `bowire workspace init <path>` CLI, per-entity layout + `.gitignore` template with the secret-separation convention. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/196)
-
-#### <a id="issue-kuestenlogik-bowire-210"></a>⬜ Backlog · [#210](https://github.com/Kuestenlogik/Bowire/issues/210) Standalone recording format .bwr — self-contained, workspace-agnostic
-
-`.bwr` is already the de-facto recording extension across the codebase: [[more]](https://github.com/Kuestenlogik/Bowire/issues/210)
 
 #### <a id="issue-kuestenlogik-bowire-211"></a>⬜ Backlog · [#211](https://github.com/Kuestenlogik/Bowire/issues/211) bowire mock <recording.bwr> — HTTP replay server from a recording
 
@@ -448,6 +444,10 @@ Bowire's multi-protocol coverage is wide — REST / gRPC / GraphQL / MQTT / Kafk
 #### <a id="issue-kuestenlogik-bowire-209"></a>✅ Done · [#209](https://github.com/Kuestenlogik/Bowire/issues/209) Workspace file extension: rename .blw → .bww
 
 @-
+
+#### <a id="issue-kuestenlogik-bowire-210"></a>✅ Done · [#210](https://github.com/Kuestenlogik/Bowire/issues/210) Standalone recording format .bwr — self-contained, workspace-agnostic
+
+`.bwr` is already the de-facto recording extension across the codebase: [[more]](https://github.com/Kuestenlogik/Bowire/issues/210)
 
 #### <a id="issue-kuestenlogik-bowire-212"></a>✅ Done · [#212](https://github.com/Kuestenlogik/Bowire/issues/212) Workspace storage mode — workspace-level field (precursor to #196)
 
