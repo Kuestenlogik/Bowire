@@ -1531,6 +1531,40 @@
         }
 
         // ---- General tab (default) ----
+
+        // AI-Override hint (#193 item 4 follow-up) — when the active
+        // workspace has its own AI override file (override > global
+        // resolution), surface a banner + Quick-Link to Settings →
+        // Assistant where the operator can clear or edit it. Only
+        // rendered for the ACTIVE workspace since refreshAiStatus
+        // fetches against activeWorkspaceId; other workspaces in the
+        // tree are read-only previews and don't surface the override
+        // chip.
+        if (isActive && typeof window.__bowireAi === 'object' && window.__bowireAi
+                     && typeof window.__bowireAi.getStatus === 'function') {
+            var _aiSt = window.__bowireAi.getStatus();
+            if (_aiSt && _aiSt.hasOverride) {
+                var aiBanner = el('div', { className: 'bowire-ws-detail-ai-override' });
+                aiBanner.appendChild(el('span', {
+                    className: 'bowire-ws-detail-ai-override-tag',
+                    textContent: 'AI override'
+                }));
+                aiBanner.appendChild(el('span', {
+                    className: 'bowire-ws-detail-ai-override-desc',
+                    textContent: 'This workspace overrides the global AI default — currently using '
+                        + (_aiSt.providerId || 'unknown') + ' / ' + (_aiSt.model || 'no model') + '.'
+                }));
+                aiBanner.appendChild(el('button', {
+                    className: 'bowire-ws-detail-ai-override-link',
+                    textContent: 'Open Assistant Settings',
+                    onClick: function () {
+                        if (typeof openSettings === 'function') openSettings('ai');
+                    }
+                }));
+                main.appendChild(aiBanner);
+            }
+        }
+
         // Color picker — predefined palette + native colour input for
         // custom picks, mirrors the env editor's pattern so the two
         // surfaces share the same affordance.
@@ -1731,6 +1765,29 @@
                 }),
                 el('span', { className: 'bowire-ws-detail-storage-toggle-hint',
                     textContent: 'Absolute path to a workspace folder on disk (e.g. a checked-out git repo). Leave empty for the default per-user location.' })
+            ));
+            // #155 follow-up — disk-mode workspaces carry recordings
+            // and collections on disk; the .bww download / Import
+            // surface only round-trips localStorage state. For a full
+            // disk-mode round-trip, point the operator at the new
+            // 'bowire workspace export' / 'import' CLI (#149).
+            storageSection.appendChild(el('div', {
+                className: 'bowire-ws-detail-storage-cli-hint'
+            },
+                el('span', {
+                    className: 'bowire-ws-detail-storage-cli-hint-label',
+                    textContent: 'CLI round-trip:'
+                }),
+                el('code', {
+                    className: 'bowire-ws-detail-storage-cli-hint-code',
+                    textContent: 'bowire workspace export <file.json>'
+                }),
+                el('span', {
+                    className: 'bowire-ws-detail-storage-cli-hint-tail',
+                    textContent: ' captures every per-entity file on disk; ' +
+                        '\'workspace import\' materialises the export into the per-entity layout. ' +
+                        'Use this for sharing or archiving disk-mode workspaces.'
+                })
             ));
         }
 

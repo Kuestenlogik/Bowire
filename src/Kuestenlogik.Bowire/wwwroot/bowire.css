@@ -10510,6 +10510,50 @@ and offers the path to switch. */
 .bowire-ai-scope-bar:has(.bowire-ai-scope-tag-override) {
     border-left-color: var(--bowire-warning);
 }
+/* #193 item 4 follow-up — workspace-surface AI-override hint.
+   Reuses the scope-tag styling for visual continuity with the
+   Settings dialog's scope-bar so the chip reads identically across
+   the two surfaces. */
+.bowire-ws-detail-ai-override {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    margin-bottom: 12px;
+    background: var(--bowire-surface);
+    border-radius: var(--bowire-radius-md);
+    border-left: 3px solid var(--bowire-warning);
+}
+.bowire-ws-detail-ai-override-tag {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 2px 6px;
+    border-radius: var(--bowire-radius-pill);
+    background: var(--bowire-warning-bg);
+    color: var(--bowire-warning);
+    flex-shrink: 0;
+}
+.bowire-ws-detail-ai-override-desc {
+    flex: 1;
+    font-size: 12px;
+    color: var(--bowire-text-secondary);
+    line-height: 1.4;
+}
+.bowire-ws-detail-ai-override-link {
+    font-size: 11px;
+    padding: 4px 10px;
+    border: 1px solid var(--bowire-border-subtle);
+    background: var(--bowire-bg-elevated);
+    color: var(--bowire-text);
+    border-radius: var(--bowire-radius-md);
+    cursor: pointer;
+}
+.bowire-ws-detail-ai-override-link:hover {
+    border-color: var(--bowire-border);
+    background: var(--bowire-surface);
+}
 .bowire-ai-scope-desc {
     flex: 1;
     font-size: 12px;
@@ -10931,6 +10975,31 @@ button.bowire-ws-detail-action {
     line-height: 1.4;
     grid-column: 2;
     grid-row: 2;
+}
+/* #155 follow-up — disk-mode CLI-export hint. Sits at the bottom of
+   the Storage section to nudge operators of disk-backed workspaces
+   to the `bowire workspace export` CLI when they want a full
+   on-disk round-trip (the .bww download only covers localStorage). */
+.bowire-ws-detail-storage-cli-hint {
+    margin-top: 10px;
+    padding: 8px 10px;
+    background: var(--bowire-bg-elevated);
+    border-radius: var(--bowire-radius-md);
+    font-size: 11px;
+    color: var(--bowire-text-secondary);
+    line-height: 1.5;
+}
+.bowire-ws-detail-storage-cli-hint-label {
+    font-weight: 600;
+    color: var(--bowire-text);
+    margin-right: 6px;
+}
+.bowire-ws-detail-storage-cli-hint-code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    background: var(--bowire-surface);
+    padding: 1px 6px;
+    border-radius: 3px;
+    color: var(--bowire-text);
 }
 
 /* #196 Phase 2.3 — per-workspace storage-root override. Surfaced
