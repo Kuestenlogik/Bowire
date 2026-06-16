@@ -1253,6 +1253,48 @@
         persistWorkspaces();
     }
 
+    // #193 Phase 2 — plugin pins (Dictionary<protocolId, semverString>)
+    // declared in the .bww file's `pluginPins` field. Lives in
+    // localStorage under wsKey('bowire_plugin_pins'), so the existing
+    // workspace export/import machinery round-trips it via
+    // _WORKSPACE_DATA_KEYS without bespoke wiring. Empty / missing
+    // means no requirement, current behaviour preserved.
+    var PLUGIN_PINS_KEY = 'bowire_plugin_pins';
+    function getWorkspacePluginPins(wsId) {
+        var id = wsId || activeWorkspaceId;
+        if (!id) return {};
+        try {
+            var raw = localStorage.getItem(_wsKeyFor(id, PLUGIN_PINS_KEY));
+            if (!raw) return {};
+            var parsed = JSON.parse(raw);
+            return (parsed && typeof parsed === 'object' && !Array.isArray(parsed))
+                ? parsed : {};
+        } catch { return {}; }
+    }
+    function setWorkspacePluginPins(wsId, pins) {
+        var id = wsId || activeWorkspaceId;
+        if (!id) return false;
+        var safe = (pins && typeof pins === 'object' && !Array.isArray(pins))
+            ? pins : {};
+        // Drop empty-string versions silently — they're noise, not a
+        // valid semver constraint. Keep null + non-string values out
+        // for the same reason; the .bww schema is Dictionary<string, string>.
+        var cleaned = {};
+        Object.keys(safe).forEach(function (k) {
+            var v = safe[k];
+            if (typeof v === 'string' && v.length > 0) cleaned[k] = v;
+        });
+        try {
+            if (Object.keys(cleaned).length === 0) {
+                localStorage.removeItem(_wsKeyFor(id, PLUGIN_PINS_KEY));
+            } else {
+                localStorage.setItem(_wsKeyFor(id, PLUGIN_PINS_KEY),
+                    JSON.stringify(cleaned));
+            }
+            return true;
+        } catch { return false; }
+    }
+
     // Back-compat aliases — recording.js + any other caller still
     // imports these names. Both delegate to the workspace-level
     // helpers. Drop these once every call site has migrated.
@@ -1358,7 +1400,14 @@
         // import would land an env-less workspace and the operator
         // would have to re-create every staging / prod env by hand.
         'bowire_environments',
-        'bowire_active_env'
+        'bowire_active_env',
+        // #193 Phase 2 — plugin pins for the .bww schema. Carries the
+        // project's required-protocol set (Dictionary<protocolId,
+        // semverString>) so a team member opening the workspace gets
+        // the "install missing plugins" banner instead of cryptic
+        // "no such protocol" errors at first request. Empty / absent
+        // means no requirement, current behaviour preserved.
+        'bowire_plugin_pins'
     ];
     // Modes that store per-method presets via the presets framework.
     // Each maps to a `bowire_presets_<mode>` key under wsKey().
