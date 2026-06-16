@@ -3,6 +3,91 @@
         return window.innerWidth <= 600;
     }
 
+    // #193 Phase 2 — workspace pin-check banner. Reads the cached
+    // workspacePinCheckState set by triggerWorkspacePinCheck() (see
+    // prologue.js) and emits a bowire-alert-bar above the body when
+    // the active workspace declares pluginPins the host doesn't have
+    // loaded. Returns null when there's nothing to show so the caller
+    // can append unconditionally.
+    function renderWorkspacePinBanner() {
+        var st = (typeof workspacePinCheckState !== 'undefined') ? workspacePinCheckState : null;
+        if (!st || (st.missing.length === 0 && (!st.wrongVersion || st.wrongVersion.length === 0))) return null;
+
+        var embedded = (typeof uiMode !== 'undefined' && uiMode === 'embedded');
+
+        // Human-friendly summary — list the first 3 ids, then a tail
+        // count. Keeps the banner one line on common viewports.
+        var ids = st.missing.map(function (m) { return m.id; });
+        var summary;
+        if (ids.length <= 3) {
+            summary = ids.join(', ');
+        } else {
+            summary = ids.slice(0, 3).join(', ') + ' and ' + (ids.length - 3) + ' more';
+        }
+        var text = embedded
+            ? 'Workspace expects ' + summary + ' — read-only diff.'
+            : 'Workspace needs ' + summary + ' — not loaded.';
+
+        var bar = el('div', { className: 'bowire-alert-bar', role: 'status', 'aria-live': 'polite' });
+        bar.appendChild(el('span', { className: 'bowire-alert-bar-dot', 'aria-hidden': 'true' }));
+        bar.appendChild(el('span', { className: 'bowire-alert-bar-text', textContent: text }));
+
+        // Per-plugin install status as small inline badges so the
+        // operator sees progress without opening a modal.
+        st.missing.forEach(function (entry) {
+            var status = st.perPackage[entry.id];
+            if (!status) return;
+            var badge = el('span', {
+                className: 'bowire-alert-bar-text',
+                style: 'flex:0 0 auto; opacity:0.7; font-size:11px;',
+                textContent: entry.id + ': ' + status
+            });
+            bar.appendChild(badge);
+        });
+        if (st.error) {
+            bar.appendChild(el('span', {
+                className: 'bowire-alert-bar-text',
+                style: 'flex:0 0 auto; opacity:0.7; color:var(--bowire-status-error,#c33);',
+                textContent: st.error
+            }));
+        }
+
+        // Standalone-only actions. Embedded mode is read-only by
+        // contract — never offer to mutate the host's plugin set
+        // from a workspace file (an embedded Bowire usually runs
+        // inside a production server).
+        if (!embedded) {
+            var installable = st.missing.some(function (m) { return m.packageId; });
+            bar.appendChild(el('button', {
+                className: 'bowire-alert-bar-action',
+                textContent: st.installing ? 'Installing…' : 'Install',
+                disabled: !installable || st.installing,
+                onClick: function () { installAllWorkspacePins(); }
+            }));
+            bar.appendChild(el('button', {
+                className: 'bowire-alert-bar-action',
+                textContent: 'Edit pins',
+                disabled: st.installing,
+                onClick: function () {
+                    // Item 3 lands the pin editor in Settings. Until
+                    // then, jump to the Plugins rail so the operator
+                    // sees what's loaded vs what's not.
+                    try { localStorage.setItem('bowire_rail_mode', 'discover'); } catch { /* ignore */ }
+                    railMode = 'discover';
+                    if (typeof render === 'function') render();
+                }
+            }));
+        }
+        bar.appendChild(el('button', {
+            className: 'bowire-alert-bar-close',
+            'aria-label': 'Dismiss',
+            textContent: '×',
+            disabled: st.installing,
+            onClick: function () { dismissWorkspacePinCheck(); }
+        }));
+        return bar;
+    }
+
     function render() {
         const app = document.getElementById('bowire-app');
         if (!app) return;
@@ -75,6 +160,17 @@
                 title: 'Workspace: ' + _identityWs.name
             }));
         }
+
+        // #193 Phase 2 — workspace pin-check banner. Renders between
+        // the topbar and the body when the active workspace's
+        // pluginPins map declares protocols the host doesn't have
+        // loaded. Standalone hosts get "Install missing" + "Edit
+        // pins" actions; embedded hosts get a read-only diff so a
+        // production host can't be coerced into installing plugins
+        // from a checked-in workspace file. Session-dismissable via
+        // the close affordance.
+        var pinBanner = renderWorkspacePinBanner();
+        if (pinBanner) next.appendChild(pinBanner);
 
         var body = el('div', { id: 'bowire-app-body', className: 'bowire-app-body' });
 

@@ -729,6 +729,19 @@
             try { showLegacyVarsToastIfNeeded(); }
             catch (e) { console.warn('[vars-deprecation] toast failed', e); }
 
+            // #193 Phase 2 — workspace pin check against the loaded
+            // protocol registry. Fires once per boot (workspace
+            // switching does a full reload, so the next workspace
+            // hits this same path on the fresh page). Async + side-
+            // effect free if no pins are declared.
+            try {
+                if (typeof triggerWorkspacePinCheck === 'function'
+                    && typeof activeWorkspaceId !== 'undefined'
+                    && activeWorkspaceId) {
+                    triggerWorkspacePinCheck(activeWorkspaceId);
+                }
+            } catch (e) { console.warn('[pin-check] workspace check failed', e); }
+
             // Reveal the app and fade out the loading overlay. The
             // overlay lives in the static HTML so it's visible from
             // the very first paint — no FOUC. We remove it after a
