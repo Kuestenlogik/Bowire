@@ -151,12 +151,8 @@ public static class OpenApiRecordingBuilder
             }
         }
 
-        foreach (var (code, _) in operation.Responses)
-        {
-            if (code.StartsWith('2')) return (null, code);
-        }
-
-        return (null, "OK");
+        var fallbackCode = operation.Responses.Keys.FirstOrDefault(c => c.StartsWith('2'));
+        return fallbackCode is null ? (null, "OK") : (null, fallbackCode);
     }
 
     // Pass the format explicitly so the reader doesn't have to sniff the
@@ -181,10 +177,8 @@ public static class OpenApiRecordingBuilder
     {
         if (operation.Tags is { Count: > 0 } tags)
         {
-            foreach (var t in tags)
-            {
-                if (t?.Name is { Length: > 0 } name) return name;
-            }
+            var firstNamed = tags.FirstOrDefault(t => t?.Name is { Length: > 0 });
+            if (firstNamed?.Name is { Length: > 0 } name) return name;
         }
         return doc.Info?.Title ?? "Default";
     }
