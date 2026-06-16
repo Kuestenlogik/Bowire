@@ -1736,6 +1736,150 @@
 
         main.appendChild(storageSection);
 
+        // #193 Phase 2 item 3 — Required plugins (pluginPins) editor.
+        // Lets the operator declare which protocols this workspace
+        // expects so a team member opening it gets the pin-check
+        // banner instead of cryptic "no such protocol" errors at
+        // first request. Lives between Storage and Metadata because
+        // it's project-scoped configuration like Storage — both
+        // travel with the workspace, not the user.
+        if (typeof ensurePluginCatalog === 'function') ensurePluginCatalog();
+        var catalogInfo = (typeof getCachedPluginCatalog === 'function')
+            ? getCachedPluginCatalog() : { loaded: [], catalog: {} };
+        var currentPins = (typeof getWorkspacePluginPins === 'function')
+            ? getWorkspacePluginPins(ws.id) : {};
+        var pinIds = Object.keys(currentPins).sort();
+
+        var pinsSection = el('div', { className: 'bowire-ws-detail-section' },
+            el('div', { className: 'bowire-ws-detail-section-label', textContent: 'Required plugins' }));
+        pinsSection.appendChild(el('p', {
+            className: 'bowire-ws-detail-stat-hint',
+            style: 'margin-bottom:10px',
+            textContent: 'Pins the protocols this workspace expects. A team member opening it gets a banner if any are missing; use \'*\' for any version, or a semver like \'1.5.0\' / \'>=1.4.0\'.'
+        }));
+
+        // Current pins table — minimal, no header row when empty so
+        // the empty state reads as a single line of guidance rather
+        // than an "empty table" UI smell.
+        if (pinIds.length === 0) {
+            pinsSection.appendChild(el('p', {
+                className: 'bowire-pane-empty',
+                style: 'margin:6px 0 12px;',
+                textContent: 'No pins declared — this workspace accepts any protocol set.'
+            }));
+        } else {
+            var list = el('div', { className: 'bowire-ws-detail-pins-list' });
+            pinIds.forEach(function (pid) {
+                var row = el('div', { className: 'bowire-ws-detail-pins-row' });
+                row.appendChild(el('span', { className: 'bowire-ws-detail-pins-id', textContent: pid }));
+                row.appendChild(el('input', {
+                    type: 'text',
+                    className: 'bowire-ws-detail-pins-version',
+                    value: currentPins[pid],
+                    'aria-label': 'Version constraint for ' + pid,
+                    onBlur: function (e) {
+                        var t = _liveWs();
+                        if (!t || typeof setWorkspacePluginPins !== 'function') return;
+                        var v = String(e.target.value || '').trim();
+                        var pins = getWorkspacePluginPins(t.id);
+                        if (v.length === 0) { delete pins[pid]; }
+                        else { pins[pid] = v; }
+                        setWorkspacePluginPins(t.id, pins);
+                        if (typeof triggerWorkspacePinCheck === 'function') triggerWorkspacePinCheck(t.id);
+                        render();
+                    }
+                }));
+                row.appendChild(el('button', {
+                    className: 'bowire-ws-detail-pins-remove',
+                    'aria-label': 'Remove pin for ' + pid,
+                    textContent: '✕',
+                    onClick: function () {
+                        var t = _liveWs();
+                        if (!t || typeof setWorkspacePluginPins !== 'function') return;
+                        var pins = getWorkspacePluginPins(t.id);
+                        delete pins[pid];
+                        setWorkspacePluginPins(t.id, pins);
+                        if (typeof triggerWorkspacePinCheck === 'function') triggerWorkspacePinCheck(t.id);
+                        render();
+                    }
+                }));
+                list.appendChild(row);
+            });
+            pinsSection.appendChild(list);
+        }
+
+        // Add row — dropdown fed by the catalog minus the already-
+        // pinned set. Version input defaults to '*' so the operator
+        // can hit Add without thinking about semver if they just
+        // want "this protocol must be loaded, any version is fine".
+        var catalogIds = Object.keys(catalogInfo.catalog || {})
+            .filter(function (id) { return !currentPins[id]; })
+            .sort();
+        if (catalogIds.length > 0) {
+            var addRow = el('div', { className: 'bowire-ws-detail-pins-addrow' });
+            var addSelect = el('select', { className: 'bowire-ws-detail-pins-addselect',
+                'aria-label': 'Protocol to pin' });
+            catalogIds.forEach(function (id) {
+                addSelect.appendChild(el('option', { value: id, textContent: id }));
+            });
+            var addVersion = el('input', {
+                type: 'text',
+                className: 'bowire-ws-detail-pins-addversion',
+                value: '*',
+                'aria-label': 'Version constraint'
+            });
+            var addBtn = el('button', {
+                className: 'bowire-presets-btn',
+                textContent: 'Add pin',
+                onClick: function () {
+                    var t = _liveWs();
+                    if (!t || typeof setWorkspacePluginPins !== 'function') return;
+                    var id = addSelect.value;
+                    var v = String(addVersion.value || '').trim() || '*';
+                    if (!id) return;
+                    var pins = getWorkspacePluginPins(t.id);
+                    pins[id] = v;
+                    setWorkspacePluginPins(t.id, pins);
+                    if (typeof triggerWorkspacePinCheck === 'function') triggerWorkspacePinCheck(t.id);
+                    render();
+                }
+            });
+            addRow.appendChild(addSelect);
+            addRow.appendChild(addVersion);
+            addRow.appendChild(addBtn);
+            pinsSection.appendChild(addRow);
+        }
+
+        // Convenience — pin every currently-loaded protocol with the
+        // catalog's known packageId. Saves a lot of clicks when an
+        // operator wants to lock the workspace's expected surface to
+        // "exactly what's loaded right now". Version is '*' because
+        // /api/plugins/protocols doesn't expose semver per loaded
+        // assembly today; refine when the registry surfaces it.
+        var loadedNotPinned = (catalogInfo.loaded || []).filter(function (id) {
+            return !currentPins[String(id).toLowerCase()];
+        });
+        if (loadedNotPinned.length > 0) {
+            pinsSection.appendChild(el('button', {
+                className: 'bowire-presets-btn',
+                style: 'margin-top:10px;',
+                textContent: 'Pin all currently loaded protocols (' + loadedNotPinned.length + ')',
+                onClick: function () {
+                    var t = _liveWs();
+                    if (!t || typeof setWorkspacePluginPins !== 'function') return;
+                    var pins = getWorkspacePluginPins(t.id);
+                    loadedNotPinned.forEach(function (id) {
+                        pins[String(id).toLowerCase()] = '*';
+                    });
+                    setWorkspacePluginPins(t.id, pins);
+                    if (typeof triggerWorkspacePinCheck === 'function') triggerWorkspacePinCheck(t.id);
+                    render();
+                }
+            }));
+        }
+
+        main.appendChild(pinsSection);
+
         // Metadata strip — IDs / timestamps so the operator can see
         // creation / last-opened for audit / debugging.
         var createdStr = ws.createdAt ? new Date(ws.createdAt).toLocaleString() : '—';
