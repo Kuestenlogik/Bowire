@@ -1345,6 +1345,74 @@
         return id ? !!_pinCheckIgnoredThisSession[id] : false;
     }
 
+    // Cached result for the active workspace so render() can render
+    // synchronously. null = not checked yet / hidden; {missing,
+    // installing, perPackage, error, wsId} = banner active. Shape
+    // mirrors recording.js's pluginCheckState so the existing
+    // "post-install restart" modal in renderPluginCheckModal can be
+    // reused for the workspace flow once item 3 lands.
+    var workspacePinCheckState = null;
+
+    async function triggerWorkspacePinCheck(wsId) {
+        var id = wsId || activeWorkspaceId;
+        if (!id) { workspacePinCheckState = null; return; }
+        if (isWorkspacePinCheckIgnored(id)) { workspacePinCheckState = null; return; }
+        var result = await checkWorkspacePluginPins(id);
+        if (result.missing.length === 0 && result.wrongVersion.length === 0) {
+            workspacePinCheckState = null;
+        } else {
+            workspacePinCheckState = {
+                wsId: id,
+                missing: result.missing,
+                wrongVersion: result.wrongVersion,
+                installing: false,
+                installedAll: false,
+                error: null,
+                perPackage: {}
+            };
+        }
+        try { if (typeof render === 'function') render(); } catch { /* embedded host without render */ }
+    }
+    function dismissWorkspacePinCheck() {
+        if (workspacePinCheckState) ignoreWorkspacePinCheckForSession(workspacePinCheckState.wsId);
+        workspacePinCheckState = null;
+        try { if (typeof render === 'function') render(); } catch { /* ignore */ }
+    }
+    async function installAllWorkspacePins() {
+        var st = workspacePinCheckState;
+        if (!st || st.installing) return;
+        st.installing = true; st.error = null;
+        render();
+        var anyFailed = false;
+        for (var i = 0; i < st.missing.length; i++) {
+            var entry = st.missing[i];
+            if (!entry.packageId) {
+                st.perPackage[entry.id] = 'failed';
+                anyFailed = true;
+                continue;
+            }
+            st.perPackage[entry.id] = 'installing';
+            render();
+            try {
+                var resp = await fetch(config.prefix + '/api/plugins/install', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ packageId: entry.packageId })
+                });
+                if (!resp.ok) throw new Error('HTTP ' + resp.status);
+                st.perPackage[entry.id] = 'done';
+            } catch {
+                st.perPackage[entry.id] = 'failed';
+                anyFailed = true;
+            }
+            render();
+        }
+        st.installing = false;
+        st.installedAll = !anyFailed;
+        if (anyFailed) st.error = 'Some installs failed. Check the workbench logs.';
+        render();
+    }
+
     // Back-compat aliases — recording.js + any other caller still
     // imports these names. Both delegate to the workspace-level
     // helpers. Drop these once every call site has migrated.
