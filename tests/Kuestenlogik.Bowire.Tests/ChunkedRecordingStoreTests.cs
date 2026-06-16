@@ -245,6 +245,53 @@ public sealed class ChunkedRecordingStoreTests : IDisposable
         Assert.False(Directory.Exists(SafePath.Combine(_tempRoot, "drop")));
     }
 
+    // ---------- #210 acceptance — LoadAll output is self-contained ----------
+
+    [Fact]
+    public void LoadAll_Inlines_ContentAddressed_Body_So_No_Step_Has_ResponseRef()
+    {
+        // SaveAll content-addresses bodies larger than the inline
+        // threshold (1 MiB at time of writing) into bodies/<sha256>.
+        // The standalone .bwr contract (#210, docs/recordings/bwr-format.md)
+        // forbids carrying responseRef out of LoadAll — every body
+        // must be inlined back into the assembled output. Pin that
+        // here so a future refactor of TryAssembleRecording can't
+        // silently break the .bwr self-containment guarantee.
+        var bigBody = new string('x', 2 * 1024 * 1024); // 2 MiB > 1 MiB threshold
+        var input = """
+            {
+              "recordings": [{
+                "id": "r_big",
+                "name": "Large-body recording",
+                "steps": [{
+                  "id": "s_inline",
+                  "service": "S",
+                  "method": "M",
+                  "status": "OK",
+                  "response": "REPLACE_ME"
+                }]
+              }]
+            }
+            """.Replace("REPLACE_ME", bigBody, StringComparison.Ordinal);
+
+        ChunkedRecordingStore.SaveAll(input);
+
+        // Sanity: the content-addressed body landed in bodies/.
+        var bodiesDir = SafePath.Combine(_tempRoot, "r_big", "bodies");
+        Assert.True(Directory.Exists(bodiesDir));
+        Assert.NotEmpty(Directory.GetFiles(bodiesDir));
+
+        var loaded = ChunkedRecordingStore.LoadAll();
+        using var doc = JsonDocument.Parse(loaded);
+        var step = doc.RootElement.GetProperty("recordings")[0].GetProperty("steps")[0];
+
+        // Self-containment contract.
+        Assert.False(step.TryGetProperty("responseRef", out _),
+            "LoadAll output must inline every body — responseRef leaked");
+        Assert.True(step.TryGetProperty("response", out var responseEl));
+        Assert.Equal(bigBody, responseEl.GetString());
+    }
+
     [Fact]
     public void SaveAll_Throws_When_Top_Level_Recordings_Missing_Or_Wrong_Shape()
     {

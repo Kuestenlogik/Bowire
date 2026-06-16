@@ -254,6 +254,66 @@ public sealed class RecordingCommandTests : IDisposable
     }
 
     // ----------------------------------------------------------------
+    // #210 acceptance — end-to-end: a .bwr written by the workbench's
+    // primary producer (ChunkedRecordingStore.LoadAll, which assembles
+    // the chunked workspace layout back into the single-document shape
+    // the workbench export endpoint serves) validates clean through
+    // the standalone CLI. Proves the producer/consumer contract holds.
+    // ----------------------------------------------------------------
+
+    [Fact]
+    public async Task Validate_accepts_bwr_produced_by_ChunkedRecordingStore_LoadAll()
+    {
+        // Use storageRoot to isolate the producer state from the
+        // global ChunkedRecordingStore.RootPath static — parallel xUnit
+        // classes race on that field. storageRoot resolves the
+        // recordings root through BowireUserContext.GetWorkspacePath
+        // without touching the static, so this test is parallel-safe.
+        var storageRoot = Path.Combine(_tempRoot, "ws-roundtrip");
+        Directory.CreateDirectory(storageRoot);
+
+        // Producer side: a recording with a body large enough to hit
+        // the content-addressed body store. LoadAll must resolve it
+        // back inline before the assembled JSON leaves the store
+        // (otherwise the .bwr carries a workspace-only responseRef and
+        // the standalone consumer rejects it).
+        var bigBody = new string('y', 2 * 1024 * 1024);
+        var input = """
+            {
+              "recordings": [{
+                "id": "rt_ok",
+                "name": "roundtrip",
+                "recordingFormatVersion": 2,
+                "steps": [{
+                  "id": "s1",
+                  "protocol": "rest",
+                  "service": "S",
+                  "method": "M",
+                  "httpVerb": "GET",
+                  "httpPath": "/x",
+                  "status": "OK",
+                  "response": "REPLACE_ME"
+                }]
+              }]
+            }
+            """.Replace("REPLACE_ME", bigBody, StringComparison.Ordinal);
+        ChunkedRecordingStore.SaveAll(input, workspaceId: null, storageRoot: storageRoot);
+
+        // Assembled output is what the workbench export endpoint
+        // serves; dropping it as a .bwr next to the recording is the
+        // documented standalone shape.
+        var bwrPath = Path.Combine(_tempRoot, "from-store.bwr");
+        await File.WriteAllTextAsync(bwrPath,
+            ChunkedRecordingStore.LoadAll(workspaceId: null, manifestOnly: false, storageRoot: storageRoot),
+            TestContext.Current.CancellationToken);
+
+        var (rc, stdout, stderr) = await InvokeValidate(bwrPath);
+        Assert.Equal(ExitOk, rc);
+        Assert.Empty(stderr);
+        Assert.Contains("(rt_ok)", stdout, StringComparison.Ordinal);
+    }
+
+    // ----------------------------------------------------------------
     // Helpers
     // ----------------------------------------------------------------
 
