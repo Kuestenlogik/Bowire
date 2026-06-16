@@ -184,22 +184,18 @@ public sealed class BowireMcpProtocol : IBowireProtocol
         catch { return; }
         if (tools.Count == 0) return;
 
-        var methods = new List<BowireMethodInfo>(tools.Count);
-        foreach (var tool in tools)
+        var methods = tools.Select(tool => new BowireMethodInfo(
+            Name: tool.Name,
+            FullName: "Tools/" + tool.Name,
+            ClientStreaming: false,
+            ServerStreaming: false,
+            InputType: MapToolInputSchema(tool),
+            OutputType: new BowireMessageInfo("ToolResult", "mcp.ToolResult", []),
+            MethodType: "Unary")
         {
-            methods.Add(new BowireMethodInfo(
-                Name: tool.Name,
-                FullName: "Tools/" + tool.Name,
-                ClientStreaming: false,
-                ServerStreaming: false,
-                InputType: MapToolInputSchema(tool),
-                OutputType: new BowireMessageInfo("ToolResult", "mcp.ToolResult", []),
-                MethodType: "Unary")
-            {
-                Summary = tool.Description,
-                Description = tool.Description,
-            });
-        }
+            Summary = tool.Description,
+            Description = tool.Description,
+        }).ToList();
 
         services.Add(new BowireServiceInfo("Tools", "mcp", methods)
         {
@@ -217,23 +213,18 @@ public sealed class BowireMcpProtocol : IBowireProtocol
         catch { return; }
         if (resources.Count == 0) return;
 
-        var methods = new List<BowireMethodInfo>(resources.Count);
-        foreach (var res in resources)
+        var methods = resources.Select(res => new BowireMethodInfo(
+            Name: res.Uri,
+            FullName: "Resources/" + res.Uri,
+            ClientStreaming: false,
+            ServerStreaming: false,
+            InputType: new BowireMessageInfo("ResourceRead", "mcp.ResourceRead", []),
+            OutputType: new BowireMessageInfo("ResourceContent", "mcp.ResourceContent", []),
+            MethodType: "Unary")
         {
-            var summary = string.IsNullOrEmpty(res.Name) ? res.Uri : $"{res.Name} — {res.Uri}";
-            methods.Add(new BowireMethodInfo(
-                Name: res.Uri,
-                FullName: "Resources/" + res.Uri,
-                ClientStreaming: false,
-                ServerStreaming: false,
-                InputType: new BowireMessageInfo("ResourceRead", "mcp.ResourceRead", []),
-                OutputType: new BowireMessageInfo("ResourceContent", "mcp.ResourceContent", []),
-                MethodType: "Unary")
-            {
-                Summary = summary,
-                Description = res.Description,
-            });
-        }
+            Summary = string.IsNullOrEmpty(res.Name) ? res.Uri : $"{res.Name} — {res.Uri}",
+            Description = res.Description,
+        }).ToList();
 
         services.Add(new BowireServiceInfo("Resources", "mcp", methods)
         {
@@ -251,22 +242,18 @@ public sealed class BowireMcpProtocol : IBowireProtocol
         catch { return; }
         if (prompts.Count == 0) return;
 
-        var methods = new List<BowireMethodInfo>(prompts.Count);
-        foreach (var prompt in prompts)
+        var methods = prompts.Select(prompt => new BowireMethodInfo(
+            Name: prompt.Name,
+            FullName: "Prompts/" + prompt.Name,
+            ClientStreaming: false,
+            ServerStreaming: false,
+            InputType: BuildPromptInput(prompt),
+            OutputType: new BowireMessageInfo("PromptResult", "mcp.PromptResult", []),
+            MethodType: "Unary")
         {
-            methods.Add(new BowireMethodInfo(
-                Name: prompt.Name,
-                FullName: "Prompts/" + prompt.Name,
-                ClientStreaming: false,
-                ServerStreaming: false,
-                InputType: BuildPromptInput(prompt),
-                OutputType: new BowireMessageInfo("PromptResult", "mcp.PromptResult", []),
-                MethodType: "Unary")
-            {
-                Summary = prompt.Description,
-                Description = prompt.Description,
-            });
-        }
+            Summary = prompt.Description,
+            Description = prompt.Description,
+        }).ToList();
 
         services.Add(new BowireServiceInfo("Prompts", "mcp", methods)
         {
