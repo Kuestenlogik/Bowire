@@ -108,6 +108,14 @@ internal static partial class ChunkedRecordingStore
     /// </remarks>
     internal static string ResolveRootPath(string? workspaceId, string? storageRoot = null)
     {
+        // Funnel the workspace id through the cs/path-injection
+        // sanitiser barrier up-front. Both branches below feed the id
+        // into a path segment, so the analyser needs the SanitiseId
+        // call to dominate every downstream Path.Combine / file sink.
+        var safeWorkspaceId = string.IsNullOrWhiteSpace(workspaceId)
+            ? string.Empty
+            : SanitiseId(workspaceId!);
+
         // Workspace-scoped path with an explicit storageRoot: anchor
         // under the operator's checked-out folder. The test root
         // override stays disabled here — once an operator has pointed
@@ -121,16 +129,14 @@ internal static partial class ChunkedRecordingStore
             // here (the storageRoot already identifies the workspace
             // on disk via its folder).
             return BowireUserContext.GetWorkspacePath(
-                workspaceId: workspaceId ?? string.Empty,
+                workspaceId: safeWorkspaceId,
                 storageRoot: storageRoot,
                 relativePath: "recordings");
         }
-        if (string.IsNullOrWhiteSpace(workspaceId)) return RootPath;
-        var sanitised = SanitiseId(workspaceId!);
-        if (string.IsNullOrEmpty(sanitised)) return RootPath;
+        if (string.IsNullOrEmpty(safeWorkspaceId)) return RootPath;
         return _testRootOverride is not null
-            ? SafePath.Combine(_testRootOverride, Path.Combine("workspaces", sanitised, "recordings"))
-            : BowireUserContext.GetUserPath(Path.Combine("workspaces", sanitised, "recordings"));
+            ? SafePath.Combine(_testRootOverride, Path.Combine("workspaces", safeWorkspaceId, "recordings"))
+            : BowireUserContext.GetUserPath(Path.Combine("workspaces", safeWorkspaceId, "recordings"));
     }
 
     /// <summary>
@@ -148,12 +154,19 @@ internal static partial class ChunkedRecordingStore
     /// </summary>
     public static string LoadAll(string? workspaceId = null, bool manifestOnly = false, string? storageRoot = null)
     {
+        // cs/path-injection barrier — funnel the wsId through SanitiseId
+        // at the public entry so every downstream sink fed by `root`
+        // sees the taint dropped, even though ResolveRootPath sanitises
+        // internally too.
+        var safeWorkspaceId = string.IsNullOrWhiteSpace(workspaceId)
+            ? null
+            : SanitiseId(workspaceId!);
         lock (DiskLock)
         {
             MigrateFromLegacyIfNeeded();
             try
             {
-                var root = ResolveRootPath(workspaceId, storageRoot);
+                var root = ResolveRootPath(safeWorkspaceId, storageRoot);
                 var recordings = new List<JsonElement>();
                 if (Directory.Exists(root))
                 {
@@ -208,6 +221,12 @@ internal static partial class ChunkedRecordingStore
     /// </summary>
     public static void SaveAll(string json, string? workspaceId = null, string? storageRoot = null)
     {
+        // cs/path-injection barrier — funnel wsId through SanitiseId at
+        // the public entry so the rootPath returned by ResolveRootPath
+        // is barrier-clean for the downstream Directory.* sinks.
+        var safeWorkspaceId = string.IsNullOrWhiteSpace(workspaceId)
+            ? null
+            : SanitiseId(workspaceId!);
         lock (DiskLock)
         {
             using var doc = JsonDocument.Parse(json);
@@ -217,7 +236,7 @@ internal static partial class ChunkedRecordingStore
                 throw new JsonException("Top-level object must carry a 'recordings' array.");
             }
 
-            var rootPath = ResolveRootPath(workspaceId, storageRoot);
+            var rootPath = ResolveRootPath(safeWorkspaceId, storageRoot);
             Directory.CreateDirectory(rootPath);
             var seenIds = new HashSet<string>(StringComparer.Ordinal);
 
@@ -253,9 +272,15 @@ internal static partial class ChunkedRecordingStore
     /// </summary>
     public static void DeleteAll(string? workspaceId = null, string? storageRoot = null)
     {
+        // cs/path-injection barrier at the public entry — the EnumerateDirectories
+        // sink below consumes the resolved root, and CodeQL needs the
+        // SanitiseId barrier to dominate that flow.
+        var safeWorkspaceId = string.IsNullOrWhiteSpace(workspaceId)
+            ? null
+            : SanitiseId(workspaceId!);
         lock (DiskLock)
         {
-            var root = ResolveRootPath(workspaceId, storageRoot);
+            var root = ResolveRootPath(safeWorkspaceId, storageRoot);
             if (!Directory.Exists(root)) return;
             foreach (var dir in Directory.EnumerateDirectories(root))
             {
@@ -279,10 +304,17 @@ internal static partial class ChunkedRecordingStore
         var id = SanitiseId(recordingId);
         if (string.IsNullOrEmpty(id)) throw new ArgumentException("Recording id sanitised to empty.", nameof(recordingId));
 
+        // cs/path-injection barrier on the workspace id at the public
+        // entry — every downstream path under rootPath needs the taint
+        // dropped here so the analyser stops at this method.
+        var safeWorkspaceId = string.IsNullOrWhiteSpace(workspaceId)
+            ? null
+            : SanitiseId(workspaceId!);
+
         lock (DiskLock)
         {
             MigrateFromLegacyIfNeeded();
-            var rootPath = ResolveRootPath(workspaceId, storageRoot);
+            var rootPath = ResolveRootPath(safeWorkspaceId, storageRoot);
             var dir = SafePath.Combine(rootPath, id);
             Directory.CreateDirectory(dir);
             var stepsDir = Path.Combine(dir, StepsDirectory);
@@ -378,9 +410,13 @@ internal static partial class ChunkedRecordingStore
         ArgumentException.ThrowIfNullOrEmpty(recordingId);
         var id = SanitiseId(recordingId);
         if (string.IsNullOrEmpty(id)) return null;
+        // cs/path-injection barrier on the workspace id at the public entry.
+        var safeWorkspaceId = string.IsNullOrWhiteSpace(workspaceId)
+            ? null
+            : SanitiseId(workspaceId!);
         lock (DiskLock)
         {
-            var path = Path.Combine(SafePath.Combine(ResolveRootPath(workspaceId, storageRoot), id), RecordingMetadataFile);
+            var path = Path.Combine(SafePath.Combine(ResolveRootPath(safeWorkspaceId, storageRoot), id), RecordingMetadataFile);
             if (!File.Exists(path)) return null;
             return File.ReadAllText(path);
         }
@@ -398,10 +434,18 @@ internal static partial class ChunkedRecordingStore
         if (stepIndex < 0) return null;
         var id = SanitiseId(recordingId);
         if (string.IsNullOrEmpty(id)) return null;
+        // cs/path-injection barrier on the workspace id at the public entry.
+        var safeWorkspaceId = string.IsNullOrWhiteSpace(workspaceId)
+            ? null
+            : SanitiseId(workspaceId!);
+        // Step index is an int so it can't carry path-traversal taint,
+        // but route the assembled file name through SanitiseStepFile so
+        // the analyser sees the same barrier the manifest-read path uses.
+        var stepFileName = SanitiseStepFile($"{stepIndex:D4}.json");
         lock (DiskLock)
         {
-            var rootPath = ResolveRootPath(workspaceId, storageRoot);
-            var stepPath = Path.Combine(SafePath.Combine(rootPath, id), StepsDirectory, $"{stepIndex:D4}.json");
+            var rootPath = ResolveRootPath(safeWorkspaceId, storageRoot);
+            var stepPath = Path.Combine(SafePath.Combine(rootPath, id), StepsDirectory, stepFileName);
             if (!File.Exists(stepPath)) return null;
             JsonNode? stepNode;
             try { stepNode = JsonNode.Parse(File.ReadAllText(stepPath)); }
