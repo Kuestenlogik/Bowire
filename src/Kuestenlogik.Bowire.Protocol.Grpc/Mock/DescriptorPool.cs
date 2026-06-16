@@ -63,14 +63,13 @@ public static class DescriptorPool
                     ex);
             }
 
-            foreach (var proto in set.File)
+            foreach (var proto in set.File.Where(proto => protos.All(p => p.Name != proto.Name)))
             {
                 // Two services can share a transitive dependency (e.g.
                 // google/protobuf/timestamp.proto); de-duplicate by file name
                 // so FileDescriptor.BuildFromByteStrings doesn't choke on the
                 // second copy.
-                if (!protos.Any(p => p.Name == proto.Name))
-                    protos.Add(proto);
+                protos.Add(proto);
             }
         }
 
