@@ -90,12 +90,7 @@ public sealed class OtlpEnvelopeStore
     {
         lock (_gate)
         {
-            var list = new List<OtlpEnvelope>(_ring.Count);
-            foreach (var e in _ring)
-            {
-                if (e.Kind == kind) list.Add(e);
-            }
-            return list;
+            return _ring.Where(e => e.Kind == kind).ToList();
         }
     }
 
