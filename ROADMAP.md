@@ -209,7 +209,7 @@ Phase 1 (#147-#149-#151) shipped in eb2bf1c: `BowireUserContext.GetWorkspacePath
 
 #### <a id="issue-kuestenlogik-bowire-211"></a>⬜ Backlog · [#211](https://github.com/Kuestenlogik/Bowire/issues/211) bowire mock <recording.bwr> — HTTP replay server from a recording
 
-@-
+`bowire mock` already replays a recording as a local HTTP / gRPC / WebSocket / SSE / MQTT / etc. endpoint, but the recording is passed via an option: [[more]](https://github.com/Kuestenlogik/Bowire/issues/211)
 
 #### <a id="issue-kuestenlogik-bowire-25"></a>✅ Done · [#25](https://github.com/Kuestenlogik/Bowire/issues/25) AI side-panel integration
 
