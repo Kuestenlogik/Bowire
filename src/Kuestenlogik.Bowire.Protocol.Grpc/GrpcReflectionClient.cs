@@ -141,11 +141,9 @@ internal sealed class GrpcReflectionClient : IDisposable
             if (response.FileDescriptorResponse is null)
                 continue;
 
-            foreach (var bytes in response.FileDescriptorResponse.FileDescriptorProto)
-            {
-                var proto = DescriptorParser.ParseFrom(bytes);
-                fileDescriptors.Add(proto);
-            }
+            fileDescriptors.AddRange(
+                response.FileDescriptorResponse.FileDescriptorProto
+                    .Select(bytes => DescriptorParser.ParseFrom(bytes)));
         }
 
         return BuildServiceInfo(serviceName, fileDescriptors);
@@ -173,11 +171,9 @@ internal sealed class GrpcReflectionClient : IDisposable
             if (response.FileDescriptorResponse is null)
                 continue;
 
-            foreach (var bytes in response.FileDescriptorResponse.FileDescriptorProto)
-            {
-                var proto = DescriptorParser.ParseFrom(bytes);
-                fileDescriptors.Add(proto);
-            }
+            fileDescriptors.AddRange(
+                response.FileDescriptorResponse.FileDescriptorProto
+                    .Select(bytes => DescriptorParser.ParseFrom(bytes)));
         }
 
         return fileDescriptors;
@@ -195,17 +191,11 @@ internal sealed class GrpcReflectionClient : IDisposable
 
         // First, get file descriptors for the service symbol
         var initial = await GetFileDescriptorsAsync(serviceName, ct);
-        foreach (var fd in initial)
+        foreach (var fd in initial.Where(fd => !resolved.ContainsKey(fd.Name)))
         {
-            if (!resolved.ContainsKey(fd.Name))
-            {
-                resolved[fd.Name] = fd;
-                foreach (var dep in fd.Dependency)
-                {
-                    if (!resolved.ContainsKey(dep))
-                        toResolve.Enqueue(dep);
-                }
-            }
+            resolved[fd.Name] = fd;
+            foreach (var dep in fd.Dependency.Where(dep => !resolved.ContainsKey(dep)))
+                toResolve.Enqueue(dep);
         }
 
         // Resolve transitive dependencies by file name
@@ -216,17 +206,11 @@ internal sealed class GrpcReflectionClient : IDisposable
                 continue;
 
             var deps = await GetFileDescriptorsByNameAsync(name, ct);
-            foreach (var fd in deps)
+            foreach (var fd in deps.Where(fd => !resolved.ContainsKey(fd.Name)))
             {
-                if (!resolved.ContainsKey(fd.Name))
-                {
-                    resolved[fd.Name] = fd;
-                    foreach (var dep in fd.Dependency)
-                    {
-                        if (!resolved.ContainsKey(dep))
-                            toResolve.Enqueue(dep);
-                    }
-                }
+                resolved[fd.Name] = fd;
+                foreach (var dep in fd.Dependency.Where(dep => !resolved.ContainsKey(dep)))
+                    toResolve.Enqueue(dep);
             }
         }
 
@@ -251,10 +235,9 @@ internal sealed class GrpcReflectionClient : IDisposable
             if (response.FileDescriptorResponse is null)
                 continue;
 
-            foreach (var bytes in response.FileDescriptorResponse.FileDescriptorProto)
-            {
-                result.Add(DescriptorParser.ParseFrom(bytes));
-            }
+            result.AddRange(
+                response.FileDescriptorResponse.FileDescriptorProto
+                    .Select(bytes => DescriptorParser.ParseFrom(bytes)));
         }
 
         return result;
@@ -457,19 +440,8 @@ internal sealed class GrpcReflectionClient : IDisposable
                     if (field.Type == FieldDescriptorProto.Types.Type.Message)
                     {
                         var nestedName = field.TypeName.TrimStart('.');
-
-                        // Check if this is a map field
-                        var isMap = IsMapField(msg, field);
-                        if (!isMap)
-                        {
-                            nestedMsg = ResolveMessageTypeRecursive(
-                                nestedName, fileDescriptors, visited);
-                        }
-                        else
-                        {
-                            nestedMsg = ResolveMessageTypeRecursive(
-                                nestedName, fileDescriptors, visited);
-                        }
+                        nestedMsg = ResolveMessageTypeRecursive(
+                            nestedName, fileDescriptors, visited);
                     }
                     else if (field.Type == FieldDescriptorProto.Types.Type.Enum)
                     {
