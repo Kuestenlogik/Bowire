@@ -89,12 +89,8 @@ public sealed class RestMockHostingExtension : IBowireMockHostingExtension
     /// </summary>
     internal static bool LooksLikeJson(string s)
     {
-        foreach (var ch in s)
-        {
-            if (char.IsWhiteSpace(ch)) continue;
-            return ch is '{' or '[';
-        }
-        return false;
+        var firstNonWs = s.SkipWhile(char.IsWhiteSpace).FirstOrDefault();
+        return firstNonWs is '{' or '[';
     }
 
     /// <summary>
@@ -164,9 +160,7 @@ public sealed class RestMockHostingExtension : IBowireMockHostingExtension
                 }
                 return dict;
             case YamlDotNet.RepresentationModel.YamlSequenceNode seq:
-                var list = new List<object?>(seq.Children.Count);
-                foreach (var child in seq.Children) list.Add(YamlNodeToObject(child));
-                return list;
+                return seq.Children.Select(YamlNodeToObject).ToList();
             default:
                 return null;
         }
@@ -182,10 +176,7 @@ public sealed class RestMockHostingExtension : IBowireMockHostingExtension
                     dict[prop.Name] = JsonElementToObject(prop.Value);
                 return dict;
             case System.Text.Json.JsonValueKind.Array:
-                var list = new List<object?>();
-                foreach (var child in el.EnumerateArray())
-                    list.Add(JsonElementToObject(child));
-                return list;
+                return el.EnumerateArray().Select(JsonElementToObject).ToList();
             case System.Text.Json.JsonValueKind.String:
                 return el.GetString();
             case System.Text.Json.JsonValueKind.Number:
