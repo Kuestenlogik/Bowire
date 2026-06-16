@@ -270,21 +270,56 @@ client; the tab signals this clearly with a "host-managed" status badge so the u
 happening. Overlay precedence: defaults → `IConfiguration` → `configure` callback → user-config file
 (disk wins because it represents an explicit user choice).
 
-Phase 3 (BYOK cloud) reuses the same `IChatClient` seam — register `Microsoft.Extensions.AI.OpenAI` (or the
-equivalent) instead of OllamaSharp and the endpoints carry over unchanged. Phase 4 (MCP-client reversal) layers
-Microsoft Agent Framework on top of the same `IChatClient`.
+Phase 3 (BYOK cloud) and Phase 4 (MCP-client reversal) reuse the same `IChatClient` seam via the
+`IBowireAiProviderFactory` plugin interface — see the next two sections for the as-shipped scope.
 
 ### Phase 3 — BYOK cloud providers
 
-Adds Anthropic / OpenAI / OpenRouter / Azure OpenAI in the Settings panel. Same UI surface, different routing. The
-features that benefit most from frontier models (diagnose, natural-language assertion) become genuinely strong here.
-CORS quirks and the optional embedded-host proxy ship in this phase.
+**Shipped.** Three additional optional NuGet packages slot into the same `IChatClient` seam without dragging their
+SDKs through `Kuestenlogik.Bowire.Ai`'s transitive closure — embedded hosts only pay for what they install. The
+core `.Ai` package shipped a plugin seam (`IBowireAiProviderFactory`) so the runtime no longer hardcodes provider
+ids; each provider package registers its own factory via DI.
+
+- **`Kuestenlogik.Bowire.Ai.OpenAi`** — handles `openai` (default `https://api.openai.com/v1`) and `openrouter`
+  (default `https://openrouter.ai/api/v1`) via `Microsoft.Extensions.AI.OpenAI` against the user's BYOK key. The
+  same SDK covers both because OpenRouter speaks OpenAI's wire format; the factory picks the right base URL by
+  provider id.
+- **`Kuestenlogik.Bowire.Ai.Anthropic`** — handles `anthropic` via the community-maintained `Anthropic.SDK` (its
+  `AnthropicClient.Messages` property is already an `IChatClient`, so no custom adapter is needed).
+- The Settings UI grows BYOK fields: provider dropdown widens to six options, password-input API-key row, an
+  explicit per-provider privacy banner ("Prompts go to api.openai.com…"), and provider-aware endpoint placeholders
+  + model placeholders. `hasApiKey` boolean on `GET /api/ai/status` lets the UI render a "key is set" hint without
+  echoing the key over the wire. Empty `ApiKey` in a save body means "leave existing key in place"; the explicit
+  `__bowire_clear__` sentinel drops the saved key.
+
+The standalone `bowire` CLI bundles all three additional packages so laptop users get every provider in the
+dropdown out of the box. Embedded hosts opt in granularly: `services.AddBowireAi(builder.Configuration)` alone
+gives them Ollama / LM Studio, with `.AddBowireAiOpenAi() / .AddBowireAiAnthropic() / .AddBowireAiMcp()` layering
+the optional providers on top. Bowire core itself never imports any provider SDK — the same opt-in shape as the
+protocol plugins.
+
+CORS for browser-direct calls stayed deferred: the `IChatClient` calls go through the ASP.NET host, so the
+embedded `/bowire/ai/proxy` shim referenced in the original ADR isn't needed — the host already proxies. A
+future browser-direct path can land on the same factory seam without disturbing the embedded flow.
 
 ### Phase 4 — MCP-client reversal
 
-Adds the third mode. Niche but coherent with Bowire's existing MCP-server story. Documentation explicitly markets this
-as "Bowire integrates with the MCP host you already run" rather than "another way to plug in AI". Closes the loop
-with the Tier-4 security-testing roadmap, which uses the same routing layer for threat-modelling prompts.
+**Shipped** as `Kuestenlogik.Bowire.Ai.Mcp`. Same factory seam: registering it with `AddBowireAiMcp()` adds the
+`mcp` provider id to the dropdown. The factory builds a `BowireMcpChatClient` that lazily connects to the
+user-configured MCP host on the first chat call (the lazy path keeps Settings-UI hot-swap cheap).
+
+Endpoint takes one of two shapes — an absolute http(s) URL (`http://localhost:3845/mcp` — Streamable HTTP / SSE
+auto-detected by the SDK) or a `stdio:<command>` prefix that spawns the child process as the transport
+(`stdio:claude mcp serve`). Bowire enumerates the upstream's `tools/list` once after connect and picks the first
+whose name reads as a chat / completion gateway — case-insensitive substring match on `chat`, `completion`,
+`complete`, `llm`, `generate`, `sampling`. Each chat call serialises the message thread into the tool's argument
+dictionary (`messages`, optional `model` / `temperature` / `maxTokens`) and parses the result's text content
+blocks as the assistant reply.
+
+Niche path — works against any MCP host that exposes a chat-shaped tool, which today means hand-rolled LLM
+gateways more than off-the-shelf hosts. The factory seam means future MCP `sampling/createMessage` semantics
+(if the spec stabilises a client-side sampling shape) slot in as an alternative `BowireMcpChatClient` mode
+without changing any consumer wiring.
 
 ## Open questions
 
