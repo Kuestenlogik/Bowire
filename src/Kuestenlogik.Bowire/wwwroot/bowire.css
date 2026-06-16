@@ -2613,6 +2613,20 @@ not just
     display: flex;
     flex-direction: column;
 }
+/* #193 Phase 2 item 4 — group header for trees that want to
+   visually segment unrelated branches. Used by the Settings
+   dialog to split "My preferences" from "This project". Reads
+   as a tertiary-text caps chip; no hover / selection states. */
+.bowire-tree-header {
+    padding: 14px 8px 4px;
+    color: var(--bowire-text-tertiary);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    user-select: none;
+    pointer-events: none;
+}
 .bowire-tree-row {
     display: flex;
     align-items: center;
@@ -8012,6 +8026,28 @@ and chip row */
     flex: 1;
     padding: 20px;
     overflow-y: auto;
+}
+/* #193 Phase 2 item 4 — scope banner above each settings section.
+   Reads as a quiet inline note so the operator sees the scope at a
+   glance without it competing with the actual settings rows. */
+.bowire-settings-scope-banner {
+    font-size: 11px;
+    color: var(--bowire-text-tertiary);
+    margin: 0 0 14px;
+    padding: 6px 10px;
+    border-left: 2px solid var(--bowire-border-subtle);
+    background: var(--bowire-surface);
+    border-radius: var(--bowire-radius-sm);
+}
+.bowire-settings-scope-list {
+    margin: 0;
+    padding-left: 18px;
+    color: var(--bowire-text-secondary);
+    font-size: 13px;
+    line-height: 1.5;
+}
+.bowire-settings-scope-list li {
+    margin-bottom: 2px;
 }
 .bowire-settings-section-title {
     font-size: 15px;

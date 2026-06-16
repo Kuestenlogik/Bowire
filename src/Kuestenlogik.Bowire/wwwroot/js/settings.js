@@ -27,8 +27,18 @@
                 }
             };
         }
+        // #193 Phase 2 item 4 — non-clickable group header. Used to
+        // visually segment the tree into "My preferences" (this
+        // dialog) vs "This project" (the Workspace Settings detail
+        // panel, reachable via the workspace-pointer leaf below). The
+        // helpers.js renderTree honours .header by rendering the row
+        // without click bindings.
+        function header(label) {
+            return { id: 'settings-group:' + label, label: label, header: true };
+        }
 
         var nodes = [
+            header('My preferences'),
             leaf('general', 'General', 'settings'),
             leaf('shortcuts', 'Shortcuts', 'list'),
             leaf('data', 'Data', 'trash'),
@@ -88,6 +98,16 @@
             },
             children: pluginChildren
         });
+
+        // #193 Phase 2 item 4 — second group for workspace-scope
+        // settings. The Settings dialog itself doesn't own them (they
+        // live in the Workspace tree → Settings node so they round-
+        // trip through .bww with the workspace), but a pointer here
+        // makes the split discoverable: an operator who opens
+        // Settings looking for "URL list" or "plugin pins" sees the
+        // category exists + a one-click jump to the right surface.
+        nodes.push(header('This project'));
+        nodes.push(leaf('workspace', 'Workspace…', 'layers'));
 
         return nodes;
     }
@@ -150,6 +170,21 @@
         // panel when switching categories instead of reusing stale DOM.
         var rightPanel = el('div', { id: 'bowire-settings-right-' + settingsTab, className: 'bowire-settings-right' });
 
+        // #193 Phase 2 item 4 — scope banner at the top of every
+        // section. The Settings dialog itself only houses user-scope
+        // preferences (theme, AI, shortcuts, data-cleanup), so a
+        // single sticky banner spelling that out is enough to make
+        // the split discoverable for an operator opening a workspace
+        // for the first time. The workspace pointer page suppresses
+        // the banner because it has its own scope copy.
+        if (settingsTab !== 'workspace') {
+            rightPanel.appendChild(el('div', {
+                className: 'bowire-settings-scope-banner',
+                role: 'note',
+                textContent: 'These settings stay on this machine — they don\'t travel with the workspace file (.bww).'
+            }));
+        }
+
         if (settingsTab === 'general') {
             rightPanel.appendChild(renderSettingsGeneral());
         } else if (settingsTab === 'shortcuts') {
@@ -160,6 +195,8 @@
             rightPanel.appendChild(renderSettingsAi());
         } else if (settingsTab === 'plugins') {
             rightPanel.appendChild(renderSettingsPlugins());
+        } else if (settingsTab === 'workspace') {
+            rightPanel.appendChild(renderSettingsWorkspacePointer());
         } else if (settingsTab.indexOf('plugin-') === 0) {
             var pluginId = settingsTab.substring(7);
             var plugin = protocols.find(function (p) { return p.id === pluginId; });
@@ -927,6 +964,67 @@
             'Refresh',
             function () { loadAiSettings(true); }
         ));
+
+        return section;
+    }
+
+    // ---- Workspace pointer (#193 Phase 2 item 4) ----
+    // Project-scope settings (URLs, environments, collections,
+    // recordings, flows, plugin pins, storage mode, storage root)
+    // live in the Workspace tree → Settings node so they round-trip
+    // through .bww with the workspace. This pointer page makes the
+    // split discoverable from inside the Settings dialog without
+    // duplicating the workspace-settings UI here — a single jump
+    // closes the modal and lands the operator on the workspace
+    // detail panel.
+    function renderSettingsWorkspacePointer() {
+        var section = el('div', { className: 'bowire-settings-section' });
+        section.appendChild(el('h3', { className: 'bowire-settings-section-title',
+            textContent: 'Workspace settings' }));
+
+        var ws = (typeof activeWorkspace === 'function') ? activeWorkspace() : null;
+
+        section.appendChild(el('p', { className: 'bowire-settings-row-hint',
+            style: 'margin-bottom:14px;',
+            textContent: 'These travel with the workspace file (.bww). A team member opening a checked-in workspace inherits exactly the set you save here:' }));
+
+        var list = el('ul', { className: 'bowire-settings-scope-list' },
+            el('li', { textContent: 'URLs + per-URL headers (Sources)' }),
+            el('li', { textContent: 'Environments + globals + secrets layout' }),
+            el('li', { textContent: 'Collections + recordings + flows' }),
+            el('li', { textContent: 'Plugin pins — required protocols + version constraints' }),
+            el('li', { textContent: 'Storage mode + storage root (where the workspace lives on disk)' })
+        );
+        section.appendChild(list);
+
+        section.appendChild(el('p', { className: 'bowire-settings-row-hint',
+            style: 'margin-top:14px;',
+            textContent: ws
+                ? 'Active workspace: ' + ws.name + '.'
+                : 'No workspace selected. Pick one in the activity rail before opening the workspace settings.' }));
+
+        var actions = el('div', { style: 'margin-top:14px;display:flex;gap:8px;' });
+        var openBtn = el('button', {
+            className: 'bowire-presets-btn',
+            textContent: 'Open Workspace Settings',
+            disabled: !ws,
+            onClick: function () {
+                closeSettings();
+                // Land on the workspaces rail with the active
+                // workspace selected. _renderWorkspaceSettingsDetail
+                // takes over the main pane from there.
+                if (typeof railMode !== 'undefined') {
+                    railMode = 'workspaces';
+                    try { localStorage.setItem('bowire_rail_mode', 'workspaces'); } catch { /* ignore */ }
+                }
+                if (ws && typeof workspacesSelectedId !== 'undefined') {
+                    workspacesSelectedId = ws.id;
+                }
+                if (typeof render === 'function') render();
+            }
+        });
+        actions.appendChild(openBtn);
+        section.appendChild(actions);
 
         return section;
     }
