@@ -1295,6 +1295,56 @@
         } catch { return false; }
     }
 
+    // #193 Phase 2 — pin-check against loaded protocol registry on
+    // workspace open. Result shape mirrors checkMissingPlugins(rec)
+    // in recording.js so a future unified pin-check modal can share
+    // the rendering surface. The diff is computed client-side from
+    // /api/plugins/protocols (already loaded for the recording-side
+    // pin check) — no new endpoint required.
+    //
+    // Per-session ignore-list keyed by workspace id so the operator
+    // can dismiss the banner for the current workspace + Bowire
+    // session without persisting. Crossing a restart re-surfaces the
+    // check so an operator who forgot can't silently keep replaying
+    // against a missing protocol.
+    var _pinCheckIgnoredThisSession = {};
+    async function checkWorkspacePluginPins(wsId) {
+        var id = wsId || activeWorkspaceId;
+        if (!id) return { missing: [], wrongVersion: [], catalog: {} };
+        var pins = getWorkspacePluginPins(id);
+        var pinIds = Object.keys(pins);
+        if (pinIds.length === 0) return { missing: [], wrongVersion: [], catalog: {} };
+
+        var info = null;
+        try {
+            var r = await fetch(config.prefix + '/api/plugins/protocols');
+            if (r.ok) info = await r.json();
+        } catch { /* offline / embedded — treat as 'all ok' so we don't nag */ }
+        if (!info) return { missing: [], wrongVersion: [], catalog: {} };
+
+        var loaded = {};
+        (info.loaded || []).forEach(function (pid) { loaded[String(pid).toLowerCase()] = true; });
+        var catalog = info.catalog || {};
+        var missing = [];
+        pinIds.forEach(function (pid) {
+            var lower = String(pid).toLowerCase();
+            if (loaded[lower]) return;
+            missing.push({ id: lower, packageId: catalog[lower] || null, version: pins[pid] });
+        });
+        // wrongVersion left empty in Phase 2.1 — assemblies don't
+        // expose their semver through /api/plugins/protocols today.
+        // Folded in as soon as the registry surfaces it (#196 follow-up).
+        return { missing: missing, wrongVersion: [], catalog: catalog };
+    }
+    function ignoreWorkspacePinCheckForSession(wsId) {
+        var id = wsId || activeWorkspaceId;
+        if (id) _pinCheckIgnoredThisSession[id] = true;
+    }
+    function isWorkspacePinCheckIgnored(wsId) {
+        var id = wsId || activeWorkspaceId;
+        return id ? !!_pinCheckIgnoredThisSession[id] : false;
+    }
+
     // Back-compat aliases — recording.js + any other caller still
     // imports these names. Both delegate to the workspace-level
     // helpers. Drop these once every call site has migrated.
