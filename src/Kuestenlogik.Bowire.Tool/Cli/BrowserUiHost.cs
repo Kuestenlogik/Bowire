@@ -6,6 +6,7 @@ using Kuestenlogik.Bowire.App.Configuration;
 using Kuestenlogik.Bowire.Auth;
 using Kuestenlogik.Bowire.Mock.Management;
 using Kuestenlogik.Bowire.Telemetry;
+using Kuestenlogik.Bowire.Workspace.Git;
 // UseBowireAuth lives in Kuestenlogik.Bowire.Auth; already covered.
 using Kuestenlogik.Bowire.PluginLoading;
 using Kuestenlogik.Bowire.Protocol.Mcp;
@@ -155,6 +156,14 @@ internal static class BrowserUiHost
         // their own Program.cs.
         builder.Services.AddBowireHelp();
 
+        // #196 Phase 2 — Git-backed workspace runtime. Registers the
+        // BowireGitWorkspaceExtension marker + the WorkspaceWatcher
+        // singleton so the FS-watch SSE endpoint mapped below has
+        // somewhere to land. Embedded hosts that DON'T want the
+        // watcher skip this call (the SSE endpoint then surfaces a
+        // 501 with a hint).
+        builder.Services.AddBowireGitWorkspace();
+
         // Opt-in auth gate. When --auth-provider <id> is set, the
         // matching IBowireAuthProvider plugin gets to wire its scheme
         // + the BowireAuthPolicies.Default policy; otherwise this is
@@ -241,6 +250,15 @@ internal static class BrowserUiHost
 
         // AI endpoints (#25 Phase 2). Same base-path discipline.
         app.MapBowireAiEndpoints(basePath: string.Empty);
+
+        // #196 Phase 2.4 — Git-backed workspace FS-watch SSE producer.
+        // Workspace.Git is referenced by the standalone Tool so the
+        // CLI ships the runtime bundled; embedded hosts add the
+        // package + call this themselves. Endpoint surfaces a 501 +
+        // hint when the DI registration is missing, so a misconfigured
+        // host surfaces an obvious failure rather than a silent
+        // never-fires SSE.
+        app.MapBowireGitWorkspaceEvents(basePath: string.Empty);
 
         await app.RunAsync(ct).ConfigureAwait(false);
         return 0;
