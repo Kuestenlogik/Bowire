@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Description>MCP-client-reversal provider for Kuestenlogik.Bowire.Ai (#25 Phase 4). Routes chat through a user-controlled MCP host (stdio command or http URL) by calling the first tool whose name reads as a chat / completion / sampling gateway. Add via `AddBowireAiMcp()` after `AddBowireAi()`. Bowire core + Kuestenlogik.Bowire.Ai stay free of the ModelContextProtocol SDK; only installs that need the MCP path pay for it.</Description>
+    <PackageId>Kuestenlogik.Bowire.Ai.Mcp</PackageId>
+    <PackageTags>bowire;ai;mcp;model-context-protocol;sampling;chat;ichatclient;microsoft-extensions-ai</PackageTags>
+    <IsPackable>true</IsPackable>
+  </PropertyGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="Kuestenlogik.Bowire.Ai.Mcp.Tests" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Kuestenlogik.Bowire.Ai\Kuestenlogik.Bowire.Ai.csproj" />
+    <PackageReference Include="ModelContextProtocol" />
+  </ItemGroup>
+</Project>

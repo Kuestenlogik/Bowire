@@ -2,6 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
 using Kuestenlogik.Bowire.Ai;
+using Kuestenlogik.Bowire.Ai.Anthropic;
+using Kuestenlogik.Bowire.Ai.Mcp;
+using Kuestenlogik.Bowire.Ai.OpenAi;
 using Kuestenlogik.Bowire.App.Configuration;
 using Kuestenlogik.Bowire.Auth;
 using Kuestenlogik.Bowire.Mock.Management;
@@ -142,13 +145,21 @@ internal static class BrowserUiHost
         // drive the wire details.
         builder.Services.AddBowireTelemetry(builder.Configuration);
 
-        // AI integration (#25 Phase 2). Registers IChatClient + the
-        // /api/ai/* endpoints. Default provider is Ollama at
-        // http://localhost:11434; the workbench's AI tab probes for
-        // a local instance on first paint and offers a one-click
-        // connect. Cloud providers slot in via the same seam in
-        // Phase 3.
+        // AI integration. Standalone CLI registers every provider:
+        // - AddBowireAi (Phase 2)         — Ollama / LM Studio default
+        // - AddBowireAiOpenAi (Phase 3)   — OpenAI + OpenRouter BYOK
+        // - AddBowireAiAnthropic (Phase 3) — Claude BYOK
+        // - AddBowireAiMcp (Phase 4)      — MCP-client reversal
+        // Embedded hosts opt in granularly so Bowire core stays free
+        // of every provider's transitive SDK weight (#25 ADR rule:
+        // "AI features must be a property of the user's environment,
+        // not of Bowire's infrastructure"). The workbench's AI tab
+        // probes for a local instance on first paint and offers a
+        // one-click connect against any of them via the Settings UI.
         builder.Services.AddBowireAi(builder.Configuration);
+        builder.Services.AddBowireAiOpenAi();
+        builder.Services.AddBowireAiAnthropic();
+        builder.Services.AddBowireAiMcp();
 
         // #154 Phase 4 — in-app help. The standalone CLI always
         // ships with the Help provider so users get docs without

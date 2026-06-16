@@ -134,6 +134,16 @@
          (auto-detect on 127.0.0.1:11434). Cloud providers slot in via
          the same abstraction once Phase 3 wires Microsoft.Extensions.AI.OpenAI. -->
     <PackageVersion Include="Microsoft.Extensions.AI" Version="10.7.0" />
+    <!-- Microsoft.Extensions.AI.OpenAI: IChatClient for OpenAI + any
+         OpenAI-compatible endpoint (OpenRouter, Azure OpenAI, &c.).
+         Phase 3 of #25 routes cloud BYOK through this. -->
+    <PackageVersion Include="Microsoft.Extensions.AI.OpenAI" Version="10.7.0" />
+    <!-- Anthropic.SDK: community-maintained SDK with first-class
+         Microsoft.Extensions.AI integration (the AnthropicClient().Messages
+         property returns IChatClient directly). Phase 3 of #25 uses this
+         for the BYOK Claude path — Anthropic doesn't publish an
+         official IChatClient binding yet. -->
+    <PackageVersion Include="Anthropic.SDK" Version="5.10.0" />
     <PackageVersion Include="OllamaSharp" Version="5.4.25" />
     <!-- Markdig powers the in-app help search (#154 Phase 2) — the
          indexer walks parsed markdown to strip layout and code-block
