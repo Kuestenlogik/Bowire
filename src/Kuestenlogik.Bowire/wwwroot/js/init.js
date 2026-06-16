@@ -742,6 +742,25 @@
                 }
             } catch (e) { console.warn('[pin-check] workspace check failed', e); }
 
+            // #196 Phase 2.4 — git-backed FS-watch subscriber.
+            // Opens an EventSource against /api/workspace/events for
+            // the active workspace's storageRoot (when set + storage
+            // mode is 'disk'). On any event surfaces a sticky toast
+            // with a "Reload" action. Embedded hosts that didn't wire
+            // the runtime get a 501 from the endpoint; the subscriber
+            // closes cleanly without nagging.
+            try {
+                if (typeof startWorkspaceFsWatchSubscriber === 'function'
+                    && typeof activeWorkspace === 'function') {
+                    var _ws = activeWorkspace();
+                    if (_ws && _ws.storageRoot
+                        && (typeof getWorkspaceStorageMode === 'function'
+                            ? getWorkspaceStorageMode(_ws) : 'disk') === 'disk') {
+                        startWorkspaceFsWatchSubscriber(_ws.storageRoot);
+                    }
+                }
+            } catch (e) { console.warn('[fs-watch] subscriber start failed', e); }
+
             // Reveal the app and fade out the loading overlay. The
             // overlay lives in the static HTML so it's visible from
             // the very first paint — no FOUC. We remove it after a
