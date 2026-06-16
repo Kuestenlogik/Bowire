@@ -357,15 +357,12 @@ public static class OpenApiDiscovery
     private static IOpenApiSchema? ExtractMultipartSchema(IOpenApiRequestBody? body)
     {
         if (body?.Content is null || body.Content.Count == 0) return null;
-        foreach (var (contentType, mediaType) in body.Content)
-        {
-            if (string.Equals(contentType, "multipart/form-data", StringComparison.OrdinalIgnoreCase) ||
-                string.Equals(contentType, "application/x-www-form-urlencoded", StringComparison.OrdinalIgnoreCase))
-            {
-                return mediaType.Schema;
-            }
-        }
-        return null;
+        return body.Content
+            .Where(kv =>
+                string.Equals(kv.Key, "multipart/form-data", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(kv.Key, "application/x-www-form-urlencoded", StringComparison.OrdinalIgnoreCase))
+            .Select(kv => kv.Value.Schema)
+            .FirstOrDefault();
     }
 
     /// <summary>
