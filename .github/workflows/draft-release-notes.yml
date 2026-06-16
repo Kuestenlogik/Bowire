@@ -129,8 +129,8 @@ jobs:
             # emit `**<bucket>**` heading + `- #N title` lines.
             HIGHLIGHTS=$(echo "$ISSUES_JSON" | jq -r '
               def bucket(labels):
-                ( labels | map(select(.name | startswith("track:")) | .name | sub("track:"; ""))[0]
-                  // labels | map(select(.name | startswith("area:")) | .name | sub("area:"; ""))[0]
+                ( (labels | map(select(.name | startswith("track:")) | .name | sub("track:"; ""))[0])
+                  // (labels | map(select(.name | startswith("area:")) | .name | sub("area:"; ""))[0])
                   // "misc" );
               [ .[] | { bucket: bucket(.labels), entry: "- #\(.number) \(.title)" } ]
               | group_by(.bucket)
