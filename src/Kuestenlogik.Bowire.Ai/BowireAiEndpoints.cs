@@ -88,6 +88,12 @@ public static class BowireAiEndpoints
                 resolved.ProviderId,
                 resolved.Endpoint,
                 resolved.Model,
+                // Never echo the API key back over the wire — surface a
+                // boolean so the UI can show "key is set" without exposing
+                // the value. The save path treats an empty ApiKey as
+                // "leave existing in place", so users editing the model
+                // don't have to re-type the key.
+                hasApiKey = !string.IsNullOrEmpty(resolved.ApiKey),
                 resolved.AutoDetectLocal,
                 hasOverride,
                 workspaceId = string.IsNullOrEmpty(workspaceId) ? null : workspaceId,
@@ -128,18 +134,35 @@ public static class BowireAiEndpoints
                 ProviderId = string.IsNullOrWhiteSpace(body.ProviderId) ? current.ProviderId : body.ProviderId!.Trim(),
                 Endpoint = string.IsNullOrWhiteSpace(body.Endpoint) ? current.Endpoint : body.Endpoint!.Trim(),
                 Model = string.IsNullOrWhiteSpace(body.Model) ? current.Model : body.Model!.Trim(),
+                // Empty/whitespace ApiKey means "leave existing in place"
+                // so the user can swap models without re-typing their key.
+                // Explicit clear is signalled by sending the sentinel
+                // string "__bowire_clear__" instead of an empty value.
+                ApiKey = string.IsNullOrWhiteSpace(body.ApiKey)
+                    ? current.ApiKey
+                    : (body.ApiKey == "__bowire_clear__" ? null : body.ApiKey!.Trim()),
                 AutoDetectLocal = body.AutoDetectLocal ?? current.AutoDetectLocal,
             };
 
-            // Endpoint sanity check — anything outside http/https is a
-            // configuration mistake (file://, javascript:, &c.). We
-            // catch it here so the user gets a clear 400 instead of a
-            // confusing OllamaApiClient construction failure.
-            if (!Uri.TryCreate(next.Endpoint, UriKind.Absolute, out var u)
-                || (u.Scheme != Uri.UriSchemeHttp && u.Scheme != Uri.UriSchemeHttps))
+            // Endpoint sanity check. http(s) URLs accepted everywhere;
+            // the MCP-client-reversal provider also accepts the
+            // "stdio:command" form (Phase 4) since that's the
+            // documented MCP-host-as-gateway shape. Anything else
+            // (file://, javascript:, &c.) is a config mistake.
+            var isMcp = string.Equals(next.ProviderId, "mcp", StringComparison.OrdinalIgnoreCase);
+            var isStdioMcp = isMcp && next.Endpoint.StartsWith("stdio:", StringComparison.OrdinalIgnoreCase);
+            if (!isStdioMcp)
             {
-                return Results.Json(new { error = "Endpoint must be an absolute http(s) URL." },
-                    JsonOpts, statusCode: 400);
+                if (!Uri.TryCreate(next.Endpoint, UriKind.Absolute, out var u)
+                    || (u.Scheme != Uri.UriSchemeHttp && u.Scheme != Uri.UriSchemeHttps))
+                {
+                    return Results.Json(new
+                    {
+                        error = isMcp
+                            ? "MCP endpoint must be an absolute http(s) URL or a 'stdio:<command>' string."
+                            : "Endpoint must be an absolute http(s) URL.",
+                    }, JsonOpts, statusCode: 400);
+                }
             }
 
             try
@@ -170,6 +193,7 @@ public static class BowireAiEndpoints
                 applied.ProviderId,
                 applied.Endpoint,
                 applied.Model,
+                hasApiKey = !string.IsNullOrEmpty(applied.ApiKey),
                 applied.AutoDetectLocal,
             }, JsonOpts);
         }).ExcludeFromDescription();
@@ -216,6 +240,7 @@ public static class BowireAiEndpoints
                 applied.ProviderId,
                 applied.Endpoint,
                 applied.Model,
+                hasApiKey = !string.IsNullOrEmpty(applied.ApiKey),
                 applied.AutoDetectLocal,
             }, JsonOpts);
         }).ExcludeFromDescription();
@@ -1053,6 +1078,7 @@ public static class BowireAiEndpoints
         string? ProviderId,
         string? Endpoint,
         string? Model,
+        string? ApiKey,
         bool? AutoDetectLocal);
 
     /// <summary>
