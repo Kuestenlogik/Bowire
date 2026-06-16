@@ -1378,6 +1378,35 @@
         workspacePinCheckState = null;
         try { if (typeof render === 'function') render(); } catch { /* ignore */ }
     }
+    // Cached /api/plugins/protocols result so the pin editor's
+    // "available protocols" dropdown and the pin-check banner share
+    // one fetch. Shape: { loaded: [<id>], catalog: { <id>: <packageId> } }.
+    // First read kicks off the fetch + a re-render; subsequent reads
+    // hit the cache. Invalidate by setting _pluginCatalogCache = null
+    // (e.g. after a plugin install to surface a freshly-loaded one).
+    var _pluginCatalogCache = null;
+    var _pluginCatalogFetching = false;
+    function ensurePluginCatalog() {
+        if (_pluginCatalogCache || _pluginCatalogFetching) return;
+        _pluginCatalogFetching = true;
+        fetch(config.prefix + '/api/plugins/protocols')
+            .then(function (r) { return r.ok ? r.json() : null; })
+            .then(function (info) {
+                _pluginCatalogCache = info || { loaded: [], catalog: {} };
+                _pluginCatalogFetching = false;
+                try { if (typeof render === 'function') render(); } catch { /* ignore */ }
+            })
+            .catch(function () {
+                _pluginCatalogCache = { loaded: [], catalog: {} };
+                _pluginCatalogFetching = false;
+                try { if (typeof render === 'function') render(); } catch { /* ignore */ }
+            });
+    }
+    function getCachedPluginCatalog() {
+        return _pluginCatalogCache || { loaded: [], catalog: {} };
+    }
+    function invalidatePluginCatalogCache() { _pluginCatalogCache = null; }
+
     async function installAllWorkspacePins() {
         var st = workspacePinCheckState;
         if (!st || st.installing) return;
