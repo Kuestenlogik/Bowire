@@ -1,3 +1,13 @@
+// @generated
+// This file is the closing fragment of the assembled `wwwroot/bowire.js`
+// bundle — the MSBuild step at compile-time concatenates every
+// <BowireJsFragment> in `.csproj` into a single runtime file. This
+// fragment closes the IIFE that prologue.js opens; per-file it has
+// a stray `})();` at the bottom and is syntactically incomplete. The
+// `@generated` marker above tells CodeQL (and other static analysers)
+// to skip parse-level checks here — the assembled bundle is what
+// actually runs in the browser.
+
     // #124 — Palette command extension API. Plugins / external scripts
     // register their own command-palette entries via this global so
     // the omnibox surfaces them under the "Commands" group. Each call

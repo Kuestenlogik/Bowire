@@ -1,3 +1,11 @@
+// @generated
+// This file is a fragment of the assembled `wwwroot/bowire.js` bundle —
+// the MSBuild step at compile-time concatenates every <BowireJsFragment>
+// in `.csproj` into a single runtime file. The fragment opens an IIFE
+// that init.js closes; per-file it is syntactically incomplete and
+// would be invalid JS on its own. The `@generated` marker above tells
+// CodeQL (and other static analysers) to skip parse-level checks here
+// — the assembled bundle is what actually runs in the browser.
 /**
  * Bowire — Interactive gRPC Browser
  * Pure vanilla JS, no framework dependencies.
