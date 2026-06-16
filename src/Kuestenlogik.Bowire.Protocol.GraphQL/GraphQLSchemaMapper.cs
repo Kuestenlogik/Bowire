@@ -65,11 +65,9 @@ internal sealed class GraphQLSchemaMapper
         if (!rootType.TryGetProperty("fields", out var fields) || fields.ValueKind != JsonValueKind.Array)
             return;
 
-        var methods = new List<BowireMethodInfo>();
-        foreach (var field in fields.EnumerateArray())
-        {
-            methods.Add(MapField(field, serviceName, isSubscription));
-        }
+        var methods = fields.EnumerateArray()
+            .Select(field => MapField(field, serviceName, isSubscription))
+            .ToList();
 
         if (methods.Count == 0)
             return;
