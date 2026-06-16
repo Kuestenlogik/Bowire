@@ -59,15 +59,23 @@ jobs:
 
       - name: Resolve released version
         id: ver
+        env:
+          # Route caller-controlled values through env vars so the shell
+          # never sees them as inline template expansion — the canonical
+          # mitigation for actions/code-injection. github.event.workflow_run.
+          # head_branch is the tag name on a release trigger; inputs.
+          # released_version is the manual-dispatch field.
+          EVENT_NAME: ${{ github.event_name }}
+          DISPATCH_VERSION: ${{ github.event.inputs.released_version }}
+          RUN_HEAD_BRANCH: ${{ github.event.workflow_run.head_branch }}
         run: |
           # Pull the released version from the trigger context. For
           # workflow_run, the head_branch carries the tag name (e.g.
           # `v1.8.0`); for workflow_dispatch we take the input verbatim.
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            RELEASED="${{ github.event.inputs.released_version }}"
+          if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
+            RELEASED="$DISPATCH_VERSION"
           else
-            RELEASED="${{ github.event.workflow_run.head_branch }}"
-            RELEASED="${RELEASED#v}"
+            RELEASED="${RUN_HEAD_BRANCH#v}"
           fi
           if [ -z "$RELEASED" ]; then
             echo "::error::could not resolve released version"

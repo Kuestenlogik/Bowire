@@ -278,9 +278,16 @@ function shortProject(item) {
 }
 
 // Escape pipes in a cell so a title containing `|` doesn't break the
-// markdown table layout. Other chars render fine inside table cells.
+// markdown table layout. Backslashes have to be escaped FIRST so an
+// input like `\|` doesn't survive as `\\|` and re-introduce a literal
+// pipe through the markdown reader's own unescape pass — that's the
+// js/incomplete-sanitization footgun. Newlines also need taming since
+// a raw `\n` in a cell breaks the row.
 function tableCell(s) {
-    return String(s ?? "").replace(/\|/g, "\\|");
+    return String(s ?? "")
+        .replace(/\\/g, "\\\\")
+        .replace(/\|/g, "\\|")
+        .replace(/\r?\n/g, "<br>");
 }
 
 // Stable anchor id for in-file cross-links between the Overview
