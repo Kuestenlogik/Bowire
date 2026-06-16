@@ -1617,7 +1617,13 @@
         // the "install missing plugins" banner instead of cryptic
         // "no such protocol" errors at first request. Empty / absent
         // means no requirement, current behaviour preserved.
-        'bowire_plugin_pins'
+        'bowire_plugin_pins',
+        // #161 Phase 2 — open method tabs per workspace. Boot already
+        // migrates this key per-workspace; rounding it through the
+        // export means a team member who opens the .bww lands on the
+        // same tabs the author left open. Empty / absent leaves the
+        // tab strip empty as before.
+        'bowire_request_tabs'
     ];
     // Modes that store per-method presets via the presets framework.
     // Each maps to a `bowire_presets_<mode>` key under wsKey().
