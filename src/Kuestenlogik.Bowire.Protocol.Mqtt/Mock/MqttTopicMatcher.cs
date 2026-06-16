@@ -95,10 +95,6 @@ public static class MqttTopicMatcher
     public static bool IsPattern(string? pattern)
     {
         if (string.IsNullOrEmpty(pattern)) return false;
-        foreach (var segment in pattern.Split('/'))
-        {
-            if (segment == "+" || segment == "#") return true;
-        }
-        return false;
+        return pattern.Split('/').Any(segment => segment is "+" or "#");
     }
 }
