@@ -82,11 +82,13 @@ internal static class MissCaptureWriter
                 "miss-capture: appended {StepId} ({Protocol} {Verb} {Path}) to {File}",
                 step.Id, step.Protocol, Safe(step.HttpVerb), Safe(step.HttpPath ?? ("/" + step.Service + "/" + step.Method)), path);
         }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or System.Text.Json.JsonException or InvalidOperationException)
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or System.Text.Json.JsonException or InvalidOperationException or InvalidDataException)
         {
             // Miss-capture persistence is best-effort; the next miss will
             // try again. JSON parse failure means the file was hand-edited
-            // into a bad shape; surface but keep serving.
+            // into a bad shape (or contained `null` literal that the
+            // typed loader rejects with InvalidDataException); surface
+            // and keep serving.
             logger.LogWarning(ex, "miss-capture: failed to persist miss for {Path} to {File}",
                 Safe(ctx.Request.Path.Value), path);
         }
