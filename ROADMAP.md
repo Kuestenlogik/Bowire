@@ -12,12 +12,11 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.0 — Re-architected workbench shell + workspace = project folder *(due 2026-06-19)*
 
-**60/63 done** · 3 backlog
+**61/63 done** · 2 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
 | [115](https://github.com/Kuestenlogik/Bowire/issues/115) | Bowire | [v2.0 — UI refactor: re-architect the workbench shell](#issue-kuestenlogik-bowire-115) | ⬜ Backlog |  |
-| [193](https://github.com/Kuestenlogik/Bowire/issues/193) | Bowire | [Workspace .bww Phase 2 — UI wiring + plugin-pin check + scope split](#issue-kuestenlogik-bowire-193) | ⬜ Backlog |  |
 | [196](https://github.com/Kuestenlogik/Bowire/issues/196) | Bowire | [Git-backed workspaces Phase 2 — Kuestenlogik.Bowire.Workspace.Git runtime + FS-watch + secret merge](#issue-kuestenlogik-bowire-196) | ⬜ Backlog |  |
 | [25](https://github.com/Kuestenlogik/Bowire/issues/25) | Bowire | [AI side-panel integration](#issue-kuestenlogik-bowire-25) | ✅ Done | `area:workbench` |
 | [33](https://github.com/Kuestenlogik/Bowire/issues/33) | Bowire | [Protocol plugins — Connect Phase 1+3 + OTLP](#issue-kuestenlogik-bowire-33) | ✅ Done | `area:plugin-sdk` |
@@ -74,6 +73,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [168](https://github.com/Kuestenlogik/Bowire/issues/168) | Bowire | [Workbench-wide action log with undo / redo (Ctrl+Z)](#issue-kuestenlogik-bowire-168) | ✅ Done |  |
 | [169](https://github.com/Kuestenlogik/Bowire/issues/169) | Bowire | [Hint dismiss pattern — "Don't show again" + Settings restore](#issue-kuestenlogik-bowire-169) | ✅ Done |  |
 | [192](https://github.com/Kuestenlogik/Bowire/issues/192) | Bowire | [Workspace + Settings: sidebar tree navigation (MudBlazor TreeView / NavMenu style)](#issue-kuestenlogik-bowire-192) | ✅ Done |  |
+| [193](https://github.com/Kuestenlogik/Bowire/issues/193) | Bowire | [Workspace .bww Phase 2 — UI wiring + plugin-pin check + scope split](#issue-kuestenlogik-bowire-193) | ✅ Done |  |
 | [195](https://github.com/Kuestenlogik/Bowire/issues/195) | Bowire | [Protocol plugin — OTLP passive listener (Kuestenlogik.Bowire.Protocol.Otlp)](#issue-kuestenlogik-bowire-195) | ✅ Done |  |
 | [209](https://github.com/Kuestenlogik/Bowire/issues/209) | Bowire | [Workspace file extension: rename .blw → .bww](#issue-kuestenlogik-bowire-209) | ✅ Done |  |
 | [210](https://github.com/Kuestenlogik/Bowire/issues/210) | Bowire | [Standalone recording format .bwr — self-contained, workspace-agnostic](#issue-kuestenlogik-bowire-210) | ✅ Done |  |
@@ -198,10 +198,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 #### <a id="issue-kuestenlogik-bowire-115"></a>⬜ Backlog · [#115](https://github.com/Kuestenlogik/Bowire/issues/115) v2.0 — UI refactor: re-architect the workbench shell
 
 > **Status:** Phase 1 — Shell-Refactor abgeschlossen (Juni 2026). Was in v2.0 noch zu erledigen ist: ein kleiner Cleanup-Sweep + Release-Notes. Phase 2 (mehrere Feature-Streams) ist auf eigene Tickets unter v2.1-Milestone verschoben. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/115)
-
-#### <a id="issue-kuestenlogik-bowire-193"></a>⬜ Backlog · [#193](https://github.com/Kuestenlogik/Bowire/issues/193) Workspace .bww Phase 2 — UI wiring + plugin-pin check + scope split
-
-`.bww` schema extension (Phase 1) shipped in 2f80024 — `workspaceFormatVersion`, `recordings`, `flows`, and `pluginPins` are now part of the on-disk shape with backwards-compatible deserialization and stable camelCase serialization. The workbench doesn't yet read or write the new fields; that's Phase 2. [[more]](https://github.com/Kuestenlogik/Bowire/issues/193)
 
 #### <a id="issue-kuestenlogik-bowire-196"></a>⬜ Backlog · [#196](https://github.com/Kuestenlogik/Bowire/issues/196) Git-backed workspaces Phase 2 — Kuestenlogik.Bowire.Workspace.Git runtime + FS-watch + secret merge
 
@@ -432,6 +428,10 @@ The workbench has several "this is a hint / warning" surfaces, each with its own
 #### <a id="issue-kuestenlogik-bowire-192"></a>✅ Done · [#192](https://github.com/Kuestenlogik/Bowire/issues/192) Workspace + Settings: sidebar tree navigation (MudBlazor TreeView / NavMenu style)
 
 Workspace-related navigation is slow and indirect today: [[more]](https://github.com/Kuestenlogik/Bowire/issues/192)
+
+#### <a id="issue-kuestenlogik-bowire-193"></a>✅ Done · [#193](https://github.com/Kuestenlogik/Bowire/issues/193) Workspace .bww Phase 2 — UI wiring + plugin-pin check + scope split
+
+`.bww` schema extension (Phase 1) shipped in 2f80024 — `workspaceFormatVersion`, `recordings`, `flows`, and `pluginPins` are now part of the on-disk shape with backwards-compatible deserialization and stable camelCase serialization. The workbench doesn't yet read or write the new fields; that's Phase 2. [[more]](https://github.com/Kuestenlogik/Bowire/issues/193)
 
 #### <a id="issue-kuestenlogik-bowire-195"></a>✅ Done · [#195](https://github.com/Kuestenlogik/Bowire/issues/195) Protocol plugin — OTLP passive listener (Kuestenlogik.Bowire.Protocol.Otlp)
 
