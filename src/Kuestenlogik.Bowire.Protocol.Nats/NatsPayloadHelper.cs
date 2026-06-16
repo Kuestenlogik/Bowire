@@ -48,15 +48,8 @@ internal static class NatsPayloadHelper
         return FormatHexDump(payload);
     }
 
-    private static bool LooksLikeText(string s)
-    {
-        foreach (var c in s)
-        {
-            if (char.IsControl(c) && c != '\n' && c != '\r' && c != '\t')
-                return false;
-        }
-        return true;
-    }
+    private static bool LooksLikeText(string s) =>
+        !s.Any(c => char.IsControl(c) && c != '\n' && c != '\r' && c != '\t');
 
     private static string FormatHexDump(ReadOnlySpan<byte> bytes)
     {
