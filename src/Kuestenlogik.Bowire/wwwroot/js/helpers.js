@@ -1223,6 +1223,21 @@
 
     function _renderTreeNode(node, depth) {
         if (!node) return document.createTextNode('');
+
+        // Group-header node: non-clickable section label used to
+        // visually segment a tree into named groups (e.g. the Settings
+        // dialog's "My preferences" vs "This project" split, #193
+        // Phase 2 item 4). Renders as a small uppercase chip; no
+        // selection state, no drag/drop, no onClick.
+        if (node.header) {
+            return el('div', {
+                className: 'bowire-tree-header',
+                role: 'presentation',
+                style: 'padding-left:' + (8 + depth * 14) + 'px',
+                textContent: node.label || ''
+            });
+        }
+
         var hasChildren = Array.isArray(node.children) && node.children.length > 0;
         var isExpandable = !!node.expandable || hasChildren;
         var isExpanded = isExpandable && !!node.expanded;
