@@ -209,7 +209,7 @@ Phase 1 (#147-#149-#151) shipped in eb2bf1c: `BowireUserContext.GetWorkspacePath
 
 #### <a id="issue-kuestenlogik-bowire-210"></a>⬜ Backlog · [#210](https://github.com/Kuestenlogik/Bowire/issues/210) Standalone recording format .bwr — self-contained, workspace-agnostic
 
-@-
+`.bwr` is already the de-facto recording extension across the codebase: [[more]](https://github.com/Kuestenlogik/Bowire/issues/210)
 
 #### <a id="issue-kuestenlogik-bowire-211"></a>⬜ Backlog · [#211](https://github.com/Kuestenlogik/Bowire/issues/211) bowire mock <recording.bwr> — HTTP replay server from a recording
 
