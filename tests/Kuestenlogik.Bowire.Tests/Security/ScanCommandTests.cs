@@ -551,7 +551,15 @@ public sealed class ScanCommandTests
 
     private static async Task<WebApplication> StartUpstreamAsync(CancellationToken ct)
     {
-        var builder = WebApplication.CreateSlimBuilder();
+        // Pin the content root to a known-existing directory so this
+        // helper is immune to peer tests that swap the process CWD into
+        // a temp dir and delete it before restoring (workspace-tests
+        // were observed doing this on CI). Without the override
+        // CreateSlimBuilder() throws ArgumentException on a dead CWD.
+        var builder = WebApplication.CreateSlimBuilder(new WebApplicationOptions
+        {
+            ContentRootPath = AppContext.BaseDirectory,
+        });
         builder.Logging.ClearProviders();
         builder.WebHost.ConfigureKestrel(o => o.Listen(IPAddress.Loopback, 0, l => l.Protocols = HttpProtocols.Http1));
         var app = builder.Build();
