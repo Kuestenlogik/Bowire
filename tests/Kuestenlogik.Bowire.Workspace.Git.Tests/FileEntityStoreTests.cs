@@ -419,4 +419,83 @@ public sealed class FileEntityStoreTests : IDisposable
             TestContext.Current.CancellationToken);
         Assert.True(File.Exists(SafePath.Combine(nested, "environments", "e.json")));
     }
+
+    // ---------- #151 Phase 2.5 — secret-overlay merge on environment load ----------
+
+    [Fact]
+    public async Task LoadAsync_Environment_Merges_Sibling_Secrets_Json_Overlay()
+    {
+        var sut = new FileEntityStore(_root);
+        var ct = TestContext.Current.CancellationToken;
+
+        // Base + secrets — secrets file is hand-written here because
+        // FileEntityStore.SaveAsync targets the base name only. In
+        // practice an operator writes the secrets file from the CLI
+        // or by hand and it stays gitignored.
+        await sut.SaveAsync("environments", "staging",
+            """{"id":"staging","name":"Staging","variables":{"API_HOST":"api.staging.example.com"}}""",
+            ct);
+        var secretsPath = Path.Combine(_root, "environments", "staging.secrets.json");
+        await File.WriteAllTextAsync(secretsPath,
+            """{"variables":{"API_KEY":"sk-real"}}""", ct);
+
+        var loaded = await sut.LoadAsync("environments", "staging", ct);
+        Assert.NotNull(loaded);
+        using var doc = JsonDocument.Parse(loaded!);
+        var vars = doc.RootElement.GetProperty("variables");
+        Assert.Equal("api.staging.example.com", vars.GetProperty("API_HOST").GetString());
+        Assert.Equal("sk-real", vars.GetProperty("API_KEY").GetString());
+    }
+
+    [Fact]
+    public async Task LoadAsync_Environment_Without_Secrets_Returns_Base_Verbatim()
+    {
+        var sut = new FileEntityStore(_root);
+        var ct = TestContext.Current.CancellationToken;
+
+        await sut.SaveAsync("environments", "no-secrets",
+            """{"id":"no-secrets","variables":{"A":"1"}}""", ct);
+
+        var loaded = await sut.LoadAsync("environments", "no-secrets", ct);
+        using var doc = JsonDocument.Parse(loaded!);
+        Assert.Equal("1", doc.RootElement.GetProperty("variables").GetProperty("A").GetString());
+    }
+
+    [Fact]
+    public async Task LoadAsync_Non_Environment_Kind_Does_Not_Apply_Overlay()
+    {
+        var sut = new FileEntityStore(_root);
+        var ct = TestContext.Current.CancellationToken;
+
+        await sut.SaveAsync("scripts", "s",
+            """{"id":"s","body":"print('x')"}""", ct);
+        // Even if a sibling .secrets.json existed for a non-env kind,
+        // the merger doesn't fire — the overlay convention is env-only.
+        var secretsPath = Path.Combine(_root, "scripts", "s.secrets.json");
+        await File.WriteAllTextAsync(secretsPath,
+            """{"body":"overridden"}""", ct);
+
+        var loaded = await sut.LoadAsync("scripts", "s", ct);
+        using var doc = JsonDocument.Parse(loaded!);
+        Assert.Equal("print('x')", doc.RootElement.GetProperty("body").GetString());
+    }
+
+    [Fact]
+    public async Task LoadAsync_Environment_With_Malformed_Secrets_Returns_Base_Verbatim()
+    {
+        var sut = new FileEntityStore(_root);
+        var ct = TestContext.Current.CancellationToken;
+
+        await sut.SaveAsync("environments", "broken",
+            """{"id":"broken","variables":{"X":"y"}}""", ct);
+        var secretsPath = Path.Combine(_root, "environments", "broken.secrets.json");
+        await File.WriteAllTextAsync(secretsPath, "{ not json", ct);
+
+        // Operator hand-edited the secrets file into a bad shape —
+        // LoadAsync surfaces the base verbatim so the whole workspace
+        // doesn't brick.
+        var loaded = await sut.LoadAsync("environments", "broken", ct);
+        using var doc = JsonDocument.Parse(loaded!);
+        Assert.Equal("y", doc.RootElement.GetProperty("variables").GetProperty("X").GetString());
+    }
 }
