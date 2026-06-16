@@ -134,16 +134,12 @@ internal static class PulsarDiscovery
         {
             using var doc = JsonDocument.Parse(json);
             if (doc.RootElement.ValueKind != JsonValueKind.Array) return [];
-            var list = new List<string>();
-            foreach (var el in doc.RootElement.EnumerateArray())
-            {
-                if (el.ValueKind == JsonValueKind.String)
-                {
-                    var v = el.GetString();
-                    if (!string.IsNullOrEmpty(v)) list.Add(v!);
-                }
-            }
-            return list;
+            return doc.RootElement.EnumerateArray()
+                .Where(el => el.ValueKind == JsonValueKind.String)
+                .Select(el => el.GetString())
+                .Where(v => !string.IsNullOrEmpty(v))
+                .Select(v => v!)
+                .ToList();
         }
         catch (JsonException)
         {
