@@ -569,12 +569,130 @@
     // without restarting the host. When the optional
     // Kuestenlogik.Bowire.Ai package isn't installed, /api/ai/status
     // returns 404 and the section renders an install hint instead.
+    //
+    // Provider matrix (#25 ADR):
+    //   ollama / lmstudio — local (Kuestenlogik.Bowire.Ai)
+    //   openai / openrouter — BYOK cloud (Kuestenlogik.Bowire.Ai.OpenAi)
+    //   anthropic — BYOK cloud (Kuestenlogik.Bowire.Ai.Anthropic)
+    //   mcp — MCP-client reversal (Kuestenlogik.Bowire.Ai.Mcp)
+    function isAiCloudProvider(p) {
+        return p === 'openai' || p === 'anthropic' || p === 'openrouter';
+    }
+    function isAiLocalProvider(p) {
+        return p === 'ollama' || p === 'lmstudio';
+    }
+    function defaultEndpointFor(providerId) {
+        switch (providerId) {
+            case 'openai': return 'https://api.openai.com/v1';
+            case 'openrouter': return 'https://openrouter.ai/api/v1';
+            case 'anthropic': return ''; // SDK uses its built-in endpoint
+            case 'mcp': return 'http://localhost:3845/mcp';
+            case 'lmstudio': return 'http://localhost:1234';
+            default: return 'http://localhost:11434';
+        }
+    }
+    function endpointPlaceholderFor(providerId) {
+        switch (providerId) {
+            case 'openai': return 'https://api.openai.com/v1';
+            case 'openrouter': return 'https://openrouter.ai/api/v1';
+            case 'anthropic': return '(SDK default — leave blank)';
+            case 'mcp': return 'http://localhost:3845/mcp or stdio:claude mcp serve';
+            case 'lmstudio': return 'http://localhost:1234';
+            default: return 'http://localhost:11434';
+        }
+    }
+    function endpointHelpFor(providerId) {
+        switch (providerId) {
+            case 'openai': return 'OpenAI API base URL. Default api.openai.com/v1 covers chat-completions; an Azure / proxy deployment slots in by overriding the URL here.';
+            case 'openrouter': return 'OpenRouter base URL — same OpenAI-compatible wire shape against a single key that fronts dozens of models.';
+            case 'anthropic': return 'Leave blank to use the SDK\'s built-in endpoint. The Anthropic.SDK package handles the wire details.';
+            case 'mcp': return 'Either an absolute http(s) URL of the MCP host (Streamable HTTP or SSE) or a "stdio:<command>" string that Bowire will spawn as a child process. Bowire picks the first tool whose name reads as a chat / completion / sampling gateway.';
+            case 'lmstudio': return 'LM Studio listens on 127.0.0.1:1234 by default. Same Ollama-compatible wire shape.';
+            default: return 'Ollama listens on 127.0.0.1:11434 by default. Use a remote host for shared GPU servers.';
+        }
+    }
+    function modelPlaceholderFor(providerId) {
+        switch (providerId) {
+            case 'openai': return 'gpt-4o-mini';
+            case 'openrouter': return 'anthropic/claude-3.5-sonnet';
+            case 'anthropic': return 'claude-opus-4-7';
+            case 'mcp': return '(host-defined)';
+            default: return 'llama3.2:3b';
+        }
+    }
+    function renderAiPrivacyBanner(providerId) {
+        // The privacy stance is loud per the ADR — every provider
+        // option spells out exactly where prompts go.
+        var text;
+        var kind = 'tip';
+        if (isAiLocalProvider(providerId)) {
+            text = 'Prompts stay on this machine. Nothing leaves loopback. Bowire never sees the prompt or response.';
+            kind = 'ok';
+        } else if (providerId === 'openai') {
+            text = 'Prompts go to api.openai.com. Your API key stays on this machine; Bowire calls the provider directly. Küstenlogik never sees the key, prompts, or responses.';
+        } else if (providerId === 'anthropic') {
+            text = 'Prompts go to api.anthropic.com. Your API key stays on this machine; Bowire calls the provider directly. Küstenlogik never sees the key, prompts, or responses.';
+        } else if (providerId === 'openrouter') {
+            text = 'Prompts go to openrouter.ai. Your API key stays on this machine; Bowire calls the provider directly. Küstenlogik never sees the key, prompts, or responses.';
+        } else if (providerId === 'mcp') {
+            text = 'Prompts go to the MCP host you configured. Bowire connects as a client; the host is responsible for the model affinity, auth, and rate limiting. Küstenlogik never sees prompts or responses.';
+            kind = 'ok';
+        } else {
+            return el('div');
+        }
+        return el('div', {
+            className: 'bowire-settings-ai-privacy bowire-settings-ai-privacy-' + kind,
+            textContent: text
+        });
+    }
+    function renderAiApiKeyRow(draft, status, hostManaged) {
+        var hasExistingKey = !!(status && status.hasApiKey);
+        var notApplicable = !isAiCloudProvider(draft.providerId);
+        return renderSettingsRow('API key',
+            notApplicable
+                ? 'Not applicable for this provider. Local providers need no key; the MCP path inherits auth from the configured host.'
+                : 'BYOK — your provider key. Stays in ai-config.json on this machine; never proxied through Küstenlogik. Leave blank to keep the existing key (shown as "set" below).',
+            function () {
+                var wrap = el('div', { className: 'bowire-settings-apikey-wrap' });
+                var input = el('input', {
+                    type: 'password',
+                    className: 'bowire-settings-input bowire-settings-apikey-input',
+                    value: '',
+                    placeholder: notApplicable
+                        ? '(not used by this provider)'
+                        : (hasExistingKey ? '••••••••••• (leave blank to keep)' : 'sk-...'),
+                    autocomplete: 'off',
+                    spellcheck: false
+                });
+                input.oninput = function () { draft.apiKey = input.value; };
+                if (hostManaged || notApplicable) input.setAttribute('disabled', 'disabled');
+                wrap.appendChild(input);
+                if (hasExistingKey && !notApplicable) {
+                    var clearBtn = el('button', {
+                        type: 'button',
+                        className: 'bowire-settings-apikey-clear',
+                        textContent: 'Clear stored key',
+                        title: 'Remove the API key from ai-config.json. Disables the cloud provider until you paste one again.'
+                    });
+                    clearBtn.onclick = function () {
+                        // The sentinel lets the server distinguish
+                        // "leave existing" (empty body field) from
+                        // "explicitly clear" (this sentinel).
+                        draft.apiKey = '__bowire_clear__';
+                        renderSettingsDialog();
+                    };
+                    wrap.appendChild(clearBtn);
+                }
+                return wrap;
+            });
+    }
+
     var aiSettingsState = {
         loaded: false,
         loading: false,
         status: null,         // last /api/ai/status body, or null when 404
         probe: null,          // last /api/ai/probe-local body
-        draft: null,          // { providerId, endpoint, model, autoDetectLocal }
+        draft: null,          // { providerId, endpoint, model, apiKey, autoDetectLocal }
         saving: false,
         result: null          // { kind: 'ok'|'err', text }
     };
@@ -610,6 +728,7 @@
                     providerId: aiSettingsState.status.providerId || 'ollama',
                     endpoint: aiSettingsState.status.endpoint || 'http://localhost:11434',
                     model: aiSettingsState.status.model || '',
+                    apiKey: aiSettingsState.status.apiKey || '',
                     autoDetectLocal: !!aiSettingsState.status.autoDetectLocal
                 };
             }
@@ -686,12 +805,14 @@
                         providerId: resp.body.providerId,
                         endpoint: resp.body.endpoint,
                         model: resp.body.model,
+                        hasApiKey: !!resp.body.hasApiKey,
                         autoDetectLocal: !!resp.body.autoDetectLocal
                     };
                     aiSettingsState.draft = {
                         providerId: resp.body.providerId,
                         endpoint: resp.body.endpoint,
                         model: resp.body.model,
+                        apiKey: '', // reset the draft field after save so a leave-blank does the right thing next save
                         autoDetectLocal: !!resp.body.autoDetectLocal
                     };
                     aiSettingsState.result = {
@@ -818,39 +939,69 @@
                 : 'No live client. The next save reconfigures the runtime.');
         section.appendChild(el('div', { className: statusClass, textContent: statusText }));
 
-        // Provider dropdown (Phase 2 set; cloud providers join the list
-        // once #25 Phase 3 ships).
+        // Provider dropdown (Phase 2 local + Phase 3 BYOK cloud +
+        // Phase 4 MCP-client reversal). Each option's tooltip names
+        // the package that contributes the factory — standalone bowire
+        // bundles all of them, embedded hosts opt in granularly.
         section.appendChild(renderSettingsRow('Provider',
-            'Backend that serves chat completions. Local providers (Ollama / LM Studio) require nothing leaves the machine. Cloud providers land with #25 Phase 3.',
+            'Backend that serves chat completions. Local (Ollama / LM Studio) keeps prompts on this machine; BYOK cloud (OpenAI / Anthropic / OpenRouter) calls the provider directly from this host; MCP routes through your existing MCP host.',
             function () {
                 var sel = el('select', { className: 'bowire-settings-select' });
                 var options = [
                     { v: 'ollama', l: 'Ollama (local)' },
-                    { v: 'lmstudio', l: 'LM Studio (local, Ollama-compatible)' }
+                    { v: 'lmstudio', l: 'LM Studio (local, Ollama-compatible)' },
+                    { v: 'openai', l: 'OpenAI (BYOK cloud)' },
+                    { v: 'anthropic', l: 'Anthropic / Claude (BYOK cloud)' },
+                    { v: 'openrouter', l: 'OpenRouter (BYOK cloud, multi-model)' },
+                    { v: 'mcp', l: 'MCP host (reverse — your gateway)' }
                 ];
                 options.forEach(function (o) {
                     sel.appendChild(el('option', { value: o.v, textContent: o.l, selected: draft.providerId === o.v }));
                 });
-                sel.onchange = function () { draft.providerId = sel.value; };
+                sel.onchange = function () {
+                    draft.providerId = sel.value;
+                    // Swap the endpoint default when the user picks a
+                    // different provider class so they don't have to
+                    // manually retype it on first switch. We only swap
+                    // when the current endpoint still looks like the
+                    // ollama default — never overwrite something the
+                    // user has actually typed.
+                    if ((draft.endpoint || '') === 'http://localhost:11434' || !draft.endpoint) {
+                        draft.endpoint = defaultEndpointFor(sel.value);
+                    }
+                    renderSettingsDialog();
+                };
                 if (hostManaged) sel.setAttribute('disabled', 'disabled');
                 return sel;
             }));
 
-        // Endpoint text input. Defaults populated from current state so
-        // editing only what you need is the path of least resistance.
+        // Privacy banner — provider-specific so the user always sees
+        // exactly where prompts go before they paste a key. Same
+        // privacy stance the ADR pins in docs/architecture/ai-integration.md.
+        section.appendChild(renderAiPrivacyBanner(draft.providerId));
+
+        // Endpoint text input. Placeholder + helper text are
+        // provider-specific so MCP users see the stdio: form and
+        // cloud users see the canonical base URL.
         section.appendChild(renderSettingsRow('Endpoint',
-            'Base URL of the provider. Ollama default: http://localhost:11434 · LM Studio default: http://localhost:1234. Use a remote host for shared GPU servers.',
+            endpointHelpFor(draft.providerId),
             function () {
                 var input = el('input', {
                     type: 'text',
                     className: 'bowire-settings-input',
                     value: draft.endpoint || '',
-                    placeholder: 'http://localhost:11434'
+                    placeholder: endpointPlaceholderFor(draft.providerId)
                 });
                 input.oninput = function () { draft.endpoint = input.value; };
                 if (hostManaged) input.setAttribute('disabled', 'disabled');
                 return input;
             }));
+
+        // API key — only relevant for the BYOK cloud providers. We
+        // render the row anyway with a "(not applicable)" hint for
+        // local / MCP providers so the surface doesn't reflow every
+        // time the user toggles the dropdown.
+        section.appendChild(renderAiApiKeyRow(draft, aiSettingsState.status, hostManaged));
 
         // Model: dropdown sourced from probe results when available,
         // free-text otherwise. Probe response shapes for the two
@@ -866,7 +1017,7 @@
                         type: 'text',
                         className: 'bowire-settings-input',
                         value: draft.model || '',
-                        placeholder: 'llama3.2:3b'
+                        placeholder: modelPlaceholderFor(draft.providerId)
                     });
                     input.oninput = function () { draft.model = input.value; };
                     if (hostManaged) input.setAttribute('disabled', 'disabled');

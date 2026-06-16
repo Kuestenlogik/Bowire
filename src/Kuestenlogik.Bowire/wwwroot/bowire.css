@@ -8173,6 +8173,48 @@ and chip row */
 .bowire-settings-row-label { font-size: 13px; color: var(--bowire-text); font-weight: 500; }
 .bowire-settings-row-desc { font-size: 11px; color: var(--bowire-text-tertiary); margin-top: 2px; }
 .bowire-settings-row-control { flex-shrink: 0; }
+/* #25 Phase 3+4 — AI provider privacy banner. Sits between the
+   provider dropdown and the endpoint row so the user reads exactly
+   where prompts go before they paste a key. Two flavours by route:
+   local / MCP carry the "stays on this machine" green tone; cloud
+   carries the neutral grey-amber tone. */
+.bowire-settings-ai-privacy {
+    margin: 6px 0 10px;
+    padding: 10px 12px;
+    border-radius: 4px;
+    font-size: 12px;
+    line-height: 1.45;
+    border-left: 3px solid var(--bowire-border-subtle);
+    background: var(--bowire-bg-elevated);
+    color: var(--bowire-text-secondary);
+}
+.bowire-settings-ai-privacy-ok {
+    border-left-color: var(--bowire-success, #2da44e);
+}
+/* API-key row layout: input + optional Clear button on the same line. */
+.bowire-settings-apikey-wrap {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.bowire-settings-apikey-input {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    letter-spacing: 0.5px;
+    min-width: 220px;
+}
+.bowire-settings-apikey-clear {
+    font-size: 11px;
+    padding: 4px 8px;
+    border: 1px solid var(--bowire-border-subtle);
+    background: var(--bowire-bg-elevated);
+    color: var(--bowire-text-secondary);
+    border-radius: 4px;
+    cursor: pointer;
+}
+.bowire-settings-apikey-clear:hover {
+    border-color: var(--bowire-border);
+    color: var(--bowire-text);
+}
 /* #169 — Hints and warnings row. Vertical alignment differs from
    the standard row because the list can grow; the description sits
    above its own block instead of beside the control. */
