@@ -64,12 +64,12 @@ public sealed class WorkspaceCommandEdgeCasesTests : IDisposable
     // ---------------------------------------------------------------
 
     [Fact]
-    public void Build_returns_workspace_command_with_init_and_migrate_format_subcommands()
+    public void Build_returns_workspace_command_with_full_subcommand_set()
     {
         // Pins the parent-command shape: name, description hint, and
-        // the two known subcommands as of #196 Phase 2.2 (init +
-        // migrate-format). When the next phase adds export / import,
-        // this assertion is the intended forcing function for an
+        // the four known subcommands as of #149 closeout (init +
+        // migrate-format + export + import). When a future phase adds
+        // a new verb, this assertion is the forcing function for an
         // updated subcommand inventory.
         var workspace = WorkspaceCommand.Build();
 
@@ -78,7 +78,9 @@ public sealed class WorkspaceCommandEdgeCasesTests : IDisposable
         var names = workspace.Subcommands.Select(s => s.Name).ToHashSet();
         Assert.Contains("init", names);
         Assert.Contains("migrate-format", names);
-        Assert.Equal(2, workspace.Subcommands.Count);
+        Assert.Contains("export", names);
+        Assert.Contains("import", names);
+        Assert.Equal(4, workspace.Subcommands.Count);
     }
 
     [Fact]
