@@ -4391,14 +4391,25 @@
                     tabScroll.appendChild(tabEl);
                 })(requestTabs[ti]);
             }
-            // "+" tab — opens a freeform request pane (no service /
-            // method picked yet). The user fills in URL + method by
-            // hand or via the omnibox once #124 lands.
+            // "+" tab — pins the currently-selected method into a
+            // fresh tab so the active tab stays free for ad-hoc
+            // browsing. Without an active method (just started, or
+            // landing page open) the button falls back to the
+            // freeform request builder. Shift-click forces freeform
+            // even when a method is selected, for users who want
+            // the empty-tab path on demand.
             tabScroll.appendChild(el('button', {
                 className: 'bowire-request-tab-new',
-                title: 'New tab (Ctrl+T)',
-                onClick: function () {
-                    startFreeformRequest();
+                title: selectedMethod && selectedService
+                    ? 'Pin current method into a new tab (Shift-click for empty tab)'
+                    : 'New empty tab',
+                onClick: function (e) {
+                    var forceEmpty = e && e.shiftKey;
+                    if (!forceEmpty && selectedMethod && selectedService) {
+                        openTab(selectedService, selectedMethod, { inNewTab: true });
+                    } else {
+                        startFreeformRequest();
+                    }
                 },
                 innerHTML: svgIcon('plus')
             }));
