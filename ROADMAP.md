@@ -12,11 +12,12 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.0 — Re-architected workbench shell + workspace = project folder *(due 2026-06-19)*
 
-**68/69 done** · 1 backlog
+**68/70 done** · 2 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
 | [115](https://github.com/Kuestenlogik/Bowire/issues/115) | Bowire | [v2.0 — UI refactor: re-architect the workbench shell](#issue-kuestenlogik-bowire-115) | ⬜ Backlog |  |
+| [131](https://github.com/Kuestenlogik/Bowire/issues/131) | Bowire | [Benchmarks: first-class surface (single / collection / recording / random / scheduled)](#issue-kuestenlogik-bowire-131) | ⬜ Backlog |  |
 | [25](https://github.com/Kuestenlogik/Bowire/issues/25) | Bowire | [AI side-panel integration](#issue-kuestenlogik-bowire-25) | ✅ Done | `area:workbench` |
 | [33](https://github.com/Kuestenlogik/Bowire/issues/33) | Bowire | [Protocol plugins — Connect Phase 1+3 + OTLP](#issue-kuestenlogik-bowire-33) | ✅ Done | `area:plugin-sdk` |
 | [43](https://github.com/Kuestenlogik/Bowire/issues/43) | Bowire | [MCP SSE-transport support](#issue-kuestenlogik-bowire-43) | ✅ Done | `area:mcp` |
@@ -88,13 +89,12 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.1 — Scripting, variable resolver, throughput surface *(due 2026-06-30)*
 
-**0/11 done** · 11 backlog
+**0/10 done** · 10 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
 | [117](https://github.com/Kuestenlogik/Bowire/issues/117) | Bowire | [i18n — extract every UI string; ship DE + EN catalogues](#issue-kuestenlogik-bowire-117) | ⬜ Backlog |  |
 | [126](https://github.com/Kuestenlogik/Bowire/issues/126) | Bowire | [Pre-/post-scripts with a protocol-typed sandbox](#issue-kuestenlogik-bowire-126) | ⬜ Backlog |  |
-| [131](https://github.com/Kuestenlogik/Bowire/issues/131) | Bowire | [Benchmarks: first-class surface (single / collection / recording / random / scheduled)](#issue-kuestenlogik-bowire-131) | ⬜ Backlog |  |
 | [132](https://github.com/Kuestenlogik/Bowire/issues/132) | Bowire | [Parallel sessions for recordings / collections (phase 1 local, phase 2 distributed)](#issue-kuestenlogik-bowire-132) | ⬜ Backlog |  |
 | [136](https://github.com/Kuestenlogik/Bowire/issues/136) | Bowire | [URL / service catalogue providers (local / http / consul / kubernetes / agent)](#issue-kuestenlogik-bowire-136) | ⬜ Backlog |  |
 | [140](https://github.com/Kuestenlogik/Bowire/issues/140) | Bowire | [Per-mode 'Saved Configs' / Presets (distinct from cross-workflow favorites)](#issue-kuestenlogik-bowire-140) | ⬜ Backlog |  |
@@ -204,6 +204,10 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 #### <a id="issue-kuestenlogik-bowire-115"></a>⬜ Backlog · [#115](https://github.com/Kuestenlogik/Bowire/issues/115) v2.0 — UI refactor: re-architect the workbench shell
 
 > **Status:** Phase 1 — Shell-Refactor abgeschlossen (Juni 2026). Was in v2.0 noch zu erledigen ist: ein kleiner Cleanup-Sweep + Release-Notes. Phase 2 (mehrere Feature-Streams) ist auf eigene Tickets unter v2.1-Milestone verschoben. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/115)
+
+#### <a id="issue-kuestenlogik-bowire-131"></a>⬜ Backlog · [#131](https://github.com/Kuestenlogik/Bowire/issues/131) Benchmarks: first-class surface (single / collection / recording / random / scheduled)
+
+Today benchmarks (Repeat N×, latency distribution, status histogram) live as an inline expansion on a single request pane. The discoverability is buried — the operator has to find a method, open its detail, scroll to the bench section. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/131)
 
 #### <a id="issue-kuestenlogik-bowire-25"></a>✅ Done · [#25](https://github.com/Kuestenlogik/Bowire/issues/25) AI side-panel integration
 
@@ -492,10 +496,6 @@ Bowire's UI is English-only today. Every label, every button, every tooltip, eve
 #### <a id="issue-kuestenlogik-bowire-126"></a>⬜ Backlog · [#126](https://github.com/Kuestenlogik/Bowire/issues/126) Pre-/post-scripts with a protocol-typed sandbox
 
 Real testing workflows have steps that are too dynamic for a static template: sign the body with a per-request HMAC, refresh an access token if it's about to expire, capture a value from one response into a header on the next, encode a binary blob, assert on a complex shape after send. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/126)
-
-#### <a id="issue-kuestenlogik-bowire-131"></a>⬜ Backlog · [#131](https://github.com/Kuestenlogik/Bowire/issues/131) Benchmarks: first-class surface (single / collection / recording / random / scheduled)
-
-Today benchmarks (Repeat N×, latency distribution, status histogram) live as an inline expansion on a single request pane. The discoverability is buried — the operator has to find a method, open its detail, scroll to the bench section. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/131)
 
 #### <a id="issue-kuestenlogik-bowire-132"></a>⬜ Backlog · [#132](https://github.com/Kuestenlogik/Bowire/issues/132) Parallel sessions for recordings / collections (phase 1 local, phase 2 distributed)
 
