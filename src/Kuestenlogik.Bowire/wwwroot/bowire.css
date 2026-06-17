@@ -11,6 +11,14 @@
        headroom to glow without washing the cards out. */
     --bowire-bg: #0a0a14;
     --bowire-bg-elevated: #14141f;
+    /* Tab-strip background — sits between body and the elevated
+       content surface. The active tab adopts --bowire-bg-elevated
+       (same as .bowire-pane-header) so it reads as the
+       content-joined surface; inactive tabs inherit this strip
+       colour so the row is darker than the active tab but lighter
+       than the bare body. Hoppscotch convention without dragging
+       the body bg along. */
+    --bowire-tab-strip-bg: #0e0e18;
     --bowire-sidebar-bg: #0e0e18;
     --bowire-sidebar-hover: #1a1a2a;
     --bowire-sidebar-active: #1f1f33;
@@ -155,6 +163,10 @@
 [data-theme="light"] {
     --bowire-bg: #f7f8fc;
     --bowire-bg-elevated: #ffffff;
+    /* Tab-strip background — sits between body and the elevated
+       content surface; matches the active-tab vs strip contrast
+       used in the dark theme. */
+    --bowire-tab-strip-bg: #eef0f6;
     --bowire-sidebar-bg: #f0f2f8;
     --bowire-sidebar-hover: #e6e9f2;
     --bowire-sidebar-active: #dde0ee;
@@ -3928,7 +3940,10 @@ full text color
        transform is overridden to none on .active so the selected
        row stays anchored even if the cursor passes over it again. */
     transition: background var(--bowire-transition), transform var(--bowire-transition);
-    border-left: 2px solid transparent;
+    /* Accent stripe + glow on .active are drawn via inset box-shadow
+       so they don't widen the box (a real border-left would push the
+       background-fill right by 3 px and the active row would read
+       as indented compared to the service header above it). */
     position: relative;
 }
 
@@ -3939,11 +3954,14 @@ full text color
 
 .bowire-method-item.active {
     background: var(--bowire-sidebar-active);
-    border-left: 3px solid var(--bowire-accent);
-    /* Inner glow on the active row — a 1px subtle accent ring + a
-       wider outer halo. Reads as a depth cue rather than a hard
-       outline, separating the selection from the hover state. */
+    /* Active-row decoration, layered (left-to-right in the shadow list):
+       — `inset 3px 0 0 accent`        the left-edge accent stripe
+       — `inset 0 0 0 1px accent-subtle` a 1 px ring inside the row
+       — `0 0 24px -8px accent-glow`   ambient outer halo
+       All inset, so the row keeps its content-box width and the
+       background fills flush with the .bowire-service-header above. */
     box-shadow:
+        inset 3px 0 0 var(--bowire-accent),
         inset 0 0 0 1px var(--bowire-accent-subtle),
         0 0 24px -8px var(--bowire-accent-glow);
 }
@@ -4706,10 +4724,19 @@ only an accent-coloured underline under the active tab. The whole
 /* ---------- Request Tab Bar ---------- */
 .bowire-request-tabs {
     flex-shrink: 0;
-    border-bottom: 1px solid var(--bowire-border);
-    background: var(--bowire-bg-elevated);
+    /* Hoppscotch convention — strip is the darker, recessed surface
+       and the active tab adopts the same lighter surface as the
+       pane-header below it so the two visually fuse. Strip colour
+       is pinned to a dedicated token (between --bowire-bg and
+       --bowire-bg-elevated) so dark / light themes can tune the
+       strip-vs-content contrast without dragging the body bg along. */
+    background: var(--bowire-tab-strip-bg);
     position: relative;
 }
+
+/* The bottom separator line now lives on .bowire-request-tabs-scroll
+   (further down in this file) — inside the overflow-clip box where
+   the active tab can actually overlap it via z-index. */
 
 .bowire-request-tabs-scroll {
     display: flex;
@@ -4718,6 +4745,31 @@ only an accent-coloured underline under the active tab. The whole
     scrollbar-width: thin;
     scrollbar-color: var(--bowire-border) transparent;
     padding: 0 8px;
+    /* Anchor the bottom-separator pseudo below to this container so
+       the line lives INSIDE the overflow-clip box. Without
+       position:relative the ::after would resolve against the
+       outer .bowire-request-tabs and that line sits in a layer the
+       active tab cannot reach. */
+    position: relative;
+}
+
+/* Bottom separator drawn as an absolutely-positioned pseudo INSIDE
+   the scroll container — same overflow box as the tabs themselves.
+   The active tab raises its stacking order with z-index:1 + an
+   opaque bg-elevated background, so its last 1 px paints over this
+   pseudo's slice. Inactive tabs have no background → the line
+   shows through under them. No margin-bottom hack needed (and so
+   no clipped overflow → no vertical scrollbar). */
+.bowire-request-tabs-scroll::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 1px;
+    background: var(--bowire-border);
+    z-index: 0;
+    pointer-events: none;
 }
 
 .bowire-request-tabs-scroll::-webkit-scrollbar {
@@ -4759,15 +4811,16 @@ only an accent-coloured underline under the active tab. The whole
 .bowire-request-tab.active {
     color: var(--bowire-text);
     border-top-color: var(--bowire-accent);
-    /* Hoppscotch-style "no seam" between the active tab and the
-       content pane below: the tab adopts the content-area background
-       and overlaps the tab-strip's 1 px border-bottom by -1 px so
-       the separator line breaks under the active tab. The .active
-       tab sits on top via position: relative + z-index — without
-       the z-index bump the negative margin would be hidden behind
-       the strip's own border. */
-    background: var(--bowire-bg);
-    margin-bottom: -1px;
+    /* Active tab adopts the same background as the pane-header /
+       inner .bowire-tabs surface below it so the two visually
+       fuse. Position:relative + z-index:1 raise the tab above the
+       scroll container's ::after separator (z-index:0). The
+       active tab's last 1 px of opaque bg-elevated paints over the
+       pseudo's pixel row, hiding the seam under the active tab
+       while leaving it visible under the inactive (transparent)
+       neighbours — no margin-bottom hack and no scrollbar. */
+    background: var(--bowire-bg-elevated);
+    position: relative;
     z-index: 1;
 }
 
