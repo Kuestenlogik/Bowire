@@ -206,7 +206,10 @@ public sealed class MockCoverageGapsTests
             TestContext.Current.CancellationToken);
         Assert.Equal(HttpStatusCode.BadRequest, resp.StatusCode);
         var body = await resp.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
-        Assert.Contains("required", body, StringComparison.Ordinal);
+        // Body must carry either `recording` (inline JSON) or `recordingId` —
+        // assert the error mentions one of them so a future copy-edit
+        // doesn't silently break the contract.
+        Assert.Contains("recording", body, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
@@ -263,7 +266,7 @@ public sealed class MockCoverageGapsTests
                 web.ConfigureServices(s =>
                 {
                     s.AddRouting();
-                    s.AddSingleton<MockRegistry>(_ => new MockRegistry(NullLogger<MockRegistry>.Instance));
+                    s.AddSingleton<BowireMockHostManager>();
                 });
                 web.Configure(app =>
                 {

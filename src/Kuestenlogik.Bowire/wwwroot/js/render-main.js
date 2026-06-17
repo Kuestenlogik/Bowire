@@ -1517,6 +1517,7 @@
         var wsTabDefs = [
             { id: 'general',   label: 'General',   icon: 'settings' },
             { id: 'variables', label: 'Variables', icon: 'braces' },
+            { id: 'auth',      label: 'Auth',      icon: 'lock' },
             { id: 'secrets',   label: 'Secrets',   icon: 'key' }
         ];
         wsTabDefs.forEach(function (td) {
@@ -1553,6 +1554,40 @@
                     if (typeof persistWorkspaces === 'function') persistWorkspaces();
                 }
             }, false));
+            return main;
+        }
+
+        // ---- Auth tab ----
+        // Workspace-level auth config — applied as the default when
+        // the active environment has no auth (or `auth.type === 'none'`).
+        // Environment auth wins on collision, mirroring the variables
+        // pattern (env vars override workspace defaults). Reuses
+        // renderAuthSection() so the editor reads identical to the
+        // env auth editor.
+        if (workspaceSettingsTab === 'auth') {
+            main.appendChild(el('p', {
+                className: 'bowire-ws-detail-stat-hint',
+                style: 'margin:8px 0',
+                textContent: 'Workspace-level default auth — applied to every request unless the active environment defines its own. Use this for "every env in this workspace hits the same API gateway with the same token" setups.'
+            }));
+            if (typeof renderAuthSection === 'function') {
+                main.appendChild(renderAuthSection(
+                    function () {
+                        var t = _liveWs() || ws;
+                        return t.auth || { type: 'none' };
+                    },
+                    function (nextAuth) {
+                        var t = _liveWs();
+                        if (!t) return;
+                        if (!nextAuth || nextAuth.type === 'none') {
+                            delete t.auth;
+                        } else {
+                            t.auth = nextAuth;
+                        }
+                        if (typeof persistWorkspaces === 'function') persistWorkspaces();
+                    }
+                ));
+            }
             return main;
         }
 
@@ -2477,7 +2512,7 @@
                         render();
                     }
                 },
-                    el('span', { innerHTML: svgIcon('recording'), style: 'width:14px;height:14px;display:inline-flex;flex-shrink:0' }),
+                    el('span', { innerHTML: svgIcon('filmstrip'), style: 'width:14px;height:14px;display:inline-flex;flex-shrink:0' }),
                     el('span', { style: 'flex:1', textContent: r.name || '(unnamed)' }),
                     el('span', { style: 'opacity:0.6;font-size:11px', textContent: stepCount + (stepCount === 1 ? ' step' : ' steps') })
                 ));
@@ -2534,6 +2569,17 @@
         ]));
         if (typeof recordingManagerSelectedId !== 'undefined') {
             recordingManagerSelectedId = rec.id;
+        }
+        // Chunked recording storage (#144 Phase 1) — rec.steps is
+        // populated lazily from the manifest. Trigger hydration the
+        // moment the detail pane mounts via the Workspace-Tree path.
+        // Gate ONLY on `rec.steps === undefined` (never tried) — the
+        // empty array case means hydrateRecording already ran and the
+        // manifest was empty; re-triggering would render-loop forever
+        // because hydrateRecording resolves synchronously when there's
+        // nothing to fetch.
+        if (typeof hydrateRecording === 'function' && rec.steps === undefined) {
+            hydrateRecording(rec).then(function () { render(); });
         }
         if (typeof renderRecordingDetail === 'function') {
             main.appendChild(renderRecordingDetail(rec));
@@ -2859,7 +2905,18 @@
                         : status === 'disconnected' ? 'Disconnected'
                         : status === 'discovering' ? 'Discovering' : status;
         var svcList = (typeof services !== 'undefined')
-            ? services.filter(function (s) { return s.originUrl === u; }) : [];
+            ? services.filter(function (s) {
+                // Only count services that actually carry methods —
+                // the JSON-RPC plugin probes every REST URL and emits
+                // a methodless "service" when no JSON-RPC endpoint is
+                // there, which would inflate the count past what the
+                // operator sees in Discover. Same gate the Discover
+                // rail-badge + tree use.
+                return s.originUrl === u
+                    && Array.isArray(s.methods)
+                    && s.methods.length > 0;
+            })
+            : [];
         var protoCounts = {};
         for (var i = 0; i < svcList.length; i++) {
             var proto = svcList[i].source || 'unknown';
@@ -3328,6 +3385,20 @@
     // item am I on" question without doubling the chrome.
 
     function renderMain() {
+        // Honest empty state when there's no active workspace (first
+        // run, or last workspace just deleted). Every other rail
+        // would either render against stale in-memory state or against
+        // the orphan namespace — both confuse the operator into
+        // thinking the workspace they just deleted is half-alive. Force
+        // the Home-rail CTA so the only path forward is "create one".
+        if (!activeWorkspaceId
+            && typeof workspaces !== 'undefined'
+            && Array.isArray(workspaces) && workspaces.length === 0
+            && railMode !== 'home') {
+            railMode = 'home';
+            try { localStorage.setItem('bowire_rail_mode', 'home'); } catch { /* ignore */ }
+        }
+
         // #139 — Home rail mode. Default landing for first-time
         // users; cross-workflow launchpad. Phase 1 shows recent
         // activity + favorites as two grids; click opens the method
@@ -3730,6 +3801,16 @@
             var recMain = el('div', { id: 'bowire-main-recordings', className: 'bowire-main bowire-main-recordings' });
             var selectedRec = recordingsList.find(function (r) { return r.id === recordingManagerSelectedId; });
             if (selectedRec && typeof renderRecordingDetail === 'function') {
+                // Chunked recording storage (#144 Phase 1) — hydrate
+                // before the toolbar reads rec.steps.length so the
+                // "Use as mock" / "Convert to Tests" actions enable
+                // correctly even when the rail-mode entry path was a
+                // jump rather than a sidebar click. Gate ONLY on
+                // `steps === undefined` — empty array means hydration
+                // already ran and re-triggering would render-loop.
+                if (typeof hydrateRecording === 'function' && selectedRec.steps === undefined) {
+                    hydrateRecording(selectedRec).then(function () { render(); });
+                }
                 recMain.appendChild(renderRecordingDetail(selectedRec));
             } else {
                 var emptyWrap = el('div', { className: 'bowire-main-pad' });

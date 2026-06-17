@@ -13,7 +13,7 @@
 // now run it as a mock without dropping to a terminal" path.
 //
 // Issue #57 (per-mock request log + SSE tail) is wired against the
-// same MockRegistry but the endpoint + UI lands separately.
+// same BowireMockHostManager but the endpoint + UI lands separately.
 
     // ---------- state ----------
     var mocksList = [];                  // [{ mockId, recordingName, port, startedAt }]
@@ -26,6 +26,10 @@
     function loadMocks() {
         if (mocksLoadInFlight) return Promise.resolve(mocksList);
         mocksLoadInFlight = true;
+        // Single registry after the #223 consolidation — every running
+        // mock (whether started via POST /api/mocks inline-recording
+        // body or via the "Use as mock" recordingId-lookup body) lives
+        // in BowireMockHostManager and surfaces here.
         return fetch(config.prefix + '/api/mocks')
             .then(function (r) { return r.ok ? r.json() : null; })
             .then(function (data) {

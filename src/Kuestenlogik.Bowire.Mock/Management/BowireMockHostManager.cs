@@ -7,23 +7,25 @@ using System.Net.Sockets;
 namespace Kuestenlogik.Bowire.Mock.Management;
 
 /// <summary>
-/// Tracks mock-server instances spun up by the workbench's
-/// "Use as mock" one-click flow (#94). Each <see cref="StartFromJson"/>
-/// allocates a fresh local port from <see cref="BasePort"/> upward,
-/// writes the recording JSON to a per-host temp file, and boots a
-/// <see cref="MockServer"/> against it. Caller gets a handle they can
-/// reference later to stop or list active hosts.
-/// <para>
-/// Lifetime is tied to the workbench process: dispose this manager
-/// (DI's <c>IHostedService</c> shutdown hook) and every running mock
-/// host stops. We deliberately don't persist active mocks — the
-/// "persistent mock" lane is owned by the <c>bowire mock</c> CLI.
-/// </para>
+/// Single owner of every UI-spun mock server. Replaces the v1.x
+/// <c>MockRegistry</c> / v2.x <c>BowireMockHostManager</c> split — there's
+/// now exactly one registry behind <c>/api/mocks*</c> (#223).
 /// </summary>
+/// <remarks>
+/// <para>Lifecycle: singleton via <c>AddBowireMockManagement()</c>;
+/// disposed on host shutdown. Every <see cref="StartAsync"/> writes the
+/// recording JSON to a temp file (the underlying <see cref="MockServer"/>
+/// ingests via path), opens the host on a free local port, and tracks
+/// the entry in a <see cref="ConcurrentDictionary{TKey,TValue}"/>.
+/// <see cref="StopAsync"/> tears the server down + deletes the temp file.</para>
+/// <para>Concurrency: List / Start / Stop / Get can interleave freely.
+/// The temp-file write is awaited before <see cref="MockServer.StartAsync"/>,
+/// so a successful start always has the file on disk.</para>
+/// </remarks>
 public sealed class BowireMockHostManager : IAsyncDisposable
 {
     /// <summary>
-    /// Starting port for the allocator. 5180 sits just above the
+    /// Starting port for the auto-allocator. 5180 sits just above the
     /// workbench's own default 5080 + plugin range, so picked ports
     /// don't collide with the workbench / its tooling in practice.
     /// </summary>
@@ -32,64 +34,100 @@ public sealed class BowireMockHostManager : IAsyncDisposable
     /// <summary>Maximum probes before giving up. 20 is plenty in practice.</summary>
     private const int MaxProbes = 20;
 
-    private readonly ConcurrentDictionary<string, MockHostEntry> _entries = new();
+    private readonly ConcurrentDictionary<string, MockHostEntry> _entries = new(StringComparer.Ordinal);
     private int _nextPort = BasePort;
     private readonly Lock _portLock = new();
 
+    /// <summary>Snapshot of every running mock. Order undefined; UI sorts by StartedAtUtc.</summary>
     public IReadOnlyCollection<MockHostHandle> List() =>
         _entries.Values.Select(e => e.Handle).ToArray();
 
+    /// <summary>Look up a single mock by id. Returns null if not running.</summary>
+    public MockHostHandle? Get(string mockId) =>
+        _entries.TryGetValue(mockId, out var entry) ? entry.Handle : null;
+
     /// <summary>
-    /// Boot a mock host for the supplied recording JSON. The document
-    /// shape must be the same that <see cref="RecordingStore"/> writes:
-    /// a single recording (not the {"recordings":[...]} envelope).
+    /// Access the request log for a running mock (#57 — Mocks panel
+    /// request tail). Returns null when the mock id isn't in the
+    /// registry.
     /// </summary>
-    public async Task<MockHostHandle> StartFromJson(string recordingJson, string recordingId, string label, CancellationToken ct)
+    public MockRequestLog? GetRequestLog(string mockId) =>
+        _entries.TryGetValue(mockId, out var entry) ? entry.RequestLog : null;
+
+    /// <summary>
+    /// Boot a mock host for the supplied recording JSON.
+    /// </summary>
+    /// <param name="recordingJson">Single recording document (NOT the
+    /// {"recordings":[...]} envelope).</param>
+    /// <param name="recordingId">Stable id of the source recording (so
+    /// the workbench can correlate the running mock back to the
+    /// recording that produced it). Empty when the start came from an
+    /// embedded host that passed a recording payload directly.</param>
+    /// <param name="label">Display label (recording name or operator-
+    /// supplied alias).</param>
+    /// <param name="port">Requested port. 0 = use the rolling
+    /// allocator; any positive value pins the mock to that port (and
+    /// fails the call if the port is busy).</param>
+    /// <param name="ct">Cancellation.</param>
+    public async Task<MockHostHandle> StartAsync(
+        string recordingJson,
+        string recordingId,
+        string label,
+        int port,
+        CancellationToken ct)
     {
         ArgumentNullException.ThrowIfNull(recordingJson);
 
         // Persist the recording to a temp file the MockServer can read.
         var dir = Path.Combine(Path.GetTempPath(), "bowire-mock-hosts");
         Directory.CreateDirectory(dir);
-        var mockId = Guid.NewGuid().ToString("N")[..10];
+        var mockId = Guid.NewGuid().ToString("N")[..12];
         var tempPath = Path.Combine(dir, $"{mockId}.json");
         await File.WriteAllTextAsync(tempPath, recordingJson, ct).ConfigureAwait(false);
 
-        var port = AllocateFreePort();
-        if (port < 0)
+        var resolvedPort = port > 0 ? port : AllocateFreePort();
+        if (resolvedPort < 0)
         {
-            // Cleanup the temp file we wrote.
             try { File.Delete(tempPath); } catch { /* ignore */ }
             throw new IOException(
                 $"No free TCP port found in the range {BasePort}..{BasePort + MaxProbes - 1}; close some mock hosts and try again.");
         }
 
+        // #57 — per-mock request log, fed by MockServer via the
+        // IMockRequestObserver seam.
+        var requestLog = new MockRequestLog();
+
         // CA2000: MockServer ownership transfers into the dictionary
-        // entry below; StopAsync / DisposeAsync tears it down. Roslyn
-        // can't see the ownership move through an IAsyncDisposable
-        // factory + await — wrapping the await in try/catch trades the
-        // warning for CA1508 ("server is always null") because the
-        // analyzer still can't model the null-out after handoff. The
-        // dictionary write and Handle ctor are non-throwing in practice
-        // (ConcurrentDictionary indexer never throws, MockHostHandle is
-        // a value record with no validation), so the pragma is safe.
+        // entry below; StopAsync / DisposeAsync tears it down.
 #pragma warning disable CA2000
-        var server = await MockServer.StartAsync(new MockServerOptions
+        MockServer server;
+        try
         {
-            RecordingPath = tempPath,
-            Port = port,
-        }, ct).ConfigureAwait(false);
+            server = await MockServer.StartAsync(new MockServerOptions
+            {
+                RecordingPath = tempPath,
+                Host = "127.0.0.1",
+                Port = resolvedPort,
+                Watch = false,
+                RequestObserver = requestLog,
+            }, ct).ConfigureAwait(false);
+        }
+        catch
+        {
+            try { File.Delete(tempPath); } catch { /* ignore */ }
+            throw;
+        }
 #pragma warning restore CA2000
 
         var handle = new MockHostHandle(
             MockId: mockId,
-            RecordingId: recordingId,
-            Label: label,
+            RecordingId: recordingId ?? string.Empty,
+            Label: string.IsNullOrWhiteSpace(label) ? "unnamed" : label,
             Port: server.Port,
             Url: $"http://127.0.0.1:{server.Port}",
             StartedAtUtc: DateTime.UtcNow);
 
-        _entries[mockId] = new MockHostEntry(handle, server, tempPath);
+        _entries[mockId] = new MockHostEntry(handle, server, tempPath, requestLog);
         return handle;
     }
 
@@ -142,7 +180,11 @@ public sealed class BowireMockHostManager : IAsyncDisposable
         }
     }
 
-    private sealed record MockHostEntry(MockHostHandle Handle, MockServer Server, string TempPath);
+    private sealed record MockHostEntry(
+        MockHostHandle Handle,
+        MockServer Server,
+        string TempPath,
+        MockRequestLog RequestLog);
 }
 
 /// <summary>

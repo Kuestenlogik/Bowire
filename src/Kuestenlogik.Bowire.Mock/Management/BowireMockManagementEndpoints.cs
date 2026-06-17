@@ -11,25 +11,28 @@ using Microsoft.Extensions.Logging;
 namespace Kuestenlogik.Bowire.Mock.Management;
 
 /// <summary>
-/// HTTP API surface for managing UI-driven mock servers (issue #56).
-/// Maps four endpoints under <c>{basePath}/api/mocks</c>:
+/// HTTP API surface for managing UI-driven mock servers. Five endpoints
+/// under <c>{basePath}/api/mocks</c>:
 /// <list type="bullet">
-///   <item><c>POST /api/mocks</c> — start a mock from a recording payload.</item>
-///   <item><c>GET /api/mocks</c> — list running mocks (Mocks panel data source).</item>
+///   <item><c>POST /api/mocks</c> — start a mock. Accepts either an
+///     inline recording payload (<c>{ recording, name?, port? }</c> —
+///     the legacy embedded-host shape) OR a recording-id lookup
+///     (<c>{ recordingId, label? }</c> — the "Use as mock" shape).</item>
+///   <item><c>GET /api/mocks</c> — list running mocks.</item>
 ///   <item><c>GET /api/mocks/{id}</c> — single mock detail.</item>
 ///   <item><c>DELETE /api/mocks/{id}</c> — stop a mock.</item>
+///   <item><c>GET /api/mocks/{id}/requests</c> — request-log tail (#57).</item>
 /// </list>
-/// The SSE event stream (request-count tail) is part of issue #57 and
-/// not wired here yet.
 /// </summary>
 /// <remarks>
-/// Opt-in: embedded hosts that pull in <c>Kuestenlogik.Bowire.Mock</c>
+/// <para>One owner — <see cref="BowireMockHostManager"/>. Replaces the
+/// v1.x split with a separate <c>MockRegistry</c> + the v2.x
+/// host-manager-only <c>/api/mock/*</c> surface (#223).</para>
+/// <para>Opt-in: embedded hosts that pull in <c>Kuestenlogik.Bowire.Mock</c>
 /// call <c>builder.Services.AddBowireMockManagement()</c> +
 /// <c>app.MapBowireMockManagement()</c> alongside the usual
 /// <c>AddBowire()</c> / <c>MapBowire()</c>. Standalone <c>bowire</c>
-/// CLI wires both automatically. The endpoints stay outside Core
-/// because they require the mock package (recordings ingest, Kestrel
-/// host) — that's a one-way dependency by design.
+/// CLI wires both automatically.</para>
 /// </remarks>
 public static class BowireMockManagementEndpoints
 {
@@ -46,26 +49,26 @@ public static class BowireMockManagementEndpoints
     public static IEndpointRouteBuilder MapBowireMockManagement(
         this IEndpointRouteBuilder endpoints, string basePath = "/bowire")
     {
-        endpoints.MapGet($"{basePath}/api/mocks", (MockRegistry registry) =>
+        endpoints.MapGet($"{basePath}/api/mocks", (BowireMockHostManager manager) =>
         {
-            var snapshot = registry.List()
-                .OrderByDescending(m => m.StartedAt)
+            var snapshot = manager.List()
+                .OrderByDescending(h => h.StartedAtUtc)
                 .Select(MockSummary.From)
                 .ToArray();
             return Results.Json(new { mocks = snapshot }, JsonOptions);
         }).ExcludeFromDescription();
 
         endpoints.MapGet($"{basePath}/api/mocks/{{mockId}}",
-            (string mockId, MockRegistry registry) =>
+            (string mockId, BowireMockHostManager manager) =>
         {
-            var inst = registry.Get(mockId);
-            return inst is null
+            var handle = manager.Get(mockId);
+            return handle is null
                 ? Results.NotFound(new { error = $"Mock {mockId} not running." })
-                : Results.Json(MockSummary.From(inst), JsonOptions);
+                : Results.Json(MockSummary.From(handle), JsonOptions);
         }).ExcludeFromDescription();
 
         endpoints.MapPost($"{basePath}/api/mocks",
-            async (HttpContext ctx, MockRegistry registry) =>
+            async (HttpContext ctx, BowireMockHostManager manager) =>
         {
             StartMockRequest? req;
             try
@@ -78,23 +81,64 @@ public static class BowireMockManagementEndpoints
                 return Results.Json(new { error = "Invalid JSON: " + ex.Message },
                     JsonOptions, statusCode: 400);
             }
-
-            if (req is null || string.IsNullOrWhiteSpace(req.Recording))
+            if (req is null)
             {
-                return Results.Json(new { error = "recording (JSON document) is required." },
+                return Results.Json(new { error = "Request body is required." },
                     JsonOptions, statusCode: 400);
             }
 
-            var displayName = string.IsNullOrWhiteSpace(req.Name) ? "unnamed" : req.Name;
-            var port = req.Port ?? 0; // 0 = OS-assigned; resolved via MockServer.Port
+            // Two start shapes; pick based on which field arrived.
+            //   { recording, name?, port? }    — inline payload (legacy + embedded)
+            //   { recordingId, label? }        — lookup via IRecordingJsonProvider ("Use as mock")
+            string? recordingJson;
+            string recordingId;
+            string label;
 
-            // Mock registry start: spawns ASP.NET host, runs plugin
-            // emitters / transports — unbounded failure surface.
-#pragma warning disable CA1031 // Do not catch general exception types
+            if (!string.IsNullOrWhiteSpace(req.RecordingId))
+            {
+                var lookup = ctx.RequestServices.GetService<IRecordingJsonProvider>();
+                if (lookup is null)
+                {
+                    return Results.Json(
+                        new { error = "No IRecordingJsonProvider registered — embedded hosts must pass `recording` inline." },
+                        JsonOptions, statusCode: 500);
+                }
+                try { recordingJson = lookup.TryGetRecordingJson(req.RecordingId); }
+                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException or InvalidOperationException)
+                {
+                    return Results.Json(
+                        new { error = "Couldn't read the recording: " + ex.Message },
+                        JsonOptions, statusCode: 500);
+                }
+                if (recordingJson is null)
+                {
+                    return Results.Json(
+                        new { error = $"No recording with id '{req.RecordingId}'" },
+                        JsonOptions, statusCode: 404);
+                }
+                recordingId = req.RecordingId;
+                label = string.IsNullOrWhiteSpace(req.Label) ? req.RecordingId : req.Label!;
+            }
+            else if (!string.IsNullOrWhiteSpace(req.Recording))
+            {
+                recordingJson = req.Recording;
+                recordingId = string.Empty;
+                label = string.IsNullOrWhiteSpace(req.Name) ? "unnamed" : req.Name!;
+            }
+            else
+            {
+                return Results.Json(
+                    new { error = "Body must carry either `recording` (inline JSON) or `recordingId` (lookup)." },
+                    JsonOptions, statusCode: 400);
+            }
+
+            var port = req.Port ?? 0; // 0 = OS-assigned via the rolling allocator
+
+#pragma warning disable CA1031 // mock-start spawns the full host pipeline; unbounded failure surface
             try
             {
-                var inst = await registry.StartAsync(req.Recording, displayName, port, ctx.RequestAborted);
-                return Results.Json(MockSummary.From(inst), JsonOptions, statusCode: 201);
+                var handle = await manager.StartAsync(recordingJson!, recordingId, label, port, ctx.RequestAborted);
+                return Results.Json(MockSummary.From(handle), JsonOptions, statusCode: 201);
             }
             catch (Exception ex)
 #pragma warning restore CA1031
@@ -108,9 +152,9 @@ public static class BowireMockManagementEndpoints
         }).ExcludeFromDescription();
 
         endpoints.MapDelete($"{basePath}/api/mocks/{{mockId}}",
-            async (string mockId, MockRegistry registry) =>
+            async (string mockId, BowireMockHostManager manager, HttpContext ctx) =>
         {
-            var stopped = await registry.StopAsync(mockId);
+            var stopped = await manager.StopAsync(mockId, ctx.RequestAborted);
             return stopped
                 ? Results.NoContent()
                 : Results.NotFound(new { error = $"Mock {mockId} not running." });
@@ -121,19 +165,19 @@ public static class BowireMockManagementEndpoints
         //   since         -> minimum sequence number (>0 means "give me only
         //                    entries newer than the cursor I last saw")
         endpoints.MapGet($"{basePath}/api/mocks/{{mockId}}/requests",
-            (string mockId, int? limit, long? since, MockRegistry registry) =>
+            (string mockId, int? limit, long? since, BowireMockHostManager manager) =>
         {
-            var inst = registry.Get(mockId);
-            if (inst is null)
+            var log = manager.GetRequestLog(mockId);
+            if (log is null)
             {
                 return Results.NotFound(new { error = $"Mock {mockId} not running." });
             }
-            var entries = inst.RequestLog.Snapshot(limit ?? 100, since ?? 0);
+            var entries = log.Snapshot(limit ?? 100, since ?? 0);
             return Results.Json(new
             {
                 mockId,
-                total = inst.RequestLog.TotalRequests,
-                capacity = inst.RequestLog.Capacity,
+                total = log.TotalRequests,
+                capacity = log.Capacity,
                 entries
             }, JsonOptions);
         }).ExcludeFromDescription();
@@ -141,23 +185,33 @@ public static class BowireMockManagementEndpoints
         return endpoints;
     }
 
-    private sealed record StartMockRequest(string Recording, string? Name, int? Port);
+    private sealed record StartMockRequest(
+        string? Recording,
+        string? Name,
+        int? Port,
+        string? RecordingId,
+        string? Label);
 
     /// <summary>
-    /// JSON-friendly projection of a <see cref="MockInstance"/>. Hides
-    /// the live <see cref="MockServer"/> reference — the UI doesn't
-    /// need it and serializing the host graph would loop.
+    /// JSON-friendly projection of a <see cref="MockHostHandle"/>. Same
+    /// shape the workbench rail consumes from <c>GET /api/mocks</c>.
     /// </summary>
     internal sealed record MockSummary(
         string MockId,
+        string RecordingId,
         string RecordingName,
+        string Label,
         int Port,
-        DateTimeOffset StartedAt)
+        string Url,
+        DateTime StartedAt)
     {
-        public static MockSummary From(MockInstance instance) => new(
-            instance.MockId,
-            instance.RecordingDisplayName,
-            instance.Port,
-            instance.StartedAt);
+        public static MockSummary From(MockHostHandle handle) => new(
+            handle.MockId,
+            handle.RecordingId,
+            handle.Label,
+            handle.Label,
+            handle.Port,
+            handle.Url,
+            handle.StartedAtUtc);
     }
 }

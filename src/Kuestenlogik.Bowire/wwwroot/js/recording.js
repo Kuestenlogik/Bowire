@@ -941,13 +941,15 @@
     }
 
     // ---- #94 — Use Recording as Mock ----
-    // POST /api/mock/from-recording with the recording id. Backend
-    // boots a MockServer on a free local port, returns
-    // { mockId, url, port }. Toast surfaces the URL + a copy button so
-    // the user can paste it into another tool with one click.
+    // POST /api/mocks with the recording id. Backend looks the recording
+    // up via IRecordingJsonProvider, boots a MockServer on a free local
+    // port, returns { mockId, url, port }. Toast surfaces the URL + a
+    // copy button so the user can paste it into another tool with one
+    // click. (Consolidated with the legacy /api/mock/from-recording
+    // surface under #223.)
     function useRecordingAsMock(rec) {
         if (!rec || !rec.id) return;
-        fetch('/api/mock/from-recording', {
+        fetch(config.prefix + '/api/mocks', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ recordingId: rec.id, label: rec.name }),
@@ -1104,9 +1106,24 @@
         var toolbar = el('div', { className: 'bowire-recording-toolbar' });
         var isReplaying = recordingReplayState && recordingReplayState.recordingId === rec.id && recordingReplayState.status === 'running';
 
+        // Toolbar gates on "does this recording carry any steps". Three
+        // shapes are accepted (matches the sidebar list's stepN logic):
+        //   1) Hydrated steps[] with entries — the inline shape returned
+        //      by the default GET /api/recordings.
+        //   2) stepsManifest[] entries — the manifest-only shape returned
+        //      under #144 Phase 1.8's lazy-load mode.
+        //   3) Numeric stepCount — emitted by the chunked store so the
+        //      sidebar can render a "3 steps" badge before hydration
+        //      runs. We treat it the same as the other two — the
+        //      backend IRecordingJsonProvider re-assembles the full
+        //      body on the actual "use as mock" call.
+        var _hasSteps = (Array.isArray(rec.steps) && rec.steps.length > 0)
+            || (Array.isArray(rec.stepsManifest) && rec.stepsManifest.length > 0)
+            || (typeof rec.stepCount === 'number' && rec.stepCount > 0);
+
         toolbar.appendChild(el('button', {
             className: 'bowire-recording-action-btn',
-            disabled: isReplaying || rec.steps.length === 0,
+            disabled: isReplaying || !_hasSteps,
             title: 'Replay every step in order with the current environment variables',
             onClick: function () { replayRecording(rec.id); }
         },
@@ -1118,7 +1135,7 @@
         // Each session runs the steps sequentially in its own context.
         toolbar.appendChild(el('button', {
             className: 'bowire-recording-action-btn',
-            disabled: rec.steps.length === 0,
+            disabled: !_hasSteps,
             title: 'Replay this recording in N parallel sessions at once',
             onClick: function () { _promptAndRunParallel('recording', rec.id, rec.name); }
         },
@@ -1131,7 +1148,7 @@
         if (typeof createBenchmarkSpec === 'function') {
             toolbar.appendChild(el('button', {
                 className: 'bowire-recording-action-btn',
-                disabled: rec.steps.length === 0,
+                disabled: !_hasSteps,
                 title: 'Create a benchmark that replays this recording N times',
                 onClick: function () {
                     var spec = createBenchmarkSpec({
@@ -1155,7 +1172,7 @@
 
         toolbar.appendChild(el('button', {
             className: 'bowire-recording-action-btn',
-            disabled: rec.steps.length === 0,
+            disabled: !_hasSteps,
             title: 'Append status + response equality assertions to every (service, method) in this recording',
             onClick: function () {
                 var added = convertRecordingToTests(rec.id);
@@ -1173,7 +1190,7 @@
         // the user can stop them when done.
         toolbar.appendChild(el('button', {
             className: 'bowire-recording-action-btn',
-            disabled: rec.steps.length === 0,
+            disabled: !_hasSteps,
             title: 'Spin up a local mock server that returns this recording verbatim. URL is copied to your clipboard.',
             onClick: function () { useRecordingAsMock(rec); }
         },
@@ -1182,7 +1199,7 @@
 
         toolbar.appendChild(el('button', {
             className: 'bowire-recording-action-btn',
-            disabled: rec.steps.length === 0,
+            disabled: !_hasSteps,
             title: 'Project this recording into a visual flow (Request nodes per step). Edit + replay from the Flow tab.',
             onClick: function () {
                 var flowId = convertRecordingToFlow(rec.id);
@@ -1201,7 +1218,7 @@
 
         toolbar.appendChild(el('button', {
             className: 'bowire-recording-action-btn',
-            disabled: rec.steps.length === 0,
+            disabled: !_hasSteps,
             title: 'Download as HAR 1.2 (Chrome DevTools / Postman / Insomnia compatible)',
             onClick: function () { exportRecordingAsHar(rec.id); }
         },
@@ -1211,7 +1228,7 @@
 
         toolbar.appendChild(el('button', {
             className: 'bowire-recording-action-btn',
-            disabled: rec.steps.length === 0,
+            disabled: !_hasSteps,
             title: 'Download a self-contained HTML report (CI artifact friendly). Uses replay results when available, captured statuses otherwise.',
             onClick: function () { exportRecordingAsHtml(rec.id); }
         },
@@ -1221,7 +1238,7 @@
 
         toolbar.appendChild(el('button', {
             className: 'bowire-recording-action-btn',
-            disabled: rec.steps.length === 0,
+            disabled: !_hasSteps,
             title: 'Download the raw Bowire recording JSON',
             onClick: function () { exportRecordingAsJson(rec.id); }
         },

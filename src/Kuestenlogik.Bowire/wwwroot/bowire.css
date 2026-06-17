@@ -3663,6 +3663,29 @@ full text color
     color: var(--protocol-color);
 }
 
+/* Source header above each block of services that share an
+   originUrl — keeps multi-URL setups readable. Pattern: small
+   uppercase chip-style, sits flush-left with extra top margin
+   so it visually anchors the block beneath. The first one in
+   the list has no top margin so it sits close to the filter
+   chips above. */
+.bowire-service-source-header {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--bowire-text-tertiary);
+    padding: 4px 6px;
+    margin-top: 12px;
+    margin-bottom: 2px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.bowire-service-source-header:first-child {
+    margin-top: 0;
+}
+
 .bowire-service-header {
     display: flex;
     align-items: center;
@@ -6659,6 +6682,50 @@ they're a way
     margin-left: 12px;
     color: var(--bowire-text-secondary);
     font-size: 13px;
+}
+
+/* ---------- Context menu (sidebar list rows etc.) ---------- */
+.bowire-context-menu {
+    background: var(--bowire-surface);
+    border: 1px solid var(--bowire-border-subtle);
+    border-radius: var(--bowire-radius-md);
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.28);
+    padding: 4px;
+    min-width: 180px;
+    z-index: 10001;
+    font-size: 13px;
+}
+.bowire-context-menu-item {
+    display: block;
+    width: 100%;
+    padding: 6px 12px;
+    background: transparent;
+    color: var(--bowire-text);
+    border: 0;
+    text-align: left;
+    cursor: pointer;
+    border-radius: 3px;
+    font: inherit;
+}
+.bowire-context-menu-item:hover:not(.disabled) {
+    background: var(--bowire-accent-subtle);
+    color: var(--bowire-accent);
+}
+.bowire-context-menu-item.disabled {
+    color: var(--bowire-text-tertiary);
+    cursor: default;
+}
+.bowire-context-menu-item.danger {
+    color: var(--bowire-danger, #ef4444);
+}
+.bowire-context-menu-item.danger:hover {
+    background: rgba(239, 68, 68, 0.12);
+    color: var(--bowire-danger, #ef4444);
+}
+.bowire-context-menu-separator {
+    height: 1px;
+    background: var(--bowire-border-subtle);
+    margin: 4px 0;
 }
 
 /* ---------- Confirm Dialog ---------- */
