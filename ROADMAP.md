@@ -89,11 +89,10 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.1 — Scripting, variable resolver, throughput surface *(due 2026-06-30)*
 
-**0/10 done** · 10 backlog
+**0/9 done** · 9 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
-| [117](https://github.com/Kuestenlogik/Bowire/issues/117) | Bowire | [i18n — extract every UI string; ship DE + EN catalogues](#issue-kuestenlogik-bowire-117) | ⬜ Backlog |  |
 | [126](https://github.com/Kuestenlogik/Bowire/issues/126) | Bowire | [Pre-/post-scripts with a protocol-typed sandbox](#issue-kuestenlogik-bowire-126) | ⬜ Backlog |  |
 | [132](https://github.com/Kuestenlogik/Bowire/issues/132) | Bowire | [Parallel sessions for recordings / collections (phase 1 local, phase 2 distributed)](#issue-kuestenlogik-bowire-132) | ⬜ Backlog |  |
 | [136](https://github.com/Kuestenlogik/Bowire/issues/136) | Bowire | [URL / service catalogue providers (local / http / consul / kubernetes / agent)](#issue-kuestenlogik-bowire-136) | ⬜ Backlog |  |
@@ -194,6 +193,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [98](https://github.com/Kuestenlogik/Bowire/issues/98) | Bowire | [Multi-tenant Phase F — user chip, scoped state copy, admin impersonation](#issue-kuestenlogik-bowire-98) | ⬜ Backlog |  |
 | [103](https://github.com/Kuestenlogik/Bowire/issues/103) | Bowire | [Generate boat photos: submarine, ferry, tugboat, lighthouse](#issue-kuestenlogik-bowire-103) | ⬜ Backlog |  |
 | [110](https://github.com/Kuestenlogik/Bowire/issues/110) | Bowire | [Site: surface the AI assistant in the launch wizard + quickstart](#issue-kuestenlogik-bowire-110) | ⬜ Backlog |  |
+| [117](https://github.com/Kuestenlogik/Bowire/issues/117) | Bowire | [i18n — extract every UI string; ship DE + EN catalogues](#issue-kuestenlogik-bowire-117) | ⬜ Backlog |  |
 | [128](https://github.com/Kuestenlogik/Bowire/issues/128) | Bowire | [Bowire Agent — register embedded instances with a central hub](#issue-kuestenlogik-bowire-128) | ⬜ Backlog |  |
 | [130](https://github.com/Kuestenlogik/Bowire/issues/130) | Bowire | [Comparison table: add Hoppscotch + topic-based filtering](#issue-kuestenlogik-bowire-130) | ⬜ Backlog |  |
 
@@ -488,10 +488,6 @@ Parent tracker: #140 (full multi-mode preset adoption, kept open on v2.1 for the
 Parent tracker: #132 (full local + distributed acceptance, kept open on v2.1 for Phase 2 — distributed across workers). [[more]](https://github.com/Kuestenlogik/Bowire/issues/222)
 
 ### v2.1 — Scripting, variable resolver, throughput surface *(due 2026-06-30)*
-
-#### <a id="issue-kuestenlogik-bowire-117"></a>⬜ Backlog · [#117](https://github.com/Kuestenlogik/Bowire/issues/117) i18n — extract every UI string; ship DE + EN catalogues
-
-Bowire's UI is English-only today. Every label, every button, every tooltip, every empty-state copy is a hard-coded literal in the JS source. [[more]](https://github.com/Kuestenlogik/Bowire/issues/117)
 
 #### <a id="issue-kuestenlogik-bowire-126"></a>⬜ Backlog · [#126](https://github.com/Kuestenlogik/Bowire/issues/126) Pre-/post-scripts with a protocol-typed sandbox
 
@@ -810,6 +806,10 @@ The launch stepper on the home page ([`/_includes/launch.html`](https://github.c
 #### <a id="issue-kuestenlogik-bowire-110"></a>⬜ Backlog · [#110](https://github.com/Kuestenlogik/Bowire/issues/110) Site: surface the AI assistant in the launch wizard + quickstart
 
 v1.9 ships the AI workbench in a real way — chat grounded in workbench state (#89 Phase 1), MCP-style tool calling (#108, #109), AI-assisted security (#59-#63). The "Straight into the water" launch wizard on bowire.io still onboards users as if AI is invisible. [[more]](https://github.com/Kuestenlogik/Bowire/issues/110)
+
+#### <a id="issue-kuestenlogik-bowire-117"></a>⬜ Backlog · [#117](https://github.com/Kuestenlogik/Bowire/issues/117) i18n — extract every UI string; ship DE + EN catalogues
+
+Bowire's UI is English-only today. Every label, every button, every tooltip, every empty-state copy is a hard-coded literal in the JS source. [[more]](https://github.com/Kuestenlogik/Bowire/issues/117)
 
 #### <a id="issue-kuestenlogik-bowire-128"></a>⬜ Backlog · [#128](https://github.com/Kuestenlogik/Bowire/issues/128) Bowire Agent — register embedded instances with a central hub
 
