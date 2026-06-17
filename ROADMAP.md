@@ -12,12 +12,14 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.0 — Re-architected workbench shell + workspace = project folder *(due 2026-06-19)*
 
-**64/66 done** · 2 backlog
+**64/68 done** · 4 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
 | [115](https://github.com/Kuestenlogik/Bowire/issues/115) | Bowire | [v2.0 — UI refactor: re-architect the workbench shell](#issue-kuestenlogik-bowire-115) | ⬜ Backlog |  |
 | [219](https://github.com/Kuestenlogik/Bowire/issues/219) | Bowire | [Benchmarks Phase 1 — single-method shape as first-class rail (closeout of #131 Phase 1)](#issue-kuestenlogik-bowire-219) | ⬜ Backlog |  |
+| [220](https://github.com/Kuestenlogik/Bowire/issues/220) | Bowire | [Recordings Phase 1 — chunked disk layout + content-addressed bodies (closeout of #144 Phase 1)](#issue-kuestenlogik-bowire-220) | ⬜ Backlog |  |
+| [221](https://github.com/Kuestenlogik/Bowire/issues/221) | Bowire | [Presets framework Phase 1 — generic per-mode saved configs + Benchmarks integration (closeout of #140 Phase 1)](#issue-kuestenlogik-bowire-221) | ⬜ Backlog |  |
 | [25](https://github.com/Kuestenlogik/Bowire/issues/25) | Bowire | [AI side-panel integration](#issue-kuestenlogik-bowire-25) | ✅ Done | `area:workbench` |
 | [33](https://github.com/Kuestenlogik/Bowire/issues/33) | Bowire | [Protocol plugins — Connect Phase 1+3 + OTLP](#issue-kuestenlogik-bowire-33) | ✅ Done | `area:plugin-sdk` |
 | [43](https://github.com/Kuestenlogik/Bowire/issues/43) | Bowire | [MCP SSE-transport support](#issue-kuestenlogik-bowire-43) | ✅ Done | `area:mcp` |
@@ -205,6 +207,14 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 #### <a id="issue-kuestenlogik-bowire-219"></a>⬜ Backlog · [#219](https://github.com/Kuestenlogik/Bowire/issues/219) Benchmarks Phase 1 — single-method shape as first-class rail (closeout of #131 Phase 1)
 
 Parent tracker: #131 (full 5-shape acceptance, kept open on v2.1 for Phases 2–5). [[more]](https://github.com/Kuestenlogik/Bowire/issues/219)
+
+#### <a id="issue-kuestenlogik-bowire-220"></a>⬜ Backlog · [#220](https://github.com/Kuestenlogik/Bowire/issues/220) Recordings Phase 1 — chunked disk layout + content-addressed bodies (closeout of #144 Phase 1)
+
+Parent tracker: #144 (full GB-scale acceptance, kept open on v2.1 for Phase 2+ — filesystem watch + reconcile UI + lazy step-load on UI scroll). [[more]](https://github.com/Kuestenlogik/Bowire/issues/220)
+
+#### <a id="issue-kuestenlogik-bowire-221"></a>⬜ Backlog · [#221](https://github.com/Kuestenlogik/Bowire/issues/221) Presets framework Phase 1 — generic per-mode saved configs + Benchmarks integration (closeout of #140 Phase 1)
+
+Parent tracker: #140 (full multi-mode preset adoption, kept open on v2.1 for the remaining mode integrations). [[more]](https://github.com/Kuestenlogik/Bowire/issues/221)
 
 #### <a id="issue-kuestenlogik-bowire-25"></a>✅ Done · [#25](https://github.com/Kuestenlogik/Bowire/issues/25) AI side-panel integration
 
