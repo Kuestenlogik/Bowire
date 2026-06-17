@@ -12,7 +12,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.0 — Re-architected workbench shell + workspace = project folder *(due 2026-06-19)*
 
-**62/63 done** · 1 backlog
+**63/64 done** · 1 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -79,6 +79,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [210](https://github.com/Kuestenlogik/Bowire/issues/210) | Bowire | [Standalone recording format .bwr — self-contained, workspace-agnostic](#issue-kuestenlogik-bowire-210) | ✅ Done |  |
 | [211](https://github.com/Kuestenlogik/Bowire/issues/211) | Bowire | [bowire mock <recording.bwr> — HTTP replay server from a recording](#issue-kuestenlogik-bowire-211) | ✅ Done |  |
 | [212](https://github.com/Kuestenlogik/Bowire/issues/212) | Bowire | [Workspace storage mode — workspace-level field (precursor to #196)](#issue-kuestenlogik-bowire-212) | ✅ Done |  |
+| [217](https://github.com/Kuestenlogik/Bowire/issues/217) | Bowire | [v2.0 Sweep 1 — v1.9 parity polish (Sources drop zone + Save-now + Duplicate)](#issue-kuestenlogik-bowire-217) | ✅ Done |  |
 
 ### v2.1 — Scripting, variable resolver, throughput surface *(due 2026-06-30)*
 
@@ -453,6 +454,10 @@ Phase 1 (#147-#149-#151) shipped in eb2bf1c: `BowireUserContext.GetWorkspacePath
 
 @-
 
+#### <a id="issue-kuestenlogik-bowire-217"></a>✅ Done · [#217](https://github.com/Kuestenlogik/Bowire/issues/217) v2.0 Sweep 1 — v1.9 parity polish (Sources drop zone + Save-now + Duplicate)
+
+Sweep 1 (commit 3fdef31) covered the two surfaces flagged by the post-architecture audit: [[more]](https://github.com/Kuestenlogik/Bowire/issues/217)
+
 ### v2.1 — Scripting, variable resolver, throughput surface *(due 2026-06-30)*
 
 #### <a id="issue-kuestenlogik-bowire-117"></a>⬜ Backlog · [#117](https://github.com/Kuestenlogik/Bowire/issues/117) i18n — extract every UI string; ship DE + EN catalogues
@@ -791,4 +796,4 @@ The comparison table on bowire.io today lines Bowire up against Postman / Insomn
 
 ---
 
-*Generated 2026-06-16 from [Project #2](https://github.com/orgs/Kuestenlogik/projects/2).*
+*Generated 2026-06-17 from [Project #2](https://github.com/orgs/Kuestenlogik/projects/2).*
