@@ -5088,6 +5088,18 @@ response below.
     animation: bowire-fade-in 100ms ease-out;
 }
 
+/* "Save to Collection" sits in the request action bar, which lives
+   just above the response pane and the page status strip. A downward
+   menu lands behind the status strip and the items disappear. Flip
+   this specific dropdown upward — its parent button is the anchor,
+   so anchoring on bottom: 100% pops the menu over the button. */
+.bowire-save-col-dropdown {
+    top: auto;
+    bottom: 100%;
+    margin-top: 0;
+    margin-bottom: 4px;
+}
+
 .bowire-dropdown-item {
     padding: 6px 12px;
     font-size: 12px;
