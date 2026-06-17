@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 using System.Collections.Concurrent;
+using System.Text.Json;
 using System.Text.RegularExpressions;
 using Kuestenlogik.Bowire.Mocking;
 
@@ -24,7 +25,14 @@ namespace Kuestenlogik.Bowire.Mock.Matchers;
 /// <c>/{service}/{method}</c> URL path.
 /// </item>
 /// </list>
-/// Non-unary steps are always skipped; the first matching step wins.
+/// Non-unary steps are always skipped. When several recorded steps share
+/// the same verb + path template (e.g. three captures of
+/// <c>GET /pet/{petId}</c> with <c>petId</c> = 3, 5, 10), the matcher
+/// scores each candidate by how well its recorded request body matches the
+/// incoming path-bindings and picks the best hit — so a mock call against
+/// <c>/pet/5</c> returns the response for <c>petId = 5</c> instead of
+/// always handing back the first capture. Ties (and the historical
+/// single-template path) keep the original "first match wins" order.
 /// Phase 2 later adds a topic matcher for MQTT / Socket.IO wildcards as a
 /// separate <see cref="IMockMatcher"/> implementation.
 /// </summary>
@@ -35,13 +43,24 @@ public sealed class ExactMatcher : IMockMatcher
     // is shared across every incoming request.
     private static readonly ConcurrentDictionary<string, Regex> s_templateCache = new(StringComparer.Ordinal);
 
+    // Score handed back for a non-template match (literal path equality or
+    // a gRPC/Socket.IO candidate where the matcher has no further axis to
+    // rank on). Higher than any plausible body-binding count so a literal
+    // hit short-circuits before the matcher inspects the rest of the list,
+    // preserving the original "first literal match wins" contract.
+    private const int LiteralOrNonRestMatchScore = 1_000_000;
+
     public bool TryMatch(MockRequest request, BowireRecording recording, out BowireRecordingStep matchedStep)
     {
         ArgumentNullException.ThrowIfNull(request);
         ArgumentNullException.ThrowIfNull(recording);
 
+        BowireRecordingStep? bestStep = null;
+        var bestScore = -1;
+
         foreach (var candidate in recording.Steps)
         {
+            int score;
             // Skip protocol-shaped steps that don't match the request family.
             // Replay-ability (unary vs streaming, sent-messages for duplex) is
             // the replayer's concern — here we only pair incoming wire shape
@@ -50,6 +69,7 @@ public sealed class ExactMatcher : IMockMatcher
             {
                 if (!IsGrpcStep(candidate)) continue;
                 if (!MatchesGrpcPath(candidate, request)) continue;
+                score = LiteralOrNonRestMatchScore;
             }
             else if (IsSocketIoStep(candidate))
             {
@@ -59,19 +79,117 @@ public sealed class ExactMatcher : IMockMatcher
                 // instead: any GET upgrade on /socket.io/* pairs
                 // against the first socketio step in the recording.
                 if (!MatchesSocketIoRequest(request)) continue;
+                score = LiteralOrNonRestMatchScore;
             }
             else
             {
                 if (!IsRestStep(candidate)) continue;
                 if (!MatchesRestVerbAndPath(candidate, request)) continue;
+                score = ScoreRestCandidate(candidate, request);
             }
 
-            matchedStep = candidate;
+            if (score > bestScore)
+            {
+                bestStep = candidate;
+                bestScore = score;
+            }
+
+            // Literal / non-REST matches don't get any extra signal from
+            // body inspection, so the first one always wins — short-circuit
+            // to preserve the historical order-of-capture tie-break.
+            if (bestScore >= LiteralOrNonRestMatchScore) break;
+        }
+
+        if (bestStep is not null)
+        {
+            matchedStep = bestStep;
             return true;
         }
 
         matchedStep = null!;
         return false;
+    }
+
+    /// <summary>
+    /// Rank a REST candidate that already passed verb + path-or-template
+    /// matching. Literal-path hits always outrank template hits (no body
+    /// inspection needed). For template hits, the score counts how many of
+    /// the captured path bindings (e.g. <c>petId = 5</c>) line up with the
+    /// recorded request body — a step recorded against <c>petId = 5</c>
+    /// outranks a sibling recorded against <c>petId = 3</c> when the
+    /// incoming request asks for pet 5. Missing / unparseable bodies score
+    /// zero and the historical "first match wins" tie-break takes over.
+    /// </summary>
+    private static int ScoreRestCandidate(BowireRecordingStep step, MockRequest request)
+    {
+        var template = step.HttpPath!;
+        if (!IsTemplate(template))
+        {
+            // Literal-path equality already filtered out non-matches in
+            // MatchesRestVerbAndPath; everyone here is an exact hit.
+            return LiteralOrNonRestMatchScore;
+        }
+
+        var bindings = ExtractTemplateBindings(template, request.Path);
+        if (bindings is null || bindings.Count == 0) return 0;
+        if (string.IsNullOrWhiteSpace(step.Body)) return 0;
+
+        Dictionary<string, string>? bodyValues;
+        try
+        {
+            bodyValues = ParseBodyStringValues(step.Body!);
+        }
+        catch (JsonException)
+        {
+            return 0;
+        }
+
+        if (bodyValues is null || bodyValues.Count == 0) return 0;
+
+        var matched = 0;
+        foreach (var (name, value) in bindings)
+        {
+            if (bodyValues.TryGetValue(name, out var recorded)
+                && string.Equals(recorded, value, StringComparison.Ordinal))
+            {
+                matched++;
+            }
+        }
+        return matched;
+    }
+
+    /// <summary>
+    /// Flatten a step body into a name → string-form map. The recorder
+    /// keeps the captured input as the JSON the user submitted (e.g.
+    /// <c>{"petId":3}</c>); we coerce primitive values to their canonical
+    /// text form so the matcher can compare them against URL-decoded path
+    /// segments without caring whether the user typed a number or a string.
+    /// </summary>
+    private static Dictionary<string, string>? ParseBodyStringValues(string bodyJson)
+    {
+        using var doc = JsonDocument.Parse(bodyJson);
+        if (doc.RootElement.ValueKind != JsonValueKind.Object) return null;
+
+        var map = new Dictionary<string, string>(StringComparer.Ordinal);
+        foreach (var prop in doc.RootElement.EnumerateObject())
+        {
+            var v = prop.Value;
+            switch (v.ValueKind)
+            {
+                case JsonValueKind.String:
+                    map[prop.Name] = v.GetString() ?? string.Empty;
+                    break;
+                case JsonValueKind.Number:
+                case JsonValueKind.True:
+                case JsonValueKind.False:
+                    map[prop.Name] = v.GetRawText();
+                    break;
+                default:
+                    // Arrays / objects don't appear in path bindings — skip.
+                    break;
+            }
+        }
+        return map;
     }
 
     private static bool IsRestStep(BowireRecordingStep s) =>
