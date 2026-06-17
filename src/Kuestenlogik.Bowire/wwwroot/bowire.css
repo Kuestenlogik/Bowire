@@ -3706,15 +3706,13 @@ full text color
        `--protocol-color` token so the group + every nested element can
        reach the protocol's hue with a single var() call. Set per
        protocol via the data-protocol attribute below. Falls back to
-       the neutral `default` token for protocols we haven't tuned. */
+       the neutral `default` token for protocols we haven't tuned. The
+       left-edge stripe that used to ride on this border was retired
+       on user feedback — too much noise next to the source panel's
+       border and the method-row hover. The protocol-color is still
+       reachable for any nested element that wants to tint itself
+       (currently the service icon). */
     --protocol-color: var(--bowire-protocol-default);
-    /* Left-edge stripe — the at-a-glance "this is REST / gRPC / …"
-       cue. Drawn as a border on the group rather than an extra DOM
-       node so the protocol color sits flush with the service header
-       chevron + the method rows beneath it. */
-    border-left: 3px solid var(--protocol-color);
-    border-top-left-radius: 4px;
-    border-bottom-left-radius: 4px;
 }
 
 /* Per-protocol resolution. New protocols only need one line each —
@@ -3988,14 +3986,15 @@ direction in the left rail.
 .bowire-method-badge[data-direction="duplex"] { --direction-color: var(--bowire-direction-duplex); }
 .bowire-method-badge[data-direction="neutral"] { --direction-color: var(--bowire-direction-neutral); }
 
-/* Method-row's own data-direction (mirrored from the badge so a
-   scanning eye picks up the direction without reading the badge).
-   3 px rail on the row's right edge,
-kept subtle so the protocol
-   stripe on the group's left edge stays the primary cue. */
+/* Method-row's right-edge direction rail used to mirror the badge's
+   warm / cool / duplex chroma. Retired alongside the group's left-edge
+   protocol stripe — together they made the tree read as too busy.
+   The direction signal still lives on the badge itself (see the
+   .bowire-method-badge[data-direction=…] rules above), which is the
+   primary cue. The --direction-color token resolution stays here so
+   any future element can still reach the hue without re-deriving it. */
 .bowire-method-item[data-direction] {
     --direction-color: var(--bowire-direction-neutral);
-    box-shadow: inset -3px 0 0 var(--direction-color);
 }
 .bowire-method-item[data-direction="warm"] { --direction-color: var(--bowire-direction-warm); }
 .bowire-method-item[data-direction="cool"] { --direction-color: var(--bowire-direction-cool); }
