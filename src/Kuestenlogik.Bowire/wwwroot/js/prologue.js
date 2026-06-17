@@ -109,6 +109,143 @@
         catch (e) { markSaveFailed('URLs', e); }
     }
 
+    // ---- Per-URL aliases ---------------------------------------------
+    // The sidebar, the discover-tree source header, the connection
+    // popover, and the per-URL filter all show this name in place of
+    // the (often very long) URL. Aliases are unique within a workspace
+    // and survive URL edits — when the user retypes a URL we move the
+    // existing alias over so the friendly name doesn't reset on every
+    // change. localStorage shape is a plain { [url]: alias } dict.
+    const SERVER_URL_ALIASES_KEY = 'bowire_server_url_aliases';
+    let serverUrlAliases = (function () {
+        try {
+            var raw = localStorage.getItem(wsKey(SERVER_URL_ALIASES_KEY));
+            if (!raw) return {};
+            var parsed = JSON.parse(raw);
+            return (parsed && typeof parsed === 'object') ? parsed : {};
+        } catch { return {}; }
+    })();
+
+    function persistServerUrlAliases() {
+        try { localStorage.setItem(wsKey(SERVER_URL_ALIASES_KEY), JSON.stringify(serverUrlAliases)); markSaved('URL aliases'); }
+        catch (e) { markSaveFailed('URL aliases', e); }
+    }
+
+    // Best-effort short label for a URL — host + last meaningful path
+    // segment, slugged so it's safe as a filter id / DOM token. Used as
+    // the auto-suggested alias when the user first adds a URL.
+    function defaultAliasForUrl(url) {
+        if (!url) return '';
+        var base = '';
+        try {
+            var u = new URL(url);
+            var host = (u.host || '').replace(/^www\./i, '');
+            // Pick the longest path segment (drops "/v3/openapi.json" → "openapi"
+            // pattern that's usually less informative than the host).
+            var segs = (u.pathname || '').split('/').filter(Boolean);
+            var lastSeg = segs.length > 0 ? segs[segs.length - 1].replace(/\.[a-z0-9]+$/i, '') : '';
+            base = lastSeg ? host.split('.')[0] + '-' + lastSeg : host.split('.')[0];
+        } catch {
+            base = url;
+        }
+        // Slug — lowercase, strip everything that isn't a word char or '-'.
+        base = String(base).toLowerCase()
+            .replace(/[^a-z0-9-]+/g, '-')
+            .replace(/^-+|-+$/g, '');
+        if (!base) base = 'url';
+        // Truncate so the alias stays a "short" name.
+        if (base.length > 24) base = base.slice(0, 24).replace(/-+$/, '');
+        return base;
+    }
+
+    // Find an unused alias starting from `seed`, appending -2, -3, … on
+    // collision. Optionally ignores `forUrl` so re-suggesting for an
+    // existing entry doesn't collide with itself.
+    function uniqueAlias(seed, forUrl) {
+        var used = {};
+        for (var k in serverUrlAliases) {
+            if (Object.prototype.hasOwnProperty.call(serverUrlAliases, k) && k !== forUrl) {
+                used[serverUrlAliases[k]] = true;
+            }
+        }
+        if (!used[seed]) return seed;
+        for (var i = 2; i < 1000; i++) {
+            var candidate = seed + '-' + i;
+            if (!used[candidate]) return candidate;
+        }
+        return seed + '-' + Date.now();
+    }
+
+    // Assign an auto-alias when a URL gains its first appearance. Never
+    // overwrites an existing alias — the user's manual choice wins.
+    function ensureAliasForUrl(url) {
+        if (!url) return;
+        if (serverUrlAliases[url]) return;
+        serverUrlAliases[url] = uniqueAlias(defaultAliasForUrl(url), url);
+        persistServerUrlAliases();
+    }
+
+    // Look up the alias for `url`, falling back to the URL itself so
+    // call sites always have something printable.
+    function aliasForUrl(url) {
+        if (!url) return '';
+        return serverUrlAliases[url] || url;
+    }
+
+    // Manually set an alias. Returns { ok: true } on success or
+    // { ok: false, error } when the requested name is empty / collides
+    // with another URL's alias / contains illegal characters. Callers
+    // surface the error inline next to the alias input.
+    function setUrlAlias(url, requested) {
+        if (!url) return { ok: false, error: 'No URL to label' };
+        var trimmed = String(requested || '').trim();
+        if (!trimmed) return { ok: false, error: 'Alias cannot be empty' };
+        if (!/^[A-Za-z0-9._-]{1,40}$/.test(trimmed)) {
+            return { ok: false, error: 'Use letters, digits, dot, dash, underscore (max 40)' };
+        }
+        for (var k in serverUrlAliases) {
+            if (Object.prototype.hasOwnProperty.call(serverUrlAliases, k)
+                && k !== url
+                && serverUrlAliases[k] === trimmed) {
+                return { ok: false, error: 'Alias already used by another URL' };
+            }
+        }
+        serverUrlAliases[url] = trimmed;
+        persistServerUrlAliases();
+        return { ok: true };
+    }
+
+    function removeAliasForUrl(url) {
+        if (url && serverUrlAliases[url]) {
+            delete serverUrlAliases[url];
+            persistServerUrlAliases();
+        }
+    }
+
+    // Migrate alias when the user edits an existing URL in place — the
+    // user just retyped the address, not "this is a different
+    // resource", so preserve the friendly name they already picked.
+    function renameAliasForUrl(oldUrl, newUrl) {
+        if (!oldUrl || !newUrl || oldUrl === newUrl) return;
+        if (!serverUrlAliases[oldUrl]) {
+            ensureAliasForUrl(newUrl);
+            return;
+        }
+        // If the destination already has an alias, just drop the old one
+        // (we can't have two URLs share the same alias).
+        if (serverUrlAliases[newUrl]) {
+            delete serverUrlAliases[oldUrl];
+        } else {
+            serverUrlAliases[newUrl] = serverUrlAliases[oldUrl];
+            delete serverUrlAliases[oldUrl];
+        }
+        persistServerUrlAliases();
+    }
+
+    // Seed aliases for whatever URLs are already in the list on boot
+    // (migration for workspaces saved before this feature shipped).
+    serverUrls.forEach(ensureAliasForUrl);
+
     // Backwards-compat aliases for code paths that haven't been refactored yet
     function getPrimaryServerUrl() { return serverUrls.length > 0 ? serverUrls[0] : ''; }
 
@@ -293,6 +430,38 @@
         try {
             localStorage.setItem(EXPANDED_SERVICES_KEY, JSON.stringify(Array.from(expandedServices)));
         } catch {}
+    }
+
+    // Expanded-state of source-URL panels in the discover tree. Each
+    // URL is a top-level expansion panel that wraps its services so
+    // the sidebar reads as "this URL → these services" instead of a
+    // flat list. The default is "everything open" (Set holds the
+    // explicitly-collapsed entries) — first-time users see their
+    // services without having to click a toggle, returning users get
+    // their last layout back. Stored as the URLs the user has
+    // collapsed so a new URL added later shows up open by default.
+    const COLLAPSED_SOURCES_KEY = 'bowire_collapsed_sources';
+    let collapsedSources = (function () {
+        try {
+            var raw = localStorage.getItem(COLLAPSED_SOURCES_KEY);
+            if (!raw) return new Set();
+            var arr = JSON.parse(raw);
+            return new Set(Array.isArray(arr) ? arr : []);
+        } catch { return new Set(); }
+    })();
+    function persistCollapsedSources() {
+        try {
+            localStorage.setItem(COLLAPSED_SOURCES_KEY, JSON.stringify(Array.from(collapsedSources)));
+        } catch {}
+    }
+    function isSourceExpanded(originUrl) {
+        return !collapsedSources.has(originUrl || '');
+    }
+    function toggleSourceExpanded(originUrl) {
+        var key = originUrl || '';
+        if (collapsedSources.has(key)) collapsedSources.delete(key);
+        else collapsedSources.add(key);
+        persistCollapsedSources();
     }
     let searchQuery = '';
 
@@ -1687,6 +1856,9 @@
                 // orphan namespace and come back empty next render.
                 try {
                     if (typeof serverUrls !== 'undefined' && Array.isArray(serverUrls)) serverUrls.length = 0;
+                    if (typeof serverUrlAliases !== 'undefined' && serverUrlAliases) {
+                        Object.keys(serverUrlAliases).forEach(function (k) { delete serverUrlAliases[k]; });
+                    }
                     if (typeof recordingsList !== 'undefined' && Array.isArray(recordingsList)) recordingsList.length = 0;
                     if (typeof collectionsList !== 'undefined' && Array.isArray(collectionsList)) collectionsList.length = 0;
                     if (typeof flowsList !== 'undefined' && Array.isArray(flowsList)) flowsList.length = 0;
@@ -1729,6 +1901,10 @@
     // when new workspace-scoped state lands. Order doesn't matter.
     var _WORKSPACE_DATA_KEYS = [
         'bowire_server_urls',
+        // Short-name (alias) per server URL — { [url]: alias }. Lives
+        // alongside the URL list so the friendly names the user picked
+        // round-trip with the workspace through export / import.
+        'bowire_server_url_aliases',
         'bowire_url_meta',
         'bowire_collections',
         'bowire_collections_trash',

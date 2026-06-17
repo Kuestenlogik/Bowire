@@ -86,6 +86,7 @@
                 if (!newUrl) return;
                 serverUrls = [newUrl];
                 connectionStatuses[newUrl] = 'connecting';
+                ensureAliasForUrl(newUrl);
                 persistServerUrls();
                 render();
                 fetchServices();
@@ -98,10 +99,12 @@
                             // Treating an empty edit as "remove this URL"
                             serverUrls.splice(idx, 1);
                             delete connectionStatuses[url];
+                            removeAliasForUrl(url);
                         } else if (newUrl !== url) {
                             serverUrls[idx] = newUrl;
                             delete connectionStatuses[url];
                             connectionStatuses[newUrl] = 'connecting';
+                            renameAliasForUrl(url, newUrl);
                         }
                         persistServerUrls();
                         render();
@@ -110,6 +113,7 @@
                         // Remove button
                         serverUrls.splice(idx, 1);
                         delete connectionStatuses[url];
+                        removeAliasForUrl(url);
                         persistServerUrls();
                         render();
                         fetchServices();
@@ -159,9 +163,12 @@
     }
 
     /**
-     * Renders a single editable URL row with status dot, text input, and
-     * (optional) remove button. Calls onCommit with the trimmed value when
-     * the user presses Enter or blurs the input.
+     * Renders a single editable URL row with status dot, alias input,
+     * URL input, and (optional) remove button. Calls onCommit with the
+     * trimmed URL value when the user presses Enter or blurs the URL
+     * input. The alias is persisted directly through setUrlAlias —
+     * it has its own commit / validation path because the URL the
+     * alias is keyed by can race with an in-flight URL edit.
      */
     function renderUrlInputRow(url, hasRemoveButton, locked, onCommit, onRemove) {
         var status = connectionStatuses[url] || 'disconnected';
@@ -174,6 +181,67 @@
             })
         ));
 
+        // ---- Alias input ----
+        // Sits left of the URL so the operator's eye lands on the
+        // friendly short name first; the URL itself becomes secondary
+        // context. Empty when the URL hasn't been committed yet (the
+        // alias auto-fills on first commit in renderUrlBarRow).
+        var aliasErrSlot = el('div', { className: 'bowire-url-alias-err' });
+        var aliasValue = url ? aliasForUrl(url) : '';
+        // aliasForUrl falls back to the URL itself for un-aliased
+        // entries (so other call sites always print SOMETHING). Don't
+        // surface that in the input — it would just look like the URL
+        // was duplicated.
+        if (aliasValue === url) aliasValue = '';
+        var aliasInput = el('input', {
+            className: 'bowire-url-alias-input' + (locked ? ' locked' : ''),
+            type: 'text',
+            value: aliasValue,
+            placeholder: 'alias',
+            title: locked ? 'Alias locked — URL is fixed via --url parameter'
+                          : 'Short name for this URL (unique per workspace). Used in the discover tree, connection popover, and filters.',
+            spellcheck: 'false',
+            autocomplete: 'off'
+        });
+        if (locked) {
+            aliasInput.readOnly = true;
+        } else {
+            var commitAlias = function (nextRaw) {
+                aliasErrSlot.textContent = '';
+                if (!url) return;  // alias makes no sense before the URL is set
+                var nextTrim = (nextRaw || '').trim();
+                var current = serverUrlAliases[url] || '';
+                if (nextTrim === current) return;
+                if (!nextTrim) {
+                    // Empty input → drop the user's custom alias and
+                    // fall back to the auto-suggested one so we never
+                    // leave the URL anonymous in other views.
+                    removeAliasForUrl(url);
+                    ensureAliasForUrl(url);
+                    render();
+                    return;
+                }
+                var res = setUrlAlias(url, nextTrim);
+                if (!res.ok) {
+                    aliasErrSlot.textContent = res.error;
+                    aliasInput.classList.add('invalid');
+                    return;
+                }
+                aliasInput.classList.remove('invalid');
+                render();
+            };
+            aliasInput.addEventListener('keydown', function (e) {
+                if (e.key === 'Enter') { e.preventDefault(); commitAlias(e.target.value); }
+                else if (e.key === 'Escape') {
+                    aliasErrSlot.textContent = '';
+                    aliasInput.classList.remove('invalid');
+                    aliasInput.value = aliasValue;
+                }
+            });
+            aliasInput.addEventListener('blur', function (e) { commitAlias(e.target.value); });
+        }
+
+        // ---- URL input ----
         // Build the attrs map conditionally — el()'s default path is
         // setAttribute(k, v) for every key, and setAttribute(k, undefined)
         // sets the attribute to the literal string "undefined" which the
@@ -202,7 +270,15 @@
             };
         }
         var input = el('input', inputAttrs);
-        row.appendChild(input);
+
+        // Wrap alias + URL inputs in a single column so the per-row
+        // validation message can slip in below the alias without
+        // pushing the URL input out of alignment.
+        var inputs = el('div', { className: 'bowire-url-inputs' },
+            el('div', { className: 'bowire-url-fields' }, aliasInput, input),
+            aliasErrSlot
+        );
+        row.appendChild(inputs);
 
         if (locked) {
             row.appendChild(el('span', {
@@ -3438,13 +3514,20 @@
                                         .filter(function (s) { return s.originUrl === url; })
                                         .reduce(function (acc, s) { return acc + (s.methods ? s.methods.length : 0); }, 0);
                                     var isOn = urlFilter.has(url);
-                                    // Truncate long URLs in the label —
-                                    // OpenAPI-doc paths can be 60+ chars and
-                                    // the popup width is fixed. Title carries
-                                    // the full URL for hover.
-                                    var shortUrl = url.length > 38
-                                        ? url.slice(0, 14) + '…' + url.slice(-22)
-                                        : url;
+                                    // Use the user's alias when one is set —
+                                    // they picked it precisely because the
+                                    // raw URL is too long to scan. Fall back
+                                    // to a middle-truncated URL for entries
+                                    // without an alias yet. Title carries
+                                    // the full URL for hover either way.
+                                    var aliasLabel = (typeof serverUrlAliases !== 'undefined' && serverUrlAliases[url])
+                                        ? serverUrlAliases[url]
+                                        : null;
+                                    var shortUrl = aliasLabel
+                                        ? aliasLabel
+                                        : (url.length > 38
+                                            ? url.slice(0, 14) + '…' + url.slice(-22)
+                                            : url);
                                     popupTop.appendChild(el('div', {
                                         className: 'bowire-protocol-filter-option' + (isOn ? ' selected' : ''),
                                         role: 'menuitemcheckbox',
@@ -3590,9 +3673,18 @@
 
                 // --- URL chips (one per active URL filter) ---
                 urlFilter.forEach(function (url) {
-                    var shortUrl = url.length > 30
-                        ? url.slice(0, 10) + '…' + url.slice(-18)
-                        : url;
+                    // Prefer the user's alias for chip labels — the
+                    // chip row is tight on horizontal space and the
+                    // alias is exactly the short name the user picked
+                    // to recognise this URL at a glance.
+                    var aliasLabel = (typeof serverUrlAliases !== 'undefined' && serverUrlAliases[url])
+                        ? serverUrlAliases[url]
+                        : null;
+                    var shortUrl = aliasLabel
+                        ? aliasLabel
+                        : (url.length > 30
+                            ? url.slice(0, 10) + '…' + url.slice(-18)
+                            : url);
                     filterRow.appendChild(el('div', { className: 'bowire-filter-chip', title: url },
                         el('span', {
                             className: 'bowire-filter-chip-icon',
@@ -3782,7 +3874,25 @@
                 if (au !== bu) return au < bu ? -1 : 1;
                 return (a.name || '').localeCompare(b.name || '');
             });
+
+            // Source-panel state — the panel is the parent node for
+            // every service group that shares the same originUrl.
+            // Mounted as a MudBlazor-style expansion panel: header
+            // (chevron + alias + counts) toggles a body that contains
+            // the service groups. Buckets get created lazily as the
+            // loop encounters each origin.
             var _lastOriginUrl = undefined;
+            var _activePanelBody = list;          // where the next service group should land
+            var _activePanelCount = null;         // count badge on the active panel header
+            var _servicesInActivePanel = 0;       // running tally for the current panel
+
+            function finalizeActivePanelCount() {
+                if (_activePanelCount) {
+                    _activePanelCount.textContent = _servicesInActivePanel
+                        + ' service'
+                        + (_servicesInActivePanel === 1 ? '' : 's');
+                }
+            }
 
             for (const svc of orderedServices) {
                 var baseMethods = svc.methods;
@@ -3809,31 +3919,98 @@
 
                 if (filteredMethods.length === 0) continue;
 
-                // Source header — emit when the originUrl changes from
-                // the previous service (or on the very first
-                // rendered service). Pulls the host out of the URL
-                // for the headline; full URL sits in the title
-                // tooltip so a paste-able copy is one hover away.
+                // Source panel — when the originUrl changes from the
+                // previous service (or on the very first rendered
+                // service) we close out the previous panel's count
+                // and open a fresh expansion panel for this URL.
+                // The panel header carries the user's alias (auto-
+                // assigned on first add, editable in the URL bar
+                // above) as the primary label and the full URL as
+                // the hover tooltip. Clicking the header toggles
+                // the body that holds every service from this URL.
                 var _thisOriginUrl = svc.originUrl || '';
                 if (_thisOriginUrl !== _lastOriginUrl) {
+                    finalizeActivePanelCount();
                     _lastOriginUrl = _thisOriginUrl;
+                    _servicesInActivePanel = 0;
+
                     var sourceLabel;
                     if (_thisOriginUrl) {
-                        try {
-                            var u = new URL(_thisOriginUrl);
-                            sourceLabel = u.host + (u.pathname && u.pathname !== '/' ? u.pathname : '');
-                        } catch {
-                            sourceLabel = _thisOriginUrl;
+                        var aliased = serverUrlAliases[_thisOriginUrl];
+                        if (aliased) {
+                            sourceLabel = aliased;
+                        } else {
+                            try {
+                                var u = new URL(_thisOriginUrl);
+                                sourceLabel = u.host + (u.pathname && u.pathname !== '/' ? u.pathname : '');
+                            } catch {
+                                sourceLabel = _thisOriginUrl;
+                            }
                         }
                     } else {
                         sourceLabel = '— no source';
                     }
-                    list.appendChild(el('div', {
-                        className: 'bowire-service-source-header',
-                        title: _thisOriginUrl || 'Services without an external source URL (e.g. workspace-local schemas)',
-                        textContent: sourceLabel
-                    }));
+
+                    var panelExpanded = isSourceExpanded(_thisOriginUrl);
+                    var panelStatus = _thisOriginUrl
+                        ? (connectionStatuses[_thisOriginUrl] || 'disconnected')
+                        : '';
+                    var panel = el('div', {
+                        className: 'bowire-source-panel'
+                            + (panelExpanded ? ' expanded' : ' collapsed'),
+                        'data-origin-url': _thisOriginUrl
+                    });
+                    (function (originUrl) {
+                        var panelCount = el('span', {
+                            className: 'bowire-source-panel-count',
+                            textContent: ''
+                        });
+                        var panelHeader = el('div', {
+                            className: 'bowire-source-panel-header',
+                            role: 'button',
+                            tabIndex: 0,
+                            title: originUrl || 'Services without an external source URL (e.g. workspace-local schemas)',
+                            onClick: function () {
+                                toggleSourceExpanded(originUrl);
+                                render();
+                            },
+                            onKeydown: function (e) {
+                                if (e.key === 'Enter' || e.key === ' ') {
+                                    e.preventDefault();
+                                    toggleSourceExpanded(originUrl);
+                                    render();
+                                }
+                            }
+                        },
+                            el('span', {
+                                className: 'bowire-source-panel-chevron'
+                                    + (panelExpanded ? ' expanded' : ''),
+                                innerHTML: svgIcon('chevron')
+                            }),
+                            originUrl
+                                ? el('span', {
+                                    className: 'bowire-source-panel-status bowire-url-dot ' + panelStatus,
+                                    title: 'Status: ' + panelStatus
+                                })
+                                : null,
+                            el('span', {
+                                className: 'bowire-source-panel-label',
+                                textContent: sourceLabel
+                            }),
+                            panelCount
+                        );
+                        var panelBody = el('div', {
+                            className: 'bowire-source-panel-body'
+                                + (panelExpanded ? '' : ' collapsed')
+                        });
+                        panel.appendChild(panelHeader);
+                        panel.appendChild(panelBody);
+                        list.appendChild(panel);
+                        _activePanelBody = panelBody;
+                        _activePanelCount = panelCount;
+                    })(_thisOriginUrl);
                 }
+                _servicesInActivePanel++;
 
                 const isExpanded = expandedServices.has(svc.name) || (query && filteredMethods.length > 0);
                 const shortName = svc.name.split('.').pop();
@@ -3958,8 +4135,9 @@
                     methodList.appendChild(item);
                 }
                 group.appendChild(methodList);
-                list.appendChild(group);
+                _activePanelBody.appendChild(group);
             }
+            finalizeActivePanelCount();
         }
 
         sidebar.appendChild(list);
