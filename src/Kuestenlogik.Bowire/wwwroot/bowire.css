@@ -4759,6 +4759,16 @@ only an accent-coloured underline under the active tab. The whole
 .bowire-request-tab.active {
     color: var(--bowire-text);
     border-top-color: var(--bowire-accent);
+    /* Hoppscotch-style "no seam" between the active tab and the
+       content pane below: the tab adopts the content-area background
+       and overlaps the tab-strip's 1 px border-bottom by -1 px so
+       the separator line breaks under the active tab. The .active
+       tab sits on top via position: relative + z-index — without
+       the z-index bump the negative margin would be hidden behind
+       the strip's own border. */
+    background: var(--bowire-bg);
+    margin-bottom: -1px;
+    z-index: 1;
 }
 
 /* The protocol stripe on the left edge (#123) and the direction-tinted

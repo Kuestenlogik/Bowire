@@ -2695,12 +2695,19 @@
         var data = restoreRequestTabsFromStorage();
         if (!data || data.tabs.length === 0) { requestTabsRehydrated = true; return; }
         requestTabsRehydrated = true;
+        var seenIds = Object.create(null);
         for (var i = 0; i < data.tabs.length; i++) {
             var t = data.tabs[i];
             var svc = services.find(function (s) { return s.name === t.serviceKey; });
             if (!svc) continue;
             var meth = (svc.methods || []).find(function (m) { return m.name === t.methodKey; });
             if (!meth) continue;
+            // Drop tabs whose id collides with one already restored
+            // — corrupt persisted state should not resurrect the
+            // duplicate that originally produced the two-active-
+            // tabs symptom.
+            if (seenIds[t.id]) continue;
+            seenIds[t.id] = true;
             requestTabs.push({
                 id: t.id,
                 serviceKey: t.serviceKey,
@@ -2718,11 +2725,47 @@
             selectedMethod = firstTab.method;
             selectedService = firstTab.service;
         }
+        // Make sure the in-process counter starts above every
+        // restored id so the next '+' / Ctrl-click / context-menu
+        // tab can't collide with a tab we just rehydrated.
+        bumpTabIdCounterPast(requestTabs);
     }
 
     let _tabIdCounter = 0;
     function nextTabId() {
-        return 'tab_' + (++_tabIdCounter);
+        // Walk the counter forward until it produces an id that
+        // isn't already in use. Rehydrate restores tabs with their
+        // original ids before bumping the counter (see
+        // bumpTabIdCounterPast below); without this loop a counter
+        // bump that missed an outlier would still let two tabs
+        // share the same id, which is what produced the "two
+        // active tabs" symptom — every tab whose id === activeTabId
+        // got the .active CSS class, including the unintended
+        // duplicate.
+        for (;;) {
+            var id = 'tab_' + (++_tabIdCounter);
+            var clash = false;
+            for (var i = 0; i < requestTabs.length; i++) {
+                if (requestTabs[i].id === id) { clash = true; break; }
+            }
+            if (!clash) return id;
+        }
+    }
+
+    function bumpTabIdCounterPast(tabs) {
+        // Move _tabIdCounter past the highest tab_<n> id we just
+        // restored from localStorage so the next nextTabId() can't
+        // hand back one of the restored ids by accident. Ignores
+        // ids that don't fit the tab_<n> pattern (defensive).
+        if (!Array.isArray(tabs)) return;
+        for (var i = 0; i < tabs.length; i++) {
+            var id = tabs[i] && tabs[i].id;
+            if (typeof id !== 'string') continue;
+            var m = id.match(/^tab_(\d+)$/);
+            if (!m) continue;
+            var n = parseInt(m[1], 10);
+            if (n > _tabIdCounter) _tabIdCounter = n;
+        }
     }
 
     /**
@@ -2732,14 +2775,18 @@
      */
     function openTab(svc, method, opts) {
         opts = opts || {};
-        // De-dupe by (service, method) — clicking the same method
-        // twice should switch to its tab, not open a second copy.
-        // Skip the de-dupe when the caller explicitly asked for a
-        // new tab (+-button, "Open in new tab" context-menu item,
-        // Ctrl-/middle-click) — that path is precisely how the user
-        // pins a second copy of an already-open method so it stays
-        // around while they navigate elsewhere in the active tab.
-        if (!opts.inNewTab) {
+        // De-dupe by (service, method): ONLY when there is no active
+        // tab to repurpose (landing page, every tab closed). In that
+        // case we fall back to switching to an existing tab that
+        // already holds this method. With an active tab present the
+        // normal path always repurposes it, even if another tab
+        // happens to hold the same method — otherwise a pinned tab
+        // hijacks the focus the moment the user clicks something
+        // matching in the tree, and the active tab they were just
+        // editing snaps away. The `inNewTab` path skips the de-dupe
+        // unconditionally (it's how the user explicitly pins a
+        // second copy).
+        if (!opts.inNewTab && activeTabId === null) {
             var existing = null;
             for (var i = 0; i < requestTabs.length; i++) {
                 if (requestTabs[i].serviceKey === svc.name
