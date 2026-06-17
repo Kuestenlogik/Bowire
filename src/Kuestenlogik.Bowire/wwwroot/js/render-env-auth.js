@@ -1056,9 +1056,16 @@
                     var methodCount = 0;
                     if (typeof services !== 'undefined' && Array.isArray(services)) {
                         for (var si = 0; si < services.length; si++) {
-                            if (services[si].originUrl === url) {
+                            // Only count services that actually carry
+                            // methods — OpenAPI discovery sometimes emits
+                            // a host-only "service" with no operations
+                            // which would inflate the per-URL tally past
+                            // what the tree shows.
+                            if (services[si].originUrl === url
+                                && Array.isArray(services[si].methods)
+                                && services[si].methods.length > 0) {
                                 svcCount++;
-                                methodCount += (services[si].methods || []).length;
+                                methodCount += services[si].methods.length;
                             }
                         }
                     }
@@ -2295,7 +2302,7 @@
                         group: 'Recordings',
                         label: rec.name,
                         sublabel: steps + ' step' + (steps === 1 ? '' : 's'),
-                        icon: svgIcon('recording'),
+                        icon: svgIcon('filmstrip'),
                         onSelect: function () {
                             recordingManagerSelectedId = rec.id;
                             railMode = 'recordings';

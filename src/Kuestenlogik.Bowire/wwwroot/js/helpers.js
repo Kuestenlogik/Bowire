@@ -1145,15 +1145,98 @@
     // opts.onClick: row-level click handler
     // opts.onDelete: optional delete handler — renders a trash button
     // opts.deleteTitle: tooltip + aria-label for the delete button
+    // ---- Context menu ----
+    // Floating panel triggered on right-click. Items: { label, onClick,
+    // disabled?, danger?, separator? }. The first non-separator click
+    // dismisses + dispatches; any outside-click dismisses without firing
+    // anything. Multiple open menus replace each other so the
+    // last-opened wins. Mounted directly on document.body so a sidebar
+    // overflow-hidden parent doesn't clip it.
+    var _bowireOpenContextMenu = null;
+    function _closeContextMenu() {
+        if (_bowireOpenContextMenu && _bowireOpenContextMenu.parentNode) {
+            _bowireOpenContextMenu.parentNode.removeChild(_bowireOpenContextMenu);
+        }
+        _bowireOpenContextMenu = null;
+        document.removeEventListener('click', _closeContextMenu, true);
+        document.removeEventListener('contextmenu', _onDocContextMenu, true);
+        document.removeEventListener('keydown', _onMenuKey, true);
+    }
+    function _onDocContextMenu(e) {
+        // Don't close on right-clicks that would themselves spawn a
+        // fresh menu — the new openContextMenu call already cleans up
+        // the previous one before mounting.
+        _closeContextMenu();
+    }
+    function _onMenuKey(e) {
+        if (e.key === 'Escape') _closeContextMenu();
+    }
+    function showContextMenu(clientX, clientY, items) {
+        if (!Array.isArray(items) || items.length === 0) return;
+        _closeContextMenu();
+        var menu = document.createElement('div');
+        menu.className = 'bowire-context-menu';
+        menu.style.position = 'fixed';
+        // Pin off-screen first; we measure + reposition after mount so
+        // the menu never clips the viewport.
+        menu.style.left = '-9999px';
+        menu.style.top = '-9999px';
+        items.forEach(function (item) {
+            if (item.separator) {
+                var sep = document.createElement('div');
+                sep.className = 'bowire-context-menu-separator';
+                menu.appendChild(sep);
+                return;
+            }
+            var row = document.createElement('button');
+            row.type = 'button';
+            row.className = 'bowire-context-menu-item'
+                + (item.danger ? ' danger' : '')
+                + (item.disabled ? ' disabled' : '');
+            row.textContent = item.label;
+            if (item.disabled) row.setAttribute('disabled', 'disabled');
+            row.onclick = function (ev) {
+                ev.stopPropagation();
+                if (item.disabled) return;
+                _closeContextMenu();
+                try { item.onClick(ev); } catch (e) { console.warn('[bowire] context-menu handler failed', e); }
+            };
+            menu.appendChild(row);
+        });
+        document.body.appendChild(menu);
+        // Reposition so the menu fits the viewport.
+        var rect = menu.getBoundingClientRect();
+        var vw = window.innerWidth;
+        var vh = window.innerHeight;
+        var left = Math.min(clientX, vw - rect.width - 4);
+        var top = Math.min(clientY, vh - rect.height - 4);
+        if (left < 4) left = 4;
+        if (top < 4) top = 4;
+        menu.style.left = left + 'px';
+        menu.style.top = top + 'px';
+        _bowireOpenContextMenu = menu;
+        // Defer the dismiss-listener install by one tick so the very
+        // click that opened the menu doesn't immediately close it.
+        setTimeout(function () {
+            document.addEventListener('click', _closeContextMenu, true);
+            document.addEventListener('contextmenu', _onDocContextMenu, true);
+            document.addEventListener('keydown', _onMenuKey, true);
+        }, 0);
+    }
+
     function renderSidebarListItem(opts) {
         opts = opts || {};
-        var row = el('div', {
+        var rowAttrs = {
             id: opts.id,
             className: 'bowire-env-list-item'
                 + (opts.active ? ' active' : '')
                 + (opts.selected ? ' selected' : ''),
             onClick: opts.onClick
-        });
+        };
+        if (typeof opts.onContextMenu === 'function') {
+            rowAttrs.onContextMenu = opts.onContextMenu;
+        }
+        var row = el('div', rowAttrs);
         if (opts.icon) {
             row.appendChild(el('span', { className: 'bowire-env-sidebar-icon', innerHTML: svgIcon(opts.icon) }));
         } else if (opts.accent) {
@@ -1635,9 +1718,19 @@
             disconnect: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 7h3a5 5 0 010 10h-3M9 17H6a5 5 0 010-10h3"/><line x1="8" y1="12" x2="16" y2="12" stroke-dasharray="2 2"/></svg>',
             send: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>',
             replay: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 4v6h6"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg>',
-            // #121 — empty-card icons. Recording = solid dot (the
-            // capture affordance), console = terminal prompt.
-            recording: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="6" fill="currentColor"/></svg>',
+            // Recording rail-mode icon — film camera (svgrepo 513400).
+            // Used by the activity rail + any "go to Recordings" entry
+            // point. A single recording row uses the filmstrip glyph
+            // (below) so the rail-vs-individual-recording distinction
+            // reads at a glance.
+            recording: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 9.50019L17.6584 9.17101C19.6042 8.19807 20.5772 7.7116 21.2886 8.15127C22 8.59094 22 9.67872 22 11.8543V12.1461C22 14.3217 22 15.4094 21.2886 15.8491C20.5772 16.2888 19.6042 15.8023 17.6584 14.8294L17 14.5002V9.50019Z"/><path d="M13.5607 7.43934C14.1464 8.02513 14.1464 8.97487 13.5607 9.56066C12.9749 10.1464 12.0251 10.1464 11.4393 9.56066C10.8536 8.97487 10.8536 8.02513 11.4393 7.43934C12.0251 6.85355 12.9749 6.85355 13.5607 7.43934Z"/><path d="M2 11.5C2 8.21252 2 6.56878 2.90796 5.46243C3.07418 5.25989 3.25989 5.07418 3.46243 4.90796C4.56878 4 6.21252 4 9.5 4C12.7875 4 14.4312 4 15.5376 4.90796C15.7401 5.07418 15.9258 5.25989 16.092 5.46243C17 6.56878 17 8.21252 17 11.5V12.5C17 15.7875 17 17.4312 16.092 18.5376C15.9258 18.7401 15.7401 18.9258 15.5376 19.092C14.4312 20 12.7875 20 9.5 20C6.21252 20 4.56878 20 3.46243 19.092C3.25989 18.9258 3.07418 18.7401 2.90796 18.5376C2 17.4312 2 15.7875 2 12.5V11.5Z"/></svg>',
+            // Individual-recording glyph — rounded-square film reel
+            // with the perforation strip across the top + a play-
+            // triangle centred below. Reads as "a single playable
+            // recording" so a row in the workspace tree / omnibox /
+            // detail header doesn't repeat the rail-mode camera.
+            // stroke recoloured to currentColor.
+            filmstrip: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg"><path d="M2 12C2 7.28595 2 4.92893 3.46447 3.46447C4.92893 2 7.28595 2 12 2C16.714 2 19.0711 2 20.5355 3.46447C22 4.92893 22 7.28595 22 12C22 16.714 22 19.0711 20.5355 20.5355C19.0711 22 16.714 22 12 22C7.28595 22 4.92893 22 3.46447 20.5355C2 19.0711 2 16.714 2 12Z"/><path d="M21.5 8H2.5"/><path d="M10.5 2.5L7 8"/><path d="M17 2.5L13.5 8"/><path d="M15 14.5C15 13.8666 14.338 13.4395 13.014 12.5852C11.6719 11.7193 11.0008 11.2863 10.5004 11.6042C10 11.9221 10 12.7814 10 14.5C10 16.2186 10 17.0779 10.5004 17.3958C11.0008 17.7137 11.6719 17.2807 13.014 16.4148C14.338 15.5605 15 15.1334 15 14.5Z"/></svg>',
             console: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>',
             // #133 — activity-rail icons. Lucide-style line work to
             // match the rest of the topbar / drawer toggles.

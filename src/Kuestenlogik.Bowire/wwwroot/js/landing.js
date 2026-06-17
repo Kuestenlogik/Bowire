@@ -512,12 +512,19 @@
     }
 
     function buildServiceSummary() {
-        var serviceCount = services.length;
+        // Count only services that actually carry methods — the
+        // OpenAPI discovery sometimes emits a host-only "service"
+        // (the API root) with no operations, which would inflate the
+        // count past what the user sees in the tree.
+        var serviceCount = 0;
         var methodCount = 0;
         var protoIds = new Set();
         for (var i = 0; i < services.length; i++) {
             var s = services[i];
-            if (Array.isArray(s.methods)) methodCount += s.methods.length;
+            if (Array.isArray(s.methods) && s.methods.length > 0) {
+                serviceCount++;
+                methodCount += s.methods.length;
+            }
             if (s.source) protoIds.add(s.source);
         }
         var parts = [];

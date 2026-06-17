@@ -22,6 +22,21 @@
     async function applyAuth(metadata) {
         var env = getActiveEnv();
         var auth = env && env.auth;
+
+        // Workspace-level auth fallback (mirrors the variables story:
+        // env overrides workspace). If the active env has no auth or
+        // explicitly opted into "none", fall back to the workspace's
+        // own auth config. A workspace without auth and an env without
+        // auth = unauthenticated, as before.
+        if (!auth || !auth.type || auth.type === 'none') {
+            try {
+                var ws = (typeof activeWorkspace === 'function') ? activeWorkspace() : null;
+                if (ws && ws.auth && ws.auth.type && ws.auth.type !== 'none') {
+                    auth = ws.auth;
+                }
+            } catch { /* prologue not yet loaded — skip workspace fallback */ }
+        }
+
         var out = Object.assign({}, metadata || {});
 
         // Cookie-jar toggle is independent of the auth type — works

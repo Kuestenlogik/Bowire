@@ -775,11 +775,12 @@
         // editor opens inline when a workspace's Environments node
         // (or one of its env leaves) is clicked.
         { id: 'environments', icon: 'globe',     label: 'Environments',      group: 'work',      sidebar: { kind: 'environments' }, hideFromRail: true },
-        // Recordings retired from the rail too — owned by workspaces,
-        // managed via the Workspaces tree's per-workspace Recordings
-        // sub-node. railMode='recordings' still routes the rail-mode
-        // sidebar + main pane for the legacy dispatcher.
-        { id: 'recordings',   icon: 'recording', label: 'Recordings',        group: 'scenarios', sidebar: { kind: 'recordings' }, hideFromRail: true },
+        // Recordings sits back on the rail — peer with Mocks + Flows
+        // (every "scenarios"-group surface is a rail-level work mode).
+        // The Workspaces tree's per-workspace Recordings sub-node stays
+        // available for workspace-overview navigation; the rail is the
+        // direct quick-access path for the active workspace.
+        { id: 'recordings',   icon: 'recording', label: 'Recordings',        group: 'scenarios', sidebar: { kind: 'recordings' } },
         { id: 'mocks',        icon: 'server',    label: 'Mocks',             group: 'scenarios', sidebar: { kind: 'mocks' } },
         { id: 'flows',        icon: 'flow',      label: 'Flows',             group: 'scenarios', sidebar: { kind: 'flows' } },
         { id: 'proxy',        icon: 'disconnect',label: 'Proxy / MITM',      group: 'quality',   sidebar: { kind: 'proxy' } },
@@ -809,8 +810,28 @@
     function _railModeCount(modeId) {
         switch (modeId) {
             case 'discover':
+                // Match what the tree actually renders. Two filters
+                // matter: getFilteredServices() applies source-mode /
+                // protocol / URL filters; then the tree skips any
+                // service whose methods array is empty (the OpenAPI
+                // discovery sometimes emits a host-only service that
+                // carries the connection but no operations). The
+                // badge mirrors that second skip so it can't disagree
+                // with the visible row count.
+                if (typeof getFilteredServices === 'function') {
+                    try {
+                        return getFilteredServices()
+                            .filter(function (s) {
+                                return s && Array.isArray(s.methods) && s.methods.length > 0;
+                            }).length;
+                    }
+                    catch { /* fall through */ }
+                }
                 return (typeof services !== 'undefined' && Array.isArray(services))
-                    ? services.length : 0;
+                    ? services.filter(function (s) {
+                        return s && Array.isArray(s.methods) && s.methods.length > 0;
+                    }).length
+                    : 0;
             case 'collections':
                 return (typeof collectionsList !== 'undefined' && Array.isArray(collectionsList))
                     ? collectionsList.length : 0;
@@ -1313,11 +1334,49 @@
 
                 list.appendChild(renderSidebarListItem({
                     id: 'bowire-rec-row-' + rec.id,
+                    icon: 'filmstrip',
                     name: rec.name,
                     meta: stepN + ' step' + (stepN === 1 ? '' : 's')
                         + (rec.id === recordingActiveId ? ' · ● recording' : ''),
                     active: recordingManagerSelectedId === rec.id,
                     selected: recordingsSelected.has(rec.id),
+                    onContextMenu: function (e) {
+                        // Right-click → context menu with the
+                        // common actions for this recording.
+                        // "Use as mock" is the headline; replay /
+                        // delete follow. stopPropagation so a parent
+                        // listener (workspaces tree, &c.) doesn't
+                        // also pop its own menu.
+                        e.preventDefault();
+                        e.stopPropagation();
+                        if (typeof showContextMenu === 'function') {
+                            var items = [];
+                            items.push({
+                                label: 'Use as mock',
+                                disabled: !((Array.isArray(rec.steps) && rec.steps.length > 0)
+                                    || (Array.isArray(rec.stepsManifest) && rec.stepsManifest.length > 0)
+                                    || (typeof rec.stepCount === 'number' && rec.stepCount > 0)),
+                                onClick: function () {
+                                    if (typeof useRecordingAsMock === 'function') useRecordingAsMock(rec);
+                                }
+                            });
+                            items.push({ separator: true });
+                            items.push({
+                                label: 'Replay',
+                                onClick: function () {
+                                    if (typeof replayRecording === 'function') replayRecording(rec.id);
+                                }
+                            });
+                            items.push({
+                                label: 'Delete',
+                                danger: true,
+                                onClick: function () {
+                                    if (typeof deleteRecording === 'function') deleteRecording(rec.id);
+                                }
+                            });
+                            showContextMenu(e.clientX, e.clientY, items);
+                        }
+                    },
                     onClick: function (e) {
                         // #143 Phase 3 — modifier-aware click handling.
                         var isMod = applyListSelectionClick(recordingsSelected, recordingsSelectionAnchor, recIds, idx, e);
@@ -2196,7 +2255,7 @@
             return {
                 id: 'ws:' + w.id + ':recording:' + r.id,
                 label: r.name || '(unnamed)',
-                icon: 'recording',
+                icon: 'filmstrip',
                 badge: stepCount > 0 ? stepCount : null,
                 selected: leafSelected,
                 title: r.name || r.id,
@@ -2834,8 +2893,8 @@
     // mock host (from the BowireMockHostManager #94) as a clickable
     // row. Selecting a mock swaps the main pane to its detail view
     // (URL, log toggle, stop action). Refresh button at the top
-    // re-fetches /api/mock/hosts so externally-started mocks land
-    // in the list without page reload.
+    // re-fetches /api/mocks so externally-started mocks land in the
+    // list without page reload (consolidated under #223).
     // Security rail sidebar — the Security pane lives entirely in the
     // main pane (threat-model + fuzz + nuclei). The sidebar carries
     // just the rail-mode label + a one-line orientation hint so the
@@ -3708,7 +3767,24 @@
                 ));
             }
 
-            for (const svc of visibleServices) {
+            // Group services by originUrl so a multi-source setup
+            // reads as "services-from-this-host" sections rather than
+            // a flat list where pet / store / user blend with services
+            // from a second URL. Shallow-copy + sort by (originUrl,
+            // name) keeps the deterministic order; a single-URL setup
+            // still renders the source header once at the top so
+            // operators see at a glance which host their tree comes
+            // from. Empty originUrl (workspace-local schemas, mock
+            // sources) buckets under "—".
+            var orderedServices = visibleServices.slice().sort(function (a, b) {
+                var au = a.originUrl || '';
+                var bu = b.originUrl || '';
+                if (au !== bu) return au < bu ? -1 : 1;
+                return (a.name || '').localeCompare(b.name || '');
+            });
+            var _lastOriginUrl = undefined;
+
+            for (const svc of orderedServices) {
                 var baseMethods = svc.methods;
                 // Method-type filter (Unary / SS / CS / DX). Applied
                 // before the text search so the count reflects types
@@ -3732,6 +3808,32 @@
                     : baseMethods;
 
                 if (filteredMethods.length === 0) continue;
+
+                // Source header — emit when the originUrl changes from
+                // the previous service (or on the very first
+                // rendered service). Pulls the host out of the URL
+                // for the headline; full URL sits in the title
+                // tooltip so a paste-able copy is one hover away.
+                var _thisOriginUrl = svc.originUrl || '';
+                if (_thisOriginUrl !== _lastOriginUrl) {
+                    _lastOriginUrl = _thisOriginUrl;
+                    var sourceLabel;
+                    if (_thisOriginUrl) {
+                        try {
+                            var u = new URL(_thisOriginUrl);
+                            sourceLabel = u.host + (u.pathname && u.pathname !== '/' ? u.pathname : '');
+                        } catch {
+                            sourceLabel = _thisOriginUrl;
+                        }
+                    } else {
+                        sourceLabel = '— no source';
+                    }
+                    list.appendChild(el('div', {
+                        className: 'bowire-service-source-header',
+                        title: _thisOriginUrl || 'Services without an external source URL (e.g. workspace-local schemas)',
+                        textContent: sourceLabel
+                    }));
+                }
 
                 const isExpanded = expandedServices.has(svc.name) || (query && filteredMethods.length > 0);
                 const shortName = svc.name.split('.').pop();

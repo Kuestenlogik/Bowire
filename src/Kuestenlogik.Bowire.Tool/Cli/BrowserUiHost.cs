@@ -251,13 +251,13 @@ internal static class BrowserUiHost
 
         // Mock-management endpoints — same base-path discipline as the
         // bowire HTML mount (standalone => "" so endpoints land at
-        // `/api/mocks`, not `/bowire/api/mocks`).
+        // `/api/mocks`, not `/bowire/api/mocks`). The #223 consolidation
+        // collapsed the previous /api/mock/* (HostManager) + /api/mocks*
+        // (MockRegistry) split into this single surface; "Use as mock"
+        // now lands on POST /api/mocks with a { recordingId, label }
+        // body, and the recording lookup runs through the
+        // IRecordingJsonProvider seam registered above.
         app.MapBowireMockManagement(basePath: string.Empty);
-
-        // #94 — "Use as mock" one-click endpoints. Recording lookup
-        // dialled through a tiny adapter so the Mock package doesn't
-        // see the workbench's internal RecordingStore.
-        app.MapBowireMockHostEndpoints(basePath: string.Empty);
 
         // AI endpoints (#25 Phase 2). Same base-path discipline.
         app.MapBowireAiEndpoints(basePath: string.Empty);

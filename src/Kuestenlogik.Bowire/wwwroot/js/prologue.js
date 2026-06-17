@@ -41,6 +41,21 @@
         ? 'embedded'
         : (config.lockServerUrl ? 'standalone-locked' : 'standalone');
 
+    // Boot-order pin — activeWorkspaceId has to be set BEFORE the
+    // first wsKey() call, otherwise every per-workspace store
+    // (server URLs, recordings, collections, &c.) reads from the
+    // orphan namespace instead of the workspace the operator was
+    // actually using. The full workspaces list + auto-create-on-
+    // first-run dance still happens later at module scope; this
+    // early read just claims the active id so the load-fns below
+    // route correctly. Safe to re-read later — the value doesn't
+    // change between this line and the workspace block.
+    var activeWorkspaceId = null;
+    try {
+        var earlyActive = localStorage.getItem('bowire_active_workspace');
+        if (earlyActive) activeWorkspaceId = earlyActive;
+    } catch { /* localStorage disabled — fall through; orphan path applies */ }
+
     // ---- Server URL State (standalone mode) ----
     // Multi-URL: a list of discovery URLs, each fetched independently. The
     // legacy single-URL config (config.serverUrl) and old localStorage entries
@@ -796,14 +811,19 @@
     // wires the storage prefix into every persist fn, switching
     // becomes structural.
     let workspaces = [];
-    let activeWorkspaceId = null;
+    // activeWorkspaceId was already claimed at the top of the module
+    // (early boot-order pin so wsKey() routes correctly during the
+    // initial load-fns). Re-read here too — covers the edge case
+    // where the early read missed (localStorage temporarily blocked).
     try {
         var rawWs = localStorage.getItem('bowire_workspaces');
         if (rawWs) {
             var parsed = JSON.parse(rawWs);
             if (Array.isArray(parsed)) workspaces = parsed;
         }
-        activeWorkspaceId = localStorage.getItem('bowire_active_workspace') || null;
+        if (!activeWorkspaceId) {
+            activeWorkspaceId = localStorage.getItem('bowire_active_workspace') || null;
+        }
     } catch { /* ignore */ }
     // First-run behaviour. Default leaves the workspace list empty so
     // the operator sees the "Create your first workspace" Home CTA
@@ -858,7 +878,15 @@
     // per-workspace store sites call wsKey at every localStorage
     // setItem / getItem so a workspace switch picks up a fresh slate.
     function wsKey(baseKey) {
-        if (!activeWorkspaceId) return baseKey;
+        // No active workspace = no scope. Route to a one-off orphan
+        // namespace instead of the unscoped legacy key, so a
+        // "delete all workspaces" sweep doesn't accidentally surface
+        // v1.x global recordings / collections / &c. when the next
+        // workspace is created. The orphan namespace gets cleared by
+        // the deleteWorkspace cascade below.
+        if (!activeWorkspaceId) {
+            return 'bowire_ws_orphan_' + String(baseKey).replace(/^bowire_/, '');
+        }
         return 'bowire_ws_' + activeWorkspaceId + '_'
             + String(baseKey).replace(/^bowire_/, '');
     }
@@ -1095,6 +1123,16 @@
         } catch (e) { markSaveFailed('workspace', e); }
     }
     function activeWorkspace() {
+        // Explicit null = "no active workspace" (e.g. after deleting
+        // the last one). Don't auto-fallback to workspaces[0] — that
+        // hides the null state and the topbar chip would show a
+        // workspace the operator didn't pick. The fallback only kicks
+        // in when activeWorkspaceId points at a stale id that no
+        // longer exists (e.g. an externally-edited bowire_active_workspace
+        // file) — there's still at least one workspace, just nothing
+        // currently selected, so the first-listed entry is a sane
+        // landing.
+        if (!activeWorkspaceId) return null;
         var hit = workspaces.find(function (w) { return w.id === activeWorkspaceId; });
         if (hit) return hit;
         return workspaces.length > 0 ? workspaces[0] : null;
@@ -1599,15 +1637,66 @@
         return true;
     }
     function deleteWorkspace(id) {
-        // Drop the entry and re-point active. When the last workspace
-        // goes, activeWorkspaceId returns to null and the topbar chip
-        // falls back to the empty "no workspace" state — the operator
-        // creates a new one via the dropdown's "+ New workspace…" item.
         var idx = workspaces.findIndex(function (w) { return w.id === id; });
         if (idx < 0) return false;
         workspaces.splice(idx, 1);
+
+        // Workspace = project folder (#155): per-workspace localStorage
+        // namespace gets purged on delete so a leftover wsKeyFor(id, ...)
+        // entry doesn't haunt the next workspace that happens to share
+        // a key. Covers every WORKSPACE_DATA_KEY + every known preset
+        // mode bucket.
+        try {
+            if (Array.isArray(_WORKSPACE_DATA_KEYS)) {
+                _WORKSPACE_DATA_KEYS.forEach(function (k) {
+                    localStorage.removeItem(wsKeyFor(id, k));
+                });
+            }
+            if (Array.isArray(_WORKSPACE_PRESET_MODES)) {
+                _WORKSPACE_PRESET_MODES.forEach(function (mode) {
+                    localStorage.removeItem(wsKeyFor(id, 'bowire_presets_' + mode));
+                });
+            }
+        } catch { /* localStorage quota / disabled — best-effort cleanup */ }
+
         if (activeWorkspaceId === id) {
-            activeWorkspaceId = workspaces.length > 0 ? workspaces[0].id : null;
+            if (workspaces.length === 0) {
+                // Honest empty state: no workspace = no scope.
+                // Auto-seeding a "Personal" workspace looked plausible
+                // in the dropdown + settings tree but quietly broke
+                // every per-workspace persist path (in-memory caches
+                // still pointed at the deleted namespace; new URLs /
+                // recordings didn't render because the load-fns ran
+                // against the old state). The user-facing fix is to
+                // mirror reality — empty workspaces[] means no active
+                // workspace, every rail surfaces the same "create one
+                // to start" empty state, and the topbar switcher reads
+                // "[no workspace]".
+                activeWorkspaceId = null;
+                try {
+                    if (Array.isArray(_WORKSPACE_DATA_KEYS)) {
+                        _WORKSPACE_DATA_KEYS.forEach(function (k) {
+                            localStorage.removeItem('bowire_ws_orphan_'
+                                + String(k).replace(/^bowire_/, ''));
+                        });
+                    }
+                } catch { /* best-effort */ }
+                // Reset the in-memory state so the UI doesn't keep
+                // showing recordings / urls / collections from the
+                // deleted workspace. Load-fns run against the empty
+                // orphan namespace and come back empty next render.
+                try {
+                    if (typeof serverUrls !== 'undefined' && Array.isArray(serverUrls)) serverUrls.length = 0;
+                    if (typeof recordingsList !== 'undefined' && Array.isArray(recordingsList)) recordingsList.length = 0;
+                    if (typeof collectionsList !== 'undefined' && Array.isArray(collectionsList)) collectionsList.length = 0;
+                    if (typeof flowsList !== 'undefined' && Array.isArray(flowsList)) flowsList.length = 0;
+                    if (typeof environments !== 'undefined' && Array.isArray(environments)) environments.length = 0;
+                    if (typeof services !== 'undefined' && Array.isArray(services)) services.length = 0;
+                    if (typeof favorites !== 'undefined' && Array.isArray(favorites)) favorites.length = 0;
+                } catch { /* defensive — some arrays may not be declared yet */ }
+            } else {
+                activeWorkspaceId = workspaces[0].id;
+            }
         }
         persistWorkspaces();
         return true;

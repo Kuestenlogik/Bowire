@@ -13,17 +13,14 @@ namespace Kuestenlogik.Bowire.Mock.Management;
 public static class BowireMockManagementServiceCollectionExtensions
 {
     /// <summary>
-    /// Register the <see cref="MockRegistry"/> singleton so endpoints +
-    /// future MCP tools can resolve it. Idempotent — re-calling is a
-    /// no-op rather than registering a duplicate.
+    /// Register the <see cref="BowireMockHostManager"/> singleton so
+    /// the endpoints + future MCP tools can resolve it. Single owner
+    /// of mock-server lifecycle after the #223 consolidation —
+    /// MockRegistry + the parallel <c>/api/mock/*</c> surface are
+    /// gone. Idempotent — re-calling is a no-op.
     /// </summary>
     public static IServiceCollection AddBowireMockManagement(this IServiceCollection services)
     {
-        services.AddSingleton<MockRegistry>();
-        // #94 — one-click "Use as mock" host manager. Sibling of
-        // MockRegistry: registry tracks the static-mock instances #56
-        // ships, manager tracks the recording-derived mocks the
-        // workbench's "Use as mock" button spins up.
         services.AddSingleton<BowireMockHostManager>();
         return services;
     }
