@@ -12,11 +12,12 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.0 — Re-architected workbench shell + workspace = project folder *(due 2026-06-19)*
 
-**64/65 done** · 1 backlog
+**64/66 done** · 2 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
 | [115](https://github.com/Kuestenlogik/Bowire/issues/115) | Bowire | [v2.0 — UI refactor: re-architect the workbench shell](#issue-kuestenlogik-bowire-115) | ⬜ Backlog |  |
+| [219](https://github.com/Kuestenlogik/Bowire/issues/219) | Bowire | [Benchmarks Phase 1 — single-method shape as first-class rail (closeout of #131 Phase 1)](#issue-kuestenlogik-bowire-219) | ⬜ Backlog |  |
 | [25](https://github.com/Kuestenlogik/Bowire/issues/25) | Bowire | [AI side-panel integration](#issue-kuestenlogik-bowire-25) | ✅ Done | `area:workbench` |
 | [33](https://github.com/Kuestenlogik/Bowire/issues/33) | Bowire | [Protocol plugins — Connect Phase 1+3 + OTLP](#issue-kuestenlogik-bowire-33) | ✅ Done | `area:plugin-sdk` |
 | [43](https://github.com/Kuestenlogik/Bowire/issues/43) | Bowire | [MCP SSE-transport support](#issue-kuestenlogik-bowire-43) | ✅ Done | `area:mcp` |
@@ -200,6 +201,10 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 #### <a id="issue-kuestenlogik-bowire-115"></a>⬜ Backlog · [#115](https://github.com/Kuestenlogik/Bowire/issues/115) v2.0 — UI refactor: re-architect the workbench shell
 
 > **Status:** Phase 1 — Shell-Refactor abgeschlossen (Juni 2026). Was in v2.0 noch zu erledigen ist: ein kleiner Cleanup-Sweep + Release-Notes. Phase 2 (mehrere Feature-Streams) ist auf eigene Tickets unter v2.1-Milestone verschoben. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/115)
+
+#### <a id="issue-kuestenlogik-bowire-219"></a>⬜ Backlog · [#219](https://github.com/Kuestenlogik/Bowire/issues/219) Benchmarks Phase 1 — single-method shape as first-class rail (closeout of #131 Phase 1)
+
+Parent tracker: #131 (full 5-shape acceptance, kept open on v2.1 for Phases 2–5). [[more]](https://github.com/Kuestenlogik/Bowire/issues/219)
 
 #### <a id="issue-kuestenlogik-bowire-25"></a>✅ Done · [#25](https://github.com/Kuestenlogik/Bowire/issues/25) AI side-panel integration
 
