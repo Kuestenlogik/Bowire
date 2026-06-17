@@ -1158,6 +1158,49 @@
         persistWorkspaces();
         return ws;
     }
+
+    // #127 follow-up — "Save As" / Fork-Workspace affordance. v1.9
+    // had Save-As at the workspace dropdown; v2.0's auto-save model
+    // dropped explicit Save-As. This helper rebuilds the path: create
+    // a fresh workspace under <newName> + clone every _WORKSPACE_DATA_KEYS
+    // value + every preset-mode bucket from the source workspace's
+    // localStorage namespace into the new one. Returns the new
+    // workspace, or null when the create itself fails (name taken).
+    function duplicateWorkspace(sourceId, newName) {
+        var source = workspaces.find(function (w) { return w.id === sourceId; });
+        if (!source) return null;
+        var fresh = createWorkspace(newName || (source.name + ' (copy)'), source.color);
+        if (!fresh) return null;
+        // _WORKSPACE_DATA_KEYS is the canonical "everything this
+        // workspace owns" list; iterating it covers URLs / envs /
+        // collections / recordings / flows / pins / favorites /
+        // benchmarks / open tabs without bespoke per-key code.
+        try {
+            _WORKSPACE_DATA_KEYS.forEach(function (k) {
+                var raw = localStorage.getItem(wsKeyFor(sourceId, k));
+                if (raw !== null) {
+                    localStorage.setItem(wsKeyFor(fresh.id, k), raw);
+                }
+            });
+            // Presets framework storage — same shape as data keys but
+            // keyed under bowire_presets_<mode> per workspace. Copy
+            // each known mode bucket so saved configs travel too.
+            if (Array.isArray(_WORKSPACE_PRESET_MODES)) {
+                _WORKSPACE_PRESET_MODES.forEach(function (mode) {
+                    var pkey = 'bowire_presets_' + mode;
+                    var raw = localStorage.getItem(wsKeyFor(sourceId, pkey));
+                    if (raw !== null) {
+                        localStorage.setItem(wsKeyFor(fresh.id, pkey), raw);
+                    }
+                });
+            }
+            markSaved('duplicate');
+        } catch (e) {
+            console.warn('[bowire] duplicateWorkspace failed mid-copy', e);
+        }
+        return fresh;
+    }
+
     function switchWorkspace(id) {
         var ws = workspaces.find(function (w) { return w.id === id; });
         if (!ws) return;
@@ -1796,6 +1839,22 @@
     let saveState = { kind: 'idle', at: 0, target: '' };
     let saveStateClearTimer = null;
 
+    // #127 follow-up — dirty-tracker for the manual "Save now" button.
+    // Bowire's persist functions run immediately on each mutation, so
+    // there are no "unsaved changes" in the v1.9 sense. But Cmd+S /
+    // "Save now" exists as a "force-flush every slot at once" path,
+    // and the button should grey out when nothing has been autosaved
+    // since the last force-flush — otherwise the operator hits Save
+    // and gets no visible consequence.
+    //
+    // hasUnflushedChanges flips true on every markSaved call EXCEPT
+    // the ones called from inside flushAllPersists (gated by
+    // _flushInProgress so a flush-internal markSaved doesn't
+    // re-dirty the state it just cleaned).
+    let _hasUnflushedChanges = false;
+    let _flushInProgress = false;
+    function hasUnflushedChanges() { return _hasUnflushedChanges; }
+
     // #127 — folder-open capability. Set once at boot from
     // /api/workspace/can-open-folder. Embedded hosts get { available:
     // false } back so the save-pill click is gated off (the host is
@@ -1844,22 +1903,33 @@
             try { fn(); ok++; }
             catch (e) { console.warn('[bowire] flush ' + label + ' failed', e); fail++; }
         }
-        tryRun('serverUrls',      function () { persistServerUrls(); });
-        tryRun('protocolFilter',  function () { persistProtocolFilter(); });
-        tryRun('methodTypeFilter',function () { persistMethodTypeFilter(); });
-        tryRun('urlFilter',       function () { persistUrlFilter(); });
-        tryRun('expandedServices',function () { persistExpandedServices(); });
-        tryRun('urlHeaders',      function () { persistUrlHeaders(); });
-        tryRun('urlMeta',         function () { persistUrlMeta(); });
-        tryRun('recordingsTrash', function () { persistRecordingsTrash(); });
-        tryRun('collectionsTrash',function () { persistCollectionsTrash(); });
-        tryRun('workspaces',      function () { persistWorkspaces(); });
-        tryRun('requestTabs',     function () { persistRequestTabs(); });
-        tryRun('collections',     function () { persistCollections(); });
-        tryRun('recordings',      function () { persistRecordings(); });
-        tryRun('flows',           function () { persistFlows(); });
-        tryRun('benchmarks',      function () { persistBenchmarks(); });
+        _flushInProgress = true;
+        try {
+            tryRun('serverUrls',      function () { persistServerUrls(); });
+            tryRun('protocolFilter',  function () { persistProtocolFilter(); });
+            tryRun('methodTypeFilter',function () { persistMethodTypeFilter(); });
+            tryRun('urlFilter',       function () { persistUrlFilter(); });
+            tryRun('expandedServices',function () { persistExpandedServices(); });
+            tryRun('urlHeaders',      function () { persistUrlHeaders(); });
+            tryRun('urlMeta',         function () { persistUrlMeta(); });
+            tryRun('recordingsTrash', function () { persistRecordingsTrash(); });
+            tryRun('collectionsTrash',function () { persistCollectionsTrash(); });
+            tryRun('workspaces',      function () { persistWorkspaces(); });
+            tryRun('requestTabs',     function () { persistRequestTabs(); });
+            tryRun('collections',     function () { persistCollections(); });
+            tryRun('recordings',      function () { persistRecordings(); });
+            tryRun('flows',           function () { persistFlows(); });
+            tryRun('benchmarks',      function () { persistBenchmarks(); });
+        } finally {
+            _flushInProgress = false;
+        }
+        // Reset dirty tracker — every persist slot just got written.
+        _hasUnflushedChanges = false;
         markSaved(fail > 0 ? ('flush (' + ok + ' ok, ' + fail + ' err)') : 'all');
+        // The markSaved above re-set _hasUnflushedChanges=true because
+        // _flushInProgress is now false. Clear it again — the flush
+        // itself isn't new dirty state.
+        _hasUnflushedChanges = false;
     }
 
     // ---- #115 App-Version-Marker + Cosmetic-State-Reset ----
@@ -1949,6 +2019,12 @@
 
     function markSaved(target) {
         saveState = { kind: 'saved', at: Date.now(), target: target || 'state' };
+        // Dirty-tracker — only count autosaves outside a force-flush
+        // sweep; the markSaved a flush itself emits at the end is
+        // bookkeeping, not new dirty state.
+        if (!_flushInProgress) {
+            _hasUnflushedChanges = true;
+        }
         if (saveStateClearTimer) clearTimeout(saveStateClearTimer);
         saveStateClearTimer = setTimeout(function () {
             saveState = { kind: 'idle', at: 0, target: '' };
