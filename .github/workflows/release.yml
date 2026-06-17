@@ -87,30 +87,50 @@ jobs:
           GH_TOKEN: ${{ secrets.RELEASE_PAT || secrets.GITHUB_TOKEN }}
         run: |
           TAG="${GITHUB_REF_NAME}"
-          # Look for an existing draft release whose body carries real
-          # editorial content (anything beyond the legacy placeholder
-          # marker). Drafts are pre-populated by the maintainer with
-          # `gh release create $TAG --draft --notes-file <path>` before
-          # the tag is pushed; the publish step below promotes the
-          # draft.
+          # Source-of-truth chain (from v2.1 onward):
+          #   1) docs/release-notes/upcoming.md (file-driven, v2.1+ canonical path)
+          #   2) docs/release-notes/${TAG}.md  (preserved past release body)
+          #   3) Legacy: GitHub Draft Release body (v2.0 used this — fall back so
+          #      tags pushed in the transition still publish)
+          # The file-driven path keeps the Releases page free of Draft entries that
+          # otherwise look like "v2.1 already exists" to users hitting that URL.
+          FILE_BODY=""
+          for candidate in "docs/release-notes/${TAG}.md" "docs/release-notes/upcoming.md"; do
+            if [[ -f "$candidate" ]]; then
+              # Strip any YAML front-matter so the body downstream is pure
+              # markdown ready to land in the release body verbatim.
+              FILE_BODY=$(awk 'BEGIN{fm=0} /^---$/{fm++; next} fm<2{next} {print}' "$candidate")
+              FILE_BODY=$(echo "$FILE_BODY" | sed -E 's/<[^>]+>//g; /^[[:space:]]*$/d' | head -c 1)
+              if [[ -n "$FILE_BODY" ]]; then
+                FILE_BODY="present-at:${candidate}"
+                break
+              fi
+              FILE_BODY=""
+            fi
+          done
+          if [[ -n "$FILE_BODY" ]]; then
+            echo "✓ Found curated block for ${TAG} (file: ${FILE_BODY#present-at:})"
+            exit 0
+          fi
+          # Legacy fallback: GitHub Draft Release body.
           BODY=$(gh api "repos/${{ github.repository }}/releases/tags/${TAG}" --jq '.body' 2>/dev/null || true)
           if [[ -z "$BODY" ]]; then
-            # No release record at all — check for a draft by tag (drafts
-            # don't surface via the /releases/tags/$TAG endpoint until
-            # they're published).
             BODY=$(gh api "repos/${{ github.repository }}/releases" --jq ".[] | select(.tag_name == \"${TAG}\") | .body" 2>/dev/null | head -n 50000 || true)
           fi
           if [[ -z "$BODY" ]] || echo "$BODY" | grep -q "See the auto-generated change list below"; then
             echo "::error::No editorial body found for ${TAG}."
             echo ""
-            echo "Create a draft release with the highlights before tagging:"
+            echo "Curate the release body in the repo (preferred from v2.1):"
+            echo "  edit docs/release-notes/upcoming.md, commit + push, then tag."
+            echo ""
+            echo "Or, legacy path (v2.0 compatible):"
             echo "  gh release create ${TAG} --repo ${{ github.repository }} --draft \\"
             echo "    --title '${TAG} — <theme>' --notes-file path/to/notes.md"
             echo ""
-            echo "The publish step below promotes the draft."
+            echo "The publish step below promotes the file body or the draft."
             exit 1
           fi
-          echo "✓ Found curated block for ${TAG}"
+          echo "✓ Found curated block for ${TAG} (legacy: GitHub Draft Release)"
 
       - uses: actions/setup-dotnet@v5
         with:
@@ -559,15 +579,36 @@ jobs:
       # rule + hint line frame the seam between curated highlights and
       # auto-gen commit list so the two sections read as separate
       # blocks rather than one wall.
-      - name: Pull editorial body from GitHub draft release
+      - name: Pull editorial body (file first, GitHub draft as fallback)
         env:
           GH_TOKEN: ${{ secrets.RELEASE_PAT || secrets.GITHUB_TOKEN }}
         run: |
           TAG="${GITHUB_REF_NAME}"
-          # Drafts don't show up under /releases/tags/$TAG; list all
-          # releases and grep by tag_name.
-          NOTES=$(gh api "repos/${{ github.repository }}/releases" \
-            --jq ".[] | select(.tag_name == \"${TAG}\") | .body" 2>/dev/null || true)
+          NOTES=""
+          # Source chain matches the gate above: docs/release-notes/${TAG}.md
+          # → docs/release-notes/upcoming.md → GitHub draft release body.
+          for candidate in "docs/release-notes/${TAG}.md" "docs/release-notes/upcoming.md"; do
+            if [[ -f "$candidate" ]]; then
+              # Strip YAML front-matter; the body downstream is pure
+              # markdown that lands as-is in the release.
+              CANDIDATE_BODY=$(awk 'BEGIN{fm=0} /^---$/{fm++; next} fm<2{next} {print}' "$candidate")
+              # Ignore template placeholders so an unedited upcoming.md
+              # doesn't ship as "real" notes.
+              CLEAN=$(echo "$CANDIDATE_BODY" | sed -E 's/<[^>]+>//g; /^[[:space:]]*$/d' | head -c 1)
+              if [[ -n "$CLEAN" ]]; then
+                NOTES="$CANDIDATE_BODY"
+                echo "Using editorial body from ${candidate}"
+                break
+              fi
+            fi
+          done
+          if [[ -z "$NOTES" ]]; then
+            # Drafts don't show up under /releases/tags/$TAG; list all
+            # releases and grep by tag_name.
+            NOTES=$(gh api "repos/${{ github.repository }}/releases" \
+              --jq ".[] | select(.tag_name == \"${TAG}\") | .body" 2>/dev/null || true)
+            [[ -n "$NOTES" ]] && echo "Using editorial body from GitHub draft release (legacy)."
+          fi
           {
             if [[ -z "$NOTES" ]]; then
               echo "## $TAG"
