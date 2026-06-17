@@ -9900,6 +9900,76 @@ so the user sees where the
     border-style: solid;
 }
 
+/* #152 follow-up — Sources detail per-URL schema drop zone. Shares
+   the visual language of the Discover sidebar proto-dropzone so the
+   two surfaces read as one affordance; the only difference is which
+   URL the upload gets bound to in the discovery pass. */
+.bowire-sources-dropzone {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    padding: 16px 12px;
+    background: var(--bowire-bg);
+    border: 1px dashed var(--bowire-border);
+    border-radius: var(--bowire-radius-md);
+    color: var(--bowire-text-secondary);
+    cursor: pointer;
+    transition: all var(--bowire-transition);
+    text-align: center;
+}
+.bowire-sources-dropzone:hover,
+.bowire-sources-dropzone.drag {
+    background: var(--bowire-accent-subtle);
+    border-color: var(--bowire-accent);
+    color: var(--bowire-accent-text);
+    border-style: solid;
+}
+.bowire-sources-dropzone-icon {
+    width: 22px;
+    height: 22px;
+    color: var(--bowire-accent);
+}
+.bowire-sources-dropzone-icon svg {
+    width: 100%;
+    height: 100%;
+}
+.bowire-sources-dropzone-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--bowire-text);
+}
+.bowire-sources-dropzone-hint {
+    font-size: 11px;
+    color: var(--bowire-text-tertiary);
+}
+.bowire-sources-schema-list {
+    margin-top: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+.bowire-sources-schema-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 6px 10px;
+    background: var(--bowire-bg-elevated);
+    border-radius: 4px;
+    font-size: 12px;
+}
+.bowire-sources-schema-name {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    color: var(--bowire-text);
+}
+.bowire-sources-schema-kind {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--bowire-text-tertiary);
+}
+
 .bowire-proto-dropzone-icon {
     width: 22px;
     height: 22px;
@@ -10812,6 +10882,36 @@ and offers the path to switch. */
 }
 .bowire-ws-detail-switch-btn:hover {
     background: var(--bowire-accent-hover);
+}
+/* #127 follow-up — manual control cluster (Save-now + Duplicate)
+   slots in next to the Switch / Active badge so all per-workspace
+   actions sit in one strip. */
+.bowire-ws-detail-header-actions {
+    display: flex;
+    gap: 8px;
+    margin-left: auto;
+}
+.bowire-ws-detail-action-btn {
+    background: var(--bowire-bg-elevated);
+    color: var(--bowire-text);
+    border: 1px solid var(--bowire-border-subtle);
+    padding: 6px 12px;
+    border-radius: var(--bowire-radius-md);
+    cursor: pointer;
+    font-size: 12px;
+}
+.bowire-ws-detail-action-btn:hover {
+    border-color: var(--bowire-border);
+    background: var(--bowire-surface);
+}
+.bowire-ws-detail-action-btn[disabled] {
+    opacity: 0.5;
+    cursor: default;
+    color: var(--bowire-text-tertiary);
+}
+.bowire-ws-detail-action-btn[disabled]:hover {
+    border-color: var(--bowire-border-subtle);
+    background: var(--bowire-bg-elevated);
 }
 .bowire-ws-detail-section {
     display: flex;

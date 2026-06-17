@@ -1453,6 +1453,57 @@
                     }
                 })
         );
+        // #127 follow-up — manual control cluster. v2.0's auto-save
+        // covers the path-of-least-resistance case, but operators
+        // also want explicit affordances for:
+        //   * Save now — force-flush every persist slot in one click,
+        //     same as Cmd+S; useful before closing the tab or sharing
+        //     a screenshot of a known-saved state.
+        //   * Duplicate — "Save As" / fork: clone this workspace's
+        //     entire data set into a fresh workspace, restoring the
+        //     v1.9 Save-As path the auto-save model dropped.
+        var headerActions = el('div', { className: 'bowire-ws-detail-header-actions' });
+        if (isActive) {
+            // Save-now button greys out when nothing has been
+            // autosaved since the last force-flush — pressing it then
+            // would be a no-op the operator can't see. hasUnflushedChanges
+            // tracks autosaves outside the flush sweep itself.
+            var _dirty = (typeof hasUnflushedChanges === 'function') && hasUnflushedChanges();
+            var saveBtn = el('button', {
+                className: 'bowire-ws-detail-action-btn',
+                textContent: _dirty ? 'Save now' : 'Saved',
+                title: _dirty
+                    ? 'Force-flush every persist slot. Same as Cmd/Ctrl+S.'
+                    : 'Nothing pending — every autosave slot is already on disk.',
+                onClick: function () {
+                    if (typeof flushAllPersists === 'function') flushAllPersists();
+                }
+            });
+            if (!_dirty) saveBtn.setAttribute('disabled', 'disabled');
+            headerActions.appendChild(saveBtn);
+        }
+        headerActions.appendChild(el('button', {
+            className: 'bowire-ws-detail-action-btn',
+            textContent: 'Duplicate…',
+            title: 'Create a copy of this workspace (URLs, envs, collections, recordings, flows, pins). Useful as a "Save As" / fork.',
+            onClick: function () {
+                var t = _liveWs();
+                if (!t || typeof duplicateWorkspace !== 'function') return;
+                bowirePrompt('Name for the duplicate', {
+                    title: 'Duplicate workspace',
+                    defaultValue: t.name + ' (copy)',
+                    okLabel: 'Duplicate',
+                }, function (newName) {
+                    if (newName === null) return;
+                    var fresh = duplicateWorkspace(t.id, newName);
+                    if (fresh) {
+                        workspacesSelectedId = fresh.id;
+                        render();
+                    }
+                });
+            }
+        }));
+        header.appendChild(headerActions);
         main.appendChild(header);
 
         // ---- Tabs: General | Variables | Secrets ----
@@ -2757,11 +2808,37 @@
         return main;
     }
 
+    // #152 follow-up — schema upload helper shared by the Sources-
+    // detail drop-zone (drag-drop + click→file-picker). Mirrors the
+    // Discover sidebar's renderProtoUploadPanel upload loop so
+    // /api/proto/upload + /api/openapi/upload stay the single backend
+    // seam for every schema source — the difference is which surface
+    // the operator triggers it from.
+    async function _uploadSourcesSchemaFiles(files) {
+        var protoCount = 0, openapiCount = 0;
+        for (var file of files) {
+            var content = await file.text();
+            var lower = file.name.toLowerCase();
+            var endpoint;
+            if (lower.endsWith('.proto')) {
+                endpoint = '/api/proto/upload';
+                protoCount++;
+            } else {
+                endpoint = '/api/openapi/upload?name=' + encodeURIComponent(file.name);
+                openapiCount++;
+            }
+            await fetch(config.prefix + endpoint, { method: 'POST', body: content });
+        }
+        var msg = [];
+        if (protoCount > 0) msg.push(protoCount + ' .proto');
+        if (openapiCount > 0) msg.push(openapiCount + ' OpenAPI');
+        toast(msg.join(' + ') + ' imported', 'success');
+        if (typeof fetchServices === 'function') fetchServices();
+    }
+
     // #152 — Sources rail-mode main pane. Right-hand detail view
     // for the selected URL: status header + discovery summary +
-    // headers (placeholder) + schema imports (placeholder) +
-    // delete action. Subsequent commits flesh out the headers /
-    // schema sections; v1 focuses on the consolidated surface.
+    // headers + schema upload + delete action.
     function renderSourcesDetailMain() {
         var main = el('div', { id: 'bowire-main-sources', className: 'bowire-main bowire-main-workspaces' });
 
@@ -2920,17 +2997,73 @@
         );
         main.appendChild(actions);
 
-        // Schema-file management + per-URL headers are placeholders for
-        // the next pass — drop zone + key/value editor land in
-        // follow-ups so this rail mode ships in a usable state today.
-        main.appendChild(el('div', { className: 'bowire-ws-detail-section' },
-            el('div', { className: 'bowire-ws-detail-section-label', textContent: 'Schema files' }),
-            el('p', {
-                className: 'bowire-sources-hint',
-                style: 'color:var(--bowire-text-tertiary); font-size:12px;',
-                textContent: 'Drop-zone + Replace / Remove actions land in #152 follow-up.'
+        // #152 follow-up — schema-file drop zone per URL. Same upload
+        // path the Discover sidebar uses (/api/proto/upload + /api/openapi/upload)
+        // so the operator can manage schemas next to the URL they
+        // belong to instead of context-switching to Discover.
+        var schemaSection = el('div', { className: 'bowire-ws-detail-section' },
+            el('div', { className: 'bowire-ws-detail-section-label', textContent: 'Schema files' }));
+
+        // List schemas associated with this URL (matched by OriginUrl).
+        // Per-URL filter keeps the section relevant — global schemas
+        // still surface in the Discover sidebar.
+        var matchingSchemas = (typeof services === 'object' && Array.isArray(services))
+            ? services.filter(function (s) {
+                return (s.source === 'proto' || s.source === 'rest')
+                    && s.originUrl === u;
             })
-        ));
+            : [];
+
+        var schemaDrop = el('div', {
+            className: 'bowire-sources-dropzone',
+            onDragOver: function (e) { e.preventDefault(); this.classList.add('drag'); },
+            onDragLeave: function () { this.classList.remove('drag'); },
+            onDrop: async function (e) {
+                e.preventDefault();
+                this.classList.remove('drag');
+                var files = e.dataTransfer && e.dataTransfer.files;
+                if (!files || files.length === 0) return;
+                await _uploadSourcesSchemaFiles(files);
+            },
+            onClick: function () {
+                var input = document.createElement('input');
+                input.type = 'file';
+                input.accept = '.proto,.json,.yaml,.yml';
+                input.multiple = true;
+                input.onchange = async function () {
+                    if (!input.files || input.files.length === 0) return;
+                    await _uploadSourcesSchemaFiles(input.files);
+                };
+                input.click();
+            }
+        },
+            el('div', { className: 'bowire-sources-dropzone-icon', innerHTML: svgIcon('upload') }),
+            el('div', { className: 'bowire-sources-dropzone-title',
+                textContent: matchingSchemas.length === 0
+                    ? 'Upload schema files'
+                    : 'Add more schema files' }),
+            el('div', { className: 'bowire-sources-dropzone-hint',
+                textContent: '.proto for gRPC  ·  .json / .yaml for OpenAPI / Swagger  ·  drop or click' })
+        );
+        schemaSection.appendChild(schemaDrop);
+
+        if (matchingSchemas.length > 0) {
+            var schemaList = el('div', { className: 'bowire-sources-schema-list' });
+            matchingSchemas.forEach(function (svc) {
+                schemaList.appendChild(el('div', { className: 'bowire-sources-schema-row' },
+                    el('span', {
+                        className: 'bowire-sources-schema-name',
+                        textContent: svc.Name
+                    }),
+                    el('span', {
+                        className: 'bowire-sources-schema-kind',
+                        textContent: svc.source === 'proto' ? 'gRPC (.proto)' : 'OpenAPI'
+                    })
+                ));
+            });
+            schemaSection.appendChild(schemaList);
+        }
+        main.appendChild(schemaSection);
         // #152 v2 — per-URL headers editor. Applied to every
         // request invoked against this URL by the api.js request-
         // header builder.
