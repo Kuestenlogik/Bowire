@@ -12,7 +12,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.0 — Re-architected workbench shell + workspace = project folder *(due 2026-06-19)*
 
-**68/70 done** · 2 backlog
+**69/71 done** · 2 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -86,10 +86,11 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [220](https://github.com/Kuestenlogik/Bowire/issues/220) | Bowire | [Recordings Phase 1 — chunked disk layout + content-addressed bodies (closeout of #144 Phase 1)](#issue-kuestenlogik-bowire-220) | ✅ Done |  |
 | [221](https://github.com/Kuestenlogik/Bowire/issues/221) | Bowire | [Presets framework Phase 1 — generic per-mode saved configs + Benchmarks integration (closeout of #140 Phase 1)](#issue-kuestenlogik-bowire-221) | ✅ Done |  |
 | [222](https://github.com/Kuestenlogik/Bowire/issues/222) | Bowire | [Parallel sessions Phase 1 — local fan-out from recording / collection toolbar (closeout of #132 Phase 1)](#issue-kuestenlogik-bowire-222) | ✅ Done |  |
+| [223](https://github.com/Kuestenlogik/Bowire/issues/223) | Bowire | [Consolidate the two mock-server registries — MockRegistry vs BowireMockHostManager](#issue-kuestenlogik-bowire-223) | ✅ Done |  |
 
 ### v2.1 — Scripting, variable resolver, throughput surface *(due 2026-06-30)*
 
-**0/10 done** · 10 backlog
+**0/9 done** · 9 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -102,7 +103,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [153](https://github.com/Kuestenlogik/Bowire/issues/153) | Bowire | [Bowire as transparent interceptor — embedded middleware + standalone reverse-proxy](#issue-kuestenlogik-bowire-153) | ⬜ Backlog |  |
 | [194](https://github.com/Kuestenlogik/Bowire/issues/194) | Bowire | [Action log Phase 2 — remaining mutation sites + cross-reload undo + soft-delete workspaces](#issue-kuestenlogik-bowire-194) | ⬜ Backlog |  |
 | [197](https://github.com/Kuestenlogik/Bowire/issues/197) | Bowire | [Deprecate + unlist Kuestenlogik.Bowire.Extension.MapLibre on nuget.org after v2.0 ships](#issue-kuestenlogik-bowire-197) | ⬜ Backlog |  |
-| [223](https://github.com/Kuestenlogik/Bowire/issues/223) | Bowire | [Consolidate the two mock-server registries — MockRegistry vs BowireMockHostManager](#issue-kuestenlogik-bowire-223) | ⬜ Backlog |  |
 
 ### v2.2 — Test pillar: assertions, CI runner, regression coverage *(due 2026-07-10)*
 
@@ -488,6 +488,10 @@ Parent tracker: #140 (full multi-mode preset adoption, kept open on v2.1 for the
 
 Parent tracker: #132 (full local + distributed acceptance, kept open on v2.1 for Phase 2 — distributed across workers). [[more]](https://github.com/Kuestenlogik/Bowire/issues/222)
 
+#### <a id="issue-kuestenlogik-bowire-223"></a>✅ Done · [#223](https://github.com/Kuestenlogik/Bowire/issues/223) Consolidate the two mock-server registries — MockRegistry vs BowireMockHostManager
+
+The workbench currently runs two parallel registries for mock-server lifecycle: [[more]](https://github.com/Kuestenlogik/Bowire/issues/223)
+
 ### v2.1 — Scripting, variable resolver, throughput surface *(due 2026-06-30)*
 
 #### <a id="issue-kuestenlogik-bowire-126"></a>⬜ Backlog · [#126](https://github.com/Kuestenlogik/Bowire/issues/126) Pre-/post-scripts with a protocol-typed sandbox
@@ -525,10 +529,6 @@ Phase 1 shipped in e084bc3 — central `actionLog`, Statusbar pill, Activity dra
 #### <a id="issue-kuestenlogik-bowire-197"></a>⬜ Backlog · [#197](https://github.com/Kuestenlogik/Bowire/issues/197) Deprecate + unlist Kuestenlogik.Bowire.Extension.MapLibre on nuget.org after v2.0 ships
 
 `Kuestenlogik.Bowire.Extension.MapLibre` 1.3.0-rc.1 was renamed to `Kuestenlogik.Bowire.Map` ahead of v2.0 (commit 75c8d1f). … [[more]](https://github.com/Kuestenlogik/Bowire/issues/197)
-
-#### <a id="issue-kuestenlogik-bowire-223"></a>⬜ Backlog · [#223](https://github.com/Kuestenlogik/Bowire/issues/223) Consolidate the two mock-server registries — MockRegistry vs BowireMockHostManager
-
-The workbench currently runs two parallel registries for mock-server lifecycle: [[more]](https://github.com/Kuestenlogik/Bowire/issues/223)
 
 ### v2.2 — Test pillar: assertions, CI runner, regression coverage *(due 2026-07-10)*
 
