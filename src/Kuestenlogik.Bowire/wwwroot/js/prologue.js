@@ -2705,17 +2705,26 @@
      */
     function openTab(svc, method, opts) {
         opts = opts || {};
-        var existing = null;
-        for (var i = 0; i < requestTabs.length; i++) {
-            if (requestTabs[i].serviceKey === svc.name
-                && requestTabs[i].methodKey === method.name) {
-                existing = requestTabs[i];
-                break;
+        // De-dupe by (service, method) — clicking the same method
+        // twice should switch to its tab, not open a second copy.
+        // Skip the de-dupe when the caller explicitly asked for a
+        // new tab (+-button, "Open in new tab" context-menu item,
+        // Ctrl-/middle-click) — that path is precisely how the user
+        // pins a second copy of an already-open method so it stays
+        // around while they navigate elsewhere in the active tab.
+        if (!opts.inNewTab) {
+            var existing = null;
+            for (var i = 0; i < requestTabs.length; i++) {
+                if (requestTabs[i].serviceKey === svc.name
+                    && requestTabs[i].methodKey === method.name) {
+                    existing = requestTabs[i];
+                    break;
+                }
             }
-        }
-        if (existing) {
-            switchTab(existing.id);
-            return;
+            if (existing) {
+                switchTab(existing.id);
+                return;
+            }
         }
         // Clear freeform mode if active — opening a tab exits freeform
         freeformRequest = null;

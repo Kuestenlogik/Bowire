@@ -3955,17 +3955,28 @@
                     var panelStatus = _thisOriginUrl
                         ? (connectionStatuses[_thisOriginUrl] || 'disconnected')
                         : '';
+                    // Stable per-URL DOM id keeps morphdom matching the
+                    // same panel across re-renders even when the label
+                    // text changes (e.g. user just renamed the alias).
+                    // Without it morphdom would pair by position and
+                    // skip the textContent sync that the alias edit
+                    // depends on.
+                    var panelDomId = 'bowire-source-' + (_thisOriginUrl || '_no_source_')
+                        .replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 80);
                     var panel = el('div', {
+                        id: panelDomId,
                         className: 'bowire-source-panel'
                             + (panelExpanded ? ' expanded' : ' collapsed'),
                         'data-origin-url': _thisOriginUrl
                     });
-                    (function (originUrl) {
+                    (function (originUrl, domId) {
                         var panelCount = el('span', {
+                            id: domId + '-count',
                             className: 'bowire-source-panel-count',
                             textContent: ''
                         });
                         var panelHeader = el('div', {
+                            id: domId + '-header',
                             className: 'bowire-source-panel-header',
                             role: 'button',
                             tabIndex: 0,
@@ -3994,12 +4005,14 @@
                                 })
                                 : null,
                             el('span', {
+                                id: domId + '-label',
                                 className: 'bowire-source-panel-label',
                                 textContent: sourceLabel
                             }),
                             panelCount
                         );
                         var panelBody = el('div', {
+                            id: domId + '-body',
                             className: 'bowire-source-panel-body'
                                 + (panelExpanded ? '' : ' collapsed')
                         });
@@ -4008,7 +4021,7 @@
                         list.appendChild(panel);
                         _activePanelBody = panelBody;
                         _activePanelCount = panelCount;
-                    })(_thisOriginUrl);
+                    })(_thisOriginUrl, panelDomId);
                 }
                 _servicesInActivePanel++;
 
@@ -4095,6 +4108,30 @@
                                 e.preventDefault();
                                 openTab(svc, m, { inNewTab: true });
                             }
+                        },
+                        // Right-click → context menu. Headline action
+                        // is "Open in new tab" so users who don't know
+                        // (or don't want) the Ctrl/middle-click
+                        // modifier shortcut can still pin a method.
+                        onContextMenu: function (e) {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            if (typeof showContextMenu !== 'function') return;
+                            var items = [
+                                { label: 'Open in new tab', onClick: function () {
+                                    openTab(svc, m, { inNewTab: true });
+                                } },
+                                { separator: true },
+                                {
+                                    label: isFavorite(svc.name, m.name)
+                                        ? 'Remove from favorites'
+                                        : 'Add to favorites',
+                                    onClick: function () {
+                                        toggleFavorite(svc.name, m.name);
+                                    }
+                                }
+                            ];
+                            showContextMenu(e.clientX, e.clientY, items);
                         }
                     },
                         // Order: [name (flex:1)] [deprecated] [star] [badge]

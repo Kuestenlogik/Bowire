@@ -3695,7 +3695,9 @@ full text color
     flex: 1;
     overflow-y: auto;
     overflow-x: hidden;
-    padding: 8px 0;
+    /* Source panels carry their own top border + the sidebar's URL
+       bar has its own bottom edge — the old 8 px vertical padding
+       just created a redundant gutter between them. */
 }
 
 /* Service-list scrollbar now inherits from the global * rule. */
@@ -3769,15 +3771,21 @@ full text color
  * its services. Header carries the alias + service count + status
  * dot; clicking the header (or pressing Enter / Space when focused)
  * toggles the body. Collapsed bodies are display:none so they don't
- * count toward sidebar scroll height. */
+ * count toward sidebar scroll height.
+ *
+ * Sits flush with the sidebar edges — the .bowire-service-list
+ * container already provides the vertical air; an extra panel
+ * margin would just visually inset the tree from the URL bar
+ * and footer for no information gain. */
 .bowire-source-panel {
     display: flex;
     flex-direction: column;
-    border: 1px solid var(--bowire-border);
-    border-radius: var(--bowire-radius-sm);
-    margin: 6px 8px;
+    border-top: 1px solid var(--bowire-border);
     background: var(--bowire-bg);
     overflow: hidden;
+}
+.bowire-source-panel:last-child {
+    border-bottom: 1px solid var(--bowire-border);
 }
 .bowire-source-panel.collapsed {
     background: transparent;
@@ -3787,7 +3795,7 @@ full text color
     display: flex;
     align-items: center;
     gap: 8px;
-    padding: 6px 10px;
+    padding: 6px 12px;
     cursor: pointer;
     user-select: none;
     color: var(--bowire-text);
@@ -3967,19 +3975,14 @@ full text color
 .bowire-method-badge[data-type="HTTP_HEAD"] { background: #6b7280; min-width: 36px; } /* gray */
 .bowire-method-badge[data-type="HTTP_OPTIONS"] { background: #6b7280; min-width: 52px; } /* gray */
 
-/* #122 — direction-axis rail on every method badge. A 2 px left-edge
-   bar in the direction color (warm = client→server,
-cool =
-   server→client,
-duplex = bidirectional) layered on top of the
-   existing verb / type background. Two-axis read at a glance:
-   verb color in the fill,
-direction in the left rail.
-   --direction-color is resolved per data-direction below. */
+/* The direction-axis rail (#122) used to ride on top of every method
+   badge as a 2 px left-edge bar in the direction color. Retired on
+   user feedback — the badge fill already carries the HTTP verb /
+   method-type signal, and for REST the direction is implicit in the
+   verb (GET = cool, POST/PUT/PATCH/DELETE = warm). The token
+   resolution stays so any future consumer can still reach the hue. */
 .bowire-method-badge[data-direction] {
     --direction-color: var(--bowire-direction-neutral);
-    box-shadow: inset 3px 0 0 var(--direction-color);
-    padding-left: 11px;
 }
 .bowire-method-badge[data-direction="warm"] { --direction-color: var(--bowire-direction-warm); }
 .bowire-method-badge[data-direction="cool"] { --direction-color: var(--bowire-direction-cool); }
@@ -3988,11 +3991,11 @@ direction in the left rail.
 
 /* Method-row's right-edge direction rail used to mirror the badge's
    warm / cool / duplex chroma. Retired alongside the group's left-edge
-   protocol stripe — together they made the tree read as too busy.
-   The direction signal still lives on the badge itself (see the
-   .bowire-method-badge[data-direction=…] rules above), which is the
-   primary cue. The --direction-color token resolution stays here so
-   any future element can still reach the hue without re-deriving it. */
+   protocol stripe and the badge's own direction rail — together they
+   made the tree read as too busy. Direction is now implicit in the
+   HTTP verb / method-type label on the badge. The --direction-color
+   token resolution stays here so any future element can still reach
+   the hue without re-deriving it. */
 .bowire-method-item[data-direction] {
     --direction-color: var(--bowire-direction-neutral);
 }
@@ -4758,13 +4761,15 @@ only an accent-coloured underline under the active tab. The whole
     border-top-color: var(--bowire-accent);
 }
 
-/* #123 — protocol + direction colors on every tab. Protocol stripe
-   on the left edge (consistent with the sidebar group stripe);
-   direction tint on the active tab's bottom underline so the user
-   sees both axes without reading text. */
+/* The protocol stripe on the left edge (#123) and the direction-tinted
+   active underline used to layer protocol + direction signals onto
+   every tab. Retired on user feedback — the active-tab indicator
+   (border-top in the accent color, set above) is enough on its own.
+   The --tab-protocol-color resolution stays so any future element
+   inside a tab can still reach the protocol hue without re-deriving
+   it; nothing currently consumes it. */
 .bowire-request-tab[data-protocol] {
     --tab-protocol-color: var(--bowire-protocol-default);
-    border-left: 3px solid var(--tab-protocol-color);
 }
 .bowire-request-tab[data-protocol="rest"] { --tab-protocol-color: var(--bowire-protocol-rest); }
 .bowire-request-tab[data-protocol="grpc"] { --tab-protocol-color: var(--bowire-protocol-grpc); }
@@ -4779,11 +4784,6 @@ only an accent-coloured underline under the active tab. The whole
 .bowire-request-tab[data-protocol="kafka"] { --tab-protocol-color: var(--bowire-protocol-kafka); }
 .bowire-request-tab[data-protocol="odata"] { --tab-protocol-color: var(--bowire-protocol-odata); }
 .bowire-request-tab[data-protocol="mcp"] { --tab-protocol-color: var(--bowire-protocol-mcp); }
-
-.bowire-request-tab[data-direction="warm"].active { border-top-color: var(--bowire-direction-warm); }
-.bowire-request-tab[data-direction="cool"].active { border-top-color: var(--bowire-direction-cool); }
-.bowire-request-tab[data-direction="duplex"].active { border-top-color: var(--bowire-direction-duplex); }
-.bowire-request-tab[data-direction="neutral"].active { border-top-color: var(--bowire-direction-neutral); }
 
 /* "+" new-tab button — peer of the tabs,
 lives at the right of the
