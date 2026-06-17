@@ -12,12 +12,11 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.0 — Re-architected workbench shell + workspace = project folder *(due 2026-06-19)*
 
-**63/65 done** · 2 backlog
+**64/65 done** · 1 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
 | [115](https://github.com/Kuestenlogik/Bowire/issues/115) | Bowire | [v2.0 — UI refactor: re-architect the workbench shell](#issue-kuestenlogik-bowire-115) | ⬜ Backlog |  |
-| [218](https://github.com/Kuestenlogik/Bowire/issues/218) | Bowire | [v2.0 Sweep 2 — scope-split + tab round-trip + disk-mode CLI hint](#issue-kuestenlogik-bowire-218) | ⬜ Backlog |  |
 | [25](https://github.com/Kuestenlogik/Bowire/issues/25) | Bowire | [AI side-panel integration](#issue-kuestenlogik-bowire-25) | ✅ Done | `area:workbench` |
 | [33](https://github.com/Kuestenlogik/Bowire/issues/33) | Bowire | [Protocol plugins — Connect Phase 1+3 + OTLP](#issue-kuestenlogik-bowire-33) | ✅ Done | `area:plugin-sdk` |
 | [43](https://github.com/Kuestenlogik/Bowire/issues/43) | Bowire | [MCP SSE-transport support](#issue-kuestenlogik-bowire-43) | ✅ Done | `area:mcp` |
@@ -81,6 +80,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [211](https://github.com/Kuestenlogik/Bowire/issues/211) | Bowire | [bowire mock <recording.bwr> — HTTP replay server from a recording](#issue-kuestenlogik-bowire-211) | ✅ Done |  |
 | [212](https://github.com/Kuestenlogik/Bowire/issues/212) | Bowire | [Workspace storage mode — workspace-level field (precursor to #196)](#issue-kuestenlogik-bowire-212) | ✅ Done |  |
 | [217](https://github.com/Kuestenlogik/Bowire/issues/217) | Bowire | [v2.0 Sweep 1 — v1.9 parity polish (Sources drop zone + Save-now + Duplicate)](#issue-kuestenlogik-bowire-217) | ✅ Done |  |
+| [218](https://github.com/Kuestenlogik/Bowire/issues/218) | Bowire | [v2.0 Sweep 2 — scope-split + tab round-trip + disk-mode CLI hint](#issue-kuestenlogik-bowire-218) | ✅ Done |  |
 
 ### v2.1 — Scripting, variable resolver, throughput surface *(due 2026-06-30)*
 
@@ -200,10 +200,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 #### <a id="issue-kuestenlogik-bowire-115"></a>⬜ Backlog · [#115](https://github.com/Kuestenlogik/Bowire/issues/115) v2.0 — UI refactor: re-architect the workbench shell
 
 > **Status:** Phase 1 — Shell-Refactor abgeschlossen (Juni 2026). Was in v2.0 noch zu erledigen ist: ein kleiner Cleanup-Sweep + Release-Notes. Phase 2 (mehrere Feature-Streams) ist auf eigene Tickets unter v2.1-Milestone verschoben. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/115)
-
-#### <a id="issue-kuestenlogik-bowire-218"></a>⬜ Backlog · [#218](https://github.com/Kuestenlogik/Bowire/issues/218) v2.0 Sweep 2 — scope-split + tab round-trip + disk-mode CLI hint
-
-Sweep 2 (commit 61e2610) covered the partial-vs-fully-durchgängig items found by the post-feature audit. Every recent shipped surface was walked click-path → backend → persisted side-effect; eight of the ten were fully durchgängig, three needed small follow-ups. [[more]](https://github.com/Kuestenlogik/Bowire/issues/218)
 
 #### <a id="issue-kuestenlogik-bowire-25"></a>✅ Done · [#25](https://github.com/Kuestenlogik/Bowire/issues/25) AI side-panel integration
 
@@ -462,6 +458,10 @@ Phase 1 (#147-#149-#151) shipped in eb2bf1c: `BowireUserContext.GetWorkspacePath
 #### <a id="issue-kuestenlogik-bowire-217"></a>✅ Done · [#217](https://github.com/Kuestenlogik/Bowire/issues/217) v2.0 Sweep 1 — v1.9 parity polish (Sources drop zone + Save-now + Duplicate)
 
 Sweep 1 (commit 3fdef31) covered the two surfaces flagged by the post-architecture audit: [[more]](https://github.com/Kuestenlogik/Bowire/issues/217)
+
+#### <a id="issue-kuestenlogik-bowire-218"></a>✅ Done · [#218](https://github.com/Kuestenlogik/Bowire/issues/218) v2.0 Sweep 2 — scope-split + tab round-trip + disk-mode CLI hint
+
+Sweep 2 (commit 61e2610) covered the partial-vs-fully-durchgängig items found by the post-feature audit. Every recent shipped surface was walked click-path → backend → persisted side-effect; eight of the ten were fully durchgängig, three needed small follow-ups. [[more]](https://github.com/Kuestenlogik/Bowire/issues/218)
 
 ### v2.1 — Scripting, variable resolver, throughput surface *(due 2026-06-30)*
 
