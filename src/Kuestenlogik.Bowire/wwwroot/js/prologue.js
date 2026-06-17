@@ -1821,6 +1821,11 @@
                     localStorage.removeItem(wsKeyFor(id, k));
                 });
             }
+            if (Array.isArray(_WORKSPACE_BROWSER_STATE_KEYS)) {
+                _WORKSPACE_BROWSER_STATE_KEYS.forEach(function (k) {
+                    localStorage.removeItem(wsKeyFor(id, k));
+                });
+            }
             if (Array.isArray(_WORKSPACE_PRESET_MODES)) {
                 _WORKSPACE_PRESET_MODES.forEach(function (mode) {
                     localStorage.removeItem(wsKeyFor(id, 'bowire_presets_' + mode));
@@ -1845,6 +1850,12 @@
                 try {
                     if (Array.isArray(_WORKSPACE_DATA_KEYS)) {
                         _WORKSPACE_DATA_KEYS.forEach(function (k) {
+                            localStorage.removeItem('bowire_ws_orphan_'
+                                + String(k).replace(/^bowire_/, ''));
+                        });
+                    }
+                    if (Array.isArray(_WORKSPACE_BROWSER_STATE_KEYS)) {
+                        _WORKSPACE_BROWSER_STATE_KEYS.forEach(function (k) {
                             localStorage.removeItem('bowire_ws_orphan_'
                                 + String(k).replace(/^bowire_/, ''));
                         });
@@ -1925,12 +1936,22 @@
         // the "install missing plugins" banner instead of cryptic
         // "no such protocol" errors at first request. Empty / absent
         // means no requirement, current behaviour preserved.
-        'bowire_plugin_pins',
-        // #161 Phase 2 — open method tabs per workspace. Boot already
-        // migrates this key per-workspace; rounding it through the
-        // export means a team member who opens the .bww lands on the
-        // same tabs the author left open. Empty / absent leaves the
-        // tab strip empty as before.
+        'bowire_plugin_pins'
+        // bowire_request_tabs intentionally NOT listed here — open
+        // tabs are browser session state (which row I happened to be
+        // looking at), not project content. Persisted under wsKey()
+        // so the strip survives a reload but is NOT round-tripped
+        // through workspace export / import. Cleaned up on workspace
+        // delete via _WORKSPACE_BROWSER_STATE_KEYS below so the
+        // localStorage entry doesn't leak.
+    ];
+
+    // Per-workspace keys that survive a reload but are NOT part of
+    // the project content. Wiped on workspace delete so deleting a
+    // workspace fully reclaims its localStorage footprint; skipped
+    // by exportWorkspaceJson so a .bww file carries the project,
+    // not the author's accidental UI state.
+    var _WORKSPACE_BROWSER_STATE_KEYS = [
         'bowire_request_tabs'
     ];
     // Modes that store per-method presets via the presets framework.
@@ -2643,7 +2664,13 @@
                 active: activeTabId,
             };
             localStorage.setItem(wsKey('bowire_request_tabs'), JSON.stringify(data));
-            markSaved('tabs');
+            // Tabs are browser session state, not project content — the
+            // localStorage write is just so the strip survives a reload.
+            // No markSaved() because the "Saved tabs" toast that used
+            // to fire on every method click implied the user had to
+            // care about persisting which row they had open, which is
+            // backwards. The catch arm still surfaces real failures
+            // (quota exceeded, &c.) — that's a legit thing to know.
         } catch (e) { markSaveFailed('tabs', e); }
     }
     function restoreRequestTabsFromStorage() {
