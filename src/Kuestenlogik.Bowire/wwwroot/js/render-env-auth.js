@@ -1072,11 +1072,18 @@
 
                     var row = el('div', { className: 'bowire-conn-popover-row bowire-conn-row-' + status });
 
+                    // Show the alias instead of the URL when one is
+                    // assigned — keeps the popover scannable when the
+                    // user has six staging clones with near-identical
+                    // hostnames. Full URL still in the tooltip.
+                    var aliased = (typeof serverUrlAliases !== 'undefined' && serverUrlAliases[url])
+                        ? serverUrlAliases[url]
+                        : '';
                     var topRow = el('div', { className: 'bowire-conn-popover-row-top' },
                         el('span', { className: 'bowire-conn-popover-row-dot' }),
                         el('span', {
                             className: 'bowire-conn-popover-row-url',
-                            textContent: truncateMiddle(url, 36),
+                            textContent: aliased || truncateMiddle(url, 36),
                             title: url
                         }),
                         el('span', {
@@ -1088,6 +1095,13 @@
                         })
                     );
                     row.appendChild(topRow);
+                    if (aliased) {
+                        row.appendChild(el('div', {
+                            className: 'bowire-conn-popover-row-url-secondary',
+                            textContent: truncateMiddle(url, 48),
+                            title: url
+                        }));
+                    }
 
                     if (status === 'connected' && svcCount > 0) {
                         row.appendChild(el('div', { className: 'bowire-conn-popover-row-meta',
