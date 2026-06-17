@@ -12,11 +12,12 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.0 — Re-architected workbench shell + workspace = project folder *(due 2026-06-19)*
 
-**63/64 done** · 1 backlog
+**63/65 done** · 2 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
 | [115](https://github.com/Kuestenlogik/Bowire/issues/115) | Bowire | [v2.0 — UI refactor: re-architect the workbench shell](#issue-kuestenlogik-bowire-115) | ⬜ Backlog |  |
+| [218](https://github.com/Kuestenlogik/Bowire/issues/218) | Bowire | [v2.0 Sweep 2 — scope-split + tab round-trip + disk-mode CLI hint](#issue-kuestenlogik-bowire-218) | ⬜ Backlog |  |
 | [25](https://github.com/Kuestenlogik/Bowire/issues/25) | Bowire | [AI side-panel integration](#issue-kuestenlogik-bowire-25) | ✅ Done | `area:workbench` |
 | [33](https://github.com/Kuestenlogik/Bowire/issues/33) | Bowire | [Protocol plugins — Connect Phase 1+3 + OTLP](#issue-kuestenlogik-bowire-33) | ✅ Done | `area:plugin-sdk` |
 | [43](https://github.com/Kuestenlogik/Bowire/issues/43) | Bowire | [MCP SSE-transport support](#issue-kuestenlogik-bowire-43) | ✅ Done | `area:mcp` |
@@ -199,6 +200,10 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 #### <a id="issue-kuestenlogik-bowire-115"></a>⬜ Backlog · [#115](https://github.com/Kuestenlogik/Bowire/issues/115) v2.0 — UI refactor: re-architect the workbench shell
 
 > **Status:** Phase 1 — Shell-Refactor abgeschlossen (Juni 2026). Was in v2.0 noch zu erledigen ist: ein kleiner Cleanup-Sweep + Release-Notes. Phase 2 (mehrere Feature-Streams) ist auf eigene Tickets unter v2.1-Milestone verschoben. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/115)
+
+#### <a id="issue-kuestenlogik-bowire-218"></a>⬜ Backlog · [#218](https://github.com/Kuestenlogik/Bowire/issues/218) v2.0 Sweep 2 — scope-split + tab round-trip + disk-mode CLI hint
+
+Sweep 2 (commit 61e2610) covered the partial-vs-fully-durchgängig items found by the post-feature audit. Every recent shipped surface was walked click-path → backend → persisted side-effect; eight of the ten were fully durchgängig, three needed small follow-ups. [[more]](https://github.com/Kuestenlogik/Bowire/issues/218)
 
 #### <a id="issue-kuestenlogik-bowire-25"></a>✅ Done · [#25](https://github.com/Kuestenlogik/Bowire/issues/25) AI side-panel integration
 
