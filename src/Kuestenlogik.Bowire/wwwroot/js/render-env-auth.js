@@ -1789,6 +1789,18 @@
             'aria-label': ws ? 'Switch workspace' : 'Create workspace',
             onClick: function (e) {
                 e.stopPropagation();
+                // Close any other topbar dropdown before toggling
+                // ours. The env dropdown is mounted imperatively
+                // (envBtnWrapper.appendChild(menu) + a setTimeout
+                // outside-click handler) instead of via the render-
+                // state path the workspace menu uses, so a click
+                // here doesn't bubble into its outside-handler — we
+                // have to remove the menu node ourselves. Without
+                // this the env dropdown stayed open in the
+                // background when the user clicked the workspace
+                // chip and vice versa.
+                var openEnvMenu = document.querySelector('.bowire-env-dropdown-menu');
+                if (openEnvMenu) openEnvMenu.remove();
                 workspaceMenuOpen = !workspaceMenuOpen;
                 render();
             }
@@ -2705,6 +2717,13 @@
             title: 'Active environment — click to switch',
             onClick: function (e) {
                 e.stopPropagation();
+                // Close the workspace dropdown if it's open. They
+                // sit next to each other in the topbar and only one
+                // should ever be visible at a time.
+                if (workspaceMenuOpen) {
+                    workspaceMenuOpen = false;
+                    render();
+                }
                 var existing = envBtnWrapper.querySelector('.bowire-env-dropdown-menu');
                 if (existing) { existing.remove(); return; }
                 // Re-read every piece of state at click time. morphdom

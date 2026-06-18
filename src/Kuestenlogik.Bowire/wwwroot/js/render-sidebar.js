@@ -3875,23 +3875,121 @@
                 return (a.name || '').localeCompare(b.name || '');
             });
 
-            // Source-panel state — the panel is the parent node for
-            // every service group that shares the same originUrl.
-            // Mounted as a MudBlazor-style expansion panel: header
-            // (chevron + alias + counts) toggles a body that contains
-            // the service groups. Buckets get created lazily as the
-            // loop encounters each origin.
-            var _lastOriginUrl = undefined;
-            var _activePanelBody = list;          // where the next service group should land
-            var _activePanelCount = null;         // count badge on the active panel header
-            var _servicesInActivePanel = 0;       // running tally for the current panel
+            // Source-panel state — every discovery URL gets a panel,
+            // even when its services list is empty (disconnected /
+            // first-time / awaiting discovery). The user's plug
+            // button on the panel header relies on the panel staying
+            // visible so they can hit "connect" again. Panels are
+            // built lazily by ensureSourcePanel() — once for each URL
+            // — and the service loop drops its service groups into
+            // the right panel by url.
+            var _panelEntries = Object.create(null);
 
-            function finalizeActivePanelCount() {
-                if (_activePanelCount) {
-                    _activePanelCount.textContent = _servicesInActivePanel
-                        + ' service'
-                        + (_servicesInActivePanel === 1 ? '' : 's');
+            function buildSourcePanel(originUrl) {
+                var sourceLabel;
+                if (originUrl) {
+                    var aliased = serverUrlAliases[originUrl];
+                    if (aliased) {
+                        sourceLabel = aliased;
+                    } else {
+                        try {
+                            var u = new URL(originUrl);
+                            sourceLabel = u.host + (u.pathname && u.pathname !== '/' ? u.pathname : '');
+                        } catch {
+                            sourceLabel = originUrl;
+                        }
+                    }
+                } else {
+                    sourceLabel = '— no source';
                 }
+
+                var panelExpanded = isSourceExpanded(originUrl);
+                var panelStatus = originUrl
+                    ? (connectionStatuses[originUrl] || 'disconnected')
+                    : '';
+                var panelDomId = 'bowire-source-' + (originUrl || '_no_source_')
+                    .replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 80);
+                var panel = el('div', {
+                    id: panelDomId,
+                    className: 'bowire-source-panel'
+                        + (panelExpanded ? ' expanded' : ' collapsed'),
+                    'data-origin-url': originUrl
+                });
+                var panelCount = el('span', {
+                    id: panelDomId + '-count',
+                    className: 'bowire-source-panel-count',
+                    textContent: ''
+                });
+                var panelHeader = el('div', {
+                    id: panelDomId + '-header',
+                    className: 'bowire-source-panel-header',
+                    role: 'button',
+                    tabIndex: 0,
+                    title: originUrl || 'Services without an external source URL (e.g. workspace-local schemas)',
+                    onClick: function () {
+                        toggleSourceExpanded(originUrl);
+                        render();
+                    },
+                    onKeydown: function (e) {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            toggleSourceExpanded(originUrl);
+                            render();
+                        }
+                    }
+                },
+                    el('span', {
+                        className: 'bowire-source-panel-chevron'
+                            + (panelExpanded ? ' expanded' : ''),
+                        innerHTML: svgIcon('chevron')
+                    }),
+                    el('span', {
+                        id: panelDomId + '-label',
+                        className: 'bowire-source-panel-label',
+                        textContent: sourceLabel
+                    }),
+                    panelCount,
+                    originUrl
+                        ? el('button', {
+                            type: 'button',
+                            className: 'bowire-source-panel-conn-btn bowire-conn-pill-' + panelStatus,
+                            title: (panelStatus === 'connected' || panelStatus === 'connecting')
+                                ? 'Disconnect from ' + originUrl
+                                : 'Re-connect to ' + originUrl,
+                            'aria-label': 'Toggle connection',
+                            onClick: function (e) {
+                                e.stopPropagation();
+                                toggleSourceConnection(originUrl);
+                            },
+                            innerHTML: svgIcon('plug')
+                        })
+                        : null
+                );
+                var panelBody = el('div', {
+                    id: panelDomId + '-body',
+                    className: 'bowire-source-panel-body'
+                        + (panelExpanded ? '' : ' collapsed')
+                });
+                panel.appendChild(panelHeader);
+                panel.appendChild(panelBody);
+                list.appendChild(panel);
+                return { body: panelBody, count: panelCount, services: 0 };
+            }
+
+            function ensureSourcePanel(originUrl) {
+                var key = originUrl || '';
+                if (!_panelEntries[key]) _panelEntries[key] = buildSourcePanel(key);
+                return _panelEntries[key];
+            }
+
+            // Pre-create panels for every serverUrl so disconnected
+            // URLs still appear in the tree (with an empty body) and
+            // the user has a button to re-connect them. Order matches
+            // the URL bar above. Services from other origins (e.g.
+            // workspace-local schemas) get their panels lazily inside
+            // the service loop below.
+            for (var preU = 0; preU < serverUrls.length; preU++) {
+                ensureSourcePanel(serverUrls[preU]);
             }
 
             for (const svc of orderedServices) {
@@ -3919,111 +4017,13 @@
 
                 if (filteredMethods.length === 0) continue;
 
-                // Source panel — when the originUrl changes from the
-                // previous service (or on the very first rendered
-                // service) we close out the previous panel's count
-                // and open a fresh expansion panel for this URL.
-                // The panel header carries the user's alias (auto-
-                // assigned on first add, editable in the URL bar
-                // above) as the primary label and the full URL as
-                // the hover tooltip. Clicking the header toggles
-                // the body that holds every service from this URL.
+                // Get or create the panel for this service's URL —
+                // serverUrls panels were pre-created above; this
+                // covers stray origins (workspace-local schemas, &c.)
+                // not in the URL bar.
                 var _thisOriginUrl = svc.originUrl || '';
-                if (_thisOriginUrl !== _lastOriginUrl) {
-                    finalizeActivePanelCount();
-                    _lastOriginUrl = _thisOriginUrl;
-                    _servicesInActivePanel = 0;
-
-                    var sourceLabel;
-                    if (_thisOriginUrl) {
-                        var aliased = serverUrlAliases[_thisOriginUrl];
-                        if (aliased) {
-                            sourceLabel = aliased;
-                        } else {
-                            try {
-                                var u = new URL(_thisOriginUrl);
-                                sourceLabel = u.host + (u.pathname && u.pathname !== '/' ? u.pathname : '');
-                            } catch {
-                                sourceLabel = _thisOriginUrl;
-                            }
-                        }
-                    } else {
-                        sourceLabel = '— no source';
-                    }
-
-                    var panelExpanded = isSourceExpanded(_thisOriginUrl);
-                    var panelStatus = _thisOriginUrl
-                        ? (connectionStatuses[_thisOriginUrl] || 'disconnected')
-                        : '';
-                    // Stable per-URL DOM id keeps morphdom matching the
-                    // same panel across re-renders even when the label
-                    // text changes (e.g. user just renamed the alias).
-                    // Without it morphdom would pair by position and
-                    // skip the textContent sync that the alias edit
-                    // depends on.
-                    var panelDomId = 'bowire-source-' + (_thisOriginUrl || '_no_source_')
-                        .replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 80);
-                    var panel = el('div', {
-                        id: panelDomId,
-                        className: 'bowire-source-panel'
-                            + (panelExpanded ? ' expanded' : ' collapsed'),
-                        'data-origin-url': _thisOriginUrl
-                    });
-                    (function (originUrl, domId) {
-                        var panelCount = el('span', {
-                            id: domId + '-count',
-                            className: 'bowire-source-panel-count',
-                            textContent: ''
-                        });
-                        var panelHeader = el('div', {
-                            id: domId + '-header',
-                            className: 'bowire-source-panel-header',
-                            role: 'button',
-                            tabIndex: 0,
-                            title: originUrl || 'Services without an external source URL (e.g. workspace-local schemas)',
-                            onClick: function () {
-                                toggleSourceExpanded(originUrl);
-                                render();
-                            },
-                            onKeydown: function (e) {
-                                if (e.key === 'Enter' || e.key === ' ') {
-                                    e.preventDefault();
-                                    toggleSourceExpanded(originUrl);
-                                    render();
-                                }
-                            }
-                        },
-                            el('span', {
-                                className: 'bowire-source-panel-chevron'
-                                    + (panelExpanded ? ' expanded' : ''),
-                                innerHTML: svgIcon('chevron')
-                            }),
-                            originUrl
-                                ? el('span', {
-                                    className: 'bowire-source-panel-status bowire-url-dot ' + panelStatus,
-                                    title: 'Status: ' + panelStatus
-                                })
-                                : null,
-                            el('span', {
-                                id: domId + '-label',
-                                className: 'bowire-source-panel-label',
-                                textContent: sourceLabel
-                            }),
-                            panelCount
-                        );
-                        var panelBody = el('div', {
-                            id: domId + '-body',
-                            className: 'bowire-source-panel-body'
-                                + (panelExpanded ? '' : ' collapsed')
-                        });
-                        panel.appendChild(panelHeader);
-                        panel.appendChild(panelBody);
-                        list.appendChild(panel);
-                        _activePanelBody = panelBody;
-                        _activePanelCount = panelCount;
-                    })(_thisOriginUrl, panelDomId);
-                }
-                _servicesInActivePanel++;
+                var _panelEntry = ensureSourcePanel(_thisOriginUrl);
+                _panelEntry.services++;
 
                 const isExpanded = expandedServices.has(svc.name) || (query && filteredMethods.length > 0);
                 const shortName = svc.name.split('.').pop();
@@ -4172,9 +4172,18 @@
                     methodList.appendChild(item);
                 }
                 group.appendChild(methodList);
-                _activePanelBody.appendChild(group);
+                _panelEntry.body.appendChild(group);
             }
-            finalizeActivePanelCount();
+            // Stamp each panel's count badge with the running tally
+            // we accumulated during the service loop. Disconnected /
+            // empty panels print "0 services" — visible signal that
+            // there's nothing to invoke from this URL right now.
+            Object.keys(_panelEntries).forEach(function (key) {
+                var entry = _panelEntries[key];
+                entry.count.textContent = entry.services
+                    + ' service'
+                    + (entry.services === 1 ? '' : 's');
+            });
         }
 
         sidebar.appendChild(list);
