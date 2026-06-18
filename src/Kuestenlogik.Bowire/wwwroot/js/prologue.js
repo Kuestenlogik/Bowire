@@ -2538,7 +2538,7 @@
     // exactly once per logical change — never one event per delta.
     let streamSelectedIds = new Set();
     let streamSelectionAnchorIdx = null;   // last single-click index for shift-range
-    let responseViewMode = 'json';      // 'json' (pretty/syntax) or 'tree' (collapsible nodes)
+    let responseViewMode = 'tree';      // retained for any older code path; new render always uses the collapsible tree
     let showAllHistory = false; // Whether history tab shows all methods or filtered
 
     // ---- Form Input State ----
