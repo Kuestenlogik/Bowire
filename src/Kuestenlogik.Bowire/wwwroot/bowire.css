@@ -3899,10 +3899,14 @@ full text color
    Replaces the older status-only dot — clicking now also flips the
    discovery state for that URL (connected → disconnect & drop the
    URL's services from the tree; disconnected → re-fetch and splice
-   them back in). State-colour comes from the shared
-   .bowire-conn-pill-<state> classes used by the statusbar pill, so
-   green/amber/red/grey stay in sync between the two surfaces. */
+   them back in). Glyph stays as the plug; state communicates
+   through colour AND a diagonal strike when the URL is offline:
+   - connected → green plug
+   - connecting → amber plug, pulsing
+   - disconnected / error / first-run → red plug with a diagonal
+     strike-through drawn as a ::after overlay. */
 .bowire-source-panel-conn-btn {
+    position: relative;
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -3929,11 +3933,39 @@ full text color
     color: var(--bowire-text);
 }
 .bowire-source-panel-conn-btn.bowire-conn-pill-connected { color: #22c55e; }
-.bowire-source-panel-conn-btn.bowire-conn-pill-error     { color: var(--bowire-error); }
 .bowire-source-panel-conn-btn.bowire-conn-pill-connecting,
 .bowire-source-panel-conn-btn.bowire-conn-pill-partial    { color: #f59e0b; }
 .bowire-source-panel-conn-btn.bowire-conn-pill-connecting svg {
     animation: bowire-conn-pulse 1.2s ease-in-out infinite;
+}
+
+/* Offline states get a red glyph + a diagonal strike-through drawn
+   as a 2 px ::after slab rotated -45° across the button. The plug
+   icon stays the same on all states so the affordance reads as
+   "this plug, currently unplugged" rather than two different
+   glyphs the user has to learn. */
+.bowire-source-panel-conn-btn.bowire-conn-pill-disconnected,
+.bowire-source-panel-conn-btn.bowire-conn-pill-error,
+.bowire-source-panel-conn-btn.bowire-conn-pill-first-run {
+    color: var(--bowire-error);
+}
+.bowire-source-panel-conn-btn.bowire-conn-pill-disconnected::after,
+.bowire-source-panel-conn-btn.bowire-conn-pill-error::after,
+.bowire-source-panel-conn-btn.bowire-conn-pill-first-run::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 15%;
+    right: 15%;
+    /* Match the plug glyph's effective stroke weight at 12×12 px
+       (the SVG is stroke-width: 2 in a 24×24 viewBox → ~1 px on
+       screen). A heavier 2 px slab read as bolder than the icon
+       itself. */
+    height: 1px;
+    background: currentColor;
+    transform: translateY(-50%) rotate(-45deg);
+    transform-origin: center;
+    pointer-events: none;
 }
 
 .bowire-source-panel-body {

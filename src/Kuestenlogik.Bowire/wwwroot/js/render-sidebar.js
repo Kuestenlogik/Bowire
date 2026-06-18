@@ -3775,12 +3775,16 @@
             renderProxyListInto(list);
         } else if (sidebarView === 'favorites') {
             renderFavoritesListInto(list);
-        } else if (services.length === 0) {
+        } else if (services.length === 0 && (!Array.isArray(serverUrls) || serverUrls.length === 0)) {
             // Spinner while discovery is in flight; otherwise a one-line
             // hint that matches the other rails' sidebars (Mocks, Flows,
             // Recordings, Sources, Collections, Benchmarks all show a
             // short "No … yet." on the same .bowire-pane-empty shape).
             // The full empty-card call-to-action lives in the main pane.
+            // We only fall into this empty branch when there are also
+            // no serverUrls configured — when URLs exist (even with
+            // every one disconnected) the panel path below still runs
+            // so each URL keeps its panel + plug button visible.
             if (isLoadingServices) {
                 list.appendChild(el('div', { className: 'bowire-loading' },
                     el('div', { className: 'bowire-spinner' }),
@@ -3961,6 +3965,10 @@
                                 e.stopPropagation();
                                 toggleSourceConnection(originUrl);
                             },
+                            // Always render the normal plug glyph;
+                            // offline state gets a CSS-drawn diagonal
+                            // strike-through overlay so the icon
+                            // reads as "plug, but not plugged in".
                             innerHTML: svgIcon('plug')
                         })
                         : null
