@@ -119,46 +119,245 @@
                 }
             }
         });
-        // Header — title + close button. Matches the brand strip in
-        // the topbar so the drawer reads as the "open" version of the
-        // same affordance.
-        panel.appendChild(el('div', { className: 'bowire-app-drawer-header' },
-            el('div', { className: 'bowire-app-drawer-title', textContent: config.title || 'Bowire' }),
-            el('button', {
+        function closeDrawer() {
+            appDrawerOpen = false;
+            render();
+        }
+
+        // Header reuses the exact brand-cluster markup from the topbar
+        // so the B/burger button + wordmark sit pixel-aligned over
+        // their topbar counterparts. CSS pins the header height to
+        // the topbar's via --bowire-topbar-height and matches the
+        // padding + border, so when the drawer opens it reads as the
+        // topbar "growing downwards" rather than a separate surface.
+        var header = el('div', { className: 'bowire-app-drawer-header' },
+            renderBrandCluster({ withoutId: true })
+        );
+        panel.appendChild(header);
+
+        var body = el('div', { className: 'bowire-app-drawer-body' });
+
+        // --- Workspace section ---
+        // Per-workspace navigation lives in the Workspaces rail; the
+        // drawer's role here is identity + switch. Header shows the
+        // active workspace as a chip (colour-coded), the rest of the
+        // workspaces are listed underneath as direct-switch buttons.
+        if (typeof workspaces !== 'undefined' && Array.isArray(workspaces)) {
+            var aw = (typeof activeWorkspace === 'function') ? activeWorkspace() : null;
+            var wsSection = el('section', { className: 'bowire-app-drawer-section' });
+            wsSection.appendChild(el('div', {
+                className: 'bowire-app-drawer-section-title',
+                textContent: 'Workspace'
+            }));
+            if (aw) {
+                wsSection.appendChild(el('div', { className: 'bowire-app-drawer-ws-active' },
+                    el('span', {
+                        className: 'bowire-app-drawer-ws-swatch',
+                        style: 'background: ' + (aw.color || 'var(--bowire-accent)')
+                    }),
+                    el('span', { className: 'bowire-app-drawer-ws-name', textContent: aw.name || 'Untitled' })
+                ));
+            } else {
+                wsSection.appendChild(el('div', {
+                    className: 'bowire-app-drawer-ws-empty',
+                    textContent: 'No workspace selected.'
+                }));
+            }
+            // Other workspaces — quick-switch shortcuts. Cap at 5 to
+            // keep the drawer compact; full management goes through
+            // the Workspaces rail (button below).
+            var others = workspaces.filter(function (w) {
+                return aw ? w.id !== aw.id : true;
+            }).slice(0, 5);
+            if (others.length > 0) {
+                others.forEach(function (w) {
+                    wsSection.appendChild(el('button', {
+                        type: 'button',
+                        className: 'bowire-app-drawer-item bowire-app-drawer-item-ws',
+                        onClick: function () {
+                            if (typeof switchWorkspace === 'function') switchWorkspace(w.id);
+                            closeDrawer();
+                        }
+                    },
+                        el('span', {
+                            className: 'bowire-app-drawer-ws-swatch',
+                            style: 'background: ' + (w.color || 'var(--bowire-accent)')
+                        }),
+                        el('span', { className: 'bowire-app-drawer-item-label', textContent: w.name || 'Untitled' })
+                    ));
+                });
+            }
+            wsSection.appendChild(el('button', {
                 type: 'button',
-                className: 'bowire-app-drawer-close',
-                title: 'Close menu',
-                'aria-label': 'Close menu',
-                innerHTML: svgIcon('close'),
+                className: 'bowire-app-drawer-item',
                 onClick: function () {
-                    appDrawerOpen = false;
+                    try { railMode = 'workspaces'; } catch { /* let-shadow */ }
+                    try { localStorage.setItem('bowire_rail_mode', 'workspaces'); } catch { /* ignore */ }
+                    closeDrawer();
+                }
+            },
+                el('span', { className: 'bowire-app-drawer-item-icon', innerHTML: svgIcon('layers') }),
+                el('span', { className: 'bowire-app-drawer-item-label', textContent: 'Manage workspaces…' })
+            ));
+            body.appendChild(wsSection);
+        }
+
+        // --- Quick actions section ---
+        var actionsSection = el('section', { className: 'bowire-app-drawer-section' });
+        actionsSection.appendChild(el('div', {
+            className: 'bowire-app-drawer-section-title',
+            textContent: 'Quick actions'
+        }));
+        actionsSection.appendChild(el('button', {
+            type: 'button',
+            className: 'bowire-app-drawer-item',
+            onClick: function () {
+                closeDrawer();
+                requestAnimationFrame(function () {
+                    var s = document.querySelector('.bowire-topbar-palette input, .bowire-topbar-palette-input');
+                    if (s) { try { s.focus(); s.select && s.select(); } catch {} }
+                });
+            }
+        },
+            el('span', { className: 'bowire-app-drawer-item-icon', innerHTML: svgIcon('search') }),
+            el('span', { className: 'bowire-app-drawer-item-label', textContent: 'Open command palette' }),
+            el('span', { className: 'bowire-app-drawer-item-hint', textContent: 'Ctrl + /' })
+        ));
+        if (typeof createWorkspace === 'function') {
+            actionsSection.appendChild(el('button', {
+                type: 'button',
+                className: 'bowire-app-drawer-item',
+                onClick: function () {
+                    closeDrawer();
+                    bowirePrompt('Workspace name', {
+                        title: 'New workspace',
+                        confirmText: 'Create'
+                    }).then(function (name) {
+                        if (!name) return;
+                        try { createWorkspace(String(name).trim()); } catch (e) {
+                            if (typeof toast === 'function') toast('Failed: ' + e.message, 'error');
+                        }
+                    });
+                }
+            },
+                el('span', { className: 'bowire-app-drawer-item-icon', innerHTML: svgIcon('plus') }),
+                el('span', { className: 'bowire-app-drawer-item-label', textContent: 'New workspace…' })
+            ));
+        }
+        if (typeof exportWorkspaceJson === 'function' && (typeof activeWorkspace === 'function') && activeWorkspace()) {
+            actionsSection.appendChild(el('button', {
+                type: 'button',
+                className: 'bowire-app-drawer-item',
+                onClick: function () {
+                    closeDrawer();
+                    try {
+                        var ws = activeWorkspace();
+                        var payload = exportWorkspaceJson(ws.id);
+                        var blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+                        var a = document.createElement('a');
+                        a.href = URL.createObjectURL(blob);
+                        a.download = (ws.name || 'workspace') + '.bww.json';
+                        a.click();
+                        setTimeout(function () { URL.revokeObjectURL(a.href); }, 0);
+                    } catch (e) {
+                        if (typeof toast === 'function') toast('Export failed: ' + e.message, 'error');
+                    }
+                }
+            },
+                el('span', { className: 'bowire-app-drawer-item-icon', innerHTML: svgIcon('download') }),
+                el('span', { className: 'bowire-app-drawer-item-label', textContent: 'Export workspace' })
+            ));
+        }
+        if (typeof importWorkspaceJson === 'function') {
+            actionsSection.appendChild(el('button', {
+                type: 'button',
+                className: 'bowire-app-drawer-item',
+                onClick: function () {
+                    closeDrawer();
+                    var input = document.createElement('input');
+                    input.type = 'file';
+                    input.accept = '.json,.bww,application/json';
+                    input.onchange = function () {
+                        var f = input.files && input.files[0];
+                        if (!f) return;
+                        var reader = new FileReader();
+                        reader.onload = function () {
+                            try {
+                                var data = JSON.parse(String(reader.result));
+                                importWorkspaceJson(data);
+                                if (typeof toast === 'function') toast('Workspace imported', 'success');
+                            } catch (e) {
+                                if (typeof toast === 'function') toast('Import failed: ' + e.message, 'error');
+                            }
+                        };
+                        reader.readAsText(f);
+                    };
+                    input.click();
+                }
+            },
+                el('span', { className: 'bowire-app-drawer-item-icon', innerHTML: svgIcon('upload') }),
+                el('span', { className: 'bowire-app-drawer-item-label', textContent: 'Import workspace…' })
+            ));
+        }
+        body.appendChild(actionsSection);
+
+        // --- App-level footer: theme, settings, help, version ---
+        var footerSection = el('section', { className: 'bowire-app-drawer-section bowire-app-drawer-footer' });
+        // Theme cycle: auto → light → dark → auto. Shows the current
+        // preference as the trailing hint so the operator sees what's
+        // active without opening Settings.
+        if (typeof themePreference !== 'undefined' && typeof setThemePreference === 'function') {
+            var current = themePreference;
+            var next = current === 'auto' ? 'light' : current === 'light' ? 'dark' : 'auto';
+            var themeIcon = current === 'dark' ? 'moon' : current === 'light' ? 'sun' : 'themeAuto';
+            footerSection.appendChild(el('button', {
+                type: 'button',
+                className: 'bowire-app-drawer-item',
+                onClick: function () {
+                    setThemePreference(next);
                     render();
                 }
-            })
-        ));
-        // Nav list — every rail mode (including the ones hidden from
-        // the activity rail like Collections / Environments) so the
-        // drawer is a complete navigational index. Active mode gets
-        // is-active for visual feedback.
-        var navList = el('nav', { className: 'bowire-app-drawer-list' });
-        if (typeof _railModes !== 'undefined' && Array.isArray(_railModes)) {
-            _railModes.forEach(function (m) {
-                navList.appendChild(el('button', {
-                    type: 'button',
-                    className: 'bowire-app-drawer-item' + (railMode === m.id ? ' is-active' : ''),
-                    onClick: function () {
-                        try { railMode = m.id; } catch { /* let-shadow */ }
-                        try { localStorage.setItem('bowire_rail_mode', m.id); } catch { /* ignore */ }
-                        appDrawerOpen = false;
-                        render();
-                    }
-                },
-                    el('span', { className: 'bowire-app-drawer-item-icon', innerHTML: svgIcon(m.icon) }),
-                    el('span', { className: 'bowire-app-drawer-item-label', textContent: m.label })
-                ));
-            });
+            },
+                el('span', { className: 'bowire-app-drawer-item-icon', innerHTML: svgIcon(themeIcon) }),
+                el('span', { className: 'bowire-app-drawer-item-label', textContent: 'Theme' }),
+                el('span', { className: 'bowire-app-drawer-item-hint', textContent: current })
+            ));
         }
-        panel.appendChild(navList);
+        if (typeof openSettings === 'function') {
+            footerSection.appendChild(el('button', {
+                type: 'button',
+                className: 'bowire-app-drawer-item',
+                onClick: function () {
+                    closeDrawer();
+                    openSettings();
+                }
+            },
+                el('span', { className: 'bowire-app-drawer-item-icon', innerHTML: svgIcon('settings') }),
+                el('span', { className: 'bowire-app-drawer-item-label', textContent: 'Settings' })
+            ));
+        }
+        footerSection.appendChild(el('button', {
+            type: 'button',
+            className: 'bowire-app-drawer-item',
+            onClick: function () {
+                closeDrawer();
+                if (typeof openSettings === 'function') openSettings('help');
+            }
+        },
+            el('span', { className: 'bowire-app-drawer-item-icon', innerHTML: svgIcon('help') }),
+            el('span', { className: 'bowire-app-drawer-item-label', textContent: 'Help & docs' })
+        ));
+        // Version footer — small, secondary, no interaction.
+        var version = (config && config.version) || '';
+        if (version) {
+            footerSection.appendChild(el('div', {
+                className: 'bowire-app-drawer-version',
+                textContent: (config.title || 'Bowire') + ' · ' + version
+            }));
+        }
+        body.appendChild(footerSection);
+
+        panel.appendChild(body);
         shell.appendChild(backdrop);
         shell.appendChild(panel);
         // Focus the panel when it opens so Escape works without the
@@ -1461,27 +1660,18 @@
     // sidebar search, sidebar header, sidebar env selector, and sidebar
     // footer theme toggle all moved into this topbar so the sidebar can
     // focus on service navigation.
-    function renderTopbar() {
-        var bar = el('div', { id: 'bowire-topbar', className: 'bowire-topbar' });
-
-        // --- Brand (left column) ---
-        // Theme-aware logo selection: dark theme → mono (white) SVG so
-        // the brand stays readable on the dark background, light theme
-        // → regular (black) SVG. Both data URLs are shipped inline by
-        // BowireHtmlGenerator; getEffectiveTheme() resolves the
-        // auto-mode media-query so even auto users get the right one.
+    // Brand cluster (B-button + wordmark) used by both the topbar and
+    // the app-drawer header — the drawer reuses the exact same markup
+    // so when the drawer is open it lines up pixel-for-pixel over the
+    // topbar's own brand and the "menu opened" affordance feels like
+    // a single moving piece. `withoutId` skips the global id so the
+    // drawer copy doesn't collide with the topbar copy in the DOM.
+    function renderBrandCluster(opts) {
+        opts = opts || {};
         var effectiveTheme = getEffectiveTheme();
         var logoSrc = effectiveTheme === 'dark'
             ? (config.logoIconMono || config.logoIcon)
             : config.logoIcon;
-        // The brand mark is wrapped in a button so hover animates the
-        // B into a burger glyph (three stacked bars). The default
-        // layer is the actual logo (img or fallback letter); the
-        // burger layer is three CSS spans positioned absolutely on
-        // top. CSS crossfades + lifts the bars into place. Click
-        // jumps back to Home, which doubles as a useful primary
-        // action ("take me back to the start") without inventing a
-        // new menu surface.
         var logoLayer = logoSrc
             ? el('img', { className: 'bowire-logo-icon', src: logoSrc, alt: '' })
             : el('div', { className: 'bowire-logo-icon', textContent: (config.title || 'B').charAt(0) });
@@ -1490,12 +1680,13 @@
             el('span', { className: 'bowire-logo-burger-bar' }),
             el('span', { className: 'bowire-logo-burger-bar' })
         );
+        var isOpen = (typeof appDrawerOpen !== 'undefined' && appDrawerOpen);
         var logoBtn = el('button', {
             type: 'button',
-            className: 'bowire-logo-btn' + (typeof appDrawerOpen !== 'undefined' && appDrawerOpen ? ' is-open' : ''),
-            title: 'Menu',
-            'aria-label': 'Open menu',
-            'aria-expanded': (typeof appDrawerOpen !== 'undefined' && appDrawerOpen) ? 'true' : 'false',
+            className: 'bowire-logo-btn' + (isOpen ? ' is-open' : ''),
+            title: isOpen ? 'Close menu' : 'Open menu',
+            'aria-label': isOpen ? 'Close menu' : 'Open menu',
+            'aria-expanded': isOpen ? 'true' : 'false',
             onClick: function () {
                 if (typeof appDrawerOpen !== 'undefined') {
                     try { appDrawerOpen = !appDrawerOpen; } catch { /* let-shadow */ }
@@ -1504,7 +1695,9 @@
             }
         }, logoLayer, burgerLayer);
         var logoCol = el('div', { className: 'bowire-topbar-brand-logo-col' }, logoBtn);
-        var brand = el('div', { id: 'bowire-topbar-brand', className: 'bowire-topbar-brand' },
+        var brandAttrs = { className: 'bowire-topbar-brand' };
+        if (!opts.withoutId) brandAttrs.id = 'bowire-topbar-brand';
+        return el('div', brandAttrs,
             logoCol,
             el('div', { className: 'bowire-topbar-brand-text' },
                 el('div', { className: 'bowire-logo-text', textContent: config.title }),
@@ -1513,7 +1706,11 @@
                     : null
             )
         );
-        bar.appendChild(brand);
+    }
+
+    function renderTopbar() {
+        var bar = el('div', { id: 'bowire-topbar', className: 'bowire-topbar' });
+        bar.appendChild(renderBrandCluster());
 
         // --- Command palette (center column) ---
         // #124 v2 — build paletteWrap unconditionally for stash on a

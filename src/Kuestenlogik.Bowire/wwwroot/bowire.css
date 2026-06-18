@@ -3327,38 +3327,22 @@ img.bowire-logo-icon {
 .bowire-app-drawer.is-open .bowire-app-drawer-panel {
     transform: translateX(0);
 }
+/* Header geometry matches the topbar's brand row 1:1 so the
+   B-button + wordmark in the drawer sit exactly over their topbar
+   counterparts when the drawer is open. Same padding pattern
+   (8px 16px 8px 0), same height (--bowire-topbar-height = 56 px),
+   same border-bottom subtle rule. */
 .bowire-app-drawer-header {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    padding: 14px 16px;
-    border-bottom: 1px solid var(--bowire-border);
+    padding: 8px 16px 8px 0;
+    height: var(--bowire-topbar-height, 56px);
+    box-sizing: border-box;
+    border-bottom: 1px solid var(--bowire-border-subtle);
+    flex-shrink: 0;
 }
-.bowire-app-drawer-title {
-    font-size: 16px;
-    font-weight: 600;
-    color: var(--bowire-text);
-    letter-spacing: -0.01em;
-}
-.bowire-app-drawer-close {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 28px;
-    height: 28px;
-    border: 0;
-    background: transparent;
-    color: var(--bowire-text-tertiary);
-    border-radius: var(--bowire-radius-sm);
-    cursor: pointer;
-}
-.bowire-app-drawer-close:hover {
-    background: var(--bowire-surface-hover);
-    color: var(--bowire-text);
-}
-.bowire-app-drawer-close svg {
-    width: 16px;
-    height: 16px;
+.bowire-app-drawer-header .bowire-topbar-brand {
+    width: 100%;
 }
 .bowire-app-drawer-list {
     flex: 1;
@@ -3367,6 +3351,82 @@ img.bowire-logo-icon {
     display: flex;
     flex-direction: column;
     gap: 2px;
+}
+/* Body wraps the scrollable region. Sections render section titles +
+   their own item stacks; the footer sits at the bottom with a top
+   border so theme/settings/help read as a tier separate from the
+   workspace + quick actions blocks above. */
+.bowire-app-drawer-body {
+    flex: 1;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+}
+.bowire-app-drawer-section {
+    display: flex;
+    flex-direction: column;
+    padding: 8px 8px 12px;
+}
+.bowire-app-drawer-section + .bowire-app-drawer-section {
+    border-top: 1px solid var(--bowire-border-subtle);
+}
+.bowire-app-drawer-section-title {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--bowire-text-tertiary);
+    padding: 6px 8px;
+}
+.bowire-app-drawer-footer {
+    margin-top: auto;
+}
+.bowire-app-drawer-ws-active {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 12px;
+    margin-bottom: 4px;
+    border-radius: var(--bowire-radius-sm);
+    background: color-mix(in srgb, var(--bowire-accent) 6%, transparent);
+}
+.bowire-app-drawer-ws-empty {
+    padding: 6px 12px;
+    font-size: 12px;
+    color: var(--bowire-text-tertiary);
+    font-style: italic;
+}
+.bowire-app-drawer-ws-swatch {
+    flex-shrink: 0;
+    width: 12px;
+    height: 12px;
+    border-radius: 4px;
+    background: var(--bowire-accent);
+    box-shadow: 0 0 0 1px var(--bowire-border);
+}
+.bowire-app-drawer-ws-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--bowire-text);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.bowire-app-drawer-item-ws .bowire-app-drawer-ws-swatch {
+    width: 10px;
+    height: 10px;
+}
+.bowire-app-drawer-item-hint {
+    margin-left: auto;
+    font-size: 11px;
+    color: var(--bowire-text-tertiary);
+    padding-left: 8px;
+}
+.bowire-app-drawer-version {
+    padding: 12px 12px 4px;
+    font-size: 11px;
+    color: var(--bowire-text-tertiary);
+    text-align: center;
 }
 .bowire-app-drawer-item {
     display: flex;
