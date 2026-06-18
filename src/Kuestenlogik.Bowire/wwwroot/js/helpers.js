@@ -1711,6 +1711,10 @@
             play: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>',
             stop: '<svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="1"/></svg>',
             copy: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>',
+            // Pin glyph — used on the console auto-scroll toggle.
+            // Active state ("pinned to tail") flips the colour via
+            // the .is-on CSS class on the wrapping button.
+            pin: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 17v5"/><path d="M9 10.76V6a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v4.76l2 4.24H7l2-4.24Z"/></svg>',
             sun: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>',
             moon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>',
             clock: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>',
@@ -1805,6 +1809,27 @@
             download: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>',
             list: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>',
             layers: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>',
+            // User-supplied "preset" glyph — clipboard with a saved
+            // sheet and a corner fold. Reads as "captured config
+            // sheet" so it pairs naturally with the Preset picker
+            // without clashing with the workspace chip's `layers`
+            // glyph. Custom viewBox; fill switched to currentColor so
+            // it tints with the surrounding icon-button colour.
+            preset: '<svg viewBox="-48 0 512 512" fill="currentColor"><path d="M256,512l-204,0c-28.719,0 -52,-23.281 -52,-52l0,-328c0,-28.719 23.281,-52 52,-52l44,0l0,-8c0,-39.765 32.236,-72 72,-72c39.764,0 72,32.236 72,72l0,8l124,0c28.719,0 52,23.281 52,52l0,220l-0.296,0c-1.259,11.755 -6.497,22.793 -14.934,31.23l-113.54,113.54c-8.437,8.437 -19.475,13.675 -31.23,14.934l0,0.296Zm-160,-400l-44,0c-11.071,0.025 -20,8.97 -20,20l0,328c0,11.046 8.954,20 20,20l172,0l0,-96c0,-35.346 28.654,-64 64,-64l96,0l0,-188c0,-11.03 -8.929,-19.975 -20,-20l-236,0l0,152c0,13.255 10.745,24 24,24c13.255,0 24,-10.745 24,-24l0,-120l32,0l0,120c0,30.928 -25.072,56 -56,56c-30.928,0 -56,-25.072 -56,-56l0,-152Zm160,367.218c3.222,-0.929 6.189,-2.662 8.603,-5.076l113.539,-113.539c2.414,-2.414 4.147,-5.381 5.076,-8.603l-95.218,0c-17.673,0 -32,14.327 -32,32l0,95.218Zm-48,-399.218l0,-8c0,-22.091 -17.909,-40 -40,-40c-22.091,0 -40,17.909 -40,40l0,8l80,0Z"/></svg>',
+            // User-supplied "discover" glyph — horizontal bars joined
+            // by a vertical spine that crosses the centre. Reads as a
+            // sitemap / catalogue, which matches Discover's "show me
+            // every endpoint on every service" intent better than the
+            // compass needle it replaces. Custom viewBox 0 0 32 32;
+            // fill switched to currentColor so it tints with the
+            // surrounding icon-button colour.
+            discover: '<svg viewBox="0 0 32 32" fill="currentColor"><path d="M31.783 5.814l-3.116-3.479c-0.189-0.214-0.462-0.336-0.748-0.336h-10.945v-1.062c0-0.517-0.448-0.938-1-0.938s-1 0.42-1 0.938v1.062h-7.994c-0.553 0-1 0.448-1 1v6.989c0 0.553 0.447 1 1 1h7.994v2.003h-10.893c-0.286 0-0.558 0.122-0.748 0.336l-3.115 3.541c-0.336 0.379-0.336 0.949 0 1.328l3.115 3.509c0.191 0.214 0.462 0.305 0.748 0.305h10.893v9.052c0 0.517 0.448 0.938 1 0.938s1-0.42 1-0.938v-9.053h8.015c0.552 0 1-0.448 1-1v-7.019c0-0.553-0.448-1-1-1h-8.014v-2.003h10.945c0.286 0 0.558-0.122 0.748-0.336l3.116-3.51c0.335-0.378 0.335-0.949 0-1.328v-0zM23.989 20.010h-19.459l-2.228-2.477 2.228-2.541h19.459v5.018zM27.47 8.989h-19.49v-4.989h19.49l2.227 2.479z"/></svg>',
+            // User-supplied "mock" glyph — magnifying-glass head with
+            // an open pacman target. Mirrored horizontally (the source
+            // pointed right; mock semantics read better with the lens
+            // pointing left). fill switched to currentColor so it
+            // tints with the surrounding icon-button colour.
+            mock: '<svg viewBox="0 0 512 512" fill="currentColor"><g transform="translate(512,0) scale(-1,1)"><path d="M489.518,201.801C484.932,88.594,392.72,0,279.307,0C166.021,0,73.349,89.983,69.025,202.237 c-14.52,28.421-40.695,81.771-41.893,84.215c-6.784,13.536-7.038,29.476-0.587,43.479c6.427,13.965,18.677,24.129,33.61,27.865 l9.585,2.404c4.649,20.986,11.639,52.62,13.829,62.673c8.251,37.973,28.198,54.176,66.696,54.176 c5.332,0,10.759-0.318,16.043-0.834v3.285V512h32.499h190.645h32.499v-32.499v-66.719c0-21.74,6.712-42.822,17.948-56.389 C486.162,300.559,492.462,241.623,489.518,201.801z M414.872,335.66c-18.772,22.661-25.421,52.962-25.421,77.122v66.719H198.806 v-42.155c0,0-26.294,7.205-48.542,7.205c-22.232,0-29.833-5.094-34.943-28.596c-3.38-15.519-18.193-82.406-18.193-82.406 l-29.08-7.276c-5.292-1.325-9.703-4.975-11.988-9.942c-2.286-4.959-2.198-10.687,0.245-15.567c0,0,31.801-64.823,45.059-90.356 c0.016-98.258,79.677-177.911,177.943-177.911c95.997,0,174.19,76.034,177.76,171.158 C459.963,241.362,452.623,290.102,414.872,335.66z"/><path d="M279.307,93.093c-64.815,0-117.34,52.534-117.34,117.349c0,64.799,52.526,117.34,117.34,117.34 c64.8,0,117.34-52.541,117.34-117.34C396.647,145.626,344.107,93.093,279.307,93.093z M279.307,299.044v-88.602h-88.61 c0-48.938,39.671-88.611,88.61-88.611v88.611h88.602C367.909,259.372,328.245,299.044,279.307,299.044z"/></g></svg>',
             filter: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>',
             grip: '<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="5" r="1.5"/><circle cx="15" cy="5" r="1.5"/><circle cx="9" cy="12" r="1.5"/><circle cx="15" cy="12" r="1.5"/><circle cx="9" cy="19" r="1.5"/><circle cx="15" cy="19" r="1.5"/></svg>',
             chevronUp: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="18 15 12 9 6 15"/></svg>',

@@ -392,6 +392,7 @@
                 methodType: selectedMethod?.methodType || 'Unary',
                 body: messages[0] || '{}',
                 messages: messages.slice(),
+                metadata: metadata || null,
                 status: statusInfo?.status || 'Error',
                 durationMs: statusInfo?.durationMs || 0
             });
@@ -577,6 +578,7 @@
                 methodType: selectedMethod?.methodType || 'ServerStreaming',
                 body: messages[0] || '{}',
                 messages: messages.slice(),
+                metadata: metadata || null,
                 status: 'OK',
                 durationMs: elapsed
             });

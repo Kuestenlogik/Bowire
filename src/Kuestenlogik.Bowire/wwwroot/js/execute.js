@@ -265,22 +265,64 @@
             || document.querySelector('#bowire-right-drawer-tab-console .bowire-help-topic-count');
         if (countEl) countEl.textContent = String(consoleLog.length);
 
-        // Auto-scroll to bottom
-        requestAnimationFrame(function () {
-            body.scrollTop = body.scrollHeight;
-        });
+        // Pin-aware auto-scroll: only follow the tail when the
+        // user hasn't scrolled up to read history (or has
+        // explicitly toggled off the pin in the toolbar).
+        if (consoleAutoScroll) {
+            requestAnimationFrame(function () {
+                body.scrollTop = body.scrollHeight;
+            });
+        }
         return true;
     }
 
     function buildConsoleRow(entry) {
-        var row = el('div', { className: 'bowire-console-row ' + consoleEntryClass(entry.type, entry.status) });
-        var summary = el('div', {
-            className: 'bowire-console-summary',
-            onClick: function () {
+        var isSel = consoleSelected.has(entry.id);
+        // Click semantics live on the row itself (not just the
+        // summary) so the whole horizontal strip \u2014 including
+        // empty space to the right of the text \u2014 is a hit target.
+        //   plain         \u2192 replace selection with this row
+        //   ctrl/cmd+click \u2192 toggle this row in the selection
+        //   shift+click   \u2192 range-select from anchor to here
+        // The expand/copy buttons inside the row stopPropagation
+        // so they keep firing their own actions; double-click
+        // toggles the expanded body so users can still read the
+        // full payload without losing selection.
+        var row = el('div', {
+            className: 'bowire-console-row '
+                + consoleEntryClass(entry.type, entry.status)
+                + (isSel ? ' selected' : ''),
+            'data-entry-id': String(entry.id),
+            onClick: function (e) {
+                if (e.shiftKey && consoleSelectionAnchor != null) {
+                    var filtered = filteredConsoleLog();
+                    var ai = filtered.findIndex(function (x) { return x.id === consoleSelectionAnchor; });
+                    var bi = filtered.findIndex(function (x) { return x.id === entry.id; });
+                    if (ai >= 0 && bi >= 0) {
+                        var lo = Math.min(ai, bi), hi = Math.max(ai, bi);
+                        consoleSelected.clear();
+                        for (var k = lo; k <= hi; k++) consoleSelected.add(filtered[k].id);
+                    } else {
+                        consoleSelected = new Set([entry.id]);
+                    }
+                } else if (e.ctrlKey || e.metaKey) {
+                    if (consoleSelected.has(entry.id)) consoleSelected.delete(entry.id);
+                    else consoleSelected.add(entry.id);
+                    consoleSelectionAnchor = entry.id;
+                } else {
+                    consoleSelected.clear();
+                    consoleSelected.add(entry.id);
+                    consoleSelectionAnchor = entry.id;
+                }
+                if (typeof render === 'function') render();
+            },
+            onDblClick: function (e) {
+                e.preventDefault();
                 entry.expanded = !entry.expanded;
-                renderConsolePanel(false);
+                if (typeof render === 'function') render();
             }
         });
+        var summary = el('div', { className: 'bowire-console-summary' });
         summary.appendChild(el('span', { className: 'bowire-console-time', textContent: formatConsoleTime(entry.time) }));
         summary.appendChild(el('span', { className: 'bowire-console-type', textContent: consoleTypeLabel(entry.type) }));
         summary.appendChild(el('span', { className: 'bowire-console-method', textContent: entry.method || '' }));
@@ -296,6 +338,50 @@
             if (preview.length > 80) preview = preview.substring(0, 80) + '\u2026';
             summary.appendChild(el('span', { className: 'bowire-console-preview', textContent: preview }));
         }
+        // Hover-revealed action cluster on the right end of the
+        // row: expand toggle + copy button. Both are CSS-hidden
+        // until .bowire-console-row:hover or focus.
+        //
+        // Expand toggle (...) doubles as a peek-tooltip: its title
+        // carries the pretty-printed body so just hovering over
+        // the button (without clicking) shows the full message in
+        // the browser's native tooltip. Click toggles the inline
+        // expanded body the same way double-click on the row does.
+        var fullBody = '';
+        if (entry.body) {
+            try {
+                var parsed = typeof entry.body === 'string' ? JSON.parse(entry.body) : entry.body;
+                fullBody = JSON.stringify(parsed, null, 2);
+            } catch {
+                fullBody = String(entry.body);
+            }
+        }
+        summary.appendChild(el('button', {
+            type: 'button',
+            className: 'bowire-console-row-expand',
+            title: fullBody || 'No body to expand',
+            'aria-label': entry.expanded ? 'Collapse entry' : 'Expand entry',
+            'aria-expanded': entry.expanded ? 'true' : 'false',
+            textContent: entry.expanded ? '×' : '…',
+            onClick: function (e) {
+                e.stopPropagation();
+                entry.expanded = !entry.expanded;
+                if (typeof render === 'function') render();
+            }
+        }));
+        summary.appendChild(el('button', {
+            type: 'button',
+            className: 'bowire-console-row-copy',
+            title: 'Copy this entry',
+            'aria-label': 'Copy entry',
+            innerHTML: svgIcon('copy'),
+            onClick: function (e) {
+                e.stopPropagation();
+                navigator.clipboard.writeText(serializeConsoleEntries([entry])).then(function () {
+                    if (typeof toast === 'function') toast('Entry copied', 'success');
+                });
+            }
+        }));
         row.appendChild(summary);
         if (entry.expanded && entry.body) {
             var pretty;
@@ -316,7 +402,27 @@
     // now just trigger a full render() so morphdom diffs the drawer
     // content rather than maintaining a separate floating panel.
     function _renderConsoleDrawerBody() {
+        var wrap = el('div', { className: 'bowire-console-drawer-wrap' });
+        // No separate toolbar row — every filter chip + every
+        // action button lives in the drawer header above.
         var body = el('div', { className: 'bowire-console-body bowire-console-drawer-body' });
+        // Auto-scroll detection: when the user scrolls up away
+        // from the bottom, drop the auto-scroll pin so new entries
+        // don't yank them back. Scrolling all the way back to the
+        // bottom re-arms it. The pin toggle in the toolbar exposes
+        // the same flag for explicit control.
+        body.addEventListener('scroll', function () {
+            var atBottom = body.scrollTop + body.clientHeight >= body.scrollHeight - 4;
+            if (consoleAutoScroll && !atBottom) {
+                consoleAutoScroll = false;
+                _syncConsolePinButton();
+            } else if (!consoleAutoScroll && atBottom) {
+                consoleAutoScroll = true;
+                _syncConsolePinButton();
+            }
+        });
+
+        var filtered = filteredConsoleLog();
         if (consoleLog.length === 0) {
             body.appendChild(renderEmptyCard({
                 icon: 'console',
@@ -333,12 +439,340 @@
                     },
                 ]
             }));
+        } else if (filtered.length === 0) {
+            body.appendChild(el('div', { className: 'bowire-console-empty',
+                style: 'padding:12px 14px;color:var(--bowire-text-tertiary)',
+                textContent: 'No entries match the current filters.' }));
         } else {
-            for (var i = 0; i < consoleLog.length; i++) {
-                body.appendChild(buildConsoleRow(consoleLog[i]));
+            for (var i = 0; i < filtered.length; i++) {
+                body.appendChild(buildConsoleRow(filtered[i]));
             }
         }
-        return body;
+        wrap.appendChild(body);
+        return wrap;
+    }
+
+    function _syncConsolePinButton() {
+        var btn = document.getElementById('bowire-console-pin-btn');
+        if (!btn) return;
+        btn.classList.toggle('is-on', !consoleAutoScroll);
+        btn.setAttribute('aria-pressed', !consoleAutoScroll ? 'true' : 'false');
+        btn.title = consoleAutoScroll
+            ? 'Auto-scroll is active — click to pin view'
+            : 'View pinned — click to follow tail';
+    }
+
+    // Shared label tables used by both the chip row (toolbar) and
+    // the filter trigger (header) so the two stay in sync.
+    var CONSOLE_TYPE_LABELS = {
+        request:  'Req',
+        response: 'Resp',
+        error:    'Err',
+        channel:  'Chan'
+    };
+    var CONSOLE_TIME_OPTS = [
+        { v: 1,  label: 'Last 1 min' },
+        { v: 5,  label: 'Last 5 min' },
+        { v: 15, label: 'Last 15 min' },
+        { v: 60, label: 'Last 60 min' }
+    ];
+
+    // Build the chip cluster + filter-add trigger. Returns two DOM
+    // nodes so the caller can place the chips inline in the header
+    // and the trigger inside the action cluster — the toolbar row
+    // is gone, everything lives in the drawer header.
+    function _buildConsoleFilterChips() {
+        var chipRow = el('div', { className: 'bowire-console-filter-chips' });
+
+        function buildFilterChip(label, onRemove) {
+            return el('span', { className: 'bowire-console-filter-chip' },
+                el('span', { className: 'bowire-console-filter-chip-label', textContent: label }),
+                el('button', {
+                    type: 'button',
+                    className: 'bowire-console-filter-chip-remove',
+                    title: 'Remove filter',
+                    'aria-label': 'Remove filter ' + label,
+                    textContent: '×',
+                    onClick: function (e) {
+                        e.stopPropagation();
+                        onRemove();
+                        if (typeof render === 'function') render();
+                    }
+                })
+            );
+        }
+
+        consoleTypeFilter.forEach(function (id) {
+            var lbl = CONSOLE_TYPE_LABELS[id] || id;
+            chipRow.appendChild(buildFilterChip(lbl, function () {
+                consoleTypeFilter.delete(id);
+            }));
+        });
+        if (consoleTimeFilterMin > 0) {
+            var match = CONSOLE_TIME_OPTS.find(function (o) { return o.v === consoleTimeFilterMin; });
+            chipRow.appendChild(buildFilterChip(match ? match.label : ('Last ' + consoleTimeFilterMin + ' min'), function () {
+                consoleTimeFilterMin = 0;
+            }));
+        }
+        return chipRow;
+    }
+
+    function _buildConsoleFilterAddTrigger() {
+        // Header button — toggles the filter bar below the drawer
+        // header on/off. The bar carries the active chips, a search
+        // input for free-text filtering, and (Phase 2) parses
+        // `type:req`-style tokens into structured chips. is-on
+        // reflects "filter bar visible OR any filter active" so the
+        // user gets a hint that filters are in play even when the
+        // bar is collapsed.
+        var anyActive = consoleTypeFilter.size > 0
+            || consoleTimeFilterMin > 0
+            || !!(consoleTextFilter || '').trim();
+        return el('button', {
+            type: 'button',
+            id: 'bowire-console-filter-add-btn',
+            className: 'bowire-console-toolbar-btn bowire-console-filter-add-btn'
+                + ((consoleFilterBarOpen || anyActive) ? ' is-on' : ''),
+            title: consoleFilterBarOpen ? 'Hide filter bar' : 'Show filter bar',
+            'aria-label': 'Toggle filter bar',
+            'aria-pressed': consoleFilterBarOpen ? 'true' : 'false',
+            innerHTML: svgIcon('filter'),
+            onClick: function () {
+                consoleFilterBarOpen = !consoleFilterBarOpen;
+                if (typeof render === 'function') render();
+            }
+        });
+    }
+
+    // Filter bar that lives between the drawer header and the
+    // console body. Hosts the active-filter chips + a search input
+    // that filters by free-text match against the log entries.
+    function _renderConsoleFilterBar() {
+        var bar = el('div', { className: 'bowire-console-filterbar' });
+
+        // Active chips (type + time).
+        function buildChip(label, onRemove) {
+            return el('span', { className: 'bowire-console-filter-chip' },
+                el('span', { className: 'bowire-console-filter-chip-label', textContent: label }),
+                el('button', {
+                    type: 'button',
+                    className: 'bowire-console-filter-chip-remove',
+                    title: 'Remove filter',
+                    'aria-label': 'Remove filter ' + label,
+                    textContent: '×',
+                    onClick: function (e) {
+                        e.stopPropagation();
+                        onRemove();
+                        if (typeof render === 'function') render();
+                    }
+                })
+            );
+        }
+        consoleTypeFilter.forEach(function (id) {
+            bar.appendChild(buildChip('type:' + id, function () { consoleTypeFilter.delete(id); }));
+        });
+        if (consoleTimeFilterMin > 0) {
+            bar.appendChild(buildChip(consoleTimeFilterMin + 'm', function () { consoleTimeFilterMin = 0; }));
+        }
+
+        // Search input — live filter via consoleTextFilter. Special
+        // tokens (`type:req` / `type:resp` / `type:error` /
+        // `type:channel` / `5m`, `15m`, …) committed with Space or
+        // Enter become chips; everything else stays as free-text
+        // search across method/status/body.
+        var input = el('input', {
+            type: 'text',
+            className: 'bowire-console-filterbar-input',
+            placeholder: 'Search… (try: type:req, type:resp, 5m)',
+            value: consoleTextFilter,
+            spellcheck: 'false',
+            autocomplete: 'off',
+            onInput: function (e) {
+                consoleTextFilter = e.target.value;
+                _rerenderConsoleBody();
+            },
+            onKeydown: function (e) {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    var raw = (input.value || '').trim();
+                    if (!raw) return;
+                    if (_tryTokeniseConsoleFilter(raw)) {
+                        e.preventDefault();
+                        input.value = '';
+                        consoleTextFilter = '';
+                        if (typeof render === 'function') render();
+                    }
+                } else if (e.key === 'Backspace' && input.value === '') {
+                    // Backspace on empty input pops the most recent
+                    // chip — keyboard-friendly chip removal.
+                    if (consoleTimeFilterMin > 0) {
+                        consoleTimeFilterMin = 0;
+                        if (typeof render === 'function') render();
+                    } else if (consoleTypeFilter.size > 0) {
+                        var last = Array.from(consoleTypeFilter).pop();
+                        consoleTypeFilter.delete(last);
+                        if (typeof render === 'function') render();
+                    }
+                }
+            }
+        });
+        bar.appendChild(input);
+
+        // Clear-all button when anything filter-y is set.
+        if (consoleTypeFilter.size > 0 || consoleTimeFilterMin > 0 || (consoleTextFilter || '').trim()) {
+            bar.appendChild(el('button', {
+                type: 'button',
+                className: 'bowire-console-filterbar-clear',
+                title: 'Clear all filters',
+                'aria-label': 'Clear all filters',
+                textContent: 'Clear',
+                onClick: function () {
+                    consoleTypeFilter.clear();
+                    consoleTimeFilterMin = 0;
+                    consoleTextFilter = '';
+                    if (typeof render === 'function') render();
+                }
+            }));
+        }
+        return bar;
+    }
+
+    // Parse a single token like `type:req` or `5m` into a structured
+    // filter chip. Returns true when the token was consumed (caller
+    // clears the input), false when it should stay as plain text.
+    function _tryTokeniseConsoleFilter(raw) {
+        var m;
+        m = raw.match(/^type:(req|request|resp|response|err|error|chan|channel)$/i);
+        if (m) {
+            var alias = {
+                req: 'request', request: 'request',
+                resp: 'response', response: 'response',
+                err: 'error', error: 'error',
+                chan: 'channel', channel: 'channel'
+            };
+            var canon = alias[m[1].toLowerCase()];
+            if (canon) {
+                consoleTypeFilter.add(canon);
+                return true;
+            }
+        }
+        m = raw.match(/^(\d+)m$/i);
+        if (m) {
+            consoleTimeFilterMin = parseInt(m[1], 10);
+            return true;
+        }
+        return false;
+    }
+
+    // Body-only re-render path so live-typing in the search input
+    // doesn't yank focus away by recreating the input element.
+    function _rerenderConsoleBody() {
+        var body = document.querySelector('.bowire-console-drawer-body');
+        if (!body) return;
+        var parent = body.parentElement;
+        var fresh = el('div', { className: 'bowire-console-body bowire-console-drawer-body' });
+        var filtered = filteredConsoleLog();
+        if (filtered.length === 0) {
+            fresh.appendChild(el('div', { className: 'bowire-console-empty',
+                style: 'padding:12px 14px;color:var(--bowire-text-tertiary)',
+                textContent: consoleLog.length === 0 ? 'No activity yet' : 'No entries match the current filters.' }));
+        } else {
+            for (var i = 0; i < filtered.length; i++) fresh.appendChild(buildConsoleRow(filtered[i]));
+        }
+        parent.replaceChild(fresh, body);
+    }
+
+    // Build the cluster of action buttons that lives in the
+    // drawer header — pin auto-scroll, download selection,
+    // download all, clear selection, clear log, close. Mirrors
+    // the "all buttons in the header" layout the user asked for.
+    function _renderConsoleHeaderActions(onClose) {
+        var actions = el('div', { className: 'bowire-console-header-actions' });
+
+        // Filter-add trigger leads the cluster — funnel icon, opens
+        // the same dropdown that previously sat under "+ Filter" in
+        // the retired toolbar row.
+        actions.appendChild(_buildConsoleFilterAddTrigger());
+
+        // Pin glyph = "view pinned at current position, not
+        // following the tail". So the button is .is-on when
+        // consoleAutoScroll is FALSE (view is pinned / frozen),
+        // and inactive when auto-scroll follows new entries.
+        // Click pins (= turn auto-scroll off); click again to
+        // resume tailing.
+        actions.appendChild(el('button', {
+            type: 'button',
+            id: 'bowire-console-pin-btn',
+            className: 'bowire-console-toolbar-btn' + (!consoleAutoScroll ? ' is-on' : ''),
+            title: consoleAutoScroll
+                ? 'Auto-scroll is active — click to pin view'
+                : 'View pinned — click to follow tail',
+            'aria-label': 'Toggle auto-scroll',
+            'aria-pressed': !consoleAutoScroll ? 'true' : 'false',
+            innerHTML: svgIcon('pin'),
+            onClick: function () {
+                consoleAutoScroll = !consoleAutoScroll;
+                _syncConsolePinButton();
+                if (consoleAutoScroll) {
+                    var body = document.querySelector('.bowire-console-drawer-body');
+                    if (body) body.scrollTop = body.scrollHeight;
+                }
+            }
+        }));
+        actions.appendChild(el('span', {
+            className: 'bowire-console-toolbar-selcount',
+            title: 'Selected entries',
+            textContent: String(consoleSelected.size)
+        }));
+        // Smart download — falls back to the whole log when there's
+        // no selection, downloads just the selection otherwise. One
+        // button instead of separate "download selected / download
+        // all" affordances; the title reflects the current mode.
+        var hasSel = consoleSelected.size > 0;
+        actions.appendChild(el('button', {
+            type: 'button',
+            className: 'bowire-console-toolbar-btn',
+            title: hasSel
+                ? 'Download selection (' + consoleSelected.size + ' entr' + (consoleSelected.size === 1 ? 'y' : 'ies') + ')'
+                : 'Download entire log (' + consoleLog.length + ')',
+            'aria-label': hasSel ? 'Download selection' : 'Download entire log',
+            innerHTML: svgIcon('download'),
+            onClick: function () {
+                if (hasSel) {
+                    var entries = consoleLog.filter(function (e) { return consoleSelected.has(e.id); });
+                    downloadConsoleEntries(entries, 'bowire-console-selected.log');
+                } else {
+                    downloadConsoleEntries(consoleLog, 'bowire-console.log');
+                }
+            }
+        }));
+        actions.appendChild(el('button', {
+            type: 'button',
+            className: 'bowire-console-toolbar-btn',
+            title: 'Clear selection',
+            'aria-label': 'Clear selection',
+            textContent: '✕',
+            onClick: function () {
+                consoleSelected.clear();
+                if (typeof render === 'function') render();
+            }
+        }));
+        actions.appendChild(el('button', {
+            type: 'button',
+            id: 'bowire-console-clear-btn',
+            className: 'bowire-console-clear bowire-console-toolbar-btn',
+            textContent: 'Clear',
+            title: 'Clear all entries',
+            onClick: clearConsole
+        }));
+        actions.appendChild(el('button', {
+            type: 'button',
+            className: 'bowire-drawer-close bowire-bottom-drawer-close',
+            title: 'Close console',
+            'aria-label': 'Close console',
+            innerHTML: svgIcon('close'),
+            onClick: onClose
+        }));
+        return actions;
     }
 
     function _renderConsoleTabActions() {
@@ -357,10 +791,10 @@
         // Legacy floating panel retired (#164 v2) — Console now mounts
         // as a bottom-attached drawer below the main body. Clean up
         // any stale floating root, then auto-scroll the bottom-drawer
-        // body when new entries arrived.
+        // body when new entries arrived AND the pin is on.
         var existing = document.querySelector('.bowire-console-panel');
         if (existing) existing.remove();
-        if (consoleOpen && autoScroll) {
+        if (consoleOpen && autoScroll && consoleAutoScroll) {
             requestAnimationFrame(function () {
                 var body = document.querySelector('.bowire-console-drawer-body');
                 if (body) body.scrollTop = body.scrollHeight;
@@ -424,27 +858,19 @@
                 ? el('span', { className: 'bowire-bottom-drawer-count', textContent: String(consoleLog.length) })
                 : null
         ));
-        var headerActions = el('div', { className: 'bowire-bottom-drawer-actions' });
-        headerActions.appendChild(el('button', {
-            type: 'button',
-            className: 'bowire-console-clear',
-            textContent: 'Clear',
-            title: 'Clear all entries',
-            onClick: clearConsole
+        // Action cluster (filter toggle, pin, downloads, clears,
+        // close) lives at the header right end. Active-filter chips
+        // moved into the filter bar below — toggle via the funnel
+        // button in the action cluster.
+        header.appendChild(_renderConsoleHeaderActions(function () {
+            consoleOpen = false;
+            if (typeof render === 'function') render();
         }));
-        headerActions.appendChild(el('button', {
-            type: 'button',
-            className: 'bowire-drawer-close bowire-bottom-drawer-close',
-            title: 'Close console',
-            'aria-label': 'Close console',
-            innerHTML: svgIcon('close'),
-            onClick: function () {
-                consoleOpen = false;
-                if (typeof render === 'function') render();
-            }
-        }));
-        header.appendChild(headerActions);
         drawer.appendChild(header);
+
+        if (consoleFilterBarOpen) {
+            drawer.appendChild(_renderConsoleFilterBar());
+        }
 
         drawer.appendChild(_renderConsoleDrawerBody());
         return drawer;

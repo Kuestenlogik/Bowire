@@ -1379,14 +1379,39 @@
         var logoSrc = effectiveTheme === 'dark'
             ? (config.logoIconMono || config.logoIcon)
             : config.logoIcon;
-        var logoIcon = logoSrc
+        // The brand mark is wrapped in a button so hover animates the
+        // B into a burger glyph (three stacked bars). The default
+        // layer is the actual logo (img or fallback letter); the
+        // burger layer is three CSS spans positioned absolutely on
+        // top. CSS crossfades + lifts the bars into place. Click
+        // jumps back to Home, which doubles as a useful primary
+        // action ("take me back to the start") without inventing a
+        // new menu surface.
+        var logoLayer = logoSrc
             ? el('img', { className: 'bowire-logo-icon', src: logoSrc, alt: '' })
             : el('div', { className: 'bowire-logo-icon', textContent: (config.title || 'B').charAt(0) });
-        // Wrap the logo in a 48 px column so the column anchors to
-        // the activity-rail width below while the inner mark can
-        // size independently. Without the wrapper the .bowire-logo-
-        // icon rule fought between '48 px column' and '22 px mark'.
-        var logoCol = el('div', { className: 'bowire-topbar-brand-logo-col' }, logoIcon);
+        var burgerLayer = el('span', { className: 'bowire-logo-burger', 'aria-hidden': 'true' },
+            el('span', { className: 'bowire-logo-burger-bar' }),
+            el('span', { className: 'bowire-logo-burger-bar' }),
+            el('span', { className: 'bowire-logo-burger-bar' })
+        );
+        var logoBtn = el('button', {
+            type: 'button',
+            className: 'bowire-logo-btn',
+            title: 'Home',
+            'aria-label': 'Go to Home',
+            onClick: function () {
+                if (typeof railMode !== 'undefined') {
+                    try { railMode = 'home'; } catch { /* let-shadow */ }
+                    try { localStorage.setItem('bowire_rail_mode', 'home'); } catch { /* ignore */ }
+                }
+                if (typeof selectedMethod !== 'undefined') {
+                    try { selectedMethod = null; } catch { /* let-shadow */ }
+                }
+                if (typeof render === 'function') render();
+            }
+        }, logoLayer, burgerLayer);
+        var logoCol = el('div', { className: 'bowire-topbar-brand-logo-col' }, logoBtn);
         var brand = el('div', { id: 'bowire-topbar-brand', className: 'bowire-topbar-brand' },
             logoCol,
             el('div', { className: 'bowire-topbar-brand-text' },
@@ -2436,8 +2461,8 @@
         // navigate nowhere visible.
         var railJumps = [
             { id: 'home',         label: 'Home',              icon: 'house' },
-            { id: 'discover',     label: 'Discover',          icon: 'compass' },
-            { id: 'mocks',        label: 'Mocks',             icon: 'server' },
+            { id: 'discover',     label: 'Discover',          icon: 'discover' },
+            { id: 'mocks',        label: 'Mocks',             icon: 'mock' },
             { id: 'flows',        label: 'Flows',             icon: 'flow' },
             { id: 'proxy',        label: 'Proxy / MITM',      icon: 'disconnect' },
             { id: 'benchmarks',   label: 'Benchmarks',        icon: 'chart' },

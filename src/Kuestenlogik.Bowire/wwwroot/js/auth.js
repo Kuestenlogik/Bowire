@@ -906,21 +906,41 @@
         if (!foundSvc || !foundMethod) return;
         openTab(foundSvc, foundMethod);
 
-        // Populate request data
-        if (entry.messages && entry.messages.length > 0) {
-            requestMessages = entry.messages.slice();
-        } else if (entry.body && !entry.body.startsWith('(channel:')) {
-            requestMessages = [entry.body];
+        // Build the wire payload directly from the history entry.
+        // Going through handleExecute() would re-read the DOM (live
+        // form/headers) and apply the pre-request script — both
+        // change what gets sent. A "replay" must reproduce the
+        // original wire, so we bypass both and call the protocol
+        // invoker directly with the captured messages + metadata.
+        var replayMessages = (entry.messages && entry.messages.length > 0)
+            ? entry.messages.slice()
+            : (entry.body && !entry.body.startsWith('(channel:') ? [entry.body] : ['{}']);
+        var replayMetadata = (entry.metadata && typeof entry.metadata === 'object')
+            ? Object.assign({}, entry.metadata)
+            : null;
+
+        // Mirror into the live request state so the Body tab — if the
+        // user opens it later — shows what was just replayed. We
+        // intentionally do NOT switch tabs: the user clicked Replay
+        // from the History view and would rather watch the response
+        // come back there than be torn out to the Body editor.
+        requestMessages = replayMessages.slice();
+
+        // Directly invoke the protocol so the wire matches the entry
+        // verbatim — no DOM read, no script mutation, no environment
+        // substitution on the way out.
+        var svcName = foundSvc.name;
+        var mthName = foundMethod.name;
+        var isServerStreaming = foundMethod.serverStreaming;
+        if (isServerStreaming) {
+            if (typeof invokeStreaming === 'function') {
+                invokeStreaming(svcName, mthName, replayMessages, replayMetadata);
+            }
+        } else {
+            if (typeof invokeUnary === 'function') {
+                invokeUnary(svcName, mthName, replayMessages, replayMetadata);
+            }
         }
-
-        activeRequestTab = 'body';
-        requestInputMode = 'json';
-        render();
-
-        // After render, trigger execution
-        requestAnimationFrame(function () {
-            handleExecute();
-        });
     }
 
     function repeatLastCall() {

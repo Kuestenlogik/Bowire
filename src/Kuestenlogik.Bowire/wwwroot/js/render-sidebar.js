@@ -839,7 +839,7 @@
         // of "what I'm working on right now"). Boot migration in
         // prologue.js rewrites a stale railMode='sources' to
         // 'workspaces' so existing installs land on the new spot.
-        { id: 'discover',     icon: 'compass',   label: 'Discover',          group: 'work',      sidebar: { kind: 'services' } },
+        { id: 'discover',     icon: 'discover',  label: 'Discover',          group: 'work',      sidebar: { kind: 'services' } },
         // Collections rail mode kept in the catalogue (so the existing
         // sidebar + main-pane render paths still work when the
         // Workspaces tree dispatches to it), but hideFromRail removes
@@ -857,7 +857,7 @@
         // available for workspace-overview navigation; the rail is the
         // direct quick-access path for the active workspace.
         { id: 'recordings',   icon: 'recording', label: 'Recordings',        group: 'scenarios', sidebar: { kind: 'recordings' } },
-        { id: 'mocks',        icon: 'server',    label: 'Mocks',             group: 'scenarios', sidebar: { kind: 'mocks' } },
+        { id: 'mocks',        icon: 'mock',      label: 'Mocks',             group: 'scenarios', sidebar: { kind: 'mocks' } },
         { id: 'flows',        icon: 'flow',      label: 'Flows',             group: 'scenarios', sidebar: { kind: 'flows' } },
         { id: 'proxy',        icon: 'disconnect',label: 'Proxy / MITM',      group: 'quality',   sidebar: { kind: 'proxy' } },
         { id: 'benchmarks',   icon: 'chart',     label: 'Benchmarks',        group: 'quality',   sidebar: { kind: 'benchmarks' } },
@@ -3892,8 +3892,16 @@
             function buildSourcePanel(originUrl) {
                 var sourceLabel;
                 if (originUrl) {
-                    var aliased = serverUrlAliases[originUrl];
-                    if (aliased) {
+                    // Look up the friendly name through aliasForUrl()
+                    // so the panel picks up whichever rename surface
+                    // the user touched — the URL-bar alias input
+                    // (serverUrlAliases) OR the Sources rail rename
+                    // (urlMeta[url].name). The helper returns the raw
+                    // URL when neither store has a hit, so fall
+                    // through to the host+pathname formatter only
+                    // when the alias really is empty.
+                    var aliased = aliasForUrl(originUrl);
+                    if (aliased && aliased !== originUrl) {
                         sourceLabel = aliased;
                     } else {
                         try {
@@ -3953,6 +3961,19 @@
                         textContent: sourceLabel
                     }),
                     panelCount,
+                    originUrl
+                        ? el('button', {
+                            type: 'button',
+                            className: 'bowire-source-panel-refresh-btn',
+                            title: 'Re-discover services from ' + originUrl,
+                            'aria-label': 'Refresh source',
+                            onClick: function (e) {
+                                e.stopPropagation();
+                                refreshSourceServices(originUrl);
+                            },
+                            innerHTML: svgIcon('repeat')
+                        })
+                        : null,
                     originUrl
                         ? el('button', {
                             type: 'button',
@@ -4062,11 +4083,14 @@
                     innerHTML: svgIcon('chevron')
                 }));
 
-                // Protocol icon (leading) — only when more than one
-                // protocol is loaded; with a single plugin the icon
-                // would just repeat for every group and waste space.
-                // Helps the user tell mixed gRPC / REST / Kafka /
-                // DIS / Akka sidebars apart at a glance.
+                headerEl.appendChild(el('span', { className: 'bowire-service-name', textContent: shortName, title: svc.name }));
+
+                // Protocol icon (trailing) — sits between the service
+                // name and the method-count badge so the type label
+                // reads as a row-end tag instead of a leading bullet.
+                // Only emitted when more than one protocol is loaded;
+                // with a single plugin the icon would just repeat for
+                // every group and waste space.
                 if (protocols.length > 1) {
                     var svcProto = protocols.find(function (p) { return p.id === svc.source; });
                     if (svcProto) {
@@ -4078,7 +4102,6 @@
                     }
                 }
 
-                headerEl.appendChild(el('span', { className: 'bowire-service-name', textContent: shortName, title: svc.name }));
                 headerEl.appendChild(el('span', {
                     className: 'bowire-method-count',
                     textContent: query
