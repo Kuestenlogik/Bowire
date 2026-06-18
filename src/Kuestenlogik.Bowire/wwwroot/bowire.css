@@ -5492,6 +5492,146 @@ lives at the right of the
    headline). The previous centered-hero look was inconsistent across
    rails ("mal sehr klein, mal sehr groß, zentriert vs. links") —
    restyled here once so every rail's first impression reads the same. */
+/* Execute caret menu — small popover anchored under the split-
+   button's caret. Disabled items render with reduced opacity and a
+   not-allowed cursor; the title attribute carries the why. */
+.bowire-action-execute-menu {
+    z-index: 1100;
+    min-width: 240px;
+    background: var(--bowire-surface);
+    border: 1px solid var(--bowire-border);
+    border-radius: var(--bowire-radius);
+    box-shadow: var(--bowire-shadow-lg);
+    padding: 4px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+.bowire-action-execute-menu-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 8px 10px;
+    border: 0;
+    background: transparent;
+    color: var(--bowire-text);
+    text-align: left;
+    border-radius: var(--bowire-radius-sm);
+    cursor: pointer;
+    font: inherit;
+}
+.bowire-action-execute-menu-item:hover { background: var(--bowire-surface-hover); }
+.bowire-action-execute-menu-item.is-disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+.bowire-action-execute-menu-item.is-disabled:hover { background: transparent; }
+.bowire-action-execute-menu-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+    color: var(--bowire-text-tertiary);
+}
+.bowire-action-execute-menu-icon svg { width: 14px; height: 14px; }
+
+/* Response-metadata pane — toolbar with an icon-only copy button
+   (right-aligned), then a two-column table. The hover-revealed
+   per-row copy button copies one value; the toolbar button serialises
+   every header as `Header: Value\n…` for paste into curl / scripts. */
+.bowire-response-metadata-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px;
+    border-bottom: 1px solid var(--bowire-border-subtle);
+    background: var(--bowire-surface);
+    flex-shrink: 0;
+}
+.bowire-response-metadata-toolbar-spacer { flex: 1; }
+.bowire-response-metadata-tool-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    padding: 0;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: var(--bowire-radius-sm);
+    color: var(--bowire-text-tertiary);
+    cursor: pointer;
+    transition: color var(--bowire-transition), background var(--bowire-transition), border-color var(--bowire-transition);
+}
+.bowire-response-metadata-tool-btn:hover {
+    background: var(--bowire-surface-hover);
+    border-color: var(--bowire-border);
+    color: var(--bowire-text);
+}
+.bowire-response-metadata-tool-btn svg { width: 14px; height: 14px; }
+.bowire-response-metadata-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+    font-family: var(--bowire-font-mono);
+}
+.bowire-response-metadata-table thead th {
+    text-align: left;
+    font-weight: 600;
+    font-family: var(--bowire-font);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-size: 11px;
+    color: var(--bowire-text-tertiary);
+    padding: 8px 12px;
+    background: var(--bowire-surface);
+    border-bottom: 1px solid var(--bowire-border);
+    position: sticky;
+    top: 0;
+}
+.bowire-response-metadata-table tbody tr {
+    border-bottom: 1px solid var(--bowire-border-subtle);
+}
+.bowire-response-metadata-table tbody tr:hover { background: var(--bowire-surface-hover); }
+.bowire-response-metadata-table td {
+    padding: 6px 12px;
+    vertical-align: top;
+    color: var(--bowire-text);
+}
+.bowire-response-metadata-key {
+    width: 1%;
+    white-space: nowrap;
+    color: var(--bowire-text-secondary);
+    font-weight: 500;
+}
+.bowire-response-metadata-value {
+    word-break: break-word;
+}
+.bowire-response-metadata-actions-col { width: 32px; }
+.bowire-response-metadata-actions {
+    text-align: right;
+    width: 32px;
+}
+.bowire-response-metadata-copy {
+    background: transparent;
+    border: 0;
+    color: var(--bowire-text-tertiary);
+    cursor: pointer;
+    padding: 2px 6px;
+    border-radius: var(--bowire-radius-sm);
+    opacity: 0;
+    transition: opacity var(--bowire-transition), background var(--bowire-transition);
+}
+.bowire-response-metadata-table tbody tr:hover .bowire-response-metadata-copy { opacity: 1; }
+.bowire-response-metadata-copy:hover {
+    background: var(--bowire-surface-alt);
+    color: var(--bowire-text);
+}
+.bowire-response-metadata-copy svg { width: 14px; height: 14px; vertical-align: middle; }
+
 .bowire-empty-state {
     display: flex;
     flex-direction: column;
@@ -13535,6 +13675,35 @@ subtler
     flex-direction: column;
     gap: 6px;
     margin-bottom: 14px;
+}
+
+/* Read-only result rows for the response-pane "Test results" tab.
+   No inputs; path/op/expected render as plain text in monospace so
+   the row stays scannable without looking like an editor. */
+.bowire-tests-results-summary {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--bowire-text);
+    padding: 6px 10px;
+    margin-bottom: 10px;
+    border-radius: var(--bowire-radius-sm);
+    background: var(--bowire-surface-alt);
+}
+.bowire-tests-results-summary.all-pass { color: var(--bowire-success); }
+.bowire-tests-results-summary.has-failure { color: var(--bowire-error); }
+.bowire-test-row-result .bowire-test-path-readonly,
+.bowire-test-row-result .bowire-test-op-readonly,
+.bowire-test-row-result .bowire-test-expected-readonly {
+    font-family: var(--bowire-font-mono);
+    font-size: 12px;
+    color: var(--bowire-text);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    padding: 4px 6px;
+}
+.bowire-test-row-result .bowire-test-op-readonly {
+    color: var(--bowire-text-tertiary);
 }
 
 .bowire-test-row {

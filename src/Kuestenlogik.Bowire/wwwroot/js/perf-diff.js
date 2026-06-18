@@ -461,75 +461,117 @@
         const btnIcon = isExecuting && isStreaming ? svgIcon('stop') : svgIcon('play');
         const btnClass = isExecuting && isStreaming ? 'bowire-execute-btn streaming-active' : 'bowire-execute-btn';
 
+        // Execute as a split button: primary = Execute (or Stop
+        // when a stream is mid-flight); caret = a small menu with
+        // alternate run modes (Repeat last, Run as benchmark, Run
+        // with preset). Repeat, Save-to-collection and the inline
+        // collections-manager icon were retired from the bar —
+        // they duplicated the "+ Add to…" menu in the method
+        // header and the History tab.
+        const lastCall = getHistory().find(function (h) {
+            return h.service === selectedService?.name && h.method === selectedMethod?.name;
+        });
+        const splitWrap = el('div', { className: 'bowire-split-btn-wrap bowire-action-execute-split' });
         const btn = el('button', {
             id: isExecuting && isStreaming ? 'bowire-action-stop-btn' : 'bowire-action-execute-btn',
-            className: btnClass,
-            // Shortcut moved off the button face into the hover hint
-            // — the inline 'Ctrl+Enter' chip on the button itself was
-            // noise once the user knows the shortcut.
+            className: btnClass + ' bowire-split-btn-main',
             title: btnText + ' (Ctrl+Enter)',
             onClick: handleExecute
         },
             el('span', { innerHTML: btnIcon, style: 'width:14px;height:14px;display:flex' }),
             el('span', { textContent: btnText })
         );
-
         if (isExecuting && !isStreaming) btn.disabled = true;
-        bar.appendChild(btn);
-
-        // Repeat Last button
-        const lastCall = getHistory().find(function (h) {
-            return h.service === selectedService?.name && h.method === selectedMethod?.name;
-        });
-        const repeatBtn = el('button', {
-            id: 'bowire-action-repeat-btn',
-            className: 'bowire-repeat-btn',
-            onClick: repeatLastCall,
-            title: lastCall ? 'Repeat last call to ' + selectedMethod.name : 'No previous calls'
-        },
-            el('span', { innerHTML: svgIcon('repeat'), style: 'width:14px;height:14px;display:flex' }),
-            el('span', { textContent: 'Repeat' })
-        );
-        if (!lastCall || isExecuting) repeatBtn.disabled = true;
-        bar.appendChild(repeatBtn);
-
-        // Save to Collection dropdown
-        var saveColWrapper = el('div', { className: 'bowire-dropdown-wrapper', style: 'position:relative' });
-        var saveColBtn = el('button', {
-            id: 'bowire-action-save-btn',
-            className: 'bowire-repeat-btn',
-            title: 'Save this request to a collection',
+        splitWrap.appendChild(btn);
+        const caret = el('button', {
+            id: 'bowire-action-execute-caret-btn',
+            className: 'bowire-execute-btn bowire-split-btn-caret',
+            title: 'More run options',
+            'aria-haspopup': 'menu',
             onClick: function (e) {
                 e.stopPropagation();
-                renderSaveToCollectionDropdown(saveColBtn);
+                var prev = document.querySelector('.bowire-action-execute-menu');
+                if (prev) { prev.remove(); return; }
+                var menu = el('div', { className: 'bowire-action-execute-menu', role: 'menu' });
+                menu.appendChild(el('button', {
+                    type: 'button',
+                    className: 'bowire-action-execute-menu-item' + (lastCall ? '' : ' is-disabled'),
+                    disabled: lastCall ? undefined : true,
+                    title: lastCall
+                        ? 'Re-send the last logged request to ' + selectedMethod.name
+                        : 'No previous calls',
+                    onClick: function () {
+                        menu.remove();
+                        if (lastCall) repeatLastCall();
+                    }
+                },
+                    el('span', { className: 'bowire-action-execute-menu-icon', innerHTML: svgIcon('repeat') }),
+                    el('span', { textContent: 'Repeat last call' })
+                ));
+                var lastOkCall = lastCall && lastCall.status && lastCall.status !== 'Error';
+                var canBench = lastOkCall && typeof createBenchmarkSpec === 'function';
+                menu.appendChild(el('button', {
+                    type: 'button',
+                    className: 'bowire-action-execute-menu-item' + (canBench ? '' : ' is-disabled'),
+                    disabled: canBench ? undefined : true,
+                    title: canBench
+                        ? 'Create a benchmark spec from this request and open it'
+                        : 'Execute a successful call first — benchmarks need a known-good request',
+                    onClick: function () {
+                        menu.remove();
+                        if (!canBench) return;
+                        var addBtn = document.querySelector('#bowire-header-addto-btn');
+                        if (addBtn) { try { addBtn.click(); } catch {} }
+                        railMode = 'benchmarks';
+                        try { localStorage.setItem('bowire_rail_mode', 'benchmarks'); } catch { /* ignore */ }
+                        render();
+                    }
+                },
+                    el('span', { className: 'bowire-action-execute-menu-icon', innerHTML: svgIcon('lightning') }),
+                    el('span', { textContent: 'Run as benchmark…' })
+                ));
+                var hasPresets = (typeof loadPresets === 'function')
+                    ? loadPresets('discover').some(function (p) {
+                        return p && p.config
+                            && p.config.service === selectedService.name
+                            && p.config.method === selectedMethod.name;
+                    })
+                    : false;
+                menu.appendChild(el('button', {
+                    type: 'button',
+                    className: 'bowire-action-execute-menu-item' + (hasPresets ? '' : ' is-disabled'),
+                    disabled: hasPresets ? undefined : true,
+                    title: hasPresets
+                        ? 'Apply a saved preset, then execute'
+                        : 'No presets defined for this method',
+                    onClick: function () {
+                        menu.remove();
+                        if (!hasPresets) return;
+                        var presetBtn = document.querySelector('#bowire-header-presets-btn');
+                        if (presetBtn) { try { presetBtn.click(); } catch {} }
+                    }
+                },
+                    el('span', { className: 'bowire-action-execute-menu-icon', innerHTML: svgIcon('preset') }),
+                    el('span', { textContent: 'Run with preset…' })
+                ));
+                document.body.appendChild(menu);
+                var rect = caret.getBoundingClientRect();
+                menu.style.position = 'fixed';
+                menu.style.left = Math.max(8, rect.left) + 'px';
+                menu.style.top = (rect.bottom + 6) + 'px';
+                setTimeout(function () {
+                    function onOutside(ev) {
+                        if (!menu.contains(ev.target) && !caret.contains(ev.target)) {
+                            menu.remove();
+                            document.removeEventListener('click', onOutside, true);
+                        }
+                    }
+                    document.addEventListener('click', onOutside, true);
+                }, 0);
             }
-        },
-            el('span', { innerHTML: svgIcon('list'), style: 'width:14px;height:14px;display:flex' }),
-            el('span', { textContent: 'Save \u25BE' })
-        );
-        saveColWrapper.appendChild(saveColBtn);
-        bar.appendChild(saveColWrapper);
-
-        // Collections manager button
-        bar.appendChild(el('button', {
-            id: 'bowire-action-collections-btn',
-            className: 'bowire-repeat-btn',
-            title: 'Open collections manager',
-            'aria-label': 'Open collections manager',
-            onClick: function () {
-                // #133 Phase 3 — switch to Collections rail mode
-                // instead of opening the legacy modal.
-                collectionsList = loadCollections();
-                if (collectionsList.length > 0 && !collectionManagerSelectedId) {
-                    collectionManagerSelectedId = collectionsList[0].id;
-                }
-                railMode = 'collections';
-                try { localStorage.setItem('bowire_rail_mode', 'collections'); } catch { /* ignore */ }
-                render();
-            }
-        },
-            el('span', { innerHTML: svgIcon('list'), style: 'width:14px;height:14px;display:flex' })
-        ));
+        }, el('span', { innerHTML: svgIcon('chevronDown') }));
+        splitWrap.appendChild(caret);
+        bar.appendChild(splitWrap);
 
         // Transcoding mode toggle — only when the method has a google.api.http
         // annotation AND the REST plugin is loaded (the "via HTTP" path needs
@@ -606,12 +648,8 @@
 
         bar.appendChild(statusBar);
 
-        // Keyboard shortcut hint
-        bar.appendChild(el('div', {
-            className: 'bowire-status-item',
-            style: 'opacity: 0.5',
-            textContent: 'Ctrl+Enter to send'
-        }));
+        // Ctrl+Enter hint retired — the Execute button's title
+        // attribute already exposes the shortcut on hover.
 
         bar.appendChild(renderRecordingToggleButton());
         // Console toggle retired from the action bar — same affordance

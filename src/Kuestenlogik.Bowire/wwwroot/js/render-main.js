@@ -4611,10 +4611,25 @@
                     ));
 
                     if (typeof createBenchmarkSpec === 'function') {
+                        // Benchmarking is only meaningful for a request
+                        // shape the server actually accepts — otherwise
+                        // the user persists a wire that they already
+                        // know is broken. Require a successful last
+                        // call (statusInfo present, no responseError)
+                        // before letting the item create the spec.
+                        var lastCallOk = (typeof statusInfo !== 'undefined' && statusInfo)
+                            && (typeof responseError === 'undefined' || !responseError)
+                            && statusInfo.status !== 'Error';
                         menu.appendChild(el('button', {
-                            className: 'bowire-header-addto-item',
+                            className: 'bowire-header-addto-item'
+                                + (lastCallOk ? '' : ' bowire-header-addto-item-disabled'),
                             role: 'menuitem',
+                            disabled: lastCallOk ? undefined : true,
+                            title: lastCallOk
+                                ? 'Save this request as a benchmark spec'
+                                : 'Execute a successful call first — benchmarks need a known-good request',
                             onClick: function () {
+                                if (!lastCallOk) return;
                                 var snap = _snapshotRequest();
                                 if (!snap) return;
                                 var spec = createBenchmarkSpec({
@@ -4940,11 +4955,22 @@
             textContent: 'Scripts',
             onClick: function () { activeRequestTab = 'scripts'; render(); }
         });
+        // Tests-DEFINITION tab. Lives request-side because assertions
+        // are part of the method's configuration (they ride along
+        // with collections / recordings / exports). Pass/fail results
+        // surface in the response pane's "Test results" tab.
+        const testsTab = el('div', {
+            id: 'bowire-request-tab-tests',
+            className: `bowire-tab ${activeRequestTab === 'tests' ? 'active' : ''}`,
+            textContent: 'Tests',
+            onClick: function () { activeRequestTab = 'tests'; render(); }
+        });
         tabs.appendChild(bodyTab);
         tabs.appendChild(metaTab);
         tabs.appendChild(schemaTab);
         tabs.appendChild(codeTab);
         tabs.appendChild(scriptsTab);
+        tabs.appendChild(testsTab);
         tabs.appendChild(historyTab);
         pane.appendChild(tabs);
 
@@ -5923,6 +5949,20 @@
             scriptsContent.appendChild(postArea);
         }
         pane.appendChild(scriptsContent);
+
+        // Tests-definition tab content. The editor (renderTestDefinitionsTab)
+        // lets the operator manage the assertion list; results show
+        // up in the response pane's "Test results" tab.
+        const testsContent = el('div', {
+            id: 'bowire-request-tab-tests-content',
+            className: `bowire-tab-content ${activeRequestTab === 'tests' ? 'active' : ''}`
+        });
+        if (selectedMethod) {
+            testsContent.appendChild(typeof renderTestDefinitionsTab === 'function'
+                ? renderTestDefinitionsTab()
+                : el('div', { className: 'bowire-empty-state', textContent: 'Tests not available.' }));
+        }
+        pane.appendChild(testsContent);
 
         return pane;
     }
@@ -7328,26 +7368,28 @@
             textContent: 'Response Metadata',
             onClick: function () { activeResponseTab = 'headers'; render(); }
         }));
-        // Performance + Tests tabs — only meaningful for unary methods
+        // Tests tab — only meaningful for unary methods. The
+        // Performance tab was retired here: load runs are an action
+        // ("repeat this request N times under concurrency C") rather
+        // than a response property, so they belong in the Benchmarks
+        // rail. Use "+ Add to… → Create benchmark" in the method
+        // header — that path is gated on a successful last call so
+        // only known-good requests become benchmark specs.
         if (selectedMethod && selectedMethod.methodType === 'Unary') {
-            tabs.appendChild(el('div', {
-                id: 'bowire-response-tab-performance',
-                className: `bowire-tab ${activeResponseTab === 'performance' ? 'active' : ''}`,
-                textContent: 'Performance',
-                onClick: function () { activeResponseTab = 'performance'; render(); }
-            }));
-            // Tests tab with pass/fail counter when assertions exist
-            var testsLabel = 'Tests';
+            // Test results tab \u2014 read-only pass/fail per assertion
+            // against the most recent response. Definitions are
+            // managed in the request pane's Tests sub-tab.
+            var testsLabel = 'Test results';
             var summary = selectedService && selectedMethod
                 ? getAssertionSummary(selectedService.name, selectedMethod.name)
                 : null;
             if (summary && summary.total > 0) {
                 if (summary.untested === summary.total) {
-                    testsLabel = 'Tests (' + summary.total + ')';
+                    testsLabel = 'Test results (' + summary.total + ')';
                 } else if (summary.failed > 0) {
-                    testsLabel = 'Tests (' + summary.passed + '/' + summary.total + ' \u2717)';
+                    testsLabel = 'Test results (' + summary.passed + '/' + summary.total + ' \u2717)';
                 } else {
-                    testsLabel = 'Tests (' + summary.passed + '/' + summary.total + ' \u2713)';
+                    testsLabel = 'Test results (' + summary.passed + '/' + summary.total + ' \u2713)';
                 }
             }
             tabs.appendChild(el('div', {
@@ -7383,22 +7425,38 @@
         const respHeader = el('div', { className: 'bowire-pane-header' },
             el('span', { className: 'bowire-pane-title', textContent: 'Result' }),
             el('div', { className: 'bowire-pane-actions' },
-                // JSON / Tree view toggle. Stable id so morphdom
-                // keyed-matches the same button across re-renders
-                // instead of merging onto the wrong sibling (which
-                // produced the "Tree button runs Copy" symptom).
+                // Expand all / Collapse all — operate on the
+                // <details> nodes the JSON tree renders. Hidden when
+                // there is no response body or we're in streaming
+                // mode (the stream pane has its own controls).
                 (function () {
                     if (!responseData || streamMessages.length > 0) return el('span');
                     return el('button', {
-                        id: 'bowire-response-view-toggle-btn',
-                        className: 'bowire-pane-btn' + (responseViewMode === 'tree' ? ' active' : ''),
-                        title: responseViewMode === 'tree'
-                            ? 'Switch to JSON view'
-                            : 'Switch to collapsible tree view',
-                        textContent: responseViewMode === 'tree' ? 'JSON' : 'Tree',
+                        id: 'bowire-response-tree-expand-btn',
+                        className: 'bowire-pane-btn',
+                        title: 'Expand all nodes',
+                        textContent: 'Expand all',
                         onClick: function () {
-                            responseViewMode = responseViewMode === 'tree' ? 'json' : 'tree';
-                            render();
+                            var nodes = document.querySelectorAll('.bowire-response-output .bowire-json-tree-node');
+                            nodes.forEach(function (n) { n.open = true; });
+                        }
+                    });
+                })(),
+                (function () {
+                    if (!responseData || streamMessages.length > 0) return el('span');
+                    return el('button', {
+                        id: 'bowire-response-tree-collapse-btn',
+                        className: 'bowire-pane-btn',
+                        title: 'Collapse all nodes',
+                        textContent: 'Collapse all',
+                        onClick: function () {
+                            var nodes = document.querySelectorAll('.bowire-response-output .bowire-json-tree-node');
+                            nodes.forEach(function (n) {
+                                // Leave the topmost root open so the
+                                // tree still hints at its shape.
+                                if (n.parentElement && n.parentElement.classList.contains('bowire-json-tree')) return;
+                                n.open = false;
+                            });
                         }
                     });
                 })(),
@@ -7682,17 +7740,17 @@
                     );
                     respBody.appendChild(el('div', { className: 'bowire-mcp-content' }, rawHeader));
                 }
-                // Interactive JSON: each key/value carries its dotted
-                // path; clicking copies the matching ${response.X}
-                // chaining variable so the user can paste it straight
-                // into the next request body. Title attribute on each
-                // pickable span gives the hover hint. The tree-view
-                // variant reuses the same click handler — both
-                // renderers emit the same data-json-path attributes.
+                // Interactive collapsible JSON tree. Click a value
+                // copies `${response.X}` (chaining variable) into
+                // the clipboard; double-click a key copies the bare
+                // path so it lands cleanly in a test-assertion
+                // expected-field. The Tree/JSON toggle was retired —
+                // every container is now ent/foldable in place via
+                // the native <details> markup the tree renderer
+                // emits.
                 const output = el('div', {
-                    className: 'bowire-response-output is-interactive'
-                        + (responseViewMode === 'tree' ? ' is-tree' : ''),
-                    title: 'Click any value to copy as ${response.X}',
+                    className: 'bowire-response-output is-interactive is-tree',
+                    title: 'Click any value to copy as ${response.X} — double-click a key to copy the path',
                     onClick: function (e) {
                         var target = e.target.closest('[data-json-path]');
                         if (!target) return;
@@ -7702,11 +7760,23 @@
                             function () { toast('Copied: ' + chainVar, 'success'); },
                             function () { toast('Copy failed', 'error'); }
                         );
+                    },
+                    onDblClick: function (e) {
+                        var keyEl = e.target.closest('.bowire-json-tree-label');
+                        if (!keyEl) return;
+                        e.preventDefault();
+                        // Suppress the click-to-copy-${} that would
+                        // otherwise also fire on the second click.
+                        e.stopPropagation();
+                        var raw = keyEl.getAttribute('data-json-path') || '';
+                        if (!raw) return;
+                        navigator.clipboard.writeText(raw).then(
+                            function () { toast('Copied path: ' + raw, 'success'); },
+                            function () { toast('Copy failed', 'error'); }
+                        );
                     }
                 });
-                output.innerHTML = responseViewMode === 'tree'
-                    ? renderJsonTree(responseData)
-                    : highlightJsonInteractive(responseData);
+                output.innerHTML = renderJsonTree(responseData);
                 // Wrap the response output in a split-pane host when a
                 // registered viewer claims the active method's kind
                 // (e.g. MapLibre on coordinate.wgs84). For unary RPCs
@@ -7750,14 +7820,68 @@
         const headersBody = el('div', { className: 'bowire-pane-body' });
 
         if (statusInfo && statusInfo.metadata && Object.keys(statusInfo.metadata).length > 0) {
-            const meta = el('div', { className: 'bowire-schema', style: 'padding: 16px' });
-            for (const [k, v] of Object.entries(statusInfo.metadata)) {
-                meta.appendChild(el('div', { className: 'bowire-schema-field' },
-                    el('span', { className: 'bowire-schema-field-name', textContent: k }),
-                    el('span', { className: 'bowire-schema-field-type', textContent: v })
+            var metaEntries = Object.entries(statusInfo.metadata).sort(function (a, b) {
+                return String(a[0]).toLowerCase().localeCompare(String(b[0]).toLowerCase());
+            });
+            // Raw-text serialisation (`Header: Value\n…`) is still
+            // useful for the bulk copy action — drops cleanly into a
+            // curl / script — but it's not its own view any more.
+            var rawText = metaEntries.map(function (p) {
+                var v = (p[1] === null || p[1] === undefined) ? '' : String(p[1]);
+                return p[0] + ': ' + v;
+            }).join('\n');
+            var toolbar = el('div', { className: 'bowire-response-metadata-toolbar' });
+            toolbar.appendChild(el('div', { className: 'bowire-response-metadata-toolbar-spacer' }));
+            toolbar.appendChild(el('button', {
+                type: 'button',
+                className: 'bowire-response-metadata-tool-btn',
+                title: 'Copy as raw text',
+                'aria-label': 'Copy as raw text',
+                innerHTML: svgIcon('copy'),
+                onClick: function () {
+                    navigator.clipboard.writeText(rawText).then(function () {
+                        if (typeof toast === 'function') toast('Copied headers', 'success');
+                    });
+                }
+            }));
+            headersBody.appendChild(toolbar);
+
+            // Two-column table — header name (mono, narrow) + value
+            // (mono, wraps). Hover-revealed copy button on each row
+            // dumps that single value to the clipboard.
+            var table = el('table', { className: 'bowire-response-metadata-table' });
+            table.appendChild(el('thead', null,
+                el('tr', null,
+                    el('th', { textContent: 'Header' }),
+                    el('th', { textContent: 'Value' }),
+                    el('th', { className: 'bowire-response-metadata-actions-col', 'aria-label': 'Actions' })
+                )
+            ));
+            var tbody = el('tbody');
+            metaEntries.forEach(function (pair) {
+                var k = pair[0], v = pair[1];
+                var valueStr = (v === null || v === undefined) ? '' : String(v);
+                tbody.appendChild(el('tr', null,
+                    el('td', { className: 'bowire-response-metadata-key', textContent: k }),
+                    el('td', { className: 'bowire-response-metadata-value', textContent: valueStr }),
+                    el('td', { className: 'bowire-response-metadata-actions' },
+                        el('button', {
+                            type: 'button',
+                            className: 'bowire-response-metadata-copy',
+                            title: 'Copy value',
+                            'aria-label': 'Copy ' + k,
+                            innerHTML: svgIcon('copy'),
+                            onClick: function () {
+                                navigator.clipboard.writeText(valueStr).then(function () {
+                                    if (typeof toast === 'function') toast('Copied ' + k, 'success');
+                                });
+                            }
+                        })
+                    )
                 ));
-            }
-            headersBody.appendChild(meta);
+            });
+            table.appendChild(tbody);
+            headersBody.appendChild(table);
         } else {
             headersBody.appendChild(el('div', { className: 'bowire-empty-state', style: 'padding: 40px' },
                 el('div', { className: 'bowire-empty-desc', textContent: 'No response metadata available.' })
@@ -7767,15 +7891,24 @@
         headersContent.appendChild(headersBody);
         pane.appendChild(headersContent);
 
-        // Performance + Tests tabs — only for unary methods
+        // Test results tab — only for unary methods. The editor
+        // lives in the request pane's Tests sub-tab; this view is
+        // read-only pass/fail against the last response. Performance
+        // moved to the Benchmarks rail (see the response-tab list
+        // above).
         if (selectedMethod && selectedMethod.methodType === 'Unary') {
-            var perfContent = el('div', { className: 'bowire-tab-content ' + (activeResponseTab === 'performance' ? 'active' : '') });
-            perfContent.appendChild(renderPerformanceTab());
-            pane.appendChild(perfContent);
-
             var testsContent = el('div', { className: 'bowire-tab-content ' + (activeResponseTab === 'tests' ? 'active' : '') });
-            testsContent.appendChild(renderTestsTab());
+            testsContent.appendChild(typeof renderTestResultsTab === 'function'
+                ? renderTestResultsTab()
+                : renderTestsTab());
             pane.appendChild(testsContent);
+        }
+        // Migrate stale tab state forward — if someone had the
+        // Performance tab active when this build shipped, snap them
+        // to Response so they're not stuck on a tab that no longer
+        // exists.
+        if (activeResponseTab === 'performance') {
+            activeResponseTab = 'response';
         }
 
         return pane;
