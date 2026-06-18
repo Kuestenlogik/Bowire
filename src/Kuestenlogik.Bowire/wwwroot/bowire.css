@@ -1403,12 +1403,18 @@ but
     color: var(--bowire-accent);
 }
 
-/* Collapsed: small flush-with-rail indicator strip. Nudged 4 px
-   leftward (overlaps the rail edge) so the chevron reads as a clear
-   "open" affordance instead of sitting back inside the empty space
-   to the right of the rail. */
+/* Collapsed: small flush-with-rail indicator strip. Sits almost
+   entirely overlapping the rail edge so the chevron tucks against
+   the activity rail (the user's eye finds it where the rail ends
+   instead of floating in empty space to the right). */
 .bowire-sidebar-edge-toggle-collapsed {
-    left: calc(var(--bowire-rail-width, 56px) - 4px);
+    /* Sit flush with the rail's outer edge — the chevron's left edge
+       lines up with the rail's right edge, no overlap. The activity
+       rail is 48 px wide (.bowire-activity-rail), NOT 56 px — the
+       earlier fallback of 56 px floated the chevron 8 px out into
+       empty space; -12 px / -4 px were workarounds for the wrong
+       baseline. */
+    left: var(--bowire-rail-width, 48px);
     opacity: 0.6;
     width: 14px;
     height: 40px;
@@ -2812,7 +2818,10 @@ not just
 .bowire-conn-pill-dot svg {
     width: 14px;
     height: 14px;
-    transform: scale(1.25);
+    /* Rotate the plug glyph 90° clockwise so the prongs point right
+       — reads as "plugged into the wall on the right edge of the
+       statusbar" instead of the vertical "dangling" default. */
+    transform: scale(1.25) rotate(90deg);
     transform-origin: center;
 }
 
@@ -3807,7 +3816,11 @@ full text color
     display: flex;
     align-items: center;
     gap: 8px;
-    padding: 6px 12px;
+    /* Match .bowire-service-header padding so the source-panel
+       header reads at the same row height as the service / method
+       rows beneath it — uneven row heights made the panel header
+       look pinched relative to the tree it owns. */
+    padding: 8px 16px;
     cursor: pointer;
     user-select: none;
     color: var(--bowire-text);
@@ -3823,23 +3836,32 @@ full text color
     outline-offset: -2px;
 }
 
+/* Shared chevron geometry for the discover-tree open/close affordances
+   on both .bowire-service-header and .bowire-source-panel-header. One
+   ruleset for both spans + their inner svg so the rotation pivot,
+   icon size, and rotation easing can never drift apart. */
+.bowire-service-chevron,
 .bowire-source-panel-chevron {
-    width: 10px;
-    height: 10px;
+    width: 12px;
+    height: 12px;
     flex-shrink: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transform: rotate(-90deg);
-    transition: transform 120ms ease;
-    color: var(--bowire-text-tertiary);
+    transition: transform var(--bowire-transition);
 }
-.bowire-source-panel-chevron.expanded {
-    transform: rotate(0deg);
-}
+.bowire-service-chevron svg,
 .bowire-source-panel-chevron svg {
+    /* The chevron SVG has no width/height attributes — left to its
+       intrinsic 24×24 size it overflows the 12×12 span, and the span
+       rotates around its (6,6) centre while the visible glyph centre
+       sits at (12,12) → the chevron swings off-axis. Forcing the
+       inner SVG to fill the span and render as a block puts the
+       glyph's visual centre exactly on the span's rotation pivot. */
     width: 100%;
     height: 100%;
+    display: block;
+}
+.bowire-service-chevron.expanded,
+.bowire-source-panel-chevron.expanded {
+    transform: rotate(90deg);
 }
 
 .bowire-source-panel-status {
@@ -3857,16 +3879,71 @@ full text color
 }
 
 .bowire-source-panel-count {
+    /* Match .bowire-method-count visually + dimensionally so the
+       panel header reads at exactly the same row height as a
+       .bowire-service-header beneath it. The plain text version
+       used previously was a hair shorter than the service header's
+       pill-shaped count badge, which made every panel header look
+       slightly squished. */
     flex-shrink: 0;
-    font-size: 10px;
+    font-size: 11px;
     color: var(--bowire-text-tertiary);
+    background: var(--bowire-surface);
+    padding: 1px 6px;
+    border-radius: var(--bowire-radius-pill);
+    font-weight: 500;
     font-variant-numeric: tabular-nums;
+}
+
+/* Connection toggle on the right edge of every source-panel header.
+   Replaces the older status-only dot — clicking now also flips the
+   discovery state for that URL (connected → disconnect & drop the
+   URL's services from the tree; disconnected → re-fetch and splice
+   them back in). State-colour comes from the shared
+   .bowire-conn-pill-<state> classes used by the statusbar pill, so
+   green/amber/red/grey stay in sync between the two surfaces. */
+.bowire-source-panel-conn-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    padding: 0;
+    background: transparent;
+    border: none;
+    border-radius: var(--bowire-radius-sm);
+    color: var(--bowire-text-tertiary);
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: background var(--bowire-transition), color var(--bowire-transition);
+}
+.bowire-source-panel-conn-btn svg {
+    /* Match the rotated statusbar plug so the icon reads as the
+       same affordance on both surfaces. */
+    width: 12px;
+    height: 12px;
+    transform: rotate(90deg);
+}
+.bowire-source-panel-conn-btn:hover {
+    background: var(--bowire-surface-hover);
+    color: var(--bowire-text);
+}
+.bowire-source-panel-conn-btn.bowire-conn-pill-connected { color: #22c55e; }
+.bowire-source-panel-conn-btn.bowire-conn-pill-error     { color: var(--bowire-error); }
+.bowire-source-panel-conn-btn.bowire-conn-pill-connecting,
+.bowire-source-panel-conn-btn.bowire-conn-pill-partial    { color: #f59e0b; }
+.bowire-source-panel-conn-btn.bowire-conn-pill-connecting svg {
+    animation: bowire-conn-pulse 1.2s ease-in-out infinite;
 }
 
 .bowire-source-panel-body {
     display: flex;
     flex-direction: column;
-    padding: 2px 0 4px;
+    /* No vertical padding — the user wants the tree rows to sit
+       flush with the panel header above and the next panel below.
+       The header's own 8 px padding gives the breathing room; an
+       extra 2/4 px inside the body just looked like a stray margin
+       around the tree. */
     border-top: 1px solid var(--bowire-border-subtle, var(--bowire-border));
 }
 .bowire-source-panel-body.collapsed {
@@ -3893,16 +3970,8 @@ full text color
     background: var(--bowire-sidebar-hover);
 }
 
-.bowire-service-chevron {
-    width: 12px;
-    height: 12px;
-    transition: transform var(--bowire-transition);
-    flex-shrink: 0;
-}
-
-.bowire-service-chevron.expanded {
-    transform: rotate(90deg);
-}
+/* .bowire-service-chevron rules live in the shared block higher up
+   alongside .bowire-source-panel-chevron — one source of truth. */
 
 .bowire-service-name {
     flex: 1;
@@ -3933,13 +4002,13 @@ full text color
     display: flex;
     align-items: center;
     gap: 8px;
-    padding: 10px 16px 10px 32px;
+    /* 8 px vertical padding matches .bowire-service-header and
+       .bowire-source-panel-header so every tree row reads at the
+       same height. 32 px on the left preserves the hierarchy
+       indent under the service header. */
+    padding: 8px 16px 8px 32px;
     cursor: pointer;
-    /* Spring-eased transition on background + transform so hover
-       reads as the row leaning forward, not a flat color swap.
-       transform is overridden to none on .active so the selected
-       row stays anchored even if the cursor passes over it again. */
-    transition: background var(--bowire-transition), transform var(--bowire-transition);
+    transition: background var(--bowire-transition);
     /* Accent stripe + glow on .active are drawn via inset box-shadow
        so they don't widen the box (a real border-left would push the
        background-fill right by 3 px and the active row would read
@@ -3949,7 +4018,11 @@ full text color
 
 .bowire-method-item:not(.active):hover {
     background: var(--bowire-sidebar-hover);
-    transform: translateX(2px);
+    /* No translateX on hover — it left a 2 px gap between the
+       sidebar's left edge and the hover background, which read as
+       an indent compared to the .bowire-service-header hover above
+       (that one fills flush). Background-only feedback keeps the
+       row anchored. */
 }
 
 .bowire-method-item.active {

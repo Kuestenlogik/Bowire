@@ -246,6 +246,38 @@
     // (migration for workspaces saved before this feature shipped).
     serverUrls.forEach(ensureAliasForUrl);
 
+    // Toggle the discovery connection for a single source URL. Used
+    // by the plug button on each source-panel header in the discover
+    // tree. Connected → drop the URL's services from the in-memory
+    // list and flag the URL as disconnected. Disconnected / error /
+    // first-run → kick off a fresh fetchServicesForUrl and splice
+    // the returned services back into the list when it resolves.
+    function toggleSourceConnection(url) {
+        if (!url) return;
+        var st = connectionStatuses[url] || 'disconnected';
+        if (st === 'connected' || st === 'connecting') {
+            connectionStatuses[url] = 'disconnected';
+            if (Array.isArray(services)) {
+                services = services.filter(function (s) { return s.originUrl !== url; });
+            }
+            render();
+            return;
+        }
+        connectionStatuses[url] = 'connecting';
+        render();
+        if (typeof fetchServicesForUrl !== 'function') return;
+        Promise.resolve(fetchServicesForUrl(url)).then(function (fresh) {
+            if (!Array.isArray(services)) services = [];
+            services = services.filter(function (s) { return s.originUrl !== url; });
+            if (Array.isArray(fresh) && fresh.length) {
+                services = services.concat(fresh);
+            }
+            render();
+        }).catch(function () {
+            render();
+        });
+    }
+
     // Backwards-compat aliases for code paths that haven't been refactored yet
     function getPrimaryServerUrl() { return serverUrls.length > 0 ? serverUrls[0] : ''; }
 
