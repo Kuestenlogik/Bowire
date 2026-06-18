@@ -88,6 +88,93 @@
         return bar;
     }
 
+    // MudBlazor-style responsive app drawer. Always rendered into
+    // the layout; visibility is driven by the `is-open` class so
+    // morphdom can keep the panel node stable across toggles (slide
+    // transitions stay smooth, listeners survive). The B/burger
+    // brand-mark button toggles appDrawerOpen.
+    function renderAppDrawer() {
+        var shell = el('div', {
+            id: 'bowire-app-drawer',
+            className: 'bowire-app-drawer' + (appDrawerOpen ? ' is-open' : ''),
+            'aria-hidden': appDrawerOpen ? 'false' : 'true'
+        });
+        var backdrop = el('div', {
+            className: 'bowire-app-drawer-backdrop',
+            onClick: function () {
+                appDrawerOpen = false;
+                render();
+            }
+        });
+        var panel = el('aside', {
+            className: 'bowire-app-drawer-panel',
+            role: 'navigation',
+            'aria-label': 'Main menu',
+            tabIndex: -1,
+            onKeydown: function (e) {
+                if (e.key === 'Escape') {
+                    e.preventDefault();
+                    appDrawerOpen = false;
+                    render();
+                }
+            }
+        });
+        // Header — title + close button. Matches the brand strip in
+        // the topbar so the drawer reads as the "open" version of the
+        // same affordance.
+        panel.appendChild(el('div', { className: 'bowire-app-drawer-header' },
+            el('div', { className: 'bowire-app-drawer-title', textContent: config.title || 'Bowire' }),
+            el('button', {
+                type: 'button',
+                className: 'bowire-app-drawer-close',
+                title: 'Close menu',
+                'aria-label': 'Close menu',
+                innerHTML: svgIcon('close'),
+                onClick: function () {
+                    appDrawerOpen = false;
+                    render();
+                }
+            })
+        ));
+        // Nav list — every rail mode (including the ones hidden from
+        // the activity rail like Collections / Environments) so the
+        // drawer is a complete navigational index. Active mode gets
+        // is-active for visual feedback.
+        var navList = el('nav', { className: 'bowire-app-drawer-list' });
+        if (typeof _railModes !== 'undefined' && Array.isArray(_railModes)) {
+            _railModes.forEach(function (m) {
+                navList.appendChild(el('button', {
+                    type: 'button',
+                    className: 'bowire-app-drawer-item' + (railMode === m.id ? ' is-active' : ''),
+                    onClick: function () {
+                        try { railMode = m.id; } catch { /* let-shadow */ }
+                        try { localStorage.setItem('bowire_rail_mode', m.id); } catch { /* ignore */ }
+                        appDrawerOpen = false;
+                        render();
+                    }
+                },
+                    el('span', { className: 'bowire-app-drawer-item-icon', innerHTML: svgIcon(m.icon) }),
+                    el('span', { className: 'bowire-app-drawer-item-label', textContent: m.label })
+                ));
+            });
+        }
+        panel.appendChild(navList);
+        shell.appendChild(backdrop);
+        shell.appendChild(panel);
+        // Focus the panel when it opens so Escape works without the
+        // user clicking first. We do this in rAF so the node is in
+        // the DOM before we touch focus.
+        if (appDrawerOpen) {
+            requestAnimationFrame(function () {
+                var p = document.querySelector('.bowire-app-drawer-panel');
+                if (p && document.activeElement !== p) {
+                    try { p.focus({ preventScroll: true }); } catch { /* older browsers */ }
+                }
+            });
+        }
+        return shell;
+    }
+
     function render() {
         const app = document.getElementById('bowire-app');
         if (!app) return;
@@ -341,6 +428,14 @@
         // button, plus future ambient indicators (hint count, save
         // state, workspace name).
         next.appendChild(renderStatusBar());
+
+        // MudBlazor-style responsive app drawer. Mounted last so its
+        // fixed-position panel + backdrop sit on top of every other
+        // surface. Hidden via display: none when closed (keeping the
+        // element in the tree so morphdom doesn't need to recreate it
+        // on every open/close).
+        var drawer = renderAppDrawer();
+        if (drawer) next.appendChild(drawer);
 
         if (typeof window.morphdom === 'function') {
             window.morphdom(app, next, {
@@ -1397,16 +1492,13 @@
         );
         var logoBtn = el('button', {
             type: 'button',
-            className: 'bowire-logo-btn',
-            title: 'Home',
-            'aria-label': 'Go to Home',
+            className: 'bowire-logo-btn' + (typeof appDrawerOpen !== 'undefined' && appDrawerOpen ? ' is-open' : ''),
+            title: 'Menu',
+            'aria-label': 'Open menu',
+            'aria-expanded': (typeof appDrawerOpen !== 'undefined' && appDrawerOpen) ? 'true' : 'false',
             onClick: function () {
-                if (typeof railMode !== 'undefined') {
-                    try { railMode = 'home'; } catch { /* let-shadow */ }
-                    try { localStorage.setItem('bowire_rail_mode', 'home'); } catch { /* ignore */ }
-                }
-                if (typeof selectedMethod !== 'undefined') {
-                    try { selectedMethod = null; } catch { /* let-shadow */ }
+                if (typeof appDrawerOpen !== 'undefined') {
+                    try { appDrawerOpen = !appDrawerOpen; } catch { /* let-shadow */ }
                 }
                 if (typeof render === 'function') render();
             }

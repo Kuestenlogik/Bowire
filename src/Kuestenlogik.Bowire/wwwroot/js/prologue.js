@@ -1072,6 +1072,11 @@
     // #139 — Home mode is the first-launch default. Returning users
     // restore their last-active mode from localStorage.
     let railMode = 'home';
+    // App-drawer (MudBlazor-style responsive). Toggled by the B/burger
+    // logo button. Slides in from the left, lists every rail mode +
+    // workspace/theme shortcuts. Closed by backdrop click, Esc or
+    // selecting a mode.
+    let appDrawerOpen = false;
     try { railMode = localStorage.getItem('bowire_rail_mode') || 'home'; } catch { /* ignore */ }
     // Boot migration — rail modes retired in favour of the Workspace-
     // detail pane (workspaces own their sources / collections /
