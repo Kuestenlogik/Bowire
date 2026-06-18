@@ -3207,6 +3207,80 @@ img.bowire-logo-icon {
     border-radius: 0;
 }
 
+/* Brand mark as a button: hover crossfades the B into a three-bar
+   burger glyph. Both layers are stacked inside the same 22 px box
+   that the logo column already reserves, so the topbar geometry
+   doesn't shift. The B-layer scales / rotates out while the burger
+   bars settle into place — gives the hover a tactile "snap" without
+   any layout reflow. Click jumps back to Home, mapped in
+   render-env-auth.js's onClick handler. */
+.bowire-logo-btn {
+    position: relative;
+    width: 22px;
+    height: 22px;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    cursor: pointer;
+    flex-shrink: 0;
+    color: var(--bowire-text);
+}
+.bowire-logo-btn:focus-visible {
+    outline: 2px solid var(--bowire-accent);
+    outline-offset: 2px;
+    border-radius: var(--bowire-radius-sm);
+}
+.bowire-logo-btn .bowire-logo-icon {
+    transition: opacity 180ms ease, transform 220ms cubic-bezier(0.4, 0, 0.2, 1);
+    transform-origin: center;
+}
+.bowire-logo-btn:hover .bowire-logo-icon {
+    opacity: 0;
+    transform: scale(0.6) rotate(-90deg);
+}
+.bowire-logo-burger {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 4px;
+    opacity: 0;
+    pointer-events: none;
+    transform: scale(0.6);
+    transition: opacity 180ms ease 60ms, transform 220ms cubic-bezier(0.4, 0, 0.2, 1) 60ms;
+}
+.bowire-logo-burger-bar {
+    /* Animate `width` instead of transform: scaleX. scaleX(1) plus
+       a 2 px-thick bar lands on subpixel rows often enough that the
+       middle bar reads thinner than the outer two on some zooms /
+       resolutions. Animating width keeps every bar pixel-aligned. */
+    width: 0;
+    height: 2px;
+    background: currentColor;
+    border-radius: 2px;
+    transition: width 260ms cubic-bezier(0.4, 0, 0.2, 1);
+    align-self: flex-start;
+    margin-left: 2px;
+}
+.bowire-logo-btn:hover .bowire-logo-burger {
+    opacity: 1;
+    transform: scale(1);
+}
+.bowire-logo-btn:hover .bowire-logo-burger-bar {
+    width: 18px;
+}
+.bowire-logo-btn:hover .bowire-logo-burger-bar:nth-child(1) {
+    transition-delay: 80ms;
+}
+.bowire-logo-btn:hover .bowire-logo-burger-bar:nth-child(2) {
+    transition-delay: 140ms;
+}
+.bowire-logo-btn:hover .bowire-logo-burger-bar:nth-child(3) {
+    transition-delay: 200ms;
+}
+
 .bowire-logo-text {
     font-size: 18px;
     font-weight: 700;
@@ -3723,6 +3797,7 @@ full text color
 
 /* Service-list scrollbar now inherits from the global * rule. */
 
+.bowire-service-group:last-child { margin-bottom: 0; }
 .bowire-service-group {
     margin-bottom: 4px;
     /* #120 — resolve `--bowire-protocol-<id>` into a local
@@ -3757,12 +3832,13 @@ full text color
 .bowire-service-group[data-protocol="asyncapi"] { --protocol-color: var(--bowire-protocol-asyncapi); }
 .bowire-service-group[data-protocol="proto"] { --protocol-color: var(--bowire-protocol-grpc); }
 
-/* Protocol-tinted service-icon inside the group header. Inherits the
-   group's --protocol-color so the icon reads in the protocol's hue
-   instead of the neutral text-secondary baseline. */
-.bowire-service-group .bowire-service-proto-icon {
-    color: var(--protocol-color);
-}
+/* Protocol icon stays in the neutral header colour (inherits from
+   .bowire-service-header → --bowire-text-secondary). The earlier
+   per-protocol tint (#120) was retired alongside the left-edge
+   protocol stripe and direction-axis rails — the icon glyph alone
+   is enough to read the protocol type without another colour layer
+   competing with the rest of the tree. The --protocol-color token
+   resolution above stays so any future surface can reach the hue. */
 
 /* Source header above each block of services that share an
    originUrl — keeps multi-URL setups readable. Pattern: small
@@ -3893,6 +3969,36 @@ full text color
     border-radius: var(--bowire-radius-pill);
     font-weight: 500;
     font-variant-numeric: tabular-nums;
+}
+
+/* Refresh button — sits left of the connection toggle on each
+   source-panel header. One-shot re-discovery for this URL via
+   refreshSourceServices(); leaves the connection state alone but
+   flips the spinner during the fetch (connecting class on the
+   plug button takes care of that). Shape mirrors the conn-btn so
+   the pair reads as a paired control cluster. */
+.bowire-source-panel-refresh-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    padding: 0;
+    background: transparent;
+    border: none;
+    border-radius: var(--bowire-radius-sm);
+    color: var(--bowire-text-tertiary);
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: background var(--bowire-transition), color var(--bowire-transition);
+}
+.bowire-source-panel-refresh-btn svg {
+    width: 12px;
+    height: 12px;
+}
+.bowire-source-panel-refresh-btn:hover {
+    background: var(--bowire-surface-hover);
+    color: var(--bowire-text);
 }
 
 /* Connection toggle on the right edge of every source-panel header.
@@ -4681,18 +4787,19 @@ only an accent-coloured underline under the active tab. The whole
     height: 100%;
 }
 
-/* Protocol-icon badge in front of every service-group header in
-   the sidebar — only shown when the host has more than one
-   plugin loaded (rendered conditionally in render-sidebar.js).
-   Sized to match the chevron + service-name baseline so the row
-   reads as one tight cluster. */
+/* Protocol-icon badge — trails the service name on the right side
+   of every service-group header (was leading; moved per user
+   request). Only shown when the host has more than one plugin
+   loaded (rendered conditionally in render-sidebar.js). Sized to
+   match the count-pill baseline so the row's right cluster reads
+   as one tight unit; the .bowire-service-header's flex gap handles
+   the spacing, so no margin-right is needed. */
 .bowire-service-proto-icon {
     display: inline-flex;
     align-items: center;
     justify-content: center;
     width: 14px;
     height: 14px;
-    margin-right: 6px;
     flex-shrink: 0;
     color: var(--bowire-text-tertiary);
     opacity: 0.85;
@@ -4810,21 +4917,173 @@ only an accent-coloured underline under the active tab. The whole
     text-overflow: ellipsis;
 }
 
-.bowire-header-badge {
+/* Inline variant — path sits next to the verb chip in the header
+   right cluster instead of stacking as a third line under the
+   method name. Reads as "PUT /pet" so the operator gets a single
+   address tag. Truncates with ellipsis on narrow widths; the full
+   path stays available via the title tooltip. user-select is off
+   because the only interaction is double-click-to-copy — leaving
+   the text marked afterwards looks like a glitchy half-selection. */
+.bowire-header-path-inline {
+    margin-top: 0;
+    font-size: 12px;
+    color: var(--bowire-text-secondary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 240px;
+    flex-shrink: 1;
+    min-width: 0;
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+.bowire-header-proto-icon {
+    /* Same neutral colour the tree's protocol icon uses (the per-
+       protocol tint was retired earlier on user feedback). Sized
+       to match the verb-chip baseline so the pair reads as one
+       cluster. */
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    padding: 0;
+    background: transparent;
+    border: none;
+    border-radius: var(--bowire-radius-sm);
+    flex-shrink: 0;
+    color: var(--bowire-text-tertiary);
+    opacity: 0.85;
+}
+.bowire-header-proto-icon-clickable {
+    cursor: pointer;
+    transition: background var(--bowire-transition), color var(--bowire-transition), opacity var(--bowire-transition);
+}
+.bowire-header-proto-icon-clickable:hover {
+    background: var(--bowire-surface-hover);
+    color: var(--bowire-text);
+    opacity: 1;
+}
+.bowire-header-proto-icon svg {
+    width: 14px;
+    height: 14px;
+}
+
+/* Recent-calls popup that opens from the header's protocol icon.
+   Anchors to body via JS-positioning so the drawer's overflow
+   doesn't clip it. */
+.bowire-header-recent-popup {
+    position: fixed;
+    max-width: min(420px, calc(100vw - 32px));
+    max-height: min(60vh, 480px);
+    padding: 10px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    background: var(--bowire-bg-elevated);
+    border: 1px solid var(--bowire-border);
+    border-radius: var(--bowire-radius-md);
+    box-shadow: var(--bowire-shadow-lg);
+    z-index: 10030;
+}
+.bowire-header-recent-popup-title {
     font-size: 11px;
     font-weight: 600;
+    color: var(--bowire-text-tertiary);
     text-transform: uppercase;
-    letter-spacing: 0.05em;
-    padding: 4px 10px;
+    letter-spacing: 0.04em;
+}
+.bowire-header-recent-popup-empty {
+    font-size: 12px;
+    color: var(--bowire-text-tertiary);
+    padding: 6px 0;
+}
+.bowire-header-recent-popup-list {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    overflow-y: auto;
+    min-height: 0;
+}
+.bowire-header-recent-popup-row {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    padding: 6px 8px;
+    background: transparent;
+    border: none;
     border-radius: var(--bowire-radius-sm);
+    color: var(--bowire-text);
+    text-align: left;
+    font-size: 12px;
+    cursor: pointer;
+    transition: background var(--bowire-transition);
+}
+.bowire-header-recent-popup-row:hover {
+    background: var(--bowire-surface-hover);
+}
+.bowire-header-recent-popup-row.is-error {
+    color: var(--bowire-error);
+}
+.bowire-header-recent-popup-method {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.bowire-header-recent-popup-meta {
+    font-size: 11px;
+    color: var(--bowire-text-tertiary);
+    font-variant-numeric: tabular-nums;
+    flex-shrink: 0;
+}
+.bowire-header-recent-popup-close {
+    align-self: flex-end;
+    padding: 4px 12px;
+    font-size: 12px;
+    background: transparent;
+    color: var(--bowire-text-secondary);
+    border: none;
+    border-radius: var(--bowire-radius-sm);
+    cursor: pointer;
+}
+.bowire-header-recent-popup-close:hover {
+    background: var(--bowire-surface-hover);
+    color: var(--bowire-text);
+}
+
+.bowire-header-badge {
+    /* Match the tree's .bowire-method-badge — pill shape, same
+       palette per HTTP verb / method type. The header badge is a
+       bigger sibling of the tree chip so the operator's eye lands
+       on the same affordance in both places (same verb = same
+       colour + pill shape, just slightly larger). */
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 4px 11px;
+    border-radius: var(--bowire-radius-pill);
     color: white;
     flex-shrink: 0;
+    min-width: 42px;
+    text-align: center;
 }
 
 .bowire-header-badge[data-type="Unary"] { background: var(--bowire-badge-unary); }
 .bowire-header-badge[data-type="ServerStreaming"] { background: var(--bowire-badge-server); }
 .bowire-header-badge[data-type="ClientStreaming"] { background: var(--bowire-badge-client); }
 .bowire-header-badge[data-type="Duplex"] { background: var(--bowire-badge-duplex); }
+
+/* HTTP verb colors — keep in sync with .bowire-method-badge so
+   the tree row and the header read as the same chip family. */
+.bowire-header-badge[data-type="HTTP_GET"]     { background: #10b981; } /* green */
+.bowire-header-badge[data-type="HTTP_POST"]    { background: #3b82f6; } /* blue */
+.bowire-header-badge[data-type="HTTP_PUT"]     { background: #f59e0b; } /* orange */
+.bowire-header-badge[data-type="HTTP_PATCH"]   { background: #8b5cf6; } /* purple */
+.bowire-header-badge[data-type="HTTP_DELETE"]  { background: #ef4444; min-width: 50px; } /* red */
+.bowire-header-badge[data-type="HTTP_HEAD"]    { background: #6b7280; } /* gray */
+.bowire-header-badge[data-type="HTTP_OPTIONS"] { background: #6b7280; min-width: 60px; }
 
 /* ---------- Request Tab Bar ---------- */
 .bowire-request-tabs {
@@ -4979,27 +5238,22 @@ lives at the right of the
 }
 .bowire-request-tab-new svg { width: 14px; height: 14px; }
 
+/* Tab proto chip — uses .bowire-method-badge for full pill shape +
+   HTTP verb palette (same chip family as the tree). Only tweak the
+   tab-specific sizing here so the verb chip fits inside the tab
+   strip without stretching it. */
 .bowire-request-tab-proto {
     font-size: 9px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-    padding: 1px 5px;
-    border-radius: var(--bowire-radius-sm);
-    color: white;
-    flex-shrink: 0;
+    padding: 2px 7px;
+    min-width: 26px;
     line-height: 1.4;
 }
 
-.bowire-request-tab-proto[data-type="Unary"] { background: var(--bowire-badge-unary); }
-.bowire-request-tab-proto[data-type="ServerStreaming"] { background: var(--bowire-badge-server); }
-.bowire-request-tab-proto[data-type="ClientStreaming"] { background: var(--bowire-badge-client); }
-.bowire-request-tab-proto[data-type="Duplex"] { background: var(--bowire-badge-duplex); }
-.bowire-request-tab-proto[data-type^="HTTP_"] { background: var(--bowire-badge-unary); }
-
 .bowire-request-tab-name {
+    flex: 1;
     overflow: hidden;
     text-overflow: ellipsis;
+    white-space: nowrap;
     min-width: 0;
 }
 
@@ -5266,6 +5520,52 @@ response below.
     bottom: 100%;
     margin-top: 0;
     margin-bottom: 4px;
+}
+
+/* Split-button: a primary action button glued to a caret button
+   that opens a dropdown menu. Used on the response-pane Copy
+   button — Copy = raw response, caret = protocol-aware code
+   snippets (curl / grpcurl / wscat / fetch / …). The two halves
+   sit flush so they read as one control; only the inner edges of
+   the seam get rounded off. */
+.bowire-split-btn-wrap {
+    position: relative;
+    display: inline-flex;
+    align-items: stretch;
+}
+.bowire-split-btn-main {
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+    border-right-width: 0;
+}
+.bowire-split-btn-caret {
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+    padding-left: 8px;
+    padding-right: 8px;
+    min-width: 0;
+}
+.bowire-split-btn-caret:focus,
+.bowire-split-btn-main:focus {
+    z-index: 1;
+}
+.bowire-split-btn-wrap .bowire-dropdown-menu {
+    /* Anchor on the right edge of the wrap so the menu opens to
+       the left into the response pane instead of clipping off the
+       right side of the viewport — the buttons sit at the right
+       end of the pane header. */
+    right: 0;
+    left: auto;
+}
+.bowire-dropdown-separator {
+    height: 1px;
+    margin: 4px 0;
+    background: var(--bowire-border);
+}
+.bowire-dropdown-item-disabled {
+    color: var(--bowire-text-tertiary);
+    cursor: default;
+    pointer-events: none;
 }
 
 .bowire-dropdown-item {
@@ -7780,7 +8080,12 @@ instead of having to
 .bowire-header-addto-menu {
     position: absolute;
     top: calc(100% + 6px);
-    left: 0;
+    /* Anchor on the right edge of the button so the dropdown opens
+       leftward into the visible viewport. The button sits in the
+       header's right cluster, so a left-anchored menu (left: 0)
+       slid 240 px off the right edge of the window. */
+    right: 0;
+    left: auto;
     z-index: 60;
     min-width: 240px;
     max-width: 320px;
@@ -7847,6 +8152,194 @@ instead of having to
     background: transparent;
 }
 
+/* Preset picker in the method header. Sits next to the favorite
+   star and shares the same icon-button footprint as the add-to
+   trigger — sized via the shared header-tool rule so styling stays
+   consistent across the cluster. The count badge is a small chip
+   tucked against the icon. */
+.bowire-header-presets-wrap {
+    position: relative;
+    display: inline-flex;
+    margin-left: 2px;
+}
+.bowire-header-presets-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    height: 26px;
+    padding: 0 6px;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: var(--bowire-radius-sm);
+    color: var(--bowire-text-tertiary);
+    cursor: pointer;
+    transition: color var(--bowire-transition), background var(--bowire-transition), border-color var(--bowire-transition);
+}
+.bowire-header-presets-btn:hover,
+.bowire-header-presets-btn.active {
+    background: var(--bowire-surface-hover);
+    border-color: var(--bowire-border);
+    color: var(--bowire-text);
+}
+.bowire-header-presets-btn svg {
+    width: 14px;
+    height: 14px;
+}
+.bowire-header-presets-count {
+    font-size: 11px;
+    line-height: 1;
+    padding: 2px 5px;
+    border-radius: 9px;
+    background: var(--bowire-surface-alt);
+    color: var(--bowire-text-secondary);
+}
+.bowire-header-presets-menu {
+    position: fixed;
+    z-index: 1100;
+    min-width: 260px;
+    max-width: 360px;
+    background: var(--bowire-surface);
+    border: 1px solid var(--bowire-border);
+    border-radius: var(--bowire-radius);
+    box-shadow: var(--bowire-shadow-lg);
+    padding: 4px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+.bowire-header-presets-title {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--bowire-text-tertiary);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 6px 8px 4px;
+}
+.bowire-header-presets-row {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    border-radius: var(--bowire-radius-sm);
+    position: relative;
+}
+.bowire-header-presets-row:hover {
+    background: var(--bowire-surface-hover);
+}
+.bowire-header-presets-default,
+.bowire-header-presets-tocol,
+.bowire-header-presets-delete {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    border: none;
+    background: transparent;
+    color: var(--bowire-text-tertiary);
+    border-radius: var(--bowire-radius-sm);
+    cursor: pointer;
+}
+.bowire-header-presets-default:hover,
+.bowire-header-presets-tocol:hover,
+.bowire-header-presets-delete:hover {
+    color: var(--bowire-text);
+    background: var(--bowire-surface-alt);
+}
+.bowire-header-presets-default.is-on {
+    color: var(--bowire-accent);
+}
+.bowire-header-presets-default svg,
+.bowire-header-presets-tocol svg {
+    width: 14px;
+    height: 14px;
+}
+.bowire-header-presets-delete {
+    font-size: 18px;
+    line-height: 1;
+}
+.bowire-header-presets-apply {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    padding: 6px 8px;
+    border: none;
+    background: transparent;
+    color: var(--bowire-text);
+    text-align: left;
+    cursor: pointer;
+    border-radius: var(--bowire-radius-sm);
+    font: inherit;
+}
+.bowire-header-presets-name {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.bowire-header-presets-collist {
+    position: absolute;
+    top: 100%;
+    right: 26px;
+    z-index: 1;
+    margin-top: 2px;
+    min-width: 180px;
+    background: var(--bowire-surface);
+    border: 1px solid var(--bowire-border);
+    border-radius: var(--bowire-radius);
+    box-shadow: var(--bowire-shadow);
+    padding: 4px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+.bowire-header-presets-collist-empty {
+    padding: 8px;
+    font-size: 12px;
+    color: var(--bowire-text-tertiary);
+    text-align: center;
+}
+.bowire-header-presets-collist-row {
+    text-align: left;
+    border: none;
+    background: transparent;
+    color: var(--bowire-text);
+    padding: 6px 8px;
+    border-radius: var(--bowire-radius-sm);
+    cursor: pointer;
+    font: inherit;
+}
+.bowire-header-presets-collist-row:hover {
+    background: var(--bowire-surface-hover);
+}
+.bowire-header-presets-empty {
+    padding: 8px;
+    font-size: 12px;
+    color: var(--bowire-text-tertiary);
+    text-align: center;
+}
+.bowire-header-presets-sep {
+    height: 1px;
+    background: var(--bowire-border);
+    margin: 4px 0;
+}
+.bowire-header-presets-manage {
+    width: 100%;
+    text-align: left;
+    border: none;
+    background: transparent;
+    color: var(--bowire-text-secondary);
+    padding: 6px 8px;
+    border-radius: var(--bowire-radius-sm);
+    cursor: pointer;
+    font: inherit;
+}
+.bowire-header-presets-manage:hover {
+    background: var(--bowire-surface-hover);
+    color: var(--bowire-text);
+}
+
 /* #114 — inline hint chip at the method header. Small accent pill
    between the method badge and the copy-URL button. The hint count
    lives in the chip; the full hint texts are still listed in the
@@ -7886,24 +8379,30 @@ not as a pill + button
 }
 
 /* Copy invoke URL button in the method header */
+/* Sized + coloured to match the favorite-star / add-to / preset
+   triggers in the same cluster — otherwise the icon-row reads as a
+   mismatched stack of buttons (different padding, dimmer tone). */
 .bowire-header-copy-url {
-    background: none;
-    border: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    padding: 0;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: var(--bowire-radius-sm);
     color: var(--bowire-text-tertiary);
     cursor: pointer;
-    padding: 4px;
-    display: inline-flex;
-    width: 20px;
-    height: 20px;
-    opacity: 0.5;
-    transition: opacity var(--bowire-transition), color var(--bowire-transition);
-    margin-left: 8px;
+    transition: color var(--bowire-transition), background var(--bowire-transition), border-color var(--bowire-transition);
+    margin-left: 2px;
 }
 .bowire-header-copy-url:hover {
-    opacity: 1;
-    color: var(--bowire-accent);
+    background: var(--bowire-surface-hover);
+    border-color: var(--bowire-border);
+    color: var(--bowire-text);
 }
-.bowire-header-copy-url svg { width: 100%; height: 100%; }
+.bowire-header-copy-url svg { width: 14px; height: 14px; }
 
 /* Breadcrumb navigation: Protocol > Service. Sits inside .bowire-header-info
  * stacked above the method-name title — it provides the navigational
@@ -12039,13 +12538,13 @@ subtler
     height: 24px;
     padding: 0 10px;
     background: transparent;
-    border: 1px solid var(--bowire-border);
+    border: none;
     border-radius: var(--bowire-radius-sm);
     color: var(--bowire-text-secondary);
     font-size: 11px;
     cursor: pointer;
     font-family: var(--bowire-font-sans);
-    transition: all var(--bowire-transition);
+    transition: background var(--bowire-transition), color var(--bowire-transition);
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -12054,7 +12553,6 @@ subtler
 .bowire-console-clear:hover {
     background: var(--bowire-sidebar-hover);
     color: var(--bowire-text);
-    border-color: var(--bowire-accent);
 }
 
 .bowire-console-body {
@@ -12077,10 +12575,308 @@ subtler
     border-left: 3px solid transparent;
     padding: 0 14px;
     transition: background var(--bowire-transition);
+    display: flex;
+    align-items: flex-start;
+    gap: 6px;
+    user-select: none;
+    /* Whole-row hit target — anywhere along the strip selects this
+       entry, not just the text-bearing summary in the middle. */
+    cursor: pointer;
 }
 
 .bowire-console-row:hover {
     background: var(--bowire-sidebar-hover);
+}
+.bowire-console-row.selected {
+    background: var(--bowire-accent-subtle);
+}
+
+/* .bowire-console-row-select was the per-row checkbox; selection is
+   now click-driven (plain / ctrl-click / shift-click) so no markup
+   here. Rule kept as a doc breadcrumb. */
+
+/* Hover-revealed action cluster on the row right edge. Both the
+   expand-toggle and the copy button stay hidden by default to keep
+   the row chrome calm, fade in on row hover/focus, and stay
+   visible once focused so keyboard users can reach them. The
+   first action in the pair (expand toggle) carries margin-left:
+   auto so the cluster snaps right; the second one (copy) just
+   sits next to it. */
+.bowire-console-row-expand,
+.bowire-console-row-copy {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    padding: 0;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: var(--bowire-radius-sm);
+    color: var(--bowire-text-tertiary);
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity var(--bowire-transition), background var(--bowire-transition), color var(--bowire-transition);
+    flex-shrink: 0;
+}
+.bowire-console-row-expand {
+    margin-left: auto;
+    font-size: 14px;
+    line-height: 1;
+    font-weight: 600;
+}
+.bowire-console-row-copy svg { width: 13px; height: 13px; }
+.bowire-console-row:hover .bowire-console-row-expand,
+.bowire-console-row:hover .bowire-console-row-copy,
+.bowire-console-row-expand:focus-visible,
+.bowire-console-row-copy:focus-visible {
+    opacity: 1;
+}
+.bowire-console-row-expand:hover,
+.bowire-console-row-copy:hover {
+    background: var(--bowire-surface-hover);
+    color: var(--bowire-text);
+}
+
+/* Console drawer wrap — toolbar pinned at top, scrolling body
+   below. Toolbar carries the type pills, time-window selector,
+   selection counter, download / clear / pin buttons. */
+.bowire-console-drawer-wrap {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-height: 0;
+}
+
+.bowire-console-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 6px 12px;
+    border-bottom: 1px solid var(--bowire-border-subtle, var(--bowire-border));
+    background: var(--bowire-bg-elevated);
+    flex-shrink: 0;
+    flex-wrap: wrap;
+}
+.bowire-console-toolbar-group {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+.bowire-console-toolbar-label {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--bowire-text-tertiary);
+}
+/* Console filter chips — active filters appear as removable chips
+   inline in the drawer header (between the title and the action
+   cluster). The trigger button that opens the add-filter menu
+   lives in the action cluster as a funnel-icon button. Matches
+   the bowire.io marketing site's "Add protocols" chip layout. */
+.bowire-console-filter-chips {
+    display: inline-flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 4px;
+    flex: 1;
+    min-width: 0;
+}
+/* Filter bar sits below the drawer header and above the console
+   body. Toggled by the funnel button in the header action cluster.
+   Hosts the chips for structured filters (type / time window) +
+   a free-text search input. Chips and input share the same row so
+   the user can backspace from the empty input to pop the most
+   recent chip — the standard token-input pattern. */
+.bowire-console-filterbar {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex-wrap: wrap;
+    padding: 6px 12px;
+    border-bottom: 1px solid var(--bowire-border-subtle, var(--bowire-border));
+    background: var(--bowire-bg-elevated);
+    flex-shrink: 0;
+}
+.bowire-console-filterbar-input {
+    flex: 1;
+    min-width: 140px;
+    height: 24px;
+    padding: 0 8px;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: var(--bowire-text);
+    font-size: 12px;
+    font-family: var(--bowire-font-sans);
+}
+.bowire-console-filterbar-input::placeholder {
+    color: var(--bowire-text-tertiary);
+}
+.bowire-console-filterbar-input:focus {
+    /* Match the chip ring so the operator's eye reads the input as
+       part of the same token cluster. */
+    box-shadow: none;
+}
+.bowire-console-filterbar-clear {
+    height: 22px;
+    padding: 0 10px;
+    background: transparent;
+    border: none;
+    border-radius: var(--bowire-radius-sm);
+    color: var(--bowire-text-tertiary);
+    font-size: 11px;
+    cursor: pointer;
+    transition: color var(--bowire-transition), background var(--bowire-transition);
+}
+.bowire-console-filterbar-clear:hover {
+    color: var(--bowire-text);
+    background: var(--bowire-surface-hover);
+}
+.bowire-console-filter-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 4px 2px 8px;
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--bowire-accent);
+    background: var(--bowire-accent-subtle);
+    border: 1px solid var(--bowire-accent);
+    border-radius: var(--bowire-radius-pill);
+}
+.bowire-console-filter-chip-label {
+    line-height: 1;
+}
+.bowire-console-filter-chip-remove {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    height: 16px;
+    padding: 0;
+    background: transparent;
+    border: none;
+    border-radius: 50%;
+    color: var(--bowire-accent);
+    cursor: pointer;
+    font-size: 14px;
+    line-height: 1;
+    transition: background var(--bowire-transition), color var(--bowire-transition);
+}
+.bowire-console-filter-chip-remove:hover {
+    background: var(--bowire-accent);
+    color: white;
+}
+.bowire-console-filter-add {
+    position: relative;
+    display: inline-flex;
+}
+/* Filter-add trigger is just the funnel-icon variant of the
+   border-free .bowire-console-toolbar-btn now — sizing comes from
+   that rule. Keep a small icon-only width so the funnel sits next
+   to the pin button without extra horizontal padding. */
+.bowire-console-filter-add-btn {
+    width: 24px;
+    padding: 0;
+}
+.bowire-console-filter-add-btn svg {
+    width: 13px;
+    height: 13px;
+}
+.bowire-console-filter-add .bowire-dropdown-menu {
+    top: 100%;
+    left: 0;
+    margin-top: 4px;
+    /* The console drawer sits at the bottom of the viewport with a
+       stack of panes above it (main content, response-pane, …) that
+       use z-index up to ~100. Hop well above them so the dropdown
+       lands on top regardless of which pane it crosses. */
+    z-index: 10010;
+    /* Cap to a reasonable height so the flip-up variant fits even
+       when the splitter is dragged close to the top of the viewport
+       — the menu becomes scrollable internally instead of clipping
+       behind the topbar. */
+    max-height: 60vh;
+    overflow-y: auto;
+}
+
+/* JS adds .flip-up when there isn't enough viewport room below the
+   trigger (the console drawer is anchored at the bottom of the
+   window, so the default downward menu lands clipped against the
+   page edge). Anchors the menu to the bottom edge of the trigger
+   instead so it opens upward into the console body. */
+.bowire-console-filter-add .bowire-dropdown-menu.flip-up {
+    top: auto;
+    bottom: 100%;
+    margin-top: 0;
+    margin-bottom: 4px;
+}
+.bowire-dropdown-menu-section {
+    padding: 4px 12px 2px;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--bowire-text-tertiary);
+}
+.bowire-console-toolbar-actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    margin-left: auto;
+}
+
+/* Consolidated action cluster in the drawer header — replaces the
+   old split between header (Clear + Close) and toolbar-right
+   (Pin + downloads + clear-selection + clear). One row, on the
+   right edge of the header, so the user finds every console
+   affordance in the same place. */
+.bowire-console-header-actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    margin-left: auto;
+}
+/* Border-free chrome to match the statusbar / topbar idiom — a
+   subtle hover background is the only chrome until the button is
+   active (.is-on) or focused. Keeps the console header reading as
+   an ambient strip instead of a fence of bordered chips. */
+.bowire-console-toolbar-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 24px;
+    padding: 0 8px;
+    font-size: 11px;
+    background: transparent;
+    color: var(--bowire-text-secondary);
+    border: none;
+    border-radius: var(--bowire-radius-sm);
+    cursor: pointer;
+    transition: background var(--bowire-transition), color var(--bowire-transition);
+}
+.bowire-console-toolbar-btn:hover {
+    color: var(--bowire-text);
+    background: var(--bowire-surface-hover);
+}
+.bowire-console-toolbar-btn:focus-visible {
+    outline: 2px solid var(--bowire-accent);
+    outline-offset: -2px;
+}
+.bowire-console-toolbar-btn.is-on {
+    color: var(--bowire-accent);
+    background: var(--bowire-accent-subtle);
+}
+.bowire-console-toolbar-btn svg {
+    width: 13px;
+    height: 13px;
+}
+.bowire-console-toolbar-selcount {
+    font-size: 10px;
+    color: var(--bowire-text-tertiary);
+    padding: 0 4px;
+    font-variant-numeric: tabular-nums;
 }
 
 .bowire-console-row.request { border-left-color: var(--bowire-info); }
@@ -12770,11 +13566,94 @@ subtler
     vertical-align: middle;
 }
 
+.bowire-header-summary-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 4px;
+    min-width: 0;
+}
 .bowire-header-summary {
     font-size: 12px;
     color: var(--bowire-text-secondary);
-    margin-top: 4px;
     line-height: 1.4;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    min-width: 0;
+    flex: 1;
+}
+.bowire-header-summary-expand {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 18px;
+    padding: 0;
+    background: transparent;
+    border: 1px solid var(--bowire-border);
+    border-radius: var(--bowire-radius-sm);
+    color: var(--bowire-text-tertiary);
+    font-size: 14px;
+    line-height: 1;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: background var(--bowire-transition), color var(--bowire-transition), border-color var(--bowire-transition);
+}
+.bowire-header-summary-expand:hover {
+    background: var(--bowire-surface-hover);
+    color: var(--bowire-text);
+    border-color: var(--bowire-text-tertiary);
+}
+
+/* Popup that shows the full description when the expand button
+   is clicked. Floats as a body-portal so it isn't clipped by the
+   header's overflow. */
+.bowire-header-summary-popup {
+    position: fixed;
+    top: 80px;
+    left: 50%;
+    transform: translateX(-50%);
+    max-width: min(640px, calc(100vw - 32px));
+    max-height: calc(100vh - 160px);
+    padding: 16px 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    background: var(--bowire-bg-elevated);
+    border: 1px solid var(--bowire-border);
+    border-radius: var(--bowire-radius-md);
+    box-shadow: var(--bowire-shadow-lg);
+    z-index: 10020;
+}
+.bowire-header-summary-popup-title {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--bowire-text-tertiary);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+.bowire-header-summary-popup-body {
+    font-size: 13px;
+    color: var(--bowire-text);
+    line-height: 1.5;
+    overflow-y: auto;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+.bowire-header-summary-popup-close {
+    align-self: flex-end;
+    padding: 4px 14px;
+    font-size: 12px;
+    background: var(--bowire-accent);
+    color: white;
+    border: none;
+    border-radius: var(--bowire-radius-sm);
+    cursor: pointer;
+}
+.bowire-header-summary-popup-close:hover {
+    background: var(--bowire-accent-hover, var(--bowire-accent));
+    opacity: 0.92;
 }
 
 /* Required asterisk on form labels — visible at a glance */

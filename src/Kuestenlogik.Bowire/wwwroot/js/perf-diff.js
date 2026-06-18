@@ -355,11 +355,11 @@
                 var connectBtn = el('button', {
                     id: 'bowire-channel-connect-btn',
                     className: 'bowire-execute-btn bowire-connect-btn',
+                    title: 'Connect (Ctrl+Enter)',
                     onClick: channelConnect
                 },
                     el('span', { innerHTML: svgIcon('connect'), style: 'width:14px;height:14px;display:flex' }),
-                    el('span', { textContent: 'Connect' }),
-                    el('span', { className: 'bowire-shortcut-hint', textContent: 'Ctrl+Enter' })
+                    el('span', { textContent: 'Connect' })
                 );
                 bar.appendChild(connectBtn);
             } else {
@@ -367,11 +367,11 @@
                 var sendBtn = el('button', {
                     id: 'bowire-channel-send-btn',
                     className: 'bowire-execute-btn bowire-send-btn',
+                    title: 'Send (Ctrl+Enter)',
                     onClick: channelSend
                 },
                     el('span', { innerHTML: svgIcon('send'), style: 'width:14px;height:14px;display:flex' }),
-                    el('span', { textContent: 'Send' }),
-                    el('span', { className: 'bowire-shortcut-hint', textContent: 'Ctrl+Enter' })
+                    el('span', { textContent: 'Send' })
                 );
                 bar.appendChild(sendBtn);
 
@@ -450,7 +450,8 @@
                 textContent: duplexConnected ? 'Ctrl+Enter to send' : 'Ctrl+Enter to connect'
             }));
 
-            bar.appendChild(renderConsoleToggleButton());
+            // Console button was here — retired, the statusbar console
+            // button at the bottom-right already owns this affordance.
             return bar;
         }
 
@@ -463,11 +464,14 @@
         const btn = el('button', {
             id: isExecuting && isStreaming ? 'bowire-action-stop-btn' : 'bowire-action-execute-btn',
             className: btnClass,
+            // Shortcut moved off the button face into the hover hint
+            // — the inline 'Ctrl+Enter' chip on the button itself was
+            // noise once the user knows the shortcut.
+            title: btnText + ' (Ctrl+Enter)',
             onClick: handleExecute
         },
             el('span', { innerHTML: btnIcon, style: 'width:14px;height:14px;display:flex' }),
-            el('span', { textContent: btnText }),
-            el('span', { className: 'bowire-shortcut-hint', textContent: 'Ctrl+Enter' })
+            el('span', { textContent: btnText })
         );
 
         if (isExecuting && !isStreaming) btn.disabled = true;
@@ -610,7 +614,8 @@
         }));
 
         bar.appendChild(renderRecordingToggleButton());
-        bar.appendChild(renderConsoleToggleButton());
+        // Console toggle retired from the action bar — same affordance
+        // lives in the statusbar at the bottom-right.
         return bar;
     }
 

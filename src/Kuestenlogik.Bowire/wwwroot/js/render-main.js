@@ -4043,25 +4043,238 @@
             // sat in a sibling row to the right of the toggle button, so a
             // short Protocol > Service trail and a short method name landed
             // on the same horizontal axis and overlapped at narrower widths.
+            // Path label — for REST the badge already shows the verb,
+            // so we only print the path (httpPath) to avoid a redundant
+            // "PUT /pet" + "PUT" pair. For other protocols
+            // (gRPC, GraphQL, …) httpPath isn't set; fall back to
+            // fullName so the operator still gets a service/method
+            // identifier here.
+            //
+            // The Protocol > Service breadcrumb line that used to lead
+            // the info column is gone — it read as filler ("REST › pet"
+            // duplicated the protocol chip + the service segment the
+            // user just clicked in the sidebar). The protocol icon
+            // moves to the right cluster as a small glyph next to the
+            // verb chip so the operator still sees which protocol
+            // they're invoking, just out of the info column.
+            // Path moved out of the info column and next to the
+            // verb chip on the right — REST verb + path read as
+            // one address ("PUT /pet"), and the info column shrinks
+            // to two lines (name + description) instead of three.
+            var pathLabel = selectedMethod.httpPath || selectedMethod.fullName || '';
             const info = el('div', { className: 'bowire-header-info' },
-                breadcrumb,
-                headerName,
-                el('div', { className: 'bowire-header-path', textContent: selectedMethod.fullName })
+                headerName
             );
-            // Optional one-line summary or first line of description
+            // Summary line — first line of the method's summary or
+            // description. When that line is too long for the
+            // available width it ellipsis-truncates via CSS; the
+            // full text is mirrored into the title attribute (native
+            // tooltip on hover) AND a "…" expand button next to the
+            // line opens a popup with the unabridged content so the
+            // operator can read multi-paragraph descriptions
+            // without leaving the header.
             var summary = selectedMethod.summary || selectedMethod.description;
             if (summary) {
-                var firstLine = String(summary).split('\n')[0].trim();
+                var fullText = String(summary).trim();
+                var firstLine = fullText.split('\n')[0].trim();
                 if (firstLine.length > 0) {
-                    info.appendChild(el('div', { className: 'bowire-header-summary', textContent: firstLine }));
+                    var summaryRow = el('div', { className: 'bowire-header-summary-row' });
+                    summaryRow.appendChild(el('span', {
+                        className: 'bowire-header-summary',
+                        textContent: firstLine,
+                        title: fullText
+                    }));
+                    // Show the expand button only when the full text
+                    // is meaningfully longer than the first line
+                    // (multi-paragraph, or a long single line). 80
+                    // chars is a coarse-but-reasonable cutoff that
+                    // matches the row width we hover-truncate at.
+                    var needsExpand = fullText.length > firstLine.length
+                        || firstLine.length > 80;
+                    if (needsExpand) {
+                        summaryRow.appendChild(el('button', {
+                            type: 'button',
+                            className: 'bowire-header-summary-expand',
+                            title: fullText,
+                            'aria-label': 'Show full description',
+                            textContent: '…',
+                            onClick: function (e) {
+                                e.stopPropagation();
+                                // Drop a previously-open popup if
+                                // any, then mount a fresh one
+                                // anchored to body so it isn't
+                                // clipped by the header's overflow.
+                                var prev = document.querySelector('.bowire-header-summary-popup');
+                                if (prev) prev.remove();
+                                var popup = el('div', { className: 'bowire-header-summary-popup', role: 'dialog' },
+                                    el('div', { className: 'bowire-header-summary-popup-title',
+                                        textContent: selectedMethod.name + ' — description' }),
+                                    el('div', { className: 'bowire-header-summary-popup-body', textContent: fullText }),
+                                    el('button', {
+                                        type: 'button',
+                                        className: 'bowire-header-summary-popup-close',
+                                        textContent: 'Close',
+                                        onClick: function () { popup.remove(); }
+                                    })
+                                );
+                                document.body.appendChild(popup);
+                                // Outside-click closer.
+                                setTimeout(function () {
+                                    function onOutside(ev) {
+                                        if (!popup.contains(ev.target)) {
+                                            popup.remove();
+                                            document.removeEventListener('click', onOutside, true);
+                                        }
+                                    }
+                                    document.addEventListener('click', onOutside, true);
+                                }, 0);
+                            }
+                        }));
+                    }
+                    info.appendChild(summaryRow);
                 }
             }
+            // Silence the unused-var lint — breadcrumb is still
+            // assembled above for the moment in case we want to
+            // reinstate it behind a toggle.
+            void breadcrumb;
             header.appendChild(info);
+            // Protocol icon — small glyph immediately left of the
+            // verb chip. Reuses the proto icon already supplied by
+            // the protocol plugin (same svg the sidebar's service
+            // header uses) so the chip cluster carries the full
+            // "protocol + verb" identity in one line.
+            if (selectedService && selectedService.source) {
+                var headerProto = protocols.find(function (p) { return p.id === selectedService.source; });
+                if (headerProto && headerProto.icon) {
+                    var protoSource = selectedService.source;
+                    var protoBtn = el('button', {
+                        type: 'button',
+                        className: 'bowire-header-proto-icon bowire-header-proto-icon-clickable',
+                        title: headerProto.name + ' — click for recent ' + headerProto.name + ' calls',
+                        'aria-label': 'Recent ' + headerProto.name + ' calls',
+                        innerHTML: headerProto.icon,
+                        onClick: function (e) {
+                            e.stopPropagation();
+                            // Close any previously-open popup before
+                            // mounting a fresh one. The list is filtered
+                            // to history entries whose service shares
+                            // the current method's protocol (REST →
+                            // REST calls, gRPC → gRPC calls, &c.).
+                            var prev = document.querySelector('.bowire-header-recent-popup');
+                            if (prev) prev.remove();
+                            var entries = (typeof getHistory === 'function' ? getHistory() : [])
+                                .filter(function (h) {
+                                    var svc = services && services.find(function (s) { return s.name === h.service; });
+                                    return svc && svc.source === protoSource;
+                                })
+                                .slice(0, 20);
+                            var popup = el('div', {
+                                className: 'bowire-header-recent-popup',
+                                role: 'dialog'
+                            });
+                            popup.appendChild(el('div', {
+                                className: 'bowire-header-recent-popup-title',
+                                textContent: 'Recent ' + headerProto.name + ' calls'
+                            }));
+                            if (entries.length === 0) {
+                                popup.appendChild(el('div', {
+                                    className: 'bowire-header-recent-popup-empty',
+                                    textContent: 'No ' + headerProto.name + ' calls yet — fire one to see it here.'
+                                }));
+                            } else {
+                                var list = el('div', { className: 'bowire-header-recent-popup-list' });
+                                entries.forEach(function (h) {
+                                    var row = el('button', {
+                                        type: 'button',
+                                        className: 'bowire-header-recent-popup-row'
+                                            + (isHistoryEntryOk(h) ? '' : ' is-error'),
+                                        title: 'Replay this call',
+                                        onClick: function () {
+                                            popup.remove();
+                                            if (typeof replayHistoryEntry === 'function') replayHistoryEntry(h);
+                                        }
+                                    });
+                                    row.appendChild(el('span', {
+                                        className: 'bowire-header-recent-popup-method',
+                                        textContent: (h.service ? h.service + '.' : '') + h.method
+                                    }));
+                                    var when = h.timestamp
+                                        ? new Date(h.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+                                        : '';
+                                    row.appendChild(el('span', {
+                                        className: 'bowire-header-recent-popup-meta',
+                                        textContent: (h.status || '') + (when ? ' · ' + when : '')
+                                    }));
+                                    list.appendChild(row);
+                                });
+                                popup.appendChild(list);
+                            }
+                            popup.appendChild(el('button', {
+                                type: 'button',
+                                className: 'bowire-header-recent-popup-close',
+                                textContent: 'Close',
+                                onClick: function () { popup.remove(); }
+                            }));
+                            document.body.appendChild(popup);
+                            // Anchor below the trigger.
+                            var rect = protoBtn.getBoundingClientRect();
+                            popup.style.position = 'fixed';
+                            var rightEdge = Math.min(window.innerWidth - 8, rect.right);
+                            popup.style.left = Math.max(8, rightEdge - popup.offsetWidth) + 'px';
+                            popup.style.top = (rect.bottom + 6) + 'px';
+                            // Outside-click closer.
+                            setTimeout(function () {
+                                function onOutside(ev) {
+                                    if (!popup.contains(ev.target) && !protoBtn.contains(ev.target)) {
+                                        popup.remove();
+                                        document.removeEventListener('click', onOutside, true);
+                                    }
+                                }
+                                document.addEventListener('click', onOutside, true);
+                            }, 0);
+                        }
+                    });
+                    header.appendChild(protoBtn);
+                }
+            }
             header.appendChild(el('span', {
                 className: 'bowire-header-badge',
                 dataset: { type: methodBadgeType(selectedMethod) },
                 textContent: selectedMethod.httpMethod || methodBadgeLabel(selectedMethod.methodType)
             }));
+            // Path right next to the verb chip — "PUT /pet" reads
+            // as one address. The title tooltip + double-click copy
+            // use the FULLY qualified URL (origin + path) so the
+            // operator can grab the real callable URL without
+            // hunting through code-export.
+            if (pathLabel) {
+                var fullMethodUrl = (function () {
+                    var base = (selectedService && selectedService.originUrl)
+                        || (typeof serverUrls !== 'undefined' && serverUrls[0])
+                        || '';
+                    var path = selectedMethod.httpPath || '';
+                    if (!path) return base || pathLabel;
+                    // Discovery URLs that point at an OpenAPI / AsyncAPI
+                    // doc need their last segment stripped — otherwise we'd
+                    // append the method path to .../openapi.json.
+                    if (/\.(json|yaml|yml)(\?.*)?$/i.test(base)) {
+                        base = base.replace(/\/[^\/]+(\?.*)?$/, '');
+                    }
+                    return base.replace(/\/$/, '') + path;
+                })();
+                header.appendChild(el('span', {
+                    className: 'bowire-header-path bowire-header-path-inline',
+                    textContent: pathLabel,
+                    title: fullMethodUrl,
+                    onDblClick: function (e) {
+                        e.preventDefault();
+                        navigator.clipboard.writeText(fullMethodUrl).then(function () {
+                            if (typeof toast === 'function') toast('URL copied', 'success');
+                        });
+                    }
+                }));
+            }
 
             // #156 — favorite star in the method header. Toggle the
             // current method's favorite state from where the operator
@@ -4085,6 +4298,173 @@
                     }));
                 } catch (e) { console.warn('[favorites] header-star failed', e); }
             }
+
+            // Preset picker — lists the presets saved against this
+            // method (filtered by service + method on the preset's
+            // snapshot). Default click on a preset applies it
+            // (body → editor); per-row star toggles
+            // "load this preset automatically when this method is
+            // opened"; per-row trash deletes; the bottom-of-menu
+            // "Add to collection ▸" routes the selected preset into
+            // a Collection via the same per-item shape Collections
+            // already store. Trigger sits next to the favorite star
+            // so the cluster reads as "this method's saved state".
+            try {
+                var presetSvc = selectedService.name;
+                var presetMth = selectedMethod.name;
+                var presetAll = (typeof loadPresets === 'function')
+                    ? loadPresets('discover') : [];
+                var presetList = presetAll.filter(function (p) {
+                    return p && p.config
+                        && p.config.service === presetSvc
+                        && p.config.method === presetMth;
+                });
+                // Picker is per-method — showing it for unrelated
+                // presets just clutters the header. Workspace-wide
+                // management stays reachable via the bottom of this
+                // dropdown when at least one preset matches.
+                if (presetList.length > 0) {
+                    var presetWrap = el('div', { className: 'bowire-header-presets-wrap' });
+                    var presetBtn = el('button', {
+                        type: 'button',
+                        id: 'bowire-header-presets-btn',
+                        className: 'bowire-header-presets-btn',
+                        title: presetList.length + ' preset' + (presetList.length === 1 ? '' : 's') + ' for this method',
+                        'aria-label': 'Saved presets',
+                        'aria-haspopup': 'menu',
+                        onClick: function (e) {
+                            e.stopPropagation();
+                            var prev = document.querySelector('.bowire-header-presets-menu');
+                            if (prev) { prev.remove(); return; }
+                            var menu = el('div', { className: 'bowire-header-presets-menu', role: 'menu' });
+                            menu.appendChild(el('div', {
+                                className: 'bowire-header-presets-title',
+                                textContent: 'Presets · ' + presetMth
+                            }));
+                            presetList.forEach(function (preset) {
+                                var row = el('div', { className: 'bowire-header-presets-row' });
+                                // Default star — preset.isDefault marks the
+                                // one to auto-apply on next method open.
+                                row.appendChild(el('button', {
+                                    type: 'button',
+                                    className: 'bowire-header-presets-default'
+                                        + (preset.isDefault ? ' is-on' : ''),
+                                    title: preset.isDefault
+                                        ? 'Default preset — click to clear'
+                                        : 'Set as default for this method',
+                                    'aria-label': 'Toggle default preset',
+                                    innerHTML: svgIcon(preset.isDefault ? 'starFilled' : 'star'),
+                                    onClick: function (ev) {
+                                        ev.stopPropagation();
+                                        if (preset.isDefault) {
+                                            if (typeof clearDefaultPreset === 'function') clearDefaultPreset('discover');
+                                        } else {
+                                            if (typeof setAsDefaultPreset === 'function') setAsDefaultPreset('discover', preset.id);
+                                        }
+                                        menu.remove();
+                                        render();
+                                    }
+                                }));
+                                // Body-click → apply preset to live form.
+                                row.appendChild(el('button', {
+                                    type: 'button',
+                                    className: 'bowire-header-presets-apply',
+                                    title: 'Apply preset',
+                                    onClick: function (ev) {
+                                        ev.stopPropagation();
+                                        if (typeof applyPresetToCurrentMethod === 'function'
+                                            && applyPresetToCurrentMethod(preset)) {
+                                            menu.remove();
+                                        }
+                                    }
+                                },
+                                    el('span', { className: 'bowire-header-presets-name', textContent: preset.name || 'Untitled' })
+                                ));
+                                // Add-to-collection: opens a small inline
+                                // submenu listing the workspace's
+                                // collections. Click adds a Collection
+                                // item built from the preset's snapshot.
+                                row.appendChild(el('button', {
+                                    type: 'button',
+                                    className: 'bowire-header-presets-tocol',
+                                    title: 'Add to collection…',
+                                    'aria-label': 'Add to collection',
+                                    innerHTML: svgIcon('list'),
+                                    onClick: function (ev) {
+                                        ev.stopPropagation();
+                                        var existing = row.querySelector('.bowire-header-presets-collist');
+                                        if (existing) { existing.remove(); return; }
+                                        var collist = el('div', { className: 'bowire-header-presets-collist' });
+                                        var cols = (typeof collectionsList !== 'undefined' && Array.isArray(collectionsList))
+                                            ? collectionsList : [];
+                                        if (cols.length === 0) {
+                                            collist.appendChild(el('div', {
+                                                className: 'bowire-header-presets-collist-empty',
+                                                textContent: 'No collections yet'
+                                            }));
+                                        }
+                                        cols.forEach(function (col) {
+                                            collist.appendChild(el('button', {
+                                                type: 'button',
+                                                className: 'bowire-header-presets-collist-row',
+                                                textContent: col.name,
+                                                onClick: function (ev2) {
+                                                    ev2.stopPropagation();
+                                                    if (typeof addToCollection === 'function') {
+                                                        addToCollection(col.id, preset.config);
+                                                        toast('Added "' + (preset.name || 'preset') + '" to ' + col.name, 'success');
+                                                    }
+                                                    menu.remove();
+                                                    render();
+                                                }
+                                            }));
+                                        });
+                                        row.appendChild(collist);
+                                    }
+                                }));
+                                row.appendChild(el('button', {
+                                    type: 'button',
+                                    className: 'bowire-header-presets-delete',
+                                    title: 'Delete preset',
+                                    'aria-label': 'Delete preset',
+                                    textContent: '×',
+                                    onClick: function (ev) {
+                                        ev.stopPropagation();
+                                        if (typeof deletePreset === 'function') deletePreset('discover', preset.id);
+                                        menu.remove();
+                                        render();
+                                    }
+                                }));
+                                menu.appendChild(row);
+                            });
+                            document.body.appendChild(menu);
+                            // Anchor to the trigger button.
+                            var rect = presetBtn.getBoundingClientRect();
+                            var rightEdge = Math.min(window.innerWidth - 8, rect.right);
+                            menu.style.position = 'fixed';
+                            menu.style.left = Math.max(8, rightEdge - menu.offsetWidth) + 'px';
+                            menu.style.top = (rect.bottom + 6) + 'px';
+                            setTimeout(function () {
+                                function onOutside(ev) {
+                                    if (!menu.contains(ev.target) && !presetBtn.contains(ev.target)) {
+                                        menu.remove();
+                                        document.removeEventListener('click', onOutside, true);
+                                    }
+                                }
+                                document.addEventListener('click', onOutside, true);
+                            }, 0);
+                        }
+                    },
+                        el('span', { innerHTML: svgIcon('preset') }),
+                        el('span', {
+                            className: 'bowire-header-presets-count',
+                            textContent: String(presetList.length)
+                        })
+                    );
+                    presetWrap.appendChild(presetBtn);
+                    header.appendChild(presetWrap);
+                }
+            } catch (e) { console.warn('[presets] header picker failed', e); }
 
             // #296 — "Add to…" quick-action menu. Sits between the
             // favorite star and the hint chip. The trigger is a
@@ -4226,7 +4606,7 @@
                             });
                         }
                     },
-                        el('span', { className: 'bowire-header-addto-item-icon', innerHTML: svgIcon('layers') }),
+                        el('span', { className: 'bowire-header-addto-item-icon', innerHTML: svgIcon('preset') }),
                         el('span', { textContent: 'Save as preset' })
                     ));
 
@@ -4340,20 +4720,16 @@
                 }
             }));
         }
-        // No 'Select a method from the sidebar' filler when there's no
-        // selection — every other rail's empty header just stays
-        // blank. Only attach the header when it has actual content
-        // (a selected method's breadcrumb + name + actions): an empty
-        // wrapper rendered as a gray strip above the landing card
-        // with no function.
-        if (header.firstChild) main.appendChild(header);
-
-        // Request tab bar — visible when 2+ tabs are open so the user
-        // #123 — tab strip is always present once there's at least one
+        // Stack order: tab strip → method header → content panes.
+        // The tab strip is the top-level navigation (which method are
+        // we looking at), the header is the identity card for the
+        // currently-active tab, and the panes are the work surface.
+        // Putting tabs first lets the user switch contexts without
+        // their eye crossing the entire header column.
+        //
+        // Request tab bar — visible whenever there's at least one
         // open tab, plus a "+" button so the operator can spawn a
-        // fresh blank tab without going through the sidebar. The
-        // previous "show only when >=2" heuristic hid the affordance
-        // exactly when the user needed to discover it.
+        // fresh blank tab without going through the sidebar.
         if (requestTabs.length >= 1) {
             var tabBar = el('div', { id: 'bowire-request-tabs', className: 'bowire-request-tabs' });
             var tabScroll = el('div', { className: 'bowire-request-tabs-scroll' });
@@ -4369,16 +4745,24 @@
                         'data-direction': dir,
                         onClick: function () { switchTab(tab.id); }
                     },
-                        el('span', {
-                            className: 'bowire-request-tab-proto',
-                            dataset: { type: methodBadgeType(tab.method), direction: dir },
-                            textContent: methodBadgeText(tab.method)
-                        }),
+                        // Method name leads — the identifier the user
+                        // recognises. The verb/method-type chip
+                        // trails on the right, same pill-style as
+                        // the tree (.bowire-method-badge) for visual
+                        // consistency.
                         el('span', {
                             className: 'bowire-request-tab-name',
                             textContent: tab.methodKey
                         }),
-                        el('button', {
+                        el('span', {
+                            className: 'bowire-request-tab-proto bowire-method-badge',
+                            dataset: { type: methodBadgeType(tab.method), direction: dir },
+                            textContent: methodBadgeText(tab.method)
+                        }),
+                        // Hide the × on the last remaining tab — closeTab()
+                        // refuses to drop below one tab anyway, so leaving
+                        // the affordance visible just invited dead clicks.
+                        requestTabs.length > 1 ? el('button', {
                             className: 'bowire-request-tab-close',
                             innerHTML: svgIcon('close'),
                             title: 'Close tab (Ctrl+W)',
@@ -4386,7 +4770,7 @@
                                 e.stopPropagation();
                                 closeTab(tab.id);
                             }
-                        })
+                        }) : null
                     );
                     tabScroll.appendChild(tabEl);
                 })(requestTabs[ti]);
@@ -4416,6 +4800,12 @@
             tabBar.appendChild(tabScroll);
             main.appendChild(tabBar);
         }
+
+        // Header lives BELOW the tab strip now — see the comment
+        // before the tab bar above for the rationale. Empty header
+        // (no method selected) stays unattached so the landing card
+        // doesn't sit under a gray strip with no content.
+        if (header.firstChild) main.appendChild(header);
 
         // Proto-only warning banner
         if (selectedService && selectedService.source === 'proto') {
@@ -5326,14 +5716,35 @@
                         bodyPreview = h.body;
                     }
 
+                    // Resolve the entry FRESH at click time via the
+                    // (timestamp, service, method) tuple stored on the
+                    // node — closure capture of `h` is unsafe because
+                    // morphdom preserves the previous DOM node across
+                    // re-renders (the row is recreated, but the diff
+                    // keeps the old element with its stale handler).
+                    // See feedback_morphdom_stale_handler_pitfall.
                     const replayBtn = el('button', {
                         className: 'bowire-history-replay',
                         title: 'Replay this request',
                         'aria-label': 'Replay this request',
                         innerHTML: svgIcon('play'),
+                        'data-replay-ts': String(h.timestamp || 0),
+                        'data-replay-svc': h.service || '',
+                        'data-replay-mth': h.method || '',
                         onClick: function (e) {
                             e.stopPropagation();
-                            replayHistoryEntry(h);
+                            var btn = e.currentTarget;
+                            var ts = parseInt(btn.getAttribute('data-replay-ts'), 10) || 0;
+                            var svc = btn.getAttribute('data-replay-svc');
+                            var mth = btn.getAttribute('data-replay-mth');
+                            var fresh = (typeof getHistory === 'function')
+                                ? getHistory().find(function (x) {
+                                    return x && x.timestamp === ts
+                                        && x.service === svc
+                                        && x.method === mth;
+                                })
+                                : null;
+                            if (fresh) replayHistoryEntry(fresh);
                         }
                     });
 
@@ -5369,19 +5780,36 @@
 
                     const item = el('div', {
                         className: 'bowire-history-item',
-                        onClick: function () {
-                            // Find and select the method, populate editor
+                        'data-entry-ts': String(h.timestamp || 0),
+                        'data-entry-svc': h.service || '',
+                        'data-entry-mth': h.method || '',
+                        onClick: function (clickEvt) {
+                            // Same stale-closure caveat as the replay
+                            // button — resolve via dom attributes so a
+                            // morphdom-preserved row picks up the
+                            // current entry, not the one captured when
+                            // this node was first inserted.
+                            var node = clickEvt.currentTarget;
+                            var ts = parseInt(node.getAttribute('data-entry-ts'), 10) || 0;
+                            var fSvc = node.getAttribute('data-entry-svc');
+                            var fMth = node.getAttribute('data-entry-mth');
+                            var fresh = (typeof getHistory === 'function')
+                                ? getHistory().find(function (x) {
+                                    return x && x.timestamp === ts
+                                        && x.service === fSvc
+                                        && x.method === fMth;
+                                })
+                                : null;
+                            if (!fresh) return;
                             for (const svc of services) {
                                 for (const m of svc.methods) {
-                                    if (svc.name === h.service && m.name === h.method) {
+                                    if (svc.name === fresh.service && m.name === fresh.method) {
                                         openTab(svc, m);
-                                        // After opening the tab, populate the
-                                        // editor with the history entry's body.
                                         activeRequestTab = 'body';
-                                        if (h.messages && h.messages.length > 0) {
-                                            requestMessages = h.messages.slice();
-                                        } else if (h.body && !h.body.startsWith('(channel:')) {
-                                            requestMessages = [h.body];
+                                        if (fresh.messages && fresh.messages.length > 0) {
+                                            requestMessages = fresh.messages.slice();
+                                        } else if (fresh.body && !fresh.body.startsWith('(channel:')) {
+                                            requestMessages = [fresh.body];
                                         }
                                         requestInputMode = 'json';
                                         render();
@@ -6955,13 +7383,14 @@
         const respHeader = el('div', { className: 'bowire-pane-header' },
             el('span', { className: 'bowire-pane-title', textContent: 'Result' }),
             el('div', { className: 'bowire-pane-actions' },
-                // JSON / Tree view toggle. Only meaningful when there's
-                // structured data to render (responseData present, no
-                // active stream). The tree view uses native <details>
-                // for collapsible nodes, so it costs no JS state.
+                // JSON / Tree view toggle. Stable id so morphdom
+                // keyed-matches the same button across re-renders
+                // instead of merging onto the wrong sibling (which
+                // produced the "Tree button runs Copy" symptom).
                 (function () {
                     if (!responseData || streamMessages.length > 0) return el('span');
                     return el('button', {
+                        id: 'bowire-response-view-toggle-btn',
                         className: 'bowire-pane-btn' + (responseViewMode === 'tree' ? ' active' : ''),
                         title: responseViewMode === 'tree'
                             ? 'Switch to JSON view'
@@ -6973,66 +7402,137 @@
                         }
                     });
                 })(),
-                // Copy — for streaming, a dropdown lets the user choose
-                // between the currently selected message or the entire
-                // list. For unary responses there's only one result so
-                // a plain button suffices.
+                // Copy split-button. Primary click copies the response
+                // body as-is; the caret opens a protocol-aware code-
+                // export dropdown (curl / grpcurl / fetch / wscat / …)
+                // sourced from code-export.js. Streaming responses also
+                // get "selected / all messages" raw entries up top.
                 (function () {
-                    if (streamMessages.length > 0) {
-                        var wrapper = el('div', { className: 'bowire-dropdown-wrapper' });
-                        var btn = el('button', {
-                            className: 'bowire-pane-btn',
-                            textContent: 'Copy \u25BE',
-                            onClick: function (e) {
-                                e.stopPropagation();
-                                var menu = wrapper.querySelector('.bowire-dropdown-menu');
-                                if (menu) menu.classList.toggle('visible');
-                            }
+                    var wrapper = el('div', { id: 'bowire-response-copy-split', className: 'bowire-split-btn-wrap' });
+
+                    function copyRawResponse() {
+                        if (streamMessages.length > 0) {
+                            var idx = streamEffectiveIndex();
+                            var text = idx >= 0 ? streamMessageRaw(streamMessages[idx]) : '';
+                            navigator.clipboard.writeText(text).then(function () {
+                                toast(idx >= 0 ? ('Copied message #' + (idx + 1)) : 'Copied response', 'success');
+                            });
+                            return;
+                        }
+                        var t = responseData || '';
+                        navigator.clipboard.writeText(t).then(function () {
+                            toast('Copied to clipboard', 'success');
                         });
-                        var menu = el('div', { className: 'bowire-dropdown-menu' },
-                            el('div', {
-                                className: 'bowire-dropdown-item',
-                                textContent: 'Copy selected message',
-                                onClick: function () {
-                                    var idx = streamEffectiveIndex();
-                                    var text = idx >= 0 ? streamMessageRaw(streamMessages[idx]) : '';
-                                    navigator.clipboard.writeText(text).then(function () {
-                                        toast('Copied message #' + (idx + 1), 'success');
-                                    });
-                                    wrapper.querySelector('.bowire-dropdown-menu').classList.remove('visible');
-                                }
-                            }),
-                            el('div', {
-                                className: 'bowire-dropdown-item',
-                                textContent: 'Copy all messages',
-                                onClick: function () {
-                                    var text = streamMessages.map(function (m) {
-                                        return streamMessageRaw(m);
-                                    }).join('\n');
-                                    navigator.clipboard.writeText(text).then(function () {
-                                        toast('Copied ' + streamMessages.length + ' messages', 'success');
-                                    });
-                                    wrapper.querySelector('.bowire-dropdown-menu').classList.remove('visible');
-                                }
-                            })
-                        );
-                        wrapper.appendChild(btn);
-                        wrapper.appendChild(menu);
-                        document.addEventListener('click', function () { menu.classList.remove('visible'); });
-                        return wrapper;
                     }
-                    return el('button', {
-                        className: 'bowire-pane-btn',
+
+                    var mainBtn = el('button', {
+                        id: 'bowire-response-copy-main-btn',
+                        className: 'bowire-pane-btn bowire-split-btn-main',
+                        title: 'Copy response body as-is',
                         textContent: 'Copy',
-                        onClick: function () {
-                            var text = responseData || '';
-                            navigator.clipboard.writeText(text).then(function () { toast('Copied to clipboard', 'success'); });
+                        onClick: function () { copyRawResponse(); }
+                    });
+                    var caretBtn = el('button', {
+                        id: 'bowire-response-copy-caret-btn',
+                        className: 'bowire-pane-btn bowire-split-btn-caret',
+                        title: 'Copy as code / command',
+                        'aria-haspopup': 'menu',
+                        textContent: '\u25BE',
+                        onClick: function (e) {
+                            e.stopPropagation();
+                            var menu = wrapper.querySelector('.bowire-dropdown-menu');
+                            if (menu) menu.classList.toggle('visible');
                         }
                     });
+
+                    var menu = el('div', { className: 'bowire-dropdown-menu', role: 'menu' });
+
+                    if (streamMessages.length > 0) {
+                        menu.appendChild(el('div', {
+                            className: 'bowire-dropdown-item',
+                            textContent: 'Copy selected message',
+                            onClick: function () {
+                                var idx = streamEffectiveIndex();
+                                var text = idx >= 0 ? streamMessageRaw(streamMessages[idx]) : '';
+                                navigator.clipboard.writeText(text).then(function () {
+                                    toast('Copied message #' + (idx + 1), 'success');
+                                });
+                                menu.classList.remove('visible');
+                            }
+                        }));
+                        menu.appendChild(el('div', {
+                            className: 'bowire-dropdown-item',
+                            textContent: 'Copy all messages',
+                            onClick: function () {
+                                var text = streamMessages.map(function (m) {
+                                    return streamMessageRaw(m);
+                                }).join('\n');
+                                navigator.clipboard.writeText(text).then(function () {
+                                    toast('Copied ' + streamMessages.length + ' messages', 'success');
+                                });
+                                menu.classList.remove('visible');
+                            }
+                        }));
+                        menu.appendChild(el('div', { className: 'bowire-dropdown-separator' }));
+                    }
+
+                    // Protocol-specific request-codegen snippets sourced
+                    // from code-export.js: REST \u2192 curl/fetch/python,
+                    // gRPC \u2192 grpcurl, websocket \u2192 wscat, \u2026 .
+                    var langs = (typeof getCodeExportLanguages === 'function') ? getCodeExportLanguages() : [];
+                    if (langs.length === 0) {
+                        menu.appendChild(el('div', {
+                            className: 'bowire-dropdown-item bowire-dropdown-item-disabled',
+                            textContent: 'No code-export options for this protocol'
+                        }));
+                    } else {
+                        for (var li = 0; li < langs.length; li++) {
+                            (function (lang) {
+                                menu.appendChild(el('div', {
+                                    className: 'bowire-dropdown-item',
+                                    textContent: 'Copy as ' + lang.label,
+                                    onClick: function () {
+                                        var snippet = (typeof generateCodeSnippet === 'function')
+                                            ? generateCodeSnippet(lang.id)
+                                            : '';
+                                        navigator.clipboard.writeText(snippet).then(function () {
+                                            toast('Copied ' + lang.label + ' snippet', 'success');
+                                        });
+                                        menu.classList.remove('visible');
+                                    }
+                                }));
+                            })(langs[li]);
+                        }
+                    }
+
+                    wrapper.appendChild(mainBtn);
+                    wrapper.appendChild(caretBtn);
+                    wrapper.appendChild(menu);
+                    document.addEventListener('click', function (e) {
+                        if (!wrapper.contains(e.target)) menu.classList.remove('visible');
+                    });
+                    return wrapper;
                 })(),
                 (function () {
-                    var wrapper = el('div', { className: 'bowire-dropdown-wrapper' });
+                    // Download menu \u2014 protocol-aware so only formats
+                    // that make sense for the current response shape
+                    // are offered. JSON always available (every
+                    // protocol's response is JSON-encoded in the
+                    // workbench); Proto Binary only for gRPC where the
+                    // wire bytes are meaningful; plain text fallback
+                    // when the response isn't JSON. Items get unique
+                    // id-prefixes so morphdom doesn't reuse a JSON-only
+                    // protocol's items as Proto-Binary ones across a
+                    // method swap.
+                    var src = (selectedService && selectedService.source) || 'rest';
+                    var formats = [];
+                    formats.push({ id: 'json', label: 'JSON' });
+                    if (src === 'grpc' || src === 'proto') {
+                        formats.push({ id: 'proto', label: 'Proto Binary' });
+                    }
+                    var wrapper = el('div', { id: 'bowire-response-download-wrap', className: 'bowire-dropdown-wrapper' });
                     var btn = el('button', {
+                        id: 'bowire-response-download-btn',
                         className: 'bowire-pane-btn',
                         textContent: 'Download \u25BE',
                         onClick: function (e) {
@@ -7041,22 +7541,24 @@
                             if (menu) menu.classList.toggle('visible');
                         }
                     });
-                    var menu = el('div', { className: 'bowire-dropdown-menu' },
-                        el('div', {
-                            className: 'bowire-dropdown-item',
-                            textContent: 'JSON',
-                            onClick: function () { downloadResponse('json'); wrapper.querySelector('.bowire-dropdown-menu').classList.remove('visible'); }
-                        }),
-                        el('div', {
-                            className: 'bowire-dropdown-item',
-                            textContent: 'Proto Binary',
-                            onClick: function () { downloadResponse('proto'); wrapper.querySelector('.bowire-dropdown-menu').classList.remove('visible'); }
-                        })
-                    );
+                    var menu = el('div', { className: 'bowire-dropdown-menu' });
+                    for (var di = 0; di < formats.length; di++) {
+                        (function (fmt) {
+                            menu.appendChild(el('div', {
+                                className: 'bowire-dropdown-item',
+                                textContent: fmt.label,
+                                onClick: function () {
+                                    downloadResponse(fmt.id);
+                                    menu.classList.remove('visible');
+                                }
+                            }));
+                        })(formats[di]);
+                    }
                     wrapper.appendChild(btn);
                     wrapper.appendChild(menu);
-                    // Close dropdown on outside click
-                    document.addEventListener('click', function () { menu.classList.remove('visible'); });
+                    document.addEventListener('click', function (e) {
+                        if (!wrapper.contains(e.target)) menu.classList.remove('visible');
+                    });
                     return wrapper;
                 })(),
                 (function () {
@@ -7079,34 +7581,10 @@
                         }
                     });
                 })(),
-                el('button', {
-                    className: 'bowire-pane-btn',
-                    textContent: 'grpcurl',
-                    title: 'Copy as grpcurl command',
-                    onClick: function () {
-                        if (!selectedService || !selectedMethod) { toast('No method selected', 'info'); return; }
-                        var svc = selectedService.name;
-                        var m = selectedMethod.name;
-                        var body = requestMessages[0] || '{}';
-                        var target = (selectedService && selectedService.originUrl) || getPrimaryServerUrl() || 'localhost:5001';
-                        // Strip scheme for grpcurl
-                        var plaintext = target.startsWith('http://');
-                        var host = target.replace(/^https?:\/\//, '');
-
-                        var cmd = 'grpcurl';
-                        if (plaintext) cmd += ' -plaintext';
-                        try {
-                            var parsed = JSON.parse(body);
-                            var compact = JSON.stringify(parsed);
-                            cmd += " -d '" + compact.replace(/'/g, "'\\''") + "'";
-                        } catch {
-                            cmd += " -d '" + body.replace(/\n/g, ' ').replace(/'/g, "'\\''") + "'";
-                        }
-                        cmd += ' ' + host + ' ' + svc + '/' + m;
-
-                        navigator.clipboard.writeText(cmd).then(function () { toast('Copied grpcurl command', 'success'); });
-                    }
-                })
+                // The standalone "grpcurl" button used to live here.
+                // It's now an entry in the Copy split-button's
+                // dropdown (see above) — protocol-aware so REST gets
+                // curl, gRPC gets grpcurl, WebSocket gets wscat, &c.
             )
         );
         respContent.appendChild(respHeader);

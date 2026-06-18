@@ -38,6 +38,12 @@
     function loadPresets(mode) {
         if (!mode) return [];
         if (Object.prototype.hasOwnProperty.call(_presetsCache, mode)) {
+            // Kick off a one-shot disk → cache hydration so the
+            // workbench's first read after boot picks up presets
+            // saved from another browser / device. Cheap when
+            // already done (the _presetsHydrated guard short-
+            // circuits the fetch).
+            ensurePresetsLoaded(mode);
             return _presetsCache[mode];
         }
         try {
@@ -45,9 +51,11 @@
             var arr = raw ? JSON.parse(raw) : [];
             if (!Array.isArray(arr)) arr = [];
             _presetsCache[mode] = arr;
+            ensurePresetsLoaded(mode);
             return arr;
         } catch {
             _presetsCache[mode] = [];
+            ensurePresetsLoaded(mode);
             return _presetsCache[mode];
         }
     }
@@ -60,6 +68,66 @@
         } catch (e) {
             console.warn('[presets] persist failed for ' + mode, e);
         }
+        // Disk-sync — mirrors the collections/recordings pattern.
+        // localStorage stays as the immediate cache; the PUT lands
+        // the presets under workspaces/<wsId>/presets/<mode>.json on
+        // disk so they ride along with the workspace export and
+        // survive a browser reset. Debounced so a burst of edits
+        // doesn't hammer the file.
+        schedulePresetsDiskSync(mode);
+    }
+
+    var _presetsDiskSyncTimers = {};
+    function schedulePresetsDiskSync(mode) {
+        if (typeof fetch !== 'function') return;
+        if (_presetsDiskSyncTimers[mode]) clearTimeout(_presetsDiskSyncTimers[mode]);
+        _presetsDiskSyncTimers[mode] = setTimeout(function () {
+            _presetsDiskSyncTimers[mode] = null;
+            var wsId = (typeof activeWorkspaceId === 'string' && activeWorkspaceId)
+                ? activeWorkspaceId : '';
+            var qs = '?mode=' + encodeURIComponent(mode)
+                + (wsId ? '&workspaceId=' + encodeURIComponent(wsId) : '');
+            fetch(config.prefix + '/api/presets' + qs, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(_presetsCache[mode] || [])
+            }).catch(function () { /* silent — localStorage already has it */ });
+        }, 400);
+    }
+
+    // Boot-time disk → cache hydration. Called once per mode the
+    // workbench actually opens (see ensurePresetsLoaded). Falls
+    // through silently when the server doesn't respond (offline,
+    // embedded host without the endpoint), leaving the cache to
+    // whatever localStorage already had.
+    var _presetsHydrated = {};
+    function ensurePresetsLoaded(mode) {
+        if (!mode || _presetsHydrated[mode]) return;
+        _presetsHydrated[mode] = true;
+        if (typeof fetch !== 'function') return;
+        var wsId = (typeof activeWorkspaceId === 'string' && activeWorkspaceId)
+            ? activeWorkspaceId : '';
+        var qs = '?mode=' + encodeURIComponent(mode)
+            + (wsId ? '&workspaceId=' + encodeURIComponent(wsId) : '');
+        fetch(config.prefix + '/api/presets' + qs).then(function (r) {
+            if (!r.ok) return null;
+            return r.json();
+        }).then(function (arr) {
+            if (!Array.isArray(arr) || arr.length === 0) return;
+            // Merge by id: disk wins on conflict (it's the source of
+            // truth across browsers). New localStorage entries that
+            // aren't on disk yet survive untouched and ride the next
+            // disk-sync.
+            var local = _presetsCache[mode] || (_presetsCache[mode] = []);
+            var byId = {};
+            local.forEach(function (p) { if (p && p.id) byId[p.id] = p; });
+            arr.forEach(function (p) { if (p && p.id) byId[p.id] = p; });
+            _presetsCache[mode] = Object.values(byId);
+            try {
+                localStorage.setItem(_presetsStorageKey(mode), JSON.stringify(_presetsCache[mode]));
+            } catch { /* localStorage quota / disabled */ }
+            if (typeof render === 'function') render();
+        }).catch(function () { /* silent */ });
     }
 
     function _presetId() {
@@ -150,6 +218,70 @@
     // Wired in prologue.js's switchWorkspace handler via this name.
     function _presetsCacheClear() {
         _presetsCache = {};
+        _presetsHydrated = {};
+    }
+
+    // Apply a Discover-mode preset back into the live request form.
+    // Refuses to clobber the form if the preset was saved against a
+    // different (service, method) — the picker only surfaces matching
+    // presets, but a stale dropdown click during a method-switch race
+    // would otherwise overwrite the new method's body. Patches
+    // metadata rows directly in the DOM so the subsequent render()
+    // (which seeds from existing rows, see render-main.js:5534) picks
+    // them up without needing a parallel "pending headers" state.
+    function applyPresetToCurrentMethod(preset) {
+        if (!preset || !preset.config) return false;
+        var c = preset.config;
+        if (typeof selectedService === 'undefined' || typeof selectedMethod === 'undefined'
+            || !selectedService || !selectedMethod) return false;
+        if (c.service && c.method
+            && (c.service !== selectedService.name || c.method !== selectedMethod.name)) {
+            if (typeof toast === 'function') {
+                toast('Preset is for ' + c.service + '.' + c.method, 'error');
+            }
+            return false;
+        }
+        if (Array.isArray(c.messages) && c.messages.length > 0) {
+            requestMessages = c.messages.slice();
+        } else if (typeof c.body === 'string') {
+            requestMessages = [c.body];
+        }
+        // Replace the metadata rows in-place. createMetadataRow lives
+        // in render-main.js so we go through the DOM rather than
+        // calling it directly — the editor's container is .bowire-metadata-editor.
+        try {
+            var editor = document.querySelector('.bowire-metadata-editor');
+            if (editor && c.metadata && typeof c.metadata === 'object') {
+                var oldRows = editor.querySelectorAll('.bowire-metadata-row');
+                oldRows.forEach(function (r) { r.remove(); });
+                var addBtn = editor.querySelector('.bowire-metadata-add');
+                Object.keys(c.metadata).forEach(function (key) {
+                    var row = el('div', { className: 'bowire-metadata-row' },
+                        el('input', { className: 'bowire-metadata-input', type: 'text', value: key, placeholder: 'header name' }),
+                        el('input', { className: 'bowire-metadata-input', type: 'text', value: c.metadata[key], placeholder: 'header value' })
+                    );
+                    if (addBtn) editor.insertBefore(row, addBtn);
+                    else editor.appendChild(row);
+                });
+                if (Object.keys(c.metadata).length === 0) {
+                    var emptyRow = el('div', { className: 'bowire-metadata-row' },
+                        el('input', { className: 'bowire-metadata-input', type: 'text', value: '', placeholder: 'header name' }),
+                        el('input', { className: 'bowire-metadata-input', type: 'text', value: '', placeholder: 'header value' })
+                    );
+                    if (addBtn) editor.insertBefore(emptyRow, addBtn);
+                    else editor.appendChild(emptyRow);
+                }
+            }
+        } catch (e) { console.warn('[presets] metadata apply failed', e); }
+        if (typeof activeRequestTab !== 'undefined') {
+            try { activeRequestTab = 'body'; } catch { /* const in some bundles */ }
+        }
+        touchPresetUse('discover', preset.id);
+        if (typeof toast === 'function') {
+            toast('Loaded "' + (preset.name || 'preset') + '"', 'success');
+        }
+        if (typeof render === 'function') render();
+        return true;
     }
 
     // ---- Generic UI helper: render a "Saved configs" bar ----
@@ -209,7 +341,7 @@
                 });
             }
         },
-            el('span', { innerHTML: svgIcon('star') }),
+            el('span', { innerHTML: svgIcon('preset') }),
             el('span', { textContent: ' Save preset' })
         ));
 

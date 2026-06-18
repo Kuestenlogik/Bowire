@@ -163,6 +163,15 @@
     // existing entry doesn't collide with itself.
     function uniqueAlias(seed, forUrl) {
         var used = {};
+        if (typeof urlMeta !== 'undefined') {
+            for (var k0 in urlMeta) {
+                if (Object.prototype.hasOwnProperty.call(urlMeta, k0)
+                    && k0 !== forUrl
+                    && urlMeta[k0] && urlMeta[k0].name) {
+                    used[urlMeta[k0].name] = true;
+                }
+            }
+        }
         for (var k in serverUrlAliases) {
             if (Object.prototype.hasOwnProperty.call(serverUrlAliases, k) && k !== forUrl) {
                 used[serverUrlAliases[k]] = true;
@@ -176,26 +185,41 @@
         return seed + '-' + Date.now();
     }
 
-    // Assign an auto-alias when a URL gains its first appearance. Never
-    // overwrites an existing alias — the user's manual choice wins.
+    // Assign an auto-alias when a URL gains its first appearance.
+    // Never overwrites an existing alias — the user's manual choice
+    // wins — and never overwrites a name already in urlMeta. Writes
+    // through to urlMeta so the consolidated store stays in sync.
     function ensureAliasForUrl(url) {
         if (!url) return;
+        if (typeof urlMeta !== 'undefined' && urlMeta[url] && urlMeta[url].name) return;
         if (serverUrlAliases[url]) return;
-        serverUrlAliases[url] = uniqueAlias(defaultAliasForUrl(url), url);
-        persistServerUrlAliases();
+        var seeded = uniqueAlias(defaultAliasForUrl(url), url);
+        if (typeof setUrlMeta === 'function') setUrlMeta(url, { name: seeded });
+        else { serverUrlAliases[url] = seeded; persistServerUrlAliases(); }
     }
 
-    // Look up the alias for `url`, falling back to the URL itself so
-    // call sites always have something printable.
+    // Single source of truth for the URL → friendly-name mapping:
+    // urlMeta[url].name. The legacy serverUrlAliases store is kept
+    // as a read-fallback for workspaces that were saved before the
+    // consolidation but is no longer written to — every rename
+    // (URL-bar alias input AND Sources-rail rename) lands in
+    // urlMeta now, so the discover tree, the connection popover,
+    // the filter chips and the Sources rail all read the same
+    // value.
     function aliasForUrl(url) {
         if (!url) return '';
-        return serverUrlAliases[url] || url;
+        if (typeof urlMeta !== 'undefined' && urlMeta[url] && urlMeta[url].name) return urlMeta[url].name;
+        if (serverUrlAliases[url]) return serverUrlAliases[url];
+        return url;
     }
 
     // Manually set an alias. Returns { ok: true } on success or
     // { ok: false, error } when the requested name is empty / collides
-    // with another URL's alias / contains illegal characters. Callers
-    // surface the error inline next to the alias input.
+    // with another URL's alias / contains illegal characters. Writes
+    // through to urlMeta[url].name — the single source of truth — and
+    // also cleans the legacy serverUrlAliases entry if one exists, so
+    // a workspace that's mid-migration doesn't keep shadowing the new
+    // value via the read-fallback in aliasForUrl().
     function setUrlAlias(url, requested) {
         if (!url) return { ok: false, error: 'No URL to label' };
         var trimmed = String(requested || '').trim();
@@ -203,20 +227,42 @@
         if (!/^[A-Za-z0-9._-]{1,40}$/.test(trimmed)) {
             return { ok: false, error: 'Use letters, digits, dot, dash, underscore (max 40)' };
         }
-        for (var k in serverUrlAliases) {
-            if (Object.prototype.hasOwnProperty.call(serverUrlAliases, k)
-                && k !== url
-                && serverUrlAliases[k] === trimmed) {
+        // Uniqueness check spans BOTH stores so a name from the
+        // legacy aliases blocks a duplicate just as a urlMeta name
+        // would.
+        if (typeof urlMeta !== 'undefined') {
+            for (var k1 in urlMeta) {
+                if (Object.prototype.hasOwnProperty.call(urlMeta, k1)
+                    && k1 !== url
+                    && urlMeta[k1] && urlMeta[k1].name === trimmed) {
+                    return { ok: false, error: 'Alias already used by another URL' };
+                }
+            }
+        }
+        for (var k2 in serverUrlAliases) {
+            if (Object.prototype.hasOwnProperty.call(serverUrlAliases, k2)
+                && k2 !== url
+                && serverUrlAliases[k2] === trimmed) {
                 return { ok: false, error: 'Alias already used by another URL' };
             }
         }
-        serverUrlAliases[url] = trimmed;
-        persistServerUrlAliases();
+        if (typeof setUrlMeta === 'function') {
+            setUrlMeta(url, { name: trimmed });
+        }
+        if (serverUrlAliases[url]) {
+            delete serverUrlAliases[url];
+            persistServerUrlAliases();
+        }
         return { ok: true };
     }
 
     function removeAliasForUrl(url) {
-        if (url && serverUrlAliases[url]) {
+        if (!url) return;
+        if (typeof urlMeta !== 'undefined' && urlMeta[url] && urlMeta[url].name) {
+            delete urlMeta[url].name;
+            if (typeof persistUrlMeta === 'function') persistUrlMeta();
+        }
+        if (serverUrlAliases[url]) {
             delete serverUrlAliases[url];
             persistServerUrlAliases();
         }
@@ -227,19 +273,19 @@
     // resource", so preserve the friendly name they already picked.
     function renameAliasForUrl(oldUrl, newUrl) {
         if (!oldUrl || !newUrl || oldUrl === newUrl) return;
-        if (!serverUrlAliases[oldUrl]) {
+        var existing = aliasForUrl(oldUrl);
+        if (existing === oldUrl) {
+            // No alias to carry over — just seed the new URL.
             ensureAliasForUrl(newUrl);
             return;
         }
-        // If the destination already has an alias, just drop the old one
-        // (we can't have two URLs share the same alias).
-        if (serverUrlAliases[newUrl]) {
-            delete serverUrlAliases[oldUrl];
-        } else {
-            serverUrlAliases[newUrl] = serverUrlAliases[oldUrl];
-            delete serverUrlAliases[oldUrl];
+        // If the destination already has a name, drop the old one.
+        if (aliasForUrl(newUrl) !== newUrl) {
+            removeAliasForUrl(oldUrl);
+            return;
         }
-        persistServerUrlAliases();
+        if (typeof setUrlMeta === 'function') setUrlMeta(newUrl, { name: existing });
+        removeAliasForUrl(oldUrl);
     }
 
     // Seed aliases for whatever URLs are already in the list on boot
@@ -263,9 +309,31 @@
             render();
             return;
         }
+        refreshSourceServices(url);
+    }
+
+    // Force a fresh discovery against a single source URL while
+    // leaving its connection state alone (connected stays connected,
+    // disconnected becomes connecting → connected on success). Used
+    // by the refresh button on each source-panel header so the user
+    // can re-pull a schema mid-session without flipping the URL off
+    // and back on. Surfaces a delta toast when the new schema has
+    // gained / lost services or methods so the operator sees the
+    // result of their click without having to scan the tree.
+    function refreshSourceServices(url) {
+        if (!url || typeof fetchServicesForUrl !== 'function') return;
+
+        // Snapshot the pre-refresh state so we can compute a delta
+        // when the fetch resolves.
+        var prev = (Array.isArray(services) ? services : [])
+            .filter(function (s) { return s.originUrl === url; });
+        var prevSvcCount = prev.length;
+        var prevMethodCount = prev.reduce(function (acc, s) {
+            return acc + (Array.isArray(s.methods) ? s.methods.length : 0);
+        }, 0);
+
         connectionStatuses[url] = 'connecting';
         render();
-        if (typeof fetchServicesForUrl !== 'function') return;
         Promise.resolve(fetchServicesForUrl(url)).then(function (fresh) {
             if (!Array.isArray(services)) services = [];
             services = services.filter(function (s) { return s.originUrl !== url; });
@@ -273,6 +341,30 @@
                 services = services.concat(fresh);
             }
             render();
+
+            // Delta toast — only fired when something actually
+            // changed. Mirrors the schema-watch language so the two
+            // surfaces feel consistent. Sign-prefixed numbers + a
+            // count-aware plural for each piece. Silent on no-op so
+            // the operator isn't toast-spammed by routine refreshes.
+            var freshList = Array.isArray(fresh) ? fresh : [];
+            var newSvcCount = freshList.length;
+            var newMethodCount = freshList.reduce(function (acc, s) {
+                return acc + (Array.isArray(s.methods) ? s.methods.length : 0);
+            }, 0);
+            var svcDelta = newSvcCount - prevSvcCount;
+            var methodDelta = newMethodCount - prevMethodCount;
+            if (typeof toast !== 'function') return;
+            if (svcDelta === 0 && methodDelta === 0) {
+                toast('No changes from ' + url, 'info');
+                return;
+            }
+            var parts = [];
+            if (svcDelta > 0) parts.push('+' + svcDelta + ' service' + (svcDelta === 1 ? '' : 's'));
+            if (svcDelta < 0) parts.push(svcDelta + ' service' + (svcDelta === -1 ? '' : 's'));
+            if (methodDelta > 0) parts.push('+' + methodDelta + ' method' + (methodDelta === 1 ? '' : 's'));
+            if (methodDelta < 0) parts.push(methodDelta + ' method' + (methodDelta === -1 ? '' : 's'));
+            toast('Schema changed: ' + parts.join(', '), 'info');
         }).catch(function () {
             render();
         });
@@ -854,7 +946,14 @@
     // dropdowns, color dot in the source list) without rewriting
     // the serverUrls[] array shape — entries there stay raw URL
     // strings so existing code paths keep working.
-    let urlMeta = {};
+    // `var` (not `let`) so that the alias helpers above can do a
+    // safe `typeof urlMeta` check before this block runs at boot —
+    // ensureAliasForUrl is invoked via serverUrls.forEach() earlier
+    // in the module, and `let` would throw on temporal-dead-zone
+    // access from there. `var` is hoisted to `undefined` so the
+    // typeof guard returns 'undefined' cleanly until the assignment
+    // below replaces it with the live store.
+    var urlMeta = {};
     try {
         var rawUrlMeta = localStorage.getItem(wsKey('bowire_url_meta'));
         if (rawUrlMeta) urlMeta = JSON.parse(rawUrlMeta) || {};
@@ -2901,6 +3000,16 @@
         addRecentMethod(svc.name, method.name);
         expandedServices.add(svc.name);
         persistExpandedServices();
+        // Mirror the focus into the source-panel expansion state so
+        // the user lands on an open tree row when they navigate via
+        // a freshly-opened tab too (not just on switchTab).
+        if (typeof collapsedSources !== 'undefined') {
+            var srcUrl0 = (svc && svc.originUrl) || '';
+            if (collapsedSources.has(srcUrl0)) {
+                collapsedSources.delete(srcUrl0);
+                if (typeof persistCollapsedSources === 'function') persistCollapsedSources();
+            }
+        }
         if (isMobile()) sidebarCollapsed = true;
         render();
     }
@@ -2927,6 +3036,24 @@
         persistRequestTabs();
         selectedMethod = tab.method;
         selectedService = tab.service;
+
+        // Mirror the tab switch into the tree: expand the owning
+        // service so the active method-row is visible (otherwise
+        // the .active highlight in the sidebar lives behind a
+        // collapsed service header) AND the owning source panel so
+        // disconnected / explicitly-collapsed panels open back up
+        // when the user navigates into them via a tab.
+        if (tab.service && tab.service.name && typeof expandedServices !== 'undefined') {
+            expandedServices.add(tab.service.name);
+            if (typeof persistExpandedServices === 'function') persistExpandedServices();
+        }
+        if (tab.service && typeof collapsedSources !== 'undefined') {
+            var srcUrl = tab.service.originUrl || '';
+            if (collapsedSources.has(srcUrl)) {
+                collapsedSources.delete(srcUrl);
+                if (typeof persistCollapsedSources === 'function') persistCollapsedSources();
+            }
+        }
 
         var hadChannel = restoreChannelFor(tab.serviceKey, tab.methodKey);
         if (!hadChannel) {
@@ -3361,6 +3488,97 @@
     let consoleLog = [];          // [{ id, time, type, method, status, durationMs, body, expanded }]
     let consoleOpen = false;
     let consoleNextId = 1;
+
+    // Per-row selection set (entry id → selected). Drives the
+    // "Download selected" affordance in the toolbar; selection
+    // survives until cleared explicitly or the entry leaves the
+    // ring buffer.
+    let consoleSelected = new Set();
+    // Last clicked row id — anchor for shift-range selection. Stays
+    // valid across renders because ids are stable (consoleNextId is
+    // monotonic and entries only ever leave the buffer at the head
+    // when CONSOLE_MAX trims).
+    let consoleSelectionAnchor = null;
+    // When true, every new entry pins the view to the bottom (live
+    // tail). When the user scrolls up the body, this auto-flips to
+    // false so they can read mid-history without the latest entry
+    // yanking them away; toggling the pin button at the top of the
+    // drawer re-arms auto-scroll.
+    let consoleAutoScroll = true;
+    // Type-filter — empty Set means "all types". Populated with
+    // strings ('request' / 'response' / 'error' / 'channel') by the
+    // type pills in the toolbar.
+    let consoleTypeFilter = new Set();
+    // Time-filter — minutes back from now. 0 = no time filter.
+    // Driven by the dropdown ("Last 1 / 5 / 15 / 60 min", "All").
+    let consoleTimeFilterMin = 0;
+    // Free-text needle that matches against method/status/body of
+    // each entry. Composes with the structured chip filters above.
+    // Empty string = no text filter.
+    let consoleTextFilter = '';
+    // Toggle for the filter bar that lives below the drawer header.
+    // The funnel button in the header shows/hides the bar; chips
+    // and the search input live inside it.
+    let consoleFilterBarOpen = false;
+
+    function filteredConsoleLog() {
+        var needle = (consoleTextFilter || '').trim().toLowerCase();
+        if (consoleTypeFilter.size === 0 && consoleTimeFilterMin === 0 && !needle) return consoleLog;
+        var cutoff = consoleTimeFilterMin > 0
+            ? Date.now() - consoleTimeFilterMin * 60 * 1000
+            : 0;
+        return consoleLog.filter(function (e) {
+            if (consoleTypeFilter.size > 0 && !consoleTypeFilter.has(e.type)) return false;
+            if (cutoff && e.time < cutoff) return false;
+            if (needle) {
+                var hay = ((e.method || '') + ' '
+                    + (e.status || '') + ' '
+                    + (e.type || '') + ' '
+                    + (typeof e.body === 'string' ? e.body : JSON.stringify(e.body || ''))
+                ).toLowerCase();
+                if (hay.indexOf(needle) === -1) return false;
+            }
+            return true;
+        });
+    }
+
+    // Serialise a list of console entries as a downloadable plain-
+    // text log. Each entry becomes "<time> <TYPE> <method> <status>
+    // <duration> <body>" on one line; expanded bodies are pretty-
+    // printed indented underneath.
+    function serializeConsoleEntries(entries) {
+        return entries.map(function (e) {
+            var date = new Date(e.time).toISOString();
+            var line = '[' + date + '] '
+                + String(e.type || '').toUpperCase()
+                + (e.method ? ' ' + e.method : '')
+                + (e.status ? ' ' + e.status : '')
+                + (typeof e.durationMs === 'number' ? ' ' + e.durationMs + 'ms' : '');
+            var body = '';
+            if (e.body) {
+                try {
+                    var parsed = typeof e.body === 'string' ? JSON.parse(e.body) : e.body;
+                    body = JSON.stringify(parsed, null, 2);
+                } catch {
+                    body = String(e.body);
+                }
+            }
+            return body ? line + '\n' + body : line;
+        }).join('\n\n');
+    }
+
+    function downloadConsoleEntries(entries, filename) {
+        if (!entries.length) return;
+        var blob = new Blob([serializeConsoleEntries(entries)], { type: 'text/plain;charset=utf-8' });
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement('a');
+        a.href = url;
+        a.download = filename || ('bowire-console.log');
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+    }
 
     function addConsoleEntry(entry) {
         var e = Object.assign({
