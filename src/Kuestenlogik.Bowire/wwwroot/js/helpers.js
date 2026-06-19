@@ -1288,8 +1288,35 @@
             row.type = 'button';
             row.className = 'bowire-context-menu-item'
                 + (item.danger ? ' danger' : '')
-                + (item.disabled ? ' disabled' : '');
-            row.textContent = item.label;
+                + (item.disabled ? ' disabled' : '')
+                + (item.icon || item.meta || item.indicator ? ' bowire-context-menu-item-rich' : '');
+            // Tooltip only on rich items (icon/meta/explicit title) so
+            // the truncated label still surfaces the full text. Plain
+            // text items skip the tooltip to avoid redundancy.
+            if (item.title) row.title = item.title;
+            else if (item.icon || item.meta || item.indicator) row.title = item.label || '';
+            if (item.icon) {
+                var iconEl = document.createElement('span');
+                iconEl.className = 'bowire-context-menu-item-icon';
+                iconEl.innerHTML = svgIcon(item.icon);
+                row.appendChild(iconEl);
+            }
+            if (item.indicator) {
+                var ind = document.createElement('span');
+                ind.className = 'bowire-context-menu-item-indicator is-' + item.indicator;
+                ind.setAttribute('aria-label', item.indicator);
+                row.appendChild(ind);
+            }
+            var lbl = document.createElement('span');
+            lbl.className = 'bowire-context-menu-item-label';
+            lbl.textContent = item.label;
+            row.appendChild(lbl);
+            if (item.meta) {
+                var meta = document.createElement('span');
+                meta.className = 'bowire-context-menu-item-meta';
+                meta.textContent = item.meta;
+                row.appendChild(meta);
+            }
             if (item.disabled) row.setAttribute('disabled', 'disabled');
             row.onclick = function (ev) {
                 ev.stopPropagation();

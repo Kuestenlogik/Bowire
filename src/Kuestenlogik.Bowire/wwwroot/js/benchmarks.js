@@ -728,7 +728,8 @@
         loadBenchmarks();
         var items = [];
         items.push({
-            label: '+ New envelope from this',
+            label: 'New envelope from this',
+            icon: 'plus',
             onClick: function () {
                 var seed = { targets: [target] };
                 if (options.name) seed.name = options.name;
@@ -748,8 +749,16 @@
             items.push({ separator: true });
             benchmarksList.forEach(function (env) {
                 var t = env.targets || [];
+                var isRunning = (typeof benchmarkActiveSpecId !== 'undefined'
+                    && benchmarkActiveSpecId === env.id
+                    && benchmark && benchmark.running);
                 items.push({
-                    label: env.name + '  ·  ' + t.length + ' target' + (t.length === 1 ? '' : 's'),
+                    label: env.name,
+                    title: env.name + ' · ' + t.length + ' target' + (t.length === 1 ? '' : 's')
+                        + (isRunning ? ' · running' : ''),
+                    icon: 'lightning',
+                    meta: t.length + (t.length === 1 ? ' target' : ' targets'),
+                    indicator: isRunning ? 'running' : null,
                     onClick: function () {
                         if (!Array.isArray(env.targets)) env.targets = [];
                         env.targets.push(target);
