@@ -765,24 +765,35 @@
 
     // ---- Detail-pane helpers ----
 
-    function _modeRadio(spec, value, label, title) {
-        var checked = (spec.mode || 'sequential') === value;
-        return el('label', {
-            className: 'bowire-envelope-mode-radio' + (checked ? ' is-active' : ''),
-            title: title
-        },
-            el('input', {
-                type: 'radio',
-                name: 'envelope-mode-' + spec.id,
-                value: value,
-                checked: checked ? 'checked' : null,
-                onChange: function () {
+    function _renderModeSegmented(spec) {
+        // Two-position segmented control — replaces the old pair of
+        // bordered radio cards. Single bordered host with the active
+        // option highlighted via accent tint.
+        var current = spec.mode || 'sequential';
+        function seg(value, label, title) {
+            var active = current === value;
+            return el('button', {
+                type: 'button',
+                className: 'bowire-envelope-mode-seg' + (active ? ' is-active' : ''),
+                title: title,
+                'aria-pressed': active ? 'true' : 'false',
+                onClick: function () {
+                    if (active) return;
                     spec.mode = value;
                     persistBenchmarks();
                     render();
                 }
-            }),
-            el('span', { textContent: label })
+            }, el('span', { textContent: label }));
+        }
+        return el('div', {
+            className: 'bowire-envelope-mode-seg-host',
+            role: 'radiogroup',
+            'aria-label': 'Per-iteration target dispatch mode'
+        },
+            seg('sequential', 'Sequential',
+                'Targets are invoked one after the other per VU iteration. Iteration fails on first error.'),
+            seg('parallel', 'Parallel',
+                'Targets are all invoked at once per VU iteration. Iteration succeeds when every target succeeds.')
         );
     }
 
@@ -844,55 +855,63 @@
         var section = el('div', { className: 'bowire-ws-detail-section' });
         section.appendChild(el('div', { className: 'bowire-ws-detail-section-label', textContent: 'Targets' }));
 
-        var list = el('div', { className: 'bowire-envelope-targets' });
-        (spec.targets || []).forEach(function (target, idx) {
-            list.appendChild(_renderTargetRow(spec, target, idx));
-        });
-        section.appendChild(list);
+        if ((spec.targets || []).length === 0) {
+            section.appendChild(el('div', {
+                className: 'bowire-envelope-targets-empty',
+                textContent: 'No targets yet — add a method, collection, or recording below.'
+            }));
+        } else {
+            var list = el('div', { className: 'bowire-envelope-targets' });
+            spec.targets.forEach(function (target, idx) {
+                list.appendChild(_renderTargetRow(spec, target, idx));
+            });
+            section.appendChild(list);
+        }
 
-        // Add-target dropdown — Method / Collection / Recording. Each
-        // adds a fresh entry; the user then picks the actual id in
-        // the row's inline editor.
-        var addRow = el('div', { className: 'bowire-envelope-targets-add' });
-        addRow.appendChild(el('button', {
+        // Add-target — single dropdown button replaces the three
+        // bespoke buttons. Picks Method / Collection / Recording via
+        // showContextMenu; the seeded target's actual id is filled
+        // in via the row's inline editor.
+        var addBtn = el('button', {
             type: 'button',
             className: 'bowire-envelope-target-add-btn',
-            textContent: '+ Method',
-            title: 'Add a discover-style method target',
-            onClick: function () {
-                spec.targets.push({
-                    type: 'method',
-                    service: (typeof selectedService !== 'undefined' && selectedService) ? selectedService.name : '',
-                    method: (typeof selectedMethod !== 'undefined' && selectedMethod) ? selectedMethod.name : '',
-                    protocol: null, body: '{}', metadata: {}, serverUrl: null
-                });
-                persistBenchmarks();
-                render();
+            title: 'Add a target (method, collection or recording)',
+            onClick: function (ev) {
+                if (typeof showContextMenu !== 'function') return;
+                showContextMenu(ev.clientX, ev.clientY, [
+                    {
+                        label: 'Method',
+                        onClick: function () {
+                            spec.targets.push({
+                                type: 'method',
+                                service: (typeof selectedService !== 'undefined' && selectedService) ? selectedService.name : '',
+                                method: (typeof selectedMethod !== 'undefined' && selectedMethod) ? selectedMethod.name : '',
+                                protocol: null, body: '{}', metadata: {}, serverUrl: null
+                            });
+                            persistBenchmarks(); render();
+                        }
+                    },
+                    {
+                        label: 'Collection replay',
+                        onClick: function () {
+                            spec.targets.push({ type: 'collection-ref', collectionId: null, itemIndex: null });
+                            persistBenchmarks(); render();
+                        }
+                    },
+                    {
+                        label: 'Recording replay',
+                        onClick: function () {
+                            spec.targets.push({ type: 'recording-ref', recordingId: null, stepIndex: null });
+                            persistBenchmarks(); render();
+                        }
+                    }
+                ]);
             }
-        }));
-        addRow.appendChild(el('button', {
-            type: 'button',
-            className: 'bowire-envelope-target-add-btn',
-            textContent: '+ Collection',
-            title: 'Add a collection replay target',
-            onClick: function () {
-                spec.targets.push({ type: 'collection-ref', collectionId: null, itemIndex: null });
-                persistBenchmarks();
-                render();
-            }
-        }));
-        addRow.appendChild(el('button', {
-            type: 'button',
-            className: 'bowire-envelope-target-add-btn',
-            textContent: '+ Recording',
-            title: 'Add a recording replay target',
-            onClick: function () {
-                spec.targets.push({ type: 'recording-ref', recordingId: null, stepIndex: null });
-                persistBenchmarks();
-                render();
-            }
-        }));
-        section.appendChild(addRow);
+        },
+            el('span', { textContent: '+ Add target' }),
+            el('span', { className: 'bowire-envelope-add-caret', innerHTML: svgIcon('chevronDown') })
+        );
+        section.appendChild(addBtn);
         return section;
     }
 
@@ -1033,11 +1052,18 @@
         var section = el('div', { className: 'bowire-ws-detail-section' });
         section.appendChild(el('div', { className: 'bowire-ws-detail-section-label', textContent: 'Phases' }));
 
-        var list = el('div', { className: 'bowire-envelope-phases' });
-        (spec.phases || []).forEach(function (phase, idx) {
-            list.appendChild(_renderPhaseRow(spec, phase, idx));
-        });
-        section.appendChild(list);
+        if ((spec.phases || []).length === 0) {
+            section.appendChild(el('div', {
+                className: 'bowire-envelope-targets-empty',
+                textContent: 'No phases yet — add one to define the load profile.'
+            }));
+        } else {
+            var list = el('div', { className: 'bowire-envelope-phases' });
+            spec.phases.forEach(function (phase, idx) {
+                list.appendChild(_renderPhaseRow(spec, phase, idx));
+            });
+            section.appendChild(list);
+        }
 
         section.appendChild(el('button', {
             type: 'button',
@@ -1051,6 +1077,39 @@
             }
         }));
         return section;
+    }
+
+    // Parse '30s' / '5m' / '1h' / plain ms into a number of
+    // milliseconds. Returns null on un-parseable input so the caller
+    // can ignore the keystroke.
+    function _parseDurationToMs(text) {
+        if (text == null) return null;
+        var s = String(text).trim().toLowerCase();
+        if (!s) return null;
+        var m = s.match(/^(\d+(?:\.\d+)?)\s*(ms|s|m|h)?$/);
+        if (!m) return null;
+        var n = parseFloat(m[1]);
+        if (isNaN(n)) return null;
+        var unit = m[2] || 'ms';
+        switch (unit) {
+            case 'ms': return Math.round(n);
+            case 's':  return Math.round(n * 1000);
+            case 'm':  return Math.round(n * 60 * 1000);
+            case 'h':  return Math.round(n * 60 * 60 * 1000);
+        }
+        return null;
+    }
+
+    // Format ms back to the shortest readable string. Hidden-helper
+    // for the duration input's initial value; the user can type any
+    // valid form back.
+    function _formatDurationMs(ms) {
+        if (ms == null || isNaN(ms)) return '';
+        var n = Number(ms);
+        if (n >= 3600000 && n % 3600000 === 0) return (n / 3600000) + 'h';
+        if (n >= 60000 && n % 60000 === 0) return (n / 60000) + 'm';
+        if (n >= 1000 && n % 1000 === 0) return (n / 1000) + 's';
+        return n + 'ms';
     }
 
     function _phaseKind(phase) {
@@ -1106,21 +1165,21 @@
                 phase.totalIterations = v; persistBenchmarks(); render();
             }));
         } else if (kind === 'time') {
-            fields.appendChild(_numberField('Duration (ms)', phase.durationMs || 30000, 100, 3600000, function (v) {
+            fields.appendChild(_durationField('Duration', phase.durationMs || 30000, function (v) {
                 phase.durationMs = v; persistBenchmarks(); render();
             }));
         } else if (kind === 'ramp') {
             fields.appendChild(_numberField('Target VUs', phase.rampToVus || (phase.vus * 2), 1, 64, function (v) {
                 phase.rampToVus = v; persistBenchmarks(); render();
             }));
-            fields.appendChild(_numberField('Duration (ms)', phase.durationMs || 30000, 100, 3600000, function (v) {
+            fields.appendChild(_durationField('Duration', phase.durationMs || 30000, function (v) {
                 phase.durationMs = v; persistBenchmarks(); render();
             }));
         } else if (kind === 'arrival') {
             fields.appendChild(_numberField('Rate (rps)', phase.arrivalRate || 10, 1, 10000, function (v) {
                 phase.arrivalRate = v; persistBenchmarks(); render();
             }));
-            fields.appendChild(_numberField('Duration (ms)', phase.durationMs || 30000, 100, 3600000, function (v) {
+            fields.appendChild(_durationField('Duration', phase.durationMs || 30000, function (v) {
                 phase.durationMs = v; persistBenchmarks(); render();
             }));
         }
@@ -1174,6 +1233,28 @@
                     var v = parseInt(e.target.value, 10);
                     if (isNaN(v)) return;
                     onChange(Math.max(min, Math.min(max, v)));
+                }
+            })
+        );
+    }
+
+    // Duration input — text field that accepts '30s' / '5m' / '1h' /
+    // bare milliseconds. Initial display picks the shortest form
+    // (e.g. 60000 → '1m', 30000 → '30s', 500 → '500ms'). Invalid
+    // keystrokes leave the model unchanged; the input reverts on
+    // blur via render().
+    function _durationField(label, ms, onChange) {
+        return el('div', { className: 'bowire-envelope-field bowire-envelope-field-number' },
+            el('div', { className: 'bowire-envelope-field-label', textContent: label }),
+            el('input', {
+                type: 'text',
+                value: _formatDurationMs(ms),
+                placeholder: '30s, 5m, 1h, 60000…',
+                className: 'bowire-envelope-field-input',
+                onChange: function (e) {
+                    var v = _parseDurationToMs(e.target.value);
+                    if (v == null || v < 100) return;
+                    onChange(v);
                 }
             })
         );
@@ -1326,10 +1407,7 @@
         // ---- Mode toggle (sequential | parallel) ----
         main.appendChild(el('div', { className: 'bowire-ws-detail-section' },
             el('div', { className: 'bowire-ws-detail-section-label', textContent: 'Mode' }),
-            el('div', { className: 'bowire-envelope-mode-row' },
-                _modeRadio(spec, 'sequential', 'Sequential', 'Targets are invoked one after the other per VU iteration. Iteration fails on first error.'),
-                _modeRadio(spec, 'parallel', 'Parallel', 'Targets are all invoked at once per VU iteration. Iteration succeeds when every target succeeds.')
-            )
+            _renderModeSegmented(spec)
         ));
 
         // ---- Targets ----
