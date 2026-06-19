@@ -690,6 +690,59 @@
         return sidebar;
     }
 
+    // ---- Add-target picker (Phase 3 add-surfaces) ----
+    //
+    // Shows a context menu at (clientX, clientY) that lets the user
+    // either drop `target` into an existing envelope OR spawn a new
+    // envelope seeded with it. Callers pass an `options.name` for
+    // the new-envelope path so the resulting spec has a meaningful
+    // default name (e.g. "Benchmark: <method>" or "Benchmark: <collection>").
+    //
+    // `options.jumpAfterCreate` defaults to true — creating a new
+    // envelope hops the rail to Benchmarks and selects it so the
+    // operator can immediately tune phases and Run; appending to an
+    // existing envelope stays put with a toast (less interruptive).
+    function addTargetToEnvelopePicker(clientX, clientY, target, options) {
+        options = options || {};
+        if (typeof showContextMenu !== 'function') return;
+        loadBenchmarks();
+        var items = [];
+        items.push({
+            label: '+ New envelope from this',
+            onClick: function () {
+                var seed = { targets: [target] };
+                if (options.name) seed.name = options.name;
+                var spec = createBenchmarkSpec(seed);
+                if (typeof benchmarksSelectedId !== 'undefined' && spec) {
+                    benchmarksSelectedId = spec.id;
+                }
+                if (options.jumpAfterCreate !== false) {
+                    railMode = 'benchmarks';
+                    try { localStorage.setItem('bowire_rail_mode', 'benchmarks'); } catch { /* ignore */ }
+                }
+                toast('Envelope created', 'success');
+                render();
+            }
+        });
+        if (benchmarksList.length > 0) {
+            items.push({ separator: true });
+            benchmarksList.forEach(function (env) {
+                var t = env.targets || [];
+                items.push({
+                    label: env.name + '  ·  ' + t.length + ' target' + (t.length === 1 ? '' : 's'),
+                    onClick: function () {
+                        if (!Array.isArray(env.targets)) env.targets = [];
+                        env.targets.push(target);
+                        persistBenchmarks();
+                        toast('Added to "' + env.name + '"', 'success');
+                        render();
+                    }
+                });
+            });
+        }
+        showContextMenu(clientX, clientY, items);
+    }
+
     // ---- Detail-pane helpers ----
 
     function _modeRadio(spec, value, label, title) {

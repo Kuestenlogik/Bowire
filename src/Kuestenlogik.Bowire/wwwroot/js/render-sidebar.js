@@ -4222,6 +4222,23 @@
                             methodDragPayload = null;
                             render();
                         },
+                        onContextMenu: function (e) {
+                            // Right-click on a method-tree row opens an
+                            // "Add to envelope…" picker (Phase 3 add-
+                            // surfaces) — the operator can drop the
+                            // method into an existing envelope or spawn
+                            // a new one seeded with it.
+                            if (typeof addTargetToEnvelopePicker !== 'function') return;
+                            e.preventDefault();
+                            e.stopPropagation();
+                            addTargetToEnvelopePicker(e.clientX, e.clientY, {
+                                type: 'method',
+                                service: svc.name,
+                                method: m.name,
+                                protocol: svc.source || null,
+                                body: '{}', metadata: {}, serverUrl: null
+                            }, { name: svc.name + '.' + m.name });
+                        },
                         onClick: function (e) {
                             // Browser-style modifier: Ctrl/Cmd+click
                             // (or middle-click) opens in a new tab;

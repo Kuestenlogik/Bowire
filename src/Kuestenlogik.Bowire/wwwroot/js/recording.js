@@ -1200,26 +1200,20 @@
             el('span', { textContent: 'Parallel sessions' })
         ));
 
-        // #131 — Benchmark this recording. Creates a benchmark spec
-        // with kind=recording, then jumps to the Benchmarks pane.
-        if (typeof createBenchmarkSpec === 'function') {
+        // #131 Phase 3 — "Benchmark" opens an Add-to-envelope picker.
+        // The operator can drop this recording into an existing
+        // envelope or spawn a new one seeded with the recording as
+        // its first target.
+        if (typeof addTargetToEnvelopePicker === 'function') {
             toolbar.appendChild(el('button', {
                 className: 'bowire-recording-action-btn',
                 disabled: !_hasSteps,
-                title: 'Create a benchmark that replays this recording N times',
-                onClick: function () {
-                    var spec = createBenchmarkSpec({
-                        name: 'Benchmark: ' + (rec.name || 'recording'),
-                        kind: 'recording',
-                        sourceId: rec.id
-                    });
-                    if (typeof benchmarksSelectedId !== 'undefined' && spec) {
-                        benchmarksSelectedId = spec.id;
-                    }
-                    railMode = 'benchmarks';
-                    try { localStorage.setItem('bowire_rail_mode', 'benchmarks'); } catch { /* ignore */ }
-                    toast('Benchmark created', 'success');
-                    render();
+                title: 'Add this recording to a benchmark envelope',
+                onClick: function (e) {
+                    addTargetToEnvelopePicker(e.clientX, e.clientY,
+                        { type: 'recording-ref', recordingId: rec.id, stepIndex: null },
+                        { name: 'Benchmark: ' + (rec.name || 'recording') }
+                    );
                 }
             },
                 el('span', { innerHTML: svgIcon('lightning') }),

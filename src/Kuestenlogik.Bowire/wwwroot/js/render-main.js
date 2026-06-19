@@ -3385,6 +3385,21 @@
                         }
                     });
                 }
+                if (available && typeof addTargetToEnvelopePicker === 'function') {
+                    items.push({ separator: true });
+                    items.push({
+                        label: 'Add to envelope…',
+                        onClick: function (ev) {
+                            addTargetToEnvelopePicker(ev.clientX, ev.clientY, {
+                                type: 'method',
+                                service: serviceName,
+                                method: methodName,
+                                protocol: proto || null,
+                                body: '{}', metadata: {}, serverUrl: null
+                            }, { name: serviceName + '.' + methodName });
+                        }
+                    });
+                }
                 showContextMenu(e.clientX, e.clientY, items);
             }
         });
@@ -4724,13 +4739,13 @@
                         el('span', { textContent: 'Save as preset' })
                     ));
 
-                    if (typeof createBenchmarkSpec === 'function') {
+                    if (typeof addTargetToEnvelopePicker === 'function') {
                         // Benchmarking is only meaningful for a request
                         // shape the server actually accepts — otherwise
                         // the user persists a wire that they already
                         // know is broken. Require a successful last
                         // call (statusInfo present, no responseError)
-                        // before letting the item create the spec.
+                        // before letting the item open the picker.
                         var lastCallOk = (typeof statusInfo !== 'undefined' && statusInfo)
                             && (typeof responseError === 'undefined' || !responseError)
                             && statusInfo.status !== 'Error';
@@ -4740,32 +4755,26 @@
                             role: 'menuitem',
                             disabled: lastCallOk ? undefined : true,
                             title: lastCallOk
-                                ? 'Save this request as a benchmark spec'
-                                : 'Execute a successful call first — benchmarks need a known-good request',
-                            onClick: function () {
+                                ? 'Add this method to a benchmark envelope'
+                                : 'Execute a successful call first — envelopes need a known-good request',
+                            onClick: function (ev) {
                                 if (!lastCallOk) return;
                                 var snap = _snapshotRequest();
                                 if (!snap) return;
-                                var spec = createBenchmarkSpec({
-                                    name: snap.service + '.' + snap.method,
+                                _closeAddToMenu();
+                                addTargetToEnvelopePicker(ev.clientX, ev.clientY, {
+                                    type: 'method',
                                     service: snap.service,
                                     method: snap.method,
                                     protocol: snap.protocol,
                                     body: snap.body,
-                                    metadata: snap.metadata || {}
-                                });
-                                if (typeof benchmarksSelectedId !== 'undefined' && spec) {
-                                    benchmarksSelectedId = spec.id;
-                                }
-                                railMode = 'benchmarks';
-                                try { localStorage.setItem('bowire_rail_mode', 'benchmarks'); } catch { /* ignore */ }
-                                toast('Benchmark created', 'success');
-                                _closeAddToMenu();
-                                render();
+                                    metadata: snap.metadata || {},
+                                    serverUrl: null
+                                }, { name: snap.service + '.' + snap.method });
                             }
                         },
                             el('span', { className: 'bowire-header-addto-item-icon', innerHTML: svgIcon('lightning') }),
-                            el('span', { textContent: 'Create benchmark' })
+                            el('span', { textContent: 'Add to envelope…' })
                         ));
                     }
 
