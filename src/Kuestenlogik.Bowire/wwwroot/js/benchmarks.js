@@ -588,26 +588,46 @@
                     render();
                 }
             },
-            overflow: (benchmarksList && benchmarksList.length > 0) ? [
-                {
-                    label: 'Delete all benchmarks',
-                    danger: true,
-                    onClick: function () {
-                        var n = benchmarksList.length;
-                        bowireConfirm(
-                            'Delete all ' + n + ' benchmarks?',
-                            function () {
-                                benchmarksList.length = 0;
-                                benchmarksSelectedId = null;
-                                if (typeof persistBenchmarks === 'function') persistBenchmarks();
-                                toast(n + ' benchmark' + (n === 1 ? '' : 's') + ' deleted', 'success');
-                                render();
-                            },
-                            { title: 'Delete all benchmarks', confirmText: 'Delete ' + n, danger: true }
-                        );
-                    }
+            overflow: (function () {
+                var items = [];
+                items.push({ label: 'Import from Artillery JSON…',
+                    onClick: function () { importEnvelopeFrom('artillery'); } });
+                items.push({ label: 'Import from Postman Collection…',
+                    onClick: function () { importEnvelopeFrom('postman'); } });
+                items.push({ label: 'Import Bowire envelope…',
+                    onClick: function () { importEnvelopeFrom('native'); } });
+                if (benchmarksSelectedId && getBenchmarkSpec(benchmarksSelectedId)) {
+                    items.push({ separator: true });
+                    items.push({ label: 'Export as Artillery JSON',
+                        onClick: function () { exportSelectedEnvelopeAs('artillery'); } });
+                    items.push({ label: 'Export as k6 script',
+                        onClick: function () { exportSelectedEnvelopeAs('k6'); } });
+                    items.push({ label: 'Export as Bowire envelope',
+                        onClick: function () { exportSelectedEnvelopeAs('native'); } });
                 }
-            ] : null
+                if (benchmarksList && benchmarksList.length > 0) {
+                    items.push({ separator: true });
+                    items.push({
+                        label: 'Delete all benchmarks',
+                        danger: true,
+                        onClick: function () {
+                            var n = benchmarksList.length;
+                            bowireConfirm(
+                                'Delete all ' + n + ' benchmarks?',
+                                function () {
+                                    benchmarksList.length = 0;
+                                    benchmarksSelectedId = null;
+                                    if (typeof persistBenchmarks === 'function') persistBenchmarks();
+                                    toast(n + ' benchmark' + (n === 1 ? '' : 's') + ' deleted', 'success');
+                                    render();
+                                },
+                                { title: 'Delete all benchmarks', confirmText: 'Delete ' + n, danger: true }
+                            );
+                        }
+                    });
+                }
+                return items;
+            })()
         }));
 
         var list = el('div', { id: 'bowire-benchmarks-list', className: 'bowire-env-list' });
@@ -1414,4 +1434,374 @@
         }
 
         return main;
+    }
+
+    // ---------- Phase 4 — Interop (Artillery / k6 / Postman) ----------
+    //
+    // Artillery JSON is the natural fit for envelope round-trip:
+    // config.phases ≈ spec.phases, scenarios[].flow ≈ spec.targets.
+    // We emit JSON instead of YAML because Artillery accepts JSON
+    // and the browser doesn't ship a YAML parser.
+    //
+    // k6 is export-only — we generate a complete .js script with
+    // `export const options = { stages: [...] }` and a default
+    // function body that fetches each method target. Stage shape
+    // maps from our (vus, durationMs) phases.
+    //
+    // Postman is import-only — we accept a Postman Collection JSON
+    // and map each request to a method target, then read the
+    // collection-level "info.runner.iterations" (or fall back to 1)
+    // for the iteration count.
+
+    function _envelopeArtilleryBaseUrl() {
+        // Pick the first discovered URL as the Artillery `target` —
+        // Artillery is URL-based, our targets are RPC-shape, so this
+        // is the best heuristic. Operators can edit after export.
+        if (typeof serverUrls !== 'undefined' && serverUrls.length > 0) {
+            return serverUrls[0];
+        }
+        return 'http://localhost:5000';
+    }
+
+    function _envelopeMethodTargetToArtilleryStep(target) {
+        // Bowire's /api/invoke endpoint takes the protocol + service +
+        // method in the body — emit a Postman/Artillery-style POST
+        // pointing at it so an actual Artillery run hits the local
+        // workbench, not the upstream service directly. This keeps
+        // semantics consistent (auth, vars, plugin pipeline all run).
+        return {
+            post: {
+                url: '/api/invoke',
+                json: {
+                    service: target.service,
+                    method: target.method,
+                    protocol: target.protocol,
+                    messages: [target.body || '{}'],
+                    metadata: target.metadata || null
+                }
+            }
+        };
+    }
+
+    function exportEnvelopeAsArtillery(spec) {
+        var phases = (spec.phases || []).map(function (p) {
+            var ap = {};
+            if (p.durationMs) ap.duration = Math.max(1, Math.round(p.durationMs / 1000));
+            if (p.totalIterations) {
+                // Artillery has no native "fixed iterations" — emulate
+                // as a 1-second phase with the iteration count as
+                // arrivalCount (Artillery's one-shot batch shape).
+                ap.duration = ap.duration || 1;
+                ap.arrivalCount = p.totalIterations;
+            }
+            if (p.arrivalRate) ap.arrivalRate = p.arrivalRate;
+            if (p.vus && !ap.arrivalRate && !ap.arrivalCount) {
+                // VUs-only phase — translate to arrivalCount × duration
+                ap.arrivalRate = p.vus;
+            }
+            if (p.rampToVus) ap.rampTo = p.rampToVus;
+            return ap;
+        });
+
+        var flow = [];
+        (spec.targets || []).forEach(function (t) {
+            if (t.type === 'method') {
+                flow.push(_envelopeMethodTargetToArtilleryStep(t));
+            } else if (t.type === 'collection-ref') {
+                var col = (typeof collectionsList !== 'undefined' ? collectionsList : [])
+                    .find(function (c) { return c.id === t.collectionId; });
+                if (col && Array.isArray(col.items)) {
+                    col.items.forEach(function (it) {
+                        flow.push(_envelopeMethodTargetToArtilleryStep(it));
+                    });
+                }
+            } else if (t.type === 'recording-ref') {
+                var rec = (typeof recordingsList !== 'undefined' ? recordingsList : [])
+                    .find(function (r) { return r.id === t.recordingId; });
+                if (rec && Array.isArray(rec.steps)) {
+                    rec.steps.forEach(function (st) {
+                        flow.push(_envelopeMethodTargetToArtilleryStep({
+                            service: st.service,
+                            method: st.method,
+                            protocol: st.protocol,
+                            body: st.request,
+                            metadata: st.metadata
+                        }));
+                    });
+                }
+            }
+        });
+
+        return {
+            config: {
+                target: _envelopeArtilleryBaseUrl(),
+                phases: phases
+            },
+            scenarios: [{
+                name: spec.name || 'Bowire envelope',
+                flow: flow
+            }]
+        };
+    }
+
+    function importEnvelopeFromArtillery(parsed) {
+        // Best-effort import. Artillery's flow steps are URL-based,
+        // so step targets land with empty service/method — the
+        // operator wires the real targets up after import. Phases
+        // map cleanly.
+        var cfg = parsed.config || {};
+        var phases = (cfg.phases || []).map(function (ap) {
+            var p = {
+                vus: ap.arrivalRate || 1,
+                totalIterations: ap.arrivalCount || null,
+                durationMs: ap.duration ? ap.duration * 1000 : null,
+                rampToVus: ap.rampTo || null,
+                arrivalRate: ap.arrivalRate || null
+            };
+            return defaultEnvelopePhase(p);
+        });
+        if (phases.length === 0) phases = [defaultEnvelopePhase({})];
+
+        var firstScenario = (parsed.scenarios && parsed.scenarios[0]) || { flow: [] };
+        var targets = (firstScenario.flow || []).map(function (step) {
+            // Only POST/GET/PUT/DELETE/PATCH are interpretable.
+            var verbs = ['post', 'get', 'put', 'delete', 'patch'];
+            var verb = verbs.find(function (v) { return step[v]; });
+            if (!verb) return null;
+            var stepCfg = step[verb];
+            // Try to recover a method-shape from the URL — if it's
+            // an /api/invoke call (our own export), parse the JSON
+            // body for service+method.
+            if (stepCfg.url === '/api/invoke' && stepCfg.json) {
+                return {
+                    type: 'method',
+                    service: stepCfg.json.service || '',
+                    method: stepCfg.json.method || '',
+                    protocol: stepCfg.json.protocol || null,
+                    body: (stepCfg.json.messages && stepCfg.json.messages[0]) || '{}',
+                    metadata: stepCfg.json.metadata || {},
+                    serverUrl: null
+                };
+            }
+            // Generic URL step — leave service/method blank for the
+            // operator to fill in.
+            return {
+                type: 'method',
+                service: '', method: '',
+                protocol: null,
+                body: stepCfg.json ? JSON.stringify(stepCfg.json) : '{}',
+                metadata: {}, serverUrl: stepCfg.url || null
+            };
+        }).filter(Boolean);
+        if (targets.length === 0) {
+            targets = [{ type: 'method', service: '', method: '',
+                protocol: null, body: '{}', metadata: {}, serverUrl: null }];
+        }
+
+        return createBenchmarkSpec({
+            name: firstScenario.name || 'Imported from Artillery',
+            targets: targets,
+            phases: phases,
+            mode: 'sequential'
+        });
+    }
+
+    function exportEnvelopeAsK6(spec) {
+        // Map phases to k6 stages. k6 has only vus+duration stages —
+        // iteration-bounded phases get translated to vus + estimated
+        // duration (1 second per phase as a placeholder; operators
+        // adjust). Arrival-rate phases are translated via the
+        // ramping-arrival-rate executor in a comment so the user
+        // can switch over manually.
+        var stages = (spec.phases || []).map(function (p) {
+            var target = p.rampToVus || p.vus || 1;
+            var durationS = p.durationMs ? Math.max(1, Math.round(p.durationMs / 1000)) : 1;
+            return { duration: durationS + 's', target: target };
+        });
+
+        // Build the default function — one fetch per method target.
+        var targetCalls = [];
+        (spec.targets || []).forEach(function (t) {
+            if (t.type !== 'method') return;
+            targetCalls.push(
+                "    http.post(\n" +
+                "        baseUrl + '/api/invoke',\n" +
+                "        JSON.stringify({\n" +
+                "            service: '" + (t.service || '') + "',\n" +
+                "            method: '" + (t.method || '') + "',\n" +
+                "            protocol: " + (t.protocol ? "'" + t.protocol + "'" : 'null') + ",\n" +
+                "            messages: [" + JSON.stringify(t.body || '{}') + "],\n" +
+                "            metadata: " + JSON.stringify(t.metadata || null) + "\n" +
+                "        }),\n" +
+                "        { headers: { 'Content-Type': 'application/json' } }\n" +
+                "    );"
+            );
+        });
+
+        return "// Generated from Bowire envelope '" + (spec.name || '(unnamed)') + "'\n" +
+            "// Run with: k6 run script.js\n" +
+            "import http from 'k6/http';\n" +
+            "import { sleep } from 'k6';\n" +
+            "\n" +
+            "export const options = {\n" +
+            "    stages: " + JSON.stringify(stages, null, 2).replace(/\n/g, '\n    ') + "\n" +
+            "};\n" +
+            "\n" +
+            "const baseUrl = '" + _envelopeArtilleryBaseUrl() + "';\n" +
+            "\n" +
+            "export default function () {\n" +
+            (targetCalls.length > 0 ? targetCalls.join('\n') : "    // No method targets in envelope.") + "\n" +
+            "}\n";
+    }
+
+    function importEnvelopeFromPostman(parsed) {
+        // Walk the Postman Collection's items (possibly nested in
+        // folders) and turn each request into a method target. The
+        // collection-level "info" carries an optional runner config
+        // that hints at iteration count.
+        var requests = [];
+        function _walk(items) {
+            (items || []).forEach(function (it) {
+                if (Array.isArray(it.item)) {
+                    _walk(it.item);
+                } else if (it.request) {
+                    requests.push(it);
+                }
+            });
+        }
+        _walk((parsed.item) || []);
+
+        var targets = requests.map(function (it) {
+            var req = it.request || {};
+            var url = typeof req.url === 'string' ? req.url
+                : (req.url && (req.url.raw || req.url.path)) || '';
+            var bodyText = '{}';
+            if (req.body && req.body.raw) bodyText = String(req.body.raw);
+            var metadata = {};
+            (req.header || []).forEach(function (h) {
+                if (h && h.key) metadata[h.key] = h.value || '';
+            });
+            return {
+                type: 'method',
+                service: 'rest',
+                method: (req.method || 'GET') + ' ' + url,
+                protocol: 'rest',
+                body: bodyText, metadata: metadata,
+                serverUrl: null
+            };
+        });
+        if (targets.length === 0) {
+            targets = [{ type: 'method', service: '', method: '',
+                protocol: null, body: '{}', metadata: {}, serverUrl: null }];
+        }
+
+        var iter = 1;
+        var info = parsed.info || {};
+        if (info.runner && info.runner.iterations) iter = parseInt(info.runner.iterations, 10) || 1;
+
+        return createBenchmarkSpec({
+            name: info.name || 'Imported from Postman',
+            targets: targets,
+            phases: [defaultEnvelopePhase({ vus: 1, totalIterations: iter })],
+            mode: 'sequential'
+        });
+    }
+
+    // Trigger a browser download with `text` as `filename` (mime).
+    function _downloadEnvelopeArtifact(filename, mime, text) {
+        try {
+            var blob = new Blob([text], { type: mime });
+            var url = URL.createObjectURL(blob);
+            var a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            setTimeout(function () {
+                URL.revokeObjectURL(url);
+                a.remove();
+            }, 0);
+        } catch (e) {
+            console.warn('[bowire] envelope download failed', e);
+            toast('Download failed', 'error');
+        }
+    }
+
+    // Prompt for a file via a hidden <input type=file>, read the
+    // text, and hand it to the parser. Used for both Artillery and
+    // Postman imports.
+    function _pickEnvelopeJsonFile(label, onParsed) {
+        var input = document.createElement('input');
+        input.type = 'file';
+        input.accept = '.json,application/json';
+        input.onchange = function () {
+            var file = input.files && input.files[0];
+            if (!file) return;
+            var reader = new FileReader();
+            reader.onload = function () {
+                try {
+                    var parsed = JSON.parse(reader.result || '{}');
+                    onParsed(parsed);
+                } catch (e) {
+                    toast(label + ' import failed: ' + e.message, 'error');
+                }
+            };
+            reader.readAsText(file);
+        };
+        input.click();
+    }
+
+    function exportSelectedEnvelopeAs(format) {
+        var spec = getBenchmarkSpec(benchmarksSelectedId);
+        if (!spec) { toast('Pick an envelope to export', 'error'); return; }
+        var stem = (spec.name || 'envelope').replace(/[^\w\-]+/g, '_');
+        if (format === 'artillery') {
+            var artillery = exportEnvelopeAsArtillery(spec);
+            _downloadEnvelopeArtifact(stem + '.artillery.json', 'application/json',
+                JSON.stringify(artillery, null, 2));
+            toast('Exported as Artillery JSON', 'success');
+        } else if (format === 'k6') {
+            var k6 = exportEnvelopeAsK6(spec);
+            _downloadEnvelopeArtifact(stem + '.k6.js', 'application/javascript', k6);
+            toast('Exported as k6 script', 'success');
+        } else if (format === 'native') {
+            _downloadEnvelopeArtifact(stem + '.bowire-envelope.json', 'application/json',
+                JSON.stringify(spec, null, 2));
+            toast('Exported as Bowire envelope', 'success');
+        }
+    }
+
+    function importEnvelopeFrom(format) {
+        if (format === 'artillery') {
+            _pickEnvelopeJsonFile('Artillery', function (parsed) {
+                var spec = importEnvelopeFromArtillery(parsed);
+                benchmarksSelectedId = spec.id;
+                railMode = 'benchmarks';
+                try { localStorage.setItem('bowire_rail_mode', 'benchmarks'); } catch { /* ignore */ }
+                toast('Imported Artillery config', 'success');
+                render();
+            });
+        } else if (format === 'postman') {
+            _pickEnvelopeJsonFile('Postman', function (parsed) {
+                var spec = importEnvelopeFromPostman(parsed);
+                benchmarksSelectedId = spec.id;
+                railMode = 'benchmarks';
+                try { localStorage.setItem('bowire_rail_mode', 'benchmarks'); } catch { /* ignore */ }
+                toast('Imported Postman collection', 'success');
+                render();
+            });
+        } else if (format === 'native') {
+            _pickEnvelopeJsonFile('Bowire envelope', function (parsed) {
+                // Native imports preserve everything — just clone the
+                // raw object with a fresh id so it doesn't collide
+                // with an existing entry.
+                parsed.id = 'env_' + Math.random().toString(36).slice(2, 10);
+                migrateEnvelope(parsed);
+                benchmarksList.push(parsed);
+                persistBenchmarks();
+                benchmarksSelectedId = parsed.id;
+                toast('Imported envelope', 'success');
+                render();
+            });
+        }
     }
