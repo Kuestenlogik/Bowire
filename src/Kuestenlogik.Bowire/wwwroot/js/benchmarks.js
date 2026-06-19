@@ -1463,12 +1463,37 @@
         return 'http://localhost:5000';
     }
 
+    // Postman/Artillery use {{var}} interpolation, Bowire uses ${var}.
+    // Both syntaxes name the same thing — the variable name — so the
+    // rewrite is mechanical. Whitespace inside the braces is folded.
+    // No escape mechanism: literal '{{ }}' in source text gets eaten.
+    // The reverse direction is symmetric.
+    function _postmanVarsToBowire(text) {
+        if (text == null) return text;
+        return String(text).replace(/\{\{\s*([^{}]+?)\s*\}\}/g, '${$1}');
+    }
+    function _bowireVarsToHandlebars(text) {
+        if (text == null) return text;
+        return String(text).replace(/\$\{\s*([^${}]+?)\s*\}/g, '{{$1}}');
+    }
+    function _convertMetadataVars(metadata, fn) {
+        if (!metadata || typeof metadata !== 'object') return metadata;
+        var out = {};
+        Object.keys(metadata).forEach(function (k) {
+            out[k] = fn(metadata[k]);
+        });
+        return out;
+    }
+
     function _envelopeMethodTargetToArtilleryStep(target) {
         // Bowire's /api/invoke endpoint takes the protocol + service +
         // method in the body — emit a Postman/Artillery-style POST
         // pointing at it so an actual Artillery run hits the local
         // workbench, not the upstream service directly. This keeps
         // semantics consistent (auth, vars, plugin pipeline all run).
+        // Bowire's ${var} syntax is rewritten to Artillery's {{var}}
+        // so per-iteration substitution stays live on the receiving
+        // side.
         return {
             post: {
                 url: '/api/invoke',
@@ -1476,8 +1501,8 @@
                     service: target.service,
                     method: target.method,
                     protocol: target.protocol,
-                    messages: [target.body || '{}'],
-                    metadata: target.metadata || null
+                    messages: [_bowireVarsToHandlebars(target.body || '{}')],
+                    metadata: _convertMetadataVars(target.metadata, _bowireVarsToHandlebars) || null
                 }
             }
         };
@@ -1578,18 +1603,22 @@
                     service: stepCfg.json.service || '',
                     method: stepCfg.json.method || '',
                     protocol: stepCfg.json.protocol || null,
-                    body: (stepCfg.json.messages && stepCfg.json.messages[0]) || '{}',
-                    metadata: stepCfg.json.metadata || {},
+                    body: _postmanVarsToBowire((stepCfg.json.messages && stepCfg.json.messages[0]) || '{}'),
+                    metadata: _convertMetadataVars(stepCfg.json.metadata, _postmanVarsToBowire) || {},
                     serverUrl: null
                 };
             }
             // Generic URL step — leave service/method blank for the
-            // operator to fill in.
+            // operator to fill in. {{var}} placeholders inside the
+            // body get rewritten to ${var} so Bowire's variable
+            // resolver picks them up on Run.
             return {
                 type: 'method',
                 service: '', method: '',
                 protocol: null,
-                body: stepCfg.json ? JSON.stringify(stepCfg.json) : '{}',
+                body: stepCfg.json
+                    ? _postmanVarsToBowire(JSON.stringify(stepCfg.json))
+                    : '{}',
                 metadata: {}, serverUrl: stepCfg.url || null
             };
         }).filter(Boolean);
@@ -1681,12 +1710,18 @@
             (req.header || []).forEach(function (h) {
                 if (h && h.key) metadata[h.key] = h.value || '';
             });
+            // Postman variables ({{var}}) get rewritten to Bowire's
+            // ${var} on both body and header values so per-iteration
+            // substitution stays live after import. Url string carries
+            // the same syntax; we rewrite it too for the captured
+            // method label.
             return {
                 type: 'method',
                 service: 'rest',
-                method: (req.method || 'GET') + ' ' + url,
+                method: (req.method || 'GET') + ' ' + _postmanVarsToBowire(url),
                 protocol: 'rest',
-                body: bodyText, metadata: metadata,
+                body: _postmanVarsToBowire(bodyText),
+                metadata: _convertMetadataVars(metadata, _postmanVarsToBowire),
                 serverUrl: null
             };
         });
