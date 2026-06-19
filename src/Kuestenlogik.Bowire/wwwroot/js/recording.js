@@ -261,6 +261,63 @@
         render();
     }
 
+    // Resume capturing into an existing recording — new requests
+    // get appended to its steps list instead of starting a fresh
+    // entry. Idempotent: re-targeting the currently-active recording
+    // is a no-op; pointing at a finalised one re-arms the capture
+    // hook. Used by the Recordings sidebar's "Continue" affordance.
+    function continueRecording(id) {
+        var rec = recordingsList.find(function (r) { return r.id === id; });
+        if (!rec) return;
+        recordingActiveId = rec.id;
+        if (typeof recordingManagerSelectedId !== 'undefined') {
+            recordingManagerSelectedId = rec.id;
+        }
+        persistRecordings();
+        addConsoleEntry({ type: 'response', method: rec.name, status: 'Recording resumed' });
+        render();
+    }
+
+    // Rename a saved recording — used by both the sidebar inline
+    // rename affordance and the context menu's "Rename…" entry.
+    // Silently ignores blank names so the caller can do
+    // `if (!renameRecording(id, newName)) toast(...)` without
+    // checking the prompt result twice.
+    function renameRecording(id, name) {
+        var trimmed = String(name || '').trim();
+        if (!trimmed) return false;
+        var rec = recordingsList.find(function (r) { return r.id === id; });
+        if (!rec) return false;
+        rec.name = trimmed;
+        persistRecordings();
+        render();
+        return true;
+    }
+
+    // Project a recording's captured steps onto Collection-item
+    // shape — each unary step becomes one item, channel / streaming
+    // steps are skipped (collections only know unary today). Returns
+    // the items so callers can route them either into an existing
+    // collection or a freshly-created one.
+    function recordingToCollectionItems(rec) {
+        if (!rec || !Array.isArray(rec.steps)) return [];
+        var out = [];
+        rec.steps.forEach(function (s) {
+            if (s.methodType && s.methodType !== 'Unary') return;
+            out.push({
+                service: s.service,
+                method: s.method,
+                methodType: s.methodType || 'Unary',
+                protocol: s.protocol,
+                body: s.body || (Array.isArray(s.messages) ? s.messages[0] : '{}'),
+                messages: Array.isArray(s.messages) ? s.messages.slice() : undefined,
+                metadata: s.metadata || null,
+                serverUrl: s.serverUrl || null
+            });
+        });
+        return out;
+    }
+
     function stopRecording() {
         var rec = recordingsList.find(function (r) { return r.id === recordingActiveId; });
         var name = rec ? rec.name : 'Recording';

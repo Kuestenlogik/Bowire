@@ -1098,6 +1098,102 @@
     //   icon → svg glyph, label → text (use either, not both). Null
     //   entries are skipped so callers can express conditional actions
     //   inline (`condition ? {…} : null`).
+    // Unified sidebar toolbar — same shape across every rail's
+    // sidebar so operators don't have to relearn the affordances per
+    // mode. Two states:
+    //   - default: title + primary action (accent button) +
+    //     secondary icon actions + optional overflow ⋮ menu
+    //   - selection: count + bulk-action icons + clear (×)
+    // Selection-mode is offered when opts.selection is set with a
+    // non-zero count; the caller still owns the selection store.
+    //
+    // opts.title          : section heading (string)
+    // opts.primary        : { icon, label, title, onClick } — accent button
+    // opts.actions        : [{ icon, title, onClick, danger?, disabled? }, ...]
+    // opts.overflow       : [{ label, icon?, onClick, danger?, separator? }, ...]
+    // opts.selection      : { count, actions:[{...}], onClear }
+    function renderSidebarToolbar(opts) {
+        opts = opts || {};
+        var sel = opts.selection;
+        if (sel && sel.count > 0) {
+            var selRow = el('div', { className: 'bowire-sidebar-toolbar is-selection' });
+            selRow.appendChild(el('span', {
+                className: 'bowire-sidebar-toolbar-count',
+                textContent: sel.count + ' selected'
+            }));
+            selRow.appendChild(el('span', { className: 'bowire-sidebar-toolbar-spacer' }));
+            (sel.actions || []).forEach(function (a) {
+                if (!a) return;
+                selRow.appendChild(_renderToolbarIconBtn(a));
+            });
+            selRow.appendChild(_renderToolbarIconBtn({
+                icon: 'close',
+                title: 'Clear selection (Esc)',
+                onClick: sel.onClear || function () {}
+            }));
+            return selRow;
+        }
+
+        var row = el('div', { className: 'bowire-sidebar-toolbar' });
+        if (typeof opts.onTitleClick === 'function') {
+            row.appendChild(el('button', {
+                type: 'button',
+                className: 'bowire-sidebar-toolbar-title bowire-sidebar-toolbar-title-link',
+                title: opts.titleClickTitle || 'Open ' + (opts.title || '') + ' overview',
+                'aria-label': opts.titleClickTitle || 'Open ' + (opts.title || '') + ' overview',
+                textContent: opts.title || '',
+                onClick: opts.onTitleClick
+            }));
+        } else {
+            row.appendChild(el('span', { className: 'bowire-sidebar-toolbar-title', textContent: opts.title || '' }));
+        }
+        row.appendChild(el('span', { className: 'bowire-sidebar-toolbar-spacer' }));
+        if (opts.primary) {
+            var p = opts.primary;
+            row.appendChild(el('button', {
+                type: 'button',
+                className: 'bowire-sidebar-toolbar-primary',
+                title: p.title || p.label || 'Add',
+                'aria-label': p.title || p.label || 'Add',
+                disabled: p.disabled ? true : undefined,
+                onClick: p.onClick
+            },
+                p.icon ? el('span', { innerHTML: svgIcon(p.icon) }) : null,
+                p.label ? el('span', { textContent: p.label }) : null
+            ));
+        }
+        (opts.actions || []).forEach(function (a) {
+            if (!a) return;
+            row.appendChild(_renderToolbarIconBtn(a));
+        });
+        if (Array.isArray(opts.overflow) && opts.overflow.length > 0) {
+            row.appendChild(el('button', {
+                type: 'button',
+                className: 'bowire-sidebar-toolbar-btn',
+                title: 'More actions',
+                'aria-label': 'More actions',
+                'aria-haspopup': 'menu',
+                onClick: function (e) {
+                    e.stopPropagation();
+                    showContextMenu(e.clientX, e.clientY, opts.overflow);
+                }
+            }, el('span', { innerHTML: svgIcon('dots') })));
+        }
+        return row;
+    }
+    function _renderToolbarIconBtn(a) {
+        return el('button', {
+            type: 'button',
+            className: 'bowire-sidebar-toolbar-btn'
+                + (a.danger ? ' is-danger' : '')
+                + (a.active ? ' is-active' : ''),
+            title: a.title,
+            'aria-label': a.ariaLabel || a.title,
+            disabled: a.disabled ? true : undefined,
+            onClick: a.onClick
+        }, a.icon ? el('span', { innerHTML: svgIcon(a.icon) }) : el('span', { textContent: a.label || '?' }));
+    }
+
     function renderSidebarHeader(opts) {
         opts = opts || {};
         var row = el('div', { className: 'bowire-env-list-header' });
@@ -1832,6 +1928,10 @@
             mock: '<svg viewBox="0 0 512 512" fill="currentColor"><g transform="translate(512,0) scale(-1,1)"><path d="M489.518,201.801C484.932,88.594,392.72,0,279.307,0C166.021,0,73.349,89.983,69.025,202.237 c-14.52,28.421-40.695,81.771-41.893,84.215c-6.784,13.536-7.038,29.476-0.587,43.479c6.427,13.965,18.677,24.129,33.61,27.865 l9.585,2.404c4.649,20.986,11.639,52.62,13.829,62.673c8.251,37.973,28.198,54.176,66.696,54.176 c5.332,0,10.759-0.318,16.043-0.834v3.285V512h32.499h190.645h32.499v-32.499v-66.719c0-21.74,6.712-42.822,17.948-56.389 C486.162,300.559,492.462,241.623,489.518,201.801z M414.872,335.66c-18.772,22.661-25.421,52.962-25.421,77.122v66.719H198.806 v-42.155c0,0-26.294,7.205-48.542,7.205c-22.232,0-29.833-5.094-34.943-28.596c-3.38-15.519-18.193-82.406-18.193-82.406 l-29.08-7.276c-5.292-1.325-9.703-4.975-11.988-9.942c-2.286-4.959-2.198-10.687,0.245-15.567c0,0,31.801-64.823,45.059-90.356 c0.016-98.258,79.677-177.911,177.943-177.911c95.997,0,174.19,76.034,177.76,171.158 C459.963,241.362,452.623,290.102,414.872,335.66z"/><path d="M279.307,93.093c-64.815,0-117.34,52.534-117.34,117.349c0,64.799,52.526,117.34,117.34,117.34 c64.8,0,117.34-52.541,117.34-117.34C396.647,145.626,344.107,93.093,279.307,93.093z M279.307,299.044v-88.602h-88.61 c0-48.938,39.671-88.611,88.61-88.611v88.611h88.602C367.909,259.372,328.245,299.044,279.307,299.044z"/></g></svg>',
             filter: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>',
             grip: '<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="5" r="1.5"/><circle cx="15" cy="5" r="1.5"/><circle cx="9" cy="12" r="1.5"/><circle cx="15" cy="12" r="1.5"/><circle cx="9" cy="19" r="1.5"/><circle cx="15" cy="19" r="1.5"/></svg>',
+            // Three-dot overflow handle. Vertical orientation so the
+            // glyph reads as "open this row's hidden actions" — the
+            // same affordance Gmail / GitHub / VS Code use.
+            dots: '<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="12" cy="19" r="1.6"/></svg>',
             chevronUp: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="18 15 12 9 6 15"/></svg>',
             chevronDown: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>',
             // Half-filled circle = "follows system" — left half dark, right half light.

@@ -493,21 +493,10 @@
                 var prev = document.querySelector('.bowire-action-execute-menu');
                 if (prev) { prev.remove(); return; }
                 var menu = el('div', { className: 'bowire-action-execute-menu', role: 'menu' });
-                menu.appendChild(el('button', {
-                    type: 'button',
-                    className: 'bowire-action-execute-menu-item' + (lastCall ? '' : ' is-disabled'),
-                    disabled: lastCall ? undefined : true,
-                    title: lastCall
-                        ? 'Re-send the last logged request to ' + selectedMethod.name
-                        : 'No previous calls',
-                    onClick: function () {
-                        menu.remove();
-                        if (lastCall) repeatLastCall();
-                    }
-                },
-                    el('span', { className: 'bowire-action-execute-menu-icon', innerHTML: svgIcon('repeat') }),
-                    el('span', { textContent: 'Repeat last call' })
-                ));
+                // "Repeat last call" was retired — primary Execute
+                // re-uses the active form state (which already holds
+                // the last sent body) and the History tab's per-row
+                // Replay button restores any older entry verbatim.
                 var lastOkCall = lastCall && lastCall.status && lastCall.status !== 'Error';
                 var canBench = lastOkCall && typeof createBenchmarkSpec === 'function';
                 menu.appendChild(el('button', {
@@ -530,25 +519,29 @@
                     el('span', { className: 'bowire-action-execute-menu-icon', innerHTML: svgIcon('lightning') }),
                     el('span', { textContent: 'Run as benchmark…' })
                 ));
-                var hasPresets = (typeof loadPresets === 'function')
-                    ? loadPresets('discover').some(function (p) {
+                var presetList = (typeof loadPresets === 'function')
+                    ? loadPresets('discover').filter(function (p) {
                         return p && p.config
                             && p.config.service === selectedService.name
                             && p.config.method === selectedMethod.name;
                     })
-                    : false;
+                    : [];
+                var hasPresets = presetList.length > 0;
                 menu.appendChild(el('button', {
                     type: 'button',
                     className: 'bowire-action-execute-menu-item' + (hasPresets ? '' : ' is-disabled'),
                     disabled: hasPresets ? undefined : true,
                     title: hasPresets
-                        ? 'Apply a saved preset, then execute'
+                        ? 'Pick a saved preset, apply it, then execute'
                         : 'No presets defined for this method',
                     onClick: function () {
                         menu.remove();
                         if (!hasPresets) return;
-                        var presetBtn = document.querySelector('#bowire-header-presets-btn');
-                        if (presetBtn) { try { presetBtn.click(); } catch {} }
+                        // Open a small chooser modal — picking an
+                        // entry applies the preset and immediately
+                        // executes. No detour through the header
+                        // picker dropdown.
+                        _openRunWithPresetDialog(presetList);
                     }
                 },
                     el('span', { className: 'bowire-action-execute-menu-icon', innerHTML: svgIcon('preset') }),
@@ -558,7 +551,19 @@
                 var rect = caret.getBoundingClientRect();
                 menu.style.position = 'fixed';
                 menu.style.left = Math.max(8, rect.left) + 'px';
-                menu.style.top = (rect.bottom + 6) + 'px';
+                // Auto-flip vertically — the action bar lives at the
+                // bottom of the workbench, so a downward popover
+                // gets clipped. Measure after mount and place above
+                // the caret when there isn't enough room below.
+                var menuH = menu.offsetHeight;
+                var vpH = window.innerHeight;
+                var spaceBelow = vpH - rect.bottom;
+                var spaceAbove = rect.top;
+                if (spaceBelow >= menuH + 12 || spaceBelow >= spaceAbove) {
+                    menu.style.top = (rect.bottom + 6) + 'px';
+                } else {
+                    menu.style.top = Math.max(8, rect.top - menuH - 6) + 'px';
+                }
                 setTimeout(function () {
                     function onOutside(ev) {
                         if (!menu.contains(ev.target) && !caret.contains(ev.target)) {
@@ -655,6 +660,72 @@
         // Console toggle retired from the action bar — same affordance
         // lives in the statusbar at the bottom-right.
         return bar;
+    }
+
+    // Modal chooser for "Run with preset…". Lists every preset that
+    // matches the active (service, method); click applies + executes.
+    // Pattern mirrors bowireConfirm — same overlay + dialog classes
+    // so theming + Esc/backdrop close come for free.
+    function _openRunWithPresetDialog(presets) {
+        var existing = document.querySelector('.bowire-confirm-overlay');
+        if (existing) existing.remove();
+        var list = el('div', { className: 'bowire-run-preset-list' });
+        presets.forEach(function (preset) {
+            list.appendChild(el('button', {
+                type: 'button',
+                className: 'bowire-run-preset-item' + (preset.isDefault ? ' is-default' : ''),
+                title: preset.isDefault ? 'Default preset for this method' : preset.name,
+                onClick: function () {
+                    overlay.remove();
+                    if (typeof applyPresetToCurrentMethod === 'function'
+                        && applyPresetToCurrentMethod(preset)) {
+                        // Give the editor + metadata-row patches a
+                        // frame to settle before execute reads the
+                        // DOM. applyPresetToCurrentMethod already
+                        // re-renders, so we wait one rAF.
+                        requestAnimationFrame(function () {
+                            if (typeof handleExecute === 'function') handleExecute();
+                        });
+                    }
+                }
+            },
+                el('span', { className: 'bowire-run-preset-item-name', textContent: preset.name || 'Untitled' }),
+                preset.isDefault
+                    ? el('span', { className: 'bowire-run-preset-item-tag', textContent: 'default' })
+                    : null
+            ));
+        });
+        var cancelBtn = el('button', {
+            className: 'bowire-confirm-btn cancel',
+            textContent: 'Cancel',
+            onClick: function () { overlay.remove(); }
+        });
+        var dialog = el('div', {
+            className: 'bowire-confirm-dialog bowire-run-preset-dialog',
+            role: 'dialog',
+            'aria-modal': 'true',
+            'aria-labelledby': 'bowire-run-preset-title'
+        },
+            el('div', { id: 'bowire-run-preset-title', className: 'bowire-confirm-title', textContent: 'Run with preset' }),
+            el('div', { className: 'bowire-confirm-message', textContent: 'Pick a saved preset for ' + selectedMethod.name + '. The body and headers are applied, then the request is sent.' }),
+            list,
+            el('div', { className: 'bowire-confirm-actions' }, cancelBtn)
+        );
+        var overlay = el('div', {
+            className: 'bowire-confirm-overlay',
+            onClick: function (e) { if (e.target === overlay) overlay.remove(); }
+        }, dialog);
+        document.body.appendChild(overlay);
+        // Esc closes — focus the first preset button so keyboard
+        // navigation works out of the box.
+        document.addEventListener('keydown', function escHandler(e) {
+            if (e.key === 'Escape') {
+                overlay.remove();
+                document.removeEventListener('keydown', escHandler);
+            }
+        });
+        var first = list.querySelector('button');
+        if (first) { try { first.focus(); } catch {} }
     }
 
     function renderConsoleToggleButton() {
