@@ -793,8 +793,14 @@
                 render();
             }
         },
-            el('span', { innerHTML: svgIcon('record'), className: 'bowire-console-toggle-icon bowire-recording-toggle-icon' }),
-            el('span', { textContent: active ? 'Stop' : 'Record' }),
+            el('span', {
+                innerHTML: svgIcon(active ? 'square' : 'record'),
+                className: 'bowire-console-toggle-icon bowire-recording-toggle-icon'
+            }),
+            // Step-count badge in the corner when recording is live —
+            // small accent pill so the operator can glance at it
+            // without the verbose "Record · 4 steps" wording the pill
+            // used to carry.
             active && stepCount > 0
                 ? el('span', { className: 'bowire-console-toggle-count', textContent: String(stepCount) })
                 : null

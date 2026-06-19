@@ -247,7 +247,7 @@
                 toast('Saved to collection', 'success');
             }
         },
-            el('span', { innerHTML: svgIcon('list'), style: 'width:14px;height:14px;display:flex' }),
+            el('span', { innerHTML: svgIcon('folder'), style: 'width:14px;height:14px;display:flex' }),
             el('span', { textContent: 'Save to Collection' })
         ));
         pane.appendChild(actions);
@@ -3348,7 +3348,7 @@
             'data-protocol': proto || 'default',
             'data-direction': dir,
             title: available
-                ? 'Open in Discover'
+                ? 'Open in Discover · right-click for actions'
                 : 'Method no longer in discovery — connect to its server to use it',
             onClick: function () {
                 if (!available) return;
@@ -3356,17 +3356,72 @@
                 try { localStorage.setItem('bowire_rail_mode', 'discover'); } catch { /* ignore */ }
                 sidebarView = 'services';
                 openTab(svc, meth);
+            },
+            onContextMenu: function (e) {
+                e.preventDefault();
+                e.stopPropagation();
+                if (typeof showContextMenu !== 'function') return;
+                var items = [];
+                if (available) {
+                    items.push({
+                        label: 'Open in Discover',
+                        onClick: function () {
+                            railMode = 'discover';
+                            try { localStorage.setItem('bowire_rail_mode', 'discover'); } catch { /* ignore */ }
+                            sidebarView = 'services';
+                            openTab(svc, meth);
+                        }
+                    });
+                    items.push({ separator: true });
+                }
+                if (typeof isFavorite === 'function' && typeof toggleFavorite === 'function') {
+                    var fav = false;
+                    try { fav = isFavorite(serviceName, methodName); } catch { /* ignore */ }
+                    items.push({
+                        label: fav ? 'Remove from favorites' : 'Add to favorites',
+                        onClick: function () {
+                            toggleFavorite(serviceName, methodName);
+                            render();
+                        }
+                    });
+                }
+                showContextMenu(e.clientX, e.clientY, items);
             }
         });
 
+        // Header row: method name + verb badge on the same line.
+        // Previously the badge sat on its own line above the method
+        // name, which used 3 rows for what could be 2 and made the
+        // tile feel oversized for the information it carries.
+        var headerRow = el('div', { className: 'bowire-home-tile-header' },
+            el('span', { className: 'bowire-home-tile-method', textContent: methodName })
+        );
         if (meth) {
-            tile.appendChild(el('span', {
+            headerRow.appendChild(el('span', {
                 className: 'bowire-home-tile-badge bowire-method-badge',
                 dataset: { type: methodBadgeType(meth), direction: dir },
-                textContent: methodBadgeText(meth),
+                textContent: methodBadgeText(meth)
             }));
         }
-        tile.appendChild(el('div', { className: 'bowire-home-tile-method', textContent: methodName }));
+        // Star toggle — shown when the tile is rendered from the
+        // Favorites section (isFavorite=true). Click toggles the
+        // entry off; the surrounding tile click stays bound to
+        // openTab via stopPropagation here.
+        if (isFavorite && typeof toggleFavorite === 'function') {
+            headerRow.appendChild(el('button', {
+                type: 'button',
+                className: 'bowire-home-tile-star',
+                title: 'Remove from favorites',
+                'aria-label': 'Remove ' + serviceName + '.' + methodName + ' from favorites',
+                innerHTML: svgIcon('starFilled'),
+                onClick: function (ev) {
+                    ev.stopPropagation();
+                    toggleFavorite(serviceName, methodName);
+                    render();
+                }
+            }));
+        }
+        tile.appendChild(headerRow);
         tile.appendChild(el('div', { className: 'bowire-home-tile-service', textContent: serviceName }));
 
         return tile;
@@ -3538,35 +3593,81 @@
             var sections = el('div', { className: 'bowire-home-sections' });
 
             var favs = (typeof getFavorites === 'function') ? getFavorites() : [];
-            var favSection = el('div', { className: 'bowire-home-section' });
-            favSection.appendChild(el('h3', { className: 'bowire-home-section-title' },
+            var favSection = el('div', { className: 'bowire-home-section bowire-home-section-favs' });
+            var favExpanded = homeFavView === 'list';
+            var favShown = favExpanded ? favs.length : Math.min(favs.length, 9);
+            var favCountText = (!favExpanded && favs.length > favShown)
+                ? favShown + ' of ' + favs.length
+                : favs.length + (favs.length === 1 ? ' entry' : ' entries');
+            // Title is clickable — same shape as Recent Activity:
+            // toggle between the capped grid (9 tiles, 3x3) and a
+            // scrollable full list.
+            favSection.appendChild(el('button', {
+                type: 'button',
+                className: 'bowire-home-section-title bowire-home-section-title-toggle',
+                title: favExpanded ? 'Collapse to favorites grid' : 'Show full favorites list',
+                'aria-expanded': favExpanded ? 'true' : 'false',
+                onClick: function () {
+                    homeFavView = favExpanded ? 'grid' : 'list';
+                    render();
+                }
+            },
                 el('span', { innerHTML: svgIcon('starFilled'), style: 'color:var(--bowire-accent)' }),
                 el('span', { textContent: 'Favorites' }),
-                el('span', { className: 'bowire-home-section-count', textContent: favs.length + (favs.length === 1 ? ' entry' : ' entries') })
+                el('span', { className: 'bowire-home-section-count', textContent: favCountText }),
+                el('span', {
+                    className: 'bowire-home-section-toggle-caret',
+                    innerHTML: svgIcon(favExpanded ? 'chevronUp' : 'chevronDown')
+                })
             ));
             if (favs.length === 0) {
                 favSection.appendChild(renderEmptyCard({
                     icon: 'star',
                     headline: 'No favorites yet',
                     body: 'Star a method from the sidebar or any recent entry below — it lands here for one-click access across every workflow.'
-                    // hintKey removed — for consistency with the
-                    // 'No recent activity' card below, this hint stays
-                    // until the operator stars their first method.
                 }));
+            } else if (favExpanded) {
+                var favList = el('div', { className: 'bowire-home-recent-list' });
+                favs.forEach(function (fav) {
+                    favList.appendChild(renderHomeTile(fav.service, fav.method, true));
+                });
+                favSection.appendChild(favList);
             } else {
                 var favGrid = el('div', { className: 'bowire-home-grid' });
-                favs.forEach(function (fav) {
+                favs.slice(0, 9).forEach(function (fav) {
                     favGrid.appendChild(renderHomeTile(fav.service, fav.method, true));
                 });
                 favSection.appendChild(favGrid);
             }
             sections.appendChild(favSection);
 
-            var recentSection = el('div', { className: 'bowire-home-section' });
-            recentSection.appendChild(el('h3', { className: 'bowire-home-section-title' },
+            var recentSection = el('div', { className: 'bowire-home-section bowire-home-section-recent' });
+            var isExpanded = homeRecentView === 'list';
+            var recentShown = isExpanded ? recent.length : Math.min(recent.length, 9);
+            var recentCountText = (!isExpanded && recent.length > recentShown)
+                ? recentShown + ' of ' + recent.length
+                : recent.length + (recent.length === 1 ? ' entry' : ' entries');
+            // Section title is clickable — toggles between the
+            // capped grid and a scrollable full-history list. A
+            // chevron indicates which state we're in so it doesn't
+            // look like a plain non-interactive heading.
+            recentSection.appendChild(el('button', {
+                type: 'button',
+                className: 'bowire-home-section-title bowire-home-section-title-toggle',
+                title: isExpanded ? 'Collapse to recent grid' : 'Show full activity list',
+                'aria-expanded': isExpanded ? 'true' : 'false',
+                onClick: function () {
+                    homeRecentView = isExpanded ? 'grid' : 'list';
+                    render();
+                }
+            },
                 el('span', { innerHTML: svgIcon('history') }),
                 el('span', { textContent: 'Recent activity' }),
-                el('span', { className: 'bowire-home-section-count', textContent: recent.length + (recent.length === 1 ? ' entry' : ' entries') })
+                el('span', { className: 'bowire-home-section-count', textContent: recentCountText }),
+                el('span', {
+                    className: 'bowire-home-section-toggle-caret',
+                    innerHTML: svgIcon(isExpanded ? 'chevronUp' : 'chevronDown')
+                })
             ));
             if (recent.length === 0) {
                 recentSection.appendChild(renderEmptyCard({
@@ -3574,9 +3675,22 @@
                     headline: 'No recent activity',
                     body: 'Open methods in Discover and they land here in MRU order.'
                 }));
+            } else if (isExpanded) {
+                // Full scrollable list — each row is a compact tile
+                // that reuses the same renderHomeTile shape; the
+                // outer container is scroll-bound so the rest of the
+                // home page doesn't have to grow with the history.
+                var recentList = el('div', { className: 'bowire-home-recent-list' });
+                recent.forEach(function (r) {
+                    recentList.appendChild(renderHomeTile(r.service, r.method, false));
+                });
+                recentSection.appendChild(recentList);
             } else {
                 var recentGrid = el('div', { className: 'bowire-home-grid' });
-                recent.slice(0, 10).forEach(function (r) {
+                // Cap the visible recents at 9 — the Home grid is a
+                // 3-column layout, so 9 lands as a clean 3x3 block
+                // without a stranded trailing row.
+                recent.slice(0, 9).forEach(function (r) {
                     recentGrid.appendChild(renderHomeTile(r.service, r.method, false));
                 });
                 recentSection.appendChild(recentGrid);
@@ -3624,7 +3738,7 @@
                 var emptyWrap = el('div', { className: 'bowire-main-pad' });
                 var noCols = !(collectionsList && collectionsList.length > 0);
                 emptyWrap.appendChild(renderEmptyCard({
-                    icon: 'list',
+                    icon: 'folder',
                     headline: noCols ? 'No collections yet' : 'Pick a collection',
                     body: noCols
                         ? 'Collections group saved requests so you can replay them as a set. Start fresh, or import a Postman collection / OpenAPI spec.'
@@ -4389,7 +4503,7 @@
                                     className: 'bowire-header-presets-tocol',
                                     title: 'Add to collection…',
                                     'aria-label': 'Add to collection',
-                                    innerHTML: svgIcon('list'),
+                                    innerHTML: svgIcon('folder'),
                                     onClick: function (ev) {
                                         ev.stopPropagation();
                                         var existing = row.querySelector('.bowire-header-presets-collist');
@@ -4545,7 +4659,7 @@
                                     render();
                                 }
                             },
-                                el('span', { className: 'bowire-header-addto-item-icon', innerHTML: svgIcon('list') }),
+                                el('span', { className: 'bowire-header-addto-item-icon', innerHTML: svgIcon('folder') }),
                                 el('span', { textContent: col.name }),
                                 el('span', { className: 'bowire-header-addto-item-meta', textContent: col.items.length + (col.items.length === 1 ? ' entry' : ' entries') })
                             ));

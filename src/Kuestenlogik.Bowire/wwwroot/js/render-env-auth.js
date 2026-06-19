@@ -88,6 +88,108 @@
         return bar;
     }
 
+    // Drop-target side panel that pops in while the user drags a
+    // method row out of the discover tree. Lists every workspace
+    // collection as a drop zone plus a "+ New collection" entry at
+    // the bottom; dropping on a zone appends a snapshot of the
+    // dragged method onto that collection. Esc / clicking the
+    // backdrop cancels the drag.
+    function renderMethodDropPanel() {
+        var shell = el('div', {
+            className: 'bowire-method-drop-shell',
+            onClick: function (e) {
+                if (e.target === shell) {
+                    methodDragPayload = null;
+                    render();
+                }
+            }
+        });
+        var panel = el('aside', {
+            className: 'bowire-method-drop-panel',
+            'aria-label': 'Drop on a collection'
+        });
+        panel.appendChild(el('div', { className: 'bowire-method-drop-header' },
+            el('span', { className: 'bowire-method-drop-title', textContent: 'Drop on a collection' }),
+            el('span', { className: 'bowire-method-drop-method',
+                textContent: methodDragPayload.service + '.' + methodDragPayload.method })
+        ));
+
+        var cols = (typeof collectionsList !== 'undefined' && Array.isArray(collectionsList))
+            ? collectionsList : [];
+
+        function _itemFromPayload() {
+            var svc = (typeof services !== 'undefined' && Array.isArray(services))
+                ? services.find(function (s) { return s.name === methodDragPayload.service; }) : null;
+            var m = svc && (svc.methods || []).find(function (x) { return x.name === methodDragPayload.method; });
+            var body = '{}';
+            if (m && typeof generateDefaultJson === 'function') {
+                try { body = generateDefaultJson(m.inputType, 0); } catch { /* keep '{}' */ }
+            }
+            return {
+                service: methodDragPayload.service,
+                method: methodDragPayload.method,
+                methodType: m ? (m.methodType || 'Unary') : 'Unary',
+                protocol: svc ? svc.source : null,
+                body: body,
+                messages: [body],
+                metadata: null,
+                serverUrl: svc ? svc.originUrl : null
+            };
+        }
+
+        function makeZone(label, onDrop) {
+            var z = el('div', {
+                className: 'bowire-method-drop-zone',
+                onDragover: function (e) {
+                    e.preventDefault();
+                    e.dataTransfer.dropEffect = 'copy';
+                    z.classList.add('is-hover');
+                },
+                onDragleave: function () { z.classList.remove('is-hover'); },
+                onDrop: function (e) {
+                    e.preventDefault();
+                    z.classList.remove('is-hover');
+                    onDrop();
+                }
+            }, el('span', { textContent: label }));
+            return z;
+        }
+
+        var list = el('div', { className: 'bowire-method-drop-list' });
+        cols.forEach(function (col) {
+            var z = makeZone(col.name + ' · ' + (col.items ? col.items.length : 0) + ' items', function () {
+                if (typeof addToCollection !== 'function') return;
+                addToCollection(col.id, _itemFromPayload());
+                toast('Added to "' + col.name + '"', 'success');
+                methodDragPayload = null;
+                render();
+            });
+            list.appendChild(z);
+        });
+        if (cols.length === 0) {
+            list.appendChild(el('div', {
+                className: 'bowire-method-drop-empty',
+                textContent: 'No collections yet — drop here to create one.'
+            }));
+        }
+        // Trailing "+ New collection" zone — drop here creates a
+        // fresh collection named after the dragged method and adds
+        // the snapshot as its first item.
+        list.appendChild(makeZone('+ New collection from this method', function () {
+            if (typeof createCollection !== 'function' || typeof addToCollection !== 'function') return;
+            var col = createCollection(methodDragPayload.method + ' collection');
+            addToCollection(col.id, _itemFromPayload());
+            collectionsList = (typeof loadCollections === 'function') ? loadCollections() : collectionsList;
+            collectionManagerSelectedId = col.id;
+            toast('Created collection "' + col.name + '"', 'success');
+            methodDragPayload = null;
+            render();
+        }));
+        panel.appendChild(list);
+        shell.appendChild(panel);
+        return shell;
+    }
+
     // MudBlazor-style responsive app drawer. Always rendered into
     // the layout; visibility is driven by the `is-open` class so
     // morphdom can keep the panel node stable across toggles (slide
@@ -627,6 +729,15 @@
         // button, plus future ambient indicators (hint count, save
         // state, workspace name).
         next.appendChild(renderStatusBar());
+
+        // Drop-target side panel for method → collection drag &
+        // drop. Mounted while a drag is live; lists every workspace
+        // collection as a drop zone plus a "+ New collection" entry
+        // at the bottom. See render-sidebar.js's onDragstart for the
+        // entry point.
+        if (typeof methodDragPayload !== 'undefined' && methodDragPayload) {
+            next.appendChild(renderMethodDropPanel());
+        }
 
         // MudBlazor-style responsive app drawer. Mounted last so its
         // fixed-position panel + backdrop sit on top of every other

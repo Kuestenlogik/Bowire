@@ -2420,9 +2420,156 @@ not just
 .bowire-home-tile[data-protocol="websocket"] { --protocol-color: var(--bowire-protocol-websocket); }
 .bowire-home-tile[data-protocol="sse"] { --protocol-color: var(--bowire-protocol-sse); }
 .bowire-home-tile[data-protocol="nats"] { --protocol-color: var(--bowire-protocol-nats); }
+/* Recent-activity title toggles between the capped 3x3 grid and
+   the scrollable list. Button reset so the heading still reads as
+   a title; chevron carries the affordance. */
+.bowire-home-section-title-toggle {
+    border: 0;
+    background: transparent;
+    color: inherit;
+    text-align: left;
+    cursor: pointer;
+    font: inherit;
+    width: 100%;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.bowire-home-section-title-toggle:hover .bowire-home-section-toggle-caret { color: var(--bowire-text); }
+.bowire-home-section-toggle-caret {
+    margin-left: 4px;
+    display: inline-flex;
+    align-items: center;
+    color: var(--bowire-text-tertiary);
+    transition: color var(--bowire-transition);
+}
+.bowire-home-section-toggle-caret svg { width: 14px; height: 14px; }
+/* Full-list variant — single-column, scrollable. Max-height caps
+   the section so it doesn't push the rest of Home off-screen. */
+.bowire-home-recent-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    max-height: 60vh;
+    overflow-y: auto;
+    padding-right: 4px;
+}
+.bowire-home-recent-list .bowire-home-tile {
+    padding: 8px 12px;
+}
+
+.bowire-home-tile-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+}
+/* Filled-star control on favorited tiles. Click toggles the
+   favorite off. Hidden until the row is hovered so the resting
+   state stays calm; visible immediately on the right of the
+   header row, after the badge. */
+.bowire-home-tile-star {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: var(--bowire-accent);
+    cursor: pointer;
+    border-radius: var(--bowire-radius-sm);
+    opacity: 0;
+    transition: opacity var(--bowire-transition), background var(--bowire-transition);
+    flex-shrink: 0;
+}
+.bowire-home-tile:hover .bowire-home-tile-star { opacity: 1; }
+.bowire-home-tile-star:hover {
+    background: color-mix(in srgb, var(--bowire-accent) 14%, transparent);
+}
+.bowire-home-tile-star svg { width: 14px; height: 14px; }
+
+/* Method-drag → collection drop panel. Pops in on the right edge
+   while a discover-tree method row is being dragged. The shell is
+   full-viewport with a low-opacity backdrop; the actual drop list
+   sits in a fixed-width column on the right so the operator's
+   cursor lands inside the panel without travelling far. */
+.bowire-method-drop-shell {
+    position: fixed;
+    inset: 0;
+    z-index: 1500;
+    background: rgba(15, 23, 42, 0.18);
+}
+.bowire-method-drop-panel {
+    position: absolute;
+    top: 56px;
+    bottom: 0;
+    right: 0;
+    width: 320px;
+    max-width: 90vw;
+    background: var(--bowire-surface);
+    border-left: 1px solid var(--bowire-border);
+    box-shadow: -8px 0 24px rgba(0, 0, 0, 0.18);
+    display: flex;
+    flex-direction: column;
+    padding: 12px;
+    gap: 8px;
+}
+.bowire-method-drop-header {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 4px 4px 8px;
+    border-bottom: 1px solid var(--bowire-border-subtle);
+}
+.bowire-method-drop-title {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--bowire-text-tertiary);
+}
+.bowire-method-drop-method {
+    font-family: var(--bowire-font-mono);
+    font-size: 12px;
+    color: var(--bowire-text);
+}
+.bowire-method-drop-list {
+    flex: 1;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding-top: 4px;
+}
+.bowire-method-drop-zone {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 12px;
+    border: 1px dashed var(--bowire-border);
+    background: transparent;
+    color: var(--bowire-text);
+    border-radius: var(--bowire-radius-sm);
+    font-size: 13px;
+    transition: background var(--bowire-transition), border-color var(--bowire-transition);
+    cursor: copy;
+}
+.bowire-method-drop-zone.is-hover {
+    background: color-mix(in srgb, var(--bowire-accent) 14%, transparent);
+    border-color: var(--bowire-accent);
+    border-style: solid;
+}
+.bowire-method-drop-empty {
+    font-size: 12px;
+    color: var(--bowire-text-tertiary);
+    padding: 8px 4px;
+}
 .bowire-home-tile-badge {
-    align-self: flex-start;
-    margin-bottom: 2px;
+    margin-left: auto;
+    flex-shrink: 0;
 }
 .bowire-home-tile-method {
     font-size: 13px;
@@ -2432,6 +2579,8 @@ not just
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    flex: 1;
+    min-width: 0;
 }
 .bowire-home-tile-service {
     font-size: 11px;
@@ -14243,11 +14392,26 @@ subtler
    matches the Console button's footprint. The override below kills the
    auto margin (only the leftmost of the two action-bar pills should claim
    the trailing space) and tints the icon red when armed. */
+/* Recording toggle — icon-only square so it doesn't crowd the
+   accent-filled Execute button next to it. The pill+label form
+   the .bowire-console-toggle base supplied was visually competing
+   with the primary action; collapsing to an icon ride keeps the
+   affordance discoverable (tooltip carries the verb) while letting
+   Execute own the action row's visual weight. */
 .bowire-recording-toggle {
     margin-left: 0;
+    position: relative;
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    gap: 0;
+    justify-content: center;
 }
+.bowire-recording-toggle-icon { width: 14px; height: 14px; }
 .bowire-recording-toggle-icon svg {
     color: #ef4444;
+    width: 14px;
+    height: 14px;
 }
 .bowire-recording-toggle.active {
     background: rgba(239, 68, 68, 0.12);
@@ -14257,6 +14421,26 @@ subtler
 .bowire-recording-toggle.active .bowire-recording-toggle-icon svg {
     color: #ef4444;
     animation: bowire-recording-pulse 1.4s ease-in-out infinite;
+}
+/* Step-count badge sits in the corner so the icon stays the
+   primary glyph. Mirrors the console-toggle count placement. */
+.bowire-recording-toggle .bowire-console-toggle-count {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    background: #ef4444;
+    color: white;
+    min-width: 14px;
+    height: 14px;
+    padding: 0 3px;
+    border-radius: 7px;
+    font-size: 9px;
+    font-weight: 700;
+    line-height: 14px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 0 0 1.5px var(--bowire-bg, #000);
 }
 @keyframes bowire-recording-pulse {
     0%, 100% { opacity: 1; }

@@ -2467,6 +2467,18 @@
         try { render(); } catch { /* harmless */ }
     }
     let activeRequestTab = 'body';
+    // Home-page "Recent activity" surface — 'grid' shows the
+    // capped 3x3 tile block, 'list' switches to a scrollable
+    // full-history list. Toggled by clicking the section title.
+    let homeRecentView = 'grid';
+    // Same shape for Favorites — capped grid by default, list on
+    // click of the section title.
+    let homeFavView = 'grid';
+    // When the user starts dragging a method-tree row, this holds
+    // { service, method }. A side-panel of drop-targets (Collections)
+    // pops in on the right while the drag is live; cleared on drop
+    // or dragend.
+    let methodDragPayload = null;
     // Sub-tab within the Body tab. For GraphQL methods the Body tab
     // composes from three surfaces (Query / Variables form / Selection
     // set picker) — historically all three rendered stacked, which
