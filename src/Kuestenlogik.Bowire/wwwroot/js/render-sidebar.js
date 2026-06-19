@@ -714,27 +714,23 @@
             envSidebarSelectedId = activeId || (envs.length > 0 ? envs[0].id : '__globals__');
         }
 
-        // Header with + button
-        var header = el('div', { className: 'bowire-env-sidebar-header' },
-            el('span', { className: 'bowire-env-sidebar-title', textContent: 'Environments' }),
-            el('div', { className: 'bowire-env-sidebar-actions' },
-                el('button', {
-                    id: 'bowire-env-sidebar-create-btn',
-                    className: 'bowire-env-sidebar-action-btn',
-                    title: 'Create new environment',
-                    'aria-label': 'Create new environment',
-                    innerHTML: svgIcon('plus'),
-                    onClick: function () {
-                        if (typeof openCreateEnvironmentDialog !== 'function') return;
-                        openCreateEnvironmentDialog(function (env) {
-                            envSidebarSelectedId = env.id;
-                            render();
-                        });
-                    }
-                })
-            )
-        );
-        list.appendChild(header);
+        // Unified sidebar toolbar — primary "+ New environment".
+        // Drops the bespoke .bowire-env-sidebar-header markup that
+        // had drifted out of sync with the other rails' headers.
+        list.appendChild(renderSidebarToolbar({
+            title: 'Environments',
+            primary: {
+                icon: 'plus',
+                title: 'Create new environment',
+                onClick: function () {
+                    if (typeof openCreateEnvironmentDialog !== 'function') return;
+                    openCreateEnvironmentDialog(function (env) {
+                        envSidebarSelectedId = env.id;
+                        render();
+                    });
+                }
+            }
+        }));
 
         // (Workspace include-all toggle + per-env inclusion checkboxes
         // retired with the self-contained workspaces refactor — envs
@@ -1461,7 +1457,7 @@
                 count: recordingsSelected.size,
                 actions: [
                     {
-                        icon: 'list',
+                        icon: 'folder',
                         title: 'Convert selected recordings into a new collection',
                         onClick: function () {
                             _bulkConvertToCollection(Array.from(recordingsSelected));
@@ -4202,6 +4198,20 @@
                         // protocol-color stripe on the group's left
                         // edge for the two-axis read.
                         'data-direction': methodDirection(m),
+                        draggable: 'true',
+                        onDragstart: function (e) {
+                            try {
+                                e.dataTransfer.setData('application/x-bowire-method',
+                                    JSON.stringify({ service: svc.name, method: m.name }));
+                                e.dataTransfer.effectAllowed = 'copy';
+                            } catch { /* ignore */ }
+                            methodDragPayload = { service: svc.name, method: m.name };
+                            render();
+                        },
+                        onDragend: function () {
+                            methodDragPayload = null;
+                            render();
+                        },
                         onClick: function (e) {
                             // Browser-style modifier: Ctrl/Cmd+click
                             // (or middle-click) opens in a new tab;
