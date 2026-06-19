@@ -1283,106 +1283,206 @@
     function renderRecordingsSidebar() {
         var sidebar = el('div', { id: 'bowire-sidebar', className: 'bowire-sidebar bowire-sidebar-mode' });
 
-        // #143 Phase 3 — selection-mode header swaps in when the
-        // user has multi-selected at least one row. Header shows
-        // 'N selected · Delete · Clear' instead of the normal
-        // title + record toggle.
-        var header;
-        if (recordingsSelected.size > 0) {
-            header = el('div', { className: 'bowire-env-list-header bowire-selection-header' },
-                el('span', { className: 'bowire-selection-count', textContent: recordingsSelected.size + ' selected' }),
-                el('button', {
-                    className: 'bowire-selection-action bowire-selection-action-danger',
-                    title: 'Move selected to trash',
+        // Per-row context menu = same actions the hover-reveal
+        // exposes, in the same order. Both surfaces wired against
+        // this single source so they can't drift apart.
+        function _buildRecordingContextMenu(rec) {
+            var hasSteps = (Array.isArray(rec.steps) && rec.steps.length > 0)
+                || (Array.isArray(rec.stepsManifest) && rec.stepsManifest.length > 0)
+                || (typeof rec.stepCount === 'number' && rec.stepCount > 0);
+            var items = [];
+            items.push({
+                label: 'Replay',
+                disabled: !hasSteps,
+                onClick: function () {
+                    if (typeof replayRecording === 'function') replayRecording(rec.id);
+                }
+            });
+            items.push({
+                label: rec.id === recordingActiveId ? 'Stop recording' : 'Continue recording',
+                onClick: function () {
+                    if (rec.id === recordingActiveId) {
+                        if (typeof stopRecording === 'function') stopRecording();
+                    } else {
+                        if (typeof continueRecording === 'function') continueRecording(rec.id);
+                    }
+                }
+            });
+            items.push({ separator: true });
+            items.push({
+                label: 'Rename…',
+                onClick: function () {
+                    bowirePrompt('Recording name', {
+                        title: 'Rename recording',
+                        defaultValue: rec.name || '',
+                        confirmText: 'Save'
+                    }).then(function (newName) {
+                        if (!newName) return;
+                        if (typeof renameRecording === 'function') renameRecording(rec.id, newName);
+                    });
+                }
+            });
+            items.push({
+                label: 'Use as mock',
+                disabled: !hasSteps,
+                onClick: function () {
+                    if (typeof useRecordingAsMock === 'function') useRecordingAsMock(rec);
+                }
+            });
+            items.push({
+                label: 'Convert to collection',
+                disabled: !hasSteps || typeof recordingToCollectionItems !== 'function',
+                onClick: function () {
+                    if (typeof recordingToCollectionItems !== 'function') return;
+                    var items2 = recordingToCollectionItems(rec);
+                    if (items2.length === 0) { toast('No unary steps to convert', 'error'); return; }
+                    if (typeof createCollection !== 'function' || typeof addToCollection !== 'function') return;
+                    var col = createCollection((rec.name || 'Recording') + ' (from recording)');
+                    items2.forEach(function (it) { addToCollection(col.id, it); });
+                    collectionsList = loadCollections();
+                    collectionManagerSelectedId = col.id;
+                    toast('Created collection (' + items2.length + ' items)', 'success');
+                    render();
+                }
+            });
+            items.push({ separator: true });
+            items.push({
+                label: 'Delete',
+                danger: true,
+                onClick: function () {
+                    if (typeof deleteRecording === 'function') deleteRecording(rec.id);
+                }
+            });
+            return items;
+        }
+
+        // Bulk handlers — same projection regardless of whether they
+        // were triggered from the selection toolbar or the per-row
+        // ⋮ menu later.
+        function _bulkDelete(ids) {
+            var removed = [];
+            ids.forEach(function (rid) {
+                var idx = recordingsList.findIndex(function (r) { return r.id === rid; });
+                if (idx < 0) return;
+                removed.push({ entry: recordingsList[idx], originalIdx: idx, deletedAt: Date.now() });
+                recordingsList.splice(idx, 1);
+                if (recordingManagerSelectedId === rid) recordingManagerSelectedId = null;
+                if (recordingActiveId === rid) recordingActiveId = null;
+            });
+            for (var k = removed.length - 1; k >= 0; k--) recordingsTrash.unshift(removed[k]);
+            recordingsSelected.clear();
+            recordingsSelectionAnchor = null;
+            persistRecordings();
+            persistRecordingsTrash();
+            toast(removed.length + ' recording' + (removed.length === 1 ? '' : 's') + ' moved to trash', 'success', {
+                undo: function () {
+                    for (var u = 0; u < removed.length; u++) {
+                        var t = removed[u];
+                        recordingsList.splice(Math.min(t.originalIdx, recordingsList.length), 0, t.entry);
+                        var tIdx = recordingsTrash.findIndex(function (x) { return x.entry && x.entry.id === t.entry.id; });
+                        if (tIdx >= 0) recordingsTrash.splice(tIdx, 1);
+                    }
+                    persistRecordings();
+                    persistRecordingsTrash();
+                    render();
+                }
+            });
+            render();
+        }
+        function _bulkConvertToCollection(ids) {
+            if (typeof createCollection !== 'function' || typeof addToCollection !== 'function') return;
+            var picks = ids
+                .map(function (id) { return recordingsList.find(function (r) { return r.id === id; }); })
+                .filter(Boolean);
+            var allItems = [];
+            picks.forEach(function (rec) {
+                allItems = allItems.concat(recordingToCollectionItems(rec));
+            });
+            if (allItems.length === 0) {
+                toast('No unary steps to convert', 'error');
+                return;
+            }
+            var name = picks.length === 1
+                ? (picks[0].name + ' (from recording)')
+                : (picks.length + ' recordings → collection');
+            var col = createCollection(name);
+            allItems.forEach(function (it) { addToCollection(col.id, it); });
+            collectionsList = loadCollections();
+            collectionManagerSelectedId = col.id;
+            recordingsSelected.clear();
+            recordingsSelectionAnchor = null;
+            toast('Created collection "' + name + '" (' + allItems.length + ' items)', 'success');
+            render();
+        }
+
+        // Unified sidebar toolbar (#143 / sidebar-consistency pass).
+        // Default state offers Start/Stop primary + Refresh +
+        // overflow; selection state swaps to bulk Delete / Convert
+        // to collection + Clear.
+        sidebar.appendChild(renderSidebarToolbar({
+            title: 'Recordings',
+            primary: {
+                icon: isRecording() ? 'square' : 'record',
+                title: isRecording() ? 'Stop the current recording' : 'Start a new recording',
+                onClick: function () {
+                    if (isRecording()) stopRecording();
+                    else startRecording();
+                    if (recordingActiveId) recordingManagerSelectedId = recordingActiveId;
+                    render();
+                }
+            },
+            overflow: recordingsList.length > 0 ? [
+                {
+                    label: 'Move all to trash',
+                    danger: true,
                     onClick: function () {
-                        var ids = Array.from(recordingsSelected);
-                        var removed = [];
-                        ids.forEach(function (rid) {
-                            var idx = recordingsList.findIndex(function (r) { return r.id === rid; });
-                            if (idx < 0) return;
-                            removed.push({ entry: recordingsList[idx], originalIdx: idx, deletedAt: Date.now() });
-                            recordingsList.splice(idx, 1);
-                            if (recordingManagerSelectedId === rid) recordingManagerSelectedId = null;
-                            if (recordingActiveId === rid) recordingActiveId = null;
-                        });
-                        // Prepend the batch so undo restores the
-                        // most-recently-deleted first.
-                        for (var k = removed.length - 1; k >= 0; k--) recordingsTrash.unshift(removed[k]);
-                        recordingsSelected.clear();
-                        recordingsSelectionAnchor = null;
-                        persistRecordings();
-                        persistRecordingsTrash();
-                        toast(removed.length + ' recording' + (removed.length === 1 ? '' : 's') + ' moved to trash', 'success', {
-                            undo: function () {
-                                for (var u = 0; u < removed.length; u++) {
-                                    var t = removed[u];
-                                    recordingsList.splice(Math.min(t.originalIdx, recordingsList.length), 0, t.entry);
-                                    // Pop from trash front.
-                                    var tIdx = recordingsTrash.findIndex(function (x) { return x.entry && x.entry.id === t.entry.id; });
-                                    if (tIdx >= 0) recordingsTrash.splice(tIdx, 1);
-                                }
+                        var n = recordingsList.length;
+                        bowireConfirm(
+                            'Move all ' + n + ' recordings to trash?',
+                            function () {
+                                var removed = recordingsList.map(function (r, idx) {
+                                    return { entry: r, originalIdx: idx, deletedAt: Date.now() };
+                                });
+                                recordingsList.length = 0;
+                                recordingManagerSelectedId = null;
+                                recordingActiveId = null;
+                                for (var k = removed.length - 1; k >= 0; k--) recordingsTrash.unshift(removed[k]);
                                 persistRecordings();
                                 persistRecordingsTrash();
+                                toast(removed.length + ' recordings moved to trash', 'success');
                                 render();
-                            }
-                        });
-                        render();
+                            },
+                            { title: 'Move all to trash', confirmText: 'Move ' + n, danger: true }
+                        );
                     }
-                }, el('span', { innerHTML: svgIcon('trash'), style: 'width:13px;height:13px;display:inline-flex' })),
-                el('button', {
-                    className: 'bowire-selection-action',
-                    title: 'Clear selection (Esc)',
-                    textContent: '×',
-                    onClick: function () {
-                        recordingsSelected.clear();
-                        recordingsSelectionAnchor = null;
-                        render();
-                    }
-                })
-            );
-        } else {
-            // Normal header — title + start/stop record button + overflow.
-            header = renderSidebarHeader({
-                title: 'Recordings',
+                }
+            ] : null,
+            selection: recordingsSelected.size > 0 ? {
+                count: recordingsSelected.size,
                 actions: [
                     {
-                        title: isRecording() ? 'Stop the current recording' : 'Start a new recording',
-                        ariaLabel: isRecording() ? 'Stop recording' : 'Start recording',
-                        icon: isRecording() ? 'square' : 'record',
+                        icon: 'list',
+                        title: 'Convert selected recordings into a new collection',
                         onClick: function () {
-                            if (isRecording()) stopRecording();
-                            else startRecording();
-                            if (recordingActiveId) recordingManagerSelectedId = recordingActiveId;
-                            render();
+                            _bulkConvertToCollection(Array.from(recordingsSelected));
                         }
                     },
-                    recordingsList.length > 0 ? {
-                        title: 'More actions', ariaLabel: 'More actions', label: '⋮',
+                    {
+                        icon: 'trash',
+                        danger: true,
+                        title: 'Move selected to trash',
                         onClick: function () {
-                            var n = recordingsList.length;
-                            bowireConfirm(
-                                'Move all ' + n + ' recordings to trash?',
-                                function () {
-                                    var removed = recordingsList.map(function (r, idx) {
-                                        return { entry: r, originalIdx: idx, deletedAt: Date.now() };
-                                    });
-                                    recordingsList.length = 0;
-                                    recordingManagerSelectedId = null;
-                                    recordingActiveId = null;
-                                    for (var k = removed.length - 1; k >= 0; k--) recordingsTrash.unshift(removed[k]);
-                                    persistRecordings();
-                                    persistRecordingsTrash();
-                                    toast(removed.length + ' recordings moved to trash', 'success');
-                                    render();
-                                },
-                                { title: 'Move all to trash', confirmText: 'Move ' + n, danger: true }
-                            );
+                            _bulkDelete(Array.from(recordingsSelected));
                         }
-                    } : null
-                ]
-            });
-        }
-        sidebar.appendChild(header);
+                    }
+                ],
+                onClear: function () {
+                    recordingsSelected.clear();
+                    recordingsSelectionAnchor = null;
+                    render();
+                }
+            } : null
+        }));
 
         // List
         if (recordingsList.length === 0) {
@@ -1417,40 +1517,10 @@
                     active: recordingManagerSelectedId === rec.id,
                     selected: recordingsSelected.has(rec.id),
                     onContextMenu: function (e) {
-                        // Right-click → context menu with the
-                        // common actions for this recording.
-                        // "Use as mock" is the headline; replay /
-                        // delete follow. stopPropagation so a parent
-                        // listener (workspaces tree, &c.) doesn't
-                        // also pop its own menu.
                         e.preventDefault();
                         e.stopPropagation();
                         if (typeof showContextMenu === 'function') {
-                            var items = [];
-                            items.push({
-                                label: 'Use as mock',
-                                disabled: !((Array.isArray(rec.steps) && rec.steps.length > 0)
-                                    || (Array.isArray(rec.stepsManifest) && rec.stepsManifest.length > 0)
-                                    || (typeof rec.stepCount === 'number' && rec.stepCount > 0)),
-                                onClick: function () {
-                                    if (typeof useRecordingAsMock === 'function') useRecordingAsMock(rec);
-                                }
-                            });
-                            items.push({ separator: true });
-                            items.push({
-                                label: 'Replay',
-                                onClick: function () {
-                                    if (typeof replayRecording === 'function') replayRecording(rec.id);
-                                }
-                            });
-                            items.push({
-                                label: 'Delete',
-                                danger: true,
-                                onClick: function () {
-                                    if (typeof deleteRecording === 'function') deleteRecording(rec.id);
-                                }
-                            });
-                            showContextMenu(e.clientX, e.clientY, items);
+                            showContextMenu(e.clientX, e.clientY, _buildRecordingContextMenu(rec));
                         }
                     },
                     onClick: function (e) {
@@ -1522,30 +1592,29 @@
     function renderSourcesSidebar() {
         var sidebar = el('div', { id: 'bowire-sidebar', className: 'bowire-sidebar bowire-sidebar-mode' });
 
-        sidebar.appendChild(renderSidebarHeader({
+        sidebar.appendChild(renderSidebarToolbar({
             title: 'Sources',
-            actions: [
-                !config.lockServerUrl ? {
-                    title: 'Add a discovery URL', ariaLabel: 'Add URL', icon: 'plus',
-                    onClick: function () {
-                        bowirePrompt('Add discovery URL', {
-                            title: 'New source',
-                            placeholder: 'rest@https://… / graphql@…  or plain https://…',
-                            confirmText: 'Add',
-                        }).then(function (raw) {
-                            if (!raw) return;
-                            if (typeof addServerUrl === 'function') addServerUrl(raw);
-                            else if (typeof serverUrls !== 'undefined' && serverUrls.indexOf(raw) < 0) {
-                                serverUrls.push(raw);
-                                if (typeof persistServerUrls === 'function') persistServerUrls();
-                            }
-                            sourcesSelectedUrl = raw;
-                            if (typeof onServerUrlChanged === 'function') onServerUrlChanged();
-                            render();
-                        });
-                    }
-                } : null
-            ]
+            primary: !config.lockServerUrl ? {
+                icon: 'plus',
+                title: 'Add a discovery URL',
+                onClick: function () {
+                    bowirePrompt('Add discovery URL', {
+                        title: 'New source',
+                        placeholder: 'rest@https://… / graphql@…  or plain https://…',
+                        confirmText: 'Add',
+                    }).then(function (raw) {
+                        if (!raw) return;
+                        if (typeof addServerUrl === 'function') addServerUrl(raw);
+                        else if (typeof serverUrls !== 'undefined' && serverUrls.indexOf(raw) < 0) {
+                            serverUrls.push(raw);
+                            if (typeof persistServerUrls === 'function') persistServerUrls();
+                        }
+                        sourcesSelectedUrl = raw;
+                        if (typeof onServerUrlChanged === 'function') onServerUrlChanged();
+                        render();
+                    });
+                }
+            } : null
         }));
 
         if (!serverUrls || serverUrls.length === 0) {
@@ -2007,28 +2076,23 @@
             }
         });
 
-        sidebar.appendChild(renderSidebarHeader({
+        sidebar.appendChild(renderSidebarToolbar({
             title: 'Workspaces',
-            // Click the section heading → Workspaces overview (root
-            // of the workspaces-tree settings surface). Discoverable
-            // entry point that doesn't require knowing the trail in
-            // the per-workspace header.
             onTitleClick: function () {
                 workspaceTreeSelection = { kind: 'workspaces-overview' };
                 render();
             },
             titleClickTitle: 'Open Workspaces overview',
-            actions: [
-                {
-                    title: 'Create new workspace', ariaLabel: 'Create new workspace', icon: 'plus',
-                    onClick: function () {
-                        openCreateWorkspaceDialog(function (ws) {
-                            workspacesSelectedId = ws.id;
-                            workspaceTreeSelection = { wsId: ws.id, kind: 'workspace' };
-                        });
-                    }
+            primary: {
+                icon: 'plus',
+                title: 'Create new workspace',
+                onClick: function () {
+                    openCreateWorkspaceDialog(function (ws) {
+                        workspacesSelectedId = ws.id;
+                        workspaceTreeSelection = { wsId: ws.id, kind: 'workspace' };
+                    });
                 }
-            ]
+            }
         }));
 
         var wsIds = workspaces.map(function (w) { return w.id; });
@@ -2724,94 +2788,91 @@
     function renderCollectionsSidebar() {
         var sidebar = el('div', { id: 'bowire-sidebar', className: 'bowire-sidebar bowire-sidebar-mode' });
 
-        // #143 Phase 3 — selection header swap when multi-selecting.
-        var header;
-        if (collectionsSelected.size > 0) {
-            header = el('div', { className: 'bowire-env-list-header bowire-selection-header' },
-                el('span', { className: 'bowire-selection-count', textContent: collectionsSelected.size + ' selected' }),
-                el('button', {
-                    className: 'bowire-selection-action bowire-selection-action-danger',
-                    title: 'Move selected to trash',
+        function _bulkDeleteCollections(ids) {
+            var removed = [];
+            ids.forEach(function (cid) {
+                var idx = collectionsList.findIndex(function (c) { return c.id === cid; });
+                if (idx < 0) return;
+                removed.push({ entry: collectionsList[idx], originalIdx: idx, deletedAt: Date.now() });
+                collectionsList.splice(idx, 1);
+                if (collectionManagerSelectedId === cid) collectionManagerSelectedId = null;
+            });
+            for (var k = removed.length - 1; k >= 0; k--) collectionsTrash.unshift(removed[k]);
+            collectionsSelected.clear();
+            collectionsSelectionAnchor = null;
+            persistCollections();
+            persistCollectionsTrash();
+            toast(removed.length + ' collection' + (removed.length === 1 ? '' : 's') + ' moved to trash', 'success', {
+                undo: function () {
+                    for (var u = 0; u < removed.length; u++) {
+                        var t = removed[u];
+                        collectionsList.splice(Math.min(t.originalIdx, collectionsList.length), 0, t.entry);
+                        var tIdx = collectionsTrash.findIndex(function (x) { return x.entry && x.entry.id === t.entry.id; });
+                        if (tIdx >= 0) collectionsTrash.splice(tIdx, 1);
+                    }
+                    persistCollections();
+                    persistCollectionsTrash();
+                    render();
+                }
+            });
+            render();
+        }
+
+        sidebar.appendChild(renderSidebarToolbar({
+            title: 'Collections',
+            primary: {
+                icon: 'plus',
+                title: 'Create new collection',
+                onClick: function () {
+                    var col = createCollection();
+                    collectionManagerSelectedId = col.id;
+                    render();
+                }
+            },
+            overflow: (collectionsList && collectionsList.length > 0) ? [
+                {
+                    label: 'Move all to trash',
+                    danger: true,
                     onClick: function () {
-                        var ids = Array.from(collectionsSelected);
-                        var removed = [];
-                        ids.forEach(function (cid) {
-                            var idx = collectionsList.findIndex(function (c) { return c.id === cid; });
-                            if (idx < 0) return;
-                            removed.push({ entry: collectionsList[idx], originalIdx: idx, deletedAt: Date.now() });
-                            collectionsList.splice(idx, 1);
-                            if (collectionManagerSelectedId === cid) collectionManagerSelectedId = null;
-                        });
-                        for (var k = removed.length - 1; k >= 0; k--) collectionsTrash.unshift(removed[k]);
-                        collectionsSelected.clear();
-                        collectionsSelectionAnchor = null;
-                        persistCollections();
-                        persistCollectionsTrash();
-                        toast(removed.length + ' collection' + (removed.length === 1 ? '' : 's') + ' moved to trash', 'success', {
-                            undo: function () {
-                                for (var u = 0; u < removed.length; u++) {
-                                    var t = removed[u];
-                                    collectionsList.splice(Math.min(t.originalIdx, collectionsList.length), 0, t.entry);
-                                    var tIdx = collectionsTrash.findIndex(function (x) { return x.entry && x.entry.id === t.entry.id; });
-                                    if (tIdx >= 0) collectionsTrash.splice(tIdx, 1);
-                                }
+                        var n = collectionsList.length;
+                        bowireConfirm(
+                            'Move all ' + n + ' collections to trash?',
+                            function () {
+                                var removed = collectionsList.map(function (c, idx) {
+                                    return { entry: c, originalIdx: idx, deletedAt: Date.now() };
+                                });
+                                collectionsList.length = 0;
+                                collectionManagerSelectedId = null;
+                                for (var k = removed.length - 1; k >= 0; k--) collectionsTrash.unshift(removed[k]);
                                 persistCollections();
                                 persistCollectionsTrash();
+                                toast(removed.length + ' collections moved to trash', 'success');
                                 render();
-                            }
-                        });
-                        render();
+                            },
+                            { title: 'Move all to trash', confirmText: 'Move ' + n, danger: true }
+                        );
                     }
-                }, el('span', { innerHTML: svgIcon('trash'), style: 'width:13px;height:13px;display:inline-flex' })),
-                el('button', {
-                    className: 'bowire-selection-action',
-                    title: 'Clear selection (Esc)',
-                    textContent: '×',
-                    onClick: function () {
-                        collectionsSelected.clear();
-                        collectionsSelectionAnchor = null;
-                        render();
-                    }
-                })
-            );
-        } else {
-            header = renderSidebarHeader({
-                title: 'Collections',
+                }
+            ] : null,
+            selection: collectionsSelected.size > 0 ? {
+                count: collectionsSelected.size,
                 actions: [
                     {
-                        title: 'Create new collection', ariaLabel: 'Create new collection', icon: 'plus',
+                        icon: 'trash',
+                        danger: true,
+                        title: 'Move selected to trash',
                         onClick: function () {
-                            var col = createCollection();
-                            collectionManagerSelectedId = col.id;
-                            render();
+                            _bulkDeleteCollections(Array.from(collectionsSelected));
                         }
-                    },
-                    (collectionsList && collectionsList.length > 0) ? {
-                        title: 'More actions', ariaLabel: 'More actions', label: '⋮',
-                        onClick: function () {
-                            var n = collectionsList.length;
-                            bowireConfirm(
-                                'Move all ' + n + ' collections to trash?',
-                                function () {
-                                    var removed = collectionsList.map(function (c, idx) {
-                                        return { entry: c, originalIdx: idx, deletedAt: Date.now() };
-                                    });
-                                    collectionsList.length = 0;
-                                    collectionManagerSelectedId = null;
-                                    for (var k = removed.length - 1; k >= 0; k--) collectionsTrash.unshift(removed[k]);
-                                    persistCollections();
-                                    persistCollectionsTrash();
-                                    toast(removed.length + ' collections moved to trash', 'success');
-                                    render();
-                                },
-                                { title: 'Move all to trash', confirmText: 'Move ' + n, danger: true }
-                            );
-                        }
-                    } : null
-                ]
-            });
-        }
-        sidebar.appendChild(header);
+                    }
+                ],
+                onClear: function () {
+                    collectionsSelected.clear();
+                    collectionsSelectionAnchor = null;
+                    render();
+                }
+            } : null
+        }));
 
         if (!collectionsList || collectionsList.length === 0) {
             sidebar.appendChild(el('div', {
@@ -2981,9 +3042,7 @@
     // sibling rail mode leaking into Security.
     function renderSecuritySidebar() {
         var sidebar = el('div', { id: 'bowire-sidebar', className: 'bowire-sidebar bowire-sidebar-mode' });
-        sidebar.appendChild(el('div', { className: 'bowire-env-list-header' },
-            el('span', { textContent: 'Security' })
-        ));
+        sidebar.appendChild(renderSidebarToolbar({ title: 'Security' }));
         sidebar.appendChild(el('div', {
             className: 'bowire-pane-empty',
             style: 'padding:12px 14px',
@@ -2995,18 +3054,37 @@
     function renderMocksSidebar() {
         var sidebar = el('div', { id: 'bowire-sidebar', className: 'bowire-sidebar bowire-sidebar-mode' });
 
-        sidebar.appendChild(renderSidebarHeader({
+        sidebar.appendChild(renderSidebarToolbar({
             title: 'Running mocks',
             actions: [
                 {
-                    title: 'Refresh the list of running mocks', ariaLabel: 'Refresh mocks', icon: 'replay',
+                    icon: 'replay',
+                    title: 'Refresh the list of running mocks',
                     onClick: function () {
                         if (typeof fetchMocks === 'function') {
                             fetchMocks().then(function () { render(); });
                         }
                     }
                 }
-            ]
+            ],
+            overflow: (mocksList && mocksList.length > 0 && typeof stopMock === 'function') ? [
+                {
+                    label: 'Stop all mocks',
+                    danger: true,
+                    onClick: function () {
+                        var ids = mocksList.map(function (m) { return m.mockId; });
+                        bowireConfirm(
+                            'Stop all ' + ids.length + ' running mocks?',
+                            function () {
+                                ids.forEach(function (id) { stopMock(id); });
+                                mockSelectedId = null;
+                                render();
+                            },
+                            { title: 'Stop all mocks', confirmText: 'Stop ' + ids.length, danger: true }
+                        );
+                    }
+                }
+            ] : null
         }));
 
         if (!mocksList || mocksList.length === 0) {

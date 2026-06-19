@@ -5492,6 +5492,68 @@ lives at the right of the
    headline). The previous centered-hero look was inconsistent across
    rails ("mal sehr klein, mal sehr groß, zentriert vs. links") —
    restyled here once so every rail's first impression reads the same. */
+/* Request / Response section header above each pane's tab strip
+   — anchors the operator on which half they're looking at without
+   relying on verbose tab labels ("Request Body" → just "Body").
+   Sized like a subtle eyebrow: small, uppercase, secondary tone. */
+.bowire-pane-heading {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--bowire-text-tertiary);
+    padding: 8px 16px 4px;
+    flex-shrink: 0;
+}
+
+/* "Run with preset" picker dialog. Reuses the confirm overlay
+   chrome; the preset list sits between the explanatory message
+   and the Cancel action so click-to-apply is the primary path. */
+.bowire-run-preset-dialog {
+    min-width: 360px;
+    max-width: 480px;
+}
+.bowire-run-preset-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin: 12px 0 4px;
+    max-height: 320px;
+    overflow-y: auto;
+}
+.bowire-run-preset-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    border: 1px solid var(--bowire-border-subtle);
+    background: var(--bowire-surface);
+    color: var(--bowire-text);
+    border-radius: var(--bowire-radius-sm);
+    cursor: pointer;
+    text-align: left;
+    font: inherit;
+}
+.bowire-run-preset-item:hover,
+.bowire-run-preset-item:focus-visible {
+    background: var(--bowire-surface-hover);
+    border-color: var(--bowire-border);
+    outline: none;
+}
+.bowire-run-preset-item.is-default {
+    border-color: color-mix(in srgb, var(--bowire-accent) 50%, var(--bowire-border));
+}
+.bowire-run-preset-item-name { flex: 1; }
+.bowire-run-preset-item-tag {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--bowire-accent);
+    background: color-mix(in srgb, var(--bowire-accent) 12%, transparent);
+    padding: 2px 6px;
+    border-radius: 4px;
+}
+
 /* Execute caret menu — small popover anchored under the split-
    button's caret. Disabled items render with reduced opacity and a
    not-allowed cursor; the title attribute carries the why. */
@@ -7133,6 +7195,39 @@ detail fills 100% ---------- */
 }
 
 .bowire-execute-btn.streaming-active {
+    background: var(--bowire-error);
+}
+
+/* Execute split — main button keeps the accent face, the caret
+   shares the same fill but is narrowed to just hold the chevron,
+   with a faint separator on the seam so the two halves still read
+   as distinct affordances. Higher-specificity selectors so the
+   .bowire-execute-btn padding/radius doesn't bleed back in. */
+.bowire-action-execute-split { gap: 0; }
+.bowire-action-execute-split .bowire-split-btn-main {
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+    /* Inset rule on the right edge — a real border-right would
+       grow the button's box; box-shadow inset paints over the fill
+       at pixel-perfect width. */
+    box-shadow: inset -1px 0 0 rgba(0, 0, 0, 0.18);
+}
+.bowire-action-execute-split .bowire-split-btn-caret {
+    padding: 0 8px;
+    min-width: 32px;
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+.bowire-action-execute-split .bowire-split-btn-caret svg {
+    width: 14px;
+    height: 14px;
+}
+/* Streaming-active state on the main button also recolours the
+   caret so they don't visually drift apart while a stream runs. */
+.bowire-action-execute-split .bowire-split-btn-main.streaming-active + .bowire-split-btn-caret {
     background: var(--bowire-error);
 }
 
@@ -11345,6 +11440,97 @@ so the user sees where the
     letter-spacing: 0.04em;
     color: var(--bowire-text-tertiary);
     font-weight: 600;
+}
+
+/* Unified sidebar toolbar — every rail's sidebar uses this strip
+   under its section title so the actions stay in the same place
+   across modes. Icon buttons are 26 px squares; the accent primary
+   sits at the right edge. Selection-mode swaps the title for a
+   count and exposes bulk-action icons + a clear (×) button. */
+.bowire-sidebar-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 8px 10px;
+    border-bottom: 1px solid var(--bowire-border-subtle);
+    flex-shrink: 0;
+}
+.bowire-sidebar-toolbar-spacer { flex: 1; }
+.bowire-sidebar-toolbar-title {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--bowire-text-tertiary);
+}
+.bowire-sidebar-toolbar-count {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--bowire-text);
+}
+.bowire-sidebar-toolbar.is-selection {
+    background: color-mix(in srgb, var(--bowire-accent) 8%, transparent);
+}
+.bowire-sidebar-toolbar-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    padding: 0;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: var(--bowire-radius-sm);
+    color: var(--bowire-text-tertiary);
+    cursor: pointer;
+    transition: color var(--bowire-transition), background var(--bowire-transition), border-color var(--bowire-transition);
+}
+.bowire-sidebar-toolbar-btn:hover {
+    background: var(--bowire-surface-hover);
+    border-color: var(--bowire-border);
+    color: var(--bowire-text);
+}
+.bowire-sidebar-toolbar-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+.bowire-sidebar-toolbar-btn.is-active {
+    background: color-mix(in srgb, var(--bowire-accent) 14%, transparent);
+    color: var(--bowire-accent);
+}
+.bowire-sidebar-toolbar-btn.is-danger:hover {
+    color: var(--bowire-error);
+    border-color: var(--bowire-error);
+}
+.bowire-sidebar-toolbar-btn svg {
+    width: 14px;
+    height: 14px;
+}
+.bowire-sidebar-toolbar-primary {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 26px;
+    padding: 0 10px;
+    border: 0;
+    background: var(--bowire-accent);
+    color: white;
+    font-size: 12px;
+    font-weight: 600;
+    border-radius: var(--bowire-radius-sm);
+    cursor: pointer;
+    transition: background var(--bowire-transition);
+}
+.bowire-sidebar-toolbar-primary:hover {
+    background: var(--bowire-accent-hover);
+}
+.bowire-sidebar-toolbar-primary:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+.bowire-sidebar-toolbar-primary svg {
+    width: 13px;
+    height: 13px;
 }
 /* Clickable variant of the section title — used by the workspaces
    sidebar header to navigate to the Workspaces overview. Looks

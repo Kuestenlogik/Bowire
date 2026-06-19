@@ -4909,8 +4909,13 @@
         // Body" after visiting Metadata couldn't re-activate the
         // body tab (old listener was attached to a node that now
         // represented metadata).
+        // Pane heading — anchors the left half visually so the
+        // operator doesn't rely on the verbose "Request Body" tab
+        // label to know which side they're on. Tabs below can stay
+        // terse (Body / Metadata / Schema / Tests / …).
+        pane.appendChild(el('div', { className: 'bowire-pane-heading', textContent: 'Request' }));
         const tabs = el('div', { id: 'bowire-request-tabs', className: 'bowire-tabs' });
-        const bodyTabLabel = isMultiMessage ? 'Messages (' + requestMessages.length + ')' : 'Request Body';
+        const bodyTabLabel = isMultiMessage ? 'Messages (' + requestMessages.length + ')' : 'Body';
         const bodyTab = el('div', {
             id: 'bowire-request-tab-body',
             className: `bowire-tab ${activeRequestTab === 'body' ? 'active' : ''}`,
@@ -7353,6 +7358,10 @@
         var resMethodKey = (selectedService ? selectedService.name : '')
             + '-' + (selectedMethod ? selectedMethod.name : '');
         const pane = el('div', { id: 'bowire-response-pane-' + resMethodKey, className: 'bowire-pane' });
+
+        // Pane heading — mirrors the "Request" label on the left so
+        // the seam between the two halves reads at a glance.
+        pane.appendChild(el('div', { className: 'bowire-pane-heading', textContent: 'Response' }));
 
         // Tabs
         const tabs = el('div', { className: 'bowire-tabs' });
