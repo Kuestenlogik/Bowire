@@ -1,26 +1,129 @@
-    // ---- #131 Phase 1 — Benchmarks rail-mode ----
+    // ---- #131 Benchmarks rail-mode — Envelope model ----
     //
-    // First-class home for performance probing. Phase 1 ships the
-    // 'single' shape (one service+method, N calls, K concurrency,
-    // latency percentiles + status histogram). Later phases add the
-    // collection, recording, random and scheduled shapes that the
-    // issue body enumerates — same spec object, different runner.
+    // First-class home for performance probing. Specs are now
+    // 'envelopes': a reusable {targets[], phases[], mode} bundle
+    // that decouples WHAT to invoke (targets) from HOW OFTEN +
+    // HOW PARALLEL (phases). One envelope can carry:
+    //   - 1 method (legacy 'single' shape)
+    //   - a saved collection (legacy 'collection' shape)
+    //   - a saved recording (legacy 'recording' shape)
+    //   - a free mix of any of the above, replayed sequentially or
+    //     in parallel per VU iteration
+    //
+    // Phases follow the Artillery / k6 stages model so that import /
+    // export to those formats is round-trippable later (Phase 4 of
+    // the rollout). Phase shapes supported in v1:
+    //   { vus, totalIterations, durationMs }      ← legacy n×K
+    //   { vus, durationMs }                       ← hold for time
+    //   { vus, rampToVus, durationMs }            ← linear ramp
+    //   { arrivalRate, durationMs }               ← Artillery-style
     //
     // Specs live per-workspace in localStorage under wsKey
-    // ('bowire_benchmarks'). Each spec carries its last completed run
-    // inline (durations are numbers — even 100k samples is ~800 KB,
-    // well within quota). A spec is reusable: the user picks one in
-    // the sidebar, tweaks N/concurrency in the detail pane, hits
-    // Run, and the result replaces lastRun. Saving a copy is a
-    // single button — no version history yet.
-    //
-    // The runner (runBenchmarkSpec) takes EXPLICIT parameters so it
-    // doesn't depend on selectedService/selectedMethod or the request
-    // editor — those drive the LEGACY perf-diff path, not this one.
-    // That keeps benchmarks runnable from saved specs after a
-    // workspace switch, without first navigating back to Discover.
+    // ('bowire_benchmarks'). Old format ({kind, service, method, n,
+    // concurrency, sourceId, ...}) is migrated in place on first
+    // load — see migrateEnvelope() below. Legacy mirror fields
+    // (kind, service, method, body, metadata, protocol, sourceId,
+    // n, concurrency) stay on the envelope so the existing detail
+    // pane keeps rendering during the Phase 1 rollout; Phase 2
+    // rewrites the detail pane and drops the mirror.
 
     const BENCHMARKS_KEY = 'bowire_benchmarks';
+
+    // Default-phase factory — a single fixed n × K stage so the
+    // simplest case ("100 calls at concurrency 4") just sets the
+    // first phase's scalar fields.
+    function defaultEnvelopePhase(seed) {
+        seed = seed || {};
+        return {
+            vus: Math.max(1, parseInt(seed.vus, 10) || parseInt(seed.concurrency, 10) || 4),
+            totalIterations: seed.totalIterations !== undefined
+                ? Math.max(1, parseInt(seed.totalIterations, 10) || 1)
+                : Math.max(1, parseInt(seed.n, 10) || 100),
+            rampToVus: null,
+            arrivalRate: null,
+            durationMs: null
+        };
+    }
+
+    // Build a target from a legacy seed. Seed shapes:
+    //   { kind: 'single', service, method, body, metadata, protocol }
+    //   { kind: 'collection', sourceId }
+    //   { kind: 'recording', sourceId }
+    function targetFromLegacySeed(seed) {
+        seed = seed || {};
+        if (seed.kind === 'collection') {
+            return { type: 'collection-ref', collectionId: seed.sourceId || null, itemIndex: null };
+        }
+        if (seed.kind === 'recording') {
+            return { type: 'recording-ref', recordingId: seed.sourceId || null, stepIndex: null };
+        }
+        return {
+            type: 'method',
+            service: seed.service || (typeof selectedService !== 'undefined' && selectedService ? selectedService.name : ''),
+            method: seed.method || (typeof selectedMethod !== 'undefined' && selectedMethod ? selectedMethod.name : ''),
+            protocol: seed.protocol
+                || (typeof selectedService !== 'undefined' && selectedService
+                    ? (selectedService.source || (typeof selectedProtocol !== 'undefined' ? selectedProtocol : null))
+                    : null),
+            body: seed.body || '{}',
+            metadata: seed.metadata || {},
+            serverUrl: null
+        };
+    }
+
+    // Re-derive legacy mirror fields (kind/service/method/.../n/K)
+    // from targets[0] and phases[0]. Called whenever a new envelope
+    // is built or migrated so the existing detail pane (which reads
+    // these fields directly) keeps working unchanged.
+    function syncEnvelopeLegacyFields(spec) {
+        if (!spec) return spec;
+        var t0 = (spec.targets && spec.targets[0]) || null;
+        var p0 = (spec.phases && spec.phases[0]) || null;
+        if (t0) {
+            if (t0.type === 'collection-ref') {
+                spec.kind = 'collection';
+                spec.sourceId = t0.collectionId;
+                spec.service = ''; spec.method = '';
+                spec.body = '{}'; spec.metadata = {};
+                spec.protocol = null;
+            } else if (t0.type === 'recording-ref') {
+                spec.kind = 'recording';
+                spec.sourceId = t0.recordingId;
+                spec.service = ''; spec.method = '';
+                spec.body = '{}'; spec.metadata = {};
+                spec.protocol = null;
+            } else {
+                spec.kind = 'single';
+                spec.service = t0.service || '';
+                spec.method = t0.method || '';
+                spec.body = t0.body || '{}';
+                spec.metadata = t0.metadata || {};
+                spec.protocol = t0.protocol || null;
+                spec.sourceId = null;
+            }
+        }
+        if (p0) {
+            spec.n = p0.totalIterations || spec.n || 100;
+            spec.concurrency = p0.vus || spec.concurrency || 4;
+        }
+        return spec;
+    }
+
+    // One-shot upgrade for specs persisted in the pre-envelope
+    // shape. Idempotent — re-running on a v2 spec is a no-op.
+    function migrateEnvelope(spec) {
+        if (!spec) return spec;
+        if (Array.isArray(spec.targets) && Array.isArray(spec.phases)) {
+            return spec; // already v2
+        }
+        spec.targets = [targetFromLegacySeed(spec)];
+        spec.phases = [defaultEnvelopePhase({
+            vus: spec.concurrency,
+            totalIterations: spec.n
+        })];
+        spec.mode = spec.mode || 'sequential';
+        return syncEnvelopeLegacyFields(spec);
+    }
 
     function loadBenchmarks() {
         // Lazy-hydrate from localStorage on first access. After that
@@ -34,10 +137,55 @@
         } catch {
             benchmarksList = [];
         }
+        // One-shot upgrade of pre-envelope specs. migrateEnvelope is
+        // idempotent so re-running on already-v2 entries is a no-op.
+        var dirty = false;
+        for (var i = 0; i < benchmarksList.length; i++) {
+            var before = !!(benchmarksList[i].targets && benchmarksList[i].phases);
+            migrateEnvelope(benchmarksList[i]);
+            if (!before) dirty = true;
+        }
+        if (dirty) {
+            try {
+                localStorage.setItem(wsKey(BENCHMARKS_KEY), JSON.stringify(benchmarksList));
+            } catch (e) {
+                console.warn('[bowire] failed to persist migrated benchmarks', e);
+            }
+        }
         return benchmarksList;
     }
 
+    // Reflect detail-pane edits to legacy mirror fields (spec.n,
+    // spec.concurrency, spec.service, …) back into the v2 envelope
+    // shape (phases[0], targets[0]) before serialising. Keeps the
+    // two surfaces in sync without invasive changes to every input
+    // handler in the detail pane.
+    function reflectLegacyEditsBack(spec) {
+        if (!spec || !Array.isArray(spec.phases) || !Array.isArray(spec.targets)) return;
+        if (spec.phases[0]) {
+            if (typeof spec.n === 'number') spec.phases[0].totalIterations = spec.n;
+            if (typeof spec.concurrency === 'number') spec.phases[0].vus = spec.concurrency;
+        }
+        if (spec.targets[0]) {
+            var t0 = spec.targets[0];
+            if (t0.type === 'method') {
+                if (spec.service !== undefined) t0.service = spec.service;
+                if (spec.method !== undefined) t0.method = spec.method;
+                if (spec.body !== undefined) t0.body = spec.body;
+                if (spec.metadata !== undefined) t0.metadata = spec.metadata;
+                if (spec.protocol !== undefined) t0.protocol = spec.protocol;
+            } else if (t0.type === 'collection-ref' && spec.sourceId !== undefined) {
+                t0.collectionId = spec.sourceId;
+            } else if (t0.type === 'recording-ref' && spec.sourceId !== undefined) {
+                t0.recordingId = spec.sourceId;
+            }
+        }
+    }
+
     function persistBenchmarks() {
+        if (Array.isArray(benchmarksList)) {
+            benchmarksList.forEach(reflectLegacyEditsBack);
+        }
         try {
             localStorage.setItem(wsKey(BENCHMARKS_KEY), JSON.stringify(benchmarksList || []));
             markSaved('Benchmarks');
@@ -60,37 +208,40 @@
         var defaultName = kind === 'collection' ? 'Benchmark collection'
                         : kind === 'recording' ? 'Benchmark recording'
                         : 'New benchmark';
+
+        // Envelope-shape (v2). Legacy mirror fields (kind, service,
+        // method, body, metadata, protocol, sourceId, n, concurrency,
+        // serverUrl) are filled by syncEnvelopeLegacyFields below
+        // so the existing detail-pane code keeps reading them
+        // directly. Phase 2 of the rollout swaps the detail pane to
+        // the new shape and drops the mirror.
         var spec = {
             id: makeBenchmarkId(),
             name: seed.name || defaultName,
-            // Shape of what's under test. 'single' (existing) repeats one
-            // unary call N×K. 'collection' replays a saved Collection's
-            // items N times. 'recording' replays a Recording's steps N
-            // times. Discover, Collection-Detail and Recording-Detail
-            // each have a "Benchmark this …" button that prefills the
-            // matching kind so the operator never has to type a target
-            // by hand. Phase 1: kind drives execution dispatch in
-            // runBenchmarkSpec; collection / recording stay sequential
-            // within one session (parallel sessions land via the
-            // separate Recording/Collection "Run in parallel sessions"
-            // surface).
-            kind: kind,
-            // single-shape targets
-            service: seed.service || (selectedService ? selectedService.name : ''),
-            method: seed.method || (selectedMethod ? selectedMethod.name : ''),
-            protocol: seed.protocol
-                || (selectedService ? (selectedService.source || selectedProtocol) : null),
-            body: seed.body || '{}',
-            metadata: seed.metadata || {},
-            // collection-/recording-shape target — id of the source
-            // collection or recording inside the active workspace.
-            sourceId: seed.sourceId || null,
-            serverUrl: null, // resolved at run-time
-            n: seed.n || 100,
-            concurrency: seed.concurrency || 4,
+
+            // WHAT to invoke per VU iteration. Multiple targets are
+            // walked in order when mode === 'sequential' or fired
+            // concurrently when mode === 'parallel'.
+            targets: Array.isArray(seed.targets) && seed.targets.length > 0
+                ? seed.targets.slice()
+                : [targetFromLegacySeed(seed)],
+
+            // HOW OFTEN × HOW PARALLEL. Each phase advances when
+            // either totalIterations is reached OR durationMs elapses.
+            phases: Array.isArray(seed.phases) && seed.phases.length > 0
+                ? seed.phases.map(defaultEnvelopePhase)
+                : [defaultEnvelopePhase({
+                    vus: seed.concurrency,
+                    totalIterations: seed.n
+                })],
+
+            mode: seed.mode || 'sequential',
+
             createdAt: 0,
             lastRun: null
         };
+        syncEnvelopeLegacyFields(spec);
+
         benchmarksList.push(spec);
         persistBenchmarks();
         return spec;
