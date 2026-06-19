@@ -3179,22 +3179,30 @@
         //      because the user is inside "my picks", not browsing the whole
         //      API surface. The star in the services view keeps its
         //      add/remove toggle behaviour.
-        // Segmented control retired — Discover is the services tree
-        // alone, so a single-pill 'Services' tab was just chrome with
-        // no choice. The viewSwitch container stays as the host for
-        // the '+' new-request dropdown that lives at its right edge.
-        var viewSwitch = el('div', { id: 'bowire-sidebar-view-switch', className: 'bowire-view-switch', role: 'toolbar' });
+        // Unified sidebar toolbar — caps-title "Discover" on the left,
+        // favorites-only toggle + Plus new-request menu on the right.
+        // Replaces the bespoke .bowire-view-switch card-look so Discover
+        // sits in the same toolbar frame as every other rail. The Plus
+        // dropdown keeps its bespoke per-protocol markup (icons read
+        // faster than a plain text context menu) and anchors against
+        // newBtnWrapper inside the new row.
+        var viewSwitch = el('div', { id: 'bowire-sidebar-view-switch', className: 'bowire-sidebar-toolbar', role: 'toolbar' });
+        viewSwitch.appendChild(el('span', {
+            className: 'bowire-sidebar-toolbar-title',
+            textContent: 'Discover'
+        }));
+        viewSwitch.appendChild(el('span', { className: 'bowire-sidebar-toolbar-spacer' }));
 
-        // Favorites-only toggle hoisted into the same row as the
-        // '+' button so the operator doesn't see two related controls
-        // (filter + create) split across separate rows. The protocol
-        // filter + filter chips stay below in the svcToolbar — those
-        // are subordinate / can take their own line.
+        // Favorites-only toggle — same row as the '+' button so the
+        // operator doesn't see two related controls (filter + create)
+        // split across separate rows. Protocol filter + filter chips
+        // stay below in the svcToolbar — those are subordinate / can
+        // take their own line.
         if (sidebarView === 'services') {
             viewSwitch.appendChild(el('button', {
                 type: 'button',
                 id: 'bowire-favorites-only-btn',
-                className: 'bowire-fav-only-toggle' + (favoritesOnly ? ' active' : ''),
+                className: 'bowire-sidebar-toolbar-btn' + (favoritesOnly ? ' is-active' : ''),
                 title: favoritesOnly
                     ? 'Showing favorites only — click to show everything'
                     : 'Filter the list to favorited methods only',
@@ -3206,12 +3214,14 @@
             }, el('span', { innerHTML: svgIcon(favoritesOnly ? 'starFilled' : 'star') })));
         }
 
-        // "+" button — always visible in the tab row, all views
-        viewSwitch.appendChild(el('span', { style: 'flex:1' }));
+        // "+" new-request button — accent-primary in the toolbar so it
+        // reads at the same weight as the "+" button on every other
+        // rail. The dropdown still lives inside newBtnWrapper so it
+        // can anchor `position:absolute` against the button.
         var newBtnWrapper = el('div', { className: 'bowire-new-btn-wrapper' });
         var newBtn = el('button', {
             id: 'bowire-new-btn',
-            className: 'bowire-new-btn' + (freeformRequest ? ' active' : ''),
+            className: 'bowire-sidebar-toolbar-primary',
             title: 'New request, collection, or environment',
             'aria-label': 'New request, collection, or environment',
             onClick: function (e) {
