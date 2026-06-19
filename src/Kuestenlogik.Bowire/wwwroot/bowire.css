@@ -16980,3 +16980,185 @@ not as the
     font-family: var(--bowire-mono, monospace);
 }
 
+/* ---------- Benchmark Envelope detail pane (#131 Phase 2) ---------- */
+.bowire-envelope-mode-row {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+.bowire-envelope-mode-radio {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border: 1px solid var(--bowire-border);
+    border-radius: var(--bowire-radius-sm);
+    background: transparent;
+    cursor: pointer;
+    font-size: 12px;
+    transition: background var(--bowire-transition), border-color var(--bowire-transition);
+}
+.bowire-envelope-mode-radio input { margin: 0; }
+.bowire-envelope-mode-radio:hover {
+    background: var(--bowire-surface-hover);
+    border-color: var(--bowire-border);
+}
+.bowire-envelope-mode-radio.is-active {
+    background: color-mix(in srgb, var(--bowire-accent) 14%, transparent);
+    border-color: var(--bowire-accent);
+    color: var(--bowire-accent);
+}
+
+.bowire-envelope-targets {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+.bowire-envelope-target-row {
+    border: 1px solid var(--bowire-border);
+    border-radius: var(--bowire-radius-sm);
+    background: var(--bowire-surface-elevated, transparent);
+}
+.bowire-envelope-target-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 10px;
+    border-bottom: 1px solid var(--bowire-border-subtle);
+}
+.bowire-envelope-target-icon {
+    display: inline-flex;
+    width: 14px;
+    height: 14px;
+    color: var(--bowire-text-tertiary);
+}
+.bowire-envelope-target-icon svg {
+    width: 14px;
+    height: 14px;
+}
+.bowire-envelope-target-summary {
+    flex: 1;
+    font-size: 12px;
+    font-weight: 500;
+}
+.bowire-envelope-target-tools {
+    display: inline-flex;
+    gap: 2px;
+}
+.bowire-envelope-target-tool-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    padding: 0;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: var(--bowire-radius-sm);
+    color: var(--bowire-text-tertiary);
+    cursor: pointer;
+}
+.bowire-envelope-target-tool-btn svg {
+    width: 12px;
+    height: 12px;
+}
+.bowire-envelope-target-tool-btn:hover {
+    background: var(--bowire-surface-hover);
+    color: var(--bowire-text);
+    border-color: var(--bowire-border);
+}
+.bowire-envelope-target-tool-btn.is-danger:hover {
+    color: var(--bowire-error);
+    border-color: var(--bowire-error);
+}
+.bowire-envelope-target-body {
+    padding: 8px 10px 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.bowire-envelope-field {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+.bowire-envelope-field-label {
+    font-size: 11px;
+    color: var(--bowire-text-tertiary);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+.bowire-envelope-field-select,
+.bowire-envelope-field-input,
+.bowire-envelope-field-textarea {
+    width: 100%;
+    padding: 6px 8px;
+    border: 1px solid var(--bowire-border);
+    border-radius: var(--bowire-radius-sm);
+    background: var(--bowire-bg);
+    color: var(--bowire-text);
+    font-size: 12px;
+    font-family: inherit;
+}
+.bowire-envelope-field-textarea {
+    font-family: var(--bowire-mono);
+    resize: vertical;
+    min-height: 60px;
+}
+.bowire-envelope-field-number {
+    flex: 1;
+    min-width: 100px;
+}
+
+.bowire-envelope-targets-add {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+.bowire-envelope-target-add-btn,
+.bowire-envelope-phase-add-btn {
+    padding: 6px 10px;
+    background: transparent;
+    border: 1px dashed var(--bowire-border);
+    border-radius: var(--bowire-radius-sm);
+    color: var(--bowire-text-secondary);
+    cursor: pointer;
+    font-size: 12px;
+    transition: background var(--bowire-transition), color var(--bowire-transition);
+}
+.bowire-envelope-target-add-btn:hover,
+.bowire-envelope-phase-add-btn:hover {
+    background: var(--bowire-surface-hover);
+    color: var(--bowire-text);
+    border-color: var(--bowire-accent);
+}
+
+.bowire-envelope-phases {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+.bowire-envelope-phase-row {
+    display: flex;
+    align-items: flex-end;
+    gap: 8px;
+    padding: 8px 10px;
+    border: 1px solid var(--bowire-border);
+    border-radius: var(--bowire-radius-sm);
+}
+.bowire-envelope-phase-row .bowire-envelope-field-select {
+    min-width: 160px;
+}
+.bowire-envelope-phase-fields {
+    flex: 1;
+    display: flex;
+    gap: 8px;
+}
+.bowire-envelope-phase-tools {
+    display: inline-flex;
+    gap: 2px;
+    align-self: center;
+}
