@@ -612,6 +612,45 @@
 
     // ---- Flow Sidebar List ----
     function renderFlowsListInto(container) {
+        // Unified sidebar toolbar (#143 / sidebar-consistency pass).
+        // Primary "+ New flow" replaces the old bottom-of-list
+        // "New Flow" button so the affordance lands in the same
+        // place every rail's primary action does.
+        if (typeof renderSidebarToolbar === 'function') {
+            container.appendChild(renderSidebarToolbar({
+                title: 'Flows',
+                primary: {
+                    icon: 'plus',
+                    title: 'New flow',
+                    onClick: function () {
+                        var flow = createFlow();
+                        flowEditorSelectedId = flow.id;
+                        render();
+                    }
+                },
+                overflow: (flowsList && flowsList.length > 0) ? [
+                    {
+                        label: 'Delete all flows',
+                        danger: true,
+                        onClick: function () {
+                            var n = flowsList.length;
+                            bowireConfirm(
+                                'Delete all ' + n + ' flows?',
+                                function () {
+                                    flowsList.length = 0;
+                                    flowEditorSelectedId = null;
+                                    if (typeof persistFlows === 'function') persistFlows();
+                                    toast(n + ' flow' + (n === 1 ? '' : 's') + ' deleted', 'success');
+                                    render();
+                                },
+                                { title: 'Delete all flows', confirmText: 'Delete ' + n, danger: true }
+                            );
+                        }
+                    }
+                ] : null
+            }));
+        }
+
         if (flowsList.length === 0) {
             // Empty-state copy + call-to-action live in the main pane
             // (renderFlowCanvas's empty branch). Sidebar shows a
@@ -649,18 +688,8 @@
             })(flowsList[i]);
         }
 
-        container.appendChild(el('div', { className: 'bowire-env-sidebar-add', style: 'padding:8px' },
-            el('button', {
-                id: 'bowire-flow-create-btn',
-                className: 'bowire-recording-action-btn',
-                style: 'width:100%',
-                onClick: function () {
-                    var flow = createFlow();
-                    flowEditorSelectedId = flow.id;
-                    render();
-                }
-            }, el('span', { innerHTML: svgIcon('plus') }), el('span', { textContent: 'New Flow' }))
-        ));
+        // Bottom "+ New Flow" button retired — primary lives in the
+        // sidebar toolbar at the top of this list (see above).
     }
 
     // ---- Flow Canvas (Main Pane) ----

@@ -162,6 +162,48 @@
             bowireProxyConnect();
         }
 
+        // Unified sidebar toolbar — overflow holds Clear all and
+        // the API-URL editor (the latter is settings, not action,
+        // so it lives behind the ⋮).
+        if (typeof renderSidebarToolbar === 'function') {
+            container.appendChild(renderSidebarToolbar({
+                title: 'Proxy',
+                actions: [
+                    {
+                        icon: 'replay',
+                        title: 'Reconnect to the proxy',
+                        onClick: function () {
+                            proxyConnectionState = 'idle';
+                            render();
+                        }
+                    }
+                ],
+                overflow: [
+                    {
+                        label: 'Clear all flows',
+                        danger: true,
+                        onClick: function () { bowireProxyClearFlows(); }
+                    },
+                    { separator: true },
+                    {
+                        label: 'Edit API URL…',
+                        onClick: function () {
+                            bowirePrompt('Proxy API URL', {
+                                title: 'Proxy connection',
+                                defaultValue: proxyApiUrl,
+                                placeholder: 'http://localhost:8889',
+                                confirmText: 'Save'
+                            }).then(function (val) {
+                                if (!val) return;
+                                bowireProxySetApiUrl(String(val).trim());
+                                render();
+                            });
+                        }
+                    }
+                ]
+            }));
+        }
+
         if (proxyConnectionState === 'connecting') {
             container.appendChild(el('div', { className: 'bowire-loading', style: 'padding:24px' },
                 el('div', { className: 'bowire-spinner' }),
@@ -221,25 +263,8 @@
             })(proxyFlows[i]);
         }
 
-        container.appendChild(el('div', { style: 'padding:8px; display:flex; gap:6px; flex-direction:column' },
-            el('button', {
-                id: 'bowire-proxy-clear-btn',
-                className: 'bowire-recording-action-btn',
-                onClick: function () { bowireProxyClearFlows(); }
-            }, el('span', { textContent: 'Clear all' })),
-            el('div', { style: 'display:flex; gap:6px; align-items:center; margin-top:4px; font-size:11px; color:var(--bowire-text-secondary)' },
-                el('span', { textContent: 'API:' }),
-                el('input', {
-                    id: 'bowire-proxy-api-url',
-                    type: 'text',
-                    className: 'bowire-input',
-                    style: 'flex:1; font-size:11px; padding:2px 4px; font-family:monospace',
-                    value: proxyApiUrl,
-                    spellcheck: 'false',
-                    onChange: function (e) { bowireProxySetApiUrl(e.target.value); render(); }
-                })
-            )
-        ));
+        // Bottom Clear-all + API-URL row retired — both affordances
+        // live in the sidebar toolbar (overflow ⋮) at the top now.
     }
 
     // ---- Main pane ----

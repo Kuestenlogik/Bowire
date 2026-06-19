@@ -397,18 +397,37 @@
         var sidebar = el('div', { id: 'bowire-sidebar', className: 'bowire-sidebar bowire-sidebar-mode' });
         loadBenchmarks();
 
-        sidebar.appendChild(renderSidebarHeader({
+        sidebar.appendChild(renderSidebarToolbar({
             title: 'Benchmarks',
-            actions: [
+            primary: {
+                icon: 'plus',
+                title: 'New benchmark',
+                onClick: function () {
+                    var spec = createBenchmarkSpec();
+                    benchmarksSelectedId = spec.id;
+                    render();
+                }
+            },
+            overflow: (benchmarksList && benchmarksList.length > 0) ? [
                 {
-                    title: 'New benchmark', ariaLabel: 'New benchmark', icon: 'plus',
+                    label: 'Delete all benchmarks',
+                    danger: true,
                     onClick: function () {
-                        var spec = createBenchmarkSpec();
-                        benchmarksSelectedId = spec.id;
-                        render();
+                        var n = benchmarksList.length;
+                        bowireConfirm(
+                            'Delete all ' + n + ' benchmarks?',
+                            function () {
+                                benchmarksList.length = 0;
+                                benchmarksSelectedId = null;
+                                if (typeof persistBenchmarks === 'function') persistBenchmarks();
+                                toast(n + ' benchmark' + (n === 1 ? '' : 's') + ' deleted', 'success');
+                                render();
+                            },
+                            { title: 'Delete all benchmarks', confirmText: 'Delete ' + n, danger: true }
+                        );
                     }
                 }
-            ]
+            ] : null
         }));
 
         var list = el('div', { id: 'bowire-benchmarks-list', className: 'bowire-env-list' });
@@ -438,6 +457,51 @@
                     onClick: function () {
                         benchmarksSelectedId = spec.id;
                         render();
+                    },
+                    onContextMenu: function (e) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        if (typeof showContextMenu !== 'function') return;
+                        showContextMenu(e.clientX, e.clientY, [
+                            {
+                                label: isRunning ? 'Stop run' : 'Run benchmark',
+                                onClick: function () {
+                                    if (isRunning) {
+                                        if (typeof stopBenchmark === 'function') stopBenchmark();
+                                    } else {
+                                        benchmarksSelectedId = spec.id;
+                                        if (typeof runBenchmark === 'function') runBenchmark(spec.n, spec.concurrency);
+                                    }
+                                }
+                            },
+                            {
+                                label: 'Rename…',
+                                onClick: function () {
+                                    bowirePrompt('Benchmark name', {
+                                        title: 'Rename benchmark',
+                                        defaultValue: spec.name || '',
+                                        confirmText: 'Save'
+                                    }).then(function (name) {
+                                        if (!name) return;
+                                        spec.name = String(name).trim();
+                                        if (typeof persistBenchmarks === 'function') persistBenchmarks();
+                                        render();
+                                    });
+                                }
+                            },
+                            { separator: true },
+                            {
+                                label: 'Delete',
+                                danger: true,
+                                onClick: function () {
+                                    var idx = benchmarksList.indexOf(spec);
+                                    if (idx >= 0) benchmarksList.splice(idx, 1);
+                                    if (benchmarksSelectedId === spec.id) benchmarksSelectedId = null;
+                                    if (typeof persistBenchmarks === 'function') persistBenchmarks();
+                                    render();
+                                }
+                            }
+                        ]);
                     }
                 }));
             });
