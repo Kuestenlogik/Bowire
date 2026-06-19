@@ -261,146 +261,266 @@
         return benchmarksList.find(function (s) { return s.id === id; }) || null;
     }
 
-    // Runner — promise-returning, explicit-spec.
-    //
-    // Returns when every iteration has resolved (or been cancelled).
-    // Updates the LIVE `benchmark` scratchpad on every completion so
-    // existing perf-diff visualisations keep working; also calls the
-    // optional onProgress callback after each batch so the rail-mode
-    // detail pane can re-render itself without piggy-backing on the
-    // global render() throttle.
-    async function runBenchmarkSpec(spec, onProgress) {
-        if (!spec || benchmark.running) return null;
+    // Per-target invocation dispatch. Returns {pass, durationMs,
+    // statusLabel} so the phase-loop can aggregate uniformly regardless
+    // of target type.
+    async function _invokeBenchmarkTarget(target) {
+        if (!target) return { pass: false, durationMs: 0, statusLabel: 'NoTarget' };
 
-        // Shape dispatch (#131). 'single' (default) repeats one unary
-        // call N×K — the existing path below. 'collection' replays a
-        // saved Collection N times with K concurrent sessions; same for
-        // 'recording'. Both shape branches reuse _runCollectionSession /
-        // _runRecordingSession from collections.js so the per-session
-        // semantics match the standalone Parallel-Sessions button.
-        if (spec.kind === 'collection' || spec.kind === 'recording') {
-            return _runBenchmarkSequenceShape(spec, onProgress);
-        }
-
-        // Resolve the target service so we know which URL to hit. If
-        // the spec captured a service that's no longer in the current
-        // workspace's discovery, fall back to selectedService — but
-        // surface the mismatch in the console for the operator.
-        var targetService = (services || []).find(function (s) {
-            return s.name === spec.service && (!spec.protocol || s.source === spec.protocol);
-        });
-        if (!targetService && selectedService && selectedService.name === spec.service) {
-            targetService = selectedService;
-        }
-        if (!targetService) {
-            addConsoleEntry({
-                type: 'response',
-                method: spec.service + '/' + spec.method,
-                status: 'Benchmark error',
-                body: 'Service "' + spec.service + '" not in current discovery'
+        if (target.type === 'method') {
+            var targetService = (typeof services !== 'undefined' ? services : []).find(function (s) {
+                return s.name === target.service && (!target.protocol || s.source === target.protocol);
             });
-            return null;
-        }
-
-        // Snapshot what each iteration needs — once. The body template
-        // stays raw so each call re-substitutes (${now}/${uuid} are
-        // expected to change per call); metadata likewise.
-        var bodyTemplate = String(spec.body || '{}');
-        var metadataTemplate = spec.metadata || {};
-        var n = Math.max(1, parseInt(spec.n, 10) || 1);
-        var concurrency = Math.max(1, Math.min(parseInt(spec.concurrency, 10) || 1, 20));
-        var serviceUrlParam = serverUrlParamForService(targetService, false);
-        var protocolId = spec.protocol || targetService.source || selectedProtocol || undefined;
-        var fullName = spec.service + '/' + spec.method;
-
-        // #125 Phase 4 — prefetch ai.* refs from body + metadata ONCE
-        // before kicking off the workers. The cache is session-scoped,
-        // so all N iterations share the same resolved value. That's
-        // intentional for benchmarks: the load profile should be
-        // consistent across the run, not re-generate the AI value 1000
-        // times (which would also dominate the latency numbers).
-        if (typeof window.bowirePrefetchAiVars === 'function') {
-            try {
-                var aiTpls = [bodyTemplate];
-                for (var mk in metadataTemplate) {
-                    if (Object.prototype.hasOwnProperty.call(metadataTemplate, mk)) {
-                        aiTpls.push(String(metadataTemplate[mk] || ''));
-                    }
+            if (!targetService && typeof selectedService !== 'undefined'
+                && selectedService && selectedService.name === target.service) {
+                targetService = selectedService;
+            }
+            if (!targetService) {
+                return { pass: false, durationMs: 0, statusLabel: 'MissingService' };
+            }
+            var bodyTpl = String(target.body || '{}');
+            var metaTpl = target.metadata || {};
+            var messages = [substituteVars(bodyTpl)];
+            var meta = {};
+            for (var k in metaTpl) {
+                if (Object.prototype.hasOwnProperty.call(metaTpl, k)) {
+                    meta[k] = substituteVars(metaTpl[k]);
                 }
-                await window.bowirePrefetchAiVars(aiTpls);
-            } catch (e) { console.warn('[ai-prefetch] benchmark failed', e); }
+            }
+            if (typeof applyAuth === 'function') meta = await applyAuth(meta);
+            var serviceUrlParam = serverUrlParamForService(targetService, false);
+            var protocolId = target.protocol || targetService.source
+                || (typeof selectedProtocol !== 'undefined' ? selectedProtocol : undefined);
+            var t0 = performance.now();
+            try {
+                var resp = await fetch(config.prefix + '/api/invoke' + serviceUrlParam, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        service: target.service,
+                        method: target.method,
+                        messages: messages,
+                        metadata: Object.keys(meta).length > 0 ? meta : null,
+                        protocol: protocolId
+                    })
+                });
+                var result = await resp.json();
+                var elapsed = performance.now() - t0;
+                if (result.title) {
+                    return { pass: false, durationMs: elapsed, statusLabel: 'Error' };
+                }
+                return {
+                    pass: true,
+                    durationMs: elapsed,
+                    statusLabel: result.status || 'OK'
+                };
+            } catch (e) {
+                return {
+                    pass: false,
+                    durationMs: performance.now() - t0,
+                    statusLabel: 'NetworkError'
+                };
+            }
         }
 
-        resetBenchmark({ n: n, concurrency: concurrency });
-        benchmark.running = true;
-        benchmark.startTime = performance.now();
-        benchmarkActiveSpecId = spec.id;
-        addConsoleEntry({
-            type: 'request',
-            method: fullName,
-            status: 'Benchmark',
-            body: 'Starting ' + n + ' calls (concurrency ' + concurrency + ')'
-        });
-        if (typeof onProgress === 'function') onProgress();
+        if (target.type === 'collection-ref') {
+            var col = (typeof collectionsList !== 'undefined' ? collectionsList : [])
+                .find(function (c) { return c.id === target.collectionId; });
+            if (!col) return { pass: false, durationMs: 0, statusLabel: 'MissingCollection' };
+            if (typeof _runCollectionSession !== 'function') {
+                return { pass: false, durationMs: 0, statusLabel: 'NoSessionRunner' };
+            }
+            var tc = performance.now();
+            try {
+                var rc = await _runCollectionSession(col);
+                return {
+                    pass: !!(rc && rc.pass),
+                    durationMs: performance.now() - tc,
+                    statusLabel: (rc && rc.pass) ? 'OK' : 'Error'
+                };
+            } catch {
+                return { pass: false, durationMs: performance.now() - tc, statusLabel: 'NetworkError' };
+            }
+        }
+
+        if (target.type === 'recording-ref') {
+            var rec = (typeof recordingsList !== 'undefined' ? recordingsList : [])
+                .find(function (r) { return r.id === target.recordingId; });
+            if (!rec) return { pass: false, durationMs: 0, statusLabel: 'MissingRecording' };
+            if (typeof _runRecordingSession !== 'function') {
+                return { pass: false, durationMs: 0, statusLabel: 'NoSessionRunner' };
+            }
+            var tr = performance.now();
+            try {
+                var rr = await _runRecordingSession(rec);
+                return {
+                    pass: !!(rr && rr.pass),
+                    durationMs: performance.now() - tr,
+                    statusLabel: (rr && rr.pass) ? 'OK' : 'Error'
+                };
+            } catch {
+                return { pass: false, durationMs: performance.now() - tr, statusLabel: 'NetworkError' };
+            }
+        }
+
+        return { pass: false, durationMs: 0, statusLabel: 'UnknownType' };
+    }
+
+    // One VU iteration walks the spec's targets. mode === 'parallel'
+    // fires them all concurrently; pass = ALL pass, durationMs =
+    // max. mode === 'sequential' walks them one-by-one; pass = all
+    // pass, durationMs = sum.
+    async function _runEnvelopeIteration(spec) {
+        var targets = Array.isArray(spec.targets) ? spec.targets : [];
+        if (targets.length === 0) {
+            return { pass: false, durationMs: 0, statusLabel: 'NoTargets' };
+        }
+        if (spec.mode === 'parallel' && targets.length > 1) {
+            var results = await Promise.all(targets.map(_invokeBenchmarkTarget));
+            var pass = results.every(function (r) { return r && r.pass; });
+            var maxMs = 0;
+            var firstFailLabel = null;
+            results.forEach(function (r) {
+                if (r.durationMs > maxMs) maxMs = r.durationMs;
+                if (!r.pass && !firstFailLabel) firstFailLabel = r.statusLabel;
+            });
+            return {
+                pass: pass,
+                durationMs: maxMs,
+                statusLabel: pass ? 'OK' : (firstFailLabel || 'Error')
+            };
+        }
+        // sequential — walk targets in order, abort on first fail
+        var totalMs = 0;
+        for (var i = 0; i < targets.length; i++) {
+            var rs = await _invokeBenchmarkTarget(targets[i]);
+            totalMs += rs.durationMs || 0;
+            if (!rs.pass) {
+                return { pass: false, durationMs: totalMs, statusLabel: rs.statusLabel };
+            }
+        }
+        return { pass: true, durationMs: totalMs, statusLabel: 'OK' };
+    }
+
+    // One phase: spawn `vus` workers; each pulls iterations until
+    // `totalIterations` is reached OR `durationMs` elapses (whichever
+    // is set). Tracks results into the live benchmark scratchpad.
+    async function _runEnvelopePhase(spec, phase, onProgress) {
+        var vus = Math.max(1, Math.min(parseInt(phase.vus, 10) || 1, 64));
+        var iterCap = phase.totalIterations
+            ? Math.max(1, parseInt(phase.totalIterations, 10) || 1)
+            : null;
+        var deadline = phase.durationMs
+            ? performance.now() + Math.max(0, parseInt(phase.durationMs, 10) || 0)
+            : null;
+        if (!iterCap && !deadline) iterCap = 1;
 
         var nextIndex = 0;
         async function worker() {
             while (true) {
                 if (benchmark.cancelled) return;
-                var idx = nextIndex++;
-                if (idx >= n) return;
-
-                var messages = [substituteVars(bodyTemplate)];
-                var meta = {};
-                for (var k in metadataTemplate) {
-                    if (Object.prototype.hasOwnProperty.call(metadataTemplate, k)) {
-                        meta[k] = substituteVars(metadataTemplate[k]);
-                    }
+                if (deadline && performance.now() >= deadline) return;
+                if (iterCap !== null) {
+                    var idx = nextIndex++;
+                    if (idx >= iterCap) return;
                 }
-                meta = await applyAuth(meta);
 
-                var t0 = performance.now();
-                try {
-                    var resp = await fetch(config.prefix + '/api/invoke' + serviceUrlParam, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            service: spec.service,
-                            method: spec.method,
-                            messages: messages,
-                            metadata: Object.keys(meta).length > 0 ? meta : null,
-                            protocol: protocolId
-                        })
-                    });
-                    var elapsed = performance.now() - t0;
-                    var result = await resp.json();
-                    if (result.title) {
-                        benchmark.failure++;
-                        benchmark.statusCounts['Error'] = (benchmark.statusCounts['Error'] || 0) + 1;
-                    } else {
-                        benchmark.success++;
-                        benchmark.durations.push(elapsed);
-                        var status = result.status || 'OK';
-                        benchmark.statusCounts[status] = (benchmark.statusCounts[status] || 0) + 1;
-                    }
-                } catch (e) {
+                var rs = await _runEnvelopeIteration(spec);
+
+                if (rs.pass) {
+                    benchmark.success++;
+                    benchmark.durations.push(rs.durationMs);
+                } else {
                     benchmark.failure++;
-                    benchmark.statusCounts['NetworkError'] = (benchmark.statusCounts['NetworkError'] || 0) + 1;
                 }
+                var lbl = rs.statusLabel || (rs.pass ? 'OK' : 'Error');
+                benchmark.statusCounts[lbl] = (benchmark.statusCounts[lbl] || 0) + 1;
                 benchmark.completed++;
 
-                // Throttle progress callbacks to ~10/s for large runs.
-                if (typeof onProgress === 'function' &&
-                    (benchmark.completed % Math.max(1, Math.floor(n / 50)) === 0
-                        || benchmark.completed === n)) {
+                if (typeof onProgress === 'function' && benchmark.total > 0
+                    && (benchmark.completed % Math.max(1, Math.floor(benchmark.total / 50)) === 0
+                        || benchmark.completed === benchmark.total)) {
                     onProgress();
                 }
             }
         }
-
         var workers = [];
-        for (var w = 0; w < concurrency; w++) workers.push(worker());
+        for (var w = 0; w < vus; w++) workers.push(worker());
         await Promise.all(workers);
+    }
+
+    // Pre-flight: AI-prefetch is per-method, so walk the method-targets
+    // once and prime the ai.* cache so each iteration uses the same
+    // resolved value (consistent load profile, not per-call drift).
+    async function _envelopePrefetchAi(spec) {
+        if (typeof window.bowirePrefetchAiVars !== 'function') return;
+        var tpls = [];
+        (spec.targets || []).forEach(function (t) {
+            if (t.type !== 'method') return;
+            tpls.push(String(t.body || '{}'));
+            var m = t.metadata || {};
+            for (var k in m) {
+                if (Object.prototype.hasOwnProperty.call(m, k)) tpls.push(String(m[k] || ''));
+            }
+        });
+        if (tpls.length === 0) return;
+        try { await window.bowirePrefetchAiVars(tpls); }
+        catch (e) { console.warn('[ai-prefetch] envelope failed', e); }
+    }
+
+    // Runner — envelope-aware, multi-phase, multi-target.
+    //
+    // For each phase in spec.phases: spawn phase.vus workers that
+    // pull iterations off a shared counter (or loop until durationMs
+    // elapses); each iteration walks spec.targets[] in spec.mode
+    // (sequential | parallel). Results stream into the live
+    // benchmark scratchpad so existing perf-diff visualisations keep
+    // working unchanged.
+    async function runBenchmarkSpec(spec, onProgress) {
+        if (!spec || benchmark.running) return null;
+        migrateEnvelope(spec);
+        reflectLegacyEditsBack(spec);
+
+        var phases = Array.isArray(spec.phases) && spec.phases.length > 0
+            ? spec.phases
+            : [defaultEnvelopePhase({ vus: spec.concurrency, totalIterations: spec.n })];
+
+        // Iteration-bounded total = sum of totalIterations across
+        // phases. Time-bounded phases contribute 0 to the upfront
+        // total — the progress bar will tick up but reach 100 % only
+        // once the deadline hits and benchmark.total catches up.
+        var iterTotal = 0;
+        phases.forEach(function (p) {
+            if (p.totalIterations) iterTotal += parseInt(p.totalIterations, 10) || 0;
+        });
+        if (iterTotal === 0) iterTotal = 1;
+        var concurrencyMax = phases.reduce(function (acc, p) {
+            return Math.max(acc, parseInt(p.vus, 10) || 0);
+        }, 0) || 1;
+
+        await _envelopePrefetchAi(spec);
+
+        resetBenchmark({ n: iterTotal, concurrency: concurrencyMax });
+        benchmark.running = true;
+        benchmark.startTime = performance.now();
+        benchmarkActiveSpecId = spec.id;
+
+        var displayName = spec.name || (spec.targets && spec.targets[0]
+            ? _benchmarkTargetLabel(spec.targets[0]) : 'Envelope');
+        addConsoleEntry({
+            type: 'request',
+            method: displayName,
+            status: 'Benchmark',
+            body: 'Starting ' + phases.length + ' phase' + (phases.length === 1 ? '' : 's')
+                + ' · ' + spec.targets.length + ' target' + (spec.targets.length === 1 ? '' : 's')
+                + ' · mode ' + (spec.mode || 'sequential')
+        });
+        if (typeof onProgress === 'function') onProgress();
+
+        for (var pi = 0; pi < phases.length; pi++) {
+            if (benchmark.cancelled) break;
+            await _runEnvelopePhase(spec, phases[pi], onProgress);
+        }
 
         benchmark.endTime = performance.now();
         benchmark.running = false;
@@ -408,22 +528,20 @@
         var totalMs = benchmark.endTime - benchmark.startTime;
         addConsoleEntry({
             type: 'response',
-            method: fullName,
+            method: displayName,
             status: benchmark.cancelled ? 'Cancelled' : 'Benchmark complete',
             durationMs: Math.round(totalMs),
             body: benchmark.success + ' OK / ' + benchmark.failure + ' failed'
         });
 
-        // Persist the result onto the spec so a workspace switch +
-        // return shows the last run instead of an empty screen.
         var stats = computeBenchmarkStats();
         spec.lastRun = {
-            ranAt: benchmark.startTime,           // perf-time; cosmetic only
+            ranAt: benchmark.startTime,
             durations: benchmark.durations.slice(),
             statusCounts: Object.assign({}, benchmark.statusCounts),
             success: benchmark.success,
             failure: benchmark.failure,
-            total: n,
+            total: benchmark.total,
             startTimeMs: benchmark.startTime,
             endTimeMs: benchmark.endTime,
             cancelled: benchmark.cancelled,
@@ -434,112 +552,23 @@
         return spec.lastRun;
     }
 
-    // Shape=collection / shape=recording runner. N sessions across K
-    // concurrent workers; each session replays the whole sequence in
-    // its own context. Aggregates per-session pass/fail + per-call
-    // durations so the existing percentile / status-distribution
-    // chart keeps working without a separate code path.
-    async function _runBenchmarkSequenceShape(spec, onProgress) {
-        var sourceList = spec.kind === 'collection'
-            ? (typeof collectionsList !== 'undefined' ? collectionsList : [])
-            : (typeof recordingsList !== 'undefined' ? recordingsList : []);
-        var source = sourceList.find(function (s) { return s.id === spec.sourceId; });
-        if (!source) {
-            addConsoleEntry({
-                type: 'response',
-                method: spec.name,
-                status: 'Benchmark error',
-                body: 'Source ' + spec.kind + ' "' + spec.sourceId + '" not in current workspace'
-            });
-            return null;
+    // Pretty-print a target for the console line above. Method targets
+    // get "service/method"; collection / recording references resolve
+    // to "name" or fall back to the id.
+    function _benchmarkTargetLabel(target) {
+        if (!target) return '?';
+        if (target.type === 'method') return target.service + '/' + target.method;
+        if (target.type === 'collection-ref') {
+            var col = (typeof collectionsList !== 'undefined' ? collectionsList : [])
+                .find(function (c) { return c.id === target.collectionId; });
+            return col ? col.name : ('collection:' + target.collectionId);
         }
-        var sessionRunner = spec.kind === 'collection' ? _runCollectionSession : _runRecordingSession;
-        if (typeof sessionRunner !== 'function') {
-            addConsoleEntry({
-                type: 'response',
-                method: spec.name,
-                status: 'Benchmark error',
-                body: 'Session runner not loaded for shape=' + spec.kind
-            });
-            return null;
+        if (target.type === 'recording-ref') {
+            var rec = (typeof recordingsList !== 'undefined' ? recordingsList : [])
+                .find(function (r) { return r.id === target.recordingId; });
+            return rec ? rec.name : ('recording:' + target.recordingId);
         }
-        var n = Math.max(1, parseInt(spec.n, 10) || 1);
-        var concurrency = Math.max(1, Math.min(parseInt(spec.concurrency, 10) || 1, 20));
-
-        resetBenchmark({ n: n, concurrency: concurrency });
-        benchmark.running = true;
-        benchmark.startTime = performance.now();
-        benchmarkActiveSpecId = spec.id;
-        addConsoleEntry({
-            type: 'request',
-            method: spec.name,
-            status: 'Benchmark',
-            body: 'Starting ' + n + ' ' + spec.kind + ' sessions (concurrency ' + concurrency + ')'
-        });
-        if (typeof onProgress === 'function') onProgress();
-
-        var nextIndex = 0;
-        async function worker() {
-            while (true) {
-                if (benchmark.cancelled) return;
-                var idx = nextIndex++;
-                if (idx >= n) return;
-                var t0 = performance.now();
-                try {
-                    var sessionResult = await sessionRunner(source);
-                    var elapsed = performance.now() - t0;
-                    if (sessionResult.pass) {
-                        benchmark.success++;
-                        benchmark.durations.push(elapsed);
-                        benchmark.statusCounts['OK'] = (benchmark.statusCounts['OK'] || 0) + 1;
-                    } else {
-                        benchmark.failure++;
-                        benchmark.statusCounts['Error'] = (benchmark.statusCounts['Error'] || 0) + 1;
-                    }
-                } catch (e) {
-                    benchmark.failure++;
-                    benchmark.statusCounts['NetworkError'] = (benchmark.statusCounts['NetworkError'] || 0) + 1;
-                }
-                benchmark.completed++;
-                if (typeof onProgress === 'function' &&
-                    (benchmark.completed % Math.max(1, Math.floor(n / 50)) === 0
-                        || benchmark.completed === n)) {
-                    onProgress();
-                }
-            }
-        }
-
-        var workers = [];
-        for (var w = 0; w < concurrency; w++) workers.push(worker());
-        await Promise.all(workers);
-
-        benchmark.endTime = performance.now();
-        benchmark.running = false;
-        benchmarkActiveSpecId = null;
-        var totalMs = benchmark.endTime - benchmark.startTime;
-        addConsoleEntry({
-            type: 'response',
-            method: spec.name,
-            status: benchmark.cancelled ? 'Cancelled' : 'Benchmark complete',
-            durationMs: Math.round(totalMs),
-            body: benchmark.success + ' sessions passed / ' + benchmark.failure + ' failed'
-        });
-        var stats = computeBenchmarkStats();
-        spec.lastRun = {
-            ranAt: benchmark.startTime,
-            durations: benchmark.durations.slice(),
-            statusCounts: Object.assign({}, benchmark.statusCounts),
-            success: benchmark.success,
-            failure: benchmark.failure,
-            total: n,
-            startTimeMs: benchmark.startTime,
-            endTimeMs: benchmark.endTime,
-            cancelled: benchmark.cancelled,
-            stats: stats
-        };
-        persistBenchmarks();
-        if (typeof onProgress === 'function') onProgress();
-        return spec.lastRun;
+        return target.type || '?';
     }
 
     // ---- Sidebar: list of saved benchmark specs ----
