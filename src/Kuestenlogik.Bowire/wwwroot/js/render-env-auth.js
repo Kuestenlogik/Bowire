@@ -95,13 +95,14 @@
     // dragged method onto that collection. Esc / clicking the
     // backdrop cancels the drag.
     function renderMethodDropPanel() {
+        function _cancel() {
+            methodDragPayload = null;
+            render();
+        }
         var shell = el('div', {
             className: 'bowire-method-drop-shell',
             onClick: function (e) {
-                if (e.target === shell) {
-                    methodDragPayload = null;
-                    render();
-                }
+                if (e.target === shell) _cancel();
             }
         });
         var panel = el('aside', {
@@ -109,9 +110,19 @@
             'aria-label': 'Drop on a collection'
         });
         panel.appendChild(el('div', { className: 'bowire-method-drop-header' },
-            el('span', { className: 'bowire-method-drop-title', textContent: 'Drop on a collection' }),
-            el('span', { className: 'bowire-method-drop-method',
-                textContent: methodDragPayload.service + '.' + methodDragPayload.method })
+            el('div', { className: 'bowire-method-drop-header-text' },
+                el('span', { className: 'bowire-method-drop-title', textContent: 'Drop on a collection' }),
+                el('span', { className: 'bowire-method-drop-method',
+                    textContent: methodDragPayload.service + '.' + methodDragPayload.method })
+            ),
+            el('button', {
+                type: 'button',
+                className: 'bowire-method-drop-cancel',
+                title: 'Cancel (Esc)',
+                'aria-label': 'Cancel',
+                innerHTML: svgIcon('close'),
+                onClick: _cancel
+            })
         ));
 
         var cols = (typeof collectionsList !== 'undefined' && Array.isArray(collectionsList))
@@ -137,9 +148,9 @@
             };
         }
 
-        function makeZone(label, onDrop) {
+        function makeZone(opts, onDrop) {
             var z = el('div', {
-                className: 'bowire-method-drop-zone',
+                className: 'bowire-method-drop-zone' + (opts.kind === 'new' ? ' is-new' : ''),
                 onDragover: function (e) {
                     e.preventDefault();
                     e.dataTransfer.dropEffect = 'copy';
@@ -151,13 +162,28 @@
                     z.classList.remove('is-hover');
                     onDrop();
                 }
-            }, el('span', { textContent: label }));
+            });
+            if (opts.icon) {
+                z.appendChild(el('span', {
+                    className: 'bowire-method-drop-zone-icon',
+                    innerHTML: svgIcon(opts.icon)
+                }));
+            }
+            z.appendChild(el('span', { className: 'bowire-method-drop-zone-label', textContent: opts.label }));
+            if (opts.meta) {
+                z.appendChild(el('span', { className: 'bowire-method-drop-zone-meta', textContent: opts.meta }));
+            }
             return z;
         }
 
         var list = el('div', { className: 'bowire-method-drop-list' });
         cols.forEach(function (col) {
-            var z = makeZone(col.name + ' · ' + (col.items ? col.items.length : 0) + ' items', function () {
+            var itemCount = col.items ? col.items.length : 0;
+            var z = makeZone({
+                icon: 'folder',
+                label: col.name,
+                meta: itemCount + (itemCount === 1 ? ' item' : ' items')
+            }, function () {
                 if (typeof addToCollection !== 'function') return;
                 addToCollection(col.id, _itemFromPayload());
                 toast('Added to "' + col.name + '"', 'success');
@@ -169,13 +195,17 @@
         if (cols.length === 0) {
             list.appendChild(el('div', {
                 className: 'bowire-method-drop-empty',
-                textContent: 'No collections yet — drop here to create one.'
+                textContent: 'No collections yet — drop on the entry below to create one.'
             }));
         }
         // Trailing "+ New collection" zone — drop here creates a
         // fresh collection named after the dragged method and adds
         // the snapshot as its first item.
-        list.appendChild(makeZone('+ New collection from this method', function () {
+        list.appendChild(makeZone({
+            icon: 'plus',
+            label: 'New collection from this method',
+            kind: 'new'
+        }, function () {
             if (typeof createCollection !== 'function' || typeof addToCollection !== 'function') return;
             var col = createCollection(methodDragPayload.method + ' collection');
             addToCollection(col.id, _itemFromPayload());
@@ -186,7 +216,34 @@
             render();
         }));
         panel.appendChild(list);
+
+        // ESC-to-cancel hint at the bottom — explicit affordance so
+        // the modal doesn't read as "drop or stuck".
+        panel.appendChild(el('div', { className: 'bowire-method-drop-footer' },
+            el('span', { textContent: 'Press ' }),
+            el('span', { className: 'bowire-method-drop-kbd', textContent: 'Esc' }),
+            el('span', { textContent: ' to cancel' })
+        ));
         shell.appendChild(panel);
+
+        // ESC key handler. Polls every 200ms for state.methodDragPayload
+        // being cleared by a drop or click — at that point the listener
+        // self-removes so a fresh drag attaches its own.
+        var keyHandler = function (ev) {
+            if (ev.key === 'Escape') {
+                document.removeEventListener('keydown', keyHandler);
+                _cancel();
+            }
+        };
+        document.addEventListener('keydown', keyHandler);
+        setTimeout(function _gc() {
+            if (!methodDragPayload) {
+                document.removeEventListener('keydown', keyHandler);
+                return;
+            }
+            setTimeout(_gc, 200);
+        }, 200);
+
         return shell;
     }
 
