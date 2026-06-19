@@ -16981,32 +16981,64 @@ not as the
 }
 
 /* ---------- Benchmark Envelope detail pane (#131 Phase 2) ---------- */
-.bowire-envelope-mode-row {
-    display: flex;
-    gap: 8px;
-    flex-wrap: wrap;
-}
-.bowire-envelope-mode-radio {
+/* Segmented control — single bordered host with two children that
+   share the border. The active child gets an accent tint; switching
+   reads as moving the highlight rather than swapping two cards. */
+.bowire-envelope-mode-seg-host {
     display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 6px 12px;
+    align-items: stretch;
+    padding: 2px;
     border: 1px solid var(--bowire-border);
     border-radius: var(--bowire-radius-sm);
+    background: var(--bowire-bg);
+    gap: 0;
+}
+.bowire-envelope-mode-seg {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px 12px;
     background: transparent;
+    border: 0;
+    border-radius: calc(var(--bowire-radius-sm) - 2px);
+    color: var(--bowire-text-secondary);
     cursor: pointer;
     font-size: 12px;
-    transition: background var(--bowire-transition), border-color var(--bowire-transition);
+    font-weight: 500;
+    transition: background var(--bowire-transition), color var(--bowire-transition);
 }
-.bowire-envelope-mode-radio input { margin: 0; }
-.bowire-envelope-mode-radio:hover {
-    background: var(--bowire-surface-hover);
-    border-color: var(--bowire-border);
+.bowire-envelope-mode-seg:hover {
+    color: var(--bowire-text);
 }
-.bowire-envelope-mode-radio.is-active {
-    background: color-mix(in srgb, var(--bowire-accent) 14%, transparent);
-    border-color: var(--bowire-accent);
+.bowire-envelope-mode-seg.is-active {
+    background: color-mix(in srgb, var(--bowire-accent) 16%, transparent);
     color: var(--bowire-accent);
+    cursor: default;
+}
+
+/* Empty-state line — used when targets or phases are empty so the
+   detail pane never reads as broken (no rows + bare Add button). */
+.bowire-envelope-targets-empty {
+    padding: 14px 12px;
+    border: 1px dashed var(--bowire-border);
+    border-radius: var(--bowire-radius-sm);
+    color: var(--bowire-text-tertiary);
+    font-size: 12px;
+    margin-bottom: 8px;
+    text-align: center;
+}
+
+/* + Add target / + Add phase — pill button with a caret. The caret
+   span is only there for the targets dropdown; the phase add stays
+   text-only and the caret span is just absent. */
+.bowire-envelope-add-caret {
+    display: inline-flex;
+    margin-left: 6px;
+    color: var(--bowire-text-tertiary);
+}
+.bowire-envelope-add-caret svg {
+    width: 10px;
+    height: 10px;
 }
 
 .bowire-envelope-targets {
