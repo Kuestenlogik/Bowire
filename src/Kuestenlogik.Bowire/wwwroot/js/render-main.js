@@ -3409,7 +3409,11 @@
         // name, which used 3 rows for what could be 2 and made the
         // tile feel oversized for the information it carries.
         var headerRow = el('div', { className: 'bowire-home-tile-header' },
-            el('span', { className: 'bowire-home-tile-method', textContent: methodName })
+            el('span', {
+                className: 'bowire-home-tile-method',
+                title: methodName,
+                textContent: methodName
+            })
         );
         if (meth) {
             headerRow.appendChild(el('span', {
@@ -3437,7 +3441,11 @@
             }));
         }
         tile.appendChild(headerRow);
-        tile.appendChild(el('div', { className: 'bowire-home-tile-service', textContent: serviceName }));
+        tile.appendChild(el('div', {
+            className: 'bowire-home-tile-service',
+            title: serviceName,
+            textContent: serviceName
+        }));
 
         return tile;
     }

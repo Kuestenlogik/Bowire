@@ -2454,9 +2454,20 @@ not just
     max-height: 60vh;
     overflow-y: auto;
     padding-right: 4px;
+    animation: bowire-home-section-swap 220ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 .bowire-home-recent-list .bowire-home-tile {
     padding: 8px 12px;
+}
+
+/* Grid view picks up the same entry animation so the swap between
+   grid and list reads as a single soft transition. */
+.bowire-home-grid {
+    animation: bowire-home-section-swap 220ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+@keyframes bowire-home-section-swap {
+    from { opacity: 0; transform: translateY(4px); }
+    to   { opacity: 1; transform: translateY(0); }
 }
 
 .bowire-home-tile-header {
