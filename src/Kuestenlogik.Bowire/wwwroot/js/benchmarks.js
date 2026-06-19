@@ -690,6 +690,422 @@
         return sidebar;
     }
 
+    // ---- Detail-pane helpers ----
+
+    function _modeRadio(spec, value, label, title) {
+        var checked = (spec.mode || 'sequential') === value;
+        return el('label', {
+            className: 'bowire-envelope-mode-radio' + (checked ? ' is-active' : ''),
+            title: title
+        },
+            el('input', {
+                type: 'radio',
+                name: 'envelope-mode-' + spec.id,
+                value: value,
+                checked: checked ? 'checked' : null,
+                onChange: function () {
+                    spec.mode = value;
+                    persistBenchmarks();
+                    render();
+                }
+            }),
+            el('span', { textContent: label })
+        );
+    }
+
+    // Resolve every target in the spec. Returns true iff all of them
+    // can run right now (the referenced service / collection /
+    // recording still lives in the workspace). Used to gate the Run
+    // button so we don't dispatch into ?MissingService errors.
+    function _allTargetsRunnable(spec) {
+        var targets = spec.targets || [];
+        if (targets.length === 0) return false;
+        for (var i = 0; i < targets.length; i++) {
+            var t = targets[i];
+            if (t.type === 'method') {
+                var svc = (typeof services !== 'undefined' ? services : [])
+                    .find(function (s) { return s.name === t.service && (!t.protocol || s.source === t.protocol); });
+                if (!svc) return false;
+                var methods = (svc && Array.isArray(svc.methods)) ? svc.methods : [];
+                if (!methods.find(function (m) { return m.name === t.method; })) return false;
+            } else if (t.type === 'collection-ref') {
+                if (!(typeof collectionsList !== 'undefined'
+                        ? collectionsList : []).find(function (c) { return c.id === t.collectionId; })) return false;
+            } else if (t.type === 'recording-ref') {
+                if (!(typeof recordingsList !== 'undefined'
+                        ? recordingsList : []).find(function (r) { return r.id === t.recordingId; })) return false;
+            }
+        }
+        return true;
+    }
+
+    function _targetIcon(target) {
+        if (!target) return 'plug';
+        if (target.type === 'collection-ref') return 'folder';
+        if (target.type === 'recording-ref') return 'recording';
+        return 'plug';
+    }
+
+    function _targetSummary(target) {
+        if (!target) return '?';
+        if (target.type === 'method') {
+            var svcMissing = !((typeof services !== 'undefined' ? services : [])
+                .find(function (s) { return s.name === target.service; }));
+            return (target.service || '—') + '/' + (target.method || '—')
+                + (svcMissing && target.service ? ' (not in discovery)' : '');
+        }
+        if (target.type === 'collection-ref') {
+            var col = (typeof collectionsList !== 'undefined' ? collectionsList : [])
+                .find(function (c) { return c.id === target.collectionId; });
+            return col ? col.name : ('Missing collection · ' + target.collectionId);
+        }
+        if (target.type === 'recording-ref') {
+            var rec = (typeof recordingsList !== 'undefined' ? recordingsList : [])
+                .find(function (r) { return r.id === target.recordingId; });
+            return rec ? rec.name : ('Missing recording · ' + target.recordingId);
+        }
+        return target.type || '?';
+    }
+
+    function _renderTargetsSection(spec) {
+        var section = el('div', { className: 'bowire-ws-detail-section' });
+        section.appendChild(el('div', { className: 'bowire-ws-detail-section-label', textContent: 'Targets' }));
+
+        var list = el('div', { className: 'bowire-envelope-targets' });
+        (spec.targets || []).forEach(function (target, idx) {
+            list.appendChild(_renderTargetRow(spec, target, idx));
+        });
+        section.appendChild(list);
+
+        // Add-target dropdown — Method / Collection / Recording. Each
+        // adds a fresh entry; the user then picks the actual id in
+        // the row's inline editor.
+        var addRow = el('div', { className: 'bowire-envelope-targets-add' });
+        addRow.appendChild(el('button', {
+            type: 'button',
+            className: 'bowire-envelope-target-add-btn',
+            textContent: '+ Method',
+            title: 'Add a discover-style method target',
+            onClick: function () {
+                spec.targets.push({
+                    type: 'method',
+                    service: (typeof selectedService !== 'undefined' && selectedService) ? selectedService.name : '',
+                    method: (typeof selectedMethod !== 'undefined' && selectedMethod) ? selectedMethod.name : '',
+                    protocol: null, body: '{}', metadata: {}, serverUrl: null
+                });
+                persistBenchmarks();
+                render();
+            }
+        }));
+        addRow.appendChild(el('button', {
+            type: 'button',
+            className: 'bowire-envelope-target-add-btn',
+            textContent: '+ Collection',
+            title: 'Add a collection replay target',
+            onClick: function () {
+                spec.targets.push({ type: 'collection-ref', collectionId: null, itemIndex: null });
+                persistBenchmarks();
+                render();
+            }
+        }));
+        addRow.appendChild(el('button', {
+            type: 'button',
+            className: 'bowire-envelope-target-add-btn',
+            textContent: '+ Recording',
+            title: 'Add a recording replay target',
+            onClick: function () {
+                spec.targets.push({ type: 'recording-ref', recordingId: null, stepIndex: null });
+                persistBenchmarks();
+                render();
+            }
+        }));
+        section.appendChild(addRow);
+        return section;
+    }
+
+    function _renderTargetRow(spec, target, idx) {
+        var row = el('div', { className: 'bowire-envelope-target-row' });
+
+        // Header — icon, summary, move/remove tools
+        var header = el('div', { className: 'bowire-envelope-target-header' });
+        header.appendChild(el('span', {
+            className: 'bowire-envelope-target-icon',
+            innerHTML: svgIcon(_targetIcon(target))
+        }));
+        header.appendChild(el('span', {
+            className: 'bowire-envelope-target-summary',
+            textContent: _targetSummary(target)
+        }));
+        var tools = el('div', { className: 'bowire-envelope-target-tools' });
+        if (idx > 0) {
+            tools.appendChild(el('button', {
+                type: 'button', className: 'bowire-envelope-target-tool-btn', title: 'Move up',
+                innerHTML: svgIcon('chevronUp'),
+                onClick: function () {
+                    var t = spec.targets.splice(idx, 1)[0];
+                    spec.targets.splice(idx - 1, 0, t);
+                    persistBenchmarks(); render();
+                }
+            }));
+        }
+        if (idx < spec.targets.length - 1) {
+            tools.appendChild(el('button', {
+                type: 'button', className: 'bowire-envelope-target-tool-btn', title: 'Move down',
+                innerHTML: svgIcon('chevronDown'),
+                onClick: function () {
+                    var t = spec.targets.splice(idx, 1)[0];
+                    spec.targets.splice(idx + 1, 0, t);
+                    persistBenchmarks(); render();
+                }
+            }));
+        }
+        tools.appendChild(el('button', {
+            type: 'button', className: 'bowire-envelope-target-tool-btn is-danger', title: 'Remove target',
+            innerHTML: svgIcon('trash'),
+            onClick: function () {
+                spec.targets.splice(idx, 1);
+                persistBenchmarks(); render();
+            }
+        }));
+        header.appendChild(tools);
+        row.appendChild(header);
+
+        // Body — inline editor per target type
+        var body = el('div', { className: 'bowire-envelope-target-body' });
+        if (target.type === 'method') {
+            var svcNames = (typeof services !== 'undefined' ? services : []).map(function (s) { return s.name; });
+            var svc = (typeof services !== 'undefined' ? services : []).find(function (s) { return s.name === target.service; });
+            var methodNames = (svc && Array.isArray(svc.methods)) ? svc.methods.map(function (m) { return m.name; }) : [];
+
+            body.appendChild(_inlineSelect('Service', target.service, svcNames, function (v) {
+                target.service = v; target.method = ''; persistBenchmarks(); render();
+            }));
+            body.appendChild(_inlineSelect('Method', target.method, methodNames, function (v) {
+                target.method = v; persistBenchmarks(); render();
+            }));
+            body.appendChild(el('div', { className: 'bowire-envelope-field' },
+                el('div', { className: 'bowire-envelope-field-label', textContent: 'Body template' }),
+                el('textarea', {
+                    className: 'bowire-envelope-field-textarea',
+                    rows: '4', spellcheck: 'false',
+                    value: target.body || '{}',
+                    onChange: function (e) {
+                        target.body = String(e.target.value || ''); persistBenchmarks();
+                    }
+                })
+            ));
+        } else if (target.type === 'collection-ref') {
+            var colList = (typeof collectionsList !== 'undefined' ? collectionsList : []);
+            var colNames = colList.map(function (c) { return c.id + '|' + c.name; });
+            body.appendChild(_inlineSelectKeyed('Collection', target.collectionId, colList, 'id', 'name', function (v) {
+                target.collectionId = v; persistBenchmarks(); render();
+            }));
+        } else if (target.type === 'recording-ref') {
+            var recList = (typeof recordingsList !== 'undefined' ? recordingsList : []);
+            body.appendChild(_inlineSelectKeyed('Recording', target.recordingId, recList, 'id', 'name', function (v) {
+                target.recordingId = v; persistBenchmarks(); render();
+            }));
+        }
+        row.appendChild(body);
+        return row;
+    }
+
+    function _inlineSelect(label, value, options, onChange) {
+        var select = el('select', {
+            className: 'bowire-envelope-field-select',
+            onChange: function (e) { onChange(e.target.value); }
+        });
+        var hasMatch = options.indexOf(value) >= 0;
+        if (!value || !hasMatch) {
+            select.appendChild(el('option', {
+                value: value || '', textContent: value ? (value + ' (not in discovery)') : '— Pick —',
+                selected: 'selected'
+            }));
+        }
+        options.forEach(function (opt) {
+            select.appendChild(el('option', { value: opt, textContent: opt, selected: opt === value ? 'selected' : null }));
+        });
+        return el('div', { className: 'bowire-envelope-field' },
+            el('div', { className: 'bowire-envelope-field-label', textContent: label }),
+            select
+        );
+    }
+
+    function _inlineSelectKeyed(label, value, items, idKey, nameKey, onChange) {
+        var select = el('select', {
+            className: 'bowire-envelope-field-select',
+            onChange: function (e) { onChange(e.target.value || null); }
+        });
+        select.appendChild(el('option', {
+            value: '',
+            textContent: value && !items.find(function (i) { return i[idKey] === value; })
+                ? 'Missing · ' + value
+                : '— Pick —',
+            selected: !value ? 'selected' : null
+        }));
+        items.forEach(function (item) {
+            select.appendChild(el('option', {
+                value: item[idKey],
+                textContent: item[nameKey] || item[idKey],
+                selected: item[idKey] === value ? 'selected' : null
+            }));
+        });
+        return el('div', { className: 'bowire-envelope-field' },
+            el('div', { className: 'bowire-envelope-field-label', textContent: label }),
+            select
+        );
+    }
+
+    function _renderPhasesSection(spec) {
+        var section = el('div', { className: 'bowire-ws-detail-section' });
+        section.appendChild(el('div', { className: 'bowire-ws-detail-section-label', textContent: 'Phases' }));
+
+        var list = el('div', { className: 'bowire-envelope-phases' });
+        (spec.phases || []).forEach(function (phase, idx) {
+            list.appendChild(_renderPhaseRow(spec, phase, idx));
+        });
+        section.appendChild(list);
+
+        section.appendChild(el('button', {
+            type: 'button',
+            className: 'bowire-envelope-phase-add-btn',
+            textContent: '+ Phase',
+            title: 'Add a load phase',
+            onClick: function () {
+                spec.phases.push(defaultEnvelopePhase({ vus: 4, totalIterations: 100 }));
+                persistBenchmarks();
+                render();
+            }
+        }));
+        return section;
+    }
+
+    function _phaseKind(phase) {
+        if (phase.arrivalRate) return 'arrival';
+        if (phase.rampToVus != null) return 'ramp';
+        if (phase.durationMs) return 'time';
+        return 'iter';
+    }
+
+    function _renderPhaseRow(spec, phase, idx) {
+        var row = el('div', { className: 'bowire-envelope-phase-row' });
+
+        var kind = _phaseKind(phase);
+        var kindSel = el('select', {
+            className: 'bowire-envelope-field-select',
+            title: 'Phase profile',
+            onChange: function (e) {
+                var k = e.target.value;
+                if (k === 'iter') {
+                    phase.totalIterations = phase.totalIterations || 100;
+                    phase.durationMs = null; phase.rampToVus = null; phase.arrivalRate = null;
+                } else if (k === 'time') {
+                    phase.durationMs = phase.durationMs || 30000;
+                    phase.totalIterations = null; phase.rampToVus = null; phase.arrivalRate = null;
+                } else if (k === 'ramp') {
+                    phase.durationMs = phase.durationMs || 30000;
+                    phase.rampToVus = phase.rampToVus || (phase.vus * 2 || 8);
+                    phase.totalIterations = null; phase.arrivalRate = null;
+                } else if (k === 'arrival') {
+                    phase.durationMs = phase.durationMs || 30000;
+                    phase.arrivalRate = phase.arrivalRate || 10;
+                    phase.totalIterations = null; phase.rampToVus = null;
+                }
+                persistBenchmarks();
+                render();
+            }
+        });
+        [
+            { v: 'iter',    t: 'Fixed iterations' },
+            { v: 'time',    t: 'Hold for duration' },
+            { v: 'ramp',    t: 'Ramp VUs' },
+            { v: 'arrival', t: 'Arrival rate (rps)' }
+        ].forEach(function (o) {
+            kindSel.appendChild(el('option', { value: o.v, textContent: o.t, selected: o.v === kind ? 'selected' : null }));
+        });
+
+        var fields = el('div', { className: 'bowire-envelope-phase-fields' });
+        fields.appendChild(_numberField('VUs', phase.vus, 1, 64, function (v) {
+            phase.vus = v; persistBenchmarks(); render();
+        }));
+        if (kind === 'iter') {
+            fields.appendChild(_numberField('Iterations', phase.totalIterations || 100, 1, 1000000, function (v) {
+                phase.totalIterations = v; persistBenchmarks(); render();
+            }));
+        } else if (kind === 'time') {
+            fields.appendChild(_numberField('Duration (ms)', phase.durationMs || 30000, 100, 3600000, function (v) {
+                phase.durationMs = v; persistBenchmarks(); render();
+            }));
+        } else if (kind === 'ramp') {
+            fields.appendChild(_numberField('Target VUs', phase.rampToVus || (phase.vus * 2), 1, 64, function (v) {
+                phase.rampToVus = v; persistBenchmarks(); render();
+            }));
+            fields.appendChild(_numberField('Duration (ms)', phase.durationMs || 30000, 100, 3600000, function (v) {
+                phase.durationMs = v; persistBenchmarks(); render();
+            }));
+        } else if (kind === 'arrival') {
+            fields.appendChild(_numberField('Rate (rps)', phase.arrivalRate || 10, 1, 10000, function (v) {
+                phase.arrivalRate = v; persistBenchmarks(); render();
+            }));
+            fields.appendChild(_numberField('Duration (ms)', phase.durationMs || 30000, 100, 3600000, function (v) {
+                phase.durationMs = v; persistBenchmarks(); render();
+            }));
+        }
+
+        var tools = el('div', { className: 'bowire-envelope-phase-tools' });
+        if (idx > 0) {
+            tools.appendChild(el('button', {
+                type: 'button', className: 'bowire-envelope-target-tool-btn', title: 'Move up',
+                innerHTML: svgIcon('chevronUp'),
+                onClick: function () {
+                    var p = spec.phases.splice(idx, 1)[0]; spec.phases.splice(idx - 1, 0, p);
+                    persistBenchmarks(); render();
+                }
+            }));
+        }
+        if (idx < spec.phases.length - 1) {
+            tools.appendChild(el('button', {
+                type: 'button', className: 'bowire-envelope-target-tool-btn', title: 'Move down',
+                innerHTML: svgIcon('chevronDown'),
+                onClick: function () {
+                    var p = spec.phases.splice(idx, 1)[0]; spec.phases.splice(idx + 1, 0, p);
+                    persistBenchmarks(); render();
+                }
+            }));
+        }
+        if (spec.phases.length > 1) {
+            tools.appendChild(el('button', {
+                type: 'button', className: 'bowire-envelope-target-tool-btn is-danger', title: 'Remove phase',
+                innerHTML: svgIcon('trash'),
+                onClick: function () {
+                    spec.phases.splice(idx, 1); persistBenchmarks(); render();
+                }
+            }));
+        }
+
+        row.appendChild(kindSel);
+        row.appendChild(fields);
+        row.appendChild(tools);
+        return row;
+    }
+
+    function _numberField(label, value, min, max, onChange) {
+        return el('div', { className: 'bowire-envelope-field bowire-envelope-field-number' },
+            el('div', { className: 'bowire-envelope-field-label', textContent: label }),
+            el('input', {
+                type: 'number',
+                min: String(min), max: String(max),
+                value: String(value),
+                className: 'bowire-envelope-field-input',
+                onChange: function (e) {
+                    var v = parseInt(e.target.value, 10);
+                    if (isNaN(v)) return;
+                    onChange(Math.max(min, Math.min(max, v)));
+                }
+            })
+        );
+    }
+
     // ---- Main: configure + run + show last result ----
 
     function renderBenchmarksDetailMain() {
@@ -824,244 +1240,34 @@
             } catch (e) { console.warn('[benchmarks] presets bar failed', e); }
         }
 
-        // Shape banner — surfaces what's under test so the operator
-        // doesn't have to read the title to figure out the kind. Plus a
-        // unified label for the Source field below.
-        var shapeLabel = spec.kind === 'collection' ? 'Collection'
-                       : spec.kind === 'recording' ? 'Recording'
-                       : 'Single method';
+        // ---- Envelope summary ----
+        var targetsCount = (spec.targets || []).length;
+        var phasesCount = (spec.phases || []).length;
         main.appendChild(el('div', {
             className: 'bowire-ws-detail-stat-hint',
-            textContent: 'Shape: ' + shapeLabel
-                + (spec.kind === 'single'
-                    ? ' — one unary call repeated N times at K concurrency.'
-                    : ' — each session replays the whole sequence; N sessions run at K concurrency.')
+            textContent: targetsCount + ' target' + (targetsCount === 1 ? '' : 's')
+                + ' · ' + phasesCount + ' phase' + (phasesCount === 1 ? '' : 's')
+                + ' · mode: ' + (spec.mode || 'sequential')
         }));
 
-        // Shape-specific source picker. single-method shape keeps the
-        // service + method dropdowns; collection / recording shapes
-        // show their source label + an Open-in-source-rail shortcut.
-        if (spec.kind === 'collection' || spec.kind === 'recording') {
-            var sourceList = spec.kind === 'collection'
-                ? (typeof collectionsList !== 'undefined' ? collectionsList : [])
-                : (typeof recordingsList !== 'undefined' ? recordingsList : []);
-            var source = sourceList.find(function (s) { return s.id === spec.sourceId; });
-            var sourceSection = el('div', { className: 'bowire-ws-detail-section' });
-            sourceSection.appendChild(el('div', { className: 'bowire-ws-detail-section-label', textContent: 'Source' }));
-            if (source) {
-                sourceSection.appendChild(el('div', { style: 'display:flex;align-items:center;gap:8px' },
-                    el('span', { innerHTML: svgIcon(spec.kind === 'collection' ? 'folder' : 'recording'), style: 'width:14px;height:14px;display:inline-flex' }),
-                    el('span', { style: 'flex:1', textContent: source.name || '(unnamed)' }),
-                    el('button', {
-                        className: 'bowire-recording-action-btn',
-                        textContent: 'Open',
-                        onClick: function () {
-                            railMode = spec.kind === 'collection' ? 'collections' : 'recordings';
-                            try { localStorage.setItem('bowire_rail_mode', railMode); } catch { /* ignore */ }
-                            if (spec.kind === 'collection' && typeof collectionManagerSelectedId !== 'undefined') {
-                                collectionManagerSelectedId = source.id;
-                            } else if (spec.kind === 'recording' && typeof recordingManagerSelectedId !== 'undefined') {
-                                recordingManagerSelectedId = source.id;
-                            }
-                            render();
-                        }
-                    })
-                ));
-            } else {
-                sourceSection.appendChild(el('p', {
-                    className: 'bowire-ws-detail-stat-hint',
-                    textContent: 'Source ' + spec.kind + ' is not in the current workspace. Open the source rail to pick another.'
-                }));
-            }
-            main.appendChild(sourceSection);
-
-            // collection / recording shapes don't need the per-call
-            // body / metadata templates — each item or step carries its
-            // own. Render the load knobs + Run button inline (smaller
-            // surface than the single-method path which also has body
-            // / auth pickers).
-            main.appendChild(el('div', { className: 'bowire-ws-detail-section' },
-                el('div', { className: 'bowire-ws-detail-section-label', textContent: 'Load' }),
-                el('div', { className: 'bowire-ws-detail-storage-row', style: 'gap:16px' },
-                    el('label', { className: 'bowire-ws-detail-storage-option', style: 'flex:1' },
-                        el('div', { textContent: 'Iterations (N)', style: 'font-weight:500;margin-bottom:4px' }),
-                        el('input', {
-                            type: 'number', min: '1', max: '10000',
-                            value: String(spec.n),
-                            style: 'width:100%;padding:6px 8px',
-                            onChange: function (e) {
-                                spec.n = Math.max(1, parseInt(e.target.value, 10) || 1);
-                                persistBenchmarks();
-                                render();
-                            }
-                        })
-                    ),
-                    el('label', { className: 'bowire-ws-detail-storage-option', style: 'flex:1' },
-                        el('div', { textContent: 'Concurrency', style: 'font-weight:500;margin-bottom:4px' }),
-                        el('input', {
-                            type: 'number', min: '1', max: '20',
-                            value: String(spec.concurrency),
-                            style: 'width:100%;padding:6px 8px',
-                            onChange: function (e) {
-                                spec.concurrency = Math.max(1, Math.min(20, parseInt(e.target.value, 10) || 1));
-                                persistBenchmarks();
-                                render();
-                            }
-                        })
-                    )
-                )
-            ));
-
-            var seqRunning = benchmark.running && benchmarkActiveSpecId === spec.id;
-            var seqCanRun = !!source;
-            main.appendChild(el('div', { className: 'bowire-ws-detail-section', style: 'display:flex;align-items:center;gap:12px' },
-                el('button', {
-                    className: 'bowire-ws-detail-switch-btn',
-                    style: 'background:' + (seqRunning ? 'var(--bowire-danger)' : 'var(--bowire-accent)') + ';color:#fff',
-                    disabled: (!seqCanRun && !seqRunning) ? 'disabled' : null,
-                    textContent: seqRunning ? 'Stop' : 'Run benchmark',
-                    onClick: function () {
-                        if (seqRunning) { stopBenchmark(); return; }
-                        runBenchmarkSpec(spec, function () { render(); });
-                    }
-                }),
-                seqRunning
-                    ? el('span', {
-                        className: 'bowire-ws-detail-stat-hint',
-                        textContent: benchmark.completed + ' / ' + benchmark.total + ' sessions'
-                    })
-                    : null
-            ));
-
-            if (spec.lastRun && spec.lastRun.stats) {
-                var ls = spec.lastRun;
-                var lsStats = ls.stats;
-                function _ms(v) { return Math.round(v * 10) / 10 + ' ms'; }
-                main.appendChild(el('div', { className: 'bowire-ws-detail-section' },
-                    el('div', { className: 'bowire-ws-detail-section-label', textContent: 'Session latency (last run)' }),
-                    el('div', { className: 'bowire-ws-detail-stats' },
-                        el('div', { className: 'bowire-ws-detail-stat' },
-                            el('div', { className: 'bowire-ws-detail-stat-value', textContent: _ms(lsStats.p50) }),
-                            el('div', { className: 'bowire-ws-detail-stat-label', textContent: 'p50' })
-                        ),
-                        el('div', { className: 'bowire-ws-detail-stat' },
-                            el('div', { className: 'bowire-ws-detail-stat-value', textContent: _ms(lsStats.p95) }),
-                            el('div', { className: 'bowire-ws-detail-stat-label', textContent: 'p95' })
-                        ),
-                        el('div', { className: 'bowire-ws-detail-stat' },
-                            el('div', { className: 'bowire-ws-detail-stat-value', textContent: ls.success + ' / ' + ls.total }),
-                            el('div', { className: 'bowire-ws-detail-stat-label', textContent: 'sessions passed' })
-                        )
-                    )
-                ));
-            }
-            return main;
-        }
-
-        // ---- Target: service / method (single-method shape) ----
-        // Drop-downs sourced from the current workspace's discovered
-        // services. If the spec captures a name that's no longer in
-        // discovery the input shows the captured value with a warning
-        // dot so operators see the mismatch instead of silently
-        // having the wrong target run.
-        var serviceNames = (services || []).map(function (s) { return s.name; });
-        var hasService = serviceNames.indexOf(spec.service) >= 0;
-        var targetService = (services || []).find(function (s) { return s.name === spec.service; });
-        var methodNames = (targetService && Array.isArray(targetService.methods))
-            ? targetService.methods.map(function (m) { return m.name; })
-            : [];
-        var hasMethod = methodNames.indexOf(spec.method) >= 0;
-
-        function selectField(label, value, options, hasMatch, onChange) {
-            var select = el('select', {
-                className: 'bowire-ws-detail-name',
-                style: 'min-width:200px',
-                onChange: function (e) { onChange(e.target.value); }
-            });
-            if (!hasMatch && value) {
-                select.appendChild(el('option', { value: value, textContent: value + ' (not in discovery)', selected: true }));
-            }
-            options.forEach(function (opt) {
-                select.appendChild(el('option', { value: opt, textContent: opt, selected: opt === value }));
-            });
-            if (options.length === 0 && hasMatch) {
-                // shouldn't happen, but guards a stray empty list
-                select.appendChild(el('option', { value: '', textContent: '—' }));
-            }
-            return el('div', { className: 'bowire-ws-detail-section' },
-                el('div', { className: 'bowire-ws-detail-section-label', textContent: label }),
-                select
-            );
-        }
-
-        main.appendChild(selectField('Service', spec.service, serviceNames, hasService, function (v) {
-            spec.service = v;
-            spec.method = '';        // method choices change with the service
-            persistBenchmarks();
-            render();
-        }));
-        main.appendChild(selectField('Method', spec.method, methodNames, hasMethod, function (v) {
-            spec.method = v;
-            persistBenchmarks();
-            render();
-        }));
-
-        // ---- Body template ----
+        // ---- Mode toggle (sequential | parallel) ----
         main.appendChild(el('div', { className: 'bowire-ws-detail-section' },
-            el('div', { className: 'bowire-ws-detail-section-label', textContent: 'Request body (vars supported)' }),
-            el('textarea', {
-                className: 'bowire-ws-detail-desc',
-                value: spec.body || '{}',
-                rows: '6',
-                spellcheck: 'false',
-                style: 'font-family:var(--bowire-mono);font-size:12px',
-                onChange: function (e) {
-                    spec.body = String(e.target.value || '');
-                    persistBenchmarks();
-                }
-            })
-        ));
-
-        // ---- N + concurrency ----
-        main.appendChild(el('div', { className: 'bowire-ws-detail-section' },
-            el('div', { className: 'bowire-ws-detail-section-label', textContent: 'Load' }),
-            el('div', { className: 'bowire-ws-detail-storage-row', style: 'gap:16px' },
-                el('label', { className: 'bowire-ws-detail-storage-option', style: 'flex:1' },
-                    el('div', { textContent: 'Iterations (N)', style: 'font-weight:500;margin-bottom:4px' }),
-                    el('input', {
-                        type: 'number',
-                        min: '1',
-                        max: '100000',
-                        value: String(spec.n),
-                        style: 'width:100%;padding:6px 8px',
-                        onChange: function (e) {
-                            spec.n = Math.max(1, parseInt(e.target.value, 10) || 1);
-                            persistBenchmarks();
-                            render();
-                        }
-                    })
-                ),
-                el('label', { className: 'bowire-ws-detail-storage-option', style: 'flex:1' },
-                    el('div', { textContent: 'Concurrency', style: 'font-weight:500;margin-bottom:4px' }),
-                    el('input', {
-                        type: 'number',
-                        min: '1',
-                        max: '20',
-                        value: String(spec.concurrency),
-                        style: 'width:100%;padding:6px 8px',
-                        onChange: function (e) {
-                            spec.concurrency = Math.max(1, Math.min(20, parseInt(e.target.value, 10) || 1));
-                            persistBenchmarks();
-                            render();
-                        }
-                    })
-                )
+            el('div', { className: 'bowire-ws-detail-section-label', textContent: 'Mode' }),
+            el('div', { className: 'bowire-envelope-mode-row' },
+                _modeRadio(spec, 'sequential', 'Sequential', 'Targets are invoked one after the other per VU iteration. Iteration fails on first error.'),
+                _modeRadio(spec, 'parallel', 'Parallel', 'Targets are all invoked at once per VU iteration. Iteration succeeds when every target succeeds.')
             )
         ));
 
+        // ---- Targets ----
+        main.appendChild(_renderTargetsSection(spec));
+
+        // ---- Phases ----
+        main.appendChild(_renderPhasesSection(spec));
+
         // ---- Run / cancel + progress ----
         var isThisRunning = benchmark.running && benchmarkActiveSpecId === spec.id;
-        var canRun = !!spec.service && !!spec.method && hasService && hasMethod;
+        var canRun = (spec.targets || []).length > 0 && _allTargetsRunnable(spec);
         var runRow = el('div', { className: 'bowire-ws-detail-section', style: 'display:flex;align-items:center;gap:12px' },
             el('button', {
                 className: 'bowire-ws-detail-switch-btn',
@@ -1069,10 +1275,7 @@
                 disabled: !canRun && !isThisRunning ? 'disabled' : null,
                 textContent: isThisRunning ? 'Stop' : 'Run benchmark',
                 onClick: function () {
-                    if (isThisRunning) {
-                        stopBenchmark();
-                        return;
-                    }
+                    if (isThisRunning) { stopBenchmark(); return; }
                     runBenchmarkSpec(spec, function () { render(); });
                 }
             }),
@@ -1085,7 +1288,7 @@
                 : (!canRun
                     ? el('span', {
                         className: 'bowire-ws-detail-stat-hint',
-                        textContent: 'Pick a service + method from this workspace to enable Run.'
+                        textContent: 'Add at least one resolvable target to enable Run.'
                     })
                     : null)
         );
