@@ -275,27 +275,20 @@
             el('span', { textContent: 'Parallel sessions' })
         ));
 
-        // #131 \u2014 Benchmark this collection. Creates a benchmark spec
-        // with kind=collection, then jumps to the Benchmarks pane so
-        // the operator can pick n + concurrency and run.
-        if (typeof createBenchmarkSpec === 'function') {
+        // #131 Phase 3 \u2014 "Benchmark" now opens an Add-to-envelope
+        // picker. The operator can drop this collection into an
+        // existing envelope or spawn a new one seeded with the
+        // collection as its first target.
+        if (typeof addTargetToEnvelopePicker === 'function') {
             toolbar.appendChild(el('button', {
                 className: 'bowire-recording-action-btn',
                 disabled: col.items.length === 0,
-                title: 'Create a benchmark that replays this collection N times',
-                onClick: function () {
-                    var spec = createBenchmarkSpec({
-                        name: 'Benchmark: ' + (col.name || 'collection'),
-                        kind: 'collection',
-                        sourceId: col.id
-                    });
-                    if (typeof benchmarksSelectedId !== 'undefined' && spec) {
-                        benchmarksSelectedId = spec.id;
-                    }
-                    railMode = 'benchmarks';
-                    try { localStorage.setItem('bowire_rail_mode', 'benchmarks'); } catch { /* ignore */ }
-                    toast('Benchmark created', 'success');
-                    render();
+                title: 'Add this collection to a benchmark envelope',
+                onClick: function (e) {
+                    addTargetToEnvelopePicker(e.clientX, e.clientY,
+                        { type: 'collection-ref', collectionId: col.id, itemIndex: null },
+                        { name: 'Benchmark: ' + (col.name || 'collection') }
+                    );
                 }
             },
                 el('span', { innerHTML: svgIcon('lightning') }),
