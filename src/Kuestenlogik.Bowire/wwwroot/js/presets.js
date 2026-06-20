@@ -407,23 +407,32 @@
         // the frame the form is visibly settled.
         var formInputs = document.querySelectorAll('.bowire-form-input[data-field-key]');
         if (formInputs.length > 0 && typeof formValues !== 'undefined') {
+            var checkedAny = false;
             for (var i = 0; i < formInputs.length; i++) {
                 var key = formInputs[i].dataset.fieldKey;
                 var expected = formValues[key];
-                var actualVal = formInputs[i].value;
                 if (expected === undefined || expected === null) {
-                    if (actualVal !== '') return false;
-                } else if (typeof expected === 'object') {
-                    // Nested objects/arrays don't bind to a single
-                    // input — schema-form recursively renders them.
-                    // Skip and trust the recursive children to flag
-                    // the mismatch via their own form-input rows.
+                    // No expected value for this field — preset
+                    // didn't carry it. Skip; we can't verify and we
+                    // mustn't require the field to be empty (the
+                    // operator may have other inputs typed in).
                     continue;
-                } else if (String(actualVal) !== String(expected)) {
+                }
+                if (typeof expected === 'object') {
+                    // Nested objects/arrays don't bind to a single
+                    // input — children are checked via their own
+                    // form-input rows.
+                    continue;
+                }
+                checkedAny = true;
+                if (String(formInputs[i].value) !== String(expected)) {
                     return false;
                 }
             }
-            return true;
+            // If we never had a comparable field, fall through to
+            // the editor/streaming branches (the preset body might
+            // be empty but the editor still needs to show "{}").
+            if (checkedAny) return true;
         }
 
         // JSON / raw body sub-tab.
