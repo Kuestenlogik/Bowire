@@ -7531,12 +7531,28 @@ so the active tab's underline is the only horizontal
      below; inactive tabs read as siblings.
    - The faint container bottom border stays so the strip is still
      anchored visually when no tab is active. */
+/* Same pattern as the workbench tab strip above: the strip is a
+   darker recessed surface, inactive tabs blend with it, the active
+   tab adopts the pane's elevated background so the seam between
+   tab and content disappears. The bottom separator lives on an
+   ::after pseudo that the active tab paints over via z-index. */
 .bowire-tabs {
     display: flex;
     gap: 0;
-    border-bottom: 1px solid var(--bowire-border);
-    background: var(--bowire-bg-elevated);
+    background: var(--bowire-tab-strip-bg);
     flex-shrink: 0;
+    position: relative;
+}
+.bowire-tabs::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 1px;
+    background: var(--bowire-border);
+    z-index: 0;
+    pointer-events: none;
 }
 
 .bowire-tab {
@@ -7545,14 +7561,14 @@ so the active tab's underline is the only horizontal
     font-weight: 500;
     color: var(--bowire-text-tertiary);
     cursor: pointer;
-    /* Hoppscotch-style — accent stripe lives on the TOP edge of
-       the active tab; inactive tabs have no top decoration so they
-       read as plain text. 2 px transparent border on every tab so
-       the row height stays stable when an active tab swaps in. */
+    /* Accent stripe lives on the TOP edge of the active tab; inactive
+       tabs have no top decoration so they read as plain text. 2 px
+       transparent border keeps row height stable through swaps. */
     border-top: 2px solid transparent;
     border-bottom: 0;
-    transition: all var(--bowire-transition);
+    transition: color var(--bowire-transition), background var(--bowire-transition);
     user-select: none;
+    position: relative;
 }
 
 .bowire-tab:hover {
@@ -7562,14 +7578,13 @@ so the active tab's underline is the only horizontal
 .bowire-tab.active {
     color: var(--bowire-accent);
     border-top-color: var(--bowire-accent);
+    /* Adopts the pane-content surface so tab and content visually
+       fuse. z-index lifts the tab above the strip's ::after pseudo;
+       the active tab's opaque bg paints over the separator's slice
+       hiding the seam — inactive tabs are transparent so the line
+       shows through under them. */
     background: var(--bowire-bg-elevated);
-    font-weight: 600;
-    /* Inner glow tint underneath the accent stripe so the active tab
-       reads as "highlighted" even when the strip + pane share the
-       same elevated surface (the prior styling relied on the stripe
-       alone, which was too thin to pick up at a glance). */
-    box-shadow: inset 0 2px 0 -2px var(--bowire-accent),
-                inset 0 6px 12px -8px color-mix(in srgb, var(--bowire-accent) 60%, transparent);
+    z-index: 1;
 }
 
 .bowire-tab-content {
