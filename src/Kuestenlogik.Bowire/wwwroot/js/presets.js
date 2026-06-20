@@ -350,56 +350,102 @@
         }
         touchPresetUse('discover', preset.id);
         if (typeof render === 'function') render();
-        // Defer the "Loaded …" toast until AFTER the form-update is
-        // visually settled. The toast has a 200 ms slide-in
-        // animation; the form update doesn't animate at all, so
-        // even a double-rAF schedule (toast paint in frame N+1)
-        // reads as "toast first, then form" — the moving toast
-        // catches the eye before the static form values do. A
-        // 220 ms setTimeout lets the browser fully paint the form
-        // update + a beat of "settled" time before the toast slides
-        // in, so the user reads the toast as confirmation of an
-        // already-visible state change.
+        // Signal-based "form is loaded" gate. Instead of guessing
+        // when the browser is done painting via a fixed timeout, we
+        // poll the live DOM on every animation frame until either
+        // (a) the expected values actually show up on the form /
+        // editor inputs — fire success toast — or (b) we hit the
+        // attempt cap, meaning the preset never landed (schema
+        // mismatch survived the pre-check) — fire the error toast.
         //
-        // Inside the timeout we VERIFY that the preset's body
-        // landed in the live state. saveMessageEditors() can
-        // round-trip stale input back into requestMessages, the
-        // schema-form may have ignored every field if the schema
-        // drifted — both failure modes survive the pre-apply check.
-        // Surface the failure instead of falsely toasting "Loaded".
+        // The cap is 30 frames (≈ 500 ms at 60fps), generous enough
+        // to absorb a slow layout pass on a deep schema while still
+        // surfacing a failure quickly.
         if (typeof toast === 'function') {
             var expectedBody = bodyText;
-            var finalToast = function () {
-                var ok = _verifyPresetLanded(expectedBody);
-                if (ok) {
+            var attempts = 0;
+            var maxAttempts = 30;
+            var tick = function () {
+                if (_isPresetVisibleInDom(expectedBody)) {
                     toast('Loaded "' + (preset.name || 'preset') + '"', 'success');
-                } else {
-                    toast('Preset could not be fully applied — schema may have changed', 'error');
+                    return;
                 }
+                if (++attempts >= maxAttempts) {
+                    toast('Preset could not be fully applied — schema may have changed', 'error');
+                    return;
+                }
+                window.requestAnimationFrame(tick);
             };
-            setTimeout(finalToast, 220);
+            if (typeof window !== 'undefined' && typeof window.requestAnimationFrame === 'function') {
+                window.requestAnimationFrame(tick);
+            } else {
+                // Fallback: fire immediately without DOM check
+                toast('Loaded "' + (preset.name || 'preset') + '"', 'success');
+            }
         }
         return true;
     }
 
-    // Post-apply verification helper. The preset body should be the
-    // canonical form of whatever sits in requestMessages[0] after
-    // render(). Compare via parsed-JSON equality so whitespace /
-    // key-order differences don't trip the check.
-    function _verifyPresetLanded(expectedBody) {
-        if (expectedBody == null) return true; // nothing to verify
-        var actualBody = (typeof requestMessages !== 'undefined'
-                && Array.isArray(requestMessages))
-            ? String(requestMessages[0] || '')
-            : '';
-        if (actualBody === expectedBody) return true;
-        try {
-            var a = JSON.parse(actualBody);
-            var b = JSON.parse(expectedBody);
-            return JSON.stringify(a) === JSON.stringify(b);
-        } catch {
+    // Live DOM check — has the expected preset body actually landed
+    // in the visible form / JSON editor / message editors? Used as
+    // the "form is loaded" signal so the success toast only fires
+    // once the DOM reflects the new state.
+    function _isPresetVisibleInDom(expectedBody) {
+        if (expectedBody == null) return true;
+        var parsedExpected = null;
+        try { parsedExpected = JSON.parse(expectedBody); } catch { /* raw text */ }
+
+        // Multi-message stream editors — each .bowire-message-editor
+        // value should match its slot in requestMessages.
+        var multi = document.querySelectorAll('.bowire-message-editor');
+        if (multi.length > 0) {
+            // Only the first editor's content is captured by single-
+            // body presets; for multi we just check editor 0.
+            return _jsonEqualOrRaw(multi[0].value, expectedBody, parsedExpected);
+        }
+
+        // Single JSON editor (Payload sub-tab = JSON / raw body).
+        var editor = document.querySelector('.bowire-editor');
+        if (editor) {
+            return _jsonEqualOrRaw(editor.value, expectedBody, parsedExpected);
+        }
+
+        // Form sub-tab — verify each top-level expected key has the
+        // expected value on its matching .bowire-form-input. Keys
+        // with no matching input are skipped (schema may have grown
+        // / shrunk); but every key that DOES have an input must
+        // match, otherwise the apply is still in flight.
+        if (!parsedExpected || typeof parsedExpected !== 'object' || Array.isArray(parsedExpected)) {
             return false;
         }
+        var keys = Object.keys(parsedExpected);
+        if (keys.length === 0) return true;
+        var matchedAny = false;
+        for (var i = 0; i < keys.length; i++) {
+            var k = keys[i];
+            var input = document.querySelector('.bowire-form-input[data-field-key="' + k + '"]');
+            if (!input) continue;
+            var expectedVal = parsedExpected[k];
+            if (typeof expectedVal === 'object') {
+                // Nested object — represented by multiple inputs we
+                // don't have a clean handle on; accept the field as
+                // "in progress" rather than requiring exact match.
+                continue;
+            }
+            if (String(input.value) !== String(expectedVal)) return false;
+            matchedAny = true;
+        }
+        return matchedAny;
+    }
+
+    function _jsonEqualOrRaw(actual, expectedRaw, expectedParsed) {
+        if (actual === expectedRaw) return true;
+        if (expectedParsed != null) {
+            try {
+                return JSON.stringify(JSON.parse(actual)) === JSON.stringify(expectedParsed);
+            } catch { return false; }
+        }
+        return false;
     }
 
     // ---- Generic UI helper: render a "Saved configs" bar ----
