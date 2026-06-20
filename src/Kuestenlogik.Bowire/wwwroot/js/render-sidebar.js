@@ -4227,16 +4227,24 @@
                             // "Add to envelope…" picker (Phase 3 add-
                             // surfaces) — the operator can drop the
                             // method into an existing envelope or spawn
-                            // a new one seeded with it.
+                            // a new one seeded with it. Body is the
+                            // default-JSON for the method's inputType so
+                            // the seeded envelope is runnable without
+                            // any further editing.
                             if (typeof addTargetToEnvelopePicker !== 'function') return;
                             e.preventDefault();
                             e.stopPropagation();
+                            var defaultBody = '{}';
+                            if (typeof generateDefaultJson === 'function') {
+                                try { defaultBody = generateDefaultJson(m.inputType, 0); }
+                                catch { /* keep '{}' */ }
+                            }
                             addTargetToEnvelopePicker(e.clientX, e.clientY, {
                                 type: 'method',
                                 service: svc.name,
                                 method: m.name,
                                 protocol: svc.source || null,
-                                body: '{}', metadata: {}, serverUrl: null
+                                body: defaultBody, metadata: {}, serverUrl: null
                             }, { name: svc.name + '.' + m.name });
                         },
                         onClick: function (e) {
