@@ -3193,26 +3193,11 @@
         }));
         viewSwitch.appendChild(el('span', { className: 'bowire-sidebar-toolbar-spacer' }));
 
-        // Favorites-only toggle — same row as the '+' button so the
-        // operator doesn't see two related controls (filter + create)
-        // split across separate rows. Protocol filter + filter chips
-        // stay below in the svcToolbar — those are subordinate / can
-        // take their own line.
-        if (sidebarView === 'services') {
-            viewSwitch.appendChild(el('button', {
-                type: 'button',
-                id: 'bowire-favorites-only-btn',
-                className: 'bowire-sidebar-toolbar-btn' + (favoritesOnly ? ' is-active' : ''),
-                title: favoritesOnly
-                    ? 'Showing favorites only — click to show everything'
-                    : 'Filter the list to favorited methods only',
-                'aria-pressed': favoritesOnly ? 'true' : 'false',
-                onClick: function () {
-                    setFavoritesOnly(!favoritesOnly);
-                    render();
-                }
-            }, el('span', { innerHTML: svgIcon(favoritesOnly ? 'starFilled' : 'star') })));
-        }
+        // Favorites-only toggle retired from the toolbar row — it moved
+        // into the protocol filter popup as the first option (state
+        // marker + click toggle). One filter control on the strip
+        // instead of two related-but-separate buttons (Memory: don't
+        // multiply interaction patterns).
 
         // "+" new-request button — accent-primary in the toolbar so it
         // reads at the same weight as the "+" button on every other
@@ -3410,7 +3395,8 @@
         if (viewSwitchActiveProtocols.length > 1 || allMethodTypes.size > 1 || allOriginUrls.size > 1) {
             var filterDisabled = sidebarView !== 'services';
             var filterBtnWrapperTop = el('div', { className: 'bowire-protocol-filter-wrapper' });
-            var totalFilterCount = protocolFilter.size + methodTypeFilter.size + urlFilter.size;
+            var totalFilterCount = protocolFilter.size + methodTypeFilter.size + urlFilter.size
+                + (favoritesOnly ? 1 : 0);
             var filterBtnAttrs = {
                 id: 'bowire-protocol-filter-btn',
                 className: 'bowire-protocol-filter-btn'
@@ -3438,7 +3424,34 @@
 
             if (protocolFilterOpen && !filterDisabled) {
                     var popupTop = el('div', { className: 'bowire-protocol-filter-popup' });
-                    popupTop.appendChild(el('div', { className: 'bowire-protocol-filter-popup-header' },
+                    // Favorites is a filter too — sits at the top of the
+                    // popup as a single toggle row so the operator only
+                    // has to learn one filter surface instead of one
+                    // toolbar button + one popup.
+                    popupTop.appendChild(el('div', {
+                        className: 'bowire-protocol-filter-option' + (favoritesOnly ? ' selected' : ''),
+                        role: 'menuitemcheckbox',
+                        'aria-checked': favoritesOnly ? 'true' : 'false',
+                        onClick: function (e) {
+                            e.stopPropagation();
+                            setFavoritesOnly(!favoritesOnly);
+                            render();
+                        }
+                    },
+                        el('span', {
+                            className: 'bowire-protocol-filter-check',
+                            textContent: favoritesOnly ? '✓' : ''
+                        }),
+                        el('span', {
+                            className: 'bowire-protocol-filter-proto-icon',
+                            innerHTML: svgIcon(favoritesOnly ? 'starFilled' : 'star')
+                        }),
+                        el('span', {
+                            className: 'bowire-protocol-filter-proto-name',
+                            textContent: 'Favorites only'
+                        })
+                    ));
+                    popupTop.appendChild(el('div', { className: 'bowire-protocol-filter-popup-header', style: 'margin-top:6px' },
                         el('span', { textContent: 'Filter by protocol' }),
                         protocolFilter.size > 0
                             ? el('button', {
