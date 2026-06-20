@@ -9323,6 +9323,18 @@ and chip row */
 .bowire-env-color-dot.active {
     box-shadow: 0 0 0 2px var(--bowire-bg), 0 0 0 3px currentColor;
 }
+/* Pulsing variant — used by the Benchmarks sidebar to indicate a
+   running envelope. The pulse echoes the context-menu running-dot
+   so both surfaces read as the same state at a glance. */
+.bowire-env-color-dot.is-pulsing {
+    box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.6);
+    animation: bowire-sidebar-dot-pulse 1.4s infinite;
+}
+@keyframes bowire-sidebar-dot-pulse {
+    0%   { box-shadow: 0 0 0 0   rgba(245, 158, 11, 0.55); }
+    70%  { box-shadow: 0 0 0 6px rgba(245, 158, 11, 0);    }
+    100% { box-shadow: 0 0 0 0   rgba(245, 158, 11, 0);    }
+}
 /* Env color quick-select swatches */
 .bowire-env-color-row {
     display: flex;
@@ -17337,24 +17349,35 @@ not as the
     gap: 8px;
     margin-bottom: 8px;
 }
+/* Phase-row card — kind-select + tools share the top, fields below.
+   The two-row layout reads better at narrow widths than the
+   horizontal flex did (kind+tools never wrapped, but fields would). */
 .bowire-envelope-phase-row {
     display: flex;
-    align-items: flex-end;
-    gap: 8px;
-    padding: 8px 10px;
+    flex-direction: column;
+    gap: 10px;
+    padding: 10px 12px;
     border: 1px solid var(--bowire-border);
     border-radius: var(--bowire-radius-sm);
+    background: var(--bowire-surface-elevated, transparent);
 }
-.bowire-envelope-phase-row .bowire-envelope-field-select {
-    min-width: 160px;
+.bowire-envelope-phase-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.bowire-envelope-phase-header .bowire-envelope-field-select {
+    flex: 1;
+    min-width: 140px;
+    max-width: 220px;
 }
 .bowire-envelope-phase-fields {
-    flex: 1;
     display: flex;
-    gap: 8px;
+    gap: 10px;
+    flex-wrap: wrap;
 }
 .bowire-envelope-phase-tools {
     display: inline-flex;
     gap: 2px;
-    align-self: center;
+    margin-left: auto;
 }

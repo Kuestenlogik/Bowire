@@ -613,26 +613,28 @@
             },
             overflow: (function () {
                 var items = [];
-                items.push({ label: 'Import from Artillery JSON…',
+                items.push({ label: 'Import from Artillery JSON…', icon: 'replay',
                     onClick: function () { importEnvelopeFrom('artillery'); } });
-                items.push({ label: 'Import from Postman Collection…',
+                items.push({ label: 'Import from Postman Collection…', icon: 'replay',
                     onClick: function () { importEnvelopeFrom('postman'); } });
-                items.push({ label: 'Import Bowire envelope…',
+                items.push({ label: 'Import Bowire envelope…', icon: 'replay',
                     onClick: function () { importEnvelopeFrom('native'); } });
                 if (benchmarksSelectedId && getBenchmarkSpec(benchmarksSelectedId)) {
                     items.push({ separator: true });
-                    items.push({ label: 'Export as Artillery JSON',
+                    items.push({ label: 'Export as Artillery JSON', icon: 'send',
                         onClick: function () { exportSelectedEnvelopeAs('artillery'); } });
-                    items.push({ label: 'Export as k6 script',
+                    items.push({ label: 'Export as k6 script', icon: 'send',
                         onClick: function () { exportSelectedEnvelopeAs('k6'); } });
-                    items.push({ label: 'Export as Bowire envelope',
+                    items.push({ label: 'Export as Bowire envelope', icon: 'send',
                         onClick: function () { exportSelectedEnvelopeAs('native'); } });
                 }
                 if (benchmarksList && benchmarksList.length > 0) {
                     items.push({ separator: true });
                     items.push({
                         label: 'Delete all benchmarks',
+                        icon: 'trash',
                         danger: true,
+                        meta: String(benchmarksList.length),
                         onClick: function () {
                             var n = benchmarksList.length;
                             bowireConfirm(
@@ -674,6 +676,7 @@
                 list.appendChild(renderSidebarListItem({
                     id: 'bowire-bench-row-' + spec.id,
                     accent: isRunning ? 'var(--bowire-warning)' : 'var(--bowire-accent)',
+                    pulse: isRunning,
                     name: spec.name,
                     meta: meta,
                     selected: spec.id === benchmarksSelectedId,
@@ -1270,9 +1273,15 @@
             }));
         }
 
-        row.appendChild(kindSel);
+        // Two-row layout: kind-select + tools share the header (so
+        // the dropdown and remove-button never wrap below the fields
+        // on narrow widths); per-kind fields sit below as a wrapping
+        // flex group.
+        var header = el('div', { className: 'bowire-envelope-phase-header' });
+        header.appendChild(kindSel);
+        header.appendChild(tools);
+        row.appendChild(header);
         row.appendChild(fields);
-        row.appendChild(tools);
         return row;
     }
 
