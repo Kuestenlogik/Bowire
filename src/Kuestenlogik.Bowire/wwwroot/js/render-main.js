@@ -4475,10 +4475,26 @@
                             e.stopPropagation();
                             var prev = document.querySelector('.bowire-header-presets-menu');
                             if (prev) { prev.remove(); return; }
+                            // Re-resolve the preset list AT CLICK TIME
+                            // — morphdom keeps the old DOM button across
+                            // re-renders, so the closure variable
+                            // captured at first paint is stale by the
+                            // time the next preset is saved. Reading
+                            // loadPresets() here picks up the live list,
+                            // including entries added by Save-as-preset
+                            // since the last render.
+                            var liveSvc = selectedService ? selectedService.name : presetSvc;
+                            var liveMth = selectedMethod ? selectedMethod.name : presetMth;
+                            var presetList = (typeof loadPresets === 'function'
+                                    ? loadPresets('discover') : []).filter(function (p) {
+                                return p && p.config
+                                    && p.config.service === liveSvc
+                                    && p.config.method === liveMth;
+                            });
                             var menu = el('div', { className: 'bowire-header-presets-menu', role: 'menu' });
                             menu.appendChild(el('div', {
                                 className: 'bowire-header-presets-title',
-                                textContent: 'Presets · ' + presetMth
+                                textContent: 'Presets · ' + liveMth
                             }));
                             presetList.forEach(function (preset) {
                                 var row = el('div', { className: 'bowire-header-presets-row' });
