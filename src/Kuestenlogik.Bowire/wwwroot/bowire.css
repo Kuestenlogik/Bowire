@@ -4073,6 +4073,46 @@ full text color
     font-variant-numeric: tabular-nums;
 }
 
+/* Filter button inside the unified sidebar toolbar — adopts the
+   square 26 px icon-button geometry of every other toolbar control
+   (matches .bowire-sidebar-toolbar-btn) so the row reads as one
+   uniform strip instead of mixing pill + square shapes. The count
+   badge floats top-right via absolute positioning so the button's
+   square footprint stays stable as the badge toggles in/out. */
+.bowire-sidebar-toolbar .bowire-protocol-filter-wrapper {
+    align-self: center;
+}
+.bowire-sidebar-toolbar .bowire-protocol-filter-btn {
+    width: 26px;
+    height: 26px;
+    padding: 0;
+    gap: 0;
+    border: 1px solid transparent;
+    border-radius: var(--bowire-radius-sm);
+    align-self: auto;
+    opacity: 1;
+    color: var(--bowire-text-tertiary);
+    position: relative;
+}
+.bowire-sidebar-toolbar .bowire-protocol-filter-btn:hover:not(:disabled) {
+    background: var(--bowire-surface-hover);
+    border-color: var(--bowire-border);
+    color: var(--bowire-text);
+}
+.bowire-sidebar-toolbar .bowire-protocol-filter-btn.has-active {
+    color: var(--bowire-accent);
+}
+.bowire-sidebar-toolbar .bowire-protocol-filter-btn-count {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    min-width: 14px;
+    height: 14px;
+    padding: 0 3px;
+    font-size: 9px;
+    border: 1px solid var(--bowire-bg);
+}
+
 .bowire-protocol-filter-popup {
     /* Fixed positioning escapes the sidebar's overflow:hidden. The
        top/left are set by JS after a short setTimeout to ensure

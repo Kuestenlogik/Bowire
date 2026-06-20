@@ -3673,7 +3673,12 @@
                         livePopup.style.right = 'auto';
                     }, 0);
             }
-            svcToolbar.appendChild(filterBtnWrapperTop);
+            // Filter button lives in the unified toolbar row alongside
+            // the title + '+' button, NOT a step lower in svcToolbar.
+            // One toolbar surface holds every state-changing control
+            // for Discover; svcToolbar shrinks down to the name-filter
+            // input + the (conditional) chip strip.
+            viewSwitch.insertBefore(filterBtnWrapperTop, newBtnWrapper);
         }
 
         // Chip row inside the toolbar — shown when a filter is active
