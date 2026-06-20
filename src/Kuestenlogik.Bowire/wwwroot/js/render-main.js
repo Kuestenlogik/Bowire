@@ -701,7 +701,7 @@
             var secWrap = el('div', { className: 'bowire-env-editor-vars' });
             secWrap.appendChild(el('div', {
                 className: 'bowire-env-editor-subtitle',
-                textContent: 'Reference as {{secret.NAME}} in any input. Session-only — cleared on reload. Workspace defaults under Workspace › Variables apply when this environment has no override; Phase 5 wraps an OS keyring.'
+                textContent: 'Reference as {{secret.NAME}} in any input. Session-only — cleared on reload. Workspace defaults under Workspace › Variables apply when this environment has no override.'
             }));
             secWrap.appendChild(_renderKvSection('Secrets', envSecretsMap, function (next) {
                 var oldNames = Object.keys(envSecretsMap);
@@ -1596,7 +1596,7 @@
             main.appendChild(el('p', {
                 className: 'bowire-ws-detail-stat-hint',
                 style: 'margin:8px 0',
-                textContent: 'Session-only secrets — pass-through values for {{secret.NAME}} resolutions. Never written to disk, never exported. Phase 5 wraps an OS keyring (#208).'
+                textContent: 'Session-only secrets — pass-through values for {{secret.NAME}} resolutions. Never written to disk, never exported.'
             }));
             var secretsMap = (typeof getWorkspaceSecrets === 'function') ? getWorkspaceSecrets(ws.id) : {};
             main.appendChild(_renderKvSection('Secrets', secretsMap, function (next) {
@@ -4046,12 +4046,6 @@
             // The renderUrlBarRow already understands the locked vs.
             // editable cases.
             srcWrap.appendChild(renderUrlBarRow(!!config.lockServerUrl));
-            // Future: add schema-file drop zone, catalogue source
-            // chip (#136), per-URL origin badge.
-            srcWrap.appendChild(el('p', {
-                className: 'bowire-sources-hint',
-                textContent: 'Schema-file management and catalogue providers (#92, #136) land in subsequent commits.'
-            }));
             srcMain.appendChild(srcWrap);
             return srcMain;
         }
