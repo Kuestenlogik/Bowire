@@ -343,33 +343,59 @@
             return '<div class="bowire-json-tree-row">' + labelHtml(path)
                 + leafSpan('bowire-json-boolean', value ? 'true' : 'false', path) + '</div>';
         }
+        // Arrays + objects render as IDE-style collapsible blocks:
+        //   collapsed:  "label": [ … ]              (or { … })
+        //   expanded:   "label": [
+        //                 ...children...
+        //               ]                          (closing bracket below)
+        // The "3 items"/"3 keys" meta moves out of the inline text
+        // into the summary's title attribute — visible on hover, not
+        // competing with the JSON itself.
+        function containerSummary(openBracket, closeBracket, metaText) {
+            return '<summary class="bowire-json-tree-summary" title="' + escapeHtml(metaText) + '">'
+                + labelHtml(path)
+                + '<span class="bowire-json-tree-bracket">' + openBracket + '</span>'
+                + '<span class="bowire-json-tree-ellipsis">' + ' … ' + '</span>'
+                + '<span class="bowire-json-tree-bracket bowire-json-tree-bracket-closed">'
+                + closeBracket + '</span>'
+                + '</summary>';
+        }
+        function containerClose(closeBracket) {
+            return '<div class="bowire-json-tree-row bowire-json-tree-close">'
+                + '<span class="bowire-json-tree-bracket">' + closeBracket + '</span></div>';
+        }
+
         if (Array.isArray(value)) {
             var openAttr = openByDefault ? ' open' : '';
             var len = value.length;
-            var summary = '<summary class="bowire-json-tree-summary">'
-                + labelHtml(path)
-                + '<span class="bowire-json-tree-bracket">[</span>'
-                + '<span class="bowire-json-tree-meta">' + len + (len === 1 ? ' item' : ' items') + '</span>'
-                + '<span class="bowire-json-tree-bracket">]</span>'
-                + '</summary>';
+            var meta = len + (len === 1 ? ' item' : ' items');
+            var summary = containerSummary('[', ']', meta);
+            if (len === 0) {
+                // Empty array — collapse marker doesn't apply, just
+                // print "[]" inline. Stays consistent with the
+                // expanded form where children list would be empty.
+                return '<div class="bowire-json-tree-row">' + labelHtml(path)
+                    + '<span class="bowire-json-tree-bracket">[]</span></div>';
+            }
             var children = '';
             for (var i = 0; i < len; i++) {
                 var childPath = path ? path + '.' + i : String(i);
                 children += treeNodeHtml(value[i], childPath, i, false);
             }
             return '<details class="bowire-json-tree-node"' + openAttr + '>' + summary
-                + '<div class="bowire-json-tree-children">' + children + '</div></details>';
+                + '<div class="bowire-json-tree-children">' + children + '</div>'
+                + containerClose(']')
+                + '</details>';
         }
         if (typeof value === 'object') {
             var keys = Object.keys(value);
             var openAttr2 = openByDefault ? ' open' : '';
-            var summary2 = '<summary class="bowire-json-tree-summary">'
-                + labelHtml(path)
-                + '<span class="bowire-json-tree-bracket">{</span>'
-                + '<span class="bowire-json-tree-meta">' + keys.length
-                + (keys.length === 1 ? ' key' : ' keys') + '</span>'
-                + '<span class="bowire-json-tree-bracket">}</span>'
-                + '</summary>';
+            var meta2 = keys.length + (keys.length === 1 ? ' key' : ' keys');
+            var summary2 = containerSummary('{', '}', meta2);
+            if (keys.length === 0) {
+                return '<div class="bowire-json-tree-row">' + labelHtml(path)
+                    + '<span class="bowire-json-tree-bracket">{}</span></div>';
+            }
             var children2 = '';
             for (var k = 0; k < keys.length; k++) {
                 var ckey = keys[k];
@@ -377,7 +403,9 @@
                 children2 += treeNodeHtml(value[ckey], ckpath, ckey, false);
             }
             return '<details class="bowire-json-tree-node"' + openAttr2 + '>' + summary2
-                + '<div class="bowire-json-tree-children">' + children2 + '</div></details>';
+                + '<div class="bowire-json-tree-children">' + children2 + '</div>'
+                + containerClose('}')
+                + '</details>';
         }
         return '<div class="bowire-json-tree-row">' + escapeHtml(String(value)) + '</div>';
     }
