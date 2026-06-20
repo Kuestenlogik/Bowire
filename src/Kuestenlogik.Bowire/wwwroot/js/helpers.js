@@ -1364,7 +1364,7 @@
             row.appendChild(el('span', { className: 'bowire-env-sidebar-icon', innerHTML: svgIcon(opts.icon) }));
         } else if (opts.accent) {
             row.appendChild(el('span', {
-                className: 'bowire-env-color-dot',
+                className: 'bowire-env-color-dot' + (opts.pulse ? ' is-pulsing' : ''),
                 style: 'background:' + opts.accent
             }));
         }
