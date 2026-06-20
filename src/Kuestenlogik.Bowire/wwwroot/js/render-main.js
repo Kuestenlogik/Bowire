@@ -3336,7 +3336,7 @@
     // shows method type + protocol icon when available, and
     // gracefully degrades to plain text when the method isn't in
     // the current discovery (stale favorite).
-    function renderHomeTile(serviceName, methodName, isFavorite) {
+    function renderHomeTile(serviceName, methodName, isFavorite, metaText) {
         var svc = services.find(function (s) { return s.name === serviceName; });
         var meth = svc && (svc.methods || []).find(function (m) { return m.name === methodName; });
         var available = !!(svc && meth);
@@ -3449,11 +3449,19 @@
             }));
         }
         tile.appendChild(headerRow);
-        tile.appendChild(el('div', {
+        var subRow = el('div', { className: 'bowire-home-tile-sub' });
+        subRow.appendChild(el('span', {
             className: 'bowire-home-tile-service',
             title: serviceName,
             textContent: serviceName
         }));
+        if (metaText) {
+            subRow.appendChild(el('span', {
+                className: 'bowire-home-tile-meta',
+                textContent: metaText
+            }));
+        }
+        tile.appendChild(subRow);
 
         return tile;
     }
@@ -3702,7 +3710,9 @@
                 // without a stranded trailing row. Full list lives
                 // in the overlay drawer (click the section title).
                 recent.slice(0, 9).forEach(function (r) {
-                    recentGrid.appendChild(renderHomeTile(r.service, r.method, false));
+                    var when = (typeof getRelativeTime === 'function' && r.ts)
+                        ? getRelativeTime(r.ts) : '';
+                    recentGrid.appendChild(renderHomeTile(r.service, r.method, false, when));
                 });
                 recentSection.appendChild(recentGrid);
             }
@@ -3732,8 +3742,11 @@
                     content: function () {
                         var list = el('div', { className: 'bowire-home-list-drawer-list' });
                         drawerItems.forEach(function (item) {
+                            var when = (drawerKind === 'recent'
+                                    && typeof getRelativeTime === 'function' && item.ts)
+                                ? getRelativeTime(item.ts) : '';
                             list.appendChild(renderHomeTile(item.service, item.method,
-                                drawerKind === 'favorites'));
+                                drawerKind === 'favorites', when));
                         });
                         return list;
                     }
