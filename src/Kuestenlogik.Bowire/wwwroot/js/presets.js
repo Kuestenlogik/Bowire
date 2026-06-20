@@ -350,17 +350,10 @@
         }
         touchPresetUse('discover', preset.id);
         if (typeof render === 'function') render();
-        // Signal-based "form is loaded" gate. Instead of guessing
-        // when the browser is done painting via a fixed timeout, we
-        // poll the live DOM on every animation frame until either
-        // (a) the expected values actually show up on the form /
-        // editor inputs — fire success toast — or (b) we hit the
-        // attempt cap, meaning the preset never landed (schema
-        // mismatch survived the pre-check) — fire the error toast.
-        //
-        // The cap is 30 frames (≈ 500 ms at 60fps), generous enough
-        // to absorb a slow layout pass on a deep schema while still
-        // surfacing a failure quickly.
+        // Signal-based "form is loaded" gate. Polls the live DOM on
+        // every animation frame until the expected values are
+        // visibly present, then fires the success toast — or hits
+        // the attempt cap (≈ 500 ms) and surfaces failure instead.
         if (typeof toast === 'function') {
             var expectedBody = bodyText;
             var attempts = 0;
@@ -385,6 +378,7 @@
         }
         return true;
     }
+
 
     // DOM-state check — "has morphdom finished painting the new
     // preset values into the visible inputs?". Reads the live
