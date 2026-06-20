@@ -5048,7 +5048,11 @@
         // terse (Body / Metadata / Schema / Tests / …).
         pane.appendChild(el('div', { className: 'bowire-pane-heading', textContent: 'Request' }));
         const tabs = el('div', { id: 'bowire-request-tabs', className: 'bowire-tabs' });
-        const bodyTabLabel = isMultiMessage ? 'Messages (' + requestMessages.length + ')' : 'Body';
+        // Top-tab label — "Payload" instead of "Body" so the REST/OData
+        // sub-tab strip below ("Form / Body") doesn't read as the
+        // nonsensical "Body > Body". Multi-message methods keep their
+        // count-aware "Messages (N)" label.
+        const bodyTabLabel = isMultiMessage ? 'Messages (' + requestMessages.length + ')' : 'Payload';
         const bodyTab = el('div', {
             id: 'bowire-request-tab-body',
             className: `bowire-tab ${activeRequestTab === 'body' ? 'active' : ''}`,

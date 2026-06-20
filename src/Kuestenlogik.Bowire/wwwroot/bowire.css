@@ -14166,6 +14166,29 @@ subtler
 /* ---------- Tests tab ---------- */
 .bowire-tab-tests.has-failure {
     color: var(--bowire-error);
+    font-weight: 600;
+}
+/* Pulsing dot on the right of the label so a failed-test state catches
+   the eye even when the user is parked on Body / Response Metadata
+   and only glances at the strip. Same pulse used by the Benchmarks
+   sidebar running-indicator + envelope picker indicator — feels
+   familiar across surfaces. */
+.bowire-tab-tests.has-failure::after {
+    content: '';
+    display: inline-block;
+    width: 7px;
+    height: 7px;
+    margin-left: 6px;
+    border-radius: 50%;
+    vertical-align: 1px;
+    background: var(--bowire-error);
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--bowire-error) 60%, transparent);
+    animation: bowire-tab-tests-fail-pulse 1.4s infinite;
+}
+@keyframes bowire-tab-tests-fail-pulse {
+    0%   { box-shadow: 0 0 0 0   color-mix(in srgb, var(--bowire-error) 55%, transparent); }
+    70%  { box-shadow: 0 0 0 6px color-mix(in srgb, var(--bowire-error) 0%,  transparent); }
+    100% { box-shadow: 0 0 0 0   color-mix(in srgb, var(--bowire-error) 0%,  transparent); }
 }
 
 .bowire-tab-tests.all-pass {
@@ -14220,13 +14243,31 @@ subtler
     font-size: 13px;
     font-weight: 600;
     color: var(--bowire-text);
-    padding: 6px 10px;
+    padding: 8px 12px;
     margin-bottom: 10px;
     border-radius: var(--bowire-radius-sm);
     background: var(--bowire-surface-alt);
+    border-left: 3px solid transparent;
 }
-.bowire-tests-results-summary.all-pass { color: var(--bowire-success); }
-.bowire-tests-results-summary.has-failure { color: var(--bowire-error); }
+.bowire-tests-results-summary.all-pass {
+    color: var(--bowire-success);
+    background: color-mix(in srgb, var(--bowire-success) 12%, transparent);
+    border-left-color: var(--bowire-success);
+}
+/* Failure summary — tinted background + left accent bar + warning glyph.
+   The colored band makes the failure unmistakable even at a glance and
+   matches the per-row pattern below. */
+.bowire-tests-results-summary.has-failure {
+    color: var(--bowire-error);
+    background: color-mix(in srgb, var(--bowire-error) 14%, transparent);
+    border-left-color: var(--bowire-error);
+}
+.bowire-tests-results-summary.has-failure::before {
+    content: '⚠';
+    display: inline-block;
+    margin-right: 8px;
+    font-size: 14px;
+}
 .bowire-test-row-result .bowire-test-path-readonly,
 .bowire-test-row-result .bowire-test-op-readonly,
 .bowire-test-row-result .bowire-test-expected-readonly {
