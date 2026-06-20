@@ -811,8 +811,22 @@
                     // Fast-path: structurally identical subtree → skip.
                     // Big win for static toolbar/header regions that
                     // haven't changed across renders.
+                    //
+                    // CAVEAT: isEqualNode compares attributes only, not
+                    // properties. Form inputs carry their state on the
+                    // .value PROPERTY which isEqualNode can't see — so
+                    // a subtree that looks "equal" can still hide a
+                    // stale input value (e.g. after applyPreset writes
+                    // formValues without changing attrs). Don't apply
+                    // the optimization to subtrees that contain form
+                    // fields — the value sync needs morphdom's special
+                    // INPUT/TEXTAREA/SELECT handlers to run.
                     if (fromEl.isEqualNode && fromEl.isEqualNode(toEl)) {
-                        return false;
+                        var tag = fromEl.tagName;
+                        if (tag !== 'INPUT' && tag !== 'TEXTAREA' && tag !== 'SELECT'
+                            && !fromEl.querySelector('input, textarea, select')) {
+                            return false;
+                        }
                     }
                     // Preserve the live state of the currently focused
                     // input/textarea/select. morphdom has special handlers
