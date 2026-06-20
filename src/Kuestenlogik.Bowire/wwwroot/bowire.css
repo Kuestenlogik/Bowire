@@ -2336,10 +2336,14 @@ not just
 }
 /* First-run band — same shape as Continue, but with a tagline above
    the Start grid instead of three resume tiles. */
+/* Tour + Docs footer at the bottom of Home. The parent .bowire-home-
+   wrap already adds a 22 px `gap` between bands, so the previous
+   margin-top + padding-top + border-top stacked an extra ~46 px on
+   top of that and pushed the buttons below the fold — forcing a
+   scrollbar on Home for no content reason. Slim margin only; the
+   natural band gap is enough separation. */
 .bowire-home-footer-slot {
-    margin-top: 8px;
-    padding-top: 16px;
-    border-top: 1px solid var(--bowire-border-subtle);
+    margin-top: 4px;
 }
 .bowire-home-footer-slot .bowire-landing-footer {
     margin-top: 0;
