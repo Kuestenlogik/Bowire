@@ -2195,11 +2195,13 @@ not just
        bottom. No max-width: wide viewports fill horizontally via the
        auto-fill grids inside each band. Padding tracks the shared
        --bowire-main-gutter so Home, Discover, Workspaces, &c all line
-       up when switching rails. */
-    padding: var(--bowire-main-gutter);
+       up when switching rails. Vertical gutter halved so all four
+       bands (Continue / Start / Sections / Footer) fit a typical
+       1080-px viewport without a scrollbar. */
+    padding: 16px var(--bowire-main-gutter);
     display: flex;
     flex-direction: column;
-    gap: 22px;
+    gap: 14px;
 }
 .bowire-home-band {
     /* Every band lives in the same content column. text-align:left
@@ -2208,7 +2210,7 @@ not just
        + left-aligned grids underneath read as restless. */
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 8px;
 }
 .bowire-home-band-title {
     display: flex;
@@ -2250,10 +2252,10 @@ not just
 .bowire-home-continue-tile {
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 4px;
     align-items: flex-start;
     text-align: left;
-    padding: 14px 16px;
+    padding: 10px 14px;
     background: var(--bowire-surface);
     border: 1px solid var(--bowire-border);
     border-left: 3px solid var(--bowire-accent);
@@ -2302,10 +2304,10 @@ not just
 .bowire-home-start-card {
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 2px;
     align-items: flex-start;
     text-align: left;
-    padding: 12px 14px;
+    padding: 8px 12px;
     background: var(--bowire-surface);
     border: 1px solid var(--bowire-border);
     border-radius: var(--bowire-radius-md);
@@ -2343,7 +2345,7 @@ not just
    scrollbar on Home for no content reason. Slim margin only; the
    natural band gap is enough separation. */
 .bowire-home-footer-slot {
-    margin-top: 4px;
+    margin-top: 0;
 }
 .bowire-home-footer-slot .bowire-landing-footer {
     margin-top: 0;
@@ -2356,19 +2358,18 @@ not just
 .bowire-home-sections {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 32px;
+    gap: 20px;
 }
 @media (max-width: 900px) {
     .bowire-home-sections {
         grid-template-columns: 1fr;
-        gap: 24px;
+        gap: 16px;
     }
 }
 .bowire-home-section {
-    margin-bottom: 0; /* override the stacked default */
-}
-.bowire-home-section {
-    margin-bottom: 20px;
+    margin-bottom: 0; /* override the stacked default — the
+        sections grid handles cross-column gap, and the parent band
+        gap handles vertical spacing to the footer. */
 }
 .bowire-home-section-title {
     display: flex;
@@ -2379,7 +2380,7 @@ not just
     text-transform: uppercase;
     letter-spacing: 0.06em;
     color: var(--bowire-text-secondary);
-    margin: 0 0 12px;
+    margin: 0 0 8px;
 }
 .bowire-home-section-title svg {
     width: 14px;
