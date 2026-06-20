@@ -2468,12 +2468,12 @@
     }
     let activeRequestTab = 'body';
     // Home-page "Recent activity" surface — 'grid' shows the
-    // capped 3x3 tile block, 'list' switches to a scrollable
-    // full-history list. Toggled by clicking the section title.
-    let homeRecentView = 'grid';
-    // Same shape for Favorites — capped grid by default, list on
-    // click of the section title.
-    let homeFavView = 'grid';
+    // Home list drawer — when set ('favorites' / 'recent'), a right-
+    // side overlay drawer pops over Home showing the full list. Used
+    // instead of the prior in-place expansion (homeFavView /
+    // homeRecentView) which made Home itself scrollable. Null = no
+    // drawer; section titles toggle it.
+    let homeListDrawer = null;
     // When the user starts dragging a method-tree row, this holds
     // { service, method }. A side-panel of drop-targets (Collections)
     // pops in on the right while the drag is live; cleared on drop

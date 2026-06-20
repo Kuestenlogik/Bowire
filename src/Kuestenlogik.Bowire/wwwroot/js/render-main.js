@@ -3625,21 +3625,20 @@
 
             var favs = (typeof getFavorites === 'function') ? getFavorites() : [];
             var favSection = el('div', { className: 'bowire-home-section bowire-home-section-favs' });
-            var favExpanded = homeFavView === 'list';
-            var favShown = favExpanded ? favs.length : Math.min(favs.length, 9);
-            var favCountText = (!favExpanded && favs.length > favShown)
-                ? favShown + ' of ' + favs.length
+            var favCappedCount = Math.min(favs.length, 9);
+            var favCountText = favs.length > favCappedCount
+                ? favCappedCount + ' of ' + favs.length
                 : favs.length + (favs.length === 1 ? ' entry' : ' entries');
-            // Title is clickable — same shape as Recent Activity:
-            // toggle between the capped grid (9 tiles, 3x3) and a
-            // scrollable full list.
+            // Title click opens the right-side overlay drawer with the
+            // full list. The grid in Home stays capped at 9 so Home
+            // itself never needs to scroll; the drawer is where the
+            // operator browses the long tail.
             favSection.appendChild(el('button', {
                 type: 'button',
                 className: 'bowire-home-section-title bowire-home-section-title-toggle',
-                title: favExpanded ? 'Collapse to favorites grid' : 'Show full favorites list',
-                'aria-expanded': favExpanded ? 'true' : 'false',
+                title: 'Show full favorites list',
                 onClick: function () {
-                    homeFavView = favExpanded ? 'grid' : 'list';
+                    homeListDrawer = 'favorites';
                     render();
                 }
             },
@@ -3648,7 +3647,7 @@
                 el('span', { className: 'bowire-home-section-count', textContent: favCountText }),
                 el('span', {
                     className: 'bowire-home-section-toggle-caret',
-                    innerHTML: svgIcon(favExpanded ? 'chevronUp' : 'chevronDown')
+                    innerHTML: svgIcon('chevron')
                 })
             ));
             if (favs.length === 0) {
@@ -3657,12 +3656,6 @@
                     headline: 'No favorites yet',
                     body: 'Star a method from the sidebar or any recent entry below — it lands here for one-click access across every workflow.'
                 }));
-            } else if (favExpanded) {
-                var favList = el('div', { className: 'bowire-home-recent-list' });
-                favs.forEach(function (fav) {
-                    favList.appendChild(renderHomeTile(fav.service, fav.method, true));
-                });
-                favSection.appendChild(favList);
             } else {
                 var favGrid = el('div', { className: 'bowire-home-grid' });
                 favs.slice(0, 9).forEach(function (fav) {
@@ -3673,22 +3666,18 @@
             sections.appendChild(favSection);
 
             var recentSection = el('div', { className: 'bowire-home-section bowire-home-section-recent' });
-            var isExpanded = homeRecentView === 'list';
-            var recentShown = isExpanded ? recent.length : Math.min(recent.length, 9);
-            var recentCountText = (!isExpanded && recent.length > recentShown)
-                ? recentShown + ' of ' + recent.length
+            var recentCappedCount = Math.min(recent.length, 9);
+            var recentCountText = recent.length > recentCappedCount
+                ? recentCappedCount + ' of ' + recent.length
                 : recent.length + (recent.length === 1 ? ' entry' : ' entries');
-            // Section title is clickable — toggles between the
-            // capped grid and a scrollable full-history list. A
-            // chevron indicates which state we're in so it doesn't
-            // look like a plain non-interactive heading.
+            // Title click opens the right-side overlay drawer with
+            // the full activity history.
             recentSection.appendChild(el('button', {
                 type: 'button',
                 className: 'bowire-home-section-title bowire-home-section-title-toggle',
-                title: isExpanded ? 'Collapse to recent grid' : 'Show full activity list',
-                'aria-expanded': isExpanded ? 'true' : 'false',
+                title: 'Show full activity list',
                 onClick: function () {
-                    homeRecentView = isExpanded ? 'grid' : 'list';
+                    homeListDrawer = 'recent';
                     render();
                 }
             },
@@ -3697,7 +3686,7 @@
                 el('span', { className: 'bowire-home-section-count', textContent: recentCountText }),
                 el('span', {
                     className: 'bowire-home-section-toggle-caret',
-                    innerHTML: svgIcon(isExpanded ? 'chevronUp' : 'chevronDown')
+                    innerHTML: svgIcon('chevron')
                 })
             ));
             if (recent.length === 0) {
@@ -3706,21 +3695,12 @@
                     headline: 'No recent activity',
                     body: 'Open methods in Discover and they land here in MRU order.'
                 }));
-            } else if (isExpanded) {
-                // Full scrollable list — each row is a compact tile
-                // that reuses the same renderHomeTile shape; the
-                // outer container is scroll-bound so the rest of the
-                // home page doesn't have to grow with the history.
-                var recentList = el('div', { className: 'bowire-home-recent-list' });
-                recent.forEach(function (r) {
-                    recentList.appendChild(renderHomeTile(r.service, r.method, false));
-                });
-                recentSection.appendChild(recentList);
             } else {
                 var recentGrid = el('div', { className: 'bowire-home-grid' });
                 // Cap the visible recents at 9 — the Home grid is a
                 // 3-column layout, so 9 lands as a clean 3x3 block
-                // without a stranded trailing row.
+                // without a stranded trailing row. Full list lives
+                // in the overlay drawer (click the section title).
                 recent.slice(0, 9).forEach(function (r) {
                     recentGrid.appendChild(renderHomeTile(r.service, r.method, false));
                 });
@@ -3729,6 +3709,36 @@
             sections.appendChild(recentSection);
             sectionsBand.appendChild(sections);
             homeWrap.appendChild(sectionsBand);
+
+            // Right-side drawer — opened by clicking either section
+            // title. Uses the shared renderDrawer chrome (same shape
+            // as the Assistant / Help / Tests drawers) so the Home
+            // overlay reads as part of the existing workbench drawer
+            // family instead of a one-off.
+            if (homeListDrawer && typeof renderDrawer === 'function') {
+                var drawerKind = homeListDrawer;
+                var drawerTitle = drawerKind === 'favorites' ? 'Favorites' : 'Recent activity';
+                var drawerItems = drawerKind === 'favorites' ? favs : recent;
+                var closeDrawer = function () { homeListDrawer = null; render(); };
+                homeMain.appendChild(renderDrawer({
+                    id: 'bowire-home-list-drawer',
+                    className: 'bowire-home-list-drawer',
+                    title: drawerTitle,
+                    titleAccessory: el('span', {
+                        className: 'bowire-drawer-title-count',
+                        textContent: String(drawerItems.length)
+                    }),
+                    onClose: closeDrawer,
+                    content: function () {
+                        var list = el('div', { className: 'bowire-home-list-drawer-list' });
+                        drawerItems.forEach(function (item) {
+                            list.appendChild(renderHomeTile(item.service, item.method,
+                                drawerKind === 'favorites'));
+                        });
+                        return list;
+                    }
+                }));
+            }
 
             // Tour + Docs footer at the very bottom of Home. Used to
             // sit under every Discover empty state — once per session

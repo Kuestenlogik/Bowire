@@ -2352,6 +2352,47 @@ not just
     padding-top: 0;
     border-top: 0;
 }
+
+/* Home list drawer — uses the shared .bowire-drawer chrome but
+   pinned as a fixed-position overlay over Home (rather than the
+   in-flow side-panel that the Assistant drawer uses at wide
+   widths). Same animation, header, close button — Home doesn't get
+   to invent its own drawer shape. */
+.bowire-home-list-drawer {
+    position: fixed;
+    top: var(--bowire-topbar-height, 56px);
+    right: 0;
+    bottom: 0;
+    width: 380px;
+    max-width: 92vw;
+    z-index: 90;
+    background: var(--bowire-bg);
+    border-left: 1px solid var(--bowire-border);
+    box-shadow: var(--bowire-shadow-lg);
+    animation: bowire-home-drawer-slide-in 200ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+@keyframes bowire-home-drawer-slide-in {
+    from { transform: translateX(24px); opacity: 0; }
+    to   { transform: translateX(0);    opacity: 1; }
+}
+.bowire-home-list-drawer .bowire-drawer-title-count {
+    margin-left: 8px;
+    padding: 1px 6px;
+    background: var(--bowire-surface);
+    border: 1px solid var(--bowire-border);
+    border-radius: var(--bowire-radius-sm);
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--bowire-text-tertiary);
+}
+.bowire-home-list-drawer-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+.bowire-home-list-drawer-list .bowire-home-tile {
+    padding: 8px 12px;
+}
 /* Side-by-side layout: Favorites + Recent live in a 2-column grid
    below the title strip. Collapses to a single column below 900 px
    so narrow viewports don't squeeze each tile too tight. */
