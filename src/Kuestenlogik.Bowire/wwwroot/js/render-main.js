@@ -3390,12 +3390,20 @@
                     items.push({
                         label: 'Add to envelope…',
                         onClick: function (ev) {
+                            // Default-JSON body from the method's input
+                            // type so the seeded envelope is runnable
+                            // without extra editing.
+                            var defaultBody = '{}';
+                            if (meth && typeof generateDefaultJson === 'function') {
+                                try { defaultBody = generateDefaultJson(meth.inputType, 0); }
+                                catch { /* keep '{}' */ }
+                            }
                             addTargetToEnvelopePicker(ev.clientX, ev.clientY, {
                                 type: 'method',
                                 service: serviceName,
                                 method: methodName,
                                 protocol: proto || null,
-                                body: '{}', metadata: {}, serverUrl: null
+                                body: defaultBody, metadata: {}, serverUrl: null
                             }, { name: serviceName + '.' + methodName });
                         }
                     });
