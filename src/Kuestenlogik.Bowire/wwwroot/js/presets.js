@@ -302,10 +302,23 @@
             try { activeRequestTab = 'body'; } catch { /* const in some bundles */ }
         }
         touchPresetUse('discover', preset.id);
-        if (typeof toast === 'function') {
-            toast('Loaded "' + (preset.name || 'preset') + '"', 'success');
-        }
         if (typeof render === 'function') render();
+        // Defer the "Loaded …" toast until AFTER the next paint so
+        // the user sees the populated form first and reads the
+        // toast as confirmation of an already-applied change. Toast-
+        // first reads as "supposed to be loaded, but where are my
+        // values?" because the toast paints on top of a frame where
+        // the form hasn't repainted yet.
+        if (typeof toast === 'function') {
+            var done = function () {
+                toast('Loaded "' + (preset.name || 'preset') + '"', 'success');
+            };
+            if (typeof window !== 'undefined' && typeof window.requestAnimationFrame === 'function') {
+                window.requestAnimationFrame(done);
+            } else {
+                done();
+            }
+        }
         return true;
     }
 
