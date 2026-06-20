@@ -571,6 +571,29 @@
         return target.type || '?';
     }
 
+    // Envelope-aware sidebar meta. Shows total iterations across all
+    // phases when every phase is iteration-bounded ("400×"); falls
+    // back to phase-count when any phase is time-bounded ("3 phases")
+    // since an upfront iteration estimate isn't possible. Single-
+    // phase iter-bounded envelopes get the compact "100×" form so
+    // typical specs read identically to the pre-envelope shape.
+    function _envelopeSidebarMeta(spec) {
+        var phases = (spec.phases || []);
+        if (phases.length === 0) return '—';
+        var totalIter = 0;
+        var anyTimeBounded = false;
+        for (var i = 0; i < phases.length; i++) {
+            if (phases[i].durationMs && !phases[i].totalIterations) {
+                anyTimeBounded = true;
+                continue;
+            }
+            totalIter += phases[i].totalIterations || 0;
+        }
+        if (anyTimeBounded) return phases.length + ' phase' + (phases.length === 1 ? '' : 's');
+        if (totalIter > 0) return totalIter + '×';
+        return phases.length + ' phase' + (phases.length === 1 ? '' : 's');
+    }
+
     // ---- Sidebar: list of saved benchmark specs ----
 
     function renderBenchmarksSidebar() {
@@ -646,7 +669,7 @@
                 } else if (spec.lastRun && spec.lastRun.stats) {
                     meta = 'p95 ' + Math.round(spec.lastRun.stats.p95) + ' ms';
                 } else {
-                    meta = spec.n + '×';
+                    meta = _envelopeSidebarMeta(spec);
                 }
                 list.appendChild(renderSidebarListItem({
                     id: 'bowire-bench-row-' + spec.id,
@@ -670,7 +693,7 @@
                                         if (typeof stopBenchmark === 'function') stopBenchmark();
                                     } else {
                                         benchmarksSelectedId = spec.id;
-                                        if (typeof runBenchmark === 'function') runBenchmark(spec.n, spec.concurrency);
+                                        runBenchmarkSpec(spec, function () { render(); });
                                     }
                                 }
                             },
