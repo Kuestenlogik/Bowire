@@ -4496,10 +4496,33 @@
                                 className: 'bowire-header-presets-title',
                                 textContent: 'Presets · ' + liveMth
                             }));
+                            // Each row follows the same shape as the top-bar
+                            // "Add to" dropdown: whole row is one click target
+                            // (= primary action), with a hover-revealed tools
+                            // cluster on the right for secondary actions.
+                            //
+                            //   [⭐] name            [default chip] [🗀] [🗑]
+                            //    ↑   ↑                        ↑       ↑
+                            //  state row-click=apply         meta   hover-reveal
                             presetList.forEach(function (preset) {
-                                var row = el('div', { className: 'bowire-header-presets-row' });
-                                // Default star — preset.isDefault marks the
-                                // one to auto-apply on next method open.
+                                var row = el('div', {
+                                    className: 'bowire-header-presets-row'
+                                        + (preset.isDefault ? ' is-default' : ''),
+                                    role: 'menuitem',
+                                    title: 'Apply preset',
+                                    onClick: function (ev) {
+                                        ev.stopPropagation();
+                                        if (typeof applyPresetToCurrentMethod === 'function'
+                                            && applyPresetToCurrentMethod(preset)) {
+                                            menu.remove();
+                                        }
+                                    }
+                                });
+                                // Star = state marker + toggle. Reserved-width
+                                // slot so the row geometry doesn't jump when
+                                // the default flips; greyed when off, accent
+                                // when on. stopPropagation so the row's
+                                // apply-click doesn't also fire.
                                 row.appendChild(el('button', {
                                     type: 'button',
                                     className: 'bowire-header-presets-default'
@@ -4520,28 +4543,26 @@
                                         render();
                                     }
                                 }));
-                                // Body-click → apply preset to live form.
-                                row.appendChild(el('button', {
+                                row.appendChild(el('span', {
+                                    className: 'bowire-header-presets-name',
+                                    textContent: preset.name || 'Untitled'
+                                }));
+                                // Meta chip — tertiary-text tag between name
+                                // and tools cluster. Only shown for default
+                                // entries; carries the per-row context.
+                                if (preset.isDefault) {
+                                    row.appendChild(el('span', {
+                                        className: 'bowire-header-presets-meta',
+                                        textContent: 'default'
+                                    }));
+                                }
+                                // Tools cluster — hover-revealed secondary
+                                // actions (add-to-collection, delete). Wrapped
+                                // so the CSS hover-reveal targets one slot.
+                                var tools = el('div', { className: 'bowire-header-presets-tools' });
+                                tools.appendChild(el('button', {
                                     type: 'button',
-                                    className: 'bowire-header-presets-apply',
-                                    title: 'Apply preset',
-                                    onClick: function (ev) {
-                                        ev.stopPropagation();
-                                        if (typeof applyPresetToCurrentMethod === 'function'
-                                            && applyPresetToCurrentMethod(preset)) {
-                                            menu.remove();
-                                        }
-                                    }
-                                },
-                                    el('span', { className: 'bowire-header-presets-name', textContent: preset.name || 'Untitled' })
-                                ));
-                                // Add-to-collection: opens a small inline
-                                // submenu listing the workspace's
-                                // collections. Click adds a Collection
-                                // item built from the preset's snapshot.
-                                row.appendChild(el('button', {
-                                    type: 'button',
-                                    className: 'bowire-header-presets-tocol',
+                                    className: 'bowire-header-presets-tool',
                                     title: 'Add to collection…',
                                     'aria-label': 'Add to collection',
                                     innerHTML: svgIcon('folder'),
@@ -4577,9 +4598,9 @@
                                         row.appendChild(collist);
                                     }
                                 }));
-                                row.appendChild(el('button', {
+                                tools.appendChild(el('button', {
                                     type: 'button',
-                                    className: 'bowire-header-presets-delete',
+                                    className: 'bowire-header-presets-tool bowire-header-presets-tool-danger',
                                     title: 'Delete preset',
                                     'aria-label': 'Delete preset',
                                     innerHTML: svgIcon('trash'),
@@ -4590,6 +4611,7 @@
                                         render();
                                     }
                                 }));
+                                row.appendChild(tools);
                                 menu.appendChild(row);
                             });
                             document.body.appendChild(menu);

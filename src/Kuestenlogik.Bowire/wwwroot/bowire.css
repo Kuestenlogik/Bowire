@@ -9014,61 +9014,48 @@ instead of having to
     letter-spacing: 0.05em;
     padding: 6px 8px 4px;
 }
+/* Whole row is the primary click target ("apply preset"), mirroring
+   the .bowire-header-addto-item pattern. Star sits left as a state +
+   toggle slot; tools cluster sits right and hover-reveals so the
+   resting row reads as one clean entry per preset. */
 .bowire-header-presets-row {
     display: flex;
     align-items: center;
-    gap: 2px;
+    gap: 8px;
+    padding: 6px 8px;
     border-radius: var(--bowire-radius-sm);
     position: relative;
+    cursor: pointer;
+    color: var(--bowire-text);
+    font-size: 12px;
+    transition: background var(--bowire-transition);
 }
 .bowire-header-presets-row:hover {
     background: var(--bowire-surface-hover);
 }
-.bowire-header-presets-default,
-.bowire-header-presets-tocol,
-.bowire-header-presets-delete {
+.bowire-header-presets-default {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 24px;
-    height: 24px;
+    width: 20px;
+    height: 20px;
     border: none;
     background: transparent;
     color: var(--bowire-text-tertiary);
     border-radius: var(--bowire-radius-sm);
     cursor: pointer;
+    flex-shrink: 0;
 }
-.bowire-header-presets-default:hover,
-.bowire-header-presets-tocol:hover,
-.bowire-header-presets-delete:hover {
+.bowire-header-presets-default:hover {
     color: var(--bowire-text);
     background: var(--bowire-surface-alt);
 }
 .bowire-header-presets-default.is-on {
     color: var(--bowire-accent);
 }
-.bowire-header-presets-default svg,
-.bowire-header-presets-tocol svg,
-.bowire-header-presets-delete svg {
+.bowire-header-presets-default svg {
     width: 14px;
     height: 14px;
-}
-.bowire-header-presets-delete:hover {
-    color: var(--bowire-error);
-}
-.bowire-header-presets-apply {
-    flex: 1;
-    min-width: 0;
-    display: flex;
-    align-items: center;
-    padding: 6px 8px;
-    border: none;
-    background: transparent;
-    color: var(--bowire-text);
-    text-align: left;
-    cursor: pointer;
-    border-radius: var(--bowire-radius-sm);
-    font: inherit;
 }
 .bowire-header-presets-name {
     flex: 1;
@@ -9076,6 +9063,46 @@ instead of having to
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+}
+.bowire-header-presets-meta {
+    font-size: 10px;
+    color: var(--bowire-text-tertiary);
+    flex-shrink: 0;
+}
+/* Tools cluster — hover-revealed (display: none at rest). Width
+   slot is reserved via the existing layout flow once hovered; no
+   reflow because the cluster is the last child. */
+.bowire-header-presets-tools {
+    display: none;
+    align-items: center;
+    gap: 2px;
+    flex-shrink: 0;
+}
+.bowire-header-presets-row:hover .bowire-header-presets-tools {
+    display: inline-flex;
+}
+.bowire-header-presets-tool {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    border: none;
+    background: transparent;
+    color: var(--bowire-text-tertiary);
+    border-radius: var(--bowire-radius-sm);
+    cursor: pointer;
+}
+.bowire-header-presets-tool svg {
+    width: 14px;
+    height: 14px;
+}
+.bowire-header-presets-tool:hover {
+    color: var(--bowire-text);
+    background: var(--bowire-surface-alt);
+}
+.bowire-header-presets-tool-danger:hover {
+    color: var(--bowire-error);
 }
 .bowire-header-presets-collist {
     position: absolute;
