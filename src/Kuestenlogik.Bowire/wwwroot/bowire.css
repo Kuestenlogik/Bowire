@@ -9048,13 +9048,13 @@ instead of having to
     color: var(--bowire-accent);
 }
 .bowire-header-presets-default svg,
-.bowire-header-presets-tocol svg {
+.bowire-header-presets-tocol svg,
+.bowire-header-presets-delete svg {
     width: 14px;
     height: 14px;
 }
-.bowire-header-presets-delete {
-    font-size: 18px;
-    line-height: 1;
+.bowire-header-presets-delete:hover {
+    color: var(--bowire-error);
 }
 .bowire-header-presets-apply {
     flex: 1;

@@ -4582,7 +4582,7 @@
                                     className: 'bowire-header-presets-delete',
                                     title: 'Delete preset',
                                     'aria-label': 'Delete preset',
-                                    textContent: '×',
+                                    innerHTML: svgIcon('trash'),
                                     onClick: function (ev) {
                                         ev.stopPropagation();
                                         if (typeof deletePreset === 'function') deletePreset('discover', preset.id);
