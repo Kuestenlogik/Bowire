@@ -9125,8 +9125,8 @@ instead of having to
    preset entry. */
 .bowire-header-presets-divider {
     height: 1px;
-    background: var(--bowire-border-subtle);
-    margin: 4px 0;
+    background: var(--bowire-border);
+    margin: 6px 4px;
 }
 .bowire-header-presets-row-action {
     color: var(--bowire-accent);
