@@ -230,10 +230,16 @@
     // (which seeds from existing rows, see render-main.js:5534) picks
     // them up without needing a parallel "pending headers" state.
     function applyPresetToCurrentMethod(preset) {
-        if (!preset || !preset.config) return false;
+        if (!preset || !preset.config) {
+            if (typeof toast === 'function') toast('Preset is empty', 'error');
+            return false;
+        }
         var c = preset.config;
         if (typeof selectedService === 'undefined' || typeof selectedMethod === 'undefined'
-            || !selectedService || !selectedMethod) return false;
+            || !selectedService || !selectedMethod) {
+            if (typeof toast === 'function') toast('Pick a method before applying a preset', 'error');
+            return false;
+        }
         if (c.service && c.method
             && (c.service !== selectedService.name || c.method !== selectedMethod.name)) {
             if (typeof toast === 'function') {
@@ -241,6 +247,47 @@
             }
             return false;
         }
+
+        // Pre-apply schema check — refuse to swallow a preset whose
+        // body keys have nothing to do with the current method's
+        // schema. That's the "preset was saved against a renamed
+        // method" case the user flagged: apply would technically run
+        // (no exception), the form would stay empty, and the toast
+        // would falsely claim "Loaded". Compare preset top-level
+        // JSON keys to the current inputType fields — at least one
+        // must overlap (we tolerate missing keys, and extra keys are
+        // fine too; we only reject zero overlap).
+        var bodyText = Array.isArray(c.messages) && c.messages.length > 0
+            ? c.messages[0]
+            : (typeof c.body === 'string' ? c.body : null);
+        if (typeof bodyText === 'string'
+                && selectedMethod.inputType
+                && Array.isArray(selectedMethod.inputType.fields)
+                && selectedMethod.inputType.fields.length > 0) {
+            try {
+                var parsed = JSON.parse(bodyText);
+                if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+                    var presetKeys = Object.keys(parsed);
+                    if (presetKeys.length > 0) {
+                        var schemaKeys = selectedMethod.inputType.fields.map(function (f) {
+                            return typeof fieldJsonKey === 'function'
+                                ? fieldJsonKey(f)
+                                : f.name;
+                        });
+                        var anyOverlap = presetKeys.some(function (k) {
+                            return schemaKeys.indexOf(k) >= 0;
+                        });
+                        if (!anyOverlap) {
+                            if (typeof toast === 'function') {
+                                toast('Preset does not match this method’s schema', 'error');
+                            }
+                            return false;
+                        }
+                    }
+                }
+            } catch { /* non-JSON body — let it through (REST raw text, GraphQL query, …) */ }
+        }
+
         if (Array.isArray(c.messages) && c.messages.length > 0) {
             requestMessages = c.messages.slice();
         } else if (typeof c.body === 'string') {
@@ -308,23 +355,54 @@
         // toast as confirmation of an already-applied change. A
         // single requestAnimationFrame fires BEFORE the next paint,
         // so the toast would still paint in the same frame as the
-        // form update — and because the toast has a slide-in
-        // animation, the user notices it first. Double rAF lets the
-        // browser paint the form values in frame N, then paints the
-        // toast in frame N+1.
+        // form update. Double rAF lets the browser paint the form
+        // values in frame N, then paints the toast in frame N+1.
+        //
+        // Inside the second rAF we also VERIFY that the preset's
+        // body landed in the live state. saveMessageEditors() can
+        // round-trip stale input back into requestMessages, the
+        // schema-form may have ignored every field if the schema
+        // drifted — both failure modes survive the pre-apply check.
+        // Surface the failure instead of falsely toasting "Loaded".
         if (typeof toast === 'function') {
-            var done = function () {
-                toast('Loaded "' + (preset.name || 'preset') + '"', 'success');
+            var expectedBody = bodyText;
+            var finalToast = function () {
+                var ok = _verifyPresetLanded(expectedBody);
+                if (ok) {
+                    toast('Loaded "' + (preset.name || 'preset') + '"', 'success');
+                } else {
+                    toast('Preset could not be fully applied — schema may have changed', 'error');
+                }
             };
             if (typeof window !== 'undefined' && typeof window.requestAnimationFrame === 'function') {
                 window.requestAnimationFrame(function () {
-                    window.requestAnimationFrame(done);
+                    window.requestAnimationFrame(finalToast);
                 });
             } else {
-                done();
+                finalToast();
             }
         }
         return true;
+    }
+
+    // Post-apply verification helper. The preset body should be the
+    // canonical form of whatever sits in requestMessages[0] after
+    // render(). Compare via parsed-JSON equality so whitespace /
+    // key-order differences don't trip the check.
+    function _verifyPresetLanded(expectedBody) {
+        if (expectedBody == null) return true; // nothing to verify
+        var actualBody = (typeof requestMessages !== 'undefined'
+                && Array.isArray(requestMessages))
+            ? String(requestMessages[0] || '')
+            : '';
+        if (actualBody === expectedBody) return true;
+        try {
+            var a = JSON.parse(actualBody);
+            var b = JSON.parse(expectedBody);
+            return JSON.stringify(a) === JSON.stringify(b);
+        } catch {
+            return false;
+        }
     }
 
     // ---- Generic UI helper: render a "Saved configs" bar ----
