@@ -8653,12 +8653,29 @@ details[open] > .bowire-json-tree-summary::before {
 .bowire-json-tree-bracket {
     color: var(--bowire-text-secondary);
 }
-.bowire-json-tree-meta {
-    color: var(--bowire-text-secondary);
-    font-style: italic;
-    margin: 0 4px;
-    font-size: 11px;
+/* IDE-style collapse markers — the inline ellipsis "… " and the
+   inline closing bracket only show when the node is collapsed.
+   When the node is open, the closing bracket is rendered as its
+   own row below the children (.bowire-json-tree-close). The "x keys"
+   meta moved into the summary's title attribute (hover tooltip)
+   so the JSON shape stays readable. */
+.bowire-json-tree-ellipsis {
+    color: var(--bowire-text-tertiary);
+    margin: 0 2px;
 }
+details[open] > .bowire-json-tree-summary > .bowire-json-tree-ellipsis,
+details[open] > .bowire-json-tree-summary > .bowire-json-tree-bracket-closed {
+    display: none;
+}
+.bowire-json-tree-close {
+    padding-left: 0;
+}
+details:not([open]) > .bowire-json-tree-close {
+    display: none;
+}
+/* Legacy meta class — kept as a no-op so any external decorators
+   that still query it don't break. */
+.bowire-json-tree-meta { display: none; }
 .bowire-json-tree-fallback {
     white-space: pre-wrap;
     word-break: break-word;

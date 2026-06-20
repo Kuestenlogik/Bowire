@@ -4886,18 +4886,70 @@
                     var isActive = tab.id === activeTabId;
                     var dir = methodDirection(tab.method);
                     var proto = (tab.service && tab.service.source) || 'default';
+                    // Stable id + data-tab-id — morphdom matches the
+                    // node across re-renders by id (so it keeps the
+                    // same DOM element for the same tab) AND every
+                    // click handler re-reads the id from data-tab-id
+                    // at click time instead of closing over `tab.id`.
+                    // Without this, morphdom keeps the prior listener
+                    // attached to the recycled node — the close button
+                    // on tab C would fire `closeTab(B.id)` because the
+                    // listener was attached when this slot rendered B.
                     var tabEl = el('div', {
+                        id: 'bowire-request-tab-' + tab.id,
                         className: 'bowire-request-tab' + (isActive ? ' active' : ''),
                         title: tab.serviceKey + ' / ' + tab.methodKey,
+                        'data-tab-id': tab.id,
                         'data-protocol': proto,
                         'data-direction': dir,
-                        onClick: function () { switchTab(tab.id); }
+                        onClick: function (e) {
+                            var id = e.currentTarget.dataset.tabId;
+                            if (id) switchTab(id);
+                        },
+                        onContextMenu: function (e) {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            if (typeof showContextMenu !== 'function') return;
+                            var id = e.currentTarget.dataset.tabId;
+                            if (!id) return;
+                            var idx = requestTabs.findIndex(function (t) { return t.id === id; });
+                            var hasOthers = requestTabs.length > 1;
+                            var hasRight = idx >= 0 && idx < requestTabs.length - 1;
+                            showContextMenu(e.clientX, e.clientY, [
+                                {
+                                    label: 'Close',
+                                    icon: 'close',
+                                    disabled: !hasOthers,
+                                    onClick: function () { closeTab(id); }
+                                },
+                                {
+                                    label: 'Close others',
+                                    disabled: !hasOthers,
+                                    onClick: function () {
+                                        // Close every other tab, then make sure
+                                        // the right-clicked one is the active +
+                                        // sole remaining tab.
+                                        var keepId = id;
+                                        requestTabs.slice().forEach(function (t) {
+                                            if (t.id !== keepId) closeTab(t.id);
+                                        });
+                                        switchTab(keepId);
+                                    }
+                                },
+                                {
+                                    label: 'Close tabs to the right',
+                                    disabled: !hasRight,
+                                    onClick: function () {
+                                        var currentIdx = requestTabs.findIndex(function (t) { return t.id === id; });
+                                        if (currentIdx < 0) return;
+                                        requestTabs.slice(currentIdx + 1).forEach(function (t) {
+                                            closeTab(t.id);
+                                        });
+                                    }
+                                }
+                            ]);
+                        }
                     },
-                        // Method name leads — the identifier the user
-                        // recognises. The verb/method-type chip
-                        // trails on the right, same pill-style as
-                        // the tree (.bowire-method-badge) for visual
-                        // consistency.
                         el('span', {
                             className: 'bowire-request-tab-name',
                             textContent: tab.methodKey
@@ -4910,13 +4962,17 @@
                         // Hide the × on the last remaining tab — closeTab()
                         // refuses to drop below one tab anyway, so leaving
                         // the affordance visible just invited dead clicks.
+                        // Closure-free handler — reads the tab id at click
+                        // time from data-tab-id on the parent tab.
                         requestTabs.length > 1 ? el('button', {
                             className: 'bowire-request-tab-close',
                             innerHTML: svgIcon('close'),
                             title: 'Close tab (Ctrl+W)',
                             onClick: function (e) {
                                 e.stopPropagation();
-                                closeTab(tab.id);
+                                var parent = e.currentTarget.closest('.bowire-request-tab');
+                                var id = parent && parent.dataset.tabId;
+                                if (id) closeTab(id);
                             }
                         }) : null
                     );
