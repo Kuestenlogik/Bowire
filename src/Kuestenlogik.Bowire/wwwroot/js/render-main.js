@@ -4646,6 +4646,19 @@
                         var liveSvc = selectedService;
                         var liveMth = selectedMethod;
                         if (!liveSvc || !liveMth) return null;
+                        // If the user was editing on the Form sub-tab,
+                        // their changes live in formValues — flush them
+                        // into requestMessages[0] before snapshotting so
+                        // the saved preset / collection / benchmark
+                        // carries the real edited body, not the empty
+                        // {} that the editor started with.
+                        try {
+                            if (typeof syncFormToJson === 'function'
+                                    && typeof requestInputMode !== 'undefined'
+                                    && requestInputMode === 'form') {
+                                syncFormToJson();
+                            }
+                        } catch { /* schema-form not loaded */ }
                         var body = (Array.isArray(requestMessages) && requestMessages[0]) || '{}';
                         var meta = {};
                         var metaRows = document.querySelectorAll('.bowire-metadata-row');

@@ -263,6 +263,14 @@
                 if (singleEd) singleEd.value = requestMessages[0] || '';
             }
         } catch { /* editor not mounted yet — render() will seed from requestMessages */ }
+        // Form sub-tab — re-populate formValues from the new
+        // requestMessages[0] so form inputs reflect the preset.
+        // Without this the form keeps showing stale values (or the
+        // empty initial form when the user was on Form mode while
+        // applying the preset).
+        try {
+            if (typeof syncJsonToForm === 'function') syncJsonToForm();
+        } catch { /* schema-form not loaded for this method */ }
         // Replace the metadata rows in-place. createMetadataRow lives
         // in render-main.js so we go through the DOM rather than
         // calling it directly — the editor's container is .bowire-metadata-editor.
