@@ -305,16 +305,21 @@
         if (typeof render === 'function') render();
         // Defer the "Loaded …" toast until AFTER the next paint so
         // the user sees the populated form first and reads the
-        // toast as confirmation of an already-applied change. Toast-
-        // first reads as "supposed to be loaded, but where are my
-        // values?" because the toast paints on top of a frame where
-        // the form hasn't repainted yet.
+        // toast as confirmation of an already-applied change. A
+        // single requestAnimationFrame fires BEFORE the next paint,
+        // so the toast would still paint in the same frame as the
+        // form update — and because the toast has a slide-in
+        // animation, the user notices it first. Double rAF lets the
+        // browser paint the form values in frame N, then paints the
+        // toast in frame N+1.
         if (typeof toast === 'function') {
             var done = function () {
                 toast('Loaded "' + (preset.name || 'preset') + '"', 'success');
             };
             if (typeof window !== 'undefined' && typeof window.requestAnimationFrame === 'function') {
-                window.requestAnimationFrame(done);
+                window.requestAnimationFrame(function () {
+                    window.requestAnimationFrame(done);
+                });
             } else {
                 done();
             }
