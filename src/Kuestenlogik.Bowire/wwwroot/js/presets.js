@@ -246,6 +246,23 @@
         } else if (typeof c.body === 'string') {
             requestMessages = [c.body];
         }
+        // Push the new content into the live editor DOM BEFORE
+        // render() runs. renderRequestPane() starts with a
+        // saveMessageEditors() call that re-reads the editor's
+        // current value and overwrites requestMessages — without
+        // this DOM patch that round-trip resurrects the user's
+        // stale input and the preset apply has no visible effect.
+        try {
+            var multiEditors = document.querySelectorAll('.bowire-message-editor');
+            if (multiEditors.length > 0) {
+                for (var mi = 0; mi < multiEditors.length; mi++) {
+                    multiEditors[mi].value = requestMessages[mi] || '';
+                }
+            } else {
+                var singleEd = document.querySelector('.bowire-editor');
+                if (singleEd) singleEd.value = requestMessages[0] || '';
+            }
+        } catch { /* editor not mounted yet — render() will seed from requestMessages */ }
         // Replace the metadata rows in-place. createMetadataRow lives
         // in render-main.js so we go through the DOM rather than
         // calling it directly — the editor's container is .bowire-metadata-editor.

@@ -8614,7 +8614,13 @@ they're a way
     font-size: 12px;
     line-height: 1.55;
 }
+/* IDE-style layout — every node has a 14 px left gutter that holds
+   the toggle triangle and (when open) a vertical guide line. Summary
+   content sits flush at the gutter's right edge so opening `{` and
+   closing `}` rows line up vertically. */
 .bowire-json-tree-node {
+    position: relative;
+    padding-left: 14px;
     margin: 0;
 }
 .bowire-json-tree-summary {
@@ -8626,22 +8632,35 @@ they're a way
 .bowire-json-tree-summary::-webkit-details-marker { display: none; }
 .bowire-json-tree-summary::before {
     content: '\25B8';
-    display: inline-block;
+    position: absolute;
+    left: 0;
+    top: 0;
     width: 12px;
     color: var(--bowire-text-secondary);
     transition: transform 80ms ease;
-    margin-right: 2px;
 }
 details[open] > .bowire-json-tree-summary::before {
     transform: rotate(90deg);
 }
-.bowire-json-tree-children {
+/* Vertical guide line — only when the node is expanded. Lives in
+   the gutter column under the rotated triangle, stops just above
+   the closing-bracket row so the line never crashes into the `}`. */
+details.bowire-json-tree-node[open]::after {
+    content: '';
+    position: absolute;
+    left: 5px;
+    top: 20px;
+    bottom: 20px;
     border-left: 1px dashed var(--bowire-border);
-    margin-left: 6px;
-    padding-left: 12px;
+    pointer-events: none;
+}
+.bowire-json-tree-children {
+    border-left: none;
+    margin-left: 0;
+    padding-left: 14px;
 }
 .bowire-json-tree-row {
-    padding-left: 14px;
+    padding-left: 0;
 }
 .bowire-json-tree-label {
     color: #a78bfa;
