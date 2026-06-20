@@ -4496,14 +4496,15 @@
                                 className: 'bowire-header-presets-title',
                                 textContent: 'Presets · ' + liveMth
                             }));
-                            // Each row follows the same shape as the top-bar
-                            // "Add to" dropdown: whole row is one click target
-                            // (= primary action), with a hover-revealed tools
-                            // cluster on the right for secondary actions.
+                            // Each row follows the same shape as the workspace
+                            // dropdown: whole row clicks to apply, tools cluster
+                            // on the right carries the state marker (default
+                            // star — analog of the workspace ✓) + secondary
+                            // actions that hover-reveal.
                             //
-                            //   [⭐] name            [default chip] [🗀] [🗑]
-                            //    ↑   ↑                        ↑       ↑
-                            //  state row-click=apply         meta   hover-reveal
+                            //   name                    [⭐ state] [🗀] [🗑]
+                            //    ↑                          ↑         ↑
+                            //  row-click=apply          state marker hover-reveal
                             presetList.forEach(function (preset) {
                                 var row = el('div', {
                                     className: 'bowire-header-presets-row'
@@ -4518,12 +4519,21 @@
                                         }
                                     }
                                 });
+                                row.appendChild(el('span', {
+                                    className: 'bowire-header-presets-name',
+                                    textContent: preset.name || 'Untitled'
+                                }));
+                                // Tools cluster — sits on the right, carries
+                                // the state marker (always-visible slot;
+                                // greyed-out when not default) plus the
+                                // hover-revealed secondary actions.
+                                var tools = el('div', { className: 'bowire-header-presets-tools' });
                                 // Star = state marker + toggle. Reserved-width
                                 // slot so the row geometry doesn't jump when
-                                // the default flips; greyed when off, accent
-                                // when on. stopPropagation so the row's
-                                // apply-click doesn't also fire.
-                                row.appendChild(el('button', {
+                                // the default flips. Stays visible when
+                                // default ("the marker"); when not default it
+                                // hover-reveals along with the other tools.
+                                tools.appendChild(el('button', {
                                     type: 'button',
                                     className: 'bowire-header-presets-default'
                                         + (preset.isDefault ? ' is-on' : ''),
@@ -4543,23 +4553,6 @@
                                         render();
                                     }
                                 }));
-                                row.appendChild(el('span', {
-                                    className: 'bowire-header-presets-name',
-                                    textContent: preset.name || 'Untitled'
-                                }));
-                                // Meta chip — tertiary-text tag between name
-                                // and tools cluster. Only shown for default
-                                // entries; carries the per-row context.
-                                if (preset.isDefault) {
-                                    row.appendChild(el('span', {
-                                        className: 'bowire-header-presets-meta',
-                                        textContent: 'default'
-                                    }));
-                                }
-                                // Tools cluster — hover-revealed secondary
-                                // actions (add-to-collection, delete). Wrapped
-                                // so the CSS hover-reveal targets one slot.
-                                var tools = el('div', { className: 'bowire-header-presets-tools' });
                                 tools.appendChild(el('button', {
                                     type: 'button',
                                     className: 'bowire-header-presets-tool',

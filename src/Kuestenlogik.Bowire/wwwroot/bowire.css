@@ -9014,10 +9014,11 @@ instead of having to
     letter-spacing: 0.05em;
     padding: 6px 8px 4px;
 }
-/* Whole row is the primary click target ("apply preset"), mirroring
-   the .bowire-header-addto-item pattern. Star sits left as a state +
-   toggle slot; tools cluster sits right and hover-reveals so the
-   resting row reads as one clean entry per preset. */
+/* Whole row clicks to apply. Tools cluster sits on the right and
+   carries the state marker (default star — analog of the workspace
+   ✓ check) plus the hover-revealed secondary actions. Mirrors the
+   workspace dropdown pattern so operators don't have to learn a new
+   shape per surface. */
 .bowire-header-presets-row {
     display: flex;
     align-items: center;
@@ -9033,30 +9034,6 @@ instead of having to
 .bowire-header-presets-row:hover {
     background: var(--bowire-surface-hover);
 }
-.bowire-header-presets-default {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 20px;
-    height: 20px;
-    border: none;
-    background: transparent;
-    color: var(--bowire-text-tertiary);
-    border-radius: var(--bowire-radius-sm);
-    cursor: pointer;
-    flex-shrink: 0;
-}
-.bowire-header-presets-default:hover {
-    color: var(--bowire-text);
-    background: var(--bowire-surface-alt);
-}
-.bowire-header-presets-default.is-on {
-    color: var(--bowire-accent);
-}
-.bowire-header-presets-default svg {
-    width: 14px;
-    height: 14px;
-}
 .bowire-header-presets-name {
     flex: 1;
     min-width: 0;
@@ -9064,34 +9041,71 @@ instead of having to
     text-overflow: ellipsis;
     white-space: nowrap;
 }
-.bowire-header-presets-meta {
-    font-size: 10px;
-    color: var(--bowire-text-tertiary);
-    flex-shrink: 0;
-}
-/* Tools cluster — hover-revealed (display: none at rest). Width
-   slot is reserved via the existing layout flow once hovered; no
-   reflow because the cluster is the last child. */
+/* Tools cluster — reserved height so the row doesn't grow when the
+   hover-revealed actions pop in. Star (state marker) is always in
+   the DOM; visibility flips so the slot stays width-stable. */
 .bowire-header-presets-tools {
-    display: none;
+    margin-left: auto;
+    display: inline-flex;
     align-items: center;
     gap: 2px;
     flex-shrink: 0;
+    min-height: 22px;
 }
-.bowire-header-presets-row:hover .bowire-header-presets-tools {
-    display: inline-flex;
-}
-.bowire-header-presets-tool {
+/* Default-star — state marker AND toggle. At rest, only visible
+   when this preset is the default (so the row reads as "marked").
+   On row hover the slot also shows for non-defaults so the operator
+   can set / clear it via click. */
+.bowire-header-presets-default {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 20px;
-    height: 20px;
+    width: 22px;
+    height: 22px;
     border: none;
     background: transparent;
     color: var(--bowire-text-tertiary);
     border-radius: var(--bowire-radius-sm);
     cursor: pointer;
+    flex-shrink: 0;
+    visibility: hidden;
+}
+.bowire-header-presets-default.is-on {
+    color: var(--bowire-accent);
+    visibility: visible;
+}
+.bowire-header-presets-row:hover .bowire-header-presets-default {
+    visibility: visible;
+}
+.bowire-header-presets-default:hover {
+    color: var(--bowire-text);
+    background: var(--bowire-surface-alt);
+}
+.bowire-header-presets-default.is-on:hover {
+    color: var(--bowire-accent);
+}
+.bowire-header-presets-default svg {
+    width: 14px;
+    height: 14px;
+}
+/* Secondary tools (add-to-collection, delete) — display: none at
+   rest, inline-flex on row hover. Same pattern as the workspace
+   rename / edit / trash trio. */
+.bowire-header-presets-tool {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    border: none;
+    background: transparent;
+    color: var(--bowire-text-tertiary);
+    border-radius: var(--bowire-radius-sm);
+    cursor: pointer;
+    flex-shrink: 0;
+}
+.bowire-header-presets-row:hover .bowire-header-presets-tool {
+    display: inline-flex;
 }
 .bowire-header-presets-tool svg {
     width: 14px;
