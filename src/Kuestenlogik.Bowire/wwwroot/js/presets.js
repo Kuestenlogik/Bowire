@@ -386,35 +386,70 @@
         return true;
     }
 
-    // State-based "preset landed" check. render() is synchronous —
-    // by the time the rAF after render() fires, requestMessages[0]
-    // is the canonical source of truth for the request body. The
-    // DOM (form-inputs, editor) is updated by morphdom from that
-    // state in the same render() call, so trusting the state is
-    // equivalent to trusting the DOM but works for ANY shape
-    // (flat, nested, repeated, mixed) — whereas a DOM walk has to
-    // re-implement schema-form's flatten logic and gets stuck on
-    // nested objects, arrays, and repeated inputs.
+    // DOM-state check — "has morphdom finished painting the new
+    // preset values into the visible inputs?". Reads the live
+    // .bowire-form-input nodes and compares each one's .value
+    // property against formValues[fieldKey] (the source of truth
+    // syncJsonToForm just populated). When EVERY visible input
+    // matches its formValues entry, the form is in sync — that's
+    // the "loaded" signal.
     //
-    // saveMessageEditors() may overwrite requestMessages[0] from
-    // the live .bowire-editor — but my apply path pre-fills that
-    // editor with the preset body, so saveMessageEditors reads the
-    // preset back in (no-op). Form mode has no .bowire-editor → no
-    // overwrite. Either way, requestMessages[0] === expectedBody
-    // after render() means the apply succeeded.
+    // Falls back to the .bowire-editor textarea (JSON sub-tab) and
+    // .bowire-message-editor (streaming) when no form-input is
+    // rendered. Returning true on an empty/no-editor surface keeps
+    // the loop from spinning forever on non-form methods.
     function _isPresetVisibleInDom(expectedBody) {
-        if (expectedBody == null) return true;
-        var actual = (typeof requestMessages !== 'undefined' && Array.isArray(requestMessages))
-            ? String(requestMessages[0] || '')
-            : '';
-        if (actual === expectedBody) return true;
-        // Whitespace / key-order tolerance via canonical JSON.
-        try {
-            return JSON.stringify(JSON.parse(actual))
-                === JSON.stringify(JSON.parse(expectedBody));
-        } catch {
-            return false;
+        // Form sub-tab — compare each rendered form-input to
+        // formValues. formValues was populated by syncJsonToForm()
+        // BEFORE render(); morphdom is what gets the value onto
+        // the live input.value property. The first frame after
+        // render() in which all inputs equal their formValues is
+        // the frame the form is visibly settled.
+        var formInputs = document.querySelectorAll('.bowire-form-input[data-field-key]');
+        if (formInputs.length > 0 && typeof formValues !== 'undefined') {
+            for (var i = 0; i < formInputs.length; i++) {
+                var key = formInputs[i].dataset.fieldKey;
+                var expected = formValues[key];
+                var actualVal = formInputs[i].value;
+                if (expected === undefined || expected === null) {
+                    if (actualVal !== '') return false;
+                } else if (typeof expected === 'object') {
+                    // Nested objects/arrays don't bind to a single
+                    // input — schema-form recursively renders them.
+                    // Skip and trust the recursive children to flag
+                    // the mismatch via their own form-input rows.
+                    continue;
+                } else if (String(actualVal) !== String(expected)) {
+                    return false;
+                }
+            }
+            return true;
         }
+
+        // JSON / raw body sub-tab.
+        var editor = document.querySelector('.bowire-editor');
+        if (editor) {
+            if (expectedBody == null) return true;
+            if (editor.value === expectedBody) return true;
+            try {
+                return JSON.stringify(JSON.parse(editor.value))
+                    === JSON.stringify(JSON.parse(expectedBody));
+            } catch { return false; }
+        }
+
+        // Streaming (multi-message).
+        var multi = document.querySelectorAll('.bowire-message-editor');
+        if (multi.length > 0) {
+            if (expectedBody == null) return true;
+            if (multi[0].value === expectedBody) return true;
+            try {
+                return JSON.stringify(JSON.parse(multi[0].value))
+                    === JSON.stringify(JSON.parse(expectedBody));
+            } catch { return false; }
+        }
+
+        // No checkable surface visible — don't spin the loop.
+        return true;
     }
 
     // ---- Generic UI helper: render a "Saved configs" bar ----
