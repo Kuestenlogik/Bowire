@@ -4492,10 +4492,6 @@
                                     && p.config.method === liveMth;
                             });
                             var menu = el('div', { className: 'bowire-header-presets-menu', role: 'menu' });
-                            menu.appendChild(el('div', {
-                                className: 'bowire-header-presets-title',
-                                textContent: 'Presets · ' + liveMth
-                            }));
                             // Each row follows the same shape as the workspace
                             // dropdown: whole row clicks to apply, tools cluster
                             // on the right carries the state marker (default
@@ -4607,6 +4603,67 @@
                                 row.appendChild(tools);
                                 menu.appendChild(row);
                             });
+                            // Separator + "Save as preset" action — mirrors
+                            // the workspace dropdown's "New workspace…" entry
+                            // at the bottom. Keeps the create-flow discoverable
+                            // from the same surface where the operator browses
+                            // existing presets, without forcing them through
+                            // the unrelated "+ Add to…" menu.
+                            menu.appendChild(el('div', { className: 'bowire-header-presets-divider' }));
+                            menu.appendChild(el('div', {
+                                className: 'bowire-header-presets-row bowire-header-presets-row-action',
+                                role: 'menuitem',
+                                title: 'Save current request as a new preset',
+                                onClick: function (ev) {
+                                    ev.stopPropagation();
+                                    // Inline snapshot — _snapshotRequest lives
+                                    // in the +Add-to closure and isn't reachable
+                                    // here. Same shape as that path.
+                                    if (!selectedService || !selectedMethod) return;
+                                    try {
+                                        if (typeof syncFormToJson === 'function'
+                                                && typeof requestInputMode !== 'undefined'
+                                                && requestInputMode === 'form') {
+                                            syncFormToJson();
+                                        }
+                                    } catch { /* schema-form not loaded */ }
+                                    var body = (Array.isArray(requestMessages) && requestMessages[0]) || '{}';
+                                    var meta = {};
+                                    var metaRows = document.querySelectorAll('.bowire-metadata-row');
+                                    for (var mi = 0; mi < metaRows.length; mi++) {
+                                        var inputs = metaRows[mi].querySelectorAll('.bowire-metadata-input');
+                                        if (inputs.length === 2 && inputs[0].value.trim()) {
+                                            meta[inputs[0].value.trim()] = inputs[1].value;
+                                        }
+                                    }
+                                    var snap = {
+                                        service: selectedService.name,
+                                        method: selectedMethod.name,
+                                        methodType: selectedMethod.methodType || 'Unary',
+                                        protocol: selectedService.source || selectedProtocol || 'grpc',
+                                        body: body,
+                                        messages: Array.isArray(requestMessages) ? requestMessages.slice() : [body],
+                                        metadata: Object.keys(meta).length > 0 ? meta : null,
+                                        serverUrl: selectedService.originUrl || (Array.isArray(serverUrls) && serverUrls[0]) || null
+                                    };
+                                    menu.remove();
+                                    bowirePrompt('Preset name', {
+                                        title: 'Save as preset',
+                                        placeholder: selectedMethod.name + ' preset',
+                                        confirmText: 'Save'
+                                    }).then(function (name) {
+                                        if (!name) return;
+                                        if (typeof savePresetFromSnapshot === 'function') {
+                                            savePresetFromSnapshot('discover', String(name).trim(), snap);
+                                            toast('Preset saved', 'success');
+                                        }
+                                        render();
+                                    });
+                                }
+                            },
+                                el('span', { className: 'bowire-header-presets-action-icon', innerHTML: svgIcon('plus') }),
+                                el('span', { textContent: 'Save as preset…' })
+                            ));
                             document.body.appendChild(menu);
                             // Anchor to the trigger button.
                             var rect = presetBtn.getBoundingClientRect();
