@@ -36,11 +36,31 @@
     // Build a snapshot of the current request for codegen — body / metadata
     // / server URL / etc. — substituting environment vars so the generated
     // snippet matches what Execute would actually send.
+    //
+    // CRITICAL: this runs INSIDE renderRequestPane, which means it executes
+    // BEFORE morphdom syncs the new form values into the live DOM. Calling
+    // syncFormToJson() here would read the STALE (pre-merge) inputs and
+    // overwrite formValues + requestMessages with empty strings — every
+    // render cycle. That destroyed preset apply state mid-render. We
+    // assemble bodyJson read-only without mutating any global.
     function buildCodeExportContext() {
         var bodyJson = '{}';
         if (selectedMethod && selectedMethod.inputType && requestInputMode === 'form') {
-            try { syncFormToJson(); } catch (e) { /* ignore */ }
-            bodyJson = requestMessages[0] || '{}';
+            // Read-only snapshot: prefer formValues for the current schema,
+            // fall back to requestMessages[0] if formValues isn't initialised
+            // yet. NEVER call syncFormToJson here — see note above.
+            try {
+                var snap = (typeof collectFormValuesFromState === 'function')
+                    ? collectFormValuesFromState(selectedMethod.inputType, '')
+                    : null;
+                if (snap != null) {
+                    bodyJson = JSON.stringify(snap, null, 2);
+                } else {
+                    bodyJson = (requestMessages && requestMessages[0]) || '{}';
+                }
+            } catch (e) {
+                bodyJson = (requestMessages && requestMessages[0]) || '{}';
+            }
         } else {
             var ed = $('.bowire-editor') || $('.bowire-message-editor');
             bodyJson = ed ? ed.value || '{}' : '{}';
