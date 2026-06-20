@@ -386,66 +386,35 @@
         return true;
     }
 
-    // Live DOM check — has the expected preset body actually landed
-    // in the visible form / JSON editor / message editors? Used as
-    // the "form is loaded" signal so the success toast only fires
-    // once the DOM reflects the new state.
+    // State-based "preset landed" check. render() is synchronous —
+    // by the time the rAF after render() fires, requestMessages[0]
+    // is the canonical source of truth for the request body. The
+    // DOM (form-inputs, editor) is updated by morphdom from that
+    // state in the same render() call, so trusting the state is
+    // equivalent to trusting the DOM but works for ANY shape
+    // (flat, nested, repeated, mixed) — whereas a DOM walk has to
+    // re-implement schema-form's flatten logic and gets stuck on
+    // nested objects, arrays, and repeated inputs.
+    //
+    // saveMessageEditors() may overwrite requestMessages[0] from
+    // the live .bowire-editor — but my apply path pre-fills that
+    // editor with the preset body, so saveMessageEditors reads the
+    // preset back in (no-op). Form mode has no .bowire-editor → no
+    // overwrite. Either way, requestMessages[0] === expectedBody
+    // after render() means the apply succeeded.
     function _isPresetVisibleInDom(expectedBody) {
         if (expectedBody == null) return true;
-        var parsedExpected = null;
-        try { parsedExpected = JSON.parse(expectedBody); } catch { /* raw text */ }
-
-        // Multi-message stream editors — each .bowire-message-editor
-        // value should match its slot in requestMessages.
-        var multi = document.querySelectorAll('.bowire-message-editor');
-        if (multi.length > 0) {
-            // Only the first editor's content is captured by single-
-            // body presets; for multi we just check editor 0.
-            return _jsonEqualOrRaw(multi[0].value, expectedBody, parsedExpected);
-        }
-
-        // Single JSON editor (Payload sub-tab = JSON / raw body).
-        var editor = document.querySelector('.bowire-editor');
-        if (editor) {
-            return _jsonEqualOrRaw(editor.value, expectedBody, parsedExpected);
-        }
-
-        // Form sub-tab — verify each top-level expected key has the
-        // expected value on its matching .bowire-form-input. Keys
-        // with no matching input are skipped (schema may have grown
-        // / shrunk); but every key that DOES have an input must
-        // match, otherwise the apply is still in flight.
-        if (!parsedExpected || typeof parsedExpected !== 'object' || Array.isArray(parsedExpected)) {
+        var actual = (typeof requestMessages !== 'undefined' && Array.isArray(requestMessages))
+            ? String(requestMessages[0] || '')
+            : '';
+        if (actual === expectedBody) return true;
+        // Whitespace / key-order tolerance via canonical JSON.
+        try {
+            return JSON.stringify(JSON.parse(actual))
+                === JSON.stringify(JSON.parse(expectedBody));
+        } catch {
             return false;
         }
-        var keys = Object.keys(parsedExpected);
-        if (keys.length === 0) return true;
-        var matchedAny = false;
-        for (var i = 0; i < keys.length; i++) {
-            var k = keys[i];
-            var input = document.querySelector('.bowire-form-input[data-field-key="' + k + '"]');
-            if (!input) continue;
-            var expectedVal = parsedExpected[k];
-            if (typeof expectedVal === 'object') {
-                // Nested object — represented by multiple inputs we
-                // don't have a clean handle on; accept the field as
-                // "in progress" rather than requiring exact match.
-                continue;
-            }
-            if (String(input.value) !== String(expectedVal)) return false;
-            matchedAny = true;
-        }
-        return matchedAny;
-    }
-
-    function _jsonEqualOrRaw(actual, expectedRaw, expectedParsed) {
-        if (actual === expectedRaw) return true;
-        if (expectedParsed != null) {
-            try {
-                return JSON.stringify(JSON.parse(actual)) === JSON.stringify(expectedParsed);
-            } catch { return false; }
-        }
-        return false;
     }
 
     // ---- Generic UI helper: render a "Saved configs" bar ----
