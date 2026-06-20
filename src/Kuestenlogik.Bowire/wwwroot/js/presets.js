@@ -350,16 +350,19 @@
         }
         touchPresetUse('discover', preset.id);
         if (typeof render === 'function') render();
-        // Defer the "Loaded …" toast until AFTER the next paint so
-        // the user sees the populated form first and reads the
-        // toast as confirmation of an already-applied change. A
-        // single requestAnimationFrame fires BEFORE the next paint,
-        // so the toast would still paint in the same frame as the
-        // form update. Double rAF lets the browser paint the form
-        // values in frame N, then paints the toast in frame N+1.
+        // Defer the "Loaded …" toast until AFTER the form-update is
+        // visually settled. The toast has a 200 ms slide-in
+        // animation; the form update doesn't animate at all, so
+        // even a double-rAF schedule (toast paint in frame N+1)
+        // reads as "toast first, then form" — the moving toast
+        // catches the eye before the static form values do. A
+        // 220 ms setTimeout lets the browser fully paint the form
+        // update + a beat of "settled" time before the toast slides
+        // in, so the user reads the toast as confirmation of an
+        // already-visible state change.
         //
-        // Inside the second rAF we also VERIFY that the preset's
-        // body landed in the live state. saveMessageEditors() can
+        // Inside the timeout we VERIFY that the preset's body
+        // landed in the live state. saveMessageEditors() can
         // round-trip stale input back into requestMessages, the
         // schema-form may have ignored every field if the schema
         // drifted — both failure modes survive the pre-apply check.
@@ -374,13 +377,7 @@
                     toast('Preset could not be fully applied — schema may have changed', 'error');
                 }
             };
-            if (typeof window !== 'undefined' && typeof window.requestAnimationFrame === 'function') {
-                window.requestAnimationFrame(function () {
-                    window.requestAnimationFrame(finalToast);
-                });
-            } else {
-                finalToast();
-            }
+            setTimeout(finalToast, 220);
         }
         return true;
     }
