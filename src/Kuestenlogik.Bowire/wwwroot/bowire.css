@@ -5552,7 +5552,10 @@ only an accent-coloured underline under the active tab. The whole
     overflow-y: hidden;
     scrollbar-width: thin;
     scrollbar-color: var(--bowire-border) transparent;
-    padding: 0 8px;
+    /* Flush-left so the first tab's accent stripe aligns with the
+       sidebar edge below it. Right side keeps its 8 px so the trailing
+       "+" button has a margin from the pane's right wall. */
+    padding: 0 8px 0 0;
     /* Anchor the bottom-separator pseudo below to this container so
        the line lives INSIDE the overflow-clip box. Without
        position:relative the ::after would resolve against the
@@ -7557,9 +7560,16 @@ so the active tab's underline is the only horizontal
 }
 
 .bowire-tab.active {
-    color: var(--bowire-accent-text);
+    color: var(--bowire-accent);
     border-top-color: var(--bowire-accent);
     background: var(--bowire-bg-elevated);
+    font-weight: 600;
+    /* Inner glow tint underneath the accent stripe so the active tab
+       reads as "highlighted" even when the strip + pane share the
+       same elevated surface (the prior styling relied on the stripe
+       alone, which was too thin to pick up at a glance). */
+    box-shadow: inset 0 2px 0 -2px var(--bowire-accent),
+                inset 0 6px 12px -8px color-mix(in srgb, var(--bowire-accent) 60%, transparent);
 }
 
 .bowire-tab-content {
