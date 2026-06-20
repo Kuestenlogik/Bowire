@@ -2659,11 +2659,14 @@
         if (!svcName || !methodName) return;
         var list = getRecentMethods();
         // De-dupe: if this exact pair is already in the list, drop the
-        // old entry so the freshly-touched copy lands at the top.
+        // old entry so the freshly-touched copy lands at the top — with
+        // a fresh timestamp.
         list = list.filter(function (r) {
             return !(r.service === svcName && r.method === methodName);
         });
-        list.unshift({ service: svcName, method: methodName });
+        var ts;
+        try { ts = Date.now(); } catch { ts = 0; }
+        list.unshift({ service: svcName, method: methodName, ts: ts });
         if (list.length > MAX_RECENT_METHODS) list.length = MAX_RECENT_METHODS;
         try { localStorage.setItem(wsKey(RECENT_METHODS_KEY), JSON.stringify(list)); } catch {}
     }

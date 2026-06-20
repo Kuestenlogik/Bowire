@@ -2733,12 +2733,27 @@ not just
     flex: 1;
     min-width: 0;
 }
+/* Sub-row holds service name (left) + optional time meta (right). */
+.bowire-home-tile-sub {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    min-width: 0;
+}
 .bowire-home-tile-service {
     font-size: 11px;
     color: var(--bowire-text-tertiary);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    flex: 1;
+    min-width: 0;
+}
+.bowire-home-tile-meta {
+    font-size: 10px;
+    color: var(--bowire-text-tertiary);
+    flex-shrink: 0;
+    font-variant-numeric: tabular-nums;
 }
 .bowire-home-tile-stale {
     opacity: 0.55;
