@@ -9118,6 +9118,52 @@ instead of having to
 .bowire-header-presets-tool-danger:hover {
     color: var(--bowire-error);
 }
+/* Divider + action row at the bottom of the preset menu — mirrors
+   the workspace dropdown's "New workspace…" entry. The action row
+   reuses the standard row layout (full-width click target) with an
+   accent-tinted icon + label so it reads as a CTA, not a normal
+   preset entry. */
+.bowire-header-presets-divider {
+    height: 1px;
+    background: var(--bowire-border-subtle);
+    margin: 4px 0;
+}
+.bowire-header-presets-row-action {
+    color: var(--bowire-accent);
+}
+.bowire-header-presets-row-action:hover {
+    background: var(--bowire-accent-subtle, var(--bowire-surface-hover));
+}
+.bowire-header-presets-action-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    height: 16px;
+    color: var(--bowire-accent);
+    flex-shrink: 0;
+}
+.bowire-header-presets-action-icon svg {
+    width: 14px;
+    height: 14px;
+}
+
+/* Strip the browser's native up/down spinner from numeric form
+   inputs. The default Chromium/Edge buttons clash with the
+   minimalist input chrome (different border radius, gradient fill,
+   non-themed colours) and steal focus from the actual value. Users
+   already get value adjustment via type-to-edit + arrow keys; the
+   spinner is just decoration. */
+.bowire-form-input[type='number']::-webkit-outer-spin-button,
+.bowire-form-input[type='number']::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    appearance: none;
+    margin: 0;
+}
+.bowire-form-input[type='number'] {
+    -moz-appearance: textfield;
+    appearance: textfield;
+}
 .bowire-header-presets-collist {
     position: absolute;
     top: 100%;
