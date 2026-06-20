@@ -1002,10 +1002,33 @@
             var methodNames = (svc && Array.isArray(svc.methods)) ? svc.methods.map(function (m) { return m.name; }) : [];
 
             body.appendChild(_inlineSelect('Service', target.service, svcNames, function (v) {
-                target.service = v; target.method = ''; persistBenchmarks(); render();
+                target.service = v;
+                target.method = '';
+                // Latch the picked service's protocol onto the target
+                // so the export layer doesn't have to re-resolve it
+                // (and so collection-mixed envelopes keep the right
+                // per-target protocol when services span more than
+                // one protocol).
+                var pickedSvc = (typeof services !== 'undefined' ? services : []).find(function (s) { return s.name === v; });
+                target.protocol = pickedSvc ? (pickedSvc.source || null) : null;
+                persistBenchmarks(); render();
             }));
             body.appendChild(_inlineSelect('Method', target.method, methodNames, function (v) {
-                target.method = v; persistBenchmarks(); render();
+                target.method = v;
+                // Auto-seed the body template from the method's input
+                // type when the row first picks up a real method — but
+                // only when the existing body is the bare '{}' default.
+                // Editing the body manually then switching methods
+                // preserves the operator's customisation.
+                if (v && (!target.body || target.body === '{}')
+                        && typeof generateDefaultJson === 'function') {
+                    var picked = svc && (svc.methods || []).find(function (mm) { return mm.name === v; });
+                    if (picked) {
+                        try { target.body = generateDefaultJson(picked.inputType, 0); }
+                        catch { /* keep '{}' */ }
+                    }
+                }
+                persistBenchmarks(); render();
             }));
             body.appendChild(el('div', { className: 'bowire-envelope-field' },
                 el('div', { className: 'bowire-envelope-field-label', textContent: 'Body template' }),
