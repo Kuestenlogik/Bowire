@@ -2474,6 +2474,10 @@
     // homeRecentView) which made Home itself scrollable. Null = no
     // drawer; section titles toggle it.
     let homeListDrawer = null;
+    // Recording detail-pane Export ▾ popup — when set to a recording
+    // id, the export menu for that recording is open. Single slot
+    // (opening another recording's menu closes the prior).
+    let recordingExportMenuOpenId = null;
     // When the user starts dragging a method-tree row, this holds
     // { service, method }. A side-panel of drop-targets (Collections)
     // pops in on the right while the drag is live; cleared on drop

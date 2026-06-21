@@ -1145,22 +1145,73 @@
     function renderRecordingDetail(rec) {
         var pane = el('div', { className: 'bowire-recording-detail' });
 
-        // Header: editable name + action buttons
-        var header = el('div', { className: 'bowire-recording-detail-header' });
-        var nameInput = el('input', {
-            id: 'bowire-recording-name-input',
-            type: 'text',
-            className: 'bowire-recording-name-input',
-            value: rec.name,
-            onChange: function (e) {
-                renameRecording(rec.id, e.target.value);
-            }
-        });
-        header.appendChild(nameInput);
+        // Header — adopts the shared .bowire-pane-header pattern
+        // (icon + heading on the left, tool cluster on the right).
+        // Rename uses the same bowirePrompt as workspace + collection
+        // rename, not a bare always-on text input. Delete is a
+        // header-tool here (state-mutating + rare) instead of yet
+        // another button in the action toolbar.
+        var header = el('div', { className: 'bowire-pane-header bowire-recording-detail-header' });
+        header.appendChild(el('div', { className: 'bowire-pane-header-main' },
+            el('span', {
+                className: 'bowire-recording-detail-icon',
+                innerHTML: svgIcon('recording')
+            }),
+            el('h2', { className: 'bowire-pane-title', textContent: rec.name || 'Recording' })
+        ));
+        header.appendChild(el('div', { className: 'bowire-pane-actions' },
+            el('button', {
+                type: 'button',
+                className: 'bowire-pane-header-tool',
+                title: 'Rename recording',
+                'aria-label': 'Rename recording',
+                innerHTML: svgIcon('pencil'),
+                onClick: function () {
+                    var current = rec.name || '';
+                    bowirePrompt('Rename recording', {
+                        title: 'Rename',
+                        defaultValue: current,
+                        confirmText: 'Rename',
+                        validator: function (val) {
+                            var trimmed = String(val || '').trim();
+                            if (!trimmed) return 'Name required';
+                            return null;
+                        }
+                    }).then(function (next) {
+                        if (!next) return;
+                        var trimmed = String(next).trim();
+                        if (!trimmed || trimmed === current) return;
+                        renameRecording(rec.id, trimmed);
+                        render();
+                    });
+                }
+            }),
+            el('button', {
+                type: 'button',
+                className: 'bowire-pane-header-tool bowire-pane-header-tool-danger',
+                title: 'Delete recording',
+                'aria-label': 'Delete recording',
+                innerHTML: svgIcon('trash'),
+                onClick: function () {
+                    bowireConfirm('Delete recording "' + rec.name + '"?', function () {
+                        deleteRecording(rec.id);
+                        toast('Recording deleted', 'success');
+                    }, { title: 'Delete Recording', danger: true, confirmText: 'Delete' });
+                }
+            })
+        ));
         pane.appendChild(header);
 
-        // Action toolbar
+        // Action toolbar — three groups separated by thin dividers:
+        //   Run     : Replay, Parallel sessions
+        //   Build   : Use as mock, Run as mock, Benchmark, Convert→Tests, Convert→Flow
+        //   Export  : HAR, HTML report, JSON
+        // Delete moved into the header tool cluster above (danger
+        // actions live next to rename, not in the run-actions strip).
         var toolbar = el('div', { className: 'bowire-recording-toolbar' });
+        var runGroup = el('div', { className: 'bowire-recording-toolbar-group' });
+        var buildGroup = el('div', { className: 'bowire-recording-toolbar-group' });
+        var exportGroup = el('div', { className: 'bowire-recording-toolbar-group' });
         var isReplaying = recordingReplayState && recordingReplayState.recordingId === rec.id && recordingReplayState.status === 'running';
 
         // Toolbar gates on "does this recording carry any steps". Three
@@ -1178,8 +1229,9 @@
             || (Array.isArray(rec.stepsManifest) && rec.stepsManifest.length > 0)
             || (typeof rec.stepCount === 'number' && rec.stepCount > 0);
 
-        toolbar.appendChild(el('button', {
-            className: 'bowire-recording-action-btn',
+        // ---- Run group ----
+        runGroup.appendChild(el('button', {
+            className: 'bowire-recording-action-btn bowire-recording-action-primary',
             disabled: isReplaying || !_hasSteps,
             title: 'Replay every step in order with the current environment variables',
             onClick: function () { replayRecording(rec.id); }
@@ -1187,10 +1239,8 @@
             el('span', { innerHTML: svgIcon('replay') }),
             el('span', { textContent: isReplaying ? 'Replaying…' : 'Replay' })
         ));
-
         // #132 minimal — fire N parallel sessions of this recording.
-        // Each session runs the steps sequentially in its own context.
-        toolbar.appendChild(el('button', {
+        runGroup.appendChild(el('button', {
             className: 'bowire-recording-action-btn',
             disabled: !_hasSteps,
             title: 'Replay this recording in N parallel sessions at once',
@@ -1199,13 +1249,41 @@
             el('span', { innerHTML: svgIcon('repeat') }),
             el('span', { textContent: 'Parallel sessions' })
         ));
+        toolbar.appendChild(runGroup);
 
+        // ---- Build group ----
+        // #94 — one-click "Use as mock". Boots a local MockServer
+        // against this recording and copies the resulting URL to the
+        // clipboard.
+        buildGroup.appendChild(el('button', {
+            className: 'bowire-recording-action-btn',
+            disabled: !_hasSteps,
+            title: 'Spin up a local mock server that returns this recording verbatim. URL is copied to your clipboard.',
+            onClick: function () { useRecordingAsMock(rec); }
+        },
+            el('span', { innerHTML: svgIcon('server') }),
+            el('span', { textContent: 'Use as mock' })
+        ));
+        // #56 Phase 2 — start a mock from this recording. POST hits
+        // /api/mocks; on success the workbench switches to the Mocks
+        // overlay so the user sees the running mock immediately.
+        buildGroup.appendChild(el('button', {
+            className: 'bowire-recording-action-btn',
+            disabled: rec.steps.length === 0 || !window.__bowireMocks,
+            title: 'Boot a mock server from this recording on a fresh port. View it in the Mocks panel.',
+            onClick: function () {
+                if (!window.__bowireMocks) return;
+                window.__bowireMocks.startFromRecording(rec, 0).then(function () {
+                    window.__bowireMocks.open();
+                }).catch(function () { /* toast already shown */ });
+            }
+        },
+            el('span', { innerHTML: svgIcon('plug') }),
+            el('span', { textContent: 'Run as mock' })
+        ));
         // #131 Phase 3 — "Benchmark" opens an Add-to-envelope picker.
-        // The operator can drop this recording into an existing
-        // envelope or spawn a new one seeded with the recording as
-        // its first target.
         if (typeof addTargetToEnvelopePicker === 'function') {
-            toolbar.appendChild(el('button', {
+            buildGroup.appendChild(el('button', {
                 className: 'bowire-recording-action-btn',
                 disabled: !_hasSteps,
                 title: 'Add this recording to a benchmark envelope',
@@ -1220,8 +1298,7 @@
                 el('span', { textContent: 'Benchmark' })
             ));
         }
-
-        toolbar.appendChild(el('button', {
+        buildGroup.appendChild(el('button', {
             className: 'bowire-recording-action-btn',
             disabled: !_hasSteps,
             title: 'Append status + response equality assertions to every (service, method) in this recording',
@@ -1231,31 +1308,16 @@
                 render();
             }
         },
+            el('span', { innerHTML: svgIcon('check') }),
             el('span', { textContent: 'Convert to Tests' })
         ));
-
-        // #94 — one-click "Use as mock". Boots a local MockServer
-        // against this recording and copies the resulting URL to the
-        // clipboard. Toast carries the URL + a copy button for
-        // re-grab; the manager-pane Mocks tab lists active hosts so
-        // the user can stop them when done.
-        toolbar.appendChild(el('button', {
-            className: 'bowire-recording-action-btn',
-            disabled: !_hasSteps,
-            title: 'Spin up a local mock server that returns this recording verbatim. URL is copied to your clipboard.',
-            onClick: function () { useRecordingAsMock(rec); }
-        },
-            el('span', { textContent: 'Use as mock' })
-        ));
-
-        toolbar.appendChild(el('button', {
+        buildGroup.appendChild(el('button', {
             className: 'bowire-recording-action-btn',
             disabled: !_hasSteps,
             title: 'Project this recording into a visual flow (Request nodes per step). Edit + replay from the Flow tab.',
             onClick: function () {
                 var flowId = convertRecordingToFlow(rec.id);
                 if (!flowId) return;
-                // Switch to the Flows rail mode + open the new flow.
                 railMode = 'flows';
                 try { localStorage.setItem('bowire_rail_mode', 'flows'); } catch { /* ignore */ }
                 if (typeof setSidebarView === 'function') setSidebarView('flows');
@@ -1264,70 +1326,61 @@
                 toast('Flow created from recording', 'success');
             }
         },
+            el('span', { innerHTML: svgIcon('flow') }),
             el('span', { textContent: 'Convert to Flow' })
         ));
+        toolbar.appendChild(buildGroup);
 
-        toolbar.appendChild(el('button', {
-            className: 'bowire-recording-action-btn',
+        // ---- Export group ----
+        // Three formats (HAR, HTML report, JSON) folded behind one
+        // "Export ▾" split-button-style menu so the toolbar doesn't
+        // grow three near-identical buttons. Click the chevron (or
+        // the button) → drops a small menu anchored to the button.
+        var exportMenuOpen = recordingExportMenuOpenId === rec.id;
+        var exportBtnWrapper = el('div', { className: 'bowire-recording-export-wrapper' });
+        var exportBtn = el('button', {
+            className: 'bowire-recording-action-btn bowire-recording-action-export',
             disabled: !_hasSteps,
-            title: 'Download as HAR 1.2 (Chrome DevTools / Postman / Insomnia compatible)',
-            onClick: function () { exportRecordingAsHar(rec.id); }
-        },
-            el('span', { innerHTML: svgIcon('download') }),
-            el('span', { textContent: 'Export HAR' })
-        ));
-
-        toolbar.appendChild(el('button', {
-            className: 'bowire-recording-action-btn',
-            disabled: !_hasSteps,
-            title: 'Download a self-contained HTML report (CI artifact friendly). Uses replay results when available, captured statuses otherwise.',
-            onClick: function () { exportRecordingAsHtml(rec.id); }
-        },
-            el('span', { innerHTML: svgIcon('download') }),
-            el('span', { textContent: 'Export HTML Report' })
-        ));
-
-        toolbar.appendChild(el('button', {
-            className: 'bowire-recording-action-btn',
-            disabled: !_hasSteps,
-            title: 'Download the raw Bowire recording JSON',
-            onClick: function () { exportRecordingAsJson(rec.id); }
-        },
-            el('span', { textContent: 'Export JSON' })
-        ));
-
-        // #56 Phase 2 — start a mock from this recording. POST hits
-        // /api/mocks; on success the workbench switches to the Mocks
-        // overlay so the user sees the running mock immediately.
-        toolbar.appendChild(el('button', {
-            className: 'bowire-recording-action-btn',
-            disabled: rec.steps.length === 0 || !window.__bowireMocks,
-            title: 'Boot a mock server from this recording on a fresh port. View it in the Mocks panel.',
-            onClick: function () {
-                if (!window.__bowireMocks) return;
-                window.__bowireMocks.startFromRecording(rec, 0).then(function () {
-                    // Hop to the Mocks rail mode so the new mock host
-                    // is immediately visible.
-                    window.__bowireMocks.open();
-                }).catch(function () { /* toast already shown */ });
+            title: 'Export this recording',
+            onClick: function (e) {
+                e.stopPropagation();
+                recordingExportMenuOpenId = exportMenuOpen ? null : rec.id;
+                render();
             }
         },
-            el('span', { textContent: 'Run as mock' })
-        ));
-
-        toolbar.appendChild(el('button', {
-            className: 'bowire-recording-action-btn bowire-recording-action-danger',
-            title: 'Delete this recording (cannot be undone)',
-            onClick: function () {
-                bowireConfirm('Delete recording "' + rec.name + '"?', function () {
-                    deleteRecording(rec.id);
-                    toast('Recording deleted', 'success');
-                }, { title: 'Delete Recording', danger: true, confirmText: 'Delete' });
+            el('span', { innerHTML: svgIcon('download') }),
+            el('span', { textContent: 'Export' }),
+            el('span', { className: 'bowire-recording-export-caret', innerHTML: svgIcon('chevron') })
+        );
+        exportBtnWrapper.appendChild(exportBtn);
+        if (exportMenuOpen) {
+            var exportMenu = el('div', { className: 'bowire-recording-export-menu', role: 'menu' });
+            function _exportItem(label, hint, fn) {
+                exportMenu.appendChild(el('button', {
+                    type: 'button',
+                    className: 'bowire-recording-export-menu-item',
+                    title: hint,
+                    onClick: function (e) {
+                        e.stopPropagation();
+                        recordingExportMenuOpenId = null;
+                        fn();
+                        render();
+                    }
+                },
+                    el('span', { className: 'bowire-recording-export-menu-item-label', textContent: label }),
+                    el('span', { className: 'bowire-recording-export-menu-item-hint', textContent: hint })
+                ));
             }
-        },
-            el('span', { innerHTML: svgIcon('trash') }),
-            el('span', { textContent: 'Delete' })
-        ));
+            _exportItem('HAR', 'Chrome DevTools / Postman / Insomnia compatible',
+                function () { exportRecordingAsHar(rec.id); });
+            _exportItem('HTML report', 'Self-contained CI artifact',
+                function () { exportRecordingAsHtml(rec.id); });
+            _exportItem('JSON', 'Raw Bowire recording format',
+                function () { exportRecordingAsJson(rec.id); });
+            exportBtnWrapper.appendChild(exportMenu);
+        }
+        exportGroup.appendChild(exportBtnWrapper);
+        toolbar.appendChild(exportGroup);
 
         pane.appendChild(toolbar);
 

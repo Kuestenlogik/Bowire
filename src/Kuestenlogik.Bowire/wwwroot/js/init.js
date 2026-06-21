@@ -616,6 +616,19 @@
                     changed = true;
                 }
             }
+            // Recording detail pane: Export ▾ split-button popup.
+            // Re-resolved at click time, not via closure capture
+            // (Memory: morphdom-stale-handler-pitfall).
+            if (typeof recordingExportMenuOpenId !== 'undefined' && recordingExportMenuOpenId != null) {
+                var reBtn = document.querySelector('.bowire-recording-action-export');
+                var reMenu = document.querySelector('.bowire-recording-export-menu');
+                var reInside = (reBtn && reBtn.contains(e.target))
+                    || (reMenu && reMenu.contains(e.target));
+                if (!reInside) {
+                    recordingExportMenuOpenId = null;
+                    changed = true;
+                }
+            }
             // #164 v3 — Rail overflow '…' popover. Closes on any
             // outside click; the button + popover are siblings inside
             // the rail, both checked so clicking either keeps it open.
