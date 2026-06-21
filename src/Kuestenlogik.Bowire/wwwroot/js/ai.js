@@ -1402,6 +1402,55 @@
         function rerenderThreatModel() {
             threatHost.replaceChildren();
 
+            // Empty state — no endpoints discovered yet. Renders the
+            // same shared empty-card chrome every other rail uses
+            // (Recordings, Mocks, Collections, Flows) instead of a
+            // bare ⚠ error line: headline + body + a real "Open
+            // Discover" CTA so the operator knows what to do next.
+            var hasDiscovered = false;
+            try {
+                hasDiscovered = (typeof services !== 'undefined'
+                    && Array.isArray(services)
+                    && services.some(function (s) {
+                        return s && Array.isArray(s.methods) && s.methods.length > 0;
+                    }));
+            } catch { /* services not loaded yet */ }
+
+            if (!hasDiscovered && typeof renderEmptyCard === 'function') {
+                var emptyWrap = el('div', { className: 'bowire-ai-threat-section' });
+                emptyWrap.appendChild(renderEmptyCard({
+                    icon: 'shield',
+                    headline: 'Threat model needs discovered endpoints',
+                    body: 'Connect to a server (or load a schema) in Discover. The threat-model ranks the endpoints it finds there by attack-surface risk — heuristic by default, AI-assisted if you configure a model.',
+                    actions: [
+                        {
+                            label: 'Open Discover',
+                            primary: true,
+                            onClick: function () {
+                                if (typeof railMode !== 'undefined') {
+                                    railMode = 'discover';
+                                    try { localStorage.setItem('bowire_rail_mode', 'discover'); } catch { /* ignore */ }
+                                }
+                                if (typeof setSidebarView === 'function') setSidebarView('services');
+                                if (typeof render === 'function') render();
+                            }
+                        },
+                        {
+                            label: 'Add a source',
+                            onClick: function () {
+                                if (typeof railMode !== 'undefined') {
+                                    railMode = 'sources';
+                                    try { localStorage.setItem('bowire_rail_mode', 'sources'); } catch { /* ignore */ }
+                                }
+                                if (typeof render === 'function') render();
+                            }
+                        }
+                    ]
+                }));
+                threatHost.appendChild(emptyWrap);
+                return;
+            }
+
             var section = el('div', { className: 'bowire-ai-threat-section' });
             section.appendChild(el('h4', { className: 'bowire-ai-threat-title', textContent: 'Threat model' }));
             section.appendChild(el('p', {
