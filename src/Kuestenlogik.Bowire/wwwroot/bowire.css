@@ -2344,8 +2344,15 @@ not just
    top of that and pushed the buttons below the fold — forcing a
    scrollbar on Home for no content reason. Slim margin only; the
    natural band gap is enough separation. */
+/* Footer (Tour + Docs buttons) sits visually apart from the
+   sections above via a full-width horizontal divider. Margin /
+   padding stay small so the line reads as a separator, not a
+   second band — the parent .bowire-home-wrap gap already gives the
+   needed breathing room. */
 .bowire-home-footer-slot {
     margin-top: 0;
+    padding-top: 14px;
+    border-top: 1px solid var(--bowire-border);
 }
 .bowire-home-footer-slot .bowire-landing-footer {
     margin-top: 0;
