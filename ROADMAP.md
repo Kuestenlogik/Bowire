@@ -90,7 +90,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.1 — Scripting, variable resolver, throughput surface *(due 2026-06-30)*
 
-**0/11 done** · 11 backlog
+**0/12 done** · 12 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -105,6 +105,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [197](https://github.com/Kuestenlogik/Bowire/issues/197) | Bowire | [Deprecate + unlist Kuestenlogik.Bowire.Extension.MapLibre on nuget.org after v2.0 ships](#issue-kuestenlogik-bowire-197) | ⬜ Backlog |  |
 | [231](https://github.com/Kuestenlogik/Bowire/issues/231) | Bowire | [Benchmarks: 'random' run shape — pick N random endpoints per iteration](#issue-kuestenlogik-bowire-231) | ⬜ Backlog |  |
 | [233](https://github.com/Kuestenlogik/Bowire/issues/233) | Bowire | [Benchmarks: previous-run diff banner on repeat (p95 ▲ / ▼ / status histogram delta)](#issue-kuestenlogik-bowire-233) | ⬜ Backlog |  |
+| [234](https://github.com/Kuestenlogik/Bowire/issues/234) | Bowire | [Benchmarks: result exports — CSV + k6-summary JSON + OTLP metrics](#issue-kuestenlogik-bowire-234) | ⬜ Backlog |  |
 
 ### v2.2 — Test pillar: assertions, CI runner, regression coverage *(due 2026-07-10)*
 
@@ -540,6 +541,10 @@ Add the **random** run shape to the Benchmarks envelope — picks N random endpo
 #### <a id="issue-kuestenlogik-bowire-233"></a>⬜ Backlog · [#233](https://github.com/Kuestenlogik/Bowire/issues/233) Benchmarks: previous-run diff banner on repeat (p95 ▲ / ▼ / status histogram delta)
 
 When the operator hits Run on a benchmark envelope that already has a previous run on file, surface a small diff banner: `p95 142 ms (-8 ms vs. previous · -5%)`, status histogram delta, throughput delta. So regressions jump out without reading two numbers side by side. [[more]](https://github.com/Kuestenlogik/Bowire/issues/233)
+
+#### <a id="issue-kuestenlogik-bowire-234"></a>⬜ Backlog · [#234](https://github.com/Kuestenlogik/Bowire/issues/234) Benchmarks: result exports — CSV + k6-summary JSON + OTLP metrics
+
+Round out the Benchmarks export surface so result data can leave Bowire in the formats the surrounding tooling actually consumes: [[more]](https://github.com/Kuestenlogik/Bowire/issues/234)
 
 ### v2.2 — Test pillar: assertions, CI runner, regression coverage *(due 2026-07-10)*
 
