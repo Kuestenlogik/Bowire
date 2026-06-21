@@ -12,12 +12,10 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.0 — Re-architected workbench shell + workspace = project folder *(due 2026-06-19)*
 
-**70/71 done** · 1 backlog
+**71/71 done**
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
-| [115](https://github.com/Kuestenlogik/Bowire/issues/115) | Bowire | [v2.0 — UI refactor: re-architect the workbench shell](#issue-kuestenlogik-bowire-115) | ⬜ Backlog |  |
-| [131](https://github.com/Kuestenlogik/Bowire/issues/131) | Bowire | [Benchmarks: first-class surface (single / collection / recording / random / scheduled)](#issue-kuestenlogik-bowire-131) | ✅ Done |  |
 | [25](https://github.com/Kuestenlogik/Bowire/issues/25) | Bowire | [AI side-panel integration](#issue-kuestenlogik-bowire-25) | ✅ Done | `area:workbench` |
 | [33](https://github.com/Kuestenlogik/Bowire/issues/33) | Bowire | [Protocol plugins — Connect Phase 1+3 + OTLP](#issue-kuestenlogik-bowire-33) | ✅ Done | `area:plugin-sdk` |
 | [43](https://github.com/Kuestenlogik/Bowire/issues/43) | Bowire | [MCP SSE-transport support](#issue-kuestenlogik-bowire-43) | ✅ Done | `area:mcp` |
@@ -31,6 +29,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [111](https://github.com/Kuestenlogik/Bowire/issues/111) | Bowire | [AI drawer: tabs for Chat / Threat / Templates / Fuzz to kill the nested-scrollbar stack](#issue-kuestenlogik-bowire-111) | ✅ Done |  |
 | [113](https://github.com/Kuestenlogik/Bowire/issues/113) | Bowire | [Polish: tabs visually connect to content; drop the background glow](#issue-kuestenlogik-bowire-113) | ✅ Done |  |
 | [114](https://github.com/Kuestenlogik/Bowire/issues/114) | Bowire | [Hints: render contextually at the target surface (drop the static list in the drawer)](#issue-kuestenlogik-bowire-114) | ✅ Done |  |
+| [115](https://github.com/Kuestenlogik/Bowire/issues/115) | Bowire | [v2.0 — UI refactor: re-architect the workbench shell](#issue-kuestenlogik-bowire-115) | ✅ Done |  |
 | [116](https://github.com/Kuestenlogik/Bowire/issues/116) | Bowire | [Workspaces — named, switchable contexts that bundle URLs / envs / collections / AI config](#issue-kuestenlogik-bowire-116) | ✅ Done |  |
 | [119](https://github.com/Kuestenlogik/Bowire/issues/119) | Bowire | [Reading mode on bowire.io + docs + api-docs + Bootcamp](#issue-kuestenlogik-bowire-119) | ✅ Done |  |
 | [120](https://github.com/Kuestenlogik/Bowire/issues/120) | Bowire | [Single accent + protocol as the only color](#issue-kuestenlogik-bowire-120) | ✅ Done |  |
@@ -41,6 +40,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [125](https://github.com/Kuestenlogik/Bowire/issues/125) | Bowire | [Multi-source {{...}} variable resolver](#issue-kuestenlogik-bowire-125) | ✅ Done |  |
 | [127](https://github.com/Kuestenlogik/Bowire/issues/127) | Bowire | [Auto-save to workspace + live save-state pill](#issue-kuestenlogik-bowire-127) | ✅ Done |  |
 | [129](https://github.com/Kuestenlogik/Bowire/issues/129) | Bowire | [Layout cleanup — top bar, sidebar, main pane, drawers (left-sidebar model stays)](#issue-kuestenlogik-bowire-129) | ✅ Done |  |
+| [131](https://github.com/Kuestenlogik/Bowire/issues/131) | Bowire | [Benchmarks: first-class surface (single / collection / recording / random / scheduled)](#issue-kuestenlogik-bowire-131) | ✅ Done |  |
 | [133](https://github.com/Kuestenlogik/Bowire/issues/133) | Bowire | [Activity rail (left) — switch workbench focus by use case (dev / security / perf / mocks / …)](#issue-kuestenlogik-bowire-133) | ✅ Done |  |
 | [134](https://github.com/Kuestenlogik/Bowire/issues/134) | Bowire | [Rename surface 'AI' → 'Assistant' (technology stays; user-facing labels shift)](#issue-kuestenlogik-bowire-134) | ✅ Done |  |
 | [135](https://github.com/Kuestenlogik/Bowire/issues/135) | Bowire | [Request/response layout toggle — vertical / horizontal / auto split](#issue-kuestenlogik-bowire-135) | ✅ Done |  |
@@ -206,14 +206,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.0 — Re-architected workbench shell + workspace = project folder *(due 2026-06-19)*
 
-#### <a id="issue-kuestenlogik-bowire-115"></a>⬜ Backlog · [#115](https://github.com/Kuestenlogik/Bowire/issues/115) v2.0 — UI refactor: re-architect the workbench shell
-
-> **Status:** Phase 1 — Shell-Refactor abgeschlossen (Juni 2026). Was in v2.0 noch zu erledigen ist: ein kleiner Cleanup-Sweep + Release-Notes. Phase 2 (mehrere Feature-Streams) ist auf eigene Tickets unter v2.1-Milestone verschoben. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/115)
-
-#### <a id="issue-kuestenlogik-bowire-131"></a>✅ Done · [#131](https://github.com/Kuestenlogik/Bowire/issues/131) Benchmarks: first-class surface (single / collection / recording / random / scheduled)
-
-> **Status (2026-06-21):** v2.0 ships the **envelope architecture + 3 shapes + interop exports + per-request affordance + stats output**. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/131)
-
 #### <a id="issue-kuestenlogik-bowire-25"></a>✅ Done · [#25](https://github.com/Kuestenlogik/Bowire/issues/25) AI side-panel integration
 
 > `area:workbench`
@@ -272,6 +264,10 @@ Two specific complaints that point at the same root cause — visual cohesion in
 
 Hints today live as a static list at the top of the AI drawer: [[more]](https://github.com/Kuestenlogik/Bowire/issues/114)
 
+#### <a id="issue-kuestenlogik-bowire-115"></a>✅ Done · [#115](https://github.com/Kuestenlogik/Bowire/issues/115) v2.0 — UI refactor: re-architect the workbench shell
+
+> **Status:** Phase 1 — Shell-Refactor abgeschlossen (Juni 2026). Was in v2.0 noch zu erledigen ist: ein kleiner Cleanup-Sweep + Release-Notes. Phase 2 (mehrere Feature-Streams) ist auf eigene Tickets unter v2.1-Milestone verschoben. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/115)
+
 #### <a id="issue-kuestenlogik-bowire-116"></a>✅ Done · [#116](https://github.com/Kuestenlogik/Bowire/issues/116) Workspaces — named, switchable contexts that bundle URLs / envs / collections / AI config
 
 API testers routinely juggle multiple projects: staging-payments at 10 AM, an OIDC integration at noon, a third-party SDK debug at 3 PM. Each context has its own discovery URLs, envs, collections, AI settings, recordings. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/116)
@@ -311,6 +307,10 @@ Today the workbench has no "save" action because there's no persistence model su
 #### <a id="issue-kuestenlogik-bowire-129"></a>✅ Done · [#129](https://github.com/Kuestenlogik/Bowire/issues/129) Layout cleanup — top bar, sidebar, main pane, drawers (left-sidebar model stays)
 
 The workbench's visual sub-systems are now stronger than they used to be (#120 protocol color, #122 direction axis, #123 tab strip), but the overall **layout** still feels stacked rather than designed: the top-bar density runs the eye out of room before the request pane begins, drawers slide in over … [[more]](https://github.com/Kuestenlogik/Bowire/issues/129)
+
+#### <a id="issue-kuestenlogik-bowire-131"></a>✅ Done · [#131](https://github.com/Kuestenlogik/Bowire/issues/131) Benchmarks: first-class surface (single / collection / recording / random / scheduled)
+
+> **Status (2026-06-21):** v2.0 ships the **envelope architecture + 3 shapes + interop exports + per-request affordance + stats output**. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/131)
 
 #### <a id="issue-kuestenlogik-bowire-133"></a>✅ Done · [#133](https://github.com/Kuestenlogik/Bowire/issues/133) Activity rail (left) — switch workbench focus by use case (dev / security / perf / mocks / …)
 
