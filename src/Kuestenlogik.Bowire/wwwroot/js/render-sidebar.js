@@ -3118,6 +3118,40 @@
         return sidebar;
     }
 
+    // Flows + Proxy sidebars — thin wrappers around the existing
+    // renderFlowsListInto / renderProxyListInto helpers in flows.js /
+    // proxy-view.js. Both helpers already build their own unified
+    // toolbar + list rows; the wrapper just supplies the sidebar
+    // shell so the dispatcher below can route to them, instead of
+    // falling through to the legacy Discover services-tree path
+    // (which used to render search + protocol filters + new-request
+    // dropdown ON TOP OF the flow/proxy entries — visually it read as
+    // "Discover" with a list of flows tacked on).
+    function renderFlowsSidebar() {
+        var sidebar = el('div', { id: 'bowire-sidebar', className: 'bowire-sidebar bowire-sidebar-mode' });
+        var list = el('div', {
+            id: 'bowire-sidebar-list-flows',
+            className: 'bowire-service-list'
+        });
+        if (typeof renderFlowsListInto === 'function') {
+            renderFlowsListInto(list);
+        }
+        sidebar.appendChild(list);
+        return sidebar;
+    }
+    function renderProxySidebar() {
+        var sidebar = el('div', { id: 'bowire-sidebar', className: 'bowire-sidebar bowire-sidebar-mode' });
+        var list = el('div', {
+            id: 'bowire-sidebar-list-proxy',
+            className: 'bowire-service-list'
+        });
+        if (typeof renderProxyListInto === 'function') {
+            renderProxyListInto(list);
+        }
+        sidebar.appendChild(list);
+        return sidebar;
+    }
+
     function renderSidebar() {
         // #137 — sidebar dispatch driven by the rail-mode catalogue.
         // Each mode declares its sidebar 'kind' in _railModes; this
@@ -3135,12 +3169,13 @@
             case 'sources':      sidebar = renderSourcesSidebar(); break;
             case 'benchmarks':   sidebar = renderBenchmarksSidebar(); break;
             case 'security':     sidebar = renderSecuritySidebar(); break;
+            case 'flows':        sidebar = renderFlowsSidebar(); break;
+            case 'proxy':        sidebar = renderProxySidebar(); break;
         }
         if (sidebar) return sidebar;
-        // 'flows', 'proxy', 'services' fall through to the legacy
-        // sidebar below (built from the discover service tree).
-        // Their main pane reads sidebarView, which the rail-button
-        // onClick keeps in sync.
+        // Only 'services' falls through to the legacy Discover
+        // sidebar below — that's the rail mode that actually wants
+        // the search + protocol filter + service tree chrome.
 
         // Each top-level child of the sidebar gets a stable id so morphdom
         // matches them by key instead of by position. Without ids, morphdom
