@@ -12,7 +12,7 @@ text; re-run the generator to refresh the mirror.
 ---
 ## v2.0.0 — draft — re-architected workbench + git-backed workspaces
 
-> _Draft release — body subject to change before publication. Source: https://github.com/Kuestenlogik/Bowire/releases/tag/untagged-4aacf1babd7ff547bbad_
+> _Draft release — body subject to change before publication. Source: https://github.com/Kuestenlogik/Bowire/releases/tag/untagged-e0950f9da252f2d2001f_
 
 v2.0 is the cut where every optional surface gets pulled out of the core, the workbench shell gets re-architected end-to-end, and a couple of API-level decisions get unwound now that they have stable replacements. Embedded hosts that vendored `Kuestenlogik.Bowire` directly will need a small set of explicit changes — see **Breaking changes** at the bottom.
 
@@ -107,6 +107,19 @@ A generic presets API replaces the per-mode hand-rolled "save current config" pa
 
 Recordings and collections get a "Run in parallel sessions" toolbar action that fans N copies of the run locally. Live state tracks per-session progress (started / active / completed counts, errors) and result aggregation reports per-session pass/fail + the overall outcome ("12 / 15 sessions completed, 3 errors at step 4"). No standalone rail mode — results land inline under the source that started the run so an operator chasing parallelism doesn't need to learn a new navigation step. Distributed fan-out across workers stays under #132 in v2.1.
 
+### UI polish across the rc series
+
+Through the v2.0 rc cycle every rail in the new shell got a uniform polish pass so they read as part of the same family — not nine slightly-different layouts. The biggest wins:
+
+- **Recording detail pane** — shared `.bowire-pane-header` chrome (heading + rename pencil + danger trash via `bowirePrompt`); the flat 10-button toolbar regroups into Run / Build / Export gangs, Export becomes a split-button ▾ menu (HAR / HTML report / JSON with one-line hints).
+- **Discover sidebar consolidation** — favorites toggle moves into the filter popup as its first option; the filter button moves up into the unified toolbar row next to `+ New`. One filter control instead of two related-but-separate ones.
+- **Flows + Proxy sidebars** stop falling through to the legacy Discover services-tree path — each gets its own minimal sidebar renderer.
+- **Home rhythm + drawer** — Continue / Start / Sections / Footer fit a 1080 px viewport without scrolling; Favorites / Recent titles open a right-side `renderDrawer` overlay with the full list (recent activity tiles carry relative timestamps).
+- **Preset picker in the Discover request-pane header** — per-method save / apply / set-default / add-to-collection; default-star sits right in the tools cluster (analog of the workspace ✓ marker); `+ Save as preset…` action row at the bottom of the dropdown.
+- **Security rail** drops its wrapper "Security" heading (no other rail puts a rail-name heading above its own content); Threat Model empty state swaps the bare ⚠ no-endpoints line for the shared empty-card chrome with "Open Discover" + "Add a source" CTAs.
+- **Workspace settings tabs** reorder Variables → Secrets → Auth (Variables + Secrets are KV-shape, Auth is a different mental model).
+- **Root-cause fix** — `code-export.js` was calling `syncFormToJson` from inside the render path, clobbering `formValues` + `requestMessages` with stale pre-merge DOM values every frame and breaking preset apply / history replay / Repeat-last-call. The fix swaps the mutation for a read-only `collectFormValuesFromState` snapshot.
+
 ## Breaking changes
 
 Each change has been on a back-compat ramp through v1.9.x and is removed in 2.0.
@@ -160,7 +173,7 @@ Bowire has two interpolation syntaxes that resolve identically: the original Bas
 
 ## Acknowledgements
 
-Closes 69 issues across the milestone — the full list is on the [v2.0 milestone page](https://github.com/Kuestenlogik/Bowire/milestone/8?closed=1). Special thanks to everyone who exercised the rc series and reported off-by-one drawer behaviour, single-tab vs multi-tab edge cases, and `.bowire-ai-*` class targeting in downstream CSS — every one of those reports landed as a concrete fix above.
+Closes 72 issues across the milestone — the full list is on the [v2.0 milestone page](https://github.com/Kuestenlogik/Bowire/milestone/8?closed=1). Special thanks to everyone who exercised the rc series and reported off-by-one drawer behaviour, single-tab vs multi-tab edge cases, and `.bowire-ai-*` class targeting in downstream CSS — every one of those reports landed as a concrete fix above.
 
 ---
 ## v1.9.0 — 2026-06-08 — AI for security
