@@ -149,6 +149,6 @@
          indexer walks parsed markdown to strip layout and code-block
          noise before tokenising. The on-the-wire body stays raw
          markdown so the client renderer keeps full control. -->
-    <PackageVersion Include="Markdig" Version="1.3.0" />
+    <PackageVersion Include="Markdig" Version="1.3.2" />
   </ItemGroup>
 </Project>
