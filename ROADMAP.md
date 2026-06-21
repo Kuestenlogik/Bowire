@@ -826,4 +826,4 @@ The comparison table on bowire.io today lines Bowire up against Postman / Insomn
 
 ---
 
-*Generated 2026-06-20 from [Project #2](https://github.com/orgs/Kuestenlogik/projects/2).*
+*Generated 2026-06-21 from [Project #2](https://github.com/orgs/Kuestenlogik/projects/2).*
