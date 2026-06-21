@@ -162,7 +162,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.5 — Continuous integration: PR bot, project file, org dashboard *(due 2026-08-12)*
 
-**0/4 done** · 4 backlog
+**0/5 done** · 5 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -170,6 +170,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [172](https://github.com/Kuestenlogik/Bowire/issues/172) | Bowire | [.bowire/project.json convention — checked-in workspace configuration](#issue-kuestenlogik-bowire-172) | ⬜ Backlog |  |
 | [183](https://github.com/Kuestenlogik/Bowire/issues/183) | Bowire | [GitHub Action — Bowire PR-comment bot with delta + findings + perf](#issue-kuestenlogik-bowire-183) | ⬜ Backlog |  |
 | [188](https://github.com/Kuestenlogik/Bowire/issues/188) | Bowire | [Org-level Bowire dashboard — rollup across services](#issue-kuestenlogik-bowire-188) | ⬜ Backlog |  |
+| [232](https://github.com/Kuestenlogik/Bowire/issues/232) | Bowire | [Benchmarks: 'scheduled' run shape + cron infrastructure (restart-survival)](#issue-kuestenlogik-bowire-232) | ⬜ Backlog |  |
 
 ### Backlog (not yet scheduled)
 
@@ -710,6 +711,10 @@ Bowire runs locally on the developer's machine. When the developer pushes a PR, 
 #### <a id="issue-kuestenlogik-bowire-188"></a>⬜ Backlog · [#188](https://github.com/Kuestenlogik/Bowire/issues/188) Org-level Bowire dashboard — rollup across services
 
 Once Bowire ships in multiple services across an org, "what's the state of our APIs?" is a portfolio-level question. Per-service findings are useful to the service team; rolled-up findings are what a platform / security team needs. Without a multi-service surface, Bowire stays a per-repo tool. [[more]](https://github.com/Kuestenlogik/Bowire/issues/188)
+
+#### <a id="issue-kuestenlogik-bowire-232"></a>⬜ Backlog · [#232](https://github.com/Kuestenlogik/Bowire/issues/232) Benchmarks: 'scheduled' run shape + cron infrastructure (restart-survival)
+
+Add the **scheduled** run shape to Benchmarks — a saved envelope can be set to fire on a cron schedule, the workbench (or a CLI / embedded host) runs it without operator interaction, and results land in the saved-runs history. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/232)
 
 ### Backlog (not yet scheduled)
 
