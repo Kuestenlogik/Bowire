@@ -52,6 +52,15 @@ public sealed class PulsarBrokerRoundTripTests : IAsyncLifetime
     // in Build().
     private PulsarContainer? _container;
     private string _brokerUrl = string.Empty;
+    // The admin REST surface (`/admin/v2/...`) runs on Pulsar's HTTP
+    // port 8080 inside the container; Testcontainers maps it onto a
+    // RANDOM host port (separate from the random port that proxies
+    // 6650). `PulsarConnectionHelper.Resolve` for a `pulsar://...`
+    // serverUrl assumes admin is at the default 8080 on the same
+    // host — true for real deployments, FALSE for Testcontainers'
+    // dynamic-port-mapping setup. Tests that exercise the admin path
+    // must pass this URL explicitly as the serverUrl into DiscoverAsync.
+    private string _adminUrl = string.Empty;
 
     public async ValueTask InitializeAsync()
     {
@@ -61,6 +70,8 @@ public sealed class PulsarBrokerRoundTripTests : IAsyncLifetime
         using var startCts = new CancellationTokenSource(TimeSpan.FromSeconds(60));
         await _container.StartAsync(startCts.Token);
         _brokerUrl = _container.GetBrokerAddress();
+        _adminUrl = "http://localhost:" + _container.GetMappedPublicPort(8080)
+            .ToString(System.Globalization.CultureInfo.InvariantCulture);
     }
 
     public ValueTask DisposeAsync() =>
@@ -209,23 +220,15 @@ public sealed class PulsarBrokerRoundTripTests : IAsyncLifetime
         // so PulsarConnectionHelper.Resolve, the HttpClient timeout
         // path, and the JSON parser all run end-to-end.
         //
-        // The Pulsar admin REST API is eventually consistent: produce
-        // returns OK before the broker has registered the new topic
-        // in its persistent-topic catalogue, so a discovery fired
-        // immediately after the produce intermittently returns an
-        // empty list. Poll for up to 15 s; in green-path runs the
-        // topic shows up within one or two iterations.
-        List<Kuestenlogik.Bowire.Models.BowireServiceInfo> services = [];
-        var deadline = DateTime.UtcNow.AddSeconds(15);
-        while (DateTime.UtcNow < deadline)
-        {
-            services = await plugin.DiscoverAsync(
-                serverUrl: _brokerUrl,
-                showInternalServices: false,
-                ct: TestContext.Current.CancellationToken);
-            if (services.Any(s => s.Name == leaf)) break;
-            await Task.Delay(500, TestContext.Current.CancellationToken);
-        }
+        // We pass `_adminUrl` (not `_brokerUrl`) because Testcontainers'
+        // dynamic port mapping breaks the "binary 6650 + admin 8080 on
+        // the same host" convention that the broker-URL → admin-URL
+        // resolver assumes. Real Pulsar deployments don't have this
+        // problem — but tests do.
+        var services = await plugin.DiscoverAsync(
+            serverUrl: _adminUrl,
+            showInternalServices: false,
+            ct: TestContext.Current.CancellationToken);
 
         Assert.NotEmpty(services);
         var produced = Assert.Single(services, s => s.Name == leaf);
