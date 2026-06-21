@@ -90,7 +90,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.1 — Scripting, variable resolver, throughput surface *(due 2026-06-30)*
 
-**0/10 done** · 10 backlog
+**0/11 done** · 11 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -104,6 +104,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [194](https://github.com/Kuestenlogik/Bowire/issues/194) | Bowire | [Action log Phase 2 — remaining mutation sites + cross-reload undo + soft-delete workspaces](#issue-kuestenlogik-bowire-194) | ⬜ Backlog |  |
 | [197](https://github.com/Kuestenlogik/Bowire/issues/197) | Bowire | [Deprecate + unlist Kuestenlogik.Bowire.Extension.MapLibre on nuget.org after v2.0 ships](#issue-kuestenlogik-bowire-197) | ⬜ Backlog |  |
 | [231](https://github.com/Kuestenlogik/Bowire/issues/231) | Bowire | [Benchmarks: 'random' run shape — pick N random endpoints per iteration](#issue-kuestenlogik-bowire-231) | ⬜ Backlog |  |
+| [233](https://github.com/Kuestenlogik/Bowire/issues/233) | Bowire | [Benchmarks: previous-run diff banner on repeat (p95 ▲ / ▼ / status histogram delta)](#issue-kuestenlogik-bowire-233) | ⬜ Backlog |  |
 
 ### v2.2 — Test pillar: assertions, CI runner, regression coverage *(due 2026-07-10)*
 
@@ -535,6 +536,10 @@ Phase 1 shipped in e084bc3 — central `actionLog`, Statusbar pill, Activity dra
 #### <a id="issue-kuestenlogik-bowire-231"></a>⬜ Backlog · [#231](https://github.com/Kuestenlogik/Bowire/issues/231) Benchmarks: 'random' run shape — pick N random endpoints per iteration
 
 Add the **random** run shape to the Benchmarks envelope — picks N random endpoints from the active workspace's discovered services on each iteration. Useful for chaos / fuzz-flavored load tests where the operator wants to hit "anything reachable" rather than a fixed list. [[more]](https://github.com/Kuestenlogik/Bowire/issues/231)
+
+#### <a id="issue-kuestenlogik-bowire-233"></a>⬜ Backlog · [#233](https://github.com/Kuestenlogik/Bowire/issues/233) Benchmarks: previous-run diff banner on repeat (p95 ▲ / ▼ / status histogram delta)
+
+When the operator hits Run on a benchmark envelope that already has a previous run on file, surface a small diff banner: `p95 142 ms (-8 ms vs. previous · -5%)`, status histogram delta, throughput delta. So regressions jump out without reading two numbers side by side. [[more]](https://github.com/Kuestenlogik/Bowire/issues/233)
 
 ### v2.2 — Test pillar: assertions, CI runner, regression coverage *(due 2026-07-10)*
 
