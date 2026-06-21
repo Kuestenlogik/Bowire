@@ -12,12 +12,12 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.0 — Re-architected workbench shell + workspace = project folder *(due 2026-06-19)*
 
-**69/71 done** · 2 backlog
+**70/71 done** · 1 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
 | [115](https://github.com/Kuestenlogik/Bowire/issues/115) | Bowire | [v2.0 — UI refactor: re-architect the workbench shell](#issue-kuestenlogik-bowire-115) | ⬜ Backlog |  |
-| [131](https://github.com/Kuestenlogik/Bowire/issues/131) | Bowire | [Benchmarks: first-class surface (single / collection / recording / random / scheduled)](#issue-kuestenlogik-bowire-131) | ⬜ Backlog |  |
+| [131](https://github.com/Kuestenlogik/Bowire/issues/131) | Bowire | [Benchmarks: first-class surface (single / collection / recording / random / scheduled)](#issue-kuestenlogik-bowire-131) | ✅ Done |  |
 | [25](https://github.com/Kuestenlogik/Bowire/issues/25) | Bowire | [AI side-panel integration](#issue-kuestenlogik-bowire-25) | ✅ Done | `area:workbench` |
 | [33](https://github.com/Kuestenlogik/Bowire/issues/33) | Bowire | [Protocol plugins — Connect Phase 1+3 + OTLP](#issue-kuestenlogik-bowire-33) | ✅ Done | `area:plugin-sdk` |
 | [43](https://github.com/Kuestenlogik/Bowire/issues/43) | Bowire | [MCP SSE-transport support](#issue-kuestenlogik-bowire-43) | ✅ Done | `area:mcp` |
@@ -210,9 +210,9 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 > **Status:** Phase 1 — Shell-Refactor abgeschlossen (Juni 2026). Was in v2.0 noch zu erledigen ist: ein kleiner Cleanup-Sweep + Release-Notes. Phase 2 (mehrere Feature-Streams) ist auf eigene Tickets unter v2.1-Milestone verschoben. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/115)
 
-#### <a id="issue-kuestenlogik-bowire-131"></a>⬜ Backlog · [#131](https://github.com/Kuestenlogik/Bowire/issues/131) Benchmarks: first-class surface (single / collection / recording / random / scheduled)
+#### <a id="issue-kuestenlogik-bowire-131"></a>✅ Done · [#131](https://github.com/Kuestenlogik/Bowire/issues/131) Benchmarks: first-class surface (single / collection / recording / random / scheduled)
 
-Today benchmarks (Repeat N×, latency distribution, status histogram) live as an inline expansion on a single request pane. The discoverability is buried — the operator has to find a method, open its detail, scroll to the bench section. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/131)
+> **Status (2026-06-21):** v2.0 ships the **envelope architecture + 3 shapes + interop exports + per-request affordance + stats output**. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/131)
 
 #### <a id="issue-kuestenlogik-bowire-25"></a>✅ Done · [#25](https://github.com/Kuestenlogik/Bowire/issues/25) AI side-panel integration
 
