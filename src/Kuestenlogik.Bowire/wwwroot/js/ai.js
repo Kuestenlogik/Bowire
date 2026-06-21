@@ -1386,15 +1386,12 @@
     function renderSecurityPanel() {
         var panel = el('div', { className: 'bowire-security-panel' });
 
-        var header = el('div', { className: 'bowire-ai-header' });
-        header.appendChild(el('h3', { textContent: 'Security' }));
-        header.appendChild(el('span', {
-            className: 'bowire-ai-mode',
-            textContent: aiStatus && aiStatus.hasClient
-                ? 'AI-assisted ranking — opt-in heuristic tier (#112) in v1.10'
-                : 'Configure AI in Settings to enable ranking'
-        }));
-        panel.appendChild(header);
+        // Wrapper "Security" h3 + AI-mode subtitle retired — no other
+        // rail puts a "rail name" heading above its own content (the
+        // breadcrumb + rail label already say where the operator is).
+        // The AI-mode hint moves down into the threat-model section
+        // (next to the Heuristic / AI-assisted toggle, where it has
+        // semantic context).
 
         var threatHost = el('div', { className: 'bowire-ai-threat-host' });
         panel.appendChild(threatHost);
