@@ -1514,11 +1514,15 @@
         // LISTS (sources / envs / collections / recordings), not for
         // settings of the workspace itself.
         var wsTabsBar = el('div', { className: 'bowire-env-editor-tabs' });
+        // Variables + Secrets are data tabs of the same shape (KV
+        // tables); they belong next to each other in tab order.
+        // Auth — a different mental model (per-call credentials) —
+        // lands AFTER, not between the two related ones.
         var wsTabDefs = [
             { id: 'general',   label: 'General',   icon: 'settings' },
             { id: 'variables', label: 'Variables', icon: 'braces' },
-            { id: 'auth',      label: 'Auth',      icon: 'lock' },
-            { id: 'secrets',   label: 'Secrets',   icon: 'key' }
+            { id: 'secrets',   label: 'Secrets',   icon: 'key' },
+            { id: 'auth',      label: 'Auth',      icon: 'lock' }
         ];
         wsTabDefs.forEach(function (td) {
             var btn = el('button', {
