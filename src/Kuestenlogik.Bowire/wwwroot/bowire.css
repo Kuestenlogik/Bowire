@@ -14929,30 +14929,153 @@ the action toolbar {
     height: 100%;
     overflow: auto;
 }
+/* Recording detail header — adopts the .bowire-pane-header chrome.
+   Overrides the default pane-title style to read as a recording's
+   own heading (mixed case, larger) rather than the uppercase pane
+   label we use elsewhere. */
 .bowire-recording-detail-header {
+    /* base shape comes from .bowire-pane-header */
+    padding: 12px 20px;
+}
+.bowire-pane-header-main {
     display: flex;
     align-items: center;
-}
-.bowire-recording-name-input {
+    gap: 10px;
+    min-width: 0;
     flex: 1;
-    padding: 6px 10px;
-    background: var(--bowire-input-bg, transparent);
-    border: 1px solid var(--bowire-border);
-    border-radius: var(--bowire-radius-sm);
-    color: var(--bowire-text);
-    font-size: 14px;
-    font-weight: 600;
-    font-family: var(--bowire-font-sans);
 }
-.bowire-recording-name-input:focus {
-    outline: none;
-    border-color: var(--bowire-accent);
+.bowire-recording-detail-icon {
+    display: inline-flex;
+    width: 18px;
+    height: 18px;
+    color: var(--bowire-accent);
+    flex-shrink: 0;
+}
+.bowire-recording-detail-icon svg { width: 18px; height: 18px; }
+.bowire-recording-detail-header .bowire-pane-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--bowire-text);
+    text-transform: none;
+    letter-spacing: 0;
+    margin: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    min-width: 0;
+}
+.bowire-pane-header-tool {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border: 1px solid transparent;
+    background: transparent;
+    color: var(--bowire-text-tertiary);
+    border-radius: var(--bowire-radius-sm);
+    cursor: pointer;
+    transition: background var(--bowire-transition-fast),
+                border-color var(--bowire-transition-fast),
+                color var(--bowire-transition-fast);
+}
+.bowire-pane-header-tool svg { width: 14px; height: 14px; }
+.bowire-pane-header-tool:hover {
+    color: var(--bowire-text);
+    background: var(--bowire-surface-hover);
+    border-color: var(--bowire-border);
+}
+.bowire-pane-header-tool-danger:hover {
+    color: var(--bowire-error);
+    border-color: var(--bowire-error);
+    background: transparent;
 }
 
+/* Recording action toolbar — three groups separated by thin
+   vertical dividers so the operator can see at a glance which
+   buttons are related. Wraps gracefully on narrow widths. */
 .bowire-recording-toolbar {
     display: flex;
     flex-wrap: wrap;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 20px;
+    border-bottom: 1px solid var(--bowire-border-subtle);
+}
+.bowire-recording-toolbar-group {
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: center;
     gap: 6px;
+    padding-right: 12px;
+    border-right: 1px solid var(--bowire-border-subtle);
+}
+.bowire-recording-toolbar-group:last-child {
+    padding-right: 0;
+    border-right: 0;
+}
+.bowire-recording-action-primary {
+    border-color: var(--bowire-accent) !important;
+    color: var(--bowire-accent) !important;
+}
+.bowire-recording-action-primary:hover:not(:disabled) {
+    background: var(--bowire-accent) !important;
+    color: var(--bowire-bg) !important;
+}
+
+/* Export ▾ split-button wrapper + popup. Same shape pattern as the
+   preset dropdown / Execute split-button — a small menu anchored
+   below the trigger with three rows, each rows shows the format
+   label + a one-line hint of what it's good for. */
+.bowire-recording-export-wrapper {
+    position: relative;
+    display: inline-flex;
+}
+.bowire-recording-export-caret {
+    display: inline-flex;
+    align-items: center;
+    margin-left: 2px;
+}
+.bowire-recording-export-caret svg { width: 10px; height: 10px; }
+.bowire-recording-export-menu {
+    position: absolute;
+    top: calc(100% + 4px);
+    right: 0;
+    z-index: 50;
+    min-width: 240px;
+    background: var(--bowire-surface);
+    border: 1px solid var(--bowire-border);
+    border-radius: var(--bowire-radius);
+    box-shadow: var(--bowire-shadow);
+    padding: 4px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+.bowire-recording-export-menu-item {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+    padding: 6px 10px;
+    background: transparent;
+    border: none;
+    border-radius: var(--bowire-radius-sm);
+    color: var(--bowire-text);
+    text-align: left;
+    cursor: pointer;
+    font: inherit;
+}
+.bowire-recording-export-menu-item:hover {
+    background: var(--bowire-surface-hover);
+}
+.bowire-recording-export-menu-item-label {
+    font-size: 12px;
+    font-weight: 600;
+}
+.bowire-recording-export-menu-item-hint {
+    font-size: 10px;
+    color: var(--bowire-text-tertiary);
 }
 /* ---------------------------------------------------------------- *
  * Shared outline-button family.
