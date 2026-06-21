@@ -208,10 +208,24 @@ public sealed class PulsarBrokerRoundTripTests : IAsyncLifetime
         // the in-process fake covers, but here against a real broker
         // so PulsarConnectionHelper.Resolve, the HttpClient timeout
         // path, and the JSON parser all run end-to-end.
-        var services = await plugin.DiscoverAsync(
-            serverUrl: _brokerUrl,
-            showInternalServices: false,
-            ct: TestContext.Current.CancellationToken);
+        //
+        // The Pulsar admin REST API is eventually consistent: produce
+        // returns OK before the broker has registered the new topic
+        // in its persistent-topic catalogue, so a discovery fired
+        // immediately after the produce intermittently returns an
+        // empty list. Poll for up to 15 s; in green-path runs the
+        // topic shows up within one or two iterations.
+        List<Kuestenlogik.Bowire.Models.BowireServiceInfo> services = [];
+        var deadline = DateTime.UtcNow.AddSeconds(15);
+        while (DateTime.UtcNow < deadline)
+        {
+            services = await plugin.DiscoverAsync(
+                serverUrl: _brokerUrl,
+                showInternalServices: false,
+                ct: TestContext.Current.CancellationToken);
+            if (services.Any(s => s.Name == leaf)) break;
+            await Task.Delay(500, TestContext.Current.CancellationToken);
+        }
 
         Assert.NotEmpty(services);
         var produced = Assert.Single(services, s => s.Name == leaf);
