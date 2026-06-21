@@ -47,7 +47,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
@@ -81,7 +81,7 @@ jobs:
       # a Bootcamp push triggers this build; a Bowire-side push picks up
       # whatever HEAD of Bowire.Bootcamp/main looks like at build time.
       - name: Checkout Bowire.Bootcamp
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           repository: Kuestenlogik/Bowire.Bootcamp
           path: bootcamp-source

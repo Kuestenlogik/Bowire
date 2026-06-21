@@ -58,7 +58,7 @@ jobs:
     if: ${{ github.event_name != 'release' || (!contains(github.event.release.tag_name, '-rc') && !contains(github.event.release.tag_name, '-beta') && !contains(github.event.release.tag_name, '-preview')) }}
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Resolve version + tag
         id: meta
