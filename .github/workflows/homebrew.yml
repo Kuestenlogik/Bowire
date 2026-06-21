@@ -58,7 +58,7 @@ jobs:
         if: ${{ env.HOMEBREW_TAP_TOKEN == '' }}
         run: exit 0
 
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Resolve version
         id: meta

@@ -87,7 +87,7 @@ jobs:
         shell: pwsh
         run: exit 0
 
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Resolve version + release date
         id: meta
