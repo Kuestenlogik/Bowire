@@ -266,7 +266,7 @@ Hints today live as a static list at the top of the AI drawer: [[more]](https://
 
 #### <a id="issue-kuestenlogik-bowire-115"></a>✅ Done · [#115](https://github.com/Kuestenlogik/Bowire/issues/115) v2.0 — UI refactor: re-architect the workbench shell
 
-> **Status:** Phase 1 — Shell-Refactor abgeschlossen (Juni 2026). Was in v2.0 noch zu erledigen ist: ein kleiner Cleanup-Sweep + Release-Notes. Phase 2 (mehrere Feature-Streams) ist auf eigene Tickets unter v2.1-Milestone verschoben. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/115)
+> **Status (2026-06-21):** Closed mit dem v2.0-Cut. Shell-Refactor + alle Cleanup-Sweep-Items + alle Standalone-Feature-Streams Phase 1 sind landed; Release-Notes-Draft ist staged auf https://github.com/Kuestenlogik/Bowire/releases/tag/v2.0.0 . … [[more]](https://github.com/Kuestenlogik/Bowire/issues/115)
 
 #### <a id="issue-kuestenlogik-bowire-116"></a>✅ Done · [#116](https://github.com/Kuestenlogik/Bowire/issues/116) Workspaces — named, switchable contexts that bundle URLs / envs / collections / AI config
 
