@@ -230,8 +230,13 @@ async function main() {
         let tocInserted = false;
         for (const rel of pages) {
             // 0-based index where THIS rel will land in the merged PDF.
-            if (TOC_ENTRIES.some(e => e.file === rel)) {
-                sectionStartPages.set(rel, merged.getPageCount());
+            // Normalise the path separator — collectPages emits OS-native
+            // (`\\` on Windows) while TOC_ENTRIES use `/` (Unix style),
+            // so a direct `===` would silently miss every entry on
+            // Windows runners. Compare the forward-slash forms.
+            const relUnix = rel.split(path.sep).join('/');
+            if (TOC_ENTRIES.some(e => e.file === relUnix)) {
+                sectionStartPages.set(relUnix, merged.getPageCount());
             }
             const url = 'file://' + path.join(SRC, rel).split(path.sep).join('/');
             const page = await ctx.newPage();
