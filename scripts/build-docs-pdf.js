@@ -220,11 +220,14 @@ async function main() {
         const merged = await PDFDocument.create();
         const ctx = await browser.newContext({ viewport: { width: 1200, height: 900 } });
 
-        // #241 — track the merged-PDF page index at which each TOC
-        // entry's source file lands so we can build a proper outline
-        // tree after the merge. The reader's side-panel bookmarks
-        // become the actual navigation primitive.
-        const sectionStartPages = new Map();
+        // #241 — track the merged-PDF page index + the rendered page
+        // <title> for every page so the outline tree can have both
+        // top-level section bookmarks AND second-level page-level
+        // children. The reader's side-panel bookmarks become the
+        // actual navigation primitive.
+        const sectionStartPages = new Map();   // relUnix → mergedPageIndex (TOC parents)
+        const pageStartIndices = new Map();    // relUnix → mergedPageIndex (every page)
+        const pageTitles = new Map();          // relUnix → string (every page)
 
         let count = 0;
         let tocInserted = false;
@@ -235,8 +238,10 @@ async function main() {
             // so a direct `===` would silently miss every entry on
             // Windows runners. Compare the forward-slash forms.
             const relUnix = rel.split(path.sep).join('/');
+            const startIndex = merged.getPageCount();
+            pageStartIndices.set(relUnix, startIndex);
             if (TOC_ENTRIES.some(e => e.file === relUnix)) {
-                sectionStartPages.set(relUnix, merged.getPageCount());
+                sectionStartPages.set(relUnix, startIndex);
             }
             const url = 'file://' + path.join(SRC, rel).split(path.sep).join('/');
             const page = await ctx.newPage();
@@ -267,6 +272,14 @@ async function main() {
                         if (hdr) hdr.style.display = 'none';
                     }
                 }, { version: BUILD_VERSION, date: BUILD_DATE, isCover: rel === 'index.html' });
+                // Capture the rendered page's title for outline-tree
+                // child labels. docfx wires `<title>` from front-matter
+                // (or <h1>) so this gives us the same human-readable
+                // heading the reader sees at the top of the page.
+                try {
+                    const t = (await page.title() || '').trim();
+                    if (t) pageTitles.set(relUnix, t);
+                } catch (_) { /* fall through to filename-derived title */ }
                 const buf = await page.pdf({
                     format: 'A4',
                     printBackground: true,
@@ -311,7 +324,7 @@ async function main() {
         // Preview / Sumatra / Foxit show clickable section bookmarks
         // in the side panel. That's the actual TOC navigation primitive
         // in PDFs — the front-matter TOC sheet is informational only.
-        buildOutlineTree(merged, sectionStartPages);
+        buildOutlineTree(merged, sectionStartPages, pageStartIndices, pageTitles);
 
         const bytes = await merged.save();
         fs.writeFileSync(OUT_PATH, bytes);
@@ -322,20 +335,23 @@ async function main() {
 }
 
 /**
- * Hand-build a PDF 1.7 outline (bookmark) tree on the merged document.
- * pdf-lib doesn't expose a high-level outline API — we mutate the
- * catalog directly. Structure per spec:
+ * Hand-build a 2-level PDF 1.7 outline (bookmark) tree on the merged
+ * document. pdf-lib doesn't expose a high-level outline API — we mutate
+ * the catalog directly. Structure per spec:
  *
  *   Catalog /Outlines      -> ref to root outline dict
  *   Catalog /PageMode      -> /UseOutlines (auto-opens the bookmark panel)
  *   Root outline dict      -> { Type: 'Outlines', First, Last, Count }
- *   Each item dict         -> { Title (HexString), Parent: root, Dest: [pageRef, /Fit], Prev?, Next? }
+ *   Top-level item dicts   -> { Title (HexString), Parent: root, Dest, Prev?, Next?, First?, Last?, Count? }
+ *   Child item dicts       -> { Title (HexString), Parent: <parent-item-ref>, Dest, Prev?, Next? }
  *
- * One top-level entry per curated section in TOC_ENTRIES; their
- * destinations are the merged-PDF page indices captured in
- * sectionStartPages during the render loop.
+ * Layer 1 = TOC_ENTRIES (Quickstart, Setup, User Guide, …).
+ * Layer 2 = every page beneath the same section directory, ordered as
+ *           they land in the merged PDF. Titles come from the rendered
+ *           page's <title> (docfx wires it from front-matter / h1), with
+ *           a filename-fallback when that's empty.
  */
-function buildOutlineTree(merged, sectionStartPages) {
+function buildOutlineTree(merged, sectionStartPages, pageStartIndices, pageTitles) {
     const usable = TOC_ENTRIES.filter(e => sectionStartPages.has(e.file));
     if (usable.length === 0) {
         log('  no sections matched TOC entries — outline tree skipped');
@@ -345,32 +361,85 @@ function buildOutlineTree(merged, sectionStartPages) {
     const pageRefs = merged.getPages().map(p => p.ref);
 
     const outlinesRef = ctx.nextRef();
-    const itemRefs = usable.map(() => ctx.nextRef());
+
+    // For each top-level section, collect its child pages from
+    // pageStartIndices. Children = every page under the same directory
+    // prefix as the section's index.html, except the index itself.
+    // Sort by page-start so the outline matches reading order.
+    function childrenFor(entry) {
+        const lastSlash = entry.file.lastIndexOf('/');
+        if (lastSlash < 0) return [];   // single-file section: no children
+        const dir = entry.file.substring(0, lastSlash + 1);
+        const rows = [];
+        for (const [rel, startIdx] of pageStartIndices) {
+            if (!rel.startsWith(dir)) continue;
+            if (rel === entry.file) continue;
+            rows.push({ rel, startIdx });
+        }
+        rows.sort((a, b) => a.startIdx - b.startIdx);
+        return rows;
+    }
+
+    function fallbackTitle(rel) {
+        const base = rel.substring(rel.lastIndexOf('/') + 1).replace(/\.html$/, '');
+        // 'auth-providers' → 'Auth providers'
+        return base.replace(/[-_]/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+    }
+
+    const topRefs = usable.map(() => ctx.nextRef());
 
     usable.forEach((entry, i) => {
         const startPage = sectionStartPages.get(entry.file);
         const pageRef = pageRefs[startPage];
+
+        const children = childrenFor(entry);
+        const childRefs = children.map(() => ctx.nextRef());
+
+        // Top-level item.
         const item = ctx.obj({
             Title: PDFHexString.fromText(entry.title),
             Parent: outlinesRef,
             Dest: [pageRef, PDFName.of('Fit')],
         });
-        if (i > 0) item.set(PDFName.of('Prev'), itemRefs[i - 1]);
-        if (i < itemRefs.length - 1) item.set(PDFName.of('Next'), itemRefs[i + 1]);
-        ctx.assign(itemRefs[i], item);
+        if (i > 0) item.set(PDFName.of('Prev'), topRefs[i - 1]);
+        if (i < topRefs.length - 1) item.set(PDFName.of('Next'), topRefs[i + 1]);
+        if (childRefs.length > 0) {
+            item.set(PDFName.of('First'), childRefs[0]);
+            item.set(PDFName.of('Last'), childRefs[childRefs.length - 1]);
+            // Negative Count keeps the section collapsed by default —
+            // expanded by the reader on click. Positive would open
+            // all sections at once, drowning the side panel.
+            item.set(PDFName.of('Count'), PDFNumber.of(-childRefs.length));
+        }
+        ctx.assign(topRefs[i], item);
+
+        // Children.
+        children.forEach((child, ci) => {
+            const childTitle = pageTitles.get(child.rel) || fallbackTitle(child.rel);
+            const childItem = ctx.obj({
+                Title: PDFHexString.fromText(childTitle),
+                Parent: topRefs[i],
+                Dest: [pageRefs[child.startIdx], PDFName.of('Fit')],
+            });
+            if (ci > 0) childItem.set(PDFName.of('Prev'), childRefs[ci - 1]);
+            if (ci < childRefs.length - 1) childItem.set(PDFName.of('Next'), childRefs[ci + 1]);
+            ctx.assign(childRefs[ci], childItem);
+        });
     });
 
     const outlinesDict = ctx.obj({
         Type: 'Outlines',
     });
-    outlinesDict.set(PDFName.of('First'), itemRefs[0]);
-    outlinesDict.set(PDFName.of('Last'), itemRefs[itemRefs.length - 1]);
-    outlinesDict.set(PDFName.of('Count'), PDFNumber.of(itemRefs.length));
+    outlinesDict.set(PDFName.of('First'), topRefs[0]);
+    outlinesDict.set(PDFName.of('Last'), topRefs[topRefs.length - 1]);
+    outlinesDict.set(PDFName.of('Count'), PDFNumber.of(topRefs.length));
     ctx.assign(outlinesRef, outlinesDict);
 
     merged.catalog.set(PDFName.of('Outlines'), outlinesRef);
     merged.catalog.set(PDFName.of('PageMode'), PDFName.of('UseOutlines'));
-    log(`  outline tree: ${itemRefs.length} section bookmarks wired`);
+
+    const totalChildren = usable.reduce((sum, e) => sum + childrenFor(e).length, 0);
+    log(`  outline tree: ${topRefs.length} sections + ${totalChildren} child pages wired`);
 }
 
 main().catch(err => {
