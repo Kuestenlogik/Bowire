@@ -4114,6 +4114,27 @@ button.comparison-bestfor-card.active .comparison-bestfor-name {
     .site-header.scrolled:has(.header-nav.open) {
         border-bottom-color: transparent;
     }
+    /* When the menu is open on a non-scrolled page the header is
+       still `background: transparent` — that lets the page bg show
+       THROUGH the strip between the icons row (~middle of the 64 px
+       header) and the dropdown's 88 %-alpha top edge, reading as a
+       gap even though geometrically the dropdown overlaps the bottom
+       2 px of the header. Match the header's chrome to the dropdown
+       whenever the menu is open so the seam closes cleanly. */
+    .site-header:has(.header-nav.open) {
+        background: rgba(15, 15, 23, 0.88);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border-bottom-color: transparent;
+    }
+    :root[data-theme="light"] .site-header:has(.header-nav.open) {
+        background: rgba(250, 250, 255, 0.85);
+    }
+    @media (prefers-color-scheme: light) {
+        :root[data-theme="auto"] .site-header:has(.header-nav.open) {
+            background: rgba(250, 250, 255, 0.85);
+        }
+    }
 
     /* Belt-and-suspenders against horizontal overflow on phones —
        any single oversized element (a stretched grid cell, a long
