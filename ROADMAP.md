@@ -12,7 +12,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.0 — Re-architected workbench shell + workspace = project folder *(due 2026-06-19)*
 
-**71/71 done**
+**72/72 done**
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -47,6 +47,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [137](https://github.com/Kuestenlogik/Bowire/issues/137) | Bowire | [Sidebar declaration per rail mode + stable toggle location](#issue-kuestenlogik-bowire-137) | ✅ Done |  |
 | [138](https://github.com/Kuestenlogik/Bowire/issues/138) | Bowire | [Statusbar at bottom — move connection pill + env + watch out of topbar](#issue-kuestenlogik-bowire-138) | ✅ Done |  |
 | [139](https://github.com/Kuestenlogik/Bowire/issues/139) | Bowire | [Per-mode favorites filter (drop the standalone Favorites tab)](#issue-kuestenlogik-bowire-139) | ✅ Done |  |
+| [141](https://github.com/Kuestenlogik/Bowire/issues/141) | Bowire | [Remove migration scaffolding from activity rail (wired flags + stub class + coming-soon toast)](#issue-kuestenlogik-bowire-141) | ✅ Done |  |
 | [142](https://github.com/Kuestenlogik/Bowire/issues/142) | Bowire | [Sharper radii — straighter visual style across tabs / cards / drawers](#issue-kuestenlogik-bowire-142) | ✅ Done |  |
 | [143](https://github.com/Kuestenlogik/Bowire/issues/143) | Bowire | [Uniform delete affordances on every list sidebar (single / multi-select / all)](#issue-kuestenlogik-bowire-143) | ✅ Done |  |
 | [146](https://github.com/Kuestenlogik/Bowire/issues/146) | Bowire | [Workspace-side environment inclusion list (shared envs + per-workspace selection)](#issue-kuestenlogik-bowire-146) | ✅ Done |  |
@@ -180,6 +181,10 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 |---|---|---|---|---|
 | [28](https://github.com/Kuestenlogik/Bowire/issues/28) | Bowire | [Multi-tenant data model + SCIM (Phase B)](#issue-kuestenlogik-bowire-28) | 🟢 Next up | `area:workbench` |
 | [3](https://github.com/Kuestenlogik/Bowire.Templates/issues/3) | Templates | [Plugin project template — `dotnet new bowire-plugin`](#issue-kuestenlogik-bowire-templates-3) | ⬜ Backlog | `area:plugin-sdk` |
+| [4](https://github.com/Kuestenlogik/Bowire.Bootcamp/issues/4) | Bootcamp | [Hero heading: align Bootcamp landing typography with the Documentation hero](#issue-kuestenlogik-bowire-bootcamp-4) | ⬜ Backlog |  |
+| [5](https://github.com/Kuestenlogik/Bowire.Bootcamp/issues/5) | Bootcamp | [Top-bar B-logo on Bootcamp pages should link to bowire.io/, not bowire.io/bootcamp/](#issue-kuestenlogik-bowire-bootcamp-5) | ⬜ Backlog |  |
+| [6](https://github.com/Kuestenlogik/Bowire.Bootcamp/issues/6) | Bootcamp | [Bootcamp landing renders inconsistent breadcrumb based on arrival path](#issue-kuestenlogik-bowire-bootcamp-6) | ⬜ Backlog |  |
+| [7](https://github.com/Kuestenlogik/Bowire.Bootcamp/issues/7) | Bootcamp | [Capstone copy mentions 'bowire mock' before the CLI is introduced — rephrase as capability](#issue-kuestenlogik-bowire-bootcamp-7) | ⬜ Backlog |  |
 | [11](https://github.com/Kuestenlogik/Bowire.Protocol.Surgewave/issues/11) | Protocol.Surgewave | [Light up Surgewave protocol plugin](#issue-kuestenlogik-bowire-protocol-surgewave-11) | ⬜ Backlog |  |
 | [13](https://github.com/Kuestenlogik/Bowire.Samples/issues/13) | Samples | [SimpleGraphQLSubscriptions sample](#issue-kuestenlogik-bowire-samples-13) | ⬜ Backlog | `area:plugin-sdk` |
 | [37](https://github.com/Kuestenlogik/Bowire/issues/37) | Bowire | [Bowire.Mcp — remaining tools + adapter modes](#issue-kuestenlogik-bowire-37) | ⬜ Backlog | `area:mcp` |
@@ -201,6 +206,16 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [117](https://github.com/Kuestenlogik/Bowire/issues/117) | Bowire | [i18n — extract every UI string; ship DE + EN catalogues](#issue-kuestenlogik-bowire-117) | ⬜ Backlog |  |
 | [128](https://github.com/Kuestenlogik/Bowire/issues/128) | Bowire | [Bowire Agent — register embedded instances with a central hub](#issue-kuestenlogik-bowire-128) | ⬜ Backlog |  |
 | [130](https://github.com/Kuestenlogik/Bowire/issues/130) | Bowire | [Comparison table: add Hoppscotch + topic-based filtering](#issue-kuestenlogik-bowire-130) | ⬜ Backlog |  |
+| [213](https://github.com/Kuestenlogik/Bowire/issues/213) | Bowire | [Test infra: finish SidecarFake JSON-RPC handshake to unlock SidecarBowireProtocol coverage](#issue-kuestenlogik-bowire-213) | ⬜ Backlog |  |
+| [214](https://github.com/Kuestenlogik/Bowire/issues/214) | Bowire | [Test infra: BaGet Testcontainer fixture for plugin install/activate coverage](#issue-kuestenlogik-bowire-214) | ⬜ Backlog |  |
+| [215](https://github.com/Kuestenlogik/Bowire/issues/215) | Bowire | [Test infra: IProcessLauncher seam in PluginManager to cover dotnet-shell-out paths](#issue-kuestenlogik-bowire-215) | ⬜ Backlog |  |
+| [216](https://github.com/Kuestenlogik/Bowire/issues/216) | Bowire | [Test infra: WebApplicationFactory fixture for InvokeEndpoints + UnaryReplayer coverage](#issue-kuestenlogik-bowire-216) | ⬜ Backlog |  |
+| [236](https://github.com/Kuestenlogik/Bowire/issues/236) | Bowire | [Release cascade: wait for nuget.org indexing before dispatching to siblings](#issue-kuestenlogik-bowire-236) | ⬜ Backlog |  |
+| [237](https://github.com/Kuestenlogik/Bowire/issues/237) | Bowire | [WINGET_TOKEN expired — rotate to unblock winget publish for v2.0.0+](#issue-kuestenlogik-bowire-237) | ⬜ Backlog |  |
+| [238](https://github.com/Kuestenlogik/Bowire/issues/238) | Bowire | [Map widget: trajectory LineString between sequential frames](#issue-kuestenlogik-bowire-238) | ⬜ Backlog |  |
+| [239](https://github.com/Kuestenlogik/Bowire/issues/239) | Bowire | [Map widget: time-scrubber + playback for accumulated streams](#issue-kuestenlogik-bowire-239) | ⬜ Backlog |  |
+| [240](https://github.com/Kuestenlogik/Bowire/issues/240) | Bowire | [Map widget: per-entity grouping via configurable track-id field](#issue-kuestenlogik-bowire-240) | ⬜ Backlog |  |
+| [241](https://github.com/Kuestenlogik/Bowire/issues/241) | Bowire | [Generated docs PDF: cover-logo missing 'B' + no clickable TOC + stray background-wash on some sections](#issue-kuestenlogik-bowire-241) | ⬜ Backlog |  |
 
 ## Details
 
@@ -335,6 +350,10 @@ The connection pill ("all 2 connected", "1 / 3 failed", …) sits in the topbar 
 #### <a id="issue-kuestenlogik-bowire-139"></a>✅ Done · [#139](https://github.com/Kuestenlogik/Bowire/issues/139) Per-mode favorites filter (drop the standalone Favorites tab)
 
 Today "Favorites" means one thing: a curated subset of methods, surfaced as a sub-tab in the sidebar. Useful for "the 5 methods I poke daily" but trapped in a single dimension. [[more]](https://github.com/Kuestenlogik/Bowire/issues/139)
+
+#### <a id="issue-kuestenlogik-bowire-141"></a>✅ Done · [#141](https://github.com/Kuestenlogik/Bowire/issues/141) Remove migration scaffolding from activity rail (wired flags + stub class + coming-soon toast)
+
+The activity-rail mode catalogue (#133) carries temporary scaffolding from the phased migration: [[more]](https://github.com/Kuestenlogik/Bowire/issues/141)
 
 #### <a id="issue-kuestenlogik-bowire-142"></a>✅ Done · [#142](https://github.com/Kuestenlogik/Bowire/issues/142) Sharper radii — straighter visual style across tabs / cards / drawers
 
@@ -740,6 +759,22 @@ Add the **scheduled** run shape to Benchmarks — a saved envelope can be set to
 
 \`dotnet new bowire-plugin\` in the separate [Templates repo](https://github.com/Kuestenlogik/Bowire.Templates). The polyglot sidecar variants (Python / Node / Rust / Go) shipped via \`--Sidecar\`; this is the .NET-native variant. [[more]](https://github.com/Kuestenlogik/Bowire.Templates/issues/3)
 
+#### <a id="issue-kuestenlogik-bowire-bootcamp-4"></a>⬜ Backlog · [Kuestenlogik/Bowire.Bootcamp#4](https://github.com/Kuestenlogik/Bowire.Bootcamp/issues/4) Hero heading: align Bootcamp landing typography with the Documentation hero
+
+The "Bowire Bootcamp" hero heading on the Bootcamp landing page doesn't match the heading style used on the rest of the bowire.io site (e.g. the Documentation hero). Visually it reads as a separate site instead of one of the bowire.io section heros. [[more]](https://github.com/Kuestenlogik/Bowire.Bootcamp/issues/4)
+
+#### <a id="issue-kuestenlogik-bowire-bootcamp-5"></a>⬜ Backlog · [Kuestenlogik/Bowire.Bootcamp#5](https://github.com/Kuestenlogik/Bowire.Bootcamp/issues/5) Top-bar B-logo on Bootcamp pages should link to bowire.io/, not bowire.io/bootcamp/
+
+Clicking the top-bar **B-logo** while on a Bootcamp page navigates to the **Bootcamp home** (`bowire.io/bootcamp/`), not to the marketing-site home (`bowire.io/`). … [[more]](https://github.com/Kuestenlogik/Bowire.Bootcamp/issues/5)
+
+#### <a id="issue-kuestenlogik-bowire-bootcamp-6"></a>⬜ Backlog · [Kuestenlogik/Bowire.Bootcamp#6](https://github.com/Kuestenlogik/Bowire.Bootcamp/issues/6) Bootcamp landing renders inconsistent breadcrumb based on arrival path
+
+Navigating to the Bootcamp landing via the top-bar **Bootcamp** link renders the page **without** a breadcrumb. Navigating to the same page via the B-logo click path (see linked issue) renders **with** a breadcrumb showing `Bootcamp > Home`. Same destination, two different chromes. [[more]](https://github.com/Kuestenlogik/Bowire.Bootcamp/issues/6)
+
+#### <a id="issue-kuestenlogik-bowire-bootcamp-7"></a>⬜ Backlog · [Kuestenlogik/Bowire.Bootcamp#7](https://github.com/Kuestenlogik/Bowire.Bootcamp/issues/7) Capstone copy mentions 'bowire mock' before the CLI is introduced — rephrase as capability
+
+The Capstone (or whichever Bootcamp section it appears in) names a specific tool / CLI command up-front: *"…capture sessions, replay through `bowire mock`, …"*. Bootcamp learners haven't met the `bowire` CLI yet at this point in the narrative — naming it here is jargon ahead of the introduction. [[more]](https://github.com/Kuestenlogik/Bowire.Bootcamp/issues/7)
+
 #### <a id="issue-kuestenlogik-bowire-protocol-surgewave-11"></a>⬜ Backlog · [Kuestenlogik/Bowire.Protocol.Surgewave#11](https://github.com/Kuestenlogik/Bowire.Protocol.Surgewave/issues/11) Light up Surgewave protocol plugin
 
 Tracks the Surgewave-lane work split out of Kuestenlogik/Bowire#33 so protocol-specific tickets live with the protocol-specific repo. [[more]](https://github.com/Kuestenlogik/Bowire.Protocol.Surgewave/issues/11)
@@ -843,6 +878,46 @@ Bowire's UI is English-only today. Every label, every button, every tooltip, eve
 #### <a id="issue-kuestenlogik-bowire-130"></a>⬜ Backlog · [#130](https://github.com/Kuestenlogik/Bowire/issues/130) Comparison table: add Hoppscotch + topic-based filtering
 
 The comparison table on bowire.io today lines Bowire up against Postman / Insomnia / Bruno / curl on a single feature matrix. Three gaps: [[more]](https://github.com/Kuestenlogik/Bowire/issues/130)
+
+#### <a id="issue-kuestenlogik-bowire-213"></a>⬜ Backlog · [#213](https://github.com/Kuestenlogik/Bowire/issues/213) Test infra: finish SidecarFake JSON-RPC handshake to unlock SidecarBowireProtocol coverage
+
+`SidecarBowireProtocol` is at ~50% coverage because the stdio sidecar codepath needs a real subprocess that speaks the JSON-RPC handshake (`$/initialize`, `$/initialized`, plus the `tools/list` + `tools/call` methods that drive `Discover` / `Invoke`). … [[more]](https://github.com/Kuestenlogik/Bowire/issues/213)
+
+#### <a id="issue-kuestenlogik-bowire-214"></a>⬜ Backlog · [#214](https://github.com/Kuestenlogik/Bowire/issues/214) Test infra: BaGet Testcontainer fixture for plugin install/activate coverage
+
+`BowirePluginEndpoints` (install / activate routes) and `App.PluginManager` (NuGet download + extract paths) together carry ~134 uncovered lines because there's no NuGet feed in the test environment. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/214)
+
+#### <a id="issue-kuestenlogik-bowire-215"></a>⬜ Backlog · [#215](https://github.com/Kuestenlogik/Bowire/issues/215) Test infra: IProcessLauncher seam in PluginManager to cover dotnet-shell-out paths
+
+`App.PluginManager` shells out to `dotnet publish` / `dotnet nuget …` via `Process.Start` directly. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/215)
+
+#### <a id="issue-kuestenlogik-bowire-216"></a>⬜ Backlog · [#216](https://github.com/Kuestenlogik/Bowire/issues/216) Test infra: WebApplicationFactory fixture for InvokeEndpoints + UnaryReplayer coverage
+
+`Mock.Replay.UnaryReplayer` (~226 uncovered lines) and `Endpoints.BowireInvokeEndpoints` (~58 uncovered lines) together carry the largest single coverage hole in the repo. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/216)
+
+#### <a id="issue-kuestenlogik-bowire-236"></a>⬜ Backlog · [#236](https://github.com/Kuestenlogik/Bowire/issues/236) Release cascade: wait for nuget.org indexing before dispatching to siblings
+
+When the Bowire `Release` workflow finishes a new version, it does these steps back-to-back: [[more]](https://github.com/Kuestenlogik/Bowire/issues/236)
+
+#### <a id="issue-kuestenlogik-bowire-237"></a>⬜ Backlog · [#237](https://github.com/Kuestenlogik/Bowire/issues/237) WINGET_TOKEN expired — rotate to unblock winget publish for v2.0.0+
+
+During the v2.0.0 release publish on 2026-06-21, the `winget` workflow failed at the `wingetcreate submit` step: [[more]](https://github.com/Kuestenlogik/Bowire/issues/237)
+
+#### <a id="issue-kuestenlogik-bowire-238"></a>⬜ Backlog · [#238](https://github.com/Kuestenlogik/Bowire/issues/238) Map widget: trajectory LineString between sequential frames
+
+Add an optional **trajectory line** (MapLibre LineString layer) connecting sequential frames on the map widget, so a stream of position updates renders as a moving path instead of a scatter of disconnected dots. Default OFF (current behaviour); operator toggles it on per-method or per-session. [[more]](https://github.com/Kuestenlogik/Bowire/issues/238)
+
+#### <a id="issue-kuestenlogik-bowire-239"></a>⬜ Backlog · [#239](https://github.com/Kuestenlogik/Bowire/issues/239) Map widget: time-scrubber + playback for accumulated streams
+
+Add a **time-scrubber + playback control** to the map widget for stream-driven sessions, so an operator can rewind to any point in the accumulated frame history, play forward at variable speed, and pause to inspect a specific moment. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/239)
+
+#### <a id="issue-kuestenlogik-bowire-240"></a>⬜ Backlog · [#240](https://github.com/Kuestenlogik/Bowire/issues/240) Map widget: per-entity grouping via configurable track-id field
+
+Group stream frames by an explicit **track identifier** so the map can show N parallel entities — each with its own colour, trajectory, selection state — instead of merging everything into one pile of pins. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/240)
+
+#### <a id="issue-kuestenlogik-bowire-241"></a>⬜ Backlog · [#241](https://github.com/Kuestenlogik/Bowire/issues/241) Generated docs PDF: cover-logo missing 'B' + no clickable TOC + stray background-wash on some sections
+
+The generated `bowire-docs-v2.0.0.pdf` shipped with the v2.0.0 GitHub Release has three rendering issues that reduce its usefulness as a downloadable reference: [[more]](https://github.com/Kuestenlogik/Bowire/issues/241)
 
 ---
 
