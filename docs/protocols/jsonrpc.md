@@ -53,4 +53,4 @@ JSON-RPC 2.0 has no streaming primitive — `InvokeStreamAsync` always returns a
 
 ## Sample
 
-A runnable sample lives at [`samples/JsonRpc/Math`](https://github.com/Kuestenlogik/Bowire/tree/main/samples/JsonRpc/Math) — `add` / `subtract` / `divide` with full `rpc.discover`.
+A runnable sample lives at [`examples/JsonRpc/Math`](https://github.com/Kuestenlogik/Bowire/tree/main/examples/JsonRpc/Math) — `add` / `subtract` / `divide` with full `rpc.discover`.
