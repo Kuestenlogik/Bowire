@@ -19,6 +19,13 @@ const fs = require('fs');
 const OUT = path.resolve(__dirname, '..', 'site', 'assets', 'images', 'screenshots');
 const DOCS_OUT = path.resolve(__dirname, '..', 'docs', 'images', 'screenshots');
 const URL = 'https://localhost:5101/bowire';
+// Standalone Tool target for the genuine first-boot welcome (C1 / Phase B).
+// The Combined sample auto-discovers its hosted services via the host's
+// EndpointDataSource, so a "first-run" capture against it never lands on
+// the empty welcome — it always shows a populated sidebar. The standalone
+// Tool launched without --url has no in-process services, so wiping
+// localStorage on it produces the real first-boot state.
+const TOOL_URL = 'http://localhost:5180/';
 
 // Make sure both target dirs exist. The docs/ mirror lets the Jekyll
 // marketing features.html and the docfx features/*.md reference the
@@ -525,7 +532,12 @@ async function clickMethodItem(page, text) {
     await page.waitForSelector('#bowire-app.bowire-app-ready', { timeout: 15000 });
     await page.waitForTimeout(800);
     await shot(page, 'schema-upload');
-    await shotQuickstart(page, 'first-run');
+    // C1 / Phase B: `first-run` is now captured against the standalone
+    // Tool below — the Combined sample's auto-discovered services make
+    // the welcome unreachable from this context, so a shotQuickstart
+    // here would just shoot the schema-upload landing again. The real
+    // first-boot capture happens in the dedicated block at the end of
+    // this script.
   } catch (e) {
     log(`  (schema-upload failed: ${e.message.split('\n')[0]})`);
   }
@@ -861,6 +873,86 @@ async function clickMethodItem(page, text) {
         await shot(page, 'ai-fuzz-values');
     } catch (e) {
         log(`  (AI feature shots failed: ${e.message.split('\n')[0]})`);
+    }
+
+    // ---- 12) first-run — standalone Tool (C1 / Phase B) ----
+    // The Combined sample auto-populates services[] via its in-process
+    // EndpointDataSource scan, so detectLandingState() never returns
+    // 'first-run' against it (see landing.js line 67-79). To capture
+    // the real welcome we hit the standalone Tool launched without
+    // --url and wipe every Bowire storage key so the boot lands on
+    // workspaces=[] + activeWorkspaceId=null — which is rendered as
+    // the "Create your first workspace" Home CTA (render-main.js
+    // line 3517 / bowire-home-band-firstrun). Uses its own context so
+    // the storage-clear doesn't disturb the Combined-sample captures
+    // above.
+    try {
+        log('first-run (standalone Tool)…');
+        const frCtx = await browser.newContext({
+            viewport: { width: 1280, height: 720 },
+            ignoreHTTPSErrors: true,
+            colorScheme: THEME
+        });
+        const frPage = await frCtx.newPage();
+        await frPage.emulateMedia({ colorScheme: THEME });
+        await frPage.goto(TOOL_URL, { waitUntil: 'domcontentloaded' });
+        // Wipe every storage layer that might carry a prior boot's
+        // workspace seed / rail mode / URL list — anything left would
+        // bypass the no-workspace branch and render Continue/Recent
+        // bands instead of the welcome card.
+        await frPage.evaluate(async (theme) => {
+            try { localStorage.clear(); } catch {}
+            try { sessionStorage.clear(); } catch {}
+            try {
+                if (window.indexedDB && indexedDB.databases) {
+                    const dbs = await indexedDB.databases();
+                    await Promise.all(dbs.map(d => new Promise(res => {
+                        const req = indexedDB.deleteDatabase(d.name);
+                        req.onsuccess = req.onerror = req.onblocked = () => res();
+                    })));
+                }
+            } catch {}
+            // Theme is the only pref we DO seed — without it the page
+            // flashes light briefly before settling, and the
+            // <prefers-color-scheme> emulation above isn't always
+            // honoured by the explicit `bowire_theme_pref` reader.
+            try { localStorage.setItem('bowire_theme_pref', theme); } catch {}
+        }, THEME);
+        await frPage.reload({ waitUntil: 'domcontentloaded' });
+        await frPage.waitForSelector('#bowire-app.bowire-app-ready', { timeout: 20000 });
+        // The first-run home band renders synchronously on the first
+        // paint after app-ready, but the empty-card icon/svg + button
+        // hydrate a tick later. Wait for the band specifically.
+        await frPage.waitForSelector('.bowire-home-band-firstrun', { timeout: 10000 });
+        await frPage.waitForTimeout(800);
+        // Sanity check — abort the capture if the welcome surface
+        // didn't actually land, so we don't silently overwrite the
+        // good PNG with a broken one.
+        const ok = await frPage.evaluate(() => {
+            const band = document.querySelector('.bowire-home-band-firstrun');
+            if (!band) return false;
+            const txt = (band.innerText || '').toLowerCase();
+            return txt.includes('workspace');
+        });
+        if (!ok) {
+            log('  (first-run welcome did NOT render — skipping write)');
+        } else {
+            // Mirror behaviour of shotQuickstart: write
+            // bowire-first-run-<theme>.png to docs/images/ AND
+            // first-run-<theme>.png to site/assets/images/screenshots/.
+            const docsFile = path.join(QUICKSTART_OUT, `bowire-first-run-${THEME}.png`);
+            const siteFile = path.join(OUT, `first-run-${THEME}.png`);
+            await frPage.screenshot({ path: docsFile, fullPage: false });
+            fs.copyFileSync(docsFile, siteFile);
+            if (THEME === 'dark') {
+                fs.copyFileSync(docsFile, path.join(QUICKSTART_OUT, 'bowire-first-run.png'));
+                fs.copyFileSync(docsFile, path.join(OUT, 'first-run.png'));
+            }
+            log(`  -> bowire-first-run-${THEME}.png  (docs + screenshots mirror, standalone Tool)`);
+        }
+        await frCtx.close();
+    } catch (e) {
+        log(`  (first-run capture failed: ${e.message.split('\n')[0]})`);
     }
 
     await ctx.close();
