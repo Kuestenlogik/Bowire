@@ -274,10 +274,15 @@ async function main() {
                 }, { version: BUILD_VERSION, date: BUILD_DATE, isCover: rel === 'index.html' });
                 // Capture the rendered page's title for outline-tree
                 // child labels. docfx wires `<title>` from front-matter
-                // (or <h1>) so this gives us the same human-readable
-                // heading the reader sees at the top of the page.
+                // (or <h1>) and appends the site name with a pipe
+                // separator ("Embedded Mode | Bowire Documentation").
+                // Strip everything from the first ` | ` onward so the
+                // bookmark label stays compact; the section name is
+                // already implicit in the parent outline entry.
                 try {
-                    const t = (await page.title() || '').trim();
+                    let t = (await page.title() || '').trim();
+                    const sep = t.indexOf(' | ');
+                    if (sep > 0) t = t.substring(0, sep).trim();
                     if (t) pageTitles.set(relUnix, t);
                 } catch (_) { /* fall through to filename-derived title */ }
                 const buf = await page.pdf({
@@ -335,21 +340,24 @@ async function main() {
 }
 
 /**
- * Hand-build a 2-level PDF 1.7 outline (bookmark) tree on the merged
- * document. pdf-lib doesn't expose a high-level outline API — we mutate
- * the catalog directly. Structure per spec:
+ * Hand-build a recursive (N-level) PDF 1.7 outline (bookmark) tree on
+ * the merged document. pdf-lib doesn't expose a high-level outline API
+ * — we mutate the catalog directly. Structure per spec:
  *
  *   Catalog /Outlines      -> ref to root outline dict
  *   Catalog /PageMode      -> /UseOutlines (auto-opens the bookmark panel)
  *   Root outline dict      -> { Type: 'Outlines', First, Last, Count }
- *   Top-level item dicts   -> { Title (HexString), Parent: root, Dest, Prev?, Next?, First?, Last?, Count? }
- *   Child item dicts       -> { Title (HexString), Parent: <parent-item-ref>, Dest, Prev?, Next? }
+ *   Each item dict         -> { Title (HexString), Parent, Dest [pageRef /Fit],
+ *                               Prev?, Next?, First?, Last?, Count? }
  *
- * Layer 1 = TOC_ENTRIES (Quickstart, Setup, User Guide, …).
- * Layer 2 = every page beneath the same section directory, ordered as
- *           they land in the merged PDF. Titles come from the rendered
- *           page's <title> (docfx wires it from front-matter / h1), with
- *           a filename-fallback when that's empty.
+ * Hierarchy mirrors the docs directory tree:
+ *   - Top-level = TOC_ENTRIES (Quickstart, Setup, User Guide, …)
+ *   - Children of a section's index.html = every page directly under
+ *     that section's directory PLUS the index.html of any sub-directory
+ *   - Sub-directory's children recurse the same rule
+ *
+ * Counts use the PDF convention: negative Count keeps the item closed
+ * by default (the reader expands what they want).
  */
 function buildOutlineTree(merged, sectionStartPages, pageStartIndices, pageTitles) {
     const usable = TOC_ENTRIES.filter(e => sectionStartPages.has(e.file));
@@ -360,86 +368,111 @@ function buildOutlineTree(merged, sectionStartPages, pageStartIndices, pageTitle
     const ctx = merged.context;
     const pageRefs = merged.getPages().map(p => p.ref);
 
-    const outlinesRef = ctx.nextRef();
-
-    // For each top-level section, collect its child pages from
-    // pageStartIndices. Children = every page under the same directory
-    // prefix as the section's index.html, except the index itself.
-    // Sort by page-start so the outline matches reading order.
-    function childrenFor(entry) {
-        const lastSlash = entry.file.lastIndexOf('/');
-        if (lastSlash < 0) return [];   // single-file section: no children
-        const dir = entry.file.substring(0, lastSlash + 1);
-        const rows = [];
-        for (const [rel, startIdx] of pageStartIndices) {
-            if (!rel.startsWith(dir)) continue;
-            if (rel === entry.file) continue;
-            rows.push({ rel, startIdx });
-        }
-        rows.sort((a, b) => a.startIdx - b.startIdx);
-        return rows;
-    }
-
     function fallbackTitle(rel) {
         const base = rel.substring(rel.lastIndexOf('/') + 1).replace(/\.html$/, '');
-        // 'auth-providers' → 'Auth providers'
         return base.replace(/[-_]/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
     }
 
-    const topRefs = usable.map(() => ctx.nextRef());
+    // Build a tree node for a given .html file. If the file is an
+    // index.html, its directory's other pages + sub-directory
+    // index.htmls become its children (recursively). Non-index files
+    // are leaves.
+    function buildNode(file, customTitle) {
+        const node = {
+            rel: file,
+            title: customTitle || pageTitles.get(file) || fallbackTitle(file),
+            startIdx: pageStartIndices.get(file),
+            children: [],
+        };
 
-    usable.forEach((entry, i) => {
-        const startPage = sectionStartPages.get(entry.file);
-        const pageRef = pageRefs[startPage];
-
-        const children = childrenFor(entry);
-        const childRefs = children.map(() => ctx.nextRef());
-
-        // Top-level item.
-        const item = ctx.obj({
-            Title: PDFHexString.fromText(entry.title),
-            Parent: outlinesRef,
-            Dest: [pageRef, PDFName.of('Fit')],
-        });
-        if (i > 0) item.set(PDFName.of('Prev'), topRefs[i - 1]);
-        if (i < topRefs.length - 1) item.set(PDFName.of('Next'), topRefs[i + 1]);
-        if (childRefs.length > 0) {
-            item.set(PDFName.of('First'), childRefs[0]);
-            item.set(PDFName.of('Last'), childRefs[childRefs.length - 1]);
-            // Negative Count keeps the section collapsed by default —
-            // expanded by the reader on click. Positive would open
-            // all sections at once, drowning the side panel.
-            item.set(PDFName.of('Count'), PDFNumber.of(-childRefs.length));
+        if (!file.endsWith('/index.html') && file !== 'index.html') {
+            return node;   // non-section page → leaf
         }
-        ctx.assign(topRefs[i], item);
 
-        // Children.
-        children.forEach((child, ci) => {
-            const childTitle = pageTitles.get(child.rel) || fallbackTitle(child.rel);
-            const childItem = ctx.obj({
-                Title: PDFHexString.fromText(childTitle),
-                Parent: topRefs[i],
-                Dest: [pageRefs[child.startIdx], PDFName.of('Fit')],
-            });
-            if (ci > 0) childItem.set(PDFName.of('Prev'), childRefs[ci - 1]);
-            if (ci < childRefs.length - 1) childItem.set(PDFName.of('Next'), childRefs[ci + 1]);
-            ctx.assign(childRefs[ci], childItem);
+        const dir = file === 'index.html'
+            ? ''
+            : file.substring(0, file.length - 'index.html'.length);
+
+        // Top-level (cover) has no children — TOC_ENTRIES already
+        // enumerate the top-level sections separately.
+        if (dir === '') return node;
+
+        const direct = [];                       // rel-paths of immediate child pages
+        const subSections = new Map();           // subDirName → its index.html path
+        for (const rel of pageStartIndices.keys()) {
+            if (rel === file) continue;
+            if (!rel.startsWith(dir)) continue;
+            const sub = rel.substring(dir.length);
+            if (!sub.includes('/')) {
+                direct.push(rel);
+            } else {
+                const sdName = sub.substring(0, sub.indexOf('/'));
+                const sdIndex = dir + sdName + '/index.html';
+                if (pageStartIndices.has(sdIndex) && !subSections.has(sdName)) {
+                    subSections.set(sdName, sdIndex);
+                }
+            }
+        }
+        const childRels = [...direct, ...subSections.values()];
+        // Sort by reading order — that's the source-walked sequence
+        // collectPages produced, captured in pageStartIndices.
+        childRels.sort((a, b) => pageStartIndices.get(a) - pageStartIndices.get(b));
+        node.children = childRels.map(c => buildNode(c));
+        return node;
+    }
+
+    const topNodes = usable.map(e => buildNode(e.file, e.title));
+
+    // Two-pass emit: first assign a PDFRef to every node so siblings
+    // and parents can reference each other up-front; then create
+    // each dict with the full wiring.
+    const outlinesRef = ctx.nextRef();
+    function assignRefs(node) {
+        node.ref = ctx.nextRef();
+        node.children.forEach(assignRefs);
+    }
+    topNodes.forEach(assignRefs);
+
+    function emitNode(node, parentRef, siblings, indexInSiblings) {
+        const dict = ctx.obj({
+            Title: PDFHexString.fromText(node.title),
+            Parent: parentRef,
+            Dest: [pageRefs[node.startIdx], PDFName.of('Fit')],
         });
-    });
+        if (indexInSiblings > 0) dict.set(PDFName.of('Prev'), siblings[indexInSiblings - 1].ref);
+        if (indexInSiblings < siblings.length - 1) dict.set(PDFName.of('Next'), siblings[indexInSiblings + 1].ref);
+        if (node.children.length > 0) {
+            dict.set(PDFName.of('First'), node.children[0].ref);
+            dict.set(PDFName.of('Last'), node.children[node.children.length - 1].ref);
+            // Negative Count = item closed by default. Per PDF 1.7
+            // spec the magnitude is the descendants visible IF it
+            // were open. With everything-collapsed mode, opening a
+            // node reveals only its immediate children (themselves
+            // still collapsed), so the magnitude is children.length.
+            dict.set(PDFName.of('Count'), PDFNumber.of(-node.children.length));
+        }
+        ctx.assign(node.ref, dict);
 
-    const outlinesDict = ctx.obj({
-        Type: 'Outlines',
-    });
-    outlinesDict.set(PDFName.of('First'), topRefs[0]);
-    outlinesDict.set(PDFName.of('Last'), topRefs[topRefs.length - 1]);
-    outlinesDict.set(PDFName.of('Count'), PDFNumber.of(topRefs.length));
+        node.children.forEach((c, i) => emitNode(c, node.ref, node.children, i));
+    }
+    topNodes.forEach((tn, i) => emitNode(tn, outlinesRef, topNodes, i));
+
+    const outlinesDict = ctx.obj({ Type: 'Outlines' });
+    outlinesDict.set(PDFName.of('First'), topNodes[0].ref);
+    outlinesDict.set(PDFName.of('Last'), topNodes[topNodes.length - 1].ref);
+    // Root /Count = visible items across all levels at first paint.
+    // Everything collapsed → only the top-level entries are visible.
+    outlinesDict.set(PDFName.of('Count'), PDFNumber.of(topNodes.length));
     ctx.assign(outlinesRef, outlinesDict);
 
     merged.catalog.set(PDFName.of('Outlines'), outlinesRef);
     merged.catalog.set(PDFName.of('PageMode'), PDFName.of('UseOutlines'));
 
-    const totalChildren = usable.reduce((sum, e) => sum + childrenFor(e).length, 0);
-    log(`  outline tree: ${topRefs.length} sections + ${totalChildren} child pages wired`);
+    function tally(nodes) {
+        return nodes.reduce((sum, n) => sum + 1 + tally(n.children), 0);
+    }
+    const total = tally(topNodes);
+    log(`  outline tree: ${topNodes.length} sections + ${total - topNodes.length} descendants wired`);
 }
 
 main().catch(err => {
