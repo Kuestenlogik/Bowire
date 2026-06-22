@@ -274,13 +274,32 @@ pre > code {
     border-radius: 4px;
 }
 
+/* Burger picks up the same 32×32 transparent-box shape as its
+   .theme-toggle / .search-toggle / .nav-home siblings, with the
+   same --text-secondary tint + accent hover. Earlier values
+   (color: --text, padding: 4px, no fixed box, no flex centering)
+   left the burger sitting baseline-aligned with the text-secondary
+   icons left of it — visibly higher, darker, and slightly off-grid. */
 .mobile-menu-toggle {
     display: none;
-    background: none;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    background: transparent;
     border: none;
-    color: var(--text);
+    color: var(--text-secondary);
     cursor: pointer;
-    padding: 4px;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.2s;
+}
+.mobile-menu-toggle:hover {
+    color: var(--accent);
+}
+.mobile-menu-toggle:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+    border-radius: 4px;
 }
 
 /* ===== Hero ===== */
@@ -4019,16 +4038,16 @@ button.comparison-bestfor-card.active .comparison-bestfor-name {
     .header-nav {
         display: none;
         position: absolute;
-        /* Sits flush against the header's bottom edge. A pure
-           top:var(--header-height) used to leave a 1–2 px gap on some
-           browsers because the header's 1 px transparent border-bottom
-           pushes the visual lower edge to header-height + 1 px while
-           the dropdown anchored at header-height itself. The -1 px
-           overlap pulls the dropdown UP one pixel so the two panels
-           are continuous — the border-bottom-color goes transparent
-           anyway via the :has(.open) rule below, so no visible double
-           line. */
-        top: calc(var(--header-height) - 1px);
+        /* Sits flush against the header's bottom edge. We anchor 2 px
+           ABOVE the header's bottom and let the dropdown's opaque
+           background cover the header's border-bottom (transparent
+           when scrolled+open via :has(); solid otherwise). The earlier
+           1 px overlap left a visible hairline on browsers without
+           :has() support — Safari < 17.4 / older WebViews where the
+           border-bottom-color reset never fires. 2 px is enough to
+           kill the hairline on subpixel-DPR phones without eating into
+           the dropdown's visible padding. */
+        top: calc(var(--header-height) - 2px);
         left: 0;
         right: 0;
         /* Background must match .site-header.scrolled so there's no
@@ -4055,7 +4074,7 @@ button.comparison-bestfor-card.active .comparison-bestfor-name {
     }
 
     .mobile-menu-toggle {
-        display: block;
+        display: inline-flex;
     }
 
     /* Mobile right-hand action row: keep all five icons (search,
@@ -4227,12 +4246,26 @@ button.comparison-bestfor-card.active .comparison-bestfor-name {
     .hero-actions {
         flex-direction: column;
         align-items: center;
+        gap: 8px;
     }
-
-    .btn {
-        width: 100%;
-        max-width: 280px;
+    /* Phone-sized hero CTAs — the old `.btn { width: 100%; max-width:
+       280px }` blew the buttons up to 280 px wide on a 360 px viewport
+       and stacked three of them vertically, eating 120 + px of fold
+       above the terminal. Size-to-content + tighter padding + a smaller
+       font keeps the trio at a sensible footprint while still hitting
+       the 44 px touch target. Scope was also widened from `.btn` to
+       cover every .btn on the page; pin it to .hero-actions .btn so
+       in-page CTAs (Bootcamp launcher, cards) keep their own sizing. */
+    .hero-actions .btn {
+        width: auto;
+        max-width: none;
+        padding: 10px 18px;
+        font-size: 0.875rem;
         justify-content: center;
+    }
+    .hero-actions .btn svg {
+        width: 16px;
+        height: 16px;
     }
 
     .hero-terminal {
