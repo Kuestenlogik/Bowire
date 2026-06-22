@@ -3118,6 +3118,20 @@ button.comparison-bestfor-card.active .comparison-bestfor-name {
     pointer-events: auto;
 }
 
+/* Affordance: cells carrying a data-detail attribute get a help cursor +
+   subtle dotted underline ring around the symbol on hover. Without it
+   the ✓ in `td.comparison-bowire[data-detail]` (SOAP/AMQP/NATS/…) reads
+   identical to every other ✓ and the operator has no signal that there's
+   more info under it. */
+.comparison-table td[data-detail] {
+    cursor: help;
+    position: relative;
+}
+.comparison-table td.comparison-bowire[data-detail]:hover {
+    text-decoration: underline dotted;
+    text-underline-offset: 4px;
+}
+
 /* Tooltip on the <td> itself — used by c-partial / c-yes / c-no cells where
    the original text lives in data-detail rather than inside a pill span. */
 .comparison-table td[data-detail]:hover::after {
