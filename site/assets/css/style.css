@@ -4257,37 +4257,33 @@ button.comparison-bestfor-card.active .comparison-bestfor-name {
         margin: 0;
     }
 
+    /* Phone-sized hero CTAs — keep the row layout (not a column) so
+       the three buttons stay visually balanced and the trio sits in
+       one horizontal strip rather than eating 120 + px of vertical
+       fold above the terminal. Equal-thirds via `flex: 1 1 0` makes
+       each button render at the same width regardless of label
+       length, otherwise "View on GitHub" (the longest) reads visibly
+       wider than "Bootcamp" and the row looks restless. Padding +
+       icon shrink so the trio still fits a 320 px viewport. */
     .hero-actions {
-        flex-direction: column;
-        align-items: center;
-        gap: 8px;
+        flex-direction: row;
+        flex-wrap: nowrap;
+        gap: 6px;
+        align-items: stretch;
     }
-    /* Phone-sized hero CTAs — the old `.btn { width: 100%; max-width:
-       280px }` blew the buttons up to 280 px wide on a 360 px viewport
-       and stacked three of them vertically, eating 120 + px of fold
-       above the terminal. Size-to-content + tighter padding + a smaller
-       font keeps the trio at a sensible footprint while still hitting
-       the 44 px touch target. Scope was also widened from `.btn` to
-       cover every .btn on the page; pin it to .hero-actions .btn so
-       in-page CTAs (Bootcamp launcher, cards) keep their own sizing. */
     .hero-actions .btn {
-        /* Reset the `flex: 1 1 220px` set by the 700 px block above.
-           With flex-direction: column the parent treats flex-basis as
-           the MAIN-axis size — i.e. HEIGHT — so the legacy 220 px
-           basis stretched each button to 220 px tall while
-           align-items: center kept them narrow horizontally. End
-           result: "schmaler aber viel zu hoch". `flex: 0 0 auto`
-           drops the basis-as-height stretch; size-to-content again. */
-        flex: 0 0 auto;
-        width: auto;
+        flex: 1 1 0;
+        min-width: 0;
         max-width: none;
-        padding: 10px 18px;
-        font-size: 0.875rem;
+        padding: 10px 8px;
+        font-size: 0.8125rem;
         justify-content: center;
+        white-space: nowrap;
     }
     .hero-actions .btn svg {
-        width: 16px;
-        height: 16px;
+        width: 14px;
+        height: 14px;
+        flex-shrink: 0;
     }
 
     .hero-terminal {
