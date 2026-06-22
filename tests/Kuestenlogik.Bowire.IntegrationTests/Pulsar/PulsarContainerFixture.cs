@@ -27,7 +27,7 @@ public sealed class PulsarContainerFixture : IAsyncLifetime
 {
     // Pin the image — Testcontainers.Pulsar 4.12 deprecated the
     // parameterless ctor; the 3.3.x line is the latest GA at the time
-    // of writing and matches the samples/Pulsar compose pin.
+    // of writing and matches the examples/Pulsar compose pin.
     private readonly PulsarContainer _container =
         new PulsarBuilder("apachepulsar/pulsar:3.3.0").Build();
 

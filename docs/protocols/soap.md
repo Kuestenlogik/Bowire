@@ -54,4 +54,4 @@ SOAP has no streaming primitive — `InvokeStreamAsync` always returns empty and
 
 ## Sample
 
-A hand-rolled SOAP-1.1 Calculator service (no WCF dependency) lives at [`samples/Soap/CalculatorService`](https://github.com/Kuestenlogik/Bowire/tree/main/samples/Soap/CalculatorService) — `dotnet run`, point Bowire at `http://localhost:5180/Calculator.asmx`.
+A hand-rolled SOAP-1.1 Calculator service (no WCF dependency) lives at [`examples/Soap/CalculatorService`](https://github.com/Kuestenlogik/Bowire/tree/main/examples/Soap/CalculatorService) — `dotnet run`, point Bowire at `http://localhost:5180/Calculator.asmx`.
