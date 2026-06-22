@@ -4052,16 +4052,19 @@ button.comparison-bestfor-card.active .comparison-bestfor-name {
     .header-nav {
         display: none;
         position: absolute;
-        /* Sits flush against the header's bottom edge. We anchor 2 px
-           ABOVE the header's bottom and let the dropdown's opaque
-           background cover the header's border-bottom (transparent
-           when scrolled+open via :has(); solid otherwise). The earlier
-           1 px overlap left a visible hairline on browsers without
-           :has() support — Safari < 17.4 / older WebViews where the
-           border-bottom-color reset never fires. 2 px is enough to
-           kill the hairline on subpixel-DPR phones without eating into
-           the dropdown's visible padding. */
-        top: calc(var(--header-height) - 2px);
+        /* Anchor flush against the header's bottom edge with a
+           guaranteed visible-pixel overlap. Calc-based offsets like
+           `calc(var(--header-height) - 2px)` land at sub-pixel rows
+           on hi-DPR phones (a 64 px header on devicePixelRatio 2.625
+           renders the bottom edge at row 63.6, so 62 px positioning
+           overshoots by ~1.6 px → visible hairline). Anchoring at
+           the nominal bottom edge + a -4 px margin-top forces the
+           browser to overlap the seam by a full integer-pixel
+           regardless of DPR. The :has(.header-nav.open) rule on the
+           header paints the same alpha over the overlap so the
+           dropdown reads as a seamless extension of the bar. */
+        top: var(--header-height);
+        margin-top: -4px;
         left: 0;
         right: 0;
         /* Background must match .site-header.scrolled so there's no
