@@ -110,6 +110,21 @@ async function shotQuickstart(page, name) {
 }
 
 /**
+ * Pre-shot DOM cleanup: remove contextual `bowire-inline-hint` chips
+ * (the Assistant-related hint banners that surface at the target
+ * surface — see ai.js:402). The marketing carousel cards crop to a
+ * response/recording pane and the hint would otherwise dominate the
+ * frame, pushing the actual feature content (message list, JSON
+ * tree, recording timeline) below the fold. Idempotent — no-op when
+ * no hint is currently rendered.
+ */
+async function hideInlineHints(page) {
+    await page.evaluate(() => {
+        document.querySelectorAll('.bowire-inline-hint-wrap, .bowire-inline-hint').forEach(n => n.remove());
+    });
+}
+
+/**
  * v2.0: rail-mode catalogue replaces the old #bowire-view-pill-* row.
  * Every mode-switch icon is a .bowire-rail-btn carrying data-rail-mode-id.
  * Use this helper instead of legacy `#bowire-view-pill-<view>` IDs.
@@ -338,7 +353,10 @@ async function clickMethodItem(page, text) {
         }
         // The feature is "click any JSON value to chain" — crop to
         // the response pane so the screenshot shows the picker
-        // affordance + JSON tree, not the whole workbench.
+        // affordance + JSON tree, not the whole workbench. Strip the
+        // Assistant inline-hint chip first so it doesn't dominate
+        // the cropped frame.
+        await hideInlineHints(page);
         await shot(page, 'json-chaining', { selector: '[id^="bowire-response-pane"]' });
     } catch (e) {
         log(`  (json-chaining failed: ${e.message.split('\n')[0]})`);
@@ -358,6 +376,10 @@ async function clickMethodItem(page, text) {
     // Crop to the response pane so the screenshot shows the streaming
     // surface only — the protocols.html consumer's alt text talks
     // about the "frame pane", that's exactly what we capture.
+    // Strip the Assistant inline-hint chip first; in the carousel
+    // card it would otherwise dominate the cropped frame and bury
+    // the actual message-list view this scene is meant to show.
+    await hideInlineHints(page);
     await shot(page, 'streaming', { selector: '[id^="bowire-response-pane"]' });
     // Stop the stream so the next shot isn't racing against incoming frames.
     const cancelBtn = page.locator('.bowire-cancel-btn, #bowire-cancel-btn').first();
@@ -438,12 +460,18 @@ async function clickMethodItem(page, text) {
         await page.locator('.bowire-execute-btn').first().click();
         await page.waitForTimeout(1200);
 
+        // Use IDs that actually exist in the Combined sample's seeded
+        // HarborStore — ships are 101/102/103, docks 1-5 (1+3 occupied,
+        // 2/4/5 free). Earlier shipId=1/dockNumber=1 failed validation
+        // on both counts (no ship 1, dock 1 already busy) and shipped
+        // a recording with two red rows — not exactly the "record &
+        // replay" positive demo the marketing card needs.
         await clickMethodItem(page, 'SchedulePortCall');
         await page.waitForTimeout(600);
         const shipId = page.locator('input[data-field-key="shipId"]').first();
-        if (await shipId.isVisible().catch(() => false)) await shipId.fill('1');
+        if (await shipId.isVisible().catch(() => false)) await shipId.fill('103');
         const dockNum = page.locator('input[data-field-key="dockNumber"]').first();
-        if (await dockNum.isVisible().catch(() => false)) await dockNum.fill('1');
+        if (await dockNum.isVisible().catch(() => false)) await dockNum.fill('5');
         const arrivalTs = page.locator('input[data-field-key="scheduledArrivalUnixS"]').first();
         if (await arrivalTs.isVisible().catch(() => false)) {
             await arrivalTs.fill(String(Math.floor(Date.now() / 1000) + 3600));
@@ -461,6 +489,7 @@ async function clickMethodItem(page, text) {
         // selection.
         await page.waitForSelector('.bowire-recording-detail .bowire-recording-step-row, .bowire-recording-detail-header', { timeout: 4000 }).catch(() => {});
         await page.waitForTimeout(400);
+        await hideInlineHints(page);
         await shot(page, 'recording', { selector: '.bowire-recording-detail' });
     } else {
         log('  (recordings rail toolbar primary not found — leaving placeholder)');
