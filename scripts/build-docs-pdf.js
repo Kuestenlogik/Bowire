@@ -23,7 +23,7 @@
 const { chromium } = require('@playwright/test');
 const fs = require('fs');
 const path = require('path');
-const { PDFDocument } = require('pdf-lib');
+const { PDFDocument, PDFName, PDFNumber, PDFHexString } = require('pdf-lib');
 
 const ROOT = path.resolve(__dirname, '..');
 const SRC = path.join(ROOT, 'artifacts', 'docs-standalone');
@@ -220,9 +220,19 @@ async function main() {
         const merged = await PDFDocument.create();
         const ctx = await browser.newContext({ viewport: { width: 1200, height: 900 } });
 
+        // #241 — track the merged-PDF page index at which each TOC
+        // entry's source file lands so we can build a proper outline
+        // tree after the merge. The reader's side-panel bookmarks
+        // become the actual navigation primitive.
+        const sectionStartPages = new Map();
+
         let count = 0;
         let tocInserted = false;
         for (const rel of pages) {
+            // 0-based index where THIS rel will land in the merged PDF.
+            if (TOC_ENTRIES.some(e => e.file === rel)) {
+                sectionStartPages.set(rel, merged.getPageCount());
+            }
             const url = 'file://' + path.join(SRC, rel).split(path.sep).join('/');
             const page = await ctx.newPage();
             try {
@@ -292,12 +302,70 @@ async function main() {
         }
         await ctx.close();
 
+        // #241 — Attach a /Outlines tree to the merged PDF so Acrobat /
+        // Preview / Sumatra / Foxit show clickable section bookmarks
+        // in the side panel. That's the actual TOC navigation primitive
+        // in PDFs — the front-matter TOC sheet is informational only.
+        buildOutlineTree(merged, sectionStartPages);
+
         const bytes = await merged.save();
         fs.writeFileSync(OUT_PATH, bytes);
         log(`wrote ${OUT_PATH} (${(bytes.length / 1024).toFixed(0)} KB, ${merged.getPageCount()} pages from ${count} sources)`);
     } finally {
         await browser.close();
     }
+}
+
+/**
+ * Hand-build a PDF 1.7 outline (bookmark) tree on the merged document.
+ * pdf-lib doesn't expose a high-level outline API — we mutate the
+ * catalog directly. Structure per spec:
+ *
+ *   Catalog /Outlines      -> ref to root outline dict
+ *   Catalog /PageMode      -> /UseOutlines (auto-opens the bookmark panel)
+ *   Root outline dict      -> { Type: 'Outlines', First, Last, Count }
+ *   Each item dict         -> { Title (HexString), Parent: root, Dest: [pageRef, /Fit], Prev?, Next? }
+ *
+ * One top-level entry per curated section in TOC_ENTRIES; their
+ * destinations are the merged-PDF page indices captured in
+ * sectionStartPages during the render loop.
+ */
+function buildOutlineTree(merged, sectionStartPages) {
+    const usable = TOC_ENTRIES.filter(e => sectionStartPages.has(e.file));
+    if (usable.length === 0) {
+        log('  no sections matched TOC entries — outline tree skipped');
+        return;
+    }
+    const ctx = merged.context;
+    const pageRefs = merged.getPages().map(p => p.ref);
+
+    const outlinesRef = ctx.nextRef();
+    const itemRefs = usable.map(() => ctx.nextRef());
+
+    usable.forEach((entry, i) => {
+        const startPage = sectionStartPages.get(entry.file);
+        const pageRef = pageRefs[startPage];
+        const item = ctx.obj({
+            Title: PDFHexString.fromText(entry.title),
+            Parent: outlinesRef,
+            Dest: [pageRef, PDFName.of('Fit')],
+        });
+        if (i > 0) item.set(PDFName.of('Prev'), itemRefs[i - 1]);
+        if (i < itemRefs.length - 1) item.set(PDFName.of('Next'), itemRefs[i + 1]);
+        ctx.assign(itemRefs[i], item);
+    });
+
+    const outlinesDict = ctx.obj({
+        Type: 'Outlines',
+    });
+    outlinesDict.set(PDFName.of('First'), itemRefs[0]);
+    outlinesDict.set(PDFName.of('Last'), itemRefs[itemRefs.length - 1]);
+    outlinesDict.set(PDFName.of('Count'), PDFNumber.of(itemRefs.length));
+    ctx.assign(outlinesRef, outlinesDict);
+
+    merged.catalog.set(PDFName.of('Outlines'), outlinesRef);
+    merged.catalog.set(PDFName.of('PageMode'), PDFName.of('UseOutlines'));
+    log(`  outline tree: ${itemRefs.length} section bookmarks wired`);
 }
 
 main().catch(err => {
