@@ -10,9 +10,7 @@ GitHub Release UI or `gh release edit <tag>` to change the editorial
 text; re-run the generator to refresh the mirror.
 
 ---
-## v2.0.0 — draft — re-architected workbench + git-backed workspaces
-
-> _Draft release — body subject to change before publication. Source: https://github.com/Kuestenlogik/Bowire/releases/tag/untagged-e0950f9da252f2d2001f_
+## v2.0.0 — 2026-06-21 — Re-architected workbench shell + workspace = project folder
 
 v2.0 is the cut where every optional surface gets pulled out of the core, the workbench shell gets re-architected end-to-end, and a couple of API-level decisions get unwound now that they have stable replacements. Embedded hosts that vendored `Kuestenlogik.Bowire` directly will need a small set of explicit changes — see **Breaking changes** at the bottom.
 

@@ -592,13 +592,23 @@ jobs:
               # Strip YAML front-matter; the body downstream is pure
               # markdown that lands as-is in the release.
               CANDIDATE_BODY=$(awk 'BEGIN{fm=0} /^---$/{fm++; next} fm<2{next} {print}' "$candidate")
-              # Ignore template placeholders so an unedited upcoming.md
-              # doesn't ship as "real" notes.
-              CLEAN=$(echo "$CANDIDATE_BODY" | sed -E 's/<[^>]+>//g; /^[[:space:]]*$/d' | head -c 1)
-              if [[ -n "$CLEAN" ]]; then
+              # Placeholder detection: a release-notes file is "real"
+              # only when it carries at least one `### <heading>` —
+              # i.e. a populated Highlights / Breaking subsection.
+              # Stripping single-line `<…>` left multi-line HTML
+              # comments + bare `## Highlights` headings behind so the
+              # 2.1 upcoming.md template was indistinguishable from a
+              # filled-in body, and shipped instead of the v2.0.0
+              # curated content (root-cause documented in v2.0.0.md's
+              # commit). Counting `###` lines is a stricter signal
+              # that survives template noise.
+              SECTION_COUNT=$(echo "$CANDIDATE_BODY" | grep -cE '^### ' || true)
+              if [[ "${SECTION_COUNT:-0}" -gt 0 ]]; then
                 NOTES="$CANDIDATE_BODY"
-                echo "Using editorial body from ${candidate}"
+                echo "Using editorial body from ${candidate} (${SECTION_COUNT} section(s))"
                 break
+              else
+                echo "Skipping ${candidate} — no ### subsections detected (treated as placeholder)."
               fi
             fi
           done
