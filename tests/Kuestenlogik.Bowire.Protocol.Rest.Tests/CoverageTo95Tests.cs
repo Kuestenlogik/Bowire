@@ -91,12 +91,28 @@ public sealed class CoverageTo95Tests
         // URL discovery. Embedded discovery returns false because no
         // IApiDescriptionGroupCollectionProvider is in the (null) SP.
         // Result: an empty list, not a throw.
-        using var protocol = new BowireRestProtocol();
-        var services = await protocol.DiscoverAsync(
-            serverUrl: string.Empty,
-            showInternalServices: false,
-            TestContext.Current.CancellationToken);
-        Assert.Empty(services);
+        //
+        // OpenApiUploadStore is process-wide; sibling tests in this
+        // assembly (e.g. OpenApiUploadStoreTests, BowireRestProtocolTests'
+        // upload-driven cases) seed it with synthetic specs and don't
+        // always clear before the next test runs. Without an explicit
+        // Clear here the test fails on CI when ordering puts an upload-
+        // seeding test first. Local runs pass because the alphabetical
+        // ordering happens to favour us.
+        OpenApiUploadStore.Clear();
+        try
+        {
+            using var protocol = new BowireRestProtocol();
+            var services = await protocol.DiscoverAsync(
+                serverUrl: string.Empty,
+                showInternalServices: false,
+                TestContext.Current.CancellationToken);
+            Assert.Empty(services);
+        }
+        finally
+        {
+            OpenApiUploadStore.Clear();
+        }
     }
 
     [Fact]
