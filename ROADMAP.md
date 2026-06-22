@@ -90,7 +90,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.1 — Scripting, variable resolver, throughput surface *(due 2026-06-30)*
 
-**0/12 done** · 12 backlog
+**1/12 done** · 11 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -102,10 +102,10 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [145](https://github.com/Kuestenlogik/Bowire/issues/145) | Bowire | [Deprecate ${name} in favour of {{name}} (multi-phase migration)](#issue-kuestenlogik-bowire-145) | ⬜ Backlog |  |
 | [153](https://github.com/Kuestenlogik/Bowire/issues/153) | Bowire | [Bowire as transparent interceptor — embedded middleware + standalone reverse-proxy](#issue-kuestenlogik-bowire-153) | ⬜ Backlog |  |
 | [194](https://github.com/Kuestenlogik/Bowire/issues/194) | Bowire | [Action log Phase 2 — remaining mutation sites + cross-reload undo + soft-delete workspaces](#issue-kuestenlogik-bowire-194) | ⬜ Backlog |  |
-| [197](https://github.com/Kuestenlogik/Bowire/issues/197) | Bowire | [Deprecate + unlist Kuestenlogik.Bowire.Extension.MapLibre on nuget.org after v2.0 ships](#issue-kuestenlogik-bowire-197) | ⬜ Backlog |  |
 | [231](https://github.com/Kuestenlogik/Bowire/issues/231) | Bowire | [Benchmarks: 'random' run shape — pick N random endpoints per iteration](#issue-kuestenlogik-bowire-231) | ⬜ Backlog |  |
 | [233](https://github.com/Kuestenlogik/Bowire/issues/233) | Bowire | [Benchmarks: previous-run diff banner on repeat (p95 ▲ / ▼ / status histogram delta)](#issue-kuestenlogik-bowire-233) | ⬜ Backlog |  |
 | [234](https://github.com/Kuestenlogik/Bowire/issues/234) | Bowire | [Benchmarks: result exports — CSV + k6-summary JSON + OTLP metrics](#issue-kuestenlogik-bowire-234) | ⬜ Backlog |  |
+| [197](https://github.com/Kuestenlogik/Bowire/issues/197) | Bowire | [Deprecate + unlist Kuestenlogik.Bowire.Extension.MapLibre on nuget.org after v2.0 ships](#issue-kuestenlogik-bowire-197) | ✅ Done |  |
 
 ### v2.2 — Test pillar: assertions, CI runner, regression coverage *(due 2026-07-10)*
 
@@ -530,10 +530,6 @@ Today Bowire watches traffic in two narrow ways: - **Discover / Recording / Benc
 
 Phase 1 shipped in e084bc3 — central `actionLog`, Statusbar pill, Activity drawer tab, Ctrl/Cmd+Z / Ctrl/Cmd+Shift+Z global shortcuts, `toast({undo, logAction})` helper. The first five mutation sites (collection-delete, flow-delete, env-delete, history-clear, favorites-clear) write to the log. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/194)
 
-#### <a id="issue-kuestenlogik-bowire-197"></a>⬜ Backlog · [#197](https://github.com/Kuestenlogik/Bowire/issues/197) Deprecate + unlist Kuestenlogik.Bowire.Extension.MapLibre on nuget.org after v2.0 ships
-
-`Kuestenlogik.Bowire.Extension.MapLibre` 1.3.0-rc.1 was renamed to `Kuestenlogik.Bowire.Map` ahead of v2.0 (commit 75c8d1f). … [[more]](https://github.com/Kuestenlogik/Bowire/issues/197)
-
 #### <a id="issue-kuestenlogik-bowire-231"></a>⬜ Backlog · [#231](https://github.com/Kuestenlogik/Bowire/issues/231) Benchmarks: 'random' run shape — pick N random endpoints per iteration
 
 Add the **random** run shape to the Benchmarks envelope — picks N random endpoints from the active workspace's discovered services on each iteration. Useful for chaos / fuzz-flavored load tests where the operator wants to hit "anything reachable" rather than a fixed list. [[more]](https://github.com/Kuestenlogik/Bowire/issues/231)
@@ -545,6 +541,10 @@ When the operator hits Run on a benchmark envelope that already has a previous r
 #### <a id="issue-kuestenlogik-bowire-234"></a>⬜ Backlog · [#234](https://github.com/Kuestenlogik/Bowire/issues/234) Benchmarks: result exports — CSV + k6-summary JSON + OTLP metrics
 
 Round out the Benchmarks export surface so result data can leave Bowire in the formats the surrounding tooling actually consumes: [[more]](https://github.com/Kuestenlogik/Bowire/issues/234)
+
+#### <a id="issue-kuestenlogik-bowire-197"></a>✅ Done · [#197](https://github.com/Kuestenlogik/Bowire/issues/197) Deprecate + unlist Kuestenlogik.Bowire.Extension.MapLibre on nuget.org after v2.0 ships
+
+`Kuestenlogik.Bowire.Extension.MapLibre` 1.3.0-rc.1 was renamed to `Kuestenlogik.Bowire.Map` ahead of v2.0 (commit 75c8d1f). … [[more]](https://github.com/Kuestenlogik/Bowire/issues/197)
 
 ### v2.2 — Test pillar: assertions, CI runner, regression coverage *(due 2026-07-10)*
 
