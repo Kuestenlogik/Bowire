@@ -20,7 +20,18 @@
     })();
   </script>
 
-  <link rel="icon" type="image/svg+xml" href="{{ '/assets/images/favicon.svg' | relative_url }}">
+  {%- comment -%}
+    Theme-aware favicon. Browsers ignore `@media (prefers-color-scheme)`
+    INSIDE a single SVG favicon (the favicon picker rasterises the SVG
+    in a CSS-isolated context that doesn't honour OS-theme media
+    queries), so the reliable way to flip colour with the OS theme is
+    two separate SVGs + `<link media="…">` per file. Same technique the
+    Bowire workbench app uses for its tab icon. Black mark for light
+    tab chrome, white for dark — without the dark variant the black
+    mark sat invisibly on a dark-mode browser tab.
+  {%- endcomment -%}
+  <link rel="icon" type="image/svg+xml" media="(prefers-color-scheme: light)" href="{{ '/assets/images/favicon.svg' | relative_url }}">
+  <link rel="icon" type="image/svg+xml" media="(prefers-color-scheme: dark)" href="{{ '/assets/images/favicon-dark.svg' | relative_url }}">
   <link rel="alternate icon" type="image/x-icon" href="{{ '/assets/images/favicon.ico' | relative_url }}">
   <link rel="apple-touch-icon" sizes="180x180" href="{{ '/assets/images/apple-touch-icon.png' | relative_url }}">
 
