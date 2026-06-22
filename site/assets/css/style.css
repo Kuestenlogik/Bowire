@@ -4271,6 +4271,14 @@ button.comparison-bestfor-card.active .comparison-bestfor-name {
        cover every .btn on the page; pin it to .hero-actions .btn so
        in-page CTAs (Bootcamp launcher, cards) keep their own sizing. */
     .hero-actions .btn {
+        /* Reset the `flex: 1 1 220px` set by the 700 px block above.
+           With flex-direction: column the parent treats flex-basis as
+           the MAIN-axis size — i.e. HEIGHT — so the legacy 220 px
+           basis stretched each button to 220 px tall while
+           align-items: center kept them narrow horizontally. End
+           result: "schmaler aber viel zu hoch". `flex: 0 0 auto`
+           drops the basis-as-height stretch; size-to-content again. */
+        flex: 0 0 auto;
         width: auto;
         max-width: none;
         padding: 10px 18px;
