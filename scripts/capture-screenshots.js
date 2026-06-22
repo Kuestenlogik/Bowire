@@ -165,7 +165,29 @@ async function clickMethodItem(page, text) {
     // bowire/, set the pref, then reload.
     await page.goto(URL, { waitUntil: 'domcontentloaded' });
     await page.evaluate((t) => {
-        try { localStorage.setItem('bowire_theme_pref', t); } catch {}
+        try {
+            localStorage.setItem('bowire_theme_pref', t);
+            // v2.0 boots into Home rail by default; the Discover
+            // services tree only attaches to the DOM when Discover is
+            // active. Seeding `bowire_rail_mode` before the reload
+            // makes the page boot directly into Discover without a
+            // post-load click that races with any auto-restore.
+            localStorage.setItem('bowire_rail_mode', 'discover');
+            // The renderMain force-home rule (render-main.js: when no
+            // active workspace AND workspaces.length === 0) overwrites
+            // any pre-seeded rail mode back to 'home' during the first
+            // paint. Seed a default workspace so that guard passes and
+            // the Discover sidebar actually renders.
+            var wsId = 'ws_capture';
+            localStorage.setItem('bowire_workspaces', JSON.stringify([{
+                id: wsId,
+                name: 'Capture',
+                color: '#6366f1',
+                createdAt: Date.now(),
+                lastOpenedAt: Date.now()
+            }]));
+            localStorage.setItem('bowire_active_workspace', wsId);
+        } catch {}
     }, THEME);
     await page.reload({ waitUntil: 'domcontentloaded' });
     await page.waitForSelector('#bowire-app.bowire-app-ready', { timeout: 20000 });
@@ -262,10 +284,15 @@ async function clickMethodItem(page, text) {
     await resetToSidebar(page);
 
     // ---- 4) command-palette ----
+    // v2.0: the omnibox is a modal overlay. The input
+    // (#bowire-command-palette-input) only exists inside the modal
+    // and the modal only opens when the trigger button is clicked or
+    // Ctrl/Cmd+K is pressed.
     try {
         log('command-palette…');
-        await page.locator('#bowire-command-palette-input').click();
-        await page.keyboard.type('port', { delay: 40 });
+        await page.keyboard.press('Control+K');
+        await page.waitForSelector('#bowire-command-palette-input', { timeout: 5000 });
+        await page.locator('#bowire-command-palette-input').fill('port');
         await page.waitForTimeout(500);
         await shot(page, 'command-palette');
         await page.keyboard.press('Escape');
@@ -420,6 +447,21 @@ async function clickMethodItem(page, text) {
         // the sidebar populated and the "failed" shot looks identical to
         // "ready"). Then set the target URL list and reload from a
         // genuinely empty cache.
+        //
+        // v2.0: localStorage.clear() also wipes the workspace seed +
+        // rail mode + workspace-scoped URL key. Without re-seeding,
+        // the render-main force-home rule (no active workspace AND
+        // workspaces.length === 0) kicks in and rewrites the rail
+        // back to 'home' on the very first paint — every "ready /
+        // method-detail / editable / wrong-protocol" shot times out
+        // because the Discover sidebar never attaches. Re-seed:
+        //   - bowire_workspaces (single capture workspace)
+        //   - bowire_active_workspace
+        //   - bowire_rail_mode = discover
+        //   - bowire_theme_pref
+        //   - bowire_ws_<id>_server_urls (workspace-scoped key —
+        //     the legacy bowire_server_urls is an orphan-namespace
+        //     write that prologue.js's wsKey() routes around).
         await ctx.clearCookies().catch(() => {});
         await page.evaluate(async ({ urlsJson, theme }) => {
             try { localStorage.clear(); } catch {}
@@ -434,10 +476,19 @@ async function clickMethodItem(page, text) {
                 }
             } catch {}
             try {
-                localStorage.setItem('bowire_server_urls', urlsJson);
-                // Restore the theme pref that the screenshots rely on —
-                // localStorage.clear() above wiped it.
+                var wsId = 'ws_capture';
+                localStorage.setItem('bowire_workspaces', JSON.stringify([{
+                    id: wsId, name: 'Capture', color: '#6366f1',
+                    createdAt: Date.now(), lastOpenedAt: Date.now()
+                }]));
+                localStorage.setItem('bowire_active_workspace', wsId);
+                localStorage.setItem('bowire_rail_mode', 'discover');
                 localStorage.setItem('bowire_theme_pref', theme);
+                // Workspace-scoped server URLs (matches wsKey() route)
+                localStorage.setItem('bowire_ws_' + wsId + '_server_urls', urlsJson);
+                // Legacy fallback in case any reader still consults the
+                // unscoped key.
+                localStorage.setItem('bowire_server_urls', urlsJson);
             } catch {}
         }, { urlsJson: JSON.stringify(urls), theme: THEME });
     };
