@@ -67,18 +67,34 @@ async function shotQuickstart(page, name) {
     log(`  -> bowire-${name}-${THEME}.png  (docs + screenshots mirror)`);
 }
 
+/**
+ * v2.0: rail-mode catalogue replaces the old #bowire-view-pill-* row.
+ * Every mode-switch icon is a .bowire-rail-btn carrying data-rail-mode-id.
+ * Use this helper instead of legacy `#bowire-view-pill-<view>` IDs.
+ */
+async function clickRail(page, modeId) {
+    const sel = `.bowire-rail-btn[data-rail-mode-id="${modeId}"]`;
+    const btn = page.locator(sel).first();
+    if (await btn.isVisible().catch(() => false)) {
+        await btn.click().catch(() => {});
+        await page.waitForTimeout(300);
+        return true;
+    }
+    return false;
+}
+
 async function resetToSidebar(page) {
-    // Click through any open modal overlays.
-    const closeButtons = await page.locator('.bowire-settings-close, .bowire-env-modal-close').all();
+    // Close any open right-side drawer (Assistant / Help / Tests /
+    // Activity all share the unified .bowire-drawer-close chrome).
+    const closeButtons = await page.locator('.bowire-drawer-close').all();
     for (const b of closeButtons) {
         if (await b.isVisible().catch(() => false)) await b.click().catch(() => {});
     }
-    // Switch back to Services view pill so Sidebar shows all methods.
-    const servicesPill = page.locator('#bowire-view-pill-services').first();
-    if (await servicesPill.isVisible().catch(() => false)) {
-        await servicesPill.click().catch(() => {});
-    }
-    await page.waitForTimeout(300);
+    // Close the App-Drawer if open (B-Logo burger). Esc handles both.
+    await page.keyboard.press('Escape').catch(() => {});
+    await page.waitForTimeout(200);
+    // Switch back to Discover rail so the sidebar shows the services tree.
+    await clickRail(page, 'discover');
     await expandAllGroups(page);
 }
 
@@ -163,10 +179,14 @@ async function clickMethodItem(page, text) {
     await page.waitForTimeout(500);
 
     // ---- 1) flow-editor ----
+    // v2.0: Flows is a rail mode (#137 dispatch). The sidebar's
+    // unified-toolbar `+` (.bowire-sidebar-toolbar-primary) is the
+    // create-flow entry point; legacy #bowire-flow-create-btn IDs
+    // were retired with the toolbar consolidation.
     log('flow-editor…');
-    await page.locator('#bowire-view-pill-flows').click();
+    await clickRail(page, 'flows');
     await page.waitForTimeout(500);
-    const createFlow = page.locator('#bowire-flow-create-btn, #bowire-flow-create-first-btn').first();
+    const createFlow = page.locator('.bowire-sidebar-toolbar-primary').first();
     if (await createFlow.isVisible().catch(() => false)) {
         await createFlow.click();
         await page.waitForTimeout(500);
@@ -255,9 +275,10 @@ async function clickMethodItem(page, text) {
     }
 
     // ---- 5) env-diff (environments view) ----
+    // v2.0: environments is its own rail mode.
     try {
         log('env-diff…');
-        await page.locator('#bowire-view-pill-environments').click();
+        await clickRail(page, 'environments');
         await page.waitForTimeout(600);
         await shot(page, 'env-diff');
         await resetToSidebar(page);
@@ -266,34 +287,48 @@ async function clickMethodItem(page, text) {
     }
 
     // ---- 6) settings ----
+    // v2.0: #bowire-settings-btn retired; openSettings() is exposed
+    // on window and invoked from the App-Drawer + the rail-overflow
+    // menu. Calling it directly lets the screenshot land on the
+    // dialog without depending on the App-Drawer's animation timing.
     try {
         log('settings…');
-        await page.locator('#bowire-settings-btn').click();
+        await page.evaluate(() => {
+            if (typeof window.openSettings === 'function') window.openSettings();
+        });
         await page.waitForTimeout(700);
         await shot(page, 'settings');
-        const settingsClose = page.locator('#bowire-settings-close-btn, .bowire-settings-close').first();
-        if (await settingsClose.isVisible().catch(() => false)) await settingsClose.click();
+        // Settings dialog now closes via the standard modal-close
+        // pattern or Escape. The old `#bowire-settings-close-btn` ID
+        // was removed when Settings adopted the scope-split tree.
+        await page.keyboard.press('Escape').catch(() => {});
         await page.waitForTimeout(300);
     } catch (e) {
         log(`  (settings failed: ${e.message.split('\n')[0]})`);
     }
 
     // ---- 7) recording ----
+    // v2.0: Recordings live on their own rail mode (#137 dispatch).
+    // The Discover-toolbar's record toggle was retired with the
+    // unified-sidebar-toolbar rollout (#426); the start/stop button is
+    // now in the Recordings rail's sidebar toolbar.
   try {
     log('recording…');
-    // Start a recording, execute two unary methods, then open the manager.
-    // GetPortCall (SignalR) + SchedulePortCall (gRPC unary) both come
-    // back immediately so the shot lands on a populated recording table.
-    const recordBtn = page.locator('#bowire-record-btn, .bowire-record-btn').first();
-    if (await recordBtn.isVisible().catch(() => false)) {
-        await recordBtn.click();
+    await clickRail(page, 'recordings');
+    await page.waitForTimeout(500);
+    const recStart = page.locator('.bowire-sidebar-toolbar-primary').first();
+    if (await recStart.isVisible().catch(() => false)) {
+        await recStart.click();
         await page.waitForTimeout(500);
 
+        // Pop back into Discover, hit two unary methods, then return.
+        await clickRail(page, 'discover');
+        await page.waitForTimeout(400);
         await clickMethodItem(page, 'GetPortCall');
         await page.waitForTimeout(600);
         const recId = page.locator('input[data-field-key="portCallId"], input[data-field-key="id"]').first();
         if (await recId.isVisible().catch(() => false)) await recId.fill('1');
-        await page.locator('.bowire-execute-btn, #bowire-execute-btn').first().click();
+        await page.locator('.bowire-execute-btn').first().click();
         await page.waitForTimeout(1200);
 
         await clickMethodItem(page, 'SchedulePortCall');
@@ -306,85 +341,33 @@ async function clickMethodItem(page, text) {
         if (await arrivalTs.isVisible().catch(() => false)) {
             await arrivalTs.fill(String(Math.floor(Date.now() / 1000) + 3600));
         }
-        await page.locator('.bowire-execute-btn, #bowire-execute-btn').first().click();
+        await page.locator('.bowire-execute-btn').first().click();
         await page.waitForTimeout(1200);
 
-        await recordBtn.click(); // stop
+        // Back to Recordings rail to stop + capture the populated state.
+        await clickRail(page, 'recordings');
         await page.waitForTimeout(400);
-    }
-    // Open the recording manager so the captured session shows up.
-    const recordingsBtn = page.locator('#bowire-recordings-btn, [title*="ecording"]').first();
-    if (await recordingsBtn.isVisible().catch(() => false)) {
-        await recordingsBtn.click();
-        await page.waitForTimeout(600);
+        const recStop = page.locator('.bowire-sidebar-toolbar-primary').first();
+        if (await recStop.isVisible().catch(() => false)) await recStop.click();
+        await page.waitForTimeout(400);
         await shot(page, 'recording');
-        const recClose = page.locator('.bowire-env-modal-close').first();
-        if (await recClose.isVisible().catch(() => false)) await recClose.click();
-        await page.waitForTimeout(300);
     } else {
-        log('  (recordings manager button not found — leaving placeholder)');
+        log('  (recordings rail toolbar primary not found — leaving placeholder)');
     }
   } catch (e) {
     log(`  (recording failed: ${e.message.split('\n')[0]})`);
   }
 
-    // ---- 8) performance ----
-  try {
-    log('performance…');
-    // Make sure any overlay from the previous step (recording manager,
-    // settings dialog, env modal) is dismissed before we drive the
-    // method sidebar again — otherwise the UI is behind a modal and
-    // input fields report disabled / not-visible.
-    await page.keyboard.press('Escape').catch(() => {});
-    await page.waitForTimeout(200);
-    await page.keyboard.press('Escape').catch(() => {});
+    // ---- 8) performance — RETIRED in v2.0 (#417) ----
+    // The Performance tab was removed from the response-pane in favour
+    // of the Benchmarks rail's envelope architecture (#131). The
+    // capture is skipped; pick up the Benchmark envelope-detail-pane
+    // as a replacement scene in the follow-up capture pass.
+    // The `performance.png` consumers in site/ + docs/ should switch
+    // their references to a new `benchmark-envelope.png` scene that a
+    // future capture-screenshots pass will produce.
+    log('performance — RETIRED in v2.0; scene skipped (#417 / #131 envelope arch).');
     await resetToSidebar(page);
-    await page.waitForTimeout(400);
-
-    // Pick a unary method and open the Performance tab in the response
-    // pane. GetPortCall (SignalR) is a safe unary pick — 50 round-trips
-    // fill the latency chart without mutating state.
-    await clickMethodItem(page, 'GetPortCall');
-    await page.waitForTimeout(600);
-    const perfId = page.locator('input[data-field-key="portCallId"], input[data-field-key="id"]').first();
-    if (await perfId.isVisible().catch(() => false)) await perfId.fill('1');
-
-    // Switch to Performance tab (only appears for unary methods).
-    const perfTab = page.locator('#bowire-response-tab-performance').first();
-    if (await perfTab.isVisible().catch(() => false)) {
-        await perfTab.click();
-        await page.waitForTimeout(400);
-
-        // Short run so the shot captures a populated chart without
-        // waiting seconds for 1000 calls to finish. The inputs are
-        // marked disabled while `benchmark.running` is true — pass
-        // { force: true } so stale state from a prior run doesn't
-        // wedge the capture; runBenchmark reads the values fresh.
-        const callsInput = page.locator('#bowire-perf-calls-input').first();
-        if (await callsInput.isVisible().catch(() => false)) {
-            await callsInput.fill('50', { force: true }).catch(() => {});
-        }
-        const concInput = page.locator('#bowire-perf-concurrency-input').first();
-        if (await concInput.isVisible().catch(() => false)) {
-            await concInput.fill('4', { force: true }).catch(() => {});
-        }
-
-        const runBtn = page.locator('#bowire-perf-run-btn').first();
-        if (await runBtn.isVisible().catch(() => false)) {
-            await runBtn.click();
-            // Wait for the benchmark to finish. 50 calls x ~20ms each
-            // at concurrency 4 ≈ 250ms; give it more headroom.
-            await page.waitForTimeout(3000);
-            await shot(page, 'performance');
-        } else {
-            log('  (perf run button not found — leaving placeholder)');
-        }
-    } else {
-        log('  (Performance tab not found — method probably non-Unary)');
-    }
-  } catch (e) {
-    log(`  (performance failed: ${e.message.split('\n')[0]})`);
-  }
 
     // ---- 9) schema-upload ----
   try {
@@ -512,26 +495,36 @@ async function clickMethodItem(page, text) {
             await shotQuickstart(page, 'method-detail');
         }
 
-        // editable: empty edit state — open a fresh "ad-hoc" request
-        const adhoc = page.locator('#bowire-adhoc-btn, [data-action="adhoc"]').first();
-        if (await adhoc.isVisible().catch(() => false)) {
-            await adhoc.click();
+        // editable: empty edit state — open a fresh "new request" from
+        // the unified-toolbar primary. The legacy `#bowire-adhoc-btn`
+        // was retired; in v2.0 the same affordance is the sidebar
+        // toolbar's `+` (.bowire-sidebar-toolbar-primary) which opens
+        // the protocol-picker dropdown. Click it once to surface the
+        // dropdown for the screenshot; if the dropdown auto-picks a
+        // protocol the editor lands on the empty-state.
+        const newBtn = page.locator('.bowire-sidebar-toolbar-primary').first();
+        if (await newBtn.isVisible().catch(() => false)) {
+            await newBtn.click();
             await page.waitForTimeout(500);
             await shotQuickstart(page, 'editable');
+            await page.keyboard.press('Escape').catch(() => {});
         } else {
-            // fallback: capture the same ready frame as a Bowire-branded
-            // placeholder for the editable state.
+            // fallback: same ready frame as a placeholder for editable
             await shotQuickstart(page, 'editable');
         }
 
-        // wrong-protocol: type a search query that filters everything
-        // out so the empty-state lands.
-        const search = page.locator('#bowire-sidebar-search-input, #bowire-method-filter').first();
+        // wrong-protocol: type a query that filters everything out so
+        // the empty-state lands. v2.0 retired the sidebar-search input;
+        // the command-palette (Cmd+K, #bowire-command-palette-input) is
+        // now the cross-pane search. We narrow that one to a string no
+        // method will match, then shoot the empty results state.
+        const search = page.locator('#bowire-command-palette-input').first();
         if (await search.isVisible().catch(() => false)) {
-            await search.fill('zzzzzz');
+            await search.click();
+            await page.keyboard.type('zzzzzz', { delay: 30 });
             await page.waitForTimeout(500);
             await shotQuickstart(page, 'wrong-protocol');
-            await search.fill('');
+            await page.keyboard.press('Escape').catch(() => {});
         } else {
             await shotQuickstart(page, 'wrong-protocol');
         }
@@ -544,6 +537,17 @@ async function clickMethodItem(page, text) {
     // panel state via the __bowireAi._seed* hooks instead of hitting a
     // real model. Each shot drives one of the AI surfaces into a
     // deterministic demo state and captures it.
+    //
+    // v2.0 RE-WIRE NEEDED: AI is no longer a response-pane tab — it
+    // moved into the unified right-drawer (#90 / #115 Drawer-Primitive).
+    // The legacy `#bowire-response-tab-ai` click below has been
+    // replaced with a right-drawer tab activation. Threat model lives
+    // on the Security RAIL now (not the AI drawer), so `ai-threat-
+    // model.png` should be re-shot from the Security surface instead;
+    // it's left running here for now but the produced image will need
+    // narrative-side relabelling. Template-suggest + fuzz-values seed
+    // hooks survive; their panel mount selectors may differ — verify
+    // visually before publishing.
     try {
         // Reopen the main workbench + select a method so the response
         // pane (which hosts the AI tab) is rendered.
@@ -556,8 +560,10 @@ async function clickMethodItem(page, text) {
             await firstMethod.click().catch(() => {});
             await page.waitForTimeout(500);
         }
-        // Click the AI tab in the response pane.
-        const aiTab = page.locator('#bowire-response-tab-ai').first();
+        // v2.0: AI lives on the right drawer's Assistant tab.
+        // #bowire-right-drawer-tab-assistant fires the drawer open +
+        // selects the tab in one click.
+        const aiTab = page.locator('#bowire-right-drawer-tab-assistant').first();
         if (await aiTab.isVisible().catch(() => false)) {
             await aiTab.click();
             await page.waitForTimeout(300);
