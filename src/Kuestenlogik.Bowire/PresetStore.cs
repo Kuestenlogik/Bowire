@@ -1,7 +1,9 @@
 // Copyright 2026 Küstenlogik
 // SPDX-License-Identifier: Apache-2.0
 
+using System.Text;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using Kuestenlogik.Bowire.Auth;
 
 namespace Kuestenlogik.Bowire;
@@ -25,9 +27,19 @@ namespace Kuestenlogik.Bowire;
 /// The on-disk shape is the raw JSON the workbench writes — an array
 /// of preset records — so the endpoint is a pass-through.
 /// </remarks>
-internal static class PresetStore
+internal static partial class PresetStore
 {
     private static string? _testStorePathOverride;
+
+    // CodeQL cs/path-injection allow-list. The recordings store
+    // (ChunkedRecordingStore) routes every user-supplied id through
+    // the same allow-list pattern + Regex.IsMatch barrier — anchored
+    // regex against a character class is the form the analyser
+    // recognises as a sanitiser, dropping the taint. The pattern
+    // matches what's already used over there so the two stores stay
+    // consistent.
+    [GeneratedRegex(@"^[A-Za-z0-9._-]+$")]
+    private static partial Regex SafeIdPattern();
 
     /// <summary>
     /// On-disk store location for a given (workspace, mode) pair.
@@ -38,11 +50,16 @@ internal static class PresetStore
     {
         if (_testStorePathOverride is not null) return _testStorePathOverride;
         var safeMode = SanitiseMode(mode);
-        // Workspace path resolver handles legacy (no workspaceId) and
-        // git-backed (storageRoot) layouts identically to recordings /
-        // collections / environments.
+        // CodeQL cs/path-injection barrier — funnel workspaceId through
+        // SanitiseWorkspaceId before it composes into the on-disk path.
+        // Without this the file/directory operations in Load + Save
+        // get flagged as path-injection sinks (#path-injection alerts
+        // 1756/1757/1758/1759). Matches the recordings-store pattern.
+        var safeWs = string.IsNullOrEmpty(workspaceId)
+            ? string.Empty
+            : SanitiseWorkspaceId(workspaceId);
         return BowireUserContext.GetWorkspacePath(
-            workspaceId ?? string.Empty,
+            safeWs,
             storageRoot,
             Path.Combine("presets", safeMode + ".json"));
     }
@@ -120,6 +137,41 @@ internal static class PresetStore
                     nameof(mode));
             }
         }
+        // Anchored regex barrier — the analyser recognises this as the
+        // canonical sanitisation pattern + drops the taint on the
+        // returned value. The mode loop above guarantees a match.
+        if (!SafeIdPattern().IsMatch(mode))
+        {
+            throw new ArgumentException(
+                "Sanitised mode failed the path-safety allow-list: " + mode,
+                nameof(mode));
+        }
         return mode;
+    }
+
+    private static string SanitiseWorkspaceId(string workspaceId)
+    {
+        // Workspace ids are short slugs (`ws_<8 hex>` in the standard
+        // generator + occasional manual ids). Defensive sanitisation
+        // mirrors ChunkedRecordingStore.SanitiseId — strip everything
+        // outside the safe character class, trim leading/trailing dots
+        // so `..` can't escape upward, fall back to `anon` on empty,
+        // then assert via the anchored regex so CodeQL drops the
+        // taint.
+        var sb = new StringBuilder(workspaceId.Length);
+        foreach (var c in workspaceId.Where(ch => char.IsLetterOrDigit(ch) || ch == '_' || ch == '-' || ch == '.'))
+        {
+            sb.Append(c);
+        }
+        var result = sb.ToString().TrimStart('.').TrimEnd('.');
+        if (string.IsNullOrEmpty(result)) result = "anon";
+
+        if (!SafeIdPattern().IsMatch(result))
+        {
+            throw new ArgumentException(
+                "Sanitised workspace id failed the path-safety allow-list: " + workspaceId,
+                nameof(workspaceId));
+        }
+        return result;
     }
 }
