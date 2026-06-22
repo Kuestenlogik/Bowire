@@ -222,12 +222,14 @@ async function main() {
 
         // #241 — track the merged-PDF page index + the rendered page
         // <title> for every page so the outline tree can have both
-        // top-level section bookmarks AND second-level page-level
+        // top-level section bookmarks AND deeper-level page + heading
         // children. The reader's side-panel bookmarks become the
         // actual navigation primitive.
         const sectionStartPages = new Map();   // relUnix → mergedPageIndex (TOC parents)
         const pageStartIndices = new Map();    // relUnix → mergedPageIndex (every page)
         const pageTitles = new Map();          // relUnix → string (every page)
+        const pageHeadings = new Map();        // relUnix → [{ tag, text, mergedPageIndex }, ...]
+                                               // (h2/h3 anchors with their landing merged-page index)
 
         let count = 0;
         let tocInserted = false;
@@ -285,14 +287,61 @@ async function main() {
                     if (sep > 0) t = t.substring(0, sep).trim();
                     if (t) pageTitles.set(relUnix, t);
                 } catch (_) { /* fall through to filename-derived title */ }
+
+                // Extract h2 / h3 headings + their fractional Y in the
+                // rendered HTML so we can map each one to the PDF sub-
+                // page it lands on. scrollY-relative position is
+                // independent of viewport — divide it by the document
+                // scrollHeight to get a 0..1 fraction, then multiply by
+                // the PDF's sub-page count to find which page the
+                // heading falls in.
+                let headingProbe = [];
+                let docHeight = 1;
+                try {
+                    const probe = await page.evaluate(() => {
+                        const headings = Array.from(
+                            document.querySelectorAll('article h2, article h3')
+                        ).map(h => ({
+                            tag: h.tagName,
+                            text: (h.textContent || '').trim(),
+                            top: h.getBoundingClientRect().top + window.scrollY,
+                        })).filter(h => h.text);
+                        return {
+                            headings,
+                            docHeight: document.documentElement.scrollHeight,
+                        };
+                    });
+                    headingProbe = probe.headings || [];
+                    docHeight = probe.docHeight || 1;
+                } catch (_) { /* page without article — skip */ }
+
                 const buf = await page.pdf({
                     format: 'A4',
                     printBackground: true,
                     margin: { top: '18mm', bottom: '18mm', left: '14mm', right: '14mm' },
                 });
                 const sub = await PDFDocument.load(buf);
+                const subPageCount = sub.getPageCount();
                 const copied = await merged.copyPages(sub, sub.getPageIndices());
                 copied.forEach(p => merged.addPage(p));
+
+                // Now that we know how many PDF pages this HTML
+                // produced, compute the merged-page-index for each
+                // heading. fraction ≈ heading.top / docHeight; clamp
+                // to [0, subPageCount-1] so a heading at the very end
+                // doesn't index past the last page.
+                if (headingProbe.length > 0 && subPageCount > 0) {
+                    pageHeadings.set(relUnix, headingProbe.map(h => {
+                        const frac = Math.max(0, Math.min(0.9999, h.top / docHeight));
+                        const offset = Math.floor(frac * subPageCount);
+                        return {
+                            tag: h.tag,
+                            text: h.text,
+                            mergedPageIndex: startIndex + offset,
+                        };
+                    }));
+                }
+
                 count++;
                 if (count % 10 === 0) log(`  ${count}/${pages.length} merged`);
             } finally {
@@ -329,7 +378,7 @@ async function main() {
         // Preview / Sumatra / Foxit show clickable section bookmarks
         // in the side panel. That's the actual TOC navigation primitive
         // in PDFs — the front-matter TOC sheet is informational only.
-        buildOutlineTree(merged, sectionStartPages, pageStartIndices, pageTitles);
+        buildOutlineTree(merged, sectionStartPages, pageStartIndices, pageTitles, pageHeadings);
 
         const bytes = await merged.save();
         fs.writeFileSync(OUT_PATH, bytes);
@@ -359,7 +408,7 @@ async function main() {
  * Counts use the PDF convention: negative Count keeps the item closed
  * by default (the reader expands what they want).
  */
-function buildOutlineTree(merged, sectionStartPages, pageStartIndices, pageTitles) {
+function buildOutlineTree(merged, sectionStartPages, pageStartIndices, pageTitles, pageHeadings) {
     const usable = TOC_ENTRIES.filter(e => sectionStartPages.has(e.file));
     if (usable.length === 0) {
         log('  no sections matched TOC entries — outline tree skipped');
@@ -373,10 +422,39 @@ function buildOutlineTree(merged, sectionStartPages, pageStartIndices, pageTitle
         return base.replace(/[-_]/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
     }
 
+    // Heading children for an individual page: each h2 (and h3 nested
+    // under it) becomes a bookmark. The h2/h3 outline entries land at
+    // the merged-PDF page where the heading falls (computed at render
+    // time from its fractional Y in the HTML × subPageCount).
+    function headingChildrenFor(file) {
+        const hs = pageHeadings.get(file);
+        if (!hs || hs.length === 0) return [];
+        // Group: h2 = top-level of this page's tree, subsequent h3 fold
+        // under the most recent h2. This mirrors the natural reading
+        // hierarchy without needing to compute deep h3-only chains.
+        const nodes = [];
+        let cur = null;
+        for (const h of hs) {
+            const item = {
+                rel: null,        // synthetic — no underlying file
+                title: h.text,
+                startIdx: h.mergedPageIndex,
+                children: [],
+            };
+            if (h.tag === 'H3' && cur) {
+                cur.children.push(item);
+            } else {
+                nodes.push(item);
+                cur = item;
+            }
+        }
+        return nodes;
+    }
+
     // Build a tree node for a given .html file. If the file is an
     // index.html, its directory's other pages + sub-directory
     // index.htmls become its children (recursively). Non-index files
-    // are leaves.
+    // are leaves but still get their in-page h2/h3 headings folded in.
     function buildNode(file, customTitle) {
         const node = {
             rel: file,
@@ -386,7 +464,12 @@ function buildOutlineTree(merged, sectionStartPages, pageStartIndices, pageTitle
         };
 
         if (!file.endsWith('/index.html') && file !== 'index.html') {
-            return node;   // non-section page → leaf
+            // Non-section page → leaf at the file level, but expose
+            // its h2/h3 headings as sub-bookmarks so deep documents
+            // (e.g. ui-guide/action-bar.html → Execute Button) are
+            // navigable from the side panel.
+            node.children = headingChildrenFor(file);
+            return node;
         }
 
         const dir = file === 'index.html'
@@ -417,7 +500,10 @@ function buildOutlineTree(merged, sectionStartPages, pageStartIndices, pageTitle
         // Sort by reading order — that's the source-walked sequence
         // collectPages produced, captured in pageStartIndices.
         childRels.sort((a, b) => pageStartIndices.get(a) - pageStartIndices.get(b));
-        node.children = childRels.map(c => buildNode(c));
+        const fileChildren = childRels.map(c => buildNode(c));
+        // The section's own index.html may have h2/h3 too — prepend
+        // them so they precede the sub-page list.
+        node.children = [...headingChildrenFor(file), ...fileChildren];
         return node;
     }
 
