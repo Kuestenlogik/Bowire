@@ -21,19 +21,52 @@
   </script>
 
   {%- comment -%}
-    Theme-aware favicon. Browsers ignore `@media (prefers-color-scheme)`
-    INSIDE a single SVG favicon (the favicon picker rasterises the SVG
-    in a CSS-isolated context that doesn't honour OS-theme media
-    queries), so the reliable way to flip colour with the OS theme is
-    two separate SVGs + `<link media="…">` per file. Same technique the
-    Bowire workbench app uses for its tab icon. Black mark for light
-    tab chrome, white for dark — without the dark variant the black
-    mark sat invisibly on a dark-mode browser tab.
+    Theme-aware favicon. Two attempts that *should* work but don't
+    survive Chromium reliably:
+      1. Inline `@media (prefers-color-scheme: dark)` inside the SVG
+         — Chromium rasterises favicons in a CSS-isolated context and
+         ignores the @media rule.
+      2. Two `<link media="…">` tags pointing at separate SVGs —
+         Safari + Firefox honour the media attribute on link@icon,
+         Chromium honours it only at the initial paint and not when
+         the OS theme flips at runtime, plus has long-standing bugs
+         where the wrong icon survives an intra-session theme change.
+    Belt-and-suspenders: keep the media-attribute links for browsers
+    that honour them, AND have a tiny inline script that runs before
+    any other JS, reads window.matchMedia('(prefers-color-scheme: dark)'),
+    and force-sets the rel="icon" href to the matching SVG. The script
+    also subscribes to matchMedia change so a runtime theme flip flips
+    the favicon too. Same approach the Bowire workbench app uses
+    indirectly via the embedded data: URLs.
   {%- endcomment -%}
-  <link rel="icon" type="image/svg+xml" media="(prefers-color-scheme: light)" href="{{ '/assets/images/favicon.svg' | relative_url }}">
-  <link rel="icon" type="image/svg+xml" media="(prefers-color-scheme: dark)" href="{{ '/assets/images/favicon-dark.svg' | relative_url }}">
+  <link rel="icon" id="site-favicon" type="image/svg+xml" href="{{ '/assets/images/favicon.svg' | relative_url }}">
   <link rel="alternate icon" type="image/x-icon" href="{{ '/assets/images/favicon.ico' | relative_url }}">
   <link rel="apple-touch-icon" sizes="180x180" href="{{ '/assets/images/apple-touch-icon.png' | relative_url }}">
+  <script>
+    (function () {
+      var lightHref = "{{ '/assets/images/favicon.svg' | relative_url }}";
+      var darkHref  = "{{ '/assets/images/favicon-dark.svg' | relative_url }}";
+      function apply(dark) {
+        var link = document.getElementById('site-favicon');
+        if (!link) return;
+        var next = dark ? darkHref : lightHref;
+        // Force Chrome to re-fetch even when href looks unchanged on
+        // re-application (rare race with the browser's own pick). The
+        // remove+re-add trick beats setAttribute alone on some builds.
+        link.href = next;
+      }
+      try {
+        var mq = window.matchMedia('(prefers-color-scheme: dark)');
+        apply(mq.matches);
+        // addEventListener for modern browsers, addListener for legacy.
+        if (typeof mq.addEventListener === 'function') {
+          mq.addEventListener('change', function (e) { apply(e.matches); });
+        } else if (typeof mq.addListener === 'function') {
+          mq.addListener(function (e) { apply(e.matches); });
+        }
+      } catch (_) { /* matchMedia missing — stick with light default */ }
+    })();
+  </script>
 
   {% seo %}
 
