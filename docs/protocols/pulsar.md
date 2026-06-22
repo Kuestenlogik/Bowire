@@ -67,4 +67,4 @@ Short names get expanded into Pulsar's fully-qualified form:
 
 ## Sample
 
-A docker-compose Pulsar broker + .NET producer that publishes one message per second to a demo topic lives at [`examples/Pulsar`](https://github.com/Kuestenlogik/Bowire/tree/main/examples/Pulsar).
+A docker-compose Pulsar broker + .NET producer that publishes one message per second to a demo topic lives at [`Bowire.Samples/protocols/Pulsar`](https://github.com/Kuestenlogik/Bowire.Samples/tree/main/protocols/Pulsar) (broker) + [`Bowire.Samples/protocols/Pulsar.Producer`](https://github.com/Kuestenlogik/Bowire.Samples/tree/main/protocols/Pulsar.Producer) (producer).

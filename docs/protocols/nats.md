@@ -57,4 +57,4 @@ Same JSON → UTF-8 → hex fallback chain Bowire uses for MQTT.
 
 ## Sample
 
-A docker-compose NATS broker (with JetStream) lives at [`examples/Nats`](https://github.com/Kuestenlogik/Bowire/tree/main/examples/Nats) — `docker compose up`, point Bowire at `nats://localhost:4222`.
+A docker-compose NATS broker (with JetStream) lives at [`Bowire.Samples/protocols/Nats`](https://github.com/Kuestenlogik/Bowire.Samples/tree/main/protocols/Nats) — `docker compose up`, point Bowire at `nats://localhost:4222`.
