@@ -36,9 +36,51 @@ function log(m) { console.log(new Date().toISOString().slice(11, 19), m); }
 // migrated yet.
 const THEME = (process.env.THEME || 'dark').toLowerCase();
 
-async function shot(page, name) {
+/**
+ * Capture a marketing screenshot.
+ *
+ * Opts:
+ *   selector  — CSS selector to crop to (page.locator(sel).screenshot()).
+ *               Without it, the whole viewport gets captured. Marketing
+ *               scenes that demo a specific feature (env-diff, settings
+ *               dialog, recording detail) crop to the relevant pane so
+ *               the asset only shows what the surrounding copy claims it
+ *               does, not the entire workbench chrome.
+ *   padding   — extra px padding around the cropped element (default 0).
+ *               Useful when the element's own border-radius / shadow
+ *               needs breathing room.
+ */
+async function shot(page, name, opts) {
+    opts = opts || {};
     const file = path.join(OUT, `${name}-${THEME}.png`);
-    await page.screenshot({ path: file, fullPage: false });
+    if (opts.selector) {
+        const target = page.locator(opts.selector).first();
+        await target.waitFor({ state: 'visible', timeout: 5000 });
+        if (opts.padding) {
+            // Pad: capture page-level with explicit clip taken from the
+            // bounding box so we keep a controllable margin around the
+            // target without altering layout.
+            const box = await target.boundingBox();
+            if (box) {
+                const p = opts.padding;
+                await page.screenshot({
+                    path: file,
+                    clip: {
+                        x: Math.max(0, box.x - p),
+                        y: Math.max(0, box.y - p),
+                        width: box.width + p * 2,
+                        height: box.height + p * 2
+                    }
+                });
+            } else {
+                await target.screenshot({ path: file });
+            }
+        } else {
+            await target.screenshot({ path: file });
+        }
+    } else {
+        await page.screenshot({ path: file, fullPage: false });
+    }
     fs.copyFileSync(file, path.join(DOCS_OUT, `${name}-${THEME}.png`));
     if (THEME === 'dark') {
         // Default fallback for any <img> not yet upgraded to the
@@ -187,6 +229,38 @@ async function clickMethodItem(page, text) {
                 lastOpenedAt: Date.now()
             }]));
             localStorage.setItem('bowire_active_workspace', wsId);
+            // Seed two environments under the workspace-scoped key so
+            // the env-diff scene captures a populated Compare tab
+            // rather than an empty Environments rail. Staging carries
+            // the production-flavour values; preview overrides two of
+            // them so the diff has both `same` and `differs` rows.
+            var envs = [
+                {
+                    id: 'env_staging',
+                    name: 'staging',
+                    color: '#22c55e',
+                    variables: {
+                        baseUrl: 'https://api.staging.harbor.example',
+                        apiKey: 'st-c4f1-d29a-7b00',
+                        region: 'eu-central-1',
+                        portCallDefaultLimit: '50'
+                    }
+                },
+                {
+                    id: 'env_preview',
+                    name: 'preview',
+                    color: '#f59e0b',
+                    variables: {
+                        baseUrl: 'https://api.preview.harbor.example',
+                        apiKey: 'pv-78a2-13fb-91c0',
+                        region: 'eu-central-1',
+                        portCallDefaultLimit: '200'
+                    }
+                }
+            ];
+            localStorage.setItem('bowire_ws_' + wsId + '_environments',
+                JSON.stringify(envs));
+            localStorage.setItem('bowire_ws_' + wsId + '_active_env', 'env_staging');
         } catch {}
     }, THEME);
     await page.reload({ waitUntil: 'domcontentloaded' });
@@ -218,7 +292,10 @@ async function clickMethodItem(page, text) {
         if (await btn.isVisible().catch(() => false)) { await btn.click(); await page.waitForTimeout(200); }
     }
     await page.waitForTimeout(400);
-    await shot(page, 'flow-editor');
+    // Flow editor canvas owns the main pane; crop to it so the
+    // screenshot demos the visual-flow surface, not the surrounding
+    // rail + sidebar that don't belong to the feature.
+    await shot(page, 'flow-editor', { selector: '.bowire-flow-canvas' });
     await resetToSidebar(page);
 
     // ---- 2) json-chaining ----
@@ -259,7 +336,10 @@ async function clickMethodItem(page, text) {
             await pickable.hover();
             await page.waitForTimeout(400);
         }
-        await shot(page, 'json-chaining');
+        // The feature is "click any JSON value to chain" — crop to
+        // the response pane so the screenshot shows the picker
+        // affordance + JSON tree, not the whole workbench.
+        await shot(page, 'json-chaining', { selector: '[id^="bowire-response-pane"]' });
     } catch (e) {
         log(`  (json-chaining failed: ${e.message.split('\n')[0]})`);
     }
@@ -274,7 +354,11 @@ async function clickMethodItem(page, text) {
     await page.locator('input[data-field-key="craneId"]').first().fill('1');
     await page.locator('.bowire-execute-btn, #bowire-execute-btn').first().click();
     await page.waitForTimeout(2000);
-    await shot(page, 'streaming');
+    // Streaming is a response-pane phenomenon (frame list + detail).
+    // Crop to the response pane so the screenshot shows the streaming
+    // surface only — the protocols.html consumer's alt text talks
+    // about the "frame pane", that's exactly what we capture.
+    await shot(page, 'streaming', { selector: '[id^="bowire-response-pane"]' });
     // Stop the stream so the next shot isn't racing against incoming frames.
     const cancelBtn = page.locator('.bowire-cancel-btn, #bowire-cancel-btn').first();
     if (await cancelBtn.isVisible().catch(() => false)) await cancelBtn.click().catch(() => {});
@@ -294,45 +378,41 @@ async function clickMethodItem(page, text) {
         await page.waitForSelector('#bowire-command-palette-input', { timeout: 5000 });
         await page.locator('#bowire-command-palette-input').fill('port');
         await page.waitForTimeout(500);
-        await shot(page, 'command-palette');
+        // Crop to the palette modal so the screenshot shows the
+        // command-palette UI rather than the dimmed-out workbench
+        // behind it. The modal wraps the input + suggestions in
+        // #bowire-topbar-palette which itself sits inside an
+        // overlay; the modal-content selector .bowire-omnibox-modal
+        // wraps both for the cleanest crop.
+        await shot(page, 'command-palette', {
+            selector: '.bowire-omnibox-modal, #bowire-topbar-palette',
+            padding: 24
+        });
         await page.keyboard.press('Escape');
         await page.waitForTimeout(200);
     } catch (e) {
         log(`  (command-palette failed: ${e.message.split('\n')[0]})`);
     }
 
-    // ---- 5) env-diff (environments view) ----
-    // v2.0: environments is its own rail mode.
-    try {
-        log('env-diff…');
-        await clickRail(page, 'environments');
-        await page.waitForTimeout(600);
-        await shot(page, 'env-diff');
-        await resetToSidebar(page);
-    } catch (e) {
-        log(`  (env-diff failed: ${e.message.split('\n')[0]})`);
-    }
+    // ---- 5) env-diff — DEFERRED to Phase B+ ----
+    // v2.0 moved environments behind hideFromRail (#192 — Workspaces
+    // tree dispatches to envs; no standalone rail icon). The script
+    // can't `clickRail('environments')` because the rail-btn is filtered
+    // out of the DOM. Proper capture needs either:
+    //   (a) inject via workspaces → workspace-settings → Variables tab,
+    //       then click Compare on a named env; OR
+    //   (b) extend Bowire to expose env-detail navigation on a window-
+    //       global hook like `__bowireApi.openEnv(envId, 'compare')`.
+    // Skipping the capture for now; existing env-diff.png stays from
+    // previous run.
+    log('env-diff — DEFERRED (env rail is hideFromRail in v2.0; needs workspaces-tree navigation). scene skipped.');
 
-    // ---- 6) settings ----
-    // v2.0: #bowire-settings-btn retired; openSettings() is exposed
-    // on window and invoked from the App-Drawer + the rail-overflow
-    // menu. Calling it directly lets the screenshot land on the
-    // dialog without depending on the App-Drawer's animation timing.
-    try {
-        log('settings…');
-        await page.evaluate(() => {
-            if (typeof window.openSettings === 'function') window.openSettings();
-        });
-        await page.waitForTimeout(700);
-        await shot(page, 'settings');
-        // Settings dialog now closes via the standard modal-close
-        // pattern or Escape. The old `#bowire-settings-close-btn` ID
-        // was removed when Settings adopted the scope-split tree.
-        await page.keyboard.press('Escape').catch(() => {});
-        await page.waitForTimeout(300);
-    } catch (e) {
-        log(`  (settings failed: ${e.message.split('\n')[0]})`);
-    }
+    // ---- 6) settings — DEFERRED to Phase B+ ----
+    // openSettings is IIFE-scoped (not on window); the UI opens via
+    // App-Drawer click. Proper Phase B fix: open the App-Drawer + click
+    // its Settings entry. Skipped here so the rest of the run produces
+    // clean crops; existing settings.png stays from previous run.
+    log('settings — DEFERRED (openSettings not on window in v2.0; needs App-Drawer click path). scene skipped.');
 
     // ---- 7) recording ----
     // v2.0: Recordings live on their own rail mode (#137 dispatch).
@@ -376,8 +456,12 @@ async function clickMethodItem(page, text) {
         await page.waitForTimeout(400);
         const recStop = page.locator('.bowire-sidebar-toolbar-primary').first();
         if (await recStop.isVisible().catch(() => false)) await recStop.click();
+        // Wait for the recording detail pane to render the populated
+        // step rows so the crop captures the timeline, not an empty
+        // selection.
+        await page.waitForSelector('.bowire-recording-detail .bowire-recording-step-row, .bowire-recording-detail-header', { timeout: 4000 }).catch(() => {});
         await page.waitForTimeout(400);
-        await shot(page, 'recording');
+        await shot(page, 'recording', { selector: '.bowire-recording-detail' });
     } else {
         log('  (recordings rail toolbar primary not found — leaving placeholder)');
     }
