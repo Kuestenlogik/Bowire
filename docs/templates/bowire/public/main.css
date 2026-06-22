@@ -2033,4 +2033,45 @@ object.theme-img-dark, object.theme-img-light {
     article {
         max-width: none;
     }
+
+    /* #241 — Strip stray decorative backgrounds from the printed PDF.
+       page.pdf({ printBackground: true }) renders every painted fill
+       (accent washes, theme tints, hover bleeds) and the result was
+       inconsistent surface colour across sections ("Browser UI mode"
+       being the example the user spotted). Force transparent on
+       structural wrappers + body. Code blocks keep a deliberate
+       light-grey tint so the visual code-vs-prose split survives. */
+    body,
+    article,
+    .bowire-docs-main,
+    .bowire-docs-content,
+    .bowire-docs-hero,
+    .bowire-docs-section,
+    .bowire-docs-section-alt,
+    section {
+        background: transparent !important;
+        background-color: transparent !important;
+        backdrop-filter: none !important;
+    }
+    pre, pre code,
+    article pre,
+    article code {
+        background-color: #f5f5f7 !important;
+        color: #0a0a0a !important;
+        border-color: #e3e3e3 !important;
+    }
+    /* Hero / heading gradient-fill was reading as washed-out
+       near-white text in print. Force solid black via the
+       -webkit-text-fill-color escape hatch (the gradient lives on
+       `background-clip: text` + transparent fill colour, so resetting
+       both restores legibility). */
+    .bowire-docs-hero-title,
+    .bowire-docs-hero h1,
+    article h1, article h2, article h3 {
+        -webkit-text-fill-color: #0a0a0a !important;
+        background: none !important;
+        background-clip: initial !important;
+        -webkit-background-clip: initial !important;
+        color: #0a0a0a !important;
+    }
 }
