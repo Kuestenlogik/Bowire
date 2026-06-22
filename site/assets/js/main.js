@@ -17,6 +17,180 @@ if (toggle && nav) {
 }
 
 // ====================================================================
+// Header nav — progressive overflow into a "…" dropdown
+//
+// On wide viewports the full nav fits inline next to the logo + action
+// icons. As the viewport narrows (or the action row grows), nav links
+// pop right-to-left into an overflow panel anchored to a kebab trigger.
+// Below 768 px the existing burger drawer takes over the full nav and
+// the overflow logic suspends — links are restored to their original
+// inline positions so the burger sees the complete list again.
+// ====================================================================
+(function () {
+    const headerInner = document.querySelector('.header-inner');
+    const headerNav   = document.querySelector('.header-nav');
+    const logo        = document.querySelector('.header-inner .logo');
+    const actions     = document.querySelector('.header-actions');
+    if (!headerInner || !headerNav || !logo || !actions) return;
+
+    // Snapshot the original DOM order so we can restore links exactly
+    // where they were when the burger media query takes over (≤768px),
+    // or when the viewport grows enough to fit everything again.
+    const originalLinks = Array.from(headerNav.children);
+
+    // Build trigger + panel up-front; visibility toggled by measureAndCollapse.
+    const trigger = document.createElement('button');
+    trigger.type = 'button';
+    trigger.className = 'header-nav-overflow-toggle';
+    trigger.setAttribute('aria-label', 'More navigation');
+    trigger.setAttribute('aria-haspopup', 'true');
+    trigger.setAttribute('aria-expanded', 'false');
+    trigger.style.display = 'none';
+    // Three horizontal dots — kebab/meatballs glyph, mirrors the docs
+    // site's overflow affordance.
+    trigger.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.75"/><circle cx="12" cy="12" r="1.75"/><circle cx="19" cy="12" r="1.75"/></svg>';
+
+    const panel = document.createElement('div');
+    panel.className = 'header-nav-overflow-panel';
+    panel.hidden = true;
+
+    headerNav.appendChild(trigger);
+    headerNav.appendChild(panel);
+
+    const MOBILE_BREAKPOINT = 768;
+    const overflowed = []; // links currently parked in the panel
+
+    function restoreAll() {
+        // Put every popped link back where it lived in the original
+        // header markup so the burger drawer renders the full nav.
+        while (overflowed.length) {
+            const link = overflowed.pop();
+            const idx = originalLinks.indexOf(link);
+            // Re-insert before the next original sibling that's still
+            // in the nav. Falls back to "before the trigger" so the
+            // ordering stays stable.
+            let anchor = trigger;
+            for (let i = idx + 1; i < originalLinks.length; i++) {
+                if (originalLinks[i].parentNode === headerNav) {
+                    anchor = originalLinks[i];
+                    break;
+                }
+            }
+            headerNav.insertBefore(link, anchor);
+        }
+        panel.innerHTML = '';
+    }
+
+    function navOverflows() {
+        // headerInner is a CSS grid (1fr auto 1fr). The nav lives in
+        // the centre `auto` column — when its content's intrinsic width
+        // exceeds what the grid hands it, scrollWidth > clientWidth.
+        return headerNav.scrollWidth > headerNav.clientWidth + 1;
+    }
+
+    function closePanel() {
+        if (panel.hidden) return;
+        panel.hidden = true;
+        trigger.setAttribute('aria-expanded', 'false');
+    }
+
+    function openPanel() {
+        if (!panel.hidden) return;
+        panel.hidden = false;
+        trigger.setAttribute('aria-expanded', 'true');
+    }
+
+    function measureAndCollapse() {
+        // Below the burger breakpoint the drawer owns the whole nav —
+        // restore the original DOM and hide the overflow trigger so we
+        // don't fight with the mobile drawer styles.
+        if (window.innerWidth <= MOBILE_BREAKPOINT) {
+            restoreAll();
+            trigger.style.display = 'none';
+            closePanel();
+            return;
+        }
+
+        // Start from a known-good baseline: pull everything back inline
+        // and hide the trigger. Then collapse rightmost links until the
+        // nav fits (or there are no more links to pop).
+        restoreAll();
+        trigger.style.display = 'none';
+        closePanel();
+
+        // If the nav already fits, we're done.
+        if (!navOverflows()) return;
+
+        // Show the trigger so its width is included in the fit test.
+        trigger.style.display = 'inline-flex';
+
+        // Pop from the right (just before the trigger) into the panel
+        // until the nav fits or we run out of links. Walk backwards
+        // through the original list so the popped order matches the
+        // user's reading direction (Community first, Quickstart last).
+        for (let i = originalLinks.length - 1; i >= 0; i--) {
+            if (!navOverflows()) break;
+            const link = originalLinks[i];
+            if (link.parentNode !== headerNav) continue;
+            headerNav.removeChild(link);
+            // Insert at the panel's TOP so the panel reads in the
+            // original left-to-right order (first popped = bottom).
+            panel.insertBefore(link, panel.firstChild);
+            overflowed.unshift(link);
+        }
+
+        // If nothing ended up in the panel after all (e.g. a single
+        // long link still overflows by itself), hide the trigger.
+        if (overflowed.length === 0) {
+            trigger.style.display = 'none';
+        }
+    }
+
+    // Debounced resize handler — measuring on every resize event would
+    // thrash layout on continuous drags.
+    let resizeTimer = null;
+    function onResize() {
+        if (resizeTimer) clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(measureAndCollapse, 100);
+    }
+
+    trigger.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (panel.hidden) openPanel();
+        else closePanel();
+    });
+
+    // Clicking a link inside the panel should dismiss the dropdown.
+    panel.addEventListener('click', (e) => {
+        if (e.target.closest('a')) closePanel();
+    });
+
+    document.addEventListener('click', (e) => {
+        if (panel.hidden) return;
+        if (panel.contains(e.target) || trigger.contains(e.target)) return;
+        closePanel();
+    });
+
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && !panel.hidden) {
+            closePanel();
+            trigger.focus();
+        }
+    });
+
+    window.addEventListener('resize', onResize);
+    // Run after the first paint so font metrics + grid sizes are real.
+    if (document.readyState === 'complete') {
+        requestAnimationFrame(measureAndCollapse);
+    } else {
+        window.addEventListener('load', () => requestAnimationFrame(measureAndCollapse));
+        // Also run once now — the load event might be far away if there
+        // are big images, and the nav should collapse as early as possible.
+        requestAnimationFrame(measureAndCollapse);
+    }
+})();
+
+// ====================================================================
 // Comparison table — wrap plain-text status values in a span so they can
 // render as pill-shaped chips via CSS. Runs once on load; skips cells
 // that are ✓/✗ markers, feature labels, or already wrapped.

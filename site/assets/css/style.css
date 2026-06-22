@@ -302,6 +302,77 @@ pre > code {
     border-radius: 4px;
 }
 
+/* ===== Header nav — progressive overflow (kebab dropdown) =====
+   Trigger sits at the END of .header-nav and only appears when the JS
+   couldn't fit every link inline. Visually mirrors the .header-nav <a>
+   siblings (same color tokens, same hover behaviour) so the bar stays
+   visually homogeneous. The panel anchors to the nav itself (which is
+   position:relative below) and right-aligns to the trigger. */
+.header-nav {
+    position: relative;
+}
+
+.header-nav-overflow-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    background: transparent;
+    border: none;
+    border-radius: 4px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: color 0.2s, background-color 0.2s;
+}
+.header-nav-overflow-toggle:hover,
+.header-nav-overflow-toggle[aria-expanded="true"] {
+    color: var(--text);
+    background: var(--surface);
+}
+.header-nav-overflow-toggle:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+}
+
+.header-nav-overflow-panel {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    min-width: 180px;
+    display: flex;
+    flex-direction: column;
+    padding: 8px;
+    gap: 2px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.22), 0 2px 6px rgba(0, 0, 0, 0.12);
+    z-index: 50;
+}
+.header-nav-overflow-panel[hidden] {
+    display: none;
+}
+.header-nav-overflow-panel a {
+    display: block;
+    padding: 8px 12px;
+    border-radius: 4px;
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+    font-weight: 500;
+    white-space: nowrap;
+    transition: background-color 0.15s, color 0.15s;
+}
+.header-nav-overflow-panel a:hover {
+    color: var(--text);
+    background: var(--surface);
+}
+.header-nav-overflow-panel a.active {
+    color: var(--text);
+    font-weight: 600;
+}
+
 /* ===== Hero ===== */
 .hero {
     position: relative;
@@ -4092,6 +4163,18 @@ button.comparison-bestfor-card.active .comparison-bestfor-name {
 
     .mobile-menu-toggle {
         display: inline-flex;
+    }
+
+    /* The progressive-overflow trigger + panel belong to the desktop
+       inline nav. The burger drawer below 768 px renders every link
+       in a column, so the kebab affordance would be redundant (and
+       its absolute-positioned panel would float over the drawer). The
+       JS restores popped links and hides the trigger, but belt-and-
+       suspenders the CSS in case the JS measure runs late during
+       resize transitions. */
+    .header-nav-overflow-toggle,
+    .header-nav-overflow-panel {
+        display: none !important;
     }
 
     /* Mobile right-hand action row: keep all five icons (search,
