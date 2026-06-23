@@ -9920,21 +9920,65 @@ so the textarea
 .bowire-freeform-proto-menu-icon svg { width: 16px; height: 16px; }
 .bowire-freeform-proto-menu-label { flex: 1; }
 
-/* ===== Freeform builder top-bar (Protocol + Type sections) ===== */
-.bowire-freeform-topbar {
+/* ===== Freeform builder — editable method-style header ===== */
+.bowire-freeform-pane { padding-top: 0; }
+.bowire-freeform-method-header {
     display: flex;
-    gap: 24px;
-    padding: 12px 0;
-    align-items: flex-start;
-    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--bowire-border);
 }
-.bowire-freeform-topbar-section {
+.bowire-freeform-method-header .bowire-freeform-proto-picker-wrap {
+    flex: 0 0 auto;
+    min-width: 0;
+}
+.bowire-freeform-method-header .bowire-freeform-proto-btn {
+    width: auto;
+    padding: 6px 8px;
+}
+.bowire-freeform-method-header .bowire-freeform-proto-btn-icon svg {
+    width: 18px;
+    height: 18px;
+}
+.bowire-freeform-method-header-input {
+    background: transparent;
+    border: none;
+    border-bottom: 1px dashed transparent;
+    color: var(--bowire-text);
+    font-size: 18px;
+    font-weight: 500;
+    padding: 4px 2px;
+    min-width: 80px;
+    flex-shrink: 1;
+    outline: none;
+}
+.bowire-freeform-method-header-input:hover {
+    border-bottom-color: var(--bowire-border);
+}
+.bowire-freeform-method-header-input:focus {
+    border-bottom-color: var(--bowire-accent);
+}
+.bowire-freeform-method-header-input::placeholder {
+    color: var(--bowire-text-tertiary, var(--bowire-text-secondary));
+    font-style: italic;
+}
+.bowire-freeform-method-header-service { max-width: 240px; }
+.bowire-freeform-method-header-method { max-width: 320px; }
+.bowire-freeform-method-header-sep {
+    color: var(--bowire-text-tertiary, var(--bowire-text-secondary));
+    font-size: 20px;
+    font-weight: 300;
+}
+
+/* ===== Freeform builder type bar (under the header) ===== */
+.bowire-freeform-type-bar {
     display: flex;
-    flex-direction: column;
-    gap: 4px;
-    min-width: 200px;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 16px 6px;
 }
-.bowire-freeform-topbar-label {
+.bowire-freeform-type-bar-label {
     font-size: 11px;
     text-transform: uppercase;
     letter-spacing: 0.05em;
