@@ -3423,6 +3423,10 @@
     // '+ Add to…' collection picker. Same pattern as
     // methodAddToMenuOpen for discovered methods.
     let freeformAddToMenuOpen = false;
+    // Open/close state for the freeform-builder protocol picker —
+    // native <select> can't render icons next to options, so the
+    // picker is a custom popover anchored on a button.
+    let freeformProtocolPickerOpen = false;
 
     function startFreeformRequest(opts) {
         opts = opts || {};

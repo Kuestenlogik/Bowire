@@ -144,34 +144,89 @@
         );
         pane.appendChild(header);
 
-        // Protocol picker
+        // Protocol picker — replaced the native <select> with a
+        // button + popover so each option can show the protocol's
+        // icon next to the name (native <option> elements can't
+        // render markup). Same data source (protocols list) + same
+        // methodType snap as the old select; just a different shell.
         var protoRow = el('div', { className: 'bowire-freeform-row' });
         protoRow.appendChild(el('label', { className: 'bowire-freeform-label', textContent: 'Protocol' }));
-        var protoSelect = el('select', {
-            id: 'bowire-freeform-protocol-select',
-            className: 'bowire-freeform-select',
-            onChange: function (e) {
-                fr.protocol = e.target.value;
-                // Snap methodType to the first shape the new protocol
-                // supports — otherwise the picker would carry forward
-                // an unsupported value (e.g. ClientStreaming after
-                // switching from gRPC to REST) and silently fail at
-                // invoke time.
-                var supported = getSupportedMethodTypes(fr.protocol);
-                if (supported.indexOf(fr.methodType) < 0) fr.methodType = supported[0];
-                render();
-            }
-        });
         var protoOptions = protocols.length > 0
             ? protocols
             : [{ id: 'grpc', name: 'gRPC' }, { id: 'rest', name: 'REST' }, { id: 'graphql', name: 'GraphQL' },
                { id: 'signalr', name: 'SignalR' }, { id: 'mqtt', name: 'MQTT' }, { id: 'websocket', name: 'WebSocket' }];
-        for (var pi = 0; pi < protoOptions.length; pi++) {
-            var opt = el('option', { value: protoOptions[pi].id, textContent: protoOptions[pi].name });
-            if (protoOptions[pi].id === fr.protocol) opt.selected = true;
-            protoSelect.appendChild(opt);
+        function _protoFallbackIcon(id) {
+            switch (id) {
+                case 'grpc':      return svgIcon('connect');
+                case 'rest':      return svgIcon('plug');
+                case 'graphql':   return svgIcon('flow');
+                case 'mqtt':      return svgIcon('server');
+                case 'websocket': return svgIcon('repeat');
+                case 'socketio':  return svgIcon('repeat');
+                case 'sse':       return svgIcon('send');
+                case 'mcp':       return svgIcon('boxes');
+                case 'odata':     return svgIcon('chart');
+                case 'signalr':   return svgIcon('lightning');
+                case 'soap':      return svgIcon('briefcase');
+                case 'jsonrpc':   return svgIcon('flow');
+                case 'nats':      return svgIcon('server');
+                case 'pulsar':    return svgIcon('server');
+                default:          return svgIcon('plug');
+            }
         }
-        protoRow.appendChild(protoSelect);
+        function _protoIconHtml(p) { return p.icon || _protoFallbackIcon(p.id); }
+        var currentProto = protoOptions.find(function (p) { return p.id === fr.protocol; })
+            || protoOptions[0];
+        var protoPickerWrap = el('div', { className: 'bowire-freeform-proto-picker-wrap' });
+        var protoBtn = el('button', {
+            type: 'button',
+            id: 'bowire-freeform-protocol-btn',
+            className: 'bowire-freeform-proto-btn' + (freeformProtocolPickerOpen ? ' is-open' : ''),
+            'aria-haspopup': 'listbox',
+            'aria-expanded': freeformProtocolPickerOpen ? 'true' : 'false',
+            onClick: function (e) {
+                e.stopPropagation();
+                freeformProtocolPickerOpen = !freeformProtocolPickerOpen;
+                render();
+            }
+        },
+            el('span', { className: 'bowire-freeform-proto-btn-icon', innerHTML: _protoIconHtml(currentProto) }),
+            el('span', { className: 'bowire-freeform-proto-btn-label', textContent: currentProto.name }),
+            el('span', { className: 'bowire-freeform-proto-btn-caret', innerHTML: svgIcon('chevronDown') })
+        );
+        protoPickerWrap.appendChild(protoBtn);
+        if (freeformProtocolPickerOpen) {
+            var protoMenu = el('div', {
+                className: 'bowire-freeform-proto-menu',
+                role: 'listbox',
+                onClick: function (e) { e.stopPropagation(); }
+            });
+            protoOptions.forEach(function (p) {
+                var item = el('button', {
+                    type: 'button',
+                    className: 'bowire-freeform-proto-menu-item'
+                        + (p.id === fr.protocol ? ' is-selected' : ''),
+                    role: 'option',
+                    'aria-selected': p.id === fr.protocol ? 'true' : 'false',
+                    onClick: function () {
+                        fr.protocol = p.id;
+                        // Snap methodType to a shape the new protocol
+                        // supports — same logic as the old select's
+                        // onChange.
+                        var supported = getSupportedMethodTypes(fr.protocol);
+                        if (supported.indexOf(fr.methodType) < 0) fr.methodType = supported[0];
+                        freeformProtocolPickerOpen = false;
+                        render();
+                    }
+                },
+                    el('span', { className: 'bowire-freeform-proto-menu-icon', innerHTML: _protoIconHtml(p) }),
+                    el('span', { className: 'bowire-freeform-proto-menu-label', textContent: p.name })
+                );
+                protoMenu.appendChild(item);
+            });
+            protoPickerWrap.appendChild(protoMenu);
+        }
+        protoRow.appendChild(protoPickerWrap);
 
         // Method type — filtered to what the selected protocol can do.
         var supportedTypes = getSupportedMethodTypes(fr.protocol);

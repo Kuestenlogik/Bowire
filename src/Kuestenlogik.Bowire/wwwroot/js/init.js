@@ -616,6 +616,20 @@
                     changed = true;
                 }
             }
+            // Freeform builder protocol picker — same outside-click
+            // contract as the other popovers above. The button + menu
+            // both have stopPropagation on their own handlers so any
+            // click that bubbles to document is by definition outside.
+            if (typeof freeformProtocolPickerOpen !== 'undefined' && freeformProtocolPickerOpen) {
+                var protoBtnEl = document.getElementById('bowire-freeform-protocol-btn');
+                var protoMenuEl = document.querySelector('.bowire-freeform-proto-menu');
+                var protoInside = (protoBtnEl && protoBtnEl.contains(e.target))
+                    || (protoMenuEl && protoMenuEl.contains(e.target));
+                if (!protoInside) {
+                    freeformProtocolPickerOpen = false;
+                    changed = true;
+                }
+            }
             // Recording detail pane: Export ▾ split-button popup.
             // Re-resolved at click time, not via closure capture
             // (Memory: morphdom-stale-handler-pitfall).
