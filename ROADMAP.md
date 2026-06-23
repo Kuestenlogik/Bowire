@@ -91,7 +91,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.1 — Scripting, variable resolver, throughput surface *(due 2026-06-30)*
 
-**1/12 done** · 11 backlog
+**1/13 done** · 12 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -106,6 +106,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [231](https://github.com/Kuestenlogik/Bowire/issues/231) | Bowire | [Benchmarks: 'random' run shape — pick N random endpoints per iteration](#issue-kuestenlogik-bowire-231) | ⬜ Backlog |  |
 | [233](https://github.com/Kuestenlogik/Bowire/issues/233) | Bowire | [Benchmarks: previous-run diff banner on repeat (p95 ▲ / ▼ / status histogram delta)](#issue-kuestenlogik-bowire-233) | ⬜ Backlog |  |
 | [234](https://github.com/Kuestenlogik/Bowire/issues/234) | Bowire | [Benchmarks: result exports — CSV + k6-summary JSON + OTLP metrics](#issue-kuestenlogik-bowire-234) | ⬜ Backlog |  |
+| [248](https://github.com/Kuestenlogik/Bowire/issues/248) | Bowire | [Optional rail modules — plumbing (Phase 1): toggle mechanic + always-on set + Settings editor](#issue-kuestenlogik-bowire-248) | ⬜ Backlog |  |
 | [197](https://github.com/Kuestenlogik/Bowire/issues/197) | Bowire | [Deprecate + unlist Kuestenlogik.Bowire.Extension.MapLibre on nuget.org after v2.0 ships](#issue-kuestenlogik-bowire-197) | ✅ Done |  |
 
 ### v2.2 — Test pillar: assertions, CI runner, regression coverage *(due 2026-07-10)*
@@ -163,7 +164,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [185](https://github.com/Kuestenlogik/Bowire/issues/185) | Bowire | [Schema-watch diff view — show what changed since last visit](#issue-kuestenlogik-bowire-185) | ⬜ Backlog |  |
 | [189](https://github.com/Kuestenlogik/Bowire/issues/189) | Bowire | [API design-time validation — typed rule engine over schemas](#issue-kuestenlogik-bowire-189) | ⬜ Backlog |  |
 | [247](https://github.com/Kuestenlogik/Bowire/issues/247) | Bowire | [Schema graph designer — visualise discovered .proto / SDL / OpenAPI type graph for large schemas](#issue-kuestenlogik-bowire-247) | ⬜ Backlog |  |
-| [248](https://github.com/Kuestenlogik/Bowire/issues/248) | Bowire | [Optional rail modules — make non-essential rails opt-in so workflows stay focused](#issue-kuestenlogik-bowire-248) | ⬜ Backlog |  |
+| [249](https://github.com/Kuestenlogik/Bowire/issues/249) | Bowire | [Optional rail modules — Phase 2: Schema Designer ships as the first default-off opt-in module](#issue-kuestenlogik-bowire-249) | ⬜ Backlog |  |
 
 ### v2.5 — Continuous integration: PR bot, project file, org dashboard *(due 2026-08-12)*
 
@@ -567,6 +568,10 @@ When the operator hits Run on a benchmark envelope that already has a previous r
 
 Round out the Benchmarks export surface so result data can leave Bowire in the formats the surrounding tooling actually consumes: [[more]](https://github.com/Kuestenlogik/Bowire/issues/234)
 
+#### <a id="issue-kuestenlogik-bowire-248"></a>⬜ Backlog · [#248](https://github.com/Kuestenlogik/Bowire/issues/248) Optional rail modules — plumbing (Phase 1): toggle mechanic + always-on set + Settings editor
+
+Bowire's rail catalogue (`_railModes` in `render-sidebar.js`) is fixed at compile time: Home, Discover, Recordings, Mocks, Flows, Proxy, Benchmarks, Security, Workspaces. Every operator gets every rail. Pain points: [[more]](https://github.com/Kuestenlogik/Bowire/issues/248)
+
 #### <a id="issue-kuestenlogik-bowire-197"></a>✅ Done · [#197](https://github.com/Kuestenlogik/Bowire/issues/197) Deprecate + unlist Kuestenlogik.Bowire.Extension.MapLibre on nuget.org after v2.0 ships
 
 `Kuestenlogik.Bowire.Extension.MapLibre` 1.3.0-rc.1 was renamed to `Kuestenlogik.Bowire.Map` ahead of v2.0 (commit 75c8d1f). … [[more]](https://github.com/Kuestenlogik/Bowire/issues/197)
@@ -733,9 +738,9 @@ Most API design issues — inconsistent naming, returning passwords, returning u
 
 Bowire today renders a discovered schema as a flat tree (services → methods → request / response shapes) and a JSON form for each method's parameters. That works for small APIs. It breaks down when: [[more]](https://github.com/Kuestenlogik/Bowire/issues/247)
 
-#### <a id="issue-kuestenlogik-bowire-248"></a>⬜ Backlog · [#248](https://github.com/Kuestenlogik/Bowire/issues/248) Optional rail modules — make non-essential rails opt-in so workflows stay focused
+#### <a id="issue-kuestenlogik-bowire-249"></a>⬜ Backlog · [#249](https://github.com/Kuestenlogik/Bowire/issues/249) Optional rail modules — Phase 2: Schema Designer ships as the first default-off opt-in module
 
-Bowire's rail catalogue (`_railModes` in `render-sidebar.js`) is fixed at compile time: Home, Discover, Recordings, Mocks, Flows, Proxy, Benchmarks, Security, Workspaces. Every operator gets every rail. Pain points: [[more]](https://github.com/Kuestenlogik/Bowire/issues/248)
+Phase 2 of the optional-rail-modules effort (Phase 1 in #248 lands the plumbing in v2.1). After the toggle mechanic exists, v2.4 uses it for its FIRST real default-off rail module: the Schema Designer (#247). [[more]](https://github.com/Kuestenlogik/Bowire/issues/249)
 
 ### v2.5 — Continuous integration: PR bot, project file, org dashboard *(due 2026-08-12)*
 
