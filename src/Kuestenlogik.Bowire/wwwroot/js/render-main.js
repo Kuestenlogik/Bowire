@@ -23,9 +23,12 @@
     //      - Response pane: last response output or empty hint.
     //   4. Action bar at the bottom with Execute (primary) + Save as
     //      Mock Step + Save to Collection.
-    function renderFreeformRequestBuilder() {
+    // Append the freeform builder's children directly into the
+    // caller's main pane, so they sit at the same DOM depth as the
+    // discovered-method's header / content / action-bar instead of
+    // being wrapped in an extra .bowire-main container.
+    function _appendFreeformInto(pane) {
         var fr = freeformRequest;
-        var pane = el('div', { className: 'bowire-main bowire-freeform-pane' });
 
         // ----- Protocol options + icon helpers (used by header) -----
         var protoOptions = protocols.length > 0
@@ -591,8 +594,6 @@
             el('span', { textContent: 'Save to Collection' })
         ));
         pane.appendChild(actionBar);
-
-        return pane;
     }
 
 
@@ -5526,9 +5527,17 @@
             main.appendChild(protoBanner);
         }
 
-        // Freeform request builder — manual request without discovery
+        // Freeform request builder — manual request without discovery.
+        // The builder used to return its own `.bowire-main` div which
+        // we appended INSIDE the outer main element — double-nested,
+        // and the inner pane's box-model interacted poorly with the
+        // outer container's padding/flex. Now we let the builder
+        // populate the SHARED main directly via _appendFreeformInto;
+        // its children land as direct siblings of header / banner /
+        // content / action-bar exactly like a discovered method's
+        // render order.
         if (freeformRequest) {
-            main.appendChild(renderFreeformRequestBuilder());
+            _appendFreeformInto(main);
             return main;
         }
 
