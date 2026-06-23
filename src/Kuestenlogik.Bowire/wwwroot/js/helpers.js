@@ -626,13 +626,29 @@
         var title = problemTitle(result, fallback);
         if (title) lines.push(title);
         if (result && typeof result === 'object') {
-            var statusCode = result.status_code || result.statusCode || result.httpStatus || result.http_status;
+            // Server's /api/invoke returns problem+json with a bare
+            // `status` field carrying the HTTP code (see
+            // BowireEndpointHelpers.Problem). Try that first, then fall
+            // back to the *_code/*Status aliases for test doubles /
+            // future endpoints.
+            var statusCode = (typeof result.status === 'number' && result.status > 0)
+                ? result.status
+                : (result.status_code || result.statusCode || result.httpStatus || result.http_status);
             var statusReason = result.status_reason || result.statusReason || '';
             if (statusCode) {
                 lines.push('Status: ' + statusCode + (statusReason ? ' ' + statusReason : ''));
             }
             if (result.detail && result.detail !== result.title) {
                 lines.push('Detail: ' + String(result.detail));
+            }
+            // problem+json carries a `type` URI and `instance` —
+            // surface both inline so the operator can copy/click
+            // without expanding the entry to inspect the raw body.
+            if (result.type && result.type !== 'about:blank' && result.type !== result.title) {
+                lines.push('Type: ' + String(result.type));
+            }
+            if (result.instance && result.instance !== '/api/invoke') {
+                lines.push('At: ' + String(result.instance));
             }
             // Some endpoints return the response body even on failure
             // (4xx with a problem+json body, 5xx with a stack trace).
