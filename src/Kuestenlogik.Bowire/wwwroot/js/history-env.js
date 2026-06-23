@@ -229,6 +229,15 @@
     }
 
     async function loadEnvironmentsFromDisk() {
+        // #212 Phase 0 — browser-only workspaces never write env data
+        // to disk (scheduleDiskSync skips them) so loading FROM disk
+        // would always return either empty (fresh workspace) or stale
+        // data from a previous disk-mode life. Either way the result
+        // gets blindly written into localStorage, clobbering whatever
+        // the workspace has actually accumulated in browser memory.
+        // Mirror the same guard as scheduleDiskSync's early-out.
+        if (typeof getWorkspaceStorageMode === 'function'
+            && getWorkspaceStorageMode() === 'browser-only') return;
         try {
             var resp = await fetch(config.prefix + '/api/environments');
             if (!resp.ok) return;

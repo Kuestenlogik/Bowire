@@ -243,46 +243,79 @@ async function clickMethodItem(page, text) {
             // paint. Seed a default workspace so that guard passes and
             // the Discover sidebar actually renders.
             var wsId = 'ws_capture';
+            // Force `storage: 'browser-only'` so all per-workspace
+            // state (envs, collections, recordings…) lives in
+            // localStorage. The valid values are 'browser-only' and
+            // 'disk' (see #212 Phase 0 — prologue.js); anything else,
+            // including the natural-sounding 'browser', falls through
+            // to the 'disk' default and the file-backed store wins.
+            // With disk-mode the localStorage seed gets ignored on
+            // boot — sidebar tree renders Environments (0) regardless
+            // of what we put in the env bucket.
             localStorage.setItem('bowire_workspaces', JSON.stringify([{
                 id: wsId,
                 name: 'Capture',
                 color: '#6366f1',
                 createdAt: Date.now(),
-                lastOpenedAt: Date.now()
+                lastOpenedAt: Date.now(),
+                storage: 'browser-only'
             }]));
             localStorage.setItem('bowire_active_workspace', wsId);
-            // Seed two environments under the workspace-scoped key so
-            // the env-diff scene captures a populated Compare tab
-            // rather than an empty Environments rail. Staging carries
-            // the production-flavour values; preview overrides two of
-            // them so the diff has both `same` and `differs` rows.
+            // Seed two environments under the workspace-scoped key
+            // (bowire_ws_<id>_environments) so the env-diff scene
+            // captures a populated Compare tab. Use the v2.0 shape:
+            // {id, name, color, vars} — earlier `variables:` keyed
+            // entries were silently dropped by the workspace loader
+            // (env count rendered as 0). Staging carries production-
+            // flavour values; preview overrides two of them so the
+            // diff has both `same` and `differs` rows visible.
             var envs = [
                 {
                     id: 'env_staging',
                     name: 'staging',
                     color: '#22c55e',
-                    variables: {
+                    vars: {
                         baseUrl: 'https://api.staging.harbor.example',
                         apiKey: 'st-c4f1-d29a-7b00',
                         region: 'eu-central-1',
-                        portCallDefaultLimit: '50'
+                        portCallDefaultLimit: '50',
+                        timeoutMs: '3000',
+                        logLevel: 'info'
                     }
                 },
                 {
                     id: 'env_preview',
                     name: 'preview',
                     color: '#f59e0b',
-                    variables: {
+                    vars: {
                         baseUrl: 'https://api.preview.harbor.example',
                         apiKey: 'pv-78a2-13fb-91c0',
                         region: 'eu-central-1',
-                        portCallDefaultLimit: '200'
+                        portCallDefaultLimit: '200',
+                        timeoutMs: '5000',
+                        logLevel: 'debug'
                     }
                 }
             ];
             localStorage.setItem('bowire_ws_' + wsId + '_environments',
                 JSON.stringify(envs));
             localStorage.setItem('bowire_ws_' + wsId + '_active_env', 'env_staging');
+            // Pre-mark BOTH env migrations as already-done so neither
+            // runs on this fresh boot. Without these markers:
+            //  - migrateEnvsToSharedStore would walk our bucket and
+            //    move the envs into bowire_environments_shared (leaving
+            //    the bucket too, but the marker writes happen later)
+            //  - migrateEnvsToWorkspaceOwned would then re-read shared,
+            //    rewrite the bucket from it, potentially clobbering
+            //    our exact seed mid-migration.
+            // Set both flags so the seed survives boot untouched.
+            localStorage.setItem('bowire_envs_shared_migrated_v1', '1');
+            localStorage.setItem('bowire_envs_workspace_owned_v1', '1');
+            // Also belt-and-suspenders: pre-populate the shared store
+            // with the same payload so any downstream code that reads
+            // it (e.g. for cross-workspace inclusion logic) sees the
+            // expected pair.
+            localStorage.setItem('bowire_environments_shared', JSON.stringify(envs));
         } catch {}
     }, THEME);
     await page.reload({ waitUntil: 'domcontentloaded' });
@@ -423,18 +456,78 @@ async function clickMethodItem(page, text) {
         log(`  (command-palette failed: ${e.message.split('\n')[0]})`);
     }
 
-    // ---- 5) env-diff — DEFERRED to Phase B+ ----
-    // v2.0 moved environments behind hideFromRail (#192 — Workspaces
-    // tree dispatches to envs; no standalone rail icon). The script
-    // can't `clickRail('environments')` because the rail-btn is filtered
-    // out of the DOM. Proper capture needs either:
-    //   (a) inject via workspaces → workspace-settings → Variables tab,
-    //       then click Compare on a named env; OR
-    //   (b) extend Bowire to expose env-detail navigation on a window-
-    //       global hook like `__bowireApi.openEnv(envId, 'compare')`.
-    // Skipping the capture for now; existing env-diff.png stays from
-    // previous run.
-    log('env-diff — DEFERRED (env rail is hideFromRail in v2.0; needs workspaces-tree navigation). scene skipped.');
+    // ---- 5) env-diff — navigate via the Workspaces tree ----
+    // v2.0 hides the legacy environments rail (#192); envs live under
+    // the active workspace's tree as a child group, and the Compare
+    // tab is reached via env-detail → Compare.
+    //
+    // Quirk: the post-boot `loadEnvironmentsFromDisk` call hits
+    // /api/environments and OVERWRITES the localStorage env bucket
+    // with the server's payload — empty for a fresh workspace. The
+    // boot-time seed gets wiped before we can click anything. Bowire
+    // SHOULD short-circuit that fetch for browser-only workspaces
+    // (the way scheduleDiskSync already does) but it doesn't yet, so
+    // we work around by re-seeding the env bucket HERE, after the
+    // disk-load has settled, then issuing a tree refresh so the
+    // sidebar repopulates from the fresh localStorage value.
+    try {
+        log('env-diff…');
+        await clickRail(page, 'workspaces');
+        await page.waitForTimeout(800);
+        // Re-seed envs into the bucket loadEnvironmentsFromDisk just
+        // cleared. Then dispatch a storage event so any listeners
+        // pick up the change immediately.
+        await page.evaluate(() => {
+            const wsId = 'ws_capture';
+            const envs = [
+                { id: 'env_staging', name: 'staging', color: '#22c55e',
+                  vars: { baseUrl: 'https://api.staging.harbor.example',
+                          apiKey: 'st-c4f1-d29a-7b00', region: 'eu-central-1',
+                          portCallDefaultLimit: '50', timeoutMs: '3000',
+                          logLevel: 'info' }},
+                { id: 'env_preview', name: 'preview', color: '#f59e0b',
+                  vars: { baseUrl: 'https://api.preview.harbor.example',
+                          apiKey: 'pv-78a2-13fb-91c0', region: 'eu-central-1',
+                          portCallDefaultLimit: '200', timeoutMs: '5000',
+                          logLevel: 'debug' }}
+            ];
+            localStorage.setItem('bowire_ws_' + wsId + '_environments',
+                JSON.stringify(envs));
+            localStorage.setItem('bowire_ws_' + wsId + '_active_env', 'env_staging');
+        });
+        // Toggle the rail off and back to force a fresh sidebar read.
+        await clickRail(page, 'home');
+        await page.waitForTimeout(200);
+        await clickRail(page, 'workspaces');
+        await page.waitForTimeout(500);
+        // Expand the Environments tree group.
+        const envGroup = page.locator('.bowire-tree-node', {
+            has: page.locator('.bowire-tree-label', { hasText: /^Environments$/ }),
+        }).first();
+        const envToggle = envGroup.locator('.bowire-tree-toggle').first();
+        if (await envToggle.isVisible().catch(() => false)) {
+            await envToggle.click();
+            await page.waitForTimeout(400);
+        }
+        // Click the staging child label inside the workspace tree.
+        const stagingRow = page.locator('.bowire-tree-label', { hasText: /^staging$/ }).first();
+        if (await stagingRow.isVisible().catch(() => false)) {
+            await stagingRow.click();
+            await page.waitForTimeout(500);
+        }
+        // Switch to the Compare tab — only renders after an env is
+        // selected.
+        const compareTab = page.locator('#bowire-env-tab-compare').first();
+        if (await compareTab.isVisible().catch(() => false)) {
+            await compareTab.click();
+            await page.waitForTimeout(500);
+        }
+        await hideInlineHints(page);
+        await shot(page, 'env-diff', { selector: '.bowire-env-editor-main' });
+        await resetToSidebar(page);
+    } catch (e) {
+        log(`  (env-diff failed: ${e.message.split('\n')[0]})`);
+    }
 
     // ---- 6) settings — DEFERRED to Phase B+ ----
     // openSettings is IIFE-scoped (not on window); the UI opens via
@@ -505,16 +598,29 @@ async function clickMethodItem(page, text) {
     log(`  (recording failed: ${e.message.split('\n')[0]})`);
   }
 
-    // ---- 8) performance — RETIRED in v2.0 (#417) ----
-    // The Performance tab was removed from the response-pane in favour
-    // of the Benchmarks rail's envelope architecture (#131). The
-    // capture is skipped; pick up the Benchmark envelope-detail-pane
-    // as a replacement scene in the follow-up capture pass.
-    // The `performance.png` consumers in site/ + docs/ should switch
-    // their references to a new `benchmark-envelope.png` scene that a
-    // future capture-screenshots pass will produce.
-    log('performance — RETIRED in v2.0; scene skipped (#417 / #131 envelope arch).');
-    await resetToSidebar(page);
+    // ---- 8) performance → Benchmarks rail (relabelled in v2.0) ----
+    // The standalone Performance tab in the response pane (#417) was
+    // replaced by the Benchmarks rail's envelope architecture (#131).
+    // The marketing-site card still calls it "Performance histogram"
+    // because the user-facing feature is the same — repeat a call N
+    // times, see latency percentiles + throughput — only the surface
+    // moved into its own rail mode. Capture the Benchmarks sidebar so
+    // the existing performance.png consumers (screenshots.html L138 +
+    // features.html L158) pick up the v2.0 UI without needing a site
+    // rename pass.
+    try {
+        log('performance (Benchmarks rail)…');
+        await clickRail(page, 'benchmarks');
+        await page.waitForTimeout(600);
+        await hideInlineHints(page);
+        // No crop selector — the Benchmarks empty/list state benefits
+        // from the rail + sidebar context so the viewer recognises
+        // the surface. Full viewport.
+        await shot(page, 'performance');
+        await resetToSidebar(page);
+    } catch (e) {
+        log(`  (performance/Benchmarks failed: ${e.message.split('\n')[0]})`);
+    }
 
     // ---- 9) schema-upload ----
   try {
