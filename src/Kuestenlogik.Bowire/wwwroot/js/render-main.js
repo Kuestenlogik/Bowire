@@ -1,18 +1,18 @@
     // ---- Freeform Request Builder ----
     function renderFreeformRequestBuilder() {
         var fr = freeformRequest;
-        var pane = el('div', { className: 'bowire-env-editor-main' });
+        var pane = el('div', { className: 'bowire-env-editor-main bowire-freeform-pane' });
 
-        // Header — title + "+ Add to..." collection picker + Cancel.
-        // The freeform request is SELF-CONTAINED: its URL lives inline
-        // on the saved item, not as a reference to one of the
-        // workspace's centrally-managed Source URLs. The operator who
-        // wants the URL to come from a Source uses 'New from source…'
-        // instead (separate entry-point, see follow-up). Adding to a
-        // collection writes the request shape as-is, URL and all.
-        var headerTitle = (fr._lineageHint && fr._lineageHint.sourceMethod)
-            ? 'New Request — cloned: ' + fr._lineageHint.sourceMethod
-            : 'New Request';
+        // Header — protocol icon + editable Service / Method + Add to
+        // + Cancel. The whole point of a freeform request is that
+        // every field (protocol, service, method, URL, type, body)
+        // is editable; the operator's mental model is "I'm editing a
+        // copy of a request". The discovered-method header is
+        // suppressed in renderMain when freeformRequest is active so
+        // this header is the only title strip, no duplication.
+        // The separate "New Request — cloned: …" subtitle is also
+        // dropped; the lineage hint (when set) shows in the Cancel
+        // button's tooltip instead so it doesn't add chrome.
 
         // "+ Add to..." button — opens a small picker of the workspace's
         // collections. Same affordance as the discovered-method
@@ -131,36 +131,10 @@
             ));
             freeformAddToWrap.appendChild(menu);
         }
-        var header = el('div', { className: 'bowire-env-editor-header' },
-            el('h2', { className: 'bowire-env-editor-title', textContent: headerTitle }),
-            el('span', { style: 'flex:1' }),
-            freeformAddToWrap,
-            el('button', {
-                id: 'bowire-freeform-cancel-btn',
-                className: 'bowire-env-editor-action-btn',
-                textContent: 'Cancel',
-                onClick: cancelFreeformRequest
-            })
-        );
-        pane.appendChild(header);
-
-        // Top action-bar — Protocol + Method type live here above
-        // the form so the operator picks the request SHAPE first
-        // (which determines what parameters the form below shows),
-        // then parameterises it. The form below is scoped to the
-        // picked shape: Unary shows body + metadata; streaming/
-        // duplex shows the per-message editor + connection chrome;
-        // SSE shows event-stream subscribe controls. Visually a
-        // divider separates "what kind of call" from "the call's
-        // parameters" so the two layers read at a glance.
-        var topBar = el('div', { className: 'bowire-freeform-topbar' });
-
         // Protocol picker — button + popover so each option can show
         // the protocol's icon next to its name (native <option>
         // elements can't carry markup). Same data source (protocols
         // list) + same methodType snap as the old <select>.
-        var protoRow = el('div', { className: 'bowire-freeform-topbar-section' });
-        protoRow.appendChild(el('label', { className: 'bowire-freeform-topbar-label', textContent: 'Protocol' }));
         var protoOptions = protocols.length > 0
             ? protocols
             : [{ id: 'grpc', name: 'gRPC' }, { id: 'rest', name: 'REST' }, { id: 'graphql', name: 'GraphQL' },
@@ -187,11 +161,22 @@
         function _protoIconHtml(p) { return p.icon || _protoFallbackIcon(p.id); }
         var currentProto = protoOptions.find(function (p) { return p.id === fr.protocol; })
             || protoOptions[0];
+
+        // ---- Editable method-style header ----
+        // Protocol icon button (opens picker on click) + Service +
+        // Method as inline inputs, mirroring how a discovered method
+        // header reads. When the operator types into either input
+        // the next render reflects the change in the header itself —
+        // no duplication, no separate "service" / "method" rows in
+        // the form.
+        var freeformHeader = el('div', { className: 'bowire-freeform-method-header' });
+
         var protoPickerWrap = el('div', { className: 'bowire-freeform-proto-picker-wrap' });
         var protoBtn = el('button', {
             type: 'button',
             id: 'bowire-freeform-protocol-btn',
             className: 'bowire-freeform-proto-btn' + (freeformProtocolPickerOpen ? ' is-open' : ''),
+            title: currentProto.name + ' — click to switch protocol',
             'aria-haspopup': 'listbox',
             'aria-expanded': freeformProtocolPickerOpen ? 'true' : 'false',
             onClick: function (e) {
@@ -201,7 +186,6 @@
             }
         },
             el('span', { className: 'bowire-freeform-proto-btn-icon', innerHTML: _protoIconHtml(currentProto) }),
-            el('span', { className: 'bowire-freeform-proto-btn-label', textContent: currentProto.name }),
             el('span', { className: 'bowire-freeform-proto-btn-caret', innerHTML: svgIcon('chevronDown') })
         );
         protoPickerWrap.appendChild(protoBtn);
@@ -220,9 +204,6 @@
                     'aria-selected': p.id === fr.protocol ? 'true' : 'false',
                     onClick: function () {
                         fr.protocol = p.id;
-                        // Snap methodType to a shape the new protocol
-                        // supports — same logic as the old select's
-                        // onChange.
                         var supported = getSupportedMethodTypes(fr.protocol);
                         if (supported.indexOf(fr.methodType) < 0) fr.methodType = supported[0];
                         freeformProtocolPickerOpen = false;
@@ -236,18 +217,54 @@
             });
             protoPickerWrap.appendChild(protoMenu);
         }
-        protoRow.appendChild(protoPickerWrap);
-        topBar.appendChild(protoRow);
+        freeformHeader.appendChild(protoPickerWrap);
 
-        // Method type — segmented button bar. The single-shape case
-        // (REST = Unary only, MQTT = Duplex only) renders as a
-        // non-interactive chip so the operator still sees the shape
-        // without an empty button cluster. The multi-shape case
-        // (gRPC has Unary / ServerStreaming / ClientStreaming /
-        // Duplex) shows one button per shape; clicking sets fr.methodType.
+        freeformHeader.appendChild(el('input', {
+            id: 'bowire-freeform-service-input',
+            type: 'text',
+            className: 'bowire-freeform-method-header-input bowire-freeform-method-header-service',
+            value: fr.service || '',
+            placeholder: 'service',
+            spellcheck: 'false',
+            onInput: function (e) { fr.service = e.target.value; }
+        }));
+        freeformHeader.appendChild(el('span', {
+            className: 'bowire-freeform-method-header-sep',
+            textContent: '/'
+        }));
+        freeformHeader.appendChild(el('input', {
+            id: 'bowire-freeform-method-input',
+            type: 'text',
+            className: 'bowire-freeform-method-header-input bowire-freeform-method-header-method',
+            value: fr.method || '',
+            placeholder: 'method',
+            spellcheck: 'false',
+            onInput: function (e) { fr.method = e.target.value; }
+        }));
+
+        freeformHeader.appendChild(el('span', { style: 'flex:1' }));
+        freeformHeader.appendChild(freeformAddToWrap);
+        freeformHeader.appendChild(el('button', {
+            id: 'bowire-freeform-cancel-btn',
+            className: 'bowire-env-editor-action-btn',
+            textContent: 'Cancel',
+            title: (fr._lineageHint && fr._lineageHint.sourceMethod)
+                ? 'Cancel — cloned from ' + fr._lineageHint.sourceMethod
+                : 'Discard this draft',
+            onClick: cancelFreeformRequest
+        }));
+        pane.appendChild(freeformHeader);
+
+        // ---- Method-type segmented bar (under the header) ----
+        // Type drives which parameters the form below collects, so
+        // it sits as a prominent button row right under the header
+        // instead of buried in a select.
         var supportedTypes = getSupportedMethodTypes(fr.protocol);
-        var typeRow = el('div', { className: 'bowire-freeform-topbar-section' });
-        typeRow.appendChild(el('label', { className: 'bowire-freeform-topbar-label', textContent: 'Type' }));
+        var typeBar = el('div', { className: 'bowire-freeform-type-bar' });
+        typeBar.appendChild(el('span', {
+            className: 'bowire-freeform-type-bar-label',
+            textContent: 'Type'
+        }));
         if (supportedTypes.length > 1) {
             var typeSeg = el('div', { className: 'bowire-freeform-type-seg' });
             supportedTypes.forEach(function (t) {
@@ -264,17 +281,14 @@
                     }
                 }));
             });
-            typeRow.appendChild(typeSeg);
+            typeBar.appendChild(typeSeg);
         } else {
-            typeRow.appendChild(el('span', {
+            typeBar.appendChild(el('span', {
                 className: 'bowire-freeform-type-chip',
                 textContent: supportedTypes[0]
             }));
         }
-        topBar.appendChild(typeRow);
-        pane.appendChild(topBar);
-        // Divider — visual separator between "what kind of call" and
-        // "the call's parameters" so the two layers read as distinct.
+        pane.appendChild(typeBar);
         pane.appendChild(el('div', { className: 'bowire-freeform-divider' }));
 
         // Server URL — #252 grows a two-state toggle on the left of
@@ -384,33 +398,12 @@
         }
         pane.appendChild(urlRow);
 
-        // Service name
-        var svcRow = el('div', { className: 'bowire-freeform-row' });
-        svcRow.appendChild(el('label', { className: 'bowire-freeform-label', textContent: 'Service' }));
-        svcRow.appendChild(el('input', {
-            id: 'bowire-freeform-service-input',
-            type: 'text',
-            className: 'bowire-freeform-input',
-            value: fr.service,
-            placeholder: 'my.package.MyService',
-            spellcheck: 'false',
-            onInput: function (e) { fr.service = e.target.value; }
-        }));
-        pane.appendChild(svcRow);
-
-        // Method name
-        var methodRow = el('div', { className: 'bowire-freeform-row' });
-        methodRow.appendChild(el('label', { className: 'bowire-freeform-label', textContent: 'Method' }));
-        methodRow.appendChild(el('input', {
-            id: 'bowire-freeform-method-input',
-            type: 'text',
-            className: 'bowire-freeform-input',
-            value: fr.method,
-            placeholder: 'GetUser or sensors/temperature',
-            spellcheck: 'false',
-            onInput: function (e) { fr.method = e.target.value; }
-        }));
-        pane.appendChild(methodRow);
+        // Service + Method rows retired — they're inputs in the
+        // editable header now (see freeformHeader above). The header
+        // re-renders on every keystroke so the protocol-icon + Service
+        // / Method label visible at the top of the pane always
+        // reflects the live state. Keeping a duplicate pair down here
+        // was the original duplication the user flagged.
 
         // Request body
         var bodyRow = el('div', { className: 'bowire-freeform-row bowire-freeform-body-row' });
@@ -5490,8 +5483,13 @@
         // Header lives BELOW the tab strip now — see the comment
         // before the tab bar above for the rationale. Empty header
         // (no method selected) stays unattached so the landing card
-        // doesn't sit under a gray strip with no content.
-        if (header.firstChild) main.appendChild(header);
+        // doesn't sit under a gray strip with no content. Skip when
+        // the freeform builder is active — that surface renders its
+        // OWN editable header below (selectedMethod is preserved so
+        // peripheral handlers like the [+] tab still work, but the
+        // discovered-method header would visually duplicate the
+        // freeform builder's title strip).
+        if (header.firstChild && !freeformRequest) main.appendChild(header);
 
         // Proto-only warning banner
         if (selectedService && selectedService.source === 'proto') {
