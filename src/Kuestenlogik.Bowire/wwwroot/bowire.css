@@ -9925,14 +9925,23 @@ so the textarea
 .bowire-freeform-proto-menu-icon svg { width: 16px; height: 16px; }
 .bowire-freeform-proto-menu-label { flex: 1; }
 
-/* ===== Freeform builder — editable method-style header ===== */
+/* ===== Freeform builder — editable method-style header =====
+   Mirrors .bowire-header padding (16px 24px + bottom border) so a
+   freeform pane sits in the same chrome envelope as a discovered
+   method's pane. Inputs styled to read as the title text the
+   discovered method shows as static; dashed underline on hover +
+   accent underline on focus signals editability without adding
+   permanent input-box chrome. */
 .bowire-freeform-pane { padding-top: 0; }
 .bowire-freeform-method-header {
     display: flex;
     align-items: center;
-    gap: 8px;
-    padding: 12px 16px;
+    gap: 12px;
+    padding: 16px 24px;
     border-bottom: 1px solid var(--bowire-border);
+    background: var(--bowire-bg-elevated);
+    flex-shrink: 0;
+    min-height: 60px;
 }
 .bowire-freeform-method-header .bowire-freeform-proto-picker-wrap {
     flex: 0 0 auto;
@@ -9943,16 +9952,16 @@ so the textarea
     padding: 6px 8px;
 }
 .bowire-freeform-method-header .bowire-freeform-proto-btn-icon svg {
-    width: 18px;
-    height: 18px;
+    width: 20px;
+    height: 20px;
 }
 .bowire-freeform-method-header-input {
     background: transparent;
     border: none;
     border-bottom: 1px dashed transparent;
     color: var(--bowire-text);
-    font-size: 18px;
-    font-weight: 500;
+    font-size: 16px;
+    font-weight: 600;
     padding: 4px 2px;
     min-width: 80px;
     flex-shrink: 1;
@@ -9967,12 +9976,13 @@ so the textarea
 .bowire-freeform-method-header-input::placeholder {
     color: var(--bowire-text-tertiary, var(--bowire-text-secondary));
     font-style: italic;
+    font-weight: 400;
 }
 .bowire-freeform-method-header-service { max-width: 240px; }
 .bowire-freeform-method-header-method { max-width: 320px; }
 .bowire-freeform-method-header-sep {
     color: var(--bowire-text-tertiary, var(--bowire-text-secondary));
-    font-size: 20px;
+    font-size: 18px;
     font-weight: 300;
 }
 
@@ -9981,7 +9991,7 @@ so the textarea
     display: flex;
     align-items: center;
     gap: 12px;
-    padding: 10px 16px 6px;
+    padding: 12px 24px 8px;
 }
 .bowire-freeform-type-bar-label {
     font-size: 11px;
@@ -9989,6 +9999,26 @@ so the textarea
     letter-spacing: 0.05em;
     color: var(--bowire-text-secondary);
     font-weight: 600;
+}
+
+/* URL slot — sits at identity level, between Type and the
+   request/response split. Same horizontal gutter as the header so
+   it reads as part of the top section. */
+.bowire-freeform-url-slot {
+    padding: 8px 24px 12px;
+}
+.bowire-freeform-url-slot .bowire-freeform-row {
+    margin: 0;
+    align-items: center;
+}
+.bowire-freeform-url-slot .bowire-freeform-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--bowire-text-secondary);
+    font-weight: 600;
+    margin-right: 12px;
+    min-width: auto;
 }
 .bowire-freeform-type-seg {
     display: inline-flex;
