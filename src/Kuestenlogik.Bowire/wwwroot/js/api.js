@@ -334,7 +334,7 @@
             if (result.title) {
                 responseError = result;
                 statusInfo = { status: 'Error', durationMs: 0, responseSize: 0 };
-                addConsoleEntry({ type: 'error', method: fullName, status: 'Error', body: problemTitle(result, 'Request failed') });
+                addConsoleEntry({ type: 'error', method: fullName, status: 'Error', body: richErrorDetail(result, 'Request failed') });
             } else {
                 responseData = result.response;
                 captureResponse(result.response); // for ${response.X} chaining

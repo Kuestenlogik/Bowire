@@ -316,7 +316,7 @@
             if (result.title) {
                 responseError = result;
                 statusInfo = { status: 'Error', durationMs: result.duration_ms || 0 };
-                addConsoleEntry({ type: 'error', method: fullName, status: 'Error', body: problemTitle(result) });
+                addConsoleEntry({ type: 'error', method: fullName, status: 'Error', body: richErrorDetail(result, 'Request failed') });
             } else {
                 responseData = result.response;
                 statusInfo = { status: result.status, durationMs: result.duration_ms || 0 };

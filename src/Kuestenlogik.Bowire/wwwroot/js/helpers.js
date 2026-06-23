@@ -598,6 +598,86 @@
     }
 
     /**
+     * #243 — Rich error-detail formatter for console entries on failed
+     * invocations. The plain {@link problemTitle} returns a single
+     * line (usually just "Error" or the problem+json title), which is
+     * useless when the actual signal — status code, response body,
+     * exception message — lives further down in the result object.
+     * Build a multi-line block that surfaces every available signal,
+     * truncated to 4 KB so a giant response doesn't drown the console.
+     *
+     * Lines emitted (skipped when the field is empty):
+     *   <title or fallback>
+     *   Status: <httpStatus>  <statusReason>
+     *   Detail: <problem+json detail>
+     *   Body: <response body, truncated>
+     *   Exception: <errorType>: <errorMessage>
+     *   Stack: <first relevant frame>
+     *
+     * Each signal is keyed off the BowireInvokeResult shape returned
+     * by /api/invoke. Defensive: a result that's just a plain string
+     * falls through to a single-line block carrying the string.
+     */
+    function richErrorDetail(result, fallback) {
+        var lines = [];
+        if (typeof result === 'string' && result) {
+            return result;
+        }
+        var title = problemTitle(result, fallback);
+        if (title) lines.push(title);
+        if (result && typeof result === 'object') {
+            var statusCode = result.status_code || result.statusCode || result.httpStatus || result.http_status;
+            var statusReason = result.status_reason || result.statusReason || '';
+            if (statusCode) {
+                lines.push('Status: ' + statusCode + (statusReason ? ' ' + statusReason : ''));
+            }
+            if (result.detail && result.detail !== result.title) {
+                lines.push('Detail: ' + String(result.detail));
+            }
+            // Some endpoints return the response body even on failure
+            // (4xx with a problem+json body, 5xx with a stack trace).
+            // Show it so the operator can see the server's verbatim
+            // message instead of guessing.
+            if (result.response !== undefined && result.response !== null) {
+                var bodyText = typeof result.response === 'string'
+                    ? result.response
+                    : JSON.stringify(result.response);
+                if (bodyText && bodyText !== '{}') {
+                    if (bodyText.length > 4096) {
+                        bodyText = bodyText.substring(0, 4096) + '… (' + (bodyText.length - 4096) + ' more bytes truncated)';
+                    }
+                    lines.push('Body: ' + bodyText);
+                }
+            }
+            var errType = result.errorType || result.error_type || result.exceptionType || result.exception_type;
+            var errMsg = result.errorMessage || result.error_message || result.exception || result.error;
+            if (errType || errMsg) {
+                lines.push('Exception: ' + (errType ? errType + ': ' : '') + (errMsg || '(no message)'));
+            }
+            var stack = result.stackTrace || result.stack_trace;
+            if (stack && typeof stack === 'string') {
+                // Filter MS framework frames (high signal-to-noise:
+                // Bowire / plugin frames first; framework internals
+                // are noise unless we're debugging the framework
+                // itself).
+                var frames = stack.split('\n')
+                    .map(function (s) { return s.trim(); })
+                    .filter(function (s) {
+                        if (!s) return false;
+                        if (s.indexOf('at System.') === 0) return false;
+                        if (s.indexOf('at Microsoft.') === 0) return false;
+                        if (s.indexOf('at Internal.') === 0) return false;
+                        return true;
+                    });
+                if (frames.length > 0) {
+                    lines.push('Stack: ' + frames.slice(0, 3).join(' / '));
+                }
+            }
+        }
+        return lines.length > 0 ? lines.join('\n') : (fallback || 'Request failed');
+    }
+
+    /**
      * Render an empty-state card (#121). Reusable across every pane
      * that can be empty so the operator gets a consistent "what's
      * possible from here" shape instead of a literal "No X" string.
