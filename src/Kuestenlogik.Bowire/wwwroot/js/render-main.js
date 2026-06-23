@@ -289,6 +289,22 @@
             }));
         }
         pane.appendChild(typeBar);
+        // URL row lives at the IDENTITY level — alongside protocol /
+        // type / service / method, not inside the Payload / Metadata
+        // tabs. The URL is what the call HITS; tabs are the parts of
+        // the call. Putting it inside a tab read as "the URL is one
+        // aspect of the payload", which conflated identity with
+        // content. Slot here means it sits between Type and the
+        // request/response split, visually grouped with the rest of
+        // the "what kind of call" surface.
+        // urlRow is built further below in this function — temporary
+        // ref so we can re-anchor it here without reordering all the
+        // declarations. The actual urlRow.appendChild fires later but
+        // the DOM position is set now (appendChild later sets it on
+        // the previously-empty placeholder via .appendChild reusing
+        // the same node).
+        var urlRowSlot = el('div', { className: 'bowire-freeform-url-slot' });
+        pane.appendChild(urlRowSlot);
         pane.appendChild(el('div', { className: 'bowire-freeform-divider' }));
 
         // ---- Request / Response split — same shape as the
@@ -449,7 +465,7 @@
                 onInput: function (e) { fr.serverUrl = e.target.value; }
             }));
         }
-        freeformReqPane.appendChild(urlRow);
+        urlRowSlot.appendChild(urlRow);
 
         // Service + Method rows retired — they're inputs in the
         // editable header now (see freeformHeader above). The header
