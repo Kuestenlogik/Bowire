@@ -25,13 +25,20 @@
         {
             id: 'rest',
             label: 'REST API testing',
-            description: 'A sample URL (httpbin.org), `baseUrl` + `apiToken` env vars, and a starter collection with GET + POST stubs.',
+            description: 'Petstore (well-known public OpenAPI 2.0 endpoint) — Bowire auto-discovers the Pet / Store / User services on first connect. Plus a starter collection with two ready-to-invoke calls.',
             icon: 'globe',
             apply: function (wsId) {
-                _templateWriteUrls(wsId, ['https://httpbin.org']);
+                // Swagger Petstore exposes /v2/swagger.json — Bowire's
+                // REST plugin's discovery surface picks that up
+                // automatically, so the workspace lands with a
+                // populated services tree instead of the empty
+                // "no schema found" state httpbin.org produced
+                // (httpbin doesn't publish OpenAPI / Swagger, so
+                // discovery returned 0 services from it).
+                _templateWriteUrls(wsId, ['https://petstore.swagger.io/v2']);
                 _templateWriteGlobals(wsId, {
-                    baseUrl: 'https://httpbin.org',
-                    apiToken: 'changeme'
+                    baseUrl: 'https://petstore.swagger.io/v2',
+                    apiToken: 'special-key'    // documented Petstore token
                 });
                 _templateWriteCollections(wsId, [{
                     id: 'col_rest_starter',
@@ -41,24 +48,24 @@
                         {
                             id: 'item_rest_get',
                             protocol: 'rest',
-                            service: 'httpbin',
-                            method: 'GET /get',
+                            service: 'pet',
+                            method: 'GET /pet/findByStatus',
                             methodType: 'Unary',
                             body: '',
                             messages: [],
                             metadata: null,
-                            serverUrl: 'https://httpbin.org'
+                            serverUrl: 'https://petstore.swagger.io/v2'
                         },
                         {
                             id: 'item_rest_post',
                             protocol: 'rest',
-                            service: 'httpbin',
-                            method: 'POST /post',
+                            service: 'pet',
+                            method: 'POST /pet',
                             methodType: 'Unary',
-                            body: '{"hello":"world"}',
-                            messages: ['{"hello":"world"}'],
+                            body: '{"name":"doggie","photoUrls":[],"status":"available"}',
+                            messages: ['{"name":"doggie","photoUrls":[],"status":"available"}'],
                             metadata: null,
-                            serverUrl: 'https://httpbin.org'
+                            serverUrl: 'https://petstore.swagger.io/v2'
                         }
                     ]
                 }]);
@@ -141,10 +148,206 @@
     }
 
     function getWorkspaceTemplate(id) {
+        // Built-ins win when both lists carry the same id (they
+        // shouldn't, but defensive). User-defined templates fall
+        // back to the empty default if their id is no longer in
+        // localStorage (e.g. deleted while the create-dialog was
+        // open).
         for (var i = 0; i < BOWIRE_WORKSPACE_TEMPLATES.length; i++) {
             if (BOWIRE_WORKSPACE_TEMPLATES[i].id === id) return BOWIRE_WORKSPACE_TEMPLATES[i];
         }
+        var user = _readUserTemplates();
+        for (var j = 0; j < user.length; j++) {
+            if (user[j].id === id) return _wrapUserTemplate(user[j]);
+        }
         return BOWIRE_WORKSPACE_TEMPLATES[0];
+    }
+
+    // ---- User-defined workspace templates (#242) ----
+    //
+    // Operators can snapshot a populated workspace as a reusable
+    // template. The snapshot freezes the current localStorage state
+    // under the workspace's wsKey-prefixed buckets and stores it
+    // cross-workspace (NOT workspace-scoped — templates outlive
+    // their source workspace, so deleting the source must NOT take
+    // its templates down).
+    //
+    // Storage shape:
+    //   bowire_user_workspace_templates → [{
+    //     id: 'tpl_<random>',
+    //     name: 'Harbor research',
+    //     description: '…',
+    //     icon: 'globe',
+    //     createdAt: <epoch>,
+    //     sourceWorkspaceId: 'ws_<id>',     // informational; not enforced
+    //     payload: {
+    //       urls:        [...],
+    //       urlMeta:     { ... },
+    //       envs:        [...],
+    //       activeEnvId: 'env_…' | '',
+    //       globals:     { ... },
+    //       collections: [...]
+    //     }
+    //   }, ...]
+    //
+    // Phase 1 scope per #242: URLs (+ meta), envs, collections, global
+    // vars. Plugin pins (workspace.pluginPins) live on the workspace
+    // record itself rather than under wsKey-prefixed storage; folded
+    // into the payload by copying the pluginPins field off the
+    // workspace entry at snapshot time.
+    var USER_TEMPLATES_KEY = 'bowire_user_workspace_templates';
+
+    var TEMPLATE_BUCKETS = [
+        { key: 'bowire_server_urls', field: 'urls', def: '[]' },
+        { key: 'bowire_url_meta',    field: 'urlMeta', def: '{}' },
+        { key: 'bowire_environments', field: 'envs', def: '[]' },
+        { key: 'bowire_active_env',  field: 'activeEnvId', def: '' },
+        { key: 'bowire_global_vars', field: 'globals', def: '{}' },
+        { key: 'bowire_collections', field: 'collections', def: '[]' }
+    ];
+
+    function _readUserTemplates() {
+        try {
+            var raw = localStorage.getItem(USER_TEMPLATES_KEY);
+            if (!raw) return [];
+            var arr = JSON.parse(raw);
+            return Array.isArray(arr) ? arr : [];
+        } catch { return []; }
+    }
+
+    function _writeUserTemplates(list) {
+        try { localStorage.setItem(USER_TEMPLATES_KEY, JSON.stringify(list)); }
+        catch (e) { try { markSaveFailed('workspace templates', e); } catch { /* ignore */ } }
+    }
+
+    function _wrapUserTemplate(stored) {
+        // Adapt a stored user-template record to the same shape the
+        // built-in templates use — { id, label, description, icon,
+        // apply(wsId) }. The apply function replays the snapshotted
+        // payload into the new workspace's wsKey buckets, identical
+        // to how the built-in templates write their values.
+        return {
+            id: stored.id,
+            label: stored.name || '(unnamed template)',
+            description: stored.description || '',
+            icon: stored.icon || 'layers',
+            isUser: true,
+            createdAt: stored.createdAt || 0,
+            apply: function (wsId) {
+                var p = stored.payload || {};
+                TEMPLATE_BUCKETS.forEach(function (b) {
+                    if (!(b.field in p)) return;
+                    try {
+                        var v = p[b.field];
+                        var serialised = (typeof v === 'string') ? v : JSON.stringify(v);
+                        localStorage.setItem(_templateKey(wsId, b.key), serialised);
+                    } catch { /* quota / disabled */ }
+                });
+                // Plugin pins live on the workspace record (not on
+                // its own wsKey bucket). Patch the workspaces array
+                // in place if the snapshot carried any.
+                if (p.pluginPins && Object.keys(p.pluginPins).length > 0) {
+                    try {
+                        var wsRaw = localStorage.getItem('bowire_workspaces');
+                        if (wsRaw) {
+                            var list = JSON.parse(wsRaw);
+                            if (Array.isArray(list)) {
+                                for (var i = 0; i < list.length; i++) {
+                                    if (list[i].id === wsId) {
+                                        list[i].pluginPins = p.pluginPins;
+                                        break;
+                                    }
+                                }
+                                localStorage.setItem('bowire_workspaces', JSON.stringify(list));
+                            }
+                        }
+                    } catch { /* ignore */ }
+                }
+            }
+        };
+    }
+
+    function listUserTemplates() {
+        return _readUserTemplates().map(_wrapUserTemplate);
+    }
+
+    // Snapshot the currently-active workspace as a reusable template.
+    // Throws when no active workspace exists; returns the new
+    // template id on success so the caller can highlight it in the
+    // template manager.
+    function saveCurrentWorkspaceAsTemplate(name, description, icon) {
+        var safeName = String(name || '').trim();
+        if (!safeName) throw new Error('Template name is required.');
+        var wsId = (typeof activeWorkspaceId !== 'undefined') ? activeWorkspaceId : null;
+        if (!wsId) throw new Error('No active workspace to snapshot.');
+
+        var payload = {};
+        TEMPLATE_BUCKETS.forEach(function (b) {
+            try {
+                var raw = localStorage.getItem('bowire_ws_' + wsId + '_' + b.key.replace(/^bowire_/, ''));
+                if (raw === null) raw = b.def;
+                if (b.def === '[]' || b.def === '{}') {
+                    // JSON-shaped fields: parse so the template stays
+                    // structured (callers may want to introspect).
+                    try { payload[b.field] = JSON.parse(raw); }
+                    catch { payload[b.field] = JSON.parse(b.def); }
+                } else {
+                    payload[b.field] = raw;
+                }
+            } catch { /* skip individual bucket on read error */ }
+        });
+
+        // Pin the source workspace's pluginPins (if any) into the
+        // snapshot so the new workspace inherits the same plugin
+        // expectations.
+        try {
+            var wsRaw = localStorage.getItem('bowire_workspaces');
+            if (wsRaw) {
+                var list = JSON.parse(wsRaw);
+                if (Array.isArray(list)) {
+                    for (var i = 0; i < list.length; i++) {
+                        if (list[i].id === wsId && list[i].pluginPins
+                            && typeof list[i].pluginPins === 'object') {
+                            payload.pluginPins = JSON.parse(JSON.stringify(list[i].pluginPins));
+                            break;
+                        }
+                    }
+                }
+            }
+        } catch { /* ignore */ }
+
+        var record = {
+            id: 'tpl_' + Math.random().toString(36).slice(2, 10),
+            name: safeName,
+            description: String(description || '').trim(),
+            icon: icon || 'layers',
+            createdAt: Date.now(),
+            sourceWorkspaceId: wsId,
+            payload: payload
+        };
+        var all = _readUserTemplates();
+        all.push(record);
+        _writeUserTemplates(all);
+        return record.id;
+    }
+
+    function deleteUserTemplate(id) {
+        var all = _readUserTemplates().filter(function (t) { return t.id !== id; });
+        _writeUserTemplates(all);
+    }
+
+    function renameUserTemplate(id, newName, newDescription) {
+        var all = _readUserTemplates();
+        var changed = false;
+        for (var i = 0; i < all.length; i++) {
+            if (all[i].id === id) {
+                if (typeof newName === 'string') all[i].name = newName.trim() || all[i].name;
+                if (typeof newDescription === 'string') all[i].description = newDescription.trim();
+                changed = true;
+                break;
+            }
+        }
+        if (changed) _writeUserTemplates(all);
     }
 
     // Persisted last-picked template so the dialog defaults to
@@ -180,7 +383,11 @@
         var selectedTemplateId = _readLastTemplate();
 
         var templateList = el('div', { className: 'bowire-ws-template-list', role: 'radiogroup', 'aria-label': 'Start from template' });
-        BOWIRE_WORKSPACE_TEMPLATES.forEach(function (tpl) {
+
+        // Helper that appends one row to the list. Used for built-ins
+        // and user templates alike — user templates additionally get
+        // a trailing delete button.
+        function appendRow(tpl) {
             var row = el('label', {
                 className: 'bowire-ws-template-row' + (tpl.id === selectedTemplateId ? ' selected' : ''),
                 'data-tpl-id': tpl.id
@@ -205,8 +412,52 @@
             info.appendChild(el('div', { className: 'bowire-ws-template-label', textContent: tpl.label }));
             info.appendChild(el('div', { className: 'bowire-ws-template-desc', textContent: tpl.description }));
             row.appendChild(info);
+            if (tpl.isUser) {
+                row.appendChild(el('button', {
+                    type: 'button',
+                    className: 'bowire-ws-template-delete-btn',
+                    title: 'Delete this user template',
+                    'aria-label': 'Delete template ' + tpl.label,
+                    innerHTML: svgIcon('trash'),
+                    onClick: function (ev) {
+                        // Prevent the label-click from selecting the
+                        // about-to-be-deleted row.
+                        ev.preventDefault(); ev.stopPropagation();
+                        // Use the existing toast/confirm primitive if
+                        // present; otherwise direct delete is fine.
+                        var ok = (typeof confirm === 'function')
+                            ? confirm('Delete template "' + tpl.label + '"? This cannot be undone.')
+                            : true;
+                        if (!ok) return;
+                        deleteUserTemplate(tpl.id);
+                        // If the row being deleted was the selection,
+                        // fall back to 'empty' so the create button
+                        // doesn't reference a vanished template id.
+                        if (selectedTemplateId === tpl.id) selectedTemplateId = 'empty';
+                        // Repaint the list inline rather than tearing
+                        // the dialog down + reopening.
+                        refreshList();
+                    }
+                }));
+            }
             templateList.appendChild(row);
-        });
+        }
+
+        function refreshList() {
+            templateList.innerHTML = '';
+            // Built-ins first (the empty/no-op default leads), then a
+            // section header + user templates if any exist.
+            BOWIRE_WORKSPACE_TEMPLATES.forEach(appendRow);
+            var userTpls = listUserTemplates();
+            if (userTpls.length > 0) {
+                templateList.appendChild(el('div', {
+                    className: 'bowire-ws-template-section-heading',
+                    textContent: 'Your templates'
+                }));
+                userTpls.forEach(appendRow);
+            }
+        }
+        refreshList();
 
         function commit() {
             var name = String(nameInput.value || '').trim();

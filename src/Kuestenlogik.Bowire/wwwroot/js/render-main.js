@@ -1324,6 +1324,44 @@
                         });
                     }
                 }));
+                // #242 — save the active workspace as a reusable
+                // template. Only offered for the ACTIVE workspace (you
+                // can only snapshot the localStorage of the workspace
+                // you're currently in). Non-active workspaces just see
+                // Rename + Delete.
+                if (w.id === activeWorkspaceId
+                    && typeof saveCurrentWorkspaceAsTemplate === 'function') {
+                    tools.appendChild(el('button', {
+                        type: 'button',
+                        className: 'bowire-env-overview-tool',
+                        title: 'Save workspace as template',
+                        'aria-label': 'Save workspace as template',
+                        innerHTML: (typeof svgIcon === 'function') ? svgIcon('save') : '💾',
+                        onClick: function () {
+                            var wsName = w.name || 'workspace';
+                            bowirePrompt('Template name', {
+                                title: 'Save as template',
+                                defaultValue: wsName + ' template',
+                                confirmText: 'Save',
+                                validator: function (val) {
+                                    return String(val || '').trim() ? null : 'Name required';
+                                }
+                            }).then(function (name) {
+                                if (!name) return;
+                                try {
+                                    saveCurrentWorkspaceAsTemplate(name, '', 'layers');
+                                    if (typeof toast === 'function') {
+                                        toast('Saved "' + name + '" — available in the next create-workspace dialog.', 'success');
+                                    }
+                                } catch (e) {
+                                    if (typeof toast === 'function') {
+                                        toast('Save failed: ' + (e && e.message ? e.message : 'unknown error'), 'error');
+                                    }
+                                }
+                            });
+                        }
+                    }));
+                }
                 tools.appendChild(el('button', {
                     type: 'button',
                     className: 'bowire-env-overview-tool bowire-env-overview-tool-danger',
