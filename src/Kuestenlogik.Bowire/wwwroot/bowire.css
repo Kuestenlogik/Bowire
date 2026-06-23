@@ -10028,6 +10028,35 @@ so the textarea
     margin: 4px 0 12px;
 }
 
+/* ===== Freeform builder — request / response split layout ===== */
+.bowire-freeform-pane {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    flex: 1;
+}
+.bowire-freeform-content {
+    flex: 1 1 auto;
+    min-height: 0;
+}
+.bowire-freeform-req-pane,
+.bowire-freeform-res-pane {
+    padding: 12px 16px;
+    overflow: auto;
+}
+.bowire-freeform-action-bar {
+    border-top: 1px solid var(--bowire-border);
+    padding: 8px 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.bowire-response-empty {
+    color: var(--bowire-text-tertiary, var(--bowire-text-secondary));
+    font-size: 12px;
+    padding: 12px 4px;
+}
+
 /* Services toolbar — contains +,
 filter,
 and chip row */
