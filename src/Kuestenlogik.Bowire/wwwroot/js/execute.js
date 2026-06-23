@@ -745,23 +745,34 @@
                 }
             }
         }));
+        // Clear selection — distinct from 'Close console' (which uses
+        // the close X icon). Text 'Deselect' makes the two reads
+        // unambiguous: an X icon on either button used to look the
+        // same and confused the operator about whether they were
+        // closing the drawer or wiping the selection.
         actions.appendChild(el('button', {
             type: 'button',
             className: 'bowire-console-toolbar-btn',
             title: 'Clear selection',
             'aria-label': 'Clear selection',
-            textContent: '✕',
+            textContent: 'Deselect',
             onClick: function () {
                 consoleSelected.clear();
                 if (typeof render === 'function') render();
             }
         }));
+        // Clear all entries — trash icon parity with the
+        // Recordings/Mocks rails' per-row delete pattern. Was a 'Clear'
+        // text label which read as a verb word next to two other
+        // icon-only buttons, so the eye couldn't scan the toolbar as
+        // a uniform cluster.
         actions.appendChild(el('button', {
             type: 'button',
             id: 'bowire-console-clear-btn',
             className: 'bowire-console-clear bowire-console-toolbar-btn',
-            textContent: 'Clear',
+            innerHTML: svgIcon('trash'),
             title: 'Clear all entries',
+            'aria-label': 'Clear all entries',
             onClick: clearConsole
         }));
         actions.appendChild(el('button', {
@@ -780,8 +791,9 @@
             el('button', {
                 id: 'bowire-console-clear-btn',
                 className: 'bowire-console-clear',
-                textContent: 'Clear',
+                innerHTML: svgIcon('trash'),
                 title: 'Clear all entries',
+                'aria-label': 'Clear all entries',
                 onClick: clearConsole
             })
         );
