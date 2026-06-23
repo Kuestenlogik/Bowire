@@ -10057,6 +10057,19 @@ so the textarea
     padding: 12px 4px;
 }
 
+/* ===== Freeform builder — Metadata tab content ===== */
+.bowire-freeform-meta-rows {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-top: 8px;
+}
+.bowire-freeform-meta-row {
+    display: grid;
+    grid-template-columns: 1fr 1.5fr;
+    gap: 6px;
+}
+
 /* Services toolbar — contains +,
 filter,
 and chip row */
