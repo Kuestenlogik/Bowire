@@ -168,7 +168,13 @@ public sealed class BowireMcpChatClient : IChatClient
         }
     }
 
-    private static McpClientTool? FindChatTool(IList<McpClientTool> tools)
+    /// <summary>
+    /// Look up the first MCP tool whose name reads as a chat /
+    /// completion gateway. internal so the test suite can pin the
+    /// token list + first-match ordering without needing a live MCP
+    /// server to enumerate tools.
+    /// </summary>
+    internal static McpClientTool? FindChatTool(IList<McpClientTool> tools)
     {
         foreach (var token in s_chatToolNameTokens)
         {
@@ -181,7 +187,7 @@ public sealed class BowireMcpChatClient : IChatClient
         return null;
     }
 
-    private Dictionary<string, object?> BuildArguments(IEnumerable<ChatMessage> messages, ChatOptions? options)
+    internal Dictionary<string, object?> BuildArguments(IEnumerable<ChatMessage> messages, ChatOptions? options)
     {
         // The upstream tool's argument shape is intentionally
         // unspecified — every MCP-host-as-LLM-gateway in the wild
@@ -204,7 +210,7 @@ public sealed class BowireMcpChatClient : IChatClient
         return args;
     }
 
-    private static string ExtractText(CallToolResult result)
+    internal static string ExtractText(CallToolResult result)
     {
         // The MCP content schema is a discriminated union; we ignore
         // image / resource blocks since the chat surface expects prose.
@@ -282,7 +288,7 @@ public sealed class BowireMcpChatClient : IChatClient
         return await McpClient.CreateAsync(transport, cancellationToken: ct).ConfigureAwait(false);
     }
 
-    private static (string Command, string[] Arguments) SplitCommandLine(string commandLine)
+    internal static (string Command, string[] Arguments) SplitCommandLine(string commandLine)
     {
         var parts = commandLine.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
         return parts.Length == 0
