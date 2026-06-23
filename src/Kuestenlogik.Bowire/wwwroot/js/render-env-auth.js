@@ -555,6 +555,19 @@
             try { localStorage.setItem('bowire_rail_mode', 'home'); } catch { /* ignore */ }
         }
 
+        // #248 Phase 1 — Fall back to Home if the operator just
+        // disabled the currently-active rail in Settings. Without
+        // this the rail icon disappears but the main pane keeps
+        // rendering against the disabled mode (orphan state). Home
+        // is always-on so the fallback never loops.
+        if (typeof isRailEnabled === 'function'
+            && typeof railMode !== 'undefined'
+            && railMode !== 'home'
+            && !isRailEnabled(railMode)) {
+            railMode = 'home';
+            try { localStorage.setItem('bowire_rail_mode', 'home'); } catch { /* ignore */ }
+        }
+
         // #123 — lazy tab rehydrate. One-shot guard inside; cheap
         // no-op on every subsequent render once services land. Putting
         // it at the top of render() means tab persistence works even

@@ -1082,6 +1082,86 @@
     // #139 — Home mode is the first-launch default. Returning users
     // restore their last-active mode from localStorage.
     let railMode = 'home';
+
+    // ---- #248 — Optional rail modules (Phase 1: plumbing) ----
+    //
+    // Make every non-essential rail user-toggleable so operators
+    // can trim the rail catalogue to the workflows they actually
+    // use. Three rails are ALWAYS visible because Bowire is barely
+    // usable without them:
+    //   - home        (the cross-workflow landing surface)
+    //   - discover    (the core "what services exist" view)
+    //   - workspaces  (the workspace switcher / tree)
+    //
+    // Every other rail in _railModes (recordings, mocks, flows,
+    // proxy, benchmarks, security, …) defaults to ENABLED on
+    // upgrade — no surprise hide — but the operator can flip
+    // individual modules off via Settings → Rail modes.
+    //
+    // Storage: bowire_enabled_rails localStorage key (cross-
+    // workspace per-user preference). Value is a JSON array of
+    // mode IDs the operator has opted INTO. Migration: when the
+    // key is missing or invalid, isRailEnabled returns true for
+    // every toggleable rail (the always-on set is hard-coded so
+    // it never depends on the stored value at all).
+    //
+    // Per-workspace overrides are out of scope for Phase 1 — see
+    // #249 for the v2.4 follow-up that builds on this mechanic.
+    const ALWAYS_ON_RAIL_MODES = ['home', 'discover', 'workspaces'];
+    const ENABLED_RAILS_KEY = 'bowire_enabled_rails';
+    let _enabledRailsCache = null;
+    function getEnabledRails() {
+        if (_enabledRailsCache !== null) return _enabledRailsCache;
+        try {
+            var raw = localStorage.getItem(ENABLED_RAILS_KEY);
+            if (raw) {
+                var parsed = JSON.parse(raw);
+                if (Array.isArray(parsed)) {
+                    _enabledRailsCache = parsed;
+                    return parsed;
+                }
+            }
+        } catch { /* corrupt → fall through to default */ }
+        _enabledRailsCache = null; // sentinel: "no preference set yet"
+        return null;
+    }
+    function setRailEnabled(id, enabled) {
+        if (ALWAYS_ON_RAIL_MODES.indexOf(id) >= 0) return; // ignore — always on
+        var current = getEnabledRails();
+        // First write seeds the cache from the default-all-enabled
+        // state so toggling one rail off doesn't accidentally turn
+        // off everything else.
+        if (current === null) {
+            current = _allToggleableRailIds();
+        } else {
+            current = current.slice();
+        }
+        var idx = current.indexOf(id);
+        if (enabled && idx < 0) current.push(id);
+        else if (!enabled && idx >= 0) current.splice(idx, 1);
+        _enabledRailsCache = current;
+        try {
+            localStorage.setItem(ENABLED_RAILS_KEY, JSON.stringify(current));
+            markSaved('rail modes');
+        } catch (e) { markSaveFailed('rail modes', e); }
+    }
+    function isRailEnabled(id) {
+        if (ALWAYS_ON_RAIL_MODES.indexOf(id) >= 0) return true;
+        var pref = getEnabledRails();
+        if (pref === null) return true;     // no pref set → all-enabled default
+        return pref.indexOf(id) >= 0;
+    }
+    function _allToggleableRailIds() {
+        // Lazy-evaluated against the live _railModes catalogue
+        // (declared in render-sidebar.js, hoisted into the IIFE
+        // scope). Filter out hideFromRail entries and the always-on
+        // set — they're not user-toggleable.
+        if (typeof _railModes === 'undefined' || !Array.isArray(_railModes)) return [];
+        return _railModes
+            .filter(function (m) { return !m.hideFromRail; })
+            .filter(function (m) { return ALWAYS_ON_RAIL_MODES.indexOf(m.id) < 0; })
+            .map(function (m) { return m.id; });
+    }
     // App-drawer (MudBlazor-style responsive). Toggled by the B/burger
     // logo button. Slides in from the left, lists every rail mode +
     // workspace/theme shortcuts. Closed by backdrop click, Esc or

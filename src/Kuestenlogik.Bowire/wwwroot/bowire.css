@@ -9794,6 +9794,53 @@ so the textarea
     font-size: 12px;
 }
 
+/* ===== #248 Phase 1 — Settings → Rail modes editor ===== */
+.bowire-settings-rail-subhead {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--bowire-text-secondary);
+    margin: 4px 0;
+    font-weight: 600;
+}
+.bowire-settings-rail-list {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+.bowire-settings-rail-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 10px;
+    border-radius: var(--bowire-radius-2, 4px);
+    cursor: pointer;
+}
+.bowire-settings-rail-row:hover { background: var(--bowire-surface-hover); }
+.bowire-settings-rail-row.is-locked { cursor: default; opacity: 0.7; }
+.bowire-settings-rail-row.is-locked:hover { background: transparent; }
+.bowire-settings-rail-checkbox { margin: 0; }
+.bowire-settings-rail-icon {
+    display: flex;
+    align-items: center;
+    color: var(--bowire-text-secondary);
+}
+.bowire-settings-rail-icon svg { width: 16px; height: 16px; }
+.bowire-settings-rail-label {
+    flex: 1;
+    font-size: 13px;
+    color: var(--bowire-text);
+}
+.bowire-settings-rail-badge {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--bowire-text-tertiary, var(--bowire-text-secondary));
+    padding: 2px 6px;
+    border: 1px solid var(--bowire-border);
+    border-radius: var(--bowire-radius-2, 4px);
+}
+
 /* Services toolbar — contains +,
 filter,
 and chip row */
