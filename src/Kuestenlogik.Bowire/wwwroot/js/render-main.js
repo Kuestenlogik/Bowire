@@ -42,11 +42,15 @@
                 onClick: function (e) { e.stopPropagation(); }
             });
             function _snapshotFreeform() {
+                // #252 — urlMode discriminator decides URL ownership:
+                //   'inline'  → serverUrl lives on the item (back-compat)
+                //   'source'  → serverUrl points at one of the
+                //               workspace's Source URLs by value; a
+                //               replay path resolves it back at
+                //               execute time, so renames there
+                //               propagate to this saved item.
+                var urlMode = fr.urlMode === 'source' ? 'source' : 'inline';
                 return {
-                    // Self-contained: every field lives ON the item,
-                    // no reference to workspace state. A future schema
-                    // upload, env-var rename, or Source URL retirement
-                    // does not silently break the saved item.
                     service: fr.service || '',
                     method: fr.method || '',
                     methodType: fr.methodType || 'Unary',
@@ -55,6 +59,7 @@
                     messages: [fr.body || '{}'],
                     metadata: (fr.metadata && Object.keys(fr.metadata).length > 0) ? fr.metadata : null,
                     serverUrl: fr.serverUrl || null,
+                    urlMode: urlMode,
                     // Discriminator so the collection-item view can
                     // tell ad-hoc requests apart from discovered-method
                     // entries (different glyph, no service-tree
@@ -196,18 +201,111 @@
         }
         pane.appendChild(protoRow);
 
-        // Server URL
+        // Server URL — #252 grows a two-state toggle on the left of
+        // the field: 'Inline' (the URL lives on this request only,
+        // self-contained, no ref to anything central) and 'From
+        // Source' (the URL points at one of the workspace's Source
+        // URLs by string). When 'From Source' is picked, the text
+        // input is replaced with a <select> listing the workspace's
+        // managed Source URLs. Switching modes after typing prompts
+        // to persist-as-Source / discard so the operator doesn't
+        // silently lose their typed URL.
         var urlRow = el('div', { className: 'bowire-freeform-row' });
         urlRow.appendChild(el('label', { className: 'bowire-freeform-label', textContent: 'Server URL' }));
-        urlRow.appendChild(el('input', {
-            id: 'bowire-freeform-url-input',
-            type: 'text',
-            className: 'bowire-freeform-input',
-            value: fr.serverUrl,
-            placeholder: 'https://api.example.com or mqtt://broker:1883',
-            spellcheck: 'false',
-            onInput: function (e) { fr.serverUrl = e.target.value; }
+
+        // urlMode default 'inline' — back-compat for records persisted
+        // before #252 landed.
+        if (fr.urlMode !== 'source') fr.urlMode = 'inline';
+        var hasAnySources = (typeof serverUrls !== 'undefined'
+            && Array.isArray(serverUrls) && serverUrls.length > 0);
+
+        var modeWrap = el('div', { className: 'bowire-freeform-url-mode-wrap' });
+        function _setUrlMode(next) {
+            if (fr.urlMode === next) return;
+            // Switching FROM inline → source with a typed URL not yet
+            // in the Source list — prompt before discarding so the
+            // operator's work isn't silently lost.
+            if (fr.urlMode === 'inline' && next === 'source'
+                && fr.serverUrl
+                && hasAnySources
+                && serverUrls.indexOf(fr.serverUrl) < 0) {
+                if (typeof bowireConfirm === 'function') {
+                    bowireConfirm(
+                        'Save "' + fr.serverUrl + '" as a workspace Source URL first?',
+                        function () {
+                            // Confirm = persist as Source then switch.
+                            try {
+                                if (serverUrls.indexOf(fr.serverUrl) < 0) {
+                                    serverUrls.push(fr.serverUrl);
+                                    if (typeof persistServerUrls === 'function') persistServerUrls();
+                                }
+                            } catch { /* ignore */ }
+                            fr.urlMode = 'source';
+                            render();
+                        },
+                        {
+                            title: 'Switch to Source mode',
+                            confirmText: 'Save & switch',
+                            cancelText: 'Discard & switch',
+                            onCancel: function () {
+                                fr.serverUrl = hasAnySources ? serverUrls[0] : '';
+                                fr.urlMode = 'source';
+                                render();
+                            }
+                        }
+                    );
+                    return;
+                }
+            }
+            fr.urlMode = next;
+            if (next === 'source') {
+                if (!hasAnySources) { fr.serverUrl = ''; }
+                else if (serverUrls.indexOf(fr.serverUrl) < 0) { fr.serverUrl = serverUrls[0]; }
+            }
+            render();
+        }
+        modeWrap.appendChild(el('button', {
+            type: 'button',
+            className: 'bowire-freeform-url-mode-btn' + (fr.urlMode === 'inline' ? ' is-active' : ''),
+            title: 'Self-contained URL — lives inline on this request',
+            textContent: 'Inline',
+            onClick: function () { _setUrlMode('inline'); }
         }));
+        modeWrap.appendChild(el('button', {
+            type: 'button',
+            className: 'bowire-freeform-url-mode-btn' + (fr.urlMode === 'source' ? ' is-active' : ''),
+            title: hasAnySources
+                ? 'Bind URL to a workspace-managed Source — propagates renames + retirements'
+                : 'No Source URLs in this workspace yet — add one in Workspaces → Sources first',
+            disabled: !hasAnySources,
+            textContent: 'From Source',
+            onClick: function () { _setUrlMode('source'); }
+        }));
+        urlRow.appendChild(modeWrap);
+
+        if (fr.urlMode === 'source' && hasAnySources) {
+            var sourceSelect = el('select', {
+                id: 'bowire-freeform-url-select',
+                className: 'bowire-freeform-url-source-select',
+                onChange: function (e) { fr.serverUrl = e.target.value; }
+            });
+            serverUrls.forEach(function (url) {
+                var opt = el('option', { value: url, textContent: url });
+                if (url === fr.serverUrl) opt.selected = true;
+                sourceSelect.appendChild(opt);
+            });
+            urlRow.appendChild(sourceSelect);
+        } else {
+            urlRow.appendChild(el('input', {
+                id: 'bowire-freeform-url-input',
+                type: 'text',
+                className: 'bowire-freeform-input',
+                value: fr.serverUrl,
+                placeholder: 'https://api.example.com or mqtt://broker:1883',
+                spellcheck: 'false',
+                onInput: function (e) { fr.serverUrl = e.target.value; }
+            }));
+        }
         pane.appendChild(urlRow);
 
         // Service name
@@ -3442,14 +3540,33 @@
         var embedded = typeof uiMode !== 'undefined' && uiMode === 'embedded';
         var hasServices = typeof services !== 'undefined' && Array.isArray(services) && services.length > 0;
 
-        card('plus', 'New request', 'Freeform any protocol', function () {
-            if (typeof startFreeformRequest === 'function') startFreeformRequest();
+        // #252 — Two compose entry-points with different URL semantics.
+        // 'Compose new request' (self-contained — URL lives inline on
+        // the saved item, no central reference) is the canonical
+        // freeform path. 'New from source…' binds the request to one
+        // of the workspace's centrally-managed Source URLs so an env
+        // rename / URL retirement propagates to the saved item. Both
+        // open the same freeform builder; the difference is the URL
+        // row's mode + the persisted shape.
+        card('plus', 'Compose new request', 'Self-contained — URL inline', function () {
+            if (typeof startFreeformRequest === 'function') startFreeformRequest({ urlMode: 'inline' });
             else {
                 railMode = 'discover';
                 try { localStorage.setItem('bowire_rail_mode', 'discover'); } catch { /* ignore */ }
                 render();
             }
         });
+        var hasSourceUrls = (typeof serverUrls !== 'undefined'
+            && Array.isArray(serverUrls) && serverUrls.length > 0);
+        if (hasSourceUrls && !locked && !embedded) {
+            card('connect', 'New from source…', 'URL bound to a managed Source', function () {
+                if (typeof openNewFromSourceDialog === 'function') {
+                    openNewFromSourceDialog();
+                } else if (typeof startFreeformRequest === 'function') {
+                    startFreeformRequest({ urlMode: 'source', sourceUrl: serverUrls[0] });
+                }
+            });
+        }
         // 'Add URL' only makes sense when URL editing is allowed.
         // Locked mode pins the host-provided URL; embedded mode pins
         // the in-process service catalogue. Either way there's nothing
