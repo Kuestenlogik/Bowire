@@ -45,8 +45,13 @@
                     render();
                     return;
                 }
-                var defaultName = (fr.service && fr.method) ? (fr.service + '/' + fr.method)
-                    : fr.method || ((fr.protocol || 'request') + ' request');
+                // Default name: prefer the lineage hint when this
+                // freeform was opened via "As new request" (#245) so
+                // the operator sees "cloned: PetService/GetPet" pre-
+                // filled instead of having to retype the source.
+                var defaultName = fr._defaultSaveName
+                    || ((fr.service && fr.method) ? (fr.service + '/' + fr.method)
+                        : fr.method || ((fr.protocol || 'request') + ' request'));
                 bowirePrompt('Name this request', {
                     title: 'Save as ad-hoc request',
                     defaultValue: defaultName,
@@ -57,7 +62,10 @@
                 }).then(function (name) {
                     if (!name) return;
                     try {
-                        saveCurrentFreeformAsAdHoc({ name: name });
+                        saveCurrentFreeformAsAdHoc({
+                            name: name,
+                            lineage: fr._lineageHint || { kind: 'compose' }
+                        });
                         if (typeof toast === 'function') {
                             toast('Saved "' + name + '" to Ad-hoc requests', 'success');
                         }
