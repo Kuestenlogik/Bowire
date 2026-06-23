@@ -201,6 +201,21 @@ public sealed class BowireRestProtocol : IBowireProtocol, IInlineHttpInvoker, ID
         List<string> jsonMessages, bool showInternalServices,
         Dictionary<string, string>? metadata = null, CancellationToken ct = default)
     {
+        // #256 — Ad-hoc REST routing. When the operator drops a freeform
+        // request without a discovered OpenAPI document, the freeform
+        // builder sends an empty service + an HTTP verb (GET / POST /
+        // …) as the 'method'. Detect that shape and skip the schema-
+        // index lookup entirely; RestInvoker.InvokeAdHocAsync fires
+        // a plain HttpClient call against the supplied serverUrl.
+        // gRPC / GraphQL / other protocols' freeform flows still need
+        // a service+method pair, so the convention is REST-specific.
+        if (string.IsNullOrEmpty(service) && IsAdHocVerb(method))
+        {
+            var body = jsonMessages.Count > 0 ? jsonMessages[0] : null;
+            return await RestInvoker.InvokeAdHocAsync(_http, serverUrl, method, body, metadata, ct)
+                .ConfigureAwait(false);
+        }
+
         // Embedded path: when running in-process, prime the embedded cache on
         // the fly if Discover hasn't been called yet. Lookup by (service, method)
         // hits the empty-key cache that EmbeddedDiscovery populates.
@@ -293,6 +308,24 @@ public sealed class BowireRestProtocol : IBowireProtocol, IInlineHttpInvoker, ID
         CancellationToken ct = default)
     {
         return RestInvoker.InvokeAsync(_http, serverUrl, methodInfo, jsonMessages, metadata, ct);
+    }
+
+    /// <summary>
+    /// True when <paramref name="token"/> looks like one of the seven
+    /// standard HTTP verbs. Drives the schema-free ad-hoc routing
+    /// branch in <see cref="InvokeAsync"/> (#256).
+    /// </summary>
+    private static bool IsAdHocVerb(string? token)
+    {
+        if (string.IsNullOrWhiteSpace(token)) return false;
+        var t = token.Trim();
+        return string.Equals(t, "GET", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(t, "POST", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(t, "PUT", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(t, "DELETE", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(t, "PATCH", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(t, "HEAD", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(t, "OPTIONS", StringComparison.OrdinalIgnoreCase);
     }
 }
 

@@ -10033,6 +10033,68 @@ so the textarea
     font-family: var(--bowire-font-mono, monospace);
     font-size: 12px;
 }
+
+/* ===== #256 — Freeform builder REST-mode (Postman-style) ===== */
+.bowire-freeform-rest-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 16px;
+}
+.bowire-freeform-rest-verb-chip {
+    padding: 2px 8px;
+    background: var(--bowire-surface);
+    border: 1px solid var(--bowire-border);
+    border-radius: var(--bowire-radius-2, 4px);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    color: var(--bowire-text-secondary);
+}
+.bowire-freeform-rest-url-preview {
+    font-family: var(--bowire-font-mono, monospace);
+    font-size: 13px;
+    color: var(--bowire-text-secondary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    flex: 1;
+    min-width: 0;
+}
+.bowire-freeform-verb-seg {
+    display: inline-flex;
+    border: 1px solid var(--bowire-border);
+    border-radius: var(--bowire-radius-2, 4px);
+    overflow: hidden;
+    background: var(--bowire-surface);
+    flex-shrink: 0;
+}
+.bowire-freeform-verb-seg-btn {
+    padding: 6px 10px;
+    background: transparent;
+    border: none;
+    border-right: 1px solid var(--bowire-border);
+    color: var(--bowire-text-secondary);
+    cursor: pointer;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+}
+.bowire-freeform-verb-seg-btn:last-child { border-right: none; }
+.bowire-freeform-verb-seg-btn:hover { background: var(--bowire-surface-hover); }
+.bowire-freeform-verb-seg-btn.is-active {
+    background: var(--bowire-accent);
+    color: var(--bowire-accent-fg, #fff);
+}
+/* Per-verb accent colours so the active state reads at a glance. */
+.bowire-freeform-verb-get.is-active     { background: #16a34a; color: #fff; }
+.bowire-freeform-verb-post.is-active    { background: #2563eb; color: #fff; }
+.bowire-freeform-verb-put.is-active     { background: #d97706; color: #fff; }
+.bowire-freeform-verb-delete.is-active  { background: #dc2626; color: #fff; }
+.bowire-freeform-verb-patch.is-active   { background: #7c3aed; color: #fff; }
+.bowire-freeform-verb-head.is-active    { background: #64748b; color: #fff; }
+.bowire-freeform-verb-options.is-active { background: #64748b; color: #fff; }
+
 .bowire-freeform-type-seg {
     display: inline-flex;
     border: 1px solid var(--bowire-border);
