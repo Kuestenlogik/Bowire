@@ -404,25 +404,34 @@
             }
             render();
         }
-        modeWrap.appendChild(el('button', {
-            type: 'button',
-            className: 'bowire-freeform-url-mode-btn' + (fr.urlMode === 'inline' ? ' is-active' : ''),
-            title: 'Self-contained URL — lives inline on this request',
-            textContent: 'Inline',
-            onClick: function () { _setUrlMode('inline'); }
-        }));
-        modeWrap.appendChild(el('button', {
-            type: 'button',
-            className: 'bowire-freeform-url-mode-btn' + (fr.urlMode === 'source' ? ' is-active' : ''),
-            title: hasAnySources
-                ? 'Bind URL to a workspace-managed Source'
-                : 'No Source URLs in this workspace yet',
-            disabled: !hasAnySources,
-            textContent: 'From Source',
-            onClick: function () { _setUrlMode('source'); }
-        }));
-        urlBar.appendChild(modeWrap);
-        if (fr.urlMode === 'source' && hasAnySources) {
+        // #256 — Inline/From-Source toggle suppressed for REST. Ad-hoc
+        // REST URLs are always full request URLs; there's no central
+        // 'source' concept to bind against (operators often don't even
+        // have an OpenAPI spec — the whole point of ad-hoc REST is
+        // typing the call URL directly). For other protocols (gRPC,
+        // GraphQL, MQTT, …) the toggle stays since those bind to
+        // workspace-managed base URLs.
+        if (!isRest) {
+            modeWrap.appendChild(el('button', {
+                type: 'button',
+                className: 'bowire-freeform-url-mode-btn' + (fr.urlMode === 'inline' ? ' is-active' : ''),
+                title: 'Self-contained URL — lives inline on this request',
+                textContent: 'Inline',
+                onClick: function () { _setUrlMode('inline'); }
+            }));
+            modeWrap.appendChild(el('button', {
+                type: 'button',
+                className: 'bowire-freeform-url-mode-btn' + (fr.urlMode === 'source' ? ' is-active' : ''),
+                title: hasAnySources
+                    ? 'Bind URL to a workspace-managed Source'
+                    : 'No Source URLs in this workspace yet',
+                disabled: !hasAnySources,
+                textContent: 'From Source',
+                onClick: function () { _setUrlMode('source'); }
+            }));
+            urlBar.appendChild(modeWrap);
+        }
+        if (!isRest && fr.urlMode === 'source' && hasAnySources) {
             var sourceSelect = el('select', {
                 id: 'bowire-freeform-url-select',
                 className: 'bowire-freeform-url-source-select bowire-freeform-url-bar-input',
@@ -440,7 +449,9 @@
                 type: 'text',
                 className: 'bowire-freeform-url-bar-input',
                 value: fr.serverUrl,
-                placeholder: 'https://api.example.com or mqtt://broker:1883',
+                placeholder: isRest
+                    ? 'https://api.example.com/users/123 — full request URL'
+                    : 'https://api.example.com or mqtt://broker:1883',
                 spellcheck: 'false',
                 onInput: function (e) { fr.serverUrl = e.target.value; }
             }));

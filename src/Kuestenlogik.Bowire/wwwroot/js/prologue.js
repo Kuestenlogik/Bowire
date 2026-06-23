@@ -1192,10 +1192,56 @@
     let splitMode = 'horizontal';
     try {
         var storedSplit = localStorage.getItem('bowire_split_mode');
-        if (storedSplit === 'vertical' || storedSplit === 'horizontal') {
+        if (storedSplit === 'vertical' || storedSplit === 'horizontal' || storedSplit === 'auto') {
             splitMode = storedSplit;
         }
     } catch { /* ignore */ }
+
+    // #135 — resolve the user-facing splitMode ('vertical' | 'horizontal' |
+    // 'auto') down to the layout the renderer applies ('vertical' |
+    // 'horizontal'). 'auto' picks horizontal on landscape monitors ≥1400 px
+    // wide, vertical on everything narrower / portrait. The pick happens
+    // at render time only — no live resize-driven flip, so the layout
+    // doesn't jump while the operator drags the window.
+    function resolveSplitMode(mode) {
+        if (mode === 'auto') {
+            try {
+                var landscape = (window.innerWidth || 0) >= 1400
+                    && (window.innerWidth || 0) > (window.innerHeight || 0);
+                return landscape ? 'horizontal' : 'vertical';
+            } catch { return 'horizontal'; }
+        }
+        return mode === 'vertical' ? 'vertical' : 'horizontal';
+    }
+
+    // Cycle next-state for the split-toggle button click + the
+    // Ctrl/Cmd+Alt+\ keyboard shortcut. vertical → horizontal → auto →
+    // vertical.
+    function nextSplitMode(current) {
+        if (current === 'vertical') return 'horizontal';
+        if (current === 'horizontal') return 'auto';
+        return 'vertical';
+    }
+
+    // Per-workspace storage for the saved drag-handle position. When the
+    // operator manually resizes the request / response split, the px
+    // position lands here so a reload restores it. The key is split-mode
+    // scoped because the same divider drags two different ways (clientX
+    // in horizontal mode, clientY in vertical) so the saved values aren't
+    // interchangeable.
+    function getSplitDividerPosition(layout) {
+        try {
+            var raw = localStorage.getItem(wsKey('bowire_split_pos_' + layout));
+            var n = raw ? parseInt(raw, 10) : NaN;
+            return Number.isFinite(n) && n >= 100 ? n : null;
+        } catch { return null; }
+    }
+    function setSplitDividerPosition(layout, px) {
+        try {
+            if (px == null) localStorage.removeItem(wsKey('bowire_split_pos_' + layout));
+            else localStorage.setItem(wsKey('bowire_split_pos_' + layout), String(px));
+        } catch { /* ignore */ }
+    }
 
     // #116 — Workspaces Phase 1. UI surface + naming only; actual
     // state isolation (per-workspace URLs / envs / collections /
@@ -3470,11 +3516,26 @@
         // the previous behaviour. The freeform-builder URL row reads
         // this to render either a free-text field or a Source picker.
         var urlMode = (opts.urlMode === 'source') ? 'source' : 'inline';
-        var initialServerUrl = opts.serverUrl
-            || opts.sourceUrl
-            || (serverUrls.length > 0 ? serverUrls[0] : '');
+        var resolvedProtocol = opts.protocol
+            || (protocols.length > 0 ? protocols[0].id : 'grpc');
+        // #256 — for ad-hoc REST, the URL field is the FULL request
+        // URL (e.g. https://api.example.com/users/123), NOT a base
+        // URL pointing at a discovery source. Pre-filling from the
+        // workspace's serverUrls[0] (the OpenAPI source URL) mixed
+        // the two concepts — operators often don't even HAVE a spec
+        // they could fetch. Leave empty for REST unless the caller
+        // explicitly passes a URL (As-new-request from a discovered
+        // method).
+        var initialServerUrl;
+        if (opts.serverUrl || opts.sourceUrl) {
+            initialServerUrl = opts.serverUrl || opts.sourceUrl;
+        } else if (resolvedProtocol === 'rest') {
+            initialServerUrl = '';
+        } else {
+            initialServerUrl = serverUrls.length > 0 ? serverUrls[0] : '';
+        }
         freeformRequest = {
-            protocol: opts.protocol || (protocols.length > 0 ? protocols[0].id : 'grpc'),
+            protocol: resolvedProtocol,
             serverUrl: initialServerUrl,
             urlMode: urlMode,
             service: '',
