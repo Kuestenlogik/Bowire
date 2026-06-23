@@ -9882,7 +9882,11 @@ so the textarea
     position: absolute;
     top: calc(100% + 4px);
     left: 0;
-    right: 0;
+    /* The button shrank to icon-only in the editable header (#247
+       freeform refactor) so anchoring the menu to the button width
+       made the option labels unreadable. Fixed min-width gives every
+       row enough room for "GraphQL"/"WebSocket"/longest names. */
+    min-width: 220px;
     background: var(--bowire-surface);
     border: 1px solid var(--bowire-border);
     border-radius: var(--bowire-radius-2, 4px);
@@ -9894,6 +9898,7 @@ so the textarea
     flex-direction: column;
     padding: 4px;
 }
+.bowire-freeform-proto-menu-label { white-space: nowrap; }
 .bowire-freeform-proto-menu-item {
     display: flex;
     align-items: center;
