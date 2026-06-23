@@ -3344,10 +3344,22 @@
     // methodAddToMenuOpen for discovered methods.
     let freeformAddToMenuOpen = false;
 
-    function startFreeformRequest() {
+    function startFreeformRequest(opts) {
+        opts = opts || {};
+        // #252 — urlMode discriminator: 'inline' = self-contained URL
+        // lives on the request, 'source' = URL is a reference to one
+        // of the workspace's centrally-managed Source URLs (changes
+        // there propagate to this request). Default 'inline' matches
+        // the previous behaviour. The freeform-builder URL row reads
+        // this to render either a free-text field or a Source picker.
+        var urlMode = (opts.urlMode === 'source') ? 'source' : 'inline';
+        var initialServerUrl = opts.serverUrl
+            || opts.sourceUrl
+            || (serverUrls.length > 0 ? serverUrls[0] : '');
         freeformRequest = {
-            protocol: protocols.length > 0 ? protocols[0].id : 'grpc',
-            serverUrl: serverUrls.length > 0 ? serverUrls[0] : '',
+            protocol: opts.protocol || (protocols.length > 0 ? protocols[0].id : 'grpc'),
+            serverUrl: initialServerUrl,
+            urlMode: urlMode,
             service: '',
             method: '',
             body: '{}',
@@ -3358,17 +3370,78 @@
         };
         selectedMethod = null;
         selectedService = null;
-        // The freeform builder only renders in the Discover main
-        // pane; switching modes (Home, Mocks, Recordings, …)
-        // bypasses it. Force Discover so clicking the '+' tab
-        // button (or Ctrl+T) lands the operator on the builder
-        // regardless of the active rail mode.
         if (typeof railMode !== 'undefined' && railMode !== 'discover') {
             railMode = 'discover';
             try { localStorage.setItem('bowire_rail_mode', 'discover'); } catch { /* ignore */ }
             if (typeof sidebarView !== 'undefined') sidebarView = 'services';
         }
         render();
+    }
+
+    // #252 — Source-URL picker. Lists the workspace's Source URLs as
+    // a centred floating list; clicking one opens the freeform
+    // builder with urlMode='source' bound to that URL. Backdrop dim
+    // + Escape closes; click outside closes too. Single-source
+    // workspaces skip the picker entirely.
+    function openNewFromSourceDialog() {
+        if (typeof serverUrls === 'undefined'
+            || !Array.isArray(serverUrls)
+            || serverUrls.length === 0) {
+            if (typeof toast === 'function') {
+                toast('No Source URLs in this workspace yet — add one in Workspaces → Sources first.', 'error');
+            }
+            return;
+        }
+        if (serverUrls.length === 1) {
+            startFreeformRequest({ urlMode: 'source', sourceUrl: serverUrls[0] });
+            return;
+        }
+        var backdrop = document.createElement('div');
+        backdrop.className = 'bowire-from-source-backdrop';
+        var card = document.createElement('div');
+        card.className = 'bowire-from-source-card';
+        var title = document.createElement('div');
+        title.className = 'bowire-from-source-title';
+        title.textContent = 'Pick a Source URL';
+        var desc = document.createElement('div');
+        desc.className = 'bowire-from-source-desc';
+        desc.textContent = 'The new request will reference this URL — changes to the Source propagate to the saved item.';
+        card.appendChild(title);
+        card.appendChild(desc);
+        var list = document.createElement('div');
+        list.className = 'bowire-from-source-list';
+        function close() {
+            if (backdrop.parentNode) backdrop.parentNode.removeChild(backdrop);
+            document.removeEventListener('keydown', onKey);
+        }
+        function onKey(e) { if (e.key === 'Escape') close(); }
+        serverUrls.forEach(function (url) {
+            var row = document.createElement('button');
+            row.type = 'button';
+            row.className = 'bowire-from-source-row';
+            row.textContent = url;
+            row.onclick = function () {
+                close();
+                startFreeformRequest({ urlMode: 'source', sourceUrl: url });
+            };
+            list.appendChild(row);
+        });
+        card.appendChild(list);
+        var actions = document.createElement('div');
+        actions.className = 'bowire-from-source-actions';
+        var cancelBtn = document.createElement('button');
+        cancelBtn.type = 'button';
+        cancelBtn.className = 'bowire-from-source-cancel';
+        cancelBtn.textContent = 'Cancel';
+        cancelBtn.onclick = close;
+        actions.appendChild(cancelBtn);
+        card.appendChild(actions);
+        backdrop.appendChild(card);
+        backdrop.addEventListener('click', function (e) {
+            if (e.target === backdrop) close();
+        });
+        document.body.appendChild(backdrop);
+        document.addEventListener('keydown', onKey);
     }
 
     function cancelFreeformRequest() {

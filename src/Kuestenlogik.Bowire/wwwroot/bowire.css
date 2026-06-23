@@ -9700,6 +9700,100 @@ so the textarea
 }
 .bowire-ad-hoc-row-tool svg { width: 13px; height: 13px; }
 
+/* ===== #252 — 'New from source…' URL picker ===== */
+.bowire-from-source-backdrop {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.4);
+    z-index: 9999;
+    display: flex; align-items: center; justify-content: center;
+}
+.bowire-from-source-card {
+    background: var(--bowire-surface, #fff);
+    border: 1px solid var(--bowire-border);
+    border-radius: var(--bowire-radius-3, 6px);
+    padding: 20px 24px;
+    min-width: 360px; max-width: 560px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+    display: flex; flex-direction: column; gap: 12px;
+}
+.bowire-from-source-title {
+    font-size: 16px; font-weight: 600;
+    color: var(--bowire-text);
+}
+.bowire-from-source-desc {
+    font-size: 12px;
+    color: var(--bowire-text-secondary);
+    line-height: 1.4;
+}
+.bowire-from-source-list {
+    display: flex; flex-direction: column;
+    gap: 4px;
+    max-height: 320px; overflow-y: auto;
+    margin-top: 4px;
+}
+.bowire-from-source-row {
+    text-align: left;
+    padding: 10px 12px;
+    background: transparent;
+    border: 1px solid var(--bowire-border);
+    border-radius: var(--bowire-radius-2, 4px);
+    color: var(--bowire-text);
+    font-family: var(--bowire-font-mono, monospace);
+    font-size: 12px;
+    cursor: pointer;
+}
+.bowire-from-source-row:hover {
+    background: var(--bowire-surface-hover);
+    border-color: var(--bowire-accent);
+}
+.bowire-from-source-actions {
+    display: flex; justify-content: flex-end;
+}
+.bowire-from-source-cancel {
+    padding: 6px 14px;
+    background: transparent;
+    border: 1px solid var(--bowire-border);
+    border-radius: var(--bowire-radius-2, 4px);
+    color: var(--bowire-text-secondary);
+    cursor: pointer;
+}
+.bowire-from-source-cancel:hover {
+    background: var(--bowire-surface-hover);
+    color: var(--bowire-text);
+}
+
+/* ===== #252 — Freeform builder URL-mode toggle ===== */
+.bowire-freeform-url-mode-wrap {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    margin-right: 8px;
+}
+.bowire-freeform-url-mode-btn {
+    padding: 4px 10px;
+    background: transparent;
+    border: 1px solid var(--bowire-border);
+    border-radius: var(--bowire-radius-2, 4px);
+    color: var(--bowire-text-secondary);
+    font-size: 11px;
+    cursor: pointer;
+}
+.bowire-freeform-url-mode-btn.is-active {
+    background: var(--bowire-accent);
+    color: var(--bowire-accent-fg, #fff);
+    border-color: var(--bowire-accent);
+}
+.bowire-freeform-url-source-select {
+    flex: 1;
+    padding: 6px 10px;
+    background: var(--bowire-surface);
+    border: 1px solid var(--bowire-border);
+    border-radius: var(--bowire-radius-2, 4px);
+    color: var(--bowire-text);
+    font-family: var(--bowire-font-mono, monospace);
+    font-size: 12px;
+}
+
 /* Services toolbar — contains +,
 filter,
 and chip row */

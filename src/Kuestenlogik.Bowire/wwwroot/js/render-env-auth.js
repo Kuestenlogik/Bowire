@@ -2986,6 +2986,49 @@
             })(railJumps[rj]);
         }
 
+        // --- #252 — Compose entry-points ---
+        // Two palette commands mirror the Home tiles: 'Compose new
+        // request' (self-contained URL) and 'New from source…' (URL
+        // bound to a workspace-managed Source). Match against label +
+        // common keywords so 'new', 'compose', 'freeform', 'ad-hoc'
+        // all surface them.
+        var composeKeys = ['compose', 'new', 'request', 'freeform', 'ad-hoc', 'adhoc'];
+        var composeMatch = composeKeys.some(function (k) { return k.indexOf(qLower) === 0 || qLower.indexOf(k) === 0; });
+        if (composeMatch || 'compose new request'.indexOf(qLower) >= 0) {
+            out.push({
+                group: 'New',
+                label: 'Compose new request',
+                sublabel: 'Self-contained — URL lives inline on this request',
+                icon: svgIcon('plus'),
+                onSelect: function () {
+                    if (typeof startFreeformRequest === 'function') {
+                        startFreeformRequest({ urlMode: 'inline' });
+                    }
+                    searchSuggestionsOpen = false;
+                    searchQuery = '';
+                }
+            });
+        }
+        var hasAnySrc = typeof serverUrls !== 'undefined'
+            && Array.isArray(serverUrls) && serverUrls.length > 0;
+        if (hasAnySrc && (composeMatch || 'new from source'.indexOf(qLower) >= 0 || 'source'.indexOf(qLower) === 0)) {
+            out.push({
+                group: 'New',
+                label: 'New from source…',
+                sublabel: 'URL bound to a workspace-managed Source',
+                icon: svgIcon('connect'),
+                onSelect: function () {
+                    if (typeof openNewFromSourceDialog === 'function') {
+                        openNewFromSourceDialog();
+                    } else if (typeof startFreeformRequest === 'function') {
+                        startFreeformRequest({ urlMode: 'source', sourceUrl: serverUrls[0] });
+                    }
+                    searchSuggestionsOpen = false;
+                    searchQuery = '';
+                }
+            });
+        }
+
         // --- Protocol filter matches ---
         for (var pi = 0; pi < protocols.length; pi++) {
             (function (p) {
