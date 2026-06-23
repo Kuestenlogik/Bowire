@@ -547,6 +547,90 @@
                     el('span', { className: 'bowire-action-execute-menu-icon', innerHTML: svgIcon('preset') }),
                     el('span', { textContent: 'Run with preset…' })
                 ));
+
+                // #245 — "As new request" clones the current request
+                // shape (URL / method / body / metadata) into a fresh
+                // ad-hoc request under Collections → Ad-hoc Requests
+                // (#246). Operator can then tweak URL or method without
+                // mutating the discovered service tree, and the clone
+                // persists across reloads.
+                var canClone = typeof startNewAdHocRequest === 'function'
+                    && typeof saveCurrentFreeformAsAdHoc === 'function'
+                    && selectedService && selectedMethod;
+                menu.appendChild(el('button', {
+                    type: 'button',
+                    className: 'bowire-action-execute-menu-item' + (canClone ? '' : ' is-disabled'),
+                    disabled: canClone ? undefined : true,
+                    title: canClone
+                        ? 'Clone this request as a new editable ad-hoc request — URL / method / body all editable; original discovered method stays untouched'
+                        : 'Pick a discovered method first',
+                    onClick: function () {
+                        menu.remove();
+                        if (!canClone) return;
+                        // Snapshot the current request payload from the
+                        // active state. The freeformRequest path
+                        // already knows how to render + execute the
+                        // exact same shape, so reuse it as the target.
+                        // Body: pull from the form-serialised value
+                        // when in form mode (#114) so the operator's
+                        // edits are captured, not the schema default.
+                        var bodyText = '{}';
+                        try {
+                            if (typeof requestMessages !== 'undefined'
+                                && Array.isArray(requestMessages) && requestMessages.length > 0) {
+                                bodyText = String(requestMessages[0] || '{}');
+                            }
+                        } catch { /* ignore */ }
+                        var metaCopy = {};
+                        try {
+                            if (typeof requestMetadata !== 'undefined' && requestMetadata) {
+                                metaCopy = JSON.parse(JSON.stringify(requestMetadata));
+                            }
+                        } catch { /* fall through with empty meta */ }
+                        var sourceServerUrl = '';
+                        try {
+                            if (selectedService && selectedService.originUrl) {
+                                sourceServerUrl = selectedService.originUrl;
+                            } else if (typeof serverUrls !== 'undefined' && serverUrls.length > 0) {
+                                sourceServerUrl = serverUrls[0];
+                            }
+                        } catch { /* ignore */ }
+                        startNewAdHocRequest({
+                            protocol: selectedService.source || selectedProtocol || 'rest',
+                            serverUrl: sourceServerUrl,
+                            service: selectedService.name,
+                            method: selectedMethod.name,
+                            methodType: selectedMethod.methodType || 'Unary',
+                            body: bodyText,
+                            metadata: metaCopy
+                        });
+                        try {
+                            // Immediately persist the snapshot with a
+                            // lineage hint so the operator finds it in
+                            // the Ad-hoc Requests section right away
+                            // instead of having to click Save manually.
+                            saveCurrentFreeformAsAdHoc({
+                                lineage: {
+                                    kind: 'cloned-from-discovered',
+                                    sourceMethod: selectedService.name + '/' + selectedMethod.name
+                                },
+                                name: 'cloned: ' + selectedService.name + '/' + selectedMethod.name
+                            });
+                            if (typeof toast === 'function') {
+                                toast('Cloned to Ad-hoc requests — Collections rail', 'success');
+                            }
+                            render();
+                        } catch (e) {
+                            if (typeof toast === 'function') {
+                                toast('Clone failed: ' + (e && e.message), 'error');
+                            }
+                        }
+                    }
+                },
+                    el('span', { className: 'bowire-action-execute-menu-icon', innerHTML: svgIcon('layers') }),
+                    el('span', { textContent: 'As new request…' })
+                ));
+
                 document.body.appendChild(menu);
                 var rect = caret.getBoundingClientRect();
                 menu.style.position = 'fixed';
