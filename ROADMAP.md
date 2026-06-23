@@ -151,7 +151,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.4 — Dev pillar: schema watch diff, mock-from-schema, side-by-side *(due 2026-08-03)*
 
-**0/13 done** · 13 backlog
+**0/14 done** · 14 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -168,6 +168,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [249](https://github.com/Kuestenlogik/Bowire/issues/249) | Bowire | [Optional rail modules — Phase 2: Schema Designer ships as the first default-off opt-in module](#issue-kuestenlogik-bowire-249) | ⬜ Backlog |  |
 | [250](https://github.com/Kuestenlogik/Bowire/issues/250) | Bowire | [Unified Layout — within-tab split (Auto/drag/shortcut/per-tab) + cross-tab pane split with tab drag-and-drop](#issue-kuestenlogik-bowire-250) | ⬜ Backlog |  |
 | [251](https://github.com/Kuestenlogik/Bowire/issues/251) | Bowire | [Visual shelf — drag-and-drop holding area for cross-surface fragments (parallel to OS clipboard)](#issue-kuestenlogik-bowire-251) | ⬜ Backlog |  |
+| [253](https://github.com/Kuestenlogik/Bowire/issues/253) | Bowire | [Separate discovery URL from invocation URL — schema source (upload / URL / source) + per-call invocation URL override](#issue-kuestenlogik-bowire-253) | ⬜ Backlog |  |
 
 ### v2.5 — Continuous integration: PR bot, project file, org dashboard *(due 2026-08-12)*
 
@@ -756,6 +757,10 @@ Phase 2 of the optional-rail-modules effort (Phase 1 in #248 lands the plumbing 
 #### <a id="issue-kuestenlogik-bowire-251"></a>⬜ Backlog · [#251](https://github.com/Kuestenlogik/Bowire/issues/251) Visual shelf — drag-and-drop holding area for cross-surface fragments (parallel to OS clipboard)
 
 A visible, in-app **shelf** (working name) — a drag-and-drop holding area for arbitrary fragments the operator wants to move between surfaces. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/251)
+
+#### <a id="issue-kuestenlogik-bowire-253"></a>⬜ Backlog · [#253](https://github.com/Kuestenlogik/Bowire/issues/253) Separate discovery URL from invocation URL — schema source (upload / URL / source) + per-call invocation URL override
+
+Bowire conflates two distinct URL concepts under a single "Server URL" field: [[more]](https://github.com/Kuestenlogik/Bowire/issues/253)
 
 ### v2.5 — Continuous integration: PR bot, project file, org dashboard *(due 2026-08-12)*
 
