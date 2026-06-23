@@ -3882,11 +3882,12 @@
                     }, 0);
             }
             // Filter button lives in the unified toolbar row alongside
-            // the title + '+' button, NOT a step lower in svcToolbar.
-            // One toolbar surface holds every state-changing control
-            // for Discover; svcToolbar shrinks down to the name-filter
-            // input + the (conditional) chip strip.
-            viewSwitch.insertBefore(filterBtnWrapperTop, newBtnWrapper);
+            // the title (the '+' button was retired in #244). Insert
+            // anchor was the '+' button's wrapper when both shared the
+            // row; with the '+' gone, appendChild puts the filter
+            // button at the right edge of the toolbar where the '+'
+            // used to sit.
+            viewSwitch.appendChild(filterBtnWrapperTop);
         }
 
         // Chip row inside the toolbar — shown when a filter is active
