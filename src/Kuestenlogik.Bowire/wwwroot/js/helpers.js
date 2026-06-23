@@ -631,9 +631,21 @@
             // BowireEndpointHelpers.Problem). Try that first, then fall
             // back to the *_code/*Status aliases for test doubles /
             // future endpoints.
-            var statusCode = (typeof result.status === 'number' && result.status > 0)
-                ? result.status
-                : (result.status_code || result.statusCode || result.httpStatus || result.http_status);
+            // problem+json's `status` is always present (server helper
+            // requires it). Accept number OR numeric-string ("502")
+            // since JSON.parse can deserialize either depending on
+            // upstream serializer config. Fall through to the *_code
+            // aliases for non-problem+json producers.
+            var rawStatus = result.status;
+            var statusCode = 0;
+            if (typeof rawStatus === 'number' && rawStatus > 0) {
+                statusCode = rawStatus;
+            } else if (typeof rawStatus === 'string' && /^\d+$/.test(rawStatus)) {
+                statusCode = parseInt(rawStatus, 10);
+            } else {
+                statusCode = result.status_code || result.statusCode
+                    || result.httpStatus || result.http_status || 0;
+            }
             var statusReason = result.status_reason || result.statusReason || '';
             if (statusCode) {
                 lines.push('Status: ' + statusCode + (statusReason ? ' ' + statusReason : ''));
