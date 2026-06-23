@@ -745,17 +745,17 @@
                 }
             }
         }));
-        // Clear selection — distinct from 'Close console' (which uses
-        // the close X icon). Text 'Deselect' makes the two reads
-        // unambiguous: an X icon on either button used to look the
-        // same and confused the operator about whether they were
-        // closing the drawer or wiping the selection.
+        // Clear selection — distinct icon from Close console (which
+        // uses the plain X). selectionClear renders a dashed rectangle
+        // around an interior X so the metaphor reads as 'clear the
+        // marked selection' instead of 'close this pane'. Icon over
+        // text so the toolbar survives i18n without layout breaks.
         actions.appendChild(el('button', {
             type: 'button',
             className: 'bowire-console-toolbar-btn',
             title: 'Clear selection',
             'aria-label': 'Clear selection',
-            textContent: 'Deselect',
+            innerHTML: svgIcon('selectionClear'),
             onClick: function () {
                 consoleSelected.clear();
                 if (typeof render === 'function') render();
