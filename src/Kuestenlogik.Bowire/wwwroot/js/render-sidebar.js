@@ -2939,7 +2939,149 @@
             nameOf: function (e) { return e && e.name ? e.name : '(unnamed collection)'; }
         }));
 
+        // #246 — Ad-hoc Requests section. Pinned at the bottom of the
+        // Collections sidebar (above the trash drawer). Always present
+        // even when empty — its job is the "Compose new request" CTA
+        // which replaces the retired '+ New' in the Discover toolbar
+        // (#244). Saved ad-hoc requests show as click-to-open rows
+        // with rename + delete affordances.
+        sidebar.appendChild(_renderAdHocRequestsSection());
+
         return sidebar;
+    }
+
+    // #246 — Render the Ad-hoc Requests section. Pure function — reads
+    // adHocRequests state from prologue scope, writes via the helper
+    // functions defined there (openAdHocRequest / deleteAdHocRequest /
+    // startNewAdHocRequest).
+    function _renderAdHocRequestsSection() {
+        var section = el('div', { className: 'bowire-ad-hoc-section' });
+
+        // Section heading + Compose button on the right.
+        var heading = el('div', { className: 'bowire-ad-hoc-heading' });
+        heading.appendChild(el('span', {
+            className: 'bowire-ad-hoc-heading-title',
+            textContent: 'Ad-hoc requests'
+        }));
+        heading.appendChild(el('span', {
+            className: 'bowire-ad-hoc-heading-count',
+            textContent: (adHocRequests && adHocRequests.length > 0)
+                ? String(adHocRequests.length) : ''
+        }));
+        heading.appendChild(el('span', { style: 'flex:1' }));
+        heading.appendChild(el('button', {
+            type: 'button',
+            className: 'bowire-ad-hoc-compose-btn',
+            title: 'Compose new ad-hoc request',
+            'aria-label': 'Compose new ad-hoc request',
+            innerHTML: svgIcon('plus'),
+            onClick: function (e) {
+                e.stopPropagation();
+                if (typeof startNewAdHocRequest === 'function') {
+                    startNewAdHocRequest();
+                }
+            }
+        }));
+        section.appendChild(heading);
+
+        if (!adHocRequests || adHocRequests.length === 0) {
+            section.appendChild(el('div', {
+                className: 'bowire-ad-hoc-empty',
+                textContent: 'No saved requests yet. Click + to compose your first one.'
+            }));
+            return section;
+        }
+
+        var list = el('div', { className: 'bowire-ad-hoc-list', role: 'list' });
+        adHocRequests.forEach(function (rec) {
+            var row = el('div', {
+                className: 'bowire-ad-hoc-row',
+                role: 'listitem',
+                'data-ahr-id': rec.id,
+                onClick: function () {
+                    if (typeof openAdHocRequest === 'function') openAdHocRequest(rec.id);
+                }
+            });
+            // Glyph keyed off lineage: compose = pencil, cloned = layers,
+            // promoted = bookmark.
+            var glyphName = (rec.lineage && rec.lineage.kind === 'cloned-from-discovered')
+                ? 'layers'
+                : (rec.lineage && rec.lineage.kind === 'promoted-from-preset')
+                    ? 'bookmark'
+                    : 'pencil';
+            row.appendChild(el('span', {
+                className: 'bowire-ad-hoc-row-glyph',
+                innerHTML: svgIcon(glyphName)
+            }));
+            var info = el('div', { className: 'bowire-ad-hoc-row-info' });
+            info.appendChild(el('div', {
+                className: 'bowire-ad-hoc-row-name',
+                textContent: rec.name || '(unnamed)'
+            }));
+            // Subtitle: protocol + URL hint so the operator can tell
+            // similar names apart at a glance.
+            var subParts = [];
+            if (rec.request && rec.request.protocol) subParts.push(rec.request.protocol.toUpperCase());
+            if (rec.request && rec.request.method) subParts.push(rec.request.method);
+            else if (rec.request && rec.request.serverUrl) {
+                var u = String(rec.request.serverUrl);
+                if (u.length > 40) u = u.substring(0, 40) + '…';
+                subParts.push(u);
+            }
+            info.appendChild(el('div', {
+                className: 'bowire-ad-hoc-row-sub',
+                textContent: subParts.join(' · ')
+            }));
+            row.appendChild(info);
+            // Tools cluster — rename + delete, hover-revealed.
+            var tools = el('div', { className: 'bowire-ad-hoc-row-tools' });
+            tools.appendChild(el('button', {
+                type: 'button',
+                className: 'bowire-ad-hoc-row-tool',
+                title: 'Rename',
+                'aria-label': 'Rename request',
+                innerHTML: svgIcon('pencil'),
+                onClick: function (e) {
+                    e.stopPropagation();
+                    if (typeof bowirePrompt !== 'function') return;
+                    bowirePrompt('New name', {
+                        title: 'Rename request',
+                        defaultValue: rec.name || '',
+                        confirmText: 'Rename'
+                    }).then(function (newName) {
+                        if (newName && typeof renameAdHocRequest === 'function') {
+                            renameAdHocRequest(rec.id, newName);
+                            render();
+                        }
+                    });
+                }
+            }));
+            tools.appendChild(el('button', {
+                type: 'button',
+                className: 'bowire-ad-hoc-row-tool bowire-ad-hoc-row-tool-danger',
+                title: 'Delete',
+                'aria-label': 'Delete request',
+                innerHTML: svgIcon('trash'),
+                onClick: function (e) {
+                    e.stopPropagation();
+                    if (typeof bowireConfirm !== 'function') {
+                        if (typeof deleteAdHocRequest === 'function') deleteAdHocRequest(rec.id);
+                        return;
+                    }
+                    bowireConfirm(
+                        'Delete request "' + (rec.name || rec.id) + '"?',
+                        function () {
+                            if (typeof deleteAdHocRequest === 'function') deleteAdHocRequest(rec.id);
+                        },
+                        { title: 'Delete request', confirmText: 'Delete', danger: true }
+                    );
+                }
+            }));
+            row.appendChild(tools);
+            list.appendChild(row);
+        });
+        section.appendChild(list);
+        return section;
     }
 
     // #143 Phase 2 — Renders a collapsible 'Recently deleted'
