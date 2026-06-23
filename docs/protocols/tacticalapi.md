@@ -125,6 +125,10 @@ A companion walkthrough in **[the mock-server docs](../features/mock-server.md#e
 - **v1.0.0 (shipped 2026-05-26)** &mdash; bundled-schema discovery, typed unary CRUD (`GetSituationObjects` / `AddOrUpdateSituationObjects` / `DeleteSituationObjects`), the server-streaming pump for `SubscribeSituationObjectEvents`, URL-scheme normalisation (`tacticalapi@`, `grpc(s)://`, bare `host:port`), mTLS via the shared `__bowireMtls__` marker (legacy `_bowire:client-cert-pfx` keys still honoured for back-compat), `IBowireMockEmitter` for recording replay, in-process Kestrel-hosted integration suite. The current stable line.
 - **post-1.0** &mdash; MIL-STD-2525 / APP-6 symbol renderer (the schema's `SymbolIdentifier` field is already wired through; the map widget side needs a [milsymbol.js](https://github.com/spatialillusions/milsymbol)-style renderer to turn the SIDC into the correct tactical-affiliation glyph). Service-Bus / Artemis-flavoured AMQP 1.0 discovery (parallel item on the AMQP plugin's side) could similarly land as a vendor-specific follow-on.
 
+## Sample
+
+A canonical mini-server lives at [`Bowire.Samples/protocols/TacticalApi.RadarSweep`](https://github.com/Kuestenlogik/Bowire.Samples/tree/main/protocols/TacticalApi.RadarSweep) &mdash; three MIL-2525C contacts orbit a radar centre at 54.00&deg;N / 11.50&deg;E on HTTP/2 port 5191. `dotnet run` brings it up; point Bowire at `http://localhost:5191` and pick the `Situation` service to exercise `GetSituationObjects` (unary) + `SubscribeSituationObjectEvents` (server-streaming). For a full Harbor Control Center scene with the AddOrUpdate / Delete RPCs and gRPC-Web on a second port, see the harbor-demo sibling [`Bowire.Samples/harbor-demo/src/Kuestenlogik.Bowire.Samples.TacticalApi`](https://github.com/Kuestenlogik/Bowire.Samples/tree/main/harbor-demo/src/Kuestenlogik.Bowire.Samples.TacticalApi).
+
 ## Links
 
 - Sibling repository: <https://github.com/Kuestenlogik/Bowire.Protocol.TacticalApi> &mdash; full README with the licensing rationale, the proto-fetch target, and the air-gapped instructions in source form.
