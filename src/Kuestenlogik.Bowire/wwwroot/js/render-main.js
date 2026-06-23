@@ -65,30 +65,55 @@
         // name (small, below). Same .bowire-header-info /
         // .bowire-header-method classes as discovered so spacing,
         // truncation, font weights all inherit.
+        //
+        // #256 — REST-specific Postman-style layout: when protocol is
+        // 'rest' the service field is hidden (no RPC-method identity
+        // for HTTP) and the method input becomes a verb-segmented bar
+        // alongside the URL (rendered in the URL-bar section below).
+        // The fr.method field is reused: it stores the HTTP verb
+        // ('GET' / 'POST' / …) which the server-side ad-hoc routing
+        // (BowireRestProtocol.InvokeAsync) picks up.
+        var isRest = fr.protocol === 'rest';
         var info = el('div', { className: 'bowire-header-info' });
-        info.appendChild(el('input', {
-            id: 'bowire-freeform-method-input',
-            type: 'text',
-            className: 'bowire-header-method bowire-freeform-header-method-input',
-            value: fr.method || '',
-            placeholder: 'methodName',
-            spellcheck: 'false',
-            onInput: function (e) { fr.method = e.target.value; }
-        }));
-        var serviceRow = el('div', { className: 'bowire-header-summary-row' });
-        serviceRow.appendChild(el('input', {
-            id: 'bowire-freeform-service-input',
-            type: 'text',
-            className: 'bowire-header-summary bowire-freeform-header-service-input',
-            value: fr.service || '',
-            placeholder: 'service (optional)',
-            spellcheck: 'false',
-            title: (fr._lineageHint && fr._lineageHint.sourceMethod)
-                ? 'Cloned from ' + fr._lineageHint.sourceMethod
-                : '',
-            onInput: function (e) { fr.service = e.target.value; }
-        }));
-        info.appendChild(serviceRow);
+        if (isRest) {
+            // Compact REST identity: just the verb chip + URL preview
+            // so the title strip reads as 'POST https://api/foo'
+            // without the service/method input fields. Verb picker
+            // lives in the URL bar below to keep the header clean.
+            var verbForTitle = (fr.method && fr.method.trim()) ? fr.method.trim().toUpperCase() : 'GET';
+            info.appendChild(el('div', {
+                className: 'bowire-header-method bowire-freeform-rest-title',
+                title: 'Ad-hoc REST — pick verb + URL below'
+            },
+                el('span', { className: 'bowire-freeform-rest-verb-chip', textContent: verbForTitle }),
+                el('span', { className: 'bowire-freeform-rest-url-preview',
+                    textContent: fr.serverUrl || 'enter URL below' })
+            ));
+        } else {
+            info.appendChild(el('input', {
+                id: 'bowire-freeform-method-input',
+                type: 'text',
+                className: 'bowire-header-method bowire-freeform-header-method-input',
+                value: fr.method || '',
+                placeholder: 'methodName',
+                spellcheck: 'false',
+                onInput: function (e) { fr.method = e.target.value; }
+            }));
+            var serviceRow = el('div', { className: 'bowire-header-summary-row' });
+            serviceRow.appendChild(el('input', {
+                id: 'bowire-freeform-service-input',
+                type: 'text',
+                className: 'bowire-header-summary bowire-freeform-header-service-input',
+                value: fr.service || '',
+                placeholder: 'service (optional)',
+                spellcheck: 'false',
+                title: (fr._lineageHint && fr._lineageHint.sourceMethod)
+                    ? 'Cloned from ' + fr._lineageHint.sourceMethod
+                    : '',
+                onInput: function (e) { fr.service = e.target.value; }
+            }));
+            info.appendChild(serviceRow);
+        }
         header.appendChild(info);
 
         // Right cluster: protocol picker (icon + popover) + method-type
@@ -145,8 +170,12 @@
         rightCluster.appendChild(protoPickerWrap);
 
         // Method-type segmented bar — compact in the header cluster.
+        // Suppressed for REST since REST is always Unary; the
+        // verb-picker in the URL bar carries the meaningful choice.
         var supportedTypes = getSupportedMethodTypes(fr.protocol);
-        if (supportedTypes.length > 1) {
+        if (isRest) {
+            // skip
+        } else if (supportedTypes.length > 1) {
             var typeSeg = el('div', { className: 'bowire-freeform-type-seg bowire-freeform-type-seg-compact' });
             supportedTypes.forEach(function (t) {
                 typeSeg.appendChild(el('button', {
@@ -291,11 +320,46 @@
         // ----- 2. URL row (identity-level, outside the tabs) -----
         // URL is part of "what the call hits" — it determines which
         // tabs make sense. Inline / From-Source toggle from #252.
+        //
+        // #256 — REST mode prepends a verb-segmented bar (GET / POST /
+        // PUT / DELETE / PATCH / HEAD / OPTIONS) so the operator
+        // composes a single identity row 'POST https://api/foo' in
+        // the canonical Postman shape. fr.method holds the verb; the
+        // server-side BowireRestProtocol.InvokeAsync detects the
+        // ad-hoc shape (empty service + verb method) and routes to
+        // RestInvoker.InvokeAdHocAsync.
         var urlBar = el('div', { className: 'bowire-freeform-url-bar' });
-        urlBar.appendChild(el('span', {
-            className: 'bowire-freeform-url-bar-label',
-            textContent: 'URL'
-        }));
+        if (isRest) {
+            // Default the verb when entering REST mode without one set.
+            var REST_VERBS = ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'HEAD', 'OPTIONS'];
+            if (!fr.method || REST_VERBS.indexOf((fr.method || '').toUpperCase()) < 0) {
+                fr.method = 'GET';
+            }
+            var verbSeg = el('div', { className: 'bowire-freeform-verb-seg' });
+            REST_VERBS.forEach(function (v) {
+                verbSeg.appendChild(el('button', {
+                    type: 'button',
+                    className: 'bowire-freeform-verb-seg-btn bowire-freeform-verb-' + v.toLowerCase()
+                        + (fr.method.toUpperCase() === v ? ' is-active' : ''),
+                    title: v,
+                    textContent: v,
+                    onClick: function () {
+                        if (fr.method.toUpperCase() === v) return;
+                        fr.method = v;
+                        // Clear the service field — ad-hoc REST has no
+                        // RPC service identity, only the verb + URL.
+                        fr.service = '';
+                        render();
+                    }
+                }));
+            });
+            urlBar.appendChild(verbSeg);
+        } else {
+            urlBar.appendChild(el('span', {
+                className: 'bowire-freeform-url-bar-label',
+                textContent: 'URL'
+            }));
+        }
         if (fr.urlMode !== 'source') fr.urlMode = 'inline';
         var hasAnySources = (typeof serverUrls !== 'undefined'
             && Array.isArray(serverUrls) && serverUrls.length > 0);

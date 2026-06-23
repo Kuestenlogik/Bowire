@@ -77,6 +77,132 @@ internal static class RestInvoker
         }
     }
 
+    /// <summary>
+    /// Schema-free REST invocation — Postman-style: full URL + HTTP verb +
+    /// optional JSON body + optional headers. Bypasses the
+    /// <see cref="BowireMethodInfo"/> path/query/body field bucketing entirely.
+    /// Used by the freeform request builder when the operator just wants
+    /// to hit an arbitrary URL without a discovered OpenAPI document.
+    ///
+    /// Standard verbs only (GET / POST / PUT / DELETE / PATCH / HEAD /
+    /// OPTIONS). Unknown verbs fall through with an Error status.
+    /// Body is sent verbatim as <c>application/json</c> when non-empty
+    /// AND the verb supports a body (POST / PUT / PATCH / DELETE).
+    /// </summary>
+    public static async Task<InvokeResult> InvokeAdHocAsync(
+        HttpClient http,
+        string url,
+        string httpVerb,
+        string? body,
+        Dictionary<string, string>? metadata,
+        CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(url))
+        {
+            return new InvokeResult(
+                Response: null,
+                DurationMs: 0,
+                Status: "Error",
+                Metadata: new Dictionary<string, string> { ["error"] = "URL is required" });
+        }
+        var verbUpper = (httpVerb ?? "GET").Trim().ToUpperInvariant();
+        HttpMethod method;
+        switch (verbUpper)
+        {
+            case "GET":     method = HttpMethod.Get; break;
+            case "POST":    method = HttpMethod.Post; break;
+            case "PUT":     method = HttpMethod.Put; break;
+            case "DELETE":  method = HttpMethod.Delete; break;
+            case "PATCH":   method = HttpMethod.Patch; break;
+            case "HEAD":    method = HttpMethod.Head; break;
+            case "OPTIONS": method = HttpMethod.Options; break;
+            default:
+                return new InvokeResult(
+                    Response: null,
+                    DurationMs: 0,
+                    Status: "Error",
+                    Metadata: new Dictionary<string, string> { ["error"] = "Unsupported HTTP verb: " + httpVerb });
+        }
+        Uri target;
+        try
+        {
+            target = new Uri(url, UriKind.Absolute);
+        }
+        catch (UriFormatException ex)
+        {
+            return new InvokeResult(
+                Response: null,
+                DurationMs: 0,
+                Status: "Error",
+                Metadata: new Dictionary<string, string> { ["error"] = "Invalid URL: " + ex.Message });
+        }
+        using var request = new HttpRequestMessage(method, target);
+        // Body — only meaningful on POST/PUT/PATCH/DELETE. GET/HEAD/OPTIONS
+        // skip the body entirely so we don't trip RFC-7231 §4.3.1's
+        // 'has-no-defined-semantics' clauses on the receiving side.
+        var bodyAllowed = verbUpper is "POST" or "PUT" or "PATCH" or "DELETE";
+        if (bodyAllowed && !string.IsNullOrWhiteSpace(body))
+        {
+            request.Content = new StringContent(body, Encoding.UTF8, "application/json");
+        }
+        // Custom headers. Reserved Content-Type / Content-Length stay out
+        // of the request-headers collection — they belong on the content
+        // and HttpClient sets them automatically. Filter the
+        // Bowire-internal sigv4 marker as well so it never reaches the
+        // wire, matching the schema-driven InvokeAsync path.
+        if (metadata is not null)
+        {
+            foreach (var kv in metadata)
+            {
+                if (string.IsNullOrWhiteSpace(kv.Key)) continue;
+                if (kv.Key == AwsSigV4MarkerKey) continue;
+                if (string.Equals(kv.Key, "Content-Type", StringComparison.OrdinalIgnoreCase)) continue;
+                if (string.Equals(kv.Key, "Content-Length", StringComparison.OrdinalIgnoreCase)) continue;
+                try
+                {
+                    request.Headers.TryAddWithoutValidation(kv.Key, kv.Value);
+                }
+                catch
+                {
+                    // Some headers (e.g. Authorization) can fail strict
+                    // validation; TryAddWithoutValidation is best-effort.
+                    // Ignore so one bad header doesn't poison the call.
+                }
+            }
+        }
+        var sw = Stopwatch.StartNew();
+        try
+        {
+            using var resp = await http.SendAsync(request, HttpCompletionOption.ResponseContentRead, ct).ConfigureAwait(false);
+            var elapsed = sw.ElapsedMilliseconds;
+            var respBody = await resp.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
+            var respMetadata = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var header in resp.Headers)
+            {
+                respMetadata[header.Key] = string.Join(", ", header.Value);
+            }
+            foreach (var header in resp.Content.Headers)
+            {
+                respMetadata[header.Key] = string.Join(", ", header.Value);
+            }
+            var statusLabel = ((int)resp.StatusCode).ToString(System.Globalization.CultureInfo.InvariantCulture);
+            return new InvokeResult(
+                Response: respBody,
+                DurationMs: elapsed,
+                Status: statusLabel,
+                Metadata: respMetadata);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            sw.Stop();
+            return new InvokeResult(
+                Response: null,
+                DurationMs: sw.ElapsedMilliseconds,
+                Status: "NetworkError",
+                Metadata: new Dictionary<string, string> { ["error"] = ex.Message });
+        }
+    }
+
     public static async Task<InvokeResult> InvokeAsync(
         HttpClient http,
         string serverUrl,
