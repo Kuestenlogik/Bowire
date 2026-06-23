@@ -73,25 +73,41 @@ public sealed class MapLibreExtensionTests
 public sealed class BowireExtensionRegistryTests
 {
     /// <summary>
-    /// Force-reference a type from the MapLibre assembly so the
-    /// runtime loads it into AppDomain before
-    /// <see cref="BowireExtensionRegistry.Discover"/> walks the
-    /// loaded assemblies. Same trap as the SchemaOnly /
-    /// OpenApi3Adapter discovery race (#352) — Discover's
-    /// `AppDomain.CurrentDomain.GetAssemblies()` only sees what's
-    /// already been touched, and on Linux CI runners that ordering
-    /// is xUnit-discovery-determined. Without this, the test passes
-    /// on dev boxes (assembly warmed by previous runs) but fails on
-    /// fresh CI.
+    /// Force-load the MapLibre assembly via its <see cref="Assembly"/>
+    /// reference before <see cref="BowireExtensionRegistry.Discover"/>
+    /// walks <c>AppDomain.CurrentDomain.GetAssemblies()</c>. Same trap
+    /// as the SchemaOnly / OpenApi3Adapter discovery race (#352): the
+    /// AppDomain list only contains assemblies the runtime has
+    /// actually touched, and on Linux CI runners xUnit's parallel
+    /// test-class scheduling means another class can start Discover
+    /// before BowireExtensionRegistryTests' static ctor runs.
+    ///
+    /// Plain <c>_ = typeof(MapLibreExtension);</c> proved insufficient
+    /// in practice — the JIT-visible type metadata can land without
+    /// the assembly entering the AppDomain enumerator on time.
+    /// Touching <c>.Assembly</c> goes the explicit Assembly.Load
+    /// path; touching <c>FullName</c> defeats any "discarded
+    /// expression" optimisation the compiler/JIT might apply.
     /// </summary>
     static BowireExtensionRegistryTests()
     {
-        _ = typeof(MapLibreExtension);
+        _ = typeof(MapLibreExtension).Assembly.FullName;
+    }
+
+    private static void EnsureMapLibreAssemblyLoaded()
+    {
+        // Belt-and-suspenders: per-test reload guard that runs after
+        // xUnit's parallel scheduling resolves but BEFORE Discover's
+        // GetAssemblies walk. Cheap (typeof is a no-op after the
+        // first load) and survives any future refactor that moves
+        // the static ctor.
+        _ = typeof(MapLibreExtension).Assembly.FullName;
     }
 
     [Fact]
     public void Discover_Finds_The_BuiltIn_MapLibre_Extension()
     {
+        EnsureMapLibreAssemblyLoaded();
         var registry = BowireExtensionRegistry.Discover();
         var map = registry.GetUiExtension("kuestenlogik.maplibre");
         Assert.NotNull(map);
@@ -102,6 +118,7 @@ public sealed class BowireExtensionRegistryTests
     [Fact]
     public void Discover_Maps_Extensions_To_Their_Declaring_Assembly()
     {
+        EnsureMapLibreAssemblyLoaded();
         var registry = BowireExtensionRegistry.Discover();
         var assembly = registry.GetDeclaringAssembly("kuestenlogik.maplibre");
         Assert.NotNull(assembly);
