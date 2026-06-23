@@ -40,6 +40,7 @@
         var nodes = [
             header('My preferences'),
             leaf('general', 'General', 'settings'),
+            leaf('rails', 'Rail modes', 'layers'),
             leaf('shortcuts', 'Shortcuts', 'list'),
             leaf('data', 'Data', 'trash'),
             leaf('ai', 'Assistant', 'spark')
@@ -187,6 +188,8 @@
 
         if (settingsTab === 'general') {
             rightPanel.appendChild(renderSettingsGeneral());
+        } else if (settingsTab === 'rails') {
+            rightPanel.appendChild(renderSettingsRails());
         } else if (settingsTab === 'shortcuts') {
             rightPanel.appendChild(renderSettingsShortcuts());
         } else if (settingsTab === 'data') {
@@ -531,6 +534,107 @@
             style: 'font-size:11px;color:var(--bowire-text-tertiary)',
             textContent: 'Restart Bowire with this flag, or set Bowire:EnableMcpAdapter=true in appsettings.'
         }));
+    }
+
+    // ---- #248 Phase 1 — Rail modes editor ----
+    //
+    // Renders the Settings → Rail modes panel. Lists every entry in
+    // _railModes (excluding hideFromRail = internal-only modes) with
+    // a checkbox; always-on modes show as a non-interactive row so
+    // the operator sees them but can't turn them off (greyed checkmark
+    // + "Built-in" badge). Toggleable modes carry a real checkbox
+    // that writes to bowire_enabled_rails on click and re-renders so
+    // the rail strip updates in place.
+    function renderSettingsRails() {
+        var section = el('div', { className: 'bowire-settings-section' });
+        section.appendChild(el('h3', {
+            className: 'bowire-settings-section-title',
+            textContent: 'Rail modes'
+        }));
+        section.appendChild(el('div', {
+            className: 'bowire-settings-section-hint',
+            textContent: 'Show or hide rail icons in the left strip. Always-on modes are required for Bowire to work and can’t be turned off. Disabled modes stay reachable via the command palette and deep links — only the rail icon disappears.'
+        }));
+        if (typeof _railModes === 'undefined' || !Array.isArray(_railModes)) {
+            section.appendChild(el('div', {
+                className: 'bowire-settings-section-empty',
+                textContent: 'Rail catalogue not loaded.'
+            }));
+            return section;
+        }
+        var alwaysOn = (typeof ALWAYS_ON_RAIL_MODES !== 'undefined' && Array.isArray(ALWAYS_ON_RAIL_MODES))
+            ? ALWAYS_ON_RAIL_MODES : ['home', 'discover', 'workspaces'];
+
+        function _renderModeRow(mode, locked) {
+            var enabled = locked ? true
+                : (typeof isRailEnabled === 'function' ? isRailEnabled(mode.id) : true);
+            var row = el('label', {
+                className: 'bowire-settings-rail-row' + (locked ? ' is-locked' : ''),
+                title: locked
+                    ? 'Always-on — cannot be disabled'
+                    : (enabled ? 'Currently visible on the rail' : 'Currently hidden — toggle to show')
+            });
+            var input = el('input', {
+                type: 'checkbox',
+                className: 'bowire-settings-rail-checkbox',
+                checked: enabled ? true : undefined,
+                disabled: locked ? true : undefined,
+                onChange: function (e) {
+                    if (locked) return;
+                    if (typeof setRailEnabled === 'function') {
+                        setRailEnabled(mode.id, !!e.target.checked);
+                    }
+                    if (typeof renderSettingsDialog === 'function') renderSettingsDialog();
+                    if (typeof render === 'function') render();
+                }
+            });
+            row.appendChild(input);
+            row.appendChild(el('span', {
+                className: 'bowire-settings-rail-icon',
+                innerHTML: svgIcon(mode.icon || 'square')
+            }));
+            row.appendChild(el('span', {
+                className: 'bowire-settings-rail-label',
+                textContent: mode.label
+            }));
+            if (locked) {
+                row.appendChild(el('span', {
+                    className: 'bowire-settings-rail-badge',
+                    textContent: 'Built-in'
+                }));
+            }
+            return row;
+        }
+
+        // Group 1 — always on
+        var lockedSub = el('div', {
+            className: 'bowire-settings-rail-subhead',
+            textContent: 'Always available'
+        });
+        section.appendChild(lockedSub);
+        var lockedList = el('div', { className: 'bowire-settings-rail-list' });
+        _railModes.forEach(function (m) {
+            if (m.hideFromRail) return;
+            if (alwaysOn.indexOf(m.id) < 0) return;
+            lockedList.appendChild(_renderModeRow(m, true));
+        });
+        section.appendChild(lockedList);
+
+        // Group 2 — toggleable
+        var toggleSub = el('div', {
+            className: 'bowire-settings-rail-subhead',
+            style: 'margin-top:12px;',
+            textContent: 'Toggleable'
+        });
+        section.appendChild(toggleSub);
+        var toggleList = el('div', { className: 'bowire-settings-rail-list' });
+        _railModes.forEach(function (m) {
+            if (m.hideFromRail) return;
+            if (alwaysOn.indexOf(m.id) >= 0) return;
+            toggleList.appendChild(_renderModeRow(m, false));
+        });
+        section.appendChild(toggleList);
+        return section;
     }
 
     // ---- Shortcuts ----

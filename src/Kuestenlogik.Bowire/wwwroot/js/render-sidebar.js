@@ -944,7 +944,15 @@
         // workspace tree dispatches into them, but the standalone rail
         // button is suppressed — they live "inside" a workspace and
         // are reached via the Workspaces tree.
-        var modes = _railModes.filter(function (m) { return !m.hideFromRail; });
+        // #248 Phase 1 — second filter: user-toggleable rails respect
+        // the bowire_enabled_rails preference. Always-on modes (home,
+        // discover, workspaces) are never filtered out here because
+        // isRailEnabled hard-codes them to true.
+        var modes = _railModes
+            .filter(function (m) { return !m.hideFromRail; })
+            .filter(function (m) {
+                return (typeof isRailEnabled === 'function') ? isRailEnabled(m.id) : true;
+            });
 
         // Workspace identity cue — rail-tint variant. When the operator
         // turned the cue on AND picked "Rail tint" in Settings → General,
