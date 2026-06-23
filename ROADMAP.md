@@ -149,7 +149,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.4 — Dev pillar: schema watch diff, mock-from-schema, side-by-side *(due 2026-08-03)*
 
-**0/9 done** · 9 backlog
+**0/11 done** · 11 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -162,6 +162,8 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [182](https://github.com/Kuestenlogik/Bowire/issues/182) | Bowire | [Side-by-side service version diff — schema + response comparison](#issue-kuestenlogik-bowire-182) | ⬜ Backlog |  |
 | [185](https://github.com/Kuestenlogik/Bowire/issues/185) | Bowire | [Schema-watch diff view — show what changed since last visit](#issue-kuestenlogik-bowire-185) | ⬜ Backlog |  |
 | [189](https://github.com/Kuestenlogik/Bowire/issues/189) | Bowire | [API design-time validation — typed rule engine over schemas](#issue-kuestenlogik-bowire-189) | ⬜ Backlog |  |
+| [247](https://github.com/Kuestenlogik/Bowire/issues/247) | Bowire | [Schema graph designer — visualise discovered .proto / SDL / OpenAPI type graph for large schemas](#issue-kuestenlogik-bowire-247) | ⬜ Backlog |  |
+| [248](https://github.com/Kuestenlogik/Bowire/issues/248) | Bowire | [Optional rail modules — make non-essential rails opt-in so workflows stay focused](#issue-kuestenlogik-bowire-248) | ⬜ Backlog |  |
 
 ### v2.5 — Continuous integration: PR bot, project file, org dashboard *(due 2026-08-12)*
 
@@ -219,6 +221,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [243](https://github.com/Kuestenlogik/Bowire/issues/243) | Bowire | [Failed REST / gRPC invocation logs show only 'Error' — surface status code + response body + exception message](#issue-kuestenlogik-bowire-243) | ⬜ Backlog |  |
 | [244](https://github.com/Kuestenlogik/Bowire/issues/244) | Bowire | [Discover rail toolbar: drop the '+ New' button — ad-hoc requests don't belong on the discovered-tree surface](#issue-kuestenlogik-bowire-244) | ⬜ Backlog |  |
 | [245](https://github.com/Kuestenlogik/Bowire/issues/245) | Bowire | [Execute-button dropdown: add 'As new request' to clone a discovered method's call into an editable ad-hoc copy](#issue-kuestenlogik-bowire-245) | ⬜ Backlog |  |
+| [246](https://github.com/Kuestenlogik/Bowire/issues/246) | Bowire | [Ad-hoc requests — informal cousin of Presets, lives under Collections (not a new rail, not a Design surface)](#issue-kuestenlogik-bowire-246) | ⬜ Backlog |  |
 
 ## Details
 
@@ -726,6 +729,14 @@ Bowire already has Schema-Watch (#138) that re-runs discovery on a configurable 
 
 Most API design issues — inconsistent naming, returning passwords, returning unbounded result lists, missing pagination, missing versioning — are caught by code review IF the reviewer is sharp. They scale exactly with reviewer attention, which doesn't scale. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/189)
 
+#### <a id="issue-kuestenlogik-bowire-247"></a>⬜ Backlog · [#247](https://github.com/Kuestenlogik/Bowire/issues/247) Schema graph designer — visualise discovered .proto / SDL / OpenAPI type graph for large schemas
+
+Bowire today renders a discovered schema as a flat tree (services → methods → request / response shapes) and a JSON form for each method's parameters. That works for small APIs. It breaks down when: [[more]](https://github.com/Kuestenlogik/Bowire/issues/247)
+
+#### <a id="issue-kuestenlogik-bowire-248"></a>⬜ Backlog · [#248](https://github.com/Kuestenlogik/Bowire/issues/248) Optional rail modules — make non-essential rails opt-in so workflows stay focused
+
+Bowire's rail catalogue (`_railModes` in `render-sidebar.js`) is fixed at compile time: Home, Discover, Recordings, Mocks, Flows, Proxy, Benchmarks, Security, Workspaces. Every operator gets every rail. Pain points: [[more]](https://github.com/Kuestenlogik/Bowire/issues/248)
+
 ### v2.5 — Continuous integration: PR bot, project file, org dashboard *(due 2026-08-12)*
 
 #### <a id="issue-kuestenlogik-bowire-101"></a>⬜ Backlog · [#101](https://github.com/Kuestenlogik/Bowire/issues/101) Tugboat — VS Code + JetBrains workbench extension
@@ -933,6 +944,10 @@ The `+` button in the Discover rail's sidebar toolbar opens the "create new requ
 #### <a id="issue-kuestenlogik-bowire-245"></a>⬜ Backlog · [#245](https://github.com/Kuestenlogik/Bowire/issues/245) Execute-button dropdown: add 'As new request' to clone a discovered method's call into an editable ad-hoc copy
 
 When you're on a discovered method and want to experiment — try a tweaked URL, a slightly different method name, a custom header — there's no clean path. Today's options: [[more]](https://github.com/Kuestenlogik/Bowire/issues/245)
+
+#### <a id="issue-kuestenlogik-bowire-246"></a>⬜ Backlog · [#246](https://github.com/Kuestenlogik/Bowire/issues/246) Ad-hoc requests — informal cousin of Presets, lives under Collections (not a new rail, not a Design surface)
+
+Ad-hoc requests in v2.0 are homeless. The `+ New` button in the Discover rail (see sibling issue) opens a one-shot form that doesn't persist, isn't co-located with the related saved-calls surfaces, and has no obvious entry point if you start somewhere other than Discover. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/246)
 
 ---
 
