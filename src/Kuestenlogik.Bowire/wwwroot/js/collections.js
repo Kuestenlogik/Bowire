@@ -194,7 +194,37 @@
             }))
             : null;
 
-        var serverUrl = item.serverUrl || (serverUrls.length > 0 ? serverUrls[0] : '');
+        // #252 — Resolve URL at execute time. For urlMode='source'
+        // items the snapshot's serverUrl is treated as a HINT — we
+        // re-check against the current workspace's Source URL list
+        // so a rename / retire propagates to the saved item. When
+        // the hint is no longer in the list, fall back to the
+        // current first Source URL and emit a console warning (the
+        // operator's hint that something they pinned to a Source
+        // has drifted; toast would be too noisy for batch runs).
+        var serverUrl;
+        if (item.urlMode === 'source') {
+            if (Array.isArray(serverUrls) && serverUrls.length > 0) {
+                if (item.serverUrl && serverUrls.indexOf(item.serverUrl) >= 0) {
+                    serverUrl = item.serverUrl;
+                } else {
+                    serverUrl = serverUrls[0];
+                    if (item.serverUrl && item.serverUrl !== serverUrl) {
+                        console.warn('[#252] collection item bound to source URL "'
+                            + item.serverUrl + '" no longer in workspace — replaying against "'
+                            + serverUrl + '"');
+                    }
+                }
+            } else {
+                // No sources at all → best-effort fall back to the
+                // hint so the call still has SOMETHING to hit.
+                serverUrl = item.serverUrl || '';
+            }
+        } else {
+            // urlMode='inline' (or unset, pre-#252) — self-contained
+            // URL on the item. Use as-is.
+            serverUrl = item.serverUrl || (serverUrls.length > 0 ? serverUrls[0] : '');
+        }
         var body = {
             service: item.service,
             method: item.method,
