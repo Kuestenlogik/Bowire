@@ -3234,6 +3234,10 @@
                 streamMessages = [];
                 statusInfo = null;
                 channelError = null;
+                // Last tab closed → the freeform draft has no home
+                // anymore, clear it so the landing page renders
+                // instead of an orphaned builder.
+                freeformRequest = null;
             } else {
                 // Pick a neighbor: prefer right, fall back to left
                 var nextIdx = idx < requestTabs.length ? idx : requestTabs.length - 1;
@@ -3241,6 +3245,14 @@
                 activeTabId = next.id;
                 selectedMethod = next.method;
                 selectedService = next.service;
+                // Rehydrate the freeform draft from the neighbor's
+                // stash (set to null when the neighbor never spawned
+                // a 'As new request' clone). Without this, closing the
+                // freeform tab kept the module-scope freeformRequest
+                // alive and the next render kept showing the builder
+                // — the user expected the neighbor's original
+                // discovered-method pane.
+                freeformRequest = next.freeform || null;
 
                 var hadChannel = restoreChannelFor(next.serviceKey, next.methodKey);
                 if (!hadChannel) {
