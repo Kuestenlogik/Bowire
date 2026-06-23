@@ -49,8 +49,8 @@
        on the git tag, not here. -->
   <PropertyGroup Condition="'$(IsPackable)' != 'false'">
     <Version>2.0.1-dev</Version>
-    <AssemblyVersion>2.0.0</AssemblyVersion>
-    <FileVersion>2.0.0</FileVersion>
+    <AssemblyVersion>2.0.1</AssemblyVersion>
+    <FileVersion>2.0.1</FileVersion>
   </PropertyGroup>
 
   <!-- Mark all Kuestenlogik.Bowire.Protocol.* projects as Bowire plugins so
