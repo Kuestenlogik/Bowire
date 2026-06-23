@@ -83,4 +83,59 @@ public sealed class WorkspacePathResolutionTests
         Assert.Throws<ArgumentException>(() =>
             BowireUserContext.GetWorkspacePath("ws_x", storageRoot: null, relativePath: ""));
     }
+
+    [Fact]
+    public void GetWorkspacePath_rejects_absolute_relativePath()
+    {
+        // Path.Combine silently drops earlier segments when a later
+        // segment is rooted — the guard rejects that footgun up-front
+        // so callers can't smuggle an absolute path into a
+        // workspace-scoped slot.
+        var absolute = Path.Combine(Path.GetTempPath(), "evil.json");
+        var ex = Assert.Throws<ArgumentException>(() =>
+            BowireUserContext.GetWorkspacePath("ws_x", storageRoot: null, relativePath: absolute));
+        Assert.Equal("relativePath", ex.ParamName);
+    }
+
+    [Fact]
+    public void GetWorkspacePath_rejects_absolute_relativePath_even_with_storageRoot()
+    {
+        // The IsPathRooted check on relativePath fires before the
+        // storageRoot branch, so the guard catches an absolute
+        // relativePath in both code paths.
+        var absolute = Path.Combine(Path.GetTempPath(), "evil.json");
+        var storageRoot = Path.Combine(Path.GetTempPath(), "ws-root");
+        Assert.Throws<ArgumentException>(() =>
+            BowireUserContext.GetWorkspacePath("ws_x", storageRoot, absolute));
+    }
+
+    [Fact]
+    public void GetWorkspacePath_rejects_absolute_workspaceId()
+    {
+        // workspaceId becomes a path segment in the legacy fallback —
+        // the guard refuses an absolute string so the Path.Combine
+        // below doesn't drop the leading "workspaces" anchor.
+        var rooted = Path.Combine(Path.GetTempPath(), "wsId");
+        var ex = Assert.Throws<ArgumentException>(() =>
+            BowireUserContext.GetWorkspacePath(
+                workspaceId: rooted,
+                storageRoot: null,
+                relativePath: "ok.json"));
+        Assert.Equal("workspaceId", ex.ParamName);
+    }
+
+    [Fact]
+    public void GetWorkspacePath_empty_workspaceId_skips_rooted_check()
+    {
+        // The rooted-workspaceId guard short-circuits on empty, so an
+        // empty workspaceId is accepted (collapses the legacy path to
+        // the bare "workspaces/<relative>" bucket).
+        var result = BowireUserContext.GetWorkspacePath(
+            workspaceId: "",
+            storageRoot: null,
+            relativePath: "shared.json");
+
+        Assert.Contains("workspaces", result, StringComparison.Ordinal);
+        Assert.EndsWith("shared.json", result, StringComparison.Ordinal);
+    }
 }
