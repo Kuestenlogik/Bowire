@@ -8367,6 +8367,42 @@ they're a way
 }
 .bowire-ws-template-row.selected .bowire-ws-template-icon { color: var(--bowire-accent); }
 .bowire-ws-template-icon svg { width: 16px; height: 16px; }
+/* #242 — section heading + delete button for user templates */
+.bowire-ws-template-section-heading {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--bowire-text-secondary);
+    margin: 12px 0 6px;
+    padding: 0 6px;
+}
+.bowire-ws-template-delete-btn {
+    flex-shrink: 0;
+    margin-left: 8px;
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    border: none;
+    background: transparent;
+    color: var(--bowire-text-secondary);
+    border-radius: var(--bowire-radius-2);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 120ms, color 120ms, background 120ms;
+}
+.bowire-ws-template-row:hover .bowire-ws-template-delete-btn,
+.bowire-ws-template-row.selected .bowire-ws-template-delete-btn {
+    opacity: 1;
+}
+.bowire-ws-template-delete-btn:hover {
+    color: var(--bowire-danger);
+    background: rgba(var(--bowire-danger-rgb), 0.1);
+}
+.bowire-ws-template-delete-btn svg { width: 14px; height: 14px; }
 .bowire-ws-template-info {
     display: flex;
     flex-direction: column;
