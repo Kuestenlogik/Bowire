@@ -54,7 +54,14 @@
         for (var pi = 0; pi < protocols.length; pi++) {
             var p = protocols[pi];
             if (!isProtocolEnabled(p.id)) continue;
-            if (!p.settings || p.settings.length === 0) continue;
+            // The previous filter dropped plugins without a
+            // p.settings array, which hid REST / gRPC / MCP / GraphQL
+            // / etc. from the tree entirely — even though those
+            // plugins still benefit from a dedicated detail page
+            // (enable/disable toggle, "no configurable settings"
+            // notice, plugin description). renderPluginSettings
+            // already handles the empty case, so the filter just
+            // suppressed a useful navigation row.
             (function (pp) {
                 var tabId = 'plugin-' + pp.id;
                 pluginChildren.push({
