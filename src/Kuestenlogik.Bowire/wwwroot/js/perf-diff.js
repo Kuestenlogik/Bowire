@@ -549,28 +549,32 @@
                 ));
 
                 // #245 — "As new request" clones the current request
-                // shape (URL / method / body / metadata) into a fresh
-                // ad-hoc request under Collections → Ad-hoc Requests
-                // (#246). Operator can then tweak URL or method without
-                // mutating the discovered service tree, and the clone
-                // persists across reloads.
+                // shape (URL / method / body / metadata) into the
+                // freeform New-Request builder for editing. NOT
+                // auto-saved — the discovered tree stays untouched
+                // and the operator decides whether to keep the clone:
+                //   - Execute right away → one-shot variant
+                //   - Edit URL / method / body, then Execute
+                //   - Click "Save as request" in the New-Request
+                //     header to persist into Collections → Ad-hoc
+                //     Requests (#246) if they want to keep it
+                //
+                // Putting the clone straight under Collections without
+                // asking conflated "I want to try this once" with "I
+                // want this in my saved set" — the user chose to keep
+                // those two flows separate.
                 var canClone = typeof startNewAdHocRequest === 'function'
-                    && typeof saveCurrentFreeformAsAdHoc === 'function'
                     && selectedService && selectedMethod;
                 menu.appendChild(el('button', {
                     type: 'button',
                     className: 'bowire-action-execute-menu-item' + (canClone ? '' : ' is-disabled'),
                     disabled: canClone ? undefined : true,
                     title: canClone
-                        ? 'Clone this request as a new editable ad-hoc request — URL / method / body all editable; original discovered method stays untouched'
+                        ? 'Open a New Request editor pre-filled from this method — edit URL / method / body, then Execute or Save'
                         : 'Pick a discovered method first',
                     onClick: function () {
                         menu.remove();
                         if (!canClone) return;
-                        // Snapshot the current request payload from the
-                        // active state. The freeformRequest path
-                        // already knows how to render + execute the
-                        // exact same shape, so reuse it as the target.
                         // Body: pull from the form-serialised value
                         // when in form mode (#114) so the operator's
                         // edits are captured, not the schema default.
@@ -604,27 +608,21 @@
                             body: bodyText,
                             metadata: metaCopy
                         });
+                        // Carry the lineage hint on the unsaved
+                        // freeformRequest so the eventual Save (via the
+                        // header button) tags the persisted record
+                        // correctly without losing the source-method
+                        // attribution.
                         try {
-                            // Immediately persist the snapshot with a
-                            // lineage hint so the operator finds it in
-                            // the Ad-hoc Requests section right away
-                            // instead of having to click Save manually.
-                            saveCurrentFreeformAsAdHoc({
-                                lineage: {
+                            if (freeformRequest) {
+                                freeformRequest._lineageHint = {
                                     kind: 'cloned-from-discovered',
                                     sourceMethod: selectedService.name + '/' + selectedMethod.name
-                                },
-                                name: 'cloned: ' + selectedService.name + '/' + selectedMethod.name
-                            });
-                            if (typeof toast === 'function') {
-                                toast('Cloned to Ad-hoc requests — Collections rail', 'success');
+                                };
+                                freeformRequest._defaultSaveName = 'cloned: '
+                                    + selectedService.name + '/' + selectedMethod.name;
                             }
-                            render();
-                        } catch (e) {
-                            if (typeof toast === 'function') {
-                                toast('Clone failed: ' + (e && e.message), 'error');
-                            }
-                        }
+                        } catch { /* ignore */ }
                     }
                 },
                     el('span', { className: 'bowire-action-execute-menu-icon', innerHTML: svgIcon('layers') }),
