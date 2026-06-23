@@ -675,7 +675,19 @@
     async function executeFreeformRequest() {
         if (!freeformRequest) return;
         var fr = freeformRequest;
-        if (!fr.service || !fr.method) {
+        // #256 — REST ad-hoc only needs URL + verb (no service / RPC
+        // identity). Other protocols still require service + method.
+        var isRestAdHoc = fr.protocol === 'rest';
+        if (isRestAdHoc) {
+            if (!fr.serverUrl || !fr.serverUrl.trim()) {
+                toast('Enter a request URL', 'error');
+                return;
+            }
+            if (!fr.method) {
+                toast('Pick an HTTP verb', 'error');
+                return;
+            }
+        } else if (!fr.service || !fr.method) {
             toast('Enter a service and method name', 'error');
             return;
         }
@@ -683,24 +695,41 @@
         isExecuting = true;
         responseData = null;
         responseError = null;
-        markJobActive(fr.service, fr.method);
+        markJobActive(fr.service || 'adhoc', fr.method);
         render();
 
-        var fullName = fr.service + '/' + fr.method;
-        addConsoleEntry({ type: 'request', method: fullName, body: fr.body || '{}' });
+        // Console label: REST ad-hoc reads as 'POST https://…' since
+        // there's no RPC service/method to identify; other protocols
+        // keep the 'service/method' shape.
+        var fullName = isRestAdHoc
+            ? (fr.method + ' ' + (fr.serverUrl || ''))
+            : (fr.service + '/' + fr.method);
+        // Body sent on the wire: REST ad-hoc skips the {} placeholder
+        // for GET/HEAD/OPTIONS so the request log doesn't show a
+        // spurious empty-object payload.
+        var bodyToSend = fr.body || '{}';
+        var verbHasBody = !isRestAdHoc
+            || ['POST', 'PUT', 'PATCH', 'DELETE'].indexOf((fr.method || '').toUpperCase()) >= 0;
+        addConsoleEntry({ type: 'request', method: fullName, body: verbHasBody ? bodyToSend : '' });
 
         var statusInfo = null;
         try {
             var url = config.prefix + '/api/invoke'
                 + (fr.serverUrl ? '?serverUrl=' + encodeURIComponent(fr.serverUrl) : '');
+            // Metadata (headers): pass fr.metadata through for ad-hoc
+            // REST so custom Authorization / Accept / X-* headers
+            // reach RestInvoker.InvokeAdHocAsync. Other protocols
+            // keep null until they grow custom header support.
+            var metaToSend = (isRestAdHoc && fr.metadata && Object.keys(fr.metadata).length > 0)
+                ? fr.metadata : null;
             var resp = await fetch(url, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     service: fr.service,
                     method: fr.method,
-                    messages: [fr.body || '{}'],
-                    metadata: null,
+                    messages: [verbHasBody ? bodyToSend : '{}'],
+                    metadata: metaToSend,
                     protocol: fr.protocol
                 })
             });
