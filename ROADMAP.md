@@ -216,6 +216,9 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [239](https://github.com/Kuestenlogik/Bowire/issues/239) | Bowire | [Map widget: time-scrubber + playback for accumulated streams](#issue-kuestenlogik-bowire-239) | ⬜ Backlog |  |
 | [240](https://github.com/Kuestenlogik/Bowire/issues/240) | Bowire | [Map widget: per-entity grouping via configurable track-id field](#issue-kuestenlogik-bowire-240) | ⬜ Backlog |  |
 | [242](https://github.com/Kuestenlogik/Bowire/issues/242) | Bowire | [User-defined workspace templates — save current workspace as a template, surface in create dialog](#issue-kuestenlogik-bowire-242) | ⬜ Backlog |  |
+| [243](https://github.com/Kuestenlogik/Bowire/issues/243) | Bowire | [Failed REST / gRPC invocation logs show only 'Error' — surface status code + response body + exception message](#issue-kuestenlogik-bowire-243) | ⬜ Backlog |  |
+| [244](https://github.com/Kuestenlogik/Bowire/issues/244) | Bowire | [Discover rail toolbar: drop the '+ New' button — ad-hoc requests don't belong on the discovered-tree surface](#issue-kuestenlogik-bowire-244) | ⬜ Backlog |  |
+| [245](https://github.com/Kuestenlogik/Bowire/issues/245) | Bowire | [Execute-button dropdown: add 'As new request' to clone a discovered method's call into an editable ad-hoc copy](#issue-kuestenlogik-bowire-245) | ⬜ Backlog |  |
 
 ## Details
 
@@ -918,6 +921,18 @@ Group stream frames by an explicit **track identifier** so the map can show N pa
 #### <a id="issue-kuestenlogik-bowire-242"></a>⬜ Backlog · [#242](https://github.com/Kuestenlogik/Bowire/issues/242) User-defined workspace templates — save current workspace as a template, surface in create dialog
 
 Workspace templates ship hardcoded in `wwwroot/js/workspace-templates.js` — `BOWIRE_WORKSPACE_TEMPLATES` is a static array of five built-ins (`empty`, `rest`, `grpc`, `mock`, `multiproto`). … [[more]](https://github.com/Kuestenlogik/Bowire/issues/242)
+
+#### <a id="issue-kuestenlogik-bowire-243"></a>⬜ Backlog · [#243](https://github.com/Kuestenlogik/Bowire/issues/243) Failed REST / gRPC invocation logs show only 'Error' — surface status code + response body + exception message
+
+When a manually-created REST request fails (in this case via the New-request flow against the seeded Petstore template), the response log shows nothing useful: [[more]](https://github.com/Kuestenlogik/Bowire/issues/243)
+
+#### <a id="issue-kuestenlogik-bowire-244"></a>⬜ Backlog · [#244](https://github.com/Kuestenlogik/Bowire/issues/244) Discover rail toolbar: drop the '+ New' button — ad-hoc requests don't belong on the discovered-tree surface
+
+The `+` button in the Discover rail's sidebar toolbar opens the "create new request" form. But Discover is the surface for **discovered services** — the toolbar already lists discovered method nodes, the `+` sits next to them, and the user expects "add to *what's being shown here*". … [[more]](https://github.com/Kuestenlogik/Bowire/issues/244)
+
+#### <a id="issue-kuestenlogik-bowire-245"></a>⬜ Backlog · [#245](https://github.com/Kuestenlogik/Bowire/issues/245) Execute-button dropdown: add 'As new request' to clone a discovered method's call into an editable ad-hoc copy
+
+When you're on a discovered method and want to experiment — try a tweaked URL, a slightly different method name, a custom header — there's no clean path. Today's options: [[more]](https://github.com/Kuestenlogik/Bowire/issues/245)
 
 ---
 
