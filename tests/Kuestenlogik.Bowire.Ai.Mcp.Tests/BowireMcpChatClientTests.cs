@@ -3,6 +3,7 @@
 
 using System.Text.Json;
 using Microsoft.Extensions.AI;
+using ModelContextProtocol.Client;
 using ModelContextProtocol.Protocol;
 
 namespace Kuestenlogik.Bowire.Ai.Mcp.Tests;
@@ -217,6 +218,76 @@ public sealed class BowireMcpChatClientTests
         result.Content.Add(new TextContentBlock { Text = "first line" });
         result.Content.Add(new TextContentBlock { Text = "second line" });
         Assert.Equal("first line\nsecond line", BowireMcpChatClient.ExtractText(result));
+    }
+
+    [Fact]
+    public void ExtractText_MixedTextAndNonText_JoinsOnlyTextBlocks()
+    {
+        // The TextContentBlock filter is non-empty AND TextContentBlock,
+        // so image blocks interleaved with text blocks fall out of the
+        // joined-text path — only the genuine text survives.
+        var result = new CallToolResult();
+        result.Content.Add(new TextContentBlock { Text = "intro line" });
+        result.Content.Add(new ImageContentBlock
+        {
+            Data = new ReadOnlyMemory<byte>([0x89, 0x50, 0x4E, 0x47]),
+            MimeType = "image/png",
+        });
+        result.Content.Add(new TextContentBlock { Text = "trailing line" });
+        Assert.Equal("intro line\ntrailing line", BowireMcpChatClient.ExtractText(result));
+    }
+
+    [Fact]
+    public void ExtractText_EmptyStringTextBlocks_FallsBackToJsonSerialisation()
+    {
+        // Empty / whitespace TextContentBlocks fail the
+        // !string.IsNullOrEmpty filter so the joined-text path emits
+        // nothing — the helper then falls back to the JSON snapshot
+        // of the raw Content list rather than returning an
+        // unhelpful empty string.
+        var result = new CallToolResult();
+        result.Content.Add(new TextContentBlock { Text = string.Empty });
+        result.Content.Add(new TextContentBlock { Text = null! });
+        var text = BowireMcpChatClient.ExtractText(result);
+        Assert.NotEqual(string.Empty, text);
+        Assert.StartsWith("[", text, StringComparison.Ordinal);   // JSON array shape
+    }
+
+    // -- FindChatTool — only the empty-list path is reachable from
+    //    test code (McpClientTool is sealed + needs an internal McpClient
+    //    to construct, neither of which we can fake without the SDK).
+    //    Empty list still exercises the outer foreach + early-out, which
+    //    is the path coverlet was missing. --
+
+    [Fact]
+    public void FindChatTool_EmptyToolList_ReturnsNull()
+    {
+        var result = BowireMcpChatClient.FindChatTool(new List<McpClientTool>());
+        Assert.Null(result);
+    }
+
+    // -- More BuildArguments edge cases for tighter branch coverage --
+
+    [Fact]
+    public void BuildArguments_OnlyTemperature_OmitsMaxTokens()
+    {
+        using var client = new BowireMcpChatClient("http://localhost:9999", "m");
+        var args = client.BuildArguments(
+            [new ChatMessage(ChatRole.User, "x")],
+            new ChatOptions { Temperature = 0.5f });
+        Assert.True(args.ContainsKey("temperature"));
+        Assert.False(args.ContainsKey("maxTokens"));
+    }
+
+    [Fact]
+    public void BuildArguments_OnlyMaxTokens_OmitsTemperature()
+    {
+        using var client = new BowireMcpChatClient("http://localhost:9999", "m");
+        var args = client.BuildArguments(
+            [new ChatMessage(ChatRole.User, "x")],
+            new ChatOptions { MaxOutputTokens = 100 });
+        Assert.False(args.ContainsKey("temperature"));
+        Assert.True(args.ContainsKey("maxTokens"));
     }
 
     [Fact]
