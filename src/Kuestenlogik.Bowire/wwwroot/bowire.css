@@ -10072,28 +10072,13 @@ so the textarea
 }
 
 /* ===== Freeform builder — request / response split layout ===== */
-.bowire-freeform-pane {
-    display: flex;
-    flex-direction: column;
-    min-height: 0;
-    flex: 1;
-}
-.bowire-freeform-content {
-    flex: 1 1 auto;
-    min-height: 0;
-}
-.bowire-freeform-req-pane,
-.bowire-freeform-res-pane {
-    padding: 12px 16px;
-    overflow: auto;
-}
-.bowire-freeform-action-bar {
-    border-top: 1px solid var(--bowire-border);
-    padding: 8px 16px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
+/* #248-followup — duplicates of the layout overrides above retired.
+   The canonical .bowire-pane / .bowire-content / .bowire-action-bar
+   styles (used by every discovered method's pane) do the spacing
+   correctly; layering a freeform-specific override on top of them
+   pushed the padding to 12/16px instead of the discovered defaults
+   and reads visibly inconsistent. Only the empty-state hint stays
+   freeform-specific because it has no discovered analogue. */
 .bowire-response-empty {
     color: var(--bowire-text-tertiary, var(--bowire-text-secondary));
     font-size: 12px;
