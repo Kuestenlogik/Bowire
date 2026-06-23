@@ -91,7 +91,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.1 — Scripting, variable resolver, throughput surface *(due 2026-06-30)*
 
-**1/14 done** · 13 backlog
+**3/14 done** · 11 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -106,9 +106,9 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [231](https://github.com/Kuestenlogik/Bowire/issues/231) | Bowire | [Benchmarks: 'random' run shape — pick N random endpoints per iteration](#issue-kuestenlogik-bowire-231) | ⬜ Backlog |  |
 | [233](https://github.com/Kuestenlogik/Bowire/issues/233) | Bowire | [Benchmarks: previous-run diff banner on repeat (p95 ▲ / ▼ / status histogram delta)](#issue-kuestenlogik-bowire-233) | ⬜ Backlog |  |
 | [234](https://github.com/Kuestenlogik/Bowire/issues/234) | Bowire | [Benchmarks: result exports — CSV + k6-summary JSON + OTLP metrics](#issue-kuestenlogik-bowire-234) | ⬜ Backlog |  |
-| [248](https://github.com/Kuestenlogik/Bowire/issues/248) | Bowire | [Optional rail modules — plumbing (Phase 1): toggle mechanic + always-on set + Settings editor](#issue-kuestenlogik-bowire-248) | ⬜ Backlog |  |
-| [252](https://github.com/Kuestenlogik/Bowire/issues/252) | Bowire | [Compose-request entry points: '+ Compose' (self-contained) + 'New from source…' (workspace-managed URL)](#issue-kuestenlogik-bowire-252) | ⬜ Backlog |  |
 | [197](https://github.com/Kuestenlogik/Bowire/issues/197) | Bowire | [Deprecate + unlist Kuestenlogik.Bowire.Extension.MapLibre on nuget.org after v2.0 ships](#issue-kuestenlogik-bowire-197) | ✅ Done |  |
+| [248](https://github.com/Kuestenlogik/Bowire/issues/248) | Bowire | [Optional rail modules — plumbing (Phase 1): toggle mechanic + always-on set + Settings editor](#issue-kuestenlogik-bowire-248) | ✅ Done |  |
+| [252](https://github.com/Kuestenlogik/Bowire/issues/252) | Bowire | [Compose-request entry points: '+ Compose' (self-contained) + 'New from source…' (workspace-managed URL)](#issue-kuestenlogik-bowire-252) | ✅ Done |  |
 
 ### v2.2 — Test pillar: assertions, CI runner, regression coverage *(due 2026-07-10)*
 
@@ -567,17 +567,17 @@ When the operator hits Run on a benchmark envelope that already has a previous r
 
 Round out the Benchmarks export surface so result data can leave Bowire in the formats the surrounding tooling actually consumes: [[more]](https://github.com/Kuestenlogik/Bowire/issues/234)
 
-#### <a id="issue-kuestenlogik-bowire-248"></a>⬜ Backlog · [#248](https://github.com/Kuestenlogik/Bowire/issues/248) Optional rail modules — plumbing (Phase 1): toggle mechanic + always-on set + Settings editor
-
-Bowire's rail catalogue (`_railModes` in `render-sidebar.js`) is fixed at compile time: Home, Discover, Recordings, Mocks, Flows, Proxy, Benchmarks, Security, Workspaces. Every operator gets every rail. Pain points: [[more]](https://github.com/Kuestenlogik/Bowire/issues/248)
-
-#### <a id="issue-kuestenlogik-bowire-252"></a>⬜ Backlog · [#252](https://github.com/Kuestenlogik/Bowire/issues/252) Compose-request entry points: '+ Compose' (self-contained) + 'New from source…' (workspace-managed URL)
-
-After landing #244 (drop `+ New` from Discover toolbar) + #245 (As new request from Execute dropdown) + the #246 cleanup (ad-hoc → freeform builder + `+ Add to…` parity), two design gaps remain around **how an operator starts composing a new request**: [[more]](https://github.com/Kuestenlogik/Bowire/issues/252)
-
 #### <a id="issue-kuestenlogik-bowire-197"></a>✅ Done · [#197](https://github.com/Kuestenlogik/Bowire/issues/197) Deprecate + unlist Kuestenlogik.Bowire.Extension.MapLibre on nuget.org after v2.0 ships
 
 `Kuestenlogik.Bowire.Extension.MapLibre` 1.3.0-rc.1 was renamed to `Kuestenlogik.Bowire.Map` ahead of v2.0 (commit 75c8d1f). … [[more]](https://github.com/Kuestenlogik/Bowire/issues/197)
+
+#### <a id="issue-kuestenlogik-bowire-248"></a>✅ Done · [#248](https://github.com/Kuestenlogik/Bowire/issues/248) Optional rail modules — plumbing (Phase 1): toggle mechanic + always-on set + Settings editor
+
+Bowire's rail catalogue (`_railModes` in `render-sidebar.js`) is fixed at compile time: Home, Discover, Recordings, Mocks, Flows, Proxy, Benchmarks, Security, Workspaces. Every operator gets every rail. Pain points: [[more]](https://github.com/Kuestenlogik/Bowire/issues/248)
+
+#### <a id="issue-kuestenlogik-bowire-252"></a>✅ Done · [#252](https://github.com/Kuestenlogik/Bowire/issues/252) Compose-request entry points: '+ Compose' (self-contained) + 'New from source…' (workspace-managed URL)
+
+After landing #244 (drop `+ New` from Discover toolbar) + #245 (As new request from Execute dropdown) + the #246 cleanup (ad-hoc → freeform builder + `+ Add to…` parity), two design gaps remain around **how an operator starts composing a new request**: [[more]](https://github.com/Kuestenlogik/Bowire/issues/252)
 
 ### v2.2 — Test pillar: assertions, CI runner, regression coverage *(due 2026-07-10)*
 
