@@ -9925,100 +9925,113 @@ so the textarea
 .bowire-freeform-proto-menu-icon svg { width: 16px; height: 16px; }
 .bowire-freeform-proto-menu-label { flex: 1; }
 
-/* ===== Freeform builder — editable method-style header =====
-   Mirrors .bowire-header padding (16px 24px + bottom border) so a
-   freeform pane sits in the same chrome envelope as a discovered
-   method's pane. Inputs styled to read as the title text the
-   discovered method shows as static; dashed underline on hover +
-   accent underline on focus signals editability without adding
+/* ===== Freeform builder — header (editable, mirrors .bowire-header) =====
+   The freeform pane uses the canonical .bowire-header chrome
+   directly; .bowire-freeform-header adds only the rightmost
+   cluster spacing. Editable inputs replace text in .bowire-header-
+   method and .bowire-header-summary, with a dashed-underline-on-
+   hover affordance so the operator sees they're editable without
    permanent input-box chrome. */
-.bowire-freeform-pane { padding-top: 0; }
-.bowire-freeform-method-header {
+.bowire-freeform-pane {
     display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 16px 24px;
-    border-bottom: 1px solid var(--bowire-border);
-    background: var(--bowire-bg-elevated);
-    flex-shrink: 0;
-    min-height: 60px;
+    flex-direction: column;
+    min-height: 0;
+    flex: 1;
 }
-.bowire-freeform-method-header .bowire-freeform-proto-picker-wrap {
-    flex: 0 0 auto;
-    min-width: 0;
+.bowire-freeform-header {
+    gap: 16px;
 }
-.bowire-freeform-method-header .bowire-freeform-proto-btn {
-    width: auto;
-    padding: 6px 8px;
-}
-.bowire-freeform-method-header .bowire-freeform-proto-btn-icon svg {
-    width: 20px;
-    height: 20px;
-}
-.bowire-freeform-method-header-input {
+.bowire-freeform-header-method-input {
     background: transparent;
     border: none;
     border-bottom: 1px dashed transparent;
-    color: var(--bowire-text);
-    font-size: 16px;
-    font-weight: 600;
-    padding: 4px 2px;
-    min-width: 80px;
-    flex-shrink: 1;
+    padding: 0 2px;
     outline: none;
+    width: 100%;
+    min-width: 120px;
 }
-.bowire-freeform-method-header-input:hover {
-    border-bottom-color: var(--bowire-border);
-}
-.bowire-freeform-method-header-input:focus {
-    border-bottom-color: var(--bowire-accent);
-}
-.bowire-freeform-method-header-input::placeholder {
+.bowire-freeform-header-method-input:hover { border-bottom-color: var(--bowire-border); }
+.bowire-freeform-header-method-input:focus { border-bottom-color: var(--bowire-accent); }
+.bowire-freeform-header-method-input::placeholder {
     color: var(--bowire-text-tertiary, var(--bowire-text-secondary));
     font-style: italic;
     font-weight: 400;
 }
-.bowire-freeform-method-header-service { max-width: 240px; }
-.bowire-freeform-method-header-method { max-width: 320px; }
-.bowire-freeform-method-header-sep {
-    color: var(--bowire-text-tertiary, var(--bowire-text-secondary));
-    font-size: 18px;
-    font-weight: 300;
+.bowire-freeform-header-service-input {
+    background: transparent;
+    border: none;
+    border-bottom: 1px dashed transparent;
+    padding: 0 2px;
+    outline: none;
+    width: 100%;
+    min-width: 100px;
+    color: var(--bowire-text-secondary);
 }
-
-/* ===== Freeform builder type bar (under the header) ===== */
-.bowire-freeform-type-bar {
+.bowire-freeform-header-service-input:hover { border-bottom-color: var(--bowire-border); }
+.bowire-freeform-header-service-input:focus { border-bottom-color: var(--bowire-accent); }
+.bowire-freeform-header-service-input::placeholder {
+    color: var(--bowire-text-tertiary, var(--bowire-text-secondary));
+    font-style: italic;
+}
+.bowire-freeform-header-right {
     display: flex;
     align-items: center;
-    gap: 12px;
-    padding: 12px 24px 8px;
+    gap: 8px;
+    flex-shrink: 0;
 }
-.bowire-freeform-type-bar-label {
-    font-size: 11px;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
+.bowire-freeform-header-right .bowire-freeform-proto-btn {
+    padding: 6px 8px;
+}
+.bowire-freeform-header-right .bowire-freeform-proto-btn-icon svg {
+    width: 18px;
+    height: 18px;
+}
+.bowire-header-action-btn {
+    padding: 6px 14px;
+    background: transparent;
+    border: 1px solid var(--bowire-border);
+    border-radius: var(--bowire-radius-2, 4px);
     color: var(--bowire-text-secondary);
-    font-weight: 600;
+    cursor: pointer;
+    font-size: 13px;
+}
+.bowire-header-action-btn:hover {
+    background: var(--bowire-surface-hover);
+    color: var(--bowire-text);
 }
 
-/* URL slot — sits at identity level, between Type and the
-   request/response split. Same horizontal gutter as the header so
-   it reads as part of the top section. */
-.bowire-freeform-url-slot {
-    padding: 8px 24px 12px;
-}
-.bowire-freeform-url-slot .bowire-freeform-row {
-    margin: 0;
+/* Type-segmented bar — compact variant lives in the header right cluster. */
+.bowire-freeform-type-seg-compact { font-size: 11px; }
+.bowire-freeform-type-seg-compact .bowire-freeform-type-seg-btn { padding: 5px 9px; }
+
+/* URL bar — identity level, sits between header and content split.
+   Same horizontal padding as .bowire-header so it reads as part of
+   the same chrome envelope, but slimmer (no border-bottom). */
+.bowire-freeform-url-bar {
+    display: flex;
     align-items: center;
+    gap: 8px;
+    padding: 10px 24px;
+    border-bottom: 1px solid var(--bowire-border);
+    flex-shrink: 0;
 }
-.bowire-freeform-url-slot .bowire-freeform-label {
+.bowire-freeform-url-bar-label {
     font-size: 11px;
     text-transform: uppercase;
     letter-spacing: 0.05em;
     color: var(--bowire-text-secondary);
     font-weight: 600;
-    margin-right: 12px;
-    min-width: auto;
+    flex-shrink: 0;
+}
+.bowire-freeform-url-bar-input {
+    flex: 1;
+    padding: 6px 10px;
+    background: var(--bowire-surface);
+    border: 1px solid var(--bowire-border);
+    border-radius: var(--bowire-radius-2, 4px);
+    color: var(--bowire-text);
+    font-family: var(--bowire-font-mono, monospace);
+    font-size: 12px;
 }
 .bowire-freeform-type-seg {
     display: inline-flex;

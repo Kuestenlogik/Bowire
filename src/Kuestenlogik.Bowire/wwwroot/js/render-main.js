@@ -1,140 +1,33 @@
     // ---- Freeform Request Builder ----
+    //
+    // Built deliberately against the discovered-method pane's chrome
+    // (.bowire-main → .bowire-header → .bowire-content[data-split] →
+    // .bowire-action-bar) so a freeform request reads like a discovered
+    // method's pane with every field made editable. Sections, in
+    // top-to-bottom order:
+    //
+    //   1. Header (.bowire-header)
+    //      - Info column: editable Method name (big) + editable Service
+    //        name (small, below). Mirrors .bowire-header-method /
+    //        .bowire-header-summary-row from the discovered path.
+    //      - Right cluster: protocol icon-popover, Type segmented bar,
+    //        '+ Add to…' menu, Cancel.
+    //   2. URL row — outside the tabs because URL is identity, not a
+    //      payload part (the URL determines which tabs make sense).
+    //      Carries the Inline / From-Source mode toggle from #252.
+    //   3. Content split (.bowire-content data-split) with the standard
+    //      pane chrome + draggable divider.
+    //      - Request pane: tab strip Payload / Metadata / Mock + tab
+    //        content (Body editor for Payload; key/value rows for
+    //        Metadata; status + response body for Mock).
+    //      - Response pane: last response output or empty hint.
+    //   4. Action bar at the bottom with Execute (primary) + Save as
+    //      Mock Step + Save to Collection.
     function renderFreeformRequestBuilder() {
         var fr = freeformRequest;
-        var pane = el('div', { className: 'bowire-env-editor-main bowire-freeform-pane' });
+        var pane = el('div', { className: 'bowire-main bowire-freeform-pane' });
 
-        // Header — protocol icon + editable Service / Method + Add to
-        // + Cancel. The whole point of a freeform request is that
-        // every field (protocol, service, method, URL, type, body)
-        // is editable; the operator's mental model is "I'm editing a
-        // copy of a request". The discovered-method header is
-        // suppressed in renderMain when freeformRequest is active so
-        // this header is the only title strip, no duplication.
-        // The separate "New Request — cloned: …" subtitle is also
-        // dropped; the lineage hint (when set) shows in the Cancel
-        // button's tooltip instead so it doesn't add chrome.
-
-        // "+ Add to..." button — opens a small picker of the workspace's
-        // collections. Same affordance as the discovered-method
-        // header's '+ Add to…', scoped to collections only (the
-        // freeform shape can't anchor to a preset / envelope / etc
-        // because it isn't tied to a (service, method) pair).
-        var freeformAddToWrap = el('div', { className: 'bowire-header-addto-wrap' });
-        freeformAddToWrap.appendChild(el('button', {
-            id: 'bowire-freeform-addto-btn',
-            className: 'bowire-header-addto-btn' + (freeformAddToMenuOpen ? ' active' : ''),
-            title: 'Add this request to a collection',
-            'aria-label': 'Add to collection',
-            'aria-haspopup': 'menu',
-            'aria-expanded': freeformAddToMenuOpen ? 'true' : 'false',
-            innerHTML: svgIcon('plus'),
-            onClick: function (e) {
-                e.stopPropagation();
-                freeformAddToMenuOpen = !freeformAddToMenuOpen;
-                render();
-            }
-        }));
-
-        if (freeformAddToMenuOpen) {
-            var menu = el('div', {
-                className: 'bowire-header-addto-menu',
-                role: 'menu',
-                onClick: function (e) { e.stopPropagation(); }
-            });
-            function _snapshotFreeform() {
-                // #252 — urlMode discriminator decides URL ownership:
-                //   'inline'  → serverUrl lives on the item (back-compat)
-                //   'source'  → serverUrl points at one of the
-                //               workspace's Source URLs by value; a
-                //               replay path resolves it back at
-                //               execute time, so renames there
-                //               propagate to this saved item.
-                var urlMode = fr.urlMode === 'source' ? 'source' : 'inline';
-                return {
-                    service: fr.service || '',
-                    method: fr.method || '',
-                    methodType: fr.methodType || 'Unary',
-                    protocol: fr.protocol || 'rest',
-                    body: fr.body || '{}',
-                    messages: [fr.body || '{}'],
-                    metadata: (fr.metadata && Object.keys(fr.metadata).length > 0) ? fr.metadata : null,
-                    serverUrl: fr.serverUrl || null,
-                    urlMode: urlMode,
-                    // Discriminator so the collection-item view can
-                    // tell ad-hoc requests apart from discovered-method
-                    // entries (different glyph, no service-tree
-                    // navigation on click).
-                    kind: 'ad-hoc',
-                    lineage: fr._lineageHint || { kind: 'compose' }
-                };
-            }
-            menu.appendChild(el('div', { className: 'bowire-header-addto-section', textContent: 'Collection' }));
-            var freefCols = (typeof collectionsList !== 'undefined' && Array.isArray(collectionsList))
-                ? collectionsList : [];
-            if (freefCols.length > 0) {
-                freefCols.slice(0, 6).forEach(function (col) {
-                    menu.appendChild(el('button', {
-                        className: 'bowire-header-addto-item',
-                        role: 'menuitem',
-                        onClick: function () {
-                            var snap = _snapshotFreeform();
-                            if (typeof addToCollection === 'function') {
-                                addToCollection(col.id, snap);
-                                if (typeof toast === 'function') {
-                                    toast('Added to "' + col.name + '"', 'success');
-                                }
-                            }
-                            freeformAddToMenuOpen = false;
-                            render();
-                        }
-                    },
-                        el('span', { className: 'bowire-header-addto-item-icon', innerHTML: svgIcon('folder') }),
-                        el('span', { textContent: col.name }),
-                        el('span', { className: 'bowire-header-addto-item-meta', textContent: (col.items || []).length + ((col.items || []).length === 1 ? ' entry' : ' entries') })
-                    ));
-                });
-                if (freefCols.length > 6) {
-                    menu.appendChild(el('div', {
-                        className: 'bowire-header-addto-item-meta',
-                        style: 'padding:4px 12px 0',
-                        textContent: '+ ' + (freefCols.length - 6) + ' more in Collections'
-                    }));
-                }
-            }
-            menu.appendChild(el('button', {
-                className: 'bowire-header-addto-item bowire-header-addto-item-create',
-                role: 'menuitem',
-                onClick: function () {
-                    if (typeof bowirePrompt !== 'function') return;
-                    bowirePrompt('Collection name', {
-                        title: 'New collection',
-                        placeholder: 'e.g. Smoke tests',
-                        confirmText: 'Create'
-                    }).then(function (name) {
-                        if (name === null) return;
-                        var trimmed = String(name || '').trim();
-                        if (typeof createCollection !== 'function'
-                            || typeof addToCollection !== 'function') return;
-                        var col = createCollection(trimmed || undefined);
-                        var snap = _snapshotFreeform();
-                        addToCollection(col.id, snap);
-                        if (typeof toast === 'function') {
-                            toast('Saved to "' + col.name + '"', 'success');
-                        }
-                        freeformAddToMenuOpen = false;
-                        render();
-                    });
-                }
-            },
-                el('span', { className: 'bowire-header-addto-item-icon', innerHTML: svgIcon('plus') }),
-                el('span', { textContent: 'New collection…' })
-            ));
-            freeformAddToWrap.appendChild(menu);
-        }
-        // Protocol picker — button + popover so each option can show
-        // the protocol's icon next to its name (native <option>
-        // elements can't carry markup). Same data source (protocols
-        // list) + same methodType snap as the old <select>.
+        // ----- Protocol options + icon helpers (used by header) -----
         var protoOptions = protocols.length > 0
             ? protocols
             : [{ id: 'grpc', name: 'gRPC' }, { id: 'rest', name: 'REST' }, { id: 'graphql', name: 'GraphQL' },
@@ -162,15 +55,45 @@
         var currentProto = protoOptions.find(function (p) { return p.id === fr.protocol; })
             || protoOptions[0];
 
-        // ---- Editable method-style header ----
-        // Protocol icon button (opens picker on click) + Service +
-        // Method as inline inputs, mirroring how a discovered method
-        // header reads. When the operator types into either input
-        // the next render reflects the change in the header itself —
-        // no duplication, no separate "service" / "method" rows in
-        // the form.
-        var freeformHeader = el('div', { className: 'bowire-freeform-method-header' });
+        // ----- 1. Header (.bowire-header for chrome parity) -----
+        var header = el('div', { className: 'bowire-header bowire-freeform-header' });
 
+        // Info column: editable method name (big) + editable service
+        // name (small, below). Same .bowire-header-info /
+        // .bowire-header-method classes as discovered so spacing,
+        // truncation, font weights all inherit.
+        var info = el('div', { className: 'bowire-header-info' });
+        info.appendChild(el('input', {
+            id: 'bowire-freeform-method-input',
+            type: 'text',
+            className: 'bowire-header-method bowire-freeform-header-method-input',
+            value: fr.method || '',
+            placeholder: 'methodName',
+            spellcheck: 'false',
+            onInput: function (e) { fr.method = e.target.value; }
+        }));
+        var serviceRow = el('div', { className: 'bowire-header-summary-row' });
+        serviceRow.appendChild(el('input', {
+            id: 'bowire-freeform-service-input',
+            type: 'text',
+            className: 'bowire-header-summary bowire-freeform-header-service-input',
+            value: fr.service || '',
+            placeholder: 'service (optional)',
+            spellcheck: 'false',
+            title: (fr._lineageHint && fr._lineageHint.sourceMethod)
+                ? 'Cloned from ' + fr._lineageHint.sourceMethod
+                : '',
+            onInput: function (e) { fr.service = e.target.value; }
+        }));
+        info.appendChild(serviceRow);
+        header.appendChild(info);
+
+        // Right cluster: protocol picker (icon + popover) + method-type
+        // segmented bar + '+ Add to…' menu + Cancel.
+        var rightCluster = el('div', { className: 'bowire-freeform-header-right' });
+
+        // Protocol picker — icon button + popover with all protocols
+        // (icon + name per row).
         var protoPickerWrap = el('div', { className: 'bowire-freeform-proto-picker-wrap' });
         var protoBtn = el('button', {
             type: 'button',
@@ -196,7 +119,7 @@
                 onClick: function (e) { e.stopPropagation(); }
             });
             protoOptions.forEach(function (p) {
-                var item = el('button', {
+                protoMenu.appendChild(el('button', {
                     type: 'button',
                     className: 'bowire-freeform-proto-menu-item'
                         + (p.id === fr.protocol ? ' is-selected' : ''),
@@ -212,61 +135,16 @@
                 },
                     el('span', { className: 'bowire-freeform-proto-menu-icon', innerHTML: _protoIconHtml(p) }),
                     el('span', { className: 'bowire-freeform-proto-menu-label', textContent: p.name })
-                );
-                protoMenu.appendChild(item);
+                ));
             });
             protoPickerWrap.appendChild(protoMenu);
         }
-        freeformHeader.appendChild(protoPickerWrap);
+        rightCluster.appendChild(protoPickerWrap);
 
-        freeformHeader.appendChild(el('input', {
-            id: 'bowire-freeform-service-input',
-            type: 'text',
-            className: 'bowire-freeform-method-header-input bowire-freeform-method-header-service',
-            value: fr.service || '',
-            placeholder: 'service',
-            spellcheck: 'false',
-            onInput: function (e) { fr.service = e.target.value; }
-        }));
-        freeformHeader.appendChild(el('span', {
-            className: 'bowire-freeform-method-header-sep',
-            textContent: '/'
-        }));
-        freeformHeader.appendChild(el('input', {
-            id: 'bowire-freeform-method-input',
-            type: 'text',
-            className: 'bowire-freeform-method-header-input bowire-freeform-method-header-method',
-            value: fr.method || '',
-            placeholder: 'method',
-            spellcheck: 'false',
-            onInput: function (e) { fr.method = e.target.value; }
-        }));
-
-        freeformHeader.appendChild(el('span', { style: 'flex:1' }));
-        freeformHeader.appendChild(freeformAddToWrap);
-        freeformHeader.appendChild(el('button', {
-            id: 'bowire-freeform-cancel-btn',
-            className: 'bowire-env-editor-action-btn',
-            textContent: 'Cancel',
-            title: (fr._lineageHint && fr._lineageHint.sourceMethod)
-                ? 'Cancel — cloned from ' + fr._lineageHint.sourceMethod
-                : 'Discard this draft',
-            onClick: cancelFreeformRequest
-        }));
-        pane.appendChild(freeformHeader);
-
-        // ---- Method-type segmented bar (under the header) ----
-        // Type drives which parameters the form below collects, so
-        // it sits as a prominent button row right under the header
-        // instead of buried in a select.
+        // Method-type segmented bar — compact in the header cluster.
         var supportedTypes = getSupportedMethodTypes(fr.protocol);
-        var typeBar = el('div', { className: 'bowire-freeform-type-bar' });
-        typeBar.appendChild(el('span', {
-            className: 'bowire-freeform-type-bar-label',
-            textContent: 'Type'
-        }));
         if (supportedTypes.length > 1) {
-            var typeSeg = el('div', { className: 'bowire-freeform-type-seg' });
+            var typeSeg = el('div', { className: 'bowire-freeform-type-seg bowire-freeform-type-seg-compact' });
             supportedTypes.forEach(function (t) {
                 typeSeg.appendChild(el('button', {
                     type: 'button',
@@ -281,109 +159,146 @@
                     }
                 }));
             });
-            typeBar.appendChild(typeSeg);
+            rightCluster.appendChild(typeSeg);
         } else {
-            typeBar.appendChild(el('span', {
+            rightCluster.appendChild(el('span', {
                 className: 'bowire-freeform-type-chip',
                 textContent: supportedTypes[0]
             }));
         }
-        pane.appendChild(typeBar);
-        // URL row lives at the IDENTITY level — alongside protocol /
-        // type / service / method, not inside the Payload / Metadata
-        // tabs. The URL is what the call HITS; tabs are the parts of
-        // the call. Putting it inside a tab read as "the URL is one
-        // aspect of the payload", which conflated identity with
-        // content. Slot here means it sits between Type and the
-        // request/response split, visually grouped with the rest of
-        // the "what kind of call" surface.
-        // urlRow is built further below in this function — temporary
-        // ref so we can re-anchor it here without reordering all the
-        // declarations. The actual urlRow.appendChild fires later but
-        // the DOM position is set now (appendChild later sets it on
-        // the previously-empty placeholder via .appendChild reusing
-        // the same node).
-        var urlRowSlot = el('div', { className: 'bowire-freeform-url-slot' });
-        pane.appendChild(urlRowSlot);
-        pane.appendChild(el('div', { className: 'bowire-freeform-divider' }));
 
-        // ---- Request / Response split — same shape as the
-        // discovered-method path uses (#135 split-mode attribute) so
-        // the operator gets the same left/right or top/bottom layout
-        // with a draggable divider. The freeform builder's existing
-        // form rows (URL + Body + Mock) live in the LEFT pane; the
-        // RIGHT pane shows the response. The inline actions block
-        // at the bottom of the pane is replaced by a sticky
-        // bowire-action-bar so Execute sits in the status line
-        // exactly like a discovered method's Execute. ----
-        var splitContent = el('div', {
-            className: 'bowire-content bowire-content-enter bowire-freeform-content',
-            'data-split': (typeof resolveSplitMode === 'function')
-                ? resolveSplitMode(splitMode) : (splitMode || 'horizontal')
-        });
-        var freeformReqPane = el('div', { className: 'bowire-pane bowire-freeform-req-pane' });
-        freeformReqPane.appendChild(el('div', { className: 'bowire-pane-heading', textContent: 'Request' }));
-        // Tab strip — Payload / Metadata / Mock, mirroring the
-        // discovered-method's request-pane tabs. Same classes
-        // (bowire-tabs / bowire-tab) so the existing CSS styles
-        // apply unchanged.
-        var freeformReqTabs = el('div', { id: 'bowire-freeform-request-tabs', className: 'bowire-tabs' });
-        function _ffTab(id, label) {
-            return el('div', {
-                id: 'bowire-freeform-request-tab-' + id,
-                className: 'bowire-tab' + (freeformActiveRequestTab === id ? ' active' : ''),
-                textContent: label,
-                onClick: function () { freeformActiveRequestTab = id; render(); }
+        // '+ Add to…' collection picker (self-contained snapshot per
+        // #246). Same dropdown UX as the discovered-method header.
+        var freeformAddToWrap = el('div', { className: 'bowire-header-addto-wrap' });
+        freeformAddToWrap.appendChild(el('button', {
+            id: 'bowire-freeform-addto-btn',
+            className: 'bowire-header-addto-btn' + (freeformAddToMenuOpen ? ' active' : ''),
+            title: 'Add this request to a collection',
+            'aria-label': 'Add to collection',
+            'aria-haspopup': 'menu',
+            'aria-expanded': freeformAddToMenuOpen ? 'true' : 'false',
+            innerHTML: svgIcon('plus'),
+            onClick: function (e) {
+                e.stopPropagation();
+                freeformAddToMenuOpen = !freeformAddToMenuOpen;
+                render();
+            }
+        }));
+        if (freeformAddToMenuOpen) {
+            var addToMenu = el('div', {
+                className: 'bowire-header-addto-menu',
+                role: 'menu',
+                onClick: function (e) { e.stopPropagation(); }
             });
+            function _snapshotFreeform() {
+                var urlMode = fr.urlMode === 'source' ? 'source' : 'inline';
+                return {
+                    service: fr.service || '',
+                    method: fr.method || '',
+                    methodType: fr.methodType || 'Unary',
+                    protocol: fr.protocol || 'rest',
+                    body: fr.body || '{}',
+                    messages: [fr.body || '{}'],
+                    metadata: (fr.metadata && Object.keys(fr.metadata).length > 0) ? fr.metadata : null,
+                    serverUrl: fr.serverUrl || null,
+                    urlMode: urlMode,
+                    kind: 'ad-hoc',
+                    lineage: fr._lineageHint || { kind: 'compose' }
+                };
+            }
+            addToMenu.appendChild(el('div', { className: 'bowire-header-addto-section', textContent: 'Collection' }));
+            var freefCols = (typeof collectionsList !== 'undefined' && Array.isArray(collectionsList))
+                ? collectionsList : [];
+            if (freefCols.length > 0) {
+                freefCols.slice(0, 6).forEach(function (col) {
+                    addToMenu.appendChild(el('button', {
+                        className: 'bowire-header-addto-item',
+                        role: 'menuitem',
+                        onClick: function () {
+                            var snap = _snapshotFreeform();
+                            if (typeof addToCollection === 'function') {
+                                addToCollection(col.id, snap);
+                                if (typeof toast === 'function') {
+                                    toast('Added to "' + col.name + '"', 'success');
+                                }
+                            }
+                            freeformAddToMenuOpen = false;
+                            render();
+                        }
+                    },
+                        el('span', { className: 'bowire-header-addto-item-icon', innerHTML: svgIcon('folder') }),
+                        el('span', { textContent: col.name }),
+                        el('span', { className: 'bowire-header-addto-item-meta', textContent: (col.items || []).length + ((col.items || []).length === 1 ? ' entry' : ' entries') })
+                    ));
+                });
+                if (freefCols.length > 6) {
+                    addToMenu.appendChild(el('div', {
+                        className: 'bowire-header-addto-item-meta',
+                        style: 'padding:4px 12px 0',
+                        textContent: '+ ' + (freefCols.length - 6) + ' more in Collections'
+                    }));
+                }
+            }
+            addToMenu.appendChild(el('button', {
+                className: 'bowire-header-addto-item bowire-header-addto-item-create',
+                role: 'menuitem',
+                onClick: function () {
+                    if (typeof bowirePrompt !== 'function') return;
+                    bowirePrompt('Collection name', {
+                        title: 'New collection',
+                        placeholder: 'e.g. Smoke tests',
+                        confirmText: 'Create'
+                    }).then(function (name) {
+                        if (name === null) return;
+                        var trimmed = String(name || '').trim();
+                        if (typeof createCollection !== 'function'
+                            || typeof addToCollection !== 'function') return;
+                        var col = createCollection(trimmed || undefined);
+                        var snap = _snapshotFreeform();
+                        addToCollection(col.id, snap);
+                        if (typeof toast === 'function') {
+                            toast('Saved to "' + col.name + '"', 'success');
+                        }
+                        freeformAddToMenuOpen = false;
+                        render();
+                    });
+                }
+            },
+                el('span', { className: 'bowire-header-addto-item-icon', innerHTML: svgIcon('plus') }),
+                el('span', { textContent: 'New collection…' })
+            ));
+            freeformAddToWrap.appendChild(addToMenu);
         }
-        freeformReqTabs.appendChild(_ffTab('body', 'Payload'));
-        freeformReqTabs.appendChild(_ffTab('metadata', 'Metadata'));
-        freeformReqTabs.appendChild(_ffTab('mock', 'Mock'));
-        freeformReqPane.appendChild(freeformReqTabs);
-        // Tab-content wrappers — only one is .active at a time. URL
-        // row stays OUTSIDE the tabs as it's the cross-tab anchor
-        // (URL is always relevant regardless of which sub-tab the
-        // operator is editing).
-        var ffBodyTabContent = el('div', {
-            id: 'bowire-freeform-request-tab-content-body',
-            className: 'bowire-tab-content' + (freeformActiveRequestTab === 'body' ? ' active' : '')
-        });
-        var ffMetaTabContent = el('div', {
-            id: 'bowire-freeform-request-tab-content-metadata',
-            className: 'bowire-tab-content' + (freeformActiveRequestTab === 'metadata' ? ' active' : '')
-        });
-        var ffMockTabContent = el('div', {
-            id: 'bowire-freeform-request-tab-content-mock',
-            className: 'bowire-tab-content' + (freeformActiveRequestTab === 'mock' ? ' active' : '')
-        });
-        var freeformResPane = el('div', { className: 'bowire-pane bowire-freeform-res-pane' });
-        freeformResPane.appendChild(el('div', { className: 'bowire-pane-heading', textContent: 'Response' }));
-        var freeformDivider = el('div', { className: 'bowire-pane-divider' });
+        rightCluster.appendChild(freeformAddToWrap);
 
-        // Server URL — #252 grows a two-state toggle on the left of
-        // the field: 'Inline' (the URL lives on this request only,
-        // self-contained, no ref to anything central) and 'From
-        // Source' (the URL points at one of the workspace's Source
-        // URLs by string). When 'From Source' is picked, the text
-        // input is replaced with a <select> listing the workspace's
-        // managed Source URLs. Switching modes after typing prompts
-        // to persist-as-Source / discard so the operator doesn't
-        // silently lose their typed URL.
-        var urlRow = el('div', { className: 'bowire-freeform-row' });
-        urlRow.appendChild(el('label', { className: 'bowire-freeform-label', textContent: 'Server URL' }));
+        // Cancel button — discards the freeform draft.
+        rightCluster.appendChild(el('button', {
+            id: 'bowire-freeform-cancel-btn',
+            className: 'bowire-header-action-btn',
+            textContent: 'Cancel',
+            title: (fr._lineageHint && fr._lineageHint.sourceMethod)
+                ? 'Cancel — cloned from ' + fr._lineageHint.sourceMethod
+                : 'Discard this draft',
+            onClick: cancelFreeformRequest
+        }));
 
-        // urlMode default 'inline' — back-compat for records persisted
-        // before #252 landed.
+        header.appendChild(rightCluster);
+        pane.appendChild(header);
+
+        // ----- 2. URL row (identity-level, outside the tabs) -----
+        // URL is part of "what the call hits" — it determines which
+        // tabs make sense. Inline / From-Source toggle from #252.
+        var urlBar = el('div', { className: 'bowire-freeform-url-bar' });
+        urlBar.appendChild(el('span', {
+            className: 'bowire-freeform-url-bar-label',
+            textContent: 'URL'
+        }));
         if (fr.urlMode !== 'source') fr.urlMode = 'inline';
         var hasAnySources = (typeof serverUrls !== 'undefined'
             && Array.isArray(serverUrls) && serverUrls.length > 0);
-
         var modeWrap = el('div', { className: 'bowire-freeform-url-mode-wrap' });
         function _setUrlMode(next) {
             if (fr.urlMode === next) return;
-            // Switching FROM inline → source with a typed URL not yet
-            // in the Source list — prompt before discarding so the
-            // operator's work isn't silently lost.
             if (fr.urlMode === 'inline' && next === 'source'
                 && fr.serverUrl
                 && hasAnySources
@@ -392,7 +307,6 @@
                     bowireConfirm(
                         'Save "' + fr.serverUrl + '" as a workspace Source URL first?',
                         function () {
-                            // Confirm = persist as Source then switch.
                             try {
                                 if (serverUrls.indexOf(fr.serverUrl) < 0) {
                                     serverUrls.push(fr.serverUrl);
@@ -434,18 +348,17 @@
             type: 'button',
             className: 'bowire-freeform-url-mode-btn' + (fr.urlMode === 'source' ? ' is-active' : ''),
             title: hasAnySources
-                ? 'Bind URL to a workspace-managed Source — propagates renames + retirements'
-                : 'No Source URLs in this workspace yet — add one in Workspaces → Sources first',
+                ? 'Bind URL to a workspace-managed Source'
+                : 'No Source URLs in this workspace yet',
             disabled: !hasAnySources,
             textContent: 'From Source',
             onClick: function () { _setUrlMode('source'); }
         }));
-        urlRow.appendChild(modeWrap);
-
+        urlBar.appendChild(modeWrap);
         if (fr.urlMode === 'source' && hasAnySources) {
             var sourceSelect = el('select', {
                 id: 'bowire-freeform-url-select',
-                className: 'bowire-freeform-url-source-select',
+                className: 'bowire-freeform-url-source-select bowire-freeform-url-bar-input',
                 onChange: function (e) { fr.serverUrl = e.target.value; }
             });
             serverUrls.forEach(function (url) {
@@ -453,115 +366,69 @@
                 if (url === fr.serverUrl) opt.selected = true;
                 sourceSelect.appendChild(opt);
             });
-            urlRow.appendChild(sourceSelect);
+            urlBar.appendChild(sourceSelect);
         } else {
-            urlRow.appendChild(el('input', {
+            urlBar.appendChild(el('input', {
                 id: 'bowire-freeform-url-input',
                 type: 'text',
-                className: 'bowire-freeform-input',
+                className: 'bowire-freeform-url-bar-input',
                 value: fr.serverUrl,
                 placeholder: 'https://api.example.com or mqtt://broker:1883',
                 spellcheck: 'false',
                 onInput: function (e) { fr.serverUrl = e.target.value; }
             }));
         }
-        urlRowSlot.appendChild(urlRow);
+        pane.appendChild(urlBar);
 
-        // Service + Method rows retired — they're inputs in the
-        // editable header now (see freeformHeader above). The header
-        // re-renders on every keystroke so the protocol-icon + Service
-        // / Method label visible at the top of the pane always
-        // reflects the live state. Keeping a duplicate pair down here
-        // was the original duplication the user flagged.
+        // ----- 3. Content split (.bowire-content data-split) -----
+        var splitContent = el('div', {
+            className: 'bowire-content bowire-content-enter bowire-freeform-content',
+            'data-split': (typeof resolveSplitMode === 'function')
+                ? resolveSplitMode(splitMode) : (splitMode || 'horizontal')
+        });
+        var reqPane = el('div', { className: 'bowire-pane bowire-freeform-req-pane' });
+        reqPane.appendChild(el('div', { className: 'bowire-pane-heading', textContent: 'Request' }));
+        // Tab strip — Payload / Metadata / Mock, same classes as
+        // discovered-method's request-pane tabs.
+        var reqTabs = el('div', { id: 'bowire-freeform-request-tabs', className: 'bowire-tabs' });
+        function _ffTab(id, label) {
+            return el('div', {
+                id: 'bowire-freeform-request-tab-' + id,
+                className: 'bowire-tab' + (freeformActiveRequestTab === id ? ' active' : ''),
+                textContent: label,
+                onClick: function () { freeformActiveRequestTab = id; render(); }
+            });
+        }
+        reqTabs.appendChild(_ffTab('body', 'Payload'));
+        reqTabs.appendChild(_ffTab('metadata', 'Metadata'));
+        reqTabs.appendChild(_ffTab('mock', 'Mock'));
+        reqPane.appendChild(reqTabs);
 
-        // Request body
-        var bodyRow = el('div', { className: 'bowire-freeform-row bowire-freeform-body-row' });
-        bodyRow.appendChild(el('label', { className: 'bowire-freeform-label', textContent: 'Body' }));
+        // Payload tab — body editor.
+        var bodyTabContent = el('div', {
+            id: 'bowire-freeform-request-tab-content-body',
+            className: 'bowire-tab-content' + (freeformActiveRequestTab === 'body' ? ' active' : '')
+        });
         var bodyEditor = el('textarea', {
             className: 'bowire-editor',
-            placeholder: 'Enter JSON request body...',
+            placeholder: 'Enter JSON request body…',
             spellcheck: 'false',
-            style: 'min-height:120px'
+            style: 'min-height:200px'
         });
         bodyEditor.value = fr.body;
         bodyEditor.addEventListener('input', function () { fr.body = this.value; });
-        bodyRow.appendChild(bodyEditor);
-
-        // JSON validation
+        bodyTabContent.appendChild(bodyEditor);
         var jsonStatus = el('div', { className: 'bowire-json-status empty' });
-        bodyRow.appendChild(jsonStatus);
+        bodyTabContent.appendChild(jsonStatus);
         attachJsonValidator(bodyEditor, jsonStatus);
-        ffBodyTabContent.appendChild(bodyRow);
+        reqPane.appendChild(bodyTabContent);
 
-        // Mock Response section — collapsible. Lets the user author a
-        // mock response without hitting a live backend, which is the
-        // core GUI-Mock-Builder flow. An Execute pre-fills the textarea
-        // from the real response so the user can tweak then save.
-        var mockToggleRow = el('div', {
-            className: 'bowire-freeform-mock-toggle',
-            onClick: function () {
-                freeformMockExpanded = !freeformMockExpanded;
-                render();
-            }
-        },
-            el('span', {
-                className: 'bowire-freeform-mock-caret',
-                textContent: freeformMockExpanded ? '▼' : '▶'
-            }),
-            el('span', { textContent: 'Mock Response' }),
-            el('span', {
-                className: 'bowire-freeform-mock-hint',
-                textContent: freeformMockExpanded
-                    ? '— response the mock server will return for Save as Mock Step'
-                    : '— click to author a mock response without executing'
-            })
-        );
-        // The mock toggle becomes the Mock tab heading inside the
-        // dedicated Mock tab content — no longer a collapsible inline
-        // since the tab itself is the "collapse" affordance now.
-        // Mock toggle/caret retired; the tab strip provides the same
-        // affordance.
-        void mockToggleRow;
-        if (true) {  // always render mock content into the Mock tab
-            var mockBlock = el('div', { className: 'bowire-freeform-mock-block' });
-
-            var statusRow = el('div', { className: 'bowire-freeform-row' });
-            statusRow.appendChild(el('label', { className: 'bowire-freeform-label', textContent: 'Status' }));
-            statusRow.appendChild(el('input', {
-                id: 'bowire-freeform-mock-status-input',
-                type: 'text',
-                className: 'bowire-freeform-input',
-                value: fr.mockStatus,
-                placeholder: 'OK',
-                spellcheck: 'false',
-                onInput: function (e) { fr.mockStatus = e.target.value; }
-            }));
-            mockBlock.appendChild(statusRow);
-
-            var mockBodyRow = el('div', { className: 'bowire-freeform-row bowire-freeform-body-row' });
-            mockBodyRow.appendChild(el('label', { className: 'bowire-freeform-label', textContent: 'Response' }));
-            var mockEditor = el('textarea', {
-                id: 'bowire-freeform-mock-body',
-                className: 'bowire-editor',
-                placeholder: 'JSON response body the mock server will return...',
-                spellcheck: 'false',
-                style: 'min-height:100px'
-            });
-            mockEditor.value = fr.mockResponse;
-            mockEditor.addEventListener('input', function () { fr.mockResponse = this.value; });
-            mockBodyRow.appendChild(mockEditor);
-            var mockStatusLine = el('div', { className: 'bowire-json-status empty' });
-            mockBodyRow.appendChild(mockStatusLine);
-            attachJsonValidator(mockEditor, mockStatusLine);
-            mockBlock.appendChild(mockBodyRow);
-
-            ffMockTabContent.appendChild(mockBlock);
-        }
-
-        // ---- Metadata tab content ----
-        // Simple key/value pairs editor — minimal for now, parity with
-        // the discovered method's Metadata sub-tab is the next layer
-        // of polish (left for a follow-up under #40).
+        // Metadata tab — key/value rows, one trailing empty row so
+        // the operator can add a new pair without clicking '+' first.
+        var metaTabContent = el('div', {
+            id: 'bowire-freeform-request-tab-content-metadata',
+            className: 'bowire-tab-content' + (freeformActiveRequestTab === 'metadata' ? ' active' : '')
+        });
         var metaRowsWrap = el('div', { className: 'bowire-freeform-meta-rows' });
         var metaPairs = [];
         if (fr.metadata && typeof fr.metadata === 'object') {
@@ -569,8 +436,6 @@
                 metaPairs.push({ key: k, value: String(fr.metadata[k]) });
             });
         }
-        // Always show one trailing empty row so the operator can add
-        // a new pair without clicking '+' first.
         metaPairs.push({ key: '', value: '' });
         function _writeMeta() {
             var next = {};
@@ -587,10 +452,7 @@
                 value: p.key,
                 placeholder: 'Header name',
                 spellcheck: 'false',
-                onInput: function (e) {
-                    metaPairs[idx].key = e.target.value;
-                    _writeMeta();
-                }
+                onInput: function (e) { metaPairs[idx].key = e.target.value; _writeMeta(); }
             }));
             row.appendChild(el('input', {
                 type: 'text',
@@ -598,23 +460,52 @@
                 value: p.value,
                 placeholder: 'Value',
                 spellcheck: 'false',
-                onInput: function (e) {
-                    metaPairs[idx].value = e.target.value;
-                    _writeMeta();
-                }
+                onInput: function (e) { metaPairs[idx].value = e.target.value; _writeMeta(); }
             }));
             metaRowsWrap.appendChild(row);
         });
-        ffMetaTabContent.appendChild(metaRowsWrap);
+        metaTabContent.appendChild(metaRowsWrap);
+        reqPane.appendChild(metaTabContent);
 
-        // Append the tab content containers in the same order as the
-        // tab strip. Only the .active one renders visible content (CSS
-        // .bowire-tab-content rules).
-        freeformReqPane.appendChild(ffBodyTabContent);
-        freeformReqPane.appendChild(ffMetaTabContent);
-        freeformReqPane.appendChild(ffMockTabContent);
+        // Mock tab — status + response body editor.
+        var mockTabContent = el('div', {
+            id: 'bowire-freeform-request-tab-content-mock',
+            className: 'bowire-tab-content' + (freeformActiveRequestTab === 'mock' ? ' active' : '')
+        });
+        var mockStatusRow = el('div', { className: 'bowire-freeform-row' });
+        mockStatusRow.appendChild(el('label', { className: 'bowire-freeform-label', textContent: 'Status' }));
+        mockStatusRow.appendChild(el('input', {
+            id: 'bowire-freeform-mock-status-input',
+            type: 'text',
+            className: 'bowire-freeform-input',
+            value: fr.mockStatus,
+            placeholder: 'OK',
+            spellcheck: 'false',
+            onInput: function (e) { fr.mockStatus = e.target.value; }
+        }));
+        mockTabContent.appendChild(mockStatusRow);
+        var mockBodyRow = el('div', { className: 'bowire-freeform-row bowire-freeform-body-row' });
+        mockBodyRow.appendChild(el('label', { className: 'bowire-freeform-label', textContent: 'Response' }));
+        var mockEditor = el('textarea', {
+            id: 'bowire-freeform-mock-body',
+            className: 'bowire-editor',
+            placeholder: 'JSON response body the mock server will return…',
+            spellcheck: 'false',
+            style: 'min-height:160px'
+        });
+        mockEditor.value = fr.mockResponse;
+        mockEditor.addEventListener('input', function () { fr.mockResponse = this.value; });
+        mockBodyRow.appendChild(mockEditor);
+        var mockJsonStatus = el('div', { className: 'bowire-json-status empty' });
+        mockBodyRow.appendChild(mockJsonStatus);
+        attachJsonValidator(mockEditor, mockJsonStatus);
+        mockTabContent.appendChild(mockBodyRow);
+        reqPane.appendChild(mockTabContent);
 
-        // ---- Response pane content (right side of the split) ----
+        // Response pane — last response output, problem+json, or
+        // empty hint.
+        var resPane = el('div', { className: 'bowire-pane bowire-freeform-res-pane' });
+        resPane.appendChild(el('div', { className: 'bowire-pane-heading', textContent: 'Response' }));
         if (responseError || responseData) {
             if (responseError) {
                 var errOut = el('div', { className: 'bowire-response-output error' });
@@ -623,29 +514,28 @@
                 else errOut.textContent = (typeof responseError === 'string')
                     ? responseError
                     : problemTitle(responseError, 'Request failed');
-                freeformResPane.appendChild(errOut);
+                resPane.appendChild(errOut);
             } else if (responseData) {
                 var output = el('div', { className: 'bowire-response-output is-interactive' });
                 output.innerHTML = highlightJsonInteractive(responseData);
-                freeformResPane.appendChild(output);
+                resPane.appendChild(output);
             }
         } else {
-            freeformResPane.appendChild(el('div', {
+            resPane.appendChild(el('div', {
                 className: 'bowire-response-empty',
                 textContent: 'Execute the request to see the response here.'
             }));
         }
-        splitContent.appendChild(freeformReqPane);
-        splitContent.appendChild(freeformDivider);
-        splitContent.appendChild(freeformResPane);
+        var divider = el('div', { className: 'bowire-pane-divider' });
+        splitContent.appendChild(reqPane);
+        splitContent.appendChild(divider);
+        splitContent.appendChild(resPane);
         pane.appendChild(splitContent);
-        requestAnimationFrame(function () { initResizer(freeformDivider, freeformReqPane, freeformResPane); });
+        requestAnimationFrame(function () { initResizer(divider, reqPane, resPane); });
 
-        // ---- Action bar — Execute + Save buttons in the bottom
-        // status-line strip, mirroring the discovered-method's
-        // renderActionBar layout. Sticky at the bottom of the pane.
-        var actions = el('div', { className: 'bowire-action-bar bowire-freeform-action-bar' });
-        actions.appendChild(el('button', {
+        // ----- 4. Action bar (.bowire-action-bar) at the bottom -----
+        var actionBar = el('div', { className: 'bowire-action-bar bowire-freeform-action-bar' });
+        actionBar.appendChild(el('button', {
             id: 'bowire-freeform-execute-btn',
             className: 'bowire-execute-btn',
             onClick: function () { executeFreeformRequest(); }
@@ -653,7 +543,7 @@
             el('span', { innerHTML: svgIcon('play'), style: 'width:14px;height:14px;display:flex' }),
             el('span', { textContent: 'Execute' })
         ));
-        actions.appendChild(el('button', {
+        actionBar.appendChild(el('button', {
             id: 'bowire-freeform-save-mock-btn',
             className: 'bowire-repeat-btn',
             title: 'Save this request + response as a mock step in the active recording',
@@ -662,7 +552,7 @@
             el('span', { innerHTML: svgIcon('record'), style: 'width:14px;height:14px;display:flex' }),
             el('span', { textContent: 'Save as Mock Step' })
         ));
-        actions.appendChild(el('button', {
+        actionBar.appendChild(el('button', {
             id: 'bowire-freeform-save-btn',
             className: 'bowire-repeat-btn',
             title: 'Save this request to a collection',
@@ -678,7 +568,8 @@
                         body: fr.body,
                         messages: [fr.body],
                         metadata: null,
-                        serverUrl: fr.serverUrl
+                        serverUrl: fr.serverUrl,
+                        urlMode: fr.urlMode || 'inline'
                     });
                 } else {
                     addToCollection(collectionsList[0].id, {
@@ -689,7 +580,8 @@
                         body: fr.body,
                         messages: [fr.body],
                         metadata: null,
-                        serverUrl: fr.serverUrl
+                        serverUrl: fr.serverUrl,
+                        urlMode: fr.urlMode || 'inline'
                     });
                 }
                 toast('Saved to collection', 'success');
@@ -698,12 +590,11 @@
             el('span', { innerHTML: svgIcon('folder'), style: 'width:14px;height:14px;display:flex' }),
             el('span', { textContent: 'Save to Collection' })
         ));
-        pane.appendChild(actions);
-        // Response is now rendered into the split's right pane above
-        // (freeformResPane). The inline trailing response section
-        // that used to live here is retired.
+        pane.appendChild(actionBar);
+
         return pane;
     }
+
 
     async function executeFreeformRequest() {
         if (!freeformRequest) return;
