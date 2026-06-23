@@ -222,6 +222,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [238](https://github.com/Kuestenlogik/Bowire/issues/238) | Bowire | [Map widget: trajectory LineString between sequential frames](#issue-kuestenlogik-bowire-238) | ⬜ Backlog |  |
 | [239](https://github.com/Kuestenlogik/Bowire/issues/239) | Bowire | [Map widget: time-scrubber + playback for accumulated streams](#issue-kuestenlogik-bowire-239) | ⬜ Backlog |  |
 | [240](https://github.com/Kuestenlogik/Bowire/issues/240) | Bowire | [Map widget: per-entity grouping via configurable track-id field](#issue-kuestenlogik-bowire-240) | ⬜ Backlog |  |
+| [256](https://github.com/Kuestenlogik/Bowire/issues/256) | Bowire | [Freeform builder: schema-free ad-hoc REST — URL + verb + body, Postman-style](#issue-kuestenlogik-bowire-256) | ⬜ Backlog |  |
 
 ## Details
 
@@ -946,6 +947,10 @@ Add a **time-scrubber + playback control** to the map widget for stream-driven s
 #### <a id="issue-kuestenlogik-bowire-240"></a>⬜ Backlog · [#240](https://github.com/Kuestenlogik/Bowire/issues/240) Map widget: per-entity grouping via configurable track-id field
 
 Group stream frames by an explicit **track identifier** so the map can show N parallel entities — each with its own colour, trajectory, selection state — instead of merging everything into one pile of pins. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/240)
+
+#### <a id="issue-kuestenlogik-bowire-256"></a>⬜ Backlog · [#256](https://github.com/Kuestenlogik/Bowire/issues/256) Freeform builder: schema-free ad-hoc REST — URL + verb + body, Postman-style
+
+The freeform request builder today requires a `service` + `method` name even when the operator just wants to `POST https://api.example.com/foo` with a body. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/256)
 
 ---
 
