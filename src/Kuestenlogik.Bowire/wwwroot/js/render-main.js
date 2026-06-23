@@ -144,13 +144,23 @@
         );
         pane.appendChild(header);
 
-        // Protocol picker — replaced the native <select> with a
-        // button + popover so each option can show the protocol's
-        // icon next to the name (native <option> elements can't
-        // render markup). Same data source (protocols list) + same
-        // methodType snap as the old select; just a different shell.
-        var protoRow = el('div', { className: 'bowire-freeform-row' });
-        protoRow.appendChild(el('label', { className: 'bowire-freeform-label', textContent: 'Protocol' }));
+        // Top action-bar — Protocol + Method type live here above
+        // the form so the operator picks the request SHAPE first
+        // (which determines what parameters the form below shows),
+        // then parameterises it. The form below is scoped to the
+        // picked shape: Unary shows body + metadata; streaming/
+        // duplex shows the per-message editor + connection chrome;
+        // SSE shows event-stream subscribe controls. Visually a
+        // divider separates "what kind of call" from "the call's
+        // parameters" so the two layers read at a glance.
+        var topBar = el('div', { className: 'bowire-freeform-topbar' });
+
+        // Protocol picker — button + popover so each option can show
+        // the protocol's icon next to its name (native <option>
+        // elements can't carry markup). Same data source (protocols
+        // list) + same methodType snap as the old <select>.
+        var protoRow = el('div', { className: 'bowire-freeform-topbar-section' });
+        protoRow.appendChild(el('label', { className: 'bowire-freeform-topbar-label', textContent: 'Protocol' }));
         var protoOptions = protocols.length > 0
             ? protocols
             : [{ id: 'grpc', name: 'gRPC' }, { id: 'rest', name: 'REST' }, { id: 'graphql', name: 'GraphQL' },
@@ -227,34 +237,45 @@
             protoPickerWrap.appendChild(protoMenu);
         }
         protoRow.appendChild(protoPickerWrap);
+        topBar.appendChild(protoRow);
 
-        // Method type — filtered to what the selected protocol can do.
+        // Method type — segmented button bar. The single-shape case
+        // (REST = Unary only, MQTT = Duplex only) renders as a
+        // non-interactive chip so the operator still sees the shape
+        // without an empty button cluster. The multi-shape case
+        // (gRPC has Unary / ServerStreaming / ClientStreaming /
+        // Duplex) shows one button per shape; clicking sets fr.methodType.
         var supportedTypes = getSupportedMethodTypes(fr.protocol);
+        var typeRow = el('div', { className: 'bowire-freeform-topbar-section' });
+        typeRow.appendChild(el('label', { className: 'bowire-freeform-topbar-label', textContent: 'Type' }));
         if (supportedTypes.length > 1) {
-            var typeSelect = el('select', {
-                id: 'bowire-freeform-type-select',
-                className: 'bowire-freeform-select',
-                style: 'margin-left:8px;width:auto',
-                onChange: function (e) { fr.methodType = e.target.value; }
+            var typeSeg = el('div', { className: 'bowire-freeform-type-seg' });
+            supportedTypes.forEach(function (t) {
+                typeSeg.appendChild(el('button', {
+                    type: 'button',
+                    className: 'bowire-freeform-type-seg-btn'
+                        + (t === fr.methodType ? ' is-active' : ''),
+                    title: t,
+                    textContent: t,
+                    onClick: function () {
+                        if (fr.methodType === t) return;
+                        fr.methodType = t;
+                        render();
+                    }
+                }));
             });
-            for (var ti = 0; ti < supportedTypes.length; ti++) {
-                var topt = el('option', { value: supportedTypes[ti], textContent: supportedTypes[ti] });
-                if (supportedTypes[ti] === fr.methodType) topt.selected = true;
-                typeSelect.appendChild(topt);
-            }
-            protoRow.appendChild(typeSelect);
+            typeRow.appendChild(typeSeg);
         } else {
-            // Single-shape protocol (REST = Unary only, MQTT = Duplex
-            // only, …). Render as a read-only chip so the operator
-            // sees what shape the call is, without a picker that has
-            // exactly one option.
-            protoRow.appendChild(el('span', {
+            typeRow.appendChild(el('span', {
                 className: 'bowire-freeform-type-chip',
-                style: 'margin-left:8px;padding:6px 10px;font-size:12px;color:var(--bowire-text-secondary);background:var(--bowire-surface);border:1px solid var(--bowire-border);border-radius:var(--bowire-radius-sm)',
                 textContent: supportedTypes[0]
             }));
         }
-        pane.appendChild(protoRow);
+        topBar.appendChild(typeRow);
+        pane.appendChild(topBar);
+        // Divider — visual separator between "what kind of call" and
+        // "the call's parameters" so the two layers read as distinct.
+        pane.appendChild(el('div', { className: 'bowire-freeform-divider' }));
 
         // Server URL — #252 grows a two-state toggle on the left of
         // the field: 'Inline' (the URL lives on this request only,
