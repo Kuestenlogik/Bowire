@@ -3140,8 +3140,26 @@
         }
         if (!tab) return;
 
-        // Clear freeform mode if active — switching to a tab exits freeform
-        freeformRequest = null;
+        // Persist any live freeform draft onto the tab the operator
+        // is leaving so a quick detour into another method tab + back
+        // restores the same draft instead of snapping to the
+        // discovered method's original shape. The freeform record
+        // captures the editable state (URL, body, headers, …) and is
+        // re-hydrated by the target-tab restore branch below.
+        if (freeformRequest && activeTabId) {
+            for (var oi = 0; oi < requestTabs.length; oi++) {
+                if (requestTabs[oi].id === activeTabId) {
+                    requestTabs[oi].freeform = freeformRequest;
+                    break;
+                }
+            }
+        }
+        // Restore the target tab's pinned freeform draft (if any) —
+        // clearing freeformRequest unconditionally turned every
+        // 'As new request' clone into a one-shot detour that lost
+        // its state the moment the operator alt-tabbed to compare
+        // against another method.
+        freeformRequest = tab.freeform || null;
 
         stashCurrentChannel();
         saveCurrentMethodState();
