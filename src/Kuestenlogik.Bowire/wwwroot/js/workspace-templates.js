@@ -74,10 +74,18 @@
         {
             id: 'grpc',
             label: 'gRPC services',
-            description: 'A gRPC URL prefix ready for a `.proto` upload, plus a `service` + `method` placeholder globals.',
+            description: 'A gRPC URL prefix pointing at grpcb.in (server-reflection enabled). Without reflection or a .proto upload, the services tree stays empty — the URL is a placeholder for your own gRPC backend.',
             icon: 'connect',
             apply: function (wsId) {
-                _templateWriteUrls(wsId, ['grpc@grpc.postman-echo.com:443']);
+                // grpcb.in (port 9001 grpc, 443 grpcs) is a public
+                // reflection-enabled gRPC test backend maintained by
+                // the gRPC community. Previous template pointed at
+                // grpc.postman-echo.com which returns HTTP 502 / is
+                // not actually a gRPC endpoint; swapped to grpcb.in
+                // so the discover tree populates on first connect
+                // (Bowire's gRPC plugin walks server reflection
+                // automatically when present).
+                _templateWriteUrls(wsId, ['grpcs@grpcb.in:443']);
                 _templateWriteGlobals(wsId, {
                     service: 'YourService',
                     method: 'YourMethod'
@@ -93,10 +101,16 @@
         {
             id: 'mock',
             label: 'Mock server build',
-            description: 'A starter URL pointed at postman-echo, plus an empty collection ready to capture recordings as mock fixtures.',
+            description: 'Petstore (discovery-enabled) plus an empty Mock targets collection ready to capture recordings as mock fixtures. Record-then-replay workflow ready to go.',
             icon: 'recording',
             apply: function (wsId) {
-                _templateWriteUrls(wsId, ['https://www.postman-echo.com']);
+                // Postman-echo is a generic-HTTP-echo service that
+                // exposes no service catalogue — the Discover rail
+                // landed at 0 services / 0 methods. Petstore exposes
+                // OpenAPI 2.0 at /v2/swagger.json so the workspace
+                // arrives with a populated Pet / Store / User tree
+                // ready to record against.
+                _templateWriteUrls(wsId, ['https://petstore.swagger.io/v2']);
                 _templateWriteCollections(wsId, [{
                     id: 'col_mock_targets',
                     name: 'Mock targets',
@@ -108,17 +122,17 @@
         {
             id: 'multi',
             label: 'Multi-protocol smoke test',
-            description: 'REST + WebSocket + gRPC URLs in one workspace, ready for cross-protocol coverage runs.',
+            description: 'Petstore REST + a public WebSocket echo + grpcb.in for gRPC reflection. Three different wire formats in one workspace — ready for cross-protocol coverage runs.',
             icon: 'layers',
             apply: function (wsId) {
                 _templateWriteUrls(wsId, [
-                    'https://httpbin.org',
-                    'ws://echo.websocket.org',
-                    'grpc@grpc.postman-echo.com:443'
+                    'https://petstore.swagger.io/v2',
+                    'wss://ws.postman-echo.com/raw',
+                    'grpcs@grpcb.in:443'
                 ]);
                 _templateWriteGlobals(wsId, {
-                    baseUrl: 'https://httpbin.org',
-                    wsUrl: 'ws://echo.websocket.org'
+                    baseUrl: 'https://petstore.swagger.io/v2',
+                    wsUrl: 'wss://ws.postman-echo.com/raw'
                 });
             }
         }
