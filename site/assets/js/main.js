@@ -83,9 +83,29 @@ if (toggle && nav) {
 
     function navOverflows() {
         // headerInner is a CSS grid (1fr auto 1fr). The nav lives in
-        // the centre `auto` column — when its content's intrinsic width
-        // exceeds what the grid hands it, scrollWidth > clientWidth.
-        return headerNav.scrollWidth > headerNav.clientWidth + 1;
+        // the centre `auto` column; logo + actions split the two 1fr
+        // columns. The auto column can grow until its natural width
+        // EATS INTO the 1fr columns — the grid shrinks the 1fr cells
+        // below their content's min-width, which truncates the right-
+        // hand action icons WITHOUT making nav.scrollWidth exceed
+        // nav.clientWidth (the nav cell is happily larger). So checking
+        // nav-overflow alone misses the symptom the user reported.
+        //
+        // Detect on three axes:
+        //   1. Nav itself overflows its column (rare — grid auto-sizes)
+        //   2. Actions container truncates its icons (the common case)
+        //   3. Computed columns total > inner width minus gaps (a
+        //      defensive whole-row check that catches both above)
+        if (headerNav.scrollWidth > headerNav.clientWidth + 1) return true;
+        if (actions.scrollWidth > actions.clientWidth + 1) return true;
+
+        const innerStyle = window.getComputedStyle(headerInner);
+        const gap = parseFloat(innerStyle.columnGap || innerStyle.gap || '0') || 0;
+        // 8 px slack so we collapse a hair BEFORE the tools start
+        // visibly trimming — avoids the user seeing a flicker between
+        // "tools still showing" and "first letter cut off".
+        const need = logo.offsetWidth + headerNav.scrollWidth + actions.scrollWidth + (gap * 2);
+        return need > headerInner.clientWidth - 8;
     }
 
     function closePanel() {
