@@ -3339,6 +3339,10 @@
     // hitting a live backend. A successful Execute auto-populates them
     // so the user can tweak the real response before freezing it.
     let freeformMockExpanded = false;
+    // #246 — Open/close state for the freeform-builder header's
+    // '+ Add to…' collection picker. Same pattern as
+    // methodAddToMenuOpen for discovered methods.
+    let freeformAddToMenuOpen = false;
 
     function startFreeformRequest() {
         freeformRequest = {

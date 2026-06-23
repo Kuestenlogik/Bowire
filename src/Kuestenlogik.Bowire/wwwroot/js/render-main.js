@@ -3,87 +3,137 @@
         var fr = freeformRequest;
         var pane = el('div', { className: 'bowire-env-editor-main' });
 
-        // Header
-        // #246 — when this freeform builder is editing a SAVED ad-hoc
-        // request (fr._adHocId is set) the title reflects that + the
-        // header carries a Save-changes button. Compose-from-scratch
-        // gets the "Save as request" CTA which persists the snapshot
-        // into the Collections-rail Ad-hoc Requests section.
-        var isExistingAdHoc = fr && fr._adHocId
-            && typeof adHocRequests !== 'undefined'
-            && adHocRequests.some(function (r) { return r.id === fr._adHocId; });
-        var headerTitle = isExistingAdHoc
-            ? (adHocRequests.find(function (r) { return r.id === fr._adHocId; }) || {}).name || 'Ad-hoc request'
+        // Header — title + "+ Add to..." collection picker + Cancel.
+        // The freeform request is SELF-CONTAINED: its URL lives inline
+        // on the saved item, not as a reference to one of the
+        // workspace's centrally-managed Source URLs. The operator who
+        // wants the URL to come from a Source uses 'New from source…'
+        // instead (separate entry-point, see follow-up). Adding to a
+        // collection writes the request shape as-is, URL and all.
+        var headerTitle = (fr._lineageHint && fr._lineageHint.sourceMethod)
+            ? 'New Request — cloned: ' + fr._lineageHint.sourceMethod
             : 'New Request';
-        var saveBtnLabel = isExistingAdHoc ? 'Save changes' : 'Save as request';
-        var saveBtn = el('button', {
-            id: 'bowire-freeform-save-btn',
-            className: 'bowire-env-editor-action-btn bowire-env-editor-action-primary',
-            textContent: saveBtnLabel,
-            title: isExistingAdHoc
-                ? 'Save changes to this ad-hoc request'
-                : 'Save this request to the Ad-hoc Requests section so it survives a reload',
-            onClick: function () {
-                if (typeof saveCurrentFreeformAsAdHoc !== 'function') return;
-                if (isExistingAdHoc) {
-                    try {
-                        saveCurrentFreeformAsAdHoc({});
-                        if (typeof toast === 'function') toast('Changes saved', 'success');
-                    } catch (e) {
-                        if (typeof toast === 'function') toast('Save failed: ' + (e && e.message), 'error');
-                    }
-                    render();
-                    return;
-                }
-                // Fresh compose: ask for a name so the operator names
-                // the persisted record meaningfully.
-                if (typeof bowirePrompt !== 'function') {
-                    try {
-                        saveCurrentFreeformAsAdHoc({});
-                        if (typeof toast === 'function') toast('Saved', 'success');
-                    } catch (e) { /* ignore */ }
-                    render();
-                    return;
-                }
-                // Default name: prefer the lineage hint when this
-                // freeform was opened via "As new request" (#245) so
-                // the operator sees "cloned: PetService/GetPet" pre-
-                // filled instead of having to retype the source.
-                var defaultName = fr._defaultSaveName
-                    || ((fr.service && fr.method) ? (fr.service + '/' + fr.method)
-                        : fr.method || ((fr.protocol || 'request') + ' request'));
-                bowirePrompt('Name this request', {
-                    title: 'Save as ad-hoc request',
-                    defaultValue: defaultName,
-                    confirmText: 'Save',
-                    validator: function (v) {
-                        return String(v || '').trim() ? null : 'Name required';
-                    }
-                }).then(function (name) {
-                    if (!name) return;
-                    try {
-                        saveCurrentFreeformAsAdHoc({
-                            name: name,
-                            lineage: fr._lineageHint || { kind: 'compose' }
-                        });
-                        if (typeof toast === 'function') {
-                            toast('Saved "' + name + '" to Ad-hoc requests', 'success');
-                        }
-                        render();
-                    } catch (e) {
-                        if (typeof toast === 'function') toast('Save failed: ' + (e && e.message), 'error');
-                    }
-                });
+
+        // "+ Add to..." button — opens a small picker of the workspace's
+        // collections. Same affordance as the discovered-method
+        // header's '+ Add to…', scoped to collections only (the
+        // freeform shape can't anchor to a preset / envelope / etc
+        // because it isn't tied to a (service, method) pair).
+        var freeformAddToWrap = el('div', { className: 'bowire-header-addto-wrap' });
+        freeformAddToWrap.appendChild(el('button', {
+            id: 'bowire-freeform-addto-btn',
+            className: 'bowire-header-addto-btn' + (freeformAddToMenuOpen ? ' active' : ''),
+            title: 'Add this request to a collection',
+            'aria-label': 'Add to collection',
+            'aria-haspopup': 'menu',
+            'aria-expanded': freeformAddToMenuOpen ? 'true' : 'false',
+            innerHTML: svgIcon('plus'),
+            onClick: function (e) {
+                e.stopPropagation();
+                freeformAddToMenuOpen = !freeformAddToMenuOpen;
+                render();
             }
-        });
+        }));
+
+        if (freeformAddToMenuOpen) {
+            var menu = el('div', {
+                className: 'bowire-header-addto-menu',
+                role: 'menu',
+                onClick: function (e) { e.stopPropagation(); }
+            });
+            function _snapshotFreeform() {
+                return {
+                    // Self-contained: every field lives ON the item,
+                    // no reference to workspace state. A future schema
+                    // upload, env-var rename, or Source URL retirement
+                    // does not silently break the saved item.
+                    service: fr.service || '',
+                    method: fr.method || '',
+                    methodType: fr.methodType || 'Unary',
+                    protocol: fr.protocol || 'rest',
+                    body: fr.body || '{}',
+                    messages: [fr.body || '{}'],
+                    metadata: (fr.metadata && Object.keys(fr.metadata).length > 0) ? fr.metadata : null,
+                    serverUrl: fr.serverUrl || null,
+                    // Discriminator so the collection-item view can
+                    // tell ad-hoc requests apart from discovered-method
+                    // entries (different glyph, no service-tree
+                    // navigation on click).
+                    kind: 'ad-hoc',
+                    lineage: fr._lineageHint || { kind: 'compose' }
+                };
+            }
+            menu.appendChild(el('div', { className: 'bowire-header-addto-section', textContent: 'Collection' }));
+            var freefCols = (typeof collectionsList !== 'undefined' && Array.isArray(collectionsList))
+                ? collectionsList : [];
+            if (freefCols.length > 0) {
+                freefCols.slice(0, 6).forEach(function (col) {
+                    menu.appendChild(el('button', {
+                        className: 'bowire-header-addto-item',
+                        role: 'menuitem',
+                        onClick: function () {
+                            var snap = _snapshotFreeform();
+                            if (typeof addToCollection === 'function') {
+                                addToCollection(col.id, snap);
+                                if (typeof toast === 'function') {
+                                    toast('Added to "' + col.name + '"', 'success');
+                                }
+                            }
+                            freeformAddToMenuOpen = false;
+                            render();
+                        }
+                    },
+                        el('span', { className: 'bowire-header-addto-item-icon', innerHTML: svgIcon('folder') }),
+                        el('span', { textContent: col.name }),
+                        el('span', { className: 'bowire-header-addto-item-meta', textContent: (col.items || []).length + ((col.items || []).length === 1 ? ' entry' : ' entries') })
+                    ));
+                });
+                if (freefCols.length > 6) {
+                    menu.appendChild(el('div', {
+                        className: 'bowire-header-addto-item-meta',
+                        style: 'padding:4px 12px 0',
+                        textContent: '+ ' + (freefCols.length - 6) + ' more in Collections'
+                    }));
+                }
+            }
+            menu.appendChild(el('button', {
+                className: 'bowire-header-addto-item bowire-header-addto-item-create',
+                role: 'menuitem',
+                onClick: function () {
+                    if (typeof bowirePrompt !== 'function') return;
+                    bowirePrompt('Collection name', {
+                        title: 'New collection',
+                        placeholder: 'e.g. Smoke tests',
+                        confirmText: 'Create'
+                    }).then(function (name) {
+                        if (name === null) return;
+                        var trimmed = String(name || '').trim();
+                        if (typeof createCollection !== 'function'
+                            || typeof addToCollection !== 'function') return;
+                        var col = createCollection(trimmed || undefined);
+                        var snap = _snapshotFreeform();
+                        addToCollection(col.id, snap);
+                        if (typeof toast === 'function') {
+                            toast('Saved to "' + col.name + '"', 'success');
+                        }
+                        freeformAddToMenuOpen = false;
+                        render();
+                    });
+                }
+            },
+                el('span', { className: 'bowire-header-addto-item-icon', innerHTML: svgIcon('plus') }),
+                el('span', { textContent: 'New collection…' })
+            ));
+            freeformAddToWrap.appendChild(menu);
+        }
         var header = el('div', { className: 'bowire-env-editor-header' },
             el('h2', { className: 'bowire-env-editor-title', textContent: headerTitle }),
             el('span', { style: 'flex:1' }),
-            saveBtn,
+            freeformAddToWrap,
             el('button', {
                 id: 'bowire-freeform-cancel-btn',
                 className: 'bowire-env-editor-action-btn',
-                textContent: isExistingAdHoc ? 'Close' : 'Cancel',
+                textContent: 'Cancel',
                 onClick: cancelFreeformRequest
             })
         );
