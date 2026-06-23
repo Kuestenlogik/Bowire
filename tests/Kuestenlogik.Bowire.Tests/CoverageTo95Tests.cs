@@ -199,7 +199,22 @@ public sealed class CoverageTo95Tests
 
         public MapBowireTestAppFactory(BowireMode mode)
         {
-            var builder = WebApplication.CreateSlimBuilder();
+            // Pin ContentRoot to AppContext.BaseDirectory (the test
+            // assembly's own bin/ folder) so this factory survives
+            // cross-test pollution: a sibling test in the same
+            // assembly toggles Environment.CurrentDirectory inside a
+            // try/finally for a relative-path test, and if its
+            // finally races with our CreateSlimBuilder() the builder
+            // reads the not-yet-restored cwd as ContentRoot. When
+            // the sibling's Dispose() then deletes that tmp dir,
+            // builder.Build() throws ArgumentException 'content root
+            // does not exist'. Anchoring at AppContext.BaseDirectory
+            // sidesteps the race entirely — the test bin/ always
+            // exists for the lifetime of the run.
+            var builder = WebApplication.CreateSlimBuilder(new WebApplicationOptions
+            {
+                ContentRootPath = AppContext.BaseDirectory,
+            });
             builder.Logging.ClearProviders();
             builder.WebHost.ConfigureKestrel(o =>
                 o.Listen(IPAddress.Loopback, 0, l => l.Protocols = HttpProtocols.Http1));

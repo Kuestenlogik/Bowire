@@ -964,16 +964,26 @@
     }
     function getUrlMeta(url) {
         if (!url) return {};
+        // Boot-order guard: var urlMeta = {} (line 956) is hoisted to
+        // undefined but only ASSIGNED later, while these accessors are
+        // hoisted as function declarations and reachable from boot-time
+        // call paths like serverUrls.forEach(ensureAliasForUrl) at line
+        // 293. Without the guard, the very first ensureAliasForUrl call
+        // — which routes through setUrlMeta — explodes with
+        // "Cannot read properties of undefined (reading '<url>')".
+        if (typeof urlMeta === 'undefined' || urlMeta == null) return {};
         return Object.assign({}, urlMeta[url] || {});
     }
     function setUrlMeta(url, patch) {
         if (!url || !patch) return;
+        if (typeof urlMeta === 'undefined' || urlMeta == null) return;
         if (!urlMeta[url]) urlMeta[url] = {};
         Object.assign(urlMeta[url], patch);
         persistUrlMeta();
     }
     function removeUrlMeta(url) {
         if (!url) return;
+        if (typeof urlMeta === 'undefined' || urlMeta == null) return;
         if (urlMeta[url]) { delete urlMeta[url]; persistUrlMeta(); }
     }
 
