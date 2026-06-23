@@ -2939,13 +2939,23 @@
             nameOf: function (e) { return e && e.name ? e.name : '(unnamed collection)'; }
         }));
 
-        // #246 — Ad-hoc Requests section. Pinned at the bottom of the
-        // Collections sidebar (above the trash drawer). Always present
-        // even when empty — its job is the "Compose new request" CTA
-        // which replaces the retired '+ New' in the Discover toolbar
-        // (#244). Saved ad-hoc requests show as click-to-open rows
-        // with rename + delete affordances.
-        sidebar.appendChild(_renderAdHocRequestsSection());
+        // #246 — The dedicated 'Ad-hoc Requests' section was retired
+        // after operator feedback: ad-hoc requests aren't collections,
+        // and mixing them into the Collections rail conflated two
+        // different mental models. The persistence + save flow now
+        // rides on the existing '+ Add to…' menu (parity with
+        // discovered methods), so any freeform request the operator
+        // wants to keep lands in a NAMED collection of their choice
+        // rather than a silent scratchpad pile. The compose entry-
+        // point design (where '+ Compose new request' lives + the
+        // 'New from source…' variant for centrally-managed URLs) is
+        // tracked in a follow-up issue; for now the only entry to
+        // the freeform builder is via the Execute-dropdown's 'As new
+        // request' on a discovered method.
+        //
+        // _renderAdHocRequestsSection kept in code (unused) so the
+        // workspace-tree integration in the follow-up can reuse the
+        // row-rendering shape without re-implementing it.
 
         return sidebar;
     }
