@@ -3427,6 +3427,9 @@
     // native <select> can't render icons next to options, so the
     // picker is a custom popover anchored on a button.
     let freeformProtocolPickerOpen = false;
+    // Active tab inside the freeform builder's request pane. Mirrors
+    // discovered-method's activeRequestTab — Payload / Metadata / Mock.
+    let freeformActiveRequestTab = 'body';
 
     function startFreeformRequest(opts) {
         opts = opts || {};

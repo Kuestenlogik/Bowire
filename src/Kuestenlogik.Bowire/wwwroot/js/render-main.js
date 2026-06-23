@@ -307,6 +307,39 @@
         });
         var freeformReqPane = el('div', { className: 'bowire-pane bowire-freeform-req-pane' });
         freeformReqPane.appendChild(el('div', { className: 'bowire-pane-heading', textContent: 'Request' }));
+        // Tab strip — Payload / Metadata / Mock, mirroring the
+        // discovered-method's request-pane tabs. Same classes
+        // (bowire-tabs / bowire-tab) so the existing CSS styles
+        // apply unchanged.
+        var freeformReqTabs = el('div', { id: 'bowire-freeform-request-tabs', className: 'bowire-tabs' });
+        function _ffTab(id, label) {
+            return el('div', {
+                id: 'bowire-freeform-request-tab-' + id,
+                className: 'bowire-tab' + (freeformActiveRequestTab === id ? ' active' : ''),
+                textContent: label,
+                onClick: function () { freeformActiveRequestTab = id; render(); }
+            });
+        }
+        freeformReqTabs.appendChild(_ffTab('body', 'Payload'));
+        freeformReqTabs.appendChild(_ffTab('metadata', 'Metadata'));
+        freeformReqTabs.appendChild(_ffTab('mock', 'Mock'));
+        freeformReqPane.appendChild(freeformReqTabs);
+        // Tab-content wrappers — only one is .active at a time. URL
+        // row stays OUTSIDE the tabs as it's the cross-tab anchor
+        // (URL is always relevant regardless of which sub-tab the
+        // operator is editing).
+        var ffBodyTabContent = el('div', {
+            id: 'bowire-freeform-request-tab-content-body',
+            className: 'bowire-tab-content' + (freeformActiveRequestTab === 'body' ? ' active' : '')
+        });
+        var ffMetaTabContent = el('div', {
+            id: 'bowire-freeform-request-tab-content-metadata',
+            className: 'bowire-tab-content' + (freeformActiveRequestTab === 'metadata' ? ' active' : '')
+        });
+        var ffMockTabContent = el('div', {
+            id: 'bowire-freeform-request-tab-content-mock',
+            className: 'bowire-tab-content' + (freeformActiveRequestTab === 'mock' ? ' active' : '')
+        });
         var freeformResPane = el('div', { className: 'bowire-pane bowire-freeform-res-pane' });
         freeformResPane.appendChild(el('div', { className: 'bowire-pane-heading', textContent: 'Response' }));
         var freeformDivider = el('div', { className: 'bowire-pane-divider' });
@@ -442,7 +475,7 @@
         var jsonStatus = el('div', { className: 'bowire-json-status empty' });
         bodyRow.appendChild(jsonStatus);
         attachJsonValidator(bodyEditor, jsonStatus);
-        freeformReqPane.appendChild(bodyRow);
+        ffBodyTabContent.appendChild(bodyRow);
 
         // Mock Response section — collapsible. Lets the user author a
         // mock response without hitting a live backend, which is the
@@ -467,9 +500,13 @@
                     : '— click to author a mock response without executing'
             })
         );
-        freeformReqPane.appendChild(mockToggleRow);
-
-        if (freeformMockExpanded) {
+        // The mock toggle becomes the Mock tab heading inside the
+        // dedicated Mock tab content — no longer a collapsible inline
+        // since the tab itself is the "collapse" affordance now.
+        // Mock toggle/caret retired; the tab strip provides the same
+        // affordance.
+        void mockToggleRow;
+        if (true) {  // always render mock content into the Mock tab
             var mockBlock = el('div', { className: 'bowire-freeform-mock-block' });
 
             var statusRow = el('div', { className: 'bowire-freeform-row' });
@@ -502,8 +539,64 @@
             attachJsonValidator(mockEditor, mockStatusLine);
             mockBlock.appendChild(mockBodyRow);
 
-            freeformReqPane.appendChild(mockBlock);
+            ffMockTabContent.appendChild(mockBlock);
         }
+
+        // ---- Metadata tab content ----
+        // Simple key/value pairs editor — minimal for now, parity with
+        // the discovered method's Metadata sub-tab is the next layer
+        // of polish (left for a follow-up under #40).
+        var metaRowsWrap = el('div', { className: 'bowire-freeform-meta-rows' });
+        var metaPairs = [];
+        if (fr.metadata && typeof fr.metadata === 'object') {
+            Object.keys(fr.metadata).forEach(function (k) {
+                metaPairs.push({ key: k, value: String(fr.metadata[k]) });
+            });
+        }
+        // Always show one trailing empty row so the operator can add
+        // a new pair without clicking '+' first.
+        metaPairs.push({ key: '', value: '' });
+        function _writeMeta() {
+            var next = {};
+            metaPairs.forEach(function (p) {
+                if (p.key && p.key.trim()) next[p.key.trim()] = p.value;
+            });
+            fr.metadata = next;
+        }
+        metaPairs.forEach(function (p, idx) {
+            var row = el('div', { className: 'bowire-freeform-meta-row' });
+            row.appendChild(el('input', {
+                type: 'text',
+                className: 'bowire-freeform-input',
+                value: p.key,
+                placeholder: 'Header name',
+                spellcheck: 'false',
+                onInput: function (e) {
+                    metaPairs[idx].key = e.target.value;
+                    _writeMeta();
+                }
+            }));
+            row.appendChild(el('input', {
+                type: 'text',
+                className: 'bowire-freeform-input',
+                value: p.value,
+                placeholder: 'Value',
+                spellcheck: 'false',
+                onInput: function (e) {
+                    metaPairs[idx].value = e.target.value;
+                    _writeMeta();
+                }
+            }));
+            metaRowsWrap.appendChild(row);
+        });
+        ffMetaTabContent.appendChild(metaRowsWrap);
+
+        // Append the tab content containers in the same order as the
+        // tab strip. Only the .active one renders visible content (CSS
+        // .bowire-tab-content rules).
+        freeformReqPane.appendChild(ffBodyTabContent);
+        freeformReqPane.appendChild(ffMetaTabContent);
+        freeformReqPane.appendChild(ffMockTabContent);
 
         // ---- Response pane content (right side of the split) ----
         if (responseError || responseData) {
