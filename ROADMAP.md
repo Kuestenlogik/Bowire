@@ -196,7 +196,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [11](https://github.com/Kuestenlogik/Bowire.Protocol.Surgewave/issues/11) | Protocol.Surgewave | [Light up Surgewave protocol plugin](#issue-kuestenlogik-bowire-protocol-surgewave-11) | ⬜ Backlog |  |
 | [13](https://github.com/Kuestenlogik/Bowire.Samples/issues/13) | Samples | [SimpleGraphQLSubscriptions sample](#issue-kuestenlogik-bowire-samples-13) | ⬜ Backlog | `area:plugin-sdk` |
 | [37](https://github.com/Kuestenlogik/Bowire/issues/37) | Bowire | [Bowire.Mcp — remaining tools + adapter modes](#issue-kuestenlogik-bowire-37) | ⬜ Backlog | `area:mcp` |
-| [40](https://github.com/Kuestenlogik/Bowire/issues/40) | Bowire | [Freeform Request Builder](#issue-kuestenlogik-bowire-40) | ⬜ Backlog | `area:workbench` |
 | [41](https://github.com/Kuestenlogik/Bowire/issues/41) | Bowire | [First RC of the new versioning discipline](#issue-kuestenlogik-bowire-41) | ⬜ Backlog | `area:multi` |
 | [44](https://github.com/Kuestenlogik/Bowire/issues/44) | Bowire | [Sidecar packaging — Docker / Compose / Kubernetes](#issue-kuestenlogik-bowire-44) | ⬜ Backlog | `area:docs` |
 | [46](https://github.com/Kuestenlogik/Bowire/issues/46) | Bowire | [MCP server-side notifications via IInlineSseSubscriber](#issue-kuestenlogik-bowire-46) | ⬜ Backlog | `area:mcp` |
@@ -829,12 +828,6 @@ Hand-rolled graphql-transport-ws server (or HotChocolate-based) so the GraphQL p
 > `area:mcp`
 
 **Dependencies** - Related #56, #57 — Mock UI panel + request log will need MCP-tool counterparts (`bowire.mock.start/stop/list/requests`) from this set. - Related #43 — MCP SSE-transport support. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/37)
-
-#### <a id="issue-kuestenlogik-bowire-40"></a>⬜ Backlog · [#40](https://github.com/Kuestenlogik/Bowire/issues/40) Freeform Request Builder
-
-> `area:workbench`
-
-Bowire today is discovery-first. Freeform flips this — the user creates a request from scratch without a discovered schema. [[more]](https://github.com/Kuestenlogik/Bowire/issues/40)
 
 #### <a id="issue-kuestenlogik-bowire-41"></a>⬜ Backlog · [#41](https://github.com/Kuestenlogik/Bowire/issues/41) First RC of the new versioning discipline
 
