@@ -291,6 +291,26 @@
         pane.appendChild(typeBar);
         pane.appendChild(el('div', { className: 'bowire-freeform-divider' }));
 
+        // ---- Request / Response split — same shape as the
+        // discovered-method path uses (#135 split-mode attribute) so
+        // the operator gets the same left/right or top/bottom layout
+        // with a draggable divider. The freeform builder's existing
+        // form rows (URL + Body + Mock) live in the LEFT pane; the
+        // RIGHT pane shows the response. The inline actions block
+        // at the bottom of the pane is replaced by a sticky
+        // bowire-action-bar so Execute sits in the status line
+        // exactly like a discovered method's Execute. ----
+        var splitContent = el('div', {
+            className: 'bowire-content bowire-content-enter bowire-freeform-content',
+            'data-split': (typeof resolveSplitMode === 'function')
+                ? resolveSplitMode(splitMode) : (splitMode || 'horizontal')
+        });
+        var freeformReqPane = el('div', { className: 'bowire-pane bowire-freeform-req-pane' });
+        freeformReqPane.appendChild(el('div', { className: 'bowire-pane-heading', textContent: 'Request' }));
+        var freeformResPane = el('div', { className: 'bowire-pane bowire-freeform-res-pane' });
+        freeformResPane.appendChild(el('div', { className: 'bowire-pane-heading', textContent: 'Response' }));
+        var freeformDivider = el('div', { className: 'bowire-pane-divider' });
+
         // Server URL — #252 grows a two-state toggle on the left of
         // the field: 'Inline' (the URL lives on this request only,
         // self-contained, no ref to anything central) and 'From
@@ -396,7 +416,7 @@
                 onInput: function (e) { fr.serverUrl = e.target.value; }
             }));
         }
-        pane.appendChild(urlRow);
+        freeformReqPane.appendChild(urlRow);
 
         // Service + Method rows retired — they're inputs in the
         // editable header now (see freeformHeader above). The header
@@ -422,7 +442,7 @@
         var jsonStatus = el('div', { className: 'bowire-json-status empty' });
         bodyRow.appendChild(jsonStatus);
         attachJsonValidator(bodyEditor, jsonStatus);
-        pane.appendChild(bodyRow);
+        freeformReqPane.appendChild(bodyRow);
 
         // Mock Response section — collapsible. Lets the user author a
         // mock response without hitting a live backend, which is the
@@ -447,7 +467,7 @@
                     : '— click to author a mock response without executing'
             })
         );
-        pane.appendChild(mockToggleRow);
+        freeformReqPane.appendChild(mockToggleRow);
 
         if (freeformMockExpanded) {
             var mockBlock = el('div', { className: 'bowire-freeform-mock-block' });
@@ -482,11 +502,40 @@
             attachJsonValidator(mockEditor, mockStatusLine);
             mockBlock.appendChild(mockBodyRow);
 
-            pane.appendChild(mockBlock);
+            freeformReqPane.appendChild(mockBlock);
         }
 
-        // Action buttons
-        var actions = el('div', { className: 'bowire-freeform-actions' });
+        // ---- Response pane content (right side of the split) ----
+        if (responseError || responseData) {
+            if (responseError) {
+                var errOut = el('div', { className: 'bowire-response-output error' });
+                var prob = (typeof responseError === 'object') ? normalizeProblem(responseError) : null;
+                if (prob) renderProblem(prob, errOut);
+                else errOut.textContent = (typeof responseError === 'string')
+                    ? responseError
+                    : problemTitle(responseError, 'Request failed');
+                freeformResPane.appendChild(errOut);
+            } else if (responseData) {
+                var output = el('div', { className: 'bowire-response-output is-interactive' });
+                output.innerHTML = highlightJsonInteractive(responseData);
+                freeformResPane.appendChild(output);
+            }
+        } else {
+            freeformResPane.appendChild(el('div', {
+                className: 'bowire-response-empty',
+                textContent: 'Execute the request to see the response here.'
+            }));
+        }
+        splitContent.appendChild(freeformReqPane);
+        splitContent.appendChild(freeformDivider);
+        splitContent.appendChild(freeformResPane);
+        pane.appendChild(splitContent);
+        requestAnimationFrame(function () { initResizer(freeformDivider, freeformReqPane, freeformResPane); });
+
+        // ---- Action bar — Execute + Save buttons in the bottom
+        // status-line strip, mirroring the discovered-method's
+        // renderActionBar layout. Sticky at the bottom of the pane.
+        var actions = el('div', { className: 'bowire-action-bar bowire-freeform-action-bar' });
         actions.appendChild(el('button', {
             id: 'bowire-freeform-execute-btn',
             className: 'bowire-execute-btn',
@@ -541,32 +590,9 @@
             el('span', { textContent: 'Save to Collection' })
         ));
         pane.appendChild(actions);
-
-        // Response area (reuse global state)
-        if (freeformRequest && (responseData || responseError)) {
-            var respSection = el('div', { className: 'bowire-freeform-response' });
-            if (responseError) {
-                // #91 — render structured problem+json when available.
-                var errOut = el('div', { className: 'bowire-response-output error' });
-                var prob = (typeof responseError === 'object')
-                    ? normalizeProblem(responseError)
-                    : null;
-                if (prob) {
-                    renderProblem(prob, errOut);
-                } else {
-                    errOut.textContent = (typeof responseError === 'string')
-                        ? responseError
-                        : problemTitle(responseError, 'Request failed');
-                }
-                respSection.appendChild(errOut);
-            } else if (responseData) {
-                var output = el('div', { className: 'bowire-response-output is-interactive' });
-                output.innerHTML = highlightJsonInteractive(responseData);
-                respSection.appendChild(output);
-            }
-            pane.appendChild(respSection);
-        }
-
+        // Response is now rendered into the split's right pane above
+        // (freeformResPane). The inline trailing response section
+        // that used to live here is retired.
         return pane;
     }
 
