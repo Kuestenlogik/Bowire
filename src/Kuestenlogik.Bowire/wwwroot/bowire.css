@@ -9591,6 +9591,115 @@ so the textarea
     margin-bottom: 8px;
     border-left: 2px solid var(--bowire-border-subtle, var(--bowire-border));
 }
+
+/* ===== #246 — Ad-hoc Requests section under Collections rail ===== */
+.bowire-ad-hoc-section {
+    margin-top: 16px;
+    padding-top: 12px;
+    border-top: 1px solid var(--bowire-border-subtle, var(--bowire-border));
+}
+.bowire-ad-hoc-heading {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 8px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--bowire-text-secondary);
+}
+.bowire-ad-hoc-heading-count {
+    color: var(--bowire-text-tertiary, var(--bowire-text-secondary));
+    font-weight: 500;
+    text-transform: none;
+    letter-spacing: 0;
+}
+.bowire-ad-hoc-compose-btn {
+    width: 22px;
+    height: 22px;
+    padding: 0;
+    border: none;
+    background: transparent;
+    color: var(--bowire-text-secondary);
+    border-radius: var(--bowire-radius-2);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.bowire-ad-hoc-compose-btn:hover {
+    background: var(--bowire-surface-hover);
+    color: var(--bowire-accent);
+}
+.bowire-ad-hoc-compose-btn svg { width: 14px; height: 14px; }
+.bowire-ad-hoc-empty {
+    padding: 8px 10px 4px;
+    font-size: 12px;
+    color: var(--bowire-text-tertiary, var(--bowire-text-secondary));
+    line-height: 1.4;
+}
+.bowire-ad-hoc-list {
+    display: flex;
+    flex-direction: column;
+    margin-top: 4px;
+}
+.bowire-ad-hoc-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 8px;
+    cursor: pointer;
+    border-radius: var(--bowire-radius-2);
+}
+.bowire-ad-hoc-row:hover { background: var(--bowire-surface-hover); }
+.bowire-ad-hoc-row-glyph {
+    flex-shrink: 0;
+    color: var(--bowire-text-tertiary, var(--bowire-text-secondary));
+    display: flex;
+    align-items: center;
+}
+.bowire-ad-hoc-row-glyph svg { width: 14px; height: 14px; }
+.bowire-ad-hoc-row-info { flex: 1; min-width: 0; }
+.bowire-ad-hoc-row-name {
+    font-size: 13px;
+    color: var(--bowire-text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.bowire-ad-hoc-row-sub {
+    font-size: 11px;
+    color: var(--bowire-text-tertiary, var(--bowire-text-secondary));
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.bowire-ad-hoc-row-tools {
+    display: none;
+    align-items: center;
+    gap: 2px;
+    flex-shrink: 0;
+}
+.bowire-ad-hoc-row:hover .bowire-ad-hoc-row-tools { display: flex; }
+.bowire-ad-hoc-row-tool {
+    width: 22px; height: 22px; padding: 0;
+    border: none; background: transparent;
+    color: var(--bowire-text-secondary);
+    border-radius: var(--bowire-radius-2);
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+}
+.bowire-ad-hoc-row-tool:hover {
+    color: var(--bowire-accent);
+    background: var(--bowire-surface);
+}
+.bowire-ad-hoc-row-tool-danger:hover {
+    color: var(--bowire-danger);
+    background: rgba(var(--bowire-danger-rgb), 0.1);
+}
+.bowire-ad-hoc-row-tool svg { width: 13px; height: 13px; }
+
 /* Services toolbar — contains +,
 filter,
 and chip row */

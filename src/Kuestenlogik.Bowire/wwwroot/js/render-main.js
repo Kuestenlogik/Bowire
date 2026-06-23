@@ -4,13 +4,78 @@
         var pane = el('div', { className: 'bowire-env-editor-main' });
 
         // Header
+        // #246 — when this freeform builder is editing a SAVED ad-hoc
+        // request (fr._adHocId is set) the title reflects that + the
+        // header carries a Save-changes button. Compose-from-scratch
+        // gets the "Save as request" CTA which persists the snapshot
+        // into the Collections-rail Ad-hoc Requests section.
+        var isExistingAdHoc = fr && fr._adHocId
+            && typeof adHocRequests !== 'undefined'
+            && adHocRequests.some(function (r) { return r.id === fr._adHocId; });
+        var headerTitle = isExistingAdHoc
+            ? (adHocRequests.find(function (r) { return r.id === fr._adHocId; }) || {}).name || 'Ad-hoc request'
+            : 'New Request';
+        var saveBtnLabel = isExistingAdHoc ? 'Save changes' : 'Save as request';
+        var saveBtn = el('button', {
+            id: 'bowire-freeform-save-btn',
+            className: 'bowire-env-editor-action-btn bowire-env-editor-action-primary',
+            textContent: saveBtnLabel,
+            title: isExistingAdHoc
+                ? 'Save changes to this ad-hoc request'
+                : 'Save this request to the Ad-hoc Requests section so it survives a reload',
+            onClick: function () {
+                if (typeof saveCurrentFreeformAsAdHoc !== 'function') return;
+                if (isExistingAdHoc) {
+                    try {
+                        saveCurrentFreeformAsAdHoc({});
+                        if (typeof toast === 'function') toast('Changes saved', 'success');
+                    } catch (e) {
+                        if (typeof toast === 'function') toast('Save failed: ' + (e && e.message), 'error');
+                    }
+                    render();
+                    return;
+                }
+                // Fresh compose: ask for a name so the operator names
+                // the persisted record meaningfully.
+                if (typeof bowirePrompt !== 'function') {
+                    try {
+                        saveCurrentFreeformAsAdHoc({});
+                        if (typeof toast === 'function') toast('Saved', 'success');
+                    } catch (e) { /* ignore */ }
+                    render();
+                    return;
+                }
+                var defaultName = (fr.service && fr.method) ? (fr.service + '/' + fr.method)
+                    : fr.method || ((fr.protocol || 'request') + ' request');
+                bowirePrompt('Name this request', {
+                    title: 'Save as ad-hoc request',
+                    defaultValue: defaultName,
+                    confirmText: 'Save',
+                    validator: function (v) {
+                        return String(v || '').trim() ? null : 'Name required';
+                    }
+                }).then(function (name) {
+                    if (!name) return;
+                    try {
+                        saveCurrentFreeformAsAdHoc({ name: name });
+                        if (typeof toast === 'function') {
+                            toast('Saved "' + name + '" to Ad-hoc requests', 'success');
+                        }
+                        render();
+                    } catch (e) {
+                        if (typeof toast === 'function') toast('Save failed: ' + (e && e.message), 'error');
+                    }
+                });
+            }
+        });
         var header = el('div', { className: 'bowire-env-editor-header' },
-            el('h2', { className: 'bowire-env-editor-title', textContent: 'New Request' }),
+            el('h2', { className: 'bowire-env-editor-title', textContent: headerTitle }),
             el('span', { style: 'flex:1' }),
+            saveBtn,
             el('button', {
                 id: 'bowire-freeform-cancel-btn',
                 className: 'bowire-env-editor-action-btn',
-                textContent: 'Cancel',
+                textContent: isExistingAdHoc ? 'Close' : 'Cancel',
                 onClick: cancelFreeformRequest
             })
         );

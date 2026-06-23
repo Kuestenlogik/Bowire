@@ -3372,6 +3372,169 @@
         render();
     }
 
+    // ---- #246 — Ad-hoc Requests storage ----
+    //
+    // Persistent counterpart to the transient `freeformRequest` builder
+    // state. An ad-hoc request is a SAVED single-invocation recipe —
+    // URL + verb + headers + body + metadata + auth — that lives
+    // outside any discovered service tree. Storage key
+    // `bowire_ws_<id>_ad_hoc_requests` holds the workspace's list;
+    // each record:
+    //
+    //   { id: 'ahr_<random>', name: 'scratch — POST /pet',
+    //     createdAt: <epoch>, lastInvokedAt: <epoch>,
+    //     request: { url, verb, service, method, body, metadata,
+    //                methodType, protocol },
+    //     lineage: { kind: 'compose' | 'cloned-from-discovered' |
+    //                'promoted-from-preset',
+    //                sourceMethod?: '<service>/<method>' } }
+    //
+    // The lineage discriminator lets the Collections-rail UI surface
+    // "where this ad-hoc came from" without an extra DB lookup. #245
+    // (As new request) sets kind='cloned-from-discovered'; #246's
+    // compose flow sets kind='compose'.
+    const AD_HOC_REQUESTS_KEY = 'bowire_ad_hoc_requests';
+    let adHocRequests = [];
+    try {
+        var rawAhr = localStorage.getItem(wsKey(AD_HOC_REQUESTS_KEY));
+        if (rawAhr) {
+            var parsedAhr = JSON.parse(rawAhr);
+            if (Array.isArray(parsedAhr)) adHocRequests = parsedAhr;
+        }
+    } catch { /* corrupt → reset */ }
+    function persistAdHocRequests() {
+        try { localStorage.setItem(wsKey(AD_HOC_REQUESTS_KEY), JSON.stringify(adHocRequests)); markSaved('ad-hoc requests'); }
+        catch (e) { markSaveFailed('ad-hoc requests', e); }
+    }
+
+    function _newAdHocId() {
+        return 'ahr_' + Math.random().toString(36).slice(2, 10);
+    }
+
+    function _defaultAdHocName(request, lineage) {
+        if (request && request.method) {
+            var verbPart = (request.methodType === 'Unary' && request.method) ? request.method
+                : (request.service ? request.service + '/' + request.method : request.method);
+            return verbPart;
+        }
+        if (lineage && lineage.sourceMethod) return 'cloned: ' + lineage.sourceMethod;
+        return 'untitled request';
+    }
+
+    // Persist the current freeformRequest as an ad-hoc record. If
+    // freeformRequest already carries an _adHocId field (set when
+    // opening a saved record), update that record in place instead of
+    // creating a new one. Returns the resulting record's id.
+    function saveCurrentFreeformAsAdHoc(opts) {
+        opts = opts || {};
+        if (!freeformRequest) throw new Error('No active freeform request to save.');
+        var existingId = freeformRequest._adHocId;
+        var existing = existingId
+            ? adHocRequests.find(function (r) { return r.id === existingId; })
+            : null;
+        var lineage = opts.lineage || (existing && existing.lineage)
+            || { kind: 'compose' };
+        var requestSnapshot = {
+            protocol: freeformRequest.protocol,
+            serverUrl: freeformRequest.serverUrl,
+            service: freeformRequest.service,
+            method: freeformRequest.method,
+            methodType: freeformRequest.methodType || 'Unary',
+            body: freeformRequest.body,
+            metadata: freeformRequest.metadata || {},
+            mockResponse: freeformRequest.mockResponse || '',
+            mockStatus: freeformRequest.mockStatus || 'OK'
+        };
+        if (existing) {
+            existing.name = opts.name || existing.name || _defaultAdHocName(requestSnapshot, lineage);
+            existing.request = requestSnapshot;
+            existing.lineage = lineage;
+            existing.lastInvokedAt = opts.markInvoked ? Date.now() : (existing.lastInvokedAt || 0);
+            persistAdHocRequests();
+            return existing.id;
+        }
+        var record = {
+            id: _newAdHocId(),
+            name: opts.name || _defaultAdHocName(requestSnapshot, lineage),
+            createdAt: Date.now(),
+            lastInvokedAt: opts.markInvoked ? Date.now() : 0,
+            request: requestSnapshot,
+            lineage: lineage
+        };
+        adHocRequests.unshift(record);
+        persistAdHocRequests();
+        if (freeformRequest) freeformRequest._adHocId = record.id;
+        return record.id;
+    }
+
+    // Open a saved ad-hoc request into the freeformRequest builder so
+    // the operator can tweak + re-execute. Drives the click handler on
+    // the Collections-rail's ad-hoc list.
+    function openAdHocRequest(id) {
+        var rec = adHocRequests.find(function (r) { return r.id === id; });
+        if (!rec) return;
+        freeformRequest = Object.assign({}, rec.request, { _adHocId: rec.id });
+        selectedMethod = null;
+        selectedService = null;
+        if (typeof railMode !== 'undefined' && railMode !== 'discover') {
+            railMode = 'discover';
+            try { localStorage.setItem('bowire_rail_mode', 'discover'); } catch { /* ignore */ }
+            if (typeof sidebarView !== 'undefined') sidebarView = 'services';
+        }
+        render();
+    }
+
+    function deleteAdHocRequest(id) {
+        var idx = adHocRequests.findIndex(function (r) { return r.id === id; });
+        if (idx < 0) return;
+        adHocRequests.splice(idx, 1);
+        persistAdHocRequests();
+        if (freeformRequest && freeformRequest._adHocId === id) {
+            freeformRequest = null;
+        }
+        render();
+    }
+
+    function renameAdHocRequest(id, newName) {
+        var rec = adHocRequests.find(function (r) { return r.id === id; });
+        if (!rec) return;
+        var trimmed = String(newName || '').trim();
+        if (!trimmed) return;
+        rec.name = trimmed;
+        persistAdHocRequests();
+    }
+
+    // Spawn a fresh ad-hoc compose flow. Mirrors startFreeformRequest
+    // but tags the new freeformRequest with a brand-new ad-hoc id so
+    // the FIRST save sticks (no "scratch" state that auto-deletes).
+    function startNewAdHocRequest(opts) {
+        opts = opts || {};
+        var protocol = opts.protocol
+            || (protocols.length > 0 ? protocols[0].id : 'grpc');
+        var supported = (typeof getSupportedMethodTypes === 'function')
+            ? getSupportedMethodTypes(protocol) : ['Unary'];
+        freeformRequest = {
+            protocol: protocol,
+            serverUrl: opts.serverUrl || (serverUrls.length > 0 ? serverUrls[0] : ''),
+            service: opts.service || '',
+            method: opts.method || '',
+            body: opts.body || '{}',
+            metadata: opts.metadata || {},
+            methodType: opts.methodType || supported[0] || 'Unary',
+            mockResponse: opts.mockResponse || '',
+            mockStatus: opts.mockStatus || 'OK',
+            _pendingAdHoc: true   // hint to the save flow that this is a fresh compose
+        };
+        selectedMethod = null;
+        selectedService = null;
+        if (typeof railMode !== 'undefined' && railMode !== 'discover') {
+            railMode = 'discover';
+            try { localStorage.setItem('bowire_rail_mode', 'discover'); } catch { /* ignore */ }
+            if (typeof sidebarView !== 'undefined') sidebarView = 'services';
+        }
+        render();
+    }
+
     // ---- Collections State ----
     // Named groups of saved requests, independent of recordings.
     // Each item has: { id, protocol, service, method, methodType,
