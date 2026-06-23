@@ -3448,8 +3448,11 @@
             mockResponse: '',
             mockStatus: 'OK'
         };
-        selectedMethod = null;
-        selectedService = null;
+        // selectedMethod / selectedService intentionally NOT cleared
+        // — see openAdHocRequest for rationale. Clearing flipped the
+        // [+]-tab function from "pin current method" to "open
+        // freeform" without warning, which read as the button's
+        // function changing.
         if (typeof railMode !== 'undefined' && railMode !== 'discover') {
             railMode = 'discover';
             try { localStorage.setItem('bowire_rail_mode', 'discover'); } catch { /* ignore */ }
@@ -3631,8 +3634,14 @@
         var rec = adHocRequests.find(function (r) { return r.id === id; });
         if (!rec) return;
         freeformRequest = Object.assign({}, rec.request, { _adHocId: rec.id });
-        selectedMethod = null;
-        selectedService = null;
+        // selectedMethod / selectedService intentionally NOT cleared.
+        // The renderMain early-return on freeformRequest takes
+        // priority, so the discovered-method pane doesn't paint, BUT
+        // peripheral handlers (the '[+]' tab's "pin current method"
+        // logic, breadcrumbs, command-palette context) still see the
+        // last-active discovered method. Clearing them flipped the
+        // '[+]' tab from "pin current" to "open freeform" silently,
+        // which read as the [+] button's function changing.
         if (typeof railMode !== 'undefined' && railMode !== 'discover') {
             railMode = 'discover';
             try { localStorage.setItem('bowire_rail_mode', 'discover'); } catch { /* ignore */ }
@@ -3682,8 +3691,8 @@
             mockStatus: opts.mockStatus || 'OK',
             _pendingAdHoc: true   // hint to the save flow that this is a fresh compose
         };
-        selectedMethod = null;
-        selectedService = null;
+        // selectedMethod / selectedService intentionally NOT cleared
+        // — see openAdHocRequest for rationale.
         if (typeof railMode !== 'undefined' && railMode !== 'discover') {
             railMode = 'discover';
             try { localStorage.setItem('bowire_rail_mode', 'discover'); } catch { /* ignore */ }
