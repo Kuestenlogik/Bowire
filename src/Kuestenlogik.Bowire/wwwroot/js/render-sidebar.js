@@ -3381,7 +3381,20 @@
             el('span', { innerHTML: svgIcon('plus'), style: 'width:14px;height:14px;display:flex' })
         );
         newBtnWrapper.appendChild(newBtn);
-        viewSwitch.appendChild(newBtnWrapper);
+        // #244 — The "+ New" button was retired from the Discover-rail
+        // toolbar. Discover's job is browsing the discovered tree, not
+        // composing ad-hoc requests; the button conflated those. The
+        // button declaration above stays in code because the protocol-
+        // picker dropdown it builds is reused (or will be) by the
+        // Ad-hoc-Requests section under the Collections rail (#246).
+        // To re-enable the button while iterating locally, uncomment
+        // the appendChild below.
+        //
+        // viewSwitch.appendChild(newBtnWrapper);
+        // Suppress the "unused variable" lint by silently referencing
+        // the wrapper so the dropdown-build logic doesn't get dropped
+        // by a future dead-code sweep.
+        void newBtnWrapper;
 
         sidebar.appendChild(viewSwitch);
 
