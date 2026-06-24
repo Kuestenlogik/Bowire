@@ -300,11 +300,71 @@ internal static class WorkspaceCommand
         }
 
         var store = new Kuestenlogik.Bowire.Workspace.Git.FileEntityStore(fullSource);
-        var root = new System.Text.Json.Nodes.JsonObject
+
+        // #282 A2 — emit the v2 canonical envelope. Workspace identity
+        // pulled from workspace.json (if present), per-entity arrays
+        // nested under `data`, globals lifted from globals.json. Disk-
+        // only workspaces don't have urls / urlMeta / favorites / etc.
+        // — those buckets ship as empty defaults so readers can iterate
+        // the v2 superset without null checks.
+        var workspaceIdentity = new System.Text.Json.Nodes.JsonObject
         {
-            ["workspaceFormatVersion"] = ExportFormatVersion,
-            ["exportedAt"] = DateTimeOffset.UtcNow.ToString("O", System.Globalization.CultureInfo.InvariantCulture),
+            ["name"] = new DirectoryInfo(fullSource).Name,
+            ["color"] = "#6366f1",
+            ["description"] = "",
+            ["pluginPins"] = null
         };
+        var manifestPath = Path.Combine(fullSource, "workspace.json");
+        if (File.Exists(manifestPath))
+        {
+            try
+            {
+                var manifestRaw = await File.ReadAllTextAsync(manifestPath, ct).ConfigureAwait(false);
+                if (System.Text.Json.Nodes.JsonNode.Parse(manifestRaw) is System.Text.Json.Nodes.JsonObject manifest)
+                {
+                    if (manifest["id"] is { } mid) workspaceIdentity["id"] = mid.DeepClone();
+                    if (manifest["name"] is { } mname) workspaceIdentity["name"] = mname.DeepClone();
+                    if (manifest["color"] is { } mcolor) workspaceIdentity["color"] = mcolor.DeepClone();
+                    if (manifest["description"] is { } mdesc) workspaceIdentity["description"] = mdesc.DeepClone();
+                    if (manifest["pluginPins"] is { } mpins) workspaceIdentity["pluginPins"] = mpins.DeepClone();
+                }
+            }
+            catch (JsonException)
+            {
+                // workspace.json malformed — proceed with defaults.
+                // (The data export is more valuable than blocking on
+                // a manifest read failure.)
+            }
+        }
+
+        var data = new System.Text.Json.Nodes.JsonObject();
+        // Seed every v2 data bucket with an empty default so readers
+        // never see undefined fields. Disk-only buckets get filled
+        // from per-entity files below; browser-only buckets stay [].
+        foreach (var key in V2DataKeys)
+        {
+            data[key] = key switch
+            {
+                "urlMeta" or "globals" or "presets" => (System.Text.Json.Nodes.JsonNode)new System.Text.Json.Nodes.JsonObject(),
+                "activeEnvironmentId" => null,
+                _ => (System.Text.Json.Nodes.JsonNode)new System.Text.Json.Nodes.JsonArray()
+            };
+        }
+
+        // globals.json (per-entity file at workspace root).
+        var globalsPath = Path.Combine(fullSource, "globals.json");
+        if (File.Exists(globalsPath))
+        {
+            try
+            {
+                var globalsRaw = await File.ReadAllTextAsync(globalsPath, ct).ConfigureAwait(false);
+                if (System.Text.Json.Nodes.JsonNode.Parse(globalsRaw) is System.Text.Json.Nodes.JsonObject globalsObj)
+                {
+                    data["globals"] = globalsObj;
+                }
+            }
+            catch (JsonException) { /* skip on malformed */ }
+        }
 
         var perKindCount = new Dictionary<string, int>(StringComparer.Ordinal);
         try
@@ -319,7 +379,7 @@ internal static class WorkspaceCommand
                     if (string.IsNullOrEmpty(json)) continue;
                     arr.Add(System.Text.Json.Nodes.JsonNode.Parse(json));
                 }
-                root[kind] = arr;
+                data[kind] = arr;
                 perKindCount[kind] = arr.Count;
             }
         }
@@ -333,6 +393,15 @@ internal static class WorkspaceCommand
             await stderr.WriteLineAsync($"workspace export: read failed: {ex.Message}").ConfigureAwait(false);
             return 70;
         }
+
+        var root = new System.Text.Json.Nodes.JsonObject
+        {
+            ["format"] = "bowire-workspace",
+            ["version"] = CanonicalFormatVersion,
+            ["exportedAt"] = DateTimeOffset.UtcNow.ToString("O", System.Globalization.CultureInfo.InvariantCulture),
+            ["workspace"] = workspaceIdentity,
+            ["data"] = data
+        };
 
         var fullOutput = Path.GetFullPath(outputPath);
         var outDir = Path.GetDirectoryName(fullOutput);

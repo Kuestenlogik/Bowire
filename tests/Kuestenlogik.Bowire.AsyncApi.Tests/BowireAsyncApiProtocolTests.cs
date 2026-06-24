@@ -308,4 +308,58 @@ public sealed class BowireAsyncApiProtocolTests
         Assert.Equal("Error", result.Status);
         Assert.Contains("No AsyncAPI binding resolver", result.Metadata["error"], StringComparison.Ordinal);
     }
+
+    [Fact]
+    public async Task Discover_emits_one_method_per_message_for_v2_multi_message_oneOf()
+    {
+        // V2 mirror of the V3 multi-message test. The subscribe slot
+        // on the channel declares `message.oneOf[]` with two refs;
+        // the plugin should emit one method per declared message named
+        // `operationId::messageName` so the sidebar surfaces the
+        // choice the spec offers.
+        var plugin = new BowireAsyncApiProtocol();
+        var sample = SafePath.Combine("TestData", "v2-multi-message.asyncapi.yaml");
+        var services = await plugin.DiscoverAsync(
+            serverUrl: sample, showInternalServices: false,
+            ct: TestContext.Current.CancellationToken)
+            .ConfigureAwait(true);
+
+        var lightService = Assert.Single(services);
+        Assert.Equal("smarthome/light", lightService.Name);
+        Assert.Equal(2, lightService.Methods.Count);
+
+        var measured = lightService.Methods.Single(m => m.Name == "receiveAnyLightEvent::lightMeasured");
+        Assert.Equal("asyncapi-receive", measured.MethodType);
+        Assert.Equal("lightMeasured", measured.InputType.Name);
+
+        var warning = lightService.Methods.Single(m => m.Name == "receiveAnyLightEvent::lightWarning");
+        Assert.Equal("asyncapi-receive", warning.MethodType);
+        Assert.Equal("lightWarning", warning.InputType.Name);
+    }
+
+    [Fact]
+    public async Task Invoke_v2_strips_overload_suffix_when_looking_up_operationId()
+    {
+        // Invocation on `opKey::messageName` should resolve back to
+        // the underlying operationId on the V2 channel slot. No
+        // resolver is registered so the error path is "no resolver
+        // for protocol" — proves the V2 dispatch + overload-strip
+        // landed correctly (otherwise we'd get "not found on V2
+        // channel" instead).
+        var plugin = new BowireAsyncApiProtocol();
+        var sample = SafePath.Combine("TestData", "v2-multi-message.asyncapi.yaml");
+        _ = await plugin.DiscoverAsync(sample, false, TestContext.Current.CancellationToken)
+            .ConfigureAwait(true);
+
+        var result = await plugin.InvokeAsync(
+            serverUrl: sample,
+            service: "smarthome/light",
+            method: "receiveAnyLightEvent::lightMeasured",
+            jsonMessages: ["{}"],
+            showInternalServices: false,
+            ct: TestContext.Current.CancellationToken)
+            .ConfigureAwait(true);
+        Assert.Equal("Error", result.Status);
+        Assert.Contains("No AsyncAPI binding resolver", result.Metadata["error"], StringComparison.Ordinal);
+    }
 }

@@ -193,6 +193,48 @@ public sealed class AsyncApiBindingsExtractorTests
     }
 
     [Fact]
+    public void Extracts_v2_operation_messages_oneOf_per_slot()
+    {
+        // V2 mirror of ExtractV3OperationMessages: only the `oneOf[]`
+        // shape produces entries (single-message `message: { $ref }`
+        // stays on the typed-model path and yields no entry here).
+        var yaml = """
+            asyncapi: '2.6.0'
+            info:
+              title: T
+              version: '1.0.0'
+            channels:
+              t1:
+                subscribe:
+                  operationId: rcv
+                  message:
+                    oneOf:
+                      - $ref: '#/components/messages/a'
+                      - $ref: '#/components/messages/b'
+              t2:
+                publish:
+                  operationId: snd
+                  message:
+                    $ref: '#/components/messages/c'
+            """;
+
+        var assembly = typeof(BowireAsyncApiProtocol).Assembly;
+        var type = assembly.GetType("Kuestenlogik.Bowire.AsyncApi.AsyncApiBindingsExtractor")!;
+        var method = type.GetMethod("ExtractV2OperationMessages", BindingFlags.Public | BindingFlags.Static)!;
+        var result = (IReadOnlyDictionary<string,
+            IReadOnlyDictionary<string, IReadOnlyList<string>>>)
+            method.Invoke(null, new object[] { yaml })!;
+
+        // Only t1 has a oneOf — t2 has a single-message slot which
+        // the walker intentionally skips.
+        Assert.Single(result);
+        Assert.Collection(result["t1"]["subscribe"],
+            n => Assert.Equal("a", n),
+            n => Assert.Equal("b", n));
+        Assert.False(result.ContainsKey("t2"));
+    }
+
+    [Fact]
     public void Skips_non_scalar_binding_fields()
     {
         // A nested mapping (e.g. mqtt server-binding `lastWill`) is

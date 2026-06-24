@@ -2283,6 +2283,58 @@
         'discover', 'flows', 'benchmarks', 'mocks', 'proxy', 'security'
     ];
 
+    // #282 — Map localStorage bucket keys to the v2 canonical
+    // `data` field names. Keeps the on-the-wire schema independent
+    // of internal storage naming so renames inside Bowire don't
+    // break round-trip. Unmapped keys pass through with their raw
+    // bucket name (defensive — better to over-include than drop).
+    var _V2_DATA_KEY_MAP = {
+        bowire_server_urls:          'urls',
+        bowire_url_meta:             'urlMeta',
+        bowire_server_url_aliases:   'urlAliases',
+        bowire_environments:         'environments',
+        bowire_active_env:           'activeEnvironmentId',
+        bowire_global_vars:          'globals',
+        bowire_collections:          'collections',
+        bowire_collections_trash:    'collectionsTrash',
+        bowire_recordings:           'recordings',
+        bowire_recordings_trash:     'recordingsTrash',
+        bowire_favorites:            'favorites',
+        bowire_benchmarks:           'benchmarks',
+        bowire_flows:                'flows'
+    };
+    // Inverse of _V2_DATA_KEY_MAP — used by importWorkspaceJson to
+    // route v2-canonical field names back to the localStorage bucket
+    // they originally lived in. Built once at module load.
+    var _V2_DATA_REVERSE_KEY_MAP = (function () {
+        var inv = {};
+        Object.keys(_V2_DATA_KEY_MAP).forEach(function (k) {
+            inv[_V2_DATA_KEY_MAP[k]] = k;
+        });
+        return inv;
+    })();
+
+    // Default empty containers per v2 field so freshly-exported
+    // workspaces with sparse data still serialise every bucket.
+    // Lets downstream readers iterate without defensive null checks.
+    var _V2_DATA_DEFAULTS = {
+        urls:                [],
+        urlMeta:             {},
+        urlAliases:          {},
+        environments:        [],
+        activeEnvironmentId: null,
+        globals:             {},
+        collections:         [],
+        collectionsTrash:    [],
+        recordings:          [],
+        recordingsTrash:     [],
+        favorites:           [],
+        benchmarks:          [],
+        flows:               [],
+        scripts:             [],   // disk-only; browser exports as []
+        presets:             {}
+    };
+
     function exportWorkspaceJson(wsId) {
         var ws = workspaces.find(function (w) { return w.id === wsId; });
         if (!ws) return null;
@@ -2292,28 +2344,37 @@
                 return raw ? JSON.parse(raw) : null;
             } catch { return null; }
         }
-        var data = {};
-        _WORKSPACE_DATA_KEYS.forEach(function (k) {
-            var v = readJson(k);
-            if (v !== null && v !== undefined) data[k] = v;
+        // Seed with defaults so every v2 field is always present
+        // (even empty), then overlay each populated bucket.
+        var data = Object.assign({}, _V2_DATA_DEFAULTS);
+        _WORKSPACE_DATA_KEYS.forEach(function (rawKey) {
+            // pluginPins is workspace identity, not data — handled
+            // separately below.
+            if (rawKey === 'bowire_plugin_pins') return;
+            var v = readJson(rawKey);
+            if (v === null || v === undefined) return;
+            var canonical = _V2_DATA_KEY_MAP[rawKey] || rawKey;
+            data[canonical] = v;
         });
+        // Presets — per-mode arrays consolidated under a single
+        // presets object.
         var presets = {};
         _WORKSPACE_PRESET_MODES.forEach(function (mode) {
             var p = readJson('bowire_presets_' + mode);
             if (Array.isArray(p) && p.length > 0) presets[mode] = p;
         });
-        if (Object.keys(presets).length > 0) data.presets = presets;
+        data.presets = presets;
+        // Plugin pins ride on workspace identity in v2, not data.
+        var pluginPins = readJson('bowire_plugin_pins') || null;
         return {
             format: 'bowire-workspace',
-            version: 1,
+            version: 2,
             exportedAt: new Date().toISOString(),
             workspace: {
+                id: wsId,
                 name: ws.name,
                 color: ws.color,
                 description: ws.description || '',
-                // Inclusion fields retired with #A — envs are workspace-
-                // owned now, the workspace export carries the env list
-                // itself under data.bowire_environments.
                 // #212 Phase 0 — workspace-level storage decision.
                 // Exported so a recipient sees the same disk-vs-browser
                 // posture the source workspace was running with.
@@ -2321,7 +2382,8 @@
                 // Legacy field mirrored on export for pre-#212
                 // importers; new importers prefer `storage` and fall
                 // back to this if absent.
-                recordingStorageMode: ws.recordingStorageMode || 'both'
+                recordingStorageMode: ws.recordingStorageMode || 'both',
+                pluginPins: pluginPins
             },
             data: data
         };
@@ -2400,29 +2462,29 @@
                 _migratedFrom: 'cli-v1'
             };
         }
-        // UI-v1: same envelope shape as v2, just version === 1.
+        // UI-v1: same envelope shape as v2, but data fields use the
+        // raw localStorage bucket names (bowire_server_urls,
+        // bowire_environments, …). Translate them to v2 canonical
+        // names + backfill missing buckets with empty defaults.
         if (payload.format === 'bowire-workspace' && payload.version === 1) {
             var d = payload.data || {};
-            // Backfill the data buckets the UI export omitted (recordings,
-            // scripts, flows — those are localStorage-only entities the
-            // UI didn't snapshot in v1).
-            var uiData = Object.assign({
-                urls: [],
-                urlMeta: {},
-                environments: [],
-                activeEnvironmentId: null,
-                globals: {},
-                collections: [],
-                recordings: [],
-                scripts: [],
-                flows: [],
-                presets: {}
-            }, d);
+            var uiData = Object.assign({}, _V2_DATA_DEFAULTS);
+            Object.keys(d).forEach(function (rawKey) {
+                if (rawKey === 'presets') { uiData.presets = d.presets; return; }
+                var canonical = _V2_DATA_KEY_MAP[rawKey] || rawKey;
+                uiData[canonical] = d[rawKey];
+            });
+            // pluginPins lived in data under the raw key in v1 — lift
+            // up onto workspace identity for v2.
+            var workspace = Object.assign({}, payload.workspace || {});
+            if (d.bowire_plugin_pins && !workspace.pluginPins) {
+                workspace.pluginPins = d.bowire_plugin_pins;
+            }
             return {
                 format: 'bowire-workspace',
                 version: 2,
                 exportedAt: payload.exportedAt || new Date().toISOString(),
-                workspace: payload.workspace || {},
+                workspace: workspace,
                 data: uiData,
                 _migratedFrom: 'ui-v1'
             };
@@ -2498,9 +2560,21 @@
             }
         }
 
-        _WORKSPACE_DATA_KEYS.forEach(function (k) {
-            if (Object.prototype.hasOwnProperty.call(data, k)) writeKey(k, data[k]);
+        // v2 envelope carries canonical-named fields ('urls', 'environments',
+        // 'globals'…) under data; legacy reader code keyed off raw
+        // localStorage bucket names ('bowire_server_urls' etc.). Map
+        // canonical → raw via the reverse of _V2_DATA_KEY_MAP so we
+        // write to the correct localStorage bucket.
+        Object.keys(data).forEach(function (canonical) {
+            if (canonical === 'presets') return; // handled below
+            var rawKey = _V2_DATA_REVERSE_KEY_MAP[canonical] || canonical;
+            writeKey(rawKey, data[canonical]);
         });
+        // Plugin pins live on workspace identity in v2; persist via
+        // the pluginPins bucket.
+        if (wsMeta.pluginPins && typeof wsMeta.pluginPins === 'object') {
+            writeKey('bowire_plugin_pins', wsMeta.pluginPins);
+        }
         if (data.presets && typeof data.presets === 'object') {
             Object.keys(data.presets).forEach(function (m) {
                 if (Array.isArray(data.presets[m])) {

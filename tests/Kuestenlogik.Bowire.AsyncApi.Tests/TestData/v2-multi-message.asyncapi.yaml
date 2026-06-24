@@ -1,0 +1,33 @@
+asyncapi: '2.6.0'
+info:
+  title: V2 Multi-Message Demo
+  version: '1.0.0'
+  description: |
+    V2 mirror of the V3 multi-message sample. The subscribe slot
+    declares a `message.oneOf[]` array so a single operation accepts
+    either of two payloads; the AsyncAPI plugin should emit one method
+    per declared message and route invocations back to the underlying
+    operationId.
+
+servers:
+  broker:
+    url: 'mqtt://localhost:1883'
+    protocol: mqtt
+
+channels:
+  smarthome/light:
+    subscribe:
+      operationId: receiveAnyLightEvent
+      message:
+        oneOf:
+          - $ref: '#/components/messages/lightMeasured'
+          - $ref: '#/components/messages/lightWarning'
+
+components:
+  messages:
+    lightMeasured:
+      name: lightMeasured
+      contentType: application/json
+    lightWarning:
+      name: lightWarning
+      contentType: application/json
