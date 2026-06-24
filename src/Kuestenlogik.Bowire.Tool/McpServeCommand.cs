@@ -42,22 +42,42 @@ internal static class McpServeCommand
         int Port,
         bool AllowArbitraryUrls,
         bool NoEnvAllowlist,
+        bool AllowInvoke,
+        bool NoConfirm,
         CommandIo Io);
 
     public static Task<int> RunAsync(string bind, int port, bool allowArbitraryUrls, bool noEnvAllowlist)
-        => RunAsync(bind, port, allowArbitraryUrls, noEnvAllowlist, stdout: null, stderr: null, ct: CancellationToken.None);
+        => RunAsync(bind, port, allowArbitraryUrls, noEnvAllowlist,
+            allowInvoke: false, noConfirm: false,
+            stdout: null, stderr: null, ct: CancellationToken.None);
+
+    public static Task<int> RunAsync(string bind, int port, bool allowArbitraryUrls, bool noEnvAllowlist,
+        bool allowInvoke, bool noConfirm)
+        => RunAsync(bind, port, allowArbitraryUrls, noEnvAllowlist,
+            allowInvoke, noConfirm, stdout: null, stderr: null, ct: CancellationToken.None);
 
     // internal: tests pass a pre-cancelled token so DefaultServeStdio /
     // DefaultServeHttp exit promptly without blocking on stdin/stdout
     // or a Kestrel socket. Public surface is the CT-less overload above
     // — production callers keep that.
     internal static Task<int> RunAsync(string bind, int port, bool allowArbitraryUrls, bool noEnvAllowlist,
+        bool allowInvoke = false, bool noConfirm = false,
         TextWriter? stdout = null, TextWriter? stderr = null, CancellationToken ct = default)
     {
         Action<BowireMcpOptions> configureOpts = o =>
         {
             o.AllowArbitraryUrls = allowArbitraryUrls;
             o.LoadAllowlistFromEnvironments = !noEnvAllowlist;
+            // --allow-invoke widens the allowlist to every URL the
+            // user has typed at least once (~/.bowire/typed-urls.json).
+            // Strictly additive — combines with the environments seed,
+            // never narrows it.
+            o.LoadAllowlistFromTypedUrls = allowInvoke;
+            // --no-confirm drops the pending-confirmation gate on
+            // mutator tools. Default-on so an interactive user gets
+            // the safety net by default; agents with their own approval
+            // pipeline opt out.
+            o.RequireConfirmationForMutations = !noConfirm;
         };
 
         // Stdio-mode caveat: the JSON-RPC framing the SDK does owns
@@ -65,7 +85,7 @@ internal static class McpServeCommand
         // sink (the WARNING blob that lands on stderr), not the
         // protocol stream — so it's safe to redirect even in --bind stdio.
         var io = CommandIo.Resolve(stdout, stderr);
-        var cfg = new McpServeConfig(configureOpts, port, allowArbitraryUrls, noEnvAllowlist, io);
+        var cfg = new McpServeConfig(configureOpts, port, allowArbitraryUrls, noEnvAllowlist, allowInvoke, noConfirm, io);
 
         return bind switch
         {
@@ -92,6 +112,10 @@ internal static class McpServeCommand
 
         if (cfg.AllowArbitraryUrls)
             await cfg.Io.Err.WriteLineAsync("[bowire-mcp] WARNING: --allow-arbitrary-urls set; bowire.invoke / bowire.subscribe accept any URL the agent supplies.").ConfigureAwait(false);
+        if (cfg.AllowInvoke)
+            await cfg.Io.Err.WriteLineAsync("[bowire-mcp] --allow-invoke set: seeding allowlist from ~/.bowire/typed-urls.json (in addition to environments.json).").ConfigureAwait(false);
+        if (cfg.NoConfirm)
+            await cfg.Io.Err.WriteLineAsync("[bowire-mcp] --no-confirm set: mutator tools (bowire.mock.start, bowire.record.start) execute without the two-step confirmation gate.").ConfigureAwait(false);
 
         try
         {
@@ -119,6 +143,10 @@ internal static class McpServeCommand
         cfg.Io.OutLine($"  Bowire MCP - listening on http://localhost:{cfg.Port}/bowire/mcp");
         if (cfg.AllowArbitraryUrls)
             cfg.Io.OutLine("  WARNING: --allow-arbitrary-urls is set; URL allowlist is disabled.");
+        if (cfg.AllowInvoke)
+            cfg.Io.OutLine("  --allow-invoke set: seeding allowlist from ~/.bowire/typed-urls.json.");
+        if (cfg.NoConfirm)
+            cfg.Io.OutLine("  --no-confirm set: mutator tools execute without the two-step confirmation gate.");
         cfg.Io.OutLine("  Connect Claude Desktop / Cursor with the URL above; or POST JSON-RPC directly.");
 
         try

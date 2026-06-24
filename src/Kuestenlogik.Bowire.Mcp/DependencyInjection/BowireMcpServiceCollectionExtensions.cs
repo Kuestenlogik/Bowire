@@ -63,6 +63,12 @@ public static class BowireMcpServiceCollectionExtensions
         // mock instances.
         services.AddSingleton<BowireMockHandleRegistry>();
 
+        // Pending-confirmation store — backs the two-step confirm
+        // pattern on mutator tools (#37). Singleton so tokens issued
+        // by one tool call can be redeemed by a later one in the
+        // same session.
+        services.AddSingleton<BowireMcpConfirmationStore>();
+
         return services.AddMcpServer(o =>
         {
             o.ServerInfo = new ModelContextProtocol.Protocol.Implementation

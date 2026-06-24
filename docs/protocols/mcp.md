@@ -209,12 +209,23 @@ Both transports expose the same toolset. Top-level tools include:
 | `bowire.subscribe` | Sample a streaming method for a bounded window and return collected frames. |
 | `bowire.env.list` / `bowire.env.get` | Read environments stored under `~/.bowire/environments.json`. |
 | `bowire.recordings.list` / `bowire.recording.get` | Browse captured recordings. |
-| `bowire.mock.start` / `bowire.mock.stop` / `bowire.mock.list` | Spin up an in-process mock server from a recording, stop it, list active handles. |
+| `bowire.mock.start` / `bowire.mock.stop` / `bowire.mock.list` | Spin up an in-process mock server from a recording, stop it, list active handles. Mutators run behind a two-step confirmation gate (`--no-confirm` to disable). |
+| `bowire.har.import` | Convert a HAR 1.2 trace into a Bowire recording — optionally writes it to disk for use with `bowire.mock.start`. |
+| `bowire.assert` | Append a Newman-style assertion (`{ path, op, expected }`) onto a step inside a recording. Ops: `eq`, `ne`, `gt`, `gte`, `lt`, `lte`, `contains`, `matches`, `exists`, `notexists`, `type`. |
+| `bowire.allowlist.show` / `bowire.allowlist.permit` | Diagnose the active URL allowlist + extend it at runtime (the latter also persists to `~/.bowire/typed-urls.json`). |
 
 The full tool list is generated from the discovered `BowireMcpTools` class via the ModelContextProtocol C# SDK — call `tools/list` on the running server to see the current schemas.
 
 ### Security warning (roles 3 + 4)
 
 The MCP server lets an agent drive any URL that's allowlisted (or any URL at all if no allowlist is configured). Treat it the same way you'd treat a CLI with shell access: only run it against trusted target systems, and prefer the `AllowedServerUrls` allowlist for non-localhost production hosts.
+
+Three CLI flags layer the allowlist:
+
+- *(default)* — the allowlist seeds from `~/.bowire/environments.json` (every saved environment's `serverUrl`). Add URLs explicitly via `BowireMcpOptions.AllowedServerUrls` when scripting.
+- `--allow-invoke` — also seed from `~/.bowire/typed-urls.json`, which tracks every URL the user has typed into the workbench. Widens the allowlist without dropping the gate; agents can also call `bowire.allowlist.permit` to append the URL the user just typed.
+- `--allow-arbitrary-urls` — drop the gate entirely. Sandboxed CI only.
+
+`--no-confirm` disables the two-step pending-confirmation pattern on mutator tools (`bowire.mock.start`, `bowire.record.start`). Without it, the first call returns `{ pending: true, confirmationToken, plan }` and the agent must echo the token (or pass `confirm: true`) on a second call to execute. Pending tokens expire after five minutes.
 
 See also: [Quick Start](../setup/index.md), [Plugin System](../features/plugin-system.md)
