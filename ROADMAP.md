@@ -195,6 +195,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [7](https://github.com/Kuestenlogik/Bowire.Bootcamp/issues/7) | Bootcamp | [Capstone copy mentions 'bowire mock' before the CLI is introduced — rephrase as capability](#issue-kuestenlogik-bowire-bootcamp-7) | ⬜ Backlog |  |
 | [11](https://github.com/Kuestenlogik/Bowire.Protocol.Surgewave/issues/11) | Protocol.Surgewave | [Light up Surgewave protocol plugin](#issue-kuestenlogik-bowire-protocol-surgewave-11) | ⬜ Backlog |  |
 | [13](https://github.com/Kuestenlogik/Bowire.Samples/issues/13) | Samples | [SimpleGraphQLSubscriptions sample](#issue-kuestenlogik-bowire-samples-13) | ⬜ Backlog | `area:plugin-sdk` |
+| [40](https://github.com/Kuestenlogik/Bowire/issues/40) | Bowire | [Freeform Request Builder](#issue-kuestenlogik-bowire-40) | ⬜ Backlog | `area:workbench` |
 | [44](https://github.com/Kuestenlogik/Bowire/issues/44) | Bowire | [Sidecar packaging — Docker / Compose / Kubernetes](#issue-kuestenlogik-bowire-44) | ⬜ Backlog | `area:docs` |
 | [50](https://github.com/Kuestenlogik/Bowire/issues/50) | Bowire | [Marketing site — gallery / lightbox layer on solutions/*](#issue-kuestenlogik-bowire-50) | ⬜ Backlog | `area:site` |
 | [51](https://github.com/Kuestenlogik/Bowire/issues/51) | Bowire | [Marketing site — migrate <img> tags to picture.html partial](#issue-kuestenlogik-bowire-51) | ⬜ Backlog | `area:site` |
@@ -704,6 +705,12 @@ Tracks the Surgewave-lane work split out of Kuestenlogik/Bowire#33 so protocol-s
 > `area:plugin-sdk`
 
 Hand-rolled graphql-transport-ws server (or HotChocolate-based) so the GraphQL pluginʼs subscription code path has a runnable target. [[more]](https://github.com/Kuestenlogik/Bowire.Samples/issues/13)
+
+#### <a id="issue-kuestenlogik-bowire-40"></a>⬜ Backlog · [#40](https://github.com/Kuestenlogik/Bowire/issues/40) Freeform Request Builder
+
+> `area:workbench`
+
+Bowire today is discovery-first. Freeform flips this — the user creates a request from scratch without a discovered schema. [[more]](https://github.com/Kuestenlogik/Bowire/issues/40)
 
 #### <a id="issue-kuestenlogik-bowire-44"></a>⬜ Backlog · [#44](https://github.com/Kuestenlogik/Bowire/issues/44) Sidecar packaging — Docker / Compose / Kubernetes
 
