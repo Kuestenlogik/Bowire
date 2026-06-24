@@ -2034,13 +2034,16 @@ object.theme-img-dark, object.theme-img-light {
         max-width: none;
     }
 
-    /* #241 — Strip stray decorative backgrounds from the printed PDF.
-       page.pdf({ printBackground: true }) renders every painted fill
-       (accent washes, theme tints, hover bleeds) and the result was
-       inconsistent surface colour across sections ("Browser UI mode"
-       being the example the user spotted). Force transparent on
-       structural wrappers + body. Code blocks keep a deliberate
-       light-grey tint so the visual code-vs-prose split survives. */
+    /* #241 — Backgrounds bleeding into the printed PDF. Playwright
+       runs page.pdf({ printBackground: true }) so every CSS-painted
+       background ends up in the output — including tints that were
+       meant only to mark interactive states on screen (badges, hover
+       fills, accent washes). Force the article body to white and let
+       only the deliberately code-visual `<pre>` / `<code>` blocks keep
+       their tinted background as the reader expects. The user spotted
+       this on the "Browser UI mode" section ("Launch Bowire pointed
+       at a target server URL …") where some surrounding decorative
+       fill leaked into the print rendering. */
     body,
     article,
     .bowire-docs-main,
@@ -2053,6 +2056,9 @@ object.theme-img-dark, object.theme-img-light {
         background-color: transparent !important;
         backdrop-filter: none !important;
     }
+    /* Pre / code retain their subtle tint — the printed reader still
+       benefits from a visual code-vs-prose split. Use a fixed grey so
+       theme tokens don't drag accent washes in. */
     pre, pre code,
     article pre,
     article code {
@@ -2060,14 +2066,14 @@ object.theme-img-dark, object.theme-img-light {
         color: #0a0a0a !important;
         border-color: #e3e3e3 !important;
     }
-    /* Hero / heading gradient-fill was reading as washed-out
-       near-white text in print. Force solid black via the
-       -webkit-text-fill-color escape hatch (the gradient lives on
-       `background-clip: text` + transparent fill colour, so resetting
-       both restores legibility). */
+    /* Strip the gradient title-fill on headings — they read as
+       washed-out near-white text under print. Force solid black for
+       legibility. */
     .bowire-docs-hero-title,
     .bowire-docs-hero h1,
-    article h1, article h2, article h3 {
+    article h1,
+    article h2,
+    article h3 {
         -webkit-text-fill-color: #0a0a0a !important;
         background: none !important;
         background-clip: initial !important;
