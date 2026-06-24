@@ -1922,6 +1922,18 @@
         //     entire data set into a fresh workspace, restoring the
         //     v1.9 Save-As path the auto-save model dropped.
         var headerActions = el('div', { className: 'bowire-ws-detail-header-actions' });
+        // 'All workspaces' — explicit nav back to the overview. The
+        // breadcrumb 'Workspaces' link at the top of the header does
+        // the same thing but reads as decoration; a real action
+        // button next to Save-now / Duplicate gives the operator a
+        // visible affordance to leave a single workspace's detail
+        // pane and see the listing.
+        headerActions.appendChild(el('button', {
+            className: 'bowire-ws-detail-action-btn',
+            textContent: 'All workspaces',
+            title: 'Show the list of every workspace',
+            onClick: _goToWorkspacesOverview
+        }));
         if (isActive) {
             // Save-now button greys out when nothing has been
             // autosaved since the last force-flush — pressing it then
@@ -1962,6 +1974,43 @@
                 });
             }
         }));
+        // 'Save as template…' — only on the ACTIVE workspace (you can
+        // only snapshot the localStorage of the workspace you're
+        // currently in). #242 already exposed this in the workspaces
+        // overview's per-row tool cluster; surfacing it here too so
+        // the operator who's already inside their workspace settings
+        // doesn't have to navigate back to find it.
+        if (isActive && typeof saveCurrentWorkspaceAsTemplate === 'function') {
+            headerActions.appendChild(el('button', {
+                className: 'bowire-ws-detail-action-btn',
+                textContent: 'Save as template…',
+                title: 'Snapshot this workspace as a reusable template. Shows up in 'Your templates' on the next create-workspace dialog.',
+                onClick: function () {
+                    var t = _liveWs();
+                    var wsName = (t && t.name) || 'workspace';
+                    bowirePrompt('Template name', {
+                        title: 'Save as template',
+                        defaultValue: wsName + ' template',
+                        confirmText: 'Save',
+                        validator: function (val) {
+                            return String(val || '').trim() ? null : 'Name required';
+                        }
+                    }).then(function (name) {
+                        if (!name) return;
+                        try {
+                            saveCurrentWorkspaceAsTemplate(name, '', 'layers');
+                            if (typeof toast === 'function') {
+                                toast('Saved "' + name + '" — available in the next create-workspace dialog.', 'success');
+                            }
+                        } catch (e) {
+                            if (typeof toast === 'function') {
+                                toast('Save failed: ' + (e && e.message ? e.message : 'unknown error'), 'error');
+                            }
+                        }
+                    });
+                }
+            }));
+        }
         header.appendChild(headerActions);
         main.appendChild(header);
 

@@ -2080,6 +2080,18 @@
             }
         });
 
+        // Explicit "All workspaces" overview button — sits in the
+        // overflow cluster next to the '+ New workspace' so the route
+        // to the listing is a real affordance, not a clickable title
+        // that reads as decoration.
+        var overviewOverflow = [{
+            label: 'Show all workspaces',
+            icon: 'list',
+            onClick: function () {
+                workspaceTreeSelection = { kind: 'workspaces-overview' };
+                render();
+            }
+        }];
         sidebar.appendChild(renderSidebarToolbar({
             title: 'Workspaces',
             onTitleClick: function () {
@@ -2087,6 +2099,7 @@
                 render();
             },
             titleClickTitle: 'Open Workspaces overview',
+            overflow: overviewOverflow,
             primary: {
                 icon: 'plus',
                 title: 'Create new workspace',
