@@ -161,12 +161,11 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.8 — Workbench UX polish: freeform REST, header library, connection pill
 
-**0/6 done** · 6 backlog
+**0/5 done** · 5 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
 | [47](https://github.com/Kuestenlogik/Bowire/issues/47) | Bowire | [Sidebar display: method name vs path toggle](#issue-kuestenlogik-bowire-47) | ⬜ Backlog | `area:workbench` |
-| [93](https://github.com/Kuestenlogik/Bowire/issues/93) | Bowire | [Topbar: connection-state pill (aggregate + per-URL popover)](#issue-kuestenlogik-bowire-93) | ⬜ Backlog |  |
 | [95](https://github.com/Kuestenlogik/Bowire/issues/95) | Bowire | [Header Library: named, scoped, toggleable header sets](#issue-kuestenlogik-bowire-95) | ⬜ Backlog |  |
 | [117](https://github.com/Kuestenlogik/Bowire/issues/117) | Bowire | [i18n — extract every UI string; ship DE + EN catalogues](#issue-kuestenlogik-bowire-117) | ⬜ Backlog |  |
 | [256](https://github.com/Kuestenlogik/Bowire/issues/256) | Bowire | [Freeform builder: schema-free ad-hoc REST — URL + verb + body, Postman-style](#issue-kuestenlogik-bowire-256) | ⬜ Backlog |  |
@@ -195,7 +194,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
 | [3](https://github.com/Kuestenlogik/Bowire.Templates/issues/3) | Templates | [Plugin project template — `dotnet new bowire-plugin`](#issue-kuestenlogik-bowire-templates-3) | ⬜ Backlog | `area:plugin-sdk` |
-| [5](https://github.com/Kuestenlogik/Bowire.Bootcamp/issues/5) | Bootcamp | [Top-bar B-logo on Bootcamp pages should link to bowire.io/, not bowire.io/bootcamp/](#issue-kuestenlogik-bowire-bootcamp-5) | ⬜ Backlog |  |
 | [6](https://github.com/Kuestenlogik/Bowire.Bootcamp/issues/6) | Bootcamp | [Bootcamp landing renders inconsistent breadcrumb based on arrival path](#issue-kuestenlogik-bowire-bootcamp-6) | ⬜ Backlog |  |
 | [7](https://github.com/Kuestenlogik/Bowire.Bootcamp/issues/7) | Bootcamp | [Capstone copy mentions 'bowire mock' before the CLI is introduced — rephrase as capability](#issue-kuestenlogik-bowire-bootcamp-7) | ⬜ Backlog |  |
 | [11](https://github.com/Kuestenlogik/Bowire.Protocol.Surgewave/issues/11) | Protocol.Surgewave | [Light up Surgewave protocol plugin](#issue-kuestenlogik-bowire-protocol-surgewave-11) | ⬜ Backlog |  |
@@ -657,10 +655,6 @@ Group stream frames by an explicit **track identifier** so the map can show N pa
 
 For REST endpoints, offer a per-sidebar toggle (sticky in localStorage) that flips the label between \`GetForecast\` and \`GET /api/Weather/forecast/{city}\`. [[more]](https://github.com/Kuestenlogik/Bowire/issues/47)
 
-#### <a id="issue-kuestenlogik-bowire-93"></a>⬜ Backlog · [#93](https://github.com/Kuestenlogik/Bowire/issues/93) Topbar: connection-state pill (aggregate + per-URL popover)
-
-Today the user has to scroll the sidebar to know whether their configured URL is actually connected — the dot lives next to the URL input inside the source selector. That's the right place for *editing* the URL, but the wrong place for *monitoring* the connection. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/93)
-
 #### <a id="issue-kuestenlogik-bowire-95"></a>⬜ Backlog · [#95](https://github.com/Kuestenlogik/Bowire/issues/95) Header Library: named, scoped, toggleable header sets
 
 Headers like `Accept: application/vnd.example+json`, `X-Api-Version: 2`, `User-Agent: my-tester/1.0` get re-typed on every method, every environment, every workspace. Bowire's Metadata tab is per-request — there's no place to say "every call against api.example.com sends these three headers" without scripts. [[more]](https://github.com/Kuestenlogik/Bowire/issues/95)
@@ -708,10 +702,6 @@ Close the second half of the v0.8.11 design. [[more]](https://github.com/Kuesten
 > `area:plugin-sdk`
 
 \`dotnet new bowire-plugin\` in the separate [Templates repo](https://github.com/Kuestenlogik/Bowire.Templates). The polyglot sidecar variants (Python / Node / Rust / Go) shipped via \`--Sidecar\`; this is the .NET-native variant. [[more]](https://github.com/Kuestenlogik/Bowire.Templates/issues/3)
-
-#### <a id="issue-kuestenlogik-bowire-bootcamp-5"></a>⬜ Backlog · [Kuestenlogik/Bowire.Bootcamp#5](https://github.com/Kuestenlogik/Bowire.Bootcamp/issues/5) Top-bar B-logo on Bootcamp pages should link to bowire.io/, not bowire.io/bootcamp/
-
-Clicking the top-bar **B-logo** while on a Bootcamp page navigates to the **Bootcamp home** (`bowire.io/bootcamp/`), not to the marketing-site home (`bowire.io/`). … [[more]](https://github.com/Kuestenlogik/Bowire.Bootcamp/issues/5)
 
 #### <a id="issue-kuestenlogik-bowire-bootcamp-6"></a>⬜ Backlog · [Kuestenlogik/Bowire.Bootcamp#6](https://github.com/Kuestenlogik/Bowire.Bootcamp/issues/6) Bootcamp landing renders inconsistent breadcrumb based on arrival path
 
