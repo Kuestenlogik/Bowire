@@ -473,17 +473,12 @@
 
         function refreshList() {
             templateList.innerHTML = '';
-            // Built-ins first (the empty/no-op default leads), then a
-            // section header + user templates if any exist.
+            // Single list — built-ins first, then user templates,
+            // no section divider. They're all templates; the only
+            // distinction is that built-ins lack the delete affordance
+            // (tpl.isUser drives the per-row trash icon in appendRow).
             BOWIRE_WORKSPACE_TEMPLATES.forEach(appendRow);
-            var userTpls = listUserTemplates();
-            if (userTpls.length > 0) {
-                templateList.appendChild(el('div', {
-                    className: 'bowire-ws-template-section-heading',
-                    textContent: 'Your templates'
-                }));
-                userTpls.forEach(appendRow);
-            }
+            listUserTemplates().forEach(appendRow);
         }
         refreshList();
 
