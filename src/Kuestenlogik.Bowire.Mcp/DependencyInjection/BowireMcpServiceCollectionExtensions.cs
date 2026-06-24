@@ -6,6 +6,8 @@ using Kuestenlogik.Bowire.Recording;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
+using ModelContextProtocol;
+using ModelContextProtocol.Protocol;
 using ModelContextProtocol.Server;
 
 namespace Kuestenlogik.Bowire.Mcp;
@@ -88,5 +90,150 @@ public static class BowireMcpServiceCollectionExtensions
                 Title = "Bowire workbench (self-MCP)"
             };
         });
+    }
+
+    /// <summary>
+    /// Register a forwarder-mode MCP server (#286). Every incoming MCP
+    /// request is relayed to <paramref name="parentEndpoint"/> via an
+    /// outbound <see cref="BowireForwardingMcpTransport"/>; no Bowire
+    /// tools / resources / prompts are bound locally — the parent's
+    /// surface is what the LLM caller sees.
+    /// </summary>
+    /// <param name="services">The application's service collection.</param>
+    /// <param name="parentEndpoint">
+    /// HTTP(S) URI of the parent Bowire MCP endpoint (e.g.
+    /// <c>http://localhost:5198/bowire/mcp</c>).
+    /// </param>
+    /// <param name="bearerToken">
+    /// Optional bearer token; attached as <c>Authorization: Bearer …</c>
+    /// on every request to the parent. Required when the parent has
+    /// <c>--token</c> set.
+    /// </param>
+    public static IMcpServerBuilder AddBowireMcpForwarder(
+        this IServiceCollection services,
+        Uri parentEndpoint,
+        string? bearerToken = null)
+    {
+        ArgumentNullException.ThrowIfNull(services);
+        ArgumentNullException.ThrowIfNull(parentEndpoint);
+
+        // Singleton so the parent connection is established once + reused
+        // across every incoming MCP request. The host's shutdown calls
+        // IAsyncDisposable.DisposeAsync, which closes the parent client.
+        services.AddSingleton(_ => new BowireForwardingMcpTransport(parentEndpoint, bearerToken));
+
+        return services
+            .AddMcpServer(o =>
+            {
+                o.ServerInfo = new Implementation
+                {
+                    Name = "bowire-mcp-forwarder",
+                    Version = typeof(BowireForwardingMcpTransport).Assembly
+                        .GetName().Version?.ToString() ?? "0.0.0",
+                    Title = "Bowire workbench (MCP forwarder)",
+                };
+            })
+            .WithListToolsHandler(ForwardListToolsAsync)
+            .WithCallToolHandler(ForwardCallToolAsync)
+            .WithListPromptsHandler(ForwardListPromptsAsync)
+            .WithGetPromptHandler(ForwardGetPromptAsync)
+            .WithListResourcesHandler(ForwardListResourcesAsync)
+            .WithReadResourceHandler(ForwardReadResourceAsync)
+            .WithListResourceTemplatesHandler(ForwardListResourceTemplatesAsync);
+    }
+
+    // ----- forwarder handlers ----------------------------------------
+    //
+    // Every handler resolves the singleton forwarder, gets (or lazily
+    // builds) the parent McpClient, and re-issues the typed request.
+    // McpException from the parent surfaces verbatim; non-MCP exceptions
+    // are wrapped so the SDK turns them into a JSON-RPC error envelope
+    // with the upstream cause attached.
+
+    private static async ValueTask<ListToolsResult> ForwardListToolsAsync(
+        RequestContext<ListToolsRequestParams> ctx, CancellationToken ct)
+    {
+        var forwarder = ResolveForwarder(ctx);
+        var client = await GetParentClientOrThrow(forwarder, ct).ConfigureAwait(false);
+        return await client.ListToolsAsync(ctx.Params ?? new ListToolsRequestParams(), ct).ConfigureAwait(false);
+    }
+
+    private static async ValueTask<CallToolResult> ForwardCallToolAsync(
+        RequestContext<CallToolRequestParams> ctx, CancellationToken ct)
+    {
+        var forwarder = ResolveForwarder(ctx);
+        var client = await GetParentClientOrThrow(forwarder, ct).ConfigureAwait(false);
+        var p = ctx.Params ?? throw new McpException("tools/call request had no parameters.");
+        return await client.CallToolAsync(p, ct).ConfigureAwait(false);
+    }
+
+    private static async ValueTask<ListPromptsResult> ForwardListPromptsAsync(
+        RequestContext<ListPromptsRequestParams> ctx, CancellationToken ct)
+    {
+        var forwarder = ResolveForwarder(ctx);
+        var client = await GetParentClientOrThrow(forwarder, ct).ConfigureAwait(false);
+        return await client.ListPromptsAsync(ctx.Params ?? new ListPromptsRequestParams(), ct).ConfigureAwait(false);
+    }
+
+    private static async ValueTask<GetPromptResult> ForwardGetPromptAsync(
+        RequestContext<GetPromptRequestParams> ctx, CancellationToken ct)
+    {
+        var forwarder = ResolveForwarder(ctx);
+        var client = await GetParentClientOrThrow(forwarder, ct).ConfigureAwait(false);
+        var p = ctx.Params ?? throw new McpException("prompts/get request had no parameters.");
+        return await client.GetPromptAsync(p, ct).ConfigureAwait(false);
+    }
+
+    private static async ValueTask<ListResourcesResult> ForwardListResourcesAsync(
+        RequestContext<ListResourcesRequestParams> ctx, CancellationToken ct)
+    {
+        var forwarder = ResolveForwarder(ctx);
+        var client = await GetParentClientOrThrow(forwarder, ct).ConfigureAwait(false);
+        return await client.ListResourcesAsync(ctx.Params ?? new ListResourcesRequestParams(), ct).ConfigureAwait(false);
+    }
+
+    private static async ValueTask<ReadResourceResult> ForwardReadResourceAsync(
+        RequestContext<ReadResourceRequestParams> ctx, CancellationToken ct)
+    {
+        var forwarder = ResolveForwarder(ctx);
+        var client = await GetParentClientOrThrow(forwarder, ct).ConfigureAwait(false);
+        var p = ctx.Params ?? throw new McpException("resources/read request had no parameters.");
+        return await client.ReadResourceAsync(p, ct).ConfigureAwait(false);
+    }
+
+    private static async ValueTask<ListResourceTemplatesResult> ForwardListResourceTemplatesAsync(
+        RequestContext<ListResourceTemplatesRequestParams> ctx, CancellationToken ct)
+    {
+        var forwarder = ResolveForwarder(ctx);
+        var client = await GetParentClientOrThrow(forwarder, ct).ConfigureAwait(false);
+        return await client.ListResourceTemplatesAsync(ctx.Params ?? new ListResourceTemplatesRequestParams(), ct).ConfigureAwait(false);
+    }
+
+    private static BowireForwardingMcpTransport ResolveForwarder<T>(RequestContext<T> ctx)
+    {
+        var services = ctx.Services
+            ?? throw new McpException("Forwarder handler ran without a service provider — DI wiring is broken.");
+        return services.GetRequiredService<BowireForwardingMcpTransport>();
+    }
+
+    private static async Task<ModelContextProtocol.Client.McpClient> GetParentClientOrThrow(
+        BowireForwardingMcpTransport forwarder, CancellationToken ct)
+    {
+        try
+        {
+            return await forwarder.GetClientAsync(ct).ConfigureAwait(false);
+        }
+        catch (McpException)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            // Surface the upstream cause in the JSON-RPC error message so
+            // the caller can tell a "parent unreachable" from a "tool
+            // failed" — same convention as the protocol adapter.
+            throw new McpException(
+                $"Bowire MCP forwarder: failed to reach parent endpoint '{forwarder.ParentEndpoint}' — {ex.Message}", ex);
+        }
     }
 }
