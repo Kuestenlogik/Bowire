@@ -2072,6 +2072,13 @@ not just
 .bowire-env-overview-row:hover .bowire-env-overview-tool {
     display: inline-flex;
 }
+/* Workspaces overview rows have enough horizontal room to carry
+   the tool cluster permanently — hover-reveal would just slow the
+   operator down. Restrict to the workspaces variant so the env
+   overview keeps its hover-reveal tighter shape. */
+.bowire-main-workspaces .bowire-env-overview-tool {
+    display: inline-flex;
+}
 .bowire-env-overview-tool:hover {
     background: var(--bowire-bg-elevated);
     color: var(--bowire-text);
@@ -2136,40 +2143,10 @@ not just
     visibility: hidden;
 }
 .bowire-workspace-menu-item-check.is-active { visibility: visible; }
-.bowire-workspace-menu-item-rename,
-.bowire-workspace-menu-item-edit,
-.bowire-workspace-menu-item-trash {
-    width: 22px;
-    height: 22px;
-    flex-shrink: 0;
-    display: none;
-    align-items: center;
-    justify-content: center;
-    padding: 0;
-    border: 0;
-    border-radius: var(--bowire-radius-sm);
-    background: transparent;
-    color: var(--bowire-text-tertiary);
-    cursor: pointer;
-    transition: background var(--bowire-transition), color var(--bowire-transition);
-}
-.bowire-workspace-menu-item:hover .bowire-workspace-menu-item-rename,
-.bowire-workspace-menu-item:hover .bowire-workspace-menu-item-edit,
-.bowire-workspace-menu-item:hover .bowire-workspace-menu-item-trash {
-    display: inline-flex;
-}
-.bowire-workspace-menu-item-rename:hover,
-.bowire-workspace-menu-item-edit:hover {
-    background: var(--bowire-surface);
-    color: var(--bowire-text);
-}
-.bowire-workspace-menu-item-trash:hover {
-    background: var(--bowire-surface);
-    color: var(--bowire-error);
-}
-.bowire-workspace-menu-item-rename svg,
-.bowire-workspace-menu-item-edit svg,
-.bowire-workspace-menu-item-trash svg { width: 12px; height: 12px; }
+/* Per-row rename / edit / trash tools retired from the topbar
+   workspace dropdown in #276 — those actions live on the Workspaces
+   rail sidebar's hover-revealed tools + right-click menu now, so the
+   dropdown stays minimal (switch + check marker only). */
 .bowire-workspace-menu-divider {
     height: 1px;
     margin: 4px 0;
@@ -3082,6 +3059,39 @@ not just
 .bowire-tree-add:hover {
     background: var(--bowire-surface);
     color: var(--bowire-text);
+}
+/* #276 — Per-row hover-revealed tool icon buttons for tree rows
+   (Workspaces rail rename / save-as-template / duplicate / delete).
+   Match the .bowire-tree-add affordance: display:none until row hover
+   so the row stays uncluttered at rest, then a strip of icons appears
+   on the right between the badge and the `+` add affordance. */
+.bowire-tree-tool {
+    flex-shrink: 0;
+    width: 18px;
+    height: 18px;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    border: 0;
+    border-radius: var(--bowire-radius-sm);
+    background: transparent;
+    color: var(--bowire-text-tertiary);
+    cursor: pointer;
+    transition: background var(--bowire-transition), color var(--bowire-transition);
+}
+.bowire-tree-tool svg { width: 11px; height: 11px; }
+.bowire-tree-row:hover .bowire-tree-tool { display: inline-flex; }
+.bowire-tree-tool:hover {
+    background: var(--bowire-surface);
+    color: var(--bowire-text);
+}
+.bowire-tree-tool-danger:hover {
+    color: var(--bowire-error);
+}
+.bowire-tree-tool:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
 }
 .bowire-tree-children {
     display: flex;
@@ -12744,6 +12754,98 @@ button.bowire-sidebar-toolbar-title:hover,
 .bowire-sidebar-toolbar-primary svg {
     width: 13px;
     height: 13px;
+}
+/* #276 — Sidebar filterbar (search + sort) rendered immediately
+   below the section toolbar. Same horizontal padding as the toolbar
+   so the search input lines up vertically with the title above. */
+.bowire-sidebar-toolbar-wrap {
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+}
+.bowire-sidebar-toolbar-wrap > .bowire-sidebar-toolbar {
+    border-bottom: 0;
+}
+.bowire-sidebar-filterbar {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 10px 8px 10px;
+    border-bottom: 1px solid var(--bowire-border-subtle);
+}
+.bowire-sidebar-filterbar-search {
+    flex: 1;
+    min-width: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 26px;
+    padding: 0 8px;
+    background: var(--bowire-surface);
+    border: 1px solid var(--bowire-border-subtle);
+    border-radius: var(--bowire-radius-sm);
+    color: var(--bowire-text-tertiary);
+    transition: border-color var(--bowire-transition), background var(--bowire-transition);
+}
+.bowire-sidebar-filterbar-search:focus-within {
+    border-color: var(--bowire-accent);
+    background: var(--bowire-bg);
+}
+.bowire-sidebar-filterbar-search-icon {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 12px;
+    height: 12px;
+}
+.bowire-sidebar-filterbar-search-icon svg {
+    width: 12px;
+    height: 12px;
+}
+.bowire-sidebar-filterbar-search-input {
+    flex: 1;
+    min-width: 0;
+    border: 0;
+    background: transparent;
+    color: var(--bowire-text);
+    font-size: 12px;
+    outline: none;
+    padding: 0;
+    margin: 0;
+    /* Strip the WebKit clear-x — the search field is short and the
+       cancel glyph fights with the magnifier icon at this size. */
+}
+.bowire-sidebar-filterbar-search-input::-webkit-search-cancel-button {
+    -webkit-appearance: none;
+    display: none;
+}
+.bowire-sidebar-filterbar-search-input::placeholder {
+    color: var(--bowire-text-tertiary);
+}
+.bowire-sidebar-filterbar-sort {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+}
+.bowire-sidebar-filterbar-sort-select {
+    height: 26px;
+    padding: 0 6px;
+    background: var(--bowire-surface);
+    border: 1px solid var(--bowire-border-subtle);
+    border-radius: var(--bowire-radius-sm);
+    color: var(--bowire-text-secondary);
+    font-size: 11px;
+    cursor: pointer;
+    transition: border-color var(--bowire-transition), color var(--bowire-transition);
+}
+.bowire-sidebar-filterbar-sort-select:hover {
+    border-color: var(--bowire-border);
+    color: var(--bowire-text);
+}
+.bowire-sidebar-filterbar-sort-select:focus-visible {
+    outline: none;
+    border-color: var(--bowire-accent);
 }
 /* Clickable variant of the section title — used by the workspaces
    sidebar header to navigate to the Workspaces overview. Looks

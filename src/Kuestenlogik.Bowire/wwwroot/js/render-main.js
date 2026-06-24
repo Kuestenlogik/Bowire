@@ -1724,98 +1724,28 @@
                         render();
                     }
                 }));
+                // #276 — Per-row tools sourced from the same
+                // _workspaceRowActionDefs the sidebar tree uses, so
+                // both surfaces share the actions, the labels, the
+                // dialog wording, and the confirmation copy. The
+                // overview wraps each definition in its own
+                // `bowire-env-overview-tool` button shape (different
+                // visual rhythm from the sidebar's compact tree-tool
+                // icons, but same outcome).
                 var tools = el('div', { className: 'bowire-env-overview-tools' });
-                tools.appendChild(el('button', {
-                    type: 'button',
-                    className: 'bowire-env-overview-tool',
-                    title: 'Rename workspace',
-                    'aria-label': 'Rename workspace',
-                    innerHTML: (typeof svgIcon === 'function') ? svgIcon('pencil') : '✎',
-                    onClick: function () {
-                        var wsId = w.id;
-                        var oldName = w.name || '';
-                        bowirePrompt('Rename workspace', {
-                            title: 'Rename',
-                            defaultValue: oldName,
-                            confirmText: 'Rename',
-                            validator: function (val) {
-                                var trimmed = String(val || '').trim();
-                                if (!trimmed) return 'Name required';
-                                if (trimmed.toLowerCase() === String(oldName || '').trim().toLowerCase()) return null;
-                                if (typeof _isWorkspaceNameTaken === 'function'
-                                    && _isWorkspaceNameTaken(trimmed, wsId)) {
-                                    if (typeof toast === 'function') {
-                                        toast('A workspace named "' + trimmed + '" already exists.', 'error');
-                                    }
-                                    return 'Duplicate';
-                                }
-                                return null;
-                            }
-                        }).then(function (renamed) {
-                            if (renamed && typeof renameWorkspace === 'function') {
-                                renameWorkspace(wsId, renamed);
-                                render();
-                            }
-                        });
-                    }
-                }));
-                // #242 — save the active workspace as a reusable
-                // template. Only offered for the ACTIVE workspace (you
-                // can only snapshot the localStorage of the workspace
-                // you're currently in). Non-active workspaces just see
-                // Rename + Delete.
-                if (w.id === activeWorkspaceId
-                    && typeof saveCurrentWorkspaceAsTemplate === 'function') {
+                var rowDefs = (typeof _workspaceRowActionDefs === 'function')
+                    ? _workspaceRowActionDefs(w) : [];
+                rowDefs.forEach(function (def) {
                     tools.appendChild(el('button', {
                         type: 'button',
-                        className: 'bowire-env-overview-tool',
-                        title: 'Save workspace as template',
-                        'aria-label': 'Save workspace as template',
-                        innerHTML: (typeof svgIcon === 'function') ? svgIcon('save') : '💾',
-                        onClick: function () {
-                            var wsName = w.name || 'workspace';
-                            bowirePrompt('Template name', {
-                                title: 'Save as template',
-                                defaultValue: wsName + ' template',
-                                confirmText: 'Save',
-                                validator: function (val) {
-                                    return String(val || '').trim() ? null : 'Name required';
-                                }
-                            }).then(function (name) {
-                                if (!name) return;
-                                try {
-                                    saveCurrentWorkspaceAsTemplate(name, '', 'layers');
-                                    if (typeof toast === 'function') {
-                                        toast('Saved "' + name + '" — available in the next create-workspace dialog.', 'success');
-                                    }
-                                } catch (e) {
-                                    if (typeof toast === 'function') {
-                                        toast('Save failed: ' + (e && e.message ? e.message : 'unknown error'), 'error');
-                                    }
-                                }
-                            });
-                        }
+                        className: 'bowire-env-overview-tool'
+                            + (def.danger ? ' bowire-env-overview-tool-danger' : ''),
+                        title: def.title || def.label,
+                        'aria-label': def.title || def.label,
+                        innerHTML: svgIcon(def.icon),
+                        onClick: def.onClick
                     }));
-                }
-                tools.appendChild(el('button', {
-                    type: 'button',
-                    className: 'bowire-env-overview-tool bowire-env-overview-tool-danger',
-                    title: 'Delete workspace',
-                    'aria-label': 'Delete workspace',
-                    innerHTML: (typeof svgIcon === 'function') ? svgIcon('trash') : '🗑',
-                    onClick: function () {
-                        var wsId = w.id;
-                        var wsName = w.name || '(unnamed)';
-                        bowireConfirm(
-                            'Delete workspace "' + wsName + '"? Sources, environments, recordings and variables stored in this workspace are removed.',
-                            function () {
-                                if (typeof deleteWorkspace === 'function') deleteWorkspace(wsId);
-                                render();
-                            },
-                            { title: 'Delete workspace', confirmText: 'Delete', danger: true }
-                        );
-                    }
-                }));
+                });
                 row.appendChild(tools);
                 list.appendChild(row);
             });

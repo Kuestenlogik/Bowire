@@ -899,6 +899,57 @@
     // kind ∈ 'workspace' | 'sources' | 'url' | 'environments' |
     //        'collections' | 'recordings' | 'settings'
     let workspaceTreeSelection = { kind: 'workspace' };
+    // #276 — Workspaces sidebar search + sort. Search is session-only
+    // (Postman-style: each rail starts unfiltered after reload). Sort
+    // persists so the operator's preferred order survives reload.
+    //   'lastUsed'    (default) → most-recently-switched-to first; keeps
+    //                             the workspace they actually live in at
+    //                             the top
+    //   'alphabetical'          → A→Z by display name
+    //   'created'               → newest first by createdAt
+    let workspacesSearchQuery = '';
+    let workspacesSortBy = 'lastUsed';
+    try {
+        var rawWsSort = localStorage.getItem('bowire_workspaces_sort');
+        if (rawWsSort === 'lastUsed' || rawWsSort === 'alphabetical' || rawWsSort === 'created') {
+            workspacesSortBy = rawWsSort;
+        }
+    } catch { /* corrupt — keep default */ }
+    function setWorkspacesSortBy(mode) {
+        if (mode !== 'lastUsed' && mode !== 'alphabetical' && mode !== 'created') return;
+        workspacesSortBy = mode;
+        try { localStorage.setItem('bowire_workspaces_sort', mode); }
+        catch { /* quota / disabled — survive */ }
+    }
+    function getSortedFilteredWorkspaces() {
+        var list = Array.isArray(workspaces) ? workspaces.slice() : [];
+        var q = (workspacesSearchQuery || '').trim().toLowerCase();
+        if (q) {
+            list = list.filter(function (w) {
+                return (w.name || '').toLowerCase().indexOf(q) !== -1;
+            });
+        }
+        if (workspacesSortBy === 'alphabetical') {
+            list.sort(function (a, b) {
+                return (a.name || '').localeCompare(b.name || '');
+            });
+        } else if (workspacesSortBy === 'created') {
+            list.sort(function (a, b) {
+                return (b.createdAt || 0) - (a.createdAt || 0);
+            });
+        } else {
+            // lastUsed — most recently opened first, falling back to
+            // createdAt so a workspace that was never explicitly
+            // switched-to (e.g. just imported) still has a sensible
+            // anchor.
+            list.sort(function (a, b) {
+                var aL = a.lastOpenedAt || a.createdAt || 0;
+                var bL = b.lastOpenedAt || b.createdAt || 0;
+                return bL - aL;
+            });
+        }
+        return list;
+    }
     // #152 — selected URL in the Sources rail-mode detail view.
     let sourcesSelectedUrl = null;
     // #152 v3 — multi-select state on the Sources list (reuses the
