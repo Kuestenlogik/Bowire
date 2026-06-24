@@ -2442,7 +2442,7 @@
                                         title: isActive ? 'Active workspace' : 'Switch to this workspace'
                                     }),
                                     _toolBtn(renameDef, false),
-                                    isActive ? _toolBtn(sastDef, false) : null,
+                                    _toolBtn(sastDef, false),
                                     _toolBtn(deleteDef, true)
                                 )
                             );
