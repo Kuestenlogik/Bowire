@@ -32,21 +32,32 @@ public class BowireMcpToolsTests : IAsyncDisposable
     private BowireMcpTools BuildTools(
         BowireProtocolRegistry? registry = null,
         BowireMcpOptions? options = null,
-        BowireMockHandleRegistry? mockHandles = null)
+        BowireMockHandleRegistry? mockHandles = null,
+        BowireMcpConfirmationStore? confirmations = null)
     {
         registry ??= new BowireProtocolRegistry();
         // LoadAllowlistFromEnvironments must default to false in tests so the
         // ctor doesn't read the user's actual ~/.bowire/environments.json.
-        options ??= new BowireMcpOptions { LoadAllowlistFromEnvironments = false };
+        // RequireConfirmationForMutations defaults to off so the bulk of
+        // existing assertions on MockStart don't have to thread a token
+        // through. Tests that exercise the confirmation gate flip it
+        // back on explicitly.
+        options ??= new BowireMcpOptions
+        {
+            LoadAllowlistFromEnvironments = false,
+            RequireConfirmationForMutations = false,
+        };
         if (mockHandles is null)
         {
             mockHandles = new BowireMockHandleRegistry();
             _registries.Add(mockHandles);
         }
+        confirmations ??= new BowireMcpConfirmationStore();
 
         return new BowireMcpTools(
             registry,
             mockHandles,
+            confirmations,
             Options.Create(options),
             NullLogger<BowireMcpTools>.Instance);
     }
@@ -383,24 +394,29 @@ public class BowireMcpToolsTests : IAsyncDisposable
     }
 
     [Fact]
-    public void RecordStart_Returns_Not_Implemented_Sentinel()
+    public void RecordStart_Returns_Deferred_Sentinel()
     {
-        var result = BowireMcpTools.RecordStart("my-recording");
-        Assert.Contains("not yet implemented", result, StringComparison.Ordinal);
+        // Confirmation defaults to off in BuildTools so the call falls
+        // through to the deferred sentinel — the gate is exercised in
+        // BowireMcpConfirmationGateTests.
+        var tools = BuildTools();
+        var result = tools.RecordStart("my-recording", confirm: true);
+        Assert.Contains("deferred", result, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
-    public void RecordStop_Returns_Not_Implemented_Sentinel()
+    public void RecordStop_Returns_Deferred_Sentinel()
     {
-        var result = BowireMcpTools.RecordStop();
-        Assert.Contains("not yet implemented", result, StringComparison.Ordinal);
+        var tools = BuildTools();
+        var result = tools.RecordStop(confirm: true);
+        Assert.Contains("deferred", result, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
-    public void RecordReplay_Returns_Not_Implemented_Sentinel()
+    public void RecordReplay_Returns_Deferred_Sentinel()
     {
         var result = BowireMcpTools.RecordReplay("rec_42");
-        Assert.Contains("not yet implemented", result, StringComparison.Ordinal);
+        Assert.Contains("deferred", result, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("rec_42", result, StringComparison.Ordinal);
     }
 

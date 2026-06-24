@@ -84,10 +84,19 @@ public sealed class BowireMcpCoverageTests : IAsyncDisposable
         BowireMcpOptions? options = null)
     {
         registry ??= new BowireProtocolRegistry();
-        options ??= new BowireMcpOptions { LoadAllowlistFromEnvironments = false };
+        // Coverage tests pre-date the #37 two-step confirmation gate;
+        // default it off so the bulk of mock-start assertions stay
+        // valid. Dedicated tests in BowireMcpConfirmationGateTests
+        // flip it back on to exercise the new branches.
+        options ??= new BowireMcpOptions
+        {
+            LoadAllowlistFromEnvironments = false,
+            RequireConfirmationForMutations = false,
+        };
         return new BowireMcpTools(
             registry,
             NewMockHandles(),
+            new BowireMcpConfirmationStore(),
             Options.Create(options),
             NullLogger<BowireMcpTools>.Instance);
     }
@@ -232,6 +241,7 @@ public sealed class BowireMcpCoverageTests : IAsyncDisposable
             var tools = new BowireMcpTools(
                 new BowireProtocolRegistry(),
                 NewMockHandles(),
+                new BowireMcpConfirmationStore(),
                 Options.Create(options),
                 NullLogger<BowireMcpTools>.Instance);
 
@@ -257,6 +267,7 @@ public sealed class BowireMcpCoverageTests : IAsyncDisposable
             _ = new BowireMcpTools(
                 new BowireProtocolRegistry(),
                 NewMockHandles(),
+                new BowireMcpConfirmationStore(),
                 Options.Create(options),
                 NullLogger<BowireMcpTools>.Instance);
 
@@ -274,6 +285,7 @@ public sealed class BowireMcpCoverageTests : IAsyncDisposable
             _ = new BowireMcpTools(
                 new BowireProtocolRegistry(),
                 NewMockHandles(),
+                new BowireMcpConfirmationStore(),
                 Options.Create(options),
                 NullLogger<BowireMcpTools>.Instance);
 
@@ -296,6 +308,7 @@ public sealed class BowireMcpCoverageTests : IAsyncDisposable
             _ = new BowireMcpTools(
                 new BowireProtocolRegistry(),
                 NewMockHandles(),
+                new BowireMcpConfirmationStore(),
                 Options.Create(options),
                 NullLogger<BowireMcpTools>.Instance);
 

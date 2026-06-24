@@ -3,8 +3,10 @@
 
 using System.ComponentModel;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using Kuestenlogik.Bowire;
 using Kuestenlogik.Bowire.Mock;
+using Kuestenlogik.Bowire.Mocking;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using ModelContextProtocol.Server;
@@ -40,17 +42,20 @@ public sealed class BowireMcpTools
 
     private readonly BowireProtocolRegistry _registry;
     private readonly BowireMockHandleRegistry _mockHandles;
+    private readonly BowireMcpConfirmationStore _confirmations;
     private readonly BowireMcpOptions _options;
     private readonly ILogger<BowireMcpTools> _logger;
 
     public BowireMcpTools(
         BowireProtocolRegistry registry,
         BowireMockHandleRegistry mockHandles,
+        BowireMcpConfirmationStore confirmations,
         IOptions<BowireMcpOptions> options,
         ILogger<BowireMcpTools> logger)
     {
         _registry = registry;
         _mockHandles = mockHandles;
+        _confirmations = confirmations;
         _options = options.Value;
         _logger = logger;
 
@@ -64,6 +69,19 @@ public sealed class BowireMcpTools
             {
                 _logger.LogDebug(ex,
                     "Couldn't seed allowlist from environments.json; continuing with the explicit list only.");
+            }
+        }
+
+        // --allow-invoke: also seed from the typed-URL history. Strictly
+        // additive; never narrows the env-seeded allowlist. Failures here
+        // are silent so a missing or corrupt file doesn't break MCP startup.
+        if (_options.LoadAllowlistFromTypedUrls)
+        {
+            try { SeedAllowlistFromTypedUrls(_options); }
+            catch (Exception ex)
+            {
+                _logger.LogDebug(ex,
+                    "Couldn't seed allowlist from typed-urls.json; continuing with the explicit list only.");
             }
         }
     }
@@ -217,19 +235,38 @@ public sealed class BowireMcpTools
         {
             using var stream = File.OpenRead(path);
             using var doc = JsonDocument.Parse(stream);
-            var summary = new List<object>();
-            if (doc.RootElement.ValueKind == JsonValueKind.Array)
+            // On-disk shape is the wrapper { "recordings": [ ... ] } —
+            // pre-2026 builds of this tool wrongly expected a bare array
+            // and silently returned empty; fall back to that branch for
+            // the rare malformed file just in case.
+            JsonElement array;
+            if (doc.RootElement.ValueKind == JsonValueKind.Object
+                && doc.RootElement.TryGetProperty("recordings", out var wrapped)
+                && wrapped.ValueKind == JsonValueKind.Array)
             {
-                foreach (var rec in doc.RootElement.EnumerateArray())
+                array = wrapped;
+            }
+            else if (doc.RootElement.ValueKind == JsonValueKind.Array)
+            {
+                array = doc.RootElement;
+            }
+            else
+            {
+                return JsonSerializer.Serialize(new { path, recordings = Array.Empty<object>() }, JsonOpts);
+            }
+
+            var summary = new List<object>();
+            foreach (var rec in array.EnumerateArray())
+            {
+                summary.Add(new
                 {
-                    summary.Add(new
-                    {
-                        id = rec.TryGetProperty("id", out var i) ? i.GetString() : null,
-                        name = rec.TryGetProperty("name", out var n) ? n.GetString() : null,
-                        createdAt = rec.TryGetProperty("createdAt", out var c) ? c.GetString() : null,
-                        stepCount = rec.TryGetProperty("steps", out var s) && s.ValueKind == JsonValueKind.Array ? s.GetArrayLength() : 0
-                    });
-                }
+                    id = rec.TryGetProperty("id", out var i) ? i.GetString() : null,
+                    name = rec.TryGetProperty("name", out var n) ? n.GetString() : null,
+                    createdAt = rec.TryGetProperty("createdAt", out var c)
+                        ? (c.ValueKind == JsonValueKind.Number ? c.GetInt64().ToString(System.Globalization.CultureInfo.InvariantCulture) : c.GetString())
+                        : null,
+                    stepCount = rec.TryGetProperty("steps", out var s) && s.ValueKind == JsonValueKind.Array ? s.GetArrayLength() : 0
+                });
             }
             return JsonSerializer.Serialize(new { path, recordings = summary }, JsonOpts);
         }
@@ -239,8 +276,206 @@ public sealed class BowireMcpTools
         }
     }
 
+    [McpServerTool(Name = "bowire.har.import")]
+    [Description("Convert a HAR 1.2 trace into a Bowire recording. Reads the HAR file at `harPath`, optionally writes the recording JSON to `outPath` (use \"-\" or omit to return the JSON inline), and returns a summary { recordingId, stepCount, outPath?, recording? }. Pair with bowire.mock.start { recording: <outPath> } to serve the trace back.")]
+    public static async Task<string> HarImport(
+        [Description("Path to a HAR 1.2 document on disk.")] string harPath,
+        [Description("Optional output path for the resulting recording JSON. Use \"-\" or omit to return the recording inline in the response.")] string? outPath = null,
+        [Description("Optional recording name. Defaults to the HAR's creator name or \"Imported HAR\".")] string? name = null)
+    {
+        if (string.IsNullOrWhiteSpace(harPath))
+            return "bowire.har.import: harPath is required.";
+        if (!File.Exists(harPath))
+            return $"bowire.har.import: HAR file not found at {harPath}.";
+
+        BowireRecording recording;
+        try
+        {
+            var content = await File.ReadAllTextAsync(harPath).ConfigureAwait(false);
+            recording = BowireHarConverter.Convert(content, name);
+        }
+        catch (BowireHarImportException ex)
+        {
+            return $"bowire.har.import: HAR import failed — {ex.Message}";
+        }
+        catch (Exception ex)
+        {
+            return $"bowire.har.import: unexpected failure — {ex.Message}";
+        }
+
+        var recordingJson = JsonSerializer.Serialize(recording, JsonOpts);
+        if (string.IsNullOrEmpty(outPath) || outPath == "-")
+        {
+            return JsonSerializer.Serialize(new
+            {
+                recordingId = recording.Id,
+                stepCount = recording.Steps.Count,
+                recording = JsonDocument.Parse(recordingJson).RootElement
+            }, JsonOpts);
+        }
+
+        var dir = Path.GetDirectoryName(Path.GetFullPath(outPath));
+        if (!string.IsNullOrEmpty(dir) && !Directory.Exists(dir)) Directory.CreateDirectory(dir);
+        await File.WriteAllTextAsync(outPath, recordingJson).ConfigureAwait(false);
+
+        return JsonSerializer.Serialize(new
+        {
+            recordingId = recording.Id,
+            stepCount = recording.Steps.Count,
+            outPath = Path.GetFullPath(outPath)
+        }, JsonOpts);
+    }
+
+    [McpServerTool(Name = "bowire.assert")]
+    [Description("Append a test assertion onto a step inside an on-disk recording. Targets either ~/.bowire/recordings.json (when recordingId is set) or the supplied recordingPath. The assertion shape matches the Newman-style probe Bowire runs after replay: { path, op, expected }. Supported ops: eq, ne, gt, gte, lt, lte, contains, matches, exists, notexists, type. Use path=\"status\" to assert on the HTTP/gRPC status name; otherwise path is a JSONPath rooted at the response body. Returns the assertion id + the step it was attached to.")]
+    public static async Task<string> Assert(
+        [Description("0-based index of the step inside the recording.")] int stepIndex,
+        [Description("Assertion path. Use \"status\" for the status-name slot, or a JSONPath like \"$.users[0].id\" for a response field.")] string path,
+        [Description("Operator: eq, ne, gt, gte, lt, lte, contains, matches, exists, notexists, type.")] string op,
+        [Description("Expected value. For exists / notexists / type the value semantics are op-specific (type takes a string like \"number\").")] JsonElement expected,
+        [Description("Recording id to target — looked up inside ~/.bowire/recordings.json. Mutually exclusive with recordingPath.")] string? recordingId = null,
+        [Description("Path to a stand-alone recording JSON file to mutate. Mutually exclusive with recordingId.")] string? recordingPath = null)
+    {
+        if (string.IsNullOrWhiteSpace(path))
+            return "bowire.assert: path is required (use \"status\" or a JSONPath).";
+        if (string.IsNullOrWhiteSpace(op))
+            return "bowire.assert: op is required.";
+
+        if (!IsKnownAssertOp(op))
+            return $"bowire.assert: unknown op \"{op}\". Supported: {string.Join(", ", KnownAssertOps)}.";
+
+        var hasId = !string.IsNullOrWhiteSpace(recordingId);
+        var hasPath = !string.IsNullOrWhiteSpace(recordingPath);
+        if (hasId == hasPath)
+            return "bowire.assert: provide exactly one of recordingId or recordingPath.";
+
+        // Resolve the target file + recording — defaults to the
+        // ~/.bowire/recordings.json wrapper, but a stand-alone recording
+        // path is also legal (HAR imports + the CLI all write to that
+        // shape).
+        var targetFile = hasPath ? Path.GetFullPath(recordingPath!) : BowireConfigPath("recordings.json");
+        if (!File.Exists(targetFile))
+            return $"bowire.assert: file not found at {targetFile}.";
+
+        JsonNode? root;
+        try
+        {
+            var content = await File.ReadAllTextAsync(targetFile).ConfigureAwait(false);
+            root = JsonNode.Parse(content);
+        }
+        catch (Exception ex)
+        {
+            return $"bowire.assert: failed to parse {targetFile} — {ex.Message}";
+        }
+
+        // Locate the recording node we'll mutate. Either the bare
+        // recording (when the file is one recording) or the wrapper's
+        // entry under "recordings".
+        JsonNode? recording = null;
+        if (hasPath)
+        {
+            recording = root;
+        }
+        else if (root?["recordings"] is JsonArray arr)
+        {
+            foreach (var r in arr)
+            {
+                if (r?["id"]?.GetValue<string>() == recordingId)
+                {
+                    recording = r;
+                    break;
+                }
+            }
+        }
+
+        if (recording is null)
+            return hasId
+                ? $"bowire.assert: no recording with id \"{recordingId}\" in {targetFile}."
+                : $"bowire.assert: {targetFile} is not a recording document.";
+
+        if (recording["steps"] is not JsonArray steps)
+            return "bowire.assert: target recording has no \"steps\" array.";
+        if (stepIndex < 0 || stepIndex >= steps.Count)
+            return $"bowire.assert: stepIndex {stepIndex} is out of range (recording has {steps.Count} step{(steps.Count == 1 ? "" : "s")}).";
+
+        // The step's assertions array gets created on first call. The id
+        // format mirrors the workbench's nextTestId() in test-assertions.js
+        // so a recording exported from the workbench and one mutated via
+        // MCP look indistinguishable downstream.
+        var step = steps[stepIndex]!;
+        if (step["assertions"] is not JsonArray assertions)
+        {
+            assertions = new JsonArray();
+            step["assertions"] = assertions;
+        }
+
+        var assertionId = $"t_{DateTimeOffset.UtcNow.ToUnixTimeMilliseconds():x}_{Guid.NewGuid().ToString("N")[..4]}";
+        var assertion = new JsonObject
+        {
+            ["id"] = assertionId,
+            ["path"] = path,
+            ["op"] = op,
+            // Clone via re-parse so the JsonElement we received from MCP
+            // is detached from its owning document and safely embeddable
+            // inside the JsonNode tree.
+            ["expected"] = JsonNode.Parse(expected.GetRawText())
+        };
+        assertions.Add(assertion);
+
+        try
+        {
+            await File.WriteAllTextAsync(targetFile,
+                root!.ToJsonString(new JsonSerializerOptions { WriteIndented = true })).ConfigureAwait(false);
+        }
+        catch (Exception ex)
+        {
+            return $"bowire.assert: failed to write {targetFile} — {ex.Message}";
+        }
+
+        return JsonSerializer.Serialize(new
+        {
+            assertionId,
+            stepIndex,
+            stepId = step["id"]?.GetValue<string>(),
+            recordingId = hasId ? recordingId : recording["id"]?.GetValue<string>(),
+            file = targetFile,
+            assertionCount = assertions.Count
+        }, JsonOpts);
+    }
+
+    [McpServerTool(Name = "bowire.allowlist.permit")]
+    [Description("Record that a URL is now allowed for bowire.invoke / bowire.subscribe — appends to ~/.bowire/typed-urls.json (the same file --allow-invoke seeds from) and adds the URL to the in-memory allowlist for the rest of this session. Use to surface \"the user just typed this URL into the workbench\" without re-reading the file. Returns whether the URL was new + the resulting list size.")]
+    public string AllowlistPermit(
+        [Description("Server URL to allow.")] string url)
+    {
+        if (string.IsNullOrWhiteSpace(url))
+            return "bowire.allowlist.permit: url is required.";
+
+        bool addedToFile = false;
+        try { addedToFile = BowireMcpTypedUrlStore.Add(url); }
+        catch (Exception ex)
+        {
+            _logger.LogDebug(ex, "Couldn't persist typed-url addition; in-memory allowlist still updated.");
+        }
+
+        bool addedToMemory = false;
+        if (!_options.AllowedServerUrls.Any(u => string.Equals(u, url, StringComparison.OrdinalIgnoreCase)))
+        {
+            _options.AllowedServerUrls.Add(url);
+            addedToMemory = true;
+        }
+
+        return JsonSerializer.Serialize(new
+        {
+            url,
+            addedToFile,
+            addedToMemory,
+            allowlistSize = _options.AllowedServerUrls.Count
+        }, JsonOpts);
+    }
+
     [McpServerTool(Name = "bowire.mock.start")]
-    [Description("Spin up a local Bowire mock server that replays a recording (or synthesises responses from a schema). Returns a handle the agent uses with bowire.mock.stop. Multiple mocks can run concurrently on different ports.")]
+    [Description("Spin up a local Bowire mock server that replays a recording (or synthesises responses from a schema). Returns a handle the agent uses with bowire.mock.stop. Multiple mocks can run concurrently on different ports. Two-step by default (controlled by RequireConfirmationForMutations): the first call returns { pending: true, confirmationToken, plan }; re-invoke with confirm=true or pass the token back as confirmationToken to actually start the mock.")]
     public async Task<string> MockStart(
         [Description("Path to a Bowire recording JSON.")] string? recording = null,
         [Description("Path to an OpenAPI 3 document for schema-only mocks.")] string? schema = null,
@@ -248,6 +483,8 @@ public sealed class BowireMcpTools
         [Description("Path to a GraphQL SDL file.")] string? graphqlSchema = null,
         [Description("Listen port. 0 picks an OS-assigned port.")] int port = 0,
         [Description("Listen host. Default 'localhost'.")] string host = "localhost",
+        [Description("Skip the pending-confirmation step. Equivalent to passing the confirmationToken from a prior call.")] bool confirm = false,
+        [Description("Confirmation token returned by a prior pending call. Either this or confirm=true is required when RequireConfirmationForMutations is enabled.")] string? confirmationToken = null,
         CancellationToken ct = default)
     {
         var sources = new[] { recording, schema, grpcSchema, graphqlSchema }.Count(s => !string.IsNullOrEmpty(s));
@@ -255,6 +492,14 @@ public sealed class BowireMcpTools
             return sources == 0
                 ? "bowire.mock.start: provide exactly one of recording / schema / grpcSchema / graphqlSchema."
                 : "bowire.mock.start: recording / schema / grpcSchema / graphqlSchema are mutually exclusive — pick one.";
+
+        // Confirmation gate. When the option is off the call falls
+        // through unchanged (parity with the pre-#37 behaviour); when
+        // on, the first call parks a plan and asks for a second-step
+        // confirmation.
+        var plan = $"Start a mock server on {host}:{port} backed by {recording ?? schema ?? grpcSchema ?? graphqlSchema}.";
+        if (TryConfirmOrPark("bowire.mock.start", plan, confirm, confirmationToken, out var pendingResponse))
+            return pendingResponse!;
 
         var options = new MockServerOptions
         {
@@ -311,33 +556,113 @@ public sealed class BowireMcpTools
     }
 
     [McpServerTool(Name = "bowire.record.start")]
-    [Description("(planned, Phase 2) Begin a new recording so subsequent invokes are captured.")]
-    public static string RecordStart(
-        [Description("Optional recording name.")] string? name = null) =>
-        "bowire.record.start is not yet implemented in this Bowire.Mcp build (planned for Phase 2). See the ROADMAP entry on Bowire.Mcp.";
+    [Description("(deferred) Begin a new recording so subsequent invokes are captured. Server-side active-recording state is not yet lifted out of the browser — until that lands, exercise the confirmation flow + return a sentinel response. See ROADMAP / #37 for the design notes.")]
+    public string RecordStart(
+        [Description("Optional recording name.")] string? name = null,
+        [Description("Skip the pending-confirmation step.")] bool confirm = false,
+        [Description("Confirmation token returned by a prior pending call.")] string? confirmationToken = null)
+    {
+        var plan = $"Start a new server-side recording named \"{name ?? "(auto-generated)"}\". (deferred — see ROADMAP)";
+        if (TryConfirmOrPark("bowire.record.start", plan, confirm, confirmationToken, out var pendingResponse))
+            return pendingResponse!;
+
+        return "bowire.record.start is deferred: server-side active-recording state isn't lifted yet. Until it is, use the workbench UI to start recordings and bowire.record.list to enumerate them. See #37 on ROADMAP for the design notes.";
+    }
 
     [McpServerTool(Name = "bowire.record.stop")]
-    [Description("(planned, Phase 2) Stop the active recording and persist it.")]
-    public static string RecordStop() =>
-        "bowire.record.stop is not yet implemented in this Bowire.Mcp build (planned for Phase 2). See the ROADMAP entry on Bowire.Mcp.";
+    [Description("(deferred) Stop the active recording and persist it. Server-side active-recording state is not yet lifted out of the browser; see #37 on ROADMAP.")]
+    public string RecordStop(
+        [Description("Skip the pending-confirmation step.")] bool confirm = false,
+        [Description("Confirmation token returned by a prior pending call.")] string? confirmationToken = null)
+    {
+        var plan = "Stop the active server-side recording and persist it. (deferred — see ROADMAP)";
+        if (TryConfirmOrPark("bowire.record.stop", plan, confirm, confirmationToken, out var pendingResponse))
+            return pendingResponse!;
+
+        return "bowire.record.stop is deferred: server-side active-recording state isn't lifted yet. The workbench UI owns recording lifecycle today. See #37 on ROADMAP.";
+    }
 
     [McpServerTool(Name = "bowire.record.replay")]
-    [Description("(planned, Phase 3) Replay a recording by id and return per-step pass/fail.")]
+    [Description("(deferred) Replay a recording by id and return per-step pass/fail. The runtime piece needs server-side replay state lifted out of the browser; see #37 on ROADMAP. Use bowire.mock.start { recording: ... } today to serve a recording back.")]
     public static string RecordReplay(
         [Description("Recording id from bowire.record.list.")] string id) =>
-        $"bowire.record.replay({id}) is not yet implemented in this Bowire.Mcp build (planned for Phase 3). See the ROADMAP entry on Bowire.Mcp.";
+        $"bowire.record.replay({id}) is deferred: server-side replay state isn't lifted yet. Use bowire.mock.start with recording=<path> to serve the recording as a mock, then bowire.invoke the mock to step through it. See #37 on ROADMAP for the design notes.";
 
     [McpServerTool(Name = "bowire.allowlist.show")]
-    [Description("Diagnostic: show the URLs the agent is currently allowed to call via bowire.invoke / bowire.subscribe.")]
+    [Description("Diagnostic: show the URLs the agent is currently allowed to call via bowire.invoke / bowire.subscribe, plus the toggles that fed the list (environments seed, typed-URLs seed, --allow-arbitrary-urls).")]
     public string AllowlistShow() =>
         JsonSerializer.Serialize(new
         {
             allowArbitraryUrls = _options.AllowArbitraryUrls,
             loadFromEnvironments = _options.LoadAllowlistFromEnvironments,
+            loadFromTypedUrls = _options.LoadAllowlistFromTypedUrls,
+            requireConfirmationForMutations = _options.RequireConfirmationForMutations,
             urls = _options.AllowedServerUrls
         }, JsonOpts);
 
     // -------------------- Helpers --------------------
+
+    /// <summary>
+    /// Known assertion operators — kept in lock-step with the workbench's
+    /// ASSERT_OPERATORS array in <c>test-assertions.js</c>. Passing an
+    /// op outside this set produces a user-visible error before the
+    /// assertion is appended so a typo doesn't park a permanently-broken
+    /// test on the step.
+    /// </summary>
+    internal static readonly string[] KnownAssertOps =
+        ["eq", "ne", "gt", "gte", "lt", "lte", "contains", "matches", "exists", "notexists", "type"];
+
+    private static bool IsKnownAssertOp(string op) =>
+        Array.IndexOf(KnownAssertOps, op) >= 0;
+
+    /// <summary>
+    /// Two-step confirm gate for mutator tools. Returns <see langword="true"/>
+    /// when the caller still needs to confirm (pending response is in
+    /// <paramref name="pendingResponse"/>); returns <see langword="false"/>
+    /// when the call may execute. Bypasses entirely when
+    /// <see cref="BowireMcpOptions.RequireConfirmationForMutations"/> is off.
+    /// </summary>
+    private bool TryConfirmOrPark(string kind, string plan, bool confirm, string? confirmationToken,
+        out string? pendingResponse)
+    {
+        pendingResponse = null;
+
+        // Opt-out: no gate, every call executes immediately. Matches
+        // the pre-#37 behaviour for hosts that want fully-autonomous
+        // agent runs.
+        if (!_options.RequireConfirmationForMutations) return false;
+
+        // Token shortcut — agents that already hold a token from a
+        // prior pending response can redeem it instead of re-stating
+        // every input.
+        if (!string.IsNullOrWhiteSpace(confirmationToken))
+        {
+            var entry = _confirmations.Consume(confirmationToken);
+            if (entry is null)
+            {
+                pendingResponse = JsonSerializer.Serialize(new
+                {
+                    error = $"No pending confirmation matches token \"{confirmationToken}\" (or it expired).",
+                    kind
+                }, JsonOpts);
+                return true;
+            }
+            return false;
+        }
+
+        if (confirm) return false;
+
+        var token = _confirmations.Issue(kind, plan);
+        pendingResponse = JsonSerializer.Serialize(new
+        {
+            pending = true,
+            confirmationToken = token,
+            kind,
+            plan,
+            note = "Re-invoke with confirm=true (or confirmationToken from this response) to execute. Token expires in 5 minutes."
+        }, JsonOpts);
+        return true;
+    }
 
     private bool IsUrlAllowed(string? url)
     {
@@ -367,6 +692,21 @@ public sealed class BowireMcpTools
         using var doc = JsonDocument.Parse(stream);
         var seen = new HashSet<string>(options.AllowedServerUrls, StringComparer.OrdinalIgnoreCase);
         WalkForServerUrls(doc.RootElement, options, seen);
+    }
+
+    /// <summary>
+    /// Seed the allowlist from the user's typed-URL history
+    /// (<c>~/.bowire/typed-urls.json</c>). Backs the <c>--allow-invoke</c>
+    /// CLI flag — widens the allowlist to "anywhere the user has actually
+    /// pointed Bowire" without dropping the gate entirely.
+    /// </summary>
+    private static void SeedAllowlistFromTypedUrls(BowireMcpOptions options)
+    {
+        var seen = new HashSet<string>(options.AllowedServerUrls, StringComparer.OrdinalIgnoreCase);
+        foreach (var url in BowireMcpTypedUrlStore.LoadAll())
+        {
+            if (seen.Add(url)) options.AllowedServerUrls.Add(url);
+        }
     }
 
     private static void WalkForServerUrls(JsonElement el, BowireMcpOptions options, HashSet<string> seen)

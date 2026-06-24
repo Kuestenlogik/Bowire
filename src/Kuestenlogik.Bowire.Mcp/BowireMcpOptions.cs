@@ -49,6 +49,37 @@ public sealed class BowireMcpOptions
     public bool AllowArbitraryUrls { get; set; }
 
     /// <summary>
+    /// When <c>true</c>, also seed <see cref="AllowedServerUrls"/> from
+    /// the user's typed-URL history (<c>~/.bowire/typed-urls.json</c>).
+    /// Wider than <see cref="LoadAllowlistFromEnvironments"/> — typed
+    /// URLs include every server the user has actually pointed Bowire at,
+    /// not just the ones they've saved as named environments. Default
+    /// <c>false</c>: opt-in via <c>--allow-invoke</c> on the CLI because
+    /// it materially widens what an agent can hit.
+    /// </summary>
+    /// <remarks>
+    /// Strictly additive — combines with <see cref="AllowedServerUrls"/>
+    /// + the environments seed; never narrows the list. Tools also gain
+    /// a <c>bowire.allowlist.permit(url)</c> entry point that appends to
+    /// the typed-URL file so an agent can record "the user just typed
+    /// this URL into the workbench" without re-reading the file.
+    /// </remarks>
+    public bool LoadAllowlistFromTypedUrls { get; set; }
+
+    /// <summary>
+    /// When <c>true</c> (default), tools that mutate live state
+    /// (<c>bowire.mock.start</c>, <c>bowire.record.start</c>,
+    /// <c>bowire.env.switch</c>) require an explicit second-step
+    /// confirmation: the first call returns <c>{ pending: true, token,
+    /// plan }</c>; the agent re-invokes with <c>confirm: true</c> or
+    /// passes the <c>confirmationToken</c> to actually execute. Read-only
+    /// tools (<c>bowire.discover</c>, <c>bowire.env.list</c>) bypass
+    /// this gate. Set <c>false</c> for fully-autonomous agent runs that
+    /// have a higher-level approval layer of their own.
+    /// </summary>
+    public bool RequireConfirmationForMutations { get; set; } = true;
+
+    /// <summary>
     /// Cap on how long <c>bowire.subscribe</c> will sample a streaming
     /// call before returning the collected frames. The agent can pass a
     /// shorter <c>durationMs</c> argument; values above this cap are

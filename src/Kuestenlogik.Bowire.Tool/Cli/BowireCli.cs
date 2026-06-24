@@ -617,14 +617,21 @@ internal static class BowireCli
         { Description = "Drop the URL allowlist. Only safe in sandboxed contexts." };
         var noEnvAllowlist = new Option<bool>("--no-env-allowlist")
         { Description = "Skip seeding the allowlist from ~/.bowire/environments.json." };
+        var allowInvoke = new Option<bool>("--allow-invoke")
+        { Description = "Widen the allowlist to every URL the user has typed at least once (~/.bowire/typed-urls.json). Strictly additive with the environments seed." };
+        var noConfirm = new Option<bool>("--no-confirm")
+        { Description = "Skip the two-step pending-confirmation gate on mutator tools (bowire.mock.start, bowire.record.start). Use when the agent host already enforces approvals." };
 
         var serve = new Command("serve", "Run Bowire as an MCP server (AI-agent bridge).");
         serve.Add(bind); serve.Add(port); serve.Add(allowArbitrary); serve.Add(noEnvAllowlist);
+        serve.Add(allowInvoke); serve.Add(noConfirm);
         serve.SetAction(async (pr, ct) => await McpServeCommand.RunAsync(
             bind: pr.GetValue(bind) ?? "stdio",
             port: pr.GetValue(port),
             allowArbitraryUrls: pr.GetValue(allowArbitrary),
             noEnvAllowlist: pr.GetValue(noEnvAllowlist),
+            allowInvoke: pr.GetValue(allowInvoke),
+            noConfirm: pr.GetValue(noConfirm),
             stdout: pr.InvocationConfiguration.Output,
             stderr: pr.InvocationConfiguration.Error,
             ct: ct).ConfigureAwait(false));
