@@ -8497,10 +8497,26 @@ they're a way
     background: var(--bowire-accent-subtle, var(--bowire-bg-elevated));
     border-color: var(--bowire-accent);
 }
+/* The native radio input stays in the DOM for keyboard navigation
+   (arrow keys + space) + form-semantic single-selection, but is
+   visually hidden — the row's .selected state (accent border +
+   subtle accent-tinted bg) communicates which template is picked.
+   sr-only style so screen readers still see the radio group. */
 .bowire-ws-template-radio {
-    margin-top: 2px;
-    flex-shrink: 0;
-    accent-color: var(--bowire-accent);
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+.bowire-ws-template-radio:focus-visible + .bowire-ws-template-icon,
+.bowire-ws-template-row:has(.bowire-ws-template-radio:focus-visible) {
+    outline: 2px solid var(--bowire-accent);
+    outline-offset: 2px;
 }
 .bowire-ws-template-icon {
     display: inline-flex;
