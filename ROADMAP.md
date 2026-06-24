@@ -91,7 +91,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.1 — Scripting, variable resolver, throughput surface *(due 2026-06-30)*
 
-**16/32 done** · 16 backlog
+**18/32 done** · 14 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -107,8 +107,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [233](https://github.com/Kuestenlogik/Bowire/issues/233) | Bowire | [Benchmarks: previous-run diff banner on repeat (p95 ▲ / ▼ / status histogram delta)](#issue-kuestenlogik-bowire-233) | ⬜ Backlog |  |
 | [234](https://github.com/Kuestenlogik/Bowire/issues/234) | Bowire | [Benchmarks: result exports — CSV + k6-summary JSON + OTLP metrics](#issue-kuestenlogik-bowire-234) | ⬜ Backlog |  |
 | [254](https://github.com/Kuestenlogik/Bowire/issues/254) | Bowire | [Freeform builder: auto-discover prompt after first successful invoke](#issue-kuestenlogik-bowire-254) | ⬜ Backlog |  |
-| [272](https://github.com/Kuestenlogik/Bowire/issues/272) | Bowire | [Assistant drawer: useless hint 'Pick a method in the sidebar' when no workspace exists](#issue-kuestenlogik-bowire-272) | ⬜ Backlog |  |
-| [273](https://github.com/Kuestenlogik/Bowire/issues/273) | Bowire | [Topbar workspace dropdown: + and list icons appear left-aligned instead of vertically centered](#issue-kuestenlogik-bowire-273) | ⬜ Backlog |  |
 | [274](https://github.com/Kuestenlogik/Bowire/issues/274) | Bowire | [Workspaces label inconsistency: 4 names for the same destination (overview) + ellipsis convention](#issue-kuestenlogik-bowire-274) | ⬜ Backlog |  |
 | [275](https://github.com/Kuestenlogik/Bowire/issues/275) | Bowire | [Workspace-detail dead-end: 'No workspace selected. Pick one in the sidebar' when sidepanel collapsed](#issue-kuestenlogik-bowire-275) | ⬜ Backlog |  |
 | [197](https://github.com/Kuestenlogik/Bowire/issues/197) | Bowire | [Deprecate + unlist Kuestenlogik.Bowire.Extension.MapLibre on nuget.org after v2.0 ships](#issue-kuestenlogik-bowire-197) | ✅ Done |  |
@@ -127,6 +125,8 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [269](https://github.com/Kuestenlogik/Bowire/issues/269) | Bowire | [Freeform builder: layout parity with discovered-method pane](#issue-kuestenlogik-bowire-269) | ✅ Done |  |
 | [270](https://github.com/Kuestenlogik/Bowire/issues/270) | Bowire | [Workspaces: 'Show all workspaces' / 'Manage workspaces' entry-points](#issue-kuestenlogik-bowire-270) | ✅ Done |  |
 | [271](https://github.com/Kuestenlogik/Bowire/issues/271) | Bowire | [Workspace create label unified — 'New workspace' everywhere](#issue-kuestenlogik-bowire-271) | ✅ Done |  |
+| [272](https://github.com/Kuestenlogik/Bowire/issues/272) | Bowire | [Assistant drawer: useless hint 'Pick a method in the sidebar' when no workspace exists](#issue-kuestenlogik-bowire-272) | ✅ Done |  |
+| [273](https://github.com/Kuestenlogik/Bowire/issues/273) | Bowire | [Topbar workspace dropdown: + and list icons appear left-aligned instead of vertically centered](#issue-kuestenlogik-bowire-273) | ✅ Done |  |
 
 ### v2.2 — Test pillar: assertions, CI runner, regression coverage *(due 2026-07-10)*
 
@@ -590,14 +590,6 @@ Round out the Benchmarks export surface so result data can leave Bowire in the f
 
 Last unchecked acceptance item from the parent **#40** Freeform Request Builder ticket. After a freeform request hits a 2xx response, prompt the operator: [[more]](https://github.com/Kuestenlogik/Bowire/issues/254)
 
-#### <a id="issue-kuestenlogik-bowire-272"></a>⬜ Backlog · [#272](https://github.com/Kuestenlogik/Bowire/issues/272) Assistant drawer: useless hint 'Pick a method in the sidebar' when no workspace exists
-
-In the no-workspace empty state (fresh install, last workspace just deleted), the Assistant drawer shows: [[more]](https://github.com/Kuestenlogik/Bowire/issues/272)
-
-#### <a id="issue-kuestenlogik-bowire-273"></a>⬜ Backlog · [#273](https://github.com/Kuestenlogik/Bowire/issues/273) Topbar workspace dropdown: + and list icons appear left-aligned instead of vertically centered
-
-In the topbar workspace-chip dropdown, the '+' (new workspace) and three-lines list icon (Manage workspaces…) appear left-aligned within their icon column rather than vertically centered alongside their label text. [[more]](https://github.com/Kuestenlogik/Bowire/issues/273)
-
 #### <a id="issue-kuestenlogik-bowire-274"></a>⬜ Backlog · [#274](https://github.com/Kuestenlogik/Bowire/issues/274) Workspaces label inconsistency: 4 names for the same destination (overview) + ellipsis convention
 
 Same destination (workspaces overview list), four different labels across surfaces: [[more]](https://github.com/Kuestenlogik/Bowire/issues/274)
@@ -669,6 +661,14 @@ Topbar workspace-chip dropdown gained 'Show all workspaces…' / 'Manage workspa
 #### <a id="issue-kuestenlogik-bowire-271"></a>✅ Done · [#271](https://github.com/Kuestenlogik/Bowire/issues/271) Workspace create label unified — 'New workspace' everywhere
 
 Welcome card said 'Create workspace', topbar dropdown said '+ New workspace…' — same affordance, two labels. Unified on 'New workspace' to match the '+ New X' pattern Bowire uses across collections / envs / sources. 'Create workspace' stays as the dialog HEADER (describes the dialog's job, not a trigger).
+
+#### <a id="issue-kuestenlogik-bowire-272"></a>✅ Done · [#272](https://github.com/Kuestenlogik/Bowire/issues/272) Assistant drawer: useless hint 'Pick a method in the sidebar' when no workspace exists
+
+In the no-workspace empty state (fresh install, last workspace just deleted), the Assistant drawer shows: [[more]](https://github.com/Kuestenlogik/Bowire/issues/272)
+
+#### <a id="issue-kuestenlogik-bowire-273"></a>✅ Done · [#273](https://github.com/Kuestenlogik/Bowire/issues/273) Topbar workspace dropdown: + and list icons appear left-aligned instead of vertically centered
+
+In the topbar workspace-chip dropdown, the '+' (new workspace) and three-lines list icon (Manage workspaces…) appear left-aligned within their icon column rather than vertically centered alongside their label text. [[more]](https://github.com/Kuestenlogik/Bowire/issues/273)
 
 ### v2.2 — Test pillar: assertions, CI runner, regression coverage *(due 2026-07-10)*
 
