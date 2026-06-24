@@ -2136,13 +2136,39 @@ not just
     min-height: 22px;
 }
 .bowire-workspace-menu-item-check {
-    width: 14px;
+    width: 18px;
+    height: 18px;
     flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     text-align: center;
-    color: var(--bowire-accent);
+    /* Inactive default: invisible-but-reserved slot. Hover OR
+       .is-active flips to visible. The two visible states differ by
+       color (accent for active-display, tertiary for activate-button). */
     visibility: hidden;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    cursor: default;
+    color: var(--bowire-text-tertiary);
 }
-.bowire-workspace-menu-item-check.is-active { visibility: visible; }
+.bowire-workspace-menu-item-check.is-active {
+    visibility: visible;
+    color: var(--bowire-accent);
+}
+.bowire-workspace-menu-item-check.bowire-workspace-menu-item-activate {
+    cursor: pointer;
+    transition: background var(--bowire-transition), color var(--bowire-transition);
+    border-radius: var(--bowire-radius-sm);
+}
+.bowire-workspace-menu-item:hover .bowire-workspace-menu-item-check.bowire-workspace-menu-item-activate {
+    visibility: visible;
+}
+.bowire-workspace-menu-item-check.bowire-workspace-menu-item-activate:hover {
+    background: var(--bowire-surface);
+    color: var(--bowire-text);
+}
 .bowire-workspace-menu-item-check svg { width: 12px; height: 12px; }
 /* #276 follow-up — Per-row tools restored in the topbar workspace
    dropdown (user feedback: the dropdown is the quick-access surface

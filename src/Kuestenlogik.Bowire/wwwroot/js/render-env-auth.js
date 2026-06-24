@@ -2434,25 +2434,40 @@
                                 el('span', { className: 'bowire-workspace-menu-item-glyph', innerHTML: glyph }),
                                 el('span', { className: 'bowire-workspace-menu-item-name', textContent: w.name }),
                                 el('div', { className: 'bowire-workspace-menu-item-tools' },
-                                    // Hover tools first (Rename /
-                                    // Save-as-template / Delete), then
-                                    // the active-state ✓ at the
-                                    // RIGHTMOST slot. Operator feedback:
-                                    // the check at the START 'jumped'
-                                    // when hover tools pushed it
-                                    // rightward — putting it at the end
-                                    // pins the slot, identical to the
-                                    // sidebar's tree-active-indicator
-                                    // pattern (#277).
+                                    // Check at the FRONT of the cluster
+                                    // (matches the pre-#276-agent
+                                    // layout the user preferred — the
+                                    // slot stays at the same X across
+                                    // every row, regardless of hover
+                                    // state or active state). Inactive
+                                    // rows render a click-to-activate
+                                    // button (tool-color); active rows
+                                    // render a non-clickable filled
+                                    // checkmark (accent-color) — same
+                                    // glyph, two visual modes, one slot.
+                                    isActive
+                                        ? el('span', {
+                                            className: 'bowire-workspace-menu-item-check is-active',
+                                            innerHTML: (typeof svgIcon === 'function') ? svgIcon('check') : '✓',
+                                            'aria-hidden': 'false',
+                                            title: 'Active workspace'
+                                        })
+                                        : el('button', {
+                                            type: 'button',
+                                            className: 'bowire-workspace-menu-item-check bowire-workspace-menu-item-activate',
+                                            innerHTML: (typeof svgIcon === 'function') ? svgIcon('check') : '✓',
+                                            title: 'Switch to this workspace',
+                                            'aria-label': 'Switch to this workspace',
+                                            onClick: function (e) {
+                                                e.stopPropagation();
+                                                switchWorkspace(w.id);
+                                                workspaceMenuOpen = false;
+                                                render();
+                                            }
+                                        }),
                                     _toolBtn(settingsDef, false),
                                     _toolBtn(renameDef, false),
-                                    _toolBtn(deleteDef, true),
-                                    el('span', {
-                                        className: 'bowire-workspace-menu-item-check' + (isActive ? ' is-active' : ''),
-                                        innerHTML: (typeof svgIcon === 'function') ? svgIcon('check') : '✓',
-                                        'aria-hidden': isActive ? 'false' : 'true',
-                                        title: isActive ? 'Active workspace' : 'Switch to this workspace'
-                                    })
+                                    _toolBtn(deleteDef, true)
                                 )
                             );
                         })
