@@ -91,7 +91,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.1 — Scripting, variable resolver, throughput surface *(due 2026-06-30)*
 
-**8/20 done** · 12 backlog
+**9/22 done** · 13 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -107,6 +107,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [233](https://github.com/Kuestenlogik/Bowire/issues/233) | Bowire | [Benchmarks: previous-run diff banner on repeat (p95 ▲ / ▼ / status histogram delta)](#issue-kuestenlogik-bowire-233) | ⬜ Backlog |  |
 | [234](https://github.com/Kuestenlogik/Bowire/issues/234) | Bowire | [Benchmarks: result exports — CSV + k6-summary JSON + OTLP metrics](#issue-kuestenlogik-bowire-234) | ⬜ Backlog |  |
 | [254](https://github.com/Kuestenlogik/Bowire/issues/254) | Bowire | [Freeform builder: auto-discover prompt after first successful invoke](#issue-kuestenlogik-bowire-254) | ⬜ Backlog |  |
+| [265](https://github.com/Kuestenlogik/Bowire/issues/265) | Bowire | [Apostrophe in Save-as-template tooltip broke JS parser](#issue-kuestenlogik-bowire-265) | ⬜ Backlog |  |
 | [197](https://github.com/Kuestenlogik/Bowire/issues/197) | Bowire | [Deprecate + unlist Kuestenlogik.Bowire.Extension.MapLibre on nuget.org after v2.0 ships](#issue-kuestenlogik-bowire-197) | ✅ Done |  |
 | [248](https://github.com/Kuestenlogik/Bowire/issues/248) | Bowire | [Optional rail modules — plumbing (Phase 1): toggle mechanic + always-on set + Settings editor](#issue-kuestenlogik-bowire-248) | ✅ Done |  |
 | [252](https://github.com/Kuestenlogik/Bowire/issues/252) | Bowire | [Compose-request entry points: '+ Compose' (self-contained) + 'New from source…' (workspace-managed URL)](#issue-kuestenlogik-bowire-252) | ✅ Done |  |
@@ -115,6 +116,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [261](https://github.com/Kuestenlogik/Bowire/issues/261) | Bowire | [Tab persistence for 'As new request' freeform clone](#issue-kuestenlogik-bowire-261) | ✅ Done |  |
 | [262](https://github.com/Kuestenlogik/Bowire/issues/262) | Bowire | [Force-home rule retired — rails clickable again after deleting last workspace](#issue-kuestenlogik-bowire-262) | ✅ Done |  |
 | [263](https://github.com/Kuestenlogik/Bowire/issues/263) | Bowire | [Settings tree: list every enabled plugin, not just those with configurable settings](#issue-kuestenlogik-bowire-263) | ✅ Done |  |
+| [264](https://github.com/Kuestenlogik/Bowire/issues/264) | Bowire | [Save-as-template button: SVG save icon (was emoji fallback)](#issue-kuestenlogik-bowire-264) | ✅ Done |  |
 
 ### v2.2 — Test pillar: assertions, CI runner, regression coverage *(due 2026-07-10)*
 
@@ -578,6 +580,10 @@ Round out the Benchmarks export surface so result data can leave Bowire in the f
 
 Last unchecked acceptance item from the parent **#40** Freeform Request Builder ticket. After a freeform request hits a 2xx response, prompt the operator: [[more]](https://github.com/Kuestenlogik/Bowire/issues/254)
 
+#### <a id="issue-kuestenlogik-bowire-265"></a>⬜ Backlog · [#265](https://github.com/Kuestenlogik/Bowire/issues/265) Apostrophe in Save-as-template tooltip broke JS parser
+
+Uncaught SyntaxError: Unexpected identifier 'Your'. The tooltip 'Shows up in 'Your templates' on the next dialog' closed the outer single-quoted string at the first inner apostrophe. Switched inner quotes to double.
+
 #### <a id="issue-kuestenlogik-bowire-197"></a>✅ Done · [#197](https://github.com/Kuestenlogik/Bowire/issues/197) Deprecate + unlist Kuestenlogik.Bowire.Extension.MapLibre on nuget.org after v2.0 ships
 
 `Kuestenlogik.Bowire.Extension.MapLibre` 1.3.0-rc.1 was renamed to `Kuestenlogik.Bowire.Map` ahead of v2.0 (commit 75c8d1f). … [[more]](https://github.com/Kuestenlogik/Bowire/issues/197)
@@ -609,6 +615,10 @@ User report: every rail icon hovered as clickable but the click did nothing. The
 #### <a id="issue-kuestenlogik-bowire-263"></a>✅ Done · [#263](https://github.com/Kuestenlogik/Bowire/issues/263) Settings tree: list every enabled plugin, not just those with configurable settings
 
 Plugins tree filter dropped entries whose p.settings array was empty or unset, hiding REST/gRPC/MCP/GraphQL/etc. from the tree entirely — only MQTT + WebSocket survived. renderPluginSettings handles the empty-settings case gracefully, so the filter was pure loss.
+
+#### <a id="issue-kuestenlogik-bowire-264"></a>✅ Done · [#264](https://github.com/Kuestenlogik/Bowire/issues/264) Save-as-template button: SVG save icon (was emoji fallback)
+
+Workspaces-overview row tool referenced svgIcon('save') which the catalogue didn't expose, so the button fell through to the floppy-disk emoji string. Mixing emoji with SVG-rendered neighbours looked broken. Added a floppy-disk SVG to the catalogue.
 
 ### v2.2 — Test pillar: assertions, CI runner, regression coverage *(due 2026-07-10)*
 
