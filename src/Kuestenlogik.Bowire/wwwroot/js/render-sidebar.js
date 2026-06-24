@@ -1936,45 +1936,15 @@
         }
 
         if (w) {
-            addItem({
-                icon: isActive ? '✓' : '→',
-                label: isActive ? 'Active workspace' : 'Switch to this workspace',
-                disabled: isActive,
-                onClick: function () { switchWorkspace(w.id); }
-            });
-            addItem({
-                icon: '✎',
-                label: 'Rename…',
-                onClick: function () {
-                    var oldName = w.name;
-                    bowirePrompt('Rename workspace', {
-                        title: 'Rename',
-                        defaultValue: oldName,
-                        confirmText: 'Rename',
-                        validator: function (val) {
-                            var trimmed = String(val || '').trim();
-                            if (!trimmed) return 'Name required';
-                            if (trimmed.toLowerCase() === String(oldName || '').trim().toLowerCase()) return null;
-                            if (typeof _isWorkspaceNameTaken === 'function'
-                                && _isWorkspaceNameTaken(trimmed, w.id)) {
-                                if (typeof toast === 'function') {
-                                    toast('A workspace named "' + trimmed + '" already exists.', 'error');
-                                }
-                                return 'Duplicate';
-                            }
-                            return null;
-                        }
-                    }).then(function (renamed) {
-                        if (renamed) {
-                            renameWorkspace(w.id, renamed);
-                            render();
-                        }
-                    });
-                }
-            });
+            // #276 — Context menu mirrors the hover-revealed per-row
+            // tools (rename / save-as-template / duplicate / delete)
+            // PLUS the navigation entries that don't belong on the
+            // tools strip (Open settings / Switch). Action definitions
+            // come from _workspaceRowActionDefs so the menu, the row
+            // tools, and the overview can't drift apart.
             addItem({
                 icon: '⚙',
-                label: 'Edit settings',
+                label: 'Open settings',
                 onClick: function () {
                     workspacesSelectedId = w.id;
                     workspaceTreeSelection = { wsId: w.id, kind: 'workspace' };
@@ -1984,21 +1954,32 @@
                     render();
                 }
             });
-            addItem({
-                icon: '🗑',
-                label: 'Delete',
-                danger: true,
-                onClick: function () {
-                    var isLast = workspaces.length === 1;
-                    var msg = isLast
-                        ? 'Delete the last workspace "' + w.name + '"? You will return to the empty no-workspace state — the underlying URLs / envs / recordings for this workspace are removed.'
-                        : 'Delete workspace "' + w.name + '"? The underlying URLs / envs / recordings for this workspace are removed.';
-                    bowireConfirm(
-                        msg,
-                        function () { deleteWorkspace(w.id); render(); },
-                        { title: 'Delete workspace', confirmText: 'Delete', danger: true }
-                    );
-                }
+            if (!isActive) {
+                addItem({
+                    icon: '→',
+                    label: 'Switch to this workspace',
+                    onClick: function () { switchWorkspace(w.id); }
+                });
+            }
+            var ctxDefs = (typeof _workspaceRowActionDefs === 'function')
+                ? _workspaceRowActionDefs(w) : [];
+            // Glyphs aligned with the inline tools-strip icons so the
+            // operator's eye reads "same action, same shape" — the
+            // pencil / save / copy / trash mapping is intentional.
+            var menuIconForKey = {
+                rename: '✎',
+                'save-template': '⤓',
+                duplicate: '⎘',
+                delete: '🗑'
+            };
+            ctxDefs.forEach(function (def, idx) {
+                if (def.key === 'delete' && idx > 0) addDivider();
+                addItem({
+                    icon: menuIconForKey[def.key] || '',
+                    label: def.label + (def.key === 'rename' || def.key === 'duplicate' || def.key === 'save-template' ? '…' : ''),
+                    danger: !!def.danger,
+                    onClick: def.onClick
+                });
             });
             addDivider();
         }
@@ -2109,6 +2090,30 @@
                         workspaceTreeSelection = { wsId: ws.id, kind: 'workspace' };
                     });
                 }
+            },
+            // #276 — search + sort filterbar. Search is session-only
+            // (cleared on reload, matching Postman / other rails);
+            // sort persists to localStorage via setWorkspacesSortBy.
+            search: {
+                placeholder: 'Search workspaces…',
+                value: workspacesSearchQuery,
+                onInput: function (v) {
+                    workspacesSearchQuery = v;
+                    render();
+                }
+            },
+            sort: {
+                title: 'Sort workspaces',
+                value: workspacesSortBy,
+                options: [
+                    { value: 'lastUsed',     label: 'Last used' },
+                    { value: 'alphabetical', label: 'Alphabetical' },
+                    { value: 'created',      label: 'Created date' }
+                ],
+                onChange: function (v) {
+                    if (typeof setWorkspacesSortBy === 'function') setWorkspacesSortBy(v);
+                    render();
+                }
             }
         }));
 
@@ -2116,16 +2121,172 @@
         if (!workspacesSelectedId || wsIds.indexOf(workspacesSelectedId) < 0) {
             workspacesSelectedId = activeWorkspaceId;
         }
-        if (!workspaceTreeSelection || !workspaceTreeSelection.wsId) {
+        // Was: any selection without a wsId got overwritten to
+        // { wsId, kind: 'workspace' } — which silently killed the
+        // 'workspaces-overview' kind (the overview-list state has
+        // NO wsId because it's a list view, not a per-workspace
+        // view). The overview never showed because every sidebar
+        // render reset the state. Preserve any kind that doesn't
+        // need a wsId; only repair stale per-workspace selections.
+        if (!workspaceTreeSelection) {
+            workspaceTreeSelection = { wsId: workspacesSelectedId, kind: 'workspace' };
+        } else if (workspaceTreeSelection.kind !== 'workspaces-overview'
+                   && !workspaceTreeSelection.wsId) {
             workspaceTreeSelection = { wsId: workspacesSelectedId, kind: 'workspace' };
         }
 
-        var nodes = workspaces.map(function (w) {
+        // Filtered + sorted view per the toolbar's search + sort.
+        // Empty-result hint surfaces inline so the operator sees that
+        // the filter is what's hiding rows (not a missing workspace).
+        var visible = (typeof getSortedFilteredWorkspaces === 'function')
+            ? getSortedFilteredWorkspaces()
+            : workspaces.slice();
+
+        if (visible.length === 0 && workspacesSearchQuery) {
+            sidebar.appendChild(el('div', {
+                className: 'bowire-pane-empty',
+                style: 'padding:12px 14px',
+                textContent: 'No workspaces match "' + workspacesSearchQuery + '".'
+            }));
+            return sidebar;
+        }
+
+        var nodes = visible.map(function (w) {
             return _buildWorkspaceTreeNode(w);
         });
         sidebar.appendChild(renderTree(nodes, { ariaLabel: 'Workspaces' }));
 
         return sidebar;
+    }
+
+    // #276 — Canonical per-workspace row-action handlers. Both the
+    // sidebar tree rows and the overview list use this so the action
+    // outcomes (which prompt, what gets saved, which toast fires) stay
+    // identical across surfaces. Each handler reads its target by id
+    // at call time so morphdom-preserved button nodes can't bind to a
+    // stale workspace reference across renders.
+    function _workspaceRowActionDefs(w) {
+        if (!w) return [];
+        var wsId = w.id;
+        var isActive = w.id === activeWorkspaceId;
+        var defs = [];
+        defs.push({
+            key: 'rename',
+            icon: 'pencil',
+            label: 'Rename',
+            // Brief: "+ pencil icon. Click → bowirePrompt('New name…')".
+            // We use the same name-collision validator the topbar
+            // dropdown / overview already use so all three surfaces
+            // share one rename gate.
+            title: 'Rename workspace',
+            onClick: function () {
+                var target = workspaces.find(function (x) { return x.id === wsId; });
+                if (!target) return;
+                var oldName = target.name;
+                bowirePrompt('New name', {
+                    title: 'Rename workspace',
+                    defaultValue: oldName,
+                    confirmText: 'Rename',
+                    validator: function (val) {
+                        var trimmed = String(val || '').trim();
+                        if (!trimmed) return 'Name required';
+                        if (trimmed.toLowerCase() === String(oldName || '').trim().toLowerCase()) return null;
+                        if (typeof _isWorkspaceNameTaken === 'function'
+                            && _isWorkspaceNameTaken(trimmed, wsId)) {
+                            if (typeof toast === 'function') {
+                                toast('A workspace named "' + trimmed + '" already exists.', 'error');
+                            }
+                            return 'Duplicate';
+                        }
+                        return null;
+                    }
+                }).then(function (renamed) {
+                    if (renamed && typeof renameWorkspace === 'function') {
+                        renameWorkspace(wsId, renamed);
+                        render();
+                    }
+                });
+            }
+        });
+        if (isActive && typeof saveCurrentWorkspaceAsTemplate === 'function') {
+            defs.push({
+                key: 'save-template',
+                icon: 'save',
+                label: 'Save as template',
+                title: 'Save workspace as template',
+                onClick: function () {
+                    var target = workspaces.find(function (x) { return x.id === wsId; });
+                    var wsName = (target && target.name) || 'workspace';
+                    bowirePrompt('Template name', {
+                        title: 'Save as template',
+                        defaultValue: wsName + ' template',
+                        confirmText: 'Save',
+                        validator: function (val) {
+                            return String(val || '').trim() ? null : 'Name required';
+                        }
+                    }).then(function (name) {
+                        if (!name) return;
+                        try {
+                            saveCurrentWorkspaceAsTemplate(name, '', 'layers');
+                            if (typeof toast === 'function') {
+                                toast('Saved "' + name + '" — available in the next create-workspace dialog.', 'success');
+                            }
+                        } catch (e) {
+                            if (typeof toast === 'function') {
+                                toast('Save failed: ' + (e && e.message ? e.message : 'unknown error'), 'error');
+                            }
+                        }
+                    });
+                }
+            });
+        }
+        defs.push({
+            key: 'duplicate',
+            icon: 'copy',
+            label: 'Duplicate',
+            title: 'Duplicate workspace',
+            onClick: function () {
+                var target = workspaces.find(function (x) { return x.id === wsId; });
+                if (!target || typeof duplicateWorkspace !== 'function') return;
+                bowirePrompt('Name for the duplicate', {
+                    title: 'Duplicate workspace',
+                    defaultValue: target.name + ' (copy)',
+                    confirmText: 'Duplicate'
+                }).then(function (newName) {
+                    if (!newName) return;
+                    var fresh = duplicateWorkspace(wsId, newName);
+                    if (fresh) {
+                        workspacesSelectedId = fresh.id;
+                        workspaceTreeSelection = { wsId: fresh.id, kind: 'workspace' };
+                        render();
+                    }
+                });
+            }
+        });
+        defs.push({
+            key: 'delete',
+            icon: 'trash',
+            label: 'Delete',
+            danger: true,
+            title: 'Delete workspace',
+            onClick: function () {
+                var target = workspaces.find(function (x) { return x.id === wsId; });
+                if (!target) return;
+                var isLast = workspaces.length === 1;
+                var msg = isLast
+                    ? 'Delete the last workspace "' + target.name + '"? You will return to the empty no-workspace state — the underlying URLs / envs / recordings for this workspace are removed.'
+                    : 'Delete workspace "' + target.name + '"? The underlying URLs / envs / recordings for this workspace are removed.';
+                bowireConfirm(
+                    msg,
+                    function () {
+                        if (typeof deleteWorkspace === 'function') deleteWorkspace(wsId);
+                        render();
+                    },
+                    { title: 'Delete workspace', confirmText: 'Delete', danger: true }
+                );
+            }
+        });
+        return defs;
     }
 
     function _buildWorkspaceTreeNode(w) {
@@ -2166,6 +2327,23 @@
             + '<polyline points="2 12 12 17 22 12"/>'
             + '</svg>';
 
+        // #276 — Per-row hover tools: rename / save-as-template /
+        // duplicate / delete. Same handlers feed the right-click
+        // context menu and the workspaces overview via
+        // _workspaceRowActionDefs so the three surfaces can't drift.
+        // Mapped here from action descriptors to the icon-button
+        // shape renderTree expects.
+        var actionDefs = (typeof _workspaceRowActionDefs === 'function')
+            ? _workspaceRowActionDefs(w) : [];
+        var tools = actionDefs.map(function (def) {
+            return {
+                icon: def.icon,
+                title: def.title || def.label,
+                danger: !!def.danger,
+                onClick: def.onClick
+            };
+        });
+
         return {
             id: wsExpandKey,
             label: w.name,
@@ -2191,6 +2369,7 @@
                     openWorkspaceContextMenu(w, e);
                 }
             },
+            tools: tools,
             onAdd: !isActive ? function () {
                 switchWorkspace(w.id);
             } : null,
