@@ -16915,6 +16915,257 @@ with the big logo. */
 }
 
 /* ============================================================
+   #126 — Pre/post-script sandbox UI
+   Two collapsible editor blocks per request tab with a shared
+   Console panel and AI "Generate from intent" button.
+   ============================================================ */
+.bowire-scripts-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 12px 0;
+}
+.bowire-script-tab-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0 16px;
+}
+.bowire-script-tab-title {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--bowire-text-tertiary);
+    font-weight: 600;
+}
+.bowire-script-proto-pill {
+    font-size: 10px;
+    padding: 2px 8px;
+    border-radius: 10px;
+    background: var(--bowire-accent-subtle);
+    color: var(--bowire-accent);
+    border: 1px solid var(--bowire-border);
+    letter-spacing: 0.04em;
+    font-weight: 600;
+}
+.bowire-script-block {
+    border: 1px solid var(--bowire-border);
+    border-radius: var(--bowire-radius-sm);
+    margin: 0 16px;
+    background: var(--bowire-surface);
+}
+.bowire-script-block-head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    cursor: pointer;
+    user-select: none;
+    border-bottom: 1px solid var(--bowire-border);
+}
+.bowire-script-block-head:hover {
+    background: var(--bowire-surface-hover);
+}
+.bowire-script-caret {
+    display: inline-block;
+    width: 12px;
+    color: var(--bowire-text-tertiary);
+    font-size: 10px;
+}
+.bowire-script-block-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--bowire-text);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+.bowire-script-block-state {
+    margin-left: auto;
+    font-size: 10px;
+    padding: 1px 8px;
+    border-radius: 8px;
+    background: var(--bowire-bg);
+    color: var(--bowire-text-tertiary);
+    border: 1px solid var(--bowire-border);
+}
+.bowire-script-block-state.active {
+    background: var(--bowire-accent-subtle);
+    color: var(--bowire-accent);
+    border-color: var(--bowire-accent);
+}
+.bowire-script-block .bowire-script-hint {
+    margin: 8px 12px 4px 12px;
+    font-size: 11px;
+    color: var(--bowire-text-tertiary);
+    line-height: 1.4;
+}
+.bowire-script-block .bowire-script-editor {
+    margin: 6px 12px 8px 12px;
+    width: calc(100% - 24px);
+    min-height: 110px;
+}
+.bowire-script-warnings {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin: 0 12px 8px 12px;
+}
+.bowire-script-warning {
+    font-size: 11px;
+    color: var(--bowire-warn, #f0a000);
+    background: rgba(240, 160, 0, 0.08);
+    border: 1px solid rgba(240, 160, 0, 0.3);
+    padding: 4px 8px;
+    border-radius: 4px;
+    line-height: 1.4;
+}
+.bowire-script-tools {
+    display: flex;
+    gap: 6px;
+    padding: 0 12px 10px 12px;
+    align-items: center;
+}
+.bowire-script-gen-btn {
+    background: var(--bowire-accent);
+    color: var(--bowire-accent-text, #fff);
+    border: 1px solid var(--bowire-accent);
+    padding: 5px 12px;
+    border-radius: 4px;
+    font-size: 12px;
+    cursor: pointer;
+    font-weight: 600;
+}
+.bowire-script-gen-btn:hover {
+    filter: brightness(1.1);
+}
+.bowire-script-gen-btn:disabled {
+    opacity: 0.5;
+    cursor: wait;
+}
+.bowire-script-tool-btn {
+    background: transparent;
+    color: var(--bowire-text-secondary);
+    border: 1px solid var(--bowire-border);
+    padding: 5px 10px;
+    border-radius: 4px;
+    font-size: 12px;
+    cursor: pointer;
+}
+.bowire-script-tool-btn:hover {
+    background: var(--bowire-surface-hover);
+    color: var(--bowire-text);
+}
+.bowire-script-block-console .bowire-script-console-empty {
+    padding: 10px 12px;
+    font-size: 12px;
+    color: var(--bowire-text-tertiary);
+    font-style: italic;
+}
+.bowire-script-console-list {
+    padding: 6px 12px;
+    max-height: 220px;
+    overflow-y: auto;
+    font-family: var(--bowire-font-mono);
+    font-size: 12px;
+}
+.bowire-script-console-row {
+    display: flex;
+    gap: 8px;
+    padding: 3px 0;
+    border-bottom: 1px dashed var(--bowire-border);
+    align-items: baseline;
+}
+.bowire-script-console-row:last-child {
+    border-bottom: none;
+}
+.bowire-script-console-phase {
+    font-size: 10px;
+    background: var(--bowire-bg);
+    padding: 0 6px;
+    border-radius: 3px;
+    color: var(--bowire-text-tertiary);
+    border: 1px solid var(--bowire-border);
+    text-transform: uppercase;
+}
+.bowire-script-console-level {
+    font-size: 10px;
+    text-transform: uppercase;
+    color: var(--bowire-text-tertiary);
+    min-width: 50px;
+}
+.bowire-script-console-error .bowire-script-console-level,
+.bowire-script-console-assert-fail .bowire-script-console-level {
+    color: var(--bowire-error, #e25555);
+}
+.bowire-script-console-msg {
+    color: var(--bowire-text);
+    word-break: break-word;
+    flex: 1;
+}
+.bowire-script-block-console .bowire-script-tool-btn {
+    margin: 4px 12px 10px 12px;
+}
+
+/* "Generate from intent" overlay + modal */
+.bowire-script-gen-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.55);
+    z-index: 1100;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.bowire-script-gen-modal {
+    background: var(--bowire-surface);
+    border: 1px solid var(--bowire-border);
+    border-radius: 8px;
+    padding: 18px;
+    width: min(520px, 92vw);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+}
+.bowire-script-gen-heading {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--bowire-text);
+}
+.bowire-script-gen-sub {
+    font-size: 12px;
+    color: var(--bowire-text-secondary);
+    line-height: 1.4;
+}
+.bowire-script-gen-input {
+    width: 100%;
+    background: var(--bowire-bg);
+    border: 1px solid var(--bowire-border);
+    border-radius: 4px;
+    padding: 8px 10px;
+    color: var(--bowire-text);
+    font-family: inherit;
+    font-size: 13px;
+    resize: vertical;
+    box-sizing: border-box;
+}
+.bowire-script-gen-input:focus {
+    outline: none;
+    border-color: var(--bowire-accent);
+    box-shadow: 0 0 0 2px var(--bowire-accent-subtle);
+}
+.bowire-script-gen-status {
+    font-size: 12px;
+    color: var(--bowire-text-tertiary);
+    min-height: 16px;
+}
+.bowire-script-gen-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+}
+
+/* ============================================================
    Plugin-check modal — pops up before recording replay when the
    recording references protocols whose plugins aren't loaded.
    Reuses the existing .bowire-env-modal frame so the overall

@@ -451,6 +451,23 @@
                 // a silent empty substitution.
                 return secretValue === null ? match : secretValue;
             }
+            // {{captured.NAME}} — value written by a pre/post script via
+            // ctx.vars.captured.NAME = …  (#126). The bag lives on
+            // window.__bowire_captured so the runtime (which owns the
+            // captured reference) and the resolver agree on the same
+            // object identity. Unknown captures leave the placeholder
+            // intact so the operator sees the typo instead of a silent
+            // empty substitution.
+            if (key.indexOf('captured.') === 0) {
+                var capturedName = key.substring('captured.'.length);
+                try {
+                    var bag = (typeof window !== 'undefined') ? window.__bowire_captured : null;
+                    if (bag && Object.prototype.hasOwnProperty.call(bag, capturedName)) {
+                        return String(bag[capturedName]);
+                    }
+                } catch (_) { /* fall through */ }
+                return match;
+            }
             // {{ai.NAME}} — session-cached AI-suggested value. The
             // synchronous resolver only reads from the cache —
             // prefetchAiVars(template) is the async path that

@@ -6810,44 +6810,14 @@
         pane.appendChild(codeContent);
 
         // Scripts tab — per-method pre-request / post-response scripts
+        // #126 — typed `ctx.*` sandbox. Editors are collapsible so the
+        // tab stays scan-able when only one phase is populated;
+        // protocol-aware placeholders + inline lint warnings + a
+        // per-phase Console panel + a "Generate from intent" AI
+        // button round out the surface.
         const scriptsContent = el('div', { id: 'bowire-request-tab-scripts-content', className: `bowire-tab-content ${activeRequestTab === 'scripts' ? 'active' : ''}` });
         if (selectedMethod && selectedService) {
-            var scripts = getMethodScripts(selectedService.name, selectedMethod.name);
-
-            // Pre-request script
-            var preLabel = el('label', { className: 'bowire-script-label', textContent: 'Pre-request' });
-            var preHint = el('div', { className: 'bowire-script-hint', textContent: 'Runs before the request is sent. Available variables: env (environment vars), vars (flow vars), request (has body, headers).' });
-            var preArea = el('textarea', {
-                id: 'bowire-script-pre',
-                className: 'bowire-script-editor',
-                placeholder: '// e.g. request.headers[\"Authorization\"] = \"Bearer \" + env.token;\n// vars.startTime = Date.now();',
-                value: scripts.preScript,
-                spellcheck: false
-            });
-            preArea.addEventListener('input', function () {
-                setMethodScript(selectedService.name, selectedMethod.name, 'preScript', preArea.value);
-            });
-
-            // Post-response script
-            var postLabel = el('label', { className: 'bowire-script-label', textContent: 'Post-response' });
-            var postHint = el('div', { className: 'bowire-script-hint', textContent: 'Runs after the response is received. Available variables: env, vars, response (parsed body), assert(condition, message).' });
-            var postArea = el('textarea', {
-                id: 'bowire-script-post',
-                className: 'bowire-script-editor',
-                placeholder: '// e.g. assert(response.status === \"OK\", \"Expected OK status\");\n// vars.token = response.accessToken;',
-                value: scripts.postScript,
-                spellcheck: false
-            });
-            postArea.addEventListener('input', function () {
-                setMethodScript(selectedService.name, selectedMethod.name, 'postScript', postArea.value);
-            });
-
-            scriptsContent.appendChild(preLabel);
-            scriptsContent.appendChild(preHint);
-            scriptsContent.appendChild(preArea);
-            scriptsContent.appendChild(postLabel);
-            scriptsContent.appendChild(postHint);
-            scriptsContent.appendChild(postArea);
+            scriptsContent.appendChild(renderScriptsTab());
         }
         pane.appendChild(scriptsContent);
 
@@ -6866,6 +6836,451 @@
         pane.appendChild(testsContent);
 
         return pane;
+    }
+
+    // #126 — Scripts tab UI. Two collapsible editors (Pre-request /
+    // Post-response) plus a shared Console panel that surfaces
+    // ctx.log() output and the last script error. Each editor has
+    // an "AI generate" button that routes through the existing
+    // schema-grounded chat endpoint (Phase C — falls back to a
+    // friendly hint when the AI host isn't configured).
+    //
+    // Collapse state lives in module scope (not localStorage) —
+    // it's a per-session preference, not project content.
+    var _scriptEditorCollapsed = { pre: false, post: false, console: false };
+
+    function renderScriptsTab() {
+        var wrap = el('div', { className: 'bowire-scripts-wrap' });
+        var svc = selectedService.name;
+        var mth = selectedMethod.name;
+        var scriptsState = getMethodScripts(svc, mth);
+        var shape = (typeof detectScriptProtocolShape === 'function')
+            ? detectScriptProtocolShape(selectedService.source, selectedProtocol)
+            : 'rest';
+
+        // Shape-aware placeholder + hint so the operator immediately
+        // sees the protocol's typed surface for this method.
+        var preExample = _scriptExampleFor(shape, 'pre');
+        var postExample = _scriptExampleFor(shape, 'post');
+        var preHintText = _scriptHintFor(shape, 'pre');
+        var postHintText = _scriptHintFor(shape, 'post');
+
+        // Protocol pill — the workbench has a million ways to surface
+        // protocol, but for the Scripts tab a small inline pill keeps
+        // the connection visible while editing.
+        var protoPill = el('div', { className: 'bowire-script-proto-pill', textContent: shape.toUpperCase() + ' surface' });
+        var header = el('div', { className: 'bowire-script-tab-header' },
+            el('span', { className: 'bowire-script-tab-title', textContent: 'Scripts' }),
+            protoPill
+        );
+        wrap.appendChild(header);
+
+        wrap.appendChild(_renderScriptEditorBlock({
+            phase: 'pre',
+            label: 'Pre-request',
+            hint: preHintText,
+            placeholder: preExample,
+            value: scriptsState.preScript,
+            shape: shape,
+            svc: svc,
+            mth: mth
+        }));
+        wrap.appendChild(_renderScriptEditorBlock({
+            phase: 'post',
+            label: 'Post-response',
+            hint: postHintText,
+            placeholder: postExample,
+            value: scriptsState.postScript,
+            shape: shape,
+            svc: svc,
+            mth: mth
+        }));
+        wrap.appendChild(_renderScriptConsoleBlock(svc, mth));
+        return wrap;
+    }
+
+    function _renderScriptEditorBlock(opts) {
+        var collapsed = !!_scriptEditorCollapsed[opts.phase];
+        var block = el('div', { className: 'bowire-script-block bowire-script-block-' + opts.phase });
+        var caret = el('span', {
+            className: 'bowire-script-caret' + (collapsed ? ' collapsed' : ''),
+            textContent: collapsed ? '▸' : '▾'
+        });
+        var labelEl = el('span', { className: 'bowire-script-block-label', textContent: opts.label });
+        var indicator = el('span', { className: 'bowire-script-block-state' });
+        var hasContent = !!(opts.value && opts.value.trim());
+        if (hasContent) {
+            indicator.classList.add('active');
+            indicator.textContent = 'on';
+        } else {
+            indicator.textContent = 'empty';
+        }
+        var head = el('div', {
+            className: 'bowire-script-block-head',
+            onClick: function () {
+                _scriptEditorCollapsed[opts.phase] = !_scriptEditorCollapsed[opts.phase];
+                render();
+            }
+        }, caret, labelEl, indicator);
+        block.appendChild(head);
+        if (collapsed) return block;
+
+        var hint = el('div', { className: 'bowire-script-hint', textContent: opts.hint });
+        var area = el('textarea', {
+            id: 'bowire-script-' + opts.phase,
+            className: 'bowire-script-editor',
+            placeholder: opts.placeholder,
+            value: opts.value || '',
+            spellcheck: false
+        });
+        area.addEventListener('input', function () {
+            setMethodScript(opts.svc, opts.mth, opts.phase === 'pre' ? 'preScript' : 'postScript', area.value);
+            // Re-lint on every keystroke. Bucket-debounce would be
+            // nicer but the source is short enough that the regex
+            // scan is sub-millisecond.
+            _updateLintWarnings(block, area.value, opts.shape);
+        });
+        block.appendChild(hint);
+        block.appendChild(area);
+
+        // Lint warnings — protocol-typed surface check.
+        var warnHost = el('div', { className: 'bowire-script-warnings' });
+        block.appendChild(warnHost);
+        _updateLintWarnings(block, opts.value, opts.shape);
+
+        // Tools row — Generate from intent + Clear + Format.
+        var toolsRow = el('div', { className: 'bowire-script-tools' });
+        var genBtn = el('button', {
+            className: 'bowire-script-gen-btn',
+            type: 'button',
+            textContent: 'Generate from intent',
+            title: 'Describe what the script should do; the assistant emits a runnable script for this protocol shape.',
+            onClick: function () { _openScriptGenPrompt(opts.phase, opts.shape, opts.svc, opts.mth, area); }
+        });
+        var clearBtn = el('button', {
+            className: 'bowire-script-tool-btn',
+            type: 'button',
+            textContent: 'Clear',
+            onClick: function () {
+                if (!area.value) return;
+                area.value = '';
+                setMethodScript(opts.svc, opts.mth, opts.phase === 'pre' ? 'preScript' : 'postScript', '');
+                render();
+            }
+        });
+        toolsRow.appendChild(genBtn);
+        toolsRow.appendChild(clearBtn);
+        block.appendChild(toolsRow);
+        return block;
+    }
+
+    function _updateLintWarnings(blockEl, source, shape) {
+        var host = blockEl.querySelector('.bowire-script-warnings');
+        if (!host) return;
+        host.innerHTML = '';
+        if (typeof lintScriptForShape !== 'function') return;
+        var warnings = lintScriptForShape(source, shape);
+        for (var i = 0; i < warnings.length; i++) {
+            host.appendChild(el('div', {
+                className: 'bowire-script-warning',
+                textContent: warnings[i].member + ' — ' + warnings[i].hint
+            }));
+        }
+    }
+
+    function _renderScriptConsoleBlock(svc, mth) {
+        var entries = (typeof getScriptConsole === 'function')
+            ? getScriptConsole(svc, mth) : [];
+        var collapsed = !!_scriptEditorCollapsed.console;
+        var block = el('div', { className: 'bowire-script-block bowire-script-block-console' });
+        var caret = el('span', {
+            className: 'bowire-script-caret' + (collapsed ? ' collapsed' : ''),
+            textContent: collapsed ? '▸' : '▾'
+        });
+        var labelEl = el('span', { className: 'bowire-script-block-label', textContent: 'Console' });
+        var count = el('span', { className: 'bowire-script-block-state', textContent: String(entries.length) });
+        var head = el('div', {
+            className: 'bowire-script-block-head',
+            onClick: function () {
+                _scriptEditorCollapsed.console = !_scriptEditorCollapsed.console;
+                render();
+            }
+        }, caret, labelEl, count);
+        block.appendChild(head);
+        if (collapsed) return block;
+
+        if (entries.length === 0) {
+            block.appendChild(el('div', {
+                className: 'bowire-script-console-empty',
+                textContent: 'No script output yet. ctx.log() writes land here after Send.'
+            }));
+        } else {
+            var list = el('div', { className: 'bowire-script-console-list' });
+            for (var i = 0; i < entries.length; i++) {
+                var e = entries[i];
+                list.appendChild(el('div', { className: 'bowire-script-console-row bowire-script-console-' + e.level },
+                    el('span', { className: 'bowire-script-console-phase', textContent: e.phase }),
+                    el('span', { className: 'bowire-script-console-level', textContent: e.level }),
+                    el('span', { className: 'bowire-script-console-msg', textContent: e.message })
+                ));
+            }
+            block.appendChild(list);
+            block.appendChild(el('button', {
+                className: 'bowire-script-tool-btn',
+                type: 'button',
+                textContent: 'Clear console',
+                onClick: function () {
+                    if (typeof clearScriptConsole === 'function') clearScriptConsole(svc, mth);
+                    render();
+                }
+            }));
+        }
+        return block;
+    }
+
+    function _scriptExampleFor(shape, phase) {
+        if (phase === 'pre') {
+            switch (shape) {
+                case 'grpc':
+                    return [
+                        '// gRPC pre-request — set authorization metadata',
+                        '// + a 5s deadline.',
+                        'ctx.metadata.set("authorization", "Bearer " + ctx.env.get("TOKEN"));',
+                        'ctx.deadline.setSeconds(5);'
+                    ].join('\n');
+                case 'mqtt':
+                    return [
+                        '// MQTT pre-request — exactly-once delivery, no retain.',
+                        'ctx.publish.qos = 1;',
+                        'ctx.publish.retain = false;'
+                    ].join('\n');
+                case 'websocket':
+                    return [
+                        '// WebSocket pre-request — adjust the outgoing frame.',
+                        '// ctx.request.body is the JSON frame string.',
+                        'ctx.log("sending frame", ctx.request.body);'
+                    ].join('\n');
+                default:
+                    return [
+                        '// REST pre-request — sign the body, stamp the URL.',
+                        'ctx.request.headers.set("X-Sent-At", String(Date.now()));',
+                        'ctx.request.query.set("trace", ctx.env.get("TRACE_ID") || "anon");'
+                    ].join('\n');
+            }
+        }
+        // post
+        switch (shape) {
+            case 'grpc':
+                return [
+                    '// gRPC post-response — capture a token, assert OK.',
+                    'ctx.assert.equal(ctx.response.status, "OK");',
+                    'var body = ctx.response.json();',
+                    'if (body && body.accessToken) ctx.vars.captured.token = body.accessToken;'
+                ].join('\n');
+            case 'mqtt':
+                return [
+                    '// MQTT post-response — log the broker ack and assert.',
+                    'ctx.log("ack", ctx.response.body);',
+                    'ctx.assert.ok(ctx.response.status, "broker did not ack");'
+                ].join('\n');
+            case 'websocket':
+                return [
+                    '// WebSocket post-response — read the final frame.',
+                    'ctx.log("final frame", ctx.response.body);'
+                ].join('\n');
+            default:
+                return [
+                    '// REST post-response — capture + assert.',
+                    'ctx.assert.equal(ctx.response.status, "OK");',
+                    'var body = ctx.response.json();',
+                    'if (body && body.id) ctx.vars.captured.lastId = body.id;'
+                ].join('\n');
+        }
+    }
+
+    function _scriptHintFor(shape, phase) {
+        var always = 'ctx.env.get/set, ctx.vars.captured, ctx.assert.equal/ok/deepEqual, ctx.log() are available in every script.';
+        if (phase === 'pre') {
+            switch (shape) {
+                case 'grpc':     return 'Runs before the gRPC call ships. ' + always + ' Protocol-typed: ctx.metadata.set, ctx.deadline.setSeconds.';
+                case 'mqtt':     return 'Runs before the MQTT publish. ' + always + ' Protocol-typed: ctx.publish.qos, ctx.publish.retain.';
+                case 'websocket':return 'Runs before the WebSocket frame is sent. ' + always + ' Protocol-typed: ctx.request.body.';
+                default:         return 'Runs before the request is sent. ' + always + ' Protocol-typed: ctx.request.headers.set, ctx.request.query.set, ctx.request.body.';
+            }
+        }
+        switch (shape) {
+            case 'grpc':     return 'Runs after the gRPC response lands. ' + always + ' Protocol-typed: ctx.response.json(), ctx.metadata (request-side, frozen).';
+            case 'mqtt':     return 'Runs after the MQTT broker ack. ' + always + ' Protocol-typed: ctx.response.body, ctx.publish (request-side, frozen).';
+            case 'websocket':return 'Runs after the WebSocket stream completes. ' + always + ' Protocol-typed: ctx.response.body.';
+            default:         return 'Runs after the response lands. ' + always + ' Protocol-typed: ctx.response.json(), ctx.response.headers, ctx.request (frozen).';
+        }
+    }
+
+    // #126 Phase C — "Generate from intent". Opens a tiny inline
+    // prompt; on submit, sends the operator's one-liner plus
+    // the protocol shape + method schema to the existing AI chat
+    // endpoint and writes the returned script body straight into
+    // the editor. The fallback path (AI host not configured)
+    // surfaces a friendly hint rather than silently doing nothing.
+    function _openScriptGenPrompt(phase, shape, svc, mth, areaEl) {
+        var existing = document.querySelector('.bowire-script-gen-modal');
+        if (existing) existing.remove();
+        var prompt = el('div', { className: 'bowire-script-gen-modal' });
+        var heading = el('div', { className: 'bowire-script-gen-heading', textContent: 'Generate ' + (phase === 'pre' ? 'pre-request' : 'post-response') + ' script' });
+        var sub = el('div', { className: 'bowire-script-gen-sub', textContent: 'Describe what the script should do for this ' + shape.toUpperCase() + ' method. The assistant sees the protocol shape + the available ctx.* surface and emits a runnable script.' });
+        var input = el('textarea', {
+            className: 'bowire-script-gen-input',
+            placeholder: phase === 'pre'
+                ? 'sign the body with my HMAC secret using sha256'
+                : 'capture the response token and assert status is OK',
+            rows: 2
+        });
+        var status = el('div', { className: 'bowire-script-gen-status' });
+        var actions = el('div', { className: 'bowire-script-gen-actions' });
+        var cancelBtn = el('button', {
+            className: 'bowire-script-tool-btn',
+            type: 'button',
+            textContent: 'Cancel',
+            onClick: function () { prompt.remove(); }
+        });
+        var submitBtn = el('button', {
+            className: 'bowire-script-gen-btn',
+            type: 'button',
+            textContent: 'Generate'
+        });
+        submitBtn.addEventListener('click', function () {
+            var intent = (input.value || '').trim();
+            if (!intent) { status.textContent = 'Type a one-line intent first.'; return; }
+            submitBtn.disabled = true;
+            status.textContent = 'Generating…';
+            _generateScriptFromIntent(intent, phase, shape, svc, mth)
+                .then(function (script) {
+                    submitBtn.disabled = false;
+                    if (!script) {
+                        status.textContent = 'No script returned. Try a more specific intent or check the AI configuration.';
+                        return;
+                    }
+                    areaEl.value = script;
+                    setMethodScript(svc, mth, phase === 'pre' ? 'preScript' : 'postScript', script);
+                    prompt.remove();
+                    render();
+                })
+                .catch(function (err) {
+                    submitBtn.disabled = false;
+                    status.textContent = 'Generation failed: ' + (err && err.message ? err.message : String(err));
+                });
+        });
+        actions.appendChild(cancelBtn);
+        actions.appendChild(submitBtn);
+        prompt.appendChild(heading);
+        prompt.appendChild(sub);
+        prompt.appendChild(input);
+        prompt.appendChild(status);
+        prompt.appendChild(actions);
+        var overlay = el('div', {
+            className: 'bowire-script-gen-overlay',
+            onClick: function (e) { if (e.target === overlay) overlay.remove(); }
+        }, prompt);
+        document.body.appendChild(overlay);
+        setTimeout(function () { try { input.focus(); } catch (_) {} }, 0);
+    }
+
+    function _generateScriptFromIntent(intent, phase, shape, svc, mth) {
+        // Compose a tight system prompt + user-intent payload and
+        // POST it to /api/ai/chat. The schema-grounded backend
+        // applies the tool-call loop on the request body the same
+        // way it does for the Assistant drawer; we just feed it a
+        // narrower system prompt so the response is a runnable
+        // script body and not a chat reply.
+        var prefix = (typeof config !== 'undefined' && config.prefix) ? config.prefix : '';
+        var surface = _ctxSurfaceFor(shape);
+        var methodSchema = null;
+        if (selectedMethod && selectedMethod.inputType) {
+            try { methodSchema = JSON.stringify({
+                input: selectedMethod.inputType && selectedMethod.inputType.name,
+                output: selectedMethod.outputType && selectedMethod.outputType.name,
+                httpVerb: selectedMethod.httpMethod || null,
+                httpPath: selectedMethod.httpPath || null
+            }); } catch (_) {}
+        }
+        var system = [
+            'You are a script-generator for the Bowire workbench.',
+            'Emit a single JavaScript snippet that runs inside the typed ctx.* sandbox for a ' + shape.toUpperCase() + ' ' + (phase === 'pre' ? 'pre-request' : 'post-response') + ' phase.',
+            'The available ctx.* surface for this phase is:',
+            surface,
+            'Constraints:',
+            '- Output ONLY the script body — no Markdown fences, no commentary.',
+            '- Use only members the surface above lists.',
+            '- Prefer ctx.env.get(...) over hard-coded secrets.',
+            '- Keep the snippet idempotent where possible.',
+            methodSchema ? ('Method schema: ' + methodSchema) : ''
+        ].filter(Boolean).join('\n');
+        var body = {
+            messages: [
+                { role: 'system', content: system },
+                { role: 'user', content: intent }
+            ]
+        };
+        return fetch(prefix + '/api/ai/chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body)
+        }).then(function (r) {
+            if (!r.ok) {
+                if (r.status === 404 || r.status === 503) {
+                    throw new Error('Assistant not configured. Install the Bowire.Ai package or pick a provider in Settings → AI.');
+                }
+                throw new Error('Assistant request failed (HTTP ' + r.status + ')');
+            }
+            return r.json();
+        }).then(function (resp) {
+            if (!resp || typeof resp.content !== 'string') return '';
+            return _stripCodeFences(resp.content);
+        });
+    }
+
+    function _stripCodeFences(text) {
+        if (!text) return '';
+        var s = String(text).trim();
+        // Strip ```js / ```javascript / ``` fences if the model
+        // wraps the script body despite the system prompt asking
+        // it not to.
+        s = s.replace(/^```[a-z]*\n?/i, '').replace(/\n?```$/i, '');
+        return s.trim();
+    }
+
+    function _ctxSurfaceFor(shape) {
+        var always = [
+            'ctx.env.get(key) / ctx.env.set(key, value) — workspace env vars',
+            'ctx.vars.captured.NAME = value — value future {{captured.NAME}} resolves to',
+            'ctx.assert.equal(actual, expected) / ctx.assert.ok(value) / ctx.assert.deepEqual(a, b)',
+            'ctx.log(...args) — surfaces in the Console panel'
+        ];
+        switch (shape) {
+            case 'grpc':
+                return always.concat([
+                    'ctx.metadata.set(key, value) / ctx.metadata.get(key)',
+                    'ctx.deadline.setSeconds(n)',
+                    'ctx.request.body (pre) | ctx.response.body, ctx.response.json(), ctx.response.metadata (post)'
+                ]).join('\n  - ');
+            case 'mqtt':
+                return always.concat([
+                    'ctx.publish.qos = 0|1|2',
+                    'ctx.publish.retain = true|false',
+                    'ctx.request.body (pre) | ctx.response.body (post)'
+                ]).join('\n  - ');
+            case 'websocket':
+                return always.concat([
+                    'ctx.request.body (pre) | ctx.response.body (post)'
+                ]).join('\n  - ');
+            default:
+                return always.concat([
+                    'ctx.request.headers.set/get/delete(key[, value])',
+                    'ctx.request.query.set/get/delete(key[, value])',
+                    'ctx.request.body / ctx.request.method / ctx.request.url',
+                    'ctx.response.json(), ctx.response.body, ctx.response.status, ctx.response.headers (post)'
+                ]).join('\n  - ');
+        }
     }
 
     function createMetadataRow(key, value) {

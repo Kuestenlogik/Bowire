@@ -103,28 +103,78 @@
         // Apply auth helper from active environment (Bearer / Basic / API Key / JWT / OAuth)
         metadata = await applyAuth(metadata);
 
-        // ---- Pre-request script ----
+        // ---- Pre-request script (#126) ----
+        // Typed `ctx.*` sandbox — env / vars / assert / log are
+        // available everywhere; ctx.request / ctx.metadata /
+        // ctx.publish overlay per protocol shape so the script
+        // can manipulate the wire request before it ships.
         var scripts = getMethodScripts(selectedService.name, selectedMethod.name);
+        // Per-request captured bag — both pre- and post-script see
+        // the same `captured` object so writes persist across the
+        // request boundary, and the next request's {{captured.X}}
+        // template substitution reads from the same place.
+        window.__bowire_captured = window.__bowire_captured || {};
+        var capturedBag = window.__bowire_captured;
         if (scripts.preScript && scripts.preScript.trim()) {
-            try {
-                var envVars = getMergedVars();
-                var flowVars = {};
-                var requestObj = {
-                    body: messages[0] || '{}',
-                    headers: Object.assign({}, metadata)
-                };
-                new Function('env', 'vars', 'request', scripts.preScript)(envVars, flowVars, requestObj);
-                // Apply any mutations the script made
-                messages[0] = requestObj.body;
-                metadata = requestObj.headers;
-                // Store flowVars so the post-response script can access them
-                window.__bowire_flow_vars = flowVars;
-            } catch (scriptErr) {
-                toast('Pre-request script error: ' + scriptErr.message, 'error');
+            var shape = (typeof detectScriptProtocolShape === 'function')
+                ? detectScriptProtocolShape(selectedService.source, selectedProtocol)
+                : 'rest';
+            var requestRef = {
+                body: messages[0] || '{}',
+                headers: Object.assign({}, metadata),
+                query: {},
+                method: selectedMethod.httpMethod || '',
+                url: selectedService.originUrl || ''
+            };
+            // Snapshot env vars + write-through callback. ctx.env.set
+            // updates the active environment (or workspace defaults
+            // if no env is selected) so a captured token survives
+            // beyond this request.
+            var envSnapshot = (typeof getMergedVars === 'function') ? getMergedVars() : {};
+            var onEnvSet = function (key, value) {
+                try {
+                    if (typeof getActiveEnv !== 'function') return;
+                    var env = getActiveEnv();
+                    if (env) {
+                        env.vars = env.vars || {};
+                        env.vars[key] = String(value == null ? '' : value);
+                        var envs = getEnvironments();
+                        var idx = envs.findIndex(function (e) { return e.id === env.id; });
+                        if (idx >= 0) { envs[idx] = env; saveEnvironments(envs); }
+                    }
+                } catch (_) { /* persistence is best-effort */ }
+            };
+            var preResult = runPreRequestScript({
+                source: scripts.preScript,
+                protocolShape: shape,
+                service: selectedService.name,
+                method: selectedMethod.name,
+                request: requestRef,
+                env: envSnapshot,
+                captured: capturedBag,
+                onEnvSet: onEnvSet
+            });
+            if (!preResult.ok) {
+                toast('Pre-request script error: ' + preResult.error, 'error');
                 return;
             }
+            // Apply mutations back to the in-flight request.
+            messages[0] = requestRef.body;
+            metadata = requestRef.headers;
+            // Snapshot for the post-response script's reading of
+            // ctx.request / ctx.metadata. Stashed on window so the
+            // separate runPostResponseScript() call can pick it up.
+            window.__bowire_request_snapshot = {
+                body: requestRef.body,
+                headers: Object.assign({}, requestRef.headers),
+                query: Object.assign({}, requestRef.query || {}),
+                method: requestRef.method,
+                url: requestRef.url,
+                publish: requestRef.publish ? Object.assign({}, requestRef.publish) : null,
+                protocolShape: shape
+            };
         } else {
-            window.__bowire_flow_vars = {};
+            window.__bowire_request_snapshot = null;
         }
 
         const isServerStreaming = selectedMethod.serverStreaming;
@@ -136,27 +186,61 @@
         }
     }
 
-    // ---- Post-response Script Runner ----
+    // ---- Post-response Script Runner (#126) ----
     // Called from invokeUnary (after assertions) and invokeStreaming (on
-    // 'done'). Runs the user's postScript in a sandboxed Function with
-    // env, vars, response, and a simple assert() helper.
-    function runPostResponseScript(service, method, parsedResponse) {
+    // 'done'). Runs the user's postScript through the typed sandbox so
+    // ctx.* shapes match the protocol — REST gets ctx.request +
+    // ctx.response.headers; gRPC gets ctx.metadata; MQTT gets
+    // ctx.publish. The always-available env / vars / assert / log
+    // surface is consistent across protocols.
+    function runPostResponseScript(service, method, parsedResponse, extraResponseInfo) {
         var scripts = getMethodScripts(service, method);
         if (!scripts.postScript || !scripts.postScript.trim()) return;
+        var snapshot = window.__bowire_request_snapshot || null;
+        var shape = (snapshot && snapshot.protocolShape)
+            ? snapshot.protocolShape
+            : ((typeof detectScriptProtocolShape === 'function')
+                ? detectScriptProtocolShape(
+                    selectedService && selectedService.source,
+                    selectedProtocol)
+                : 'rest');
 
-        try {
-            var envVars = getMergedVars();
-            var flowVars = window.__bowire_flow_vars || {};
-            var assertFn = function (condition, message) {
-                if (!condition) {
-                    throw new Error('Assertion failed' + (message ? ': ' + message : ''));
+        window.__bowire_captured = window.__bowire_captured || {};
+        var capturedBag = window.__bowire_captured;
+        var envSnapshot = (typeof getMergedVars === 'function') ? getMergedVars() : {};
+        var onEnvSet = function (key, value) {
+            try {
+                if (typeof getActiveEnv !== 'function') return;
+                var env = getActiveEnv();
+                if (env) {
+                    env.vars = env.vars || {};
+                    env.vars[key] = String(value == null ? '' : value);
+                    var envs = getEnvironments();
+                    var idx = envs.findIndex(function (e) { return e.id === env.id; });
+                    if (idx >= 0) { envs[idx] = env; saveEnvironments(envs); }
                 }
-            };
-            new Function('env', 'vars', 'response', 'assert', scripts.postScript)(
-                envVars, flowVars, parsedResponse, assertFn
-            );
-        } catch (scriptErr) {
-            toast('Post-response script error: ' + scriptErr.message, 'error');
+            } catch (_) { /* best-effort */ }
+        };
+        var requestRefForPost = snapshot || { headers: {}, query: {} };
+        var responseRef = {
+            body: parsedResponse,
+            status: (extraResponseInfo && extraResponseInfo.status) || null,
+            durationMs: (extraResponseInfo && extraResponseInfo.durationMs) || 0,
+            headers: (extraResponseInfo && extraResponseInfo.headers) || {}
+        };
+        var postResult = runPostResponseScriptTyped({
+            source: scripts.postScript,
+            protocolShape: shape,
+            service: service,
+            method: method,
+            request: requestRefForPost,
+            response: responseRef,
+            env: envSnapshot,
+            captured: capturedBag,
+            onEnvSet: onEnvSet
+        });
+        if (!postResult.ok) {
+            toast('Post-response script error: ' + postResult.error, 'error');
         }
     }
 

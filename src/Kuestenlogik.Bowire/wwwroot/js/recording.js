@@ -657,6 +657,52 @@
             }))
             : null;
 
+        // #126 Phase D — re-run the captured pre-request script so the
+        // replay reproduces the dynamic shape (signed body, captured
+        // headers, …) that the original recording produced. Without
+        // this, a recording that signed its body with HMAC would
+        // replay with an unsigned (or stale-signed) body and the
+        // server would reject it. Errors here surface as a step
+        // failure instead of silently shipping the un-modified
+        // request — the original recording wouldn't have succeeded
+        // either if the script had thrown.
+        var capturedBag = (typeof window !== 'undefined' && window.__bowire_captured)
+            ? window.__bowire_captured
+            : (window.__bowire_captured = {});
+        if (step.scripts && step.scripts.preScript && step.scripts.preScript.trim()
+            && typeof runPreRequestScript === 'function') {
+            var shape = (typeof detectScriptProtocolShape === 'function')
+                ? detectScriptProtocolShape(step.protocol, step.protocol)
+                : 'rest';
+            var preRef = {
+                body: substitutedMessages[0] || '{}',
+                headers: Object.assign({}, substitutedMeta || {}),
+                query: {},
+                method: step.httpVerb || '',
+                url: step.serverUrl || ''
+            };
+            var envSnapshot = (typeof getMergedVars === 'function') ? getMergedVars() : {};
+            var preResult = runPreRequestScript({
+                source: step.scripts.preScript,
+                protocolShape: shape,
+                service: step.service,
+                method: step.method,
+                request: preRef,
+                env: envSnapshot,
+                captured: capturedBag
+            });
+            if (!preResult.ok) {
+                return Promise.resolve({
+                    pass: false,
+                    status: 'ScriptError',
+                    durationMs: 0,
+                    error: 'Pre-request script failed: ' + preResult.error
+                });
+            }
+            substitutedMessages[0] = preRef.body;
+            substitutedMeta = preRef.headers;
+        }
+
         // Server URL: prefer the step's recorded origin URL when present, else
         // fall back to the currently active server URL. This lets a single
         // recording span multiple URLs (e.g. orchestration scenario across
@@ -681,6 +727,56 @@
         }).then(function (resp) {
             return resp.json().then(function (json) {
                 var ok = resp.ok && !json.title;
+                // #126 Phase D — re-run the captured post-response
+                // script so an assertion baked into the recording
+                // turns into a pass/fail signal on replay. The
+                // script can also write into ctx.vars.captured —
+                // the bag survives across steps within a single
+                // replay, matching the original recording's
+                // intent (capture token in step 1, use in step 2).
+                if (step.scripts && step.scripts.postScript && step.scripts.postScript.trim()
+                    && typeof runPostResponseScriptTyped === 'function') {
+                    var shape = (typeof detectScriptProtocolShape === 'function')
+                        ? detectScriptProtocolShape(step.protocol, step.protocol)
+                        : 'rest';
+                    var parsedBody = json.response;
+                    if (typeof parsedBody === 'string') {
+                        try { parsedBody = JSON.parse(parsedBody); }
+                        catch (_) { /* leave as text */ }
+                    }
+                    var bag = (typeof window !== 'undefined' && window.__bowire_captured)
+                        ? window.__bowire_captured
+                        : (window.__bowire_captured = {});
+                    var postEnv = (typeof getMergedVars === 'function') ? getMergedVars() : {};
+                    var postResult = runPostResponseScriptTyped({
+                        source: step.scripts.postScript,
+                        protocolShape: shape,
+                        service: step.service,
+                        method: step.method,
+                        request: {
+                            body: substitutedMessages[0] || '{}',
+                            headers: substitutedMeta || {},
+                            query: {}
+                        },
+                        response: {
+                            body: parsedBody,
+                            status: json.status || (ok ? 'OK' : 'Error'),
+                            durationMs: json.duration_ms || 0,
+                            headers: json.metadata || {}
+                        },
+                        env: postEnv,
+                        captured: bag
+                    });
+                    if (!postResult.ok) {
+                        return {
+                            pass: false,
+                            status: 'ScriptAssertFailed',
+                            durationMs: json.duration_ms || 0,
+                            response: json.response,
+                            error: 'Post-response script failed: ' + postResult.error
+                        };
+                    }
+                }
                 return {
                     pass: ok,
                     status: json.status || (ok ? 'OK' : 'Error'),
