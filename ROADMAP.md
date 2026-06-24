@@ -12,7 +12,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.1 — Scripting, variable resolver, throughput surface *(due 2026-06-30)*
 
-**29/48 done** · 19 backlog
+**30/48 done** · 18 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -32,7 +32,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [280](https://github.com/Kuestenlogik/Bowire/issues/280) | Bowire | [Assistant hints: actionable inline buttons / links (not just descriptive text)](#issue-kuestenlogik-bowire-280) | ⬜ Backlog |  |
 | [281](https://github.com/Kuestenlogik/Bowire/issues/281) | Bowire | [Guided tour: page-navigation + element spotlight + interactive flow](#issue-kuestenlogik-bowire-281) | ⬜ Backlog |  |
 | [282](https://github.com/Kuestenlogik/Bowire/issues/282) | Bowire | [Unified .bww format: UI export + CLI export converge on one canonical schema](#issue-kuestenlogik-bowire-282) | ⬜ Backlog |  |
-| [285](https://github.com/Kuestenlogik/Bowire/issues/285) | Bowire | [Lift active recording state from browser localStorage into a server-side BowireRecordingSession](#issue-kuestenlogik-bowire-285) | ⬜ Backlog |  |
 | [286](https://github.com/Kuestenlogik/Bowire/issues/286) | Bowire | [mcp serve --attach: MCP-over-MCP forwarder for connecting to a parent Bowire process](#issue-kuestenlogik-bowire-286) | ⬜ Backlog |  |
 | [287](https://github.com/Kuestenlogik/Bowire/issues/287) | Bowire | [Dual-MCP endpoint: MapBowireMcp + MapBowireMcpAdapter coexistence when --enable-mcp-adapter is on](#issue-kuestenlogik-bowire-287) | ⬜ Backlog |  |
 | [197](https://github.com/Kuestenlogik/Bowire/issues/197) | Bowire | [Deprecate + unlist Kuestenlogik.Bowire.Extension.MapLibre on nuget.org after v2.0 ships](#issue-kuestenlogik-bowire-197) | ✅ Done |  |
@@ -64,6 +63,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [276](https://github.com/Kuestenlogik/Bowire/issues/276) | Bowire | [Workspaces sidebar: tool parity with Recordings/Benchmarks rails (per-row + toolbar + context menu)](#issue-kuestenlogik-bowire-276) | ✅ Done |  |
 | [277](https://github.com/Kuestenlogik/Bowire/issues/277) | Bowire | [Workspace sidebar: 'Switch to active' button uses '+' icon instead of checkmark](#issue-kuestenlogik-bowire-277) | ✅ Done |  |
 | [278](https://github.com/Kuestenlogik/Bowire/issues/278) | Bowire | [Save-as-template button: floppy-disk icon reads as 'save current state', not 'snapshot as template'](#issue-kuestenlogik-bowire-278) | ✅ Done |  |
+| [285](https://github.com/Kuestenlogik/Bowire/issues/285) | Bowire | [Lift active recording state from browser localStorage into a server-side BowireRecordingSession](#issue-kuestenlogik-bowire-285) | ✅ Done |  |
 
 ### v2.2 — Test pillar: assertions, CI runner, regression coverage *(due 2026-07-10)*
 
@@ -195,7 +195,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
 | [3](https://github.com/Kuestenlogik/Bowire.Templates/issues/3) | Templates | [Plugin project template — `dotnet new bowire-plugin`](#issue-kuestenlogik-bowire-templates-3) | ⬜ Backlog | `area:plugin-sdk` |
-| [4](https://github.com/Kuestenlogik/Bowire.Bootcamp/issues/4) | Bootcamp | [Hero heading: align Bootcamp landing typography with the Documentation hero](#issue-kuestenlogik-bowire-bootcamp-4) | ⬜ Backlog |  |
 | [5](https://github.com/Kuestenlogik/Bowire.Bootcamp/issues/5) | Bootcamp | [Top-bar B-logo on Bootcamp pages should link to bowire.io/, not bowire.io/bootcamp/](#issue-kuestenlogik-bowire-bootcamp-5) | ⬜ Backlog |  |
 | [6](https://github.com/Kuestenlogik/Bowire.Bootcamp/issues/6) | Bootcamp | [Bootcamp landing renders inconsistent breadcrumb based on arrival path](#issue-kuestenlogik-bowire-bootcamp-6) | ⬜ Backlog |  |
 | [7](https://github.com/Kuestenlogik/Bowire.Bootcamp/issues/7) | Bootcamp | [Capstone copy mentions 'bowire mock' before the CLI is introduced — rephrase as capability](#issue-kuestenlogik-bowire-bootcamp-7) | ⬜ Backlog |  |
@@ -283,10 +282,6 @@ The existing guided tour reads more like inline help text than a tour. Operator'
 #### <a id="issue-kuestenlogik-bowire-282"></a>⬜ Backlog · [#282](https://github.com/Kuestenlogik/Bowire/issues/282) Unified .bww format: UI export + CLI export converge on one canonical schema
 
 Two divergent .bww shapes shipped in v2.0: [[more]](https://github.com/Kuestenlogik/Bowire/issues/282)
-
-#### <a id="issue-kuestenlogik-bowire-285"></a>⬜ Backlog · [#285](https://github.com/Kuestenlogik/Bowire/issues/285) Lift active recording state from browser localStorage into a server-side BowireRecordingSession
-
-#37 shipped four of seven planned MCP tools. The three remaining items — `bowire.record.start`, `bowire.record.stop`, `bowire.record.replay` — can't land cleanly today because the active-recording state lives in the **browser's** localStorage (`bowire_recording_active`, `bowire_recording_buffer`, &c … [[more]](https://github.com/Kuestenlogik/Bowire/issues/285)
 
 #### <a id="issue-kuestenlogik-bowire-286"></a>⬜ Backlog · [#286](https://github.com/Kuestenlogik/Bowire/issues/286) mcp serve --attach: MCP-over-MCP forwarder for connecting to a parent Bowire process
 
@@ -411,6 +406,10 @@ When hovering a workspace row in the Workspaces sidebar, the activate/switch but
 #### <a id="issue-kuestenlogik-bowire-278"></a>✅ Done · [#278](https://github.com/Kuestenlogik/Bowire/issues/278) Save-as-template button: floppy-disk icon reads as 'save current state', not 'snapshot as template'
 
 The 'Save as template' button uses the floppy-disk SVG (added in commit 4f4f477). Operator's expectation when seeing a floppy: [[more]](https://github.com/Kuestenlogik/Bowire/issues/278)
+
+#### <a id="issue-kuestenlogik-bowire-285"></a>✅ Done · [#285](https://github.com/Kuestenlogik/Bowire/issues/285) Lift active recording state from browser localStorage into a server-side BowireRecordingSession
+
+#37 shipped four of seven planned MCP tools. The three remaining items — `bowire.record.start`, `bowire.record.stop`, `bowire.record.replay` — can't land cleanly today because the active-recording state lives in the **browser's** localStorage (`bowire_recording_active`, `bowire_recording_buffer`, &c … [[more]](https://github.com/Kuestenlogik/Bowire/issues/285)
 
 ### v2.2 — Test pillar: assertions, CI runner, regression coverage *(due 2026-07-10)*
 
@@ -709,10 +708,6 @@ Close the second half of the v0.8.11 design. [[more]](https://github.com/Kuesten
 > `area:plugin-sdk`
 
 \`dotnet new bowire-plugin\` in the separate [Templates repo](https://github.com/Kuestenlogik/Bowire.Templates). The polyglot sidecar variants (Python / Node / Rust / Go) shipped via \`--Sidecar\`; this is the .NET-native variant. [[more]](https://github.com/Kuestenlogik/Bowire.Templates/issues/3)
-
-#### <a id="issue-kuestenlogik-bowire-bootcamp-4"></a>⬜ Backlog · [Kuestenlogik/Bowire.Bootcamp#4](https://github.com/Kuestenlogik/Bowire.Bootcamp/issues/4) Hero heading: align Bootcamp landing typography with the Documentation hero
-
-The "Bowire Bootcamp" hero heading on the Bootcamp landing page doesn't match the heading style used on the rest of the bowire.io site (e.g. the Documentation hero). Visually it reads as a separate site instead of one of the bowire.io section heros. [[more]](https://github.com/Kuestenlogik/Bowire.Bootcamp/issues/4)
 
 #### <a id="issue-kuestenlogik-bowire-bootcamp-5"></a>⬜ Backlog · [Kuestenlogik/Bowire.Bootcamp#5](https://github.com/Kuestenlogik/Bowire.Bootcamp/issues/5) Top-bar B-logo on Bootcamp pages should link to bowire.io/, not bowire.io/bootcamp/
 
