@@ -91,7 +91,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.1 — Scripting, variable resolver, throughput surface *(due 2026-06-30)*
 
-**5/18 done** · 13 backlog
+**7/19 done** · 12 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -107,12 +107,13 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [233](https://github.com/Kuestenlogik/Bowire/issues/233) | Bowire | [Benchmarks: previous-run diff banner on repeat (p95 ▲ / ▼ / status histogram delta)](#issue-kuestenlogik-bowire-233) | ⬜ Backlog |  |
 | [234](https://github.com/Kuestenlogik/Bowire/issues/234) | Bowire | [Benchmarks: result exports — CSV + k6-summary JSON + OTLP metrics](#issue-kuestenlogik-bowire-234) | ⬜ Backlog |  |
 | [254](https://github.com/Kuestenlogik/Bowire/issues/254) | Bowire | [Freeform builder: auto-discover prompt after first successful invoke](#issue-kuestenlogik-bowire-254) | ⬜ Backlog |  |
-| [261](https://github.com/Kuestenlogik/Bowire/issues/261) | Bowire | [Tab persistence for 'As new request' freeform clone](#issue-kuestenlogik-bowire-261) | ⬜ Backlog |  |
 | [197](https://github.com/Kuestenlogik/Bowire/issues/197) | Bowire | [Deprecate + unlist Kuestenlogik.Bowire.Extension.MapLibre on nuget.org after v2.0 ships](#issue-kuestenlogik-bowire-197) | ✅ Done |  |
 | [248](https://github.com/Kuestenlogik/Bowire/issues/248) | Bowire | [Optional rail modules — plumbing (Phase 1): toggle mechanic + always-on set + Settings editor](#issue-kuestenlogik-bowire-248) | ✅ Done |  |
 | [252](https://github.com/Kuestenlogik/Bowire/issues/252) | Bowire | [Compose-request entry points: '+ Compose' (self-contained) + 'New from source…' (workspace-managed URL)](#issue-kuestenlogik-bowire-252) | ✅ Done |  |
 | [259](https://github.com/Kuestenlogik/Bowire/issues/259) | Bowire | [richErrorDetail picks up problem+json status / type / instance](#issue-kuestenlogik-bowire-259) | ✅ Done |  |
 | [260](https://github.com/Kuestenlogik/Bowire/issues/260) | Bowire | [Console toolbar: distinct icons for Clear selection / Clear all / Close](#issue-kuestenlogik-bowire-260) | ✅ Done |  |
+| [261](https://github.com/Kuestenlogik/Bowire/issues/261) | Bowire | [Tab persistence for 'As new request' freeform clone](#issue-kuestenlogik-bowire-261) | ✅ Done |  |
+| [262](https://github.com/Kuestenlogik/Bowire/issues/262) | Bowire | [Force-home rule retired — rails clickable again after deleting last workspace](#issue-kuestenlogik-bowire-262) | ✅ Done |  |
 
 ### v2.2 — Test pillar: assertions, CI runner, regression coverage *(due 2026-07-10)*
 
@@ -576,10 +577,6 @@ Round out the Benchmarks export surface so result data can leave Bowire in the f
 
 Last unchecked acceptance item from the parent **#40** Freeform Request Builder ticket. After a freeform request hits a 2xx response, prompt the operator: [[more]](https://github.com/Kuestenlogik/Bowire/issues/254)
 
-#### <a id="issue-kuestenlogik-bowire-261"></a>⬜ Backlog · [#261](https://github.com/Kuestenlogik/Bowire/issues/261) Tab persistence for 'As new request' freeform clone
-
-Switching to another method tab + back lost the freeform clone because switchTab() unconditionally set freeformRequest = null. Now the clone is stashed on the outgoing tab's freeform field + rehydrated from the incoming tab on switch. Sibling fix: closeTab also rehydrates from neighbor (commit 7979ffa).
-
 #### <a id="issue-kuestenlogik-bowire-197"></a>✅ Done · [#197](https://github.com/Kuestenlogik/Bowire/issues/197) Deprecate + unlist Kuestenlogik.Bowire.Extension.MapLibre on nuget.org after v2.0 ships
 
 `Kuestenlogik.Bowire.Extension.MapLibre` 1.3.0-rc.1 was renamed to `Kuestenlogik.Bowire.Map` ahead of v2.0 (commit 75c8d1f). … [[more]](https://github.com/Kuestenlogik/Bowire/issues/197)
@@ -599,6 +596,14 @@ Failed REST/gRPC invocations were showing just 'Error' in the console because ri
 #### <a id="issue-kuestenlogik-bowire-260"></a>✅ Done · [#260](https://github.com/Kuestenlogik/Bowire/issues/260) Console toolbar: distinct icons for Clear selection / Clear all / Close
 
 All three buttons used the same X glyph or text 'Clear'. New selectionClear SVG (dashed rectangle + interior X) for Clear selection so the three actions read as three different intents. i18n-safe — no labels to translate.
+
+#### <a id="issue-kuestenlogik-bowire-261"></a>✅ Done · [#261](https://github.com/Kuestenlogik/Bowire/issues/261) Tab persistence for 'As new request' freeform clone
+
+Switching to another method tab + back lost the freeform clone because switchTab() unconditionally set freeformRequest = null. Now the clone is stashed on the outgoing tab's freeform field + rehydrated from the incoming tab on switch. Sibling fix: closeTab also rehydrates from neighbor (commit 7979ffa).
+
+#### <a id="issue-kuestenlogik-bowire-262"></a>✅ Done · [#262](https://github.com/Kuestenlogik/Bowire/issues/262) Force-home rule retired — rails clickable again after deleting last workspace
+
+User report: every rail icon hovered as clickable but the click did nothing. The force-home rule (added earlier to fix DOM/state divergence) had become the trap itself — every click to leave Home re-fired the guard. Removed both copies (render-env-auth.js + render-main.js).
 
 ### v2.2 — Test pillar: assertions, CI runner, regression coverage *(due 2026-07-10)*
 
