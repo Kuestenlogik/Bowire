@@ -91,11 +91,12 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.0.2 — freeform builder polish + ad-hoc REST + walkthrough fixes
 
-**0/1 done** · 1 backlog
+**1/2 done** · 1 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
-| [257](https://github.com/Kuestenlogik/Bowire/issues/257) | Bowire | [richErrorDetail picks up problem+json status / type / instance](#issue-kuestenlogik-bowire-257) | ⬜ Backlog |  |
+| [258](https://github.com/Kuestenlogik/Bowire/issues/258) | Bowire | [Console toolbar: distinct icons for Clear selection / Clear all / Close](#issue-kuestenlogik-bowire-258) | ⬜ Backlog |  |
+| [257](https://github.com/Kuestenlogik/Bowire/issues/257) | Bowire | [richErrorDetail picks up problem+json status / type / instance](#issue-kuestenlogik-bowire-257) | ✅ Done |  |
 
 ### v2.1 — Scripting, variable resolver, throughput surface *(due 2026-06-30)*
 
@@ -532,7 +533,11 @@ The workbench currently runs two parallel registries for mock-server lifecycle: 
 
 ### v2.0.2 — freeform builder polish + ad-hoc REST + walkthrough fixes
 
-#### <a id="issue-kuestenlogik-bowire-257"></a>⬜ Backlog · [#257](https://github.com/Kuestenlogik/Bowire/issues/257) richErrorDetail picks up problem+json status / type / instance
+#### <a id="issue-kuestenlogik-bowire-258"></a>⬜ Backlog · [#258](https://github.com/Kuestenlogik/Bowire/issues/258) Console toolbar: distinct icons for Clear selection / Clear all / Close
+
+All three buttons used the same X glyph (Close + Clear selection) or text 'Clear' (Clear all). New `selectionClear` SVG (dashed rectangle + interior X) for Clear selection so the three actions read as three different intents. i18n-safe — no labels to translate.
+
+#### <a id="issue-kuestenlogik-bowire-257"></a>✅ Done · [#257](https://github.com/Kuestenlogik/Bowire/issues/257) richErrorDetail picks up problem+json status / type / instance
 
 Failed REST/gRPC invocations were showing just 'Error' in the console because richErrorDetail looked for `status_code`/`statusCode`/`httpStatus`/`http_status` while the server's problem+json carries the HTTP code on a bare `status` field. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/257)
 
