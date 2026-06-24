@@ -12,7 +12,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.1 — Scripting, variable resolver, throughput surface *(due 2026-06-30)*
 
-**33/48 done** · 15 backlog
+**34/48 done** · 14 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -30,7 +30,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [280](https://github.com/Kuestenlogik/Bowire/issues/280) | Bowire | [Assistant hints: actionable inline buttons / links (not just descriptive text)](#issue-kuestenlogik-bowire-280) | ⬜ Backlog |  |
 | [281](https://github.com/Kuestenlogik/Bowire/issues/281) | Bowire | [Guided tour: page-navigation + element spotlight + interactive flow](#issue-kuestenlogik-bowire-281) | ⬜ Backlog |  |
 | [282](https://github.com/Kuestenlogik/Bowire/issues/282) | Bowire | [Unified .bww format: UI export + CLI export converge on one canonical schema](#issue-kuestenlogik-bowire-282) | ⬜ Backlog |  |
-| [287](https://github.com/Kuestenlogik/Bowire/issues/287) | Bowire | [Dual-MCP endpoint: MapBowireMcp + MapBowireMcpAdapter coexistence when --enable-mcp-adapter is on](#issue-kuestenlogik-bowire-287) | ⬜ Backlog |  |
 | [140](https://github.com/Kuestenlogik/Bowire/issues/140) | Bowire | [Per-mode 'Saved Configs' / Presets (distinct from cross-workflow favorites)](#issue-kuestenlogik-bowire-140) | ✅ Done |  |
 | [144](https://github.com/Kuestenlogik/Bowire/issues/144) | Bowire | [Large-recording capture/replay — chunked disk layout, lazy step-load, GB-scale](#issue-kuestenlogik-bowire-144) | ✅ Done |  |
 | [197](https://github.com/Kuestenlogik/Bowire/issues/197) | Bowire | [Deprecate + unlist Kuestenlogik.Bowire.Extension.MapLibre on nuget.org after v2.0 ships](#issue-kuestenlogik-bowire-197) | ✅ Done |  |
@@ -64,6 +63,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [278](https://github.com/Kuestenlogik/Bowire/issues/278) | Bowire | [Save-as-template button: floppy-disk icon reads as 'save current state', not 'snapshot as template'](#issue-kuestenlogik-bowire-278) | ✅ Done |  |
 | [285](https://github.com/Kuestenlogik/Bowire/issues/285) | Bowire | [Lift active recording state from browser localStorage into a server-side BowireRecordingSession](#issue-kuestenlogik-bowire-285) | ✅ Done |  |
 | [286](https://github.com/Kuestenlogik/Bowire/issues/286) | Bowire | [mcp serve --attach: MCP-over-MCP forwarder for connecting to a parent Bowire process](#issue-kuestenlogik-bowire-286) | ✅ Done |  |
+| [287](https://github.com/Kuestenlogik/Bowire/issues/287) | Bowire | [Dual-MCP endpoint: MapBowireMcp + MapBowireMcpAdapter coexistence when --enable-mcp-adapter is on](#issue-kuestenlogik-bowire-287) | ✅ Done |  |
 
 ### v2.2 — Test pillar: assertions, CI runner, regression coverage *(due 2026-07-10)*
 
@@ -273,10 +273,6 @@ The existing guided tour reads more like inline help text than a tour. Operator'
 
 Two divergent .bww shapes shipped in v2.0: [[more]](https://github.com/Kuestenlogik/Bowire/issues/282)
 
-#### <a id="issue-kuestenlogik-bowire-287"></a>⬜ Backlog · [#287](https://github.com/Kuestenlogik/Bowire/issues/287) Dual-MCP endpoint: MapBowireMcp + MapBowireMcpAdapter coexistence when --enable-mcp-adapter is on
-
-Today `app.MapBowireMcp()` and `app.MapBowireMcpAdapter()` are mutually exclusive — calling both either errors at startup or one silently shadows the other. #37 left this open because the adapter mode was a v2.0 late add and the routing-resolution between the two endpoints wasn't reconciled. [[more]](https://github.com/Kuestenlogik/Bowire/issues/287)
-
 #### <a id="issue-kuestenlogik-bowire-140"></a>✅ Done · [#140](https://github.com/Kuestenlogik/Bowire/issues/140) Per-mode 'Saved Configs' / Presets (distinct from cross-workflow favorites)
 
 Two concepts have been conflated under "favorites" in the workbench's evolution: [[more]](https://github.com/Kuestenlogik/Bowire/issues/140)
@@ -408,6 +404,10 @@ The 'Save as template' button uses the floppy-disk SVG (added in commit 4f4f477)
 #### <a id="issue-kuestenlogik-bowire-286"></a>✅ Done · [#286](https://github.com/Kuestenlogik/Bowire/issues/286) mcp serve --attach: MCP-over-MCP forwarder for connecting to a parent Bowire process
 
 `bowire mcp serve --attach` would let a child Bowire MCP server forward tool calls to a parent Bowire process's own MCP endpoint — useful when a remote AI agent talks to a thin Bowire process that delegates the actual work to a heavier Bowire running on the operator's workstation. [[more]](https://github.com/Kuestenlogik/Bowire/issues/286)
+
+#### <a id="issue-kuestenlogik-bowire-287"></a>✅ Done · [#287](https://github.com/Kuestenlogik/Bowire/issues/287) Dual-MCP endpoint: MapBowireMcp + MapBowireMcpAdapter coexistence when --enable-mcp-adapter is on
+
+Today `app.MapBowireMcp()` and `app.MapBowireMcpAdapter()` are mutually exclusive — calling both either errors at startup or one silently shadows the other. #37 left this open because the adapter mode was a v2.0 late add and the routing-resolution between the two endpoints wasn't reconciled. [[more]](https://github.com/Kuestenlogik/Bowire/issues/287)
 
 ### v2.2 — Test pillar: assertions, CI runner, regression coverage *(due 2026-07-10)*
 
