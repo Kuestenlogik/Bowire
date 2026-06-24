@@ -91,7 +91,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.1 — Scripting, variable resolver, throughput surface *(due 2026-06-30)*
 
-**9/22 done** · 13 backlog
+**11/24 done** · 13 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -107,7 +107,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [233](https://github.com/Kuestenlogik/Bowire/issues/233) | Bowire | [Benchmarks: previous-run diff banner on repeat (p95 ▲ / ▼ / status histogram delta)](#issue-kuestenlogik-bowire-233) | ⬜ Backlog |  |
 | [234](https://github.com/Kuestenlogik/Bowire/issues/234) | Bowire | [Benchmarks: result exports — CSV + k6-summary JSON + OTLP metrics](#issue-kuestenlogik-bowire-234) | ⬜ Backlog |  |
 | [254](https://github.com/Kuestenlogik/Bowire/issues/254) | Bowire | [Freeform builder: auto-discover prompt after first successful invoke](#issue-kuestenlogik-bowire-254) | ⬜ Backlog |  |
-| [265](https://github.com/Kuestenlogik/Bowire/issues/265) | Bowire | [Apostrophe in Save-as-template tooltip broke JS parser](#issue-kuestenlogik-bowire-265) | ⬜ Backlog |  |
+| [267](https://github.com/Kuestenlogik/Bowire/issues/267) | Bowire | [Ad-hoc REST: URL is the call URL, not pre-filled discovery source](#issue-kuestenlogik-bowire-267) | ⬜ Backlog |  |
 | [197](https://github.com/Kuestenlogik/Bowire/issues/197) | Bowire | [Deprecate + unlist Kuestenlogik.Bowire.Extension.MapLibre on nuget.org after v2.0 ships](#issue-kuestenlogik-bowire-197) | ✅ Done |  |
 | [248](https://github.com/Kuestenlogik/Bowire/issues/248) | Bowire | [Optional rail modules — plumbing (Phase 1): toggle mechanic + always-on set + Settings editor](#issue-kuestenlogik-bowire-248) | ✅ Done |  |
 | [252](https://github.com/Kuestenlogik/Bowire/issues/252) | Bowire | [Compose-request entry points: '+ Compose' (self-contained) + 'New from source…' (workspace-managed URL)](#issue-kuestenlogik-bowire-252) | ✅ Done |  |
@@ -117,6 +117,8 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [262](https://github.com/Kuestenlogik/Bowire/issues/262) | Bowire | [Force-home rule retired — rails clickable again after deleting last workspace](#issue-kuestenlogik-bowire-262) | ✅ Done |  |
 | [263](https://github.com/Kuestenlogik/Bowire/issues/263) | Bowire | [Settings tree: list every enabled plugin, not just those with configurable settings](#issue-kuestenlogik-bowire-263) | ✅ Done |  |
 | [264](https://github.com/Kuestenlogik/Bowire/issues/264) | Bowire | [Save-as-template button: SVG save icon (was emoji fallback)](#issue-kuestenlogik-bowire-264) | ✅ Done |  |
+| [265](https://github.com/Kuestenlogik/Bowire/issues/265) | Bowire | [Apostrophe in Save-as-template tooltip broke JS parser](#issue-kuestenlogik-bowire-265) | ✅ Done |  |
+| [266](https://github.com/Kuestenlogik/Bowire/issues/266) | Bowire | [Ad-hoc REST — Postman-style URL + verb + body](#issue-kuestenlogik-bowire-266) | ✅ Done |  |
 
 ### v2.2 — Test pillar: assertions, CI runner, regression coverage *(due 2026-07-10)*
 
@@ -580,9 +582,9 @@ Round out the Benchmarks export surface so result data can leave Bowire in the f
 
 Last unchecked acceptance item from the parent **#40** Freeform Request Builder ticket. After a freeform request hits a 2xx response, prompt the operator: [[more]](https://github.com/Kuestenlogik/Bowire/issues/254)
 
-#### <a id="issue-kuestenlogik-bowire-265"></a>⬜ Backlog · [#265](https://github.com/Kuestenlogik/Bowire/issues/265) Apostrophe in Save-as-template tooltip broke JS parser
+#### <a id="issue-kuestenlogik-bowire-267"></a>⬜ Backlog · [#267](https://github.com/Kuestenlogik/Bowire/issues/267) Ad-hoc REST: URL is the call URL, not pre-filled discovery source
 
-Uncaught SyntaxError: Unexpected identifier 'Your'. The tooltip 'Shows up in 'Your templates' on the next dialog' closed the outer single-quoted string at the first inner apostrophe. Switched inner quotes to double.
+startFreeformRequest pre-filled serverUrl from workspace's sources[0] (the OpenAPI source URL), conflating discovery with invocation. For protocol=rest the field now starts empty; operator types the full request URL. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/267)
 
 #### <a id="issue-kuestenlogik-bowire-197"></a>✅ Done · [#197](https://github.com/Kuestenlogik/Bowire/issues/197) Deprecate + unlist Kuestenlogik.Bowire.Extension.MapLibre on nuget.org after v2.0 ships
 
@@ -619,6 +621,14 @@ Plugins tree filter dropped entries whose p.settings array was empty or unset, h
 #### <a id="issue-kuestenlogik-bowire-264"></a>✅ Done · [#264](https://github.com/Kuestenlogik/Bowire/issues/264) Save-as-template button: SVG save icon (was emoji fallback)
 
 Workspaces-overview row tool referenced svgIcon('save') which the catalogue didn't expose, so the button fell through to the floppy-disk emoji string. Mixing emoji with SVG-rendered neighbours looked broken. Added a floppy-disk SVG to the catalogue.
+
+#### <a id="issue-kuestenlogik-bowire-265"></a>✅ Done · [#265](https://github.com/Kuestenlogik/Bowire/issues/265) Apostrophe in Save-as-template tooltip broke JS parser
+
+Uncaught SyntaxError: Unexpected identifier 'Your'. The tooltip 'Shows up in 'Your templates' on the next dialog' closed the outer single-quoted string at the first inner apostrophe. Switched inner quotes to double.
+
+#### <a id="issue-kuestenlogik-bowire-266"></a>✅ Done · [#266](https://github.com/Kuestenlogik/Bowire/issues/266) Ad-hoc REST — Postman-style URL + verb + body
+
+Closes #256. RestInvoker.InvokeAdHocAsync (server-side plain HttpClient call); BowireRestProtocol routes empty-service + verb-method to the ad-hoc path. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/266)
 
 ### v2.2 — Test pillar: assertions, CI runner, regression coverage *(due 2026-07-10)*
 
