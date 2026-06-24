@@ -1604,12 +1604,13 @@
         var ws = workspaces.find(function (w) { return w.id === workspacesSelectedId; })
                  || activeWorkspace();
         if (!ws) {
-            var emptyMain = el('div', { id: 'bowire-main-workspaces', className: 'bowire-main bowire-main-workspaces' });
-            emptyMain.appendChild(el('p', {
-                className: 'bowire-pane-empty bowire-main-pad',
-                textContent: 'No workspace selected. Pick one in the sidebar or create a new one.'
-            }));
-            return emptyMain;
+            // Was: dead-end 'No workspace selected. Pick one in the
+            // sidebar or create a new one.' — but the sidebar might be
+            // collapsed AND no 'create' affordance was shown, leaving
+            // the operator stuck on a screen they couldn't act on.
+            // Route to the overview list instead; it already has its
+            // own empty / non-empty states with proper CTAs.
+            return _renderWorkspacesOverview();
         }
         var sel = sel0;
         var kind = (sel.wsId === ws.id) ? sel.kind : 'workspace';
@@ -1868,11 +1869,11 @@
     function _renderWorkspaceSettingsDetail(ws) {
         var main = el('div', { id: 'bowire-main-workspaces', className: 'bowire-main bowire-main-workspaces' });
         if (!ws) {
-            main.appendChild(el('p', {
-                className: 'bowire-pane-empty bowire-main-pad',
-                textContent: 'No workspace selected. Pick one in the sidebar or create a new one.'
-            }));
-            return main;
+            // Defensive: was a dead-end empty hint. Route through the
+            // overview so the operator gets the New-workspace CTA
+            // instead of staring at instructional text they can't
+            // act on.
+            return _renderWorkspacesOverview();
         }
 
         // Live-lookup helper — every mutating handler in this pane reads
@@ -1961,7 +1962,7 @@
         // pane and see the listing.
         headerActions.appendChild(el('button', {
             className: 'bowire-ws-detail-action-btn',
-            textContent: 'All workspaces',
+            textContent: 'Manage workspaces',
             title: 'Show the list of every workspace',
             onClick: _goToWorkspacesOverview
         }));
@@ -4079,7 +4080,7 @@
                     body: 'A workspace is your project folder — it holds the URLs you discover, the environments + variables + secrets you reference, and the collections / recordings / benchmarks you build. Most operators name them after the project ("Petstore Staging", "Internal CMS"). You can switch + add more from the workspace chip in the topbar later.',
                     actions: [
                         {
-                            label: 'New workspace',
+                            label: 'New workspace…',
                             primary: true,
                             onClick: function () {
                                 if (typeof openCreateWorkspaceDialog === 'function') {

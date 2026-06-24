@@ -2087,7 +2087,7 @@
         // somehow stale, renderMain dispatched elsewhere and the
         // overview never painted).
         var overviewOverflow = [{
-            label: 'Show all workspaces',
+            label: 'Manage workspaces',
             icon: 'list',
             onClick: function () {
                 if (typeof _goToWorkspacesOverview === 'function') _goToWorkspacesOverview();
