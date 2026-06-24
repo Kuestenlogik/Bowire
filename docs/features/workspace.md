@@ -10,20 +10,23 @@ Workspaces have three storage faces:
 
 1. **Browser-backed** — every workspace's data sits in `localStorage` under a per-workspace key prefix (`bowire_ws_<id>_*`). Default for the Tool. Survives reloads, scoped per-browser-profile.
 2. **Disk-backed (per-entity files)** — the `Kuestenlogik.Bowire.Workspace.Git` package materialises a workspace as a directory of per-entity files (`workspace.json`, `environments/*.json`, `collections/*/`, `recordings/*.json`, `scripts/*.js`, `secrets/*`). Designed for git review (see [Git-backed workspace](#git-backed-workspace) below).
-3. **`.bww` export bundle** — a single JSON file carrying the full state. Produced via the Workspace-detail header's **Save now** / **Export** action; imported via the create-workspace dialog. The portable form for moving workspaces between machines or sending one to a teammate.
+3. **`.bww` export bundle** — a single JSON file carrying the full state. Produced via the Workspace-detail header's **Save as… → Export to .bww file** action; imported via the create-workspace dialog (or via the App-drawer **Import workspace…**). Both the workbench and the `bowire workspace export` CLI produce the SAME canonical format — full schema in [docs/format/bowire-workspace.md](../format/bowire-workspace.md).
 
 This doc focuses on `.bww` — the portable export format — and the Git-backed directory layout. For the workbench-side UX (create, switch, manage, save-as-template), see the Workspaces rail in the running app.
 
 ## What a `.bww` file contains
 
-A `.bww` is a single JSON document with a versioned envelope around the workspace state:
+A `.bww` is a single JSON document with a versioned envelope. The current canonical version is **v2** (see [#282](https://github.com/Kuestenlogik/Bowire/issues/282)); pre-unification v1 shapes from either the UI or CLI export path are auto-migrated on read. Migrated payloads carry a `_migratedFrom: 'ui-v1' | 'cli-v1'` diagnostic field. The shim retires in [v3.0.0 (#283)](https://github.com/Kuestenlogik/Bowire/issues/283).
+
+A minimal v2 export looks like:
 
 ```json
 {
   "format": "bowire-workspace",
-  "version": 1,
+  "version": 2,
   "exportedAt": "2026-06-24T08:42:13.421Z",
   "workspace": {
+    "id": "ws_abc1234567",
     "name": "Petstore staging",
     "color": "#22c55e",
     "description": "Smoke + happy-path against staging.petstore.example",
@@ -31,38 +34,27 @@ A `.bww` is a single JSON document with a versioned envelope around the workspac
   },
   "data": {
     "urls": ["https://petstore.swagger.io/v2"],
-    "urlMeta": { "https://petstore.swagger.io/v2": { "alias": "Petstore" } },
-    "environments": [
-      {
-        "id": "env_dev",
-        "name": "Dev",
-        "color": "#3b82f6",
-        "vars": { "baseUrl": "localhost:5001", "apiToken": "dev-token" }
-      }
-    ],
+    "urlMeta": { /* per-URL metadata */ },
+    "environments": [ /* … */ ],
     "activeEnvironmentId": "env_dev",
     "globals": { "apiVersion": "v2" },
-    "collections": [
-      {
-        "id": "col_smoke",
-        "name": "Smoke",
-        "items": [/* per-item request snapshots */]
-      }
-    ],
-    "presets": {
-      "discover": [/* per-method saved configs */]
-    }
+    "collections": [ /* … */ ],
+    "recordings": [], "scripts": [], "flows": [],
+    "favorites": [], "benchmarks": [],
+    "presets": { "discover": [ /* per-method saved configs */ ] }
   }
 }
 ```
 
 | Envelope field | Type | Purpose |
 |---|---|---|
-| `format` | string | Always `"bowire-workspace"`. The importer validates this header before reading anything — a foreign JSON file with the same extension is rejected. |
-| `version` | number | Schema version. Importer migrates older versions forward on read; never breaks old `.bww` files. |
-| `exportedAt` | ISO timestamp | When the bundle was produced. Diagnostic only. |
-| `workspace` | object | Workspace identity (name, color, description, plugin pins). Does NOT carry data — that's in `data`. |
-| `data` | object | The actual content: URLs, envs, globals, collections, recordings, presets, etc. |
+| `format` | string | Always `"bowire-workspace"`. Importers reject any other value before reading. |
+| `version` | number | Schema version. v2 = current canonical; v1 is auto-migrated. |
+| `exportedAt` | ISO timestamp | When the bundle was produced. Diagnostic. |
+| `workspace` | object | Workspace identity (id, name, color, description, plugin pins). |
+| `data` | object | Workspace content — every persistable bucket. Sparse exports still include every bucket as `[]` / `{}` / `null` so readers can iterate without null checks. |
+
+**See [docs/format/bowire-workspace.md](../format/bowire-workspace.md)** for the full per-bucket schema, browser-vs-disk content differences, legacy v1 shape descriptions, and migration shim behaviour.
 
 > **Note:** the on-disk shape produced by `bowire workspace init` (per-entity files, see below) is NOT the same as the `.bww` single-file bundle. The two are interoperable — `bowire workspace export <dir>` produces a `.bww`; `bowire workspace import <file.bww>` materialises a per-entity directory.
 
