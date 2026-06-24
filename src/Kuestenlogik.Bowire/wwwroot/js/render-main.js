@@ -1669,28 +1669,10 @@
                 style: 'margin-top:8px',
                 textContent: 'No workspaces yet. Create one to start organising sources, environments and recordings.'
             }));
-            // Funnel — the empty overview is the destination operators
-            // land at when they pick 'Manage workspaces' from the
-            // welcome card or topbar dropdown. Without a CTA here, that
-            // path dead-ends. The button mirrors the welcome card's
-            // primary action so the operator can finish the create
-            // flow from wherever they navigated.
-            section.appendChild(el('button', {
-                className: 'bowire-ws-detail-action bowire-ws-detail-action-primary',
-                style: 'margin-top:12px',
-                textContent: '+ New workspace',
-                onClick: function () {
-                    if (typeof openCreateWorkspaceDialog === 'function') {
-                        openCreateWorkspaceDialog(function (ws) {
-                            if (ws && ws.id) {
-                                workspacesSelectedId = ws.id;
-                                workspaceTreeSelection = { wsId: ws.id, kind: 'workspace' };
-                                render();
-                            }
-                        });
-                    }
-                }
-            }));
+            // Empty-state CTA retired — the always-appended button
+            // below the if/else carries the create affordance for both
+            // empty and populated states, so a separate empty branch
+            // would just duplicate it.
         } else {
             var list = el('div', { className: 'bowire-env-overview-list' });
             workspaces.forEach(function (w) {
@@ -1840,13 +1822,16 @@
             section.appendChild(list);
         }
 
-        // + Create button at the bottom — same idiom as the env
-        // overview's "+ Add environment" so the create affordance
-        // sits in the same place across both lists.
+        // Create-workspace button at the bottom of the list. Primary-
+        // button convention: just the verb-phrase 'New workspace…',
+        // no leading '+ ' (the + prefix belongs on inline list items
+        // / icon-only buttons, not on primary actions where the
+        // button's prominence carries the affordance). Ellipsis
+        // because the click opens a further dialog.
         section.appendChild(el('button', {
-            className: 'bowire-ws-detail-action',
+            className: 'bowire-ws-detail-action bowire-ws-detail-action-primary',
             style: 'margin-top:12px',
-            textContent: '+ New workspace',
+            textContent: 'New workspace…',
             onClick: function () {
                 if (typeof openCreateWorkspaceDialog === 'function') {
                     openCreateWorkspaceDialog(function (created) {
