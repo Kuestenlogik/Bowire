@@ -2333,7 +2333,13 @@
         var ws = workspaces.find(function (w) { return w.id === wsId; });
         var safeName = (ws && ws.name ? ws.name : wsId)
             .replace(/[^a-zA-Z0-9_-]+/g, '-').replace(/^-+|-+$/g, '');
-        var fileName = 'bowire-workspace-' + (safeName || wsId) + '.bowire.json';
+        // Filename = just the workspace name + .bww. The
+        // 'bowire-workspace-' prefix was noise — the file's HEADER
+        // (carrying type='bowire-workspace' + version) is what the
+        // import side validates, not the filename. .bww is the
+        // Bowire-workspace canonical extension; importers accept
+        // it alongside plain .json.
+        var fileName = (safeName || wsId) + '.bww';
         try {
             var blob = new Blob([JSON.stringify(payload, null, 2)],
                 { type: 'application/json' });

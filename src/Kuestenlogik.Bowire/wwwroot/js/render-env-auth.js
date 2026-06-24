@@ -415,7 +415,7 @@
                         var blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
                         var a = document.createElement('a');
                         a.href = URL.createObjectURL(blob);
-                        a.download = (ws.name || 'workspace') + '.bww.json';
+                        a.download = (ws.name || 'workspace') + '.bww';
                         a.click();
                         setTimeout(function () { URL.revokeObjectURL(a.href); }, 0);
                     } catch (e) {
