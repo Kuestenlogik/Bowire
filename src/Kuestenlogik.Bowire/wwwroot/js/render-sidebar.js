@@ -2170,6 +2170,21 @@
         var wsId = w.id;
         var isActive = w.id === activeWorkspaceId;
         var defs = [];
+        // Workspace settings — high-frequency operation (Variables /
+        // Secrets / Plugin pins / Sources URL list / Recently deleted
+        // tabs all live behind it). Promoted to first tool slot so
+        // the topbar dropdown carries it as quick-access.
+        defs.push({
+            key: 'settings',
+            icon: 'settings',
+            label: 'Workspace settings',
+            title: 'Open workspace settings',
+            onClick: function () {
+                if (typeof _goToWorkspaceSettings === 'function') {
+                    _goToWorkspaceSettings(wsId);
+                }
+            }
+        });
         defs.push({
             key: 'rename',
             icon: 'pencil',

@@ -2393,15 +2393,18 @@
                             // overview / dropdown) share one source of
                             // truth.
                             // Def shape from _workspaceRowActionDefs:
-                            // { key, icon, label, title, onClick }. My
-                            // earlier cut wrote d.id + def.run which
-                            // the helper doesn't expose, so every
-                            // tool resolved to null and the dropdown
-                            // looked tool-less even after restoration.
+                            // { key, icon, label, title, onClick }. The
+                            // dropdown surfaces a CURATED quick-access
+                            // subset (not every action) — Settings +
+                            // Rename + Delete. Save-as-template +
+                            // Duplicate are rarer operations that live
+                            // on the sidebar + overview, where there's
+                            // room to carry the full set without
+                            // crowding the quick-pick surface.
                             var defs = (typeof _workspaceRowActionDefs === 'function')
                                 ? _workspaceRowActionDefs(w) : null;
+                            var settingsDef = defs && defs.find(function (d) { return d.key === 'settings'; });
                             var renameDef = defs && defs.find(function (d) { return d.key === 'rename'; });
-                            var sastDef = defs && defs.find(function (d) { return d.key === 'save-template'; });
                             var deleteDef = defs && defs.find(function (d) { return d.key === 'delete'; });
                             function _toolBtn(def, danger) {
                                 if (!def) return null;
@@ -2441,8 +2444,8 @@
                                     // pins the slot, identical to the
                                     // sidebar's tree-active-indicator
                                     // pattern (#277).
+                                    _toolBtn(settingsDef, false),
                                     _toolBtn(renameDef, false),
-                                    _toolBtn(sastDef, false),
                                     _toolBtn(deleteDef, true),
                                     el('span', {
                                         className: 'bowire-workspace-menu-item-check' + (isActive ? ' is-active' : ''),
