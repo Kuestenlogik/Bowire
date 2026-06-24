@@ -137,12 +137,20 @@ jobs:
       # DocFX renders README.md as README.html, so bare directory URLs
       # (.../unit-1-cli/) 404 on GitHub Pages because there's no
       # index.html. Materialise the README as the directory index for
-      # both DocFX outputs. Idempotent; safe to re-run.
-      - name: Alias README.html as directory index.html
+      # both DocFX outputs — BUT only when no index.html already
+      # exists (cp -n / --no-clobber).
+      #
+      # Without the guard an explicit index.md next to the README
+      # (e.g. Bowire.Bootcamp ships both README.md AND index.md at
+      # repo root — DocFX builds index.html from index.md, then the
+      # alias step blindly trashes it with README.html). With -n the
+      # explicit index.html survives; README.html only steps in as a
+      # fallback for README-only directories like the unit folders.
+      - name: Alias README.html as directory index.html (when no index exists)
         run: |
           find _combined/docs _combined/bootcamp -name README.html -type f -print0 |
             while IFS= read -r -d '' f; do
-              cp -f "$f" "$(dirname "$f")/index.html"
+              cp -n "$f" "$(dirname "$f")/index.html"
             done
 
       # Pagefind crawls the already-rendered HTML under _combined/ (both
