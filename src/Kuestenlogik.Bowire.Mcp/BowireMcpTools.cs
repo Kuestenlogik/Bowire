@@ -7,6 +7,7 @@ using System.Text.Json.Nodes;
 using Kuestenlogik.Bowire;
 using Kuestenlogik.Bowire.Mock;
 using Kuestenlogik.Bowire.Mocking;
+using Kuestenlogik.Bowire.Recording;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using ModelContextProtocol.Server;
@@ -43,6 +44,7 @@ public sealed class BowireMcpTools
     private readonly BowireProtocolRegistry _registry;
     private readonly BowireMockHandleRegistry _mockHandles;
     private readonly BowireMcpConfirmationStore _confirmations;
+    private readonly BowireRecordingSession _recordingSession;
     private readonly BowireMcpOptions _options;
     private readonly ILogger<BowireMcpTools> _logger;
 
@@ -50,12 +52,14 @@ public sealed class BowireMcpTools
         BowireProtocolRegistry registry,
         BowireMockHandleRegistry mockHandles,
         BowireMcpConfirmationStore confirmations,
+        BowireRecordingSession recordingSession,
         IOptions<BowireMcpOptions> options,
         ILogger<BowireMcpTools> logger)
     {
         _registry = registry;
         _mockHandles = mockHandles;
         _confirmations = confirmations;
+        _recordingSession = recordingSession;
         _options = options.Value;
         _logger = logger;
 
@@ -556,37 +560,212 @@ public sealed class BowireMcpTools
     }
 
     [McpServerTool(Name = "bowire.record.start")]
-    [Description("(deferred) Begin a new recording so subsequent invokes are captured. Server-side active-recording state is not yet lifted out of the browser — until that lands, exercise the confirmation flow + return a sentinel response. See ROADMAP / #37 for the design notes.")]
+    [Description("Begin a new server-side recording (#285). Subsequent capture-mode invocations on the same workspace land in the buffer until bowire.record.stop. Two-step by default: the first call returns { pending, confirmationToken, plan }; re-invoke with confirm=true or pass the token back. Mode: capture (default, record live invokes), proxy (record proxied flows), replay (drive replay from a pre-existing recording). One active session per process — start fails with a 409-equivalent message when a session is already open.")]
     public string RecordStart(
-        [Description("Optional recording name.")] string? name = null,
+        [Description("Workspace id the recording is scoped under. Empty string accepted for legacy unscoped workspaces.")] string? workspaceId = null,
+        [Description("Mode: capture, proxy, or replay. Default capture.")] string? mode = null,
+        [Description("Optional human-readable recording name. Defaults to \"Untitled recording\".")] string? name = null,
+        [Description("Optional pre-existing recording id (replay scenarios). When null, a fresh rec_* id is generated.")] string? recordingId = null,
         [Description("Skip the pending-confirmation step.")] bool confirm = false,
         [Description("Confirmation token returned by a prior pending call.")] string? confirmationToken = null)
     {
-        var plan = $"Start a new server-side recording named \"{name ?? "(auto-generated)"}\". (deferred — see ROADMAP)";
+        var resolvedMode = ParseMode(mode);
+        var plan = $"Start a {ModeWireName(resolvedMode)} recording named \"{name ?? "Untitled recording"}\" on workspace \"{workspaceId ?? "(unscoped)"}\".";
         if (TryConfirmOrPark("bowire.record.start", plan, confirm, confirmationToken, out var pendingResponse))
             return pendingResponse!;
 
-        return "bowire.record.start is deferred: server-side active-recording state isn't lifted yet. Until it is, use the workbench UI to start recordings and bowire.record.list to enumerate them. See #37 on ROADMAP for the design notes.";
+        try
+        {
+            var state = _recordingSession.Start(
+                workspaceId: workspaceId ?? string.Empty,
+                mode: resolvedMode,
+                name: name,
+                recordingId: recordingId);
+            return JsonSerializer.Serialize(new
+            {
+                started = true,
+                recordingId = state.RecordingId,
+                workspaceId = state.WorkspaceId,
+                mode = ModeWireName(state.Mode),
+                name = state.Name,
+                startedAt = state.StartedAt,
+            }, JsonOpts);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return JsonSerializer.Serialize(new
+            {
+                started = false,
+                error = ex.Message,
+            }, JsonOpts);
+        }
     }
 
     [McpServerTool(Name = "bowire.record.stop")]
-    [Description("(deferred) Stop the active recording and persist it. Server-side active-recording state is not yet lifted out of the browser; see #37 on ROADMAP.")]
+    [Description("Stop the active server-side recording (#285) and flush the buffer into ~/.bowire/recordings.json. Returns { stopped, recordingId, stepCount }. Idempotent — returns { stopped: false, reason: \"no-active-session\" } when no session is open. Two-step by default; pass confirm=true to skip the confirmation gate.")]
     public string RecordStop(
         [Description("Skip the pending-confirmation step.")] bool confirm = false,
         [Description("Confirmation token returned by a prior pending call.")] string? confirmationToken = null)
     {
-        var plan = "Stop the active server-side recording and persist it. (deferred — see ROADMAP)";
+        var plan = "Stop the active server-side recording and persist it to ~/.bowire/recordings.json.";
         if (TryConfirmOrPark("bowire.record.stop", plan, confirm, confirmationToken, out var pendingResponse))
             return pendingResponse!;
 
-        return "bowire.record.stop is deferred: server-side active-recording state isn't lifted yet. The workbench UI owns recording lifecycle today. See #37 on ROADMAP.";
+        try
+        {
+            var recording = _recordingSession.Stop(flush: PersistRecording);
+            if (recording is null)
+            {
+                return JsonSerializer.Serialize(new
+                {
+                    stopped = false,
+                    reason = "no-active-session",
+                }, JsonOpts);
+            }
+            return JsonSerializer.Serialize(new
+            {
+                stopped = true,
+                recordingId = recording.Id,
+                stepCount = recording.Steps.Count,
+                name = recording.Name,
+            }, JsonOpts);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogDebug(ex, "bowire.record.stop failed");
+            return JsonSerializer.Serialize(new
+            {
+                stopped = false,
+                error = ex.Message,
+            }, JsonOpts);
+        }
     }
 
     [McpServerTool(Name = "bowire.record.replay")]
-    [Description("(deferred) Replay a recording by id and return per-step pass/fail. The runtime piece needs server-side replay state lifted out of the browser; see #37 on ROADMAP. Use bowire.mock.start { recording: ... } today to serve a recording back.")]
-    public static string RecordReplay(
-        [Description("Recording id from bowire.record.list.")] string id) =>
-        $"bowire.record.replay({id}) is deferred: server-side replay state isn't lifted yet. Use bowire.mock.start with recording=<path> to serve the recording as a mock, then bowire.invoke the mock to step through it. See #37 on ROADMAP for the design notes.";
+    [Description("Switch the active server-side recording session into replay mode for the given recording id (#285). When no session is open, opens a fresh one bound to the supplied recording id so the workbench can drive replay. Returns the resulting session state. Two-step by default; pass confirm=true to skip the confirmation gate.")]
+    public string RecordReplay(
+        [Description("Workspace id the replay is scoped under.")] string? workspaceId = null,
+        [Description("Recording id to replay (from bowire.record.list).")] string? recordingId = null,
+        [Description("Skip the pending-confirmation step.")] bool confirm = false,
+        [Description("Confirmation token returned by a prior pending call.")] string? confirmationToken = null)
+    {
+        if (string.IsNullOrWhiteSpace(recordingId))
+        {
+            return JsonSerializer.Serialize(new
+            {
+                replaying = false,
+                error = "recordingId is required.",
+            }, JsonOpts);
+        }
+
+        var plan = $"Replay recording \"{recordingId}\" on workspace \"{workspaceId ?? "(unscoped)"}\".";
+        if (TryConfirmOrPark("bowire.record.replay", plan, confirm, confirmationToken, out var pendingResponse))
+            return pendingResponse!;
+
+        try
+        {
+            BowireRecordingSessionState state;
+            if (_recordingSession.Active is null)
+            {
+                state = _recordingSession.Start(
+                    workspaceId: workspaceId ?? string.Empty,
+                    mode: BowireRecordingMode.Replay,
+                    name: $"Replay of {recordingId}",
+                    recordingId: recordingId);
+            }
+            else
+            {
+                state = _recordingSession.SwitchToReplay();
+            }
+            return JsonSerializer.Serialize(new
+            {
+                replaying = true,
+                recordingId = state.RecordingId,
+                workspaceId = state.WorkspaceId,
+                mode = ModeWireName(state.Mode),
+            }, JsonOpts);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return JsonSerializer.Serialize(new
+            {
+                replaying = false,
+                error = ex.Message,
+            }, JsonOpts);
+        }
+    }
+
+    /// <summary>
+    /// Parse the <c>mode</c> argument from the MCP tool surface. Accepts
+    /// the three documented strings + any casing; falls back to Capture
+    /// for null/empty/unknown so a typo doesn't park a session in a
+    /// surprising mode.
+    /// </summary>
+    private static BowireRecordingMode ParseMode(string? mode)
+    {
+        if (string.IsNullOrWhiteSpace(mode)) return BowireRecordingMode.Capture;
+        var trimmed = mode.Trim();
+        if (string.Equals(trimmed, "proxy", StringComparison.OrdinalIgnoreCase)) return BowireRecordingMode.Proxy;
+        if (string.Equals(trimmed, "replay", StringComparison.OrdinalIgnoreCase)) return BowireRecordingMode.Replay;
+        return BowireRecordingMode.Capture;
+    }
+
+    /// <summary>
+    /// Wire-form name for a mode enum value. Used in tool responses + the
+    /// plan strings the confirmation gate echoes back. Kept as a tiny
+    /// table instead of <c>ToString().ToLowerInvariant()</c> so the
+    /// names are stable (a future rename of the enum case doesn't break
+    /// the tool wire contract) and so CA1308 (which discourages
+    /// ToLowerInvariant) is satisfied.
+    /// </summary>
+    private static string ModeWireName(BowireRecordingMode mode) => mode switch
+    {
+        BowireRecordingMode.Capture => "capture",
+        BowireRecordingMode.Proxy => "proxy",
+        BowireRecordingMode.Replay => "replay",
+        _ => "capture",
+    };
+
+    /// <summary>
+    /// Flush sink for <see cref="RecordStop"/>: append the stopped
+    /// recording into the <c>~/.bowire/recordings.json</c> wrapper file
+    /// so it shows up alongside the workbench-captured recordings.
+    /// Failures are swallowed — the session has already closed; a disk
+    /// hiccup can't unwind that, and the recording is still returned to
+    /// the agent in the tool response.
+    /// </summary>
+    private BowireRecording PersistRecording(BowireRecording recording)
+    {
+        try
+        {
+            var path = BowireConfigPath("recordings.json");
+            var dir = Path.GetDirectoryName(path);
+            if (!string.IsNullOrEmpty(dir) && !Directory.Exists(dir)) Directory.CreateDirectory(dir);
+
+            JsonNode? root = null;
+            if (File.Exists(path))
+            {
+                try { root = JsonNode.Parse(File.ReadAllText(path)); }
+                catch (JsonException) { root = null; }
+            }
+            root ??= new JsonObject { ["recordings"] = new JsonArray() };
+            if (root["recordings"] is not JsonArray arr)
+            {
+                arr = new JsonArray();
+                root["recordings"] = arr;
+            }
+
+            var serialized = JsonSerializer.Serialize(recording, JsonOpts);
+            arr.Add(JsonNode.Parse(serialized));
+
+            File.WriteAllText(path, root.ToJsonString(new JsonSerializerOptions { WriteIndented = true }));
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException)
+        {
+            _logger.LogDebug(ex, "Recording flush to {Path} failed", BowireConfigPath("recordings.json"));
+        }
+        return recording;
+    }
 
     [McpServerTool(Name = "bowire.allowlist.show")]
     [Description("Diagnostic: show the URLs the agent is currently allowed to call via bowire.invoke / bowire.subscribe, plus the toggles that fed the list (environments seed, typed-URLs seed, --allow-arbitrary-urls).")]

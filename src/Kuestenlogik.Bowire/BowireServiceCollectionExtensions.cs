@@ -6,6 +6,7 @@ using Kuestenlogik.Bowire.Auth;
 using Kuestenlogik.Bowire.Net;
 using Kuestenlogik.Bowire.PluginLoading;
 using Kuestenlogik.Bowire.Plugins;
+using Kuestenlogik.Bowire.Recording;
 using Kuestenlogik.Bowire.Semantics;
 using Kuestenlogik.Bowire.Semantics.Detectors;
 using Microsoft.Extensions.Configuration;
@@ -107,6 +108,13 @@ public static class BowireServiceCollectionExtensions
 
         RegisterSemanticsStore(services, bootstrapOptions);
         RegisterFrameDetectors(services, bootstrapOptions);
+
+        // #285 — server-side active-recording lifecycle. Lives as a
+        // singleton so the workbench HTTP surface, the MCP tool surface
+        // (bowire.record.start / stop / replay), and any in-process
+        // capture hook all share one source of truth. Pre-#285 the
+        // state was browser localStorage-only; MCP couldn't reach it.
+        services.TryAddSingleton<BowireRecordingSession>();
 
         // PluginUpdateCheckService is always registered so the manual
         // GET /api/plugins/check-updates endpoint can resolve it; the

@@ -2,7 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
 using Kuestenlogik.Bowire;
+using Kuestenlogik.Bowire.Recording;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
 using ModelContextProtocol.Server;
 
@@ -68,6 +70,14 @@ public static class BowireMcpServiceCollectionExtensions
         // by one tool call can be redeemed by a later one in the
         // same session.
         services.AddSingleton<BowireMcpConfirmationStore>();
+
+        // Server-side recording session (#285). The MCP record.start /
+        // stop / replay tools mutate this singleton; when the embedded
+        // workbench host also calls AddBowire(), TryAddSingleton there
+        // sees this descriptor and skips its own registration so both
+        // paths share one instance — meaning a CLI agent's record.start
+        // and the workbench's badge end up looking at the same state.
+        services.TryAddSingleton<BowireRecordingSession>();
 
         return services.AddMcpServer(o =>
         {

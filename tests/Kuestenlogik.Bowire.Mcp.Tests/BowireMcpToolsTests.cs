@@ -58,6 +58,7 @@ public class BowireMcpToolsTests : IAsyncDisposable
             registry,
             mockHandles,
             confirmations,
+            new Kuestenlogik.Bowire.Recording.BowireRecordingSession(),
             Options.Create(options),
             NullLogger<BowireMcpTools>.Instance);
     }
@@ -394,30 +395,39 @@ public class BowireMcpToolsTests : IAsyncDisposable
     }
 
     [Fact]
-    public void RecordStart_Returns_Deferred_Sentinel()
+    public void RecordStart_Opens_Session_When_Confirm_True()
     {
-        // Confirmation defaults to off in BuildTools so the call falls
-        // through to the deferred sentinel — the gate is exercised in
-        // BowireMcpConfirmationGateTests.
+        // #285 — record.start now actually starts a session. Two-step
+        // confirmation gate is exercised in BowireMcpRecordSessionTests
+        // (this suite leaves RequireConfirmationForMutations off).
         var tools = BuildTools();
-        var result = tools.RecordStart("my-recording", confirm: true);
-        Assert.Contains("deferred", result, StringComparison.OrdinalIgnoreCase);
+        var result = tools.RecordStart(workspaceId: "ws-1", name: "my-recording", confirm: true);
+        using var doc = JsonDocument.Parse(result);
+        Assert.True(doc.RootElement.GetProperty("started").GetBoolean());
+        Assert.Equal("ws-1", doc.RootElement.GetProperty("workspaceId").GetString());
+        Assert.Equal("my-recording", doc.RootElement.GetProperty("name").GetString());
+        Assert.Equal("capture", doc.RootElement.GetProperty("mode").GetString());
     }
 
     [Fact]
-    public void RecordStop_Returns_Deferred_Sentinel()
+    public void RecordStop_Without_Active_Session_Returns_No_Active_Session()
     {
         var tools = BuildTools();
         var result = tools.RecordStop(confirm: true);
-        Assert.Contains("deferred", result, StringComparison.OrdinalIgnoreCase);
+        using var doc = JsonDocument.Parse(result);
+        Assert.False(doc.RootElement.GetProperty("stopped").GetBoolean());
+        Assert.Equal("no-active-session", doc.RootElement.GetProperty("reason").GetString());
     }
 
     [Fact]
-    public void RecordReplay_Returns_Deferred_Sentinel()
+    public void RecordReplay_Without_RecordingId_Returns_Error()
     {
-        var result = BowireMcpTools.RecordReplay("rec_42");
-        Assert.Contains("deferred", result, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("rec_42", result, StringComparison.Ordinal);
+        var tools = BuildTools();
+        var result = tools.RecordReplay(recordingId: null, confirm: true);
+        using var doc = JsonDocument.Parse(result);
+        Assert.False(doc.RootElement.GetProperty("replaying").GetBoolean());
+        Assert.Contains("recordingId is required",
+            doc.RootElement.GetProperty("error").GetString());
     }
 
     [Fact]
