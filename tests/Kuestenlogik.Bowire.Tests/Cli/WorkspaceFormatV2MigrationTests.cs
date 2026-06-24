@@ -90,10 +90,10 @@ public sealed class WorkspaceFormatV2MigrationTests : IDisposable
 
         var data = migrated["data"] as JsonObject;
         Assert.NotNull(data);
-        Assert.Equal(1, (data!["environments"] as JsonArray)!.Count);
-        Assert.Equal(1, (data["collections"] as JsonArray)!.Count);
+        Assert.Single((data!["environments"] as JsonArray)!);
+        Assert.Single((data["collections"] as JsonArray)!);
         // Browser-only buckets backfilled with empty defaults.
-        Assert.Equal(0, (data["urls"] as JsonArray)!.Count);
+        Assert.Empty((data["urls"] as JsonArray)!);
         Assert.NotNull(data["urlMeta"] as JsonObject);
         Assert.NotNull(data["globals"] as JsonObject);
         Assert.Null(data["activeEnvironmentId"]);
