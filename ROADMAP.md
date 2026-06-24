@@ -91,7 +91,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.1 — Scripting, variable resolver, throughput surface *(due 2026-06-30)*
 
-**21/34 done** · 13 backlog
+**21/35 done** · 14 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -108,6 +108,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [234](https://github.com/Kuestenlogik/Bowire/issues/234) | Bowire | [Benchmarks: result exports — CSV + k6-summary JSON + OTLP metrics](#issue-kuestenlogik-bowire-234) | ⬜ Backlog |  |
 | [254](https://github.com/Kuestenlogik/Bowire/issues/254) | Bowire | [Freeform builder: auto-discover prompt after first successful invoke](#issue-kuestenlogik-bowire-254) | ⬜ Backlog |  |
 | [277](https://github.com/Kuestenlogik/Bowire/issues/277) | Bowire | [Workspace sidebar: 'Switch to active' button uses '+' icon instead of checkmark](#issue-kuestenlogik-bowire-277) | ⬜ Backlog |  |
+| [278](https://github.com/Kuestenlogik/Bowire/issues/278) | Bowire | [Save-as-template button: floppy-disk icon reads as 'save current state', not 'snapshot as template'](#issue-kuestenlogik-bowire-278) | ⬜ Backlog |  |
 | [197](https://github.com/Kuestenlogik/Bowire/issues/197) | Bowire | [Deprecate + unlist Kuestenlogik.Bowire.Extension.MapLibre on nuget.org after v2.0 ships](#issue-kuestenlogik-bowire-197) | ✅ Done |  |
 | [248](https://github.com/Kuestenlogik/Bowire/issues/248) | Bowire | [Optional rail modules — plumbing (Phase 1): toggle mechanic + always-on set + Settings editor](#issue-kuestenlogik-bowire-248) | ✅ Done |  |
 | [252](https://github.com/Kuestenlogik/Bowire/issues/252) | Bowire | [Compose-request entry points: '+ Compose' (self-contained) + 'New from source…' (workspace-managed URL)](#issue-kuestenlogik-bowire-252) | ✅ Done |  |
@@ -595,6 +596,10 @@ Last unchecked acceptance item from the parent **#40** Freeform Request Builder 
 #### <a id="issue-kuestenlogik-bowire-277"></a>⬜ Backlog · [#277](https://github.com/Kuestenlogik/Bowire/issues/277) Workspace sidebar: 'Switch to active' button uses '+' icon instead of checkmark
 
 When hovering a workspace row in the Workspaces sidebar, the activate/switch button shows a '+' icon. The '+' universally reads as 'add something here' — operator's first thought is 'what can I add?'. [[more]](https://github.com/Kuestenlogik/Bowire/issues/277)
+
+#### <a id="issue-kuestenlogik-bowire-278"></a>⬜ Backlog · [#278](https://github.com/Kuestenlogik/Bowire/issues/278) Save-as-template button: floppy-disk icon reads as 'save current state', not 'snapshot as template'
+
+The 'Save as template' button uses the floppy-disk SVG (added in commit 4f4f477). Operator's expectation when seeing a floppy: [[more]](https://github.com/Kuestenlogik/Bowire/issues/278)
 
 #### <a id="issue-kuestenlogik-bowire-197"></a>✅ Done · [#197](https://github.com/Kuestenlogik/Bowire/issues/197) Deprecate + unlist Kuestenlogik.Bowire.Extension.MapLibre on nuget.org after v2.0 ships
 
