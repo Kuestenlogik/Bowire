@@ -12,7 +12,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.1 — Scripting, variable resolver, throughput surface *(due 2026-06-30)*
 
-**26/45 done** · 19 backlog
+**28/47 done** · 19 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -38,6 +38,8 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [197](https://github.com/Kuestenlogik/Bowire/issues/197) | Bowire | [Deprecate + unlist Kuestenlogik.Bowire.Extension.MapLibre on nuget.org after v2.0 ships](#issue-kuestenlogik-bowire-197) | ✅ Done |  |
 | [242](https://github.com/Kuestenlogik/Bowire/issues/242) | Bowire | [User-defined workspace templates — save current workspace as a template, surface in create dialog](#issue-kuestenlogik-bowire-242) | ✅ Done |  |
 | [243](https://github.com/Kuestenlogik/Bowire/issues/243) | Bowire | [Failed REST / gRPC invocation logs show only 'Error' — surface status code + response body + exception message](#issue-kuestenlogik-bowire-243) | ✅ Done |  |
+| [244](https://github.com/Kuestenlogik/Bowire/issues/244) | Bowire | [Discover rail toolbar: drop the '+ New' button — ad-hoc requests don't belong on the discovered-tree surface](#issue-kuestenlogik-bowire-244) | ✅ Done |  |
+| [245](https://github.com/Kuestenlogik/Bowire/issues/245) | Bowire | [Execute-button dropdown: add 'As new request' to clone a discovered method's call into an editable ad-hoc copy](#issue-kuestenlogik-bowire-245) | ✅ Done |  |
 | [248](https://github.com/Kuestenlogik/Bowire/issues/248) | Bowire | [Optional rail modules — plumbing (Phase 1): toggle mechanic + always-on set + Settings editor](#issue-kuestenlogik-bowire-248) | ✅ Done |  |
 | [252](https://github.com/Kuestenlogik/Bowire/issues/252) | Bowire | [Compose-request entry points: '+ Compose' (self-contained) + 'New from source…' (workspace-managed URL)](#issue-kuestenlogik-bowire-252) | ✅ Done |  |
 | [257](https://github.com/Kuestenlogik/Bowire/issues/257) | Bowire | [richErrorDetail picks up problem+json status / type / instance](#issue-kuestenlogik-bowire-257) | ✅ Done |  |
@@ -304,6 +306,14 @@ Workspace templates ship hardcoded in `wwwroot/js/workspace-templates.js` — `B
 #### <a id="issue-kuestenlogik-bowire-243"></a>✅ Done · [#243](https://github.com/Kuestenlogik/Bowire/issues/243) Failed REST / gRPC invocation logs show only 'Error' — surface status code + response body + exception message
 
 When a manually-created REST request fails (in this case via the New-request flow against the seeded Petstore template), the response log shows nothing useful: [[more]](https://github.com/Kuestenlogik/Bowire/issues/243)
+
+#### <a id="issue-kuestenlogik-bowire-244"></a>✅ Done · [#244](https://github.com/Kuestenlogik/Bowire/issues/244) Discover rail toolbar: drop the '+ New' button — ad-hoc requests don't belong on the discovered-tree surface
+
+The `+` button in the Discover rail's sidebar toolbar opens the "create new request" form. But Discover is the surface for **discovered services** — the toolbar already lists discovered method nodes, the `+` sits next to them, and the user expects "add to *what's being shown here*". … [[more]](https://github.com/Kuestenlogik/Bowire/issues/244)
+
+#### <a id="issue-kuestenlogik-bowire-245"></a>✅ Done · [#245](https://github.com/Kuestenlogik/Bowire/issues/245) Execute-button dropdown: add 'As new request' to clone a discovered method's call into an editable ad-hoc copy
+
+When you're on a discovered method and want to experiment — try a tweaked URL, a slightly different method name, a custom header — there's no clean path. Today's options: [[more]](https://github.com/Kuestenlogik/Bowire/issues/245)
 
 #### <a id="issue-kuestenlogik-bowire-248"></a>✅ Done · [#248](https://github.com/Kuestenlogik/Bowire/issues/248) Optional rail modules — plumbing (Phase 1): toggle mechanic + always-on set + Settings editor
 
