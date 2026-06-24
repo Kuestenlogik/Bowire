@@ -8415,6 +8415,68 @@ they're a way
     flex-direction: column;
     gap: 4px;
     margin-bottom: 16px;
+    /* Cap the height so the create-workspace dialog itself stays a
+       fixed visual size regardless of how many templates exist. The
+       list scrolls internally past the cap. */
+    max-height: 280px;
+    overflow-y: auto;
+}
+
+/* 'Start from scratch' option — visually separated from the
+   templates list. Reads as 'no template, blank workspace' rather
+   than 'one of the templates'. */
+.bowire-ws-template-scratch-wrap {
+    margin-bottom: 12px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--bowire-border-subtle);
+}
+.bowire-ws-template-scratch {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    background: var(--bowire-bg);
+    border: 1px solid var(--bowire-border);
+    border-radius: var(--bowire-radius-md);
+    cursor: pointer;
+    transition: background var(--bowire-transition), border-color var(--bowire-transition);
+}
+.bowire-ws-template-scratch:hover { border-color: var(--bowire-accent); }
+.bowire-ws-template-scratch.selected {
+    background: color-mix(in srgb, var(--bowire-accent) 8%, transparent);
+    border-color: var(--bowire-accent);
+}
+
+/* Templates section header — title + filter input on one row. */
+.bowire-ws-templates-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 8px;
+}
+.bowire-ws-templates-title {
+    flex-shrink: 0;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--bowire-text-secondary);
+}
+.bowire-ws-templates-filter {
+    flex: 1;
+    padding: 6px 10px;
+    background: var(--bowire-bg);
+    border: 1px solid var(--bowire-border);
+    border-radius: var(--bowire-radius-sm);
+    color: var(--bowire-text);
+    font-size: 12px;
+}
+.bowire-ws-templates-empty {
+    padding: 12px;
+    text-align: center;
+    color: var(--bowire-text-tertiary);
+    font-size: 12px;
+    font-style: italic;
 }
 .bowire-ws-template-row {
     display: flex;

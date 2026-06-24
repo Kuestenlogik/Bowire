@@ -409,8 +409,78 @@
         });
 
         var selectedTemplateId = _readLastTemplate();
+        var templateFilter = '';
+
+        // 'Empty' (start from scratch) lives ABOVE the templates list,
+        // visually separated by a divider. Conceptually it's still a
+        // template (no-op apply) but the operator's mental model
+        // splits 'no template' from 'pick a template' — the layout
+        // matches the model.
+        var startFromScratchWrap = el('div', { className: 'bowire-ws-template-scratch-wrap' });
+        var emptyTpl = BOWIRE_WORKSPACE_TEMPLATES.find(function (t) { return t.id === 'empty'; });
+        if (emptyTpl) {
+            var scratchRow = el('label', {
+                className: 'bowire-ws-template-scratch'
+                    + (selectedTemplateId === emptyTpl.id ? ' selected' : ''),
+                'data-tpl-id': emptyTpl.id
+            });
+            scratchRow.appendChild(el('input', {
+                type: 'radio',
+                name: 'bowire-ws-template',
+                value: emptyTpl.id,
+                checked: selectedTemplateId === emptyTpl.id ? 'checked' : null,
+                className: 'bowire-ws-template-radio',
+                onChange: function () {
+                    selectedTemplateId = emptyTpl.id;
+                    _syncSelectionClasses();
+                }
+            }));
+            scratchRow.appendChild(el('span', {
+                className: 'bowire-ws-template-icon',
+                innerHTML: svgIcon(emptyTpl.icon || 'plus')
+            }));
+            var scratchInfo = el('div', { className: 'bowire-ws-template-info' });
+            scratchInfo.appendChild(el('div', {
+                className: 'bowire-ws-template-label',
+                textContent: 'Start from scratch'
+            }));
+            scratchInfo.appendChild(el('div', {
+                className: 'bowire-ws-template-desc',
+                textContent: 'No URLs, no collections, no env vars — empty workspace.'
+            }));
+            scratchRow.appendChild(scratchInfo);
+            startFromScratchWrap.appendChild(scratchRow);
+        }
+
+        // Filter / search input above the templates list. Updates the
+        // visible rows on every keystroke (filter by label substring).
+        var templatesHeader = el('div', { className: 'bowire-ws-templates-header' });
+        templatesHeader.appendChild(el('div', {
+            className: 'bowire-ws-templates-title',
+            textContent: 'Or pick a template'
+        }));
+        var filterInput = el('input', {
+            type: 'text',
+            className: 'bowire-ws-templates-filter',
+            placeholder: 'Search templates…',
+            'aria-label': 'Filter templates',
+            'data-bowire-no-vars-chip': '1',
+            'data-bowire-no-vars-ac': '1',
+            onInput: function (e) {
+                templateFilter = String(e.target.value || '').toLowerCase();
+                refreshList();
+            }
+        });
+        templatesHeader.appendChild(filterInput);
 
         var templateList = el('div', { className: 'bowire-ws-template-list', role: 'radiogroup', 'aria-label': 'Start from template' });
+
+        function _syncSelectionClasses() {
+            var rows = document.querySelectorAll('.bowire-ws-template-row, .bowire-ws-template-scratch');
+            for (var i = 0; i < rows.length; i++) {
+                rows[i].classList.toggle('selected', rows[i].dataset.tplId === selectedTemplateId);
+            }
+        }
 
         // Helper that appends one row to the list. Used for built-ins
         // and user templates alike — user templates additionally get
@@ -428,10 +498,7 @@
                 className: 'bowire-ws-template-radio',
                 onChange: function () {
                     selectedTemplateId = tpl.id;
-                    var rows = templateList.querySelectorAll('.bowire-ws-template-row');
-                    for (var i = 0; i < rows.length; i++) {
-                        rows[i].classList.toggle('selected', rows[i].dataset.tplId === tpl.id);
-                    }
+                    _syncSelectionClasses();
                 }
             });
             row.appendChild(radio);
@@ -473,12 +540,30 @@
 
         function refreshList() {
             templateList.innerHTML = '';
-            // Single list — built-ins first, then user templates,
-            // no section divider. They're all templates; the only
-            // distinction is that built-ins lack the delete affordance
-            // (tpl.isUser drives the per-row trash icon in appendRow).
-            BOWIRE_WORKSPACE_TEMPLATES.forEach(appendRow);
-            listUserTemplates().forEach(appendRow);
+            // 'empty' lives outside the list (rendered above as the
+            // 'Start from scratch' option). Built-ins follow, then
+            // user templates — single continuous list, no divider.
+            // Filter input narrows by label substring + description.
+            var allTpls = BOWIRE_WORKSPACE_TEMPLATES.filter(function (t) {
+                return t.id !== 'empty';
+            }).concat(listUserTemplates());
+            if (templateFilter) {
+                allTpls = allTpls.filter(function (t) {
+                    var lbl = (t.label || '').toLowerCase();
+                    var desc = (t.description || '').toLowerCase();
+                    return lbl.indexOf(templateFilter) >= 0 || desc.indexOf(templateFilter) >= 0;
+                });
+            }
+            if (allTpls.length === 0) {
+                templateList.appendChild(el('div', {
+                    className: 'bowire-ws-templates-empty',
+                    textContent: templateFilter
+                        ? 'No templates match "' + templateFilter + '".'
+                        : 'No templates yet. Save the current workspace as a template to start building your library.'
+                }));
+                return;
+            }
+            allTpls.forEach(appendRow);
         }
         refreshList();
 
@@ -543,9 +628,10 @@
             'aria-labelledby': 'bowire-ws-create-title'
         },
             el('div', { id: 'bowire-ws-create-title', className: 'bowire-confirm-title', textContent: 'Create workspace' }),
-            el('div', { className: 'bowire-confirm-message', textContent: 'Name your workspace and pick a starting template.' }),
+            el('div', { className: 'bowire-confirm-message', textContent: 'Name your workspace, then start from scratch or pick a template.' }),
             nameInput,
-            el('div', { className: 'bowire-ws-template-heading', textContent: 'Start from template' }),
+            startFromScratchWrap,
+            templatesHeader,
             templateList,
             el('div', { className: 'bowire-confirm-actions' }, cancelBtn, confirmBtn)
         );
