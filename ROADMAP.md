@@ -67,7 +67,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.2 — Test pillar: assertions, CI runner, regression coverage *(due 2026-07-10)*
 
-**1/9 done** · 8 backlog
+**2/10 done** · 8 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -80,10 +80,11 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [191](https://github.com/Kuestenlogik/Bowire/issues/191) | Bowire | [Contract testing — Pact-style publish / verify CLI](#issue-kuestenlogik-bowire-191) | ⬜ Backlog |  |
 | [208](https://github.com/Kuestenlogik/Bowire/issues/208) | Bowire | [Variable resolver — Phase 5: OS keyring + AI re-roll + streaming](#issue-kuestenlogik-bowire-208) | ⬜ Backlog |  |
 | [180](https://github.com/Kuestenlogik/Bowire/issues/180) | Bowire | [Assertion DSL for collection / recording replay](#issue-kuestenlogik-bowire-180) | ✅ Done |  |
+| [213](https://github.com/Kuestenlogik/Bowire/issues/213) | Bowire | [Test infra: finish SidecarFake JSON-RPC handshake to unlock SidecarBowireProtocol coverage](#issue-kuestenlogik-bowire-213) | ✅ Done |  |
 
 ### v2.3 — Security pillar: shift-left scanner, OWASP coverage, auth recording *(due 2026-07-24)*
 
-**0/16 done** · 1 in progress · 15 backlog
+**1/16 done** · 1 in progress · 14 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -98,19 +99,18 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [173](https://github.com/Kuestenlogik/Bowire/issues/173) | Bowire | [OWASP API Security Top 10 — structured test suite](#issue-kuestenlogik-bowire-173) | ⬜ Backlog |  |
 | [175](https://github.com/Kuestenlogik/Bowire/issues/175) | Bowire | [Schema-aware mutation engine for fuzz / scan](#issue-kuestenlogik-bowire-175) | ⬜ Backlog |  |
 | [176](https://github.com/Kuestenlogik/Bowire/issues/176) | Bowire | [Spider / crawl — discover endpoints from a base URL](#issue-kuestenlogik-bowire-176) | ⬜ Backlog |  |
-| [178](https://github.com/Kuestenlogik/Bowire/issues/178) | Bowire | [bowire scan CLI with SARIF output + GitHub Action wrapper](#issue-kuestenlogik-bowire-178) | ⬜ Backlog |  |
 | [184](https://github.com/Kuestenlogik/Bowire/issues/184) | Bowire | [Protocol-specific security scanners — gRPC / GraphQL / WS / MQTT / SSE / MCP](#issue-kuestenlogik-bowire-184) | ⬜ Backlog |  |
 | [186](https://github.com/Kuestenlogik/Bowire/issues/186) | Bowire | [HAR import — Chrome DevTools network tab as an input source](#issue-kuestenlogik-bowire-186) | ⬜ Backlog |  |
 | [187](https://github.com/Kuestenlogik/Bowire/issues/187) | Bowire | [CVE lookup for discovered servers — fill Bowire.VulnDb](#issue-kuestenlogik-bowire-187) | ⬜ Backlog |  |
 | [190](https://github.com/Kuestenlogik/Bowire/issues/190) | Bowire | [Authentication session recording + token reuse](#issue-kuestenlogik-bowire-190) | ⬜ Backlog |  |
+| [178](https://github.com/Kuestenlogik/Bowire/issues/178) | Bowire | [bowire scan CLI with SARIF output + GitHub Action wrapper](#issue-kuestenlogik-bowire-178) | ✅ Done |  |
 
 ### v2.4 — Dev pillar: schema watch diff, mock-from-schema, side-by-side *(due 2026-08-03)*
 
-**1/14 done** · 13 backlog
+**2/14 done** · 12 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
-| [36](https://github.com/Kuestenlogik/Bowire/issues/36) | Bowire | [Replay-Mock — HTTPS MITM / record mode](#issue-kuestenlogik-bowire-36) | ⬜ Backlog | `area:mock` |
 | [48](https://github.com/Kuestenlogik/Bowire/issues/48) | Bowire | [Schema watch mode](#issue-kuestenlogik-bowire-48) | ⬜ Backlog | `area:workbench` |
 | [49](https://github.com/Kuestenlogik/Bowire/issues/49) | Bowire | [Programmatic environment provisioning in embedded mode](#issue-kuestenlogik-bowire-49) | ⬜ Backlog | `area:workbench` |
 | [177](https://github.com/Kuestenlogik/Bowire/issues/177) | Bowire | [AI-assisted service scaffolding — schema + stub + collection + test](#issue-kuestenlogik-bowire-177) | ⬜ Backlog |  |
@@ -124,6 +124,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [251](https://github.com/Kuestenlogik/Bowire/issues/251) | Bowire | [Visual shelf — drag-and-drop holding area for cross-surface fragments (parallel to OS clipboard)](#issue-kuestenlogik-bowire-251) | ⬜ Backlog |  |
 | [253](https://github.com/Kuestenlogik/Bowire/issues/253) | Bowire | [Separate discovery URL from invocation URL — schema source (upload / URL / source) + per-call invocation URL override](#issue-kuestenlogik-bowire-253) | ⬜ Backlog |  |
 | [34](https://github.com/Kuestenlogik/Bowire/issues/34) | Bowire | [AsyncAPI discovery source — remaining bindings + V2 overloads + YAML pre-normaliser](#issue-kuestenlogik-bowire-34) | ✅ Done | `area:plugin-sdk` |
+| [36](https://github.com/Kuestenlogik/Bowire/issues/36) | Bowire | [Replay-Mock — HTTPS MITM / record mode](#issue-kuestenlogik-bowire-36) | ✅ Done | `area:mock` |
 
 ### v2.5 — Continuous integration: PR bot, project file, org dashboard *(due 2026-08-12)*
 
@@ -206,7 +207,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [103](https://github.com/Kuestenlogik/Bowire/issues/103) | Bowire | [Generate boat photos: submarine, ferry, tugboat, lighthouse](#issue-kuestenlogik-bowire-103) | ⬜ Backlog |  |
 | [110](https://github.com/Kuestenlogik/Bowire/issues/110) | Bowire | [Site: surface the AI assistant in the launch wizard + quickstart](#issue-kuestenlogik-bowire-110) | ⬜ Backlog |  |
 | [130](https://github.com/Kuestenlogik/Bowire/issues/130) | Bowire | [Comparison table: add Hoppscotch + topic-based filtering](#issue-kuestenlogik-bowire-130) | ⬜ Backlog |  |
-| [213](https://github.com/Kuestenlogik/Bowire/issues/213) | Bowire | [Test infra: finish SidecarFake JSON-RPC handshake to unlock SidecarBowireProtocol coverage](#issue-kuestenlogik-bowire-213) | ⬜ Backlog |  |
 | [214](https://github.com/Kuestenlogik/Bowire/issues/214) | Bowire | [Test infra: BaGet Testcontainer fixture for plugin install/activate coverage](#issue-kuestenlogik-bowire-214) | ⬜ Backlog |  |
 | [215](https://github.com/Kuestenlogik/Bowire/issues/215) | Bowire | [Test infra: IProcessLauncher seam in PluginManager to cover dotnet-shell-out paths](#issue-kuestenlogik-bowire-215) | ⬜ Backlog |  |
 | [216](https://github.com/Kuestenlogik/Bowire/issues/216) | Bowire | [Test infra: WebApplicationFactory fixture for InvokeEndpoints + UnaryReplayer coverage](#issue-kuestenlogik-bowire-216) | ⬜ Backlog |  |
@@ -449,6 +449,10 @@ Microservice teams break each other when one team changes an API without consult
 
 Recordings + Mocks let an operator capture and replay traffic, but nothing in the workbench can answer "did the response match what I expected?" Today the only assertion is "the call returned without throwing" — fine for a developer probing, useless as a regression suite. [[more]](https://github.com/Kuestenlogik/Bowire/issues/180)
 
+#### <a id="issue-kuestenlogik-bowire-213"></a>✅ Done · [#213](https://github.com/Kuestenlogik/Bowire/issues/213) Test infra: finish SidecarFake JSON-RPC handshake to unlock SidecarBowireProtocol coverage
+
+> **Status:** shipped. The SidecarFake handshake is complete; the method names diverged from the `tools/list` / `tools/call` nomenclature in the original body. This body reflects the IST state; the original plan is preserved in the issue history. [[more]](https://github.com/Kuestenlogik/Bowire/issues/213)
+
 ### v2.3 — Security pillar: shift-left scanner, OWASP coverage, auth recording *(due 2026-07-24)*
 
 #### <a id="issue-kuestenlogik-bowire-26"></a>🟡 In progress · [#26](https://github.com/Kuestenlogik/Bowire/issues/26) Security testing tool — remaining tiers
@@ -501,10 +505,6 @@ The current scan/fuzz path generates inputs without much awareness of the schema
 
 Bowire's discovery starts from "you tell me a URL or upload a schema". If the schema is incomplete, or if there are endpoints reachable but undocumented (the classic shadow-IT case at API level), Bowire never sees them. Real security testing assumes "find the things the developer forgot to declare". [[more]](https://github.com/Kuestenlogik/Bowire/issues/176)
 
-#### <a id="issue-kuestenlogik-bowire-178"></a>⬜ Backlog · [#178](https://github.com/Kuestenlogik/Bowire/issues/178) bowire scan CLI with SARIF output + GitHub Action wrapper
-
-Same pattern as `bowire test` (v2.2): the workbench has Security primitives but no headless surface to run them in CI. Without `bowire scan` emitting SARIF for GitHub Code Scanning, the shift-left story is just talk. [[more]](https://github.com/Kuestenlogik/Bowire/issues/178)
-
 #### <a id="issue-kuestenlogik-bowire-184"></a>⬜ Backlog · [#184](https://github.com/Kuestenlogik/Bowire/issues/184) Protocol-specific security scanners — gRPC / GraphQL / WS / MQTT / SSE / MCP
 
 Each protocol Bowire speaks has its own class of vulnerabilities the HTTP-only DAST tools (ZAP, Burp) don't know about. Without protocol-specific scanners, the multi-protocol differentiation is just a feature; with them, it's the moat. [[more]](https://github.com/Kuestenlogik/Bowire/issues/184)
@@ -521,13 +521,11 @@ Bowire knows what protocol it's talking to and often what server (Envoy, NGINX, 
 
 Modern API auth is multi-step: hit `/login`, get a session cookie, hit `/refresh`, get a JWT, use the JWT on every subsequent call. Today Bowire has Auth-Configuration (mTLS, basic, bearer-static) but no understanding of FLOWS. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/190)
 
+#### <a id="issue-kuestenlogik-bowire-178"></a>✅ Done · [#178](https://github.com/Kuestenlogik/Bowire/issues/178) bowire scan CLI with SARIF output + GitHub Action wrapper
+
+> **Status:** shipped in the security pillar. The architecture diverged from the original suite-based proposal — this body reflects what was built; the original plan is preserved in the issue history below. [[more]](https://github.com/Kuestenlogik/Bowire/issues/178)
+
 ### v2.4 — Dev pillar: schema watch diff, mock-from-schema, side-by-side *(due 2026-08-03)*
-
-#### <a id="issue-kuestenlogik-bowire-36"></a>⬜ Backlog · [#36](https://github.com/Kuestenlogik/Bowire/issues/36) Replay-Mock — HTTPS MITM / record mode
-
-> `area:mock`
-
-WireMock-style transparent proxy that records real traffic. Deferred unless demand picks up — the existing recording-from-UI surface already covers most needs. [[more]](https://github.com/Kuestenlogik/Bowire/issues/36)
 
 #### <a id="issue-kuestenlogik-bowire-48"></a>⬜ Backlog · [#48](https://github.com/Kuestenlogik/Bowire/issues/48) Schema watch mode
 
@@ -586,6 +584,12 @@ Bowire conflates two distinct URL concepts under a single "Server URL" field: [[
 > `area:plugin-sdk`
 
 AsyncAPI loader + most bindings shipped (MQTT / Kafka / WebSocket / HTTP / AMQP / NATS / MQTT5 + schema export). Open: [[more]](https://github.com/Kuestenlogik/Bowire/issues/34)
+
+#### <a id="issue-kuestenlogik-bowire-36"></a>✅ Done · [#36](https://github.com/Kuestenlogik/Bowire/issues/36) Replay-Mock — HTTPS MITM / record mode
+
+> `area:mock`
+
+> **Status:** shipped. The body previously marked this "deferred unless demand picks up" — it has since been built in full. This body reflects the IST state; the original deferral note is preserved in the issue history. [[more]](https://github.com/Kuestenlogik/Bowire/issues/36)
 
 ### v2.5 — Continuous integration: PR bot, project file, org dashboard *(due 2026-08-12)*
 
@@ -762,10 +766,6 @@ v1.9 ships the AI workbench in a real way — chat grounded in workbench state (
 #### <a id="issue-kuestenlogik-bowire-130"></a>⬜ Backlog · [#130](https://github.com/Kuestenlogik/Bowire/issues/130) Comparison table: add Hoppscotch + topic-based filtering
 
 The comparison table on bowire.io today lines Bowire up against Postman / Insomnia / Bruno / curl on a single feature matrix. Three gaps: [[more]](https://github.com/Kuestenlogik/Bowire/issues/130)
-
-#### <a id="issue-kuestenlogik-bowire-213"></a>⬜ Backlog · [#213](https://github.com/Kuestenlogik/Bowire/issues/213) Test infra: finish SidecarFake JSON-RPC handshake to unlock SidecarBowireProtocol coverage
-
-`SidecarBowireProtocol` is at ~50% coverage because the stdio sidecar codepath needs a real subprocess that speaks the JSON-RPC handshake (`$/initialize`, `$/initialized`, plus the `tools/list` + `tools/call` methods that drive `Discover` / `Invoke`). … [[more]](https://github.com/Kuestenlogik/Bowire/issues/213)
 
 #### <a id="issue-kuestenlogik-bowire-214"></a>⬜ Backlog · [#214](https://github.com/Kuestenlogik/Bowire/issues/214) Test infra: BaGet Testcontainer fixture for plugin install/activate coverage
 
