@@ -91,7 +91,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.1 — Scripting, variable resolver, throughput surface *(due 2026-06-30)*
 
-**20/33 done** · 13 backlog
+**21/33 done** · 12 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -107,7 +107,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [233](https://github.com/Kuestenlogik/Bowire/issues/233) | Bowire | [Benchmarks: previous-run diff banner on repeat (p95 ▲ / ▼ / status histogram delta)](#issue-kuestenlogik-bowire-233) | ⬜ Backlog |  |
 | [234](https://github.com/Kuestenlogik/Bowire/issues/234) | Bowire | [Benchmarks: result exports — CSV + k6-summary JSON + OTLP metrics](#issue-kuestenlogik-bowire-234) | ⬜ Backlog |  |
 | [254](https://github.com/Kuestenlogik/Bowire/issues/254) | Bowire | [Freeform builder: auto-discover prompt after first successful invoke](#issue-kuestenlogik-bowire-254) | ⬜ Backlog |  |
-| [276](https://github.com/Kuestenlogik/Bowire/issues/276) | Bowire | [Workspaces sidebar: tool parity with Recordings/Benchmarks rails (per-row + toolbar + context menu)](#issue-kuestenlogik-bowire-276) | ✅ Done |  |
 | [197](https://github.com/Kuestenlogik/Bowire/issues/197) | Bowire | [Deprecate + unlist Kuestenlogik.Bowire.Extension.MapLibre on nuget.org after v2.0 ships](#issue-kuestenlogik-bowire-197) | ✅ Done |  |
 | [248](https://github.com/Kuestenlogik/Bowire/issues/248) | Bowire | [Optional rail modules — plumbing (Phase 1): toggle mechanic + always-on set + Settings editor](#issue-kuestenlogik-bowire-248) | ✅ Done |  |
 | [252](https://github.com/Kuestenlogik/Bowire/issues/252) | Bowire | [Compose-request entry points: '+ Compose' (self-contained) + 'New from source…' (workspace-managed URL)](#issue-kuestenlogik-bowire-252) | ✅ Done |  |
@@ -128,6 +127,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [273](https://github.com/Kuestenlogik/Bowire/issues/273) | Bowire | [Topbar workspace dropdown: + and list icons appear left-aligned instead of vertically centered](#issue-kuestenlogik-bowire-273) | ✅ Done |  |
 | [274](https://github.com/Kuestenlogik/Bowire/issues/274) | Bowire | [Workspaces label inconsistency: 4 names for the same destination (overview) + ellipsis convention](#issue-kuestenlogik-bowire-274) | ✅ Done |  |
 | [275](https://github.com/Kuestenlogik/Bowire/issues/275) | Bowire | [Workspace-detail dead-end: 'No workspace selected. Pick one in the sidebar' when sidepanel collapsed](#issue-kuestenlogik-bowire-275) | ✅ Done |  |
+| [276](https://github.com/Kuestenlogik/Bowire/issues/276) | Bowire | [Workspaces sidebar: tool parity with Recordings/Benchmarks rails (per-row + toolbar + context menu)](#issue-kuestenlogik-bowire-276) | ✅ Done |  |
 
 ### v2.2 — Test pillar: assertions, CI runner, regression coverage *(due 2026-07-10)*
 
@@ -591,10 +591,6 @@ Round out the Benchmarks export surface so result data can leave Bowire in the f
 
 Last unchecked acceptance item from the parent **#40** Freeform Request Builder ticket. After a freeform request hits a 2xx response, prompt the operator: [[more]](https://github.com/Kuestenlogik/Bowire/issues/254)
 
-#### <a id="issue-kuestenlogik-bowire-276"></a>✅ Done · [#276](https://github.com/Kuestenlogik/Bowire/issues/276) Workspaces sidebar: tool parity with Recordings/Benchmarks rails (per-row + toolbar + context menu)
-
-The sidebar / rail STRUCTURE is already consistent across every rail (Workspaces, Recordings, Mocks, Flows, Benchmarks, Security) — same toolbar shape, same tree/list layout, same icon column, same right-click empty-area handler. So the master-list pattern itself is settled. [[more]](https://github.com/Kuestenlogik/Bowire/issues/276)
-
 #### <a id="issue-kuestenlogik-bowire-197"></a>✅ Done · [#197](https://github.com/Kuestenlogik/Bowire/issues/197) Deprecate + unlist Kuestenlogik.Bowire.Extension.MapLibre on nuget.org after v2.0 ships
 
 `Kuestenlogik.Bowire.Extension.MapLibre` 1.3.0-rc.1 was renamed to `Kuestenlogik.Bowire.Map` ahead of v2.0 (commit 75c8d1f). … [[more]](https://github.com/Kuestenlogik/Bowire/issues/197)
@@ -674,6 +670,10 @@ Same destination (workspaces overview list), four different labels across surfac
 #### <a id="issue-kuestenlogik-bowire-275"></a>✅ Done · [#275](https://github.com/Kuestenlogik/Bowire/issues/275) Workspace-detail dead-end: 'No workspace selected. Pick one in the sidebar' when sidepanel collapsed
 
 After clicking 'Manage workspaces' with the sidepanel collapsed, the operator lands on: [[more]](https://github.com/Kuestenlogik/Bowire/issues/275)
+
+#### <a id="issue-kuestenlogik-bowire-276"></a>✅ Done · [#276](https://github.com/Kuestenlogik/Bowire/issues/276) Workspaces sidebar: tool parity with Recordings/Benchmarks rails (per-row + toolbar + context menu)
+
+The sidebar / rail STRUCTURE is already consistent across every rail (Workspaces, Recordings, Mocks, Flows, Benchmarks, Security) — same toolbar shape, same tree/list layout, same icon column, same right-click empty-area handler. So the master-list pattern itself is settled. [[more]](https://github.com/Kuestenlogik/Bowire/issues/276)
 
 ### v2.2 — Test pillar: assertions, CI runner, regression coverage *(due 2026-07-10)*
 
