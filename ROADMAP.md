@@ -91,7 +91,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.1 — Scripting, variable resolver, throughput surface *(due 2026-06-30)*
 
-**16/29 done** · 13 backlog
+**16/30 done** · 14 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -108,6 +108,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [234](https://github.com/Kuestenlogik/Bowire/issues/234) | Bowire | [Benchmarks: result exports — CSV + k6-summary JSON + OTLP metrics](#issue-kuestenlogik-bowire-234) | ⬜ Backlog |  |
 | [254](https://github.com/Kuestenlogik/Bowire/issues/254) | Bowire | [Freeform builder: auto-discover prompt after first successful invoke](#issue-kuestenlogik-bowire-254) | ⬜ Backlog |  |
 | [272](https://github.com/Kuestenlogik/Bowire/issues/272) | Bowire | [Assistant drawer: useless hint 'Pick a method in the sidebar' when no workspace exists](#issue-kuestenlogik-bowire-272) | ⬜ Backlog |  |
+| [273](https://github.com/Kuestenlogik/Bowire/issues/273) | Bowire | [Topbar workspace dropdown: + and list icons appear left-aligned instead of vertically centered](#issue-kuestenlogik-bowire-273) | ⬜ Backlog |  |
 | [197](https://github.com/Kuestenlogik/Bowire/issues/197) | Bowire | [Deprecate + unlist Kuestenlogik.Bowire.Extension.MapLibre on nuget.org after v2.0 ships](#issue-kuestenlogik-bowire-197) | ✅ Done |  |
 | [248](https://github.com/Kuestenlogik/Bowire/issues/248) | Bowire | [Optional rail modules — plumbing (Phase 1): toggle mechanic + always-on set + Settings editor](#issue-kuestenlogik-bowire-248) | ✅ Done |  |
 | [252](https://github.com/Kuestenlogik/Bowire/issues/252) | Bowire | [Compose-request entry points: '+ Compose' (self-contained) + 'New from source…' (workspace-managed URL)](#issue-kuestenlogik-bowire-252) | ✅ Done |  |
@@ -590,6 +591,10 @@ Last unchecked acceptance item from the parent **#40** Freeform Request Builder 
 #### <a id="issue-kuestenlogik-bowire-272"></a>⬜ Backlog · [#272](https://github.com/Kuestenlogik/Bowire/issues/272) Assistant drawer: useless hint 'Pick a method in the sidebar' when no workspace exists
 
 In the no-workspace empty state (fresh install, last workspace just deleted), the Assistant drawer shows: [[more]](https://github.com/Kuestenlogik/Bowire/issues/272)
+
+#### <a id="issue-kuestenlogik-bowire-273"></a>⬜ Backlog · [#273](https://github.com/Kuestenlogik/Bowire/issues/273) Topbar workspace dropdown: + and list icons appear left-aligned instead of vertically centered
+
+In the topbar workspace-chip dropdown, the '+' (new workspace) and three-lines list icon (Manage workspaces…) appear left-aligned within their icon column rather than vertically centered alongside their label text. [[more]](https://github.com/Kuestenlogik/Bowire/issues/273)
 
 #### <a id="issue-kuestenlogik-bowire-197"></a>✅ Done · [#197](https://github.com/Kuestenlogik/Bowire/issues/197) Deprecate + unlist Kuestenlogik.Bowire.Extension.MapLibre on nuget.org after v2.0 ships
 
