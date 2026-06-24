@@ -10506,6 +10506,12 @@ and chip row */
 }
 .bowire-env-dropdown-item:hover { background: var(--bowire-surface-hover); }
 .bowire-env-dropdown-item.active { font-weight: 600; color: var(--bowire-accent); }
+.bowire-env-dropdown-item-disabled {
+    color: var(--bowire-text-tertiary);
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+.bowire-env-dropdown-item-disabled:hover { background: transparent; }
 
 /* Per-row layout — analogous to the workspace dropdown.
    [glyph] [name flex:1] [tools cluster]
@@ -13035,6 +13041,35 @@ button.bowire-sidebar-toolbar-title:hover,
     outline: none;
     border-color: var(--bowire-accent);
 }
+
+/* Icon-mode sort button — cycles through sort modes on click. Icon
+   shows the active mode (clock/sortAlpha/calendar). Title tells the
+   operator the current mode + what the next click switches to. */
+.bowire-sidebar-filterbar-sort-btn {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    padding: 0;
+    background: var(--bowire-surface);
+    border: 1px solid var(--bowire-border-subtle);
+    border-radius: var(--bowire-radius-sm);
+    color: var(--bowire-text-secondary);
+    cursor: pointer;
+    transition: border-color var(--bowire-transition), color var(--bowire-transition), background var(--bowire-transition);
+}
+.bowire-sidebar-filterbar-sort-btn:hover {
+    border-color: var(--bowire-border);
+    color: var(--bowire-text);
+    background: var(--bowire-surface-hover, var(--bowire-bg-elevated));
+}
+.bowire-sidebar-filterbar-sort-btn:focus-visible {
+    outline: none;
+    border-color: var(--bowire-accent);
+}
+.bowire-sidebar-filterbar-sort-btn svg { width: 14px; height: 14px; }
 /* Clickable variant of the section title — used by the workspaces
    sidebar header to navigate to the Workspaces overview. Looks
    like the static span at rest; hover hints that it's a target. */

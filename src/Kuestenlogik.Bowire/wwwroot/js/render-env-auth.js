@@ -2355,7 +2355,14 @@
                     onClick: function (e) { e.stopPropagation(); }
                 },
                     el('div', { className: 'bowire-workspace-menu-section' },
-                        workspaces.map(function (w) {
+                        // Cross-cutting workspace sort applies in the
+                        // dropdown too (same workspacesSortBy state as
+                        // the sidebar + overview). No search filter
+                        // here — the dropdown is a quick-pick surface,
+                        // not a full search UI.
+                        (typeof getSortedWorkspaces === 'function'
+                            ? getSortedWorkspaces()
+                            : workspaces).map(function (w) {
                             var isActive = w.id === activeWorkspaceId;
                             // Per-row leading glyph: the Workspaces rail icon
                             // (Lucide 'layers') with the top "leaf" filled in
@@ -3427,9 +3434,21 @@
                 }
 
                 menu.appendChild(el('div', { className: 'bowire-env-dropdown-divider' }));
+                // Environments are workspace-scoped (#A — self-
+                // contained workspaces). Without an active workspace
+                // there's no bucket to create the env in. Disable the
+                // 'New environment…' action + show a hint instead of
+                // landing the operator on a dialog that can't persist
+                // the result.
+                var canCreateEnv = !!activeWorkspaceId;
                 menu.appendChild(el('div', {
-                    className: 'bowire-env-dropdown-item bowire-env-dropdown-item-action',
-                    onClick: function () {
+                    className: 'bowire-env-dropdown-item bowire-env-dropdown-item-action'
+                        + (canCreateEnv ? '' : ' bowire-env-dropdown-item-disabled'),
+                    title: canCreateEnv
+                        ? 'Create a new environment in the active workspace'
+                        : 'Activate a workspace first — environments live inside a workspace',
+                    'aria-disabled': canCreateEnv ? null : 'true',
+                    onClick: canCreateEnv ? function () {
                         menu.remove();
                         if (typeof openCreateEnvironmentDialog !== 'function') return;
                         openCreateEnvironmentDialog(function (env) {
@@ -3446,10 +3465,12 @@
                             catch { /* ignore */ }
                             render();
                         });
-                    }
+                    } : function (e) { e.stopPropagation(); }
                 },
                     el('span', { className: 'bowire-env-dropdown-item-icon', textContent: '+' }),
-                    el('span', { textContent: 'New environment…' })
+                    el('span', { textContent: canCreateEnv
+                        ? 'New environment…'
+                        : 'New environment… (activate a workspace first)' })
                 ));
 
                 envBtnWrapper.appendChild(menu);
