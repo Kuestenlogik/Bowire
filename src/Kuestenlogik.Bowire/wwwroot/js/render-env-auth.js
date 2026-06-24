@@ -2509,6 +2509,31 @@
                     },
                         el('span', { className: 'bowire-workspace-menu-item-icon', textContent: '+' }),
                         el('span', { textContent: 'New workspace…' })
+                    ),
+                    // Secondary entry — leads to the full Workspaces
+                    // overview. The dropdown carries the quick-access
+                    // actions (switch / + new), the overview is the
+                    // place to do the heavier management (rename /
+                    // duplicate / save-as-template / delete in a list
+                    // surface). Both no-workspace + has-workspaces
+                    // states get this entry so the welcome state can
+                    // funnel through it too (the empty overview
+                    // itself guides toward the first create).
+                    el('div', {
+                        className: 'bowire-workspace-menu-item bowire-workspace-menu-item-action',
+                        onClick: function () {
+                            workspaceMenuOpen = false;
+                            railMode = 'workspaces';
+                            try { localStorage.setItem('bowire_rail_mode', 'workspaces'); } catch { /* ignore */ }
+                            workspaceTreeSelection = { kind: 'workspaces-overview' };
+                            render();
+                        }
+                    },
+                        el('span', { className: 'bowire-workspace-menu-item-icon',
+                            innerHTML: (typeof svgIcon === 'function') ? svgIcon('list') : '☰' }),
+                        el('span', { textContent: workspaces.length > 0
+                            ? 'Show all workspaces…'
+                            : 'Manage workspaces…' })
                     )
                     // Bottom "Rename current…" / "Edit current…" / "Delete
                     // current" items retired — per-row pencil / gear / trash
