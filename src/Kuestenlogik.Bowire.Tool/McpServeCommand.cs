@@ -18,7 +18,10 @@ namespace Kuestenlogik.Bowire.App;
 ///   <item><c>--bind stdio</c> (default) — JSON-RPC over stdin/stdout
 ///         for Claude Desktop / Cursor wiring.</item>
 ///   <item><c>--bind http</c> — Streamable-HTTP transport at
-///         <c>/bowire/mcp</c> for embedded testing.</item>
+///         <c>/mcp</c> (standalone-CLI prefix, matches the workbench's
+///         own <c>/</c> mount). Embedded hosts that route Bowire under
+///         <c>/bowire/</c> use <c>/bowire/mcp</c> via their own
+///         <c>MapBowireMcp("/bowire/mcp")</c> call.</item>
 /// </list>
 /// In stdio mode every console-logger write goes to stderr — the SDK
 /// owns stdout for JSON-RPC framing and any stray stdout byte derails
@@ -209,16 +212,25 @@ internal static class McpServeCommand
 
         var app = builder.Build();
 
-        // Bearer-auth gate — when --token is set, every request to
-        // /bowire/mcp must carry Authorization: Bearer <secret>. The
-        // child (--attach-token) supplies it transparently via the
+        // Standalone CLI mounts the workbench at "/" (see
+        // BrowserUiHost.MapBowire("/", ...)), so the MCP endpoint
+        // sits at "/mcp" — no /bowire/ prefix. Embedded hosts that
+        // mount Bowire under /bowire/ use the /bowire/mcp pair via
+        // their own MapBowireMcp call. Same convention as the
+        // standalone workbench: prefix matches the host's idea of
+        // where Bowire lives, not a hard-coded /bowire/.
+        const string McpPathPrefix = "/mcp";
+
+        // Bearer-auth gate (#286) — when --token is set, every request
+        // under the MCP prefix must carry Authorization: Bearer <secret>.
+        // The child (--attach-token) supplies it transparently via the
         // forwarder transport's AdditionalHeaders.
         if (!string.IsNullOrEmpty(cfg.ServerToken))
         {
             var expected = "Bearer " + cfg.ServerToken;
             app.Use(async (HttpContext ctx, RequestDelegate next) =>
             {
-                if (ctx.Request.Path.StartsWithSegments("/bowire/mcp"))
+                if (ctx.Request.Path.StartsWithSegments(McpPathPrefix))
                 {
                     var supplied = (string?)ctx.Request.Headers.Authorization;
                     if (!string.Equals(supplied, expected, StringComparison.Ordinal))
@@ -233,9 +245,13 @@ internal static class McpServeCommand
             });
         }
 
-        app.MapMcp("/bowire/mcp");
+        // MapBowireMcp routes through BowireMcpEndpointRegistry (#287)
+        // so a dev who runs `bowire mcp serve --bind http` and embeds
+        // the adapter in the same process gets coexistence + the
+        // manifest endpoint for free.
+        app.MapBowireMcp(McpPathPrefix);
 
-        cfg.Io.OutLine($"  Bowire MCP - listening on http://localhost:{cfg.Port}/bowire/mcp");
+        cfg.Io.OutLine($"  Bowire MCP - listening on http://localhost:{cfg.Port}{McpPathPrefix}");
         if (cfg.AttachEndpoint is not null)
         {
             cfg.Io.OutLine($"  --attach {cfg.AttachEndpoint} — forwarder mode "

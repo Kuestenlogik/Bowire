@@ -14,6 +14,10 @@
     <InternalsVisibleTo Include="Kuestenlogik.Bowire.Tests" />
     <InternalsVisibleTo Include="Kuestenlogik.Bowire.IntegrationTests" />
     <InternalsVisibleTo Include="Kuestenlogik.Bowire.Mcp.Tests" />
+    <!-- Protocol.Mcp consults the dispatcher's RegisterAdapterHandlers
+         seam (#287) to plug its handlers into the dual-mount routing
+         when both Mcp + Protocol.Mcp are wired on the same host. -->
+    <InternalsVisibleTo Include="Kuestenlogik.Bowire.Protocol.Mcp" />
   </ItemGroup>
   <ItemGroup>
     <FrameworkReference Include="Microsoft.AspNetCore.App" />

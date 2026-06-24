@@ -3,7 +3,10 @@
 
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using Kuestenlogik.Bowire.Mcp;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Options;
 using ModelContextProtocol;
 using ModelContextProtocol.Protocol;
 using ModelContextProtocol.Server;
@@ -26,29 +29,52 @@ namespace Kuestenlogik.Bowire.Protocol.Mcp;
 /// what's known at compile time.
 /// </para>
 /// <para>
+/// Dual-mount coexistence (#287): when paired with
+/// <c>Kuestenlogik.Bowire.Mcp.AddBowireMcp</c>, the adapter installs
+/// its handlers on the shared
+/// <see cref="BowireMcpDualHandlerDispatcher"/> rather than calling
+/// <c>WithListToolsHandler</c> directly. The dispatcher routes
+/// per-request to either the full server's static tools or the
+/// adapter's dynamic ones based on which prefix the inbound request
+/// hit, so an embedded host can mount both endpoints on the same app
+/// without conflict.
+/// </para>
+/// <para>
 /// Usage:
 /// </para>
 /// <code>
-/// builder.Services.AddBowireMcpAdapter("http://localhost:5005");
+/// // Independent options block — separate from BowireMcpOptions.
+/// builder.Services.AddBowireMcpAdapter(opts =&gt;
+/// {
+///     opts.UpstreamServerUrl = "http://localhost:5005";
+///     opts.RequestTimeout = TimeSpan.FromSeconds(15);
+/// });
 /// var app = builder.Build();
 /// app.MapBowire(opts =&gt; opts.Title = "My API");
-/// app.MapBowireMcpAdapter("/bowire");
+/// app.MapBowireMcpAdapter();   // default: /bowire/mcp/adapter
 /// </code>
 /// </remarks>
 public static class BowireMcpAdapterServiceCollectionExtensions
 {
     /// <summary>
-    /// DI key that <see cref="AddBowireMcpAdapter"/> stashes the
-    /// target server URL under so the runtime handlers (which only
-    /// see <c>IServiceProvider</c> at request time) can read it back.
+    /// DI key that <see cref="AddBowireMcpAdapter(IServiceCollection, string?)"/>
+    /// stashes the target server URL under so the runtime handlers
+    /// (which only see <c>IServiceProvider</c> at request time) can
+    /// read it back. Retained for backwards compatibility with code
+    /// (and tests) that resolves the URL via this exact key; new code
+    /// should read <c>IOptions&lt;BowireMcpAdapterOptions&gt;</c>
+    /// instead.
     /// </summary>
     internal const string ServerUrlServiceKey = "Kuestenlogik.Bowire.Mcp.AdapterServerUrl";
 
     /// <summary>
-    /// Register the Bowire MCP adapter with the host's service
-    /// collection. Pair with
-    /// <see cref="McpAdapterEndpoints.MapBowireMcpAdapter"/> at
-    /// map-time to actually mount the endpoint.
+    /// Register the Bowire MCP adapter with the legacy positional
+    /// argument shape. Equivalent to
+    /// <see cref="AddBowireMcpAdapter(IServiceCollection, Action{BowireMcpAdapterOptions}?)"/>
+    /// with a single
+    /// <see cref="BowireMcpAdapterOptions.UpstreamServerUrl"/> setter.
+    /// Kept so existing callers (and the standalone CLI in
+    /// <c>BrowserUiHost</c>) don't have to migrate.
     /// </summary>
     /// <param name="services">The application's service collection.</param>
     /// <param name="serverUrl">
@@ -62,11 +88,57 @@ public static class BowireMcpAdapterServiceCollectionExtensions
         string? serverUrl = null)
     {
         ArgumentNullException.ThrowIfNull(services);
+        return AddBowireMcpAdapter(services, configure: opts =>
+        {
+            if (!string.IsNullOrWhiteSpace(serverUrl))
+                opts.UpstreamServerUrl = serverUrl;
+        });
+    }
 
-        var resolvedUrl = serverUrl ?? "http://localhost";
-        services.AddKeyedSingleton(ServerUrlServiceKey, resolvedUrl);
+    /// <summary>
+    /// Register the Bowire MCP adapter with a configuration callback
+    /// against the independent
+    /// <see cref="BowireMcpAdapterOptions"/> block. Pair with
+    /// <see cref="McpAdapterEndpoints.MapBowireMcpAdapter"/> at
+    /// map-time to actually mount the endpoint.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The options block is registered through the standard
+    /// <c>IOptions&lt;T&gt;</c> pipeline; multiple <c>AddBowireMcpAdapter</c>
+    /// calls compose (last writer wins per property). Independent of
+    /// <c>BowireMcpOptions</c> (the full-server config) so the two
+    /// endpoints can be tuned without cross-contamination.
+    /// </para>
+    /// </remarks>
+    public static IServiceCollection AddBowireMcpAdapter(
+        this IServiceCollection services,
+        Action<BowireMcpAdapterOptions>? configure)
+    {
+        ArgumentNullException.ThrowIfNull(services);
 
-        services
+        services.AddOptions<BowireMcpAdapterOptions>();
+        if (configure is not null) services.Configure(configure);
+
+        // Materialise the URL early so the legacy keyed-singleton seam
+        // still resolves the same value the new IOptions path returns.
+        // The keyed singleton is reused by older callers and by
+        // McpAdapterAndProtocolE2ETests; reflecting the chosen options
+        // value here keeps both surfaces consistent.
+        var bootstrap = new BowireMcpAdapterOptions();
+        configure?.Invoke(bootstrap);
+        services.AddKeyedSingleton(ServerUrlServiceKey, bootstrap.UpstreamServerUrl);
+
+        // Dual-mount coordination (#287). Both registry + dispatcher
+        // get TryAdd'd here too so an adapter-only host (no
+        // AddBowireMcp call) still has the registry to push its mount
+        // into and the dispatcher present (with no adapter handlers
+        // installed — the SDK's default behaviour applies).
+        services.TryAddSingleton<BowireMcpEndpointRegistry>();
+        services.TryAddSingleton<BowireMcpDualHandlerDispatcher>();
+        services.AddHttpContextAccessor();
+
+        var builder = services
             .AddMcpServer(o =>
             {
                 o.ServerInfo = new Implementation
@@ -77,15 +149,88 @@ public static class BowireMcpAdapterServiceCollectionExtensions
                     Title = "Bowire workbench (adapter)",
                 };
             })
-            .WithHttpTransport()
-            .WithListToolsHandler(HandleListToolsAsync)
-            .WithCallToolHandler(HandleCallToolAsync)
-            .WithListResourcesHandler(HandleListResourcesAsync)
-            .WithReadResourceHandler(HandleReadResourceAsync)
-            .WithListPromptsHandler(HandleListPromptsAsync)
-            .WithGetPromptHandler(HandleGetPromptAsync);
+            .WithHttpTransport();
+
+        // When AddBowireMcp also ran on this DI container, the
+        // dispatcher already owns the SDK's With*Handler slots — the
+        // server's TryAddSingleton path put a single dispatcher into DI
+        // and the AddBowireMcp call installed dispatcher.* shims on the
+        // SDK builder. We push the adapter's delegates into the
+        // dispatcher so server-mode requests still see the static tools
+        // (path-routed) while adapter-mode requests reach the dynamic
+        // handlers here. Standalone-adapter hosts (no AddBowireMcp)
+        // also go through this path: AddBowireMcp's installation step
+        // didn't run, so we install the dispatcher's shims here
+        // ourselves before the dispatcher returns the dynamic results.
+        var dispatcher = ResolveDispatcherFromCollection(services);
+        dispatcher.RegisterAdapterHandlers(
+            listTools: HandleListToolsAsync,
+            callTool: HandleCallToolAsync,
+            listResources: HandleListResourcesAsync,
+            readResource: HandleReadResourceAsync,
+            listPrompts: HandleListPromptsAsync,
+            getPrompt: HandleGetPromptAsync);
+
+        // If AddBowireMcp wasn't called we still need the SDK
+        // With*Handler slots wired so MapBowireMcpAdapter can serve
+        // dynamic tools. Detect that by checking whether the dispatcher
+        // is empty (no static-side handler shim was installed yet);
+        // a marker bool on the registry tracks whether the SDK builder
+        // shims are already in place.
+        if (!dispatcher.HasInstalledSdkShims)
+        {
+            builder
+                .WithListToolsHandler(dispatcher.ListToolsAsync)
+                .WithCallToolHandler(dispatcher.CallToolAsync)
+                .WithListResourcesHandler(dispatcher.ListResourcesAsync)
+                .WithReadResourceHandler(dispatcher.ReadResourceAsync)
+                .WithListPromptsHandler(dispatcher.ListPromptsAsync)
+                .WithGetPromptHandler(dispatcher.GetPromptAsync);
+            dispatcher.HasInstalledSdkShims = true;
+        }
 
         return services;
+    }
+
+    private static BowireMcpDualHandlerDispatcher ResolveDispatcherFromCollection(
+        IServiceCollection services)
+    {
+        BowireMcpEndpointRegistry? registry = null;
+        BowireMcpDualHandlerDispatcher? dispatcher = null;
+        for (var i = 0; i < services.Count; i++)
+        {
+            var d = services[i];
+            if (d.ServiceType == typeof(BowireMcpEndpointRegistry)
+                && d.ImplementationInstance is BowireMcpEndpointRegistry r)
+            {
+                registry = r;
+            }
+            if (d.ServiceType == typeof(BowireMcpDualHandlerDispatcher)
+                && d.ImplementationInstance is BowireMcpDualHandlerDispatcher dp)
+            {
+                dispatcher = dp;
+            }
+        }
+
+        registry ??= ReplaceWithInstance(services, new BowireMcpEndpointRegistry());
+        dispatcher ??= ReplaceWithInstance(services,
+            new BowireMcpDualHandlerDispatcher(registry));
+        return dispatcher;
+    }
+
+    private static T ReplaceWithInstance<T>(IServiceCollection services, T instance)
+        where T : class
+    {
+        for (var i = 0; i < services.Count; i++)
+        {
+            if (services[i].ServiceType == typeof(T))
+            {
+                services[i] = ServiceDescriptor.Singleton<T>(instance);
+                return instance;
+            }
+        }
+        services.AddSingleton(instance);
+        return instance;
     }
 
     // ----- handler implementations -------------------------------------
@@ -408,9 +553,15 @@ public static class BowireMcpAdapterServiceCollectionExtensions
         // workbench is using. If not, GetRegistry falls back to a fresh
         // Discover() — defensive only.
         var registry = Endpoints.BowireEndpointHelpers.GetRegistry();
-        var url = ctx.Services?.GetKeyedService<string>(ServerUrlServiceKey)
-            ?? "http://localhost";
-        return (registry, url);
+
+        // Prefer the new IOptions<BowireMcpAdapterOptions> path; fall
+        // back to the legacy keyed-singleton seam so historical call
+        // sites + integration tests resolve unchanged.
+        var url = ctx.Services?.GetService<IOptions<BowireMcpAdapterOptions>>()
+            ?.Value.UpstreamServerUrl;
+        if (string.IsNullOrEmpty(url))
+            url = ctx.Services?.GetKeyedService<string>(ServerUrlServiceKey);
+        return (registry, url ?? "http://localhost");
     }
 
     private static JsonObject BuildInputSchema(Models.BowireMethodInfo method)

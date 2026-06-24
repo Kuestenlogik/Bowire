@@ -16,6 +16,13 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Kuestenlogik.Bowire\Kuestenlogik.Bowire.csproj" />
+    <!-- Bowire.Mcp brings the dual-mount infrastructure
+         (BowireMcpEndpointRegistry + BowireMcpDualHandlerDispatcher)
+         that lets MapBowireMcp (full server) and MapBowireMcpAdapter
+         coexist on the same host — see #287. The adapter writes its
+         handlers to the shared dispatcher instead of overwriting the
+         SDK's global With*Handler slots. -->
+    <ProjectReference Include="..\Kuestenlogik.Bowire.Mcp\Kuestenlogik.Bowire.Mcp.csproj" />
     <!-- Official MCP C# SDK — discovery + invoke path uses
          ModelContextProtocol.Client.McpClient instead of a hand-rolled
          JSON-RPC pipeline. The adapter-server side (McpAdapterServer)
