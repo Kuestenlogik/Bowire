@@ -89,6 +89,14 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [222](https://github.com/Kuestenlogik/Bowire/issues/222) | Bowire | [Parallel sessions Phase 1 — local fan-out from recording / collection toolbar (closeout of #132 Phase 1)](#issue-kuestenlogik-bowire-222) | ✅ Done |  |
 | [223](https://github.com/Kuestenlogik/Bowire/issues/223) | Bowire | [Consolidate the two mock-server registries — MockRegistry vs BowireMockHostManager](#issue-kuestenlogik-bowire-223) | ✅ Done |  |
 
+### v2.0.2 — freeform builder polish + ad-hoc REST + walkthrough fixes
+
+**0/1 done** · 1 backlog
+
+| # | Project | Title | Status | Tags |
+|---|---|---|---|---|
+| [257](https://github.com/Kuestenlogik/Bowire/issues/257) | Bowire | [richErrorDetail picks up problem+json status / type / instance](#issue-kuestenlogik-bowire-257) | ⬜ Backlog |  |
+
 ### v2.1 — Scripting, variable resolver, throughput surface *(due 2026-06-30)*
 
 **3/15 done** · 12 backlog
@@ -522,6 +530,12 @@ Parent tracker: #132 (full local + distributed acceptance, kept open on v2.1 for
 
 The workbench currently runs two parallel registries for mock-server lifecycle: [[more]](https://github.com/Kuestenlogik/Bowire/issues/223)
 
+### v2.0.2 — freeform builder polish + ad-hoc REST + walkthrough fixes
+
+#### <a id="issue-kuestenlogik-bowire-257"></a>⬜ Backlog · [#257](https://github.com/Kuestenlogik/Bowire/issues/257) richErrorDetail picks up problem+json status / type / instance
+
+Failed REST/gRPC invocations were showing just 'Error' in the console because richErrorDetail looked for `status_code`/`statusCode`/`httpStatus`/`http_status` while the server's problem+json carries the HTTP code on a bare `status` field. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/257)
+
 ### v2.1 — Scripting, variable resolver, throughput surface *(due 2026-06-30)*
 
 #### <a id="issue-kuestenlogik-bowire-126"></a>⬜ Backlog · [#126](https://github.com/Kuestenlogik/Bowire/issues/126) Pre-/post-scripts with a protocol-typed sandbox
@@ -954,4 +968,4 @@ The freeform request builder today requires a `service` + `method` name even whe
 
 ---
 
-*Generated 2026-06-23 from [Project #2](https://github.com/orgs/Kuestenlogik/projects/2).*
+*Generated 2026-06-24 from [Project #2](https://github.com/orgs/Kuestenlogik/projects/2).*
