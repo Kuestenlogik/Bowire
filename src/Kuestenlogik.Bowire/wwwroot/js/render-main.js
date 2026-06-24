@@ -1659,6 +1659,28 @@
                 style: 'margin-top:8px',
                 textContent: 'No workspaces yet. Create one to start organising sources, environments and recordings.'
             }));
+            // Funnel — the empty overview is the destination operators
+            // land at when they pick 'Manage workspaces' from the
+            // welcome card or topbar dropdown. Without a CTA here, that
+            // path dead-ends. The button mirrors the welcome card's
+            // primary action so the operator can finish the create
+            // flow from wherever they navigated.
+            section.appendChild(el('button', {
+                className: 'bowire-ws-detail-action bowire-ws-detail-action-primary',
+                style: 'margin-top:12px',
+                textContent: '+ New workspace',
+                onClick: function () {
+                    if (typeof openCreateWorkspaceDialog === 'function') {
+                        openCreateWorkspaceDialog(function (ws) {
+                            if (ws && ws.id) {
+                                workspacesSelectedId = ws.id;
+                                workspaceTreeSelection = { wsId: ws.id, kind: 'workspace' };
+                                render();
+                            }
+                        });
+                    }
+                }
+            }));
         } else {
             var list = el('div', { className: 'bowire-env-overview-list' });
             workspaces.forEach(function (w) {
@@ -4057,6 +4079,21 @@
                                         render();
                                     });
                                 }
+                            }
+                        },
+                        // Secondary — jump into the (empty) Workspaces
+                        // overview where the operator can do heavier
+                        // management later. The empty overview itself
+                        // surfaces a New-workspace CTA, so this entry
+                        // funnels through the list rather than dead-
+                        // ends back here.
+                        {
+                            label: 'Manage workspaces',
+                            onClick: function () {
+                                railMode = 'workspaces';
+                                try { localStorage.setItem('bowire_rail_mode', 'workspaces'); } catch { /* ignore */ }
+                                workspaceTreeSelection = { kind: 'workspaces-overview' };
+                                render();
                             }
                         }
                     ]
