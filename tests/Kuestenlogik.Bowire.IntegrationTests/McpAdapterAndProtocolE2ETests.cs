@@ -16,7 +16,7 @@ namespace Kuestenlogik.Bowire.IntegrationTests;
 /// <summary>
 /// End-to-end coverage for both halves of the MCP plugin SDK
 /// migration: the adapter
-/// (<see cref="BowireMcpAdapterServiceCollectionExtensions.AddBowireMcpAdapter"/>
+/// (<see cref="BowireMcpAdapterServiceCollectionExtensions.AddBowireMcpAdapter(Microsoft.Extensions.DependencyInjection.IServiceCollection, string?)"/>
 /// + <see cref="McpAdapterEndpoints.MapBowireMcpAdapter"/>) hosting
 /// the official SDK server, and the client
 /// (<see cref="BowireMcpProtocol"/> built on
@@ -233,7 +233,7 @@ public sealed class McpAdapterAndProtocolE2ETests
         builder.Services.AddBowireMcpAdapter("http://localhost");
 
         var app = builder.Build();
-        app.MapBowireMcpAdapter(prefix: string.Empty);
+        app.MapBowireMcpAdapter(prefix: "/mcp");
 
         await app.StartAsync(TestContext.Current.CancellationToken);
 

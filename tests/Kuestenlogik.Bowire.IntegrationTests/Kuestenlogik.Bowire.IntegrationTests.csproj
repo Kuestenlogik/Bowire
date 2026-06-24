@@ -50,6 +50,12 @@
     <ProjectReference Include="..\..\src\Kuestenlogik.Bowire.Protocol.GraphQL\Kuestenlogik.Bowire.Protocol.GraphQL.csproj" />
     <ProjectReference Include="..\..\src\Kuestenlogik.Bowire.Protocol.WebSocket\Kuestenlogik.Bowire.Protocol.WebSocket.csproj" />
     <ProjectReference Include="..\..\src\Kuestenlogik.Bowire.Protocol.Mcp\Kuestenlogik.Bowire.Protocol.Mcp.csproj" />
+    <!-- Bowire.Mcp brings the workbench-as-MCP-server side + the
+         dual-mount registry/dispatcher (#287). The
+         DualMcpEndpointCoexistenceTests fixture exercises both
+         MapBowireMcp and MapBowireMcpAdapter in the same WebApplication
+         to verify they coexist without conflict. -->
+    <ProjectReference Include="..\..\src\Kuestenlogik.Bowire.Mcp\Kuestenlogik.Bowire.Mcp.csproj" />
     <ProjectReference Include="..\..\src\Kuestenlogik.Bowire.Protocol.JsonRpc\Kuestenlogik.Bowire.Protocol.JsonRpc.csproj" />
     <ProjectReference Include="..\..\src\Kuestenlogik.Bowire.Protocol.Mqtt\Kuestenlogik.Bowire.Protocol.Mqtt.csproj" />
     <ProjectReference Include="..\..\src\Kuestenlogik.Bowire.Protocol.Nats\Kuestenlogik.Bowire.Protocol.Nats.csproj" />

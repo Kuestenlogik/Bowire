@@ -3,10 +3,13 @@
 
 using Kuestenlogik.Bowire;
 using Kuestenlogik.Bowire.Recording;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using ModelContextProtocol;
+using ModelContextProtocol.AspNetCore;
 using ModelContextProtocol.Protocol;
 using ModelContextProtocol.Server;
 
@@ -32,7 +35,7 @@ namespace Kuestenlogik.Bowire.Mcp;
 ///         .WithTools&lt;BowireMcpTools&gt;()
 ///         .WithResources&lt;BowireMcpResources&gt;()
 ///         .WithPrompts&lt;BowireMcpPrompts&gt;();
-/// // …then `app.MapMcp("/bowire/mcp");`
+/// // …then `app.MapBowireMcp();` (defaults to /bowire/mcp)
 /// </code>
 /// </summary>
 public static class BowireMcpServiceCollectionExtensions
@@ -81,7 +84,35 @@ public static class BowireMcpServiceCollectionExtensions
         // and the workbench's badge end up looking at the same state.
         services.TryAddSingleton<BowireRecordingSession>();
 
-        return services.AddMcpServer(o =>
+        // Dual-mount coordination (#287). The registry tracks every
+        // MCP endpoint mounted on the host so MapBowireMcp +
+        // MapBowireMcpAdapter can coexist without clobbering each
+        // other; the dispatcher routes tools/list, tools/call, &c. to
+        // either the static server tools or the adapter handlers based
+        // on which prefix the incoming request hit. Both are TryAdd
+        // singletons so the adapter's own AddBowireMcpAdapter can wire
+        // them when AddBowireMcp wasn't called.
+        services.TryAddSingleton<BowireMcpEndpointRegistry>();
+        services.TryAddSingleton<BowireMcpDualHandlerDispatcher>();
+
+        // The dispatcher reads HttpContext.Request.Path inside the
+        // SDK's session-scoped RequestContext. The accessor is required
+        // for that lookup; idempotent on repeat registration.
+        services.AddHttpContextAccessor();
+
+        // Per-session path-latching: stash the request URL on the
+        // dispatcher at the moment the SDK creates an McpServer for
+        // a freshly-arrived JSON-RPC session. This is the robust
+        // routing signal — the IHttpContextAccessor path can come
+        // back stale or null in stateful transport mode where the
+        // long-lived server runs outside the original request scope.
+        // The setup wraps any existing caller-supplied
+        // ConfigureSessionOptions delegate so the test-suite + embedded
+        // host can still install their own callbacks.
+        services.AddSingleton<IConfigureOptions<HttpServerTransportOptions>,
+            BowireMcpHttpTransportSetup>();
+
+        var builder = services.AddMcpServer(o =>
         {
             o.ServerInfo = new ModelContextProtocol.Protocol.Implementation
             {
@@ -90,6 +121,82 @@ public static class BowireMcpServiceCollectionExtensions
                 Title = "Bowire workbench (self-MCP)"
             };
         });
+
+        // Install dispatcher-aware handlers. With both endpoints mounted,
+        // these route per-request: server-mode requests fall through to
+        // the SDK's tool/resource/prompt collections (populated by
+        // WithTools<T>/WithResources<T>/WithPrompts<T> in the caller's
+        // builder chain), adapter-mode requests forward to whatever
+        // delegates the adapter registered via
+        // BowireMcpDualHandlerDispatcher.RegisterAdapterHandlers.
+        //
+        // Resolving the dispatcher from the *root* container at builder
+        // time is safe — it's a singleton and the field reads inside the
+        // delegates are all final at request time.
+        var dispatcher = ResolveDispatcherFromCollection(services);
+        builder
+            .WithListToolsHandler(dispatcher.ListToolsAsync)
+            .WithCallToolHandler(dispatcher.CallToolAsync)
+            .WithListResourcesHandler(dispatcher.ListResourcesAsync)
+            .WithReadResourceHandler(dispatcher.ReadResourceAsync)
+            .WithListPromptsHandler(dispatcher.ListPromptsAsync)
+            .WithGetPromptHandler(dispatcher.GetPromptAsync);
+
+        // Post-merge filters. The SDK's tool/list dispatch wraps our
+        // handler and appends ToolCollection — so by the time the
+        // result reaches the wire it always contains the static tools.
+        // The filter runs after that merge and strips out the
+        // wrong-side entries based on the request URL: adapter responses
+        // drop static tools, server responses drop dynamic ones (none
+        // in practice today, but the filter keeps the contract sound
+        // even if a custom AddBowireMcpAdapter installs additional
+        // tools).
+        builder.WithRequestFilters(filters =>
+        {
+            filters.AddListToolsFilter(dispatcher.FilterListToolsByPath);
+            filters.AddCallToolFilter(dispatcher.FilterCallToolByPath);
+        });
+        dispatcher.HasInstalledSdkShims = true;
+
+        return builder;
+    }
+
+    // Pulls the dispatcher out of the (still-being-configured) service
+    // collection without building the provider. Safe because we just
+    // registered it as a singleton above; we instantiate eagerly to
+    // close over a stable reference inside the With*Handler delegates.
+    private static BowireMcpDualHandlerDispatcher ResolveDispatcherFromCollection(
+        IServiceCollection services)
+    {
+        // The pair was added via TryAddSingleton just above, so the
+        // descriptors are present. Find them, instantiate by hand, and
+        // replace the descriptors with the materialised instances so
+        // every other consumer (e.g. the adapter's AddBowireMcpAdapter
+        // call later) ends up with the same dispatcher.
+        var registry = MaterialiseSingleton<BowireMcpEndpointRegistry>(services,
+            () => new BowireMcpEndpointRegistry());
+        var dispatcher = MaterialiseSingleton(services,
+            () => new BowireMcpDualHandlerDispatcher(registry));
+        return dispatcher;
+    }
+
+    private static T MaterialiseSingleton<T>(IServiceCollection services, Func<T> factory)
+        where T : class
+    {
+        for (var i = 0; i < services.Count; i++)
+        {
+            var d = services[i];
+            if (d.ServiceType != typeof(T)) continue;
+            if (d.ImplementationInstance is T existing) return existing;
+            var created = factory();
+            services[i] = ServiceDescriptor.Singleton<T>(created);
+            return created;
+        }
+        // Not yet registered — add a singleton-instance descriptor so
+        // later registrants find this same instance.
+        var fresh = factory();
+        services.AddSingleton(fresh);
+        return fresh;
     }
 
     /// <summary>

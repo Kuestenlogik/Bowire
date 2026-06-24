@@ -499,7 +499,7 @@ public sealed class McpPluginEdgeCaseTests
         builder.Services.AddBowireMcpAdapter("http://localhost");
 
         var app = builder.Build();
-        app.MapBowireMcpAdapter(prefix: string.Empty);
+        app.MapBowireMcpAdapter(prefix: "/mcp");
 
         await app.StartAsync(TestContext.Current.CancellationToken);
 

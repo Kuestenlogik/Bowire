@@ -243,10 +243,15 @@ internal static class BrowserUiHost
 
         if (ui.EnableMcpAdapter)
         {
-            // Standalone mounts at "/" — pass "" so the MCP adapter
-            // lands at `/mcp`, not `/bowire/mcp`. The matching DI
+            // Standalone mounts the workbench at "/" — pass "/mcp" so
+            // the MCP adapter lands at `/mcp`, distinct from any future
+            // `MapBowireMcp` mount (which the dual-mount convention
+            // would put at `/mcp` with `/bowire/mcp/adapter` for the
+            // adapter when run embedded). The standalone CLI doesn't
+            // mount the full-server endpoint today; `/mcp` stays the
+            // adapter URL the workbench JS probes. The matching DI
             // registration happened pre-Build above.
-            app.MapBowireMcpAdapter(prefix: string.Empty);
+            app.MapBowireMcpAdapter(prefix: "/mcp");
         }
 
         // Mock-management endpoints — same base-path discipline as the
