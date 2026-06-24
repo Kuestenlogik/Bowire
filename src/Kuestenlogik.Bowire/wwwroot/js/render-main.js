@@ -1900,64 +1900,132 @@
             if (!_dirty) saveBtn.setAttribute('disabled', 'disabled');
             headerActions.appendChild(saveBtn);
         }
-        headerActions.appendChild(el('button', {
+        // 'Save as…' split-style action — one slot in the header that
+        // groups every 'persist this workspace in another shape' verb
+        // behind a caret menu. Save-as-template + Duplicate + Export
+        // are individually low-frequency but conceptually related; a
+        // single 'Save as' entry-point makes the header tighter and
+        // matches the method-execute split-button pattern operators
+        // already know.
+        //
+        // Direct click on the primary button opens the menu (no
+        // implicit default action — operator picks which 'save as'
+        // variant they want).
+        var saveAsWrap = el('div', { className: 'bowire-ws-detail-saveas-wrap' });
+        var saveAsBtn = el('button', {
+            id: 'bowire-ws-saveas-btn',
             className: 'bowire-ws-detail-action-btn',
-            textContent: 'Duplicate…',
-            title: 'Create a copy of this workspace (URLs, envs, collections, recordings, flows, pins). Useful as a "Save As" / fork.',
-            onClick: function () {
-                var t = _liveWs();
-                if (!t || typeof duplicateWorkspace !== 'function') return;
-                bowirePrompt('Name for the duplicate', {
-                    title: 'Duplicate workspace',
-                    defaultValue: t.name + ' (copy)',
-                    okLabel: 'Duplicate',
-                }, function (newName) {
-                    if (newName === null) return;
-                    var fresh = duplicateWorkspace(t.id, newName);
-                    if (fresh) {
-                        workspacesSelectedId = fresh.id;
-                        render();
+            title: 'Save this workspace as a copy, template, or export file',
+            onClick: function (e) {
+                e.stopPropagation();
+                var prev = document.querySelector('.bowire-ws-saveas-menu');
+                if (prev) { prev.remove(); return; }
+                var menu = el('div', { className: 'bowire-ws-saveas-menu', role: 'menu' });
+                menu.appendChild(el('button', {
+                    type: 'button',
+                    className: 'bowire-ws-saveas-menu-item',
+                    title: 'Create a copy of this workspace under a new name (URLs, envs, collections, recordings, flows, pins).',
+                    onClick: function () {
+                        menu.remove();
+                        var t = _liveWs();
+                        if (!t || typeof duplicateWorkspace !== 'function') return;
+                        bowirePrompt('Name for the duplicate', {
+                            title: 'Duplicate workspace',
+                            defaultValue: t.name + ' (copy)',
+                            okLabel: 'Duplicate'
+                        }, function (newName) {
+                            if (newName === null) return;
+                            var fresh = duplicateWorkspace(t.id, newName);
+                            if (fresh) {
+                                workspacesSelectedId = fresh.id;
+                                render();
+                            }
+                        });
                     }
-                });
-            }
-        }));
-        // 'Save as template…' — only on the ACTIVE workspace (you can
-        // only snapshot the localStorage of the workspace you're
-        // currently in). #242 already exposed this in the workspaces
-        // overview's per-row tool cluster; surfacing it here too so
-        // the operator who's already inside their workspace settings
-        // doesn't have to navigate back to find it.
-        if (isActive && typeof saveCurrentWorkspaceAsTemplate === 'function') {
-            headerActions.appendChild(el('button', {
-                className: 'bowire-ws-detail-action-btn',
-                textContent: 'Save as template…',
-                title: 'Snapshot this workspace as a reusable template. Shows up in "Your templates" on the next create-workspace dialog.',
-                onClick: function () {
-                    var t = _liveWs();
-                    var wsName = (t && t.name) || 'workspace';
-                    bowirePrompt('Template name', {
-                        title: 'Save as template',
-                        defaultValue: wsName + ' template',
-                        confirmText: 'Save',
-                        validator: function (val) {
-                            return String(val || '').trim() ? null : 'Name required';
+                },
+                    el('span', { className: 'bowire-ws-saveas-menu-icon', innerHTML: svgIcon('copy') }),
+                    el('span', { className: 'bowire-ws-saveas-menu-label', textContent: 'Duplicate as new workspace…' })
+                ));
+                if (typeof saveWorkspaceAsTemplate === 'function') {
+                    menu.appendChild(el('button', {
+                        type: 'button',
+                        className: 'bowire-ws-saveas-menu-item',
+                        title: 'Snapshot this workspace as a reusable template — appears in "Your templates" on the next create-workspace dialog.',
+                        onClick: function () {
+                            menu.remove();
+                            var t = _liveWs();
+                            if (!t) return;
+                            bowirePrompt('Template name', {
+                                title: 'Save as template',
+                                defaultValue: t.name + ' template',
+                                confirmText: 'Save',
+                                validator: function (val) {
+                                    return String(val || '').trim() ? null : 'Name required';
+                                }
+                            }).then(function (name) {
+                                if (!name) return;
+                                try {
+                                    saveWorkspaceAsTemplate(t.id, name, '', 'layers');
+                                    if (typeof toast === 'function') {
+                                        toast('Saved "' + name + '" — available in the next create-workspace dialog.', 'success');
+                                    }
+                                } catch (e) {
+                                    if (typeof toast === 'function') {
+                                        toast('Save failed: ' + (e && e.message ? e.message : 'unknown error'), 'error');
+                                    }
+                                }
+                            });
                         }
-                    }).then(function (name) {
-                        if (!name) return;
-                        try {
-                            saveCurrentWorkspaceAsTemplate(name, '', 'layers');
-                            if (typeof toast === 'function') {
-                                toast('Saved "' + name + '" — available in the next create-workspace dialog.', 'success');
-                            }
-                        } catch (e) {
-                            if (typeof toast === 'function') {
-                                toast('Save failed: ' + (e && e.message ? e.message : 'unknown error'), 'error');
-                            }
-                        }
-                    });
+                    },
+                        el('span', { className: 'bowire-ws-saveas-menu-icon', innerHTML: svgIcon('bookmark') }),
+                        el('span', { className: 'bowire-ws-saveas-menu-label', textContent: 'Save as template…' })
+                    ));
                 }
-            }));
-        }
+                if (typeof downloadWorkspaceExport === 'function') {
+                    menu.appendChild(el('button', {
+                        type: 'button',
+                        className: 'bowire-ws-saveas-menu-item',
+                        title: 'Download the workspace as a single .bww file (URLs, collections, recordings, favorites, benchmarks, flows, presets — NO secrets).',
+                        onClick: function () {
+                            menu.remove();
+                            var t = _liveWs();
+                            if (!t) return;
+                            if (downloadWorkspaceExport(t.id)) {
+                                if (typeof toast === 'function') toast('Workspace exported', 'success');
+                            } else {
+                                if (typeof toast === 'function') toast('Export failed — see console', 'error');
+                            }
+                        }
+                    },
+                        el('span', { className: 'bowire-ws-saveas-menu-icon', innerHTML: svgIcon('download') }),
+                        el('span', { className: 'bowire-ws-saveas-menu-label', textContent: 'Export to .bww file' })
+                    ));
+                }
+                document.body.appendChild(menu);
+                var rect = saveAsBtn.getBoundingClientRect();
+                menu.style.position = 'fixed';
+                menu.style.left = Math.max(8, rect.left) + 'px';
+                var menuH = menu.offsetHeight;
+                var spaceBelow = window.innerHeight - rect.bottom;
+                menu.style.top = (spaceBelow >= menuH + 12
+                    ? rect.bottom + 6
+                    : Math.max(8, rect.top - menuH - 6)) + 'px';
+                setTimeout(function () {
+                    function onOutside(ev) {
+                        if (!menu.contains(ev.target) && !saveAsBtn.contains(ev.target)) {
+                            menu.remove();
+                            document.removeEventListener('click', onOutside, true);
+                        }
+                    }
+                    document.addEventListener('click', onOutside, true);
+                }, 0);
+            }
+        },
+            el('span', { textContent: 'Save as' }),
+            el('span', { innerHTML: svgIcon('chevronDown'), style: 'display:inline-flex;align-items:center;margin-left:4px' })
+        );
+        saveAsWrap.appendChild(saveAsBtn);
+        headerActions.appendChild(saveAsWrap);
         header.appendChild(headerActions);
         main.appendChild(header);
 

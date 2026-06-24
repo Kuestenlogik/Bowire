@@ -9739,6 +9739,43 @@ so the textarea
     border-left: 2px solid var(--bowire-border-subtle, var(--bowire-border));
 }
 
+/* ===== Workspace-detail 'Save as…' dropdown ===== */
+.bowire-ws-detail-saveas-wrap { position: relative; display: inline-flex; }
+.bowire-ws-saveas-menu {
+    background: var(--bowire-surface);
+    border: 1px solid var(--bowire-border);
+    border-radius: var(--bowire-radius-md);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+    padding: 4px;
+    min-width: 280px;
+    z-index: 9999;
+}
+.bowire-ws-saveas-menu-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 8px 10px;
+    background: transparent;
+    border: 0;
+    border-radius: var(--bowire-radius-sm);
+    color: var(--bowire-text);
+    cursor: pointer;
+    text-align: left;
+}
+.bowire-ws-saveas-menu-item:hover { background: var(--bowire-bg); }
+.bowire-ws-saveas-menu-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    height: 16px;
+    color: var(--bowire-text-tertiary);
+    flex-shrink: 0;
+}
+.bowire-ws-saveas-menu-icon svg { width: 14px; height: 14px; }
+.bowire-ws-saveas-menu-label { flex: 1; font-size: 13px; }
+
 /* ===== #246 — Ad-hoc Requests section under Collections rail ===== */
 .bowire-ad-hoc-section {
     margin-top: 16px;
