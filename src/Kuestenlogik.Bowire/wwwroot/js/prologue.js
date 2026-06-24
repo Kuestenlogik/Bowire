@@ -2357,14 +2357,89 @@
         }
     }
 
+    // #282 — Detect + migrate legacy .bww shapes to the v2 canonical
+    // schema. Two pre-v2 shapes ship in v2.0:
+    //   1. UI-v1: { format: 'bowire-workspace', version: 1, workspace, data }
+    //   2. CLI-v1: { workspaceFormatVersion: 1, exportedAt, environments,
+    //               collections, recordings, scripts, flows }
+    // Detection runs before the schema validator so both shapes get
+    // rewritten in-memory; the rest of the reader sees v2 only. The
+    // shim is retired in v3.0.0 (#283).
+    function _migrateLegacyWorkspaceShape(payload) {
+        if (!payload || typeof payload !== 'object') return payload;
+        // CLI-v1: no format header, but workspaceFormatVersion + at
+        // least one per-kind array at the top level.
+        if (payload.format !== 'bowire-workspace'
+            && typeof payload.workspaceFormatVersion !== 'undefined') {
+            var cliData = {
+                urls: [],
+                urlMeta: {},
+                environments: Array.isArray(payload.environments) ? payload.environments : [],
+                activeEnvironmentId: null,
+                globals: {},
+                collections: Array.isArray(payload.collections) ? payload.collections : [],
+                recordings: Array.isArray(payload.recordings) ? payload.recordings : [],
+                scripts: Array.isArray(payload.scripts) ? payload.scripts : [],
+                flows: Array.isArray(payload.flows) ? payload.flows : [],
+                presets: {}
+            };
+            return {
+                format: 'bowire-workspace',
+                version: 2,
+                exportedAt: payload.exportedAt || new Date().toISOString(),
+                workspace: {
+                    // CLI export carried no workspace identity. Default to
+                    // 'Imported' (operator can rename); .id is allocated
+                    // by createWorkspace, not preserved.
+                    name: 'Imported',
+                    color: '#6366f1',
+                    description: '',
+                    pluginPins: null
+                },
+                data: cliData,
+                _migratedFrom: 'cli-v1'
+            };
+        }
+        // UI-v1: same envelope shape as v2, just version === 1.
+        if (payload.format === 'bowire-workspace' && payload.version === 1) {
+            var d = payload.data || {};
+            // Backfill the data buckets the UI export omitted (recordings,
+            // scripts, flows — those are localStorage-only entities the
+            // UI didn't snapshot in v1).
+            var uiData = Object.assign({
+                urls: [],
+                urlMeta: {},
+                environments: [],
+                activeEnvironmentId: null,
+                globals: {},
+                collections: [],
+                recordings: [],
+                scripts: [],
+                flows: [],
+                presets: {}
+            }, d);
+            return {
+                format: 'bowire-workspace',
+                version: 2,
+                exportedAt: payload.exportedAt || new Date().toISOString(),
+                workspace: payload.workspace || {},
+                data: uiData,
+                _migratedFrom: 'ui-v1'
+            };
+        }
+        return payload;
+    }
+
     function importWorkspaceJson(payload, opts) {
         opts = opts || {};
+        payload = _migrateLegacyWorkspaceShape(payload);
         if (!payload || typeof payload !== 'object'
             || payload.format !== 'bowire-workspace') {
             throw new Error('Not a Bowire workspace file (missing format marker)');
         }
-        if (payload.version !== 1) {
-            throw new Error('Unsupported workspace format version: ' + payload.version);
+        if (payload.version !== 2) {
+            throw new Error('Unsupported workspace format version: ' + payload.version
+                + ' (expected 2; legacy 1 shapes are auto-migrated, anything else is rejected)');
         }
         var mode = opts.mode || 'new';
         var wsMeta = payload.workspace || {};

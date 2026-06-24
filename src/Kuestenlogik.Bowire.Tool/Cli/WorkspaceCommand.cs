@@ -79,13 +79,36 @@ internal static class WorkspaceCommand
     // ---------- export / import (#149) ----------
 
     /// <summary>
-    /// Format version for the export envelope. Bumped when the wire
-    /// shape changes in a way an older importer would mis-handle.
+    /// Current canonical .bww format version (#282 unified shape).
+    /// Readers migrate anything older to this version in-memory.
+    /// </summary>
+    public const int CanonicalFormatVersion = 2;
+
+    /// <summary>
+    /// Format version the writer currently emits. Stays at the legacy
+    /// value until #282 A2 cuts the writer over to <see cref="CanonicalFormatVersion"/>.
     /// </summary>
     public const int ExportFormatVersion = 1;
 
+    /// <summary>
+    /// Legacy CLI export shape — v1 used <c>workspaceFormatVersion</c>
+    /// + top-level per-kind arrays without a <c>format</c> header or
+    /// <c>workspace</c> identity wrapper. Detected + migrated on
+    /// read in <see cref="RunImportAsync"/> through v2.x; the migration
+    /// shim is retired in v3.0.0 (#283).
+    /// </summary>
+    public const int LegacyCliExportFormatVersion = 1;
+
     private static readonly string[] ExportEntityKinds =
         ["environments", "collections", "recordings", "scripts", "flows"];
+
+    /// <summary>
+    /// Data keys present in the v2 envelope's <c>data</c> sub-object
+    /// (full superset across browser-mode + disk-mode workspaces).
+    /// </summary>
+    private static readonly string[] V2DataKeys =
+        ["urls", "urlMeta", "environments", "activeEnvironmentId",
+         "globals", "collections", "recordings", "scripts", "flows", "presets"];
 
     private static Command BuildExportCommand()
     {
@@ -145,6 +168,111 @@ internal static class WorkspaceCommand
                 ct);
         });
         return import;
+    }
+
+    /// <summary>
+    /// #282 — Detect + migrate legacy workspace-export shapes to the
+    /// v2 canonical envelope. Two pre-v2 shapes ship in v2.0 and
+    /// must keep working through v2.x; the shim retires in v3.0.0
+    /// (#283).
+    /// <list type="bullet">
+    ///   <item><b>CLI-v1</b>: no <c>format</c> header,
+    ///     <c>workspaceFormatVersion: 1</c> + top-level per-kind arrays.</item>
+    ///   <item><b>UI-v1</b>: <c>format: 'bowire-workspace', version: 1,
+    ///     workspace, data</c> — same envelope shape as v2, only the
+    ///     <c>version</c> field differs.</item>
+    /// </list>
+    /// </summary>
+    internal static System.Text.Json.Nodes.JsonObject MigrateLegacyWorkspaceShape(
+        System.Text.Json.Nodes.JsonObject root)
+    {
+        if (root is null) return new System.Text.Json.Nodes.JsonObject();
+
+        // Already v2 — pass through unchanged.
+        if ((string?)root["format"] == "bowire-workspace"
+            && root["version"] is System.Text.Json.Nodes.JsonValue v
+            && v.TryGetValue<int>(out var ver) && ver == CanonicalFormatVersion)
+        {
+            return root;
+        }
+
+        // CLI-v1: no format header, workspaceFormatVersion present.
+        if ((string?)root["format"] != "bowire-workspace"
+            && root["workspaceFormatVersion"] is not null)
+        {
+            var data = new System.Text.Json.Nodes.JsonObject();
+            data["urls"] = new System.Text.Json.Nodes.JsonArray();
+            data["urlMeta"] = new System.Text.Json.Nodes.JsonObject();
+            data["activeEnvironmentId"] = null;
+            data["globals"] = new System.Text.Json.Nodes.JsonObject();
+            data["presets"] = new System.Text.Json.Nodes.JsonObject();
+            foreach (var kind in ExportEntityKinds)
+            {
+                data[kind] = root[kind] is System.Text.Json.Nodes.JsonArray arr
+                    ? (System.Text.Json.Nodes.JsonNode)arr.DeepClone()
+                    : new System.Text.Json.Nodes.JsonArray();
+            }
+            var workspaceMeta = new System.Text.Json.Nodes.JsonObject
+            {
+                ["name"] = "Imported",
+                ["color"] = "#6366f1",
+                ["description"] = "",
+                ["pluginPins"] = null
+            };
+            return new System.Text.Json.Nodes.JsonObject
+            {
+                ["format"] = "bowire-workspace",
+                ["version"] = CanonicalFormatVersion,
+                ["exportedAt"] = (string?)root["exportedAt"]
+                    ?? System.DateTimeOffset.UtcNow.ToString("O", System.Globalization.CultureInfo.InvariantCulture),
+                ["workspace"] = workspaceMeta,
+                ["data"] = data,
+                ["_migratedFrom"] = "cli-v1"
+            };
+        }
+
+        // UI-v1: format header present, version === 1.
+        if ((string?)root["format"] == "bowire-workspace"
+            && root["version"] is System.Text.Json.Nodes.JsonValue uiV
+            && uiV.TryGetValue<int>(out var uiVer) && uiVer == 1)
+        {
+            var existingData = root["data"] as System.Text.Json.Nodes.JsonObject
+                ?? new System.Text.Json.Nodes.JsonObject();
+            var data2 = new System.Text.Json.Nodes.JsonObject();
+            foreach (var key in V2DataKeys)
+            {
+                if (existingData[key] is { } node)
+                {
+                    data2[key] = node.DeepClone();
+                }
+                else
+                {
+                    // Backfill missing buckets with empty containers so
+                    // downstream code can iterate without null checks.
+                    data2[key] = key switch
+                    {
+                        "urlMeta" or "globals" or "presets" => new System.Text.Json.Nodes.JsonObject(),
+                        "activeEnvironmentId" => null,
+                        _ => new System.Text.Json.Nodes.JsonArray()
+                    };
+                }
+            }
+            var workspace2 = root["workspace"]?.DeepClone() ?? new System.Text.Json.Nodes.JsonObject();
+            return new System.Text.Json.Nodes.JsonObject
+            {
+                ["format"] = "bowire-workspace",
+                ["version"] = CanonicalFormatVersion,
+                ["exportedAt"] = (string?)root["exportedAt"]
+                    ?? System.DateTimeOffset.UtcNow.ToString("O", System.Globalization.CultureInfo.InvariantCulture),
+                ["workspace"] = workspace2,
+                ["data"] = data2,
+                ["_migratedFrom"] = "ui-v1"
+            };
+        }
+
+        // Unrecognised shape — return as-is and let the downstream
+        // validator throw the canonical error.
+        return root;
     }
 
     // Internal so unit tests exercise the pipeline without spinning up
@@ -276,15 +404,26 @@ internal static class WorkspaceCommand
             return 70;
         }
 
+        // #282 — Detect + migrate legacy .bww shapes to the v2
+        // canonical schema. Two pre-v2 shapes ship in v2.0:
+        //   1. UI-v1: { format: 'bowire-workspace', version: 1, workspace, data }
+        //   2. CLI-v1: { workspaceFormatVersion: 1, ..., environments[], … }
+        // Both are migrated to v2 in-memory; the rest of the importer
+        // sees v2 only. The shim is retired in v3.0.0 (#283).
+        root = MigrateLegacyWorkspaceShape(root);
+
         // Refuse exports from a future format we don't understand. Same
-        // shape as RecordingFormatVersion's check elsewhere.
-        if (root["workspaceFormatVersion"] is System.Text.Json.Nodes.JsonValue v
+        // shape as RecordingFormatVersion's check elsewhere. Check
+        // happens AFTER the migration shim has rewritten legacy v1
+        // shapes into v2, so the post-migration version is what we
+        // gate on.
+        if (root["version"] is System.Text.Json.Nodes.JsonValue v
             && v.TryGetValue<int>(out var vers)
-            && vers > ExportFormatVersion)
+            && vers > CanonicalFormatVersion)
         {
             await stderr.WriteLineAsync(
                 $"workspace import: export was written under format version {vers}, " +
-                $"this build supports up to {ExportFormatVersion}. Update Bowire and retry.").ConfigureAwait(false);
+                $"this build supports up to {CanonicalFormatVersion}. Update Bowire and retry.").ConfigureAwait(false);
             return 65;
         }
 
@@ -292,12 +431,18 @@ internal static class WorkspaceCommand
         Directory.CreateDirectory(fullTarget);
         var store = new Kuestenlogik.Bowire.Workspace.Git.FileEntityStore(fullTarget);
 
+        // v2 envelope nests per-kind arrays inside `data`; legacy CLI
+        // shapes pre-migration had them at the top level. After the
+        // shim above, the data sub-object is always present.
+        var v2Data = root["data"] as System.Text.Json.Nodes.JsonObject
+            ?? new System.Text.Json.Nodes.JsonObject();
+
         var perKindCount = new Dictionary<string, int>(StringComparer.Ordinal);
         try
         {
             foreach (var kind in ExportEntityKinds)
             {
-                if (root[kind] is not System.Text.Json.Nodes.JsonArray arr) continue;
+                if (v2Data[kind] is not System.Text.Json.Nodes.JsonArray arr) continue;
                 var written = 0;
                 foreach (var entry in arr)
                 {
