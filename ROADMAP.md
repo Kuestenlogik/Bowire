@@ -12,7 +12,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.1 — Scripting, variable resolver, throughput surface *(due 2026-06-30)*
 
-**23/42 done** · 19 backlog
+**24/43 done** · 19 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -38,6 +38,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [197](https://github.com/Kuestenlogik/Bowire/issues/197) | Bowire | [Deprecate + unlist Kuestenlogik.Bowire.Extension.MapLibre on nuget.org after v2.0 ships](#issue-kuestenlogik-bowire-197) | ✅ Done |  |
 | [248](https://github.com/Kuestenlogik/Bowire/issues/248) | Bowire | [Optional rail modules — plumbing (Phase 1): toggle mechanic + always-on set + Settings editor](#issue-kuestenlogik-bowire-248) | ✅ Done |  |
 | [252](https://github.com/Kuestenlogik/Bowire/issues/252) | Bowire | [Compose-request entry points: '+ Compose' (self-contained) + 'New from source…' (workspace-managed URL)](#issue-kuestenlogik-bowire-252) | ✅ Done |  |
+| [257](https://github.com/Kuestenlogik/Bowire/issues/257) | Bowire | [richErrorDetail picks up problem+json status / type / instance](#issue-kuestenlogik-bowire-257) | ✅ Done |  |
 | [259](https://github.com/Kuestenlogik/Bowire/issues/259) | Bowire | [richErrorDetail picks up problem+json status / type / instance](#issue-kuestenlogik-bowire-259) | ✅ Done |  |
 | [260](https://github.com/Kuestenlogik/Bowire/issues/260) | Bowire | [Console toolbar: distinct icons for Clear selection / Clear all / Close](#issue-kuestenlogik-bowire-260) | ✅ Done |  |
 | [261](https://github.com/Kuestenlogik/Bowire/issues/261) | Bowire | [Tab persistence for 'As new request' freeform clone](#issue-kuestenlogik-bowire-261) | ✅ Done |  |
@@ -301,6 +302,10 @@ Bowire's rail catalogue (`_railModes` in `render-sidebar.js`) is fixed at compil
 #### <a id="issue-kuestenlogik-bowire-252"></a>✅ Done · [#252](https://github.com/Kuestenlogik/Bowire/issues/252) Compose-request entry points: '+ Compose' (self-contained) + 'New from source…' (workspace-managed URL)
 
 After landing #244 (drop `+ New` from Discover toolbar) + #245 (As new request from Execute dropdown) + the #246 cleanup (ad-hoc → freeform builder + `+ Add to…` parity), two design gaps remain around **how an operator starts composing a new request**: [[more]](https://github.com/Kuestenlogik/Bowire/issues/252)
+
+#### <a id="issue-kuestenlogik-bowire-257"></a>✅ Done · [#257](https://github.com/Kuestenlogik/Bowire/issues/257) richErrorDetail picks up problem+json status / type / instance
+
+Failed REST/gRPC invocations were showing just 'Error' in the console because richErrorDetail looked for `status_code`/`statusCode`/`httpStatus`/`http_status` while the server's problem+json carries the HTTP code on a bare `status` field. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/257)
 
 #### <a id="issue-kuestenlogik-bowire-259"></a>✅ Done · [#259](https://github.com/Kuestenlogik/Bowire/issues/259) richErrorDetail picks up problem+json status / type / instance
 
