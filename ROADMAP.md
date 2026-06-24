@@ -12,15 +12,13 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.1 — Scripting, variable resolver, throughput surface *(due 2026-06-30)*
 
-**31/48 done** · 17 backlog
+**33/48 done** · 15 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
 | [126](https://github.com/Kuestenlogik/Bowire/issues/126) | Bowire | [Pre-/post-scripts with a protocol-typed sandbox](#issue-kuestenlogik-bowire-126) | ⬜ Backlog |  |
 | [132](https://github.com/Kuestenlogik/Bowire/issues/132) | Bowire | [Parallel sessions for recordings / collections (phase 1 local, phase 2 distributed)](#issue-kuestenlogik-bowire-132) | ⬜ Backlog |  |
 | [136](https://github.com/Kuestenlogik/Bowire/issues/136) | Bowire | [URL / service catalogue providers (local / http / consul / kubernetes / agent)](#issue-kuestenlogik-bowire-136) | ⬜ Backlog |  |
-| [140](https://github.com/Kuestenlogik/Bowire/issues/140) | Bowire | [Per-mode 'Saved Configs' / Presets (distinct from cross-workflow favorites)](#issue-kuestenlogik-bowire-140) | ⬜ Backlog |  |
-| [144](https://github.com/Kuestenlogik/Bowire/issues/144) | Bowire | [Large-recording capture/replay — chunked disk layout, lazy step-load, GB-scale](#issue-kuestenlogik-bowire-144) | ⬜ Backlog |  |
 | [145](https://github.com/Kuestenlogik/Bowire/issues/145) | Bowire | [Deprecate ${name} in favour of {{name}} (multi-phase migration)](#issue-kuestenlogik-bowire-145) | ⬜ Backlog |  |
 | [153](https://github.com/Kuestenlogik/Bowire/issues/153) | Bowire | [Bowire as transparent interceptor — embedded middleware + standalone reverse-proxy](#issue-kuestenlogik-bowire-153) | ⬜ Backlog |  |
 | [194](https://github.com/Kuestenlogik/Bowire/issues/194) | Bowire | [Action log Phase 2 — remaining mutation sites + cross-reload undo + soft-delete workspaces](#issue-kuestenlogik-bowire-194) | ⬜ Backlog |  |
@@ -33,6 +31,8 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [281](https://github.com/Kuestenlogik/Bowire/issues/281) | Bowire | [Guided tour: page-navigation + element spotlight + interactive flow](#issue-kuestenlogik-bowire-281) | ⬜ Backlog |  |
 | [282](https://github.com/Kuestenlogik/Bowire/issues/282) | Bowire | [Unified .bww format: UI export + CLI export converge on one canonical schema](#issue-kuestenlogik-bowire-282) | ⬜ Backlog |  |
 | [287](https://github.com/Kuestenlogik/Bowire/issues/287) | Bowire | [Dual-MCP endpoint: MapBowireMcp + MapBowireMcpAdapter coexistence when --enable-mcp-adapter is on](#issue-kuestenlogik-bowire-287) | ⬜ Backlog |  |
+| [140](https://github.com/Kuestenlogik/Bowire/issues/140) | Bowire | [Per-mode 'Saved Configs' / Presets (distinct from cross-workflow favorites)](#issue-kuestenlogik-bowire-140) | ✅ Done |  |
+| [144](https://github.com/Kuestenlogik/Bowire/issues/144) | Bowire | [Large-recording capture/replay — chunked disk layout, lazy step-load, GB-scale](#issue-kuestenlogik-bowire-144) | ✅ Done |  |
 | [197](https://github.com/Kuestenlogik/Bowire/issues/197) | Bowire | [Deprecate + unlist Kuestenlogik.Bowire.Extension.MapLibre on nuget.org after v2.0 ships](#issue-kuestenlogik-bowire-197) | ✅ Done |  |
 | [242](https://github.com/Kuestenlogik/Bowire/issues/242) | Bowire | [User-defined workspace templates — save current workspace as a template, surface in create dialog](#issue-kuestenlogik-bowire-242) | ✅ Done |  |
 | [243](https://github.com/Kuestenlogik/Bowire/issues/243) | Bowire | [Failed REST / gRPC invocation logs show only 'Error' — surface status code + response body + exception message](#issue-kuestenlogik-bowire-243) | ✅ Done |  |
@@ -67,7 +67,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.2 — Test pillar: assertions, CI runner, regression coverage *(due 2026-07-10)*
 
-**0/9 done** · 9 backlog
+**1/9 done** · 8 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -76,10 +76,10 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [170](https://github.com/Kuestenlogik/Bowire/issues/170) | Bowire | [Mock-server fault injection — latency / errors / drops / partial responses](#issue-kuestenlogik-bowire-170) | ⬜ Backlog |  |
 | [171](https://github.com/Kuestenlogik/Bowire/issues/171) | Bowire | [Snapshot testing — capture-once, diff-on-change response baselines](#issue-kuestenlogik-bowire-171) | ⬜ Backlog |  |
 | [174](https://github.com/Kuestenlogik/Bowire/issues/174) | Bowire | [Data-driven tests — CSV / JSON / generator parameterisation](#issue-kuestenlogik-bowire-174) | ⬜ Backlog |  |
-| [180](https://github.com/Kuestenlogik/Bowire/issues/180) | Bowire | [Assertion DSL for collection / recording replay](#issue-kuestenlogik-bowire-180) | ⬜ Backlog |  |
 | [181](https://github.com/Kuestenlogik/Bowire/issues/181) | Bowire | [bowire test CLI runner with JUnit / SARIF / TTY output](#issue-kuestenlogik-bowire-181) | ⬜ Backlog |  |
 | [191](https://github.com/Kuestenlogik/Bowire/issues/191) | Bowire | [Contract testing — Pact-style publish / verify CLI](#issue-kuestenlogik-bowire-191) | ⬜ Backlog |  |
 | [208](https://github.com/Kuestenlogik/Bowire/issues/208) | Bowire | [Variable resolver — Phase 5: OS keyring + AI re-roll + streaming](#issue-kuestenlogik-bowire-208) | ⬜ Backlog |  |
+| [180](https://github.com/Kuestenlogik/Bowire/issues/180) | Bowire | [Assertion DSL for collection / recording replay](#issue-kuestenlogik-bowire-180) | ✅ Done |  |
 
 ### v2.3 — Security pillar: shift-left scanner, OWASP coverage, auth recording *(due 2026-07-24)*
 
@@ -159,7 +159,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [239](https://github.com/Kuestenlogik/Bowire/issues/239) | Bowire | [Map widget: time-scrubber + playback for accumulated streams](#issue-kuestenlogik-bowire-239) | ⬜ Backlog |  |
 | [240](https://github.com/Kuestenlogik/Bowire/issues/240) | Bowire | [Map widget: per-entity grouping via configurable track-id field](#issue-kuestenlogik-bowire-240) | ⬜ Backlog |  |
 
-### v2.8 — Workbench UX polish: freeform REST, header library, connection pill
+### v2.8 — Workbench UX polish: freeform REST, header library, i18n
 
 **0/5 done** · 5 backlog
 
@@ -229,14 +229,6 @@ Today a recording or collection runs sequentially: step 1 → step 2 → step 3,
 
 Today every Bowire instance maintains its own URL list — manually typed in the sidebar, persisted to localStorage / disk. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/136)
 
-#### <a id="issue-kuestenlogik-bowire-140"></a>⬜ Backlog · [#140](https://github.com/Kuestenlogik/Bowire/issues/140) Per-mode 'Saved Configs' / Presets (distinct from cross-workflow favorites)
-
-Two concepts have been conflated under "favorites" in the workbench's evolution: [[more]](https://github.com/Kuestenlogik/Bowire/issues/140)
-
-#### <a id="issue-kuestenlogik-bowire-144"></a>⬜ Backlog · [#144](https://github.com/Kuestenlogik/Bowire/issues/144) Large-recording capture/replay — chunked disk layout, lazy step-load, GB-scale
-
-Recordings today scale to KB-to-single-digit-MB before the architecture pushes back: [[more]](https://github.com/Kuestenlogik/Bowire/issues/144)
-
 #### <a id="issue-kuestenlogik-bowire-145"></a>⬜ Backlog · [#145](https://github.com/Kuestenlogik/Bowire/issues/145) Deprecate ${name} in favour of {{name}} (multi-phase migration)
 
 After #125 v1 landed, Bowire has two interpolation syntaxes that resolve identically: - `${name}` — Bowire's original Bash-style syntax (escape: `$${name}`) - `{{name}}` — Postman / Mustache convention (escape: `{{{{name}}}}`) [[more]](https://github.com/Kuestenlogik/Bowire/issues/145)
@@ -284,6 +276,14 @@ Two divergent .bww shapes shipped in v2.0: [[more]](https://github.com/Kuestenlo
 #### <a id="issue-kuestenlogik-bowire-287"></a>⬜ Backlog · [#287](https://github.com/Kuestenlogik/Bowire/issues/287) Dual-MCP endpoint: MapBowireMcp + MapBowireMcpAdapter coexistence when --enable-mcp-adapter is on
 
 Today `app.MapBowireMcp()` and `app.MapBowireMcpAdapter()` are mutually exclusive — calling both either errors at startup or one silently shadows the other. #37 left this open because the adapter mode was a v2.0 late add and the routing-resolution between the two endpoints wasn't reconciled. [[more]](https://github.com/Kuestenlogik/Bowire/issues/287)
+
+#### <a id="issue-kuestenlogik-bowire-140"></a>✅ Done · [#140](https://github.com/Kuestenlogik/Bowire/issues/140) Per-mode 'Saved Configs' / Presets (distinct from cross-workflow favorites)
+
+Two concepts have been conflated under "favorites" in the workbench's evolution: [[more]](https://github.com/Kuestenlogik/Bowire/issues/140)
+
+#### <a id="issue-kuestenlogik-bowire-144"></a>✅ Done · [#144](https://github.com/Kuestenlogik/Bowire/issues/144) Large-recording capture/replay — chunked disk layout, lazy step-load, GB-scale
+
+Recordings today scale to KB-to-single-digit-MB before the architecture pushes back: [[more]](https://github.com/Kuestenlogik/Bowire/issues/144)
 
 #### <a id="issue-kuestenlogik-bowire-197"></a>✅ Done · [#197](https://github.com/Kuestenlogik/Bowire/issues/197) Deprecate + unlist Kuestenlogik.Bowire.Extension.MapLibre on nuget.org after v2.0 ships
 
@@ -433,10 +433,6 @@ Regression-testing API responses is hard without a baseline. A real assertion DS
 
 Same request, N different inputs is a standard testing pattern. Today an operator would have to clone a collection item N times or write a script. Both flows lose the structured "same test, different data" semantics that test reporters expect. [[more]](https://github.com/Kuestenlogik/Bowire/issues/174)
 
-#### <a id="issue-kuestenlogik-bowire-180"></a>⬜ Backlog · [#180](https://github.com/Kuestenlogik/Bowire/issues/180) Assertion DSL for collection / recording replay
-
-Recordings + Mocks let an operator capture and replay traffic, but nothing in the workbench can answer "did the response match what I expected?" Today the only assertion is "the call returned without throwing" — fine for a developer probing, useless as a regression suite. [[more]](https://github.com/Kuestenlogik/Bowire/issues/180)
-
 #### <a id="issue-kuestenlogik-bowire-181"></a>⬜ Backlog · [#181](https://github.com/Kuestenlogik/Bowire/issues/181) bowire test CLI runner with JUnit / SARIF / TTY output
 
 Bowire is currently a UI tool. The "shift-left" / "build safer apps through continuous testing" positioning needs a headless surface that runs in CI and emits CI-friendly output (JUnit-XML, SARIF, GitHub annotations). Without it, the workbench stays a one-developer-at-a-time explorer. [[more]](https://github.com/Kuestenlogik/Bowire/issues/181)
@@ -448,6 +444,10 @@ Microservice teams break each other when one team changes an API without consult
 #### <a id="issue-kuestenlogik-bowire-208"></a>⬜ Backlog · [#208](https://github.com/Kuestenlogik/Bowire/issues/208) Variable resolver — Phase 5: OS keyring + AI re-roll + streaming
 
 @-
+
+#### <a id="issue-kuestenlogik-bowire-180"></a>✅ Done · [#180](https://github.com/Kuestenlogik/Bowire/issues/180) Assertion DSL for collection / recording replay
+
+Recordings + Mocks let an operator capture and replay traffic, but nothing in the workbench can answer "did the response match what I expected?" Today the only assertion is "the call returned without throwing" — fine for a developer probing, useless as a regression suite. [[more]](https://github.com/Kuestenlogik/Bowire/issues/180)
 
 ### v2.3 — Security pillar: shift-left scanner, OWASP coverage, auth recording *(due 2026-07-24)*
 
@@ -647,7 +647,7 @@ Add a **time-scrubber + playback control** to the map widget for stream-driven s
 
 Group stream frames by an explicit **track identifier** so the map can show N parallel entities — each with its own colour, trajectory, selection state — instead of merging everything into one pile of pins. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/240)
 
-### v2.8 — Workbench UX polish: freeform REST, header library, connection pill
+### v2.8 — Workbench UX polish: freeform REST, header library, i18n
 
 #### <a id="issue-kuestenlogik-bowire-47"></a>⬜ Backlog · [#47](https://github.com/Kuestenlogik/Bowire/issues/47) Sidebar display: method name vs path toggle
 
