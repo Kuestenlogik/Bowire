@@ -2283,7 +2283,13 @@
         // the "install missing plugins" banner instead of cryptic
         // "no such protocol" errors at first request. Empty / absent
         // means no requirement, current behaviour preserved.
-        'bowire_plugin_pins'
+        'bowire_plugin_pins',
+        // #126 — pre/post-script source per method. Lives on the
+        // method (so it travels with collections + recordings) and
+        // is round-tripped through workspace export so a team
+        // member opening the .bww file gets the same dynamic
+        // behaviour the author wrote.
+        'bowire_method_scripts'
         // bowire_request_tabs intentionally NOT listed here — open
         // tabs are browser session state (which row I happened to be
         // looking at), not project content. Persisted under wsKey()
@@ -2325,7 +2331,10 @@
         bowire_recordings_trash:     'recordingsTrash',
         bowire_favorites:            'favorites',
         bowire_benchmarks:           'benchmarks',
-        bowire_flows:                'flows'
+        bowire_flows:                'flows',
+        // #126 — per-method script source. Round-trips through
+        // .bww as `methodScripts` keyed by `service::method`.
+        bowire_method_scripts:       'methodScripts'
     };
     // Inverse of _V2_DATA_KEY_MAP — used by importWorkspaceJson to
     // route v2-canonical field names back to the localStorage bucket
@@ -2356,6 +2365,7 @@
         benchmarks:          [],
         flows:               [],
         scripts:             [],   // disk-only; browser exports as []
+        methodScripts:       {},   // #126 — per-method pre/post-script source
         presets:             {}
     };
 

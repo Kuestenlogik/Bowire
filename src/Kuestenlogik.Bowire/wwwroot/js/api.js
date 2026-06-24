@@ -1,3 +1,20 @@
+    // #126 Phase D — capture the active method's pre/post-script
+    // source so a captured recording step can re-run the exact same
+    // dynamic shape on replay (signed bodies, captured tokens,
+    // assertion expectations, …). Returns null when both scripts
+    // are empty so the captured step stays lean for the common
+    // case where the operator isn't using scripts.
+    function _captureRecordingScripts(svc, method) {
+        try {
+            if (typeof getMethodScripts !== 'function') return null;
+            var s = getMethodScripts(svc, method);
+            var pre = (s && s.preScript) || '';
+            var post = (s && s.postScript) || '';
+            if (!pre.trim() && !post.trim()) return null;
+            return { preScript: pre, postScript: post };
+        } catch (_) { return null; }
+    }
+
     // ---- API Calls ----
     async function fetchServices() {
         // Mark discovery in flight + clear stale errors so the empty-state
@@ -383,7 +400,15 @@
                 runAssertions(service, method, result.status, lastResponseJson);
 
                 // ---- Post-response script ----
-                runPostResponseScript(service, method, lastResponseJson);
+                // #126 — extra response info (status, durationMs, response
+                // metadata) feeds the typed ctx.response surface so the
+                // post-script can read response.status, response.headers,
+                // response.durationMs without re-deriving them.
+                runPostResponseScript(service, method, lastResponseJson, {
+                    status: result.status,
+                    durationMs: result.duration_ms,
+                    headers: result.metadata || {}
+                });
             }
 
             addHistory({
@@ -435,7 +460,12 @@
                 discriminator: (result && typeof result === 'object' && result.discriminator) || null,
                 interpretations: (result && typeof result === 'object' && Array.isArray(result.interpretations))
                     ? result.interpretations
-                    : null
+                    : null,
+                // #126 Phase D — capture pre/post-script source so replay
+                // re-runs the same dynamic shape that produced this
+                // step. Skipped when the method has no scripts (the
+                // common case) to keep the recording payload lean.
+                scripts: _captureRecordingScripts(service, method)
             });
         } catch (e) {
             responseError = e.message;
@@ -570,7 +600,11 @@
             if (streamResponseObj && streamResponseObj.data !== undefined) {
                 try { streamResponseObj = JSON.parse(streamResponseObj.data); } catch {}
             }
-            runPostResponseScript(service, method, streamResponseObj);
+            runPostResponseScript(service, method, streamResponseObj, {
+                status: 'OK',
+                durationMs: elapsed,
+                headers: {}
+            });
 
             addHistory({
                 service,
@@ -617,7 +651,11 @@
                     };
                 }),
                 httpPath: selectedMethod?.httpPath || null,
-                httpVerb: selectedMethod?.httpMethod || null
+                httpVerb: selectedMethod?.httpMethod || null,
+                // #126 Phase D — script source riding alongside the
+                // captured step so replay reproduces the dynamic
+                // shape (signed headers, captured tokens, …).
+                scripts: _captureRecordingScripts(service, method)
             });
 
             render();
