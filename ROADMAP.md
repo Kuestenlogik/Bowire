@@ -140,6 +140,26 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [98](https://github.com/Kuestenlogik/Bowire/issues/98) | Bowire | [Multi-tenant Phase F — user chip, scoped state copy, admin impersonation](#issue-kuestenlogik-bowire-98) | ⬜ Backlog |  |
 | [284](https://github.com/Kuestenlogik/Bowire/issues/284) | Bowire | [Multi-tenant Phase D — per-user plugin installs (system tier + per-user overlay)](#issue-kuestenlogik-bowire-284) | ⬜ Backlog |  |
 
+### v2.7 — Geospatial map: trajectories, playback & entity grouping
+
+**0/3 done** · 3 backlog
+
+| # | Project | Title | Status | Tags |
+|---|---|---|---|---|
+| [238](https://github.com/Kuestenlogik/Bowire/issues/238) | Bowire | [Map widget: trajectory LineString between sequential frames](#issue-kuestenlogik-bowire-238) | ⬜ Backlog |  |
+| [239](https://github.com/Kuestenlogik/Bowire/issues/239) | Bowire | [Map widget: time-scrubber + playback for accumulated streams](#issue-kuestenlogik-bowire-239) | ⬜ Backlog |  |
+| [240](https://github.com/Kuestenlogik/Bowire/issues/240) | Bowire | [Map widget: per-entity grouping via configurable track-id field](#issue-kuestenlogik-bowire-240) | ⬜ Backlog |  |
+
+### v2.8 — Workbench UX polish: freeform REST, header library, connection pill
+
+**0/3 done** · 3 backlog
+
+| # | Project | Title | Status | Tags |
+|---|---|---|---|---|
+| [47](https://github.com/Kuestenlogik/Bowire/issues/47) | Bowire | [Sidebar display: method name vs path toggle](#issue-kuestenlogik-bowire-47) | ⬜ Backlog | `area:workbench` |
+| [93](https://github.com/Kuestenlogik/Bowire/issues/93) | Bowire | [Topbar: connection-state pill (aggregate + per-URL popover)](#issue-kuestenlogik-bowire-93) | ⬜ Backlog |  |
+| [256](https://github.com/Kuestenlogik/Bowire/issues/256) | Bowire | [Freeform builder: schema-free ad-hoc REST — URL + verb + body, Postman-style](#issue-kuestenlogik-bowire-256) | ⬜ Backlog |  |
+
 ### v3.0 — Cleanups + breaking-change cuts
 
 **0/1 done** · 1 backlog
@@ -162,11 +182,9 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [37](https://github.com/Kuestenlogik/Bowire/issues/37) | Bowire | [Bowire.Mcp — remaining tools + adapter modes](#issue-kuestenlogik-bowire-37) | ⬜ Backlog | `area:mcp` |
 | [44](https://github.com/Kuestenlogik/Bowire/issues/44) | Bowire | [Sidecar packaging — Docker / Compose / Kubernetes](#issue-kuestenlogik-bowire-44) | ⬜ Backlog | `area:docs` |
 | [46](https://github.com/Kuestenlogik/Bowire/issues/46) | Bowire | [MCP server-side notifications via IInlineSseSubscriber](#issue-kuestenlogik-bowire-46) | ⬜ Backlog | `area:mcp` |
-| [47](https://github.com/Kuestenlogik/Bowire/issues/47) | Bowire | [Sidebar display: method name vs path toggle](#issue-kuestenlogik-bowire-47) | ⬜ Backlog | `area:workbench` |
 | [50](https://github.com/Kuestenlogik/Bowire/issues/50) | Bowire | [Marketing site — gallery / lightbox layer on solutions/*](#issue-kuestenlogik-bowire-50) | ⬜ Backlog | `area:site` |
 | [51](https://github.com/Kuestenlogik/Bowire/issues/51) | Bowire | [Marketing site — migrate <img> tags to picture.html partial](#issue-kuestenlogik-bowire-51) | ⬜ Backlog | `area:site` |
 | [53](https://github.com/Kuestenlogik/Bowire/issues/53) | Bowire | [Marketing site — second row of specialist comparisons](#issue-kuestenlogik-bowire-53) | ⬜ Backlog | `area:site` |
-| [93](https://github.com/Kuestenlogik/Bowire/issues/93) | Bowire | [Topbar: connection-state pill (aggregate + per-URL popover)](#issue-kuestenlogik-bowire-93) | ⬜ Backlog |  |
 | [95](https://github.com/Kuestenlogik/Bowire/issues/95) | Bowire | [Header Library: named, scoped, toggleable header sets](#issue-kuestenlogik-bowire-95) | ⬜ Backlog |  |
 | [103](https://github.com/Kuestenlogik/Bowire/issues/103) | Bowire | [Generate boat photos: submarine, ferry, tugboat, lighthouse](#issue-kuestenlogik-bowire-103) | ⬜ Backlog |  |
 | [110](https://github.com/Kuestenlogik/Bowire/issues/110) | Bowire | [Site: surface the AI assistant in the launch wizard + quickstart](#issue-kuestenlogik-bowire-110) | ⬜ Backlog |  |
@@ -179,10 +197,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [216](https://github.com/Kuestenlogik/Bowire/issues/216) | Bowire | [Test infra: WebApplicationFactory fixture for InvokeEndpoints + UnaryReplayer coverage](#issue-kuestenlogik-bowire-216) | ⬜ Backlog |  |
 | [236](https://github.com/Kuestenlogik/Bowire/issues/236) | Bowire | [Release cascade: wait for nuget.org indexing before dispatching to siblings](#issue-kuestenlogik-bowire-236) | ⬜ Backlog |  |
 | [237](https://github.com/Kuestenlogik/Bowire/issues/237) | Bowire | [WINGET_TOKEN expired — rotate to unblock winget publish for v2.0.0+](#issue-kuestenlogik-bowire-237) | ⬜ Backlog |  |
-| [238](https://github.com/Kuestenlogik/Bowire/issues/238) | Bowire | [Map widget: trajectory LineString between sequential frames](#issue-kuestenlogik-bowire-238) | ⬜ Backlog |  |
-| [239](https://github.com/Kuestenlogik/Bowire/issues/239) | Bowire | [Map widget: time-scrubber + playback for accumulated streams](#issue-kuestenlogik-bowire-239) | ⬜ Backlog |  |
-| [240](https://github.com/Kuestenlogik/Bowire/issues/240) | Bowire | [Map widget: per-entity grouping via configurable track-id field](#issue-kuestenlogik-bowire-240) | ⬜ Backlog |  |
-| [256](https://github.com/Kuestenlogik/Bowire/issues/256) | Bowire | [Freeform builder: schema-free ad-hoc REST — URL + verb + body, Postman-style](#issue-kuestenlogik-bowire-256) | ⬜ Backlog |  |
 | [258](https://github.com/Kuestenlogik/Bowire/issues/258) | Bowire | [Console toolbar: distinct icons for Clear selection / Clear all / Close](#issue-kuestenlogik-bowire-258) | ⬜ Backlog |  |
 
 ## Details
@@ -569,6 +583,36 @@ Phase F of the multi-tenant rollout — the UI affordances that turn "multi-user
 
 Extracted from #28 — **Phase D** of the multi-tenant rollout. Tracked separately so it can be sized + scheduled. [[more]](https://github.com/Kuestenlogik/Bowire/issues/284)
 
+### v2.7 — Geospatial map: trajectories, playback & entity grouping
+
+#### <a id="issue-kuestenlogik-bowire-238"></a>⬜ Backlog · [#238](https://github.com/Kuestenlogik/Bowire/issues/238) Map widget: trajectory LineString between sequential frames
+
+Add an optional **trajectory line** (MapLibre LineString layer) connecting sequential frames on the map widget, so a stream of position updates renders as a moving path instead of a scatter of disconnected dots. Default OFF (current behaviour); operator toggles it on per-method or per-session. [[more]](https://github.com/Kuestenlogik/Bowire/issues/238)
+
+#### <a id="issue-kuestenlogik-bowire-239"></a>⬜ Backlog · [#239](https://github.com/Kuestenlogik/Bowire/issues/239) Map widget: time-scrubber + playback for accumulated streams
+
+Add a **time-scrubber + playback control** to the map widget for stream-driven sessions, so an operator can rewind to any point in the accumulated frame history, play forward at variable speed, and pause to inspect a specific moment. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/239)
+
+#### <a id="issue-kuestenlogik-bowire-240"></a>⬜ Backlog · [#240](https://github.com/Kuestenlogik/Bowire/issues/240) Map widget: per-entity grouping via configurable track-id field
+
+Group stream frames by an explicit **track identifier** so the map can show N parallel entities — each with its own colour, trajectory, selection state — instead of merging everything into one pile of pins. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/240)
+
+### v2.8 — Workbench UX polish: freeform REST, header library, connection pill
+
+#### <a id="issue-kuestenlogik-bowire-47"></a>⬜ Backlog · [#47](https://github.com/Kuestenlogik/Bowire/issues/47) Sidebar display: method name vs path toggle
+
+> `area:workbench`
+
+For REST endpoints, offer a per-sidebar toggle (sticky in localStorage) that flips the label between \`GetForecast\` and \`GET /api/Weather/forecast/{city}\`. [[more]](https://github.com/Kuestenlogik/Bowire/issues/47)
+
+#### <a id="issue-kuestenlogik-bowire-93"></a>⬜ Backlog · [#93](https://github.com/Kuestenlogik/Bowire/issues/93) Topbar: connection-state pill (aggregate + per-URL popover)
+
+Today the user has to scroll the sidebar to know whether their configured URL is actually connected — the dot lives next to the URL input inside the source selector. That's the right place for *editing* the URL, but the wrong place for *monitoring* the connection. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/93)
+
+#### <a id="issue-kuestenlogik-bowire-256"></a>⬜ Backlog · [#256](https://github.com/Kuestenlogik/Bowire/issues/256) Freeform builder: schema-free ad-hoc REST — URL + verb + body, Postman-style
+
+The freeform request builder today requires a `service` + `method` name even when the operator just wants to `POST https://api.example.com/foo` with a body. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/256)
+
 ### v3.0 — Cleanups + breaking-change cuts
 
 #### <a id="issue-kuestenlogik-bowire-283"></a>⬜ Backlog · [#283](https://github.com/Kuestenlogik/Bowire/issues/283) Retire v1 .bww format migration shim (introduced in #282)
@@ -627,12 +671,6 @@ Published \`ghcr.io/kuestenlogik/bowire:latest\` image already; missing: [[more]
 
 Close the second half of the v0.8.11 design. [[more]](https://github.com/Kuestenlogik/Bowire/issues/46)
 
-#### <a id="issue-kuestenlogik-bowire-47"></a>⬜ Backlog · [#47](https://github.com/Kuestenlogik/Bowire/issues/47) Sidebar display: method name vs path toggle
-
-> `area:workbench`
-
-For REST endpoints, offer a per-sidebar toggle (sticky in localStorage) that flips the label between \`GetForecast\` and \`GET /api/Weather/forecast/{city}\`. [[more]](https://github.com/Kuestenlogik/Bowire/issues/47)
-
 #### <a id="issue-kuestenlogik-bowire-50"></a>⬜ Backlog · [#50](https://github.com/Kuestenlogik/Bowire/issues/50) Marketing site — gallery / lightbox layer on solutions/*
 
 > `area:site`
@@ -650,10 +688,6 @@ Image-perf pipeline shipped (sharp → AVIF + WebP, three variant widths; pictur
 > `area:site`
 
 The comparison tableʼs "top-5-competitors check" framing already lets us mention more tools in the best-for strip without committing them to a full table row. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/53)
-
-#### <a id="issue-kuestenlogik-bowire-93"></a>⬜ Backlog · [#93](https://github.com/Kuestenlogik/Bowire/issues/93) Topbar: connection-state pill (aggregate + per-URL popover)
-
-Today the user has to scroll the sidebar to know whether their configured URL is actually connected — the dot lives next to the URL input inside the source selector. That's the right place for *editing* the URL, but the wrong place for *monitoring* the connection. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/93)
 
 #### <a id="issue-kuestenlogik-bowire-95"></a>⬜ Backlog · [#95](https://github.com/Kuestenlogik/Bowire/issues/95) Header Library: named, scoped, toggleable header sets
 
@@ -702,22 +736,6 @@ When the Bowire `Release` workflow finishes a new version, it does these steps b
 #### <a id="issue-kuestenlogik-bowire-237"></a>⬜ Backlog · [#237](https://github.com/Kuestenlogik/Bowire/issues/237) WINGET_TOKEN expired — rotate to unblock winget publish for v2.0.0+
 
 During the v2.0.0 release publish on 2026-06-21, the `winget` workflow failed at the `wingetcreate submit` step: [[more]](https://github.com/Kuestenlogik/Bowire/issues/237)
-
-#### <a id="issue-kuestenlogik-bowire-238"></a>⬜ Backlog · [#238](https://github.com/Kuestenlogik/Bowire/issues/238) Map widget: trajectory LineString between sequential frames
-
-Add an optional **trajectory line** (MapLibre LineString layer) connecting sequential frames on the map widget, so a stream of position updates renders as a moving path instead of a scatter of disconnected dots. Default OFF (current behaviour); operator toggles it on per-method or per-session. [[more]](https://github.com/Kuestenlogik/Bowire/issues/238)
-
-#### <a id="issue-kuestenlogik-bowire-239"></a>⬜ Backlog · [#239](https://github.com/Kuestenlogik/Bowire/issues/239) Map widget: time-scrubber + playback for accumulated streams
-
-Add a **time-scrubber + playback control** to the map widget for stream-driven sessions, so an operator can rewind to any point in the accumulated frame history, play forward at variable speed, and pause to inspect a specific moment. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/239)
-
-#### <a id="issue-kuestenlogik-bowire-240"></a>⬜ Backlog · [#240](https://github.com/Kuestenlogik/Bowire/issues/240) Map widget: per-entity grouping via configurable track-id field
-
-Group stream frames by an explicit **track identifier** so the map can show N parallel entities — each with its own colour, trajectory, selection state — instead of merging everything into one pile of pins. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/240)
-
-#### <a id="issue-kuestenlogik-bowire-256"></a>⬜ Backlog · [#256](https://github.com/Kuestenlogik/Bowire/issues/256) Freeform builder: schema-free ad-hoc REST — URL + verb + body, Postman-style
-
-The freeform request builder today requires a `service` + `method` name even when the operator just wants to `POST https://api.example.com/foo` with a body. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/256)
 
 #### <a id="issue-kuestenlogik-bowire-258"></a>⬜ Backlog · [#258](https://github.com/Kuestenlogik/Bowire/issues/258) Console toolbar: distinct icons for Clear selection / Clear all / Close
 
