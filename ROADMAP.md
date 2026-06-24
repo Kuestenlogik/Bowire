@@ -89,15 +89,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [222](https://github.com/Kuestenlogik/Bowire/issues/222) | Bowire | [Parallel sessions Phase 1 — local fan-out from recording / collection toolbar (closeout of #132 Phase 1)](#issue-kuestenlogik-bowire-222) | ✅ Done |  |
 | [223](https://github.com/Kuestenlogik/Bowire/issues/223) | Bowire | [Consolidate the two mock-server registries — MockRegistry vs BowireMockHostManager](#issue-kuestenlogik-bowire-223) | ✅ Done |  |
 
-### v2.0.2 — freeform builder polish + ad-hoc REST + walkthrough fixes
-
-**1/2 done** · 1 backlog
-
-| # | Project | Title | Status | Tags |
-|---|---|---|---|---|
-| [258](https://github.com/Kuestenlogik/Bowire/issues/258) | Bowire | [Console toolbar: distinct icons for Clear selection / Clear all / Close](#issue-kuestenlogik-bowire-258) | ⬜ Backlog |  |
-| [257](https://github.com/Kuestenlogik/Bowire/issues/257) | Bowire | [richErrorDetail picks up problem+json status / type / instance](#issue-kuestenlogik-bowire-257) | ✅ Done |  |
-
 ### v2.1 — Scripting, variable resolver, throughput surface *(due 2026-06-30)*
 
 **3/15 done** · 12 backlog
@@ -232,6 +223,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [239](https://github.com/Kuestenlogik/Bowire/issues/239) | Bowire | [Map widget: time-scrubber + playback for accumulated streams](#issue-kuestenlogik-bowire-239) | ⬜ Backlog |  |
 | [240](https://github.com/Kuestenlogik/Bowire/issues/240) | Bowire | [Map widget: per-entity grouping via configurable track-id field](#issue-kuestenlogik-bowire-240) | ⬜ Backlog |  |
 | [256](https://github.com/Kuestenlogik/Bowire/issues/256) | Bowire | [Freeform builder: schema-free ad-hoc REST — URL + verb + body, Postman-style](#issue-kuestenlogik-bowire-256) | ⬜ Backlog |  |
+| [258](https://github.com/Kuestenlogik/Bowire/issues/258) | Bowire | [Console toolbar: distinct icons for Clear selection / Clear all / Close](#issue-kuestenlogik-bowire-258) | ⬜ Backlog |  |
 
 ## Details
 
@@ -530,16 +522,6 @@ Parent tracker: #132 (full local + distributed acceptance, kept open on v2.1 for
 #### <a id="issue-kuestenlogik-bowire-223"></a>✅ Done · [#223](https://github.com/Kuestenlogik/Bowire/issues/223) Consolidate the two mock-server registries — MockRegistry vs BowireMockHostManager
 
 The workbench currently runs two parallel registries for mock-server lifecycle: [[more]](https://github.com/Kuestenlogik/Bowire/issues/223)
-
-### v2.0.2 — freeform builder polish + ad-hoc REST + walkthrough fixes
-
-#### <a id="issue-kuestenlogik-bowire-258"></a>⬜ Backlog · [#258](https://github.com/Kuestenlogik/Bowire/issues/258) Console toolbar: distinct icons for Clear selection / Clear all / Close
-
-All three buttons used the same X glyph (Close + Clear selection) or text 'Clear' (Clear all). New `selectionClear` SVG (dashed rectangle + interior X) for Clear selection so the three actions read as three different intents. i18n-safe — no labels to translate.
-
-#### <a id="issue-kuestenlogik-bowire-257"></a>✅ Done · [#257](https://github.com/Kuestenlogik/Bowire/issues/257) richErrorDetail picks up problem+json status / type / instance
-
-Failed REST/gRPC invocations were showing just 'Error' in the console because richErrorDetail looked for `status_code`/`statusCode`/`httpStatus`/`http_status` while the server's problem+json carries the HTTP code on a bare `status` field. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/257)
 
 ### v2.1 — Scripting, variable resolver, throughput surface *(due 2026-06-30)*
 
@@ -970,6 +952,10 @@ Group stream frames by an explicit **track identifier** so the map can show N pa
 #### <a id="issue-kuestenlogik-bowire-256"></a>⬜ Backlog · [#256](https://github.com/Kuestenlogik/Bowire/issues/256) Freeform builder: schema-free ad-hoc REST — URL + verb + body, Postman-style
 
 The freeform request builder today requires a `service` + `method` name even when the operator just wants to `POST https://api.example.com/foo` with a body. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/256)
+
+#### <a id="issue-kuestenlogik-bowire-258"></a>⬜ Backlog · [#258](https://github.com/Kuestenlogik/Bowire/issues/258) Console toolbar: distinct icons for Clear selection / Clear all / Close
+
+All three buttons used the same X glyph (Close + Clear selection) or text 'Clear' (Clear all). New `selectionClear` SVG (dashed rectangle + interior X) for Clear selection so the three actions read as three different intents. i18n-safe — no labels to translate.
 
 ---
 
