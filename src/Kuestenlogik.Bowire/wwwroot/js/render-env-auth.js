@@ -356,7 +356,7 @@
                 }
             },
                 el('span', { className: 'bowire-app-drawer-item-icon', innerHTML: svgIcon('layers') }),
-                el('span', { className: 'bowire-app-drawer-item-label', textContent: 'Manage workspaces…' })
+                el('span', { className: 'bowire-app-drawer-item-label', textContent: 'Manage workspaces' })
             ));
             body.appendChild(wsSection);
         }
@@ -2531,9 +2531,7 @@
                     },
                         el('span', { className: 'bowire-workspace-menu-item-icon',
                             innerHTML: (typeof svgIcon === 'function') ? svgIcon('list') : '☰' }),
-                        el('span', { textContent: workspaces.length > 0
-                            ? 'Show all workspaces…'
-                            : 'Manage workspaces…' })
+                        el('span', { textContent: 'Manage workspaces' })
                     )
                     // Bottom "Rename current…" / "Edit current…" / "Delete
                     // current" items retired — per-row pencil / gear / trash

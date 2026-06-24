@@ -42,9 +42,50 @@
 
     var BOWIRE_AI_HINTS = [
         {
+            id: 'no-workspace-yet',
+            level: 'info',
+            match: function (c) {
+                // No workspace at all → the 'pick a method' hint
+                // pointed at a sidebar that has nothing in it. Steer
+                // the operator toward the actual next step.
+                return !c.method
+                    && typeof workspaces !== 'undefined'
+                    && Array.isArray(workspaces)
+                    && workspaces.length === 0;
+            },
+            render: function () {
+                return 'No workspace yet. Create one to discover services and start invoking methods — once you do, this hint feed will surface context-aware tips here.';
+            }
+        },
+        {
+            id: 'no-services-yet',
+            level: 'info',
+            match: function (c) {
+                // Workspace exists but no services discovered yet —
+                // point the operator at the URL row instead of asking
+                // them to pick a method that doesn't exist yet.
+                return !c.method
+                    && typeof services !== 'undefined'
+                    && Array.isArray(services)
+                    && services.length === 0
+                    && typeof workspaces !== 'undefined'
+                    && workspaces.length > 0;
+            },
+            render: function () {
+                return 'No services discovered yet. Add a URL or upload a schema in the Sources panel — the hint feed lights up once methods land in the Discover sidebar.';
+            }
+        },
+        {
             id: 'no-method-selected',
             level: 'info',
-            match: function (c) { return !c.method; },
+            match: function (c) {
+                // Only when there ARE services + workspace exists →
+                // 'pick a method' is actionable.
+                return !c.method
+                    && typeof services !== 'undefined'
+                    && Array.isArray(services)
+                    && services.length > 0;
+            },
             render: function () {
                 return 'Pick a method in the sidebar to see context-aware hints here.';
             }

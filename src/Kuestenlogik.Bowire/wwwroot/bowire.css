@@ -2098,10 +2098,14 @@ not just
 }
 .bowire-workspace-menu-item-icon {
     width: 14px;
+    height: 14px;
     display: inline-flex;
+    align-items: center;
     justify-content: center;
     color: var(--bowire-text-secondary);
+    flex-shrink: 0;
 }
+.bowire-workspace-menu-item-icon svg { width: 14px; height: 14px; display: block; }
 /* Per-row right cluster: [check] [edit] [trash].
    The check leads as the always-reserved active-state slot
    (visibility-toggle keeps its width stable on every row so
