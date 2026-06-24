@@ -2392,11 +2392,17 @@
                             // present so the three surfaces (sidebar /
                             // overview / dropdown) share one source of
                             // truth.
+                            // Def shape from _workspaceRowActionDefs:
+                            // { key, icon, label, title, onClick }. My
+                            // earlier cut wrote d.id + def.run which
+                            // the helper doesn't expose, so every
+                            // tool resolved to null and the dropdown
+                            // looked tool-less even after restoration.
                             var defs = (typeof _workspaceRowActionDefs === 'function')
                                 ? _workspaceRowActionDefs(w) : null;
-                            var renameDef = defs && defs.find(function (d) { return d.id === 'rename'; });
-                            var sastDef = defs && defs.find(function (d) { return d.id === 'save-template'; });
-                            var deleteDef = defs && defs.find(function (d) { return d.id === 'delete'; });
+                            var renameDef = defs && defs.find(function (d) { return d.key === 'rename'; });
+                            var sastDef = defs && defs.find(function (d) { return d.key === 'save-template'; });
+                            var deleteDef = defs && defs.find(function (d) { return d.key === 'delete'; });
                             function _toolBtn(def, danger) {
                                 if (!def) return null;
                                 var classes = 'bowire-workspace-menu-item-tool'
@@ -2404,13 +2410,13 @@
                                 return el('button', {
                                     type: 'button',
                                     className: classes,
-                                    title: def.label,
+                                    title: def.title || def.label,
                                     'aria-label': def.label,
                                     innerHTML: (typeof svgIcon === 'function') ? svgIcon(def.icon) : def.icon,
                                     onClick: function (e) {
                                         e.stopPropagation();
                                         workspaceMenuOpen = false;
-                                        if (typeof def.run === 'function') def.run();
+                                        if (typeof def.onClick === 'function') def.onClick();
                                     }
                                 });
                             }
