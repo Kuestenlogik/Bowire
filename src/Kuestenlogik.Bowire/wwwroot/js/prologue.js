@@ -921,6 +921,30 @@
         try { localStorage.setItem('bowire_workspaces_sort', mode); }
         catch { /* quota / disabled — survive */ }
     }
+    // Sort-only (no filter) — used by surfaces that don't have their
+    // own search input (topbar dropdown, workspaces overview list).
+    // The sort setting applies cross-cuttingly via the shared
+    // workspacesSortBy state; only the sidebar's filterbar layers
+    // the search filter on top via getSortedFilteredWorkspaces.
+    function getSortedWorkspaces() {
+        var list = Array.isArray(workspaces) ? workspaces.slice() : [];
+        if (workspacesSortBy === 'alphabetical') {
+            list.sort(function (a, b) {
+                return (a.name || '').localeCompare(b.name || '');
+            });
+        } else if (workspacesSortBy === 'created') {
+            list.sort(function (a, b) {
+                return (b.createdAt || 0) - (a.createdAt || 0);
+            });
+        } else {
+            list.sort(function (a, b) {
+                var aL = a.lastOpenedAt || a.createdAt || 0;
+                var bL = b.lastOpenedAt || b.createdAt || 0;
+                return bL - aL;
+            });
+        }
+        return list;
+    }
     function getSortedFilteredWorkspaces() {
         var list = Array.isArray(workspaces) ? workspaces.slice() : [];
         var q = (workspacesSearchQuery || '').trim().toLowerCase();

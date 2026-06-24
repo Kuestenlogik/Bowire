@@ -1355,29 +1355,59 @@
                 filterRow.appendChild(searchHost);
             }
             if (opts.sort && Array.isArray(opts.sort.options) && opts.sort.options.length > 0) {
-                var sortHost = el('label', {
-                    className: 'bowire-sidebar-filterbar-sort',
-                    title: opts.sort.title || 'Sort'
-                });
-                var sortSel = el('select', {
-                    className: 'bowire-sidebar-filterbar-sort-select',
-                    'aria-label': opts.sort.title || 'Sort',
-                    onChange: function (e) {
-                        if (typeof opts.sort.onChange === 'function') {
-                            opts.sort.onChange(e.target.value);
-                        }
+                // Two render paths: cycling icon-button (when every
+                // option carries an .icon) or the legacy native-select
+                // fallback. The icon-button advances the mode on each
+                // click — current-mode glyph + tooltip name the active
+                // mode AND the next-on-click mode so the operator
+                // doesn't have to memorise the cycle order.
+                var allHaveIcons = opts.sort.options.every(function (o) { return o.icon; });
+                if (allHaveIcons) {
+                    var curIdx = 0;
+                    for (var i = 0; i < opts.sort.options.length; i++) {
+                        if (opts.sort.options[i].value === opts.sort.value) { curIdx = i; break; }
                     }
-                });
-                opts.sort.options.forEach(function (o) {
-                    var optEl = el('option', {
-                        value: o.value,
-                        textContent: o.label
+                    var curOpt = opts.sort.options[curIdx];
+                    var nextOpt = opts.sort.options[(curIdx + 1) % opts.sort.options.length];
+                    var sortBtn = el('button', {
+                        type: 'button',
+                        className: 'bowire-sidebar-filterbar-sort-btn',
+                        title: (opts.sort.title || 'Sort') + ': ' + curOpt.label
+                            + ' — click for ' + nextOpt.label,
+                        'aria-label': (opts.sort.title || 'Sort') + ': ' + curOpt.label,
+                        innerHTML: svgIcon(curOpt.icon),
+                        onClick: function () {
+                            if (typeof opts.sort.onChange === 'function') {
+                                opts.sort.onChange(nextOpt.value);
+                            }
+                        }
                     });
-                    if (o.value === opts.sort.value) optEl.selected = true;
-                    sortSel.appendChild(optEl);
-                });
-                sortHost.appendChild(sortSel);
-                filterRow.appendChild(sortHost);
+                    filterRow.appendChild(sortBtn);
+                } else {
+                    var sortHost = el('label', {
+                        className: 'bowire-sidebar-filterbar-sort',
+                        title: opts.sort.title || 'Sort'
+                    });
+                    var sortSel = el('select', {
+                        className: 'bowire-sidebar-filterbar-sort-select',
+                        'aria-label': opts.sort.title || 'Sort',
+                        onChange: function (e) {
+                            if (typeof opts.sort.onChange === 'function') {
+                                opts.sort.onChange(e.target.value);
+                            }
+                        }
+                    });
+                    opts.sort.options.forEach(function (o) {
+                        var optEl = el('option', {
+                            value: o.value,
+                            textContent: o.label
+                        });
+                        if (o.value === opts.sort.value) optEl.selected = true;
+                        sortSel.appendChild(optEl);
+                    });
+                    sortHost.appendChild(sortSel);
+                    filterRow.appendChild(sortHost);
+                }
             }
             wrap.appendChild(filterRow);
             return wrap;
@@ -2094,6 +2124,8 @@
             sun: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>',
             moon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>',
             clock: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>',
+            calendar: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>',
+            sortAlpha: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 4v16M6 4l-3 3M6 4l3 3"/><path d="M13 6h7M13 12h5M13 18h3"/></svg>',
             connect: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 7h3a5 5 0 010 10h-3M9 17H6a5 5 0 010-10h3"/><line x1="8" y1="12" x2="16" y2="12"/></svg>',
             disconnect: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 7h3a5 5 0 010 10h-3M9 17H6a5 5 0 010-10h3"/><line x1="8" y1="12" x2="16" y2="12" stroke-dasharray="2 2"/></svg>',
             send: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>',

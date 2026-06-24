@@ -2105,10 +2105,16 @@
             sort: {
                 title: 'Sort workspaces',
                 value: workspacesSortBy,
+                // Each option carries an icon — renderSidebarToolbar
+                // switches from native-select to a cycling icon-mode
+                // button when every option has one. The sort setting
+                // applies cross-cuttingly (sidebar + topbar dropdown +
+                // overview) via the shared workspacesSortBy state,
+                // persisted to localStorage.
                 options: [
-                    { value: 'lastUsed',     label: 'Last used' },
-                    { value: 'alphabetical', label: 'Alphabetical' },
-                    { value: 'created',      label: 'Created date' }
+                    { value: 'lastUsed',     label: 'Last used',    icon: 'clock' },
+                    { value: 'alphabetical', label: 'Alphabetical', icon: 'sortAlpha' },
+                    { value: 'created',      label: 'Created date', icon: 'calendar' }
                 ],
                 onChange: function (v) {
                     if (typeof setWorkspacesSortBy === 'function') setWorkspacesSortBy(v);

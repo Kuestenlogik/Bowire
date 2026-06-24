@@ -1675,7 +1675,13 @@
             // would just duplicate it.
         } else {
             var list = el('div', { className: 'bowire-env-overview-list' });
-            workspaces.forEach(function (w) {
+            // Cross-cutting workspace sort applies in the overview
+            // list too (same workspacesSortBy state as sidebar +
+            // dropdown). The overview will gain its own dedicated
+            // search bar separately; today no filter is applied here.
+            var overviewWorkspaces = (typeof getSortedWorkspaces === 'function')
+                ? getSortedWorkspaces() : workspaces;
+            overviewWorkspaces.forEach(function (w) {
                 var isActive = w.id === activeWorkspaceId;
                 var wsColor = w.color || 'var(--bowire-text-tertiary)';
                 // Same layers glyph idiom as the workspace settings
