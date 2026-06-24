@@ -537,23 +537,14 @@
         const app = document.getElementById('bowire-app');
         if (!app) return;
 
-        // Force-home BEFORE the sidebar paints. Without this, clicking
-        // a non-home rail on the no-workspace empty state would update
-        // railMode + paint the rail with the new active class, then
-        // renderMain's force-home check (which fires later in the
-        // pipeline) would silently rewrite railMode = 'home' without
-        // repainting the rail — DOM said discover, state said home,
-        // and the next click on home short-circuited via the
-        // `railMode === m.id` early-out. Run the same guard up here
-        // so the rail-btn active class reflects the corrected railMode
-        // on the very first render after the rail click.
-        if (typeof activeWorkspaceId !== 'undefined' && !activeWorkspaceId
-            && typeof workspaces !== 'undefined' && Array.isArray(workspaces)
-            && workspaces.length === 0
-            && typeof railMode !== 'undefined' && railMode !== 'home') {
-            railMode = 'home';
-            try { localStorage.setItem('bowire_rail_mode', 'home'); } catch { /* ignore */ }
-        }
+        // Force-home rule retired. Pinning the operator to Home
+        // whenever workspaces.length === 0 trapped rail clicks: any
+        // attempt to leave Home re-fired the guard, snapping railMode
+        // back to 'home', so every rail icon was visually clickable
+        // (hover highlight + transition) but the click had no
+        // effect. The user's complaint: 'die buttons werden als
+        // klickbar dargestellt'. Drop the guard; each rail owns its
+        // own no-workspace empty state already.
 
         // #248 Phase 1 — Fall back to Home if the operator just
         // disabled the currently-active rail in Settings. Without

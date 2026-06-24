@@ -4016,13 +4016,12 @@
         // the orphan namespace — both confuse the operator into
         // thinking the workspace they just deleted is half-alive. Force
         // the Home-rail CTA so the only path forward is "create one".
-        if (!activeWorkspaceId
-            && typeof workspaces !== 'undefined'
-            && Array.isArray(workspaces) && workspaces.length === 0
-            && railMode !== 'home') {
-            railMode = 'home';
-            try { localStorage.setItem('bowire_rail_mode', 'home'); } catch { /* ignore */ }
-        }
+        // Force-home rule retired — see top of render() in
+        // render-env-auth.js for rationale. Pinning every non-home
+        // click back to Home trapped the operator: rails read as
+        // clickable (hover highlight + transition) but the click
+        // was undone before the next paint. Each rail's own empty
+        // state handles the no-workspace case.
 
         // #139 — Home rail mode. Default landing for first-time
         // users; cross-workflow launchpad. Phase 1 shows recent
