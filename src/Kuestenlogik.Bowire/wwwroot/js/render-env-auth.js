@@ -2372,20 +2372,14 @@
                                 + '<polyline points="2 17 12 22 22 17"/>'
                                 + '<polyline points="2 12 12 17 22 12"/>'
                                 + '</svg>';
-                            // Right-cluster layout: [check] [edit] [delete].
-                            // The check leads (active-state indicator) and
-                            // always reserves its slot via visibility-toggle
-                            // so the cluster anchors identically on every
-                            // row regardless of active state. Edit + delete
-                            // are display:none until row-hover — they pop in
-                            // as a transient tools strip, no reserved-flow
-                            // slot in the display state. The per-row meta
-                            // chip (#146 env-count label) was retired here
-                            // because the count doesn't aid the switching
-                            // decision — env-scope management lives in the
-                            // Workspaces rail. See feedback memory
-                            // `feedback-dropdown-meta-chip-pattern` for the
-                            // visual idiom should a future surface need it.
+                            // #276 — Topbar dropdown trimmed to quick-
+                            // access (Postman / VS Code convention):
+                            // the rows only carry the active-state ✓
+                            // marker now. Rename / Edit / Delete moved
+                            // to the Workspaces rail sidebar so the
+                            // topbar dropdown reads as a fast pick
+                            // surface instead of a management
+                            // panel.
                             return el('div', {
                                 className: 'bowire-workspace-menu-item' + (isActive ? ' active' : ''),
                                 onClick: function () {
@@ -2401,98 +2395,6 @@
                                         className: 'bowire-workspace-menu-item-check' + (isActive ? ' is-active' : ''),
                                         textContent: '✓',
                                         'aria-hidden': isActive ? 'false' : 'true'
-                                    }),
-                                    // Per-row rename — opens the bowirePrompt
-                                    // sheet for this workspace. Pencil leads
-                                    // the action buttons because rename is
-                                    // the most common per-row tweak.
-                                    el('button', {
-                                        type: 'button',
-                                        className: 'bowire-workspace-menu-item-rename',
-                                        title: 'Rename workspace',
-                                        'aria-label': 'Rename workspace',
-                                        innerHTML: svgIcon('pencil'),
-                                        onClick: function (e) {
-                                            e.stopPropagation();
-                                            var oldName = w.name;
-                                            var wsId = w.id;
-                                            workspaceMenuOpen = false;
-                                            render();
-                                            bowirePrompt('Rename workspace', {
-                                                title: 'Rename',
-                                                defaultValue: oldName,
-                                                confirmText: 'Rename',
-                                                validator: function (val) {
-                                                    var trimmed = String(val || '').trim();
-                                                    if (!trimmed) return 'Name required';
-                                                    if (trimmed.toLowerCase() === String(oldName || '').trim().toLowerCase()) return null;
-                                                    if (typeof _isWorkspaceNameTaken === 'function'
-                                                        && _isWorkspaceNameTaken(trimmed, wsId)) {
-                                                        if (typeof toast === 'function') {
-                                                            toast('A workspace named "' + trimmed + '" already exists.', 'error');
-                                                        }
-                                                        return 'Duplicate';
-                                                    }
-                                                    return null;
-                                                }
-                                            }).then(function (renamed) {
-                                                if (renamed) {
-                                                    renameWorkspace(wsId, renamed);
-                                                    render();
-                                                }
-                                            });
-                                        }
-                                    }),
-                                    // #192 (C) — per-row "edit" affordance: jumps
-                                    // straight into the Workspaces rail with this
-                                    // workspace + Settings selected, without
-                                    // going via rail-switch → list pick.
-                                    el('button', {
-                                        type: 'button',
-                                        className: 'bowire-workspace-menu-item-edit',
-                                        title: 'Edit workspace',
-                                        'aria-label': 'Edit workspace',
-                                        innerHTML: svgIcon('settings'),
-                                        onClick: function (e) {
-                                            e.stopPropagation();
-                                            workspaceMenuOpen = false;
-                                            workspacesSelectedId = w.id;
-                                            if (typeof workspaceTreeSelection !== 'undefined') {
-                                                workspaceTreeSelection = { wsId: w.id, kind: 'workspace' };
-                                            }
-                                            railMode = 'workspaces';
-                                            try { localStorage.setItem('bowire_rail_mode', 'workspaces'); }
-                                            catch { /* ignore */ }
-                                            render();
-                                        }
-                                    }),
-                                    // Per-row delete — works for every workspace
-                                    // in the list, not just the active one. Drops
-                                    // the old "Delete current" bottom item; the
-                                    // confirm prompt switches copy when this is
-                                    // the last workspace.
-                                    el('button', {
-                                        type: 'button',
-                                        className: 'bowire-workspace-menu-item-trash',
-                                        title: 'Delete workspace',
-                                        'aria-label': 'Delete workspace',
-                                        innerHTML: svgIcon('trash'),
-                                        onClick: function (e) {
-                                            e.stopPropagation();
-                                            var wsName = w.name;
-                                            var wsId = w.id;
-                                            var isLast = workspaces.length === 1;
-                                            workspaceMenuOpen = false;
-                                            render();
-                                            var msg = isLast
-                                                ? 'Delete the last workspace "' + wsName + '"? You will return to the empty no-workspace state — the underlying URLs / envs / recordings for this workspace are removed.'
-                                                : 'Delete workspace "' + wsName + '"? The underlying URLs / envs / recordings for this workspace are removed.';
-                                            bowireConfirm(
-                                                msg,
-                                                function () { deleteWorkspace(wsId); render(); },
-                                                { title: 'Delete workspace', confirmText: 'Delete', danger: true }
-                                            );
-                                        }
                                     })
                                 )
                             );

@@ -1315,6 +1315,74 @@
                 }
             }, el('span', { innerHTML: svgIcon('dots') })));
         }
+
+        // #276 — Optional second-row strip below the toolbar for
+        // search + sort. When opts.search or opts.sort is set, the
+        // function returns a wrapper containing the title row + the
+        // filter row so callers can still append it as a single
+        // sidebar child. opts.search: { value, placeholder?, onInput }.
+        // opts.sort: { value, options: [{value,label}], onChange }.
+        if (opts.search || opts.sort) {
+            var wrap = el('div', { className: 'bowire-sidebar-toolbar-wrap' });
+            wrap.appendChild(row);
+            var filterRow = el('div', { className: 'bowire-sidebar-filterbar' });
+            if (opts.search) {
+                var searchHost = el('label', {
+                    className: 'bowire-sidebar-filterbar-search'
+                });
+                searchHost.appendChild(el('span', {
+                    className: 'bowire-sidebar-filterbar-search-icon',
+                    innerHTML: svgIcon('search'),
+                    'aria-hidden': 'true'
+                }));
+                searchHost.appendChild(el('input', {
+                    type: 'search',
+                    className: 'bowire-sidebar-filterbar-search-input',
+                    placeholder: opts.search.placeholder || 'Search…',
+                    value: opts.search.value || '',
+                    autocomplete: 'off',
+                    spellcheck: 'false',
+                    // Search-palette: opt out of var-chip / autocomplete
+                    // overlays so the field stays a plain filter.
+                    'data-bowire-no-vars-chip': '1',
+                    'data-bowire-no-vars-ac': '1',
+                    onInput: function (e) {
+                        if (typeof opts.search.onInput === 'function') {
+                            opts.search.onInput(e.target.value);
+                        }
+                    }
+                }));
+                filterRow.appendChild(searchHost);
+            }
+            if (opts.sort && Array.isArray(opts.sort.options) && opts.sort.options.length > 0) {
+                var sortHost = el('label', {
+                    className: 'bowire-sidebar-filterbar-sort',
+                    title: opts.sort.title || 'Sort'
+                });
+                var sortSel = el('select', {
+                    className: 'bowire-sidebar-filterbar-sort-select',
+                    'aria-label': opts.sort.title || 'Sort',
+                    onChange: function (e) {
+                        if (typeof opts.sort.onChange === 'function') {
+                            opts.sort.onChange(e.target.value);
+                        }
+                    }
+                });
+                opts.sort.options.forEach(function (o) {
+                    var optEl = el('option', {
+                        value: o.value,
+                        textContent: o.label
+                    });
+                    if (o.value === opts.sort.value) optEl.selected = true;
+                    sortSel.appendChild(optEl);
+                });
+                sortHost.appendChild(sortSel);
+                filterRow.appendChild(sortHost);
+            }
+            wrap.appendChild(filterRow);
+            return wrap;
+        }
+
         return row;
     }
     function _renderToolbarIconBtn(a) {
@@ -1674,6 +1742,32 @@
                 className: 'bowire-tree-badge',
                 textContent: String(node.badge)
             }));
+        }
+
+        // #276 — Per-row hover-revealed tools. Rendered before the
+        // `+` add button so the "add to this group" affordance stays
+        // anchored at the row's far right (operator's muscle memory).
+        // Each tool: { icon, title, danger?, disabled?, onClick }.
+        // null/undefined entries are silently dropped so callers can
+        // use inline conditionals (e.g. save-as-template only on the
+        // active workspace).
+        if (Array.isArray(node.tools) && node.tools.length > 0) {
+            node.tools.forEach(function (t) {
+                if (!t) return;
+                row.appendChild(el('button', {
+                    type: 'button',
+                    className: 'bowire-tree-tool'
+                        + (t.danger ? ' bowire-tree-tool-danger' : ''),
+                    title: t.title,
+                    'aria-label': t.ariaLabel || t.title,
+                    disabled: t.disabled ? true : undefined,
+                    innerHTML: svgIcon(t.icon),
+                    onClick: function (e) {
+                        e.stopPropagation();
+                        if (typeof t.onClick === 'function') t.onClick(e);
+                    }
+                }));
+            });
         }
 
         if (typeof node.onAdd === 'function') {
