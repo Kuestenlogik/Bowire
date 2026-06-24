@@ -1443,3 +1443,55 @@
         var row = el('div', { className: 'bowire-recording-step' }, label, deleteBtn);
         return row;
     }
+
+    // #285 — Server-side recording-session SSE listener. The workbench
+    // already drives capture/replay locally via recordingActiveId +
+    // recordingsList — this listener is purely informational, surfacing
+    // server-initiated transitions (e.g. an MCP agent calling
+    // bowire.record.start while the user has a browser tab open) so the
+    // UI can react in a future iteration. State is exposed on the global
+    // window.__bowireRecordingSession; consumers can subscribe via the
+    // 'bowire:recording-session' DOM event. Best-effort connect — falls
+    // silent if EventSource is unavailable or the server is older than
+    // #285. Zero behavioural change in the existing recorder flow.
+    function _initRecordingSessionStream() {
+        if (typeof window === 'undefined' || typeof EventSource === 'undefined') return;
+        if (window.__bowireRecordingSessionStream) return;
+        try {
+            var url = (config && config.prefix ? config.prefix : '') + '/api/recording/session/events';
+            var es = new EventSource(url);
+            window.__bowireRecordingSessionStream = es;
+            window.__bowireRecordingSession = window.__bowireRecordingSession || null;
+            function dispatch(kind, detail) {
+                window.__bowireRecordingSession = detail || null;
+                try {
+                    window.dispatchEvent(new CustomEvent('bowire:recording-session', {
+                        detail: { kind: kind, session: detail }
+                    }));
+                } catch (_) { /* IE11-era guard; harmless in modern browsers */ }
+            }
+            function parse(e) {
+                try { return JSON.parse(e.data); } catch (_) { return null; }
+            }
+            es.addEventListener('snapshot', function (e) { dispatch('snapshot', parse(e)); });
+            es.addEventListener('started', function (e) {
+                var p = parse(e); dispatch('started', p && p.session ? p.session : null);
+            });
+            es.addEventListener('step', function (e) {
+                var p = parse(e); dispatch('step', p && p.session ? p.session : null);
+            });
+            es.addEventListener('mode', function (e) {
+                var p = parse(e); dispatch('mode', p && p.session ? p.session : null);
+            });
+            es.addEventListener('stopped', function (e) {
+                var p = parse(e); dispatch('stopped', null);
+                window.__bowireRecordingSession = null;
+            });
+            es.onerror = function () { /* EventSource auto-reconnects; nothing to do */ };
+        } catch (_) {
+            // Server doesn't expose the endpoint, or browser blocked EventSource —
+            // silently disable. The existing localStorage-backed recorder flow
+            // keeps working unchanged.
+        }
+    }
+    _initRecordingSessionStream();

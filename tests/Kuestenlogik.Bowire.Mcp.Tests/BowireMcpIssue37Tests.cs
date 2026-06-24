@@ -65,6 +65,7 @@ public sealed class BowireMcpIssue37Tests : IAsyncDisposable
             registry,
             mockHandles,
             confirmations,
+            new Kuestenlogik.Bowire.Recording.BowireRecordingSession(),
             Options.Create(options),
             NullLogger<BowireMcpTools>.Instance);
     }

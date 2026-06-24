@@ -97,6 +97,7 @@ public sealed class BowireMcpCoverageTests : IAsyncDisposable
             registry,
             NewMockHandles(),
             new BowireMcpConfirmationStore(),
+            new Kuestenlogik.Bowire.Recording.BowireRecordingSession(),
             Options.Create(options),
             NullLogger<BowireMcpTools>.Instance);
     }
@@ -242,6 +243,7 @@ public sealed class BowireMcpCoverageTests : IAsyncDisposable
                 new BowireProtocolRegistry(),
                 NewMockHandles(),
                 new BowireMcpConfirmationStore(),
+                new Kuestenlogik.Bowire.Recording.BowireRecordingSession(),
                 Options.Create(options),
                 NullLogger<BowireMcpTools>.Instance);
 
@@ -268,6 +270,7 @@ public sealed class BowireMcpCoverageTests : IAsyncDisposable
                 new BowireProtocolRegistry(),
                 NewMockHandles(),
                 new BowireMcpConfirmationStore(),
+                new Kuestenlogik.Bowire.Recording.BowireRecordingSession(),
                 Options.Create(options),
                 NullLogger<BowireMcpTools>.Instance);
 
@@ -286,6 +289,7 @@ public sealed class BowireMcpCoverageTests : IAsyncDisposable
                 new BowireProtocolRegistry(),
                 NewMockHandles(),
                 new BowireMcpConfirmationStore(),
+                new Kuestenlogik.Bowire.Recording.BowireRecordingSession(),
                 Options.Create(options),
                 NullLogger<BowireMcpTools>.Instance);
 
@@ -309,6 +313,7 @@ public sealed class BowireMcpCoverageTests : IAsyncDisposable
                 new BowireProtocolRegistry(),
                 NewMockHandles(),
                 new BowireMcpConfirmationStore(),
+                new Kuestenlogik.Bowire.Recording.BowireRecordingSession(),
                 Options.Create(options),
                 NullLogger<BowireMcpTools>.Instance);
 
