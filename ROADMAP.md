@@ -91,7 +91,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.1 — Scripting, variable resolver, throughput surface *(due 2026-06-30)*
 
-**23/37 done** · 14 backlog
+**23/38 done** · 15 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -109,6 +109,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [254](https://github.com/Kuestenlogik/Bowire/issues/254) | Bowire | [Freeform builder: auto-discover prompt after first successful invoke](#issue-kuestenlogik-bowire-254) | ⬜ Backlog |  |
 | [279](https://github.com/Kuestenlogik/Bowire/issues/279) | Bowire | [Workspace ordering: configurable (creation date / alphabetical / manual drag-drop), respected across sidebar + dropdown + overview](#issue-kuestenlogik-bowire-279) | ⬜ Backlog |  |
 | [280](https://github.com/Kuestenlogik/Bowire/issues/280) | Bowire | [Assistant hints: actionable inline buttons / links (not just descriptive text)](#issue-kuestenlogik-bowire-280) | ⬜ Backlog |  |
+| [281](https://github.com/Kuestenlogik/Bowire/issues/281) | Bowire | [Guided tour: page-navigation + element spotlight + interactive flow](#issue-kuestenlogik-bowire-281) | ⬜ Backlog |  |
 | [197](https://github.com/Kuestenlogik/Bowire/issues/197) | Bowire | [Deprecate + unlist Kuestenlogik.Bowire.Extension.MapLibre on nuget.org after v2.0 ships](#issue-kuestenlogik-bowire-197) | ✅ Done |  |
 | [248](https://github.com/Kuestenlogik/Bowire/issues/248) | Bowire | [Optional rail modules — plumbing (Phase 1): toggle mechanic + always-on set + Settings editor](#issue-kuestenlogik-bowire-248) | ✅ Done |  |
 | [252](https://github.com/Kuestenlogik/Bowire/issues/252) | Bowire | [Compose-request entry points: '+ Compose' (self-contained) + 'New from source…' (workspace-managed URL)](#issue-kuestenlogik-bowire-252) | ✅ Done |  |
@@ -602,6 +603,10 @@ When a workspace is switched to active, it 'jumps to the top' of the list — cu
 #### <a id="issue-kuestenlogik-bowire-280"></a>⬜ Backlog · [#280](https://github.com/Kuestenlogik/Bowire/issues/280) Assistant hints: actionable inline buttons / links (not just descriptive text)
 
 The Assistant drawer's context-aware hints describe what the operator should do but don't expose the action itself. Example from the no-workspace state (post-#272 fix): [[more]](https://github.com/Kuestenlogik/Bowire/issues/280)
+
+#### <a id="issue-kuestenlogik-bowire-281"></a>⬜ Backlog · [#281](https://github.com/Kuestenlogik/Bowire/issues/281) Guided tour: page-navigation + element spotlight + interactive flow
+
+The existing guided tour reads more like inline help text than a tour. Operator's complaints: - Pages aren't navigated to — the tour says 'click X' but X isn't visible - Hints don't highlight the item being discussed - No spotlight / no darkening of the rest of the page so the eye lands on the right element [[more]](https://github.com/Kuestenlogik/Bowire/issues/281)
 
 #### <a id="issue-kuestenlogik-bowire-197"></a>✅ Done · [#197](https://github.com/Kuestenlogik/Bowire/issues/197) Deprecate + unlist Kuestenlogik.Bowire.Extension.MapLibre on nuget.org after v2.0 ships
 
