@@ -91,7 +91,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.1 — Scripting, variable resolver, throughput surface *(due 2026-06-30)*
 
-**7/19 done** · 12 backlog
+**8/20 done** · 12 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -114,6 +114,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [260](https://github.com/Kuestenlogik/Bowire/issues/260) | Bowire | [Console toolbar: distinct icons for Clear selection / Clear all / Close](#issue-kuestenlogik-bowire-260) | ✅ Done |  |
 | [261](https://github.com/Kuestenlogik/Bowire/issues/261) | Bowire | [Tab persistence for 'As new request' freeform clone](#issue-kuestenlogik-bowire-261) | ✅ Done |  |
 | [262](https://github.com/Kuestenlogik/Bowire/issues/262) | Bowire | [Force-home rule retired — rails clickable again after deleting last workspace](#issue-kuestenlogik-bowire-262) | ✅ Done |  |
+| [263](https://github.com/Kuestenlogik/Bowire/issues/263) | Bowire | [Settings tree: list every enabled plugin, not just those with configurable settings](#issue-kuestenlogik-bowire-263) | ✅ Done |  |
 
 ### v2.2 — Test pillar: assertions, CI runner, regression coverage *(due 2026-07-10)*
 
@@ -604,6 +605,10 @@ Switching to another method tab + back lost the freeform clone because switchTab
 #### <a id="issue-kuestenlogik-bowire-262"></a>✅ Done · [#262](https://github.com/Kuestenlogik/Bowire/issues/262) Force-home rule retired — rails clickable again after deleting last workspace
 
 User report: every rail icon hovered as clickable but the click did nothing. The force-home rule (added earlier to fix DOM/state divergence) had become the trap itself — every click to leave Home re-fired the guard. Removed both copies (render-env-auth.js + render-main.js).
+
+#### <a id="issue-kuestenlogik-bowire-263"></a>✅ Done · [#263](https://github.com/Kuestenlogik/Bowire/issues/263) Settings tree: list every enabled plugin, not just those with configurable settings
+
+Plugins tree filter dropped entries whose p.settings array was empty or unset, hiding REST/gRPC/MCP/GraphQL/etc. from the tree entirely — only MQTT + WebSocket survived. renderPluginSettings handles the empty-settings case gracefully, so the filter was pure loss.
 
 ### v2.2 — Test pillar: assertions, CI runner, regression coverage *(due 2026-07-10)*
 
