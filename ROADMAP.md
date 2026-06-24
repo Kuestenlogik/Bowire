@@ -128,13 +128,16 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [188](https://github.com/Kuestenlogik/Bowire/issues/188) | Bowire | [Org-level Bowire dashboard — rollup across services](#issue-kuestenlogik-bowire-188) | ⬜ Backlog |  |
 | [232](https://github.com/Kuestenlogik/Bowire/issues/232) | Bowire | [Benchmarks: 'scheduled' run shape + cron infrastructure (restart-survival)](#issue-kuestenlogik-bowire-232) | ⬜ Backlog |  |
 
-### v2.6
+### v2.6 — Multi-tenancy: per-identity state, SCIM provisioning, per-user plugins
 
-**0/1 done** · 1 next up
+**0/4 done** · 1 next up · 3 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
 | [28](https://github.com/Kuestenlogik/Bowire/issues/28) | Bowire | [Multi-tenant data model + SCIM (Phase B)](#issue-kuestenlogik-bowire-28) | 🟢 Next up | `area:workbench` |
+| [96](https://github.com/Kuestenlogik/Bowire/issues/96) | Bowire | [Multi-tenant Phase C — SCIM 2.0 provisioning endpoints](#issue-kuestenlogik-bowire-96) | ⬜ Backlog |  |
+| [97](https://github.com/Kuestenlogik/Bowire/issues/97) | Bowire | [Multi-tenant Phase E — single-user → multi-tenant migration path](#issue-kuestenlogik-bowire-97) | ⬜ Backlog |  |
+| [98](https://github.com/Kuestenlogik/Bowire/issues/98) | Bowire | [Multi-tenant Phase F — user chip, scoped state copy, admin impersonation](#issue-kuestenlogik-bowire-98) | ⬜ Backlog |  |
 
 ### v3.0 — Cleanups + breaking-change cuts
 
@@ -156,7 +159,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [11](https://github.com/Kuestenlogik/Bowire.Protocol.Surgewave/issues/11) | Protocol.Surgewave | [Light up Surgewave protocol plugin](#issue-kuestenlogik-bowire-protocol-surgewave-11) | ⬜ Backlog |  |
 | [13](https://github.com/Kuestenlogik/Bowire.Samples/issues/13) | Samples | [SimpleGraphQLSubscriptions sample](#issue-kuestenlogik-bowire-samples-13) | ⬜ Backlog | `area:plugin-sdk` |
 | [37](https://github.com/Kuestenlogik/Bowire/issues/37) | Bowire | [Bowire.Mcp — remaining tools + adapter modes](#issue-kuestenlogik-bowire-37) | ⬜ Backlog | `area:mcp` |
-| [41](https://github.com/Kuestenlogik/Bowire/issues/41) | Bowire | [First RC of the new versioning discipline](#issue-kuestenlogik-bowire-41) | ⬜ Backlog | `area:multi` |
 | [44](https://github.com/Kuestenlogik/Bowire/issues/44) | Bowire | [Sidecar packaging — Docker / Compose / Kubernetes](#issue-kuestenlogik-bowire-44) | ⬜ Backlog | `area:docs` |
 | [46](https://github.com/Kuestenlogik/Bowire/issues/46) | Bowire | [MCP server-side notifications via IInlineSseSubscriber](#issue-kuestenlogik-bowire-46) | ⬜ Backlog | `area:mcp` |
 | [47](https://github.com/Kuestenlogik/Bowire/issues/47) | Bowire | [Sidebar display: method name vs path toggle](#issue-kuestenlogik-bowire-47) | ⬜ Backlog | `area:workbench` |
@@ -165,9 +167,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [53](https://github.com/Kuestenlogik/Bowire/issues/53) | Bowire | [Marketing site — second row of specialist comparisons](#issue-kuestenlogik-bowire-53) | ⬜ Backlog | `area:site` |
 | [93](https://github.com/Kuestenlogik/Bowire/issues/93) | Bowire | [Topbar: connection-state pill (aggregate + per-URL popover)](#issue-kuestenlogik-bowire-93) | ⬜ Backlog |  |
 | [95](https://github.com/Kuestenlogik/Bowire/issues/95) | Bowire | [Header Library: named, scoped, toggleable header sets](#issue-kuestenlogik-bowire-95) | ⬜ Backlog |  |
-| [96](https://github.com/Kuestenlogik/Bowire/issues/96) | Bowire | [Multi-tenant Phase C — SCIM 2.0 provisioning endpoints](#issue-kuestenlogik-bowire-96) | ⬜ Backlog |  |
-| [97](https://github.com/Kuestenlogik/Bowire/issues/97) | Bowire | [Multi-tenant Phase E — single-user → multi-tenant migration path](#issue-kuestenlogik-bowire-97) | ⬜ Backlog |  |
-| [98](https://github.com/Kuestenlogik/Bowire/issues/98) | Bowire | [Multi-tenant Phase F — user chip, scoped state copy, admin impersonation](#issue-kuestenlogik-bowire-98) | ⬜ Backlog |  |
 | [103](https://github.com/Kuestenlogik/Bowire/issues/103) | Bowire | [Generate boat photos: submarine, ferry, tugboat, lighthouse](#issue-kuestenlogik-bowire-103) | ⬜ Backlog |  |
 | [110](https://github.com/Kuestenlogik/Bowire/issues/110) | Bowire | [Site: surface the AI assistant in the launch wizard + quickstart](#issue-kuestenlogik-bowire-110) | ⬜ Backlog |  |
 | [117](https://github.com/Kuestenlogik/Bowire/issues/117) | Bowire | [i18n — extract every UI string; ship DE + EN catalogues](#issue-kuestenlogik-bowire-117) | ⬜ Backlog |  |
@@ -545,13 +544,25 @@ Once Bowire ships in multiple services across an org, "what's the state of our A
 
 Add the **scheduled** run shape to Benchmarks — a saved envelope can be set to fire on a cron schedule, the workbench (or a CLI / embedded host) runs it without operator interaction, and results land in the saved-runs history. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/232)
 
-### v2.6
+### v2.6 — Multi-tenancy: per-identity state, SCIM provisioning, per-user plugins
 
 #### <a id="issue-kuestenlogik-bowire-28"></a>🟢 Next up · [#28](https://github.com/Kuestenlogik/Bowire/issues/28) Multi-tenant data model + SCIM (Phase B)
 
 > `area:workbench`
 
 **Builds on:** #31, #32 — multi-tenant SCIM extends the auth foundation. [[more]](https://github.com/Kuestenlogik/Bowire/issues/28)
+
+#### <a id="issue-kuestenlogik-bowire-96"></a>⬜ Backlog · [#96](https://github.com/Kuestenlogik/Bowire/issues/96) Multi-tenant Phase C — SCIM 2.0 provisioning endpoints
+
+Extracted from #28 — **Phase C** of the multi-tenant rollout. Tracked separately so it can be sized + scheduled. [[more]](https://github.com/Kuestenlogik/Bowire/issues/96)
+
+#### <a id="issue-kuestenlogik-bowire-97"></a>⬜ Backlog · [#97](https://github.com/Kuestenlogik/Bowire/issues/97) Multi-tenant Phase E — single-user → multi-tenant migration path
+
+Extracted from #28 — **Phase E** of the multi-tenant rollout. Tracked separately so it can be sized + scheduled. [[more]](https://github.com/Kuestenlogik/Bowire/issues/97)
+
+#### <a id="issue-kuestenlogik-bowire-98"></a>⬜ Backlog · [#98](https://github.com/Kuestenlogik/Bowire/issues/98) Multi-tenant Phase F — user chip, scoped state copy, admin impersonation
+
+Phase F of the multi-tenant rollout — the UI affordances that turn "multi-user works under the hood" into "users feel it" (#28). [[more]](https://github.com/Kuestenlogik/Bowire/issues/98)
 
 ### v3.0 — Cleanups + breaking-change cuts
 
@@ -599,12 +610,6 @@ Hand-rolled graphql-transport-ws server (or HotChocolate-based) so the GraphQL p
 
 **Dependencies** - Related #56, #57 — Mock UI panel + request log will need MCP-tool counterparts (`bowire.mock.start/stop/list/requests`) from this set. - Related #43 — MCP SSE-transport support. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/37)
 
-#### <a id="issue-kuestenlogik-bowire-41"></a>⬜ Backlog · [#41](https://github.com/Kuestenlogik/Bowire/issues/41) First RC of the new versioning discipline
-
-> `area:multi`
-
-Features land as 1.0.x-rc.N for a smoke round before the final 1.0.x tag. Consumers opt in via --prerelease. [[more]](https://github.com/Kuestenlogik/Bowire/issues/41)
-
 #### <a id="issue-kuestenlogik-bowire-44"></a>⬜ Backlog · [#44](https://github.com/Kuestenlogik/Bowire/issues/44) Sidecar packaging — Docker / Compose / Kubernetes
 
 > `area:docs`
@@ -648,18 +653,6 @@ Today the user has to scroll the sidebar to know whether their configured URL is
 #### <a id="issue-kuestenlogik-bowire-95"></a>⬜ Backlog · [#95](https://github.com/Kuestenlogik/Bowire/issues/95) Header Library: named, scoped, toggleable header sets
 
 Headers like `Accept: application/vnd.example+json`, `X-Api-Version: 2`, `User-Agent: my-tester/1.0` get re-typed on every method, every environment, every workspace. Bowire's Metadata tab is per-request — there's no place to say "every call against api.example.com sends these three headers" without scripts. [[more]](https://github.com/Kuestenlogik/Bowire/issues/95)
-
-#### <a id="issue-kuestenlogik-bowire-96"></a>⬜ Backlog · [#96](https://github.com/Kuestenlogik/Bowire/issues/96) Multi-tenant Phase C — SCIM 2.0 provisioning endpoints
-
-Extracted from #28 — **Phase C** of the multi-tenant rollout. Tracked separately so it can be sized + scheduled. [[more]](https://github.com/Kuestenlogik/Bowire/issues/96)
-
-#### <a id="issue-kuestenlogik-bowire-97"></a>⬜ Backlog · [#97](https://github.com/Kuestenlogik/Bowire/issues/97) Multi-tenant Phase E — single-user → multi-tenant migration path
-
-Extracted from #28 — **Phase E** of the multi-tenant rollout. Tracked separately so it can be sized + scheduled. [[more]](https://github.com/Kuestenlogik/Bowire/issues/97)
-
-#### <a id="issue-kuestenlogik-bowire-98"></a>⬜ Backlog · [#98](https://github.com/Kuestenlogik/Bowire/issues/98) Multi-tenant Phase F — user chip, scoped state copy, admin impersonation
-
-Phase F of the multi-tenant rollout — the UI affordances that turn "multi-user works under the hood" into "users feel it" (#28). [[more]](https://github.com/Kuestenlogik/Bowire/issues/98)
 
 #### <a id="issue-kuestenlogik-bowire-103"></a>⬜ Backlog · [#103](https://github.com/Kuestenlogik/Bowire/issues/103) Generate boat photos: submarine, ferry, tugboat, lighthouse
 
