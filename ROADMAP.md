@@ -91,7 +91,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.1 — Scripting, variable resolver, throughput surface *(due 2026-06-30)*
 
-**16/31 done** · 15 backlog
+**16/32 done** · 16 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -110,6 +110,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [272](https://github.com/Kuestenlogik/Bowire/issues/272) | Bowire | [Assistant drawer: useless hint 'Pick a method in the sidebar' when no workspace exists](#issue-kuestenlogik-bowire-272) | ⬜ Backlog |  |
 | [273](https://github.com/Kuestenlogik/Bowire/issues/273) | Bowire | [Topbar workspace dropdown: + and list icons appear left-aligned instead of vertically centered](#issue-kuestenlogik-bowire-273) | ⬜ Backlog |  |
 | [274](https://github.com/Kuestenlogik/Bowire/issues/274) | Bowire | [Workspaces label inconsistency: 4 names for the same destination (overview) + ellipsis convention](#issue-kuestenlogik-bowire-274) | ⬜ Backlog |  |
+| [275](https://github.com/Kuestenlogik/Bowire/issues/275) | Bowire | [Workspace-detail dead-end: 'No workspace selected. Pick one in the sidebar' when sidepanel collapsed](#issue-kuestenlogik-bowire-275) | ⬜ Backlog |  |
 | [197](https://github.com/Kuestenlogik/Bowire/issues/197) | Bowire | [Deprecate + unlist Kuestenlogik.Bowire.Extension.MapLibre on nuget.org after v2.0 ships](#issue-kuestenlogik-bowire-197) | ✅ Done |  |
 | [248](https://github.com/Kuestenlogik/Bowire/issues/248) | Bowire | [Optional rail modules — plumbing (Phase 1): toggle mechanic + always-on set + Settings editor](#issue-kuestenlogik-bowire-248) | ✅ Done |  |
 | [252](https://github.com/Kuestenlogik/Bowire/issues/252) | Bowire | [Compose-request entry points: '+ Compose' (self-contained) + 'New from source…' (workspace-managed URL)](#issue-kuestenlogik-bowire-252) | ✅ Done |  |
@@ -600,6 +601,10 @@ In the topbar workspace-chip dropdown, the '+' (new workspace) and three-lines l
 #### <a id="issue-kuestenlogik-bowire-274"></a>⬜ Backlog · [#274](https://github.com/Kuestenlogik/Bowire/issues/274) Workspaces label inconsistency: 4 names for the same destination (overview) + ellipsis convention
 
 Same destination (workspaces overview list), four different labels across surfaces: [[more]](https://github.com/Kuestenlogik/Bowire/issues/274)
+
+#### <a id="issue-kuestenlogik-bowire-275"></a>⬜ Backlog · [#275](https://github.com/Kuestenlogik/Bowire/issues/275) Workspace-detail dead-end: 'No workspace selected. Pick one in the sidebar' when sidepanel collapsed
+
+After clicking 'Manage workspaces' with the sidepanel collapsed, the operator lands on: [[more]](https://github.com/Kuestenlogik/Bowire/issues/275)
 
 #### <a id="issue-kuestenlogik-bowire-197"></a>✅ Done · [#197](https://github.com/Kuestenlogik/Bowire/issues/197) Deprecate + unlist Kuestenlogik.Bowire.Extension.MapLibre on nuget.org after v2.0 ships
 
