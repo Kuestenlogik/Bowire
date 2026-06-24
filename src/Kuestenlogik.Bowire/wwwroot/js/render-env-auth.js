@@ -2431,19 +2431,25 @@
                                 el('span', { className: 'bowire-workspace-menu-item-glyph', innerHTML: glyph }),
                                 el('span', { className: 'bowire-workspace-menu-item-name', textContent: w.name }),
                                 el('div', { className: 'bowire-workspace-menu-item-tools' },
-                                    // #277 — active-state ✓ ('check'
-                                    // icon, not text glyph) leads the
-                                    // cluster. Same idiom as the env
-                                    // overview's check-toggle.
+                                    // Hover tools first (Rename /
+                                    // Save-as-template / Delete), then
+                                    // the active-state ✓ at the
+                                    // RIGHTMOST slot. Operator feedback:
+                                    // the check at the START 'jumped'
+                                    // when hover tools pushed it
+                                    // rightward — putting it at the end
+                                    // pins the slot, identical to the
+                                    // sidebar's tree-active-indicator
+                                    // pattern (#277).
+                                    _toolBtn(renameDef, false),
+                                    _toolBtn(sastDef, false),
+                                    _toolBtn(deleteDef, true),
                                     el('span', {
                                         className: 'bowire-workspace-menu-item-check' + (isActive ? ' is-active' : ''),
                                         innerHTML: (typeof svgIcon === 'function') ? svgIcon('check') : '✓',
                                         'aria-hidden': isActive ? 'false' : 'true',
                                         title: isActive ? 'Active workspace' : 'Switch to this workspace'
-                                    }),
-                                    _toolBtn(renameDef, false),
-                                    _toolBtn(sastDef, false),
-                                    _toolBtn(deleteDef, true)
+                                    })
                                 )
                             );
                         })
