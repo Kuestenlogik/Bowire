@@ -12,7 +12,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.1 — Scripting, variable resolver, throughput surface *(due 2026-06-30)*
 
-**28/47 done** · 19 backlog
+**29/48 done** · 19 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -40,6 +40,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [243](https://github.com/Kuestenlogik/Bowire/issues/243) | Bowire | [Failed REST / gRPC invocation logs show only 'Error' — surface status code + response body + exception message](#issue-kuestenlogik-bowire-243) | ✅ Done |  |
 | [244](https://github.com/Kuestenlogik/Bowire/issues/244) | Bowire | [Discover rail toolbar: drop the '+ New' button — ad-hoc requests don't belong on the discovered-tree surface](#issue-kuestenlogik-bowire-244) | ✅ Done |  |
 | [245](https://github.com/Kuestenlogik/Bowire/issues/245) | Bowire | [Execute-button dropdown: add 'As new request' to clone a discovered method's call into an editable ad-hoc copy](#issue-kuestenlogik-bowire-245) | ✅ Done |  |
+| [246](https://github.com/Kuestenlogik/Bowire/issues/246) | Bowire | [Ad-hoc requests — informal cousin of Presets, lives under Collections (not a new rail, not a Design surface)](#issue-kuestenlogik-bowire-246) | ✅ Done |  |
 | [248](https://github.com/Kuestenlogik/Bowire/issues/248) | Bowire | [Optional rail modules — plumbing (Phase 1): toggle mechanic + always-on set + Settings editor](#issue-kuestenlogik-bowire-248) | ✅ Done |  |
 | [252](https://github.com/Kuestenlogik/Bowire/issues/252) | Bowire | [Compose-request entry points: '+ Compose' (self-contained) + 'New from source…' (workspace-managed URL)](#issue-kuestenlogik-bowire-252) | ✅ Done |  |
 | [257](https://github.com/Kuestenlogik/Bowire/issues/257) | Bowire | [richErrorDetail picks up problem+json status / type / instance](#issue-kuestenlogik-bowire-257) | ✅ Done |  |
@@ -314,6 +315,10 @@ The `+` button in the Discover rail's sidebar toolbar opens the "create new requ
 #### <a id="issue-kuestenlogik-bowire-245"></a>✅ Done · [#245](https://github.com/Kuestenlogik/Bowire/issues/245) Execute-button dropdown: add 'As new request' to clone a discovered method's call into an editable ad-hoc copy
 
 When you're on a discovered method and want to experiment — try a tweaked URL, a slightly different method name, a custom header — there's no clean path. Today's options: [[more]](https://github.com/Kuestenlogik/Bowire/issues/245)
+
+#### <a id="issue-kuestenlogik-bowire-246"></a>✅ Done · [#246](https://github.com/Kuestenlogik/Bowire/issues/246) Ad-hoc requests — informal cousin of Presets, lives under Collections (not a new rail, not a Design surface)
+
+Ad-hoc requests in v2.0 are homeless. The `+ New` button in the Discover rail (see sibling issue) opens a one-shot form that doesn't persist, isn't co-located with the related saved-calls surfaces, and has no obvious entry point if you start somewhere other than Discover. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/246)
 
 #### <a id="issue-kuestenlogik-bowire-248"></a>✅ Done · [#248](https://github.com/Kuestenlogik/Bowire/issues/248) Optional rail modules — plumbing (Phase 1): toggle mechanic + always-on set + Settings editor
 
