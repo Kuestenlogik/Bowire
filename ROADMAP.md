@@ -91,7 +91,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.1 — Scripting, variable resolver, throughput surface *(due 2026-06-30)*
 
-**23/35 done** · 12 backlog
+**23/36 done** · 13 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -107,6 +107,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [233](https://github.com/Kuestenlogik/Bowire/issues/233) | Bowire | [Benchmarks: previous-run diff banner on repeat (p95 ▲ / ▼ / status histogram delta)](#issue-kuestenlogik-bowire-233) | ⬜ Backlog |  |
 | [234](https://github.com/Kuestenlogik/Bowire/issues/234) | Bowire | [Benchmarks: result exports — CSV + k6-summary JSON + OTLP metrics](#issue-kuestenlogik-bowire-234) | ⬜ Backlog |  |
 | [254](https://github.com/Kuestenlogik/Bowire/issues/254) | Bowire | [Freeform builder: auto-discover prompt after first successful invoke](#issue-kuestenlogik-bowire-254) | ⬜ Backlog |  |
+| [279](https://github.com/Kuestenlogik/Bowire/issues/279) | Bowire | [Workspace ordering: configurable (creation date / alphabetical / manual drag-drop), respected across sidebar + dropdown + overview](#issue-kuestenlogik-bowire-279) | ⬜ Backlog |  |
 | [197](https://github.com/Kuestenlogik/Bowire/issues/197) | Bowire | [Deprecate + unlist Kuestenlogik.Bowire.Extension.MapLibre on nuget.org after v2.0 ships](#issue-kuestenlogik-bowire-197) | ✅ Done |  |
 | [248](https://github.com/Kuestenlogik/Bowire/issues/248) | Bowire | [Optional rail modules — plumbing (Phase 1): toggle mechanic + always-on set + Settings editor](#issue-kuestenlogik-bowire-248) | ✅ Done |  |
 | [252](https://github.com/Kuestenlogik/Bowire/issues/252) | Bowire | [Compose-request entry points: '+ Compose' (self-contained) + 'New from source…' (workspace-managed URL)](#issue-kuestenlogik-bowire-252) | ✅ Done |  |
@@ -592,6 +593,10 @@ Round out the Benchmarks export surface so result data can leave Bowire in the f
 #### <a id="issue-kuestenlogik-bowire-254"></a>⬜ Backlog · [#254](https://github.com/Kuestenlogik/Bowire/issues/254) Freeform builder: auto-discover prompt after first successful invoke
 
 Last unchecked acceptance item from the parent **#40** Freeform Request Builder ticket. After a freeform request hits a 2xx response, prompt the operator: [[more]](https://github.com/Kuestenlogik/Bowire/issues/254)
+
+#### <a id="issue-kuestenlogik-bowire-279"></a>⬜ Backlog · [#279](https://github.com/Kuestenlogik/Bowire/issues/279) Workspace ordering: configurable (creation date / alphabetical / manual drag-drop), respected across sidebar + dropdown + overview
+
+When a workspace is switched to active, it 'jumps to the top' of the list — currently the sidebar's sort uses 'Last used' (added in #276) which auto-promotes the active workspace. Operator finds this confusing — the list rearranges under them. [[more]](https://github.com/Kuestenlogik/Bowire/issues/279)
 
 #### <a id="issue-kuestenlogik-bowire-197"></a>✅ Done · [#197](https://github.com/Kuestenlogik/Bowire/issues/197) Deprecate + unlist Kuestenlogik.Bowire.Extension.MapLibre on nuget.org after v2.0 ships
 
