@@ -1,70 +1,101 @@
 ---
-summary: "A workspace file bundles Bowire's connection and configuration state into a single JSON file that you can commit to version control, share with teammates, or load on a different m"
+summary: "A workspace is your project folder — URLs, environments, collections, recordings, scripts. It can live in localStorage (browser-only mode), in a git-friendly directory (Workspace.Git), or as a portable single-file `.bww` export bundle you commit / share / round-trip between machines."
 ---
 
-# Workspace Files (.bww)
+# Workspaces (.bww)
 
-A workspace file bundles Bowire's connection and configuration state into a single JSON file that you can commit to version control, share with teammates, or load on a different machine to reproduce the same setup.
+A **workspace** is Bowire's project-folder abstraction: every URL you discover, every environment + variable + secret, every collection / recording / benchmark / flow lives inside one. The workbench always has exactly one active workspace; switching workspaces switches every list at once.
 
-## What a .bww file contains
+Workspaces have three storage faces:
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `urls` | `string[]` | Server URLs to connect to |
-| `environments` | `object[]` | Environment definitions (same shape as `environments.json`) |
-| `globals` | `{ key: value }` | Global variables |
-| `collections` | `object[]` | Collection definitions with their items |
+1. **Browser-backed** — every workspace's data sits in `localStorage` under a per-workspace key prefix (`bowire_ws_<id>_*`). Default for the Tool. Survives reloads, scoped per-browser-profile.
+2. **Disk-backed (per-entity files)** — the `Kuestenlogik.Bowire.Workspace.Git` package materialises a workspace as a directory of per-entity files (`workspace.json`, `environments/*.json`, `collections/*/`, `recordings/*.json`, `scripts/*.js`, `secrets/*`). Designed for git review (see [Git-backed workspace](#git-backed-workspace) below).
+3. **`.bww` export bundle** — a single JSON file carrying the full state. Produced via the Workspace-detail header's **Save now** / **Export** action; imported via the create-workspace dialog. The portable form for moving workspaces between machines or sending one to a teammate.
 
-A minimal workspace:
+This doc focuses on `.bww` — the portable export format — and the Git-backed directory layout. For the workbench-side UX (create, switch, manage, save-as-template), see the Workspaces rail in the running app.
+
+## What a `.bww` file contains
+
+A `.bww` is a single JSON document with a versioned envelope around the workspace state:
 
 ```json
 {
-  "urls": ["https://api.example.com:443"],
-  "environments": [
-    {
-      "id": "env_dev",
-      "name": "Dev",
-      "vars": {
-        "baseUrl": "localhost:5001",
-        "token": "dev-token"
-      }
-    },
-    {
-      "id": "env_prod",
-      "name": "Prod",
-      "vars": {
-        "baseUrl": "api.example.com",
-        "token": "prod-token"
-      }
-    }
-  ],
-  "globals": {
-    "apiVersion": "v2",
-    "userAgent": "bowire/1.0"
+  "format": "bowire-workspace",
+  "version": 1,
+  "exportedAt": "2026-06-24T08:42:13.421Z",
+  "workspace": {
+    "name": "Petstore staging",
+    "color": "#22c55e",
+    "description": "Smoke + happy-path against staging.petstore.example",
+    "pluginPins": { "rest": ">=2.0", "grpc": "*" }
   },
-  "collections": []
+  "data": {
+    "urls": ["https://petstore.swagger.io/v2"],
+    "urlMeta": { "https://petstore.swagger.io/v2": { "alias": "Petstore" } },
+    "environments": [
+      {
+        "id": "env_dev",
+        "name": "Dev",
+        "color": "#3b82f6",
+        "vars": { "baseUrl": "localhost:5001", "apiToken": "dev-token" }
+      }
+    ],
+    "activeEnvironmentId": "env_dev",
+    "globals": { "apiVersion": "v2" },
+    "collections": [
+      {
+        "id": "col_smoke",
+        "name": "Smoke",
+        "items": [/* per-item request snapshots */]
+      }
+    ],
+    "presets": {
+      "discover": [/* per-method saved configs */]
+    }
+  }
 }
 ```
 
+| Envelope field | Type | Purpose |
+|---|---|---|
+| `format` | string | Always `"bowire-workspace"`. The importer validates this header before reading anything — a foreign JSON file with the same extension is rejected. |
+| `version` | number | Schema version. Importer migrates older versions forward on read; never breaks old `.bww` files. |
+| `exportedAt` | ISO timestamp | When the bundle was produced. Diagnostic only. |
+| `workspace` | object | Workspace identity (name, color, description, plugin pins). Does NOT carry data — that's in `data`. |
+| `data` | object | The actual content: URLs, envs, globals, collections, recordings, presets, etc. |
+
+> **Note:** the on-disk shape produced by `bowire workspace init` (per-entity files, see below) is NOT the same as the `.bww` single-file bundle. The two are interoperable — `bowire workspace export <dir>` produces a `.bww`; `bowire workspace import <file.bww>` materialises a per-entity directory.
+
+## Filename
+
+Workspace exports are saved as `<workspace-name>.bww`. Names with characters not safe for filesystems (slashes, colons, &c) get sanitised to `_`. The `.bww` extension is the Bowire-workspace canonical extension; importers also accept `.json` for compatibility with hand-edited files.
+
+The pre-v2.0.1 convention (`bowire-workspace-<name>.bowire.json`) was renamed — the type is identified by the file's `format` header, not the filename.
+
 ## Templates on create
 
-When you create a new workspace from the workbench (topbar workspace dropdown → **New workspace…** or the **+** button in the Workspaces rail), Bowire offers a template picker so the workspace starts with realistic seed data instead of an empty page.
+When you create a new workspace from the workbench (topbar workspace dropdown → **New workspace…**, or **+ New workspace** in the Workspaces rail / Home tile), Bowire offers a template picker so the workspace starts with realistic seed data instead of an empty page.
 
-| Template | What it seeds |
-|----------|---------------|
-| **Empty** | No URLs, no env vars, no collections. The default. |
-| **REST API testing** | A sample URL (httpbin.org), `baseUrl` + `apiToken` global variables, and a starter collection with GET + POST stubs. |
-| **gRPC services** | A gRPC URL prefix (`grpc@…`) ready for a `.proto` upload, plus `service` + `method` placeholder globals and an empty starter collection. |
-| **Mock server build** | A starter URL pointed at postman-echo, plus an empty collection ready to capture recordings as mock fixtures. |
-| **Multi-protocol smoke test** | REST + WebSocket + gRPC URLs in one workspace, ready for cross-protocol coverage runs. |
+The dialog separates **Start from scratch** (no template, blank workspace) from the template list (filterable). Templates ship built-in; user-saved templates appear in the same list with a trailing delete icon.
 
-The picked template is remembered as the default for the next workspace you create — convenient when you spin up several workspaces of the same shape (e.g. five staging environments that all start as REST).
+| Built-in template | What it seeds |
+|---|---|
+| **REST API testing** | `https://petstore.swagger.io/v2` as the discovery URL — Bowire auto-discovers Pet / Store / User services on first connect. `baseUrl` + `apiToken` globals + a starter collection with two ready-to-invoke calls (`GET /pet/findByStatus`, `POST /pet`). |
+| **gRPC services** | `grpcs@grpcb.in:443` (server-reflection enabled) plus `service` + `method` placeholder globals and an empty starter collection. Discovery populates a Pet / Empty / Helloer tree on connect. |
+| **Mock server build** | Petstore as the seed URL (discovery-enabled) plus an empty `Mock targets` collection ready to capture recordings as mock fixtures. |
+| **Multi-protocol smoke test** | Petstore REST + `wss://ws.postman-echo.com/raw` + `grpcs@grpcb.in:443` — three different wire formats in one workspace for cross-protocol coverage runs. |
 
-Templates write directly to the new workspace's per-workspace localStorage bucket. The workbench reloads once after applying a non-empty template so the in-memory state hydrates from the freshly seeded buckets.
+The picked template is remembered as the default for the next workspace you create.
+
+### Save as template
+
+The active workspace can be saved as a user template via the Workspaces rail's per-row **Save as template** action (bookmark icon), the workspace-detail header's **Save as template…** button, or the same action on any non-active workspace in the overview list. User templates show up under **Or pick a template** in the create dialog with a delete affordance for cleanup.
+
+User templates snapshot the workspace's URLs, env vars, collections, global vars, plugin pins, and presets. They live in `localStorage` under `bowire_user_workspace_templates` (per-user, cross-workspace) — they're per-machine, not synced across machines.
 
 ## Git-backed workspace (per-entity files)
 
-Beyond the single-file `.bww` bundle, Bowire supports a per-entity directory layout designed for review under version control. `bowire workspace init <path>` materialises this shape at any directory:
+The `Kuestenlogik.Bowire.Workspace.Git` runtime materialises a workspace as a directory of per-entity files designed for review under version control. `bowire workspace init <path>` creates the layout at any directory:
 
 ```
 my-workspace/
@@ -124,130 +155,86 @@ Flags:
 - `--color <hex>` — accent color (e.g. `#22c55e`). Defaults to `#6366f1`.
 - `--no-git` — skip the trailing `git init`. Useful when initialising inside an existing repository.
 
+### `bowire workspace export / import`
+
+| Command | Effect |
+|---|---|
+| `bowire workspace export <dir> <out.bww>` | Bundles a per-entity directory into a single `.bww` file (suitable for sharing). |
+| `bowire workspace import <file.bww> <dir>` | Materialises a `.bww` bundle into the per-entity directory shape. |
+
+The two formats are equivalent round-trip targets; the workbench's create-workspace dialog accepts both `.bww` files and per-entity directories (when running the disk-backed runtime).
+
 ### Storage root resolution
 
-A workspace's `storageRoot` field (when set) points at a directory like the one above. The workbench and CLI route per-workspace reads + writes through that path instead of the per-user `~/.bowire/workspaces/<id>/` default. The two storage modes compose orthogonally with the storage-mode setting (`both` / `browser-only` / `disk-only`) introduced for chunked recording storage.
+A workspace's `storageRoot` field (when set) points at a directory like the one above. The workbench and CLI route per-workspace reads + writes through that path instead of the per-user `~/.bowire/workspaces/<id>/` default. The two storage modes compose orthogonally with the storage-mode setting (`both` / `browser-only` / `disk-only`).
 
-When `storageRoot` is unset, every per-workspace file lands under `~/.bowire/workspaces/<id>/` — the legacy single-user layout, preserved exactly.
-
-### Phase 2
-
-The runtime workbench still routes existing workspaces through the legacy `~/.bowire/` per-user store; full read/write at `storageRoot` (including the filesystem watcher that reflects external edits back into the live workbench) lands in v2.1. The CLI's `init` produces the directory shape today so teams can stage their workspace under git and migrate when the workbench-side wiring ships.
+When `storageRoot` is unset, every per-workspace file lands under `~/.bowire/workspaces/<id>/` — the per-user storage layout.
 
 ### Package boundary
 
-The Phase 2 runtime (per-entity reader/writer, `FileSystemWatcher`, secret-overlay merge, workspace lockfile, SSE producer) ships as a **separate optional NuGet package** — `Kuestenlogik.Bowire.Workspace.Git` — and is NOT in core `Kuestenlogik.Bowire`. The `Workspace.<backend>` namespace leaves room for future storage backends (`Workspace.S3`, `Workspace.Sql`, …) under the same shape. This keeps embedded ASP.NET hosts free of file-IO machinery they didn't ask for: a stock `app.MapBowire(...)` call without the extension package referenced sees the legacy per-user storage path and runs no background watcher.
+The Workspace.Git runtime (per-entity reader/writer, `FileSystemWatcher`, secret-overlay merge, workspace lockfile, SSE producer) ships as a **separate optional NuGet package** — `Kuestenlogik.Bowire.Workspace.Git` — and is NOT in core `Kuestenlogik.Bowire`. The `Workspace.<backend>` namespace leaves room for future storage backends (`Workspace.S3`, `Workspace.Sql`, …) under the same shape. This keeps embedded ASP.NET hosts free of file-IO machinery they didn't ask for: a stock `app.MapBowire(...)` call without the extension package referenced sees the legacy per-user storage path and runs no background watcher.
 
 Standalone `Kuestenlogik.Bowire.Tool` carries the package transitively so `bowire` from the command line gets the full git-workspace surface out of the box. Embedded hosts opt in with an explicit package reference when they want it.
 
-Phase 1's `BowireUserContext.GetWorkspacePath` seam ships in core because it's a pure path resolver with zero new dependencies — the extension package plugs into it via the seam without touching the host's dependency graph.
+`BowireUserContext.GetWorkspacePath` ships in core as a path-resolver seam with zero new dependencies — the extension package plugs into it without touching the host's dependency graph.
 
-## File location
+## Export workflow
 
-The workspace file is read from and written to the **working directory** where Bowire was launched. The file is always named `.bww` (no base name, just the extension).
+From the workbench:
 
-```
-my-project/
-  .bww              <-- workspace file
-  src/
-  tests/
-```
+1. **Workspaces rail** (or workspace-detail header) → **Save now** → flushes every in-flight autosave bucket to durable storage.
+2. **Export…** in the same header (or per-row tool) → produces a `<workspace-name>.bww` download.
 
-When no `.bww` file exists, the workspace endpoints return empty defaults and the UI operates normally without workspace-driven configuration.
+The `.bww` is a snapshot of the workspace at the moment of export. Edits made afterward stay in the live workspace; re-export to update the snapshot.
 
-## Loading and saving
+## Import workflow
 
-Bowire exposes two endpoints for workspace operations:
+From the workbench:
 
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/bowire/api/workspace` | `GET` | Returns the current workspace document (or empty defaults) |
-| `/bowire/api/workspace` | `PUT` | Replaces the workspace file on disk |
+1. **Topbar workspace chip** → **New workspace…** → in the create dialog, switch to the **Import .bww** tab (or drop the `.bww` onto the dialog).
+2. The importer validates the `format` header, migrates the schema version if older, and materialises the workspace into the operator's storage (localStorage in browser-only mode; per-entity directory if Workspace.Git is active).
 
-The GET endpoint reads the file on every request, so external edits (e.g. from `git pull`) are picked up immediately.
+A successful import lands as a NEW workspace (separate ID) — the importer doesn't overwrite the active workspace's state. To replace a workspace, delete it first then import.
 
-The PUT endpoint validates the incoming JSON and writes it to disk with pretty-printed formatting.
+## Version control patterns
 
-## Version control
+The `.bww` single-file bundle is git-friendly:
 
-The `.bww` file is designed to be version-control friendly:
+- **Human-readable JSON** — written with `WriteIndented = true`, so diffs are clean and reviewable.
+- **No secrets by default** — URLs and environment names are safe to commit. Tokens and API keys should live in `environments/<env>.secrets.json` (per-entity layout) or be referenced via `{{secret.NAME}}` (workspace-wide secrets).
+- **Deterministic structure** — fields are always serialised in the same key order, minimising noise in diffs.
 
-- **Human-readable JSON** -- the file is written with `WriteIndented = true`, so diffs are clean and reviewable.
-- **No secrets by default** -- URLs and environment names are safe to commit. Tokens and API keys can be stored in environment variables, but consider using `.gitignore` for workspaces that contain sensitive values.
-- **Deterministic structure** -- fields are always serialized in the same order, minimizing noise in diffs.
+For team workflows, prefer the **per-entity directory** layout (Workspace.Git) over the single-file `.bww`. Per-entity gives clean file-level diffs (rename one env, touch one file) instead of a single ever-changing bundle.
 
-### Recommended .gitignore entry
+### Recommended `.gitignore` entry
 
-If your workspace contains sensitive environment variables, add the file to `.gitignore`:
+If your project tracks `.bww` exports of personal workspaces (not shared team workspaces), exclude them:
 
 ```
-# Bowire workspace (contains tokens)
-.bww
+# Bowire workspace exports — per-user state, not for the team
+*.bww
 ```
 
-Alternatively, keep the workspace committed but move secrets into a separate file or system environment variables.
-
-## Team sharing
-
-A committed `.bww` file gives every team member the same starting configuration:
-
-1. Clone the repository.
-2. Run `bowire` from the project root.
-3. Bowire loads the `.bww` file and pre-populates server URLs, environments, globals, and collections.
-
-This eliminates the "how do I connect to the API?" onboarding question. New team members get a working setup immediately.
-
-### Workflow
-
-```bash
-# Developer A sets up the workspace
-bowire --url https://api.staging.example.com
-# (configure environments, save collections, etc.)
-# The UI writes the workspace via PUT /bowire/api/workspace
-
-git add .bww
-git commit -m "Add Bowire workspace with staging config"
-
-# Developer B clones and runs
-git clone repo
-cd repo
-bowire
-# Bowire loads the workspace — same URLs, environments, collections
-```
+For team-shared per-entity workspaces, the layout's own `.gitignore` (produced by `bowire workspace init`) already excludes secrets.
 
 ## Combining with environments
 
-The workspace file's `environments` and `globals` fields follow the same schema as `~/.bowire/environments.json`. When a workspace is loaded, its environments are available alongside any user-level environments.
+The workspace's `environments` and `globals` follow the same schema regardless of storage mode (single `.bww` or per-entity files). When a workspace is loaded, its environments are available alongside any user-level environments.
 
 This means you can have:
 
-- **Project-level** environments in `.bww` -- shared across the team
-- **Personal** environments in `~/.bowire/environments.json` -- private tokens, local overrides
+- **Project-level** environments in the workspace — shared across the team
+- **Personal** environments scoped to the user — private tokens, local overrides
 
 ## Combining with collections
 
-Collections stored in the workspace file are loaded alongside any user-level collections. This lets you ship a set of "starter" collections with the project while team members add their own.
-
-## Empty workspace
-
-When the `.bww` file does not exist or is empty/corrupt, the workspace endpoints return:
-
-```json
-{
-  "urls": [],
-  "environments": [],
-  "globals": {},
-  "collections": []
-}
-```
-
-Bowire operates normally in this case -- all configuration comes from user-level storage (`~/.bowire/` and `localStorage`).
+Collections stored in the workspace are loaded alongside any user-level collections. This lets you ship a set of "starter" collections with the project while team members add their own.
 
 ## Tips
 
-- Use workspaces to **standardize your team's API testing setup** -- everyone gets the same URLs, environments, and starter collections.
-- Keep the `.bww` file next to your project's source code so it travels with the repo.
-- For open-source projects, include a `.bww` file with example URLs and placeholder tokens so contributors can get started quickly.
-- The workspace is a snapshot -- it does not auto-sync with the UI. Save explicitly when you want to update the committed file.
+- Use workspaces to **standardise your team's API testing setup** — everyone gets the same URLs, environments, and starter collections.
+- For team-shared workspaces, prefer the per-entity directory layout (`bowire workspace init`) so secret separation, file-level diffs, and per-script editing all work out of the box.
+- For one-off sharing (sending a workspace to a teammate, archiving a snapshot before a big change), use `.bww` export — single file, easy to attach.
+- For open-source projects, include a `workspace.example.json` (or a `.bww` with placeholder tokens) so contributors can get started quickly.
 
 See also: [Environments & Variables](environments.md), [Collections](collections.md)
