@@ -91,7 +91,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.1 — Scripting, variable resolver, throughput surface *(due 2026-06-30)*
 
-**11/24 done** · 13 backlog
+**13/25 done** · 12 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -107,7 +107,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [233](https://github.com/Kuestenlogik/Bowire/issues/233) | Bowire | [Benchmarks: previous-run diff banner on repeat (p95 ▲ / ▼ / status histogram delta)](#issue-kuestenlogik-bowire-233) | ⬜ Backlog |  |
 | [234](https://github.com/Kuestenlogik/Bowire/issues/234) | Bowire | [Benchmarks: result exports — CSV + k6-summary JSON + OTLP metrics](#issue-kuestenlogik-bowire-234) | ⬜ Backlog |  |
 | [254](https://github.com/Kuestenlogik/Bowire/issues/254) | Bowire | [Freeform builder: auto-discover prompt after first successful invoke](#issue-kuestenlogik-bowire-254) | ⬜ Backlog |  |
-| [267](https://github.com/Kuestenlogik/Bowire/issues/267) | Bowire | [Ad-hoc REST: URL is the call URL, not pre-filled discovery source](#issue-kuestenlogik-bowire-267) | ⬜ Backlog |  |
 | [197](https://github.com/Kuestenlogik/Bowire/issues/197) | Bowire | [Deprecate + unlist Kuestenlogik.Bowire.Extension.MapLibre on nuget.org after v2.0 ships](#issue-kuestenlogik-bowire-197) | ✅ Done |  |
 | [248](https://github.com/Kuestenlogik/Bowire/issues/248) | Bowire | [Optional rail modules — plumbing (Phase 1): toggle mechanic + always-on set + Settings editor](#issue-kuestenlogik-bowire-248) | ✅ Done |  |
 | [252](https://github.com/Kuestenlogik/Bowire/issues/252) | Bowire | [Compose-request entry points: '+ Compose' (self-contained) + 'New from source…' (workspace-managed URL)](#issue-kuestenlogik-bowire-252) | ✅ Done |  |
@@ -119,6 +118,8 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [264](https://github.com/Kuestenlogik/Bowire/issues/264) | Bowire | [Save-as-template button: SVG save icon (was emoji fallback)](#issue-kuestenlogik-bowire-264) | ✅ Done |  |
 | [265](https://github.com/Kuestenlogik/Bowire/issues/265) | Bowire | [Apostrophe in Save-as-template tooltip broke JS parser](#issue-kuestenlogik-bowire-265) | ✅ Done |  |
 | [266](https://github.com/Kuestenlogik/Bowire/issues/266) | Bowire | [Ad-hoc REST — Postman-style URL + verb + body](#issue-kuestenlogik-bowire-266) | ✅ Done |  |
+| [267](https://github.com/Kuestenlogik/Bowire/issues/267) | Bowire | [Ad-hoc REST: URL is the call URL, not pre-filled discovery source](#issue-kuestenlogik-bowire-267) | ✅ Done |  |
+| [268](https://github.com/Kuestenlogik/Bowire/issues/268) | Bowire | [Ad-hoc REST: executeFreeformRequest validation no longer requires service](#issue-kuestenlogik-bowire-268) | ✅ Done |  |
 
 ### v2.2 — Test pillar: assertions, CI runner, regression coverage *(due 2026-07-10)*
 
@@ -582,10 +583,6 @@ Round out the Benchmarks export surface so result data can leave Bowire in the f
 
 Last unchecked acceptance item from the parent **#40** Freeform Request Builder ticket. After a freeform request hits a 2xx response, prompt the operator: [[more]](https://github.com/Kuestenlogik/Bowire/issues/254)
 
-#### <a id="issue-kuestenlogik-bowire-267"></a>⬜ Backlog · [#267](https://github.com/Kuestenlogik/Bowire/issues/267) Ad-hoc REST: URL is the call URL, not pre-filled discovery source
-
-startFreeformRequest pre-filled serverUrl from workspace's sources[0] (the OpenAPI source URL), conflating discovery with invocation. For protocol=rest the field now starts empty; operator types the full request URL. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/267)
-
 #### <a id="issue-kuestenlogik-bowire-197"></a>✅ Done · [#197](https://github.com/Kuestenlogik/Bowire/issues/197) Deprecate + unlist Kuestenlogik.Bowire.Extension.MapLibre on nuget.org after v2.0 ships
 
 `Kuestenlogik.Bowire.Extension.MapLibre` 1.3.0-rc.1 was renamed to `Kuestenlogik.Bowire.Map` ahead of v2.0 (commit 75c8d1f). … [[more]](https://github.com/Kuestenlogik/Bowire/issues/197)
@@ -629,6 +626,14 @@ Uncaught SyntaxError: Unexpected identifier 'Your'. The tooltip 'Shows up in 'Yo
 #### <a id="issue-kuestenlogik-bowire-266"></a>✅ Done · [#266](https://github.com/Kuestenlogik/Bowire/issues/266) Ad-hoc REST — Postman-style URL + verb + body
 
 Closes #256. RestInvoker.InvokeAdHocAsync (server-side plain HttpClient call); BowireRestProtocol routes empty-service + verb-method to the ad-hoc path. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/266)
+
+#### <a id="issue-kuestenlogik-bowire-267"></a>✅ Done · [#267](https://github.com/Kuestenlogik/Bowire/issues/267) Ad-hoc REST: URL is the call URL, not pre-filled discovery source
+
+startFreeformRequest pre-filled serverUrl from workspace's sources[0] (the OpenAPI source URL), conflating discovery with invocation. For protocol=rest the field now starts empty; operator types the full request URL. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/267)
+
+#### <a id="issue-kuestenlogik-bowire-268"></a>✅ Done · [#268](https://github.com/Kuestenlogik/Bowire/issues/268) Ad-hoc REST: executeFreeformRequest validation no longer requires service
+
+Validation guard 'Enter a service and method name' silently blocked every ad-hoc REST click — fr.service is intentionally empty in ad-hoc mode. Now REST mode requires URL + verb only; other protocols still require service + method. Console label reads 'POST https://…' instead of '/POST'. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/268)
 
 ### v2.2 — Test pillar: assertions, CI runner, regression coverage *(due 2026-07-10)*
 
