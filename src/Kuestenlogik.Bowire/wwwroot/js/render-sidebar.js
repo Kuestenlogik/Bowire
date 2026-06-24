@@ -2208,7 +2208,12 @@
                 });
             }
         });
-        if (isActive && typeof saveCurrentWorkspaceAsTemplate === 'function') {
+        // Save-as-template is available on ANY workspace, not just
+        // the active one — the per-workspace localStorage buckets
+        // (bowire_ws_<id>_*) are read regardless of active state. The
+        // earlier 'active only' gate was a self-imposed restriction
+        // from the first cut.
+        if (typeof saveWorkspaceAsTemplate === 'function') {
             defs.push({
                 key: 'save-template',
                 icon: 'bookmark',
@@ -2227,7 +2232,7 @@
                     }).then(function (name) {
                         if (!name) return;
                         try {
-                            saveCurrentWorkspaceAsTemplate(name, '', 'layers');
+                            saveWorkspaceAsTemplate(wsId, name, '', 'layers');
                             if (typeof toast === 'function') {
                                 toast('Saved "' + name + '" — available in the next create-workspace dialog.', 'success');
                             }

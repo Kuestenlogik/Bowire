@@ -285,15 +285,20 @@
         return _readUserTemplates().map(_wrapUserTemplate);
     }
 
-    // Snapshot the currently-active workspace as a reusable template.
-    // Throws when no active workspace exists; returns the new
-    // template id on success so the caller can highlight it in the
-    // template manager.
-    function saveCurrentWorkspaceAsTemplate(name, description, icon) {
+    // Snapshot ANY workspace as a reusable template. wsId arg lets
+    // callers snapshot inactive workspaces from the sidebar / overview
+    // row tools — the storage is per-workspace (bowire_ws_<id>_*) so
+    // the read path is identical regardless of active state. The
+    // earlier 'must be active' restriction was an artifact of the
+    // first implementation reading from the in-memory state of the
+    // active workspace, NOT a fundamental constraint.
+    //
+    // Returns the new template id on success so the caller can
+    // highlight it in the template manager.
+    function saveWorkspaceAsTemplate(wsId, name, description, icon) {
         var safeName = String(name || '').trim();
         if (!safeName) throw new Error('Template name is required.');
-        var wsId = (typeof activeWorkspaceId !== 'undefined') ? activeWorkspaceId : null;
-        if (!wsId) throw new Error('No active workspace to snapshot.');
+        if (!wsId) throw new Error('Workspace id is required.');
 
         var payload = {};
         TEMPLATE_BUCKETS.forEach(function (b) {
@@ -343,6 +348,15 @@
         all.push(record);
         _writeUserTemplates(all);
         return record.id;
+    }
+
+    // Backwards-compat wrapper — existing call sites use
+    // saveCurrentWorkspaceAsTemplate(name, ...). Delegate to the
+    // parameterised function with the active workspace id.
+    function saveCurrentWorkspaceAsTemplate(name, description, icon) {
+        var wsId = (typeof activeWorkspaceId !== 'undefined') ? activeWorkspaceId : null;
+        if (!wsId) throw new Error('No active workspace to snapshot.');
+        return saveWorkspaceAsTemplate(wsId, name, description, icon);
     }
 
     function deleteUserTemplate(id) {
