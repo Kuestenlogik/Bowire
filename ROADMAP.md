@@ -97,11 +97,10 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.4 — Dev pillar: schema watch diff, mock-from-schema, side-by-side *(due 2026-08-03)*
 
-**0/14 done** · 14 backlog
+**1/14 done** · 13 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
-| [34](https://github.com/Kuestenlogik/Bowire/issues/34) | Bowire | [AsyncAPI discovery source — remaining bindings + V2 overloads + YAML pre-normaliser](#issue-kuestenlogik-bowire-34) | ✅ Done | `area:plugin-sdk` |
 | [36](https://github.com/Kuestenlogik/Bowire/issues/36) | Bowire | [Replay-Mock — HTTPS MITM / record mode](#issue-kuestenlogik-bowire-36) | ⬜ Backlog | `area:mock` |
 | [48](https://github.com/Kuestenlogik/Bowire/issues/48) | Bowire | [Schema watch mode](#issue-kuestenlogik-bowire-48) | ⬜ Backlog | `area:workbench` |
 | [49](https://github.com/Kuestenlogik/Bowire/issues/49) | Bowire | [Programmatic environment provisioning in embedded mode](#issue-kuestenlogik-bowire-49) | ⬜ Backlog | `area:workbench` |
@@ -115,6 +114,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [250](https://github.com/Kuestenlogik/Bowire/issues/250) | Bowire | [Unified Layout — within-tab split (Auto/drag/shortcut/per-tab) + cross-tab pane split with tab drag-and-drop](#issue-kuestenlogik-bowire-250) | ⬜ Backlog |  |
 | [251](https://github.com/Kuestenlogik/Bowire/issues/251) | Bowire | [Visual shelf — drag-and-drop holding area for cross-surface fragments (parallel to OS clipboard)](#issue-kuestenlogik-bowire-251) | ⬜ Backlog |  |
 | [253](https://github.com/Kuestenlogik/Bowire/issues/253) | Bowire | [Separate discovery URL from invocation URL — schema source (upload / URL / source) + per-call invocation URL override](#issue-kuestenlogik-bowire-253) | ⬜ Backlog |  |
+| [34](https://github.com/Kuestenlogik/Bowire/issues/34) | Bowire | [AsyncAPI discovery source — remaining bindings + V2 overloads + YAML pre-normaliser](#issue-kuestenlogik-bowire-34) | ✅ Done | `area:plugin-sdk` |
 
 ### v2.5 — Continuous integration: PR bot, project file, org dashboard *(due 2026-08-12)*
 
@@ -130,7 +130,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.6 — Multi-tenancy: per-identity state, SCIM provisioning, per-user plugins
 
-**0/4 done** · 1 next up · 3 backlog
+**0/5 done** · 1 next up · 4 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -138,6 +138,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [96](https://github.com/Kuestenlogik/Bowire/issues/96) | Bowire | [Multi-tenant Phase C — SCIM 2.0 provisioning endpoints](#issue-kuestenlogik-bowire-96) | ⬜ Backlog |  |
 | [97](https://github.com/Kuestenlogik/Bowire/issues/97) | Bowire | [Multi-tenant Phase E — single-user → multi-tenant migration path](#issue-kuestenlogik-bowire-97) | ⬜ Backlog |  |
 | [98](https://github.com/Kuestenlogik/Bowire/issues/98) | Bowire | [Multi-tenant Phase F — user chip, scoped state copy, admin impersonation](#issue-kuestenlogik-bowire-98) | ⬜ Backlog |  |
+| [284](https://github.com/Kuestenlogik/Bowire/issues/284) | Bowire | [Multi-tenant Phase D — per-user plugin installs (system tier + per-user overlay)](#issue-kuestenlogik-bowire-284) | ⬜ Backlog |  |
 
 ### v3.0 — Cleanups + breaking-change cuts
 
@@ -458,12 +459,6 @@ Modern API auth is multi-step: hit `/login`, get a session cookie, hit `/refresh
 
 ### v2.4 — Dev pillar: schema watch diff, mock-from-schema, side-by-side *(due 2026-08-03)*
 
-#### <a id="issue-kuestenlogik-bowire-34"></a>✅ Done · [#34](https://github.com/Kuestenlogik/Bowire/issues/34) AsyncAPI discovery source — remaining bindings + V2 overloads + YAML pre-normaliser
-
-> `area:plugin-sdk`
-
-SNS + SQS binding resolvers landed (degrade gracefully until their wire plugins ship; pass binding fields through verbatim onto the metadata bag à la Kafka / AMQP). V2 per-message overloads emit one method per `message.oneOf[]` entry, named `operationId::messageName`, matching the V3 multi-message shape. YAML pre-normaliser now also lowercases known binding-type keys (`Kafka` → `kafka`, `MQTT` → `mqtt`) and resolves common aliases (`websocket` → `ws`, `amqp091` → `amqp`) before the SDK reader sees the document — rewrite is scoped to direct children of `bindings:` headers so unrelated keys stay untouched.
-
 #### <a id="issue-kuestenlogik-bowire-36"></a>⬜ Backlog · [#36](https://github.com/Kuestenlogik/Bowire/issues/36) Replay-Mock — HTTPS MITM / record mode
 
 > `area:mock`
@@ -522,6 +517,12 @@ A visible, in-app **shelf** (working name) — a drag-and-drop holding area for 
 
 Bowire conflates two distinct URL concepts under a single "Server URL" field: [[more]](https://github.com/Kuestenlogik/Bowire/issues/253)
 
+#### <a id="issue-kuestenlogik-bowire-34"></a>✅ Done · [#34](https://github.com/Kuestenlogik/Bowire/issues/34) AsyncAPI discovery source — remaining bindings + V2 overloads + YAML pre-normaliser
+
+> `area:plugin-sdk`
+
+AsyncAPI loader + most bindings shipped (MQTT / Kafka / WebSocket / HTTP / AMQP / NATS / MQTT5 + schema export). Open: [[more]](https://github.com/Kuestenlogik/Bowire/issues/34)
+
 ### v2.5 — Continuous integration: PR bot, project file, org dashboard *(due 2026-08-12)*
 
 #### <a id="issue-kuestenlogik-bowire-101"></a>⬜ Backlog · [#101](https://github.com/Kuestenlogik/Bowire/issues/101) Tugboat — VS Code + JetBrains workbench extension
@@ -563,6 +564,10 @@ Extracted from #28 — **Phase E** of the multi-tenant rollout. Tracked separate
 #### <a id="issue-kuestenlogik-bowire-98"></a>⬜ Backlog · [#98](https://github.com/Kuestenlogik/Bowire/issues/98) Multi-tenant Phase F — user chip, scoped state copy, admin impersonation
 
 Phase F of the multi-tenant rollout — the UI affordances that turn "multi-user works under the hood" into "users feel it" (#28). [[more]](https://github.com/Kuestenlogik/Bowire/issues/98)
+
+#### <a id="issue-kuestenlogik-bowire-284"></a>⬜ Backlog · [#284](https://github.com/Kuestenlogik/Bowire/issues/284) Multi-tenant Phase D — per-user plugin installs (system tier + per-user overlay)
+
+Extracted from #28 — **Phase D** of the multi-tenant rollout. Tracked separately so it can be sized + scheduled. [[more]](https://github.com/Kuestenlogik/Bowire/issues/284)
 
 ### v3.0 — Cleanups + breaking-change cuts
 
