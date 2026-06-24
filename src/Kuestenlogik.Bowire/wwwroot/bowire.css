@@ -8415,10 +8415,12 @@ they're a way
     flex-direction: column;
     gap: 4px;
     margin-bottom: 16px;
-    /* Cap the height so the create-workspace dialog itself stays a
-       fixed visual size regardless of how many templates exist. The
-       list scrolls internally past the cap. */
-    max-height: 280px;
+    /* Fixed visual height (NOT max-height) so the dialog stays
+       rock-still while the operator filters. With max-height the
+       list collapsed to fit when the filter narrowed the rows,
+       which made the whole dialog jump around — fewer-rows is the
+       right signal, dialog-resizing isn't. */
+    height: 280px;
     overflow-y: auto;
 }
 
