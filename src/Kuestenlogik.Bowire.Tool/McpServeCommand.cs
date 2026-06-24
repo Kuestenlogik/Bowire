@@ -4,6 +4,7 @@
 using Kuestenlogik.Bowire.App.Cli;
 using Kuestenlogik.Bowire.Mcp;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -22,6 +23,18 @@ namespace Kuestenlogik.Bowire.App;
 /// In stdio mode every console-logger write goes to stderr — the SDK
 /// owns stdout for JSON-RPC framing and any stray stdout byte derails
 /// the protocol.
+///
+/// <para>
+/// Two additional modes layer on top of the transport choice:
+/// </para>
+/// <list type="bullet">
+///   <item><c>--attach &lt;parent-addr&gt;</c> — forwarder mode (#286).
+///         No local tool registry; every incoming MCP request is relayed
+///         to a running parent Bowire MCP server.</item>
+///   <item><c>--token &lt;secret&gt;</c> — bearer-auth gate on the
+///         <c>--bind http</c> endpoint. Pair with <c>--attach-token</c>
+///         on the child.</item>
+/// </list>
 /// </summary>
 internal static class McpServeCommand
 {
@@ -37,6 +50,17 @@ internal static class McpServeCommand
     /// need to assert wiring without actually launching a host. Keeps
     /// the seam type-stable when new flags get added.
     /// </summary>
+    /// <param name="ConfigureOptions">Applied to the local
+    /// <see cref="BowireMcpOptions"/> when not in forwarder mode.</param>
+    /// <param name="Port">HTTP-bind port; ignored for stdio.</param>
+    /// <param name="AllowArbitraryUrls">Mirror of <see cref="BowireMcpOptions.AllowArbitraryUrls"/>.</param>
+    /// <param name="NoEnvAllowlist">Inverse of <see cref="BowireMcpOptions.LoadAllowlistFromEnvironments"/>.</param>
+    /// <param name="AllowInvoke">Inverse of <see cref="BowireMcpOptions.LoadAllowlistFromTypedUrls"/>'s default-off.</param>
+    /// <param name="NoConfirm">Inverse of <see cref="BowireMcpOptions.RequireConfirmationForMutations"/>.</param>
+    /// <param name="Io">Diagnostic sink (stderr in stdio mode, stdout in http mode).</param>
+    /// <param name="AttachEndpoint">Forwarder target; <c>null</c> disables forwarder mode.</param>
+    /// <param name="AttachToken">Bearer token sent to the parent during forwarding.</param>
+    /// <param name="ServerToken">Bearer token expected on inbound requests in <c>--bind http</c>.</param>
     internal sealed record McpServeConfig(
         Action<BowireMcpOptions> ConfigureOptions,
         int Port,
@@ -44,7 +68,10 @@ internal static class McpServeCommand
         bool NoEnvAllowlist,
         bool AllowInvoke,
         bool NoConfirm,
-        CommandIo Io);
+        CommandIo Io,
+        Uri? AttachEndpoint = null,
+        string? AttachToken = null,
+        string? ServerToken = null);
 
     public static Task<int> RunAsync(string bind, int port, bool allowArbitraryUrls, bool noEnvAllowlist)
         => RunAsync(bind, port, allowArbitraryUrls, noEnvAllowlist,
@@ -62,7 +89,9 @@ internal static class McpServeCommand
     // — production callers keep that.
     internal static Task<int> RunAsync(string bind, int port, bool allowArbitraryUrls, bool noEnvAllowlist,
         bool allowInvoke = false, bool noConfirm = false,
-        TextWriter? stdout = null, TextWriter? stderr = null, CancellationToken ct = default)
+        TextWriter? stdout = null, TextWriter? stderr = null,
+        string? attach = null, string? attachToken = null, string? token = null,
+        CancellationToken ct = default)
     {
         Action<BowireMcpOptions> configureOpts = o =>
         {
@@ -85,7 +114,19 @@ internal static class McpServeCommand
         // sink (the WARNING blob that lands on stderr), not the
         // protocol stream — so it's safe to redirect even in --bind stdio.
         var io = CommandIo.Resolve(stdout, stderr);
-        var cfg = new McpServeConfig(configureOpts, port, allowArbitraryUrls, noEnvAllowlist, allowInvoke, noConfirm, io);
+
+        Uri? attachUri = null;
+        if (!string.IsNullOrWhiteSpace(attach))
+        {
+            if (!BowireForwardingMcpTransport.TryParseAttachEndpoint(attach, out attachUri, out var parseError))
+                return Fail(parseError, io);
+        }
+
+        var cfg = new McpServeConfig(
+            configureOpts, port, allowArbitraryUrls, noEnvAllowlist, allowInvoke, noConfirm, io,
+            AttachEndpoint: attachUri,
+            AttachToken: string.IsNullOrEmpty(attachToken) ? null : attachToken,
+            ServerToken: string.IsNullOrEmpty(token) ? null : token);
 
         return bind switch
         {
@@ -103,19 +144,39 @@ internal static class McpServeCommand
         builder.Logging.AddConsole(o => o.LogToStandardErrorThreshold = LogLevel.Trace);
         builder.Logging.SetMinimumLevel(LogLevel.Warning);
 
-        builder.Services
-            .AddBowireMcp(cfg.ConfigureOptions)
-            .WithStdioServerTransport()
-            .WithTools<BowireMcpTools>()
-            .WithResources<BowireMcpResources>()
-            .WithPrompts<BowireMcpPrompts>();
+        if (cfg.AttachEndpoint is not null)
+        {
+            // Forwarder mode — no local tools / resources / prompts.
+            // Every incoming JSON-RPC request goes upstream.
+            builder.Services
+                .AddBowireMcpForwarder(cfg.AttachEndpoint, cfg.AttachToken)
+                .WithStdioServerTransport();
 
-        if (cfg.AllowArbitraryUrls)
-            await cfg.Io.Err.WriteLineAsync("[bowire-mcp] WARNING: --allow-arbitrary-urls set; bowire.invoke / bowire.subscribe accept any URL the agent supplies.").ConfigureAwait(false);
-        if (cfg.AllowInvoke)
-            await cfg.Io.Err.WriteLineAsync("[bowire-mcp] --allow-invoke set: seeding allowlist from ~/.bowire/typed-urls.json (in addition to environments.json).").ConfigureAwait(false);
-        if (cfg.NoConfirm)
-            await cfg.Io.Err.WriteLineAsync("[bowire-mcp] --no-confirm set: mutator tools (bowire.mock.start, bowire.record.start) execute without the two-step confirmation gate.").ConfigureAwait(false);
+            await cfg.Io.Err.WriteLineAsync(
+                $"[bowire-mcp] --attach {cfg.AttachEndpoint} — forwarder mode (stdio). "
+                + (cfg.AttachToken is null ? "(no token)" : "(bearer token set)")).ConfigureAwait(false);
+            if (cfg.AllowArbitraryUrls || cfg.AllowInvoke || cfg.NoConfirm)
+            {
+                await cfg.Io.Err.WriteLineAsync(
+                    "[bowire-mcp] --attach overrides local tool flags (--allow-arbitrary-urls, --allow-invoke, --no-confirm); the parent's configuration is in effect.").ConfigureAwait(false);
+            }
+        }
+        else
+        {
+            builder.Services
+                .AddBowireMcp(cfg.ConfigureOptions)
+                .WithStdioServerTransport()
+                .WithTools<BowireMcpTools>()
+                .WithResources<BowireMcpResources>()
+                .WithPrompts<BowireMcpPrompts>();
+
+            if (cfg.AllowArbitraryUrls)
+                await cfg.Io.Err.WriteLineAsync("[bowire-mcp] WARNING: --allow-arbitrary-urls set; bowire.invoke / bowire.subscribe accept any URL the agent supplies.").ConfigureAwait(false);
+            if (cfg.AllowInvoke)
+                await cfg.Io.Err.WriteLineAsync("[bowire-mcp] --allow-invoke set: seeding allowlist from ~/.bowire/typed-urls.json (in addition to environments.json).").ConfigureAwait(false);
+            if (cfg.NoConfirm)
+                await cfg.Io.Err.WriteLineAsync("[bowire-mcp] --no-confirm set: mutator tools (bowire.mock.start, bowire.record.start) execute without the two-step confirmation gate.").ConfigureAwait(false);
+        }
 
         try
         {
@@ -130,23 +191,69 @@ internal static class McpServeCommand
         var builder = WebApplication.CreateBuilder();
         builder.Logging.SetMinimumLevel(LogLevel.Warning);
 
-        builder.Services
-            .AddBowireMcp(cfg.ConfigureOptions)
-            .WithHttpTransport(o => o.Stateless = true)
-            .WithTools<BowireMcpTools>()
-            .WithResources<BowireMcpResources>()
-            .WithPrompts<BowireMcpPrompts>();
+        if (cfg.AttachEndpoint is not null)
+        {
+            builder.Services
+                .AddBowireMcpForwarder(cfg.AttachEndpoint, cfg.AttachToken)
+                .WithHttpTransport(o => o.Stateless = true);
+        }
+        else
+        {
+            builder.Services
+                .AddBowireMcp(cfg.ConfigureOptions)
+                .WithHttpTransport(o => o.Stateless = true)
+                .WithTools<BowireMcpTools>()
+                .WithResources<BowireMcpResources>()
+                .WithPrompts<BowireMcpPrompts>();
+        }
 
         var app = builder.Build();
+
+        // Bearer-auth gate — when --token is set, every request to
+        // /bowire/mcp must carry Authorization: Bearer <secret>. The
+        // child (--attach-token) supplies it transparently via the
+        // forwarder transport's AdditionalHeaders.
+        if (!string.IsNullOrEmpty(cfg.ServerToken))
+        {
+            var expected = "Bearer " + cfg.ServerToken;
+            app.Use(async (HttpContext ctx, RequestDelegate next) =>
+            {
+                if (ctx.Request.Path.StartsWithSegments("/bowire/mcp"))
+                {
+                    var supplied = (string?)ctx.Request.Headers.Authorization;
+                    if (!string.Equals(supplied, expected, StringComparison.Ordinal))
+                    {
+                        ctx.Response.StatusCode = StatusCodes.Status401Unauthorized;
+                        ctx.Response.Headers["WWW-Authenticate"] = "Bearer realm=\"bowire-mcp\"";
+                        await ctx.Response.WriteAsync("Unauthorized — invalid or missing bearer token.", ctx.RequestAborted).ConfigureAwait(false);
+                        return;
+                    }
+                }
+                await next(ctx).ConfigureAwait(false);
+            });
+        }
+
         app.MapMcp("/bowire/mcp");
 
         cfg.Io.OutLine($"  Bowire MCP - listening on http://localhost:{cfg.Port}/bowire/mcp");
-        if (cfg.AllowArbitraryUrls)
-            cfg.Io.OutLine("  WARNING: --allow-arbitrary-urls is set; URL allowlist is disabled.");
-        if (cfg.AllowInvoke)
-            cfg.Io.OutLine("  --allow-invoke set: seeding allowlist from ~/.bowire/typed-urls.json.");
-        if (cfg.NoConfirm)
-            cfg.Io.OutLine("  --no-confirm set: mutator tools execute without the two-step confirmation gate.");
+        if (cfg.AttachEndpoint is not null)
+        {
+            cfg.Io.OutLine($"  --attach {cfg.AttachEndpoint} — forwarder mode "
+                + (cfg.AttachToken is null ? "(no token)." : "(bearer token set)."));
+            if (cfg.AllowArbitraryUrls || cfg.AllowInvoke || cfg.NoConfirm)
+                cfg.Io.OutLine("  --attach overrides local tool flags; the parent's configuration applies.");
+        }
+        else
+        {
+            if (cfg.AllowArbitraryUrls)
+                cfg.Io.OutLine("  WARNING: --allow-arbitrary-urls is set; URL allowlist is disabled.");
+            if (cfg.AllowInvoke)
+                cfg.Io.OutLine("  --allow-invoke set: seeding allowlist from ~/.bowire/typed-urls.json.");
+            if (cfg.NoConfirm)
+                cfg.Io.OutLine("  --no-confirm set: mutator tools execute without the two-step confirmation gate.");
+        }
+        if (!string.IsNullOrEmpty(cfg.ServerToken))
+            cfg.Io.OutLine("  --token set: inbound requests must carry 'Authorization: Bearer <token>'.");
         cfg.Io.OutLine("  Connect Claude Desktop / Cursor with the URL above; or POST JSON-RPC directly.");
 
         try

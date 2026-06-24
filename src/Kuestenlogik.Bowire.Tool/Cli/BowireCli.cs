@@ -621,10 +621,17 @@ internal static class BowireCli
         { Description = "Widen the allowlist to every URL the user has typed at least once (~/.bowire/typed-urls.json). Strictly additive with the environments seed." };
         var noConfirm = new Option<bool>("--no-confirm")
         { Description = "Skip the two-step pending-confirmation gate on mutator tools (bowire.mock.start, bowire.record.start). Use when the agent host already enforces approvals." };
+        var attach = new Option<string?>("--attach")
+        { Description = "Forwarder mode (#286): relay every incoming MCP request to a parent Bowire MCP endpoint. Accepts host:port shorthand (expanded to http://host:port/bowire/mcp) or an absolute http(s) URI. Mutually exclusive in spirit with --allow-arbitrary-urls / --allow-invoke / --no-confirm — those configure the *local* tool registry, which forwarder mode skips entirely." };
+        var attachToken = new Option<string?>("--attach-token")
+        { Description = "Bearer token attached to every outbound request to the parent (Authorization: Bearer <token>). Required when the parent was started with --token <secret>." };
+        var token = new Option<string?>("--token")
+        { Description = "Require Authorization: Bearer <secret> on every inbound /bowire/mcp request (--bind http only). Pair with --attach-token on the child." };
 
         var serve = new Command("serve", "Run Bowire as an MCP server (AI-agent bridge).");
         serve.Add(bind); serve.Add(port); serve.Add(allowArbitrary); serve.Add(noEnvAllowlist);
         serve.Add(allowInvoke); serve.Add(noConfirm);
+        serve.Add(attach); serve.Add(attachToken); serve.Add(token);
         serve.SetAction(async (pr, ct) => await McpServeCommand.RunAsync(
             bind: pr.GetValue(bind) ?? "stdio",
             port: pr.GetValue(port),
@@ -634,7 +641,10 @@ internal static class BowireCli
             noConfirm: pr.GetValue(noConfirm),
             stdout: pr.InvocationConfiguration.Output,
             stderr: pr.InvocationConfiguration.Error,
-            ct: ct).ConfigureAwait(false));
+            ct: ct,
+            attach: pr.GetValue(attach),
+            attachToken: pr.GetValue(attachToken),
+            token: pr.GetValue(token)).ConfigureAwait(false));
 
         var mcp = new Command("mcp", "Expose Bowire as an MCP server for AI agents.");
         mcp.Add(serve);
