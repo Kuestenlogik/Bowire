@@ -126,9 +126,14 @@ public sealed class WorkspaceExportImportTests : IDisposable
         Assert.True(File.Exists(outFile));
         var json = await File.ReadAllTextAsync(outFile, TestContext.Current.CancellationToken);
         using var doc = JsonDocument.Parse(json);
-        Assert.Equal(WorkspaceCommand.ExportFormatVersion,
-            doc.RootElement.GetProperty("workspaceFormatVersion").GetInt32());
-        Assert.True(doc.RootElement.TryGetProperty("environments", out var env));
+        // #282 A2 — writer now emits v2 canonical envelope.
+        Assert.Equal("bowire-workspace",
+            doc.RootElement.GetProperty("format").GetString());
+        Assert.Equal(WorkspaceCommand.CanonicalFormatVersion,
+            doc.RootElement.GetProperty("version").GetInt32());
+        Assert.True(doc.RootElement.TryGetProperty("workspace", out _));
+        Assert.True(doc.RootElement.TryGetProperty("data", out var dataEl));
+        Assert.True(dataEl.TryGetProperty("environments", out var env));
         Assert.Equal(0, env.GetArrayLength());
 
         var output = stdout.ToString();
@@ -235,9 +240,16 @@ public sealed class WorkspaceExportImportTests : IDisposable
     public async Task RunImportAsync_refuses_future_format_version()
     {
         var file = SafePath.Combine(_tempRoot, "future.json");
-        var futureVersion = WorkspaceCommand.ExportFormatVersion + 1;
+        // Future versions are flagged AFTER the migration shim runs.
+        // Use the v2 envelope shape so the future check fires on
+        // root["version"] (post-migration), not on legacy
+        // workspaceFormatVersion (which gets rewritten away).
+        var futureVersion = WorkspaceCommand.CanonicalFormatVersion + 1;
+        // Constructed via concat — raw string $$ literals choke on the
+        // empty-object terminator (\"data\":{}) hitting the closing
+        // \"\"\" with too many consecutive '}'.
         await File.WriteAllTextAsync(file,
-            $$"""{"workspaceFormatVersion":{{futureVersion}},"environments":[]}""",
+            "{\"format\":\"bowire-workspace\",\"version\":" + futureVersion + ",\"data\":{}}",
             TestContext.Current.CancellationToken);
 
         using var stdout = new StringWriter();

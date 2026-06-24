@@ -81,4 +81,73 @@ public sealed class AsyncApiYamlPreNormaliserTests
     {
         Assert.Equal(string.Empty, Normalise(string.Empty));
     }
+
+    [Fact]
+    public void Lowercases_upper_case_binding_keys()
+    {
+        // Authors who write `Kafka:` / `MQTT:` under bindings hit the
+        // SDK's case-sensitive lookup. The pre-normaliser rewrites
+        // those to the spec-canonical lower-case form before the
+        // reader sees the document.
+        var input = "operations:\n  op:\n    bindings:\n      Kafka:\n        topic: t\n      MQTT:\n        qos: 1\n";
+        var output = Normalise(input);
+        Assert.Contains("      kafka:", output, StringComparison.Ordinal);
+        Assert.Contains("      mqtt:", output, StringComparison.Ordinal);
+        Assert.DoesNotContain("      Kafka:", output, StringComparison.Ordinal);
+        Assert.DoesNotContain("      MQTT:", output, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Maps_websocket_alias_to_ws()
+    {
+        // AsyncAPI 2.x docs sometimes write `websocket:` where the
+        // spec mandates `ws:`. Alias resolution kicks in after the
+        // lowercase pass so `WebSocket` also lands on `ws`.
+        var input = "channels:\n  c:\n    bindings:\n      websocket:\n        method: GET\n";
+        var output = Normalise(input);
+        Assert.Contains("      ws:", output, StringComparison.Ordinal);
+        Assert.DoesNotContain("websocket:", output, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Leaves_canonical_binding_keys_unchanged()
+    {
+        var input = "operations:\n  op:\n    bindings:\n      kafka:\n        topic: t\n";
+        var output = Normalise(input);
+        Assert.Equal(input, output);
+    }
+
+    [Fact]
+    public void Does_not_rewrite_binding_like_names_outside_bindings_block()
+    {
+        // A channel key that happens to spell out a binding-id should
+        // stay untouched. The pre-normaliser only rewrites direct
+        // children of a `bindings:` header.
+        var input = "channels:\n  Kafka:\n    address: 't'\n";
+        var output = Normalise(input);
+        Assert.Contains("  Kafka:", output, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Leaves_nested_binding_fields_alone()
+    {
+        // Direct children of bindings: get rewritten (the binding-id
+        // keys themselves). Their nested-deeper field bag does NOT —
+        // those are arbitrary author-defined fields (qos, retain,
+        // schemaIdLocation, …) and have nothing to do with the
+        // binding-id name registry.
+        var input = "operations:\n  op:\n    bindings:\n      Kafka:\n        Kafka: should-stay\n";
+        var output = Normalise(input);
+        Assert.Contains("      kafka:", output, StringComparison.Ordinal);
+        Assert.Contains("        Kafka: should-stay", output, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Binding_key_normalisation_is_idempotent()
+    {
+        var input = "operations:\n  op:\n    bindings:\n      Kafka:\n        topic: t\n      WebSocket:\n        method: GET\n";
+        var once = Normalise(input);
+        var twice = Normalise(once);
+        Assert.Equal(once, twice);
+    }
 }

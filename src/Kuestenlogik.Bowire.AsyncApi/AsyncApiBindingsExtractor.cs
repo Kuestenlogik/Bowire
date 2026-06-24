@@ -217,6 +217,94 @@ internal static class AsyncApiBindingsExtractor
         return result;
     }
 
+    /// <summary>
+    /// V2 mirror of <see cref="ExtractV3OperationMessages"/>: V2 declares
+    /// the multi-message slot inline on each channel under
+    /// <c>channels[].publish.message.oneOf[]</c> /
+    /// <c>channels[].subscribe.message.oneOf[]</c>. Return shape:
+    /// <c>channelKey → slot ("publish"|"subscribe") → list of message
+    /// names</c> (trailing segment of each <c>$ref</c>). Single-message
+    /// slots (<c>message: { $ref: ... }</c>) are intentionally skipped —
+    /// the caller already handles them via <c>op.Message</c> on the
+    /// typed model, so this walker only produces entries for the
+    /// <c>oneOf</c> multi-message shape.
+    /// </summary>
+    public static IReadOnlyDictionary<string,
+            IReadOnlyDictionary<string, IReadOnlyList<string>>>
+        ExtractV2OperationMessages(string yaml)
+    {
+        var result = new Dictionary<string,
+            IReadOnlyDictionary<string, IReadOnlyList<string>>>(StringComparer.Ordinal);
+        if (string.IsNullOrWhiteSpace(yaml)) return result;
+
+        YamlStream stream;
+        try
+        {
+            stream = new YamlStream();
+            using var reader = new StringReader(yaml);
+            stream.Load(reader);
+        }
+        catch (YamlDotNet.Core.YamlException) { return result; }
+
+        if (stream.Documents.Count == 0) return result;
+        if (stream.Documents[0].RootNode is not YamlMappingNode root) return result;
+        if (!TryGetMapping(root, "channels", out var channelsNode)) return result;
+
+        foreach (var (channelKeyNode, channelValue) in channelsNode!.Children)
+        {
+            if (channelKeyNode is not YamlScalarNode channelKey) continue;
+            if (channelValue is not YamlMappingNode channelMapping) continue;
+
+            var perSlot = new Dictionary<string, IReadOnlyList<string>>(
+                StringComparer.OrdinalIgnoreCase);
+
+            foreach (var slot in new[] { "publish", "subscribe" })
+            {
+                if (!TryGetMapping(channelMapping, slot, out var slotMapping)) continue;
+                if (!TryGetMapping(slotMapping!, "message", out var messageMapping)) continue;
+
+                // Walk message.oneOf[] specifically. A flat
+                // `message: { $ref: ... }` shape isn't a multi-message
+                // overload so it stays the responsibility of the
+                // single-method emit path.
+                YamlNode? oneOfNode = null;
+                foreach (var (k, v) in messageMapping!.Children)
+                {
+                    if (k is YamlScalarNode s
+                        && string.Equals(s.Value, "oneOf", StringComparison.OrdinalIgnoreCase))
+                    {
+                        oneOfNode = v;
+                        break;
+                    }
+                }
+                if (oneOfNode is not YamlSequenceNode sequence) continue;
+
+                var names = new List<string>();
+                foreach (var item in sequence.Children)
+                {
+                    if (item is not YamlMappingNode itemMapping) continue;
+                    foreach (var (k, v) in itemMapping.Children)
+                    {
+                        if (k is YamlScalarNode keyScalar
+                            && string.Equals(keyScalar.Value, "$ref", StringComparison.Ordinal)
+                            && v is YamlScalarNode refScalar
+                            && !string.IsNullOrWhiteSpace(refScalar.Value))
+                        {
+                            names.Add(LastPathSegment(refScalar.Value));
+                            break;
+                        }
+                    }
+                }
+
+                if (names.Count > 0) perSlot[slot] = names;
+            }
+
+            if (perSlot.Count > 0) result[channelKey.Value ?? string.Empty] = perSlot;
+        }
+
+        return result;
+    }
+
     private static string LastPathSegment(string reference)
     {
         var lastSlash = reference.LastIndexOf('/');

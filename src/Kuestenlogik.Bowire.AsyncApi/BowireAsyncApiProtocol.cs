@@ -135,6 +135,15 @@ public sealed class BowireAsyncApiProtocol : IBowireProtocol
         // bindings.nats land on the plugin's `queue_group` /
         // `reply_to` metadata.
         _resolvers["nats"] = new NatsBindingResolver(registry);
+        // Phase C — SNS + SQS. AWS wire plugins still pending; the
+        // resolvers register now so document discovery recognises the
+        // binding keys and the invoke path surfaces a meaningful
+        // "plugin not loaded" error rather than the generic "no
+        // resolver registered" fall-through. Once the wire plugins
+        // land the resolvers wire through to the registered Bowire
+        // protocol with id "sns" / "sqs" automatically.
+        _resolvers["sns"] = new SnsBindingResolver(registry);
+        _resolvers["sqs"] = new SqsBindingResolver(registry);
     }
 
     public async Task<List<BowireServiceInfo>> DiscoverAsync(
@@ -193,7 +202,9 @@ public sealed class BowireAsyncApiProtocol : IBowireProtocol
                 _v2Documents[serverUrl] = v2;
                 _v2BindingsByUrl[serverUrl] =
                     AsyncApiBindingsExtractor.ExtractV2ChannelBindings(load.NormalisedYaml);
-                return MapV2Channels(v2, serverUrl);
+                var v2Messages =
+                    AsyncApiBindingsExtractor.ExtractV2OperationMessages(load.NormalisedYaml);
+                return MapV2Channels(v2, serverUrl, v2Messages);
             default:
                 return [];
         }
@@ -367,7 +378,9 @@ public sealed class BowireAsyncApiProtocol : IBowireProtocol
     /// Channels without operations still get a service entry so the
     /// sidebar surfaces the topology — matches V3.
     /// </summary>
-    private static List<BowireServiceInfo> MapV2Channels(V2AsyncApiDocument document, string sourceUrl)
+    private static List<BowireServiceInfo> MapV2Channels(
+        V2AsyncApiDocument document, string sourceUrl,
+        IReadOnlyDictionary<string, IReadOnlyDictionary<string, IReadOnlyList<string>>> messagesByChannelSlot)
     {
         var apiTitle = document.Info?.Title ?? "AsyncAPI";
         var apiVersion = document.Info?.Version;
@@ -377,14 +390,17 @@ public sealed class BowireAsyncApiProtocol : IBowireProtocol
         foreach (var (channelKey, channel) in document.Channels)
         {
             var methods = new List<BowireMethodInfo>();
+            messagesByChannelSlot.TryGetValue(channelKey, out var perSlot);
 
             if (channel.Publish is not null)
             {
-                methods.Add(BuildV2Method(channel.Publish, channel, channelKey, apiTitle, isSend: true));
+                AppendV2Methods(methods, channel.Publish, channel, channelKey, apiTitle,
+                    isSend: true, oneOfMessages: TryGetSlotMessages(perSlot, "publish"));
             }
             if (channel.Subscribe is not null)
             {
-                methods.Add(BuildV2Method(channel.Subscribe, channel, channelKey, apiTitle, isSend: false));
+                AppendV2Methods(methods, channel.Subscribe, channel, channelKey, apiTitle,
+                    isSend: false, oneOfMessages: TryGetSlotMessages(perSlot, "subscribe"));
             }
 
             services.Add(new BowireServiceInfo(
@@ -404,6 +420,60 @@ public sealed class BowireAsyncApiProtocol : IBowireProtocol
     }
 
     /// <summary>
+    /// Pull the per-slot multi-message list for a V2 channel out of
+    /// the extractor's nested map. Returns an empty list when the
+    /// channel + slot pair doesn't declare a <c>message.oneOf[]</c>,
+    /// which signals to <see cref="AppendV2Methods"/> that it should
+    /// fall back to the single-method shape (using <c>op.Message</c>
+    /// from the typed model).
+    /// </summary>
+    private static IReadOnlyList<string> TryGetSlotMessages(
+        IReadOnlyDictionary<string, IReadOnlyList<string>>? perSlot, string slotKey)
+    {
+        if (perSlot is null) return [];
+        return perSlot.TryGetValue(slotKey, out var names) ? names : [];
+    }
+
+    /// <summary>
+    /// V2 method emission with per-message overload support. Mirrors
+    /// the V3 multi-message walker (<see cref="MapV3Channels"/>): when
+    /// the slot declares more than one message in
+    /// <c>message.oneOf[]</c> we emit one method per declared message
+    /// named <c>opKey::messageName</c> so the sidebar surfaces the
+    /// choice the spec offers. Single-message slots (the dominant
+    /// shape in V2 documents in the wild) stay on the original
+    /// single-method emission path.
+    /// </summary>
+    private static void AppendV2Methods(
+        List<BowireMethodInfo> methods, V2OperationDefinition op, V2ChannelDefinition channel,
+        string channelKey, string apiTitle, bool isSend, IReadOnlyList<string> oneOfMessages)
+    {
+        if (oneOfMessages.Count > 1)
+        {
+            // Multi-message slot — emit one method per declared
+            // message. Operation name comes from operationId (when
+            // set) or the fixed "publish"/"subscribe" label, then we
+            // qualify it with the message-name segment via the same
+            // `opKey::messageName` separator V3 uses.
+            var opBase = !string.IsNullOrWhiteSpace(op.OperationId)
+                ? op.OperationId!
+                : (isSend ? "publish" : "subscribe");
+            foreach (var messageName in oneOfMessages)
+            {
+                methods.Add(BuildV2Method(
+                    op, channel, channelKey, apiTitle, isSend,
+                    overrideName: $"{opBase}{MessageOverloadSeparator}{messageName}",
+                    messageName: messageName));
+            }
+        }
+        else
+        {
+            methods.Add(BuildV2Method(op, channel, channelKey, apiTitle, isSend,
+                overrideName: null, messageName: null));
+        }
+    }
+
+    /// <summary>
     /// Build the single method node for one V2 publish/subscribe slot.
     /// Method name comes from <c>operationId</c> when set (carrying the
     /// author's identifier into the sidebar), else falls back to the
@@ -412,18 +482,26 @@ public sealed class BowireAsyncApiProtocol : IBowireProtocol
     /// </summary>
     private static BowireMethodInfo BuildV2Method(
         V2OperationDefinition op, V2ChannelDefinition channel,
-        string channelKey, string apiTitle, bool isSend)
+        string channelKey, string apiTitle, bool isSend,
+        string? overrideName, string? messageName)
     {
-        var opName = !string.IsNullOrWhiteSpace(op.OperationId)
-            ? op.OperationId!
-            : (isSend ? "publish" : "subscribe");
+        var opName = overrideName ??
+            (!string.IsNullOrWhiteSpace(op.OperationId)
+                ? op.OperationId!
+                : (isSend ? "publish" : "subscribe"));
+        // Per-message overloads adopt the declared message name as
+        // the input-type name (mirrors V3's BuildV3Method shape). The
+        // single-method path keeps the synthetic `{op}Request` name
+        // for backwards compatibility with the V2 sample tests.
+        var inputName = messageName ?? opName + "Request";
+        var outputName = messageName ?? opName + "Response";
         return new BowireMethodInfo(
             Name: opName,
             FullName: $"{apiTitle}.{channelKey}.{opName}",
             ClientStreaming: isSend,
             ServerStreaming: !isSend,
-            InputType: new BowireMessageInfo(opName + "Request", opName + "Request", []),
-            OutputType: new BowireMessageInfo(opName + "Response", opName + "Response", []),
+            InputType: new BowireMessageInfo(inputName, inputName, []),
+            OutputType: new BowireMessageInfo(outputName, outputName, []),
             MethodType: isSend ? "asyncapi-send" : "asyncapi-receive")
         {
             Summary = op.Summary ?? channel.Description,
@@ -492,8 +570,8 @@ public sealed class BowireAsyncApiProtocol : IBowireProtocol
             return Error(
                 $"No AsyncAPI binding resolver registered for protocol '{server.Protocol}'. " +
                 "Shipped resolvers: MQTT (mqtt / mqtt5), Kafka, WebSocket (ws), HTTP, " +
-                "AMQP (amqp / amqp1), NATS. SNS / SQS still gated on their wire plugins " +
-                "(see ROADMAP: AsyncAPI as a discovery source).");
+                "AMQP (amqp / amqp1), NATS, SNS, SQS. SNS / SQS resolvers degrade gracefully " +
+                "until their wire plugins ship (see ROADMAP: AsyncAPI as a discovery source).");
         }
 
         var channelKey = ResolveChannelRef(operation.Channel?.Reference);
@@ -550,9 +628,13 @@ public sealed class BowireAsyncApiProtocol : IBowireProtocol
         // Match the request's `method` against the operationId on each
         // slot (or the fallback "publish"/"subscribe" label MapV2Channels
         // synthesises when no operationId is set) so the call lands on
-        // the right direction.
-        var isSend = MatchesV2Operation(channel.Publish, method, fallback: "publish");
-        var isReceive = MatchesV2Operation(channel.Subscribe, method, fallback: "subscribe");
+        // the right direction. Strip the per-message overload suffix
+        // (`opKey::messageName`) the same way the V3 path does so a
+        // multi-message slot's individual overload methods all resolve
+        // back to the single underlying operationId.
+        var (opLookupKey, _) = SplitOverloadName(method);
+        var isSend = MatchesV2Operation(channel.Publish, opLookupKey, fallback: "publish");
+        var isReceive = MatchesV2Operation(channel.Subscribe, opLookupKey, fallback: "subscribe");
         if (!isSend && !isReceive)
         {
             return Error($"Operation '{method}' not found on V2 channel '{service}'.");

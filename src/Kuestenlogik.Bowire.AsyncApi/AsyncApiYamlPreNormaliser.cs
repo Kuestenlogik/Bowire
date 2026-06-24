@@ -50,10 +50,48 @@ internal static class AsyncApiYamlPreNormaliser
         @"^(?<indent>\s*)(?<key>asyncapi|version)\s*:(?>\s*)(?<value>[^'""\|\>#\r\n\s][^#\r\n]*?)(?<trail>\s*(?:#.*)?)$",
         RegexOptions.Multiline | RegexOptions.Compiled);
 
+    // Canonical AsyncAPI binding-key names per asyncapi/bindings repo.
+    // Authors write these inside `bindings:` blocks in a handful of
+    // places (channel-, operation-, message-, server-level). The spec
+    // is strict about casing — `KAFKA` / `Kafka` / `kafka` are not
+    // interchangeable at the parser layer — but documents in the wild
+    // routinely upper-case the binding key out of habit (e.g. `MQTT`
+    // is the marketing capitalisation; `WebSocket` is the .NET
+    // convention). Same goes for the alias map: AsyncAPI 2.x docs
+    // sometimes write `websocket` where the spec mandates `ws`. We
+    // normalise both ahead of the SDK reader.
+    //
+    // Order matters here only insofar as alias resolution runs after
+    // lowercase (so `WebSocket` → `websocket` → `ws`). Both rules
+    // are scoped to the line directly under a `bindings:` parent so
+    // we don't accidentally rewrite a `Kafka:` server name or a
+    // `MQTT:` channel key elsewhere in the document.
+    private static readonly HashSet<string> CanonicalBindingKeys = new(StringComparer.Ordinal)
+    {
+        "amqp", "amqp1", "anypointmq", "googlepubsub", "http", "ibmmq",
+        "jms", "kafka", "mercure", "mqtt", "mqtt5", "nats", "pulsar",
+        "redis", "sns", "solace", "sqs", "stomp", "ws"
+    };
+
+    // Alias → canonical map. Lower-case keys only — alias resolution
+    // happens after the lowercase pass. Keep these conservative: each
+    // alias here corresponds to a name the spec authors explicitly
+    // discuss in commit history or migration notes, not arbitrary
+    // synonyms.
+    private static readonly Dictionary<string, string> BindingKeyAliases = new(StringComparer.Ordinal)
+    {
+        ["websocket"] = "ws",
+        ["websockets"] = "ws",
+        ["amqp091"] = "amqp",
+        ["amqp10"] = "amqp1"
+    };
+
+
     /// <summary>
     /// Quote the value of every <c>asyncapi:</c> and <c>version:</c> key in
-    /// <paramref name="yaml"/>. Idempotent: already-quoted values match the
-    /// negative-lookahead in the regex and are skipped.
+    /// <paramref name="yaml"/> and normalise binding-block child keys
+    /// (lowercase + alias resolution). Idempotent: already-quoted values
+    /// and already-canonical binding keys both pass through unchanged.
     /// </summary>
     /// <remarks>
     /// <para>
@@ -64,11 +102,184 @@ internal static class AsyncApiYamlPreNormaliser
     /// that the SDK happens to deserialise as plain strings anyway is a
     /// no-op for the SDK — single-quoted strings are still strings.
     /// </para>
+    /// <para>
+    /// Binding-key normalisation walks the document line-by-line and
+    /// rewrites child keys that sit directly under a <c>bindings:</c>
+    /// header. The spec is case-sensitive (<c>kafka</c>, not <c>Kafka</c>)
+    /// but documents in the wild routinely upper-case the binding key
+    /// out of habit — same for the alias map (<c>websocket</c> →
+    /// <c>ws</c>, <c>amqp091</c> → <c>amqp</c>). Rewriting only inside
+    /// the bindings block (rather than globally) avoids touching
+    /// unrelated <c>$ref</c> targets or channel names that happen to
+    /// match a binding-key spelling.
+    /// </para>
     /// </remarks>
     public static string Normalise(string yaml)
     {
         if (string.IsNullOrEmpty(yaml)) return yaml;
-        return EnumTypedKeyPattern.Replace(yaml, QuoteValue);
+        var quoted = EnumTypedKeyPattern.Replace(yaml, QuoteValue);
+        return NormaliseBindingKeys(quoted);
+    }
+
+    /// <summary>
+    /// Line-by-line scan that lowercases + alias-maps the immediate
+    /// children of every <c>bindings:</c> header. The state machine
+    /// holds onto the indent column the <c>bindings:</c> header sits
+    /// at; only direct children (strictly greater indent, sibling
+    /// level relative to each other) get rewritten. As soon as a line
+    /// returns to the bindings-header indent (or less), we exit the
+    /// rewrite scope.
+    /// </summary>
+    private static string NormaliseBindingKeys(string yaml)
+    {
+        // Cheap pre-flight: documents without a `bindings:` header
+        // skip the per-line walk entirely.
+        if (yaml.IndexOf("bindings", StringComparison.OrdinalIgnoreCase) < 0)
+        {
+            return yaml;
+        }
+
+        var lines = yaml.Split('\n');
+        var changed = false;
+        // -1 = not currently inside a bindings block
+        var bindingsHeaderIndent = -1;
+        // Direct-child indent (the column where each binding-key
+        // starts). Captured from the first child line so we can
+        // tell siblings (same indent) from nested-deeper content
+        // (greater indent — that's binding-field bag, leave alone).
+        var childKeyIndent = -1;
+
+        for (var i = 0; i < lines.Length; i++)
+        {
+            var line = lines[i];
+            // Skip blank lines and comment-only lines: they don't
+            // affect indentation tracking. A blank line inside a
+            // bindings block is still a blank line — keep going.
+            var trimmedLeading = line.TrimStart();
+            if (trimmedLeading.Length == 0 || trimmedLeading.StartsWith('#'))
+            {
+                continue;
+            }
+
+            var indent = line.Length - trimmedLeading.Length;
+
+            // If we're inside a bindings block, decide what to do
+            // with the line based on its indent.
+            if (bindingsHeaderIndent >= 0)
+            {
+                if (indent <= bindingsHeaderIndent)
+                {
+                    // De-dented back out of the bindings block — exit.
+                    bindingsHeaderIndent = -1;
+                    childKeyIndent = -1;
+                    // Fall through to the bindings-header detect for
+                    // the current line (the line that ended the block
+                    // could itself BE another bindings header).
+                }
+                else
+                {
+                    // First child line establishes the direct-child
+                    // indent. Subsequent direct-child siblings share
+                    // it; deeper-indented lines are binding-field
+                    // bag — those stay untouched.
+                    if (childKeyIndent < 0) childKeyIndent = indent;
+
+                    if (indent == childKeyIndent && TryRewriteBindingKey(line, out var rewritten))
+                    {
+                        lines[i] = rewritten;
+                        changed = true;
+                    }
+                    // Keep looking — multi-binding blocks declare
+                    // several siblings (kafka + ws + http together).
+                    continue;
+                }
+            }
+
+            // Not in a bindings block. Is this line one?
+            if (IsBindingsHeader(trimmedLeading))
+            {
+                bindingsHeaderIndent = indent;
+                childKeyIndent = -1;
+            }
+        }
+
+        return changed ? string.Join('\n', lines) : yaml;
+    }
+
+    private static bool IsBindingsHeader(string trimmedLine)
+    {
+        // `bindings:` or `bindings:` followed by a trailing flow-mapping
+        // (`bindings: {}` — a no-op block we shouldn't rewrite, but
+        // still mark to keep the state machine simple). Inline-mapping
+        // bindings (`bindings: {kafka: {topic: x}}`) are rare in the
+        // wild and not handled here; authors who write those don't
+        // hit the casing problem we're fixing.
+        if (!trimmedLine.StartsWith("bindings", StringComparison.Ordinal)) return false;
+        var rest = trimmedLine[8..].TrimStart();
+        return rest.StartsWith(':');
+    }
+
+    private static bool TryRewriteBindingKey(string line, out string rewritten)
+    {
+        // Match `<indent><key><trailing>` where trailing starts with `:`.
+        // The key is the literal binding-id (`Kafka`, `WebSocket`, etc.).
+        // We don't go through the full regex engine because line-level
+        // splits are cheap and the structure here is dead simple.
+        var trimmedLeading = line.TrimStart();
+        var indent = line[..^trimmedLeading.Length];
+        var colon = trimmedLeading.IndexOf(':');
+        if (colon <= 0)
+        {
+            rewritten = line;
+            return false;
+        }
+        var key = trimmedLeading[..colon];
+        var trail = trimmedLeading[colon..];
+
+        // Skip keys that contain anything besides letters / digits /
+        // hyphens / underscores — that's not a binding-id, that's an
+        // anchor / alias / flow node.
+        for (var i = 0; i < key.Length; i++)
+        {
+            var c = key[i];
+            if (!char.IsLetterOrDigit(c) && c != '-' && c != '_')
+            {
+                rewritten = line;
+                return false;
+            }
+        }
+
+        // ToLowerInvariant is correct here: the AsyncAPI spec mandates
+        // lower-case binding-id keys ("kafka", "mqtt", "ws"), so the
+        // canonical form is by definition lower-case. CA1308 prefers
+        // ToUpperInvariant for ordinal comparison, but that's the wrong
+        // direction here — we'd then need to invert back to lower-case
+        // for the canonical-set membership check.
+#pragma warning disable CA1308
+        var lowered = key.ToLowerInvariant();
+#pragma warning restore CA1308
+        if (BindingKeyAliases.TryGetValue(lowered, out var canonical))
+        {
+            lowered = canonical;
+        }
+
+        if (!CanonicalBindingKeys.Contains(lowered))
+        {
+            // Unknown binding key — leave it alone. The SDK / extractor
+            // will pass it through; if it's a typo the document author
+            // gets the error from the downstream consumer.
+            rewritten = line;
+            return false;
+        }
+
+        if (string.Equals(lowered, key, StringComparison.Ordinal))
+        {
+            rewritten = line;
+            return false;
+        }
+
+        rewritten = indent + lowered + trail;
+        return true;
     }
 
     private static string QuoteValue(Match m)
