@@ -2211,9 +2211,9 @@
         if (isActive && typeof saveCurrentWorkspaceAsTemplate === 'function') {
             defs.push({
                 key: 'save-template',
-                icon: 'save',
+                icon: 'bookmark',
                 label: 'Save as template',
-                title: 'Save workspace as template',
+                title: 'Save workspace as template — appears in the create-workspace dialog',
                 onClick: function () {
                     var target = workspaces.find(function (x) { return x.id === wsId; });
                     var wsName = (target && target.name) || 'workspace';
@@ -2374,6 +2374,8 @@
                 switchWorkspace(w.id);
             } : null,
             addTitle: !isActive ? 'Switch to this workspace' : null,
+            // #277 — checkmark, not '+'. '+' read as 'add what?'.
+            addIcon: !isActive ? 'check' : null,
             onDrop: function (dt) { _handleWorkspaceDrop(w, dt); },
             children: children
         };

@@ -2143,10 +2143,39 @@ not just
     visibility: hidden;
 }
 .bowire-workspace-menu-item-check.is-active { visibility: visible; }
-/* Per-row rename / edit / trash tools retired from the topbar
-   workspace dropdown in #276 — those actions live on the Workspaces
-   rail sidebar's hover-revealed tools + right-click menu now, so the
-   dropdown stays minimal (switch + check marker only). */
+.bowire-workspace-menu-item-check svg { width: 12px; height: 12px; }
+/* #276 follow-up — Per-row tools restored in the topbar workspace
+   dropdown (user feedback: the dropdown is the quick-access surface
+   AND a practical reach for management, especially when the sidebar
+   is collapsed). Hover-revealed icon buttons: Rename + Save-as-
+   template (active only) + Delete. */
+.bowire-workspace-menu-item-tool {
+    width: 22px;
+    height: 22px;
+    flex-shrink: 0;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    border: 0;
+    border-radius: var(--bowire-radius-sm);
+    background: transparent;
+    color: var(--bowire-text-tertiary);
+    cursor: pointer;
+    transition: background var(--bowire-transition), color var(--bowire-transition);
+}
+.bowire-workspace-menu-item:hover .bowire-workspace-menu-item-tool {
+    display: inline-flex;
+}
+.bowire-workspace-menu-item-tool:hover {
+    background: var(--bowire-surface);
+    color: var(--bowire-text);
+}
+.bowire-workspace-menu-item-tool-danger:hover {
+    background: var(--bowire-surface);
+    color: var(--bowire-error);
+}
+.bowire-workspace-menu-item-tool svg { width: 12px; height: 12px; }
 .bowire-workspace-menu-divider {
     height: 1px;
     margin: 4px 0;

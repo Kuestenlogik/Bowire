@@ -2380,6 +2380,40 @@
                             // topbar dropdown reads as a fast pick
                             // surface instead of a management
                             // panel.
+                            // Per-row tools: active-state ✓ marker +
+                            // hover-revealed Rename / Save-as-template /
+                            // Delete. User feedback after #276: the
+                            // dropdown is the quick-access surface AND
+                            // a practical reach for management when
+                            // the sidebar is collapsed — full parity
+                            // with sidebar + overview was the right
+                            // call, not the trim. Action handlers
+                            // delegate to _workspaceRowActionDefs if
+                            // present so the three surfaces (sidebar /
+                            // overview / dropdown) share one source of
+                            // truth.
+                            var defs = (typeof _workspaceRowActionDefs === 'function')
+                                ? _workspaceRowActionDefs(w) : null;
+                            var renameDef = defs && defs.find(function (d) { return d.id === 'rename'; });
+                            var sastDef = defs && defs.find(function (d) { return d.id === 'save-template'; });
+                            var deleteDef = defs && defs.find(function (d) { return d.id === 'delete'; });
+                            function _toolBtn(def, danger) {
+                                if (!def) return null;
+                                var classes = 'bowire-workspace-menu-item-tool'
+                                    + (danger ? ' bowire-workspace-menu-item-tool-danger' : '');
+                                return el('button', {
+                                    type: 'button',
+                                    className: classes,
+                                    title: def.label,
+                                    'aria-label': def.label,
+                                    innerHTML: (typeof svgIcon === 'function') ? svgIcon(def.icon) : def.icon,
+                                    onClick: function (e) {
+                                        e.stopPropagation();
+                                        workspaceMenuOpen = false;
+                                        if (typeof def.run === 'function') def.run();
+                                    }
+                                });
+                            }
                             return el('div', {
                                 className: 'bowire-workspace-menu-item' + (isActive ? ' active' : ''),
                                 onClick: function () {
@@ -2391,11 +2425,19 @@
                                 el('span', { className: 'bowire-workspace-menu-item-glyph', innerHTML: glyph }),
                                 el('span', { className: 'bowire-workspace-menu-item-name', textContent: w.name }),
                                 el('div', { className: 'bowire-workspace-menu-item-tools' },
+                                    // #277 — active-state ✓ ('check'
+                                    // icon, not text glyph) leads the
+                                    // cluster. Same idiom as the env
+                                    // overview's check-toggle.
                                     el('span', {
                                         className: 'bowire-workspace-menu-item-check' + (isActive ? ' is-active' : ''),
-                                        textContent: '✓',
-                                        'aria-hidden': isActive ? 'false' : 'true'
-                                    })
+                                        innerHTML: (typeof svgIcon === 'function') ? svgIcon('check') : '✓',
+                                        'aria-hidden': isActive ? 'false' : 'true',
+                                        title: isActive ? 'Active workspace' : 'Switch to this workspace'
+                                    }),
+                                    _toolBtn(renameDef, false),
+                                    isActive ? _toolBtn(sastDef, false) : null,
+                                    _toolBtn(deleteDef, true)
                                 )
                             );
                         })
