@@ -12,7 +12,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.1 — Scripting, variable resolver, throughput surface *(due 2026-06-30)*
 
-**24/43 done** · 19 backlog
+**26/45 done** · 19 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -36,6 +36,8 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [286](https://github.com/Kuestenlogik/Bowire/issues/286) | Bowire | [mcp serve --attach: MCP-over-MCP forwarder for connecting to a parent Bowire process](#issue-kuestenlogik-bowire-286) | ⬜ Backlog |  |
 | [287](https://github.com/Kuestenlogik/Bowire/issues/287) | Bowire | [Dual-MCP endpoint: MapBowireMcp + MapBowireMcpAdapter coexistence when --enable-mcp-adapter is on](#issue-kuestenlogik-bowire-287) | ⬜ Backlog |  |
 | [197](https://github.com/Kuestenlogik/Bowire/issues/197) | Bowire | [Deprecate + unlist Kuestenlogik.Bowire.Extension.MapLibre on nuget.org after v2.0 ships](#issue-kuestenlogik-bowire-197) | ✅ Done |  |
+| [242](https://github.com/Kuestenlogik/Bowire/issues/242) | Bowire | [User-defined workspace templates — save current workspace as a template, surface in create dialog](#issue-kuestenlogik-bowire-242) | ✅ Done |  |
+| [243](https://github.com/Kuestenlogik/Bowire/issues/243) | Bowire | [Failed REST / gRPC invocation logs show only 'Error' — surface status code + response body + exception message](#issue-kuestenlogik-bowire-243) | ✅ Done |  |
 | [248](https://github.com/Kuestenlogik/Bowire/issues/248) | Bowire | [Optional rail modules — plumbing (Phase 1): toggle mechanic + always-on set + Settings editor](#issue-kuestenlogik-bowire-248) | ✅ Done |  |
 | [252](https://github.com/Kuestenlogik/Bowire/issues/252) | Bowire | [Compose-request entry points: '+ Compose' (self-contained) + 'New from source…' (workspace-managed URL)](#issue-kuestenlogik-bowire-252) | ✅ Done |  |
 | [257](https://github.com/Kuestenlogik/Bowire/issues/257) | Bowire | [richErrorDetail picks up problem+json status / type / instance](#issue-kuestenlogik-bowire-257) | ✅ Done |  |
@@ -294,6 +296,14 @@ Today `app.MapBowireMcp()` and `app.MapBowireMcpAdapter()` are mutually exclusiv
 #### <a id="issue-kuestenlogik-bowire-197"></a>✅ Done · [#197](https://github.com/Kuestenlogik/Bowire/issues/197) Deprecate + unlist Kuestenlogik.Bowire.Extension.MapLibre on nuget.org after v2.0 ships
 
 `Kuestenlogik.Bowire.Extension.MapLibre` 1.3.0-rc.1 was renamed to `Kuestenlogik.Bowire.Map` ahead of v2.0 (commit 75c8d1f). … [[more]](https://github.com/Kuestenlogik/Bowire/issues/197)
+
+#### <a id="issue-kuestenlogik-bowire-242"></a>✅ Done · [#242](https://github.com/Kuestenlogik/Bowire/issues/242) User-defined workspace templates — save current workspace as a template, surface in create dialog
+
+Workspace templates ship hardcoded in `wwwroot/js/workspace-templates.js` — `BOWIRE_WORKSPACE_TEMPLATES` is a static array of five built-ins (`empty`, `rest`, `grpc`, `mock`, `multiproto`). … [[more]](https://github.com/Kuestenlogik/Bowire/issues/242)
+
+#### <a id="issue-kuestenlogik-bowire-243"></a>✅ Done · [#243](https://github.com/Kuestenlogik/Bowire/issues/243) Failed REST / gRPC invocation logs show only 'Error' — surface status code + response body + exception message
+
+When a manually-created REST request fails (in this case via the New-request flow against the seeded Petstore template), the response log shows nothing useful: [[more]](https://github.com/Kuestenlogik/Bowire/issues/243)
 
 #### <a id="issue-kuestenlogik-bowire-248"></a>✅ Done · [#248](https://github.com/Kuestenlogik/Bowire/issues/248) Optional rail modules — plumbing (Phase 1): toggle mechanic + always-on set + Settings editor
 
