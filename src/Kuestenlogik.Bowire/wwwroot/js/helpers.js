@@ -1770,7 +1770,24 @@
             });
         }
 
-        if (typeof node.onAdd === 'function') {
+        // Rightmost slot: active indicator (always visible) OR add
+        // button (hover-revealed). Same DOM position so the active
+        // row's checkmark and the inactive row's activate-button
+        // line up vertically across the list — operator feedback:
+        // the slot must be at the same place whether active or not.
+        //
+        // node.isActive:                 always-visible filled indicator
+        // node.onAdd (no isActive):      hover-revealed action button
+        // both:                          renders only the indicator
+        //                                (active rows don't need an
+        //                                activate-button)
+        if (node.isActive) {
+            row.appendChild(el('span', {
+                className: 'bowire-tree-active-indicator',
+                title: node.activeTitle || 'Active',
+                innerHTML: svgIcon(node.addIcon || 'check')
+            }));
+        } else if (typeof node.onAdd === 'function') {
             // node.addIcon lets the caller swap the default 'plus'
             // for a semantically-appropriate glyph. Workspaces use
             // 'check' for 'Switch to this workspace' (#277) — the

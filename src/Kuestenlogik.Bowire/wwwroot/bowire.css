@@ -3089,6 +3089,22 @@ not just
     background: var(--bowire-surface);
     color: var(--bowire-text);
 }
+/* Always-visible active-state indicator at the same rightmost slot
+   .bowire-tree-add occupies on inactive rows. Fixed width + same
+   svg sizing so the slot is identical regardless of state — the
+   row's right edge doesn't 'jump' when switching between active
+   and inactive. */
+.bowire-tree-active-indicator {
+    flex-shrink: 0;
+    width: 18px;
+    height: 18px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--bowire-accent);
+    pointer-events: none;
+}
+.bowire-tree-active-indicator svg { width: 11px; height: 11px; }
 /* #276 — Per-row hover-revealed tool icon buttons for tree rows
    (Workspaces rail rename / save-as-template / duplicate / delete).
    Match the .bowire-tree-add affordance: display:none until row hover

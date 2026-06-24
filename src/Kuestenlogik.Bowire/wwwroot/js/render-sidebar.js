@@ -2375,12 +2375,20 @@
                 }
             },
             tools: tools,
+            // Layout consistency with the topbar workspace dropdown:
+            // active state = always-visible checkmark at the rightmost
+            // slot; inactive state = hover-revealed activate-button at
+            // the SAME slot. renderTree (helpers.js) chooses between
+            // isActive (indicator) and onAdd (button) via the new
+            // node.isActive flag.
+            isActive: isActive,
+            activeTitle: 'Active workspace',
             onAdd: !isActive ? function () {
                 switchWorkspace(w.id);
             } : null,
             addTitle: !isActive ? 'Switch to this workspace' : null,
             // #277 — checkmark, not '+'. '+' read as 'add what?'.
-            addIcon: !isActive ? 'check' : null,
+            addIcon: 'check',
             onDrop: function (dt) { _handleWorkspaceDrop(w, dt); },
             children: children
         };
