@@ -1525,6 +1525,15 @@
     // workspace settings / env overview / env detail crumbs all route
     // through one place and stay consistent.
     function _goToWorkspacesOverview() {
+        // Belt-and-suspenders: set railMode too so the route works
+        // even when triggered from a non-Workspaces rail (welcome-card
+        // 'Manage workspaces' button, topbar dropdown 'Show all',
+        // command palette, etc.). Without the railMode flip, renderMain
+        // dispatches to whichever rail the operator was last on and
+        // never reaches renderWorkspaceDetailMain → the overview
+        // never paints + the click appears to do nothing.
+        railMode = 'workspaces';
+        try { localStorage.setItem('bowire_rail_mode', 'workspaces'); } catch { /* ignore */ }
         workspaceTreeSelection = { kind: 'workspaces-overview' };
         render();
     }

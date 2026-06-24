@@ -2080,23 +2080,23 @@
             }
         });
 
-        // Explicit "All workspaces" overview button — sits in the
-        // overflow cluster next to the '+ New workspace' so the route
-        // to the listing is a real affordance, not a clickable title
-        // that reads as decoration.
+        // Both the clickable sidebar title and the overflow entry
+        // route through _goToWorkspacesOverview so the railMode +
+        // selection flip happens in one place (the previous inline
+        // handlers only set workspaceTreeSelection — if railMode was
+        // somehow stale, renderMain dispatched elsewhere and the
+        // overview never painted).
         var overviewOverflow = [{
             label: 'Show all workspaces',
             icon: 'list',
             onClick: function () {
-                workspaceTreeSelection = { kind: 'workspaces-overview' };
-                render();
+                if (typeof _goToWorkspacesOverview === 'function') _goToWorkspacesOverview();
             }
         }];
         sidebar.appendChild(renderSidebarToolbar({
             title: 'Workspaces',
             onTitleClick: function () {
-                workspaceTreeSelection = { kind: 'workspaces-overview' };
-                render();
+                if (typeof _goToWorkspacesOverview === 'function') _goToWorkspacesOverview();
             },
             titleClickTitle: 'Open Workspaces overview',
             overflow: overviewOverflow,
