@@ -1984,7 +1984,7 @@
             headerActions.appendChild(el('button', {
                 className: 'bowire-ws-detail-action-btn',
                 textContent: 'Save as template…',
-                title: 'Snapshot this workspace as a reusable template. Shows up in 'Your templates' on the next create-workspace dialog.',
+                title: 'Snapshot this workspace as a reusable template. Shows up in "Your templates" on the next create-workspace dialog.',
                 onClick: function () {
                     var t = _liveWs();
                     var wsName = (t && t.name) || 'workspace';
