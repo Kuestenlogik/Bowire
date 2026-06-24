@@ -152,13 +152,26 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.8 — Workbench UX polish: freeform REST, header library, connection pill
 
-**0/3 done** · 3 backlog
+**0/6 done** · 6 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
 | [47](https://github.com/Kuestenlogik/Bowire/issues/47) | Bowire | [Sidebar display: method name vs path toggle](#issue-kuestenlogik-bowire-47) | ⬜ Backlog | `area:workbench` |
 | [93](https://github.com/Kuestenlogik/Bowire/issues/93) | Bowire | [Topbar: connection-state pill (aggregate + per-URL popover)](#issue-kuestenlogik-bowire-93) | ⬜ Backlog |  |
+| [95](https://github.com/Kuestenlogik/Bowire/issues/95) | Bowire | [Header Library: named, scoped, toggleable header sets](#issue-kuestenlogik-bowire-95) | ⬜ Backlog |  |
+| [117](https://github.com/Kuestenlogik/Bowire/issues/117) | Bowire | [i18n — extract every UI string; ship DE + EN catalogues](#issue-kuestenlogik-bowire-117) | ⬜ Backlog |  |
 | [256](https://github.com/Kuestenlogik/Bowire/issues/256) | Bowire | [Freeform builder: schema-free ad-hoc REST — URL + verb + body, Postman-style](#issue-kuestenlogik-bowire-256) | ⬜ Backlog |  |
+| [258](https://github.com/Kuestenlogik/Bowire/issues/258) | Bowire | [Console toolbar: distinct icons for Clear selection / Clear all / Close](#issue-kuestenlogik-bowire-258) | ⬜ Backlog |  |
+
+### v2.9 — MCP completion + agent hub
+
+**0/3 done** · 3 backlog
+
+| # | Project | Title | Status | Tags |
+|---|---|---|---|---|
+| [37](https://github.com/Kuestenlogik/Bowire/issues/37) | Bowire | [Bowire.Mcp — remaining tools + adapter modes](#issue-kuestenlogik-bowire-37) | ⬜ Backlog | `area:mcp` |
+| [46](https://github.com/Kuestenlogik/Bowire/issues/46) | Bowire | [MCP server-side notifications via IInlineSseSubscriber](#issue-kuestenlogik-bowire-46) | ⬜ Backlog | `area:mcp` |
+| [128](https://github.com/Kuestenlogik/Bowire/issues/128) | Bowire | [Bowire Agent — register embedded instances with a central hub](#issue-kuestenlogik-bowire-128) | ⬜ Backlog |  |
 
 ### v3.0 — Cleanups + breaking-change cuts
 
@@ -179,17 +192,12 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [7](https://github.com/Kuestenlogik/Bowire.Bootcamp/issues/7) | Bootcamp | [Capstone copy mentions 'bowire mock' before the CLI is introduced — rephrase as capability](#issue-kuestenlogik-bowire-bootcamp-7) | ⬜ Backlog |  |
 | [11](https://github.com/Kuestenlogik/Bowire.Protocol.Surgewave/issues/11) | Protocol.Surgewave | [Light up Surgewave protocol plugin](#issue-kuestenlogik-bowire-protocol-surgewave-11) | ⬜ Backlog |  |
 | [13](https://github.com/Kuestenlogik/Bowire.Samples/issues/13) | Samples | [SimpleGraphQLSubscriptions sample](#issue-kuestenlogik-bowire-samples-13) | ⬜ Backlog | `area:plugin-sdk` |
-| [37](https://github.com/Kuestenlogik/Bowire/issues/37) | Bowire | [Bowire.Mcp — remaining tools + adapter modes](#issue-kuestenlogik-bowire-37) | ⬜ Backlog | `area:mcp` |
 | [44](https://github.com/Kuestenlogik/Bowire/issues/44) | Bowire | [Sidecar packaging — Docker / Compose / Kubernetes](#issue-kuestenlogik-bowire-44) | ⬜ Backlog | `area:docs` |
-| [46](https://github.com/Kuestenlogik/Bowire/issues/46) | Bowire | [MCP server-side notifications via IInlineSseSubscriber](#issue-kuestenlogik-bowire-46) | ⬜ Backlog | `area:mcp` |
 | [50](https://github.com/Kuestenlogik/Bowire/issues/50) | Bowire | [Marketing site — gallery / lightbox layer on solutions/*](#issue-kuestenlogik-bowire-50) | ⬜ Backlog | `area:site` |
 | [51](https://github.com/Kuestenlogik/Bowire/issues/51) | Bowire | [Marketing site — migrate <img> tags to picture.html partial](#issue-kuestenlogik-bowire-51) | ⬜ Backlog | `area:site` |
 | [53](https://github.com/Kuestenlogik/Bowire/issues/53) | Bowire | [Marketing site — second row of specialist comparisons](#issue-kuestenlogik-bowire-53) | ⬜ Backlog | `area:site` |
-| [95](https://github.com/Kuestenlogik/Bowire/issues/95) | Bowire | [Header Library: named, scoped, toggleable header sets](#issue-kuestenlogik-bowire-95) | ⬜ Backlog |  |
 | [103](https://github.com/Kuestenlogik/Bowire/issues/103) | Bowire | [Generate boat photos: submarine, ferry, tugboat, lighthouse](#issue-kuestenlogik-bowire-103) | ⬜ Backlog |  |
 | [110](https://github.com/Kuestenlogik/Bowire/issues/110) | Bowire | [Site: surface the AI assistant in the launch wizard + quickstart](#issue-kuestenlogik-bowire-110) | ⬜ Backlog |  |
-| [117](https://github.com/Kuestenlogik/Bowire/issues/117) | Bowire | [i18n — extract every UI string; ship DE + EN catalogues](#issue-kuestenlogik-bowire-117) | ⬜ Backlog |  |
-| [128](https://github.com/Kuestenlogik/Bowire/issues/128) | Bowire | [Bowire Agent — register embedded instances with a central hub](#issue-kuestenlogik-bowire-128) | ⬜ Backlog |  |
 | [130](https://github.com/Kuestenlogik/Bowire/issues/130) | Bowire | [Comparison table: add Hoppscotch + topic-based filtering](#issue-kuestenlogik-bowire-130) | ⬜ Backlog |  |
 | [213](https://github.com/Kuestenlogik/Bowire/issues/213) | Bowire | [Test infra: finish SidecarFake JSON-RPC handshake to unlock SidecarBowireProtocol coverage](#issue-kuestenlogik-bowire-213) | ⬜ Backlog |  |
 | [214](https://github.com/Kuestenlogik/Bowire/issues/214) | Bowire | [Test infra: BaGet Testcontainer fixture for plugin install/activate coverage](#issue-kuestenlogik-bowire-214) | ⬜ Backlog |  |
@@ -197,7 +205,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [216](https://github.com/Kuestenlogik/Bowire/issues/216) | Bowire | [Test infra: WebApplicationFactory fixture for InvokeEndpoints + UnaryReplayer coverage](#issue-kuestenlogik-bowire-216) | ⬜ Backlog |  |
 | [236](https://github.com/Kuestenlogik/Bowire/issues/236) | Bowire | [Release cascade: wait for nuget.org indexing before dispatching to siblings](#issue-kuestenlogik-bowire-236) | ⬜ Backlog |  |
 | [237](https://github.com/Kuestenlogik/Bowire/issues/237) | Bowire | [WINGET_TOKEN expired — rotate to unblock winget publish for v2.0.0+](#issue-kuestenlogik-bowire-237) | ⬜ Backlog |  |
-| [258](https://github.com/Kuestenlogik/Bowire/issues/258) | Bowire | [Console toolbar: distinct icons for Clear selection / Clear all / Close](#issue-kuestenlogik-bowire-258) | ⬜ Backlog |  |
 
 ## Details
 
@@ -609,9 +616,39 @@ For REST endpoints, offer a per-sidebar toggle (sticky in localStorage) that fli
 
 Today the user has to scroll the sidebar to know whether their configured URL is actually connected — the dot lives next to the URL input inside the source selector. That's the right place for *editing* the URL, but the wrong place for *monitoring* the connection. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/93)
 
+#### <a id="issue-kuestenlogik-bowire-95"></a>⬜ Backlog · [#95](https://github.com/Kuestenlogik/Bowire/issues/95) Header Library: named, scoped, toggleable header sets
+
+Headers like `Accept: application/vnd.example+json`, `X-Api-Version: 2`, `User-Agent: my-tester/1.0` get re-typed on every method, every environment, every workspace. Bowire's Metadata tab is per-request — there's no place to say "every call against api.example.com sends these three headers" without scripts. [[more]](https://github.com/Kuestenlogik/Bowire/issues/95)
+
+#### <a id="issue-kuestenlogik-bowire-117"></a>⬜ Backlog · [#117](https://github.com/Kuestenlogik/Bowire/issues/117) i18n — extract every UI string; ship DE + EN catalogues
+
+Bowire's UI is English-only today. Every label, every button, every tooltip, every empty-state copy is a hard-coded literal in the JS source. [[more]](https://github.com/Kuestenlogik/Bowire/issues/117)
+
 #### <a id="issue-kuestenlogik-bowire-256"></a>⬜ Backlog · [#256](https://github.com/Kuestenlogik/Bowire/issues/256) Freeform builder: schema-free ad-hoc REST — URL + verb + body, Postman-style
 
 The freeform request builder today requires a `service` + `method` name even when the operator just wants to `POST https://api.example.com/foo` with a body. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/256)
+
+#### <a id="issue-kuestenlogik-bowire-258"></a>⬜ Backlog · [#258](https://github.com/Kuestenlogik/Bowire/issues/258) Console toolbar: distinct icons for Clear selection / Clear all / Close
+
+All three buttons used the same X glyph (Close + Clear selection) or text 'Clear' (Clear all). New `selectionClear` SVG (dashed rectangle + interior X) for Clear selection so the three actions read as three different intents. i18n-safe — no labels to translate.
+
+### v2.9 — MCP completion + agent hub
+
+#### <a id="issue-kuestenlogik-bowire-37"></a>⬜ Backlog · [#37](https://github.com/Kuestenlogik/Bowire/issues/37) Bowire.Mcp — remaining tools + adapter modes
+
+> `area:mcp`
+
+**Dependencies** - Related #56, #57 — Mock UI panel + request log will need MCP-tool counterparts (`bowire.mock.start/stop/list/requests`) from this set. - Related #43 — MCP SSE-transport support. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/37)
+
+#### <a id="issue-kuestenlogik-bowire-46"></a>⬜ Backlog · [#46](https://github.com/Kuestenlogik/Bowire/issues/46) MCP server-side notifications via IInlineSseSubscriber
+
+> `area:mcp`
+
+Close the second half of the v0.8.11 design. [[more]](https://github.com/Kuestenlogik/Bowire/issues/46)
+
+#### <a id="issue-kuestenlogik-bowire-128"></a>⬜ Backlog · [#128](https://github.com/Kuestenlogik/Bowire/issues/128) Bowire Agent — register embedded instances with a central hub
+
+**One-liner.** Bowire instances embedded in apps (e.g. a Surgewave broker) register themselves with a central Bowire **hub** so an operator sees every discovery / call / mock across the fleet in one UI, instead of poking around N per-app endpoints. [[more]](https://github.com/Kuestenlogik/Bowire/issues/128)
 
 ### v3.0 — Cleanups + breaking-change cuts
 
@@ -653,23 +690,11 @@ Tracks the Surgewave-lane work split out of Kuestenlogik/Bowire#33 so protocol-s
 
 Hand-rolled graphql-transport-ws server (or HotChocolate-based) so the GraphQL pluginʼs subscription code path has a runnable target. [[more]](https://github.com/Kuestenlogik/Bowire.Samples/issues/13)
 
-#### <a id="issue-kuestenlogik-bowire-37"></a>⬜ Backlog · [#37](https://github.com/Kuestenlogik/Bowire/issues/37) Bowire.Mcp — remaining tools + adapter modes
-
-> `area:mcp`
-
-**Dependencies** - Related #56, #57 — Mock UI panel + request log will need MCP-tool counterparts (`bowire.mock.start/stop/list/requests`) from this set. - Related #43 — MCP SSE-transport support. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/37)
-
 #### <a id="issue-kuestenlogik-bowire-44"></a>⬜ Backlog · [#44](https://github.com/Kuestenlogik/Bowire/issues/44) Sidecar packaging — Docker / Compose / Kubernetes
 
 > `area:docs`
 
 Published \`ghcr.io/kuestenlogik/bowire:latest\` image already; missing: [[more]](https://github.com/Kuestenlogik/Bowire/issues/44)
-
-#### <a id="issue-kuestenlogik-bowire-46"></a>⬜ Backlog · [#46](https://github.com/Kuestenlogik/Bowire/issues/46) MCP server-side notifications via IInlineSseSubscriber
-
-> `area:mcp`
-
-Close the second half of the v0.8.11 design. [[more]](https://github.com/Kuestenlogik/Bowire/issues/46)
 
 #### <a id="issue-kuestenlogik-bowire-50"></a>⬜ Backlog · [#50](https://github.com/Kuestenlogik/Bowire/issues/50) Marketing site — gallery / lightbox layer on solutions/*
 
@@ -689,10 +714,6 @@ Image-perf pipeline shipped (sharp → AVIF + WebP, three variant widths; pictur
 
 The comparison tableʼs "top-5-competitors check" framing already lets us mention more tools in the best-for strip without committing them to a full table row. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/53)
 
-#### <a id="issue-kuestenlogik-bowire-95"></a>⬜ Backlog · [#95](https://github.com/Kuestenlogik/Bowire/issues/95) Header Library: named, scoped, toggleable header sets
-
-Headers like `Accept: application/vnd.example+json`, `X-Api-Version: 2`, `User-Agent: my-tester/1.0` get re-typed on every method, every environment, every workspace. Bowire's Metadata tab is per-request — there's no place to say "every call against api.example.com sends these three headers" without scripts. [[more]](https://github.com/Kuestenlogik/Bowire/issues/95)
-
 #### <a id="issue-kuestenlogik-bowire-103"></a>⬜ Backlog · [#103](https://github.com/Kuestenlogik/Bowire/issues/103) Generate boat photos: submarine, ferry, tugboat, lighthouse
 
 The launch stepper on the home page ([`/_includes/launch.html`](https://github.com/Kuestenlogik/Bowire/blob/main/site/_includes/launch.html)) uses one photo per boat: [[more]](https://github.com/Kuestenlogik/Bowire/issues/103)
@@ -700,14 +721,6 @@ The launch stepper on the home page ([`/_includes/launch.html`](https://github.c
 #### <a id="issue-kuestenlogik-bowire-110"></a>⬜ Backlog · [#110](https://github.com/Kuestenlogik/Bowire/issues/110) Site: surface the AI assistant in the launch wizard + quickstart
 
 v1.9 ships the AI workbench in a real way — chat grounded in workbench state (#89 Phase 1), MCP-style tool calling (#108, #109), AI-assisted security (#59-#63). The "Straight into the water" launch wizard on bowire.io still onboards users as if AI is invisible. [[more]](https://github.com/Kuestenlogik/Bowire/issues/110)
-
-#### <a id="issue-kuestenlogik-bowire-117"></a>⬜ Backlog · [#117](https://github.com/Kuestenlogik/Bowire/issues/117) i18n — extract every UI string; ship DE + EN catalogues
-
-Bowire's UI is English-only today. Every label, every button, every tooltip, every empty-state copy is a hard-coded literal in the JS source. [[more]](https://github.com/Kuestenlogik/Bowire/issues/117)
-
-#### <a id="issue-kuestenlogik-bowire-128"></a>⬜ Backlog · [#128](https://github.com/Kuestenlogik/Bowire/issues/128) Bowire Agent — register embedded instances with a central hub
-
-**One-liner.** Bowire instances embedded in apps (e.g. a Surgewave broker) register themselves with a central Bowire **hub** so an operator sees every discovery / call / mock across the fleet in one UI, instead of poking around N per-app endpoints. [[more]](https://github.com/Kuestenlogik/Bowire/issues/128)
 
 #### <a id="issue-kuestenlogik-bowire-130"></a>⬜ Backlog · [#130](https://github.com/Kuestenlogik/Bowire/issues/130) Comparison table: add Hoppscotch + topic-based filtering
 
@@ -736,10 +749,6 @@ When the Bowire `Release` workflow finishes a new version, it does these steps b
 #### <a id="issue-kuestenlogik-bowire-237"></a>⬜ Backlog · [#237](https://github.com/Kuestenlogik/Bowire/issues/237) WINGET_TOKEN expired — rotate to unblock winget publish for v2.0.0+
 
 During the v2.0.0 release publish on 2026-06-21, the `winget` workflow failed at the `wingetcreate submit` step: [[more]](https://github.com/Kuestenlogik/Bowire/issues/237)
-
-#### <a id="issue-kuestenlogik-bowire-258"></a>⬜ Backlog · [#258](https://github.com/Kuestenlogik/Bowire/issues/258) Console toolbar: distinct icons for Clear selection / Clear all / Close
-
-All three buttons used the same X glyph (Close + Clear selection) or text 'Clear' (Clear all). New `selectionClear` SVG (dashed rectangle + interior X) for Clear selection so the three actions read as three different intents. i18n-safe — no labels to translate.
 
 ---
 
