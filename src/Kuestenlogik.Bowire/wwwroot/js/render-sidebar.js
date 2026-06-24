@@ -2390,19 +2390,18 @@
                 }
             },
             tools: tools,
-            // Layout consistency with the topbar workspace dropdown:
-            // active state = always-visible checkmark at the rightmost
-            // slot; inactive state = hover-revealed activate-button at
-            // the SAME slot. renderTree (helpers.js) chooses between
-            // isActive (indicator) and onAdd (button) via the new
-            // node.isActive flag.
+            // Sidebar is the master surface for the row layout: tools
+            // hover-revealed left of the active-indicator at the
+            // rightmost slot. The topbar dropdown matches this
+            // (both end-anchored). renderTree's node.isActive drives
+            // the indicator; node.onAdd drives the activate-button
+            // on inactive rows — same slot, two visual modes.
             isActive: isActive,
             activeTitle: 'Active workspace',
             onAdd: !isActive ? function () {
                 switchWorkspace(w.id);
             } : null,
             addTitle: !isActive ? 'Switch to this workspace' : null,
-            // #277 — checkmark, not '+'. '+' read as 'add what?'.
             addIcon: 'check',
             onDrop: function (dt) { _handleWorkspaceDrop(w, dt); },
             children: children

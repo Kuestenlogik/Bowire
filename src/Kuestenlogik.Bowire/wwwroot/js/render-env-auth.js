@@ -2434,17 +2434,21 @@
                                 el('span', { className: 'bowire-workspace-menu-item-glyph', innerHTML: glyph }),
                                 el('span', { className: 'bowire-workspace-menu-item-name', textContent: w.name }),
                                 el('div', { className: 'bowire-workspace-menu-item-tools' },
-                                    // Check at the FRONT of the cluster
-                                    // (matches the pre-#276-agent
-                                    // layout the user preferred — the
-                                    // slot stays at the same X across
-                                    // every row, regardless of hover
-                                    // state or active state). Inactive
-                                    // rows render a click-to-activate
-                                    // button (tool-color); active rows
-                                    // render a non-clickable filled
-                                    // checkmark (accent-color) — same
-                                    // glyph, two visual modes, one slot.
+                                    // Layout matches the sidebar
+                                    // (master surface for the row
+                                    // shape): hover tools first
+                                    // (Settings / Rename / Delete),
+                                    // then the active-indicator at
+                                    // the END. Active = filled
+                                    // accent-color checkmark, always
+                                    // visible. Inactive = hover-
+                                    // revealed click-to-activate
+                                    // button, tool-color. Both share
+                                    // the same rightmost slot
+                                    // (fixed-width 18×18).
+                                    _toolBtn(settingsDef, false),
+                                    _toolBtn(renameDef, false),
+                                    _toolBtn(deleteDef, true),
                                     isActive
                                         ? el('span', {
                                             className: 'bowire-workspace-menu-item-check is-active',
@@ -2464,10 +2468,7 @@
                                                 workspaceMenuOpen = false;
                                                 render();
                                             }
-                                        }),
-                                    _toolBtn(settingsDef, false),
-                                    _toolBtn(renameDef, false),
-                                    _toolBtn(deleteDef, true)
+                                        })
                                 )
                             );
                         })
