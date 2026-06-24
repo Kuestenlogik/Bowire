@@ -91,7 +91,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.1 — Scripting, variable resolver, throughput surface *(due 2026-06-30)*
 
-**23/38 done** · 15 backlog
+**23/39 done** · 16 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -110,6 +110,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [279](https://github.com/Kuestenlogik/Bowire/issues/279) | Bowire | [Workspace ordering: configurable (creation date / alphabetical / manual drag-drop), respected across sidebar + dropdown + overview](#issue-kuestenlogik-bowire-279) | ⬜ Backlog |  |
 | [280](https://github.com/Kuestenlogik/Bowire/issues/280) | Bowire | [Assistant hints: actionable inline buttons / links (not just descriptive text)](#issue-kuestenlogik-bowire-280) | ⬜ Backlog |  |
 | [281](https://github.com/Kuestenlogik/Bowire/issues/281) | Bowire | [Guided tour: page-navigation + element spotlight + interactive flow](#issue-kuestenlogik-bowire-281) | ⬜ Backlog |  |
+| [282](https://github.com/Kuestenlogik/Bowire/issues/282) | Bowire | [Unified .bww format: UI export + CLI export converge on one canonical schema](#issue-kuestenlogik-bowire-282) | ⬜ Backlog |  |
 | [197](https://github.com/Kuestenlogik/Bowire/issues/197) | Bowire | [Deprecate + unlist Kuestenlogik.Bowire.Extension.MapLibre on nuget.org after v2.0 ships](#issue-kuestenlogik-bowire-197) | ✅ Done |  |
 | [248](https://github.com/Kuestenlogik/Bowire/issues/248) | Bowire | [Optional rail modules — plumbing (Phase 1): toggle mechanic + always-on set + Settings editor](#issue-kuestenlogik-bowire-248) | ✅ Done |  |
 | [252](https://github.com/Kuestenlogik/Bowire/issues/252) | Bowire | [Compose-request entry points: '+ Compose' (self-contained) + 'New from source…' (workspace-managed URL)](#issue-kuestenlogik-bowire-252) | ✅ Done |  |
@@ -205,6 +206,14 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [183](https://github.com/Kuestenlogik/Bowire/issues/183) | Bowire | [GitHub Action — Bowire PR-comment bot with delta + findings + perf](#issue-kuestenlogik-bowire-183) | ⬜ Backlog |  |
 | [188](https://github.com/Kuestenlogik/Bowire/issues/188) | Bowire | [Org-level Bowire dashboard — rollup across services](#issue-kuestenlogik-bowire-188) | ⬜ Backlog |  |
 | [232](https://github.com/Kuestenlogik/Bowire/issues/232) | Bowire | [Benchmarks: 'scheduled' run shape + cron infrastructure (restart-survival)](#issue-kuestenlogik-bowire-232) | ⬜ Backlog |  |
+
+### v3.0.0 — Cleanups + breaking-change cuts
+
+**0/1 done** · 1 backlog
+
+| # | Project | Title | Status | Tags |
+|---|---|---|---|---|
+| [283](https://github.com/Kuestenlogik/Bowire/issues/283) | Bowire | [Retire v1 .bww format migration shim (introduced in #282)](#issue-kuestenlogik-bowire-283) | ⬜ Backlog |  |
 
 ### Backlog (not yet scheduled)
 
@@ -608,6 +617,10 @@ The Assistant drawer's context-aware hints describe what the operator should do 
 
 The existing guided tour reads more like inline help text than a tour. Operator's complaints: - Pages aren't navigated to — the tour says 'click X' but X isn't visible - Hints don't highlight the item being discussed - No spotlight / no darkening of the rest of the page so the eye lands on the right element [[more]](https://github.com/Kuestenlogik/Bowire/issues/281)
 
+#### <a id="issue-kuestenlogik-bowire-282"></a>⬜ Backlog · [#282](https://github.com/Kuestenlogik/Bowire/issues/282) Unified .bww format: UI export + CLI export converge on one canonical schema
+
+Two divergent .bww shapes shipped in v2.0: [[more]](https://github.com/Kuestenlogik/Bowire/issues/282)
+
 #### <a id="issue-kuestenlogik-bowire-197"></a>✅ Done · [#197](https://github.com/Kuestenlogik/Bowire/issues/197) Deprecate + unlist Kuestenlogik.Bowire.Extension.MapLibre on nuget.org after v2.0 ships
 
 `Kuestenlogik.Bowire.Extension.MapLibre` 1.3.0-rc.1 was renamed to `Kuestenlogik.Bowire.Map` ahead of v2.0 (commit 75c8d1f). … [[more]](https://github.com/Kuestenlogik/Bowire/issues/197)
@@ -899,6 +912,12 @@ Once Bowire ships in multiple services across an org, "what's the state of our A
 #### <a id="issue-kuestenlogik-bowire-232"></a>⬜ Backlog · [#232](https://github.com/Kuestenlogik/Bowire/issues/232) Benchmarks: 'scheduled' run shape + cron infrastructure (restart-survival)
 
 Add the **scheduled** run shape to Benchmarks — a saved envelope can be set to fire on a cron schedule, the workbench (or a CLI / embedded host) runs it without operator interaction, and results land in the saved-runs history. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/232)
+
+### v3.0.0 — Cleanups + breaking-change cuts
+
+#### <a id="issue-kuestenlogik-bowire-283"></a>⬜ Backlog · [#283](https://github.com/Kuestenlogik/Bowire/issues/283) Retire v1 .bww format migration shim (introduced in #282)
+
+#282 unifies the .bww workspace export format on a v2 canonical schema. To stay non-breaking through v2.x, both reader paths (UI / CLI) ship migration shims that detect and read the legacy v1 shapes (UI-shape + CLI-shape) and rewrite them as v2 in-memory before the rest of the import pipeline runs. [[more]](https://github.com/Kuestenlogik/Bowire/issues/283)
 
 ### Backlog (not yet scheduled)
 
