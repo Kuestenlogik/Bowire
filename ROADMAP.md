@@ -179,7 +179,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
 | [37](https://github.com/Kuestenlogik/Bowire/issues/37) | Bowire | [Bowire.Mcp — remaining tools + adapter modes](#issue-kuestenlogik-bowire-37) | ⬜ Backlog | `area:mcp` |
-| [46](https://github.com/Kuestenlogik/Bowire/issues/46) | Bowire | [MCP server-side notifications via IInlineSseSubscriber](#issue-kuestenlogik-bowire-46) | ⬜ Backlog | `area:mcp` |
+| [46](https://github.com/Kuestenlogik/Bowire/issues/46) | Bowire | [MCP server-side notifications via SDK notification handlers](#issue-kuestenlogik-bowire-46) | ⬜ Backlog | `area:mcp` |
 | [128](https://github.com/Kuestenlogik/Bowire/issues/128) | Bowire | [Bowire Agent — register embedded instances with a central hub](#issue-kuestenlogik-bowire-128) | ⬜ Backlog |  |
 
 ### v3.0 — Cleanups + breaking-change cuts
@@ -683,11 +683,11 @@ All three buttons used the same X glyph (Close + Clear selection) or text 'Clear
 
 **Dependencies** - Related #56, #57 — Mock UI panel + request log will need MCP-tool counterparts (`bowire.mock.start/stop/list/requests`) from this set. - Related #43 — MCP SSE-transport support. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/37)
 
-#### <a id="issue-kuestenlogik-bowire-46"></a>⬜ Backlog · [#46](https://github.com/Kuestenlogik/Bowire/issues/46) MCP server-side notifications via IInlineSseSubscriber
+#### <a id="issue-kuestenlogik-bowire-46"></a>⬜ Backlog · [#46](https://github.com/Kuestenlogik/Bowire/issues/46) MCP server-side notifications via SDK notification handlers
 
 > `area:mcp`
 
-Close the second half of the v0.8.11 design. [[more]](https://github.com/Kuestenlogik/Bowire/issues/46)
+When an MCP tool call is in flight, the server can emit `notifications/message` (logging) and `notifications/progress` updates. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/46)
 
 #### <a id="issue-kuestenlogik-bowire-128"></a>⬜ Backlog · [#128](https://github.com/Kuestenlogik/Bowire/issues/128) Bowire Agent — register embedded instances with a central hub
 
