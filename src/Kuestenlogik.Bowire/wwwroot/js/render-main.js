@@ -1814,7 +1814,7 @@
         section.appendChild(el('button', {
             className: 'bowire-ws-detail-action',
             style: 'margin-top:12px',
-            textContent: '+ Create workspace',
+            textContent: '+ New workspace',
             onClick: function () {
                 if (typeof openCreateWorkspaceDialog === 'function') {
                     openCreateWorkspaceDialog(function (created) {
@@ -4048,7 +4048,7 @@
                     body: 'A workspace is your project folder — it holds the URLs you discover, the environments + variables + secrets you reference, and the collections / recordings / benchmarks you build. Most operators name them after the project ("Petstore Staging", "Internal CMS"). You can switch + add more from the workspace chip in the topbar later.',
                     actions: [
                         {
-                            label: 'Create workspace',
+                            label: 'New workspace',
                             primary: true,
                             onClick: function () {
                                 if (typeof openCreateWorkspaceDialog === 'function') {

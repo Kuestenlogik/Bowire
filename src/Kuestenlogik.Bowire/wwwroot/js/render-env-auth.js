@@ -2304,7 +2304,7 @@
             type: 'button',
             className: 'bowire-workspace-chip' + (workspaceMenuOpen ? ' active' : ''),
             title: ws ? ('Workspace: ' + ws.name) : 'No workspace — click to create one',
-            'aria-label': ws ? 'Switch workspace' : 'Create workspace',
+            'aria-label': ws ? 'Switch workspace' : 'New workspace',
             onClick: function (e) {
                 e.stopPropagation();
                 // Close any other topbar dropdown before toggling
