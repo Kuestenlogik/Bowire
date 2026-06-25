@@ -1985,6 +1985,12 @@
                         var chosen = searchSuggestionCache[searchSuggestionIndex];
                         if (chosen && typeof chosen.onSelect === 'function') {
                             chosen.onSelect();
+                            // Action sets searchSuggestionsOpen = false +
+                            // clears searchQuery; the modal won't visibly
+                            // close until the next render. Force one so
+                            // the palette dismisses immediately after a
+                            // pick.
+                            render();
                         }
                         return;
                     }
@@ -2065,7 +2071,14 @@
                             },
                             onClick: function (e) {
                                 e.stopPropagation();
-                                if (typeof s.onSelect === 'function') s.onSelect();
+                                if (typeof s.onSelect === 'function') {
+                                    s.onSelect();
+                                    // Same reasoning as the Enter
+                                    // handler: action mutates the
+                                    // open-flag, render() is needed
+                                    // to dismiss the modal.
+                                    render();
+                                }
                             }
                         });
                         if (s.icon) {
