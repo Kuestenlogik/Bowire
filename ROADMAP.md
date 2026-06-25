@@ -214,7 +214,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [236](https://github.com/Kuestenlogik/Bowire/issues/236) | Bowire | [Release cascade: wait for nuget.org indexing before dispatching to siblings](#issue-kuestenlogik-bowire-236) | ⬜ Backlog |  |
 | [237](https://github.com/Kuestenlogik/Bowire/issues/237) | Bowire | [WINGET_TOKEN expired — rotate to unblock winget publish for v2.0.0+](#issue-kuestenlogik-bowire-237) | ⬜ Backlog |  |
 | [288](https://github.com/Kuestenlogik/Bowire/issues/288) | Bowire | [IInlineSseSubscriber is an orphaned seam — give it a consumer or remove it](#issue-kuestenlogik-bowire-288) | ⬜ Backlog |  |
-| [290](https://github.com/Kuestenlogik/Bowire/issues/290) | Bowire | [Hopp bar: history persistence + benchmark + binary upload (follow-up to #289)](#issue-kuestenlogik-bowire-290) | ⬜ Backlog |  |
 
 ## Details
 
@@ -797,10 +796,6 @@ During the v2.0.0 release publish on 2026-06-21, the `winget` workflow failed at
 #### <a id="issue-kuestenlogik-bowire-288"></a>⬜ Backlog · [#288](https://github.com/Kuestenlogik/Bowire/issues/288) IInlineSseSubscriber is an orphaned seam — give it a consumer or remove it
 
 `IInlineSseSubscriber` (`src/Kuestenlogik.Bowire/IInlineSseSubscriber.cs`) is an optional capability seam: a protocol plugin that can subscribe to a remote SSE stream and yield each event as a `{ id, event, data, retry }` envelope, discoverable via `BowireProtocolRegistry.FindSseSubscriber()`. [[more]](https://github.com/Kuestenlogik/Bowire/issues/288)
-
-#### <a id="issue-kuestenlogik-bowire-290"></a>⬜ Backlog · [#290](https://github.com/Kuestenlogik/Bowire/issues/290) Hopp bar: history persistence + benchmark + binary upload (follow-up to #289)
-
-Follow-up to #289 — Phase F leftovers + two deferrals from Phase A/C. [[more]](https://github.com/Kuestenlogik/Bowire/issues/290)
 
 ---
 
