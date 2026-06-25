@@ -91,6 +91,31 @@ internal static class BowireInvokeEndpoints
             (serverUrl, var sanitizedMeta) = BowireEndpointHelpers.ApplyQueryAuthHints(serverUrl, body.Metadata);
             body = body with { Metadata = sanitizedMeta };
 
+            // ---- #290 — Binary upload smuggled via metadata ----
+            // The Hopp-bar's binary body picker reads the chosen File as
+            // base64 and ships it on body.BodyBinary. To avoid plumbing a
+            // new field through every protocol plugin's InvokeAsync
+            // signature (50+ implementations), we stash the base64 + the
+            // content-type + the filename onto the metadata dict under
+            // reserved X-Bowire-* keys. The REST plugin's HttpInvoker
+            // sniffs these out and writes raw bytes to the wire; other
+            // plugins ignore them — so the same path that handles a Hopp
+            // JSON body keeps working unchanged for non-binary cases.
+            if (!string.IsNullOrEmpty(body.BodyBinary))
+            {
+                var binMeta = body.Metadata is null
+                    ? new Dictionary<string, string>(StringComparer.Ordinal)
+                    : new Dictionary<string, string>(body.Metadata, StringComparer.Ordinal);
+                binMeta["X-Bowire-Body-Binary"] = body.BodyBinary;
+                binMeta["X-Bowire-Body-Binary-Content-Type"] =
+                    body.BodyBinaryContentType ?? "application/octet-stream";
+                if (!string.IsNullOrEmpty(body.BodyBinaryName))
+                {
+                    binMeta["X-Bowire-Body-Binary-Name"] = body.BodyBinaryName;
+                }
+                body = body with { Metadata = binMeta };
+            }
+
             // ---- Transcoded HTTP path ----
             // When the JS sends an inline TranscodedMethod (because the user
             // toggled "via HTTP" on a transcoded gRPC method), look up an
@@ -465,6 +490,37 @@ internal static class BowireInvokeEndpoints
         /// JS layer when the user toggles a transcoded gRPC method to "via HTTP".
         /// </summary>
         public TranscodedMethodInfo? TranscodedMethod { get; init; }
+
+        /// <summary>
+        /// #290 — base64-encoded binary request body for Hopp-bar binary
+        /// uploads. When present + non-empty the binary payload is materialised
+        /// onto a synthetic <c>X-Bowire-Body-Binary</c> metadata triple
+        /// (<c>X-Bowire-Body-Binary-Content-Type</c> + filename) and shipped
+        /// downstream to the protocol plugin alongside <see cref="Messages"/>.
+        /// REST plugin sniffs these out and writes raw bytes to the wire;
+        /// other plugins ignore them. base64-in-JSON was chosen over multipart
+        /// because it preserves the existing single JSON-body shape — no new
+        /// endpoint, no Content-Type-sniffing branch in the POST handler, and
+        /// the proxy / recording / telemetry pipeline keeps working unchanged.
+        /// Trade-off: ~33% wire overhead. Acceptable for typical Hopp-bar
+        /// uploads (a config file, an image, a serialised proto message).
+        /// Streaming / multi-MB uploads should switch to a dedicated endpoint.
+        /// </summary>
+        public string? BodyBinary { get; init; }
+
+        /// <summary>
+        /// Content-Type to use for the binary body when <see cref="BodyBinary"/>
+        /// is present. Falls back to <c>application/octet-stream</c> when the
+        /// caller didn't pin one.
+        /// </summary>
+        public string? BodyBinaryContentType { get; init; }
+
+        /// <summary>
+        /// Original filename of the binary upload. Surfaced to the protocol
+        /// plugin via metadata so any downstream Content-Disposition header
+        /// the plugin emits carries the original name. Optional.
+        /// </summary>
+        public string? BodyBinaryName { get; init; }
     }
 
     /// <summary>

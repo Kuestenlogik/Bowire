@@ -63,6 +63,152 @@
     // Open/close state for the method dropdown + the Senden split caret.
     var hoppMethodMenuOpen = false;
     var hoppSendMenuOpen = false;
+    // #290 — history dropdown (clock icon, between URL input and the
+    // send button cluster). Closed by default; toggled by the clock
+    // button click. Closed by the outside-click handler at the bottom
+    // of this file.
+    var hoppHistoryMenuOpen = false;
+
+    // ---- #290 — Bar-history persistence ----
+    //
+    // History entries persist across reloads so an operator who
+    // accidentally closed the tab (or refreshed) doesn't lose the
+    // request shape they just iterated on. The buffer is capped so
+    // the localStorage bucket can't grow unboundedly across long
+    // sessions; oldest entries get evicted when the cap is hit.
+    //
+    // Round-trips through workspace export under `hoppBarHistory` —
+    // disk-mode workspaces serialise `[]`; browser-mode workspaces
+    // serialise the live buffer.
+    var HOPP_HISTORY_KEY = 'bowire_hopp_history';
+    var HOPP_HISTORY_CAP = 50;
+
+    // Module-scope buffer mirrors the per-workspace localStorage entry.
+    // Lazily hydrated via loadHoppHistory() on first read; mutations
+    // round-trip through persistHoppHistory().
+    var hoppHistoryList = null;
+
+    function loadHoppHistory() {
+        if (Array.isArray(hoppHistoryList)) return hoppHistoryList;
+        try {
+            var raw = localStorage.getItem(wsKey(HOPP_HISTORY_KEY));
+            hoppHistoryList = raw ? JSON.parse(raw) : [];
+            if (!Array.isArray(hoppHistoryList)) hoppHistoryList = [];
+        } catch (_) {
+            hoppHistoryList = [];
+        }
+        return hoppHistoryList;
+    }
+
+    function persistHoppHistory() {
+        try {
+            localStorage.setItem(wsKey(HOPP_HISTORY_KEY),
+                JSON.stringify(hoppHistoryList || []));
+        } catch (e) {
+            // Quota-exhaustion is the realistic failure here — non-fatal,
+            // history is a convenience, not project content.
+            console.warn('[bowire] failed to persist hopp history', e);
+        }
+    }
+
+    function _makeHoppHistoryId() {
+        return 'hh_' + Math.random().toString(36).slice(2, 10);
+    }
+
+    // Snapshot the bar's current state into a history entry. Called
+    // from executeHoppRequest() after the wire result lands. The
+    // response body is intentionally NOT captured — it can be huge
+    // and balloon localStorage; only the request shape + status code
+    // + duration are kept so the operator can see "did it work last
+    // time?" without paying for re-storing the JSON payload.
+    function pushHoppHistoryEntry(fr, outcome) {
+        if (!fr) return;
+        ensureHoppState(fr);
+        loadHoppHistory();
+        var entry = {
+            id: _makeHoppHistoryId(),
+            ts: Date.now(),
+            method: fr.method || 'GET',
+            url: fr.serverUrl || '',
+            params: (fr._hopp.params || []).map(_cloneRow),
+            headers: (fr._hopp.headers || []).map(_cloneRow),
+            body: fr.body || '',
+            bodyMode: fr._hopp.bodyMode || 'json',
+            // formBody is its own KV table when bodyMode === 'form'.
+            // Capture it too so a history-restore re-hydrates the
+            // form rows without the operator having to retype them.
+            formBody: Array.isArray(fr._hopp.formBody)
+                ? fr._hopp.formBody.map(_cloneRow) : [],
+            // Binary content is a transient File reference and CAN'T
+            // be persisted — record the filename so the entry shows
+            // it, but the operator has to re-pick on restore.
+            binaryName: fr._hopp.binaryName || '',
+            authKind: fr._hopp.authKind || 'none',
+            authData: Object.assign({}, fr._hopp.authData || {}),
+            preScript: fr._hopp.preScript || '',
+            postScript: fr._hopp.postScript || '',
+            status: outcome && outcome.status != null ? outcome.status : null,
+            durationMs: outcome && outcome.durationMs != null ? outcome.durationMs : null,
+            ok: outcome ? !!outcome.ok : null
+        };
+        // Newest at index 0 — same as history-env.js's unshift pattern.
+        hoppHistoryList.unshift(entry);
+        if (hoppHistoryList.length > HOPP_HISTORY_CAP) {
+            hoppHistoryList.length = HOPP_HISTORY_CAP;
+        }
+        persistHoppHistory();
+    }
+
+    function _cloneRow(r) {
+        return {
+            key: r && r.key ? String(r.key) : '',
+            value: r && r.value != null ? String(r.value) : '',
+            description: r && r.description != null ? String(r.description) : '',
+            enabled: !r || r.enabled !== false
+        };
+    }
+
+    // Restore a history entry into the active hopp request — fills the
+    // bar but DOES NOT auto-execute. The operator clicks Execute when
+    // they're ready; this matches Hoppscotch's own "load from history"
+    // behaviour and avoids unintended re-fire of (potentially expensive
+    // or destructive) requests.
+    function restoreHoppHistoryEntry(entryId) {
+        loadHoppHistory();
+        var entry = hoppHistoryList.find(function (e) { return e.id === entryId; });
+        if (!entry) return;
+        if (!freeformRequest || !isHoppRequest(freeformRequest)) {
+            // No live hopp request — start a fresh one then fill it.
+            startHoppRequest({});
+        }
+        var fr = freeformRequest;
+        ensureHoppState(fr);
+        fr.method = entry.method || 'GET';
+        fr.serverUrl = entry.url || '';
+        fr.body = entry.body || '';
+        fr._hopp.params  = (entry.params  || []).map(_cloneRow);
+        fr._hopp.headers = (entry.headers || []).map(_cloneRow);
+        fr._hopp.formBody = (entry.formBody || []).map(_cloneRow);
+        fr._hopp.bodyMode = entry.bodyMode || 'json';
+        fr._hopp.binaryName = entry.binaryName || '';
+        // Binary File reference doesn't survive — clear so the renderer
+        // shows the empty file picker, but keep the filename hint above
+        // so the operator knows what to re-pick.
+        fr._hopp._binaryRef = null;
+        fr._hopp.authKind = entry.authKind || 'none';
+        fr._hopp.authData = Object.assign({}, entry.authData || {});
+        fr._hopp.preScript  = entry.preScript  || '';
+        fr._hopp.postScript = entry.postScript || '';
+        hoppHistoryMenuOpen = false;
+        render();
+    }
+
+    function clearHoppHistory() {
+        hoppHistoryList = [];
+        persistHoppHistory();
+        hoppHistoryMenuOpen = false;
+        render();
+    }
 
     // ---- Hopp-mode bootstrapping ----
     //
@@ -337,6 +483,17 @@
         urlWrap.appendChild(_renderHoppUrlOverlay(fr.serverUrl || ''));
         bar.appendChild(urlWrap);
 
+        // #290 — History affordance. Clock button between the URL
+        // input and the Execute cluster opens a dropdown of the last
+        // N executed requests; clicking an entry fills the bar (does
+        // NOT auto-execute — matches Hoppscotch's own behaviour). The
+        // button only renders when the history bucket is non-empty so
+        // first-time operators don't see a dead control.
+        loadHoppHistory();
+        if (hoppHistoryList.length > 0) {
+            bar.appendChild(_renderHoppHistoryButton(fr));
+        }
+
         // Send button (split caret variant menu)
         var sendWrap = el('div', { className: 'bowire-hopp-send-wrap' });
         var sendBtn = el('button', {
@@ -409,18 +566,19 @@
                 el('span', { innerHTML: svgIcon('folder'), style: 'width:14px;height:14px;display:flex' }),
                 el('span', { textContent: 'Save to collection' })
             ));
-            // Benchmark variant — only enabled when the benchmarks
-            // module is present (it ships as a fragment that may be
-            // trimmed in embedded hosts).
-            if (typeof runBenchmark === 'function') {
+            // #290 — Benchmark variant. Wired to the existing
+            // benchmarks-rail runner via createBenchmarkSpec + the
+            // hopp request snapshot as a single 'method'-style target.
+            // Only renders when benchmarks.js is present (it ships
+            // as a fragment that may be trimmed in embedded hosts).
+            if (typeof createBenchmarkSpec === 'function'
+                && typeof runBenchmarkSpec === 'function') {
                 sendMenu.appendChild(el('button', {
                     className: 'bowire-hopp-send-menu-item',
                     role: 'menuitem',
                     onClick: function () {
                         hoppSendMenuOpen = false;
-                        if (typeof toast === 'function') {
-                            toast('Benchmark from Hopp bar coming soon', 'info');
-                        }
+                        runHoppAsBenchmark(fr);
                     }
                 },
                     el('span', { innerHTML: svgIcon('lightning'), style: 'width:14px;height:14px;display:flex' }),
@@ -454,6 +612,113 @@
             authData:   fr._hopp.authData || {},
             lineage: { kind: 'hopp-bar' }
         };
+    }
+
+    // ---- #290 — History dropdown ----
+    //
+    // Clock-icon button + dropdown showing the last N executed
+    // requests for THIS workspace. Hydrated lazily from
+    // localStorage on first paint and on each bar mount; the
+    // dropdown re-renders on every state change because the menu's
+    // open/close lives on a module-scope flag.
+    function _renderHoppHistoryButton() {
+        var wrap = el('div', { className: 'bowire-hopp-history-wrap' });
+        var btn = el('button', {
+            type: 'button',
+            id: 'bowire-hopp-history-btn',
+            className: 'bowire-hopp-history-btn' + (hoppHistoryMenuOpen ? ' is-open' : ''),
+            title: 'Recent requests (' + hoppHistoryList.length + ')',
+            'aria-haspopup': 'menu',
+            'aria-expanded': hoppHistoryMenuOpen ? 'true' : 'false',
+            onClick: function (e) {
+                e.stopPropagation();
+                hoppHistoryMenuOpen = !hoppHistoryMenuOpen;
+                render();
+            },
+            innerHTML: svgIcon('history')
+        });
+        wrap.appendChild(btn);
+        if (hoppHistoryMenuOpen) {
+            var menu = el('div', {
+                className: 'bowire-hopp-history-menu',
+                role: 'menu',
+                onClick: function (e) { e.stopPropagation(); }
+            });
+            // Header strip with a Clear-all action.
+            menu.appendChild(el('div', { className: 'bowire-hopp-history-head' },
+                el('span', { className: 'bowire-hopp-history-head-label',
+                    textContent: 'Recent (' + hoppHistoryList.length + ')' }),
+                el('button', {
+                    type: 'button',
+                    className: 'bowire-hopp-history-clear',
+                    title: 'Clear history',
+                    onClick: function () {
+                        // Confirmation is the operator's only seatbelt
+                        // since cleared history can't be restored.
+                        if (typeof bowireConfirm === 'function') {
+                            bowireConfirm({
+                                title: 'Clear bar history?',
+                                body: 'Removes all ' + hoppHistoryList.length
+                                    + ' entries for this workspace. Cannot be undone.',
+                                confirmLabel: 'Clear',
+                                onConfirm: clearHoppHistory
+                            });
+                        } else if (window.confirm('Clear ' + hoppHistoryList.length + ' history entries?')) {
+                            clearHoppHistory();
+                        }
+                    },
+                    textContent: 'Clear'
+                })
+            ));
+            // Up to HOPP_HISTORY_CAP entries — render newest first
+            // (the buffer is already newest-at-index-0).
+            hoppHistoryList.forEach(function (entry) {
+                var item = el('button', {
+                    type: 'button',
+                    className: 'bowire-hopp-history-item',
+                    role: 'menuitem',
+                    title: entry.url + (entry.status != null
+                        ? ' · ' + entry.status
+                        + (entry.durationMs != null
+                            ? ' · ' + Math.round(entry.durationMs) + 'ms'
+                            : '')
+                        : ''),
+                    onClick: function () { restoreHoppHistoryEntry(entry.id); }
+                });
+                item.appendChild(el('span', {
+                    className: 'bowire-hopp-history-method',
+                    'data-verb': entry.method || 'GET',
+                    textContent: entry.method || 'GET'
+                }));
+                item.appendChild(el('span', {
+                    className: 'bowire-hopp-history-url',
+                    textContent: entry.url || '(no url)'
+                }));
+                if (entry.status != null) {
+                    item.appendChild(el('span', {
+                        className: 'bowire-hopp-history-status'
+                            + (entry.ok ? ' is-ok' : ' is-err'),
+                        textContent: String(entry.status)
+                    }));
+                }
+                item.appendChild(el('span', {
+                    className: 'bowire-hopp-history-ts',
+                    textContent: _formatRelativeTs(entry.ts)
+                }));
+                menu.appendChild(item);
+            });
+            wrap.appendChild(menu);
+        }
+        return wrap;
+    }
+
+    function _formatRelativeTs(ts) {
+        if (!ts) return '';
+        var diffSec = Math.max(0, Math.round((Date.now() - ts) / 1000));
+        if (diffSec < 60) return diffSec + 's ago';
+        if (diffSec < 3600) return Math.round(diffSec / 60) + 'm ago';
+        if (diffSec < 86400) return Math.round(diffSec / 3600) + 'h ago';
+        return Math.round(diffSec / 86400) + 'd ago';
     }
 
     // ---- Render: the sub-tab strip ----
@@ -1051,22 +1316,69 @@
             addConsoleEntry({ type: 'request', method: fullName, body: verbHasBody ? bodyStr : '' });
         }
 
+        // #290 — capture status + duration for the history entry that
+        // lands after the response (or error) comes back. The history
+        // bucket persists what we know about the OUTCOME, not the full
+        // response body — that's diagnosis-grade overhead we skip.
+        var historyOutcome = { status: null, durationMs: null, ok: false };
+        var historyStartMs = performance.now();
+
         try {
             var url = config.prefix + '/api/invoke?serverUrl=' + encodeURIComponent(urlWithParams);
+            var invokeBody = {
+                service: '',
+                method: verb,
+                messages: [verbHasBody ? bodyStr : '{}'],
+                metadata: Object.keys(headers).length > 0 ? headers : null,
+                protocol: 'rest'
+            };
+            // #290 — Binary upload via /api/invoke. We carry the bytes
+            // base64-in-JSON rather than introducing a multipart endpoint
+            // (decision documented at the top of executeHoppRequest +
+            // mirrored on the server side BowireInvokeEndpoints.InvokeRequest).
+            // Trade-off: ~33% wire overhead vs. multipart, but no new
+            // endpoint, no Content-Type-sniffing branch in the existing
+            // POST handler, and the existing JSON body inspection in the
+            // proxy / recording / telemetry pipeline keeps working
+            // verbatim. Larger uploads (>10MB) should switch to a dedicated
+            // streaming endpoint — out of scope here.
+            if (verbHasBody && fr._hopp.bodyMode === 'binary' && fr._hopp._binaryRef) {
+                try {
+                    var fileRef = fr._hopp._binaryRef;
+                    var bytes = await fileRef.arrayBuffer();
+                    invokeBody.bodyBinary = _arrayBufferToBase64(bytes);
+                    invokeBody.bodyBinaryContentType = fileRef.type || 'application/octet-stream';
+                    invokeBody.bodyBinaryName = fileRef.name || fr._hopp.binaryName || '';
+                    // Replace the placeholder JSON message with an empty
+                    // object so the protocol plugin doesn't try to parse
+                    // the binary as JSON; the binary bucket is consulted
+                    // by the server before falling back to messages[0].
+                    invokeBody.messages = ['{}'];
+                    if (!headers['Content-Type']) {
+                        headers['Content-Type'] = fileRef.type || 'application/octet-stream';
+                        invokeBody.metadata = headers;
+                    }
+                } catch (e) {
+                    if (typeof toast === 'function') toast('Binary read failed: ' + e.message, 'error');
+                    isExecuting = false;
+                    if (typeof markJobDone === 'function') markJobDone('hopp', verb);
+                    render();
+                    return;
+                }
+            }
             var resp = await fetch(url, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    service: '',
-                    method: verb,
-                    messages: [verbHasBody ? bodyStr : '{}'],
-                    metadata: Object.keys(headers).length > 0 ? headers : null,
-                    protocol: 'rest'
-                })
+                body: JSON.stringify(invokeBody)
             });
             var result = await resp.json();
+            historyOutcome.durationMs = result && result.duration_ms != null
+                ? result.duration_ms
+                : Math.round(performance.now() - historyStartMs);
             if (result.title) {
                 responseError = result;
+                historyOutcome.status = (result.status != null ? result.status : 'Error');
+                historyOutcome.ok = false;
                 if (typeof addConsoleEntry === 'function') {
                     addConsoleEntry({ type: 'error', method: fullName, status: 'Error',
                         body: typeof richErrorDetail === 'function'
@@ -1074,6 +1386,8 @@
                 }
             } else {
                 responseData = result.response;
+                historyOutcome.status = result.status || 'OK';
+                historyOutcome.ok = true;
                 if (typeof captureResponse === 'function' && result.response) captureResponse(result.response);
                 if (typeof addConsoleEntry === 'function') {
                     addConsoleEntry({ type: 'response', method: fullName,
@@ -1103,14 +1417,190 @@
             }
         } catch (e) {
             responseError = e.message;
+            historyOutcome.status = 'NetworkError';
+            historyOutcome.ok = false;
+            historyOutcome.durationMs = Math.round(performance.now() - historyStartMs);
             if (typeof addConsoleEntry === 'function') {
                 addConsoleEntry({ type: 'error', method: fullName, status: 'NetworkError', body: e.message });
             }
         }
 
+        // #290 — persist a history snapshot for this execution. We do
+        // this regardless of success/error so the operator can see what
+        // last failed too. Push is wrapped to avoid a localStorage
+        // failure cascading into the response render path.
+        try { pushHoppHistoryEntry(fr, historyOutcome); }
+        catch (e) { console.warn('[hopp-history] push failed', e); }
+
         isExecuting = false;
         if (typeof markJobDone === 'function') markJobDone('hopp', verb);
         render();
+    }
+
+    // ---- #290 — Execute as benchmark ----
+    //
+    // Snapshot the bar's current request shape into a method-style
+    // benchmark target, build a single-phase envelope (defaults: 4
+    // concurrent virtual users × 30 iterations — a reasonable smoke
+    // probe; the operator can tune via the Benchmarks rail's detail
+    // pane after the run lands), drop into the Benchmarks rail so the
+    // existing detail pane + result histogram render the result, then
+    // kick off runBenchmarkSpec. Reuses the same /api/invoke wire path
+    // executeHoppRequest does — same auth, same params merging, same
+    // metadata shape — so the benchmark's numbers actually reflect
+    // what a one-shot Execute would produce.
+    function runHoppAsBenchmark(fr) {
+        ensureHoppState(fr);
+        if (!fr.serverUrl || !fr.serverUrl.trim()) {
+            if (typeof toast === 'function') toast('Enter a URL before benchmarking', 'error');
+            return;
+        }
+        if (typeof createBenchmarkSpec !== 'function'
+            || typeof runBenchmarkSpec !== 'function') {
+            if (typeof toast === 'function') {
+                toast('Benchmarks module not loaded in this host', 'error');
+            }
+            return;
+        }
+
+        // Resolve vars + merge params into the URL so the benchmark
+        // target carries the SAME effective URL the bar would send.
+        // Otherwise a {{baseUrl}} would be re-substituted per iteration
+        // (which is fine but unnecessary churn — and a Parameter row
+        // typed into the bar would be missed because the benchmark
+        // runner only looks at target.body / target.metadata).
+        var resolvedUrl = fr.serverUrl;
+        try {
+            if (typeof substituteVars === 'function') {
+                resolvedUrl = substituteVars(fr.serverUrl);
+            }
+        } catch (_) { /* keep raw */ }
+        var urlWithParams = _composeUrlWithParams(resolvedUrl, fr._hopp.params || []);
+
+        // Auth-derived headers — same logic as executeHoppRequest, just
+        // applied to the snapshot rather than the in-flight request.
+        var headers = _kvToObject(fr._hopp.headers || []);
+        if (fr._hopp.authKind === 'bearer' && fr._hopp.authData.token) {
+            headers['Authorization'] = 'Bearer ' + fr._hopp.authData.token;
+        } else if (fr._hopp.authKind === 'basic') {
+            var u = fr._hopp.authData.username || '';
+            var p = fr._hopp.authData.password || '';
+            try { headers['Authorization'] = 'Basic ' + btoa(u + ':' + p); }
+            catch (_) { /* non-Latin chars; skip */ }
+        } else if (fr._hopp.authKind === 'apikey' && fr._hopp.authData.key) {
+            headers[fr._hopp.authData.key.trim()] = fr._hopp.authData.value || '';
+        }
+
+        var verb = (fr.method || 'GET').toUpperCase();
+        var bodyStr = '{}';
+        var verbHasBody = ['POST', 'PUT', 'PATCH', 'DELETE'].indexOf(verb) >= 0;
+        if (verbHasBody) {
+            if (fr._hopp.bodyMode === 'form') {
+                var formObj = _kvToObject(fr._hopp.formBody || []);
+                var formParts = [];
+                Object.keys(formObj).forEach(function (k) {
+                    formParts.push(encodeURIComponent(k) + '=' + encodeURIComponent(formObj[k]));
+                });
+                bodyStr = formParts.join('&');
+                if (!headers['Content-Type']) headers['Content-Type'] = 'application/x-www-form-urlencoded';
+            } else if (fr._hopp.bodyMode === 'binary') {
+                // Binary bodies don't survive into the benchmark spec —
+                // the file ref is transient and the spec persists across
+                // reloads. Operator gets a clear message rather than a
+                // silently-empty body the benchmark would happily hammer
+                // the upstream with.
+                if (typeof toast === 'function') {
+                    toast('Binary uploads can\'t be benchmarked from the Hopp bar — Execute once instead, or move the request to a collection', 'info');
+                }
+                return;
+            } else {
+                bodyStr = fr.body || '';
+                if (fr._hopp.bodyMode === 'json' && !headers['Content-Type']) {
+                    headers['Content-Type'] = 'application/json';
+                }
+            }
+        }
+
+        // Method-style target carrying the resolved URL + verb + headers
+        // + body. service='' tells the protocol plugin "freeform URL,
+        // no schema lookup needed" — same shape as executeHoppRequest
+        // sends to /api/invoke.
+        var target = {
+            type: 'method',
+            service: '',
+            method: verb,
+            protocol: 'rest',
+            body: bodyStr,
+            metadata: headers,
+            // serverUrl: pinned via the spec name so the benchmark
+            // runner picks it up through legacy mirror fields (see
+            // _invokeBenchmarkTarget). The runner reads target.serverUrl
+            // → serverUrlParamForService(...) — null falls back to the
+            // workspace's default. Pin the actual URL so per-iteration
+            // routing is unambiguous.
+            serverUrl: urlWithParams
+        };
+
+        // Defaults — 4 VUs × 30 iterations. Quick to run (~120 calls,
+        // ~2-3s on a local upstream), small enough to not flood a
+        // shared staging env. The operator can tune in the detail
+        // pane after the spec lands.
+        var spec = createBenchmarkSpec({
+            name: 'Hopp: ' + verb + ' ' + (resolvedUrl || '(no url)'),
+            targets: [target],
+            phases: [{ vus: 4, totalIterations: 30 }],
+            mode: 'sequential'
+        });
+
+        // Switch the workbench into Benchmarks-rail mode so the
+        // detail pane + result charts are visible while the run lands.
+        // railMode is the canonical sidebar state (see render-sidebar.js).
+        try {
+            if (typeof railMode !== 'undefined') {
+                // eslint-disable-next-line no-undef
+                railMode = 'benchmarks';
+                try { localStorage.setItem('bowire_rail_mode', 'benchmarks'); }
+                catch { /* ignore */ }
+            }
+        } catch (_) { /* non-fatal */ }
+        if (typeof benchmarksSelectedId !== 'undefined') {
+            // Direct write — same pattern the sidebar 'New benchmark'
+            // button uses. setMode + selecting the spec puts the
+            // operator in the right place to watch the bars fill.
+            // eslint-disable-next-line no-undef
+            benchmarksSelectedId = spec.id;
+        }
+        if (typeof toast === 'function') {
+            toast('Benchmarking ' + verb + ' (4 × 30 calls)…', 'info');
+        }
+        render();
+
+        // Fire-and-forget — runBenchmarkSpec is async; we don't await
+        // it because the render() above already painted the empty
+        // spec into the rail, and the runner's onProgress callback
+        // re-renders as results land.
+        try {
+            runBenchmarkSpec(spec, function () { render(); });
+        } catch (e) {
+            if (typeof toast === 'function') toast('Benchmark failed: ' + e.message, 'error');
+        }
+    }
+
+    // #290 — Base64 encode a binary buffer for transport via the
+    // /api/invoke JSON envelope. Streaming/large-payload uploads
+    // should go through a dedicated multipart endpoint instead; the
+    // base64 path is appropriate for typical Hopp-bar uploads
+    // (a config file, an image, a serialized proto message).
+    function _arrayBufferToBase64(buf) {
+        var bytes = new Uint8Array(buf);
+        // Chunked btoa to dodge call-stack limits on multi-MB blobs.
+        var chunkSize = 0x8000;
+        var binStr = '';
+        for (var i = 0; i < bytes.length; i += chunkSize) {
+            binStr += String.fromCharCode.apply(null,
+                bytes.subarray(i, Math.min(i + chunkSize, bytes.length)));
+        }
+        return btoa(binStr);
     }
 
     // ---- Outside-click close for menus ----
@@ -1128,6 +1618,11 @@
         if (hoppSendMenuOpen) {
             var swrap = e.target.closest && e.target.closest('.bowire-hopp-send-wrap');
             if (!swrap) { hoppSendMenuOpen = false; changed = true; }
+        }
+        // #290 — history dropdown closes on outside click, same shape.
+        if (hoppHistoryMenuOpen) {
+            var hwrap = e.target.closest && e.target.closest('.bowire-hopp-history-wrap');
+            if (!hwrap) { hoppHistoryMenuOpen = false; changed = true; }
         }
         if (changed) render();
     });
