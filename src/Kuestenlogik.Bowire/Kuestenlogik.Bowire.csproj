@@ -142,6 +142,13 @@
          can land via render()) and BEFORE init.js (so Ctrl+L can
          resolve startHoppRequest). -->
     <BowireJsFragment Include="wwwroot\js\request-builder.js" />
+    <!-- #291 — Per-protocol layout helpers (gRPC, MCP, MQTT, WebSocket, SSE).
+         Renderers + execute handlers plugged into the rbLayouts registry
+         declared in request-builder.js. Must come AFTER request-builder.js
+         so its registerResponse-pane mutations land on existing layout
+         descriptors. Function declarations are hoisted inside the shared
+         IIFE so the descriptors' callback references resolve at runtime. -->
+    <BowireJsFragment Include="wwwroot\js\request-builder-protocols.js" />
     <BowireJsFragment Include="wwwroot\js\tests.js" />
     <BowireJsFragment Include="wwwroot\js\code-export.js" />
     <BowireJsFragment Include="wwwroot\js\perf-diff.js" />

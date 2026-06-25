@@ -38,14 +38,12 @@
 
     // ---- Constants ----
     var HOPP_METHODS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS'];
-    var HOPP_TABS = [
-        { id: 'parameter', label: 'Parameter' },
-        { id: 'body',      label: 'Body'      },
-        { id: 'header',    label: 'Header'    },
-        { id: 'auth',      label: 'Auth'      },
-        { id: 'pre',       label: 'Pre-script' },
-        { id: 'post',      label: 'Post-script' },
-        { id: 'vars',      label: 'Variables' }
+    // Always-present tail tabs shared across every protocol.
+    var RB_COMMON_TAIL_TABS = [
+        { id: 'auth', label: 'Auth' },
+        { id: 'pre',  label: 'Pre-script' },
+        { id: 'post', label: 'Post-script' },
+        { id: 'vars', label: 'Variables' }
     ];
     var HOPP_BODY_MODES = [
         { id: 'json',   label: 'JSON' },
@@ -60,9 +58,85 @@
         { id: 'apikey', label: 'API Key' }
     ];
 
+    // ---- #291 — Protocol registry (rbLayouts) ----
+    //
+    // Each protocol contributes a layout descriptor via rbLayouts[id]:
+    //   {
+    //     id, label, icon?,
+    //     defaults: () => Object,       // initial _requestBuilder.byProtocol[id] blob
+    //     secondControl?: (fr) => Node, // optional control between Protocol ▾ and URL
+    //     subTabs:    (fr) => [{ id, label, badge? }],
+    //     renderTab:  (fr, tabId) => Node,
+    //     executeLabel: (fr) => string,
+    //     execute:    (fr) => Promise<void>,
+    //     urlPlaceholder?: string,
+    //     supportsHistory?: boolean      // default true
+    //   }
+    //
+    // REST is registered below as the canonical descriptor. Subsequent
+    // protocols (gRPC / MQTT / WS / SSE / GraphQL / MCP) plug in here.
+    // The bar consumes the registry generically — there is no
+    // per-protocol branching in the bar render path itself.
+    var rbLayouts = {};
+    function registerRequestBuilderLayout(layout) {
+        if (!layout || !layout.id) return;
+        rbLayouts[layout.id] = layout;
+    }
+
+    // Convenience alias matching the ticket's naming (`hoppBarLayout()`
+    // → `requestBuilderLayout()` post-rename). Plugin authors can call
+    // either; both push into the same registry.
+    function requestBuilderLayout(layout) { registerRequestBuilderLayout(layout); }
+
+    // Returns the layout descriptor for the request-builder's currently
+    // selected protocol (defaults to REST if the slot is unset or the
+    // requested protocol hasn't registered a layout yet — handy for
+    // graceful degradation when a plugin failed to load).
+    function rbActiveLayout(fr) {
+        var pid = (fr && fr._requestBuilder && fr._requestBuilder.protocol) || 'rest';
+        return rbLayouts[pid] || rbLayouts.rest;
+    }
+
     // Open/close state for the method dropdown + the Senden split caret.
     var rbMethodMenuOpen = false;
+    var rbProtocolMenuOpen = false;
     var rbSendMenuOpen = false;
+
+    // ---- #291 — Long-lived connection state (MQTT / WebSocket / SSE) ----
+    //
+    // Streaming protocols don't fit the request/response /api/invoke
+    // shape used by REST/gRPC/MCP/GraphQL — they hold a connection
+    // open and the response pane shows an incoming-frame log. This
+    // module-scope blob carries the live socket / EventSource handle
+    // and the captured frame list across renders. Cleared on protocol
+    // switch + on explicit disconnect.
+    var rbConnState = {
+        // WebSocket
+        wsSocket: null,
+        wsState: 'idle',           // 'idle' | 'connecting' | 'open' | 'closing' | 'closed'
+        wsFrames: [],              // [{ dir: 'recv'|'send'|'open'|'close'|'error', data, ts }]
+        // MQTT (subscribe stream via SSE under the hood)
+        mqttSubscribed: false,
+        mqttSource: null,
+        mqttFrames: [],
+        // SSE
+        sseSource: null,
+        sseEvents: []              // [{ event, data, id, ts }]
+    };
+
+    function rbConnReset() {
+        try { if (rbConnState.wsSocket) rbConnState.wsSocket.close(); } catch (_) {}
+        try { if (rbConnState.mqttSource) rbConnState.mqttSource.close(); } catch (_) {}
+        try { if (rbConnState.sseSource) rbConnState.sseSource.close(); } catch (_) {}
+        rbConnState.wsSocket = null;
+        rbConnState.wsState = 'idle';
+        rbConnState.wsFrames = [];
+        rbConnState.mqttSource = null;
+        rbConnState.mqttSubscribed = false;
+        rbConnState.mqttFrames = [];
+        rbConnState.sseSource = null;
+        rbConnState.sseEvents = [];
+    }
     // #290 — history dropdown (clock icon, between URL input and the
     // send button cluster). Closed by default; toggled by the clock
     // button click. Closed by the outside-click handler at the bottom
@@ -128,6 +202,18 @@
         var entry = {
             id: _makeHoppHistoryId(),
             ts: Date.now(),
+            // #291 — every history row carries the protocol it was sent
+            // under so the dropdown can prefix the entry ([gRPC] svc/m,
+            // [MQTT] topic/foo, …) and a restore re-hydrates the right
+            // per-protocol scratch bag instead of silently dropping
+            // gRPC-shaped values into a REST bar.
+            protocol: fr._requestBuilder.protocol || 'rest',
+            // Snapshot of the per-protocol scratch state. Lets a
+            // restore round-trip the gRPC service/method picker, the
+            // MQTT topic+QoS, the WS frame editor, &c. — without
+            // history widening per-protocol.
+            protoState: Object.assign({}, fr._requestBuilder.byProtocol
+                && fr._requestBuilder.byProtocol[fr._requestBuilder.protocol || 'rest'] || {}),
             method: fr.method || 'GET',
             url: fr.serverUrl || '',
             params: (fr._requestBuilder.params || []).map(_cloneRow),
@@ -183,6 +269,17 @@
         }
         var fr = freeformRequest;
         ensureHoppState(fr);
+        // #291 — restore the protocol slot first so subsequent KV
+        // restores land into the correct per-protocol bag.
+        if (entry.protocol && rbLayouts[entry.protocol]) {
+            rbSetProtocol(fr, entry.protocol);
+        }
+        if (entry.protoState && typeof entry.protoState === 'object') {
+            fr._requestBuilder.byProtocol[entry.protocol || 'rest'] = Object.assign(
+                {}, fr._requestBuilder.byProtocol[entry.protocol || 'rest'] || {},
+                entry.protoState
+            );
+        }
         fr.method = entry.method || 'GET';
         fr.serverUrl = entry.url || '';
         fr.body = entry.body || '';
@@ -218,16 +315,29 @@
     // renderer picks up the new layout.
     function startHoppRequest(opts) {
         opts = opts || {};
+        var pid = opts.protocol || 'rest';
         startFreeformRequest({
-            protocol: 'rest',
+            protocol: pid,
             urlMode: 'inline',
             serverUrl: opts.url || ''
         });
         if (!freeformRequest) return;
         // Default to GET — operators land here for the "fire one"
-        // case which is almost always a GET probe.
+        // case which is almost always a GET probe. (Per-protocol
+        // descriptors below can pick a different default in their
+        // defaults() factory; this slot lives on freeformRequest
+        // itself for REST's HTTP verb compat.)
         freeformRequest.method = opts.method || 'GET';
         freeformRequest._requestBuilder = _newHoppState();
+        freeformRequest._requestBuilder.protocol = pid;
+        // Pick the first tab the destination layout exposes so the
+        // operator doesn't land on a stale 'parameter' for a protocol
+        // that doesn't have one.
+        var layout = rbLayouts[pid];
+        if (layout && typeof layout.subTabs === 'function') {
+            var tabs = layout.subTabs(freeformRequest);
+            if (tabs.length > 0) freeformRequest._requestBuilder.activeTab = tabs[0].id;
+        }
         // If the workspace has no envs, seed a single 'scratch' set so
         // {{var}} substitution lands in a defined place rather than
         // silently no-oping. Quiet — only fire when there are zero
@@ -250,6 +360,9 @@
 
     function _newHoppState() {
         return {
+            // #291 — leftmost protocol selector. Defaults to REST so the
+            // existing bar UX is preserved bit-for-bit on first paint.
+            protocol: 'rest',
             activeTab: 'parameter',
             params: [],
             headers: [],
@@ -257,7 +370,11 @@
             preScript: '',
             postScript: '',
             authKind: 'none',
-            authData: {}
+            authData: {},
+            // Per-protocol scratch state. Switching protocols flips the
+            // active surface but the previous one's edits stay parked
+            // here so the operator can flip back without losing work.
+            byProtocol: {}
         };
     }
 
@@ -268,6 +385,13 @@
         if (!fr._requestBuilder || typeof fr._requestBuilder !== 'object') {
             fr._requestBuilder = _newHoppState();
         }
+        // #291 — Migration: requests created before the protocol picker
+        // landed have no `.protocol` field; treat them as REST so the
+        // current behaviour is preserved on existing in-flight bars.
+        if (typeof fr._requestBuilder.protocol !== 'string') fr._requestBuilder.protocol = 'rest';
+        if (!fr._requestBuilder.byProtocol || typeof fr._requestBuilder.byProtocol !== 'object') {
+            fr._requestBuilder.byProtocol = {};
+        }
         if (!Array.isArray(fr._requestBuilder.params))  fr._requestBuilder.params  = [];
         if (!Array.isArray(fr._requestBuilder.headers)) fr._requestBuilder.headers = [];
         if (typeof fr._requestBuilder.bodyMode !== 'string') fr._requestBuilder.bodyMode = 'json';
@@ -275,6 +399,53 @@
         if (typeof fr._requestBuilder.postScript !== 'string') fr._requestBuilder.postScript = '';
         if (typeof fr._requestBuilder.authKind !== 'string')   fr._requestBuilder.authKind   = 'none';
         if (!fr._requestBuilder.authData) fr._requestBuilder.authData = {};
+        // Seed per-protocol scratch with the layout's declared defaults
+        // on first touch, so the layout's renderTab / execute can rely
+        // on a populated bag without each tab paying for null checks.
+        var layout = rbActiveLayout(fr);
+        if (layout && typeof layout.defaults === 'function') {
+            var pid = layout.id;
+            if (!fr._requestBuilder.byProtocol[pid] || typeof fr._requestBuilder.byProtocol[pid] !== 'object') {
+                fr._requestBuilder.byProtocol[pid] = layout.defaults();
+            }
+        }
+    }
+
+    // Per-protocol scratch accessor. Returns the live bag for the active
+    // protocol — mutating its keys persists through render() because
+    // it's a direct slot under fr._requestBuilder.byProtocol.
+    function rbProtoState(fr) {
+        ensureHoppState(fr);
+        var layout = rbActiveLayout(fr);
+        var pid = layout ? layout.id : (fr._requestBuilder.protocol || 'rest');
+        if (!fr._requestBuilder.byProtocol[pid]) {
+            fr._requestBuilder.byProtocol[pid] = (layout && typeof layout.defaults === 'function')
+                ? layout.defaults() : {};
+        }
+        return fr._requestBuilder.byProtocol[pid];
+    }
+
+    // Switch the active protocol on the bar. Re-seeds the scratch bag
+    // for the destination protocol if it hasn't been touched yet, then
+    // re-anchors activeTab to a tab the new layout actually offers
+    // (otherwise a leftover 'body' from REST would render an empty
+    // shell on a GraphQL bar that has no Body tab).
+    function rbSetProtocol(fr, pid) {
+        ensureHoppState(fr);
+        if (!rbLayouts[pid]) return;
+        fr._requestBuilder.protocol = pid;
+        var layout = rbLayouts[pid];
+        if (typeof layout.defaults === 'function' && !fr._requestBuilder.byProtocol[pid]) {
+            fr._requestBuilder.byProtocol[pid] = layout.defaults();
+        }
+        // Reset to the first tab the new layout exposes so the user
+        // doesn't see a blank body for a tab id that doesn't exist
+        // anymore.
+        var tabs = typeof layout.subTabs === 'function' ? layout.subTabs(fr) : [];
+        if (tabs.length > 0) {
+            var has = tabs.some(function (t) { return t.id === fr._requestBuilder.activeTab; });
+            if (!has) fr._requestBuilder.activeTab = tabs[0].id;
+        }
     }
 
     function isHoppRequest(fr) {
@@ -400,11 +571,8 @@
         return wrap;
     }
 
-    // ---- Render: the request bar (method + URL + send) ----
-    function _renderRequestBuilder(fr) {
-        var bar = el('div', { className: 'bowire-request-builder-bar' });
-
-        // Method dropdown
+    // ---- Render: the REST method dropdown (used as REST's secondControl) ----
+    function _renderRestMethodDropdown(fr) {
         var methodWrap = el('div', { className: 'bowire-request-builder-method-wrap' });
         var method = (fr.method || 'GET').toUpperCase();
         if (HOPP_METHODS.indexOf(method) < 0) method = 'GET';
@@ -450,16 +618,124 @@
             });
             methodWrap.appendChild(menu);
         }
-        bar.appendChild(methodWrap);
+        return methodWrap;
+    }
+
+    // ---- Render: the protocol dropdown (leftmost control) ----
+    //
+    // Reads the registered rbLayouts and lets the operator switch the
+    // active protocol. Filtered against isProtocolEnabled() so toggling
+    // off a plugin in Settings → Plugins drops its option here too.
+    function _renderProtocolDropdown(fr) {
+        var wrap = el('div', { className: 'bowire-request-builder-protocol-wrap' });
+        var active = rbActiveLayout(fr) || rbLayouts.rest;
+        var btn = el('button', {
+            type: 'button',
+            id: 'bowire-request-builder-protocol-btn',
+            className: 'bowire-request-builder-protocol-btn'
+                + (rbProtocolMenuOpen ? ' is-open' : ''),
+            'data-protocol': active ? active.id : 'rest',
+            'aria-haspopup': 'listbox',
+            'aria-expanded': rbProtocolMenuOpen ? 'true' : 'false',
+            title: 'Wire protocol',
+            onClick: function (e) {
+                e.stopPropagation();
+                rbProtocolMenuOpen = !rbProtocolMenuOpen;
+                render();
+            }
+        },
+            el('span', {
+                className: 'bowire-request-builder-protocol-label',
+                textContent: active ? active.label : 'REST'
+            }),
+            el('span', {
+                className: 'bowire-request-builder-protocol-caret',
+                innerHTML: svgIcon('chevronDown')
+            })
+        );
+        wrap.appendChild(btn);
+        if (rbProtocolMenuOpen) {
+            var menu = el('div', {
+                className: 'bowire-request-builder-protocol-menu',
+                role: 'listbox',
+                onClick: function (e) { e.stopPropagation(); }
+            });
+            // Sort: rest, grpc, mqtt, websocket, sse, graphql, mcp first
+            // (familiar order), then anything else a plugin contributed
+            // alphabetically. Keeps the menu predictable as plugins land.
+            var canonical = ['rest', 'grpc', 'mqtt', 'websocket', 'sse', 'graphql', 'mcp'];
+            var ids = Object.keys(rbLayouts).filter(function (id) {
+                // Honour the per-plugin enable toggle when the helper
+                // is available — keep all when it isn't (safe default).
+                try {
+                    if (typeof isProtocolEnabled === 'function') return isProtocolEnabled(id);
+                } catch (_) {}
+                return true;
+            });
+            ids.sort(function (a, b) {
+                var ia = canonical.indexOf(a), ib = canonical.indexOf(b);
+                if (ia >= 0 && ib >= 0) return ia - ib;
+                if (ia >= 0) return -1;
+                if (ib >= 0) return 1;
+                return a.localeCompare(b);
+            });
+            ids.forEach(function (pid) {
+                var layout = rbLayouts[pid];
+                if (!layout) return;
+                var isActive = active && active.id === pid;
+                menu.appendChild(el('button', {
+                    type: 'button',
+                    className: 'bowire-request-builder-protocol-menu-item'
+                        + (isActive ? ' is-selected' : ''),
+                    'data-protocol': pid,
+                    role: 'option',
+                    'aria-selected': isActive ? 'true' : 'false',
+                    onClick: function () {
+                        rbSetProtocol(fr, pid);
+                        rbProtocolMenuOpen = false;
+                        render();
+                    }
+                },
+                    el('span', {
+                        className: 'bowire-request-builder-protocol-chip',
+                        'data-protocol': pid,
+                        textContent: layout.label
+                    })
+                ));
+            });
+            wrap.appendChild(menu);
+        }
+        return wrap;
+    }
+
+    // ---- Render: the request bar (protocol + 2nd-control + URL + send) ----
+    function _renderRequestBuilder(fr) {
+        var bar = el('div', { className: 'bowire-request-builder-bar' });
+        var layout = rbActiveLayout(fr) || rbLayouts.rest;
+
+        // #291 — Protocol dropdown is the leftmost control.
+        bar.appendChild(_renderProtocolDropdown(fr));
+
+        // Second control comes from the active layout. REST returns the
+        // method dropdown; other protocols may return a service picker,
+        // pub/sub selector, connect button, &c. Layouts that don't need
+        // a second control return null and the URL field takes its
+        // visual slot.
+        if (layout && typeof layout.secondControl === 'function') {
+            var sc = layout.secondControl(fr);
+            if (sc) bar.appendChild(sc);
+        }
 
         // URL input + variable overlay
         var urlWrap = el('div', { className: 'bowire-request-builder-url-wrap' });
+        var urlPlaceholder = (layout && layout.urlPlaceholder)
+            || 'https://api.example.com/users  •  use {{baseUrl}} for env vars';
         var urlInput = el('input', {
             id: 'bowire-request-builder-url-input',
             type: 'text',
             className: 'bowire-request-builder-url-input',
             value: fr.serverUrl || '',
-            placeholder: 'https://api.example.com/users  •  use {{baseUrl}} for env vars',
+            placeholder: urlPlaceholder,
             spellcheck: 'false',
             autocomplete: 'off',
             onInput: function (e) {
@@ -496,15 +772,20 @@
 
         // Send button (split caret variant menu)
         var sendWrap = el('div', { className: 'bowire-request-builder-send-wrap' });
+        // #291 — Execute label adapts per protocol (Execute / Publish /
+        // Connect / Subscribe / …). Pulled from the layout descriptor.
+        var execLabel = (layout && typeof layout.executeLabel === 'function')
+            ? layout.executeLabel(fr) : 'Execute';
         var sendBtn = el('button', {
             type: 'button',
             id: 'bowire-request-builder-send-btn',
             className: 'bowire-request-builder-send-btn',
-            title: 'Execute request (Ctrl+Enter)',
+            'data-protocol': layout ? layout.id : 'rest',
+            title: execLabel + ' (Ctrl+Enter)',
             onClick: function () { executeHoppRequest(); }
         },
             el('span', { innerHTML: svgIcon('play'), style: 'width:14px;height:14px;display:flex' }),
-            el('span', { textContent: 'Execute' })
+            el('span', { textContent: execLabel })
         );
         sendWrap.appendChild(sendBtn);
         var sendCaret = el('button', {
@@ -685,11 +966,25 @@
                         : ''),
                     onClick: function () { restoreHoppHistoryEntry(entry.id); }
                 });
+                // #291 — Protocol chip ([gRPC] svc/m, [REST] GET …)
+                // so the operator can disambiguate at a glance.
+                var pid = entry.protocol || 'rest';
                 item.appendChild(el('span', {
-                    className: 'bowire-request-builder-history-method',
-                    'data-verb': entry.method || 'GET',
-                    textContent: entry.method || 'GET'
+                    className: 'bowire-request-builder-history-proto',
+                    'data-protocol': pid,
+                    textContent: (rbLayouts[pid] && rbLayouts[pid].label) || pid.toUpperCase()
                 }));
+                // Verb / method label adapts per protocol: REST shows
+                // the HTTP verb, gRPC shows service/method, MQTT shows
+                // the topic, &c.
+                var verbLabel = _formatHistoryVerb(entry);
+                if (verbLabel) {
+                    item.appendChild(el('span', {
+                        className: 'bowire-request-builder-history-method',
+                        'data-verb': entry.method || 'GET',
+                        textContent: verbLabel
+                    }));
+                }
                 item.appendChild(el('span', {
                     className: 'bowire-request-builder-history-url',
                     textContent: entry.url || '(no url)'
@@ -721,15 +1016,58 @@
         return Math.round(diffSec / 86400) + 'd ago';
     }
 
+    // History-entry verb formatter. REST shows the HTTP verb (its
+    // method slot), other protocols pull from the per-protocol scratch
+    // snapshot so a gRPC history row reads `UserService/GetUser` and
+    // an MQTT row reads `pub` or `sub`. Falls back to '' when nothing
+    // useful is available.
+    function _formatHistoryVerb(entry) {
+        var pid = entry.protocol || 'rest';
+        var ps = entry.protoState || {};
+        switch (pid) {
+            case 'grpc':
+                if (ps.service && ps.method) return ps.service + '/' + ps.method;
+                return '';
+            case 'mqtt':
+                return ps.action === 'subscribe' ? 'sub' : 'pub';
+            case 'mcp':
+                return ps.method || 'tool';
+            case 'graphql':
+                return ps.operation || 'query';
+            case 'websocket':
+                return 'ws';
+            case 'sse':
+                return 'sse';
+            case 'rest':
+            default:
+                return entry.method || 'GET';
+        }
+    }
+
     // ---- Render: the sub-tab strip ----
+    //
+    // #291 — Driven by the active layout's subTabs() factory rather
+    // than a hard-coded HOPP_TABS list. Layouts compute their tab set
+    // (per-protocol shape — gRPC has Message/Metadata/Deadline, MQTT
+    // has Topic/Payload/QoS/Retain, &c.) and may include a `badge`
+    // field per tab for the count chip.
     function _renderHoppSubTabs(fr) {
         ensureHoppState(fr);
         var strip = el('div', { className: 'bowire-request-builder-subtabs', role: 'tablist' });
-        HOPP_TABS.forEach(function (t) {
-            var badgeCount = 0;
-            if (t.id === 'parameter') badgeCount = _activeKvCount(fr._requestBuilder.params);
-            else if (t.id === 'header') badgeCount = _activeKvCount(fr._requestBuilder.headers);
-            var isActive = fr._requestBuilder.activeTab === t.id;
+        var layout = rbActiveLayout(fr) || rbLayouts.rest;
+        var tabs = (layout && typeof layout.subTabs === 'function') ? layout.subTabs(fr) : [];
+        // Snap activeTab to a tab that actually exists in this layout
+        // (defensive — startHoppRequest + rbSetProtocol both snap too,
+        // but a hand-loaded request from disk may carry a stale id).
+        var activeId = fr._requestBuilder.activeTab;
+        if (!tabs.some(function (t) { return t.id === activeId; })
+            && tabs.length > 0) {
+            fr._requestBuilder.activeTab = tabs[0].id;
+            activeId = tabs[0].id;
+        }
+        tabs.forEach(function (t) {
+            var badgeCount = (typeof t.badge === 'function') ? t.badge(fr) : (t.badge || 0);
+            var isActive = activeId === t.id;
             var tab = el('button', {
                 type: 'button',
                 className: 'bowire-request-builder-subtab' + (isActive ? ' is-active' : ''),
@@ -899,41 +1237,39 @@
     }
 
     // ---- Render: tab body for each sub-tab ----
+    //
+    // #291 — Tab body rendering is delegated to the active layout's
+    // renderTab(fr, tabId). REST's layout passes the four common tab
+    // ids (auth/pre/post/vars) through to _renderHopp* helpers; each
+    // protocol may handle the same ids OR provide its own (e.g. gRPC's
+    // 'message' tab uses a proto-typed editor instead of REST's body
+    // surface).
     function _renderHoppTabBody(fr) {
         ensureHoppState(fr);
-        var body = el('div', { className: 'bowire-request-builder-tab-body', 'data-tab': fr._requestBuilder.activeTab });
-        switch (fr._requestBuilder.activeTab) {
-            case 'parameter':
-                body.appendChild(_renderHoppKvTable(fr._requestBuilder.params, {
-                    keyPlaceholder: 'Parameter',
-                    valuePlaceholder: 'Value',
-                    descPlaceholder: 'Description'
-                }));
-                break;
-            case 'header':
-                body.appendChild(_renderHoppKvTable(fr._requestBuilder.headers, {
-                    keyPlaceholder: 'Header',
-                    valuePlaceholder: 'Value',
-                    descPlaceholder: 'Description'
-                }));
-                break;
-            case 'body':
-                body.appendChild(_renderHoppBodyTab(fr));
-                break;
-            case 'auth':
-                body.appendChild(_renderHoppAuthTab(fr));
-                break;
-            case 'pre':
-                body.appendChild(_renderHoppScriptTab(fr, 'pre'));
-                break;
-            case 'post':
-                body.appendChild(_renderHoppScriptTab(fr, 'post'));
-                break;
-            case 'vars':
-                body.appendChild(_renderHoppVarsTab(fr));
-                break;
+        var body = el('div', {
+            className: 'bowire-request-builder-tab-body',
+            'data-tab': fr._requestBuilder.activeTab
+        });
+        var layout = rbActiveLayout(fr) || rbLayouts.rest;
+        if (layout && typeof layout.renderTab === 'function') {
+            var node = layout.renderTab(fr, fr._requestBuilder.activeTab);
+            if (node) body.appendChild(node);
         }
         return body;
+    }
+
+    // Shared renderer for the four common tail tabs every protocol
+    // includes (auth, pre, post, vars). Returns null for unknown ids so
+    // a layout that calls _renderCommonTabBody as a fallback gets a
+    // clean miss it can branch on.
+    function _renderCommonTabBody(fr, tabId) {
+        switch (tabId) {
+            case 'auth': return _renderHoppAuthTab(fr);
+            case 'pre':  return _renderHoppScriptTab(fr, 'pre');
+            case 'post': return _renderHoppScriptTab(fr, 'post');
+            case 'vars': return _renderHoppVarsTab(fr);
+            default:     return null;
+        }
     }
 
     // ---- Body tab: JSON / form / raw / binary ----
@@ -1181,7 +1517,13 @@
         pane.appendChild(_renderRequestBuilder(fr));
         pane.appendChild(_renderHoppSubTabs(fr));
         pane.appendChild(_renderHoppTabBody(fr));
-        pane.appendChild(_renderHoppResponse());
+        // #291 Phase E — per-protocol response-pane override. Layouts
+        // that provide a `renderResponse(fr)` (today: MQTT, WebSocket,
+        // SSE) get their streaming frame log; everything else falls
+        // through to the default REST status+body pane.
+        var customResponse = (typeof _renderHoppResponseForLayout === 'function')
+            ? _renderHoppResponseForLayout(fr) : null;
+        pane.appendChild(customResponse || _renderHoppResponse());
     }
 
     // ---- Execute (Phase A wire-up) ----
@@ -1198,6 +1540,26 @@
         if (!freeformRequest) return;
         var fr = freeformRequest;
         ensureHoppState(fr);
+        // #291 — Dispatch through the layout. Non-REST protocols install
+        // their own execute handler that owns the wire conversation
+        // (gRPC's UnaryAsync, MQTT's pub/sub, WS's connect/send/close,
+        // SSE's EventSource lifecycle, GraphQL's wrapAsGraphQLRequest,
+        // MCP's tool/resource/prompt envelope). REST falls through to
+        // the original logic below by registering execute = _executeRestRequest.
+        var layout = rbActiveLayout(fr);
+        if (layout && typeof layout.execute === 'function' && layout.id !== 'rest') {
+            try {
+                await layout.execute(fr);
+            } catch (e) {
+                if (typeof toast === 'function') toast(layout.label + ' execute failed: ' + e.message, 'error');
+            }
+            return;
+        }
+        // ---- REST path (default fallback) ----
+        return _executeRestRequest(fr);
+    }
+
+    async function _executeRestRequest(fr) {
         if (!fr.serverUrl || !fr.serverUrl.trim()) {
             if (typeof toast === 'function') toast('Enter a URL', 'error');
             return;
@@ -1624,8 +1986,295 @@
             var hwrap = e.target.closest && e.target.closest('.bowire-request-builder-history-wrap');
             if (!hwrap) { rbHistoryMenuOpen = false; changed = true; }
         }
+        // #291 — protocol dropdown shares the same outside-click pattern.
+        if (rbProtocolMenuOpen) {
+            var pwrap = e.target.closest && e.target.closest('.bowire-request-builder-protocol-wrap');
+            if (!pwrap) { rbProtocolMenuOpen = false; changed = true; }
+        }
         if (changed) render();
     });
+
+    // ============================================================
+    // #291 — Per-protocol layout descriptors (rbLayouts registry)
+    // ============================================================
+    //
+    // Each descriptor wires the bar's generic shell to a wire-specific
+    // surface: which 2nd control to show, which sub-tabs to expose, how
+    // to render each tab, what label to put on the execute button, and
+    // how to perform the call. The shell calls these — there is no
+    // per-protocol branching in the bar render path itself.
+
+    // ---- REST descriptor ----
+    //
+    // Wraps the pre-#291 behaviour bit-for-bit. The tab body uses the
+    // existing helpers (_renderHopp*Tab) which read fr._requestBuilder
+    // directly — REST keeps writing to the request-level slots
+    // (.params, .headers, .body, .bodyMode) rather than to the
+    // per-protocol scratch bag, because those slots feed the existing
+    // /api/invoke wire path and the benchmark snapshot.
+    registerRequestBuilderLayout({
+        id: 'rest',
+        label: 'REST',
+        urlPlaceholder: 'https://api.example.com/users  •  use {{baseUrl}} for env vars',
+        defaults: function () { return {}; },
+        secondControl: function (fr) { return _renderRestMethodDropdown(fr); },
+        subTabs: function (fr) {
+            return [
+                { id: 'parameter', label: 'Parameter',
+                  badge: function (f) { return _activeKvCount(f._requestBuilder.params); } },
+                { id: 'body',      label: 'Body' },
+                { id: 'header',    label: 'Header',
+                  badge: function (f) { return _activeKvCount(f._requestBuilder.headers); } }
+            ].concat(RB_COMMON_TAIL_TABS);
+        },
+        renderTab: function (fr, tabId) {
+            switch (tabId) {
+                case 'parameter': return _renderHoppKvTable(fr._requestBuilder.params, {
+                    keyPlaceholder: 'Parameter', valuePlaceholder: 'Value', descPlaceholder: 'Description'
+                });
+                case 'header':    return _renderHoppKvTable(fr._requestBuilder.headers, {
+                    keyPlaceholder: 'Header', valuePlaceholder: 'Value', descPlaceholder: 'Description'
+                });
+                case 'body':      return _renderHoppBodyTab(fr);
+                default:          return _renderCommonTabBody(fr, tabId);
+            }
+        },
+        executeLabel: function () { return 'Execute'; },
+        execute: function (fr) { return _executeRestRequest(fr); }
+    });
+
+    // ---- gRPC descriptor (Phase B) ----
+    //
+    // Bar shape: [gRPC ▾] [Service/Method ▾] [URL] [Execute].
+    // Sub-tabs: Message · Metadata · Auth · Deadline · Pre · Post · Vars.
+    // The service/method picker reads from `services` (the discovered
+    // set populated by api.js's fetchServices()); when no schema is
+    // discovered the operator can type `Service/Method` freehand.
+    registerRequestBuilderLayout({
+        id: 'grpc',
+        label: 'gRPC',
+        urlPlaceholder: 'https://grpc.example.com:443  •  use {{grpcUrl}} for env vars',
+        defaults: function () {
+            return {
+                service: '',     // e.g. 'UserService'
+                method:  '',     // e.g. 'GetUser'
+                message: '{}',   // proto-typed JSON message
+                metadata: [],    // KV rows for gRPC metadata
+                deadlineMs: 30000
+            };
+        },
+        secondControl: function (fr) { return _renderGrpcMethodPicker(fr); },
+        subTabs: function (fr) {
+            return [
+                { id: 'message',  label: 'Message'  },
+                { id: 'metadata', label: 'Metadata',
+                  badge: function (f) { return _activeKvCount(rbProtoState(f).metadata); } },
+                { id: 'auth',     label: 'Auth' },
+                { id: 'deadline', label: 'Deadline' },
+                { id: 'pre',      label: 'Pre-script' },
+                { id: 'post',     label: 'Post-script' },
+                { id: 'vars',     label: 'Variables' }
+            ];
+        },
+        renderTab: function (fr, tabId) {
+            var ps = rbProtoState(fr);
+            switch (tabId) {
+                case 'message':  return _renderGrpcMessageTab(fr, ps);
+                case 'metadata': return _renderHoppKvTable(ps.metadata, {
+                    keyPlaceholder: 'Metadata', valuePlaceholder: 'Value', descPlaceholder: 'Description'
+                });
+                case 'deadline': return _renderGrpcDeadlineTab(fr, ps);
+                default:         return _renderCommonTabBody(fr, tabId);
+            }
+        },
+        executeLabel: function () { return 'Execute'; },
+        execute: function (fr) { return _executeGrpcRequest(fr); }
+    });
+
+    // ---- MCP descriptor (Phase B) ----
+    //
+    // Bar shape: [MCP ▾] [Tool / Resource / Prompt ▾] [URL] [Execute].
+    // The MCP protocol plugin server-side is keyed on `protocol: 'mcp'`
+    // through /api/invoke; this layout wraps the request shape into the
+    // typed envelope the plugin expects.
+    registerRequestBuilderLayout({
+        id: 'mcp',
+        label: 'MCP',
+        urlPlaceholder: 'https://mcp.example.com  •  or http://localhost:5080/api/mcp',
+        defaults: function () {
+            return {
+                method: 'tool',   // 'tool' | 'resource' | 'prompt'
+                name: '',         // tool / resource / prompt name
+                arguments: '{}',  // JSON arguments
+                metadata: []
+            };
+        },
+        secondControl: function (fr) { return _renderMcpKindPicker(fr); },
+        subTabs: function (fr) {
+            return [
+                { id: 'arguments', label: 'Arguments' },
+                { id: 'headers',   label: 'Headers',
+                  badge: function (f) { return _activeKvCount(rbProtoState(f).metadata); } },
+                { id: 'auth',      label: 'Auth' },
+                { id: 'pre',       label: 'Pre-script' },
+                { id: 'post',      label: 'Post-script' },
+                { id: 'vars',      label: 'Variables' }
+            ];
+        },
+        renderTab: function (fr, tabId) {
+            var ps = rbProtoState(fr);
+            switch (tabId) {
+                case 'arguments': return _renderMcpArgumentsTab(fr, ps);
+                case 'headers':   return _renderHoppKvTable(ps.metadata, {
+                    keyPlaceholder: 'Header', valuePlaceholder: 'Value', descPlaceholder: 'Description'
+                });
+                default:          return _renderCommonTabBody(fr, tabId);
+            }
+        },
+        executeLabel: function () { return 'Execute'; },
+        execute: function (fr) { return _executeMcpRequest(fr); }
+    });
+
+    // ---- MQTT descriptor (Phase C) ----
+    //
+    // Bar shape: [MQTT ▾] [Publish/Subscribe ▾] [Broker URL] [Publish|Subscribe].
+    // Publish is fire-and-forget. Subscribe opens a streaming
+    // connection — the response pane shows the incoming message log.
+    registerRequestBuilderLayout({
+        id: 'mqtt',
+        label: 'MQTT',
+        urlPlaceholder: 'mqtts://broker.hivemq.com:8883  •  use {{broker}} for env vars',
+        defaults: function () {
+            return {
+                action: 'publish',  // 'publish' | 'subscribe'
+                topic: '',
+                payload: '',
+                qos: 0,
+                retain: false,
+                metadata: []        // KV — connection options / auth tokens
+            };
+        },
+        secondControl: function (fr) { return _renderMqttActionPicker(fr); },
+        subTabs: function (fr) {
+            return [
+                { id: 'topic',   label: 'Topic'   },
+                { id: 'payload', label: 'Payload' },
+                { id: 'qos',     label: 'QoS'     },
+                { id: 'auth',    label: 'Auth' },
+                { id: 'pre',     label: 'Pre-script' },
+                { id: 'post',    label: 'Post-script' },
+                { id: 'vars',    label: 'Variables' }
+            ];
+        },
+        renderTab: function (fr, tabId) {
+            var ps = rbProtoState(fr);
+            switch (tabId) {
+                case 'topic':   return _renderMqttTopicTab(fr, ps);
+                case 'payload': return _renderMqttPayloadTab(fr, ps);
+                case 'qos':     return _renderMqttQosTab(fr, ps);
+                default:        return _renderCommonTabBody(fr, tabId);
+            }
+        },
+        executeLabel: function (fr) {
+            var ps = rbProtoState(fr);
+            if (ps.action === 'subscribe') {
+                return rbConnState.mqttSubscribed ? 'Unsubscribe' : 'Subscribe';
+            }
+            return 'Publish';
+        },
+        execute: function (fr) { return _executeMqttRequest(fr); }
+    });
+
+    // ---- WebSocket descriptor (Phase C) ----
+    //
+    // Long-lived connection lifecycle: Connect → Connected → Send → Disconnect.
+    // The execute button cycles label per state. Frame log lives on
+    // rbConnState.wsFrames and renders in the response pane.
+    registerRequestBuilderLayout({
+        id: 'websocket',
+        label: 'WebSocket',
+        urlPlaceholder: 'wss://echo.websocket.events  •  or ws://localhost:5080',
+        defaults: function () {
+            return {
+                frame: '',         // outgoing frame editor content
+                metadata: [],      // Headers KV (Sec-WebSocket-Protocol, &c.)
+                subprotocols: ''   // optional list of sub-protocols
+            };
+        },
+        secondControl: function (fr) { return _renderWsConnectControl(fr); },
+        subTabs: function (fr) {
+            return [
+                { id: 'frame',   label: 'Frame'   },
+                { id: 'headers', label: 'Headers',
+                  badge: function (f) { return _activeKvCount(rbProtoState(f).metadata); } },
+                { id: 'auth',    label: 'Auth' },
+                { id: 'pre',     label: 'Pre-script' },
+                { id: 'post',    label: 'Post-script' },
+                { id: 'vars',    label: 'Variables' }
+            ];
+        },
+        renderTab: function (fr, tabId) {
+            var ps = rbProtoState(fr);
+            switch (tabId) {
+                case 'frame':   return _renderWsFrameTab(fr, ps);
+                case 'headers': return _renderHoppKvTable(ps.metadata, {
+                    keyPlaceholder: 'Header', valuePlaceholder: 'Value', descPlaceholder: 'Description'
+                });
+                default:        return _renderCommonTabBody(fr, tabId);
+            }
+        },
+        executeLabel: function () {
+            if (rbConnState.wsSocket && rbConnState.wsState === 'open') return 'Send frame';
+            if (rbConnState.wsState === 'connecting')                   return 'Connecting…';
+            if (rbConnState.wsSocket)                                   return 'Disconnect';
+            return 'Connect';
+        },
+        execute: function (fr) { return _executeWsRequest(fr); }
+    });
+
+    // ---- SSE descriptor (Phase C) ----
+    //
+    // EventSource-driven streaming. Connect opens; subsequent events
+    // append to rbConnState.sseEvents which the response pane renders.
+    registerRequestBuilderLayout({
+        id: 'sse',
+        label: 'SSE',
+        urlPlaceholder: 'https://example.com/events  •  EventSource endpoint',
+        defaults: function () {
+            return {
+                metadata: [],
+                reconnectMs: 3000,
+                withCredentials: false
+            };
+        },
+        secondControl: function () { return null; },
+        subTabs: function (fr) {
+            return [
+                { id: 'headers',   label: 'Headers',
+                  badge: function (f) { return _activeKvCount(rbProtoState(f).metadata); } },
+                { id: 'auth',      label: 'Auth' },
+                { id: 'reconnect', label: 'Reconnect' },
+                { id: 'pre',       label: 'Pre-script' },
+                { id: 'post',      label: 'Post-script' },
+                { id: 'vars',      label: 'Variables' }
+            ];
+        },
+        renderTab: function (fr, tabId) {
+            var ps = rbProtoState(fr);
+            switch (tabId) {
+                case 'headers':   return _renderHoppKvTable(ps.metadata, {
+                    keyPlaceholder: 'Header', valuePlaceholder: 'Value', descPlaceholder: 'Description'
+                });
+                case 'reconnect': return _renderSseReconnectTab(fr, ps);
+                default:          return _renderCommonTabBody(fr, tabId);
+            }
+        },
+        executeLabel: function () {
+            return rbConnState.sseSource ? 'Disconnect' : 'Connect';
+        },
+        execute: function (fr) { return _executeSseRequest(fr); }
+    });
+
 
     // ---- Ctrl+L global shortcut (Phase F) ----
     //
