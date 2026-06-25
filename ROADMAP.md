@@ -794,4 +794,4 @@ During the v2.0.0 release publish on 2026-06-21, the `winget` workflow failed at
 
 ---
 
-*Generated 2026-06-24 from [Project #2](https://github.com/orgs/Kuestenlogik/projects/2).*
+*Generated 2026-06-25 from [Project #2](https://github.com/orgs/Kuestenlogik/projects/2).*
