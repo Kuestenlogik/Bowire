@@ -1,5 +1,5 @@
 // @generated
-// hopp-bar.js — Hoppscotch-style single-line request bar (#289).
+// request-builder.js — Hoppscotch-style single-line request bar (#289).
 //
 // Drops a NEW workbench mode that re-skins the freeform request
 // builder into the canonical Hoppscotch layout:
@@ -12,11 +12,11 @@
 //   ──────────────────────────────────────────────────────────────
 //   <response pane>
 //
-// State shape extension. A freeformRequest gains a hopp-mode marker
-// (`_hopp: true`) and a few extra fields stored under `_hopp` so the
+// State shape extension. A freeformRequest gains a request-builder-mode marker
+// (`_requestBuilder: true`) and a few extra fields stored under `_requestBuilder` so the
 // classic freeform path keeps working untouched:
 //
-//   freeformRequest._hopp = {
+//   freeformRequest._requestBuilder = {
 //       activeTab: 'parameter' | 'body' | 'header' | 'auth' | 'pre' | 'post' | 'vars',
 //       params:   [{ key, value, description, enabled }, ...],
 //       headers:  [{ key, value, description, enabled }, ...],
@@ -61,13 +61,13 @@
     ];
 
     // Open/close state for the method dropdown + the Senden split caret.
-    var hoppMethodMenuOpen = false;
-    var hoppSendMenuOpen = false;
+    var rbMethodMenuOpen = false;
+    var rbSendMenuOpen = false;
     // #290 — history dropdown (clock icon, between URL input and the
     // send button cluster). Closed by default; toggled by the clock
     // button click. Closed by the outside-click handler at the bottom
     // of this file.
-    var hoppHistoryMenuOpen = false;
+    var rbHistoryMenuOpen = false;
 
     // ---- #290 — Bar-history persistence ----
     //
@@ -77,37 +77,37 @@
     // the localStorage bucket can't grow unboundedly across long
     // sessions; oldest entries get evicted when the cap is hit.
     //
-    // Round-trips through workspace export under `hoppBarHistory` —
+    // Round-trips through workspace export under `requestBuilderHistory` —
     // disk-mode workspaces serialise `[]`; browser-mode workspaces
     // serialise the live buffer.
-    var HOPP_HISTORY_KEY = 'bowire_hopp_history';
-    var HOPP_HISTORY_CAP = 50;
+    var RB_HISTORY_KEY = 'bowire_request_builder_history';
+    var RB_HISTORY_CAP = 50;
 
     // Module-scope buffer mirrors the per-workspace localStorage entry.
     // Lazily hydrated via loadHoppHistory() on first read; mutations
     // round-trip through persistHoppHistory().
-    var hoppHistoryList = null;
+    var rbHistoryList = null;
 
     function loadHoppHistory() {
-        if (Array.isArray(hoppHistoryList)) return hoppHistoryList;
+        if (Array.isArray(rbHistoryList)) return rbHistoryList;
         try {
-            var raw = localStorage.getItem(wsKey(HOPP_HISTORY_KEY));
-            hoppHistoryList = raw ? JSON.parse(raw) : [];
-            if (!Array.isArray(hoppHistoryList)) hoppHistoryList = [];
+            var raw = localStorage.getItem(wsKey(RB_HISTORY_KEY));
+            rbHistoryList = raw ? JSON.parse(raw) : [];
+            if (!Array.isArray(rbHistoryList)) rbHistoryList = [];
         } catch (_) {
-            hoppHistoryList = [];
+            rbHistoryList = [];
         }
-        return hoppHistoryList;
+        return rbHistoryList;
     }
 
     function persistHoppHistory() {
         try {
-            localStorage.setItem(wsKey(HOPP_HISTORY_KEY),
-                JSON.stringify(hoppHistoryList || []));
+            localStorage.setItem(wsKey(RB_HISTORY_KEY),
+                JSON.stringify(rbHistoryList || []));
         } catch (e) {
             // Quota-exhaustion is the realistic failure here — non-fatal,
             // history is a convenience, not project content.
-            console.warn('[bowire] failed to persist hopp history', e);
+            console.warn('[bowire] failed to persist request-builder history', e);
         }
     }
 
@@ -130,31 +130,31 @@
             ts: Date.now(),
             method: fr.method || 'GET',
             url: fr.serverUrl || '',
-            params: (fr._hopp.params || []).map(_cloneRow),
-            headers: (fr._hopp.headers || []).map(_cloneRow),
+            params: (fr._requestBuilder.params || []).map(_cloneRow),
+            headers: (fr._requestBuilder.headers || []).map(_cloneRow),
             body: fr.body || '',
-            bodyMode: fr._hopp.bodyMode || 'json',
+            bodyMode: fr._requestBuilder.bodyMode || 'json',
             // formBody is its own KV table when bodyMode === 'form'.
             // Capture it too so a history-restore re-hydrates the
             // form rows without the operator having to retype them.
-            formBody: Array.isArray(fr._hopp.formBody)
-                ? fr._hopp.formBody.map(_cloneRow) : [],
+            formBody: Array.isArray(fr._requestBuilder.formBody)
+                ? fr._requestBuilder.formBody.map(_cloneRow) : [],
             // Binary content is a transient File reference and CAN'T
             // be persisted — record the filename so the entry shows
             // it, but the operator has to re-pick on restore.
-            binaryName: fr._hopp.binaryName || '',
-            authKind: fr._hopp.authKind || 'none',
-            authData: Object.assign({}, fr._hopp.authData || {}),
-            preScript: fr._hopp.preScript || '',
-            postScript: fr._hopp.postScript || '',
+            binaryName: fr._requestBuilder.binaryName || '',
+            authKind: fr._requestBuilder.authKind || 'none',
+            authData: Object.assign({}, fr._requestBuilder.authData || {}),
+            preScript: fr._requestBuilder.preScript || '',
+            postScript: fr._requestBuilder.postScript || '',
             status: outcome && outcome.status != null ? outcome.status : null,
             durationMs: outcome && outcome.durationMs != null ? outcome.durationMs : null,
             ok: outcome ? !!outcome.ok : null
         };
         // Newest at index 0 — same as history-env.js's unshift pattern.
-        hoppHistoryList.unshift(entry);
-        if (hoppHistoryList.length > HOPP_HISTORY_CAP) {
-            hoppHistoryList.length = HOPP_HISTORY_CAP;
+        rbHistoryList.unshift(entry);
+        if (rbHistoryList.length > RB_HISTORY_CAP) {
+            rbHistoryList.length = RB_HISTORY_CAP;
         }
         persistHoppHistory();
     }
@@ -168,17 +168,17 @@
         };
     }
 
-    // Restore a history entry into the active hopp request — fills the
+    // Restore a history entry into the active request-builder request — fills the
     // bar but DOES NOT auto-execute. The operator clicks Execute when
     // they're ready; this matches Hoppscotch's own "load from history"
     // behaviour and avoids unintended re-fire of (potentially expensive
     // or destructive) requests.
     function restoreHoppHistoryEntry(entryId) {
         loadHoppHistory();
-        var entry = hoppHistoryList.find(function (e) { return e.id === entryId; });
+        var entry = rbHistoryList.find(function (e) { return e.id === entryId; });
         if (!entry) return;
         if (!freeformRequest || !isHoppRequest(freeformRequest)) {
-            // No live hopp request — start a fresh one then fill it.
+            // No live request-builder request — start a fresh one then fill it.
             startHoppRequest({});
         }
         var fr = freeformRequest;
@@ -186,27 +186,27 @@
         fr.method = entry.method || 'GET';
         fr.serverUrl = entry.url || '';
         fr.body = entry.body || '';
-        fr._hopp.params  = (entry.params  || []).map(_cloneRow);
-        fr._hopp.headers = (entry.headers || []).map(_cloneRow);
-        fr._hopp.formBody = (entry.formBody || []).map(_cloneRow);
-        fr._hopp.bodyMode = entry.bodyMode || 'json';
-        fr._hopp.binaryName = entry.binaryName || '';
+        fr._requestBuilder.params  = (entry.params  || []).map(_cloneRow);
+        fr._requestBuilder.headers = (entry.headers || []).map(_cloneRow);
+        fr._requestBuilder.formBody = (entry.formBody || []).map(_cloneRow);
+        fr._requestBuilder.bodyMode = entry.bodyMode || 'json';
+        fr._requestBuilder.binaryName = entry.binaryName || '';
         // Binary File reference doesn't survive — clear so the renderer
         // shows the empty file picker, but keep the filename hint above
         // so the operator knows what to re-pick.
-        fr._hopp._binaryRef = null;
-        fr._hopp.authKind = entry.authKind || 'none';
-        fr._hopp.authData = Object.assign({}, entry.authData || {});
-        fr._hopp.preScript  = entry.preScript  || '';
-        fr._hopp.postScript = entry.postScript || '';
-        hoppHistoryMenuOpen = false;
+        fr._requestBuilder._binaryRef = null;
+        fr._requestBuilder.authKind = entry.authKind || 'none';
+        fr._requestBuilder.authData = Object.assign({}, entry.authData || {});
+        fr._requestBuilder.preScript  = entry.preScript  || '';
+        fr._requestBuilder.postScript = entry.postScript || '';
+        rbHistoryMenuOpen = false;
         render();
     }
 
     function clearHoppHistory() {
-        hoppHistoryList = [];
+        rbHistoryList = [];
         persistHoppHistory();
-        hoppHistoryMenuOpen = false;
+        rbHistoryMenuOpen = false;
         render();
     }
 
@@ -214,7 +214,7 @@
     //
     // Used both by the empty-state "Just fire a request →" CTA and by
     // the Ctrl+L global keyboard shortcut. Replaces the classic
-    // freeformRequest with one carrying the _hopp marker so the
+    // freeformRequest with one carrying the _requestBuilder marker so the
     // renderer picks up the new layout.
     function startHoppRequest(opts) {
         opts = opts || {};
@@ -227,7 +227,7 @@
         // Default to GET — operators land here for the "fire one"
         // case which is almost always a GET probe.
         freeformRequest.method = opts.method || 'GET';
-        freeformRequest._hopp = _newHoppState();
+        freeformRequest._requestBuilder = _newHoppState();
         // If the workspace has no envs, seed a single 'scratch' set so
         // {{var}} substitution lands in a defined place rather than
         // silently no-oping. Quiet — only fire when there are zero
@@ -262,23 +262,23 @@
     }
 
     // Ensure the existing freeform request — whether opened classically
-    // or freshly converted — has a populated _hopp blob. Idempotent.
+    // or freshly converted — has a populated _requestBuilder blob. Idempotent.
     function ensureHoppState(fr) {
         if (!fr) return;
-        if (!fr._hopp || typeof fr._hopp !== 'object') {
-            fr._hopp = _newHoppState();
+        if (!fr._requestBuilder || typeof fr._requestBuilder !== 'object') {
+            fr._requestBuilder = _newHoppState();
         }
-        if (!Array.isArray(fr._hopp.params))  fr._hopp.params  = [];
-        if (!Array.isArray(fr._hopp.headers)) fr._hopp.headers = [];
-        if (typeof fr._hopp.bodyMode !== 'string') fr._hopp.bodyMode = 'json';
-        if (typeof fr._hopp.preScript !== 'string')  fr._hopp.preScript  = '';
-        if (typeof fr._hopp.postScript !== 'string') fr._hopp.postScript = '';
-        if (typeof fr._hopp.authKind !== 'string')   fr._hopp.authKind   = 'none';
-        if (!fr._hopp.authData) fr._hopp.authData = {};
+        if (!Array.isArray(fr._requestBuilder.params))  fr._requestBuilder.params  = [];
+        if (!Array.isArray(fr._requestBuilder.headers)) fr._requestBuilder.headers = [];
+        if (typeof fr._requestBuilder.bodyMode !== 'string') fr._requestBuilder.bodyMode = 'json';
+        if (typeof fr._requestBuilder.preScript !== 'string')  fr._requestBuilder.preScript  = '';
+        if (typeof fr._requestBuilder.postScript !== 'string') fr._requestBuilder.postScript = '';
+        if (typeof fr._requestBuilder.authKind !== 'string')   fr._requestBuilder.authKind   = 'none';
+        if (!fr._requestBuilder.authData) fr._requestBuilder.authData = {};
     }
 
     function isHoppRequest(fr) {
-        return !!(fr && fr._hopp);
+        return !!(fr && fr._requestBuilder);
     }
 
     // ---- KV-table helpers ----
@@ -361,7 +361,7 @@
     // hover (per the Acceptance bullet "Variables resolve inline …
     // with hover-tooltip showing source").
     function _renderHoppUrlOverlay(url) {
-        var wrap = el('div', { className: 'bowire-hopp-url-overlay' });
+        var wrap = el('div', { className: 'bowire-request-builder-url-overlay' });
         if (!url) return wrap;
         var re = /\{\{([^}]+)\}\}/g;
         var lastIdx = 0;
@@ -369,7 +369,7 @@
         while ((m = re.exec(url)) !== null) {
             if (m.index > lastIdx) {
                 wrap.appendChild(el('span', {
-                    className: 'bowire-hopp-url-plain',
+                    className: 'bowire-request-builder-url-plain',
                     textContent: url.substring(lastIdx, m.index)
                 }));
             }
@@ -383,7 +383,7 @@
             } catch (_) { /* keep raw — operator sees the typo */ }
             var unresolved = (resolved === raw);
             wrap.appendChild(el('span', {
-                className: 'bowire-hopp-url-var' + (unresolved ? ' is-unresolved' : ''),
+                className: 'bowire-request-builder-url-var' + (unresolved ? ' is-unresolved' : ''),
                 title: unresolved
                     ? '{{' + name + '}} — unresolved (no matching variable)'
                     : '{{' + name + '}} → ' + resolved,
@@ -393,7 +393,7 @@
         }
         if (lastIdx < url.length) {
             wrap.appendChild(el('span', {
-                className: 'bowire-hopp-url-plain',
+                className: 'bowire-request-builder-url-plain',
                 textContent: url.substring(lastIdx)
             }));
         }
@@ -401,51 +401,51 @@
     }
 
     // ---- Render: the request bar (method + URL + send) ----
-    function _renderHoppBar(fr) {
-        var bar = el('div', { className: 'bowire-hopp-bar' });
+    function _renderRequestBuilder(fr) {
+        var bar = el('div', { className: 'bowire-request-builder-bar' });
 
         // Method dropdown
-        var methodWrap = el('div', { className: 'bowire-hopp-method-wrap' });
+        var methodWrap = el('div', { className: 'bowire-request-builder-method-wrap' });
         var method = (fr.method || 'GET').toUpperCase();
         if (HOPP_METHODS.indexOf(method) < 0) method = 'GET';
         fr.method = method;
         var methodBtn = el('button', {
             type: 'button',
-            id: 'bowire-hopp-method-btn',
-            className: 'bowire-hopp-method-btn',
+            id: 'bowire-request-builder-method-btn',
+            className: 'bowire-request-builder-method-btn',
             'data-verb': method,
             'aria-haspopup': 'listbox',
-            'aria-expanded': hoppMethodMenuOpen ? 'true' : 'false',
+            'aria-expanded': rbMethodMenuOpen ? 'true' : 'false',
             onClick: function (e) {
                 e.stopPropagation();
-                hoppMethodMenuOpen = !hoppMethodMenuOpen;
+                rbMethodMenuOpen = !rbMethodMenuOpen;
                 render();
             }
         },
-            el('span', { className: 'bowire-hopp-method-label', textContent: method }),
-            el('span', { className: 'bowire-hopp-method-caret', innerHTML: svgIcon('chevronDown') })
+            el('span', { className: 'bowire-request-builder-method-label', textContent: method }),
+            el('span', { className: 'bowire-request-builder-method-caret', innerHTML: svgIcon('chevronDown') })
         );
         methodWrap.appendChild(methodBtn);
-        if (hoppMethodMenuOpen) {
+        if (rbMethodMenuOpen) {
             var menu = el('div', {
-                className: 'bowire-hopp-method-menu',
+                className: 'bowire-request-builder-method-menu',
                 role: 'listbox',
                 onClick: function (e) { e.stopPropagation(); }
             });
             HOPP_METHODS.forEach(function (m) {
                 menu.appendChild(el('button', {
                     type: 'button',
-                    className: 'bowire-hopp-method-menu-item' + (m === method ? ' is-selected' : ''),
+                    className: 'bowire-request-builder-method-menu-item' + (m === method ? ' is-selected' : ''),
                     'data-verb': m,
                     role: 'option',
                     'aria-selected': m === method ? 'true' : 'false',
                     onClick: function () {
                         fr.method = m;
-                        hoppMethodMenuOpen = false;
+                        rbMethodMenuOpen = false;
                         render();
                     }
                 },
-                    el('span', { className: 'bowire-hopp-method-chip', 'data-verb': m, textContent: m })
+                    el('span', { className: 'bowire-request-builder-method-chip', 'data-verb': m, textContent: m })
                 ));
             });
             methodWrap.appendChild(menu);
@@ -453,11 +453,11 @@
         bar.appendChild(methodWrap);
 
         // URL input + variable overlay
-        var urlWrap = el('div', { className: 'bowire-hopp-url-wrap' });
+        var urlWrap = el('div', { className: 'bowire-request-builder-url-wrap' });
         var urlInput = el('input', {
-            id: 'bowire-hopp-url-input',
+            id: 'bowire-request-builder-url-input',
             type: 'text',
-            className: 'bowire-hopp-url-input',
+            className: 'bowire-request-builder-url-input',
             value: fr.serverUrl || '',
             placeholder: 'https://api.example.com/users  •  use {{baseUrl}} for env vars',
             spellcheck: 'false',
@@ -466,7 +466,7 @@
                 fr.serverUrl = e.target.value;
                 // Live overlay refresh without full re-render — find
                 // the overlay sibling and replace its children.
-                var overlay = urlWrap.querySelector('.bowire-hopp-url-overlay');
+                var overlay = urlWrap.querySelector('.bowire-request-builder-url-overlay');
                 if (overlay) {
                     overlay.replaceWith(_renderHoppUrlOverlay(e.target.value));
                 }
@@ -490,16 +490,16 @@
         // button only renders when the history bucket is non-empty so
         // first-time operators don't see a dead control.
         loadHoppHistory();
-        if (hoppHistoryList.length > 0) {
+        if (rbHistoryList.length > 0) {
             bar.appendChild(_renderHoppHistoryButton(fr));
         }
 
         // Send button (split caret variant menu)
-        var sendWrap = el('div', { className: 'bowire-hopp-send-wrap' });
+        var sendWrap = el('div', { className: 'bowire-request-builder-send-wrap' });
         var sendBtn = el('button', {
             type: 'button',
-            id: 'bowire-hopp-send-btn',
-            className: 'bowire-hopp-send-btn',
+            id: 'bowire-request-builder-send-btn',
+            className: 'bowire-request-builder-send-btn',
             title: 'Execute request (Ctrl+Enter)',
             onClick: function () { executeHoppRequest(); }
         },
@@ -509,30 +509,30 @@
         sendWrap.appendChild(sendBtn);
         var sendCaret = el('button', {
             type: 'button',
-            id: 'bowire-hopp-send-caret',
-            className: 'bowire-hopp-send-caret' + (hoppSendMenuOpen ? ' is-open' : ''),
+            id: 'bowire-request-builder-send-caret',
+            className: 'bowire-request-builder-send-caret' + (rbSendMenuOpen ? ' is-open' : ''),
             title: 'More execute options',
             'aria-haspopup': 'menu',
-            'aria-expanded': hoppSendMenuOpen ? 'true' : 'false',
+            'aria-expanded': rbSendMenuOpen ? 'true' : 'false',
             onClick: function (e) {
                 e.stopPropagation();
-                hoppSendMenuOpen = !hoppSendMenuOpen;
+                rbSendMenuOpen = !rbSendMenuOpen;
                 render();
             },
             innerHTML: svgIcon('chevronDown')
         });
         sendWrap.appendChild(sendCaret);
-        if (hoppSendMenuOpen) {
+        if (rbSendMenuOpen) {
             var sendMenu = el('div', {
-                className: 'bowire-hopp-send-menu',
+                className: 'bowire-request-builder-send-menu',
                 role: 'menu',
                 onClick: function (e) { e.stopPropagation(); }
             });
             sendMenu.appendChild(el('button', {
-                className: 'bowire-hopp-send-menu-item',
+                className: 'bowire-request-builder-send-menu-item',
                 role: 'menuitem',
                 onClick: function () {
-                    hoppSendMenuOpen = false;
+                    rbSendMenuOpen = false;
                     executeHoppRequest();
                 }
             },
@@ -540,10 +540,10 @@
                 el('span', { textContent: 'Execute once' })
             ));
             sendMenu.appendChild(el('button', {
-                className: 'bowire-hopp-send-menu-item',
+                className: 'bowire-request-builder-send-menu-item',
                 role: 'menuitem',
                 onClick: function () {
-                    hoppSendMenuOpen = false;
+                    rbSendMenuOpen = false;
                     // Save to collection — reuse the freeform save path.
                     try {
                         if (typeof collectionsList !== 'undefined'
@@ -568,16 +568,16 @@
             ));
             // #290 — Benchmark variant. Wired to the existing
             // benchmarks-rail runner via createBenchmarkSpec + the
-            // hopp request snapshot as a single 'method'-style target.
+            // request-builder request snapshot as a single 'method'-style target.
             // Only renders when benchmarks.js is present (it ships
             // as a fragment that may be trimmed in embedded hosts).
             if (typeof createBenchmarkSpec === 'function'
                 && typeof runBenchmarkSpec === 'function') {
                 sendMenu.appendChild(el('button', {
-                    className: 'bowire-hopp-send-menu-item',
+                    className: 'bowire-request-builder-send-menu-item',
                     role: 'menuitem',
                     onClick: function () {
-                        hoppSendMenuOpen = false;
+                        rbSendMenuOpen = false;
                         runHoppAsBenchmark(fr);
                     }
                 },
@@ -601,16 +601,16 @@
             protocol: 'rest',
             body: fr.body || '',
             messages: [fr.body || ''],
-            metadata: _kvToObject(fr._hopp.headers),
-            params: _kvToObject(fr._hopp.params),
+            metadata: _kvToObject(fr._requestBuilder.headers),
+            params: _kvToObject(fr._requestBuilder.params),
             serverUrl: fr.serverUrl || '',
             urlMode: 'inline',
-            kind: 'hopp',
-            preScript:  fr._hopp.preScript || '',
-            postScript: fr._hopp.postScript || '',
-            authKind:   fr._hopp.authKind || 'none',
-            authData:   fr._hopp.authData || {},
-            lineage: { kind: 'hopp-bar' }
+            kind: 'request-builder',
+            preScript:  fr._requestBuilder.preScript || '',
+            postScript: fr._requestBuilder.postScript || '',
+            authKind:   fr._requestBuilder.authKind || 'none',
+            authData:   fr._requestBuilder.authData || {},
+            lineage: { kind: 'request-builder' }
         };
     }
 
@@ -622,35 +622,35 @@
     // dropdown re-renders on every state change because the menu's
     // open/close lives on a module-scope flag.
     function _renderHoppHistoryButton() {
-        var wrap = el('div', { className: 'bowire-hopp-history-wrap' });
+        var wrap = el('div', { className: 'bowire-request-builder-history-wrap' });
         var btn = el('button', {
             type: 'button',
-            id: 'bowire-hopp-history-btn',
-            className: 'bowire-hopp-history-btn' + (hoppHistoryMenuOpen ? ' is-open' : ''),
-            title: 'Recent requests (' + hoppHistoryList.length + ')',
+            id: 'bowire-request-builder-history-btn',
+            className: 'bowire-request-builder-history-btn' + (rbHistoryMenuOpen ? ' is-open' : ''),
+            title: 'Recent requests (' + rbHistoryList.length + ')',
             'aria-haspopup': 'menu',
-            'aria-expanded': hoppHistoryMenuOpen ? 'true' : 'false',
+            'aria-expanded': rbHistoryMenuOpen ? 'true' : 'false',
             onClick: function (e) {
                 e.stopPropagation();
-                hoppHistoryMenuOpen = !hoppHistoryMenuOpen;
+                rbHistoryMenuOpen = !rbHistoryMenuOpen;
                 render();
             },
             innerHTML: svgIcon('history')
         });
         wrap.appendChild(btn);
-        if (hoppHistoryMenuOpen) {
+        if (rbHistoryMenuOpen) {
             var menu = el('div', {
-                className: 'bowire-hopp-history-menu',
+                className: 'bowire-request-builder-history-menu',
                 role: 'menu',
                 onClick: function (e) { e.stopPropagation(); }
             });
             // Header strip with a Clear-all action.
-            menu.appendChild(el('div', { className: 'bowire-hopp-history-head' },
-                el('span', { className: 'bowire-hopp-history-head-label',
-                    textContent: 'Recent (' + hoppHistoryList.length + ')' }),
+            menu.appendChild(el('div', { className: 'bowire-request-builder-history-head' },
+                el('span', { className: 'bowire-request-builder-history-head-label',
+                    textContent: 'Recent (' + rbHistoryList.length + ')' }),
                 el('button', {
                     type: 'button',
-                    className: 'bowire-hopp-history-clear',
+                    className: 'bowire-request-builder-history-clear',
                     title: 'Clear history',
                     onClick: function () {
                         // Confirmation is the operator's only seatbelt
@@ -658,24 +658,24 @@
                         if (typeof bowireConfirm === 'function') {
                             bowireConfirm({
                                 title: 'Clear bar history?',
-                                body: 'Removes all ' + hoppHistoryList.length
+                                body: 'Removes all ' + rbHistoryList.length
                                     + ' entries for this workspace. Cannot be undone.',
                                 confirmLabel: 'Clear',
                                 onConfirm: clearHoppHistory
                             });
-                        } else if (window.confirm('Clear ' + hoppHistoryList.length + ' history entries?')) {
+                        } else if (window.confirm('Clear ' + rbHistoryList.length + ' history entries?')) {
                             clearHoppHistory();
                         }
                     },
                     textContent: 'Clear'
                 })
             ));
-            // Up to HOPP_HISTORY_CAP entries — render newest first
+            // Up to RB_HISTORY_CAP entries — render newest first
             // (the buffer is already newest-at-index-0).
-            hoppHistoryList.forEach(function (entry) {
+            rbHistoryList.forEach(function (entry) {
                 var item = el('button', {
                     type: 'button',
-                    className: 'bowire-hopp-history-item',
+                    className: 'bowire-request-builder-history-item',
                     role: 'menuitem',
                     title: entry.url + (entry.status != null
                         ? ' · ' + entry.status
@@ -686,23 +686,23 @@
                     onClick: function () { restoreHoppHistoryEntry(entry.id); }
                 });
                 item.appendChild(el('span', {
-                    className: 'bowire-hopp-history-method',
+                    className: 'bowire-request-builder-history-method',
                     'data-verb': entry.method || 'GET',
                     textContent: entry.method || 'GET'
                 }));
                 item.appendChild(el('span', {
-                    className: 'bowire-hopp-history-url',
+                    className: 'bowire-request-builder-history-url',
                     textContent: entry.url || '(no url)'
                 }));
                 if (entry.status != null) {
                     item.appendChild(el('span', {
-                        className: 'bowire-hopp-history-status'
+                        className: 'bowire-request-builder-history-status'
                             + (entry.ok ? ' is-ok' : ' is-err'),
                         textContent: String(entry.status)
                     }));
                 }
                 item.appendChild(el('span', {
-                    className: 'bowire-hopp-history-ts',
+                    className: 'bowire-request-builder-history-ts',
                     textContent: _formatRelativeTs(entry.ts)
                 }));
                 menu.appendChild(item);
@@ -724,26 +724,26 @@
     // ---- Render: the sub-tab strip ----
     function _renderHoppSubTabs(fr) {
         ensureHoppState(fr);
-        var strip = el('div', { className: 'bowire-hopp-subtabs', role: 'tablist' });
+        var strip = el('div', { className: 'bowire-request-builder-subtabs', role: 'tablist' });
         HOPP_TABS.forEach(function (t) {
             var badgeCount = 0;
-            if (t.id === 'parameter') badgeCount = _activeKvCount(fr._hopp.params);
-            else if (t.id === 'header') badgeCount = _activeKvCount(fr._hopp.headers);
-            var isActive = fr._hopp.activeTab === t.id;
+            if (t.id === 'parameter') badgeCount = _activeKvCount(fr._requestBuilder.params);
+            else if (t.id === 'header') badgeCount = _activeKvCount(fr._requestBuilder.headers);
+            var isActive = fr._requestBuilder.activeTab === t.id;
             var tab = el('button', {
                 type: 'button',
-                className: 'bowire-hopp-subtab' + (isActive ? ' is-active' : ''),
+                className: 'bowire-request-builder-subtab' + (isActive ? ' is-active' : ''),
                 'data-tab': t.id,
                 role: 'tab',
                 'aria-selected': isActive ? 'true' : 'false',
                 onClick: function () {
-                    fr._hopp.activeTab = t.id;
+                    fr._requestBuilder.activeTab = t.id;
                     render();
                 }
             },
-                el('span', { className: 'bowire-hopp-subtab-label', textContent: t.label }),
+                el('span', { className: 'bowire-request-builder-subtab-label', textContent: t.label }),
                 badgeCount > 0
-                    ? el('span', { className: 'bowire-hopp-subtab-badge', textContent: String(badgeCount) })
+                    ? el('span', { className: 'bowire-request-builder-subtab-badge', textContent: String(badgeCount) })
                     : null
             );
             strip.appendChild(tab);
@@ -762,16 +762,16 @@
         var keyPlaceholder = opts.keyPlaceholder || 'Key';
         var valPlaceholder = opts.valuePlaceholder || 'Value';
         var descPlaceholder = opts.descPlaceholder || 'Description';
-        var table = el('div', { className: 'bowire-hopp-kv-table' });
+        var table = el('div', { className: 'bowire-request-builder-kv-table' });
 
         // Column header strip (mirrors the screenshot in the ticket).
-        var head = el('div', { className: 'bowire-hopp-kv-head' },
-            el('span', { className: 'bowire-hopp-kv-head-drag' }),
-            el('span', { className: 'bowire-hopp-kv-head-key', textContent: keyPlaceholder }),
-            el('span', { className: 'bowire-hopp-kv-head-val', textContent: valPlaceholder }),
-            el('span', { className: 'bowire-hopp-kv-head-desc', textContent: descPlaceholder }),
-            el('span', { className: 'bowire-hopp-kv-head-on', textContent: '' }),
-            el('span', { className: 'bowire-hopp-kv-head-del', textContent: '' })
+        var head = el('div', { className: 'bowire-request-builder-kv-head' },
+            el('span', { className: 'bowire-request-builder-kv-head-drag' }),
+            el('span', { className: 'bowire-request-builder-kv-head-key', textContent: keyPlaceholder }),
+            el('span', { className: 'bowire-request-builder-kv-head-val', textContent: valPlaceholder }),
+            el('span', { className: 'bowire-request-builder-kv-head-desc', textContent: descPlaceholder }),
+            el('span', { className: 'bowire-request-builder-kv-head-on', textContent: '' }),
+            el('span', { className: 'bowire-request-builder-kv-head-del', textContent: '' })
         );
         table.appendChild(head);
 
@@ -781,20 +781,20 @@
         allRows.forEach(function (r, idx) {
             var isAdd = r._isAddRow === true;
             var row = el('div', {
-                className: 'bowire-hopp-kv-row' + (isAdd ? ' is-add-row' : ''),
+                className: 'bowire-request-builder-kv-row' + (isAdd ? ' is-add-row' : ''),
                 draggable: !isAdd ? 'true' : undefined,
                 'data-idx': String(idx)
             });
             // Drag handle (cosmetic — drag-drop reorder wired via
             // native HTML5 DnD on the row itself).
             row.appendChild(el('span', {
-                className: 'bowire-hopp-kv-drag',
+                className: 'bowire-request-builder-kv-drag',
                 title: 'Drag to reorder',
                 textContent: '⋮⋮'
             }));
             row.appendChild(el('input', {
                 type: 'text',
-                className: 'bowire-hopp-kv-input bowire-hopp-kv-key',
+                className: 'bowire-request-builder-kv-input bowire-request-builder-kv-key',
                 value: r.key || '',
                 placeholder: keyPlaceholder,
                 spellcheck: 'false',
@@ -812,7 +812,7 @@
             }));
             row.appendChild(el('input', {
                 type: 'text',
-                className: 'bowire-hopp-kv-input bowire-hopp-kv-val',
+                className: 'bowire-request-builder-kv-input bowire-request-builder-kv-val',
                 value: r.value || '',
                 placeholder: valPlaceholder,
                 spellcheck: 'false',
@@ -829,7 +829,7 @@
             }));
             row.appendChild(el('input', {
                 type: 'text',
-                className: 'bowire-hopp-kv-input bowire-hopp-kv-desc',
+                className: 'bowire-request-builder-kv-input bowire-request-builder-kv-desc',
                 value: r.description || '',
                 placeholder: descPlaceholder,
                 spellcheck: 'false',
@@ -848,7 +848,7 @@
             // toggle yet).
             row.appendChild(el('input', {
                 type: 'checkbox',
-                className: 'bowire-hopp-kv-enable',
+                className: 'bowire-request-builder-kv-enable',
                 checked: r.enabled !== false ? 'checked' : undefined,
                 title: r.enabled !== false ? 'Enabled — included in request' : 'Disabled — skipped',
                 style: isAdd ? 'visibility:hidden' : undefined,
@@ -862,7 +862,7 @@
             // Delete icon — hidden for the add-row.
             row.appendChild(el('button', {
                 type: 'button',
-                className: 'bowire-hopp-kv-del',
+                className: 'bowire-request-builder-kv-del',
                 title: 'Remove row',
                 style: isAdd ? 'visibility:hidden' : undefined,
                 innerHTML: svgIcon('close'),
@@ -901,17 +901,17 @@
     // ---- Render: tab body for each sub-tab ----
     function _renderHoppTabBody(fr) {
         ensureHoppState(fr);
-        var body = el('div', { className: 'bowire-hopp-tab-body', 'data-tab': fr._hopp.activeTab });
-        switch (fr._hopp.activeTab) {
+        var body = el('div', { className: 'bowire-request-builder-tab-body', 'data-tab': fr._requestBuilder.activeTab });
+        switch (fr._requestBuilder.activeTab) {
             case 'parameter':
-                body.appendChild(_renderHoppKvTable(fr._hopp.params, {
+                body.appendChild(_renderHoppKvTable(fr._requestBuilder.params, {
                     keyPlaceholder: 'Parameter',
                     valuePlaceholder: 'Value',
                     descPlaceholder: 'Description'
                 }));
                 break;
             case 'header':
-                body.appendChild(_renderHoppKvTable(fr._hopp.headers, {
+                body.appendChild(_renderHoppKvTable(fr._requestBuilder.headers, {
                     keyPlaceholder: 'Header',
                     valuePlaceholder: 'Value',
                     descPlaceholder: 'Description'
@@ -938,15 +938,15 @@
 
     // ---- Body tab: JSON / form / raw / binary ----
     function _renderHoppBodyTab(fr) {
-        var wrap = el('div', { className: 'bowire-hopp-body-wrap' });
+        var wrap = el('div', { className: 'bowire-request-builder-body-wrap' });
         // Mode strip
-        var modeStrip = el('div', { className: 'bowire-hopp-body-modes' });
+        var modeStrip = el('div', { className: 'bowire-request-builder-body-modes' });
         HOPP_BODY_MODES.forEach(function (m) {
             var btn = el('button', {
                 type: 'button',
-                className: 'bowire-hopp-body-mode-btn' + (fr._hopp.bodyMode === m.id ? ' is-active' : ''),
+                className: 'bowire-request-builder-body-mode-btn' + (fr._requestBuilder.bodyMode === m.id ? ' is-active' : ''),
                 onClick: function () {
-                    fr._hopp.bodyMode = m.id;
+                    fr._requestBuilder.bodyMode = m.id;
                     render();
                 }
             }, el('span', { textContent: m.label }));
@@ -954,35 +954,35 @@
         });
         wrap.appendChild(modeStrip);
 
-        if (fr._hopp.bodyMode === 'form') {
+        if (fr._requestBuilder.bodyMode === 'form') {
             // Form body uses a key/value table; stored on
-            // fr._hopp.formBody (lazy-init).
-            if (!Array.isArray(fr._hopp.formBody)) fr._hopp.formBody = [];
-            wrap.appendChild(_renderHoppKvTable(fr._hopp.formBody, {
+            // fr._requestBuilder.formBody (lazy-init).
+            if (!Array.isArray(fr._requestBuilder.formBody)) fr._requestBuilder.formBody = [];
+            wrap.appendChild(_renderHoppKvTable(fr._requestBuilder.formBody, {
                 keyPlaceholder: 'Field',
                 valuePlaceholder: 'Value',
                 descPlaceholder: 'Description'
             }));
-        } else if (fr._hopp.bodyMode === 'binary') {
+        } else if (fr._requestBuilder.bodyMode === 'binary') {
             // Binary mode: file picker (browser-only). Snapshot the
-            // chosen filename onto fr._hopp.binaryName for display
+            // chosen filename onto fr._requestBuilder.binaryName for display
             // and stash the File reference in module-scope (not
             // persistable to localStorage; the operator re-picks
             // after reload).
             wrap.appendChild(el('input', {
                 type: 'file',
-                className: 'bowire-hopp-body-binary',
+                className: 'bowire-request-builder-body-binary',
                 onChange: function (e) {
                     var f = e.target.files && e.target.files[0];
-                    fr._hopp.binaryName = f ? f.name : '';
-                    fr._hopp._binaryRef = f || null;
+                    fr._requestBuilder.binaryName = f ? f.name : '';
+                    fr._requestBuilder._binaryRef = f || null;
                     render();
                 }
             }));
-            if (fr._hopp.binaryName) {
+            if (fr._requestBuilder.binaryName) {
                 wrap.appendChild(el('div', {
-                    className: 'bowire-hopp-body-binary-name',
-                    textContent: 'Selected: ' + fr._hopp.binaryName
+                    className: 'bowire-request-builder-body-binary-name',
+                    textContent: 'Selected: ' + fr._requestBuilder.binaryName
                 }));
             }
         } else {
@@ -990,8 +990,8 @@
             // freeform's body editor with the JSON validator
             // when in JSON mode.
             var ed = el('textarea', {
-                className: 'bowire-editor bowire-hopp-body-editor',
-                placeholder: fr._hopp.bodyMode === 'json'
+                className: 'bowire-editor bowire-request-builder-body-editor',
+                placeholder: fr._requestBuilder.bodyMode === 'json'
                     ? 'JSON request body — use {{var}} for env-var substitution'
                     : 'Raw request body…',
                 spellcheck: 'false'
@@ -999,7 +999,7 @@
             ed.value = fr.body || '';
             ed.addEventListener('input', function () { fr.body = this.value; });
             wrap.appendChild(ed);
-            if (fr._hopp.bodyMode === 'json') {
+            if (fr._requestBuilder.bodyMode === 'json') {
                 var st = el('div', { className: 'bowire-json-status empty' });
                 wrap.appendChild(st);
                 try { if (typeof attachJsonValidator === 'function') attachJsonValidator(ed, st); }
@@ -1011,48 +1011,48 @@
 
     // ---- Auth tab: bind to the existing auth resolver shape ----
     function _renderHoppAuthTab(fr) {
-        var wrap = el('div', { className: 'bowire-hopp-auth-wrap' });
-        var kindRow = el('div', { className: 'bowire-hopp-auth-kind-row' });
+        var wrap = el('div', { className: 'bowire-request-builder-auth-wrap' });
+        var kindRow = el('div', { className: 'bowire-request-builder-auth-kind-row' });
         HOPP_AUTH_KINDS.forEach(function (k) {
             kindRow.appendChild(el('button', {
                 type: 'button',
-                className: 'bowire-hopp-auth-kind-btn' + (fr._hopp.authKind === k.id ? ' is-active' : ''),
+                className: 'bowire-request-builder-auth-kind-btn' + (fr._requestBuilder.authKind === k.id ? ' is-active' : ''),
                 textContent: k.label,
                 onClick: function () {
-                    fr._hopp.authKind = k.id;
+                    fr._requestBuilder.authKind = k.id;
                     render();
                 }
             }));
         });
         wrap.appendChild(kindRow);
 
-        var formWrap = el('div', { className: 'bowire-hopp-auth-form' });
-        switch (fr._hopp.authKind) {
+        var formWrap = el('div', { className: 'bowire-request-builder-auth-form' });
+        switch (fr._requestBuilder.authKind) {
             case 'bearer':
-                formWrap.appendChild(_authField('Token', fr._hopp.authData.token || '', function (v) {
-                    fr._hopp.authData.token = v;
+                formWrap.appendChild(_authField('Token', fr._requestBuilder.authData.token || '', function (v) {
+                    fr._requestBuilder.authData.token = v;
                 }));
                 break;
             case 'basic':
-                formWrap.appendChild(_authField('Username', fr._hopp.authData.username || '', function (v) {
-                    fr._hopp.authData.username = v;
+                formWrap.appendChild(_authField('Username', fr._requestBuilder.authData.username || '', function (v) {
+                    fr._requestBuilder.authData.username = v;
                 }));
-                formWrap.appendChild(_authField('Password', fr._hopp.authData.password || '', function (v) {
-                    fr._hopp.authData.password = v;
+                formWrap.appendChild(_authField('Password', fr._requestBuilder.authData.password || '', function (v) {
+                    fr._requestBuilder.authData.password = v;
                 }, 'password'));
                 break;
             case 'apikey':
-                formWrap.appendChild(_authField('Key', fr._hopp.authData.key || '', function (v) {
-                    fr._hopp.authData.key = v;
+                formWrap.appendChild(_authField('Key', fr._requestBuilder.authData.key || '', function (v) {
+                    fr._requestBuilder.authData.key = v;
                 }));
-                formWrap.appendChild(_authField('Value', fr._hopp.authData.value || '', function (v) {
-                    fr._hopp.authData.value = v;
+                formWrap.appendChild(_authField('Value', fr._requestBuilder.authData.value || '', function (v) {
+                    fr._requestBuilder.authData.value = v;
                 }));
                 break;
             case 'none':
             default:
                 formWrap.appendChild(el('div', {
-                    className: 'bowire-hopp-auth-empty',
+                    className: 'bowire-request-builder-auth-empty',
                     textContent: 'No auth — requests go out without an Authorization header. {{var}} substitution still applies to URL + headers.'
                 }));
                 break;
@@ -1061,11 +1061,11 @@
         return wrap;
     }
     function _authField(label, value, onInput, type) {
-        var row = el('div', { className: 'bowire-hopp-auth-field' });
-        row.appendChild(el('label', { className: 'bowire-hopp-auth-label', textContent: label }));
+        var row = el('div', { className: 'bowire-request-builder-auth-field' });
+        row.appendChild(el('label', { className: 'bowire-request-builder-auth-label', textContent: label }));
         row.appendChild(el('input', {
             type: type || 'text',
-            className: 'bowire-hopp-auth-input',
+            className: 'bowire-request-builder-auth-input',
             value: value,
             spellcheck: 'false',
             onInput: function (e) { onInput(e.target.value); }
@@ -1075,24 +1075,24 @@
 
     // ---- Pre/Post script tabs ----
     function _renderHoppScriptTab(fr, phase) {
-        var wrap = el('div', { className: 'bowire-hopp-script-wrap' });
+        var wrap = el('div', { className: 'bowire-request-builder-script-wrap' });
         wrap.appendChild(el('div', {
-            className: 'bowire-hopp-script-hint',
+            className: 'bowire-request-builder-script-hint',
             textContent: phase === 'pre'
                 ? 'JavaScript that runs BEFORE the request leaves. Use ctx.request to mutate headers/body, ctx.env to read env vars, ctx.vars.captured.X = v to persist a value.'
                 : 'JavaScript that runs AFTER the response lands. Inspect ctx.response.body / .status / .headers; assert with ctx.assert.ok(...); persist with ctx.vars.captured.X = v.'
         }));
         var ta = el('textarea', {
-            className: 'bowire-editor bowire-hopp-script-editor',
+            className: 'bowire-editor bowire-request-builder-script-editor',
             placeholder: phase === 'pre'
                 ? '// e.g.  ctx.request.headers.set("X-Request-Id", crypto.randomUUID());'
                 : '// e.g.  ctx.assert.equal(ctx.response.status, 200);\n//       ctx.vars.captured.id = JSON.parse(ctx.response.body).id;',
             spellcheck: 'false'
         });
-        ta.value = phase === 'pre' ? fr._hopp.preScript : fr._hopp.postScript;
+        ta.value = phase === 'pre' ? fr._requestBuilder.preScript : fr._requestBuilder.postScript;
         ta.addEventListener('input', function () {
-            if (phase === 'pre') fr._hopp.preScript = this.value;
-            else fr._hopp.postScript = this.value;
+            if (phase === 'pre') fr._requestBuilder.preScript = this.value;
+            else fr._requestBuilder.postScript = this.value;
         });
         wrap.appendChild(ta);
         return wrap;
@@ -1100,7 +1100,7 @@
 
     // ---- Variables tab: env vars + scratch overrides ----
     function _renderHoppVarsTab(fr) {
-        var wrap = el('div', { className: 'bowire-hopp-vars-wrap' });
+        var wrap = el('div', { className: 'bowire-request-builder-vars-wrap' });
         // Try to surface the active env's vars first; fall back to a
         // hint if no env is selected.
         var rows = [];
@@ -1114,32 +1114,32 @@
         } catch (_) { /* env helpers may not be loaded; show empty */ }
         if (rows.length === 0) {
             wrap.appendChild(el('div', {
-                className: 'bowire-hopp-vars-empty',
+                className: 'bowire-request-builder-vars-empty',
                 textContent: 'No environment variables yet. Use the Workspaces → Environments rail to create some, or type {{var}} in the URL and the prompt will offer to seed it.'
             }));
         } else {
             wrap.appendChild(el('div', {
-                className: 'bowire-hopp-vars-hint',
+                className: 'bowire-request-builder-vars-hint',
                 textContent: 'Read-only snapshot from the active environment. Edit values in Workspaces → Environments.'
             }));
-            var list = el('div', { className: 'bowire-hopp-vars-list' });
+            var list = el('div', { className: 'bowire-request-builder-vars-list' });
             rows.forEach(function (r) {
-                list.appendChild(el('div', { className: 'bowire-hopp-vars-row' },
-                    el('span', { className: 'bowire-hopp-vars-key', textContent: r.key }),
-                    el('span', { className: 'bowire-hopp-vars-eq', textContent: '=' }),
-                    el('span', { className: 'bowire-hopp-vars-val', textContent: r.value })
+                list.appendChild(el('div', { className: 'bowire-request-builder-vars-row' },
+                    el('span', { className: 'bowire-request-builder-vars-key', textContent: r.key }),
+                    el('span', { className: 'bowire-request-builder-vars-eq', textContent: '=' }),
+                    el('span', { className: 'bowire-request-builder-vars-val', textContent: r.value })
                 ));
             });
             wrap.appendChild(list);
         }
         // Scratch overrides for this request — let the operator pin a
-        // value JUST for this tab. Stored on fr._hopp.scratchVars.
-        if (!Array.isArray(fr._hopp.scratchVars)) fr._hopp.scratchVars = [];
+        // value JUST for this tab. Stored on fr._requestBuilder.scratchVars.
+        if (!Array.isArray(fr._requestBuilder.scratchVars)) fr._requestBuilder.scratchVars = [];
         wrap.appendChild(el('div', {
-            className: 'bowire-hopp-vars-section',
+            className: 'bowire-request-builder-vars-section',
             textContent: 'Scratch overrides (this request only)'
         }));
-        wrap.appendChild(_renderHoppKvTable(fr._hopp.scratchVars, {
+        wrap.appendChild(_renderHoppKvTable(fr._requestBuilder.scratchVars, {
             keyPlaceholder: 'Variable',
             valuePlaceholder: 'Value',
             descPlaceholder: 'Notes'
@@ -1149,7 +1149,7 @@
 
     // ---- Response renderer ----
     function _renderHoppResponse() {
-        var pane = el('div', { className: 'bowire-hopp-response' });
+        var pane = el('div', { className: 'bowire-request-builder-response' });
         pane.appendChild(el('div', { className: 'bowire-pane-heading', textContent: 'Response' }));
         if (responseError) {
             var errOut = el('div', { className: 'bowire-response-output error' });
@@ -1175,10 +1175,10 @@
     }
 
     // ---- Top-level render entry — composes the bar + subtabs + body + response ----
-    function _appendHoppInto(pane) {
+    function _appendRequestBuilderInto(pane) {
         var fr = freeformRequest;
         ensureHoppState(fr);
-        pane.appendChild(_renderHoppBar(fr));
+        pane.appendChild(_renderRequestBuilder(fr));
         pane.appendChild(_renderHoppSubTabs(fr));
         pane.appendChild(_renderHoppTabBody(fr));
         pane.appendChild(_renderHoppResponse());
@@ -1190,10 +1190,10 @@
     // adaptations:
     //   1. The URL field carries the FULL request URL — merge in the
     //      Parameter rows as query string, then submit as serverUrl.
-    //   2. Headers come from fr._hopp.headers, plus an auth-derived
+    //   2. Headers come from fr._requestBuilder.headers, plus an auth-derived
     //      Authorization header if authKind !== 'none'.
     //   3. The body is fr.body for JSON/raw or x-www-form-urlencoded
-    //      from fr._hopp.formBody for form mode.
+    //      from fr._requestBuilder.formBody for form mode.
     async function executeHoppRequest() {
         if (!freeformRequest) return;
         var fr = freeformRequest;
@@ -1209,23 +1209,23 @@
         try {
             if (typeof substituteVars === 'function') urlBase = substituteVars(fr.serverUrl);
         } catch (_) { /* keep raw */ }
-        var urlWithParams = _composeUrlWithParams(urlBase, fr._hopp.params);
+        var urlWithParams = _composeUrlWithParams(urlBase, fr._requestBuilder.params);
 
         // Compose headers — KV table + auth derivation.
-        var headers = _kvToObject(fr._hopp.headers);
+        var headers = _kvToObject(fr._requestBuilder.headers);
         // Resolve {{var}} inside header values.
         Object.keys(headers).forEach(function (k) {
             try {
                 if (typeof substituteVars === 'function') headers[k] = substituteVars(headers[k]);
             } catch (_) { /* leave raw */ }
         });
-        if (fr._hopp.authKind === 'bearer' && fr._hopp.authData.token) {
-            var tok = fr._hopp.authData.token;
+        if (fr._requestBuilder.authKind === 'bearer' && fr._requestBuilder.authData.token) {
+            var tok = fr._requestBuilder.authData.token;
             try { if (typeof substituteVars === 'function') tok = substituteVars(tok); } catch (_) { /* keep raw */ }
             headers['Authorization'] = 'Bearer ' + tok;
-        } else if (fr._hopp.authKind === 'basic') {
-            var u = fr._hopp.authData.username || '';
-            var p = fr._hopp.authData.password || '';
+        } else if (fr._requestBuilder.authKind === 'basic') {
+            var u = fr._requestBuilder.authData.username || '';
+            var p = fr._requestBuilder.authData.password || '';
             try {
                 if (typeof substituteVars === 'function') {
                     u = substituteVars(u);
@@ -1234,9 +1234,9 @@
             } catch (_) { /* keep raw */ }
             try { headers['Authorization'] = 'Basic ' + btoa(u + ':' + p); }
             catch (_) { /* btoa fails on non-Latin chars; skip silently */ }
-        } else if (fr._hopp.authKind === 'apikey' && fr._hopp.authData.key) {
-            var ak = fr._hopp.authData.key.trim();
-            var av = fr._hopp.authData.value || '';
+        } else if (fr._requestBuilder.authKind === 'apikey' && fr._requestBuilder.authData.key) {
+            var ak = fr._requestBuilder.authData.key.trim();
+            var av = fr._requestBuilder.authData.value || '';
             try { if (typeof substituteVars === 'function') av = substituteVars(av); } catch (_) { /* keep raw */ }
             headers[ak] = av;
         }
@@ -1246,26 +1246,26 @@
         var verb = fr.method.toUpperCase();
         var verbHasBody = ['POST', 'PUT', 'PATCH', 'DELETE'].indexOf(verb) >= 0;
         if (verbHasBody) {
-            if (fr._hopp.bodyMode === 'form') {
-                var formObj = _kvToObject(fr._hopp.formBody || []);
+            if (fr._requestBuilder.bodyMode === 'form') {
+                var formObj = _kvToObject(fr._requestBuilder.formBody || []);
                 var formParts = [];
                 Object.keys(formObj).forEach(function (k) {
                     formParts.push(encodeURIComponent(k) + '=' + encodeURIComponent(formObj[k]));
                 });
                 bodyStr = formParts.join('&');
                 if (!headers['Content-Type']) headers['Content-Type'] = 'application/x-www-form-urlencoded';
-            } else if (fr._hopp.bodyMode === 'binary') {
+            } else if (fr._requestBuilder.bodyMode === 'binary') {
                 // Binary upload not yet wired to /api/invoke; surface
                 // a hint so the operator knows the path needs work.
                 if (typeof toast === 'function') {
-                    toast('Binary uploads via the Hopp bar are not yet wired through /api/invoke — coming in a follow-up', 'info');
+                    toast('Binary uploads via the Request builder are not yet wired through /api/invoke — coming in a follow-up', 'info');
                 }
                 bodyStr = '';
             } else {
                 var rawBody = fr.body || '';
                 try { if (typeof substituteVars === 'function') rawBody = substituteVars(rawBody); } catch (_) { /* keep raw */ }
                 bodyStr = rawBody;
-                if (fr._hopp.bodyMode === 'json' && !headers['Content-Type']) {
+                if (fr._requestBuilder.bodyMode === 'json' && !headers['Content-Type']) {
                     headers['Content-Type'] = 'application/json';
                 }
             }
@@ -1288,13 +1288,13 @@
                 captured: (typeof window !== 'undefined' && window.__bowire_captured)
                     ? window.__bowire_captured : (window.__bowire_captured = {})
             },
-            log: function () { try { console.log.apply(console, ['[hopp-pre]'].concat([].slice.call(arguments))); } catch (_) {} },
+            log: function () { try { console.log.apply(console, ['[request-builder-pre]'].concat([].slice.call(arguments))); } catch (_) {} },
             assert: { ok: function (v, m) { if (!v) throw new Error(m || 'assert.ok failed'); } }
         };
-        if (fr._hopp.preScript && fr._hopp.preScript.trim()) {
+        if (fr._requestBuilder.preScript && fr._requestBuilder.preScript.trim()) {
             try {
                 // eslint-disable-next-line no-new-func
-                new Function('ctx', fr._hopp.preScript)(preCtx);
+                new Function('ctx', fr._requestBuilder.preScript)(preCtx);
                 // Pick up any mutations.
                 urlWithParams = preCtx.request.url || urlWithParams;
                 headers = preCtx.request.headers || headers;
@@ -1308,7 +1308,7 @@
         isExecuting = true;
         responseData = null;
         responseError = null;
-        if (typeof markJobActive === 'function') markJobActive('hopp', verb);
+        if (typeof markJobActive === 'function') markJobActive('request-builder', verb);
         render();
 
         var fullName = verb + ' ' + urlWithParams;
@@ -1342,13 +1342,13 @@
             // proxy / recording / telemetry pipeline keeps working
             // verbatim. Larger uploads (>10MB) should switch to a dedicated
             // streaming endpoint — out of scope here.
-            if (verbHasBody && fr._hopp.bodyMode === 'binary' && fr._hopp._binaryRef) {
+            if (verbHasBody && fr._requestBuilder.bodyMode === 'binary' && fr._requestBuilder._binaryRef) {
                 try {
-                    var fileRef = fr._hopp._binaryRef;
+                    var fileRef = fr._requestBuilder._binaryRef;
                     var bytes = await fileRef.arrayBuffer();
                     invokeBody.bodyBinary = _arrayBufferToBase64(bytes);
                     invokeBody.bodyBinaryContentType = fileRef.type || 'application/octet-stream';
-                    invokeBody.bodyBinaryName = fileRef.name || fr._hopp.binaryName || '';
+                    invokeBody.bodyBinaryName = fileRef.name || fr._requestBuilder.binaryName || '';
                     // Replace the placeholder JSON message with an empty
                     // object so the protocol plugin doesn't try to parse
                     // the binary as JSON; the binary bucket is consulted
@@ -1361,7 +1361,7 @@
                 } catch (e) {
                     if (typeof toast === 'function') toast('Binary read failed: ' + e.message, 'error');
                     isExecuting = false;
-                    if (typeof markJobDone === 'function') markJobDone('hopp', verb);
+                    if (typeof markJobDone === 'function') markJobDone('request-builder', verb);
                     render();
                     return;
                 }
@@ -1395,7 +1395,7 @@
                 }
 
                 // Post-script — runs AFTER the wire response lands.
-                if (fr._hopp.postScript && fr._hopp.postScript.trim()) {
+                if (fr._requestBuilder.postScript && fr._requestBuilder.postScript.trim()) {
                     var postCtx = {
                         response: {
                             status: result.status,
@@ -1404,12 +1404,12 @@
                         },
                         env: preCtx.env,
                         vars: preCtx.vars,
-                        log: function () { try { console.log.apply(console, ['[hopp-post]'].concat([].slice.call(arguments))); } catch (_) {} },
+                        log: function () { try { console.log.apply(console, ['[request-builder-post]'].concat([].slice.call(arguments))); } catch (_) {} },
                         assert: preCtx.assert
                     };
                     try {
                         // eslint-disable-next-line no-new-func
-                        new Function('ctx', fr._hopp.postScript)(postCtx);
+                        new Function('ctx', fr._requestBuilder.postScript)(postCtx);
                     } catch (e) {
                         if (typeof toast === 'function') toast('Post-script failed: ' + e.message, 'error');
                     }
@@ -1430,10 +1430,10 @@
         // last failed too. Push is wrapped to avoid a localStorage
         // failure cascading into the response render path.
         try { pushHoppHistoryEntry(fr, historyOutcome); }
-        catch (e) { console.warn('[hopp-history] push failed', e); }
+        catch (e) { console.warn('[request-builder-history] push failed', e); }
 
         isExecuting = false;
-        if (typeof markJobDone === 'function') markJobDone('hopp', verb);
+        if (typeof markJobDone === 'function') markJobDone('request-builder', verb);
         render();
     }
 
@@ -1475,47 +1475,47 @@
                 resolvedUrl = substituteVars(fr.serverUrl);
             }
         } catch (_) { /* keep raw */ }
-        var urlWithParams = _composeUrlWithParams(resolvedUrl, fr._hopp.params || []);
+        var urlWithParams = _composeUrlWithParams(resolvedUrl, fr._requestBuilder.params || []);
 
         // Auth-derived headers — same logic as executeHoppRequest, just
         // applied to the snapshot rather than the in-flight request.
-        var headers = _kvToObject(fr._hopp.headers || []);
-        if (fr._hopp.authKind === 'bearer' && fr._hopp.authData.token) {
-            headers['Authorization'] = 'Bearer ' + fr._hopp.authData.token;
-        } else if (fr._hopp.authKind === 'basic') {
-            var u = fr._hopp.authData.username || '';
-            var p = fr._hopp.authData.password || '';
+        var headers = _kvToObject(fr._requestBuilder.headers || []);
+        if (fr._requestBuilder.authKind === 'bearer' && fr._requestBuilder.authData.token) {
+            headers['Authorization'] = 'Bearer ' + fr._requestBuilder.authData.token;
+        } else if (fr._requestBuilder.authKind === 'basic') {
+            var u = fr._requestBuilder.authData.username || '';
+            var p = fr._requestBuilder.authData.password || '';
             try { headers['Authorization'] = 'Basic ' + btoa(u + ':' + p); }
             catch (_) { /* non-Latin chars; skip */ }
-        } else if (fr._hopp.authKind === 'apikey' && fr._hopp.authData.key) {
-            headers[fr._hopp.authData.key.trim()] = fr._hopp.authData.value || '';
+        } else if (fr._requestBuilder.authKind === 'apikey' && fr._requestBuilder.authData.key) {
+            headers[fr._requestBuilder.authData.key.trim()] = fr._requestBuilder.authData.value || '';
         }
 
         var verb = (fr.method || 'GET').toUpperCase();
         var bodyStr = '{}';
         var verbHasBody = ['POST', 'PUT', 'PATCH', 'DELETE'].indexOf(verb) >= 0;
         if (verbHasBody) {
-            if (fr._hopp.bodyMode === 'form') {
-                var formObj = _kvToObject(fr._hopp.formBody || []);
+            if (fr._requestBuilder.bodyMode === 'form') {
+                var formObj = _kvToObject(fr._requestBuilder.formBody || []);
                 var formParts = [];
                 Object.keys(formObj).forEach(function (k) {
                     formParts.push(encodeURIComponent(k) + '=' + encodeURIComponent(formObj[k]));
                 });
                 bodyStr = formParts.join('&');
                 if (!headers['Content-Type']) headers['Content-Type'] = 'application/x-www-form-urlencoded';
-            } else if (fr._hopp.bodyMode === 'binary') {
+            } else if (fr._requestBuilder.bodyMode === 'binary') {
                 // Binary bodies don't survive into the benchmark spec —
                 // the file ref is transient and the spec persists across
                 // reloads. Operator gets a clear message rather than a
                 // silently-empty body the benchmark would happily hammer
                 // the upstream with.
                 if (typeof toast === 'function') {
-                    toast('Binary uploads can\'t be benchmarked from the Hopp bar — Execute once instead, or move the request to a collection', 'info');
+                    toast('Binary uploads can\'t be benchmarked from the Request builder — Execute once instead, or move the request to a collection', 'info');
                 }
                 return;
             } else {
                 bodyStr = fr.body || '';
-                if (fr._hopp.bodyMode === 'json' && !headers['Content-Type']) {
+                if (fr._requestBuilder.bodyMode === 'json' && !headers['Content-Type']) {
                     headers['Content-Type'] = 'application/json';
                 }
             }
@@ -1589,7 +1589,7 @@
     // #290 — Base64 encode a binary buffer for transport via the
     // /api/invoke JSON envelope. Streaming/large-payload uploads
     // should go through a dedicated multipart endpoint instead; the
-    // base64 path is appropriate for typical Hopp-bar uploads
+    // base64 path is appropriate for typical Request-builder uploads
     // (a config file, an image, a serialized proto message).
     function _arrayBufferToBase64(buf) {
         var bytes = new Uint8Array(buf);
@@ -1611,18 +1611,18 @@
     // once per page load so it's safe to attach unconditionally.
     document.addEventListener('click', function (e) {
         var changed = false;
-        if (hoppMethodMenuOpen) {
-            var mwrap = e.target.closest && e.target.closest('.bowire-hopp-method-wrap');
-            if (!mwrap) { hoppMethodMenuOpen = false; changed = true; }
+        if (rbMethodMenuOpen) {
+            var mwrap = e.target.closest && e.target.closest('.bowire-request-builder-method-wrap');
+            if (!mwrap) { rbMethodMenuOpen = false; changed = true; }
         }
-        if (hoppSendMenuOpen) {
-            var swrap = e.target.closest && e.target.closest('.bowire-hopp-send-wrap');
-            if (!swrap) { hoppSendMenuOpen = false; changed = true; }
+        if (rbSendMenuOpen) {
+            var swrap = e.target.closest && e.target.closest('.bowire-request-builder-send-wrap');
+            if (!swrap) { rbSendMenuOpen = false; changed = true; }
         }
         // #290 — history dropdown closes on outside click, same shape.
-        if (hoppHistoryMenuOpen) {
-            var hwrap = e.target.closest && e.target.closest('.bowire-hopp-history-wrap');
-            if (!hwrap) { hoppHistoryMenuOpen = false; changed = true; }
+        if (rbHistoryMenuOpen) {
+            var hwrap = e.target.closest && e.target.closest('.bowire-request-builder-history-wrap');
+            if (!hwrap) { rbHistoryMenuOpen = false; changed = true; }
         }
         if (changed) render();
     });
@@ -1631,4 +1631,4 @@
     //
     // Wired in init.js's keydown dispatcher — see the case for 'l'
     // there. The handler calls startHoppRequest() which sets up the
-    // freeformRequest with _hopp markers and renders.
+    // freeformRequest with _requestBuilder markers and renders.

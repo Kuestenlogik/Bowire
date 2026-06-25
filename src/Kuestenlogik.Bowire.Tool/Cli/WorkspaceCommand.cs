@@ -109,8 +109,8 @@ internal static class WorkspaceCommand
     private static readonly string[] V2DataKeys =
         ["urls", "urlMeta", "environments", "activeEnvironmentId",
          "globals", "collections", "recordings", "scripts", "flows", "presets",
-         // #290 — Hopp-bar history (browser-only; disk exporters write []).
-         "hoppBarHistory"];
+         // #290 — Request-builder history (browser-only; disk exporters write []).
+         "requestBuilderHistory"];
 
     private static Command BuildExportCommand()
     {
