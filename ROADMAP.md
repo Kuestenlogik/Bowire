@@ -12,7 +12,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.1 — Scripting, variable resolver, throughput surface *(due 2026-06-30)*
 
-**36/49 done** · 13 backlog
+**36/50 done** · 14 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -29,6 +29,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [280](https://github.com/Kuestenlogik/Bowire/issues/280) | Bowire | [Assistant hints: actionable inline buttons / links (not just descriptive text)](#issue-kuestenlogik-bowire-280) | ⬜ Backlog |  |
 | [281](https://github.com/Kuestenlogik/Bowire/issues/281) | Bowire | [Guided tour: page-navigation + element spotlight + interactive flow](#issue-kuestenlogik-bowire-281) | ⬜ Backlog |  |
 | [282](https://github.com/Kuestenlogik/Bowire/issues/282) | Bowire | [Unified .bww format: UI export + CLI export converge on one canonical schema](#issue-kuestenlogik-bowire-282) | ⬜ Backlog |  |
+| [291](https://github.com/Kuestenlogik/Bowire/issues/291) | Bowire | [Hopp-bar: protocol picker (REST / gRPC / MQTT / WebSocket / SSE / GraphQL / MCP) with per-protocol sub-tab layout](#issue-kuestenlogik-bowire-291) | ⬜ Backlog |  |
 | [126](https://github.com/Kuestenlogik/Bowire/issues/126) | Bowire | [Pre-/post-scripts with a protocol-typed sandbox](#issue-kuestenlogik-bowire-126) | ✅ Done |  |
 | [140](https://github.com/Kuestenlogik/Bowire/issues/140) | Bowire | [Per-mode 'Saved Configs' / Presets (distinct from cross-workflow favorites)](#issue-kuestenlogik-bowire-140) | ✅ Done |  |
 | [144](https://github.com/Kuestenlogik/Bowire/issues/144) | Bowire | [Large-recording capture/replay — chunked disk layout, lazy step-load, GB-scale](#issue-kuestenlogik-bowire-144) | ✅ Done |  |
@@ -270,6 +271,10 @@ The existing guided tour reads more like inline help text than a tour. Operator'
 #### <a id="issue-kuestenlogik-bowire-282"></a>⬜ Backlog · [#282](https://github.com/Kuestenlogik/Bowire/issues/282) Unified .bww format: UI export + CLI export converge on one canonical schema
 
 Two divergent .bww shapes shipped in v2.0: [[more]](https://github.com/Kuestenlogik/Bowire/issues/282)
+
+#### <a id="issue-kuestenlogik-bowire-291"></a>⬜ Backlog · [#291](https://github.com/Kuestenlogik/Bowire/issues/291) Hopp-bar: protocol picker (REST / gRPC / MQTT / WebSocket / SSE / GraphQL / MCP) with per-protocol sub-tab layout
+
+The hopp-bar (#289 + #290) ships today as a REST-only experience: HTTP method dropdown + URL + Parameter/Body/Header/Auth/Scripts/Vars sub-tabs. Bowire's whole point is multi-protocol — the bar should expose every wire Bowire speaks, not just REST. [[more]](https://github.com/Kuestenlogik/Bowire/issues/291)
 
 #### <a id="issue-kuestenlogik-bowire-126"></a>✅ Done · [#126](https://github.com/Kuestenlogik/Bowire/issues/126) Pre-/post-scripts with a protocol-typed sandbox
 
