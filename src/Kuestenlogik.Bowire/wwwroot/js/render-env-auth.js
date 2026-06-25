@@ -3282,8 +3282,16 @@
         // defaults' (which doesn't exist) and shouldn't open a picker.
         // Render as a non-clickable, greyed-out label saying 'No
         // workspace'. Same gate-spirit as the env-create disable in
-        // the dropdown action below — don't expose a flow whose
-        // result has nowhere to land.
+        // the dropdown action below.
+        //
+        // The onClick handler RE-READS activeWorkspaceId at click time
+        // — morphdom preserves this trigger button across renders, so
+        // capturing the render-time flag in the closure leaves the
+        // gate stuck on its first-render value (e.g. after 0→1
+        // workspace transition the button gets re-rendered with the
+        // 'enabled' class but the closure still holds noWorkspaceActive
+        // = true, so click does nothing). See feedback-morphdom-stale-
+        // handler-pitfall.
         var noWorkspaceActive = !activeWorkspaceId;
 
         var envBtn = el('button', {
@@ -3296,7 +3304,9 @@
             'aria-disabled': noWorkspaceActive ? 'true' : null,
             onClick: function (e) {
                 e.stopPropagation();
-                if (noWorkspaceActive) return;
+                // Re-read at click time, NOT the closure-captured
+                // render-time value.
+                if (!activeWorkspaceId) return;
                 // Close the workspace dropdown if it's open. They
                 // sit next to each other in the topbar and only one
                 // should ever be visible at a time.
