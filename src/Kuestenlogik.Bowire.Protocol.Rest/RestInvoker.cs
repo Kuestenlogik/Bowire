@@ -141,7 +141,58 @@ internal static class RestInvoker
         // skip the body entirely so we don't trip RFC-7231 §4.3.1's
         // 'has-no-defined-semantics' clauses on the receiving side.
         var bodyAllowed = verbUpper is "POST" or "PUT" or "PATCH" or "DELETE";
-        if (bodyAllowed && !string.IsNullOrWhiteSpace(body))
+
+        // #290 — Binary body smuggled through metadata. The /api/invoke
+        // endpoint base64-decodes the Hopp-bar's File picker contents
+        // and stashes them under X-Bowire-Body-Binary so we don't have to
+        // thread a new field through every protocol's InvokeAsync
+        // signature. The reserved markers are stripped from the outgoing
+        // header set below so they never reach the wire — they exist
+        // purely to bridge JSON-envelope to raw bytes here.
+        const string BodyBinaryKey = "X-Bowire-Body-Binary";
+        const string BodyBinaryContentTypeKey = "X-Bowire-Body-Binary-Content-Type";
+        const string BodyBinaryNameKey = "X-Bowire-Body-Binary-Name";
+        byte[]? binaryBody = null;
+        string? binaryContentType = null;
+        string? binaryFilename = null;
+        if (bodyAllowed && metadata is not null && metadata.TryGetValue(BodyBinaryKey, out var b64))
+        {
+            try
+            {
+                binaryBody = Convert.FromBase64String(b64);
+                metadata.TryGetValue(BodyBinaryContentTypeKey, out binaryContentType);
+                metadata.TryGetValue(BodyBinaryNameKey, out binaryFilename);
+            }
+            catch (FormatException ex)
+            {
+                return new InvokeResult(
+                    Response: null,
+                    DurationMs: 0,
+                    Status: "Error",
+                    Metadata: new Dictionary<string, string>
+                    {
+                        ["error"] = "Body-Binary header isn't valid base64: " + ex.Message
+                    });
+            }
+        }
+
+        if (bodyAllowed && binaryBody is not null)
+        {
+            var content = new ByteArrayContent(binaryBody);
+            content.Headers.ContentType =
+                new System.Net.Http.Headers.MediaTypeHeaderValue(
+                    binaryContentType ?? "application/octet-stream");
+            if (!string.IsNullOrEmpty(binaryFilename))
+            {
+                content.Headers.ContentDisposition =
+                    new System.Net.Http.Headers.ContentDispositionHeaderValue("attachment")
+                    {
+                        FileName = binaryFilename
+                    };
+            }
+            request.Content = content;
+        }
+        else if (bodyAllowed && !string.IsNullOrWhiteSpace(body))
         {
             request.Content = new StringContent(body, Encoding.UTF8, "application/json");
         }
@@ -149,13 +200,19 @@ internal static class RestInvoker
         // of the request-headers collection — they belong on the content
         // and HttpClient sets them automatically. Filter the
         // Bowire-internal sigv4 marker as well so it never reaches the
-        // wire, matching the schema-driven InvokeAsync path.
+        // wire, matching the schema-driven InvokeAsync path. The #290
+        // X-Bowire-Body-Binary* markers are also internal — they're how
+        // the JSON envelope smuggled the bytes through, not actual
+        // request headers, so strip them here too.
         if (metadata is not null)
         {
             foreach (var kv in metadata)
             {
                 if (string.IsNullOrWhiteSpace(kv.Key)) continue;
                 if (kv.Key == AwsSigV4MarkerKey) continue;
+                if (string.Equals(kv.Key, BodyBinaryKey, StringComparison.Ordinal)) continue;
+                if (string.Equals(kv.Key, BodyBinaryContentTypeKey, StringComparison.Ordinal)) continue;
+                if (string.Equals(kv.Key, BodyBinaryNameKey, StringComparison.Ordinal)) continue;
                 if (string.Equals(kv.Key, "Content-Type", StringComparison.OrdinalIgnoreCase)) continue;
                 if (string.Equals(kv.Key, "Content-Length", StringComparison.OrdinalIgnoreCase)) continue;
                 try

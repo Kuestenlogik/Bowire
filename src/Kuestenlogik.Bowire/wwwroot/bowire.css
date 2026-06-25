@@ -19244,6 +19244,127 @@ not as the
     background: var(--bowire-bg-hover, #1f1f1f);
 }
 
+/* ---- #290 — History dropdown (clock icon between URL + Execute) ---- */
+.bowire-hopp-history-wrap {
+    position: relative;
+    display: inline-flex;
+}
+.bowire-hopp-history-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    margin-right: 4px;
+    background: transparent;
+    color: var(--bowire-text-muted, #888);
+    border: 1px solid var(--bowire-border, #2a2a2a);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: color 120ms ease, border-color 120ms ease;
+}
+.bowire-hopp-history-btn:hover,
+.bowire-hopp-history-btn.is-open {
+    color: var(--bowire-text, #fff);
+    border-color: var(--bowire-accent, #6366f1);
+}
+.bowire-hopp-history-btn svg {
+    width: 16px;
+    height: 16px;
+}
+.bowire-hopp-history-menu {
+    position: absolute;
+    top: calc(100% + 4px);
+    right: 0;
+    z-index: 12;
+    background: var(--bowire-bg-elevated, #1a1a1a);
+    border: 1px solid var(--bowire-border, #2a2a2a);
+    border-radius: 6px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+    padding: 4px;
+    min-width: 380px;
+    max-width: 520px;
+    max-height: 420px;
+    overflow-y: auto;
+}
+.bowire-hopp-history-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 4px 8px 6px;
+    border-bottom: 1px solid var(--bowire-border, #2a2a2a);
+    margin-bottom: 4px;
+}
+.bowire-hopp-history-head-label {
+    font: 600 11px/1 system-ui, sans-serif;
+    color: var(--bowire-text-muted, #888);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+.bowire-hopp-history-clear {
+    padding: 4px 8px;
+    background: transparent;
+    color: var(--bowire-text-muted, #888);
+    border: 1px solid var(--bowire-border, #2a2a2a);
+    border-radius: 4px;
+    cursor: pointer;
+    font: 400 11px/1 system-ui, sans-serif;
+}
+.bowire-hopp-history-clear:hover {
+    color: #ef4444;
+    border-color: #ef4444;
+}
+.bowire-hopp-history-item {
+    display: grid;
+    grid-template-columns: 64px 1fr auto auto;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    padding: 6px 8px;
+    background: transparent;
+    border: none;
+    border-radius: 4px;
+    color: #fff;
+    cursor: pointer;
+    text-align: left;
+    font: 400 12px/1.4 system-ui, sans-serif;
+}
+.bowire-hopp-history-item:hover {
+    background: var(--bowire-bg-hover, #1f1f1f);
+}
+.bowire-hopp-history-method {
+    font-weight: 700;
+    font-size: 11px;
+    letter-spacing: 0.5px;
+}
+.bowire-hopp-history-method[data-verb="GET"]     { color: #10b981; }
+.bowire-hopp-history-method[data-verb="POST"]    { color: #3b82f6; }
+.bowire-hopp-history-method[data-verb="PUT"]     { color: #f59e0b; }
+.bowire-hopp-history-method[data-verb="PATCH"]   { color: #8b5cf6; }
+.bowire-hopp-history-method[data-verb="DELETE"]  { color: #ef4444; }
+.bowire-hopp-history-method[data-verb="HEAD"]    { color: #6b7280; }
+.bowire-hopp-history-method[data-verb="OPTIONS"] { color: #6b7280; }
+.bowire-hopp-history-url {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--bowire-text, #e0e0e0);
+}
+.bowire-hopp-history-status {
+    font-size: 10px;
+    font-weight: 600;
+    padding: 2px 6px;
+    border-radius: 3px;
+    background: rgba(255, 255, 255, 0.06);
+}
+.bowire-hopp-history-status.is-ok  { color: #10b981; }
+.bowire-hopp-history-status.is-err { color: #ef4444; }
+.bowire-hopp-history-ts {
+    font-size: 11px;
+    color: var(--bowire-text-muted, #888);
+    white-space: nowrap;
+}
+
 /* ---- Sub-tab strip ---- */
 .bowire-hopp-subtabs {
     display: flex;

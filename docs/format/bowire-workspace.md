@@ -72,6 +72,7 @@ Every v2 export carries every bucket — empty array / empty object / `null` whe
   "benchmarks":          [],
   "flows":               [],
   "scripts":             [],
+  "hoppBarHistory":      [],
   "presets":             { "discover": [ /* … */ ] }
 }
 ```
@@ -92,6 +93,7 @@ Every v2 export carries every bucket — empty array / empty object / `null` whe
 | `benchmarks` | object[] | ✓ | ✗ (empty) | Saved benchmark configurations + history. |
 | `flows` | object[] | ✓ | ✓ | Saved multi-step flow definitions. |
 | `scripts` | object[] | ✗ (empty) | ✓ | Pre/post/assert scripts attached to services + collections. |
+| `hoppBarHistory` | object[] | ✓ | ✗ (empty) | Recent Hopp-bar executions (last 50). Each entry: `{ id, ts, method, url, params, headers, body, bodyMode, authKind, authData, preScript, postScript, status, durationMs }`. Response body intentionally NOT carried — only the request shape + status/timing. |
 | `presets` | object | ✓ | ✗ (empty) | Per-mode (discover / mocks / proxy / …) saved configs. Each value is an array of preset entries. |
 
 ### Bucket-level invariants
