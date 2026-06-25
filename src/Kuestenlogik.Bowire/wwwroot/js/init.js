@@ -387,6 +387,27 @@
                 }
             }
 
+            // #289 — Ctrl/Cmd+L: open the Hoppscotch-style request bar
+            // from anywhere. Browsers normally bind Ctrl+L to focus the
+            // address bar; the preventDefault() keeps that from happening
+            // and routes the operator into the workbench's own URL bar
+            // instead. inText guard so a half-typed URL in another input
+            // isn't interrupted.
+            if ((e.ctrlKey || e.metaKey) && !e.shiftKey && !e.altKey
+                && (e.key === 'l' || e.key === 'L')
+                && !inText
+                && typeof startHoppRequest === 'function') {
+                e.preventDefault();
+                startHoppRequest();
+                // Defer focus to the next frame so the freshly-rendered
+                // input is in the DOM by the time we reach for it.
+                requestAnimationFrame(function () {
+                    var inp = document.getElementById('bowire-hopp-url-input');
+                    if (inp) inp.focus();
+                });
+                return;
+            }
+
             // Esc: close overlay, stop streaming, or disconnect channel
             if (e.key === 'Escape') {
                 if (shortcutSheetOpen) {

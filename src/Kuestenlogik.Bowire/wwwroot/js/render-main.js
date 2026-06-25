@@ -3826,6 +3826,21 @@
                 render();
             }
         });
+        // #289 — Hoppscotch-style single-line bar. Lower-friction
+        // entry for the 'I just want to fire a request' case: drops
+        // the operator straight into a method + URL + Execute bar
+        // with the 7 sub-tabs (Parameter / Body / Header / Auth /
+        // Pre-script / Post-script / Variables) underneath. No
+        // workspace setup needed; binds to whatever env is active.
+        if (typeof startHoppRequest === 'function') {
+            card('send', 'Just fire a request', 'Single-line bar (Ctrl+L)', function () {
+                startHoppRequest();
+                requestAnimationFrame(function () {
+                    var inp = document.getElementById('bowire-hopp-url-input');
+                    if (inp) inp.focus();
+                });
+            });
+        }
         var hasSourceUrls = (typeof serverUrls !== 'undefined'
             && Array.isArray(serverUrls) && serverUrls.length > 0);
         if (hasSourceUrls && !locked && !embedded) {
@@ -5725,6 +5740,16 @@
         // content / action-bar exactly like a discovered method's
         // render order.
         if (freeformRequest) {
+            // #289 — Hoppscotch-style layout dispatch. When the
+            // request carries a `_hopp` marker we render the single-
+            // line bar + 7 sub-tab variant instead of the classic
+            // freeform builder. Both share the freeformRequest state
+            // container so request-tab switching, persistence, and the
+            // response capture pipeline don't need to branch.
+            if (typeof isHoppRequest === 'function' && isHoppRequest(freeformRequest)) {
+                _appendHoppInto(main);
+                return main;
+            }
             _appendFreeformInto(main);
             return main;
         }

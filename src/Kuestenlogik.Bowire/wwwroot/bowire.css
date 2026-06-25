@@ -19019,3 +19019,545 @@ not as the
     gap: 2px;
     margin-left: auto;
 }
+
+/* =========================================================================
+   #289 — Hoppscotch-style request bar
+   =========================================================================
+   The bar itself: method dropdown + URL input + Execute split button on a
+   single horizontal strip. Sub-tabs immediately below. Each tab body sits
+   in its own scroll region; response pane fills the rest.
+   ========================================================================= */
+
+.bowire-hopp-bar {
+    display: flex;
+    align-items: stretch;
+    gap: 0;
+    padding: 10px 16px;
+    background: var(--bowire-bg-elevated, var(--bowire-bg, #1a1a1a));
+    border-bottom: 1px solid var(--bowire-border, #2a2a2a);
+    position: relative;
+    z-index: 4;
+}
+
+/* ---- Method dropdown ---- */
+.bowire-hopp-method-wrap {
+    position: relative;
+    display: inline-flex;
+}
+.bowire-hopp-method-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0 12px;
+    height: 36px;
+    min-width: 92px;
+    background: var(--bowire-bg-input, #0f0f0f);
+    border: 1px solid var(--bowire-border, #2a2a2a);
+    border-right: none;
+    border-radius: 6px 0 0 6px;
+    font: 700 13px/1 var(--bowire-font-mono, monospace);
+    letter-spacing: 0.04em;
+    cursor: pointer;
+    color: #fff;
+}
+.bowire-hopp-method-btn:hover {
+    background: var(--bowire-bg-hover, #1f1f1f);
+}
+.bowire-hopp-method-btn[data-verb="GET"]     .bowire-hopp-method-label { color: #10b981; }
+.bowire-hopp-method-btn[data-verb="POST"]    .bowire-hopp-method-label { color: #3b82f6; }
+.bowire-hopp-method-btn[data-verb="PUT"]     .bowire-hopp-method-label { color: #f59e0b; }
+.bowire-hopp-method-btn[data-verb="PATCH"]   .bowire-hopp-method-label { color: #8b5cf6; }
+.bowire-hopp-method-btn[data-verb="DELETE"]  .bowire-hopp-method-label { color: #ef4444; }
+.bowire-hopp-method-btn[data-verb="HEAD"]    .bowire-hopp-method-label { color: #6b7280; }
+.bowire-hopp-method-btn[data-verb="OPTIONS"] .bowire-hopp-method-label { color: #6b7280; }
+.bowire-hopp-method-label {
+    font-weight: 700;
+    margin-right: auto;
+}
+.bowire-hopp-method-caret {
+    display: inline-flex;
+    width: 12px;
+    height: 12px;
+    opacity: 0.7;
+}
+.bowire-hopp-method-menu {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    z-index: 12;
+    background: var(--bowire-bg-elevated, #1a1a1a);
+    border: 1px solid var(--bowire-border, #2a2a2a);
+    border-radius: 6px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+    padding: 4px;
+    min-width: 140px;
+}
+.bowire-hopp-method-menu-item {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    padding: 6px 8px;
+    background: transparent;
+    border: none;
+    border-radius: 4px;
+    color: #fff;
+    cursor: pointer;
+    text-align: left;
+}
+.bowire-hopp-method-menu-item:hover,
+.bowire-hopp-method-menu-item.is-selected {
+    background: var(--bowire-bg-hover, #1f1f1f);
+}
+.bowire-hopp-method-chip {
+    font: 700 12px/1 var(--bowire-font-mono, monospace);
+    letter-spacing: 0.04em;
+    padding: 3px 8px;
+    border-radius: 4px;
+    background: rgba(255, 255, 255, 0.06);
+}
+.bowire-hopp-method-chip[data-verb="GET"]     { color: #10b981; }
+.bowire-hopp-method-chip[data-verb="POST"]    { color: #3b82f6; }
+.bowire-hopp-method-chip[data-verb="PUT"]     { color: #f59e0b; }
+.bowire-hopp-method-chip[data-verb="PATCH"]   { color: #8b5cf6; }
+.bowire-hopp-method-chip[data-verb="DELETE"]  { color: #ef4444; }
+.bowire-hopp-method-chip[data-verb="HEAD"]    { color: #6b7280; }
+.bowire-hopp-method-chip[data-verb="OPTIONS"] { color: #6b7280; }
+
+/* ---- URL input + variable overlay ---- */
+.bowire-hopp-url-wrap {
+    flex: 1;
+    position: relative;
+    display: flex;
+    align-items: stretch;
+}
+.bowire-hopp-url-input {
+    flex: 1;
+    height: 36px;
+    padding: 0 12px;
+    background: var(--bowire-bg-input, #0f0f0f);
+    border: 1px solid var(--bowire-border, #2a2a2a);
+    border-right: none;
+    font: 400 13px/1 var(--bowire-font-mono, monospace);
+    color: #fff;
+    outline: none;
+}
+.bowire-hopp-url-input:focus {
+    border-color: var(--bowire-accent, #6366f1);
+}
+.bowire-hopp-url-overlay {
+    /* Positioned overlay reveal of {{var}} chips at the start of the
+       URL field. Pointer-events:none so the underlying input keeps
+       caret + edits; visually it sits under the text but rendering
+       on the right side of the field via :after pseudo would be
+       fiddly to layout, so we render below the input as a hint row. */
+    position: absolute;
+    left: 12px;
+    bottom: -18px;
+    pointer-events: none;
+    font: 400 11px/1 var(--bowire-font-mono, monospace);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: calc(100% - 24px);
+}
+.bowire-hopp-url-plain { color: transparent; }
+.bowire-hopp-url-var {
+    pointer-events: auto;
+    color: var(--bowire-accent, #6366f1);
+    border-bottom: 1px dashed var(--bowire-accent, #6366f1);
+    cursor: help;
+}
+.bowire-hopp-url-var.is-unresolved {
+    color: #ef4444;
+    border-bottom-color: #ef4444;
+}
+
+/* ---- Send button (split caret) ---- */
+.bowire-hopp-send-wrap {
+    position: relative;
+    display: inline-flex;
+}
+.bowire-hopp-send-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0 16px;
+    height: 36px;
+    background: var(--bowire-accent, #6366f1);
+    color: #fff;
+    border: none;
+    border-radius: 0;
+    font: 600 13px/1 system-ui, sans-serif;
+    cursor: pointer;
+}
+.bowire-hopp-send-btn:hover {
+    filter: brightness(1.1);
+}
+.bowire-hopp-send-caret {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 36px;
+    background: var(--bowire-accent, #6366f1);
+    color: #fff;
+    border: none;
+    border-left: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 0 6px 6px 0;
+    cursor: pointer;
+}
+.bowire-hopp-send-caret:hover,
+.bowire-hopp-send-caret.is-open {
+    filter: brightness(1.1);
+}
+.bowire-hopp-send-caret svg {
+    width: 12px;
+    height: 12px;
+}
+.bowire-hopp-send-menu {
+    position: absolute;
+    top: calc(100% + 4px);
+    right: 0;
+    z-index: 12;
+    background: var(--bowire-bg-elevated, #1a1a1a);
+    border: 1px solid var(--bowire-border, #2a2a2a);
+    border-radius: 6px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+    padding: 4px;
+    min-width: 200px;
+}
+.bowire-hopp-send-menu-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    padding: 6px 10px;
+    background: transparent;
+    border: none;
+    border-radius: 4px;
+    color: #fff;
+    cursor: pointer;
+    text-align: left;
+    font: 400 13px/1.4 system-ui, sans-serif;
+}
+.bowire-hopp-send-menu-item:hover {
+    background: var(--bowire-bg-hover, #1f1f1f);
+}
+
+/* ---- Sub-tab strip ---- */
+.bowire-hopp-subtabs {
+    display: flex;
+    align-items: stretch;
+    gap: 0;
+    padding: 0 16px;
+    background: var(--bowire-bg, #131313);
+    border-bottom: 1px solid var(--bowire-border, #2a2a2a);
+    overflow-x: auto;
+}
+.bowire-hopp-subtab {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 14px;
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid transparent;
+    color: var(--bowire-text-muted, #888);
+    font: 500 12px/1 system-ui, sans-serif;
+    letter-spacing: 0.02em;
+    cursor: pointer;
+    white-space: nowrap;
+}
+.bowire-hopp-subtab:hover {
+    color: #fff;
+}
+.bowire-hopp-subtab.is-active {
+    color: #fff;
+    border-bottom-color: var(--bowire-accent, #6366f1);
+}
+.bowire-hopp-subtab-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 18px;
+    height: 16px;
+    padding: 0 5px;
+    border-radius: 8px;
+    background: var(--bowire-accent, #6366f1);
+    color: #fff;
+    font-size: 10px;
+    font-weight: 700;
+}
+
+/* ---- Tab body container ---- */
+.bowire-hopp-tab-body {
+    padding: 14px 16px;
+    overflow: auto;
+    flex: 1 1 auto;
+    min-height: 200px;
+}
+
+/* ---- KV table (Parameter / Header / form Body / scratch vars) ---- */
+.bowire-hopp-kv-table {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    border: 1px solid var(--bowire-border, #2a2a2a);
+    border-radius: 6px;
+    overflow: hidden;
+}
+.bowire-hopp-kv-head,
+.bowire-hopp-kv-row {
+    display: grid;
+    grid-template-columns: 24px 1fr 1fr 1fr 28px 28px;
+    align-items: center;
+    gap: 0;
+    border-bottom: 1px solid var(--bowire-border, #2a2a2a);
+    background: var(--bowire-bg, #131313);
+}
+.bowire-hopp-kv-head {
+    background: var(--bowire-bg-elevated, #1a1a1a);
+    font: 600 11px/1 system-ui, sans-serif;
+    color: var(--bowire-text-muted, #888);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+.bowire-hopp-kv-head > * {
+    padding: 8px 10px;
+}
+.bowire-hopp-kv-row:last-child {
+    border-bottom: none;
+}
+.bowire-hopp-kv-row.is-add-row {
+    background: rgba(99, 102, 241, 0.04);
+}
+.bowire-hopp-kv-drag {
+    color: var(--bowire-text-muted, #888);
+    cursor: grab;
+    user-select: none;
+    text-align: center;
+    font-size: 13px;
+    padding: 6px 0;
+}
+.bowire-hopp-kv-input {
+    width: 100%;
+    height: 32px;
+    padding: 0 10px;
+    background: transparent;
+    border: none;
+    color: #fff;
+    font: 400 13px/1 var(--bowire-font-mono, monospace);
+    outline: none;
+}
+.bowire-hopp-kv-input:focus {
+    background: var(--bowire-bg-input, #0f0f0f);
+}
+.bowire-hopp-kv-enable {
+    margin: 0 6px;
+    cursor: pointer;
+}
+.bowire-hopp-kv-del {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    margin: 0 auto;
+    background: transparent;
+    border: none;
+    border-radius: 4px;
+    color: var(--bowire-text-muted, #888);
+    cursor: pointer;
+}
+.bowire-hopp-kv-del:hover {
+    background: rgba(239, 68, 68, 0.15);
+    color: #ef4444;
+}
+.bowire-hopp-kv-del svg {
+    width: 12px;
+    height: 12px;
+}
+
+/* ---- Body tab ---- */
+.bowire-hopp-body-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+.bowire-hopp-body-modes {
+    display: flex;
+    gap: 4px;
+    flex-wrap: wrap;
+}
+.bowire-hopp-body-mode-btn {
+    padding: 4px 12px;
+    background: var(--bowire-bg-input, #0f0f0f);
+    border: 1px solid var(--bowire-border, #2a2a2a);
+    border-radius: 4px;
+    color: var(--bowire-text-muted, #888);
+    font: 500 11px/1.4 system-ui, sans-serif;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    cursor: pointer;
+}
+.bowire-hopp-body-mode-btn:hover {
+    color: #fff;
+}
+.bowire-hopp-body-mode-btn.is-active {
+    background: var(--bowire-accent, #6366f1);
+    border-color: var(--bowire-accent, #6366f1);
+    color: #fff;
+}
+.bowire-hopp-body-editor {
+    width: 100%;
+    min-height: 200px;
+    padding: 10px;
+    background: var(--bowire-bg-input, #0f0f0f);
+    border: 1px solid var(--bowire-border, #2a2a2a);
+    border-radius: 6px;
+    color: #fff;
+    font: 400 13px/1.5 var(--bowire-font-mono, monospace);
+    resize: vertical;
+    outline: none;
+}
+.bowire-hopp-body-editor:focus {
+    border-color: var(--bowire-accent, #6366f1);
+}
+.bowire-hopp-body-binary {
+    color: #fff;
+}
+.bowire-hopp-body-binary-name {
+    font: 400 12px/1.4 var(--bowire-font-mono, monospace);
+    color: var(--bowire-text-muted, #888);
+}
+
+/* ---- Auth tab ---- */
+.bowire-hopp-auth-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+.bowire-hopp-auth-kind-row {
+    display: flex;
+    gap: 4px;
+    flex-wrap: wrap;
+}
+.bowire-hopp-auth-kind-btn {
+    padding: 6px 12px;
+    background: var(--bowire-bg-input, #0f0f0f);
+    border: 1px solid var(--bowire-border, #2a2a2a);
+    border-radius: 4px;
+    color: var(--bowire-text-muted, #888);
+    font: 500 12px/1 system-ui, sans-serif;
+    cursor: pointer;
+}
+.bowire-hopp-auth-kind-btn.is-active {
+    background: var(--bowire-accent, #6366f1);
+    border-color: var(--bowire-accent, #6366f1);
+    color: #fff;
+}
+.bowire-hopp-auth-form {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-width: 480px;
+}
+.bowire-hopp-auth-field {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.bowire-hopp-auth-label {
+    min-width: 100px;
+    color: var(--bowire-text-muted, #888);
+    font: 500 12px/1 system-ui, sans-serif;
+}
+.bowire-hopp-auth-input {
+    flex: 1;
+    height: 32px;
+    padding: 0 10px;
+    background: var(--bowire-bg-input, #0f0f0f);
+    border: 1px solid var(--bowire-border, #2a2a2a);
+    border-radius: 4px;
+    color: #fff;
+    font: 400 13px/1 var(--bowire-font-mono, monospace);
+    outline: none;
+}
+.bowire-hopp-auth-input:focus {
+    border-color: var(--bowire-accent, #6366f1);
+}
+.bowire-hopp-auth-empty {
+    color: var(--bowire-text-muted, #888);
+    font: 400 12px/1.5 system-ui, sans-serif;
+}
+
+/* ---- Script tabs (pre/post) ---- */
+.bowire-hopp-script-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+.bowire-hopp-script-hint {
+    color: var(--bowire-text-muted, #888);
+    font: 400 12px/1.5 system-ui, sans-serif;
+}
+.bowire-hopp-script-editor {
+    width: 100%;
+    min-height: 220px;
+    padding: 10px;
+    background: var(--bowire-bg-input, #0f0f0f);
+    border: 1px solid var(--bowire-border, #2a2a2a);
+    border-radius: 6px;
+    color: #fff;
+    font: 400 13px/1.5 var(--bowire-font-mono, monospace);
+    resize: vertical;
+    outline: none;
+}
+
+/* ---- Variables tab ---- */
+.bowire-hopp-vars-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+.bowire-hopp-vars-hint,
+.bowire-hopp-vars-empty,
+.bowire-hopp-vars-section {
+    color: var(--bowire-text-muted, #888);
+    font: 500 12px/1.4 system-ui, sans-serif;
+}
+.bowire-hopp-vars-section {
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid var(--bowire-border, #2a2a2a);
+    color: #fff;
+}
+.bowire-hopp-vars-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    border: 1px solid var(--bowire-border, #2a2a2a);
+    border-radius: 6px;
+    overflow: hidden;
+}
+.bowire-hopp-vars-row {
+    display: grid;
+    grid-template-columns: 1fr 16px 1fr;
+    gap: 8px;
+    padding: 6px 10px;
+    border-bottom: 1px solid var(--bowire-border, #2a2a2a);
+    font: 400 12px/1.4 var(--bowire-font-mono, monospace);
+}
+.bowire-hopp-vars-row:last-child {
+    border-bottom: none;
+}
+.bowire-hopp-vars-key { color: var(--bowire-accent, #6366f1); }
+.bowire-hopp-vars-eq  { color: var(--bowire-text-muted, #888); }
+.bowire-hopp-vars-val { color: #fff; overflow: hidden; text-overflow: ellipsis; }
+
+/* ---- Response pane ---- */
+.bowire-hopp-response {
+    padding: 14px 16px;
+    border-top: 1px solid var(--bowire-border, #2a2a2a);
+    min-height: 180px;
+}

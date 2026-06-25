@@ -131,6 +131,17 @@
     <BowireJsFragment Include="wwwroot\js\landing.js" />
     <BowireJsFragment Include="wwwroot\js\autocomplete.js" />
     <BowireJsFragment Include="wwwroot\js\render-main.js" />
+    <!-- #289 — Hoppscotch-style single-line request bar. Adds a NEW
+         layout for freeformRequest when fr._hopp marker is present:
+         method dropdown + URL input + Execute button on a single bar,
+         with 7 sub-tabs (Parameter / Body / Header / Auth / Pre-
+         script / Post-script / Variables) underneath. Reuses the
+         freeformRequest container so request-tab + persistence + the
+         response capture pipeline carry over. Must come AFTER
+         render-main.js (so the freeform render path is patched here
+         can land via render()) and BEFORE init.js (so Ctrl+L can
+         resolve startHoppRequest). -->
+    <BowireJsFragment Include="wwwroot\js\hopp-bar.js" />
     <BowireJsFragment Include="wwwroot\js\tests.js" />
     <BowireJsFragment Include="wwwroot\js\code-export.js" />
     <BowireJsFragment Include="wwwroot\js\perf-diff.js" />

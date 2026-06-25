@@ -1003,6 +1003,7 @@
         { group: 'Navigation', binds: [
             { keys: ['Ctrl/Cmd', 'K'], action: 'Open the command palette' },
             { keys: ['Ctrl/Cmd', 'T'], action: 'New freeform request tab' },
+            { keys: ['Ctrl/Cmd', 'L'], action: 'Open Hoppscotch-style request bar (#289)' },
             { keys: ['Ctrl/Cmd', 'W'], action: 'Close the active request tab' },
             { keys: ['Ctrl/Cmd', '1-9'], action: 'Switch to tab N' },
             { keys: ['Ctrl', 'Tab'], action: 'Cycle to the next request tab' },
