@@ -2290,13 +2290,13 @@
         // member opening the .bww file gets the same dynamic
         // behaviour the author wrote.
         'bowire_method_scripts',
-        // #290 — Hopp-bar history (last N executed Hopp requests).
-        // Per-workspace; capped at HOPP_HISTORY_CAP (50) at write time
-        // in hopp-bar.js. Survives reload + round-trips through .bww
+        // #290 — Request-builder history (last N executed Hopp requests).
+        // Per-workspace; capped at RB_HISTORY_CAP (50) at write time
+        // in request-builder.js. Survives reload + round-trips through .bww
         // so a team member opening the workspace gets the same recent
         // request set the author had at export time. Disk-mode exports
         // ship []; browser-mode exports fill the bucket.
-        'bowire_hopp_history'
+        'bowire_request_builder_history'
         // bowire_request_tabs intentionally NOT listed here — open
         // tabs are browser session state (which row I happened to be
         // looking at), not project content. Persisted under wsKey()
@@ -2342,10 +2342,10 @@
         // #126 — per-method script source. Round-trips through
         // .bww as `methodScripts` keyed by `service::method`.
         bowire_method_scripts:       'methodScripts',
-        // #290 — Hopp-bar history (per-workspace). Browser-mode
+        // #290 — Request-builder history (per-workspace). Browser-mode
         // workspaces fill this; disk-mode exporters ship []. Cap
-        // enforced at write time inside hopp-bar.js (HOPP_HISTORY_CAP).
-        bowire_hopp_history:         'hoppBarHistory'
+        // enforced at write time inside request-builder.js (RB_HISTORY_CAP).
+        bowire_request_builder_history:         'requestBuilderHistory'
     };
     // Inverse of _V2_DATA_KEY_MAP — used by importWorkspaceJson to
     // route v2-canonical field names back to the localStorage bucket
@@ -2377,7 +2377,7 @@
         flows:               [],
         scripts:             [],   // disk-only; browser exports as []
         methodScripts:       {},   // #126 — per-method pre/post-script source
-        hoppBarHistory:      [],   // #290 — recent Hopp-bar request executions
+        requestBuilderHistory:      [],   // #290 — recent Request-builder request executions
         presets:             {}
     };
 

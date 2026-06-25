@@ -3836,7 +3836,7 @@
             card('send', 'Just fire a request', 'Single-line bar (Ctrl+L)', function () {
                 startHoppRequest();
                 requestAnimationFrame(function () {
-                    var inp = document.getElementById('bowire-hopp-url-input');
+                    var inp = document.getElementById('bowire-request-builder-url-input');
                     if (inp) inp.focus();
                 });
             });
@@ -5741,13 +5741,13 @@
         // render order.
         if (freeformRequest) {
             // #289 — Hoppscotch-style layout dispatch. When the
-            // request carries a `_hopp` marker we render the single-
+            // request carries a `_requestBuilder` marker we render the single-
             // line bar + 7 sub-tab variant instead of the classic
             // freeform builder. Both share the freeformRequest state
             // container so request-tab switching, persistence, and the
             // response capture pipeline don't need to branch.
             if (typeof isHoppRequest === 'function' && isHoppRequest(freeformRequest)) {
-                _appendHoppInto(main);
+                _appendRequestBuilderInto(main);
                 return main;
             }
             _appendFreeformInto(main);

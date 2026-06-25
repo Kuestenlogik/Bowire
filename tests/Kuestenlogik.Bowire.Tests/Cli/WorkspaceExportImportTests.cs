@@ -148,13 +148,13 @@ public sealed class WorkspaceExportImportTests : IDisposable
     }
 
     // ----------------------------------------------------------------
-    // #290 — hoppBarHistory bucket: disk-mode exporters MUST seed it
+    // #290 — requestBuilderHistory bucket: disk-mode exporters MUST seed it
     // with an empty array so v2 readers can iterate the data object
     // without defensive null checks. Browser-mode exports fill it from
     // the live buffer; this test pins the disk-mode contract.
     // ----------------------------------------------------------------
     [Fact]
-    public async Task RunExportAsync_seeds_hoppBarHistory_default_for_disk_workspace()
+    public async Task RunExportAsync_seeds_requestBuilderHistory_default_for_disk_workspace()
     {
         var ws = SafePath.Combine(_tempRoot, "disk-ws");
         Directory.CreateDirectory(ws);
@@ -169,18 +169,18 @@ public sealed class WorkspaceExportImportTests : IDisposable
         var json = await File.ReadAllTextAsync(outFile, TestContext.Current.CancellationToken);
         using var doc = JsonDocument.Parse(json);
         var dataEl = doc.RootElement.GetProperty("data");
-        Assert.True(dataEl.TryGetProperty("hoppBarHistory", out var hist),
-            "disk-mode export must seed hoppBarHistory bucket so readers can iterate the v2 data superset without null checks");
+        Assert.True(dataEl.TryGetProperty("requestBuilderHistory", out var hist),
+            "disk-mode export must seed requestBuilderHistory bucket so readers can iterate the v2 data superset without null checks");
         Assert.Equal(JsonValueKind.Array, hist.ValueKind);
         Assert.Equal(0, hist.GetArrayLength());
     }
 
-    // Browser-mode envelopes WILL carry hoppBarHistory entries. Migration
+    // Browser-mode envelopes WILL carry requestBuilderHistory entries. Migration
     // shim must preserve them; the v1 → v2 path backfills a missing
     // bucket with an empty array (so older exports don't reject), but
     // when the bucket IS present it survives unchanged.
     [Fact]
-    public void MigrateLegacyWorkspaceShape_v1_preserves_hoppBarHistory_when_present()
+    public void MigrateLegacyWorkspaceShape_v1_preserves_requestBuilderHistory_when_present()
     {
         var uiV1 = new System.Text.Json.Nodes.JsonObject
         {
@@ -189,7 +189,7 @@ public sealed class WorkspaceExportImportTests : IDisposable
             ["workspace"] = new System.Text.Json.Nodes.JsonObject { ["name"] = "WithHopp" },
             ["data"] = new System.Text.Json.Nodes.JsonObject
             {
-                ["hoppBarHistory"] = new System.Text.Json.Nodes.JsonArray(
+                ["requestBuilderHistory"] = new System.Text.Json.Nodes.JsonArray(
                     new System.Text.Json.Nodes.JsonObject
                     {
                         ["id"]     = "hh_a",
@@ -202,14 +202,14 @@ public sealed class WorkspaceExportImportTests : IDisposable
         var migrated = WorkspaceCommand.MigrateLegacyWorkspaceShape(uiV1);
         var data = migrated["data"] as System.Text.Json.Nodes.JsonObject;
         Assert.NotNull(data);
-        var hist = data!["hoppBarHistory"] as System.Text.Json.Nodes.JsonArray;
+        var hist = data!["requestBuilderHistory"] as System.Text.Json.Nodes.JsonArray;
         Assert.NotNull(hist);
         Assert.Single(hist!);
         Assert.Equal("hh_a", (string?)hist![0]!["id"]);
     }
 
     [Fact]
-    public void MigrateLegacyWorkspaceShape_v1_backfills_missing_hoppBarHistory_with_empty_array()
+    public void MigrateLegacyWorkspaceShape_v1_backfills_missing_requestBuilderHistory_with_empty_array()
     {
         var uiV1 = new System.Text.Json.Nodes.JsonObject
         {
@@ -225,7 +225,7 @@ public sealed class WorkspaceExportImportTests : IDisposable
         var migrated = WorkspaceCommand.MigrateLegacyWorkspaceShape(uiV1);
         var data = migrated["data"] as System.Text.Json.Nodes.JsonObject;
         Assert.NotNull(data);
-        var hist = data!["hoppBarHistory"] as System.Text.Json.Nodes.JsonArray;
+        var hist = data!["requestBuilderHistory"] as System.Text.Json.Nodes.JsonArray;
         Assert.NotNull(hist);
         Assert.Empty(hist!);
     }
