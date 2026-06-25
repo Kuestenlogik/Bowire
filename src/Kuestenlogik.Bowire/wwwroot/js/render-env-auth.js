@@ -3277,12 +3277,26 @@
                 + '</svg>';
         }
 
+        // Environments are workspace-scoped (#A). Without an active
+        // workspace the env chip should NOT advertise 'Workspace
+        // defaults' (which doesn't exist) and shouldn't open a picker.
+        // Render as a non-clickable, greyed-out label saying 'No
+        // workspace'. Same gate-spirit as the env-create disable in
+        // the dropdown action below — don't expose a flow whose
+        // result has nowhere to land.
+        var noWorkspaceActive = !activeWorkspaceId;
+
         var envBtn = el('button', {
             id: 'bowire-env-dropdown-btn',
-            className: 'bowire-env-dropdown-btn',
-            title: 'Active environment — click to switch',
+            className: 'bowire-env-dropdown-btn'
+                + (noWorkspaceActive ? ' bowire-env-dropdown-btn-disabled' : ''),
+            title: noWorkspaceActive
+                ? 'Activate a workspace first — environments live inside a workspace'
+                : 'Active environment — click to switch',
+            'aria-disabled': noWorkspaceActive ? 'true' : null,
             onClick: function (e) {
                 e.stopPropagation();
+                if (noWorkspaceActive) return;
                 // Close the workspace dropdown if it's open. They
                 // sit next to each other in the topbar and only one
                 // should ever be visible at a time.
@@ -3483,8 +3497,12 @@
                 className: 'bowire-env-btn-glyph',
                 innerHTML: _envGlyph(activeColor)
             }),
-            el('span', { className: 'bowire-env-btn-text', textContent: activeEnv ? activeEnv.name : 'Workspace defaults' }),
-            el('span', { className: 'bowire-env-btn-chevron', innerHTML: svgIcon('chevronDown') })
+            el('span', { className: 'bowire-env-btn-text', textContent: noWorkspaceActive
+                ? 'No workspace'
+                : (activeEnv ? activeEnv.name : 'Workspace defaults') }),
+            noWorkspaceActive
+                ? null
+                : el('span', { className: 'bowire-env-btn-chevron', innerHTML: svgIcon('chevronDown') })
         );
         envBtnWrapper.appendChild(envBtn);
         bar.appendChild(envBtnWrapper);

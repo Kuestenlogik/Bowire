@@ -10462,6 +10462,16 @@ and chip row */
     background: var(--bowire-surface-hover);
     border-color: var(--bowire-border);
 }
+/* No-workspace state: greyed out + no chevron + non-clickable.
+   Title tooltip explains why ('activate a workspace first'). */
+.bowire-env-dropdown-btn-disabled,
+.bowire-env-dropdown-btn-disabled:hover {
+    color: var(--bowire-text-tertiary);
+    background: var(--bowire-bg);
+    border-color: var(--bowire-border-subtle);
+    cursor: not-allowed;
+    opacity: 0.7;
+}
 .bowire-env-btn-text {
     max-width: 120px;
     overflow: hidden;
