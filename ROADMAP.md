@@ -78,6 +78,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [302](https://github.com/Kuestenlogik/Bowire/issues/302) | Bowire | [Response viewer: line numbers + collapsible JSON + path breadcrumb + raw tab + download (Hoppscotch parity)](#issue-kuestenlogik-bowire-302) | ✅ Done |  |
 | [309](https://github.com/Kuestenlogik/Bowire/issues/309) | Bowire | [UI: configure URL catalogue providers from Settings (#136 follow-up)](#issue-kuestenlogik-bowire-309) | ✅ Done |  |
 | [310](https://github.com/Kuestenlogik/Bowire/issues/310) | Bowire | [UI: Settings → Modules toggle (mirror Rail modes pattern) — #294 follow-up](#issue-kuestenlogik-bowire-310) | ✅ Done |  |
+| [315](https://github.com/Kuestenlogik/Bowire/issues/315) | Bowire | [Unify Proxy + Intercepted into 'Traffic' rail (Standalone / Embedded sub-modes); Mocks stays separate](#issue-kuestenlogik-bowire-315) | ✅ Done |  |
 
 ### v2.2 — Test pillar: assertions, CI runner, regression coverage *(due 2026-07-10)*
 

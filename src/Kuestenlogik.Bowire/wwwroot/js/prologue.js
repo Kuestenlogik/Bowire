@@ -1739,6 +1739,27 @@
         railMode = 'workspaces';
         try { localStorage.setItem('bowire_rail_mode', 'workspaces'); } catch { /* ignore */ }
     }
+    // #315 — Proxy + Intercepted unified into 'traffic'. Both old ids
+    // rewrite to the new one so existing installs land on the same
+    // surface instead of on a hidden / no-icon rail. The legacy
+    // descriptors stay registered (HideFromRail = true) for the
+    // deprecation window so deep links + tour scripts that still
+    // address 'proxy' / 'intercepted' don't NRE. We also rewrite the
+    // persisted sidebar-view key (bowire_sidebar_view — the
+    // SIDEBAR_VIEW_KEY const is declared further down, so we use the
+    // literal string here) so the main-pane dispatcher (driven by
+    // sidebarView, not railMode) lands on the unified pane on first
+    // paint after the upgrade.
+    if (railMode === 'proxy' || railMode === 'intercepted') {
+        railMode = 'traffic';
+        try { localStorage.setItem('bowire_rail_mode', 'traffic'); } catch { /* ignore */ }
+        try {
+            var storedSidebarView = localStorage.getItem('bowire_sidebar_view');
+            if (storedSidebarView === 'proxy' || storedSidebarView === 'intercepted') {
+                localStorage.setItem('bowire_sidebar_view', 'traffic');
+            }
+        } catch { /* ignore */ }
+    }
     // #133 Phase 2 — Mocks mode selection. Session-only;
     // re-derived from the live mocksList every render so a stopped
     // mock automatically deselects.
@@ -4591,12 +4612,18 @@
     let sidebarView = (function () {
         try {
             var v = localStorage.getItem(SIDEBAR_VIEW_KEY);
-            if (v === 'favorites' || v === 'environments' || v === 'flows' || v === 'proxy') return v;
+            // #315 — accept 'traffic' alongside the legacy 'proxy' +
+            // 'intercepted' values; the boot migration above already
+            // rewrote any stored railMode but a deep-link can still
+            // land sidebarView at the unified value.
+            if (v === 'favorites' || v === 'environments' || v === 'flows'
+                || v === 'proxy' || v === 'intercepted' || v === 'traffic') return v;
             return 'services';
         } catch { return 'services'; }
     })();
     function setSidebarView(v) {
-        sidebarView = (v === 'favorites' || v === 'environments' || v === 'flows' || v === 'proxy') ? v : 'services';
+        sidebarView = (v === 'favorites' || v === 'environments' || v === 'flows'
+            || v === 'proxy' || v === 'intercepted' || v === 'traffic') ? v : 'services';
         try { localStorage.setItem(SIDEBAR_VIEW_KEY, sidebarView); } catch {}
     }
 
