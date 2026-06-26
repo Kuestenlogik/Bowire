@@ -1990,7 +1990,25 @@
                     onChange: function (e) {
                         var v = String(e.target.value || '').trim();
                         var t = _liveWs();
-                        if (v && t) { renameWorkspace(t.id, v); render(); }
+                        if (v && t && v !== t.name) {
+                            var prevName = t.name;
+                            var targetId = t.id;
+                            if (renameWorkspace(targetId, v)) {
+                                // #194 — log so the rename is reversible
+                                // via Ctrl/Cmd+Z + the Activity drawer.
+                                if (typeof recordAction === 'function') {
+                                    recordAction({
+                                        kind: 'workspace-rename',
+                                        rail: 'workspaces',
+                                        title: 'Renamed workspace "' + prevName + '" → "' + v + '"',
+                                        undoSpec: { workspaceId: targetId, prevName: prevName, nextName: v },
+                                        undo: function () { renameWorkspace(targetId, prevName); render(); },
+                                        redo: function () { renameWorkspace(targetId, v); render(); }
+                                    });
+                                }
+                            }
+                            render();
+                        }
                     }
                 }),
                 _renderHeaderTrail([
@@ -2339,9 +2357,28 @@
                     title: c,
                     onClick: function () {
                         var t = _liveWs();
-                        if (t) {
+                        if (t && t.color !== c) {
+                            var prevColor = t.color;
+                            var targetId = t.id;
                             t.color = c;
                             persistWorkspaces();
+                            // #194 — colour picks are reversible.
+                            if (typeof recordAction === 'function') {
+                                recordAction({
+                                    kind: 'workspace-color',
+                                    rail: 'workspaces',
+                                    title: 'Changed workspace colour',
+                                    undoSpec: { workspaceId: targetId, prevColor: prevColor, nextColor: c },
+                                    undo: function () {
+                                        var w = workspaces.find(function (x) { return x.id === targetId; });
+                                        if (w) { w.color = prevColor; persistWorkspaces(); render(); }
+                                    },
+                                    redo: function () {
+                                        var w = workspaces.find(function (x) { return x.id === targetId; });
+                                        if (w) { w.color = c; persistWorkspaces(); render(); }
+                                    }
+                                });
+                            }
                             render();
                         }
                     }
@@ -2837,9 +2874,36 @@
                     bowireConfirm(
                         msg,
                         function () {
+                            var snapshotName = wsName;
                             deleteWorkspace(wsId);
                             workspacesSelectedId = activeWorkspaceId;
                             render();
+                            // #194 — soft-delete: route through the
+                            // action log so the operator can recover
+                            // via Ctrl/Cmd+Z, the toast Undo button,
+                            // or the global trash drawer's Workspaces
+                            // bucket.
+                            if (typeof toast === 'function') {
+                                toast('Workspace "' + snapshotName + '" moved to trash', 'success', {
+                                    undo: function () {
+                                        var t = (typeof workspacesTrash !== 'undefined'
+                                            && Array.isArray(workspacesTrash))
+                                            ? workspacesTrash.find(function (x) { return x && x.workspace && x.workspace.id === wsId; })
+                                            : null;
+                                        if (t && typeof restoreWorkspaceFromTrash === 'function') {
+                                            restoreWorkspaceFromTrash(t);
+                                            workspacesSelectedId = wsId;
+                                            render();
+                                        }
+                                    },
+                                    logAction: {
+                                        kind: 'workspace-delete',
+                                        rail: 'workspaces',
+                                        title: 'Deleted workspace "' + snapshotName + '"',
+                                        undoSpec: { workspaceId: wsId }
+                                    }
+                                });
+                            }
                         },
                         { title: 'Delete workspace', confirmText: 'Delete', danger: true }
                     );

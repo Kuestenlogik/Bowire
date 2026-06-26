@@ -642,19 +642,33 @@
         try { localStorage.setItem('bowire_console_height', String(consoleHeight)); }
         catch { /* ignore */ }
     }
-    // #168 — Workbench-wide action log. Central record of every
+    // #168 / #194 — Workbench-wide action log. Central record of every
     // reversible operator action; surfaces as the Statusbar Activity
-    // pill + an Activity tab in the unified right drawer + Ctrl/Cmd+Z.
+    // pill + an Activity tab in the unified right drawer + Ctrl/Cmd+Z
+    // + per-rail undo trail strip.
     //
     // State shape (in-memory):
-    //   { id, ts, kind, title, undoFn, redoFn, status }
+    //   { id, ts, kind, title, rail, undoFn, redoFn, undoSpec, status }
     //     status: 'available' | 'undone' | 'expired'
+    //     rail:   optional sidebar rail id ('recordings' | 'workspaces'
+    //             | 'collections' | 'environments' | 'flows' | 'favorites'
+    //             | 'settings'); drives the per-rail trail visualisation.
+    //     undoSpec: serializable instructions consumed by a kind-specific
+    //               resolver. When present, the entry survives reload —
+    //               the resolver runs at hydrate-time to rebuild undoFn /
+    //               redoFn from durable state. When absent, the entry
+    //               degrades to 'expired' after reload (legacy closure-
+    //               only path, kept for one-off mutations that can't be
+    //               cheaply serialised).
     //
-    // Persistence: metadata only (no closures). Reload restores the
-    // timeline as 'expired' entries so the Activity tab still surfaces
-    // what happened, just without the undo button. TTL aligned with
-    // the trash (30 days); cap at ACTION_LOG_MAX entries so the log
-    // doesn't grow unbounded under a long session.
+    // Persistence: metadata + undoSpec. Reload pipes each entry through
+    // _ACTION_RESOLVERS[kind]; resolvers rebuild the undoFn / redoFn
+    // from the spec so Ctrl/Cmd+Z keeps working after a workbench
+    // restart. Entries whose kind has no resolver (or whose undoSpec
+    // got dropped) come back as 'expired' so the timeline still tells
+    // the operator what happened. TTL aligned with the trash (30
+    // days); cap at ACTION_LOG_MAX entries so the log doesn't grow
+    // unbounded under a long session.
     const ACTION_LOG_KEY = 'bowire_action_log';
     const ACTION_LOG_MAX = 200;
     const ACTION_LOG_TTL_MS = 30 * 24 * 60 * 60 * 1000;
@@ -662,6 +676,49 @@
     let actionLogRedoStack = [];
     let activityDrawerOpen = false;
     try { activityDrawerOpen = localStorage.getItem('bowire_activity_drawer_open') === '1'; } catch { /* ignore */ }
+
+    // #194 — Activity-tab multi-select. Tracks which entry ids the
+    // operator has checked in the drawer so 'Undo selected' can
+    // sequentially roll back several entries in newest-first order.
+    // Session-only; resets on reload + drawer-close so a stale
+    // selection doesn't haunt the next visit.
+    let activitySelected = new Set();
+
+    // #194 — Resolver registry. Each `kind` registers a small handler
+    // that converts a serialisable undoSpec back into mutations of the
+    // live workbench state. The resolver is the only piece that knows
+    // how to re-apply the inverse of a given mutation; the action log
+    // itself only manages the timeline + ordering. Resolvers must
+    // tolerate stale data — by the time hydrate runs the rest of the
+    // workbench may have moved on (entity gone, workspace switched,
+    // …), so they return a no-op fn when reconstitution isn't safe
+    // rather than throwing.
+    var _ACTION_RESOLVERS = {};
+    function registerActionResolver(kind, fn) {
+        if (!kind || typeof fn !== 'function') return;
+        _ACTION_RESOLVERS[kind] = fn;
+    }
+
+    function _resolveUndoFn(entry) {
+        if (!entry || !entry.kind) return null;
+        var resolver = _ACTION_RESOLVERS[entry.kind];
+        if (!resolver) return null;
+        try {
+            var resolved = resolver(entry.undoSpec || {}, entry);
+            if (!resolved) return null;
+            // Resolvers return either a plain fn (undo only) or
+            // { undo, redo } so a hydrated entry can support redo
+            // too.
+            if (typeof resolved === 'function') return { undo: resolved, redo: null };
+            return {
+                undo: typeof resolved.undo === 'function' ? resolved.undo : null,
+                redo: typeof resolved.redo === 'function' ? resolved.redo : null
+            };
+        } catch (e) {
+            console.warn('[actionLog] resolver failed', entry.kind, e);
+            return null;
+        }
+    }
 
     function _loadActionLogFromStorage() {
         try {
@@ -673,12 +730,21 @@
             return parsed
                 .filter(function (e) { return e && typeof e.ts === 'number' && e.ts > cutoff; })
                 .map(function (e) {
-                    // Closures didn't survive the reload — entry stays
-                    // visible in the timeline as a record of what
-                    // happened, but undo is no longer available.
-                    e.status = 'expired';
-                    e.undoFn = null;
-                    e.redoFn = null;
+                    // #194 — rehydrate undoFn / redoFn from undoSpec
+                    // via the kind's resolver. When no resolver is
+                    // registered (or the entry has no spec — legacy
+                    // closure-only path), the entry degrades to
+                    // 'expired' as before.
+                    var rehydrated = (e.status === 'available') ? _resolveUndoFn(e) : null;
+                    if (rehydrated && rehydrated.undo) {
+                        e.status = 'available';
+                        e.undoFn = rehydrated.undo;
+                        e.redoFn = rehydrated.redo || null;
+                    } else {
+                        e.status = 'expired';
+                        e.undoFn = null;
+                        e.redoFn = null;
+                    }
                     return e;
                 });
         } catch { return []; }
@@ -691,6 +757,8 @@
                     ts: e.ts,
                     kind: e.kind,
                     title: e.title,
+                    rail: e.rail || null,
+                    undoSpec: e.undoSpec || null,
                     status: e.status === 'available' ? 'available' : e.status
                 };
             });
@@ -698,16 +766,33 @@
         } catch { /* quota / disabled — non-fatal */ }
     }
     function recordAction(opts) {
-        if (!opts || typeof opts.undo !== 'function') return null;
+        if (!opts) return null;
+        // Either a runtime closure or a resolvable spec is required.
+        // No spec + no fn = nothing to undo, drop silently.
+        if (typeof opts.undo !== 'function' && !opts.undoSpec) return null;
         var entry = {
             id: 'act_' + Math.random().toString(36).slice(2, 10),
             ts: Date.now(),
             kind: opts.kind || 'unknown',
             title: opts.title || opts.kind || 'Action',
-            undoFn: opts.undo,
+            rail: opts.rail || null,
+            undoSpec: opts.undoSpec || null,
+            undoFn: typeof opts.undo === 'function' ? opts.undo : null,
             redoFn: typeof opts.redo === 'function' ? opts.redo : null,
             status: 'available'
         };
+        // If only a spec was passed, materialise the undoFn through
+        // the resolver so the in-session undo works immediately —
+        // otherwise the operator would have to reload to get the
+        // first undo to fire, which would defeat the point.
+        if (!entry.undoFn && entry.undoSpec) {
+            var resolved = _resolveUndoFn(entry);
+            if (resolved && resolved.undo) {
+                entry.undoFn = resolved.undo;
+                entry.redoFn = entry.redoFn || resolved.redo || null;
+            }
+        }
+        if (!entry.undoFn) return null;
         actionLog.unshift(entry);
         if (actionLog.length > ACTION_LOG_MAX) actionLog.length = ACTION_LOG_MAX;
         // Recording a new action invalidates the redo stack (matches
@@ -748,12 +833,58 @@
             return null;
         }
     }
+    // #194 — Bulk undo. Walks N available entries from the head of
+    // the log, calling their undoFn in order. Returns the entries
+    // actually rolled back so the caller can report a count. Used by
+    // Ctrl/Cmd+Z auto-repeat (each keydown calls undoLastAction once
+    // — handled in init.js) and by the Activity tab's 'Undo selected'
+    // button.
+    function undoActionsByIds(ids) {
+        if (!Array.isArray(ids) || ids.length === 0) return [];
+        // Walk in the order the entries appear in the log (newest
+        // first) so undoing 'rename foo' then 'delete foo' applies
+        // the inverse in the original order — same semantics as
+        // pressing Ctrl/Cmd+Z N times.
+        var idSet = {};
+        ids.forEach(function (id) { idSet[id] = true; });
+        var rolled = [];
+        for (var i = 0; i < actionLog.length; i++) {
+            var entry = actionLog[i];
+            if (!idSet[entry.id]) continue;
+            if (entry.status !== 'available') continue;
+            if (typeof entry.undoFn !== 'function') continue;
+            try {
+                entry.undoFn();
+                entry.status = 'undone';
+                if (entry.redoFn) actionLogRedoStack.unshift(entry);
+                rolled.push(entry);
+            } catch (err) {
+                console.warn('[actionLog] bulk-undo failed', entry.kind, err);
+            }
+        }
+        if (rolled.length > 0) _persistActionLog();
+        return rolled;
+    }
     function availableActionCount() {
         var n = 0;
         for (var i = 0; i < actionLog.length; i++) {
             if (actionLog[i].status === 'available') n++;
         }
         return n;
+    }
+    // #194 — Find the most recent reversible entry for a given rail
+    // so the rail header can show its inline 'Just deleted X — Undo'
+    // trail. Returns null when no entry matches (no trail rendered).
+    function recentActionByRail(rail) {
+        if (!rail) return null;
+        for (var i = 0; i < actionLog.length; i++) {
+            var e = actionLog[i];
+            if (e.status !== 'available') continue;
+            if (e.rail !== rail) continue;
+            if (typeof e.undoFn !== 'function') continue;
+            return e;
+        }
+        return null;
     }
     // #296 — next-action labels for the topbar Undo / Redo button
     // tooltips. Mirrors the same lookup undoLastAction does (first
@@ -776,6 +907,7 @@
     function clearActionLog() {
         actionLog = [];
         actionLogRedoStack = [];
+        activitySelected.clear();
         _persistActionLog();
     }
     // One-shot hydrate guard. wsKey() resolves off activeWorkspaceId
@@ -2404,16 +2536,76 @@
         persistWorkspaces();
         return true;
     }
-    function deleteWorkspace(id) {
-        var idx = workspaces.findIndex(function (w) { return w.id === id; });
-        if (idx < 0) return false;
-        workspaces.splice(idx, 1);
+    // #194 — Workspaces trash. Cross-workspace store (a global
+    // browser preference, not per-workspace — the workspace IS the
+    // thing being soft-deleted) shaped like recordingsTrash /
+    // collectionsTrash so the global Trash drawer can render the
+    // bucket with the same chrome. Each entry carries the workspace
+    // metadata (id, name, color, …), the per-workspace localStorage
+    // payload as a `data` map, and a `deletedAt` timestamp. TTL +
+    // purge live alongside the other trash sections.
+    const WORKSPACES_TRASH_KEY = 'bowire_workspaces_trash';
+    let workspacesTrash = [];
+    try {
+        var rawWsTrash = localStorage.getItem(WORKSPACES_TRASH_KEY);
+        if (rawWsTrash) {
+            var parsedWsTrash = JSON.parse(rawWsTrash);
+            if (Array.isArray(parsedWsTrash)) workspacesTrash = parsedWsTrash;
+        }
+    } catch { /* corrupt — start empty */ }
+    function persistWorkspacesTrash() {
+        try { localStorage.setItem(WORKSPACES_TRASH_KEY, JSON.stringify(workspacesTrash)); }
+        catch { /* quota / disabled — non-fatal */ }
+    }
 
-        // Workspace = project folder (#155): per-workspace localStorage
-        // namespace gets purged on delete so a leftover wsKeyFor(id, ...)
-        // entry doesn't haunt the next workspace that happens to share
-        // a key. Covers every WORKSPACE_DATA_KEY + every known preset
-        // mode bucket.
+    // Snapshot the per-workspace localStorage namespace into a plain
+    // object so the workspace can be re-hydrated on restore. Includes
+    // the data buckets, the browser-state buckets, and the preset
+    // mode buckets — the same three lists deleteWorkspace clears.
+    function _snapshotWorkspaceData(id) {
+        var data = {};
+        function _read(k) {
+            try { return localStorage.getItem(_wsKeyFor(id, k)); }
+            catch { return null; }
+        }
+        if (Array.isArray(_WORKSPACE_DATA_KEYS)) {
+            _WORKSPACE_DATA_KEYS.forEach(function (k) {
+                var v = _read(k);
+                if (v != null) data[k] = v;
+            });
+        }
+        if (Array.isArray(_WORKSPACE_BROWSER_STATE_KEYS)) {
+            _WORKSPACE_BROWSER_STATE_KEYS.forEach(function (k) {
+                var v = _read(k);
+                if (v != null) data[k] = v;
+            });
+        }
+        if (Array.isArray(_WORKSPACE_PRESET_MODES)) {
+            _WORKSPACE_PRESET_MODES.forEach(function (mode) {
+                var pk = 'bowire_presets_' + mode;
+                var v = _read(pk);
+                if (v != null) data[pk] = v;
+            });
+        }
+        return data;
+    }
+
+    // Re-write a snapshot back into the per-workspace localStorage
+    // namespace. Used by restoreWorkspaceFromTrash + the undo
+    // resolver. Tolerates a partial snapshot (only the buckets that
+    // were populated round-trip).
+    function _restoreWorkspaceData(id, data) {
+        if (!data || typeof data !== 'object') return;
+        try {
+            Object.keys(data).forEach(function (k) {
+                var v = data[k];
+                if (v == null) return;
+                localStorage.setItem(_wsKeyFor(id, k), v);
+            });
+        } catch { /* quota / disabled — best-effort */ }
+    }
+
+    function _purgeWorkspaceData(id) {
         try {
             if (Array.isArray(_WORKSPACE_DATA_KEYS)) {
                 _WORKSPACE_DATA_KEYS.forEach(function (k) {
@@ -2431,6 +2623,74 @@
                 });
             }
         } catch { /* localStorage quota / disabled — best-effort cleanup */ }
+    }
+
+    // #194 — Restore a workspace from the trash bucket. Re-inserts at
+    // the original index when possible (falls back to append), pipes
+    // every persisted bucket back into the per-workspace namespace,
+    // and emits a render so every rail re-reads from the rehydrated
+    // store immediately.
+    function restoreWorkspaceFromTrash(trashEntry) {
+        if (!trashEntry || !trashEntry.workspace) return false;
+        var ws = trashEntry.workspace;
+        // Strip a stale 'deletedAt' marker that may have been added
+        // earlier so the restored workspace looks like a clean
+        // record again.
+        delete ws.deletedAt;
+        if (workspaces.find(function (w) { return w.id === ws.id; })) return false;
+        var idx = typeof trashEntry.originalIdx === 'number'
+            ? trashEntry.originalIdx : workspaces.length;
+        if (idx < 0) idx = 0;
+        if (idx > workspaces.length) idx = workspaces.length;
+        workspaces.splice(idx, 0, ws);
+        _restoreWorkspaceData(ws.id, trashEntry.data || {});
+        // Drop the entry from the trash list now that it's back.
+        var ti = workspacesTrash.indexOf(trashEntry);
+        if (ti >= 0) workspacesTrash.splice(ti, 1);
+        persistWorkspacesTrash();
+        persistWorkspaces();
+        return true;
+    }
+
+    // Hard-delete a workspace from the trash (no recovery). Mirrors
+    // the per-bucket 'delete forever' affordance on every other
+    // trash section.
+    function purgeWorkspaceFromTrash(trashEntry) {
+        if (!trashEntry || !trashEntry.workspace) return;
+        var id = trashEntry.workspace.id;
+        _purgeWorkspaceData(id);
+        var ti = workspacesTrash.indexOf(trashEntry);
+        if (ti >= 0) workspacesTrash.splice(ti, 1);
+        persistWorkspacesTrash();
+    }
+
+    function deleteWorkspace(id) {
+        var idx = workspaces.findIndex(function (w) { return w.id === id; });
+        if (idx < 0) return false;
+        var removed = workspaces[idx];
+        // #194 — soft-delete. Snapshot the workspace metadata + every
+        // per-workspace bucket BEFORE clearing storage so a restore
+        // can re-populate the namespace exactly as it was. The trash
+        // entry shape mirrors recordingsTrash / collectionsTrash so
+        // the global Trash drawer can render it with the same
+        // chrome.
+        var snapshot = _snapshotWorkspaceData(id);
+        workspacesTrash.unshift({
+            workspace: JSON.parse(JSON.stringify(removed)),
+            data: snapshot,
+            originalIdx: idx,
+            deletedAt: Date.now()
+        });
+        persistWorkspacesTrash();
+        workspaces.splice(idx, 1);
+
+        // Workspace = project folder (#155): per-workspace localStorage
+        // namespace gets purged on delete so a leftover wsKeyFor(id, ...)
+        // entry doesn't haunt the next workspace that happens to share
+        // a key. The trash entry holds the data snapshot for restore;
+        // here we drop the live namespace so a freshly-created
+        // workspace can claim the same id without colliding.
+        _purgeWorkspaceData(id);
 
         if (activeWorkspaceId === id) {
             if (workspaces.length === 0) {
@@ -2483,6 +2743,271 @@
         persistWorkspaces();
         return true;
     }
+
+    // #194 — Register kind-specific resolvers for the action log.
+    // Resolvers are pure rehydrators: they take an undoSpec from the
+    // persisted log and return { undo, redo } closures that operate
+    // on the live workbench state. Run at hydrate-time so an entry
+    // recorded before the workbench reloaded still has a working
+    // Undo button. Each resolver tolerates stale data by returning a
+    // no-op fn rather than throwing — the entry falls back to
+    // 'expired' through _resolveUndoFn's null guard.
+    //
+    // Resolver-style serialisable undos for the Phase 1 'clear' sites
+    // (history-clear, favorites-clear) are wired here too so a
+    // reload doesn't kill the undo affordance for those routes.
+    function _findTrashEntryByWorkspaceId(wsId) {
+        if (!wsId || !Array.isArray(workspacesTrash)) return null;
+        for (var i = 0; i < workspacesTrash.length; i++) {
+            var t = workspacesTrash[i];
+            if (t && t.workspace && t.workspace.id === wsId) return t;
+        }
+        return null;
+    }
+
+    registerActionResolver('workspace-delete', function (spec) {
+        if (!spec || !spec.workspaceId) return null;
+        return {
+            undo: function () {
+                var t = _findTrashEntryByWorkspaceId(spec.workspaceId);
+                if (t && restoreWorkspaceFromTrash(t)) {
+                    if (typeof render === 'function') render();
+                    return;
+                }
+                if (typeof toast === 'function') {
+                    toast('Could not restore workspace — trash entry purged.', 'error');
+                }
+            },
+            redo: function () {
+                if (typeof deleteWorkspace === 'function') deleteWorkspace(spec.workspaceId);
+                if (typeof render === 'function') render();
+            }
+        };
+    });
+
+    registerActionResolver('workspace-rename', function (spec) {
+        if (!spec || !spec.workspaceId) return null;
+        return {
+            undo: function () {
+                var ws = workspaces.find(function (w) { return w.id === spec.workspaceId; });
+                if (!ws) return;
+                ws.name = spec.prevName;
+                persistWorkspaces();
+                if (typeof render === 'function') render();
+            },
+            redo: function () {
+                var ws = workspaces.find(function (w) { return w.id === spec.workspaceId; });
+                if (!ws) return;
+                ws.name = spec.nextName;
+                persistWorkspaces();
+                if (typeof render === 'function') render();
+            }
+        };
+    });
+
+    registerActionResolver('workspace-color', function (spec) {
+        if (!spec || !spec.workspaceId) return null;
+        return {
+            undo: function () {
+                var ws = workspaces.find(function (w) { return w.id === spec.workspaceId; });
+                if (!ws) return;
+                ws.color = spec.prevColor;
+                persistWorkspaces();
+                if (typeof render === 'function') render();
+            },
+            redo: function () {
+                var ws = workspaces.find(function (w) { return w.id === spec.workspaceId; });
+                if (!ws) return;
+                ws.color = spec.nextColor;
+                persistWorkspaces();
+                if (typeof render === 'function') render();
+            }
+        };
+    });
+
+    registerActionResolver('recording-delete', function (spec) {
+        if (!spec || !spec.entry) return null;
+        return {
+            undo: function () {
+                if (!Array.isArray(recordingsList)) return;
+                if (recordingsList.find(function (r) { return r.id === spec.entry.id; })) return;
+                var idx = (typeof spec.originalIdx === 'number')
+                    ? Math.min(spec.originalIdx, recordingsList.length)
+                    : recordingsList.length;
+                recordingsList.splice(idx, 0, spec.entry);
+                if (typeof persistRecordings === 'function') persistRecordings();
+                // Drop the matching trash entry if it's still there
+                // so the recording doesn't end up in two places.
+                if (Array.isArray(recordingsTrash)) {
+                    for (var i = 0; i < recordingsTrash.length; i++) {
+                        var t = recordingsTrash[i];
+                        if (t && t.entry && t.entry.id === spec.entry.id) {
+                            recordingsTrash.splice(i, 1);
+                            if (typeof persistRecordingsTrash === 'function') persistRecordingsTrash();
+                            break;
+                        }
+                    }
+                }
+                if (typeof render === 'function') render();
+            },
+            redo: function () {
+                if (typeof deleteRecording === 'function') deleteRecording(spec.entry.id);
+                if (typeof render === 'function') render();
+            }
+        };
+    });
+
+    registerActionResolver('recording-rename', function (spec) {
+        if (!spec || !spec.recordingId) return null;
+        return {
+            undo: function () {
+                if (typeof renameRecording === 'function') renameRecording(spec.recordingId, spec.prevName);
+                if (typeof render === 'function') render();
+            },
+            redo: function () {
+                if (typeof renameRecording === 'function') renameRecording(spec.recordingId, spec.nextName);
+                if (typeof render === 'function') render();
+            }
+        };
+    });
+
+    registerActionResolver('favorite-remove', function (spec) {
+        if (!spec || !spec.service || !spec.method) return null;
+        // Resolver paths use the raw toggle helper so re-applying
+        // the inverse doesn't trigger a fresh action-log record. The
+        // in-session closures captured in history-env.js do the
+        // same dance via _suppressFavoriteLog.
+        return {
+            undo: function () {
+                if (typeof _toggleFavoriteRaw === 'function'
+                    && typeof isFavorite === 'function'
+                    && !isFavorite(spec.service, spec.method)) {
+                    _toggleFavoriteRaw(spec.service, spec.method);
+                }
+            },
+            redo: function () {
+                if (typeof _toggleFavoriteRaw === 'function'
+                    && typeof isFavorite === 'function'
+                    && isFavorite(spec.service, spec.method)) {
+                    _toggleFavoriteRaw(spec.service, spec.method);
+                }
+            }
+        };
+    });
+
+    registerActionResolver('history-clear', function (spec) {
+        if (!spec || !Array.isArray(spec.entries)) return null;
+        return {
+            undo: function () {
+                if (typeof restoreHistory === 'function') restoreHistory(spec.entries);
+            },
+            redo: function () {
+                if (typeof clearHistory === 'function') clearHistory();
+            }
+        };
+    });
+
+    registerActionResolver('favorites-clear', function (spec) {
+        if (!spec) return null;
+        return {
+            undo: function () {
+                try {
+                    var key = (typeof FAVORITES_KEY !== 'undefined') ? FAVORITES_KEY : 'bowire_favorites';
+                    localStorage.setItem(wsKey(key), JSON.stringify(spec.entries || []));
+                } catch { /* quota / disabled — non-fatal */ }
+                if (typeof render === 'function') render();
+            },
+            redo: function () {
+                try {
+                    var key = (typeof FAVORITES_KEY !== 'undefined') ? FAVORITES_KEY : 'bowire_favorites';
+                    localStorage.removeItem(wsKey(key));
+                } catch { /* ignore */ }
+                if (typeof render === 'function') render();
+            }
+        };
+    });
+
+    registerActionResolver('settings-reset', function (spec) {
+        if (!spec || !Array.isArray(spec.entries)) return null;
+        return {
+            undo: function () {
+                try {
+                    spec.entries.forEach(function (pair) {
+                        if (pair && typeof pair.key === 'string' && pair.value != null) {
+                            localStorage.setItem(pair.key, pair.value);
+                        }
+                    });
+                } catch { /* ignore */ }
+                if (typeof toast === 'function') {
+                    toast('Settings restored — reload for full effect.', 'info');
+                }
+            },
+            redo: function () {
+                try { localStorage.clear(); } catch { /* ignore */ }
+                if (typeof toast === 'function') {
+                    toast('Reset re-applied — reload to clear state.', 'info');
+                }
+            }
+        };
+    });
+
+    registerActionResolver('recordings-clear', function (spec) {
+        if (!spec || !Array.isArray(spec.entries)) return null;
+        return {
+            undo: function () {
+                if (!Array.isArray(recordingsList)) return;
+                // Splice back at remembered indices when possible.
+                var sorted = spec.entries.slice().sort(function (a, b) {
+                    return (a.originalIdx || 0) - (b.originalIdx || 0);
+                });
+                sorted.forEach(function (item) {
+                    if (recordingsList.find(function (r) { return r.id === item.entry.id; })) return;
+                    var idx = Math.min(item.originalIdx || recordingsList.length, recordingsList.length);
+                    recordingsList.splice(idx, 0, item.entry);
+                });
+                if (typeof persistRecordings === 'function') persistRecordings();
+                // Drop matching trash entries so the recordings aren't double-counted.
+                if (Array.isArray(recordingsTrash)) {
+                    var ids = {};
+                    spec.entries.forEach(function (item) { if (item.entry) ids[item.entry.id] = true; });
+                    for (var i = recordingsTrash.length - 1; i >= 0; i--) {
+                        var t = recordingsTrash[i];
+                        if (t && t.entry && ids[t.entry.id]) recordingsTrash.splice(i, 1);
+                    }
+                    if (typeof persistRecordingsTrash === 'function') persistRecordingsTrash();
+                }
+                if (typeof render === 'function') render();
+            }
+        };
+    });
+
+    registerActionResolver('collections-clear', function (spec) {
+        if (!spec || !Array.isArray(spec.entries)) return null;
+        return {
+            undo: function () {
+                if (!Array.isArray(collectionsList)) return;
+                var sorted = spec.entries.slice().sort(function (a, b) {
+                    return (a.originalIdx || 0) - (b.originalIdx || 0);
+                });
+                sorted.forEach(function (item) {
+                    if (collectionsList.find(function (c) { return c.id === item.entry.id; })) return;
+                    var idx = Math.min(item.originalIdx || collectionsList.length, collectionsList.length);
+                    collectionsList.splice(idx, 0, item.entry);
+                });
+                if (typeof persistCollections === 'function') persistCollections();
+                if (Array.isArray(collectionsTrash)) {
+                    var ids = {};
+                    spec.entries.forEach(function (item) { if (item.entry) ids[item.entry.id] = true; });
+                    for (var i = collectionsTrash.length - 1; i >= 0; i--) {
+                        var t = collectionsTrash[i];
+                        if (t && t.entry && ids[t.entry.id]) collectionsTrash.splice(i, 1);
+                    }
+                    if (typeof persistCollectionsTrash === 'function') persistCollectionsTrash();
+                }
+                if (typeof render === 'function') render();
+            }
+        };
+    });
 
     // ---- Workspace Export / Import (A1) ----
     //

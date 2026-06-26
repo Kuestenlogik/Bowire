@@ -80,16 +80,53 @@
         return getFavorites().some(function (f) { return f.service === service && f.method === method; });
     }
 
-    function toggleFavorite(service, method) {
+    // #194 — internal flag: when true, _toggleFavoriteRaw does the
+    // mutation but skips the action-log record. Used by undo/redo
+    // resolvers so re-applying the inverse doesn't re-log a fresh
+    // action (which would invalidate the redo stack).
+    var _suppressFavoriteLog = false;
+
+    function _toggleFavoriteRaw(service, method) {
         var favs = getFavorites();
         var idx = favs.findIndex(function (f) { return f.service === service && f.method === method; });
+        var removed = false;
         if (idx >= 0) {
             favs.splice(idx, 1);
+            removed = true;
         } else {
             favs.push({ service: service, method: method });
         }
         localStorage.setItem(wsKey(FAVORITES_KEY), JSON.stringify(favs));
         render();
+        return removed;
+    }
+
+    function toggleFavorite(service, method) {
+        var removed = _toggleFavoriteRaw(service, method);
+        // Log removals as a reversible action. Additions are a one-
+        // click op (just star it again) so we don't pollute the log;
+        // removals can be hard to find if the operator forgot which
+        // service the method lived on.
+        if (removed && !_suppressFavoriteLog && typeof recordAction === 'function') {
+            recordAction({
+                kind: 'favorite-remove',
+                rail: 'favorites',
+                title: 'Unfavorited ' + service + ' · ' + method,
+                undoSpec: { service: service, method: method },
+                undo: function () {
+                    _suppressFavoriteLog = true;
+                    try {
+                        if (!isFavorite(service, method)) _toggleFavoriteRaw(service, method);
+                    } finally { _suppressFavoriteLog = false; }
+                },
+                redo: function () {
+                    _suppressFavoriteLog = true;
+                    try {
+                        if (isFavorite(service, method)) _toggleFavoriteRaw(service, method);
+                    } finally { _suppressFavoriteLog = false; }
+                }
+            });
+        }
     }
 
     // Move a favorite from position `fromIdx` to `toIdx` in the
