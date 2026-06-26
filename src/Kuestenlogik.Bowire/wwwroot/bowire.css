@@ -19247,6 +19247,180 @@ not as the
     margin-left: auto;
 }
 
+/* ---------- #233 Benchmarks previous-run diff banner ----------
+   Click-to-expand strip above the Latency / Throughput / Status
+   blocks. Headline reads as a row of metric chips with up/down
+   arrows; expanded form drops a per-metric side-by-side table.
+   Tone classes (`is-warn` / `is-good` / `is-flat`) carry the
+   colour mapping — warn = regression, good = improvement. */
+.bowire-bench-diff-banner {
+    position: relative;
+    margin: 0 0 12px 0;
+    padding: 0;
+    border: 1px solid var(--bowire-border);
+    border-left-width: 3px;
+    border-radius: var(--bowire-radius-sm);
+    background: var(--bowire-bg-elevated, var(--bowire-bg));
+    cursor: pointer;
+    transition: background var(--bowire-transition), border-color var(--bowire-transition);
+}
+.bowire-bench-diff-banner:hover {
+    background: var(--bowire-surface-hover, var(--bowire-bg-elevated));
+}
+.bowire-bench-diff-banner:focus-visible {
+    outline: 2px solid var(--bowire-accent);
+    outline-offset: 2px;
+}
+.bowire-bench-diff-banner.is-warn {
+    border-left-color: var(--bowire-warning, #f59e0b);
+}
+.bowire-bench-diff-banner.is-good {
+    border-left-color: var(--bowire-success, #10b981);
+}
+.bowire-bench-diff-banner.is-flat {
+    border-left-color: var(--bowire-border);
+}
+
+.bowire-bench-diff-head {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 12px;
+    flex-wrap: wrap;
+}
+.bowire-bench-diff-title {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--bowire-text-tertiary);
+    margin-right: 4px;
+}
+.bowire-bench-diff-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 3px 8px;
+    border-radius: var(--bowire-radius-sm);
+    background: color-mix(in srgb, var(--bowire-text) 4%, transparent);
+    font-size: 12px;
+    line-height: 1;
+}
+.bowire-bench-diff-chip-label {
+    color: var(--bowire-text-tertiary);
+    font-weight: 600;
+    text-transform: lowercase;
+}
+.bowire-bench-diff-chip-value {
+    color: var(--bowire-text);
+    font-variant-numeric: tabular-nums;
+}
+.bowire-bench-diff-chip-delta {
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+}
+.bowire-bench-diff-chip.is-warn .bowire-bench-diff-chip-delta {
+    color: var(--bowire-warning, #f59e0b);
+}
+.bowire-bench-diff-chip.is-good .bowire-bench-diff-chip-delta {
+    color: var(--bowire-success, #10b981);
+}
+.bowire-bench-diff-chip.is-flat .bowire-bench-diff-chip-delta {
+    color: var(--bowire-text-tertiary);
+}
+
+.bowire-bench-diff-status {
+    display: inline-flex;
+    gap: 4px;
+    flex-wrap: wrap;
+}
+.bowire-bench-diff-status-chip {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 6px;
+    border-radius: var(--bowire-radius-sm);
+    background: color-mix(in srgb, var(--bowire-text) 4%, transparent);
+    font-size: 11px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    color: var(--bowire-text-tertiary);
+}
+.bowire-bench-diff-status-chip.is-warn {
+    color: var(--bowire-warning, #f59e0b);
+    background: color-mix(in srgb, var(--bowire-warning, #f59e0b) 12%, transparent);
+}
+.bowire-bench-diff-status-chip.is-good {
+    color: var(--bowire-success, #10b981);
+    background: color-mix(in srgb, var(--bowire-success, #10b981) 12%, transparent);
+}
+
+.bowire-bench-diff-expand {
+    margin-left: auto;
+    display: inline-flex;
+    color: var(--bowire-text-tertiary);
+}
+.bowire-bench-diff-expand svg {
+    width: 14px;
+    height: 14px;
+}
+
+/* Expanded body — full per-metric table + footer hint */
+.bowire-bench-diff-body {
+    padding: 0 12px 8px 12px;
+    border-top: 1px solid var(--bowire-border);
+    margin-top: -1px;
+}
+.bowire-bench-diff-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 8px;
+    font-size: 12px;
+}
+.bowire-bench-diff-table th {
+    text-align: left;
+    padding: 6px 8px;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--bowire-text-tertiary);
+    border-bottom: 1px solid var(--bowire-border);
+}
+.bowire-bench-diff-table th:nth-child(2),
+.bowire-bench-diff-table th:nth-child(3),
+.bowire-bench-diff-table th:nth-child(4),
+.bowire-bench-diff-table td:nth-child(2),
+.bowire-bench-diff-table td:nth-child(3),
+.bowire-bench-diff-table td:nth-child(4) {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+.bowire-bench-diff-table td {
+    padding: 5px 8px;
+    border-bottom: 1px solid color-mix(in srgb, var(--bowire-border) 50%, transparent);
+    color: var(--bowire-text);
+}
+.bowire-bench-diff-table-label {
+    color: var(--bowire-text-secondary);
+}
+.bowire-bench-diff-table-delta {
+    font-weight: 600;
+}
+.bowire-bench-diff-table tr.is-warn .bowire-bench-diff-table-delta {
+    color: var(--bowire-warning, #f59e0b);
+}
+.bowire-bench-diff-table tr.is-good .bowire-bench-diff-table-delta {
+    color: var(--bowire-success, #10b981);
+}
+.bowire-bench-diff-table tr.is-flat .bowire-bench-diff-table-delta {
+    color: var(--bowire-text-tertiary);
+}
+.bowire-bench-diff-footer {
+    padding: 8px 12px;
+    font-size: 11px;
+    color: var(--bowire-text-tertiary);
+}
+
 /* =========================================================================
    #289 — Hoppscotch-style request bar
    =========================================================================
