@@ -1490,8 +1490,49 @@
         return wrap;
     }
 
-    // ---- Response renderer ----
+    // ---- Response renderer (#302 — Hoppscotch parity) ----
+    //
+    // Shape:
+    //   ┌──────────────────────────────────────────────────────────┐
+    //   │ RESPONSE                                                 │
+    //   │ ┌ status meta strip ─────────── action cluster ────────┐ │
+    //   │ │ [200·OK] [347 ms] [3.4 kB]    [⌕] [Wrap] [⬇] [⤡] [⊟] │ │
+    //   │ ├ tabs ──────────────────────────────────────────────── │ │
+    //   │ │ JSON · Raw · Headers · Test results                  │ │
+    //   │ ├────────────────────────────────────────────────────── │ │
+    //   │ │ 1  {                                                 │ │
+    //   │ │ 2    "foo": "bar",                                   │ │
+    //   │ │ 3    "headers": ▼ {                                  │ │
+    //   │ │ 4      "x-trace": "abc"                              │ │
+    //   │ │ 5    }                                               │ │
+    //   │ │ 6  }                                                 │ │
+    //   │ ├ breadcrumb ────────────────────────────────────────── │ │
+    //   │ │ headers > x-trace                                    │ │
+    //   │ └──────────────────────────────────────────────────────┘ │
+    //   └──────────────────────────────────────────────────────────┘
+    //
+    // Per-tab/session state lives on fr._requestBuilder.responseViewer:
+    //   { tab, wrap, search, breadcrumbPath, togglesByPath:Set, searchOpen }
+    function _ensureResponseViewerState(fr) {
+        ensureHoppState(fr);
+        var rv = fr._requestBuilder.responseViewer;
+        if (!rv || typeof rv !== 'object') {
+            rv = {
+                tab: 'json',
+                wrap: false,
+                search: '',
+                searchOpen: false,
+                breadcrumbPath: '',
+                togglesByPath: new Set()
+            };
+            fr._requestBuilder.responseViewer = rv;
+        }
+        if (!(rv.togglesByPath instanceof Set)) rv.togglesByPath = new Set(rv.togglesByPath || []);
+        return rv;
+    }
+
     function _renderHoppResponse() {
+        var fr = freeformRequest;
         var pane = el('div', { className: 'bowire-request-builder-response' });
         pane.appendChild(el('div', { className: 'bowire-pane-heading', textContent: 'Response' }));
         if (responseError) {
@@ -1503,25 +1544,478 @@
                 ? responseError
                 : (typeof problemTitle === 'function' ? problemTitle(responseError, 'Request failed') : 'Request failed');
             pane.appendChild(errOut);
-        } else if (responseData) {
-            var output = el('div', { className: 'bowire-response-output is-interactive' });
-            try { output.innerHTML = highlightJsonInteractive(responseData); }
-            catch (_) { output.textContent = String(responseData); }
-            pane.appendChild(output);
-            // #254 — Offer auto-discovery once per URL after a 2xx
-            // response against a URL that isn't a Source yet. Rendered
-            // inline below the response body so it's discoverable
-            // without dominating the pane.
-            var hint = _renderAutoDiscoverHint(freeformRequest);
-            if (hint) pane.appendChild(hint);
-        } else {
+            return pane;
+        }
+        if (!responseData) {
             pane.appendChild(el('div', {
                 className: 'bowire-response-empty',
                 textContent: 'Execute the request to see the response here. Tip: Ctrl+Enter sends.'
             }));
+            return pane;
         }
+        var rv = _ensureResponseViewerState(fr);
+        var meta = (fr && fr._requestBuilder && fr._requestBuilder.lastResponseMeta) || null;
+        var headers = (meta && meta.headers) || {};
+        // ---- status meta strip + action cluster ----
+        pane.appendChild(_renderResponseMetaStrip(fr, rv, meta));
+        // ---- tab strip (JSON / Raw / Headers / Test results) ----
+        pane.appendChild(_renderResponseTabStrip(fr, rv, headers));
+        // ---- search bar (toggled by ⌕ or Ctrl/Cmd+F) ----
+        if (rv.searchOpen) pane.appendChild(_renderResponseSearchBar(fr, rv));
+        // ---- active tab body ----
+        var body = el('div', { className: 'bowire-response-tab-body' });
+        if (rv.tab === 'raw') {
+            body.appendChild(_renderResponseRawBody(responseData, rv));
+        } else if (rv.tab === 'headers') {
+            body.appendChild(renderHeaderList(headers));
+        } else if (rv.tab === 'tests') {
+            body.appendChild(_renderResponseTestsBody(fr));
+        } else {
+            // Default: JSON viewer.
+            body.appendChild(_renderResponseJsonBody(fr, rv, responseData));
+        }
+        pane.appendChild(body);
+        // ---- breadcrumb under the JSON pane ----
+        if (rv.tab === 'json') pane.appendChild(_renderResponseBreadcrumb(fr, rv));
+        // #254 — auto-discover hint sits below everything.
+        var hint = _renderAutoDiscoverHint(fr);
+        if (hint) pane.appendChild(hint);
         return pane;
     }
+
+    function _renderResponseMetaStrip(fr, rv, meta) {
+        var strip = el('div', { className: 'bowire-response-meta-strip' });
+        var info = el('div', { className: 'bowire-response-meta-info' });
+        if (meta && meta.status != null) {
+            var statusN = parseInt(meta.status, 10);
+            var statusClass = 'bowire-response-status-chip';
+            if (!isNaN(statusN)) {
+                if (statusN >= 200 && statusN < 300) statusClass += ' is-ok';
+                else if (statusN >= 400)             statusClass += ' is-err';
+                else                                  statusClass += ' is-info';
+            }
+            var phrase = httpStatusPhrase(meta.status);
+            info.appendChild(el('span', {
+                className: statusClass,
+                textContent: phrase ? (meta.status + ' · ' + phrase) : String(meta.status)
+            }));
+        }
+        if (meta && meta.durationMs != null) {
+            info.appendChild(el('span', {
+                className: 'bowire-response-meta-chip',
+                textContent: meta.durationMs + ' ms'
+            }));
+        }
+        if (meta && meta.bytes != null && meta.bytes > 0) {
+            info.appendChild(el('span', {
+                className: 'bowire-response-meta-chip',
+                textContent: formatByteSize(meta.bytes)
+            }));
+        }
+        strip.appendChild(info);
+        // Action cluster — Search, Wrap, Expand-all, Collapse-all, Copy, Download.
+        var actions = el('div', { className: 'bowire-response-meta-actions' });
+        actions.appendChild(_metaActionBtn('search', 'Search (Ctrl/Cmd+F)', rv.searchOpen, function () {
+            rv.searchOpen = !rv.searchOpen;
+            if (!rv.searchOpen) rv.search = '';
+            render();
+        }));
+        actions.appendChild(_metaActionBtn('wrap', 'Wrap long lines', rv.wrap, function () {
+            rv.wrap = !rv.wrap;
+            render();
+        }));
+        actions.appendChild(_metaActionBtn('expand', 'Expand all', false, function () {
+            rv.togglesByPath = new Set();  // empty = nothing collapsed
+            render();
+        }));
+        actions.appendChild(_metaActionBtn('collapse', 'Collapse all', false, function () {
+            rv.togglesByPath = _allContainerPaths(responseData);
+            render();
+        }));
+        actions.appendChild(_metaActionBtn('copy', 'Copy response body', false, function () {
+            try {
+                var txt = typeof responseData === 'string' ? responseData : JSON.stringify(responseData, null, 2);
+                navigator.clipboard.writeText(txt).then(
+                    function () { if (typeof toast === 'function') toast('Response copied', 'success'); },
+                    function () { if (typeof toast === 'function') toast('Copy failed', 'error'); }
+                );
+            } catch (_) { /* clipboard errors get swallowed */ }
+        }));
+        actions.appendChild(_metaActionBtn('download', 'Download response', false, function () {
+            _downloadResponseBody(fr);
+        }));
+        strip.appendChild(actions);
+        return strip;
+    }
+
+    function _metaActionBtn(iconName, title, on, onClick) {
+        // Icon label fallback — `wrap` / `expand` / `collapse` aren't in
+        // svgIcon's dictionary, render a glyph instead.
+        var fallback = null;
+        if (iconName === 'wrap')     fallback = '↩';
+        if (iconName === 'expand')   fallback = '⤢';
+        if (iconName === 'collapse') fallback = '⊟';
+        var btn = el('button', {
+            type: 'button',
+            title: title,
+            className: 'bowire-response-meta-btn' + (on ? ' is-on' : ''),
+            onClick: onClick
+        });
+        if (fallback) {
+            btn.textContent = fallback;
+        } else {
+            var svg = typeof svgIcon === 'function' ? svgIcon(iconName) : '';
+            if (svg) btn.innerHTML = svg;
+            else btn.textContent = iconName;
+        }
+        return btn;
+    }
+
+    function _renderResponseTabStrip(fr, rv, headers) {
+        var strip = el('div', { className: 'bowire-response-tab-strip' });
+        var tabs = [
+            { id: 'json',    label: 'JSON' },
+            { id: 'raw',     label: 'Raw' },
+            { id: 'headers', label: 'Headers',
+              badge: headers ? Object.keys(headers).length : 0 },
+            { id: 'tests',   label: 'Test results' }
+        ];
+        for (var i = 0; i < tabs.length; i++) {
+            var t = tabs[i];
+            var active = rv.tab === t.id;
+            var tab = el('button', {
+                type: 'button',
+                className: 'bowire-response-tab-btn' + (active ? ' is-active' : ''),
+                onClick: (function (id) {
+                    return function () { rv.tab = id; render(); };
+                })(t.id)
+            }, t.label);
+            if (t.badge && t.badge > 0) {
+                tab.appendChild(el('span', {
+                    className: 'bowire-response-tab-badge',
+                    textContent: String(t.badge)
+                }));
+            }
+            strip.appendChild(tab);
+        }
+        return strip;
+    }
+
+    function _renderResponseSearchBar(fr, rv) {
+        var bar = el('div', { className: 'bowire-response-search-bar' });
+        var input = el('input', {
+            type: 'text',
+            placeholder: 'Find in response…',
+            value: rv.search || '',
+            className: 'bowire-response-search-input',
+            onInput: function (e) {
+                rv.search = e.target.value;
+                _applyResponseSearchHighlights(rv);
+            },
+            onKeyDown: function (e) {
+                if (e.key === 'Escape') {
+                    rv.searchOpen = false;
+                    rv.search = '';
+                    render();
+                }
+            }
+        });
+        bar.appendChild(input);
+        bar.appendChild(el('button', {
+            type: 'button',
+            className: 'bowire-response-search-close',
+            title: 'Close search (Esc)',
+            innerHTML: typeof svgIcon === 'function' ? svgIcon('close') : '×',
+            onClick: function () {
+                rv.searchOpen = false;
+                rv.search = '';
+                render();
+            }
+        }));
+        // Focus the input on next tick so Ctrl/Cmd+F opens straight into typing.
+        setTimeout(function () { try { input.focus(); input.select(); } catch (_) {} }, 0);
+        return bar;
+    }
+
+    // Walk the rendered viewer and apply visual highlights to lines that
+    // match the search query. Cheap CSS class toggle — no full re-render.
+    function _applyResponseSearchHighlights(rv) {
+        var lines = document.querySelectorAll('.bowire-json-viewer-line');
+        var needle = (rv.search || '').toLowerCase();
+        for (var i = 0; i < lines.length; i++) {
+            var ln = lines[i];
+            var text = (ln.textContent || '').toLowerCase();
+            if (needle && text.indexOf(needle) >= 0) ln.classList.add('is-search-match');
+            else ln.classList.remove('is-search-match');
+        }
+    }
+
+    function _renderResponseJsonBody(fr, rv, raw) {
+        // Bind the live togglesByPath Set to the viewer so collapse state
+        // survives re-renders. onSelectLine updates the breadcrumb path.
+        var viewer = renderJsonViewer(raw, {
+            wrap: !!rv.wrap,
+            togglesByPath: rv.togglesByPath,
+            onToggle: function () { render(); },
+            onSelectLine: function (info) {
+                rv.breadcrumbPath = info.path || '';
+                _refreshBreadcrumbInline(rv);
+            }
+        });
+        viewer.classList.add('is-interactive');
+        // Double-click on a key copies the path; click-on-value copies the
+        // ${response.X} chaining variable. Same gestures as the existing
+        // `is-interactive` response output, so muscle memory carries over.
+        viewer.addEventListener('click', function (e) {
+            var target = e.target.closest && e.target.closest('[data-json-path]');
+            if (!target) return;
+            // Suppress when the click went into a chevron — that's the
+            // viewer's own handler.
+            if (e.target.closest && e.target.closest('.bowire-json-viewer-chev')) return;
+            var raw = target.getAttribute('data-json-path') || '';
+            var chainVar = raw ? '${response.' + raw + '}' : '${response}';
+            navigator.clipboard.writeText(chainVar).then(
+                function () { if (typeof toast === 'function') toast('Copied: ' + chainVar, 'success'); },
+                function () { if (typeof toast === 'function') toast('Copy failed', 'error'); }
+            );
+        });
+        viewer.addEventListener('dblclick', function (e) {
+            var keyEl = e.target.closest && e.target.closest('.bowire-json-key');
+            if (!keyEl) return;
+            e.preventDefault();
+            e.stopPropagation();
+            var raw = keyEl.getAttribute('data-json-path') || '';
+            if (!raw) return;
+            navigator.clipboard.writeText(raw).then(
+                function () { if (typeof toast === 'function') toast('Copied path: ' + raw, 'success'); },
+                function () { if (typeof toast === 'function') toast('Copy failed', 'error'); }
+            );
+        });
+        // Re-apply search highlights once mounted in the DOM.
+        if (rv.search) setTimeout(function () { _applyResponseSearchHighlights(rv); }, 0);
+        return viewer;
+    }
+
+    function _renderResponseRawBody(raw, rv) {
+        var pre = el('pre', { className: 'bowire-response-raw' + (rv.wrap ? ' is-wrap' : '') });
+        var txt = typeof raw === 'string' ? raw : (function () {
+            try { return JSON.stringify(raw, null, 2); }
+            catch (_) { return String(raw); }
+        })();
+        pre.textContent = txt;
+        return pre;
+    }
+
+    function _renderResponseTestsBody(fr) {
+        var wrap = el('div', { className: 'bowire-response-tests-pane' });
+        // The pre-/post-script engine doesn't surface a structured
+        // assertion log yet — keep this slot non-blank with the standard
+        // empty-state copy so the tab doesn't read as broken.
+        wrap.appendChild(el('div', {
+            className: 'bowire-response-empty',
+            textContent: 'Pre/post-script assertion results appear here. (Surface a structured log via `ctx.assert.*` in a post-script.)'
+        }));
+        return wrap;
+    }
+
+    function _renderResponseBreadcrumb(fr, rv) {
+        var bar = el('div', { className: 'bowire-response-breadcrumb', 'data-rv-breadcrumb': '1' });
+        if (!rv.breadcrumbPath) {
+            bar.appendChild(el('span', {
+                className: 'bowire-response-breadcrumb-hint',
+                textContent: 'Click a line to see its JSON path.'
+            }));
+            return bar;
+        }
+        var segs = rv.breadcrumbPath.split('.');
+        bar.appendChild(el('span', {
+            className: 'bowire-response-breadcrumb-root',
+            textContent: '$',
+            title: 'Root',
+            onClick: function () { rv.breadcrumbPath = ''; render(); }
+        }));
+        for (var i = 0; i < segs.length; i++) {
+            bar.appendChild(el('span', {
+                className: 'bowire-response-breadcrumb-sep',
+                textContent: ' › '
+            }));
+            (function (idx) {
+                bar.appendChild(el('span', {
+                    className: 'bowire-response-breadcrumb-seg',
+                    textContent: segs[idx],
+                    onClick: function () {
+                        rv.breadcrumbPath = segs.slice(0, idx + 1).join('.');
+                        render();
+                    }
+                }));
+            })(i);
+        }
+        return bar;
+    }
+
+    // Update only the breadcrumb in place when the operator clicks a new
+    // line — avoids a full re-render that would lose viewer scroll
+    // position.
+    function _refreshBreadcrumbInline(rv) {
+        var bar = document.querySelector('.bowire-response-breadcrumb[data-rv-breadcrumb]');
+        if (!bar) return;
+        bar.textContent = '';
+        if (!rv.breadcrumbPath) {
+            bar.appendChild(el('span', {
+                className: 'bowire-response-breadcrumb-hint',
+                textContent: 'Click a line to see its JSON path.'
+            }));
+            return;
+        }
+        var segs = rv.breadcrumbPath.split('.');
+        bar.appendChild(el('span', {
+            className: 'bowire-response-breadcrumb-root',
+            textContent: '$',
+            title: 'Root',
+            onClick: function () { rv.breadcrumbPath = ''; render(); }
+        }));
+        for (var i = 0; i < segs.length; i++) {
+            bar.appendChild(el('span', {
+                className: 'bowire-response-breadcrumb-sep',
+                textContent: ' › '
+            }));
+            (function (idx) {
+                bar.appendChild(el('span', {
+                    className: 'bowire-response-breadcrumb-seg',
+                    textContent: segs[idx],
+                    onClick: function () {
+                        rv.breadcrumbPath = segs.slice(0, idx + 1).join('.');
+                        render();
+                    }
+                }));
+            })(i);
+        }
+    }
+
+    // Walk the parsed value and return a Set of every container path so
+    // the Collapse-all action can collapse them in one shot. Empty path
+    // ('') is included via the '__root__' sentinel matching the walker.
+    function _allContainerPaths(raw) {
+        var paths = new Set();
+        var parsed;
+        try { parsed = typeof raw === 'string' ? JSON.parse(raw) : raw; }
+        catch (_) { return paths; }
+        if (parsed && typeof parsed === 'object') paths.add('__root__');
+        function walk(val, path) {
+            if (val && typeof val === 'object') {
+                if (path) paths.add(path);
+                if (Array.isArray(val)) {
+                    for (var i = 0; i < val.length; i++) {
+                        walk(val[i], path ? path + '.' + i : String(i));
+                    }
+                } else {
+                    var ks = Object.keys(val);
+                    for (var k = 0; k < ks.length; k++) {
+                        walk(val[ks[k]], path ? path + '.' + ks[k] : ks[k]);
+                    }
+                }
+            }
+        }
+        walk(parsed, '');
+        return paths;
+    }
+
+    function _downloadResponseBody(fr) {
+        try {
+            var raw = responseData;
+            if (raw == null) {
+                if (typeof toast === 'function') toast('Nothing to download', 'info');
+                return;
+            }
+            var contentType = '';
+            var meta = fr && fr._requestBuilder && fr._requestBuilder.lastResponseMeta;
+            if (meta && meta.headers) {
+                contentType = String(meta.headers['content-type']
+                    || meta.headers['Content-Type'] || '').toLowerCase();
+            }
+            var ext = 'txt';
+            var mime = 'text/plain';
+            if (contentType.indexOf('json') >= 0) { ext = 'json'; mime = 'application/json'; }
+            else if (contentType.indexOf('xml') >= 0) { ext = 'xml'; mime = 'application/xml'; }
+            else if (contentType.indexOf('html') >= 0) { ext = 'html'; mime = 'text/html'; }
+            else if (contentType.indexOf('octet-stream') >= 0) { ext = 'bin'; mime = 'application/octet-stream'; }
+            else {
+                // Sniff: looks-like-JSON falls back to .json so the file
+                // opens in the right editor by default.
+                var s = typeof raw === 'string' ? raw : '';
+                if (s && (s.charAt(0) === '{' || s.charAt(0) === '[')) {
+                    ext = 'json'; mime = 'application/json';
+                }
+            }
+            var body = typeof raw === 'string' ? raw : (function () {
+                try { return JSON.stringify(raw, null, 2); }
+                catch (_) { return String(raw); }
+            })();
+            var name = _downloadFilenameForRequest(fr, ext);
+            var blob = new Blob([body], { type: mime + ';charset=utf-8' });
+            _triggerDownload(blob, name);
+            if (typeof toast === 'function') toast('Saved ' + name, 'success');
+        } catch (e) {
+            if (typeof toast === 'function') toast('Download failed: ' + (e && e.message || e), 'error');
+        }
+    }
+
+    function _downloadFilenameForRequest(fr, ext) {
+        var base = 'response';
+        try {
+            var url = fr && fr.serverUrl ? String(fr.serverUrl) : '';
+            if (url) {
+                var u = url.replace(/^[a-z]+:\/\//i, '').replace(/[\/\?#].*/, '');
+                if (u) base = u.replace(/[^a-z0-9._-]+/gi, '-').slice(0, 60) + '-response';
+            }
+        } catch (_) { /* default base */ }
+        var ts = new Date().toISOString().replace(/[:.]/g, '-').replace('T', '_').slice(0, 19);
+        return base + '-' + ts + '.' + ext;
+    }
+
+    function _triggerDownload(blob, filename) {
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        setTimeout(function () {
+            try { document.body.removeChild(a); URL.revokeObjectURL(url); } catch (_) {}
+        }, 0);
+    }
+
+    // Ctrl/Cmd+F inside the workbench scopes to the active request's
+    // response viewer when the focus sits within the response pane —
+    // matches the Hoppscotch behaviour where the operator can type `F`
+    // immediately after a response lands. Bound at the document level so
+    // the keystroke survives re-renders.
+    //
+    // Activation rules (conservative so the browser's native Find still
+    // works when the operator wants it):
+    //   - Focus is inside the response pane                → hijack
+    //   - Focus is inside the body editor / URL bar / any
+    //     other INPUT or TEXTAREA outside the response pane  → ignore
+    //   - Focus is on body / a non-editable element         → hijack
+    //     iff the workbench has a response on screen
+    document.addEventListener('keydown', function (e) {
+        if (!(e.ctrlKey || e.metaKey) || e.key !== 'f') return;
+        var pane = document.querySelector('.bowire-request-builder-response');
+        if (!pane) return;
+        var ae = document.activeElement;
+        var focusInsidePane = ae && pane.contains(ae);
+        var focusInEditable = ae && (
+            ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA' || ae.isContentEditable);
+        // Operator is typing somewhere outside the response — leave their
+        // Ctrl+F alone so they can still search inside the editor / URL bar.
+        if (focusInEditable && !focusInsidePane) return;
+        var fr = freeformRequest;
+        if (!fr || !responseData) return;
+        var rv = _ensureResponseViewerState(fr);
+        rv.searchOpen = true;
+        e.preventDefault();
+        render();
+    });
 
     // ---- #254 — auto-discover prompt after a successful freeform invoke ----
     //
@@ -1842,6 +2336,12 @@
         isExecuting = true;
         responseData = null;
         responseError = null;
+        // #302 — drop the previous response's meta so the strip doesn't
+        // show stale status / duration / size during the new in-flight
+        // request. Toggle state on the viewer survives (it's the
+        // operator's preference, not data).
+        try { if (fr._requestBuilder) fr._requestBuilder.lastResponseMeta = null; }
+        catch (_) { /* leaving stale meta is acceptable on failure */ }
         if (typeof markJobActive === 'function') markJobActive('request-builder', verb);
         render();
 
@@ -1922,6 +2422,19 @@
                 responseData = result.response;
                 historyOutcome.status = result.status || 'OK';
                 historyOutcome.ok = true;
+                // #302 — stash status / duration / headers on the per-fr
+                // bucket so the response viewer's status meta strip,
+                // Headers tab, and download path can read them without
+                // re-issuing the request.
+                try {
+                    if (!fr._requestBuilder) ensureHoppState(fr);
+                    fr._requestBuilder.lastResponseMeta = {
+                        status: result.status != null ? result.status : null,
+                        durationMs: historyOutcome.durationMs,
+                        headers: (result.metadata && typeof result.metadata === 'object') ? result.metadata : {},
+                        bytes: jsonViewerByteLength(result.response)
+                    };
+                } catch (_) { /* leave the strip empty rather than crash render */ }
                 if (typeof captureResponse === 'function' && result.response) captureResponse(result.response);
                 if (typeof addConsoleEntry === 'function') {
                     addConsoleEntry({ type: 'response', method: fullName,

@@ -914,6 +914,12 @@
                 }
             }));
         }
+        // #302 Phase D — download all captured frames as JSON-Lines.
+        if (rbConnState.wsFrames.length > 0) {
+            head.appendChild(_streamDownloadBtn('ws-frames', rbConnState.wsFrames, function (f) {
+                return { ts: f.ts, dir: f.dir, data: f.data };
+            }));
+        }
         pane.appendChild(head);
         if (rbConnState.wsFrames.length === 0) {
             pane.appendChild(el('div', {
@@ -950,6 +956,46 @@
         }
     }
 
+    // #302 Phase D — Download button for streaming response panes. The
+    // operator can pull every captured frame / message / event as a
+    // JSON-Lines file (one JSON object per line). JSON-Lines wins over
+    // a single JSON array because tail-truncated downloads stay parseable
+    // line-by-line (a half-written array is invalid JSON), and `jq -c`
+    // streams it naturally.
+    function _streamDownloadBtn(kind, frames, mapper) {
+        return el('button', {
+            type: 'button',
+            className: 'bowire-request-builder-stream-download-btn',
+            title: 'Download captured ' + kind.replace(/-/g, ' ') + ' as JSON-Lines',
+            innerHTML: typeof svgIcon === 'function' ? svgIcon('download') : '⬇',
+            onClick: function () {
+                try {
+                    var lines = [];
+                    for (var i = 0; i < frames.length; i++) {
+                        try { lines.push(JSON.stringify(mapper(frames[i]))); }
+                        catch (_) { lines.push(JSON.stringify({ error: 'serialize-failed' })); }
+                    }
+                    var body = lines.join('\n');
+                    var ts = new Date().toISOString().replace(/[:.]/g, '-').replace('T', '_').slice(0, 19);
+                    var name = kind + '-' + ts + '.jsonl';
+                    var blob = new Blob([body], { type: 'application/jsonl;charset=utf-8' });
+                    var url = URL.createObjectURL(blob);
+                    var a = document.createElement('a');
+                    a.href = url;
+                    a.download = name;
+                    document.body.appendChild(a);
+                    a.click();
+                    setTimeout(function () {
+                        try { document.body.removeChild(a); URL.revokeObjectURL(url); } catch (_) {}
+                    }, 0);
+                    if (typeof toast === 'function') toast('Saved ' + name, 'success');
+                } catch (e) {
+                    if (typeof toast === 'function') toast('Download failed: ' + (e && e.message || e), 'error');
+                }
+            }
+        });
+    }
+
     function _renderMqttFrameLog() {
         var pane = el('div', { className: 'bowire-request-builder-response is-streaming' });
         var head = el('div', { className: 'bowire-pane-heading' });
@@ -958,6 +1004,12 @@
             head.appendChild(el('span', {
                 className: 'bowire-request-builder-ws-state-chip is-open',
                 textContent: 'Subscribed'
+            }));
+        }
+        // #302 Phase D — download captured MQTT messages as JSON-Lines.
+        if (rbConnState.mqttFrames.length > 0) {
+            head.appendChild(_streamDownloadBtn('mqtt-messages', rbConnState.mqttFrames, function (f) {
+                return { ts: f.ts, data: f.data, err: !!f.err };
             }));
         }
         pane.appendChild(head);
@@ -1016,6 +1068,12 @@
                     rbConnState.sseSource = null;
                     render();
                 }
+            }));
+        }
+        // #302 Phase D — download captured SSE events as JSON-Lines.
+        if (rbConnState.sseEvents.length > 0) {
+            head.appendChild(_streamDownloadBtn('sse-events', rbConnState.sseEvents, function (ev) {
+                return { ts: ev.ts, event: ev.event || 'message', data: ev.data };
             }));
         }
         pane.appendChild(head);
