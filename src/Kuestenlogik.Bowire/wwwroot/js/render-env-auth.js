@@ -983,6 +983,9 @@
                 priority: parseInt(n.dataset.topbarPriority, 10) || 99,
                 label: n.dataset.topbarLabel || n.getAttribute('aria-label') || '',
                 icon: n.dataset.topbarIcon || 'dots',
+                // Semantic bucket carried into the popover so dividers
+                // mirror the rail-strip's group separators.
+                group: n.dataset.topbarGroup || null,
                 disabled: !!n.disabled
             });
         }
@@ -1048,7 +1051,7 @@
         // operator's eye lands on it first.
         hidden.reverse();
         _topbarRightOverflowHidden = hidden.map(function (h) {
-            return { id: h.id, label: h.label, icon: h.icon, disabled: h.disabled };
+            return { id: h.id, label: h.label, icon: h.icon, group: h.group, disabled: h.disabled };
         });
 
         // If the hidden list changed since the last render, refresh
@@ -1110,26 +1113,71 @@
         var app = document.getElementById('bowire-app');
         if (!splitter || !app || splitter.dataset.dragHooked === '1') return;
         splitter.dataset.dragHooked = '1';
-        // When collapsed, ANY click on the splitter (not just on the
-        // chevron) should expand. We do this as a delegated CLICK
-        // listener — not via mousedown-toggle, because toggling on
-        // mousedown then re-rendering causes the trailing click to
-        // land on the new (now-expanded) chevron + collapse again.
-        // The click delegate forwards bar-clicks to the chevron so
-        // there is exactly ONE toggle path (no double-firing).
+        // Helper — the collapsed marker lives on #bowire-app-body
+        // (the app's inner row container), NOT document.body. Reading
+        // it live keeps the handlers in sync with the latest render.
+        function _isSidebarCollapsed() {
+            var appBody = document.getElementById('bowire-app-body');
+            return !!(appBody && appBody.classList.contains('bowire-sidebar-is-collapsed'));
+        }
+        // Click delegate with built-in double-click detection +
+        // post-toggle dead-zone. Same source of truth for single +
+        // double click; the browser's dblclick event is morphdom-
+        // fragile (the first click can swap the splitter node before
+        // dblclick fires). Tracking lastClickTime ourselves is robust.
+        //
+        // Behaviour:
+        //   collapsed + ANY click on bar → expand, then ignore the
+        //     trailing click of a dblclick for 500 ms so the user's
+        //     double-tap doesn't toggle back to collapsed (which is
+        //     the natural reaction if you expect double-click to work
+        //     symmetrically with the expanded variant).
+        //   expanded  + single click on bar → nothing (would be too
+        //     easy to collapse accidentally aiming at the chevron).
+        //   expanded  + double click on bar → collapse.
+        var _lastClickTs = 0;
+        var _toggleDeadUntil = 0;
         splitter.addEventListener('click', function (e) {
-            if (!document.body.classList.contains('bowire-sidebar-is-collapsed')) return;
-            // If the user clicked the chevron itself, the button's
-            // native onClick already fires. Don't double-trigger.
+            // Click on chevron: its own onClick handles it; don't double-fire.
+            if (e.target.closest('.bowire-sidebar-edge-toggle')) {
+                _lastClickTs = 0;
+                return;
+            }
+            // Suppress the browser's text-selection default on rapid
+            // double-clicks. With this gone, dblclick on the bar no
+            // longer triggers the OS / browser quick-action menu.
+            e.preventDefault();
+            var now = Date.now();
+            // Inside the dead-zone (just expanded via the previous
+            // click)? Swallow this click. Symmetry: a dblclick on the
+            // collapsed bar reads as 'expand' (not 'expand-then-toggle').
+            if (now < _toggleDeadUntil) {
+                _lastClickTs = 0;
+                return;
+            }
+            var isDouble = (now - _lastClickTs) < 500;
+            _lastClickTs = isDouble ? 0 : now;
+            if (_isSidebarCollapsed()) {
+                if (typeof toggleSidebarCollapsed === 'function') toggleSidebarCollapsed();
+                _toggleDeadUntil = now + 500;
+            } else if (isDouble) {
+                if (typeof toggleSidebarCollapsed === 'function') toggleSidebarCollapsed();
+                _toggleDeadUntil = now + 500;
+            }
+        });
+        // Suppress the browser's default dblclick action (text select,
+        // word-highlight, OS quick-look) on the bar. The 'click'
+        // handler above carries the toggle logic; this just keeps the
+        // browser from drawing its own menu on top.
+        splitter.addEventListener('dblclick', function (e) {
             if (e.target.closest('.bowire-sidebar-edge-toggle')) return;
-            var chevron = splitter.querySelector('.bowire-sidebar-edge-toggle');
-            if (chevron) chevron.click();
+            e.preventDefault();
         });
         splitter.addEventListener('mousedown', function (e) {
             // When the sidebar is collapsed: skip drag wiring — the
             // click delegate above handles the expand. The splitter
             // has cursor:pointer + no resize semantics.
-            if (document.body.classList.contains('bowire-sidebar-is-collapsed')) {
+            if (_isSidebarCollapsed()) {
                 return;
             }
             // Don't preventDefault yet — we don't know if this is a
@@ -2844,10 +2892,16 @@
             'data-topbar-priority': '5',
             'data-topbar-label': 'About',
             'data-topbar-icon': 'info',
+            'data-topbar-group': 'info',
             onClick: openAbout
         }, el('span', {
             innerHTML: svgIcon('info'),
-            style: 'width:16px;height:16px;display:flex'
+            // 14×14 matches the rest of the topbar's icon size — the
+            // legacy 16×16 made the info / help pair read as visually
+            // heavier than the neighbouring chips + buttons. Operator
+            // feedback: 'das info/about-symbol passt von der größe her
+            // nicht in die top bar'.
+            style: 'width:14px;height:14px;display:flex'
         }));
 
         // Help button — opens the in-app docs drawer (F1). Greyed out
@@ -2868,6 +2922,7 @@
             'data-topbar-priority': '5',
             'data-topbar-label': 'Help',
             'data-topbar-icon': 'help',
+            'data-topbar-group': 'info',
             onClick: function () {
                 if (helpAvailable) {
                     // #299 — toggle: closing on second click matches the
@@ -2885,7 +2940,7 @@
             }
         }, el('span', {
             innerHTML: svgIcon('help'),
-            style: 'width:16px;height:16px;display:flex'
+            style: 'width:14px;height:14px;display:flex'
         }));
 
         // Settings button — wrapped so the plugin-update badge (when
@@ -2944,6 +2999,7 @@
             'data-topbar-priority': '3',
             'data-topbar-label': 'Assistant',
             'data-topbar-icon': 'bot',
+            'data-topbar-group': 'ai',
             onClick: function () {
                 aiDrawerOpen = !aiDrawerOpen;
                 try { localStorage.setItem('bowire_ai_drawer_open', aiDrawerOpen ? '1' : '0'); } catch { /* ignore */ }
@@ -3032,6 +3088,7 @@
             'data-topbar-priority': '1',
             'data-topbar-label': 'Undo',
             'data-topbar-icon': 'undo',
+            'data-topbar-group': 'history',
             onClick: function () {
                 if (_undoDisabled) return;
                 if (typeof undoLastAction === 'function') {
@@ -3059,6 +3116,7 @@
             'data-topbar-priority': '1',
             'data-topbar-label': 'Redo',
             'data-topbar-icon': 'redo',
+            'data-topbar-group': 'history',
             onClick: function () {
                 if (_redoDisabled) return;
                 if (typeof redoLastAction === 'function') {
@@ -3092,6 +3150,7 @@
             // Undo/Redo (rarer affordance, less muscle-memory cost).
             'data-topbar-priority': '2',
             'data-topbar-label': 'Trash',
+            'data-topbar-group': 'history',
             'data-topbar-icon': 'trash',
             onClick: function () {
                 globalTrashOpen = !globalTrashOpen;
@@ -3208,7 +3267,18 @@
                 role: 'menu',
                 onClick: function (e) { e.stopPropagation(); }
             });
+            // Mirror the rail-strip's group dividers inside the topbar
+            // overflow popover so semantic groups (history, ai,
+            // appearance, info) stay visible when items hide.
+            var _topbarPopoverLastGroup = null;
             hiddenItems.forEach(function (h) {
+                if (_topbarPopoverLastGroup !== null && h.group !== _topbarPopoverLastGroup) {
+                    topbarRightOverflowPopover.appendChild(el('div', {
+                        className: 'bowire-topbar-right-overflow-divider',
+                        role: 'separator'
+                    }));
+                }
+                _topbarPopoverLastGroup = h.group;
                 topbarRightOverflowPopover.appendChild(el('button', {
                     type: 'button',
                     role: 'menuitem',
@@ -3527,6 +3597,7 @@
             // glyph as the inline button.
             'data-topbar-priority': '4',
             'data-topbar-label': 'Theme',
+            'data-topbar-group': 'appearance',
             'data-topbar-icon': iconName,
             onClick: function () {
                 var cur = themePreference;

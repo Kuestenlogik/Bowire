@@ -21,7 +21,15 @@ public sealed class BowireWorkspacesRailContribution : IBowireRailContribution
     /// <inheritdoc />
     public int SortIndex => 1200;
     /// <inheritdoc />
-    public string Group => "hardening";
+    /// <remarks>
+    /// Own 'admin' group — separated from Security's 'hardening' group
+    /// because the Workspaces switcher is a project/context surface,
+    /// not an audit/scan surface. Sits just above Settings (which has
+    /// its own divider at the rail foot), so admin + global config
+    /// cluster visually at the bottom. Operator feedback: 'workspaces
+    /// in eigene gruppe'.
+    /// </remarks>
+    public string Group => "admin";
     /// <inheritdoc />
     public string SidebarKind => "workspaces";
     /// <inheritdoc />

@@ -1167,7 +1167,19 @@
                 className: 'bowire-rail-overflow-popover',
                 role: 'menu'
             });
+            // Mirror the rail-strip's group dividers inside the popover
+            // so the same visual grouping carries over when items
+            // overflow. Skips the leading divider before the first
+            // item (no top edge to set off).
+            var _popoverLastGroup = null;
             _railOverflowHidden.forEach(function (m) {
+                if (_popoverLastGroup !== null && m.group !== _popoverLastGroup) {
+                    popover.appendChild(el('div', {
+                        className: 'bowire-rail-overflow-popover-divider',
+                        role: 'separator'
+                    }));
+                }
+                _popoverLastGroup = m.group;
                 var count = _railModeCount(m.id);
                 var hasCount = typeof count === 'number' && count > 0;
                 var isActive = railMode === m.id;
