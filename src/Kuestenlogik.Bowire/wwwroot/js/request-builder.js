@@ -1113,15 +1113,50 @@
         );
         table.appendChild(head);
 
-        // Real rows + one trailing empty add-row.
-        var allRows = rows.slice();
-        allRows.push({ key: '', value: '', description: '', enabled: true, _isAddRow: true });
-        allRows.forEach(function (r, idx) {
-            var isAdd = r._isAddRow === true;
+        // KV-table input model — uniform rows, no _isAddRow branching.
+        //
+        // Earlier implementation: kept a synthetic _isAddRow at the end
+        // with onInput pushing a NEW row + render() on every keystroke.
+        // That tore the user's focus off the input on each char + the
+        // next keystroke landed in the freshly-rendered add-row, NOT in
+        // the row the user thought they were typing into. Result: 'Tab
+        // to value' wrote the value into the NEXT row's value column.
+        // User feedback: 'so ist das überhaupt nicht nutzbar.'
+        //
+        // New model: the rows array carries one trailing empty row. The
+        // user types into it; rows[idx][field] updates in-place via
+        // onInput, NO render. When focus leaves the row entirely
+        // (focusout w/ relatedTarget outside the row), we render — that
+        // appends a fresh trailing empty row IF the just-edited row has
+        // content. Tab from key→value→desc within the row stays inside
+        // the row, no render, no focus loss.
+
+        // Ensure exactly one trailing empty row for 'add new'.
+        if (rows.length === 0 || rows[rows.length - 1].key
+            || rows[rows.length - 1].value || rows[rows.length - 1].description) {
+            rows.push({ key: '', value: '', description: '', enabled: true });
+        }
+
+        var lastIdx = rows.length - 1;
+        rows.forEach(function (r, idx) {
+            var isLast = idx === lastIdx;
             var row = el('div', {
-                className: 'bowire-request-builder-kv-row' + (isAdd ? ' is-add-row' : ''),
-                draggable: !isAdd ? 'true' : undefined,
+                className: 'bowire-request-builder-kv-row' + (isLast ? ' is-add-row' : ''),
+                draggable: !isLast ? 'true' : undefined,
                 'data-idx': String(idx)
+            });
+            // Re-render when focus leaves the row entirely — adds a
+            // new trailing empty row when the just-edited row has
+            // content. Per-input blur would fire on every Tab within
+            // the row, killing the user's flow; focusout w/ a
+            // relatedTarget check fires once, when the user actually
+            // leaves the row.
+            row.addEventListener('focusout', function (ev) {
+                if (row.contains(ev.relatedTarget)) return;
+                if (!isLast) return;
+                if (rows[idx].key || rows[idx].value || rows[idx].description) {
+                    render();
+                }
             });
             // Drag handle (cosmetic — drag-drop reorder wired via
             // native HTML5 DnD on the row itself).
@@ -1136,17 +1171,7 @@
                 value: r.key || '',
                 placeholder: keyPlaceholder,
                 spellcheck: 'false',
-                onInput: function (e) {
-                    if (isAdd) {
-                        if (e.target.value) {
-                            // Promote add-row to real row.
-                            rows.push({ key: e.target.value, value: '', description: '', enabled: true });
-                            render();
-                        }
-                    } else {
-                        rows[idx].key = e.target.value;
-                    }
-                }
+                onInput: function (e) { rows[idx].key = e.target.value; }
             }));
             row.appendChild(el('input', {
                 type: 'text',
@@ -1154,16 +1179,7 @@
                 value: r.value || '',
                 placeholder: valPlaceholder,
                 spellcheck: 'false',
-                onInput: function (e) {
-                    if (isAdd) {
-                        if (e.target.value) {
-                            rows.push({ key: '', value: e.target.value, description: '', enabled: true });
-                            render();
-                        }
-                    } else {
-                        rows[idx].value = e.target.value;
-                    }
-                }
+                onInput: function (e) { rows[idx].value = e.target.value; }
             }));
             row.appendChild(el('input', {
                 type: 'text',
@@ -1171,16 +1187,7 @@
                 value: r.description || '',
                 placeholder: descPlaceholder,
                 spellcheck: 'false',
-                onInput: function (e) {
-                    if (isAdd) {
-                        if (e.target.value) {
-                            rows.push({ key: '', value: '', description: e.target.value, enabled: true });
-                            render();
-                        }
-                    } else {
-                        rows[idx].description = e.target.value;
-                    }
-                }
+                onInput: function (e) { rows[idx].description = e.target.value; }
             }));
             // Enable checkbox — hidden for the add-row (no row to
             // toggle yet).
@@ -1189,9 +1196,9 @@
                 className: 'bowire-request-builder-kv-enable',
                 checked: r.enabled !== false ? 'checked' : undefined,
                 title: r.enabled !== false ? 'Enabled — included in request' : 'Disabled — skipped',
-                style: isAdd ? 'visibility:hidden' : undefined,
+                style: isLast ? 'visibility:hidden' : undefined,
                 onChange: function (e) {
-                    if (!isAdd) {
+                    if (!isLast) {
                         rows[idx].enabled = e.target.checked;
                         render();
                     }
@@ -1202,17 +1209,17 @@
                 type: 'button',
                 className: 'bowire-request-builder-kv-del',
                 title: 'Remove row',
-                style: isAdd ? 'visibility:hidden' : undefined,
+                style: isLast ? 'visibility:hidden' : undefined,
                 innerHTML: svgIcon('close'),
                 onClick: function () {
-                    if (!isAdd) {
+                    if (!isLast) {
                         rows.splice(idx, 1);
                         render();
                     }
                 }
             }));
             // Drag-drop wiring for reorder (real rows only).
-            if (!isAdd) {
+            if (!isLast) {
                 row.addEventListener('dragstart', function (e) {
                     e.dataTransfer.effectAllowed = 'move';
                     e.dataTransfer.setData('text/plain', String(idx));
