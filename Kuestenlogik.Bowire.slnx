@@ -46,6 +46,7 @@
     <Project Path="src/Kuestenlogik.Bowire.Mock/Kuestenlogik.Bowire.Mock.csproj" />
     <Project Path="src/Kuestenlogik.Bowire.Mcp/Kuestenlogik.Bowire.Mcp.csproj" />
     <Project Path="src/Kuestenlogik.Bowire.Tool/Kuestenlogik.Bowire.Tool.csproj" />
+    <Project Path="src/Kuestenlogik.Bowire.Bundle.Minimal/Kuestenlogik.Bowire.Bundle.Minimal.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Kuestenlogik.Bowire.Testing/Kuestenlogik.Bowire.Testing.csproj" />

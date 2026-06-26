@@ -809,13 +809,22 @@
     // in render-main.js (full-width main pane with multi-line values).
 
     // #133 / #137 — Activity rail. Always-visible icon column on the
-    // leftmost edge that switches workbench focus by use case. Single
-    // source of truth for the rail mode catalogue: each entry declares
-    // which sidebar template renders (kind). The render-env-auth body
-    // assembly + the renderSidebar dispatcher both read from this so a
-    // new mode only needs one entry to wire up its sidebar shape.
+    // leftmost edge that switches workbench focus by use case. #294
+    // turned the catalogue data-driven: each entry comes from a
+    // server-side IBowireRailContribution descriptor that lands in
+    // __BOWIRE_CONFIG__.rails. The host's installed packages decide
+    // which entries are in the catalogue — embedded hosts that don't
+    // reference the Security package never see the Security rail
+    // because the descriptor was never discovered.
     //
-    // sidebar.kind values:
+    // The shape stays compatible with the old hardcoded array so the
+    // rest of this file (sidebar dispatcher, layout pass, overflow
+    // popover, _railModeById, currentRailSidebarSpec) keeps working
+    // unchanged:
+    //   { id, icon, label, group, sidebar: { kind }, hideFromRail?, alwaysOn? }
+    //
+    // sidebar.kind values recognised by the dispatcher (renderSidebar
+    // in render-env-auth.js):
     //   'none'         → no sidebar; main pane spans edge to edge
     //   'services'     → discover services tree (Discover, Security)
     //   'collections'  → Collections list (Collections mode)
@@ -827,52 +836,29 @@
     //   'benchmarks'   → Benchmarks list
     //   'flows'        → legacy flows sidebar via sidebarView='flows'
     //   'proxy'        → legacy proxy sidebar via sidebarView='proxy'
-    var _railModes = [
-        { id: 'home',         icon: 'house',     label: 'Home',              group: 'work',      sidebar: { kind: 'none' } },
-        // 'sources' rail mode retired — URL + Schema-File management
-        // moved into the Workspace-detail pane (workspaces are the
-        // proper owner: each workspace's sources are an integral part
-        // of "what I'm working on right now"). Boot migration in
-        // prologue.js rewrites a stale railMode='sources' to
-        // 'workspaces' so existing installs land on the new spot.
-        { id: 'discover',     icon: 'discover',  label: 'Discover',          group: 'work',      sidebar: { kind: 'services' } },
-        // #293 — Compose rail: home for the ad-hoc Request Builder.
-        // Conceptually orthogonal to Discover (schema-driven, pick a
-        // server-advertised method) — the operator drafts a freeform
-        // request here without picking a discovered method first. Main
-        // pane carries its own tab strip + pinned '+ New Request' tab;
-        // each tab owns an independent request-builder instance.
-        // Sidebar kind: 'none' (the strip lives in the main pane, not
-        // the sidebar). #294 will fold this into the plugin-descriptor
-        // model; for now it ships as another always-on entry.
-        { id: 'compose',       icon: 'drill',     label: 'Compose',           group: 'work',      sidebar: { kind: 'none' } },
-        // Collections rail mode kept in the catalogue (so the existing
-        // sidebar + main-pane render paths still work when the
-        // Workspaces tree dispatches to it), but hideFromRail removes
-        // the standalone button from the activity rail — collections
-        // are managed inside their workspace.
-        { id: 'collections',  icon: 'folder',    label: 'Collections',       group: 'work',      sidebar: { kind: 'collections' }, hideFromRail: true },
-        // Environments retired from the rail too — owned by workspaces:
-        // each workspace declares which envs are included, and the
-        // editor opens inline when a workspace's Environments node
-        // (or one of its env leaves) is clicked.
-        { id: 'environments', icon: 'globe',     label: 'Environments',      group: 'work',      sidebar: { kind: 'environments' }, hideFromRail: true },
-        // Recordings sits back on the rail — peer with Mocks + Flows
-        // (every "scenarios"-group surface is a rail-level work mode).
-        // The Workspaces tree's per-workspace Recordings sub-node stays
-        // available for workspace-overview navigation; the rail is the
-        // direct quick-access path for the active workspace.
-        { id: 'recordings',   icon: 'recording', label: 'Recordings',        group: 'scenarios', sidebar: { kind: 'recordings' } },
-        { id: 'mocks',        icon: 'mock',      label: 'Mocks',             group: 'scenarios', sidebar: { kind: 'mocks' } },
-        { id: 'flows',        icon: 'flow',      label: 'Flows',             group: 'scenarios', sidebar: { kind: 'flows' } },
-        { id: 'proxy',        icon: 'disconnect',label: 'Proxy / MITM',      group: 'quality',   sidebar: { kind: 'proxy' } },
-        { id: 'benchmarks',   icon: 'chart',     label: 'Benchmarks',        group: 'quality',   sidebar: { kind: 'benchmarks' } },
-        // Parallel sessions: launched directly from a recording or
-        // collection toolbar (#132 minimal). No standalone rail mode —
-        // the result lands inline under the source that started it.
-        { id: 'security',     icon: 'shield',    label: 'Security',          group: 'hardening', sidebar: { kind: 'security' } },
-        { id: 'workspaces',   icon: 'layers',    label: 'Workspaces',        group: 'hardening', sidebar: { kind: 'workspaces' } },
-    ];
+    //
+    // Fallback to an empty list — defensive against a misconfigured
+    // host that didn't ship the config block, the rail strip just
+    // wouldn't render anything (rather than NRE-ing on _railModes
+    // being undefined). The always-on logic in prologue.js still
+    // works against an empty list (no rails to keep always on, so
+    // nothing forces a render).
+    var _railModes = (function () {
+        var cfg = (typeof window !== 'undefined' && window.__BOWIRE_CONFIG__) || {};
+        var raw = Array.isArray(cfg.rails) ? cfg.rails : [];
+        return raw.map(function (r) {
+            return {
+                id: r.id,
+                icon: r.icon,
+                label: r.label,
+                group: r.group,
+                sidebar: r.sidebar || { kind: 'none' },
+                hideFromRail: !!r.hideFromRail,
+                alwaysOn: !!r.alwaysOn,
+                defaultEnabled: r.defaultEnabled !== false
+            };
+        });
+    })();
     function _railModeById(id) {
         for (var i = 0; i < _railModes.length; i++) {
             if (_railModes[i].id === id) return _railModes[i];

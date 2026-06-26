@@ -3,6 +3,7 @@
 
 using Kuestenlogik.Bowire.Auth;
 using Kuestenlogik.Bowire.Endpoints;
+using Kuestenlogik.Bowire.Plugins;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
@@ -76,6 +77,25 @@ internal static class BowireApiEndpoints
             }
         }
         BowireEndpointHelpers.SetRegistry(registry);
+
+        // #294 — Discover the rail + module contributions and merge in
+        // any descriptors that the host registered explicitly via
+        // services.AddBowireRail<T>() / AddBowireModule<T>(). Built once
+        // per host startup (the catalogue is static for the lifetime of
+        // the process) and handed to BowireHtmlGenerator so the JS
+        // bundle's `__BOWIRE_CONFIG__.rails` / `.modules` seed renders
+        // data-driven instead of from the old hardcoded JS arrays.
+        var railRegistry = BowireRailRegistry.Discover(startupLogger);
+        foreach (var rail in endpoints.ServiceProvider.GetServices<IBowireRailContribution>())
+        {
+            railRegistry.Register(rail);
+        }
+        var moduleRegistry = BowireModuleRegistry.Discover(startupLogger);
+        foreach (var module in endpoints.ServiceProvider.GetServices<IBowireModuleContribution>())
+        {
+            moduleRegistry.Register(module);
+        }
+        BowireHtmlGenerator.SetContributions(railRegistry, moduleRegistry);
 
         // basePath is the URL fragment all routes are anchored under:
         //   • RoutePrefix = "bowire"  →  basePath = "/bowire"  (embedded default)

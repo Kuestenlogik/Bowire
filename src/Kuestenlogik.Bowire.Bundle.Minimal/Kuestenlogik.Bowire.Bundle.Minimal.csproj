@@ -1,0 +1,36 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <!--
+      #294 Phase F — Bundle.Minimal meta-package. References core + the
+      bare-minimum protocol plugins for a host that just wants "fire a
+      request and see the response" without the full workbench surface.
+      No Security rail, no AI module, no Recordings / Mocks / Flows /
+      Proxy / Benchmarks: those land in Bundle.Workbench (the
+      "everything-on" superset that retargets Bowire.Tool).
+    -->
+    <Description>Bowire bundle for embedded hosts that only need request execution against discovered services. Pulls in core + Compose + Discover-capable protocols (REST + gRPC). No Security, no Mocks, no Recordings, no AI — pick Bundle.Workbench (or per-package opt-in) for those.</Description>
+    <PackageId>Kuestenlogik.Bowire.Bundle.Minimal</PackageId>
+    <PackageTags>bowire;bundle;minimal;meta-package;embedded</PackageTags>
+    <IsPackable>true</IsPackable>
+    <!--
+      Meta-package: no code lives here, only ProjectReferences. Keep
+      the assembly empty so downstream consumers don't get a stray
+      Kuestenlogik.Bowire.Bundle.Minimal.dll in their output that
+      contains nothing useful.
+    -->
+    <IncludeBuildOutput>false</IncludeBuildOutput>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <!-- NU5128: meta-package has no lib/ folder. CA1016: meta-package
+         has no code, so there's no assembly to version-stamp. -->
+    <NoWarn>$(NoWarn);NU5128;CA1016</NoWarn>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- Core. -->
+    <ProjectReference Include="..\Kuestenlogik.Bowire\Kuestenlogik.Bowire.csproj" />
+    <!-- REST + gRPC are the two protocols every embedded host wants by
+         default. Add more by opting into Kuestenlogik.Bowire.Protocol.* directly. -->
+    <ProjectReference Include="..\Kuestenlogik.Bowire.Protocol.Rest\Kuestenlogik.Bowire.Protocol.Rest.csproj" />
+    <ProjectReference Include="..\Kuestenlogik.Bowire.Protocol.Rest.OpenApi3\Kuestenlogik.Bowire.Protocol.Rest.OpenApi3.csproj" />
+    <ProjectReference Include="..\Kuestenlogik.Bowire.Protocol.Grpc\Kuestenlogik.Bowire.Protocol.Grpc.csproj" />
+  </ItemGroup>
+</Project>
