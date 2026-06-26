@@ -19051,7 +19051,7 @@ not as the
     padding: 0 12px;
     height: 36px;
     min-width: 92px;
-    background: var(--bowire-bg-input, #0f0f0f);
+    background: var(--bowire-bg-elevated);
     border: 1px solid var(--bowire-border, #2a2a2a);
     border-right: none;
     border-radius: 6px 0 0 6px;
@@ -19134,11 +19134,11 @@ not as the
     flex: 1;
     height: 36px;
     padding: 0 12px;
-    background: var(--bowire-bg-input, #0f0f0f);
+    background: var(--bowire-bg-elevated);
     border: 1px solid var(--bowire-border, #2a2a2a);
     border-right: none;
     font: 400 13px/1 var(--bowire-font-mono, monospace);
-    color: #fff;
+    color: var(--bowire-text);
     outline: none;
 }
 .bowire-request-builder-url-input:focus {
@@ -19488,12 +19488,12 @@ not as the
     padding: 0 10px;
     background: transparent;
     border: none;
-    color: #fff;
+    color: var(--bowire-text);
     font: 400 13px/1 var(--bowire-font-mono, monospace);
     outline: none;
 }
 .bowire-request-builder-kv-input:focus {
-    background: var(--bowire-bg-input, #0f0f0f);
+    background: var(--bowire-bg-elevated);
 }
 .bowire-request-builder-kv-enable {
     margin: 0 6px;
@@ -19534,7 +19534,7 @@ not as the
 }
 .bowire-request-builder-body-mode-btn {
     padding: 4px 12px;
-    background: var(--bowire-bg-input, #0f0f0f);
+    background: var(--bowire-bg-elevated);
     border: 1px solid var(--bowire-border, #2a2a2a);
     border-radius: 4px;
     color: var(--bowire-text-muted, #888);
@@ -19555,10 +19555,10 @@ not as the
     width: 100%;
     min-height: 200px;
     padding: 10px;
-    background: var(--bowire-bg-input, #0f0f0f);
+    background: var(--bowire-bg-elevated);
     border: 1px solid var(--bowire-border, #2a2a2a);
     border-radius: 6px;
-    color: #fff;
+    color: var(--bowire-text);
     font: 400 13px/1.5 var(--bowire-font-mono, monospace);
     resize: vertical;
     outline: none;
@@ -19587,7 +19587,7 @@ not as the
 }
 .bowire-request-builder-auth-kind-btn {
     padding: 6px 12px;
-    background: var(--bowire-bg-input, #0f0f0f);
+    background: var(--bowire-bg-elevated);
     border: 1px solid var(--bowire-border, #2a2a2a);
     border-radius: 4px;
     color: var(--bowire-text-muted, #888);
@@ -19619,10 +19619,10 @@ not as the
     flex: 1;
     height: 32px;
     padding: 0 10px;
-    background: var(--bowire-bg-input, #0f0f0f);
+    background: var(--bowire-bg-elevated);
     border: 1px solid var(--bowire-border, #2a2a2a);
     border-radius: 4px;
-    color: #fff;
+    color: var(--bowire-text);
     font: 400 13px/1 var(--bowire-font-mono, monospace);
     outline: none;
 }
@@ -19648,7 +19648,7 @@ not as the
     width: 100%;
     min-height: 220px;
     padding: 10px;
-    background: var(--bowire-bg-input, #0f0f0f);
+    background: var(--bowire-bg-elevated);
     border: 1px solid var(--bowire-border, #2a2a2a);
     border-radius: 6px;
     color: #fff;
@@ -19721,7 +19721,7 @@ not as the
     padding: 0 12px;
     height: 36px;
     min-width: 96px;
-    background: var(--bowire-bg-input, #0f0f0f);
+    background: var(--bowire-bg-elevated);
     border: 1px solid var(--bowire-border, #2a2a2a);
     border-right: none;
     border-radius: 6px 0 0 6px;
@@ -19803,7 +19803,7 @@ not as the
     padding: 0 12px;
     height: 36px;
     min-width: 200px;
-    background: var(--bowire-bg-input, #0f0f0f);
+    background: var(--bowire-bg-elevated);
     border: 1px solid var(--bowire-border, #2a2a2a);
     border-right: none;
     font: 500 13px/1 var(--bowire-font-mono, monospace);
@@ -19844,10 +19844,10 @@ not as the
     flex: 1;
     height: 28px;
     padding: 0 8px;
-    background: var(--bowire-bg-input, #0f0f0f);
+    background: var(--bowire-bg-elevated);
     border: 1px solid var(--bowire-border, #2a2a2a);
     border-radius: 4px;
-    color: #fff;
+    color: var(--bowire-text);
     font: 400 12px/1 var(--bowire-font-mono, monospace);
 }
 .bowire-request-builder-grpc-free-sep { color: var(--bowire-text-muted, #888); }
@@ -19890,7 +19890,7 @@ not as the
     padding: 0 12px;
     height: 36px;
     min-width: 110px;
-    background: var(--bowire-bg-input, #0f0f0f);
+    background: var(--bowire-bg-elevated);
     border: 1px solid var(--bowire-border, #2a2a2a);
     border-right: none;
     color: #fff;
@@ -19931,10 +19931,10 @@ not as the
     height: 32px;
     margin-bottom: 8px;
     padding: 0 10px;
-    background: var(--bowire-bg-input, #0f0f0f);
+    background: var(--bowire-bg-elevated);
     border: 1px solid var(--bowire-border, #2a2a2a);
     border-radius: 4px;
-    color: #fff;
+    color: var(--bowire-text);
     font: 400 13px/1 var(--bowire-font-mono, monospace);
 }
 
@@ -19944,7 +19944,7 @@ not as the
     height: 36px;
     border: 1px solid var(--bowire-border, #2a2a2a);
     border-right: none;
-    background: var(--bowire-bg-input, #0f0f0f);
+    background: var(--bowire-bg-elevated);
 }
 .bowire-request-builder-mqtt-action-btn {
     padding: 0 12px;
@@ -19962,10 +19962,10 @@ not as the
     width: 100%;
     height: 32px;
     padding: 0 10px;
-    background: var(--bowire-bg-input, #0f0f0f);
+    background: var(--bowire-bg-elevated);
     border: 1px solid var(--bowire-border, #2a2a2a);
     border-radius: 4px;
-    color: #fff;
+    color: var(--bowire-text);
     font: 400 13px/1 var(--bowire-font-mono, monospace);
 }
 .bowire-request-builder-mqtt-qos-row {
@@ -19975,7 +19975,7 @@ not as the
 }
 .bowire-request-builder-mqtt-qos-btn {
     padding: 6px 12px;
-    background: var(--bowire-bg-input, #0f0f0f);
+    background: var(--bowire-bg-elevated);
     border: 1px solid var(--bowire-border, #2a2a2a);
     border-radius: 4px;
     color: var(--bowire-text-muted, #888);
@@ -20001,7 +20001,7 @@ not as the
     height: 36px;
     border: 1px solid var(--bowire-border, #2a2a2a);
     border-right: none;
-    background: var(--bowire-bg-input, #0f0f0f);
+    background: var(--bowire-bg-elevated);
 }
 .bowire-request-builder-ws-state-chip {
     font: 600 11px/1 system-ui, sans-serif;
@@ -20022,10 +20022,10 @@ not as the
     width: 120px;
     height: 32px;
     padding: 0 10px;
-    background: var(--bowire-bg-input, #0f0f0f);
+    background: var(--bowire-bg-elevated);
     border: 1px solid var(--bowire-border, #2a2a2a);
     border-radius: 4px;
-    color: #fff;
+    color: var(--bowire-text);
     font: 400 13px/1 var(--bowire-font-mono, monospace);
 }
 .bowire-request-builder-sse-reconnect-row,
@@ -20053,7 +20053,7 @@ not as the
     gap: 8px;
     align-items: baseline;
     padding: 4px 8px;
-    background: var(--bowire-bg-input, #0f0f0f);
+    background: var(--bowire-bg-elevated);
     border-left: 2px solid var(--bowire-border, #2a2a2a);
     border-radius: 0 4px 4px 0;
     font: 400 12px/1.4 var(--bowire-font-mono, monospace);
@@ -20069,7 +20069,7 @@ not as the
     text-align: center;
 }
 .bowire-request-builder-stream-data {
-    color: #fff;
+    color: var(--bowire-text);
     word-break: break-word;
     white-space: pre-wrap;
 }
