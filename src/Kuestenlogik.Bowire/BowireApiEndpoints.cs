@@ -116,7 +116,8 @@ internal static class BowireApiEndpoints
             .MapBowirePluginEndpoints(basePath)
             .MapBowireSemanticsEndpoints(basePath)
             .MapBowireSecurityEndpoints(basePath)
-            .MapBowireHelpEndpoints(basePath);
+            .MapBowireHelpEndpoints(basePath)
+            .MapBowireCatalogueEndpoints(basePath);
 
         // Apply the auth gate exactly once when an IBowireAuthProvider
         // is registered (AddBowireAuth resolved it from the

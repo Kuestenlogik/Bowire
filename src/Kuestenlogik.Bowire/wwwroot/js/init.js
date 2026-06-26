@@ -875,6 +875,17 @@
                 }
             });
 
+            // #136 — kick off the catalogue fetch in parallel with
+            // the first /api/services call. Catalogue-sourced URLs
+            // get merged into serverUrls; fetchServices() runs against
+            // whatever's already in the list at startup, and a render()
+            // inside initialCatalogueLoad picks up newly-added URLs.
+            // Failure to reach the catalogue endpoint is non-fatal —
+            // initialCatalogueLoad swallows network errors so a half-
+            // configured host still boots into a usable workbench.
+            if (typeof initialCatalogueLoad === 'function') {
+                initialCatalogueLoad();
+            }
             fetchServices();
         });
     }

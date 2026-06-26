@@ -182,6 +182,12 @@
          list). Consumed by render-env-auth.js's drawer mount + topbar
          overflow click, and by init.js's F1 keybind. -->
     <BowireJsFragment Include="wwwroot\js\help.js" />
+    <!-- #136 — URL / service catalogue providers boot helper. Fetches
+         /api/catalogue/info + /entries on workbench mount and merges
+         catalogue-sourced URLs into serverUrls so the existing
+         discovery + sidebar surface picks them up. Must come before
+         init.js so init.js can call initialCatalogueLoad() during boot. -->
+    <BowireJsFragment Include="wwwroot\js\catalogue.js" />
     <!--
       Frame-semantics framework + built-in widgets. extensions.js MUST
       come before any widget bundle so window.BowireExtensions.register
