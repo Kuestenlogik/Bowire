@@ -427,6 +427,19 @@
 
             // Esc: close overlay, stop streaming, or disconnect channel
             if (e.key === 'Escape') {
+                // #281 — Guided tour Esc handler. Lands FIRST so the
+                // overlay-modal eats Esc before anything else (palette,
+                // overflow popovers, &c.) — same priority ordering as
+                // the global Trash drawer below.
+                if (typeof window !== 'undefined'
+                    && typeof window.bowireTourIsRunning === 'function'
+                    && window.bowireTourIsRunning()) {
+                    e.preventDefault();
+                    if (typeof window.bowireStopTour === 'function') {
+                        window.bowireStopTour();
+                    }
+                    return;
+                }
                 if (shortcutSheetOpen) {
                     shortcutSheetOpen = false;
                     render();

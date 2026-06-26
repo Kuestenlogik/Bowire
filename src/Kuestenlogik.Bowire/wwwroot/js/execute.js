@@ -972,110 +972,34 @@
         return drawer;
     }
 
-    // ---- Guided Tour ----
-    // ---- Lightweight Tour (no external dependencies) ----
-    var tourStepIndex = -1;
-    var tourOverlay = null;
-
-    function getTourSteps() {
-        var steps = [
-            { el: '.bowire-service-list', text: 'Browse your gRPC services here. Click a service to expand its methods.', pos: 'right' },
-            { el: '.bowire-method-item', text: 'Each method shows its type: Unary (U), Server Streaming (SS), Client Streaming (CS), or Duplex (DX).', pos: 'right' },
-            { el: '#bowire-topbar-palette', text: 'Command palette — search methods, jump between environments, apply protocol filters, pin a name filter. Press Shift+/ to focus it from anywhere.', pos: 'bottom' },
-        ];
-        if ($('.bowire-favorites-group')) steps.push({ el: '.bowire-favorites-group', text: 'Star methods for quick access. Favorites are pinned at the top.', pos: 'right' });
-        if ($('.bowire-pane')) steps.push({ el: '.bowire-pane', text: 'Enter your request here. Switch between Form and JSON mode.', pos: 'right' });
-        if ($('.bowire-input-mode-toggle')) steps.push({ el: '.bowire-input-mode-toggle', text: 'Form mode for simple types, JSON for complex payloads.', pos: 'bottom' });
-        if ($('.bowire-execute-btn')) steps.push({ el: '.bowire-execute-btn', text: 'Click Execute or press Ctrl+Enter to send your request.', pos: 'top' });
-        steps.push({ el: '.bowire-theme-toggle', text: 'Switch between dark and light theme. Press T as shortcut.', pos: 'top' });
-        steps.push({ el: null, text: 'Press ? anytime to see all keyboard shortcuts. Enjoy exploring your APIs!', pos: 'center' });
-        return steps;
-    }
-
-    var TOUR_DONE_KEY = 'bowire_tour_done';
-
+    // ---- Guided Tour (legacy shim) ----
+    //
+    // #281 — The tour engine moved out of execute.js into its own
+    // tour.js fragment with a proper spotlight overlay, page-
+    // navigation primitive, and per-step CTA / event / next-button
+    // advance modes. The `startTour()` symbol stayed callable from
+    // every prior call site (sidebar 'Take Tour' footer, landing
+    // help footer, render-main welcome card) so we expose a thin
+    // shim that forwards to the new engine's Getting-started tour.
     function startTour() {
-        tourStepIndex = 0;
-        showTourStep();
-    }
-
-    function endTour() {
-        tourStepIndex = -1;
-        if (tourOverlay) { tourOverlay.remove(); tourOverlay = null; }
-        try { localStorage.setItem(TOUR_DONE_KEY, '1'); } catch {}
-    }
-
-    function shouldAutoStartTour() {
-        try { return !localStorage.getItem(TOUR_DONE_KEY); } catch { return false; }
-    }
-
-    function showTourStep() {
-        var steps = getTourSteps();
-        if (tourStepIndex < 0 || tourStepIndex >= steps.length) { endTour(); return; }
-
-        if (tourOverlay) tourOverlay.remove();
-
-        var step = steps[tourStepIndex];
-        var target = step.el ? $(step.el) : null;
-
-        // Overlay
-        tourOverlay = el('div', { className: 'bowire-tour-overlay', onClick: function (e) { if (e.target === tourOverlay) endTour(); } });
-
-        // Tooltip
-        var isLast = tourStepIndex === steps.length - 1;
-        var isFirst = tourStepIndex === 0;
-
-        var buttons = el('div', { className: 'bowire-tour-buttons' });
-        if (!isFirst) buttons.appendChild(el('button', { id: 'bowire-tour-back-btn', className: 'bowire-tour-btn-secondary', textContent: 'Back', onClick: function () { tourStepIndex--; showTourStep(); } }));
-        buttons.appendChild(el('button', { id: 'bowire-tour-skip-btn', className: 'bowire-tour-btn-skip', textContent: 'Skip', onClick: endTour }));
-        buttons.appendChild(el('button', { id: 'bowire-tour-next-btn', className: 'bowire-tour-btn-primary', textContent: isLast ? 'Done' : 'Next', onClick: function () { tourStepIndex++; showTourStep(); } }));
-
-        var counter = el('span', { className: 'bowire-tour-counter', textContent: (tourStepIndex + 1) + ' / ' + steps.length });
-
-        var tooltip = el('div', { className: 'bowire-tour-tooltip' },
-            el('div', { className: 'bowire-tour-text', textContent: step.text }),
-            el('div', { className: 'bowire-tour-footer' }, counter, buttons)
-        );
-
-        tourOverlay.appendChild(tooltip);
-        document.body.appendChild(tourOverlay);
-
-        // Position tooltip near target
-        if (target) {
-            target.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            requestAnimationFrame(function () {
-                var rect = target.getBoundingClientRect();
-                target.classList.add('bowire-tour-highlight');
-                // Remove highlight from previous
-                $$('.bowire-tour-highlight').forEach(function (el) { if (el !== target) el.classList.remove('bowire-tour-highlight'); });
-
-                if (step.pos === 'right') {
-                    tooltip.style.left = (rect.right + 12) + 'px';
-                    tooltip.style.top = rect.top + 'px';
-                } else if (step.pos === 'bottom') {
-                    tooltip.style.left = rect.left + 'px';
-                    tooltip.style.top = (rect.bottom + 12) + 'px';
-                } else if (step.pos === 'top') {
-                    tooltip.style.left = rect.left + 'px';
-                    tooltip.style.top = (rect.top - 12) + 'px';
-                    tooltip.style.transform = 'translateY(-100%)';
-                }
-
-                // Keep tooltip in viewport
-                requestAnimationFrame(function () {
-                    var tr = tooltip.getBoundingClientRect();
-                    if (tr.right > window.innerWidth - 16) tooltip.style.left = (window.innerWidth - tr.width - 16) + 'px';
-                    if (tr.bottom > window.innerHeight - 16) tooltip.style.top = (window.innerHeight - tr.height - 16) + 'px';
-                    if (tr.left < 16) tooltip.style.left = '16px';
-                    if (tr.top < 16) { tooltip.style.top = '16px'; tooltip.style.transform = 'none'; }
-                });
-            });
-        } else {
-            // Center (no target element)
-            tooltip.style.left = '50%';
-            tooltip.style.top = '50%';
-            tooltip.style.transform = 'translate(-50%, -50%)';
-            $$('.bowire-tour-highlight').forEach(function (el) { el.classList.remove('bowire-tour-highlight'); });
+        if (typeof window !== 'undefined'
+            && typeof window.bowireStartGettingStartedTour === 'function') {
+            // Force-mode = true so the legacy 'Take Tour' affordance
+            // always launches even if the saved-once flag is set —
+            // the operator clicked it on purpose.
+            window.bowireStartGettingStartedTour({ force: true });
+            return;
         }
+    }
+    function endTour() {
+        if (typeof window !== 'undefined' && typeof window.bowireStopTour === 'function') {
+            window.bowireStopTour();
+        }
+    }
+    function shouldAutoStartTour() {
+        // Auto-start retired — the new engine pops only on explicit
+        // user action ('Take a tour' button or palette command), so
+        // callers that still probed this flag get a stable `false`.
+        return false;
     }
 

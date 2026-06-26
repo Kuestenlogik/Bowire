@@ -12724,7 +12724,7 @@ duplicate) */
     text-align: center;
 }
 
-/* ---------- Guided Tour Button ---------- */
+/* ---------- Guided Tour Button (sidebar footer / welcome card link) ---------- */
 .bowire-tour-btn {
     font-size: 11px;
     color: var(--bowire-text-tertiary);
@@ -12740,40 +12740,144 @@ duplicate) */
     color: var(--bowire-accent-text);
 }
 
-/* ---------- Guided Tour (lightweight,
-no deps) ---------- */
+/* ---------- Guided Tour engine (#281) ----------
+ *
+ * Layout:
+ *   .bowire-tour-overlay      — full-viewport, hosts the SVG mask layer
+ *                                + the tooltip. pointer-events:none on
+ *                                the overlay itself so the spotlighted
+ *                                target stays clickable. The tooltip
+ *                                re-enables pointer-events for its own
+ *                                buttons.
+ *   .bowire-tour-svg          — full-viewport SVG covering the overlay.
+ *                                Mask: white = dim, black-rect = cutout
+ *                                = target stays visible.
+ *   .bowire-tour-halo         — stroked rect overlaying the cutout's
+ *                                outer ring so the eye lands on the
+ *                                target. SVG filter blurs the stroke
+ *                                into a soft glow.
+ *   .bowire-tour-tooltip      — call-out card with title / body /
+ *                                footer (counter + actions). Positioned
+ *                                in pixel coordinates by tour.js.
+ *                                The ::before pseudo-element draws the
+ *                                arrow toward the target; arrow x/y is
+ *                                supplied via --bowire-tour-arrow-x/y.
+ */
 .bowire-tour-overlay {
     position: fixed;
     inset: 0;
-    background: rgba(0, 0, 0, 0.5);
     z-index: 10001;
-    animation: bowire-fade-in 150ms ease-out;
+    pointer-events: none;
+    animation: bowire-fade-in 200ms ease-out;
+}
+
+.bowire-tour-svg {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+}
+
+.bowire-tour-halo {
+    stroke: var(--bowire-accent);
+    filter: url(#bowire-tour-halo-filter);
+    opacity: 0.9;
+    transition: x 180ms ease, y 180ms ease, width 180ms ease, height 180ms ease;
+}
+
+.bowire-tour-cutout {
+    transition: x 180ms ease, y 180ms ease, width 180ms ease, height 180ms ease;
 }
 
 .bowire-tour-tooltip {
-    position: fixed;
+    position: absolute;
+    pointer-events: auto;
     background: var(--bowire-bg-elevated);
     border: 1px solid var(--bowire-border);
     border-radius: var(--bowire-radius-lg);
-    box-shadow: var(--bowire-shadow-lg);
-    padding: 16px;
-    max-width: 340px;
+    box-shadow: var(--bowire-shadow-lg), 0 0 0 1px rgba(0, 0, 0, 0.2);
+    padding: 16px 18px;
+    max-width: 360px;
+    min-width: 280px;
     width: max-content;
     z-index: 10002;
     animation: bowire-slide-in 200ms ease-out;
 }
 
-.bowire-tour-text {
+/* Arrow — draws the call-out pointer toward the target. Positioned
+   on the tooltip edge that's adjacent to the target; x/y supplied by
+   tour.js based on the target's center vs. the tooltip's origin. */
+.bowire-tour-tooltip::before {
+    content: '';
+    position: absolute;
+    width: 12px;
+    height: 12px;
+    background: var(--bowire-bg-elevated);
+    border: 1px solid var(--bowire-border);
+    transform: rotate(45deg);
+    z-index: -1;
+}
+.bowire-tour-tip-bottom::before {
+    top: -7px;
+    left: var(--bowire-tour-arrow-x, 50%);
+    margin-left: -6px;
+    border-right: none;
+    border-bottom: none;
+}
+.bowire-tour-tip-top::before {
+    bottom: -7px;
+    left: var(--bowire-tour-arrow-x, 50%);
+    margin-left: -6px;
+    border-left: none;
+    border-top: none;
+}
+.bowire-tour-tip-right::before {
+    left: -7px;
+    top: var(--bowire-tour-arrow-y, 50%);
+    margin-top: -6px;
+    border-right: none;
+    border-top: none;
+}
+.bowire-tour-tip-left::before {
+    right: -7px;
+    top: var(--bowire-tour-arrow-y, 50%);
+    margin-top: -6px;
+    border-left: none;
+    border-bottom: none;
+}
+.bowire-tour-tip-center::before {
+    display: none;
+}
+
+.bowire-tour-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--bowire-text);
+    margin-bottom: 6px;
+    letter-spacing: -0.01em;
+}
+
+.bowire-tour-body {
     font-size: 13px;
-    line-height: 1.6;
+    line-height: 1.55;
     color: var(--bowire-text-secondary);
-    margin-bottom: 12px;
+    margin-bottom: 14px;
+}
+
+.bowire-tour-body p {
+    margin: 0 0 8px 0;
+}
+
+.bowire-tour-body p:last-child {
+    margin-bottom: 0;
 }
 
 .bowire-tour-footer {
     display: flex;
     align-items: center;
     justify-content: space-between;
+    gap: 10px;
 }
 
 .bowire-tour-counter {
@@ -12782,9 +12886,10 @@ no deps) ---------- */
     font-family: var(--bowire-font-mono);
 }
 
-.bowire-tour-buttons {
+.bowire-tour-actions {
     display: flex;
     gap: 6px;
+    align-items: center;
 }
 
 .bowire-tour-btn-primary {
@@ -12794,7 +12899,7 @@ no deps) ---------- */
     color: white;
     font-size: 12px;
     font-weight: 600;
-    padding: 5px 12px;
+    padding: 6px 14px;
     cursor: pointer;
     font-family: var(--bowire-font-sans);
     transition: background var(--bowire-transition);
@@ -12821,11 +12926,27 @@ no deps) ---------- */
     border-color: var(--bowire-text-tertiary);
 }
 
-.bowire-tour-highlight {
-    position: relative;
-    z-index: 10001;
-    box-shadow: 0 0 0 4px var(--bowire-accent), 0 0 0 8px var(--bowire-accent-subtle);
+.bowire-tour-waiting {
+    font-size: 11px;
+    color: var(--bowire-text-tertiary);
+    font-style: italic;
+    padding: 5px 10px;
+    border: 1px dashed var(--bowire-border);
     border-radius: var(--bowire-radius-sm);
+}
+
+/* Honour the operator's reduced-motion preference — drop the cutout
+   tween + the tooltip slide-in. Keeps the spotlight functional but
+   skips the animation jitter that can trigger vestibular symptoms. */
+@media (prefers-reduced-motion: reduce) {
+    .bowire-tour-overlay,
+    .bowire-tour-tooltip {
+        animation: none;
+    }
+    .bowire-tour-halo,
+    .bowire-tour-cutout {
+        transition: none;
+    }
 }
 
 /* ---------- Proto File Import Banner ---------- */

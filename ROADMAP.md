@@ -19,7 +19,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [132](https://github.com/Kuestenlogik/Bowire/issues/132) | Bowire | [Parallel sessions for recordings / collections (phase 1 local, phase 2 distributed)](#issue-kuestenlogik-bowire-132) | ⬜ Backlog |  |
 | [136](https://github.com/Kuestenlogik/Bowire/issues/136) | Bowire | [URL / service catalogue providers (local / http / consul / kubernetes / agent)](#issue-kuestenlogik-bowire-136) | ⬜ Backlog |  |
 | [153](https://github.com/Kuestenlogik/Bowire/issues/153) | Bowire | [Bowire as transparent interceptor — embedded middleware + standalone reverse-proxy](#issue-kuestenlogik-bowire-153) | ⬜ Backlog |  |
-| [281](https://github.com/Kuestenlogik/Bowire/issues/281) | Bowire | [Guided tour: page-navigation + element spotlight + interactive flow](#issue-kuestenlogik-bowire-281) | ⬜ Backlog |  |
+| [281](https://github.com/Kuestenlogik/Bowire/issues/281) | Bowire | [Guided tour: page-navigation + element spotlight + interactive flow](#issue-kuestenlogik-bowire-281) | 🟦 In progress | Phase A + B shipped — engine in tour.js with SVG-mask spotlight + page-navigation + CTA / on-event / next-button advance; Getting-started 5-step tour. Phase C (per-rail empty-state tours) deferred. |
 | [294](https://github.com/Kuestenlogik/Bowire/issues/294) | Bowire | [Pluggable workbench: rails + modules as package contributions + meta-bundles](#issue-kuestenlogik-bowire-294) | ⬜ Backlog |  |
 | [295](https://github.com/Kuestenlogik/Bowire/issues/295) | Bowire | [Compose rail: integrate Collections + Presets — three sources, one organized destination](#issue-kuestenlogik-bowire-295) | ⬜ Backlog |  |
 | [126](https://github.com/Kuestenlogik/Bowire/issues/126) | Bowire | [Pre-/post-scripts with a protocol-typed sandbox](#issue-kuestenlogik-bowire-126) | ✅ Done |  |
@@ -244,7 +244,7 @@ Today every Bowire instance maintains its own URL list — manually typed in the
 
 Today Bowire watches traffic in two narrow ways: - **Discover / Recording / Benchmarks** — the operator drives a call FROM Bowire's workbench and Bowire sees both sides. - **MITM Proxy view (#36)** — read-only inspection of traffic flowing through an external Bowire-as-proxy listener. [[more]](https://github.com/Kuestenlogik/Bowire/issues/153)
 
-#### <a id="issue-kuestenlogik-bowire-281"></a>⬜ Backlog · [#281](https://github.com/Kuestenlogik/Bowire/issues/281) Guided tour: page-navigation + element spotlight + interactive flow
+#### <a id="issue-kuestenlogik-bowire-281"></a>🟦 In progress · [#281](https://github.com/Kuestenlogik/Bowire/issues/281) Guided tour: page-navigation + element spotlight + interactive flow
 
 The existing guided tour reads more like inline help text than a tour. Operator's complaints: - Pages aren't navigated to — the tour says 'click X' but X isn't visible - Hints don't highlight the item being discussed - No spotlight / no darkening of the rest of the page so the eye lands on the right element [[more]](https://github.com/Kuestenlogik/Bowire/issues/281)
 
