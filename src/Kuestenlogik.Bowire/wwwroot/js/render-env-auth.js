@@ -2905,8 +2905,19 @@
         // anywhere in the workbench, not just when looking at a method
         // response. Badge carries the live hint count from the hint
         // engine, same number the old tab badge showed.
+        //
+        // #310 — module gate. When Settings → Modules has the AI module
+        // turned off (or the package isn't installed), the button stays
+        // out of the topbar entirely + the hint count short-circuits to
+        // zero so we don't spin the hint engine for a hidden surface.
+        var aiModuleOn = (typeof isModuleEnabled === 'function')
+            ? isModuleEnabled('ai')
+            : !!window.__bowireAi;
         var aiHintCount = 0;
-        try { aiHintCount = window.__bowireAi ? window.__bowireAi.hintCount() : 0; } catch { /* ignore */ }
+        try {
+            aiHintCount = (aiModuleOn && window.__bowireAi)
+                ? window.__bowireAi.hintCount() : 0;
+        } catch { /* ignore */ }
         var aiToggleBtn = el('button', {
             id: 'bowire-ai-drawer-toggle',
             // Reuse the .bowire-theme-toggle-btn baseline so the AI
@@ -2943,6 +2954,17 @@
                 ? el('span', { className: 'bowire-ai-drawer-badge', textContent: String(aiHintCount) })
                 : null
         );
+        // #310 — module-off → suppress the button. The Settings → Modules
+        // panel stays the place to bring it back. We close the drawer
+        // too so a switch-off-while-open doesn't leave the drawer pane
+        // visible without a way to close it.
+        if (!aiModuleOn) {
+            aiToggleBtn = null;
+            if (aiDrawerOpen) {
+                aiDrawerOpen = false;
+                try { localStorage.setItem('bowire_ai_drawer_open', '0'); } catch { /* ignore */ }
+            }
+        }
 
         // Security drawer toggle (#111). Sits next to the AI drawer
         // toggle. Shield icon signals "scanner / analysis tools" —

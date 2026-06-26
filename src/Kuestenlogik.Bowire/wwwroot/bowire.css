@@ -10361,6 +10361,62 @@ so the textarea
     border-radius: var(--bowire-radius-sm);
 }
 
+/* Shared rail-modes / modules helpers — light label above the list +
+   defensive empty-state copy. Both panels reach for the same classes;
+   adding the rules once keeps the surfaces visually aligned. */
+.bowire-settings-section-hint {
+    font-size: 12px;
+    color: var(--bowire-text-tertiary, var(--bowire-text-secondary));
+    margin: 4px 0 8px;
+    line-height: 1.45;
+}
+.bowire-settings-section-empty {
+    font-size: 12px;
+    color: var(--bowire-text-tertiary, var(--bowire-text-secondary));
+    padding: 8px;
+    border: 1px dashed var(--bowire-border);
+    border-radius: var(--bowire-radius-sm);
+    margin-top: 4px;
+}
+
+/* ===== #310 — Settings → Modules editor =====
+   Same row shape as rail modes but with a stacked label + description
+   block (modules carry one-sentence copy that explains what surface
+   the toggle hides). No always-on sub-group: every module is opt-out. */
+.bowire-settings-module-list {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin-top: 4px;
+}
+.bowire-settings-module-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 8px 8px;
+    border-radius: var(--bowire-radius-sm);
+    cursor: pointer;
+}
+.bowire-settings-module-row:hover { background: var(--bowire-surface-hover); }
+.bowire-settings-module-checkbox { margin: 2px 0 0 0; }
+.bowire-settings-module-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    flex: 1;
+    min-width: 0;
+}
+.bowire-settings-module-label {
+    font-size: 13px;
+    color: var(--bowire-text);
+    font-weight: 500;
+}
+.bowire-settings-module-desc {
+    font-size: 11px;
+    color: var(--bowire-text-tertiary, var(--bowire-text-secondary));
+    line-height: 1.4;
+}
+
 /* ===== Freeform builder — protocol picker (icon + name) ===== */
 .bowire-freeform-proto-picker-wrap {
     position: relative;

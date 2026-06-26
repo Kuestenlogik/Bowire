@@ -1620,6 +1620,109 @@
             .filter(function (m) { return m.defaultEnabled !== false; })
             .map(function (m) { return m.id; });
     }
+
+    // ---- #310 — Module enable/disable (mirrors rails) ----
+    //
+    // Modules contributed by IBowireModuleContribution (AI / Assistant /
+    // future variable-resolver, …) ship with their own Enabled flag in
+    // Settings → Modules. Persistence is WORKSPACE-SCOPED via wsKey()
+    // — different projects may legitimately want different module sets
+    // (an internal QA workspace might disable AI; a personal sandbox
+    // keeps it on). The cross-workspace rail toggle uses a flat
+    // localStorage key by contrast because rails are about UI shell
+    // chrome; modules are about which behavioural surfaces a workspace
+    // pulls in.
+    //
+    // Storage key: `bowire_enabled_modules` under the active workspace
+    // scope. Value: JSON array of module ids the operator has opted INTO,
+    // or `null` (key missing) which means "honour each module's
+    // DefaultEnabled". This way a module that ships with
+    // DefaultEnabled=false stays off until the operator flips it on,
+    // and DefaultEnabled=true stays on until they flip it off.
+    //
+    // When a module is disabled, callers gate their own surfaces:
+    //   - The AI drawer toggle hides from the topbar (render-env-auth)
+    //   - window.__bowireAi.hintCount returns 0 (no badge)
+    //   - The AI tab in Settings stays accessible (so the operator can
+    //     turn it back on from the same place they turned it off — but
+    //     the renderer shows a "module disabled" banner first).
+    var ENABLED_MODULES_KEY = 'bowire_enabled_modules';
+    var _enabledModulesCache = null;
+    var _enabledModulesCacheKey = null;
+    function _moduleDescriptorsConfig() {
+        var cfg = (typeof window !== 'undefined' && window.__BOWIRE_CONFIG__) || {};
+        return Array.isArray(cfg.modules) ? cfg.modules : [];
+    }
+    function _moduleDefaultEnabled(id) {
+        var mods = _moduleDescriptorsConfig();
+        for (var i = 0; i < mods.length; i++) {
+            if (mods[i] && mods[i].id === id) return mods[i].defaultEnabled !== false;
+        }
+        return true;
+    }
+    function _enabledModulesStorageKey() {
+        try { return wsKey(ENABLED_MODULES_KEY); }
+        catch { return ENABLED_MODULES_KEY; }
+    }
+    function _readEnabledModules() {
+        var key = _enabledModulesStorageKey();
+        if (_enabledModulesCache !== null && _enabledModulesCacheKey === key) {
+            return _enabledModulesCache;
+        }
+        _enabledModulesCacheKey = key;
+        try {
+            var raw = localStorage.getItem(key);
+            if (raw) {
+                var parsed = JSON.parse(raw);
+                if (Array.isArray(parsed)) {
+                    _enabledModulesCache = parsed;
+                    return parsed;
+                }
+            }
+        } catch { /* corrupt → fall through to default */ }
+        _enabledModulesCache = null; // sentinel: "no preference set yet"
+        return null;
+    }
+    // Public — every render path that wires up a module-contributed
+    // surface should guard the wiring with `isModuleEnabled(id)`. Hosts
+    // that don't reference the package return false (descriptor never
+    // shows up in __BOWIRE_CONFIG__.modules) — that's the
+    // package-not-installed path; the runtime-toggle path returns false
+    // when the operator has explicitly switched it off.
+    function isModuleEnabled(id) {
+        var mods = _moduleDescriptorsConfig();
+        var known = false;
+        for (var i = 0; i < mods.length; i++) {
+            if (mods[i] && mods[i].id === id) { known = true; break; }
+        }
+        if (!known) return false; // package not installed
+        var pref = _readEnabledModules();
+        if (pref === null) return _moduleDefaultEnabled(id);
+        return pref.indexOf(id) >= 0;
+    }
+    function setModuleEnabled(id, enabled) {
+        var current = _readEnabledModules();
+        // First write seeds the cache from the default-enabled state so
+        // toggling one module off doesn't accidentally turn off every
+        // other module that defaults to ON.
+        if (current === null) {
+            var mods = _moduleDescriptorsConfig();
+            current = mods.filter(function (m) { return m && m.defaultEnabled !== false; })
+                          .map(function (m) { return m.id; });
+        } else {
+            current = current.slice();
+        }
+        var idx = current.indexOf(id);
+        if (enabled && idx < 0) current.push(id);
+        else if (!enabled && idx >= 0) current.splice(idx, 1);
+        _enabledModulesCache = current;
+        try {
+            localStorage.setItem(_enabledModulesStorageKey(), JSON.stringify(current));
+            markSaved('modules');
+        } catch (e) { markSaveFailed('modules', e); }
+    }
+    // No workspace-switch hook needed: switchWorkspace() does a full
+    // window.location.reload(), which resets the cache implicitly.
     // App-drawer (MudBlazor-style responsive). Toggled by the B/burger
     // logo button. Slides in from the left, lists every rail mode +
     // workspace/theme shortcuts. Closed by backdrop click, Esc or

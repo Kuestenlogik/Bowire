@@ -41,6 +41,7 @@
             header('My preferences'),
             leaf('general', 'General', 'settings'),
             leaf('rails', 'Rail modes', 'layers'),
+            leaf('modules', 'Modules', 'plug'),
             leaf('shortcuts', 'Shortcuts', 'list'),
             leaf('data', 'Data', 'trash'),
             leaf('ai', 'Assistant', 'spark')
@@ -197,6 +198,8 @@
             rightPanel.appendChild(renderSettingsGeneral());
         } else if (settingsTab === 'rails') {
             rightPanel.appendChild(renderSettingsRails());
+        } else if (settingsTab === 'modules') {
+            rightPanel.appendChild(renderSettingsModules());
         } else if (settingsTab === 'shortcuts') {
             rightPanel.appendChild(renderSettingsShortcuts());
         } else if (settingsTab === 'data') {
@@ -647,6 +650,82 @@
             toggleList.appendChild(_renderModeRow(m, false));
         });
         section.appendChild(toggleList);
+        return section;
+    }
+
+    // ---- #310 — Modules editor ----
+    //
+    // Settings → Modules. Lists every entry in __BOWIRE_CONFIG__.modules
+    // (descriptors contributed by IBowireModuleContribution) with a
+    // workspace-scoped Enabled toggle per row. Mirrors the Rail-modes
+    // panel pattern from #248, with two differences:
+    //   - persistence is per-workspace via wsKey() (not cross-workspace);
+    //     different projects may want different module sets
+    //   - there's no "always-on" sub-group: every module is opt-out, and
+    //     hosts that don't ship a module's package don't see its row at
+    //     all (descriptor never reaches __BOWIRE_CONFIG__.modules — same
+    //     mechanic as rails for a missing package).
+    function renderSettingsModules() {
+        var section = el('div', { className: 'bowire-settings-section' });
+        section.appendChild(el('h3', {
+            className: 'bowire-settings-section-title',
+            textContent: 'Modules'
+        }));
+        section.appendChild(el('div', {
+            className: 'bowire-settings-section-hint',
+            textContent: 'Enable or disable installed Bowire modules (AI Assistant, future variable-resolver, …). When disabled, the module’s UI hides and its hooks no-op until you turn it back on. The choice is per-workspace.'
+        }));
+
+        var cfg = (typeof config !== 'undefined' && config) ? config : {};
+        var modules = Array.isArray(cfg.modules) ? cfg.modules : [];
+        if (modules.length === 0) {
+            section.appendChild(el('div', {
+                className: 'bowire-settings-section-empty',
+                textContent: 'No modules installed. Reference a Bowire module package (e.g. Kuestenlogik.Bowire.Ai) to see entries here.'
+            }));
+            return section;
+        }
+
+        var list = el('div', { className: 'bowire-settings-module-list' });
+        modules.forEach(function (mod) {
+            if (!mod || !mod.id) return;
+            var enabled = (typeof isModuleEnabled === 'function')
+                ? isModuleEnabled(mod.id)
+                : (mod.defaultEnabled !== false);
+            var row = el('label', {
+                className: 'bowire-settings-module-row',
+                title: enabled
+                    ? 'Currently active in this workspace'
+                    : 'Currently disabled in this workspace — toggle to enable'
+            });
+            var input = el('input', {
+                type: 'checkbox',
+                className: 'bowire-settings-module-checkbox',
+                checked: enabled ? true : undefined,
+                onChange: function (e) {
+                    if (typeof setModuleEnabled === 'function') {
+                        setModuleEnabled(mod.id, !!e.target.checked);
+                    }
+                    if (typeof renderSettingsDialog === 'function') renderSettingsDialog();
+                    if (typeof render === 'function') render();
+                }
+            });
+            row.appendChild(input);
+            var info = el('div', { className: 'bowire-settings-module-info' });
+            info.appendChild(el('div', {
+                className: 'bowire-settings-module-label',
+                textContent: mod.label || mod.id
+            }));
+            if (mod.description) {
+                info.appendChild(el('div', {
+                    className: 'bowire-settings-module-desc',
+                    textContent: mod.description
+                }));
+            }
+            row.appendChild(info);
+            list.appendChild(row);
+        });
+        section.appendChild(list);
         return section;
     }
 

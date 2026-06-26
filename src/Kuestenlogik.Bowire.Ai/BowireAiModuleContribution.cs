@@ -19,4 +19,6 @@ public sealed class BowireAiModuleContribution : IBowireModuleContribution
 {
     public string Id => "ai";
     public string DisplayName => "AI Assistant";
+    public string Description
+        => "Chat-with-your-API panel, schema-grounded hints, and assistant drawer toggle.";
 }
