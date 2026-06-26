@@ -276,14 +276,19 @@
         var tabBar = el('div', { id: 'bowire-compose-tabs', className: 'bowire-request-tabs bowire-compose-tabs' });
         var tabScroll = el('div', { className: 'bowire-request-tabs-scroll' });
 
-        // Pinned '+ New Request' tab — cosmetically distinct: dashed
-        // border, no close affordance, label spells out 'New Request'.
-        // Click spawns a fresh request-builder tab + focuses it.
+        // Pinned '+' tab — matches Discover's pattern (just the plus
+        // glyph, no spelled-out label). Cosmetically distinct (dashed
+        // border, no close affordance) so it doesn't get accidentally
+        // closed. Click spawns a fresh request-builder tab + focuses
+        // it. Appended AFTER the open builder tabs so it always sits
+        // at the right edge of the strip — same convention browsers
+        // and IDEs use.
         var pinned = el('button', {
             id: 'bowire-compose-tab-pinned',
             className: 'bowire-compose-tab-pinned',
             type: 'button',
             title: 'New request (Ctrl+L)',
+            'aria-label': 'New request',
             onClick: function () {
                 spawnDesignTab();
                 render();
@@ -293,10 +298,8 @@
                 });
             }
         },
-            el('span', { className: 'bowire-compose-tab-pinned-icon', innerHTML: svgIcon('plus') }),
-            el('span', { className: 'bowire-compose-tab-pinned-label', textContent: 'New Request' })
+            el('span', { className: 'bowire-compose-tab-pinned-icon', innerHTML: svgIcon('plus') })
         );
-        tabScroll.appendChild(pinned);
 
         // ---- Open builder tabs ----
         for (var ti = 0; ti < composeTabs.length; ti++) {
@@ -369,6 +372,10 @@
                 tabScroll.appendChild(tabEl);
             })(composeTabs[ti]);
         }
+        // Pinned '+' sits at the end of the strip — always the last
+        // tab, even after the operator opens N tabs (matches Discover
+        // + every modern browser / IDE).
+        tabScroll.appendChild(pinned);
         tabBar.appendChild(tabScroll);
         main.appendChild(tabBar);
 
@@ -384,18 +391,18 @@
                 }
             }
         } else {
-            // Empty state — no tabs open. Friendly hint.
-            var empty = el('div', { className: 'bowire-compose-empty' },
-                el('div', { className: 'bowire-compose-empty-icon', innerHTML: svgIcon('send') }),
-                el('div', { className: 'bowire-compose-empty-headline', textContent: 'No request open' }),
-                el('div', {
-                    className: 'bowire-compose-empty-body',
-                    textContent: 'Click + New Request to start drafting an ad-hoc request. Tip: Ctrl+L opens a new request from anywhere.'
-                }),
-                el('button', {
-                    className: 'bowire-compose-empty-cta',
-                    type: 'button',
-                    textContent: '+ New Request',
+            // Empty state — adopt the canonical rail-empty shape
+            // (#301) so Compose matches Recordings / Discover / Mocks
+            // / etc. The bowire-main-pad wrapper plus renderEmptyCard
+            // centre the card in the main pane consistently.
+            var padWrap = el('div', { className: 'bowire-main-pad' });
+            padWrap.appendChild(renderEmptyCard({
+                icon: 'drill',
+                headline: 'No request open',
+                body: 'Start with a new request — type a URL, pick a method, hit Execute. Ctrl+L opens a new request from anywhere.',
+                actions: [{
+                    label: '+ New request',
+                    primary: true,
                     onClick: function () {
                         spawnDesignTab();
                         render();
@@ -404,9 +411,9 @@
                             if (inp) inp.focus();
                         });
                     }
-                })
-            );
-            main.appendChild(empty);
+                }]
+            }));
+            main.appendChild(padWrap);
         }
         return main;
     }
