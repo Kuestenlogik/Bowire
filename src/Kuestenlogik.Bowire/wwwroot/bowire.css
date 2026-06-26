@@ -770,6 +770,76 @@ no decoration. */
     background: var(--bowire-surface-hover);
 }
 
+/* #297 — Responsive horizontal overflow for the topbar right cluster.
+   The ⋮ button + its trailing group are display:none until the
+   layout pass adds .has-overflow. The popover anchors to the right
+   edge of bowire-topbar-right so its content reads as falling out
+   of the ⋮ button. Mirrors the rail-overflow popover (#164 v3) styling
+   for visual consistency across both overflow surfaces. */
+.bowire-topbar-right {
+    position: relative; /* anchor for the popover below */
+}
+.bowire-topbar-right-overflow-btn {
+    border-radius: var(--bowire-radius-sm);
+}
+.bowire-topbar-right-overflow-btn.active {
+    color: var(--bowire-text);
+    background: var(--bowire-surface-hover);
+}
+.bowire-topbar-right-overflow-popover {
+    position: absolute;
+    top: calc(100% + 6px);
+    right: 0;
+    z-index: 1000;
+    min-width: 200px;
+    padding: 4px;
+    background: var(--bowire-bg-elevated);
+    border: 1px solid var(--bowire-border);
+    border-radius: var(--bowire-radius-md);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+.bowire-topbar-right-overflow-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 8px 10px;
+    background: transparent;
+    border: 0;
+    border-radius: var(--bowire-radius-sm);
+    color: var(--bowire-text);
+    font: inherit;
+    font-size: 13px;
+    text-align: left;
+    cursor: pointer;
+}
+.bowire-topbar-right-overflow-item:hover:not(:disabled) {
+    background: var(--bowire-surface-hover);
+}
+.bowire-topbar-right-overflow-item:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+.bowire-topbar-right-overflow-item-icon {
+    display: inline-flex;
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+}
+.bowire-topbar-right-overflow-item-icon svg {
+    width: 16px;
+    height: 16px;
+}
+.bowire-topbar-right-overflow-item-label {
+    flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
 /* #154 Phase 3 — Help drawer body layout. Two columns: navigation
    on the left (search + topic tree), rendered topic on the right.
    The drawer chrome itself comes from the renderDrawer primitive

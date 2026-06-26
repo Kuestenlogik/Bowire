@@ -910,6 +910,181 @@
         if (typeof _attachActivityRailObserver === 'function') {
             _attachActivityRailObserver();
         }
+
+        // #297 — Topbar right-cluster overflow layout pass. Same
+        // pattern as the activity rail but horizontal. Re-runs after
+        // every render so a workspace name change, env switch, or the
+        // sidebar collapsing (which widens the body but doesn't affect
+        // the topbar) all re-flow the cluster cleanly. The
+        // ResizeObserver below catches viewport resizes that don't
+        // bounce through render().
+        if (typeof _layoutTopbarRight === 'function') {
+            requestAnimationFrame(_layoutTopbarRight);
+        }
+        if (typeof _attachTopbarRightObserver === 'function') {
+            _attachTopbarRightObserver();
+        }
+    }
+
+    // #297 — Topbar right-cluster overflow state. _topbarRightOverflowHidden
+    // holds the descriptors {id, label, icon, priority, disabled} the
+    // layout pass decided don't fit; the next render() consumes it to
+    // build the popover rows. Module-scoped so render() can read it.
+    var _topbarRightOverflowHidden = [];
+    var _topbarRightObserver = null;
+    var _topbarRightObservedEl = null;
+
+    function _attachTopbarRightObserver() {
+        if (typeof ResizeObserver === 'undefined') return;
+        var rightEl = document.getElementById('bowire-topbar-right');
+        if (!rightEl) return;
+        if (rightEl === _topbarRightObservedEl) return;
+        if (_topbarRightObserver) _topbarRightObserver.disconnect();
+        // Watch the WHOLE topbar (not just the right cluster) so
+        // changes to the brand cluster or palette spacer that
+        // squeeze the right cluster's available width still trigger
+        // a relayout. The observer's callback is cheap (re-measures
+        // a handful of buttons) so we can be generous with what we
+        // listen to.
+        var bar = document.getElementById('bowire-topbar') || rightEl;
+        _topbarRightObserver = new ResizeObserver(function () {
+            if (typeof _layoutTopbarRight === 'function') _layoutTopbarRight();
+        });
+        _topbarRightObserver.observe(bar);
+        _topbarRightObservedEl = rightEl;
+    }
+
+    // Layout pass. Walks the right-cluster's tagged buttons in priority
+    // order (lowest = collapses first), measures the cluster against
+    // its container, hides priority buckets until the cluster fits.
+    // Populates _topbarRightOverflowHidden so the NEXT render builds
+    // the popover from the same list. The pass itself does NOT call
+    // render(), it just mutates display + the hidden-list — so calling
+    // it from a ResizeObserver doesn't loop.
+    function _layoutTopbarRight() {
+        var rightEl = document.getElementById('bowire-topbar-right');
+        var bar = document.getElementById('bowire-topbar');
+        if (!rightEl || !bar) return;
+        var overflowGroup = rightEl.querySelector('.bowire-topbar-right-overflow-group');
+        var overflowBtn = document.getElementById('bowire-topbar-right-overflow-btn');
+        if (!overflowGroup || !overflowBtn) return;
+
+        // Catalogue every tagged button. data-topbar-priority of "1"
+        // is the LAST to collapse (most important non-pinned), "5"
+        // collapses FIRST. Always-visible buttons (Search /
+        // Workspace / Env) have no priority attribute and are never
+        // considered for collapse.
+        var taggedNodes = rightEl.querySelectorAll('[data-topbar-priority]');
+        var catalogue = [];
+        for (var i = 0; i < taggedNodes.length; i++) {
+            var n = taggedNodes[i];
+            catalogue.push({
+                node: n,
+                id: n.id,
+                priority: parseInt(n.dataset.topbarPriority, 10) || 99,
+                label: n.dataset.topbarLabel || n.getAttribute('aria-label') || '',
+                icon: n.dataset.topbarIcon || 'dots',
+                disabled: !!n.disabled
+            });
+        }
+
+        // Reset display + the trailing overflow-group so we measure
+        // the natural (un-collapsed) width. Subsequent passes build
+        // up the hidden set from a clean slate.
+        for (var k = 0; k < catalogue.length; k++) catalogue[k].node.style.display = '';
+        overflowGroup.style.display = 'none';
+        // Force a layout sync so the measurements below reflect
+        // the reset display values.
+        // (Reading offsetWidth flushes pending layout.)
+        // eslint-disable-next-line no-unused-vars
+        var _flush = rightEl.offsetWidth;
+
+        var available = bar.clientWidth;
+        // Right cluster's natural width when nothing is hidden. If it
+        // already fits, drop the overflow group + clear the hidden
+        // list. We compare the right cluster's scrollWidth — when it
+        // exceeds available we know flex-shrink has already squeezed
+        // it (or the bar is letting it overflow).
+        var natural = _measureTopbarRightFootprint(bar, rightEl);
+        if (natural.fits) {
+            _topbarRightOverflowHidden = [];
+            overflowGroup.style.display = 'none';
+            overflowBtn.classList.remove('has-overflow');
+            return;
+        }
+
+        // Doesn't fit — show the overflow group and walk the
+        // collapsible buttons low-priority-first (descending), hiding
+        // until we fit. Within a priority bucket we collapse in the
+        // visual order they appear (so e.g. About hides before Help
+        // even though both are priority 5 — About is the right-most).
+        overflowGroup.style.display = '';
+        overflowBtn.classList.add('has-overflow');
+
+        // Sort: highest priority number (= lowest importance) first;
+        // tie-break by DOM order from right to left so the rightmost
+        // sibling in a bucket collapses first.
+        var domOrder = Array.prototype.indexOf;
+        var sorted = catalogue.slice().sort(function (a, b) {
+            if (a.priority !== b.priority) return b.priority - a.priority;
+            // Right-to-left: later in the catalogue (= further right)
+            // collapses first.
+            return catalogue.indexOf(b) - catalogue.indexOf(a);
+        });
+
+        var hidden = [];
+        for (var s = 0; s < sorted.length; s++) {
+            // Re-measure after each hide. clientWidth/scrollWidth on
+            // the cluster is the source of truth — the cluster is a
+            // flex row, so hiding a child immediately shrinks it.
+            var probe = _measureTopbarRightFootprint(bar, rightEl);
+            if (probe.fits) break;
+            sorted[s].node.style.display = 'none';
+            hidden.push(sorted[s]);
+        }
+
+        // Final fit check + commit. Hidden order matches sort order
+        // (lowest priority first); reverse to display the highest-
+        // priority hidden item at the TOP of the popover so the
+        // operator's eye lands on it first.
+        hidden.reverse();
+        _topbarRightOverflowHidden = hidden.map(function (h) {
+            return { id: h.id, label: h.label, icon: h.icon, disabled: h.disabled };
+        });
+
+        // If the hidden list changed since the last render, refresh
+        // the overflow button's aria-label + title so screen readers
+        // get the up-to-date "More: …" list without waiting for the
+        // next render. Cheap textContent update.
+        var labels = _topbarRightOverflowHidden.map(function (h) { return h.label; });
+        var ariaText = labels.length > 0 ? ('More: ' + labels.join(', ')) : 'More';
+        overflowBtn.setAttribute('aria-label', ariaText);
+        overflowBtn.setAttribute('title', ariaText);
+    }
+
+    // Helper: does the right cluster currently fit within its parent
+    // bar? Uses the topbar's clientWidth minus the left/center
+    // children's footprint as the budget. scrollWidth vs clientWidth
+    // on the right cluster itself is unreliable because the cluster
+    // has flex-shrink:0 — it just overflows the bar without
+    // increasing its own scrollWidth.
+    function _measureTopbarRightFootprint(bar, rightEl) {
+        var barWidth = bar.clientWidth;
+        // Sum the widths of every direct child of the bar EXCEPT
+        // the right cluster; that's the budget consumed by the brand
+        // cluster + the palette spacer. The remainder is what the
+        // right cluster has to fit into.
+        var siblingsWidth = 0;
+        var children = bar.children;
+        for (var i = 0; i < children.length; i++) {
+            if (children[i] === rightEl) continue;
+            siblingsWidth += children[i].getBoundingClientRect().width;
+        }
+        var available = barWidth - siblingsWidth;
+        var actual = rightEl.getBoundingClientRect().width;
+        // Tiny epsilon — sub-pixel rounding around the flex-gap can
+        // make a cluster that visually fits report a 0.x px overflow.
+        return { fits: actual <= available + 0.5, actual: actual, available: available };
     }
 
     // ResizeObserver hook for the activity rail. Idempotent — the
@@ -2546,6 +2721,14 @@
             className: 'bowire-theme-toggle-btn bowire-about-btn',
             title: 'About Bowire',
             'aria-label': 'About Bowire',
+            // #297 — priority tag for the responsive horizontal overflow
+            // pass. Lower priority = collapses first. data-topbar-label
+            // feeds the ⋮ menu rows + the aria-label "More: …" summary.
+            // data-topbar-icon names the svgIcon entry the popover
+            // re-renders into its row.
+            'data-topbar-priority': '5',
+            'data-topbar-label': 'About',
+            'data-topbar-icon': 'info',
             onClick: openAbout
         }, el('span', {
             innerHTML: svgIcon('info'),
@@ -2566,6 +2749,10 @@
                 ? (helpDrawerOpen ? 'Close Help (F1)' : 'Help (F1)')
                 : 'Install Kuestenlogik.Bowire.Help for in-app docs (or visit bowire.io/docs)',
             'aria-label': 'Help',
+            // #297 — overflow priority tag (see aboutBtn).
+            'data-topbar-priority': '5',
+            'data-topbar-label': 'Help',
+            'data-topbar-icon': 'help',
             onClick: function () {
                 if (helpAvailable) {
                     // #299 — toggle: closing on second click matches the
@@ -2627,6 +2814,10 @@
             className: 'bowire-theme-toggle-btn bowire-ai-drawer-toggle' + (aiDrawerOpen ? ' active' : ''),
             title: aiDrawerOpen ? 'Close Assistant (Ctrl+Shift+A)' : 'Open Assistant (Ctrl+Shift+A)',
             'aria-label': 'Toggle Assistant',
+            // #297 — overflow priority tag.
+            'data-topbar-priority': '3',
+            'data-topbar-label': 'Assistant',
+            'data-topbar-icon': 'bot',
             onClick: function () {
                 aiDrawerOpen = !aiDrawerOpen;
                 try { localStorage.setItem('bowire_ai_drawer_open', aiDrawerOpen ? '1' : '0'); } catch { /* ignore */ }
@@ -2698,6 +2889,12 @@
                 ? 'Nothing to undo (Ctrl/Cmd+Z)'
                 : ('Undo: ' + _undoLabel + ' (Ctrl/Cmd+Z)'),
             'aria-label': _undoDisabled ? 'Undo (nothing to undo)' : ('Undo: ' + _undoLabel),
+            // #297 — overflow priority tag. Undo + Redo are the last
+            // collapsible buttons because they're the most discoverable
+            // editor-context affordances; Trash is rarer.
+            'data-topbar-priority': '1',
+            'data-topbar-label': 'Undo',
+            'data-topbar-icon': 'undo',
             onClick: function () {
                 if (_undoDisabled) return;
                 if (typeof undoLastAction === 'function') {
@@ -2721,6 +2918,10 @@
                 ? 'Nothing to redo (Ctrl/Cmd+Shift+Z)'
                 : ('Redo: ' + _redoLabel + ' (Ctrl/Cmd+Shift+Z)'),
             'aria-label': _redoDisabled ? 'Redo (nothing to redo)' : ('Redo: ' + _redoLabel),
+            // #297 — overflow priority tag.
+            'data-topbar-priority': '1',
+            'data-topbar-label': 'Redo',
+            'data-topbar-icon': 'redo',
             onClick: function () {
                 if (_redoDisabled) return;
                 if (typeof redoLastAction === 'function') {
@@ -2750,6 +2951,11 @@
                 : ('Trash — ' + _trashTotal + ' item' + (_trashTotal === 1 ? '' : 's')
                     + ' across recordings / collections / closed tabs'),
             'aria-label': 'Toggle trash drawer',
+            // #297 — overflow priority tag. Trash collapses before
+            // Undo/Redo (rarer affordance, less muscle-memory cost).
+            'data-topbar-priority': '2',
+            'data-topbar-label': 'Trash',
+            'data-topbar-icon': 'trash',
             onClick: function () {
                 globalTrashOpen = !globalTrashOpen;
                 render();
@@ -2820,6 +3026,82 @@
             }),
             el('span', { className: 'bowire-workspace-chip-caret', innerHTML: svgIcon('chevronDown') })
         );
+
+        // #297 — Responsive horizontal overflow. ⋮ button is always
+        // rendered; CSS hides it unless _layoutTopbarRight() flags the
+        // cluster as overflowing (adds .has-overflow). The popover
+        // below is rendered only when both the open-flag is set AND
+        // the layout pass actually hid something. Catalogue order
+        // mirrors the rail-overflow pattern (#164 v3) so the popover
+        // can be rebuilt deterministically from data-topbar-priority
+        // attributes after every render.
+        var hiddenItems = (_topbarRightOverflowHidden || []).slice();
+        var topbarRightOverflowBtn = el('button', {
+            type: 'button',
+            id: 'bowire-topbar-right-overflow-btn',
+            className: 'bowire-theme-toggle-btn bowire-topbar-right-overflow-btn'
+                + (topbarRightOverflowOpen ? ' active' : ''),
+            title: hiddenItems.length > 0
+                ? ('More: ' + hiddenItems.map(function (h) { return h.label; }).join(', '))
+                : 'More',
+            'aria-label': hiddenItems.length > 0
+                ? ('More: ' + hiddenItems.map(function (h) { return h.label; }).join(', '))
+                : 'More',
+            'aria-haspopup': 'menu',
+            'aria-expanded': topbarRightOverflowOpen ? 'true' : 'false',
+            onClick: function (e) {
+                e.stopPropagation();
+                topbarRightOverflowOpen = !topbarRightOverflowOpen;
+                render();
+            }
+        }, el('span', {
+            innerHTML: svgIcon('dots'),
+            style: 'width:16px;height:16px;display:flex'
+        }));
+
+        // Popover with the hidden items. Re-fires each hidden button's
+        // click handler via id lookup so the menu rows behave EXACTLY
+        // like the inline buttons would (disabled state, drawer toggle,
+        // theme cycle…). No parallel onClick logic to drift.
+        var topbarRightOverflowPopover = null;
+        if (topbarRightOverflowOpen && hiddenItems.length > 0) {
+            topbarRightOverflowPopover = el('div', {
+                id: 'bowire-topbar-right-overflow-popover',
+                className: 'bowire-topbar-right-overflow-popover',
+                role: 'menu',
+                onClick: function (e) { e.stopPropagation(); }
+            });
+            hiddenItems.forEach(function (h) {
+                topbarRightOverflowPopover.appendChild(el('button', {
+                    type: 'button',
+                    role: 'menuitem',
+                    className: 'bowire-topbar-right-overflow-item',
+                    disabled: h.disabled ? 'disabled' : null,
+                    onClick: function (e) {
+                        e.stopPropagation();
+                        topbarRightOverflowOpen = false;
+                        // Resolve the source button at click time —
+                        // morphdom may have replaced the original node
+                        // between popover open and click (Memory:
+                        // morphdom-stale-handler-pitfall). Click the
+                        // live element so its onClick handler runs in
+                        // whatever closure the latest render gave it.
+                        var live = document.getElementById(h.id);
+                        if (live && !live.disabled) live.click();
+                        else render();
+                    }
+                },
+                    el('span', {
+                        className: 'bowire-topbar-right-overflow-item-icon',
+                        innerHTML: svgIcon(h.icon || 'dots')
+                    }),
+                    el('span', {
+                        className: 'bowire-topbar-right-overflow-item-label',
+                        textContent: h.label
+                    })
+                ));
+            });
+        }
 
         var right = el('div', { id: 'bowire-topbar-right', className: 'bowire-topbar-right' },
             // Search trigger leads the right cluster (operator
@@ -3032,7 +3314,18 @@
                 themeBtn,
                 helpBtn,
                 aboutBtn
-            )
+            ),
+            // #297 — overflow ⋮ button sits in its own trailing group so
+            // the divider-between-groups CSS rule reads it as a peer
+            // cluster instead of crowding the Drawers separator. The
+            // popover is appended OUTSIDE the group so the group's
+            // overflow:visible isn't required — popover is absolutely
+            // positioned relative to bowire-topbar-right.
+            el('div', {
+                className: 'bowire-topbar-group bowire-topbar-right-overflow-group',
+                style: 'display:none' // unhidden by _layoutTopbarRight when needed
+            }, topbarRightOverflowBtn),
+            topbarRightOverflowPopover
         );
         bar.appendChild(right);
 
@@ -3092,6 +3385,12 @@
             className: 'bowire-theme-toggle-btn' + (pref === 'auto' ? ' is-auto' : ''),
             title: 'Theme: ' + pref + ' \u2014 click for ' + nextLabel + ' (T)',
             'aria-label': 'Theme: ' + pref,
+            // #297 \u2014 overflow priority tag. data-topbar-icon mirrors
+            // the icon picked above so the popover row shows the same
+            // glyph as the inline button.
+            'data-topbar-priority': '4',
+            'data-topbar-label': 'Theme',
+            'data-topbar-icon': iconName,
             onClick: function () {
                 var cur = themePreference;
                 var next = cur === 'auto' ? 'dark'
