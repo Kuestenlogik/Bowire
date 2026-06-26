@@ -79,6 +79,44 @@ public static class BowireServiceCollectionExtensions
         => AddBowire(services, configure: null);
 
     /// <summary>
+    /// Register a specific rail contribution explicitly (in addition to
+    /// the auto-discovery pass driven by <see cref="AddBowire(IServiceCollection)"/>).
+    /// Useful when (a) the host wants to override a built-in rail's
+    /// metadata without forking the contributing package, or (b) the
+    /// rail descriptor lives in an assembly that isn't loaded by the
+    /// auto-scan reach.
+    /// </summary>
+    /// <typeparam name="TRail">
+    /// Rail contribution type. Must implement
+    /// <see cref="IBowireRailContribution"/> and expose a parameterless
+    /// constructor — the registry instantiates the descriptor without
+    /// passing dependencies (it's a metadata object).
+    /// </typeparam>
+    public static IServiceCollection AddBowireRail<TRail>(this IServiceCollection services)
+        where TRail : class, IBowireRailContribution, new()
+    {
+        ArgumentNullException.ThrowIfNull(services);
+        // Register as IBowireRailContribution so the registry's
+        // Discover pass can resolve every contribution through one
+        // DI seam; an explicit AddBowireRail<T>() lands in the same
+        // catalogue alongside the auto-discovered ones.
+        services.AddSingleton<IBowireRailContribution, TRail>();
+        return services;
+    }
+
+    /// <summary>
+    /// Counterpart to <see cref="AddBowireRail{TRail}(IServiceCollection)"/>
+    /// for cross-cutting modules (AI, Assistant, var-resolver, …).
+    /// </summary>
+    public static IServiceCollection AddBowireModule<TModule>(this IServiceCollection services)
+        where TModule : class, IBowireModuleContribution, new()
+    {
+        ArgumentNullException.ThrowIfNull(services);
+        services.AddSingleton<IBowireModuleContribution, TModule>();
+        return services;
+    }
+
+    /// <summary>
     /// Overload that exposes a configuration callback for the subset of
     /// <see cref="BowireOptions"/> that needs to be settled at
     /// <c>AddServices</c> time rather than at

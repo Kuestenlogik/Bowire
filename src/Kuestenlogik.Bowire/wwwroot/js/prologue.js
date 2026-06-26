@@ -1528,12 +1528,26 @@
     //
     // Per-workspace overrides are out of scope for Phase 1 — see
     // #249 for the v2.4 follow-up that builds on this mechanic.
-    // #293 — 'compose' joins the always-on set: it's the home for the
-    // ad-hoc request-builder (Ctrl+L, Home 'Just fire a request →'
-    // CTA). Operators always have access to a quick-fire workbench
-    // regardless of which optional rails they have enabled. #294 will
-    // refactor this hardcoded list into the plugin-descriptor model.
-    const ALWAYS_ON_RAIL_MODES = ['home', 'discover', 'compose', 'workspaces'];
+    // #294 — Always-on set now derives from the rail-contribution
+    // descriptors flagged AlwaysOn=true in C#. The four core rails
+    // (Home / Discover / Compose / Workspaces) carry the flag in
+    // their BuiltInRails.cs entries; third-party rails can opt-in by
+    // setting the same property on their descriptor. Built lazily
+    // off __BOWIRE_CONFIG__.rails so the value is always in sync
+    // with whatever the host shipped — no parallel JS list to drift.
+    function _computeAlwaysOnRailModes() {
+        var cfg = (typeof window !== 'undefined' && window.__BOWIRE_CONFIG__) || {};
+        var raw = Array.isArray(cfg.rails) ? cfg.rails : [];
+        var ids = raw.filter(function (r) { return r && r.alwaysOn; })
+                     .map(function (r) { return r.id; });
+        // Defensive fallback for the legacy embed path (older Bowire
+        // versions shipped without `alwaysOn` on the descriptor) —
+        // keep the four core rails always-on so operators don't get
+        // surprise-empty rails on the upgrade.
+        if (ids.length === 0) ids = ['home', 'discover', 'compose', 'workspaces'];
+        return ids;
+    }
+    const ALWAYS_ON_RAIL_MODES = _computeAlwaysOnRailModes();
     const ENABLED_RAILS_KEY = 'bowire_enabled_rails';
     let _enabledRailsCache = null;
     function getEnabledRails() {

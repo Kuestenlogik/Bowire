@@ -569,8 +569,14 @@
             }));
             return section;
         }
+        // #294 — ALWAYS_ON_RAIL_MODES now comes from descriptors
+        // (rail.alwaysOn=true in IBowireRailContribution). Default
+        // fallback list dropped — settings should never lie about
+        // what's locked; the contributor catalogue is the source of
+        // truth. Empty list is acceptable: it just means every
+        // discovered rail renders in the "Toggleable" section.
         var alwaysOn = (typeof ALWAYS_ON_RAIL_MODES !== 'undefined' && Array.isArray(ALWAYS_ON_RAIL_MODES))
-            ? ALWAYS_ON_RAIL_MODES : ['home', 'discover', 'workspaces'];
+            ? ALWAYS_ON_RAIL_MODES : [];
 
         function _renderModeRow(mode, locked) {
             var enabled = locked ? true

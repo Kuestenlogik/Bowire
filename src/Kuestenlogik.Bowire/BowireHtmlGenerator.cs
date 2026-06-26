@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 using System.Reflection;
+using Kuestenlogik.Bowire.Plugins;
 using Microsoft.AspNetCore.Http;
 
 namespace Kuestenlogik.Bowire;
@@ -14,6 +15,28 @@ internal static class BowireHtmlGenerator
 {
     private static readonly Lazy<string> CssContent = new(() => ReadEmbeddedFile("bowire.css"));
     private static readonly Lazy<string> JsContent = new(() => ReadEmbeddedFile("bowire.js"));
+
+    // #294 — Rail + module catalogues populated by BowireApiEndpoints.Map
+    // at host startup. Defaulting to empty registries means a test or
+    // call path that bypasses the endpoint mapping still gets a sane
+    // (empty) catalogue rather than NRE-on-first-access — the JS bundle
+    // is also defensive about an empty list.
+    private static BowireRailRegistry _rails = new();
+    private static BowireModuleRegistry _modules = new();
+
+    /// <summary>
+    /// Called once at host startup from <see cref="BowireApiEndpoints.Map"/>
+    /// so the HTML config can render the seeded rail + module
+    /// catalogues. The setters are static + last-writer-wins because
+    /// the catalogues are fixed for the lifetime of the process
+    /// (descriptors aren't hot-reloaded today).
+    /// </summary>
+    internal static void SetContributions(
+        BowireRailRegistry rails, BowireModuleRegistry modules)
+    {
+        _rails = rails ?? new BowireRailRegistry();
+        _modules = modules ?? new BowireModuleRegistry();
+    }
 
     /// <summary>
     /// Bowire favicon — three derivatives from the same source SVG,
@@ -221,7 +244,16 @@ internal static class BowireHtmlGenerator
                            logoIconMono: "{{FaviconMonoDataUrl.Value}}",
                            version: "{{AssemblyVersionString.Value}}",
                            kuestenlogikLockup: "{{KuestenlogikLockupDataUrl.Value}}",
-                           kuestenlogikLockupMono: "{{KuestenlogikLockupMonoDataUrl.Value}}"
+                           kuestenlogikLockupMono: "{{KuestenlogikLockupMonoDataUrl.Value}}",
+                           // #294 — rail + module catalogues. Each descriptor
+                           // emitted by IBowireRailContribution / IBowireModuleContribution
+                           // lands here as JSON; render-sidebar.js reads
+                           // window.__BOWIRE_CONFIG__.rails to seed _railModes
+                           // (replacing the old hardcoded array) and
+                           // settings.js iterates the same list for the
+                           // Rail-modes editor.
+                           rails: {{_rails.ToJson()}},
+                           modules: {{_modules.ToJson()}}
                        };
                    </script>
                    <script>{{js}}</script>
