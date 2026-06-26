@@ -1615,7 +1615,7 @@
                 className: 'bowire-recording-step-tool',
                 title: 'Open this step in a new Compose tab',
                 'aria-label': 'Open this step in Compose',
-                innerHTML: svgIcon('drill'),
+                innerHTML: svgIcon('compose'),
                 onClick: function (e) {
                     e.stopPropagation();
                     // Step shape mirrors collection-item: protocol +
