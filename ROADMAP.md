@@ -234,6 +234,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [311](https://github.com/Kuestenlogik/Bowire/issues/311) | Bowire | [Pluggable workbench: extract remaining rails (Phase G continuation)](#issue-kuestenlogik-bowire-311) | ⬜ Backlog |  |
 | [313](https://github.com/Kuestenlogik/Bowire/issues/313) | Bowire | [Parallel sessions Phase 3 — hardening (allowlist + audit log + agent-hub discovery)](#issue-kuestenlogik-bowire-313) | ⬜ Backlog |  |
 | [314](https://github.com/Kuestenlogik/Bowire/issues/314) | Bowire | [Pluggable workbench: extract remaining rail JS slices (Phase G remainder)](#issue-kuestenlogik-bowire-314) | ⬜ Backlog |  |
+| [316](https://github.com/Kuestenlogik/Bowire/issues/316) | Bowire | [substituteMessages([...]) passes Array.map index as cycle-guard set, crashes on 2nd+ entry](#issue-kuestenlogik-bowire-316) | ⬜ Backlog |  |
 
 ## Details
 
@@ -896,6 +897,10 @@ Follow-up from #132 Phase 2 (shipped in `ecbfa9e`). Phase 2 wired the wire shape
 #### <a id="issue-kuestenlogik-bowire-314"></a>⬜ Backlog · [#314](https://github.com/Kuestenlogik/Bowire/issues/314) Pluggable workbench: extract remaining rail JS slices (Phase G remainder)
 
 Follow-up to #311. The first wave shipped the five heaviest rail JS slices (Recordings, Mocks, Flows, Compose, Intercepted) as embedded resources on their respective `Kuestenlogik.Bowire.Rail.*` packages, and added the runtime stitching machinery in `BowireHtmlGenerator` that splices per-assembly JS … [[more]](https://github.com/Kuestenlogik/Bowire/issues/314)
+
+#### <a id="issue-kuestenlogik-bowire-316"></a>⬜ Backlog · [#316](https://github.com/Kuestenlogik/Bowire/issues/316) substituteMessages([...]) passes Array.map index as cycle-guard set, crashes on 2nd+ entry
+
+Found by coverage-wave-2 (#312) while wiring up node-tests for history-env.js. [[more]](https://github.com/Kuestenlogik/Bowire/issues/316)
 
 ---
 
