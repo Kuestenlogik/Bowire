@@ -12,12 +12,11 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.1 — Scripting, variable resolver, throughput surface *(due 2026-06-30)*
 
-**60/62 done** · 2 backlog
+**61/62 done** · 1 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
 | [132](https://github.com/Kuestenlogik/Bowire/issues/132) | Bowire | [Parallel sessions for recordings / collections (phase 1 local, phase 2 distributed)](#issue-kuestenlogik-bowire-132) | ⬜ Backlog |  |
-| [294](https://github.com/Kuestenlogik/Bowire/issues/294) | Bowire | [Pluggable workbench: rails + modules as package contributions + meta-bundles](#issue-kuestenlogik-bowire-294) | ⬜ Backlog |  |
 | [126](https://github.com/Kuestenlogik/Bowire/issues/126) | Bowire | [Pre-/post-scripts with a protocol-typed sandbox](#issue-kuestenlogik-bowire-126) | ✅ Done |  |
 | [136](https://github.com/Kuestenlogik/Bowire/issues/136) | Bowire | [URL / service catalogue providers (local / http / consul / kubernetes / agent)](#issue-kuestenlogik-bowire-136) | ✅ Done |  |
 | [140](https://github.com/Kuestenlogik/Bowire/issues/140) | Bowire | [Per-mode 'Saved Configs' / Presets (distinct from cross-workflow favorites)](#issue-kuestenlogik-bowire-140) | ✅ Done |  |
@@ -68,6 +67,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [289](https://github.com/Kuestenlogik/Bowire/issues/289) | Bowire | [Hoppscotch-style single-line request bar: method + URL + params + execute, no workspace required](#issue-kuestenlogik-bowire-289) | ✅ Done |  |
 | [291](https://github.com/Kuestenlogik/Bowire/issues/291) | Bowire | [Hopp-bar: protocol picker (REST / gRPC / MQTT / WebSocket / SSE / GraphQL / MCP) with per-protocol sub-tab layout](#issue-kuestenlogik-bowire-291) | ✅ Done |  |
 | [293](https://github.com/Kuestenlogik/Bowire/issues/293) | Bowire | [New 'Design' rail for the request-builder — separate ad-hoc crafting from schema-driven Discover](#issue-kuestenlogik-bowire-293) | ✅ Done |  |
+| [294](https://github.com/Kuestenlogik/Bowire/issues/294) | Bowire | [Pluggable workbench: rails + modules as package contributions + meta-bundles](#issue-kuestenlogik-bowire-294) | ✅ Done |  |
 | [295](https://github.com/Kuestenlogik/Bowire/issues/295) | Bowire | [Compose rail: integrate Collections + Presets — three sources, one organized destination](#issue-kuestenlogik-bowire-295) | ✅ Done |  |
 | [296](https://github.com/Kuestenlogik/Bowire/issues/296) | Bowire | [Topbar: global Trash drawer + Undo / Redo buttons (aggregate across rails)](#issue-kuestenlogik-bowire-296) | ✅ Done |  |
 | [297](https://github.com/Kuestenlogik/Bowire/issues/297) | Bowire | [Topbar: responsive horizontal overflow — collapse low-priority buttons into a ⋮ menu, mirror the rail strip](#issue-kuestenlogik-bowire-297) | ✅ Done |  |
@@ -242,10 +242,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 #### <a id="issue-kuestenlogik-bowire-132"></a>⬜ Backlog · [#132](https://github.com/Kuestenlogik/Bowire/issues/132) Parallel sessions for recordings / collections (phase 1 local, phase 2 distributed)
 
 Today a recording or collection runs sequentially: step 1 → step 2 → step 3, one session, one request in flight at a time. Useful for **functional** testing ("does the flow still work?") but unable to answer the parallel-shaped questions: [[more]](https://github.com/Kuestenlogik/Bowire/issues/132)
-
-#### <a id="issue-kuestenlogik-bowire-294"></a>⬜ Backlog · [#294](https://github.com/Kuestenlogik/Bowire/issues/294) Pluggable workbench: rails + modules as package contributions + meta-bundles
-
-Bowire today hardcodes: - An 'always-on' rail set (Home, Discover, Workspaces) — fixed in the rail-rendering code - A 'toggleable' rail set (Recordings, Mocks, Flows, Proxy, Benchmarks, Security) — toggleable in Settings, but the LIST itself is hardcoded - Cross-cutting modules (AI/Assistant, MCP, v … [[more]](https://github.com/Kuestenlogik/Bowire/issues/294)
 
 #### <a id="issue-kuestenlogik-bowire-126"></a>✅ Done · [#126](https://github.com/Kuestenlogik/Bowire/issues/126) Pre-/post-scripts with a protocol-typed sandbox
 
@@ -446,6 +442,10 @@ The hopp-bar (#289 + #290) ships today as a REST-only experience: HTTP method dr
 #### <a id="issue-kuestenlogik-bowire-293"></a>✅ Done · [#293](https://github.com/Kuestenlogik/Bowire/issues/293) New 'Design' rail for the request-builder — separate ad-hoc crafting from schema-driven Discover
 
 The request-builder (renamed from hopp-bar in commit 5d7b21a, multi-protocol since #291) currently piggy-backs on whatever tab is active in the Discover rail. Two consequences: 1. When no source/tab exists, the builder gets stuck off-frame. 2. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/293)
+
+#### <a id="issue-kuestenlogik-bowire-294"></a>✅ Done · [#294](https://github.com/Kuestenlogik/Bowire/issues/294) Pluggable workbench: rails + modules as package contributions + meta-bundles
+
+Bowire today hardcodes: - An 'always-on' rail set (Home, Discover, Workspaces) — fixed in the rail-rendering code - A 'toggleable' rail set (Recordings, Mocks, Flows, Proxy, Benchmarks, Security) — toggleable in Settings, but the LIST itself is hardcoded - Cross-cutting modules (AI/Assistant, MCP, v … [[more]](https://github.com/Kuestenlogik/Bowire/issues/294)
 
 #### <a id="issue-kuestenlogik-bowire-295"></a>✅ Done · [#295](https://github.com/Kuestenlogik/Bowire/issues/295) Compose rail: integrate Collections + Presets — three sources, one organized destination
 
