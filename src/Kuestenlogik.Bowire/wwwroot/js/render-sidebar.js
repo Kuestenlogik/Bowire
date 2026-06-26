@@ -2084,6 +2084,24 @@
                 if (typeof _goToWorkspacesOverview === 'function') _goToWorkspacesOverview();
             }
         }];
+        // #279 — Reset-to-alphabetical action. Always offered (not
+        // just when manual/lastUsed is active) so the operator who
+        // dragged things around weeks ago and forgot can still find
+        // the way back without having to remember which mode they
+        // picked.
+        if (typeof resetWorkspacesSort === 'function') {
+            overviewOverflow.push({
+                label: 'Reset sort to alphabetical',
+                icon: 'sortAlpha',
+                onClick: function () {
+                    resetWorkspacesSort();
+                    if (typeof toast === 'function') {
+                        toast('Workspace sort reset to alphabetical.', 'info');
+                    }
+                    render();
+                }
+            });
+        }
         sidebar.appendChild(renderSidebarToolbar({
             title: 'Workspaces',
             onTitleClick: function () {
@@ -2121,10 +2139,17 @@
                 // applies cross-cuttingly (sidebar + topbar dropdown +
                 // overview) via the shared workspacesSortBy state,
                 // persisted to localStorage.
+                //
+                // #279 — cycle order leads with Alphabetical (the
+                // default) so the first click off "Last used" lands
+                // on something stable. 'Manual' uses the grip-handle
+                // glyph to telegraph that this mode enables drag-
+                // drop in the overview.
                 options: [
-                    { value: 'lastUsed',     label: 'Last used',    icon: 'clock' },
                     { value: 'alphabetical', label: 'Alphabetical', icon: 'sortAlpha' },
-                    { value: 'created',      label: 'Created date', icon: 'calendar' }
+                    { value: 'created',      label: 'Created date', icon: 'calendar' },
+                    { value: 'lastUsed',     label: 'Last used',    icon: 'clock' },
+                    { value: 'manual',       label: 'Manual (drag in overview)', icon: 'grip' }
                 ],
                 onChange: function (v) {
                     if (typeof setWorkspacesSortBy === 'function') setWorkspacesSortBy(v);
