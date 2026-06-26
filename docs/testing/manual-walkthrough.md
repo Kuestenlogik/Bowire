@@ -19,7 +19,7 @@ Status convention per step: `[ ]` not yet verified · `[x]` passes · `[!]` know
 
 ### What should be visible
 
-- [ ] Topbar carries the **B**-logo + brand, env selector (says "Workspace defaults" or similar default), command palette, theme toggle, help, settings cog. **No** workspace chip (no workspace exists).
+- [ ] Topbar carries the **B**-logo + brand, env selector (says "Workspace defaults" or similar default), command palette, **Undo / Redo / Trash** trio (#296), theme toggle, help, settings cog. **No** workspace chip (no workspace exists).
 - [ ] Left rail shows the always-on set: **Home** (active by default), Discover, **Compose**, Workspaces. Disabled / optional rails (Recordings, Mocks, Flows, Proxy, Benchmarks, Security) MAY also appear unchecked-but-visible.
 - [ ] Sidebar shows nothing rail-mode-specific (Home rail has `sidebar.kind: 'none'`).
 - [ ] Main pane renders the **"Create your first workspace"** empty card:
@@ -27,6 +27,7 @@ Status convention per step: `[ ]` not yet verified · `[x]` passes · `[!]` know
   - headline `Create your first workspace`
   - body text explaining what a workspace is
   - primary action button `Create workspace`
+- [ ] The Undo + Redo buttons render in their disabled state (greyed, `aria-disabled="true"`) — there is nothing on the action-log stack yet. The Trash icon shows no badge (aggregate count == 0).
 
 ### Actions to try
 
@@ -37,6 +38,12 @@ Status convention per step: `[ ]` not yet verified · `[x]` passes · `[!]` know
 3. [ ] Click topbar **B**-logo → opens the app-drawer with rail-mode shortcuts.
 4. [ ] Open command palette (Ctrl+K) → search for `compose` → `Compose new request` should appear.
 5. [ ] Settings cog → Settings dialog opens, sidebar tree has My preferences (General / Rail modes / Shortcuts / Data / Assistant), Plugins (with sub-entries for every installed plugin), This project (Workspace pointer).
+6. [ ] **#296** — Topbar Undo / Redo / Trash trio:
+   - Hover Undo → tooltip reads `Nothing to undo (Ctrl/Cmd+Z)` while the stack is empty; after a reversible action (delete a recording, a collection, etc.) the tooltip flips to `Undo: <action title> (Ctrl/Cmd+Z)` and the button enables.
+   - Same pattern for Redo after an Undo: `Redo: <action title> (Ctrl/Cmd+Shift+Z)`.
+   - Click the Trash icon → modal-style **Trash** drawer opens, headlined `Trash — N items`. Per-bucket sections (`Recordings`, `Collections`, `Recently closed tabs`) expand on click; each row carries `Restore` + `Delete forever` + a `Deleted X days ago — will be purged in (30-X) days` TTL note. Footer actions: `Empty trash` (confirm), `Restore all` (confirm), `Cancel`.
+   - The `Workspaces` row in the drawer renders as `(0) — Soft-delete arrives with #194` until that ticket lands.
+   - Esc / backdrop click closes the drawer.
 
 ### Playwright test outline
 

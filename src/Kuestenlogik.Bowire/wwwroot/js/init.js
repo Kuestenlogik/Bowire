@@ -114,6 +114,18 @@
                 helpOpenDrawer();
                 return;
             }
+            // #296 — Esc closes the global Trash drawer first. It's
+            // a modal overlay so it gets priority over the other Esc
+            // bindings; without this the operator has to click the
+            // backdrop or the close X.
+            if (e.key === 'Escape'
+                && typeof globalTrashOpen !== 'undefined' && globalTrashOpen
+                && !searchSuggestionsOpen) {
+                e.preventDefault();
+                globalTrashOpen = false;
+                render();
+                return;
+            }
             if (e.key === 'Escape' && helpDrawerOpen
                 && typeof helpCloseDrawer === 'function'
                 && !searchSuggestionsOpen) {
