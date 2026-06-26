@@ -29,6 +29,37 @@ Status convention per step: `[ ]` not yet verified · `[x]` passes · `[!]` know
   - primary action button `Create workspace`
 - [ ] The Undo + Redo buttons render in their disabled state (greyed, `aria-disabled="true"`) — there is nothing on the action-log stack yet. The Trash icon shows no badge (aggregate count == 0).
 
+### Canonical rail welcome-card shape (#301)
+
+Every rail's "home / welcome / no-selection" surface MUST render the shared `renderEmptyCard({ icon, headline, body, actions })` helper, wrapped in the canonical pane shell so the visual rhythm is identical across rails. Future rails copy this shape; existing rails (Discover, Recordings, Collections, Mocks, Flows, Proxy, Benchmarks, Workspaces overview) already conform — diverging from this is a regression.
+
+**Markup contract**
+
+```js
+var main = el('div', { id: 'bowire-main-<rail>', className: 'bowire-main bowire-main-<rail>' });
+var emptyWrap = el('div', { className: 'bowire-main-pad' });
+emptyWrap.appendChild(renderEmptyCard({
+    icon: '<svg-id>',          // e.g. 'recording', 'folder', 'chart', 'layers'
+    headline: '<short title>', // e.g. 'No recordings yet' / 'Pick a recording'
+    body: '<one-paragraph>',   // what the rail is for + how to start
+    actions: [                 // 0..N — first one is { primary: true }
+        { label: 'Primary CTA', primary: true, onClick: function () { /* ... */ } },
+        { label: 'Secondary',   onClick: function () { /* ... */ } }
+    ]
+}));
+main.appendChild(emptyWrap);
+return main;
+```
+
+**Components rendered by `renderEmptyCard`** (`helpers.js` → `.bowire-empty-card`):
+
+- `.bowire-empty-card-icon` — accent-tinted 22px svg glyph that anchors the rail's identity.
+- `.bowire-empty-card-headline` — `<h3>`, 15px / 600.
+- `.bowire-empty-card-body` — `<p>`, 13px / secondary text, max 560px.
+- `.bowire-empty-card-actions` — flex row; primary CTA fills accent, secondaries pick up the surface fill.
+
+**Walkthrough check**: open each rail in turn (Discover → Compose → Recordings → Mocks → Flows → Proxy → Benchmarks → Security → Workspaces). The icon + headline + body + CTA cluster should align at the same gutter on every rail and read with the same typography. If a rail's welcome card looks different — typography off, padding off, header glyph instead of inline icon, custom paragraph instead of `.bowire-empty-card-body` — that's the #301 class of regression: refactor it back to this shape.
+
 ### Actions to try
 
 1. [ ] Click `Create workspace` → Create-workspace dialog opens. Tested in Phase 2.
