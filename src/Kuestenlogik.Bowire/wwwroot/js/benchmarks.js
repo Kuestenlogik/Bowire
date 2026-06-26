@@ -2325,7 +2325,12 @@
                     hint ? el('div', { className: 'bowire-ws-detail-stat-hint', textContent: hint }) : null
                 );
             }
-            function ms(v) { return Math.round(v * 10) / 10 + ' ms'; }
+            // Renamed from 'ms' → '_fmtMs' to avoid a strict-mode block-
+            // scoped-function vs var conflict: the per-endpoint loop
+            // below declares `var ms = last.durations[di++]` at function
+            // scope, which clashed with this hoisted function binding.
+            // Browsers threw 'Identifier ms has already been declared'.
+            function _fmtMs(v) { return Math.round(v * 10) / 10 + ' ms'; }
 
             // #234 — Export ▾ split-button at the top of the result
             // pane. Primary action (the label area) is "Export as CSV"
@@ -2381,11 +2386,11 @@
             main.appendChild(el('div', { className: 'bowire-ws-detail-section' },
                 el('div', { className: 'bowire-ws-detail-section-label', textContent: 'Latency (last run)' }),
                 el('div', { className: 'bowire-ws-detail-stats' },
-                    statTile('p50', ms(s.p50)),
-                    statTile('p90', ms(s.p90)),
-                    statTile('p95', ms(s.p95)),
-                    statTile('p99', ms(s.p99)),
-                    statTile('avg', ms(s.avg), 'min ' + ms(s.min) + ' · max ' + ms(s.max))
+                    statTile('p50', _fmtMs(s.p50)),
+                    statTile('p90', _fmtMs(s.p90)),
+                    statTile('p95', _fmtMs(s.p95)),
+                    statTile('p99', _fmtMs(s.p99)),
+                    statTile('avg', _fmtMs(s.avg), 'min ' + _fmtMs(s.min) + ' · max ' + _fmtMs(s.max))
                 )
             ));
             main.appendChild(el('div', { className: 'bowire-ws-detail-section' },
