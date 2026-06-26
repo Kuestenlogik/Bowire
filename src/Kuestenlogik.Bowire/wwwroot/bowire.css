@@ -20120,6 +20120,374 @@ not as the
     min-height: 180px;
 }
 
+/* =========================================================================
+   #302 — Response viewer (Hoppscotch parity)
+   ========================================================================= */
+
+/* ---- Status meta strip + action cluster ---- */
+.bowire-response-meta-strip {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 4px 0 8px;
+    flex-wrap: wrap;
+}
+.bowire-response-meta-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+.bowire-response-status-chip {
+    font: 600 11px/1 var(--bowire-font-mono, ui-monospace, Menlo, monospace);
+    padding: 4px 8px;
+    border-radius: 4px;
+    background: var(--bowire-bg-elevated, #1a1a1a);
+    color: var(--bowire-text, #e5e5e5);
+    border: 1px solid var(--bowire-border, #2a2a2a);
+    letter-spacing: 0.02em;
+}
+.bowire-response-status-chip.is-ok {
+    color: #10b981;
+    border-color: rgba(16, 185, 129, 0.4);
+    background: rgba(16, 185, 129, 0.08);
+}
+.bowire-response-status-chip.is-err {
+    color: #ef4444;
+    border-color: rgba(239, 68, 68, 0.4);
+    background: rgba(239, 68, 68, 0.08);
+}
+.bowire-response-status-chip.is-info {
+    color: #60a5fa;
+    border-color: rgba(96, 165, 250, 0.4);
+    background: rgba(96, 165, 250, 0.08);
+}
+.bowire-response-meta-chip {
+    font: 500 11px/1 var(--bowire-font-mono, ui-monospace, Menlo, monospace);
+    padding: 4px 8px;
+    border-radius: 4px;
+    background: var(--bowire-bg-elevated, #1a1a1a);
+    color: var(--bowire-text-secondary, #aaa);
+    border: 1px solid var(--bowire-border, #2a2a2a);
+}
+.bowire-response-meta-actions {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+.bowire-response-meta-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    color: var(--bowire-text-secondary, #aaa);
+    cursor: pointer;
+    transition: background 0.12s ease, color 0.12s ease, border-color 0.12s ease;
+}
+.bowire-response-meta-btn:hover {
+    background: var(--bowire-bg-elevated, #1a1a1a);
+    color: var(--bowire-text, #e5e5e5);
+    border-color: var(--bowire-border, #2a2a2a);
+}
+.bowire-response-meta-btn.is-on {
+    background: var(--bowire-accent-subtle, rgba(99, 102, 241, 0.15));
+    color: var(--bowire-accent, #6366f1);
+    border-color: var(--bowire-accent, #6366f1);
+}
+.bowire-response-meta-btn svg {
+    width: 14px;
+    height: 14px;
+}
+
+/* ---- Tab strip (JSON / Raw / Headers / Test results) ---- */
+.bowire-response-tab-strip {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    border-bottom: 1px solid var(--bowire-border, #2a2a2a);
+    margin-bottom: 0;
+}
+.bowire-response-tab-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid transparent;
+    padding: 8px 12px;
+    color: var(--bowire-text-secondary, #aaa);
+    font: 500 12px/1.2 system-ui, sans-serif;
+    cursor: pointer;
+    margin-bottom: -1px;  /* overlap the strip's bottom border */
+    transition: color 0.12s ease, border-color 0.12s ease;
+}
+.bowire-response-tab-btn:hover {
+    color: var(--bowire-text, #e5e5e5);
+}
+.bowire-response-tab-btn.is-active {
+    color: var(--bowire-accent, #6366f1);
+    border-bottom-color: var(--bowire-accent, #6366f1);
+}
+.bowire-response-tab-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 18px;
+    height: 16px;
+    padding: 0 5px;
+    border-radius: 8px;
+    background: var(--bowire-bg-elevated, #1a1a1a);
+    border: 1px solid var(--bowire-border, #2a2a2a);
+    color: var(--bowire-text-tertiary, #888);
+    font: 600 10px/1 var(--bowire-font-mono, ui-monospace, monospace);
+}
+.bowire-response-tab-btn.is-active .bowire-response-tab-badge {
+    color: var(--bowire-accent, #6366f1);
+    border-color: var(--bowire-accent, #6366f1);
+}
+
+/* ---- Search bar inside response viewer ---- */
+.bowire-response-search-bar {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 6px 8px;
+    background: var(--bowire-bg-elevated, #1a1a1a);
+    border-bottom: 1px solid var(--bowire-border, #2a2a2a);
+}
+.bowire-response-search-input {
+    flex: 1 1 auto;
+    background: transparent;
+    border: 1px solid var(--bowire-border, #2a2a2a);
+    color: var(--bowire-text, #e5e5e5);
+    padding: 4px 8px;
+    border-radius: 4px;
+    font: 12px/1.4 var(--bowire-font-mono, ui-monospace, monospace);
+    outline: none;
+}
+.bowire-response-search-input:focus {
+    border-color: var(--bowire-accent, #6366f1);
+}
+.bowire-response-search-close {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    background: transparent;
+    border: none;
+    color: var(--bowire-text-secondary, #aaa);
+    cursor: pointer;
+    border-radius: 4px;
+}
+.bowire-response-search-close:hover {
+    background: var(--bowire-bg, #0a0a0a);
+    color: var(--bowire-text, #e5e5e5);
+}
+.bowire-response-search-close svg {
+    width: 12px;
+    height: 12px;
+}
+
+/* ---- Tab body wrapper ---- */
+.bowire-response-tab-body {
+    margin-top: 0;
+    background: var(--bowire-bg, #0a0a0a);
+}
+
+/* ---- Hoppscotch-parity JSON viewer ---- */
+.bowire-json-viewer {
+    font-family: var(--bowire-font-mono, ui-monospace, Menlo, monospace);
+    font-size: 12px;
+    line-height: 1.6;
+    color: var(--bowire-text, #e5e5e5);
+    background: var(--bowire-bg, #0a0a0a);
+    overflow-x: auto;
+    max-height: 540px;
+    overflow-y: auto;
+    outline: none;
+    padding: 4px 0;
+}
+.bowire-json-viewer.is-wrap .bowire-json-viewer-code {
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+.bowire-json-viewer-line {
+    display: flex;
+    align-items: flex-start;
+    gap: 0;
+    min-width: max-content;
+    padding: 0;
+    transition: background 0.08s ease;
+}
+.bowire-json-viewer.is-wrap .bowire-json-viewer-line {
+    min-width: 0;
+}
+.bowire-json-viewer-line:hover {
+    background: var(--bowire-bg-elevated, rgba(99, 102, 241, 0.04));
+}
+.bowire-json-viewer-line.is-search-match {
+    background: rgba(250, 204, 21, 0.12);  /* amber 400 @ 12% */
+}
+[data-theme="light"] .bowire-json-viewer-line.is-search-match {
+    background: rgba(234, 179, 8, 0.18);
+}
+.bowire-json-viewer-gutter {
+    flex: 0 0 auto;
+    width: 48px;
+    padding: 0 8px 0 12px;
+    text-align: right;
+    color: var(--bowire-text-tertiary, #6a6a82);
+    user-select: none;
+    font-variant-numeric: tabular-nums;
+    position: sticky;
+    left: 0;
+    background: var(--bowire-bg, #0a0a0a);
+    border-right: 1px solid var(--bowire-border, #1a1a1a);
+}
+.bowire-json-viewer-line:hover .bowire-json-viewer-gutter {
+    color: var(--bowire-text-secondary, #aaa);
+    background: var(--bowire-bg-elevated, #131320);
+}
+.bowire-json-viewer-code {
+    flex: 1 1 auto;
+    padding: 0 12px 0 8px;
+    white-space: pre;
+    overflow-wrap: normal;
+}
+.bowire-json-viewer-bracket {
+    color: var(--bowire-text-secondary, #c0c0c0);
+}
+[data-theme="light"] .bowire-json-viewer-bracket {
+    color: #3a3a3a;
+}
+.bowire-json-viewer-chev {
+    display: inline-block;
+    width: 14px;
+    color: var(--bowire-text-tertiary, #6a6a82);
+    cursor: pointer;
+    user-select: none;
+    transition: color 0.12s ease;
+    font-size: 10px;
+}
+.bowire-json-viewer-chev:hover {
+    color: var(--bowire-accent, #6366f1);
+}
+.bowire-json-viewer-collapsed-preview {
+    color: var(--bowire-text-tertiary, #6a6a82);
+    font-style: italic;
+}
+
+/* Pickable spans in the viewer reuse the existing chaining-copy
+   affordance — underline on hover, no click-target halo. */
+.bowire-json-viewer.is-interactive .bowire-json-pickable {
+    cursor: pointer;
+    border-radius: 2px;
+    padding: 0 1px;
+}
+.bowire-json-viewer.is-interactive .bowire-json-pickable:hover {
+    background: var(--bowire-accent-subtle, rgba(99, 102, 241, 0.18));
+}
+
+/* ---- Raw tab body ---- */
+.bowire-response-raw {
+    margin: 0;
+    padding: 12px;
+    background: var(--bowire-bg, #0a0a0a);
+    color: var(--bowire-text, #e5e5e5);
+    font: 12px/1.6 var(--bowire-font-mono, ui-monospace, Menlo, monospace);
+    overflow: auto;
+    max-height: 540px;
+    white-space: pre;
+}
+.bowire-response-raw.is-wrap {
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+/* ---- Headers tab body ---- */
+.bowire-response-headers {
+    padding: 8px 0;
+}
+.bowire-response-headers-table {
+    display: flex;
+    flex-direction: column;
+}
+.bowire-response-headers-row {
+    display: grid;
+    grid-template-columns: minmax(140px, 28%) 1fr;
+    gap: 12px;
+    padding: 6px 12px;
+    border-bottom: 1px solid var(--bowire-border, #1a1a1a);
+    font: 12px/1.5 var(--bowire-font-mono, ui-monospace, Menlo, monospace);
+}
+.bowire-response-headers-row:last-child {
+    border-bottom: none;
+}
+.bowire-response-headers-key {
+    color: var(--bowire-accent, #a78bfa);
+    word-break: break-word;
+}
+[data-theme="light"] .bowire-response-headers-key {
+    color: #7c3aed;
+}
+.bowire-response-headers-val {
+    color: var(--bowire-text, #e5e5e5);
+    word-break: break-word;
+}
+
+/* ---- Tests tab body ---- */
+.bowire-response-tests-pane {
+    padding: 12px;
+}
+
+/* ---- Breadcrumb under the JSON pane ---- */
+.bowire-response-breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    flex-wrap: wrap;
+    padding: 6px 12px;
+    background: var(--bowire-bg-elevated, #131320);
+    border-top: 1px solid var(--bowire-border, #2a2a2a);
+    font: 11px/1.4 var(--bowire-font-mono, ui-monospace, Menlo, monospace);
+    color: var(--bowire-text-secondary, #aaa);
+    min-height: 24px;
+}
+.bowire-response-breadcrumb-hint {
+    color: var(--bowire-text-tertiary, #6a6a82);
+    font-style: italic;
+}
+.bowire-response-breadcrumb-root {
+    color: var(--bowire-accent, #6366f1);
+    cursor: pointer;
+    user-select: none;
+    font-weight: 600;
+}
+.bowire-response-breadcrumb-root:hover {
+    text-decoration: underline;
+}
+.bowire-response-breadcrumb-sep {
+    color: var(--bowire-text-tertiary, #6a6a82);
+}
+.bowire-response-breadcrumb-seg {
+    color: var(--bowire-text, #e5e5e5);
+    cursor: pointer;
+    padding: 0 2px;
+    border-radius: 2px;
+    transition: background 0.1s ease;
+}
+.bowire-response-breadcrumb-seg:hover {
+    background: var(--bowire-accent-subtle, rgba(99, 102, 241, 0.18));
+    color: var(--bowire-accent, #6366f1);
+}
+
 /* ---- #254 — Auto-discover prompt after a successful invoke ---- */
 .bowire-request-builder-discover-hint {
     display: flex;
@@ -20583,6 +20951,30 @@ not as the
 .bowire-request-builder-disconnect-btn:hover {
     color: var(--bowire-text);
     border-color: #ef4444;
+}
+/* #302 Phase D — Download button on streaming response panes. */
+.bowire-request-builder-stream-download-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    margin-left: 4px;
+    padding: 0;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    color: var(--bowire-text-secondary, #aaa);
+    cursor: pointer;
+}
+.bowire-request-builder-stream-download-btn:hover {
+    background: var(--bowire-bg-elevated, #1a1a1a);
+    color: var(--bowire-text, #e5e5e5);
+    border-color: var(--bowire-border, #2a2a2a);
+}
+.bowire-request-builder-stream-download-btn svg {
+    width: 12px;
+    height: 12px;
 }
 
 /* ---------- #293 Compose Rail ---------- */

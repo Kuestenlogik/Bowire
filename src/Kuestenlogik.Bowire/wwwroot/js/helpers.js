@@ -410,6 +410,320 @@
         return '<div class="bowire-json-tree-row">' + escapeHtml(String(value)) + '</div>';
     }
 
+    // ---- #302 — Hoppscotch-parity JSON viewer ------------------------------
+    //
+    // Returns an HTMLElement that renders a JSON document as a vertical
+    // stack of lines, each with:
+    //   - a sticky line-number gutter on the left,
+    //   - a code line carrying syntax-highlighted content,
+    //   - per-path data attributes so the breadcrumb + path-copy can
+    //     resolve which JSON node the caret currently sits on.
+    //
+    // Object / array openers carry a click-to-toggle chevron next to the
+    // opening bracket — collapsing replaces the children + closing bracket
+    // with a `… N items` preview on the same line. Toggle state lives in
+    // the optional `togglesByPath` Set the caller threads through opts;
+    // when not supplied the viewer keeps its own anonymous state.
+    //
+    // opts:
+    //   togglesByPath  Set<string>  paths that are collapsed (default open)
+    //   onToggle       (path,collapsed)=>void
+    //   onSelectLine   (lineInfo)=>void  fired on click — lineInfo carries
+    //                                   `path` (deepest data-json-path on
+    //                                   the line) for the breadcrumb.
+    //   wrap           bool — when true, lines wrap at the pane width;
+    //                  when false (default) they overflow horizontally.
+    function renderJsonViewer(rawText, opts) {
+        opts = opts || {};
+        var parsed;
+        var parseFailed = false;
+        try {
+            parsed = typeof rawText === 'string' ? JSON.parse(rawText) : rawText;
+        } catch {
+            parseFailed = true;
+        }
+        var viewer = el('div', {
+            className: 'bowire-json-viewer' + (opts.wrap ? ' is-wrap' : ''),
+            tabIndex: '0'
+        });
+        if (parseFailed || parsed === undefined) {
+            // Fallback — render the raw text inline with line numbers but
+            // no collapse / path metadata. Operator can still scroll +
+            // search; the breadcrumb just stays empty.
+            var rawLines = String(rawText == null ? '' : rawText).split(/\r?\n/);
+            for (var rl = 0; rl < rawLines.length; rl++) {
+                viewer.appendChild(_jsonViewerLineEl(rl + 1, _jsonViewerEscape(rawLines[rl]), '', opts));
+            }
+            return viewer;
+        }
+        var togglesByPath = opts.togglesByPath instanceof Set ? opts.togglesByPath : new Set();
+        var state = {
+            lineNo: 0,
+            togglesByPath: togglesByPath,
+            wrap: !!opts.wrap,
+            onToggle: typeof opts.onToggle === 'function' ? opts.onToggle : null,
+            lines: []  // accumulator of {lineNo, html, path}
+        };
+        _jsonViewerWalk(state, parsed, '', /*indent*/ 0, /*labelPrefix*/ '', /*trailingComma*/ false);
+        for (var i = 0; i < state.lines.length; i++) {
+            var ln = state.lines[i];
+            viewer.appendChild(_jsonViewerLineEl(ln.lineNo, ln.html, ln.path || '', opts));
+        }
+        // Click-to-collapse: chevrons carry data-collapse-path. We
+        // delegate at the viewer level so re-renders don't need to
+        // rewire per-row handlers.
+        viewer.addEventListener('click', function (e) {
+            var chev = e.target.closest && e.target.closest('.bowire-json-viewer-chev');
+            if (chev) {
+                var p = chev.getAttribute('data-collapse-path') || '';
+                if (state.togglesByPath.has(p)) state.togglesByPath.delete(p);
+                else state.togglesByPath.add(p);
+                if (state.onToggle) state.onToggle(p, state.togglesByPath.has(p));
+                return;  // selection handler runs only when the chevron itself wasn't hit
+            }
+            // Otherwise let the caller resolve which JSON node was clicked
+            // so it can update its breadcrumb. We pass the deepest line
+            // that carries a data-json-path attribute.
+            if (typeof opts.onSelectLine === 'function') {
+                var row = e.target.closest && e.target.closest('.bowire-json-viewer-line');
+                if (!row) return;
+                var path = row.getAttribute('data-line-path') || '';
+                opts.onSelectLine({ path: path, lineNo: parseInt(row.getAttribute('data-line-no') || '0', 10) });
+            }
+        });
+        // Track caret movement via keyboard nav too — Arrow-up/Arrow-down
+        // through the viewer (when it has focus) should also refresh the
+        // breadcrumb. Cheap delegation: read the current row from the
+        // active element / selection.
+        viewer.addEventListener('keyup', function (e) {
+            if (typeof opts.onSelectLine !== 'function') return;
+            if (e.key !== 'ArrowUp' && e.key !== 'ArrowDown') return;
+            var sel = window.getSelection && window.getSelection();
+            if (!sel || sel.rangeCount === 0) return;
+            var node = sel.anchorNode;
+            if (!node) return;
+            var row = node.nodeType === 1 ? node : node.parentElement;
+            row = row && row.closest && row.closest('.bowire-json-viewer-line');
+            if (!row) return;
+            opts.onSelectLine({
+                path: row.getAttribute('data-line-path') || '',
+                lineNo: parseInt(row.getAttribute('data-line-no') || '0', 10)
+            });
+        });
+        return viewer;
+    }
+
+    function _jsonViewerLineEl(lineNo, html, path, opts) {
+        var row = document.createElement('div');
+        row.className = 'bowire-json-viewer-line';
+        row.setAttribute('data-line-no', String(lineNo));
+        if (path !== undefined && path !== null) row.setAttribute('data-line-path', path);
+        var gutter = document.createElement('span');
+        gutter.className = 'bowire-json-viewer-gutter';
+        gutter.textContent = String(lineNo);
+        var code = document.createElement('span');
+        code.className = 'bowire-json-viewer-code';
+        code.innerHTML = html;
+        row.appendChild(gutter);
+        row.appendChild(code);
+        return row;
+    }
+
+    function _jsonViewerEscape(s) {
+        return String(s == null ? '' : s)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;');
+    }
+
+    // Walk the parsed JSON, accumulating one line entry per source line in
+    // the pretty-printed output. The walker prints openers/closers on
+    // separate lines (canonical 2-space pretty-print shape) so the line
+    // numbers line up with what an operator would see in `jq` output.
+    //
+    // `labelPrefix` is the rendered key + colon when this value is an
+    // object property; '' for array elements / the root value.
+    // `trailingComma` true when this value's closing line needs a comma.
+    function _jsonViewerWalk(state, value, path, indent, labelPrefix, trailingComma) {
+        var pad = '';
+        for (var p = 0; p < indent; p++) pad += '  ';
+        var nextPad = pad + '  ';
+        var comma = trailingComma ? ',' : '';
+
+        // Leaf — single line.
+        if (value === null || typeof value !== 'object') {
+            var leaf = _jsonViewerLeafHtml(value, path);
+            _pushJsonLine(state, pad + labelPrefix + leaf + comma, path);
+            return;
+        }
+
+        // Array / object: opener line + (children OR ellipsis-preview) +
+        // closer line. Collapsed state replaces the body with `… N items`.
+        var isArr = Array.isArray(value);
+        var keys = isArr ? null : Object.keys(value);
+        var len = isArr ? value.length : keys.length;
+        var openBracket = isArr ? '[' : '{';
+        var closeBracket = isArr ? ']' : '}';
+        var noun = isArr
+            ? (len === 1 ? 'item' : 'items')
+            : (len === 1 ? 'key' : 'keys');
+
+        // Empty container — collapse to single-line `[]` / `{}`.
+        if (len === 0) {
+            _pushJsonLine(state,
+                pad + labelPrefix + '<span class="bowire-json-viewer-bracket">'
+                + openBracket + closeBracket + '</span>' + comma, path);
+            return;
+        }
+
+        var collapsed = state.togglesByPath.has(path || '__root__');
+        var chevPath = path || '__root__';
+        var chev = '<span class="bowire-json-viewer-chev '
+            + (collapsed ? 'is-collapsed' : 'is-open')
+            + '" data-collapse-path="' + _jsonViewerEscape(chevPath)
+            + '" title="Toggle">'
+            + (collapsed ? '▶' : '▼') + '</span>';
+
+        if (collapsed) {
+            // Single-line preview replaces the children + closing bracket.
+            var preview = pad + labelPrefix + chev
+                + '<span class="bowire-json-viewer-bracket">' + openBracket + '</span>'
+                + '<span class="bowire-json-viewer-collapsed-preview"> … '
+                + len + ' ' + noun + ' </span>'
+                + '<span class="bowire-json-viewer-bracket">' + closeBracket + '</span>'
+                + comma;
+            _pushJsonLine(state, preview, path);
+            return;
+        }
+
+        // Expanded — opener line, recursive children, closer line.
+        _pushJsonLine(state,
+            pad + labelPrefix + chev
+            + '<span class="bowire-json-viewer-bracket">' + openBracket + '</span>',
+            path);
+        if (isArr) {
+            for (var i = 0; i < len; i++) {
+                var childPath = path ? path + '.' + i : String(i);
+                _jsonViewerWalk(state, value[i], childPath, indent + 1, '', i < len - 1);
+            }
+        } else {
+            for (var k = 0; k < len; k++) {
+                var ckey = keys[k];
+                var ckpath = path ? path + '.' + ckey : ckey;
+                var keyLabel = '<span class="bowire-json-key bowire-json-pickable" data-json-path="'
+                    + _jsonViewerEscape(ckpath) + '">'
+                    + _jsonViewerEscape(JSON.stringify(ckey)) + '</span>: ';
+                _jsonViewerWalk(state, value[ckey], ckpath, indent + 1, keyLabel, k < len - 1);
+            }
+        }
+        _pushJsonLine(state,
+            pad + '<span class="bowire-json-viewer-bracket">' + closeBracket + '</span>' + comma,
+            path);
+    }
+
+    function _jsonViewerLeafHtml(value, path) {
+        var pathAttr = ' data-json-path="' + _jsonViewerEscape(path) + '"';
+        if (value === null) {
+            return '<span class="bowire-json-null bowire-json-pickable"' + pathAttr + '>null</span>';
+        }
+        if (typeof value === 'string') {
+            return '<span class="bowire-json-string bowire-json-pickable"' + pathAttr + '>'
+                + _jsonViewerEscape(JSON.stringify(value)) + '</span>';
+        }
+        if (typeof value === 'number') {
+            return '<span class="bowire-json-number bowire-json-pickable"' + pathAttr + '>'
+                + _jsonViewerEscape(String(value)) + '</span>';
+        }
+        if (typeof value === 'boolean') {
+            return '<span class="bowire-json-boolean bowire-json-pickable"' + pathAttr + '>'
+                + (value ? 'true' : 'false') + '</span>';
+        }
+        return _jsonViewerEscape(String(value));
+    }
+
+    function _pushJsonLine(state, html, path) {
+        state.lineNo += 1;
+        state.lines.push({ lineNo: state.lineNo, html: html, path: path || '' });
+    }
+
+    // Render an object dictionary as a `Key: value` list — used by the
+    // Headers tab in the response viewer (Phase D groundwork). Returns a
+    // DOM element, never null.
+    function renderHeaderList(headers) {
+        var wrap = el('div', { className: 'bowire-response-headers' });
+        if (!headers || typeof headers !== 'object') {
+            wrap.appendChild(el('div', {
+                className: 'bowire-response-empty',
+                textContent: 'No headers captured.'
+            }));
+            return wrap;
+        }
+        var keys = Object.keys(headers);
+        if (keys.length === 0) {
+            wrap.appendChild(el('div', {
+                className: 'bowire-response-empty',
+                textContent: 'No headers captured.'
+            }));
+            return wrap;
+        }
+        keys.sort(function (a, b) { return a.localeCompare(b); });
+        var table = el('div', { className: 'bowire-response-headers-table' });
+        for (var i = 0; i < keys.length; i++) {
+            var k = keys[i];
+            var v = headers[k];
+            table.appendChild(el('div', { className: 'bowire-response-headers-row' },
+                el('div', { className: 'bowire-response-headers-key',
+                    textContent: k }),
+                el('div', { className: 'bowire-response-headers-val',
+                    textContent: Array.isArray(v) ? v.join(', ') : String(v == null ? '' : v) })
+            ));
+        }
+        wrap.appendChild(table);
+        return wrap;
+    }
+
+    // Estimate response body size — used by the status meta strip + the
+    // download filename hint. Counts UTF-8 bytes when the body is a
+    // string, falls back to JSON stringify for object inputs.
+    function jsonViewerByteLength(raw) {
+        try {
+            var s = typeof raw === 'string' ? raw : JSON.stringify(raw);
+            if (!s) return 0;
+            // Cheap UTF-8 size: Blob constructor handles encoding for us.
+            return new Blob([s]).size;
+        } catch (_) {
+            return 0;
+        }
+    }
+
+    function formatByteSize(bytes) {
+        if (bytes == null || isNaN(bytes)) return '';
+        if (bytes < 1024) return bytes + ' B';
+        if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1).replace(/\.0$/, '') + ' kB';
+        return (bytes / (1024 * 1024)).toFixed(2).replace(/\.00$/, '') + ' MB';
+    }
+
+    // Map HTTP status numbers to short phrases for the status meta strip.
+    // Covers the codes operators actually run into; falls back to "" for
+    // anything we don't recognise so the chip stays just a number.
+    function httpStatusPhrase(status) {
+        if (status === null || status === undefined) return '';
+        var n = parseInt(status, 10);
+        if (isNaN(n)) return '';
+        var phrases = {
+            200: 'OK', 201: 'Created', 202: 'Accepted', 204: 'No Content',
+            301: 'Moved Permanently', 302: 'Found', 304: 'Not Modified',
+            307: 'Temporary Redirect', 308: 'Permanent Redirect',
+            400: 'Bad Request', 401: 'Unauthorized', 403: 'Forbidden',
+            404: 'Not Found', 405: 'Method Not Allowed', 408: 'Request Timeout',
+            409: 'Conflict', 410: 'Gone', 415: 'Unsupported Media Type',
+            422: 'Unprocessable Entity', 429: 'Too Many Requests',
+            500: 'Internal Server Error', 501: 'Not Implemented',
+            502: 'Bad Gateway', 503: 'Service Unavailable', 504: 'Gateway Timeout'
+        };
+        return phrases[n] || '';
+    }
+
     function initResizer(divider, leftPane, rightPane) {
         var startX, startLeftWidth, startRightWidth;
         var isDragging = false;
