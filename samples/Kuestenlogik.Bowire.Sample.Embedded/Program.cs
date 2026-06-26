@@ -8,6 +8,7 @@
 //   dotnet run --project samples/Kuestenlogik.Bowire.Sample.Embedded --urls http://localhost:5181
 
 using Kuestenlogik.Bowire;
+using Kuestenlogik.Bowire.Interceptor;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -18,6 +19,16 @@ builder.Services.AddBowire();
 builder.Services.AddEndpointsApiExplorer();
 
 var app = builder.Build();
+
+// #153 — Transparent in-process interceptor. Every request flowing
+// through this host (any client, any tool) is tee'd into the
+// workbench's "Intercepted" rail: method, path, headers, request body,
+// response status, response body, latency. Zero client-side setup,
+// zero cert trust, zero separate process. When the operator opens a
+// recording in the workbench, intercepted flows also auto-append as
+// recording steps. The Bowire workbench's own /bowire/* surface is
+// excluded by default so the rail doesn't observe itself.
+app.UseBowireInterceptor();
 
 // Sample host routes — these are what the operator wants to see
 // discovered automatically by the embedded Bowire.

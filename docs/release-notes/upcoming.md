@@ -13,6 +13,10 @@ the moment the first 2.1 work lands.>
 <2-4 sentences>
 -->
 
+### Bowire as a transparent in-process interceptor — `app.UseBowireInterceptor()` (#153)
+
+The new interceptor middleware extends Bowire from "the operator drove a call" to "every request flowing through the host." `app.UseBowireInterceptor()` registers a pass-through middleware that records method / path / headers / request body / response status / response headers / response body / latency for every request the host receives — from any client, with zero client-side setup, no cert trust, no separate process. Captured flows land in the workbench's new **Intercepted** rail (sister to the standalone Proxy rail) live over SSE. When the operator starts a recording in the workbench, intercepted flows auto-append as recording steps — point any client at the host, click stop, replay. Standalone reverse-proxy mode (Phase C) and mock injection (Phase D) ship in later releases.
+
 ### MCP-over-MCP forwarder — `bowire mcp serve --attach` (#286)
 
 A thin Bowire process can now relay every incoming MCP tool call to a heavier Bowire running on the operator's workstation. `bowire mcp serve --attach localhost:5198 --port 5199` boots a forwarder that surfaces no local tools — `tools/list`, `tools/call`, prompts, resources, and resource templates are all marshalled to the parent and the parent's response is relayed verbatim. Useful when an LLM agent on a CI runner / container should drive the workstation Bowire without sharing the parent's MCP socket directly. The parent gains a matching `--token <secret>` bearer-auth gate (`--bind http` only); the child passes the secret with `--attach-token <secret>`.

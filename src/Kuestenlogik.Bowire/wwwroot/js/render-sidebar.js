@@ -843,6 +843,10 @@
     // being undefined). The always-on logic in prologue.js still
     // works against an empty list (no rails to keep always on, so
     // nothing forces a render).
+    //
+    // The 'intercepted' rail (#153) is contributed server-side via
+    // BuiltInRails.cs alongside the other built-ins — no special
+    // JS-side handling here.
     var _railModes = (function () {
         var cfg = (typeof window !== 'undefined' && window.__BOWIRE_CONFIG__) || {};
         var raw = Array.isArray(cfg.rails) ? cfg.rails : [];
@@ -929,6 +933,9 @@
             case 'proxy':
                 return (typeof proxyFlows !== 'undefined' && Array.isArray(proxyFlows))
                     ? proxyFlows.length : 0;
+            case 'intercepted':
+                return (typeof interceptedFlows !== 'undefined' && Array.isArray(interceptedFlows))
+                    ? interceptedFlows.length : 0;
             default:
                 return null;
         }
@@ -1034,6 +1041,8 @@
                         sidebarView = 'flows';
                     } else if (m.id === 'proxy') {
                         sidebarView = 'proxy';
+                    } else if (m.id === 'intercepted') {
+                        sidebarView = 'intercepted';
                     } else if (m.id === 'discover') {
                         sidebarView = 'services';
                     }
@@ -1111,6 +1120,7 @@
                         if (m.id === 'environments') sidebarView = 'environments';
                         else if (m.id === 'flows') sidebarView = 'flows';
                         else if (m.id === 'proxy') sidebarView = 'proxy';
+                        else if (m.id === 'intercepted') sidebarView = 'intercepted';
                         else if (m.id === 'discover') sidebarView = 'services';
                         render();
                     }
@@ -3669,6 +3679,21 @@
         sidebar.appendChild(list);
         return sidebar;
     }
+    // #153 — Intercepted rail sidebar. Thin wrapper around the
+    // renderInterceptedListInto helper in intercepted-view.js — same
+    // pattern as the proxy sidebar above.
+    function renderInterceptedSidebar() {
+        var sidebar = el('div', { id: 'bowire-sidebar', className: 'bowire-sidebar bowire-sidebar-mode' });
+        var list = el('div', {
+            id: 'bowire-sidebar-list-intercepted',
+            className: 'bowire-service-list'
+        });
+        if (typeof renderInterceptedListInto === 'function') {
+            renderInterceptedListInto(list);
+        }
+        sidebar.appendChild(list);
+        return sidebar;
+    }
 
     function renderSidebar() {
         // #137 — sidebar dispatch driven by the rail-mode catalogue.
@@ -3689,6 +3714,7 @@
             case 'security':     sidebar = renderSecuritySidebar(); break;
             case 'flows':        sidebar = renderFlowsSidebar(); break;
             case 'proxy':        sidebar = renderProxySidebar(); break;
+            case 'intercepted':  sidebar = renderInterceptedSidebar(); break;
         }
         if (sidebar) return sidebar;
         // Only 'services' falls through to the legacy Discover
@@ -4442,6 +4468,8 @@
             renderFlowsListInto(list);
         } else if (sidebarView === 'proxy') {
             renderProxyListInto(list);
+        } else if (sidebarView === 'intercepted') {
+            renderInterceptedListInto(list);
         } else if (sidebarView === 'favorites') {
             renderFavoritesListInto(list);
         } else if (services.length === 0 && (!Array.isArray(serverUrls) || serverUrls.length === 0)) {
