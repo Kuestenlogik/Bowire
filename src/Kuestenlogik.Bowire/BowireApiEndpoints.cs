@@ -137,7 +137,13 @@ internal static class BowireApiEndpoints
             .MapBowireSemanticsEndpoints(basePath)
             .MapBowireSecurityEndpoints(basePath)
             .MapBowireHelpEndpoints(basePath)
-            .MapBowireCatalogueEndpoints(basePath);
+            .MapBowireCatalogueEndpoints(basePath)
+            // #153 — in-process interceptor (UseBowireInterceptor) writes
+            // intercepted flows into a singleton InterceptedFlowStore. The
+            // endpoints always mount: when no host opted the middleware in,
+            // the store stays empty and the rail surfaces an empty state
+            // rather than a 404. The "Intercepted" rail talks to /api/intercepted/*.
+            .MapBowireInterceptorEndpoints(basePath);
 
         // Apply the auth gate exactly once when an IBowireAuthProvider
         // is registered (AddBowireAuth resolved it from the

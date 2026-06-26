@@ -4956,11 +4956,13 @@
                 ? 'flows-' + (flowEditorSelectedId || 'none')
                 : sidebarView === 'proxy'
                     ? 'proxy-' + (proxyFlowSelectedId || 'none')
-                    : freeformRequest
-                        ? 'freeform'
-                        : selectedMethod
-                            ? (selectedService ? selectedService.name : '') + '-' + selectedMethod.name
-                            : 'landing';
+                    : sidebarView === 'intercepted'
+                        ? 'intercepted-' + (interceptedFlowSelectedId || 'none')
+                        : freeformRequest
+                            ? 'freeform'
+                            : selectedMethod
+                                ? (selectedService ? selectedService.name : '') + '-' + selectedMethod.name
+                                : 'landing';
         const main = el('div', { id: 'bowire-main-' + mainViewKey, className: 'bowire-main' });
 
         // When the sidebar is in Environments view, the main pane
@@ -4981,6 +4983,14 @@
         // Proxy view — captured-flow detail pane
         if (sidebarView === 'proxy') {
             main.appendChild(renderProxyMainPane());
+            return main;
+        }
+
+        // #153 — Intercepted view — same detail-pane idiom, but the
+        // source is the in-process interceptor middleware rather than
+        // the standalone CLI proxy. Renderer lives in intercepted-view.js.
+        if (sidebarView === 'intercepted') {
+            main.appendChild(renderInterceptedMainPane());
             return main;
         }
 

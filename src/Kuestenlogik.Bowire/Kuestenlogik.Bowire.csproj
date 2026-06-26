@@ -102,6 +102,12 @@
     <BowireJsFragment Include="wwwroot\js\collections.js" />
     <BowireJsFragment Include="wwwroot\js\flows.js" />
     <BowireJsFragment Include="wwwroot\js\proxy-view.js" />
+    <!-- #153 — twin of proxy-view.js for the in-process interceptor.
+         Reuses the proxy detail-pane renderer (renderHttpExchange) so
+         both rails look identical. Must come AFTER proxy-view.js so
+         that renderHttpExchange is hoisted into the IIFE scope before
+         the intercepted-view.js code references it. -->
+    <BowireJsFragment Include="wwwroot\js\intercepted-view.js" />
     <BowireJsFragment Include="wwwroot\js\api.js" />
     <BowireJsFragment Include="wwwroot\js\protocols.js" />
     <!-- #126 — protocol-typed pre/post-request script sandbox.

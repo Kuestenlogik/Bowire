@@ -130,6 +130,24 @@ public sealed class BowireProxyRailContribution : IBowireRailContribution
     public string SidebarKind => "proxy";
 }
 
+/// <summary>
+/// Intercepted rail (#153 Phase A+B) — in-process middleware sister
+/// to the standalone Proxy rail. Surfaces every request flowing
+/// through a host that opted in via app.UseBowireInterceptor(). The
+/// /api/intercepted/* endpoints always mount (via MapBowire); when
+/// the host never opted in the store stays empty and the rail
+/// renders a 'no traffic yet' empty card.
+/// </summary>
+public sealed class BowireInterceptedRailContribution : IBowireRailContribution
+{
+    public string Id => "intercepted";
+    public string DisplayName => "Intercepted";
+    public string IconKey => "globe";
+    public int SortIndex => 950;
+    public string Group => "quality";
+    public string SidebarKind => "intercepted";
+}
+
 /// <summary>Benchmarks rail.</summary>
 public sealed class BowireBenchmarksRailContribution : IBowireRailContribution
 {

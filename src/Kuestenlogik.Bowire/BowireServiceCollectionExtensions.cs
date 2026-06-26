@@ -3,6 +3,7 @@
 
 using System.Reflection;
 using Kuestenlogik.Bowire.Auth;
+using Kuestenlogik.Bowire.Interceptor;
 using Kuestenlogik.Bowire.Net;
 using Kuestenlogik.Bowire.PluginLoading;
 using Kuestenlogik.Bowire.Plugins;
@@ -153,6 +154,14 @@ public static class BowireServiceCollectionExtensions
         // capture hook all share one source of truth. Pre-#285 the
         // state was browser localStorage-only; MCP couldn't reach it.
         services.TryAddSingleton<BowireRecordingSession>();
+
+        // #153 — Bowire-as-transparent-interceptor. The flow store +
+        // options always register so the workbench's "Intercepted" rail
+        // can resolve them (and surface an empty state if the host
+        // never opted in). Hosts opt the middleware on with
+        // app.UseBowireInterceptor() — that's what costs anything on
+        // the per-request path; this registration is free.
+        services.AddBowireInterceptorCore();
 
         // PluginUpdateCheckService is always registered so the manual
         // GET /api/plugins/check-updates endpoint can resolve it; the
