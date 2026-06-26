@@ -427,6 +427,103 @@ public sealed class BowireCatalogueServiceCollectionExtensionsTests
         Assert.NotNull(accessor.Provider);
         Assert.Equal("http", accessor.Provider!.Id);
     }
+
+    // #309 — UI override surface. The accessor became mutable so the
+    // Settings dialog can hot-swap the active provider; clearing the
+    // override restores the boot-time (appsettings) provider.
+
+    [Fact]
+    public void SetOverride_HotSwaps_Active_Provider()
+    {
+        var defaultProvider = new LocalCatalogueProvider();
+        var accessor = new BowireCatalogueProviderAccessor(defaultProvider);
+        Assert.Equal("local", accessor.Provider!.Id);
+        Assert.False(accessor.HasOverride);
+
+        accessor.SetOverride(new HttpCatalogueProvider());
+        Assert.Equal("http", accessor.Provider!.Id);
+        Assert.True(accessor.HasOverride);
+        Assert.Equal("local", accessor.DefaultProvider!.Id);
+
+        accessor.SetOverride(null);
+        Assert.Equal("local", accessor.Provider!.Id);
+        Assert.False(accessor.HasOverride);
+    }
+
+    [Fact]
+    public void SetOverride_From_Null_Default_Still_Applies()
+    {
+        var accessor = new BowireCatalogueProviderAccessor(null);
+        Assert.Null(accessor.Provider);
+
+        accessor.SetOverride(new HttpCatalogueProvider());
+        Assert.Equal("http", accessor.Provider!.Id);
+        Assert.True(accessor.HasOverride);
+
+        accessor.SetOverride(null);
+        Assert.Null(accessor.Provider);
+        Assert.False(accessor.HasOverride);
+    }
+
+    [Fact]
+    public void OverrideStore_Applies_Persisted_Override_On_Construction()
+    {
+        // Point the store at a temp file so we don't touch ~/.bowire.
+        var temp = System.IO.Path.Combine(System.IO.Path.GetTempPath(),
+            "bowire-test-" + Guid.NewGuid() + ".json");
+        Environment.SetEnvironmentVariable("BOWIRE_CATALOGUE_CONFIG_PATH", temp);
+        try
+        {
+            var payload = new BowireCatalogueOverride
+            {
+                Provider = "consul",
+                Consul = new BowireConsulCatalogueOptions { Address = "http://test:8500" }
+            };
+            System.IO.File.WriteAllText(temp, JsonSerializer.Serialize(payload));
+
+            var accessor = new BowireCatalogueProviderAccessor(null);
+            var store = new BowireCatalogueOverrideStore(accessor);
+
+            Assert.NotNull(store.Current);
+            Assert.Equal("consul", store.Current!.Provider);
+            Assert.Equal("consul", accessor.Provider!.Id);
+            Assert.True(accessor.HasOverride);
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable("BOWIRE_CATALOGUE_CONFIG_PATH", null);
+            try { System.IO.File.Delete(temp); } catch { /* best-effort */ }
+        }
+    }
+
+    [Fact]
+    public void OverrideStore_Clear_Removes_File_And_Restores_Default()
+    {
+        var temp = System.IO.Path.Combine(System.IO.Path.GetTempPath(),
+            "bowire-test-" + Guid.NewGuid() + ".json");
+        Environment.SetEnvironmentVariable("BOWIRE_CATALOGUE_CONFIG_PATH", temp);
+        try
+        {
+            var defaultProvider = new LocalCatalogueProvider();
+            var accessor = new BowireCatalogueProviderAccessor(defaultProvider);
+            var store = new BowireCatalogueOverrideStore(accessor);
+
+            store.Save(new BowireCatalogueOverride { Provider = "http" });
+            Assert.True(System.IO.File.Exists(temp));
+            Assert.Equal("http", accessor.Provider!.Id);
+            Assert.True(accessor.HasOverride);
+
+            store.Clear();
+            Assert.False(System.IO.File.Exists(temp));
+            Assert.Equal("local", accessor.Provider!.Id);
+            Assert.False(accessor.HasOverride);
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable("BOWIRE_CATALOGUE_CONFIG_PATH", null);
+            try { System.IO.File.Delete(temp); } catch { /* best-effort */ }
+        }
+    }
 }
 
 /// <summary>
