@@ -103,6 +103,7 @@ internal static class BowireCli
         root.Add(BuildJwtCommand());
         root.Add(BuildFuzzCommand());
         root.Add(BuildProxyCommand());
+        root.Add(BuildInterceptorCommand());
         root.Add(ExportCommand.Build());
         root.Add(WorkspaceCommand.Build());
         root.Add(RecordingCommand.Build());
@@ -203,6 +204,73 @@ internal static class BowireCli
         });
 
         return proxy;
+    }
+
+    // -------------------- interceptor --------------------
+
+    private static Command BuildInterceptorCommand()
+    {
+        var interceptor = new Command("interceptor",
+            "Standalone reverse-proxy mode (#307 — Phase C of #153). Fronts an upstream service: clients point at Bowire's listener, every request is forwarded upstream and captured into the same InterceptedFlowStore the embedded middleware (UseBowireInterceptor) uses. The workbench's 'Intercepted' rail reads the sidecar API surface this command exposes.");
+
+        var upstreamOpt = new Option<string>("--upstream")
+        {
+            Description = "Upstream service URL the listener forwards to (e.g. https://api.example.com). Required.",
+            Required = true,
+        };
+        var listenOpt = new Option<string>("--listen")
+        {
+            Description = "host:port the edge listener binds to (e.g. 127.0.0.1:8080, 0.0.0.0:9000, :8080). Default 127.0.0.1:0 (loopback + ephemeral port).",
+        };
+        var apiPortOpt = new Option<int?>("--api-port") { Description = "Sidecar API port the workbench's Intercepted rail reads from. Default 5089." };
+        var capacityOpt = new Option<int?>("--capacity") { Description = "Maximum number of flows retained in memory (FIFO eviction). Default 1000." };
+        var maxBodyOpt = new Option<int?>("--max-body-bytes") { Description = "Per-side body capture cap. Default 1048576 (1 MiB)." };
+        var allowSelfSignedOpt = new Option<bool>("--allow-self-signed-upstream")
+        {
+            Description = "Accept the upstream's TLS cert without chain validation. Useful when fronting a dev-mode service with a self-signed cert. Off by default."
+        };
+        var tlsOpt = new Option<bool>("--tls")
+        {
+            Description = "Serve HTTPS on the edge listener using a leaf certificate minted from Bowire's MITM CA (reuses #36's CA flow). Install the CA into the client trust store via `bowire proxy --export-ca` to avoid handshake warnings."
+        };
+        var tlsHostOpt = new Option<string?>("--tls-host")
+        {
+            Description = "Hostname the minted leaf certificate is issued for (SAN). Default: the listen address. Set when clients connect via a custom DNS name (e.g. api.local pointing to 127.0.0.1)."
+        };
+        var caDirOpt = new Option<string?>("--ca-dir")
+        {
+            Description = "Override the CA storage directory (default: ~/.bowire). Same flag as `bowire proxy`."
+        };
+
+        interceptor.Add(upstreamOpt);
+        interceptor.Add(listenOpt);
+        interceptor.Add(apiPortOpt);
+        interceptor.Add(capacityOpt);
+        interceptor.Add(maxBodyOpt);
+        interceptor.Add(allowSelfSignedOpt);
+        interceptor.Add(tlsOpt);
+        interceptor.Add(tlsHostOpt);
+        interceptor.Add(caDirOpt);
+
+        interceptor.SetAction(async (pr, ct) =>
+        {
+            var options = new InterceptorCommand.InterceptorOptions
+            {
+                Upstream = pr.GetValue(upstreamOpt) ?? "",
+                Listen = string.IsNullOrEmpty(pr.GetValue(listenOpt)) ? "127.0.0.1:0" : pr.GetValue(listenOpt)!,
+                ApiPort = pr.GetValue(apiPortOpt) ?? 5089,
+                Capacity = pr.GetValue(capacityOpt) is int c and > 0 ? c : 1000,
+                MaxBodyBytes = pr.GetValue(maxBodyOpt) is int mb and > 0 ? mb : 1024 * 1024,
+                AllowSelfSignedUpstream = pr.GetValue(allowSelfSignedOpt),
+                Tls = pr.GetValue(tlsOpt),
+                TlsHost = pr.GetValue(tlsHostOpt),
+                CaDir = pr.GetValue(caDirOpt),
+            };
+            return await InterceptorCommand.RunAsync(options,
+                pr.InvocationConfiguration.Output, pr.InvocationConfiguration.Error, ct).ConfigureAwait(false);
+        });
+
+        return interceptor;
     }
 
     // -------------------- fuzz --------------------
