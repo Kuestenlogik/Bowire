@@ -2853,6 +2853,23 @@ not just
    switching rails doesn't shift the content frame. */
 .bowire-main-pad {
     padding: var(--bowire-main-gutter);
+    box-sizing: border-box;
+}
+/* Centre the empty-card when it's the only thing in the pad — both
+   axes. Operator feedback: empty states were left-aligned + Compose
+   / home welcome jumped vertically vs Recordings. The :has() selector
+   keeps populated panes (multi-child) untouched. */
+.bowire-main-pad:has(> .bowire-empty-card:only-child) {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100%;
+}
+/* In a flex parent the card horizontal-centres on its content width.
+   Cap so long body text doesn't span the whole pane. */
+.bowire-empty-card {
+    max-width: 520px;
 }
 .bowire-sources-wrap {
     /* Match env editor + home via the shared gutter token. */
@@ -6457,12 +6474,12 @@ response below.
     color: var(--bowire-text);
 }
 .bowire-graphql-selection-type {
-    color: var(--bowire-text-muted);
+    color: var(--bowire-text-tertiary);
     font-size: 11px;
 }
 .bowire-graphql-selection-empty {
     padding: 8px 0;
-    color: var(--bowire-text-muted);
+    color: var(--bowire-text-tertiary);
     font-size: 11px;
     font-style: italic;
 }
@@ -6529,7 +6546,7 @@ response below.
 }
 .bowire-ws-file-label {
     font-size: 11px;
-    color: var(--bowire-text-muted);
+    color: var(--bowire-text-tertiary);
 }
 .bowire-ws-file-input {
     color: var(--bowire-text);
@@ -6565,7 +6582,7 @@ response below.
 }
 .bowire-diff-vs {
     font-size: 11px;
-    color: var(--bowire-text-muted);
+    color: var(--bowire-text-tertiary);
     font-style: italic;
 }
 .bowire-diff-select {
@@ -6613,7 +6630,7 @@ response below.
     word-break: break-word;
 }
 .bowire-diff-eq {
-    color: var(--bowire-text-muted);
+    color: var(--bowire-text-tertiary);
 }
 .bowire-diff-add {
     background: rgba(34, 197, 94, 0.12);
@@ -6626,7 +6643,7 @@ response below.
 .bowire-diff-empty {
     padding: 32px;
     text-align: center;
-    color: var(--bowire-text-muted);
+    color: var(--bowire-text-tertiary);
     font-size: 12px;
 }
 /* Light theme overrides for diff colours */
@@ -6658,7 +6675,7 @@ response below.
     padding: 5px 12px;
     border: 1px solid var(--bowire-border);
     background: var(--bowire-bg);
-    color: var(--bowire-text-muted);
+    color: var(--bowire-text-tertiary);
     font-size: 11px;
     font-weight: 600;
     border-radius: var(--bowire-radius-md);
@@ -6690,7 +6707,7 @@ response below.
 }
 .bowire-code-hint {
     padding: 0 16px 16px;
-    color: var(--bowire-text-muted);
+    color: var(--bowire-text-tertiary);
     font-size: 11px;
 }
 
@@ -6728,7 +6745,7 @@ response below.
     padding: 5px 12px;
     border: 1px solid var(--bowire-border);
     background: var(--bowire-bg);
-    color: var(--bowire-text-muted);
+    color: var(--bowire-text-tertiary);
     font-size: 11px;
     font-weight: 600;
     border-radius: var(--bowire-radius-md);
@@ -6767,7 +6784,7 @@ response below.
 }
 .bowire-mcp-content-meta {
     font-size: 11px;
-    color: var(--bowire-text-muted);
+    color: var(--bowire-text-tertiary);
     margin-right: auto;
 }
 .bowire-mcp-content-body {
@@ -6901,7 +6918,7 @@ hex dump below. */
     padding: 8px 16px 4px;
     font-size: 11px;
     font-weight: 600;
-    color: var(--bowire-text-muted, #94a3b8);
+    color: var(--bowire-text-tertiary);
     letter-spacing: 0.5px;
     text-transform: uppercase;
 }
@@ -8551,7 +8568,7 @@ they're a way
     border: none;
     background: transparent;
     color: var(--bowire-text-secondary);
-    border-radius: var(--bowire-radius-2);
+    border-radius: var(--bowire-radius-sm);
     cursor: pointer;
     display: flex;
     align-items: center;
@@ -9748,7 +9765,7 @@ so the textarea
     font-weight: 400;
     text-transform: none;
     letter-spacing: 0;
-    color: var(--bowire-text-muted, var(--bowire-text-secondary));
+    color: var(--bowire-text-tertiary));
     font-size: 11px;
 }
 .bowire-freeform-mock-block {
@@ -9824,7 +9841,7 @@ so the textarea
     border: none;
     background: transparent;
     color: var(--bowire-text-secondary);
-    border-radius: var(--bowire-radius-2);
+    border-radius: var(--bowire-radius-sm);
     cursor: pointer;
     display: flex;
     align-items: center;
@@ -9852,7 +9869,7 @@ so the textarea
     gap: 8px;
     padding: 6px 8px;
     cursor: pointer;
-    border-radius: var(--bowire-radius-2);
+    border-radius: var(--bowire-radius-sm);
 }
 .bowire-ad-hoc-row:hover { background: var(--bowire-surface-hover); }
 .bowire-ad-hoc-row-glyph {
@@ -9888,7 +9905,7 @@ so the textarea
     width: 22px; height: 22px; padding: 0;
     border: none; background: transparent;
     color: var(--bowire-text-secondary);
-    border-radius: var(--bowire-radius-2);
+    border-radius: var(--bowire-radius-sm);
     cursor: pointer;
     display: flex; align-items: center; justify-content: center;
 }
@@ -9938,7 +9955,7 @@ so the textarea
     padding: 10px 12px;
     background: transparent;
     border: 1px solid var(--bowire-border);
-    border-radius: var(--bowire-radius-2, 4px);
+    border-radius: var(--bowire-radius-sm);
     color: var(--bowire-text);
     font-family: var(--bowire-font-mono, monospace);
     font-size: 12px;
@@ -9955,7 +9972,7 @@ so the textarea
     padding: 6px 14px;
     background: transparent;
     border: 1px solid var(--bowire-border);
-    border-radius: var(--bowire-radius-2, 4px);
+    border-radius: var(--bowire-radius-sm);
     color: var(--bowire-text-secondary);
     cursor: pointer;
 }
@@ -9975,14 +9992,14 @@ so the textarea
     padding: 4px 10px;
     background: transparent;
     border: 1px solid var(--bowire-border);
-    border-radius: var(--bowire-radius-2, 4px);
+    border-radius: var(--bowire-radius-sm);
     color: var(--bowire-text-secondary);
     font-size: 11px;
     cursor: pointer;
 }
 .bowire-freeform-url-mode-btn.is-active {
     background: var(--bowire-accent);
-    color: var(--bowire-accent-fg, #fff);
+    color: var(--bowire-text-inverse, #fff);
     border-color: var(--bowire-accent);
 }
 .bowire-freeform-url-source-select {
@@ -9990,7 +10007,7 @@ so the textarea
     padding: 6px 10px;
     background: var(--bowire-surface);
     border: 1px solid var(--bowire-border);
-    border-radius: var(--bowire-radius-2, 4px);
+    border-radius: var(--bowire-radius-sm);
     color: var(--bowire-text);
     font-family: var(--bowire-font-mono, monospace);
     font-size: 12px;
@@ -10015,7 +10032,7 @@ so the textarea
     align-items: center;
     gap: 8px;
     padding: 6px 10px;
-    border-radius: var(--bowire-radius-2, 4px);
+    border-radius: var(--bowire-radius-sm);
     cursor: pointer;
 }
 .bowire-settings-rail-row:hover { background: var(--bowire-surface-hover); }
@@ -10040,7 +10057,7 @@ so the textarea
     color: var(--bowire-text-tertiary, var(--bowire-text-secondary));
     padding: 2px 6px;
     border: 1px solid var(--bowire-border);
-    border-radius: var(--bowire-radius-2, 4px);
+    border-radius: var(--bowire-radius-sm);
 }
 
 /* ===== Freeform builder — protocol picker (icon + name) ===== */
@@ -10057,7 +10074,7 @@ so the textarea
     padding: 6px 10px;
     background: var(--bowire-surface);
     border: 1px solid var(--bowire-border);
-    border-radius: var(--bowire-radius-2, 4px);
+    border-radius: var(--bowire-radius-sm);
     color: var(--bowire-text);
     cursor: pointer;
     font-size: 13px;
@@ -10091,7 +10108,7 @@ so the textarea
     min-width: 220px;
     background: var(--bowire-surface);
     border: 1px solid var(--bowire-border);
-    border-radius: var(--bowire-radius-2, 4px);
+    border-radius: var(--bowire-radius-sm);
     box-shadow: 0 4px 12px rgba(0,0,0,0.15);
     z-index: 100;
     max-height: 320px;
@@ -10108,7 +10125,7 @@ so the textarea
     padding: 6px 10px;
     background: transparent;
     border: none;
-    border-radius: var(--bowire-radius-2, 4px);
+    border-radius: var(--bowire-radius-sm);
     color: var(--bowire-text);
     cursor: pointer;
     font-size: 13px;
@@ -10192,7 +10209,7 @@ so the textarea
     padding: 6px 14px;
     background: transparent;
     border: 1px solid var(--bowire-border);
-    border-radius: var(--bowire-radius-2, 4px);
+    border-radius: var(--bowire-radius-sm);
     color: var(--bowire-text-secondary);
     cursor: pointer;
     font-size: 13px;
@@ -10230,7 +10247,7 @@ so the textarea
     padding: 6px 10px;
     background: var(--bowire-surface);
     border: 1px solid var(--bowire-border);
-    border-radius: var(--bowire-radius-2, 4px);
+    border-radius: var(--bowire-radius-sm);
     color: var(--bowire-text);
     font-family: var(--bowire-font-mono, monospace);
     font-size: 12px;
@@ -10247,7 +10264,7 @@ so the textarea
     padding: 2px 8px;
     background: var(--bowire-surface);
     border: 1px solid var(--bowire-border);
-    border-radius: var(--bowire-radius-2, 4px);
+    border-radius: var(--bowire-radius-sm);
     font-size: 11px;
     font-weight: 700;
     letter-spacing: 0.04em;
@@ -10266,7 +10283,7 @@ so the textarea
 .bowire-freeform-verb-seg {
     display: inline-flex;
     border: 1px solid var(--bowire-border);
-    border-radius: var(--bowire-radius-2, 4px);
+    border-radius: var(--bowire-radius-sm);
     overflow: hidden;
     background: var(--bowire-surface);
     flex-shrink: 0;
@@ -10286,7 +10303,7 @@ so the textarea
 .bowire-freeform-verb-seg-btn:hover { background: var(--bowire-surface-hover); }
 .bowire-freeform-verb-seg-btn.is-active {
     background: var(--bowire-accent);
-    color: var(--bowire-accent-fg, #fff);
+    color: var(--bowire-text-inverse, #fff);
 }
 /* Per-verb accent colours so the active state reads at a glance. */
 .bowire-freeform-verb-get.is-active     { background: #16a34a; color: #fff; }
@@ -10300,7 +10317,7 @@ so the textarea
 .bowire-freeform-type-seg {
     display: inline-flex;
     border: 1px solid var(--bowire-border);
-    border-radius: var(--bowire-radius-2, 4px);
+    border-radius: var(--bowire-radius-sm);
     overflow: hidden;
     background: var(--bowire-surface);
 }
@@ -10318,7 +10335,7 @@ so the textarea
 .bowire-freeform-type-seg-btn:hover { background: var(--bowire-surface-hover); }
 .bowire-freeform-type-seg-btn.is-active {
     background: var(--bowire-accent);
-    color: var(--bowire-accent-fg, #fff);
+    color: var(--bowire-text-inverse, #fff);
 }
 .bowire-freeform-type-chip {
     padding: 6px 12px;
@@ -10326,7 +10343,7 @@ so the textarea
     color: var(--bowire-text-secondary);
     background: var(--bowire-surface);
     border: 1px solid var(--bowire-border);
-    border-radius: var(--bowire-radius-2, 4px);
+    border-radius: var(--bowire-radius-sm);
     align-self: flex-start;
 }
 .bowire-freeform-divider {
@@ -11200,7 +11217,7 @@ and a manual "Check now"
     white-space: nowrap;
 }
 .bowire-settings-update-check-btn:hover:not(:disabled) {
-    background: var(--bowire-bg-hover, var(--bowire-bg-elevated));
+    background: var(--bowire-surface-hover));
 }
 .bowire-settings-update-check-btn:disabled {
     opacity: 0.6;
@@ -14379,7 +14396,7 @@ subtler
     margin-top: -4px;
     padding: 6px 10px;
     font-size: 11px;
-    color: var(--bowire-text-muted);
+    color: var(--bowire-text-tertiary);
     font-family: var(--bowire-font-mono);
     line-height: 1.5;
 }
@@ -14408,7 +14425,7 @@ subtler
 
 .bowire-auth-checkbox-hint {
     font-size: 11px;
-    color: var(--bowire-text-muted);
+    color: var(--bowire-text-tertiary);
     line-height: 1.5;
 }
 
@@ -19058,10 +19075,10 @@ not as the
     font: 700 13px/1 var(--bowire-font-mono, monospace);
     letter-spacing: 0.04em;
     cursor: pointer;
-    color: #fff;
+    color: var(--bowire-text);
 }
 .bowire-request-builder-method-btn:hover {
-    background: var(--bowire-bg-hover, #1f1f1f);
+    background: var(--bowire-surface-hover);
 }
 .bowire-request-builder-method-btn[data-verb="GET"]     .bowire-request-builder-method-label { color: #10b981; }
 .bowire-request-builder-method-btn[data-verb="POST"]    .bowire-request-builder-method-label { color: #3b82f6; }
@@ -19100,13 +19117,13 @@ not as the
     background: transparent;
     border: none;
     border-radius: 4px;
-    color: #fff;
+    color: var(--bowire-text);
     cursor: pointer;
     text-align: left;
 }
 .bowire-request-builder-method-menu-item:hover,
 .bowire-request-builder-method-menu-item.is-selected {
-    background: var(--bowire-bg-hover, #1f1f1f);
+    background: var(--bowire-surface-hover);
 }
 .bowire-request-builder-method-chip {
     font: 700 12px/1 var(--bowire-font-mono, monospace);
@@ -19235,13 +19252,13 @@ not as the
     background: transparent;
     border: none;
     border-radius: 4px;
-    color: #fff;
+    color: var(--bowire-text);
     cursor: pointer;
     text-align: left;
     font: 400 13px/1.4 system-ui, sans-serif;
 }
 .bowire-request-builder-send-menu-item:hover {
-    background: var(--bowire-bg-hover, #1f1f1f);
+    background: var(--bowire-surface-hover);
 }
 
 /* ---- #290 — History dropdown (clock icon between URL + Execute) ---- */
@@ -19257,7 +19274,7 @@ not as the
     height: 36px;
     margin-right: 4px;
     background: transparent;
-    color: var(--bowire-text-muted, #888);
+    color: var(--bowire-text-tertiary);
     border: 1px solid var(--bowire-border, #2a2a2a);
     border-radius: 6px;
     cursor: pointer;
@@ -19297,14 +19314,14 @@ not as the
 }
 .bowire-request-builder-history-head-label {
     font: 600 11px/1 system-ui, sans-serif;
-    color: var(--bowire-text-muted, #888);
+    color: var(--bowire-text-tertiary);
     text-transform: uppercase;
     letter-spacing: 0.5px;
 }
 .bowire-request-builder-history-clear {
     padding: 4px 8px;
     background: transparent;
-    color: var(--bowire-text-muted, #888);
+    color: var(--bowire-text-tertiary);
     border: 1px solid var(--bowire-border, #2a2a2a);
     border-radius: 4px;
     cursor: pointer;
@@ -19328,13 +19345,13 @@ not as the
     background: transparent;
     border: none;
     border-radius: 4px;
-    color: #fff;
+    color: var(--bowire-text);
     cursor: pointer;
     text-align: left;
     font: 400 12px/1.4 system-ui, sans-serif;
 }
 .bowire-request-builder-history-item:hover {
-    background: var(--bowire-bg-hover, #1f1f1f);
+    background: var(--bowire-surface-hover);
 }
 .bowire-request-builder-history-method {
     font-weight: 700;
@@ -19383,7 +19400,7 @@ not as the
 .bowire-request-builder-history-status.is-err { color: #ef4444; }
 .bowire-request-builder-history-ts {
     font-size: 11px;
-    color: var(--bowire-text-muted, #888);
+    color: var(--bowire-text-tertiary);
     white-space: nowrap;
 }
 
@@ -19405,17 +19422,17 @@ not as the
     background: transparent;
     border: none;
     border-bottom: 2px solid transparent;
-    color: var(--bowire-text-muted, #888);
+    color: var(--bowire-text-tertiary);
     font: 500 12px/1 system-ui, sans-serif;
     letter-spacing: 0.02em;
     cursor: pointer;
     white-space: nowrap;
 }
 .bowire-request-builder-subtab:hover {
-    color: #fff;
+    color: var(--bowire-text);
 }
 .bowire-request-builder-subtab.is-active {
-    color: #fff;
+    color: var(--bowire-text);
     border-bottom-color: var(--bowire-accent, #6366f1);
 }
 .bowire-request-builder-subtab-badge {
@@ -19461,7 +19478,7 @@ not as the
 .bowire-request-builder-kv-head {
     background: var(--bowire-bg-elevated, #1a1a1a);
     font: 600 11px/1 system-ui, sans-serif;
-    color: var(--bowire-text-muted, #888);
+    color: var(--bowire-text-tertiary);
     text-transform: uppercase;
     letter-spacing: 0.05em;
 }
@@ -19475,7 +19492,7 @@ not as the
     background: rgba(99, 102, 241, 0.04);
 }
 .bowire-request-builder-kv-drag {
-    color: var(--bowire-text-muted, #888);
+    color: var(--bowire-text-tertiary);
     cursor: grab;
     user-select: none;
     text-align: center;
@@ -19523,7 +19540,7 @@ not as the
     background: transparent;
     border: none;
     border-radius: 4px;
-    color: var(--bowire-text-muted, #888);
+    color: var(--bowire-text-tertiary);
     cursor: pointer;
 }
 .bowire-request-builder-kv-del:hover {
@@ -19551,14 +19568,14 @@ not as the
     background: var(--bowire-bg-elevated);
     border: 1px solid var(--bowire-border, #2a2a2a);
     border-radius: 4px;
-    color: var(--bowire-text-muted, #888);
+    color: var(--bowire-text-tertiary);
     font: 500 11px/1.4 system-ui, sans-serif;
     text-transform: uppercase;
     letter-spacing: 0.04em;
     cursor: pointer;
 }
 .bowire-request-builder-body-mode-btn:hover {
-    color: #fff;
+    color: var(--bowire-text);
 }
 .bowire-request-builder-body-mode-btn.is-active {
     background: var(--bowire-accent, #6366f1);
@@ -19581,11 +19598,11 @@ not as the
     border-color: var(--bowire-accent, #6366f1);
 }
 .bowire-request-builder-body-binary {
-    color: #fff;
+    color: var(--bowire-text);
 }
 .bowire-request-builder-body-binary-name {
     font: 400 12px/1.4 var(--bowire-font-mono, monospace);
-    color: var(--bowire-text-muted, #888);
+    color: var(--bowire-text-tertiary);
 }
 
 /* ---- Auth tab ---- */
@@ -19604,7 +19621,7 @@ not as the
     background: var(--bowire-bg-elevated);
     border: 1px solid var(--bowire-border, #2a2a2a);
     border-radius: 4px;
-    color: var(--bowire-text-muted, #888);
+    color: var(--bowire-text-tertiary);
     font: 500 12px/1 system-ui, sans-serif;
     cursor: pointer;
 }
@@ -19626,7 +19643,7 @@ not as the
 }
 .bowire-request-builder-auth-label {
     min-width: 100px;
-    color: var(--bowire-text-muted, #888);
+    color: var(--bowire-text-tertiary);
     font: 500 12px/1 system-ui, sans-serif;
 }
 .bowire-request-builder-auth-input {
@@ -19644,7 +19661,7 @@ not as the
     border-color: var(--bowire-accent, #6366f1);
 }
 .bowire-request-builder-auth-empty {
-    color: var(--bowire-text-muted, #888);
+    color: var(--bowire-text-tertiary);
     font: 400 12px/1.5 system-ui, sans-serif;
 }
 
@@ -19655,7 +19672,7 @@ not as the
     gap: 10px;
 }
 .bowire-request-builder-script-hint {
-    color: var(--bowire-text-muted, #888);
+    color: var(--bowire-text-tertiary);
     font: 400 12px/1.5 system-ui, sans-serif;
 }
 .bowire-request-builder-script-editor {
@@ -19665,7 +19682,7 @@ not as the
     background: var(--bowire-bg-elevated);
     border: 1px solid var(--bowire-border, #2a2a2a);
     border-radius: 6px;
-    color: #fff;
+    color: var(--bowire-text);
     font: 400 13px/1.5 var(--bowire-font-mono, monospace);
     resize: vertical;
     outline: none;
@@ -19680,14 +19697,14 @@ not as the
 .bowire-request-builder-vars-hint,
 .bowire-request-builder-vars-empty,
 .bowire-request-builder-vars-section {
-    color: var(--bowire-text-muted, #888);
+    color: var(--bowire-text-tertiary);
     font: 500 12px/1.4 system-ui, sans-serif;
 }
 .bowire-request-builder-vars-section {
     margin-top: 8px;
     padding-top: 8px;
     border-top: 1px solid var(--bowire-border, #2a2a2a);
-    color: #fff;
+    color: var(--bowire-text);
 }
 .bowire-request-builder-vars-list {
     display: flex;
@@ -19709,8 +19726,8 @@ not as the
     border-bottom: none;
 }
 .bowire-request-builder-vars-key { color: var(--bowire-accent, #6366f1); }
-.bowire-request-builder-vars-eq  { color: var(--bowire-text-muted, #888); }
-.bowire-request-builder-vars-val { color: #fff; overflow: hidden; text-overflow: ellipsis; }
+.bowire-request-builder-vars-eq  { color: var(--bowire-text-tertiary); }
+.bowire-request-builder-vars-val { color: var(--bowire-text); overflow: hidden; text-overflow: ellipsis; }
 
 /* ---- Response pane ---- */
 .bowire-request-builder-response {
@@ -19742,11 +19759,11 @@ not as the
     font: 600 12px/1 system-ui, sans-serif;
     letter-spacing: 0.04em;
     cursor: pointer;
-    color: #fff;
+    color: var(--bowire-text);
 }
 .bowire-request-builder-protocol-btn:hover,
 .bowire-request-builder-protocol-btn.is-open {
-    background: var(--bowire-bg-hover, #1f1f1f);
+    background: var(--bowire-surface-hover);
 }
 .bowire-request-builder-protocol-btn[data-protocol="rest"]      .bowire-request-builder-protocol-label { color: #10b981; }
 .bowire-request-builder-protocol-btn[data-protocol="grpc"]      .bowire-request-builder-protocol-label { color: #06b6d4; }
@@ -19785,13 +19802,13 @@ not as the
     background: transparent;
     border: none;
     border-radius: 4px;
-    color: #fff;
+    color: var(--bowire-text);
     cursor: pointer;
     text-align: left;
 }
 .bowire-request-builder-protocol-menu-item:hover,
 .bowire-request-builder-protocol-menu-item.is-selected {
-    background: var(--bowire-bg-hover, #1f1f1f);
+    background: var(--bowire-surface-hover);
 }
 .bowire-request-builder-protocol-chip {
     font: 700 12px/1 system-ui, sans-serif;
@@ -19821,10 +19838,10 @@ not as the
     border: 1px solid var(--bowire-border, #2a2a2a);
     border-right: none;
     font: 500 13px/1 var(--bowire-font-mono, monospace);
-    color: #fff;
+    color: var(--bowire-text);
     cursor: pointer;
 }
-.bowire-request-builder-grpc-picker-btn:hover { background: var(--bowire-bg-hover, #1f1f1f); }
+.bowire-request-builder-grpc-picker-btn:hover { background: var(--bowire-surface-hover); }
 .bowire-request-builder-grpc-picker-caret {
     display: inline-flex;
     width: 12px;
@@ -19869,11 +19886,11 @@ not as the
     font: 400 12px var(--bowire-font-mono, monospace);
     line-height: normal;
 }
-.bowire-request-builder-grpc-free-sep { color: var(--bowire-text-muted, #888); }
+.bowire-request-builder-grpc-free-sep { color: var(--bowire-text-tertiary); }
 .bowire-request-builder-grpc-svc {
     padding: 4px 6px;
     font: 600 11px/1.4 system-ui, sans-serif;
-    color: var(--bowire-text-muted, #888);
+    color: var(--bowire-text-tertiary);
     text-transform: uppercase;
     letter-spacing: 0.04em;
     margin-top: 4px;
@@ -19885,18 +19902,18 @@ not as the
     background: transparent;
     border: none;
     border-radius: 4px;
-    color: #fff;
+    color: var(--bowire-text);
     cursor: pointer;
     text-align: left;
     font: 400 13px/1 var(--bowire-font-mono, monospace);
 }
 .bowire-request-builder-grpc-method:hover,
 .bowire-request-builder-grpc-method.is-selected {
-    background: var(--bowire-bg-hover, #1f1f1f);
+    background: var(--bowire-surface-hover);
 }
 .bowire-request-builder-grpc-empty {
     padding: 12px;
-    color: var(--bowire-text-muted, #888);
+    color: var(--bowire-text-tertiary);
     font: 400 12px/1.4 system-ui, sans-serif;
 }
 
@@ -19912,11 +19929,11 @@ not as the
     background: var(--bowire-bg-elevated);
     border: 1px solid var(--bowire-border, #2a2a2a);
     border-right: none;
-    color: #fff;
+    color: var(--bowire-text);
     cursor: pointer;
     font: 600 12px/1 system-ui, sans-serif;
 }
-.bowire-request-builder-mcp-kind-btn:hover { background: var(--bowire-bg-hover, #1f1f1f); }
+.bowire-request-builder-mcp-kind-btn:hover { background: var(--bowire-surface-hover); }
 .bowire-request-builder-mcp-kind-caret { width: 12px; height: 12px; opacity: 0.7; }
 .bowire-request-builder-mcp-kind-menu {
     position: absolute;
@@ -19937,13 +19954,13 @@ not as the
     background: transparent;
     border: none;
     border-radius: 4px;
-    color: #fff;
+    color: var(--bowire-text);
     cursor: pointer;
     text-align: left;
 }
 .bowire-request-builder-mcp-kind-item:hover,
 .bowire-request-builder-mcp-kind-item.is-selected {
-    background: var(--bowire-bg-hover, #1f1f1f);
+    background: var(--bowire-surface-hover);
 }
 .bowire-request-builder-mcp-name-input {
     width: 100%;
@@ -19969,13 +19986,13 @@ not as the
     padding: 0 12px;
     background: transparent;
     border: none;
-    color: var(--bowire-text-muted, #888);
+    color: var(--bowire-text-tertiary);
     cursor: pointer;
     font: 600 12px/1 system-ui, sans-serif;
 }
 .bowire-request-builder-mqtt-action-btn.is-active {
-    background: var(--bowire-bg-hover, #1f1f1f);
-    color: #fff;
+    background: var(--bowire-surface-hover);
+    color: var(--bowire-text);
 }
 .bowire-request-builder-mqtt-topic-input {
     width: 100%;
@@ -19997,19 +20014,19 @@ not as the
     background: var(--bowire-bg-elevated);
     border: 1px solid var(--bowire-border, #2a2a2a);
     border-radius: 4px;
-    color: var(--bowire-text-muted, #888);
+    color: var(--bowire-text-tertiary);
     cursor: pointer;
     font: 500 12px/1 system-ui, sans-serif;
 }
 .bowire-request-builder-mqtt-qos-btn.is-active {
-    color: #fff;
+    color: var(--bowire-text);
     border-color: var(--bowire-accent, #6366f1);
 }
 .bowire-request-builder-mqtt-retain-row {
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    color: #fff;
+    color: var(--bowire-text);
 }
 
 /* ---- WebSocket controls ---- */
@@ -20028,7 +20045,7 @@ not as the
     padding: 3px 8px;
     border-radius: 3px;
     background: rgba(255, 255, 255, 0.06);
-    color: var(--bowire-text-muted, #888);
+    color: var(--bowire-text-tertiary);
     text-transform: uppercase;
 }
 .bowire-request-builder-ws-state-chip.is-open       { color: #10b981; background: rgba(16, 185, 129, 0.12); }
@@ -20053,7 +20070,7 @@ not as the
     align-items: center;
     gap: 8px;
     margin: 8px 0;
-    color: #fff;
+    color: var(--bowire-text);
 }
 
 /* ---- Streaming frame log (Phase E) ---- */
@@ -20083,7 +20100,7 @@ not as the
 .bowire-request-builder-stream-row.is-close { border-left-color: #ef4444; }
 .bowire-request-builder-stream-row.is-error { border-left-color: #ef4444; background: rgba(239, 68, 68, 0.05); }
 .bowire-request-builder-stream-dir {
-    color: var(--bowire-text-muted, #888);
+    color: var(--bowire-text-tertiary);
     font-weight: 700;
     text-align: center;
 }
@@ -20093,7 +20110,7 @@ not as the
     white-space: pre-wrap;
 }
 .bowire-request-builder-stream-ts {
-    color: var(--bowire-text-muted, #888);
+    color: var(--bowire-text-tertiary);
     font-size: 11px;
 }
 .bowire-request-builder-disconnect-btn {
@@ -20102,12 +20119,12 @@ not as the
     background: transparent;
     border: 1px solid var(--bowire-border, #2a2a2a);
     border-radius: 4px;
-    color: var(--bowire-text-muted, #888);
+    color: var(--bowire-text-tertiary);
     cursor: pointer;
     font: 500 11px/1 system-ui, sans-serif;
 }
 .bowire-request-builder-disconnect-btn:hover {
-    color: #fff;
+    color: var(--bowire-text);
     border-color: #ef4444;
 }
 
