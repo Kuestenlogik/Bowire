@@ -229,7 +229,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [237](https://github.com/Kuestenlogik/Bowire/issues/237) | Bowire | [WINGET_TOKEN expired — rotate to unblock winget publish for v2.0.0+](#issue-kuestenlogik-bowire-237) | ⬜ Backlog |  |
 | [288](https://github.com/Kuestenlogik/Bowire/issues/288) | Bowire | [IInlineSseSubscriber is an orphaned seam — give it a consumer or remove it](#issue-kuestenlogik-bowire-288) | ⬜ Backlog |  |
 | [292](https://github.com/Kuestenlogik/Bowire/issues/292) | Bowire | [Request-builder: GraphQL layout (#291 Phase D follow-up)](#issue-kuestenlogik-bowire-292) | ⬜ Backlog |  |
-| [307](https://github.com/Kuestenlogik/Bowire/issues/307) | Bowire | [Bowire interceptor: standalone reverse-proxy mode (Phase C)](#issue-kuestenlogik-bowire-307) | ⬜ Backlog |  |
+| [311](https://github.com/Kuestenlogik/Bowire/issues/311) | Bowire | [Pluggable workbench: extract remaining rails (Phase G continuation)](#issue-kuestenlogik-bowire-311) | ⬜ Backlog |  |
 
 ## Details
 
@@ -873,9 +873,9 @@ During the v2.0.0 release publish on 2026-06-21, the `winget` workflow failed at
 
 Followup to #291. Phases A+B+C+E shipped (REST / gRPC / MCP / MQTT / WebSocket / SSE + streaming response pane). … [[more]](https://github.com/Kuestenlogik/Bowire/issues/292)
 
-#### <a id="issue-kuestenlogik-bowire-307"></a>⬜ Backlog · [#307](https://github.com/Kuestenlogik/Bowire/issues/307) Bowire interceptor: standalone reverse-proxy mode (Phase C)
+#### <a id="issue-kuestenlogik-bowire-311"></a>⬜ Backlog · [#311](https://github.com/Kuestenlogik/Bowire/issues/311) Pluggable workbench: extract remaining rails (Phase G continuation)
 
-Follow-up to #153 — Phases A + B (embedded middleware + record-session integration) shipped in commit b2b92483de079ef1f1701ce261ba1c9b1463e4b3. This issue tracks **Phase C — standalone reverse-proxy mode**. [[more]](https://github.com/Kuestenlogik/Bowire/issues/307)
+Follow-up to #306. Phase G's descriptor-by-package extraction shipped in 0b76086 — every rail descriptor now lives in its own `Kuestenlogik.Bowire.Rail.*` NuGet, `BuiltInRails.cs` is gone from core, and `Bundle.Workbench` is the new meta-package referenced by `Bowire.Tool`. [[more]](https://github.com/Kuestenlogik/Bowire/issues/311)
 
 ---
 
