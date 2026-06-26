@@ -12,7 +12,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.1 — Scripting, variable resolver, throughput surface *(due 2026-06-30)*
 
-**55/62 done** · 7 backlog
+**56/62 done** · 6 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -22,7 +22,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [281](https://github.com/Kuestenlogik/Bowire/issues/281) | Bowire | [Guided tour: page-navigation + element spotlight + interactive flow](#issue-kuestenlogik-bowire-281) | ⬜ Backlog |  |
 | [294](https://github.com/Kuestenlogik/Bowire/issues/294) | Bowire | [Pluggable workbench: rails + modules as package contributions + meta-bundles](#issue-kuestenlogik-bowire-294) | ⬜ Backlog |  |
 | [295](https://github.com/Kuestenlogik/Bowire/issues/295) | Bowire | [Compose rail: integrate Collections + Presets — three sources, one organized destination](#issue-kuestenlogik-bowire-295) | ⬜ Backlog |  |
-| [309](https://github.com/Kuestenlogik/Bowire/issues/309) | Bowire | [UI: configure URL catalogue providers from Settings (#136 follow-up)](#issue-kuestenlogik-bowire-309) | ⬜ Backlog |  |
 | [126](https://github.com/Kuestenlogik/Bowire/issues/126) | Bowire | [Pre-/post-scripts with a protocol-typed sandbox](#issue-kuestenlogik-bowire-126) | ✅ Done |  |
 | [140](https://github.com/Kuestenlogik/Bowire/issues/140) | Bowire | [Per-mode 'Saved Configs' / Presets (distinct from cross-workflow favorites)](#issue-kuestenlogik-bowire-140) | ✅ Done |  |
 | [144](https://github.com/Kuestenlogik/Bowire/issues/144) | Bowire | [Large-recording capture/replay — chunked disk layout, lazy step-load, GB-scale](#issue-kuestenlogik-bowire-144) | ✅ Done |  |
@@ -77,6 +76,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [300](https://github.com/Kuestenlogik/Bowire/issues/300) | Bowire | [Benchmark: switching mode works once, then becomes inert](#issue-kuestenlogik-bowire-300) | ✅ Done |  |
 | [301](https://github.com/Kuestenlogik/Bowire/issues/301) | Bowire | [Home/Welcome formatting inconsistency: Benchmarks + Workspaces rails differ from others](#issue-kuestenlogik-bowire-301) | ✅ Done |  |
 | [302](https://github.com/Kuestenlogik/Bowire/issues/302) | Bowire | [Response viewer: line numbers + collapsible JSON + path breadcrumb + raw tab + download (Hoppscotch parity)](#issue-kuestenlogik-bowire-302) | ✅ Done |  |
+| [309](https://github.com/Kuestenlogik/Bowire/issues/309) | Bowire | [UI: configure URL catalogue providers from Settings (#136 follow-up)](#issue-kuestenlogik-bowire-309) | ✅ Done |  |
 | [310](https://github.com/Kuestenlogik/Bowire/issues/310) | Bowire | [UI: Settings → Modules toggle (mirror Rail modes pattern) — #294 follow-up](#issue-kuestenlogik-bowire-310) | ✅ Done |  |
 
 ### v2.2 — Test pillar: assertions, CI runner, regression coverage *(due 2026-07-10)*
@@ -93,7 +93,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [181](https://github.com/Kuestenlogik/Bowire/issues/181) | Bowire | [bowire test CLI runner with JUnit / SARIF / TTY output](#issue-kuestenlogik-bowire-181) | ⬜ Backlog |  |
 | [191](https://github.com/Kuestenlogik/Bowire/issues/191) | Bowire | [Contract testing — Pact-style publish / verify CLI](#issue-kuestenlogik-bowire-191) | ⬜ Backlog |  |
 | [208](https://github.com/Kuestenlogik/Bowire/issues/208) | Bowire | [Variable resolver — Phase 5: OS keyring + AI re-roll + streaming](#issue-kuestenlogik-bowire-208) | ⬜ Backlog |  |
-| [306](https://github.com/Kuestenlogik/Bowire/issues/306) | Bowire | [Pluggable workbench: extract every remaining rail / module to packages + Bundle.Workbench (Phase G follow-up to #294)](#issue-kuestenlogik-bowire-306) | 🚧 In progress |  |
+| [306](https://github.com/Kuestenlogik/Bowire/issues/306) | Bowire | [Pluggable workbench: extract every remaining rail / module to packages + Bundle.Workbench (Phase G follow-up to #294)](#issue-kuestenlogik-bowire-306) | ⬜ Backlog |  |
 | [180](https://github.com/Kuestenlogik/Bowire/issues/180) | Bowire | [Assertion DSL for collection / recording replay](#issue-kuestenlogik-bowire-180) | ✅ Done |  |
 | [213](https://github.com/Kuestenlogik/Bowire/issues/213) | Bowire | [Test infra: finish SidecarFake JSON-RPC handshake to unlock SidecarBowireProtocol coverage](#issue-kuestenlogik-bowire-213) | ✅ Done |  |
 
@@ -230,7 +230,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [288](https://github.com/Kuestenlogik/Bowire/issues/288) | Bowire | [IInlineSseSubscriber is an orphaned seam — give it a consumer or remove it](#issue-kuestenlogik-bowire-288) | ⬜ Backlog |  |
 | [292](https://github.com/Kuestenlogik/Bowire/issues/292) | Bowire | [Request-builder: GraphQL layout (#291 Phase D follow-up)](#issue-kuestenlogik-bowire-292) | ⬜ Backlog |  |
 | [307](https://github.com/Kuestenlogik/Bowire/issues/307) | Bowire | [Bowire interceptor: standalone reverse-proxy mode (Phase C)](#issue-kuestenlogik-bowire-307) | ⬜ Backlog |  |
-| [308](https://github.com/Kuestenlogik/Bowire/issues/308) | Bowire | [Bowire interceptor: mock injection (Phase D)](#issue-kuestenlogik-bowire-308) | ⬜ Backlog |  |
 
 ## Details
 
@@ -259,10 +258,6 @@ Bowire today hardcodes: - An 'always-on' rail set (Home, Discover, Workspaces) �
 #### <a id="issue-kuestenlogik-bowire-295"></a>⬜ Backlog · [#295](https://github.com/Kuestenlogik/Bowire/issues/295) Compose rail: integrate Collections + Presets — three sources, one organized destination
 
 The **Compose** rail (renamed from Design in commit `e52f7a9`) is now the home for the request-builder — ad-hoc requests live there. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/295)
-
-#### <a id="issue-kuestenlogik-bowire-309"></a>⬜ Backlog · [#309](https://github.com/Kuestenlogik/Bowire/issues/309) UI: configure URL catalogue providers from Settings (#136 follow-up)
-
-#136 shipped the URL catalogue provider interface (local / http / consul). Provider selection + configuration goes through appsettings (Bowire:Discovery:Catalogue:*) today — there's NO UI affordance to pick + configure a provider from the workbench. [[more]](https://github.com/Kuestenlogik/Bowire/issues/309)
 
 #### <a id="issue-kuestenlogik-bowire-126"></a>✅ Done · [#126](https://github.com/Kuestenlogik/Bowire/issues/126) Pre-/post-scripts with a protocol-typed sandbox
 
@@ -479,6 +474,10 @@ Rails already collapse into an overflow `⋮` button when the vertical space run
 #### <a id="issue-kuestenlogik-bowire-302"></a>✅ Done · [#302](https://github.com/Kuestenlogik/Bowire/issues/302) Response viewer: line numbers + collapsible JSON + path breadcrumb + raw tab + download (Hoppscotch parity)
 
 User feedback (Phase 2 walkthrough): "response darstellung auf und einklappen sowie zeilennummern so wie bei hoppscotch" (Hoppscotch screenshot supplied). [[more]](https://github.com/Kuestenlogik/Bowire/issues/302)
+
+#### <a id="issue-kuestenlogik-bowire-309"></a>✅ Done · [#309](https://github.com/Kuestenlogik/Bowire/issues/309) UI: configure URL catalogue providers from Settings (#136 follow-up)
+
+#136 shipped the URL catalogue provider interface (local / http / consul). Provider selection + configuration goes through appsettings (Bowire:Discovery:Catalogue:*) today — there's NO UI affordance to pick + configure a provider from the workbench. [[more]](https://github.com/Kuestenlogik/Bowire/issues/309)
 
 #### <a id="issue-kuestenlogik-bowire-310"></a>✅ Done · [#310](https://github.com/Kuestenlogik/Bowire/issues/310) UI: Settings → Modules toggle (mirror Rail modes pattern) — #294 follow-up
 
@@ -877,10 +876,6 @@ Followup to #291. Phases A+B+C+E shipped (REST / gRPC / MCP / MQTT / WebSocket /
 #### <a id="issue-kuestenlogik-bowire-307"></a>⬜ Backlog · [#307](https://github.com/Kuestenlogik/Bowire/issues/307) Bowire interceptor: standalone reverse-proxy mode (Phase C)
 
 Follow-up to #153 — Phases A + B (embedded middleware + record-session integration) shipped in commit b2b92483de079ef1f1701ce261ba1c9b1463e4b3. This issue tracks **Phase C — standalone reverse-proxy mode**. [[more]](https://github.com/Kuestenlogik/Bowire/issues/307)
-
-#### <a id="issue-kuestenlogik-bowire-308"></a>⬜ Backlog · [#308](https://github.com/Kuestenlogik/Bowire/issues/308) Bowire interceptor: mock injection (Phase D)
-
-Follow-up to #153 — Phases A + B (embedded middleware + record-session integration) shipped in commit b2b92483de079ef1f1701ce261ba1c9b1463e4b3. This issue tracks **Phase D — mock injection** for both embedded and standalone modes. [[more]](https://github.com/Kuestenlogik/Bowire/issues/308)
 
 ---
 
